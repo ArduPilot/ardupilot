@@ -13185,6 +13185,14 @@ switch value'''
             # uses CMD_TOTAL not MIS_TOTAL, and it's in a scalr not a
             # group and it's generally all bad.
             return
+        # Disable the simulated GPS and reboot so the EKF never establishes
+        # home during this test.  When home is set, AP_AHRS::set_home() calls
+        # AP_Mission::write_home_to_storage(), which bumps MIS_TOTAL from 0 to
+        # 1.  If that landed between the reads below the test would
+        # intermittently fail with "Total has changed".
+        self.set_parameters({"SIM_GPS1_ENABLE": 0})
+        self.reboot_sitl()
+
         self.start_subtest("Ensure GCS is not able to set MIS_TOTAL")
         old_mt = self.get_parameter("MIS_TOTAL", attempts=20) # retries to avoid seeming race condition with MAVProxy
         ex = None
