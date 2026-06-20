@@ -13135,7 +13135,11 @@ switch value'''
                       (count, attempt_count))
         return (seen_ids, id_seq)
 
-    def test_parameters_download(self):
+    def ParametersDownload(self):
+        '''check parameter download gives a consistent result'''
+        if self.is_balancebot():
+            # same binary and parameters as Rover
+            return
         self.start_subtest("parameter download")
         target_system = self.sysid_thismav()
         target_component = 1
@@ -13172,8 +13176,11 @@ switch value'''
             raise NotAchievedException("Enable parameter did not increase no of parameters downloaded")
         self.end_subsubtest("enable download")
 
-    def test_parameters_mis_total(self):
-        self.start_subsubtest("parameter mis_total")
+    def ParametersMIS_TOTAL(self):
+        '''check the GCS cannot set the internal-use-only MIS_TOTAL parameter'''
+        if self.is_balancebot():
+            # same binary and parameters as Rover
+            return
         if self.is_tracker():
             # uses CMD_TOTAL not MIS_TOTAL, and it's in a scalr not a
             # group and it's generally all bad.
@@ -13237,21 +13244,15 @@ switch value'''
         if failures:
             raise NotAchievedException("AP_SUBGROUPVARPTR entries missing @Group:/@Path: annotations")
 
-    def test_parameter_documentation(self):
+    def ParameterDocumentation(self):
         '''ensure parameter documentation is valid'''
+        if self.is_balancebot():
+            # same binary and parameters as Rover
+            return
         self.start_subsubtest("Check all parameters are documented")
         self.test_parameter_documentation_get_all_parameters()
         self.start_subsubtest("Check AP_SUBGROUPVARPTR entries have documentation annotations")
         self.test_subgroupvarptr_annotated()
-
-    def Parameters(self):
-        '''general small tests for parameter system'''
-        if self.is_balancebot():
-            # same binary and parameters as Rover
-            return
-        self.test_parameter_documentation()
-        self.test_parameters_mis_total()
-        self.test_parameters_download()
 
     def disabled_tests(self):
         return {}
@@ -16275,7 +16276,9 @@ SERIAL5_BAUD 128
             self.SetHome,
             self.ConfigErrorLoop,
             self.CPUFailsafe,
-            self.Parameters,
+            self.ParameterDocumentation,
+            self.ParametersMIS_TOTAL,
+            self.ParametersDownload,
             self.LoggerDocumentation,
             self.Logging,
             self.GetCapabilities,
