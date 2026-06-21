@@ -2071,10 +2071,10 @@ INCLUDE common.ld
                         "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SIOD%u, %u, false, "
                         % (dev, n, n))
                     if not self.intdefines.get('HAL_UART_NODMA', 0):
-# dma_rx/dma_tx set to false: RP2350 SIO UART DMA is not yet validated on hardware
-# enabling it causes Shared_DMA::call_wait() deadlock in UARTDriver::_begin() during AP_SerialManager::init().
+# dma_rx=true: RP2350 SIO UART RX uses direct dmaChannelAllocI() (no Shared_DMA), safe during init.
+# dma_tx=false: TX DMA uses Shared_DMA which causes call_wait() deadlock during AP_SerialManager::init().
                         f.write(
-                            "false, STM32_UART_%s_RX_DMA_CHAN, %s, "
+                            "true, STM32_UART_%s_RX_DMA_CHAN, %s, "
                             "false, STM32_UART_%s_TX_DMA_CHAN, %s, "
                             % (dev, rp_uart_treq_rx[n], dev, rp_uart_treq_tx[n]))
                     else:

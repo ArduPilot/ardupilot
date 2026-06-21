@@ -242,6 +242,17 @@ main XIP flash (`W25Q64JVXGIM`) plus the SPI-mode microSD card.
 
 ## Connectors
 
+Laurel has two switched power rails that feed the connector VOUT pins:
+
+| Rail | Enable GPIO | Default state | Consumers |
+|------|-------------|---------------|-----------|
+| 5 V BEC | GPIO14 (`BEC_5V_EN`) | **HIGH** (always on) | J2, J6, J7, J8, J10, J11 |
+| 9 V BEC | GPIO15 (`BEC_9V_EN`) | **LOW** (off) | J5 pin 1 |
+
+J1 pin 1 is raw `VBAT` (unswitched battery voltage), not a regulated output.
+J5 pin 1 is 9 V but **unpowered by default** — `BEC_9V_EN` must be driven high
+to enable video transmitter power.
+
 ### J1 — ESC Connector (8-pin)
 
 `J1` is the main ESC connector. It carries battery power, the current-sense
@@ -262,6 +273,137 @@ signal, ESC telemetry, and all four PWM motor outputs:
 protocols (KISS, BLHeli32, Scorpion, etc.). It is not yet declared in
 `hwdef.dat` because ArduPilot's RP2350 serial path requires a matched TX+RX
 pair to register a port.
+
+### J2 — CRSF / ELRS Receiver Connector (4-pin)
+
+`J2` is the RC receiver input connector, intended for CRSF/ELRS serial
+receivers. In ArduPilot this maps to `SERIAL3` (PIO UART).
+
+| J2 Pin | Signal | GPIO | Notes |
+|--------|--------|------|-------|
+| 1 | FTRX_VOUT_5V | — | 5 V supply to receiver |
+| 2 | GND | — | Ground |
+| 3 | FTRX_RX | GPIO21 | FC receives from receiver (`SERIAL3` RX) |
+| 4 | FTRX_TX | GPIO20 | FC transmits to receiver (`SERIAL3` TX) |
+
+### J3 — microSD Card Socket (9-pin)
+
+`J3` is the onboard microSD card socket. Laurel uses SPI mode via `SPI1`.
+The socket is the standard spring-loaded push-push type.
+
+| J3 Pin | Signal | GPIO | Notes |
+|--------|--------|------|-------|
+| 1 | DAT2 | — | Not connected in SPI mode |
+| 2 | CD/DAT3 | GPIO25 | SPI chip-select (`SDCARD_SPI_CS`) |
+| 3 | CMD | GPIO27 | SPI MOSI (`SPI1_SDO`) |
+| 4 | VDD | — | 3.3 V supply to card |
+| 5 | CLK | GPIO26 | SPI clock (`SPI1_SCK`) |
+| 6 | VSS/GND | — | Ground |
+| 7 | DAT0 | GPIO24 | SPI MISO (`SPI1_SDI`) |
+| 8 | DAT1 | — | Not connected in SPI mode |
+| 9 | DET | — | Card-detect switch (not connected in hwdef) |
+
+### J5 — Digital VTX / SBus Connector (6-pin)
+
+`J5` carries both the digital video transmitter serial link (MSP DisplayPort
+via `SERIAL1`) and the SBUS receiver input.
+
+| J5 Pin | Signal | GPIO | Notes |
+|--------|--------|------|-------|
+| 1 | DVTX_VOUT_9V | — | 9 V supply to digital VTX |
+| 2 | GND | — | Ground |
+| 3 | DVTX_TX | GPIO12 | FC transmits to VTX (`SERIAL1` TX, MSP DisplayPort) |
+| 4 | DVTX_RX | GPIO13 | FC receives from VTX (`SERIAL1` RX) |
+| 5 | GND | — | Ground |
+| 6 | DVTX_SBUS | GPIO36 | SBUS receiver input (RX-only; not yet declared in `hwdef.dat`) |
+
+`J5` pin 1 supplies 9 V from the 9 V BEC (`BEC_9V_EN` / GPIO15). This rail
+is **disabled by default** in the ArduPilot firmware (GPIO15 held low). Drive
+GPIO15 high to power the VTX.
+
+`J5` pin 6 (`GPIO36`) is RX-only and is not yet declared in `hwdef.dat`
+for the same reason as `J1` pin 4 — no matched TX pin for a full serial port.
+
+### J6 — I2C / External Compass Connector (4-pin)
+
+`J6` exposes the `I2C0` bus. An external GPS+compass module's magnetometer
+connects here. `AP_COMPASS_PROBING_ENABLED` is enabled, so any I2C compass
+on this bus will be detected automatically.
+
+| J6 Pin | Signal | GPIO | Notes |
+|--------|--------|------|-------|
+| 1 | I2C_VOUT_5V | — | 5 V supply |
+| 2 | GND | — | Ground |
+| 3 | SDA | GPIO44 | `I2C0` data (`I2C0_SDA`) |
+| 4 | SCL | GPIO45 | `I2C0` clock (`I2C0_SCL`) |
+
+Note: `J6` shares the `I2C0` bus with the onboard `DPS310` barometer. Both
+can coexist as long as the compass address does not conflict with `0x76`.
+
+### J7 — GPS / GNSS Connector (4-pin)
+
+`J7` is the GPS serial connector. In ArduPilot this maps to `SERIAL2`
+(hardware UART1, default protocol: GPS).
+
+| J7 Pin | Signal | GPIO | Notes |
+|--------|--------|------|-------|
+| 1 | GNSS_VOUT_5V | — | 5 V supply to GPS module |
+| 2 | GND | — | Ground |
+| 3 | GNSS_RX | GPIO9 | FC receives from GPS (`SERIAL2` RX) |
+| 4 | GNSS_TX | GPIO8 | FC transmits to GPS (`SERIAL2` TX) |
+
+A combined GPS+compass module uses **both** `J7` (UART) and `J6` (I2C
+compass). Connect `J7` for the GNSS serial link and `J6` for the
+magnetometer.
+
+### J8 — Addressable LED Connector (3-pin)
+
+`J8` is the RGB LED strip output. The ArduPilot serial-LED subsystem is
+not yet enabled on the RP2350 target, so this output is currently inactive.
+
+| J8 Pin | Signal | GPIO | Notes |
+|--------|--------|------|-------|
+| 1 | LED_VOUT_5V | — | 5 V supply to LED strip |
+| 2 | GND | — | Ground |
+| 3 | ONE_WIRE_LED | GPIO38 | WS2812 / addressable LED data |
+
+### J10 — Spare UART Connector (4-pin)
+
+`J10` exposes the second PIO UART (`SERIAL4`). Default ArduPilot protocol:
+MAVLink2.
+
+| J10 Pin | Signal | GPIO | Notes |
+|---------|--------|------|-------|
+| 1 | SPARE_UART_VOUT_5V | — | 5 V supply |
+| 2 | GND | — | Ground |
+| 3 | SPARE_UART_RX | GPIO35 | FC receives (`SERIAL4` RX) |
+| 4 | SPARE_UART_TX | GPIO34 | FC transmits (`SERIAL4` TX) |
+
+### J11 — Spare GPIO Connector (6-pin)
+
+`J11` breaks out spare GPIOs and an analog sense input. Specific GPIO
+assignments are not yet confirmed from the schematic.
+
+| J11 Pin | Signal | GPIO | Notes |
+|---------|--------|------|-------|
+| 1 | SPARE_VOUT_5V | — | 5 V supply |
+| 2 | GND | — | Ground |
+| 3 | SPARE_GPIO1 | TBD | |
+| 4 | SPARE_GPIO2 | TBD | |
+| 5 | SPARE_GPIO3 | TBD | |
+| 6 | SPARE_ASNS | TBD | Analog sense input |
+
+### J12 — SWD Debug Connector (3-pin)
+
+`J12` exposes the RP2350 SWD debug port. It is the only connector not on the
+PCB edge — a small 3-pin header near the middle of the board that points
+vertically when the PCB is flat.
+
+| J12 Pin | Signal | Notes |
+|---------|--------|-------|
+| 1 | SWCLK | SWD clock (nearest board edge) |
+| 2 | GND | Ground |
+| 3 | SWDIO | SWD data |
 
 ## Firmware Building
 
@@ -313,23 +455,9 @@ expected to use the ArduPilot bootloader over USB CDC.  ie uploader.py or './waf
 
 ### SWD / OpenOCD path
 
-Laurel exposes SWD through connector `J12`
-Physical identification:
-- `J12` is the only connector that is not on the PCB edge.
-- It is the small 3-pin header near the middle of the board.
-- When the PCB is lying flat on the table, this header "points up".
-
-Pinout, with pin 1 being the pin nearest the board edge:
-- Pin 1: `SWCLK`
-- Pin 2: `GND`
-- Pin 3: `SWDIO`
-
-In the hwdef this corresponds to:
-- `PC0`: SWCLK
-- `PC1`: SWDIO
-
-You can Flash the ELF over SWD with OpenOCD + GDB when doing low-level bring-up or
-when the USB boot path is unavailable.
+Laurel exposes SWD through connector `J12` — see the Connectors section for
+the full pinout. You can flash the ELF over SWD with OpenOCD + GDB when doing
+low-level bring-up or when the USB boot path is unavailable.
 
 using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
     https://github.com/raspberrypi/debugprobe/releases/download/debugprobe-v2.3.0/debugprobe_on_pico2.uf2

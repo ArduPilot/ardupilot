@@ -86,9 +86,15 @@
 /* Diagnostic: captures Core 1's VTOR at init time — readable via OpenOCD/GDB. */
 volatile uint32_t c1_vtor_at_boot = 0U;
 
-/* XIP lockout: 0=free, 1=Core0 requested, 2=Core1 parked. Defined in board_rp2350.c. */
+/* XIP lockout: 0=free, 1=Core0 requested, 2=Core1 parked. Defined in board_rp2350.c.
+   In the bootloader build board_rp2350.c is not linked, so define them here. */
+#ifdef HAL_BOOTLOADER_BUILD
+volatile uint32_t c1_xip_lock = 0U;
+volatile uint32_t c1_xip_lock_ready = 0U;
+#else
 extern volatile uint32_t c1_xip_lock;
 extern volatile uint32_t c1_xip_lock_ready;
+#endif
 
 volatile uint32_t c1_boot_stage = 0xDEAD0000U;
 volatile uint32_t c1_heartbeat = 0U;
