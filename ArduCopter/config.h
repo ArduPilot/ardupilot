@@ -318,8 +318,10 @@
 //////////////////////////////////////////////////////////////////////////////
 // Takeoff
 //
+#define PILOT_TKO_ALT_M_MIN 0.0f  // the minimum altitude above home that pilot initiated takeoff will climb to before switching to normal altitude control.
+#define PILOT_TKO_ALT_M_MAX 10.0f  // the maximum altitude above home that pilot initiated takeoff will climb to before switching to normal altitude control.
 #ifndef PILOT_TKO_ALT_M_DEFAULT
- # define PILOT_TKO_ALT_M_DEFAULT 0     // default final alt above home for pilot initiated takeoff
+ # define PILOT_TKO_ALT_M_DEFAULT PILOT_TKO_ALT_M_MIN     // default final alt above home for pilot initiated takeoff
 #endif
 
 
