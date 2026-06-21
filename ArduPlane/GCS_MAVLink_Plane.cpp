@@ -1041,6 +1041,8 @@ void GCS_MAVLINK_Plane::handle_set_attitude_target(const mavlink_message_t &msg)
 
         uint8_t attitude_mask = att_target.type_mask & 0b10000111; // q plus rpy
 
+        plane.guided_state.last_forced_rpy_rates_ms = 0; // by default, disabe rate control
+
         uint32_t now = AP_HAL::millis();
         if ((attitude_mask & 0b10000001) ||    // partial, including roll
                 (attitude_mask == 0b10000000)) { // all angles
@@ -1071,6 +1073,26 @@ void GCS_MAVLINK_Plane::handle_set_attitude_target(const mavlink_message_t &msg)
             // Update timer for external throttle
             plane.guided_state.last_forced_throttle_ms = now;
         }
+
+        // Note: Historically, attitude_mask used BODY_ROLL/PITCH/YAW_RATE_IGNORE to indicate which axes to ignore when handling attitude (not just rates).
+        // For attitude rate control, and to avoid conflicts with existing behavior, ATTITUDE_IGNORE must be set, and we require that all 3 axes need to be enable.
+
+        if (attitude_mask & 0b10000000) { // we use attitude control
+            return;
+        }
+
+        if ((attitude_mask & 0b00000001) && (attitude_mask & 0b00000010) && (attitude_mask & 0b00000100)) {
+            plane.guided_state.forced_rpy_rates_cd.x = degrees(att_target.body_roll_rate) * 100;
+            plane.guided_state.forced_rpy_rates_cd.y = degrees(att_target.body_pitch_rate) * 100;
+            plane.guided_state.forced_rpy_rates_cd.z = degrees(att_target.body_yaw_rate) * 100;
+            
+            // Enable and update timer for rate control
+            plane.guided_state.last_forced_rpy_rates_ms = now;
+
+            // Disable attitude control
+            plane.guided_state.last_forced_rpy_ms  = {0, 0, 0};
+        }
+
     }
 
 void GCS_MAVLINK_Plane::handle_set_position_target_local_ned(const mavlink_message_t &msg)
