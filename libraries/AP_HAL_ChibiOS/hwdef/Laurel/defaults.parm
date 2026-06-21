@@ -56,3 +56,11 @@ EK3_IMU_MASK 1
 # the "TasksV2\n" header — the TaskInfo array isn't allocated until the next
 # scheduler loop, so every FTP get @SYS/tasks.txt returns an empty file.
 SCHED_OPTIONS 1
+
+
+# 2 = ublox serial (GPS1_TYPE was GPS_TYPE in older ArduPilot)
+GPS1_TYPE 2
+# GPS_DRV_OPTIONS bit 2: cap ublox baud at 115200 instead of 230400.
+# Preferring 115200 for GPS as less overhead and more proven on this hardware.
+GPS_DRV_OPTIONS 4
+SERIAL2_BAUD 115
