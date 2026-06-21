@@ -72,7 +72,7 @@ Current hwdef defaults:
 - `SERIAL0`: MAVLink2 over USB
 - `SERIAL1`: MSP DisplayPort
 - `SERIAL2`: GPS
-- `SERIAL3`: RC input
+- `SERIAL3`: disabled by default; `GPIO21` is reserved for PPM-sum edge-capture RC input
 - `SERIAL4`: MAVLink2
 
 Two additional RX-only pads exist on the Laurel PCB and are not yet declared
@@ -105,13 +105,27 @@ RP2350 in this target.
 |----------|------|-------|
 | Blue status LED | GPIO6 | Exported in hwdef as `LED_BLUE`; hwdef drives output low at boot |
 | Green status LED | GPIO7 | Exported in hwdef as `LED_GREEN`; hwdef drives output low at boot |
-| Buzzer | GPIO5 | Exported as `BUZZER` and mapped as the board buzzer pin |
+| Buzzer | GPIO5 | PWM `ALARM` output driving the onboard electromagnetic transducer at a fixed nominal 4 kHz |
 | 5 V regulator enable | GPIO14 | `BEC_5V_EN`, driven high by default in application firmware |
 | 9 V regulator enable | GPIO15 | `BEC_9V_EN`, held low by default for bring-up |
 
 Laurel also has an onboard single-wire RGB LED on `GPIO39`, but serial LED
 support remains disabled for RP2350 in this target, so that LED is not yet
 bound in `hwdef.dat`.
+
+### Laurel Pre-Arm Beep Counts
+
+Laurel enables a board-specific tone-count mapping for common pre-arm failures.
+When the buzzer reports a pre-arm fault, the first failing check in the current
+pre-arm cycle is mapped as follows:
+
+- `3` beeps: RC input / transmitter failure
+- `4` beeps: battery or board-voltage failure
+- `5` beeps: sensor / estimator input failure (`BARO`, `COMPASS`, `GPS`, `INS`, `AIRSPEED`, `RANGEFINDER`, `VISION`, `FFT`)
+- `6` beeps: configuration / system / storage-style failure (`PARAMETERS`, `LOGGING`, `SWITCH`, `GPS_CONFIG`, `SYSTEM`, `MISSION`, `CAMERA`, `AUX_AUTH`, `OSD`)
+
+If no Laurel-specific mapping matches, ArduPilot falls back to the normal
+generic notify tones.
 
 ## SPI Buses
 

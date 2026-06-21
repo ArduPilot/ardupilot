@@ -37,11 +37,9 @@ FRAME_TYPE 1
 # Serial port protocol defaults.
 # SERIAL1 (UART0 / DVTX connector): MSP DisplayPort is compiled-in default.
 # SERIAL2 (UART1 / GPS connector): GPS is compiled-in default.
-# SERIAL3 (PIOUART0 / CRSF-ELRS port, GPIO20/21): enable RCIN by default so
-#   PIOUART0 is initialised and the PIO state machine configures GPIO20/21
-#   FUNCSEL=6(PIO0) at boot.  Without a receiver plugged in, the board simply
-#   shows "PreArm: RC not found" (normal behaviour).
-SERIAL3_PROTOCOL 23
+# SERIAL3 (PIOUART0 / CRSF-ELRS port, GPIO20/21): disabled - GPIO21 is used
+#   for PPM RC input via SoftSigReaderRP2350 GPIO edge capture.
+SERIAL3_PROTOCOL -1
 
 # SERIAL4 (PIOUART1 / AUX port, GPIO34/35): MAVLink2 by default so the
 # spare UART connector is ready for a telemetry radio or GCS link.
