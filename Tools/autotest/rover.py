@@ -3225,7 +3225,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("ensure a mavlink1 connection can't do anything useful with new item types")
             self.set_parameter("SERIAL2_PROTOCOL", 1)
             self.reboot_sitl()
-            mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
+            mav2 = mavutil.mavlink_connection("tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
                                               robust_parsing=True,
                                               source_system=7,
                                               source_component=7)
@@ -3649,7 +3649,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.drain_mav()
 
         self.start_subtest("No clear mission while it is being uploaded by a different node")
-        mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
+        mav2 = mavutil.mavlink_connection("tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
                                           robust_parsing=True,
                                           source_system=7,
                                           source_component=7)
@@ -6408,7 +6408,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # execute these commands:
         self.set_parameter("MAV3_OPTIONS", 2)
         self.reboot_sitl()  # mavlink-private is reboot-required
-        mav2 = mavutil.mavlink_connection("tcp:localhost:5763",
+        mav2 = mavutil.mavlink_connection("tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
                                           robust_parsing=True,
                                           source_system=7,
                                           source_component=7)
