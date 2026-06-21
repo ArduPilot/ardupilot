@@ -8,6 +8,7 @@ ArduCopter/mode.cpp|Copter::update_flight_mode
 ArduCopter/motors.cpp|Copter::motors_output
 ArduCopter/motors.cpp|Copter::motors_output_main
 ArduCopter/precision_landing.cpp|Copter::update_precland
+ArduCopter/rate_thread.cpp|Copter::rate_controller_thread
 ArduCopter/rate_thread.cpp|Copter::rate_controller_filter_update
 ArduCopter/rate_thread.cpp|Copter::update_dynamic_notch_at_specified_rate_main
 # NOTE: input_euler_angle_roll_pitch_euler_rate_yaw_rad, attitude_controller_run_quat,
@@ -36,6 +37,11 @@ libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::periodic
 libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNotch::update_params
 libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::update
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::update_gyro_filters
+# set_cutoff_frequency (164 B each): called from update_gyro_filters (SRAM) during sensors_converging()
+# window (first 30s) on every filter update tick — XIP fetch from Core1 causes UNDEFINSTR fault
+# via SMP XIP cache corruption. tanf slow-path still hits flash but only when cutoff actually changes.
+libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<Vector3<float>>::set_cutoff_frequency
+libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<float>::set_cutoff_frequency
 # apply_gyro_filters: called per-gyro-sample (1 kHz) from SPI thread; calls HarmonicNotchFilter::apply chain
 # Moving to SRAM eliminates 260+94+308+108 = 770 B of per-sample XIP pressure from core0 SPI thread.
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::apply_gyro_filters
@@ -54,6 +60,15 @@ libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch
 libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_throttle_notch
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::accumulate_samples
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::read_fifo
+# _notify_new_gyro/accel_raw_sample (656+540+64 B): called at 1kHz from read_fifo (SRAM) on Core1 SPI thread.
+# GDB PC sampling caught Core1 in _notify_new_gyro_raw_sample 60/60 times — dominant XIP exposure.
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_gyro_raw_sample
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_accel_raw_sample
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample
+# _rotate_and_correct_accel + _update_sensor_rate: called at 1kHz from _notify_new_accel_raw_sample (SRAM).
+# PC sampling showed Core1 catching these in flash after notify functions moved to SRAM.
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_rotate_and_correct_accel
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_update_sensor_rate
 libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor::update_backend_filters
 libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor_Backend::update_filters
 libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::UpdateFilter
