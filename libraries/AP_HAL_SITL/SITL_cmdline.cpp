@@ -88,7 +88,6 @@ void SITL_State::_usage(void)
            "\t--rate|-r RATE           set SITL framerate\n"
            "\t--console|-C             use console instead of TCP ports\n"
            "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
-           "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set start location (lat,lng,alt,yaw) or location name\n"
            "\t--model|-M MODEL         set simulation model\n"
            "\t--config string          set additional simulation config string\n"
