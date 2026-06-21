@@ -31,7 +31,6 @@ _ap_bin() {
     '--serial7[set device string for SERIAL7]:DEVICE:' \
     '--serial8[set device string for SERIAL8]:DEVICE:' \
     '--serial9[set device string for SERIAL9]:DEVICE:' \
-    '(-S --synthetic-clock)'{-S,--synthetic-clock}'[set synthetic clock mode]' \
     '--start-time[set simulation start time in UNIX timestamp]:TIMESTR:' \
     '--sysid[set MAV_SYSID]:ID:' \
     '--slave[set the number of JSON slaves]:number:' \

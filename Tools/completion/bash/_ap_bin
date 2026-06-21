@@ -23,7 +23,6 @@ _ap_bin()
     opts+=" --rate -r"
     opts+=" --console -C"
     opts+=" --instance -I"
-    opts+=" --synthetic-clock -S"
     opts+=" --home -O"
     opts+=" --model -M"
     opts+=" --fg -F"
