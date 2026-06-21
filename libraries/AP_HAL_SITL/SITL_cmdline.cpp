@@ -323,7 +323,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"rate",            true,   0, 'r'},
         {"console",         false,  0, 'C'},
         {"instance",        true,   0, 'I'},
-        {"synthetic-clock", false,  0, 'S'},
+        {"synthetic-clock", false,  0, 'S'}, // kept to warn that it's always enabled
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
         {"config",          true,   0, 'c'},
@@ -445,7 +445,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
         break;
         case 'S':
-            printf("Ignoring stale command-line parameter '-S'");
+            printf("Ignoring obsolete command-line parameter '-S'/'--synthetic-clock'. Synthetic clock mode is now always enabled.\n");
             break;
         case 'O':
             home_str = gopt.optarg;
