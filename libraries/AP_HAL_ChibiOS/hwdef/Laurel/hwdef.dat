@@ -124,7 +124,12 @@ PA9 UART1_RX UART1
 
 # PIOUARTs - CRSF/ELRS and AUX
 PA20 PIOUART0_TX INPUT FLOATING
+# PA21 reassigned to PPM RC input (SoftSigReaderRP2350 GPIO edge capture)
 PA21 PIOUART0_RX INPUT FLOATING
+
+# PPM RC input on GPIO21 (PA21)
+define HAL_RCIN_IS_GPIO 1
+define HAL_RCIN_GPIO_LINE 21
 PA34 PIOUART1_TX INPUT FLOATING
 PA35 PIOUART1_RX INPUT FLOATING
 
@@ -163,6 +168,9 @@ define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 # HAL_PWM_ALARM_GPIO_LINE and board.c sets FUNCSEL=4 (PWM) at boot.
 PA5  PWM2_B TIM2 LOW ALARM
 define AP_NOTIFY_TONEALARM_ENABLED 1
+# Define Laurel-specific count tones for pre-arm failures so common bring-up
+# faults can be identified without a console link.
+define AP_NOTIFY_LAUREL_TONE_COUNT_PREARM 1
 # Lock the PWM tone frequency to the transducer's rated drive frequency.
 # toneAlarm_set_buzzer_tone() uses this to override the musical note frequency
 # while preserving the on/off timing pattern for audible notifications.
