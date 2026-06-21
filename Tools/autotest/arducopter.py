@@ -1442,8 +1442,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Custom controller test complete")
 
     # Tests all actions and logic behind the battery failsafe
-    def BatteryFailsafe(self, timeout=300):
-        '''Fly Battery Failsafe'''
+    def batt_failsafe_init(self):
+        '''configure the common battery failsafe parameters shared by the
+        individual BatteryFailsafe* tests'''
         self.progress("Configure battery failsafe parameters")
         self.set_parameters({
             'SIM_SPEEDUP': 4,
@@ -1455,9 +1456,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'SIM_BATT_VOLTAGE': 12.5,
         })
 
+    def BatteryFailsafeDisabled(self):
+        '''Test that with battery failsafe disabled no action is taken'''
         # Trigger low battery condition with failsafe disabled. Verify
         # no action taken.
-        self.start_subtest("Batt failsafe disabled test")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         m = self.assert_receive_message('BATTERY_STATUS')
         if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK:
@@ -1480,12 +1483,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_rtl_complete()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.reboot_sitl()
-        self.end_subtest("Completed Batt failsafe disabled test")
 
+    def BatteryFailsafeTwoStage(self):
+        '''Two stage battery failsafe test with RTL and Land'''
         # TWO STAGE BATTERY FAILSAFE: Trigger low battery condition,
         # then critical battery condition. Verify RTL and Land actions
         # complete.
-        self.start_subtest("Two stage battery failsafe test with RTL and Land")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.delay_sim_time(3, reason="vehicle to move away")
         self.set_parameters({
@@ -1502,12 +1506,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.reboot_sitl()
-        self.end_subtest("Completed two stage battery failsafe test with RTL and Land")
 
+    def BatteryFailsafeTwoStageSmartRTL(self):
+        '''Two stage battery failsafe test with SmartRTL'''
         # TWO STAGE BATTERY FAILSAFE: Trigger low battery condition,
         # then critical battery condition. Verify both SmartRTL
         # actions complete
-        self.start_subtest("Two stage battery failsafe test with SmartRTL")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.set_parameter('BATT_FS_LOW_ACT', 3)
         self.set_parameter('BATT_FS_CRT_ACT', 4)
@@ -1523,12 +1528,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.reboot_sitl()
-        self.end_subtest("Completed two stage battery failsafe test with SmartRTL")
 
+    def BatteryFailsafeOptionsContinueLanding(self):
+        '''Battery failsafe with FS_OPTIONS set to continue landing'''
         # Trigger low battery condition in land mode with FS_OPTIONS
         # set to allow land mode to continue. Verify landing completes
         # uninterrupted.
-        self.start_subtest("Battery failsafe with FS_OPTIONS set to continue landing")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.set_parameter('FS_OPTIONS', 8)
         self.change_mode("LAND")
@@ -1540,12 +1546,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.reboot_sitl()
-        self.end_subtest("Completed battery failsafe with FS_OPTIONS set to continue landing")
 
+    def BatteryFailsafeCriticalLanding(self):
+        '''Battery failsafe critical landing not interrupted by RC failure'''
         # Trigger a critical battery condition, which triggers a land
         # mode failsafe. Trigger an RC failure. Verify the RC failsafe
         # is prevented from stopping the low battery landing.
-        self.start_subtest("Battery failsafe critical landing")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway(100, 50)
         self.set_parameters({
             'FS_OPTIONS': 0,
@@ -1565,10 +1572,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.set_parameter("SIM_RC_FAIL", 0)
         self.reboot_sitl()
-        self.end_subtest("Completed battery failsafe critical landing")
 
+    def BatteryFailsafeBrakeLand(self):
+        '''Battery failsafe brake/land action triggers BRAKE'''
         # Trigger low battery condition with failsafe set to brake/land
-        self.start_subtest("Battery failsafe brake/land")
+        self.batt_failsafe_init()
         self.context_push()
         self.takeoffAndMoveAway()
         self.set_parameter('BATT_FS_LOW_ACT', 7)
@@ -1583,9 +1591,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.context_pop()
         self.reboot_sitl()
-        self.end_subtest("Completed brake/land failsafe test")
 
-        self.start_subtest("Battery failsafe brake/land - land")
+    def BatteryFailsafeBrakeLandNoGPS(self):
+        '''Battery failsafe brake/land action falls back to LAND without GPS'''
+        self.batt_failsafe_init()
         self.context_push()
         self.takeoffAndMoveAway()
         self.set_parameter('BATT_FS_LOW_ACT', 7)
@@ -1597,19 +1606,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
         self.context_pop()
-        self.end_subtest("Completed brake/land failsafe test")
 
+    def BatteryFailsafeTerminate(self):
+        '''Battery failsafe terminate action - copter disarms and crashes'''
         # Trigger low battery condition with failsafe set to terminate. Copter will disarm and crash.
-        self.start_subtest("Battery failsafe terminate")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.set_parameter('BATT_FS_LOW_ACT', 5)
         self.delay_sim_time(10, reason="vehicle to move away")
         self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
         self.wait_statustext("Battery 1 is low", timeout=60)
         self.wait_disarmed()
-        self.end_subtest("Completed terminate failsafe test")
-
-        self.progress("All Battery failsafe tests complete")
 
     def BatteryMissing(self):
         ''' Test battery health pre-arm and missing failsafe'''
@@ -14686,7 +14693,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def tests1c(self):
         '''return list of all tests'''
         ret = ([
-             self.BatteryFailsafe,
+             self.BatteryFailsafeDisabled,
+             self.BatteryFailsafeTwoStage,
+             self.BatteryFailsafeTwoStageSmartRTL,
+             self.BatteryFailsafeOptionsContinueLanding,
+             self.BatteryFailsafeCriticalLanding,
+             self.BatteryFailsafeBrakeLand,
+             self.BatteryFailsafeBrakeLandNoGPS,
+             self.BatteryFailsafeTerminate,
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
