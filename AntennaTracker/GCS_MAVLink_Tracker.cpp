@@ -344,6 +344,10 @@ MAV_RESULT GCS_MAVLINK_Tracker::_handle_command_preflight_calibration_baro(const
 
 MAV_RESULT GCS_MAVLINK_Tracker::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
+    if ((packet.target_component != MAV_COMP_ID_ALL) && (packet.target_component != mavlink_system.compid)) {
+        // Make sure an arm/disarm command addressed to a component doesn't arm or disarm the tracker.
+        return MAV_RESULT_DENIED;
+    }
     if (is_equal(packet.param1,1.0f)) {
         tracker.arm_servos();
         return MAV_RESULT_ACCEPTED;
