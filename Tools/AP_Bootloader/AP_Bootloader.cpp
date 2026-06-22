@@ -66,6 +66,41 @@ AP_FlashIface_JEDEC ext_flash;
 static BL_Network network;
 #endif
 
+#if defined(HAL_RP2350) || defined(RP2350)
+/*
+ * Drives GPIO5 (PA5, ALARM buzzer) with a 2-beep + long-pause pattern when
+ * the bootloader is stuck waiting for a firmware upload (bad/missing firmware).
+ * PA5 is normally PWM (FUNCSEL=4 from board.c); we switch it to SIO (FUNCSEL=5)
+ * for simple on/off control.  The RDTE-4kHz transducer is self-oscillating so
+ * driving HIGH = audible tone, LOW = silence.
+ */
+static THD_WORKING_AREA(wa_beep_thread, 256);
+static THD_FUNCTION(beep_thread_func, arg) {
+    (void)arg;
+    volatile uint32_t * const gpio5_ctrl  = (volatile uint32_t *)0x4002802CU; // IO_BANK0 GPIO5_CTRL
+    volatile uint32_t * const sio_oe_set  = (volatile uint32_t *)0xD0000038U; // SIO GPIO_OE_SET
+    volatile uint32_t * const sio_out_set = (volatile uint32_t *)0xD0000018U; // SIO GPIO_OUT_SET
+    volatile uint32_t * const sio_out_clr = (volatile uint32_t *)0xD0000020U; // SIO GPIO_OUT_CLR
+    const uint32_t pin = 1U << 5U;
+
+    *gpio5_ctrl = 5U;       // FUNCSEL=5 = SIO
+    *sio_out_clr = pin;     // start silent
+    *sio_oe_set  = pin;     // enable output
+
+    while (!chThdShouldTerminateX()) {
+        *sio_out_set = pin; chThdSleepMilliseconds(100); // beep 1 on
+        *sio_out_clr = pin; chThdSleepMilliseconds(100); // beep 1 off
+        *sio_out_set = pin; chThdSleepMilliseconds(100); // beep 2 on
+        *sio_out_clr = pin; chThdSleepMilliseconds(1500); // long pause
+    }
+}
+
+static void start_bad_fw_beep(void) {
+    chThdCreateStatic(wa_beep_thread, sizeof(wa_beep_thread),
+                      LOWPRIO, beep_thread_func, nullptr);
+}
+#endif // HAL_RP2350
+
 int main(void)
 {
 #ifdef AP_BOOTLOADER_CUSTOM_HERE4
@@ -287,6 +322,7 @@ int main(void)
 #if defined(BOOTLOADER_DEV_LIST)
     #if defined(HAL_RP2350) || defined(RP2350)
     uint32_t bl_loop_counter = 0;
+    bool beep_started = false;
     #endif
     while (true) {
 #if defined(HAL_RP2350) || defined(RP2350)
@@ -300,6 +336,13 @@ int main(void)
         bl_loop_counter++;
 #endif
         jump_to_app();
+#if defined(HAL_RP2350) || defined(RP2350)
+        // jump_to_app() returned — no valid firmware. Start beeping on first failure.
+        if (!beep_started) {
+            beep_started = true;
+            start_bad_fw_beep();
+        }
+#endif
     }
 #else
     // CAN and network only
