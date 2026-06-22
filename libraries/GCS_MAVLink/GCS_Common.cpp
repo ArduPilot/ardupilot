@@ -5259,6 +5259,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_int_t &packet
 #if AP_ARMING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
+    if ((packet.target_component != MAV_COMP_ID_ALL) && (packet.target_component != mavlink_system.compid)) {
+        // Make sure an arm/disarm command addressed to a component doesn't arm or disarm the autopilot. Arming is vehicle-wide; there is no per-component arming.
+        return MAV_RESULT_DENIED;
+    }
     if (is_equal(packet.param1,1.0f)) {
         if (AP::arming().is_armed()) {
             return MAV_RESULT_ACCEPTED;
