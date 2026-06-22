@@ -473,32 +473,13 @@ void SITL_State_Common::sim_update(void)
 }
 
 /*
-  update voltage and current pins
+  set voltage and current pin values
  */
-void SITL_State_Common::update_voltage_current(float throttle)
+void SITL_State_Common::set_voltage_current_pins(float voltage, float current_amp)
 {
-    float voltage = 0;
-    float current = 0;
-    
-    if (_sitl != nullptr) {
-        if (_sitl->state.battery_voltage <= 0) {
-            if (_vehicle == ArduSub) {
-                voltage = sitl_model->get_battery_voltage();
-                current = sitl_model->get_battery_current();
-            } else {
-                voltage = sitl_model->get_battery_voltage();
-                current = sitl_model->get_battery_current();
-            }
-        } else {
-            // FDM provides voltage and current
-            voltage = _sitl->state.battery_voltage;
-            current = _sitl->state.battery_current;
-        }
-    }
-
     // assume 3DR power brick
     voltage_pin_voltage = (voltage / 10.1f);
-    current_pin_voltage = current/17.0f;
+    current_pin_voltage = current_amp / 17.0f;
     // fake battery2 as just a 25% gain on the first one
     voltage2_pin_voltage = voltage_pin_voltage * 0.25f;
     current2_pin_voltage = current_pin_voltage * 0.25f;

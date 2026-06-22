@@ -391,7 +391,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     }
     _sitl->throttle = throttle;
 
-    update_voltage_current(throttle);
+    set_voltage_current_pins(sitl_model->get_battery_voltage(), sitl_model->get_battery_current());
 }
 
 void SITL_State::init(int argc, char * const argv[])

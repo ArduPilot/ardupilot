@@ -228,7 +228,7 @@ protected:
 
     SITL::SIM *_sitl;
 
-    void update_voltage_current(float throttle);
+    void set_voltage_current_pins(float voltage, float current_amp);
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
