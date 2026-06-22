@@ -9,6 +9,8 @@ Also validates each new board directory:
   - it contains a README.md (except ODID variants, which are exempt)
   - that README.md references at least one image added in this branch
     (except AP_Periph boards, which need only the README, no image)
+  - a new bootloader hwdef (hwdef-bl.dat) has a matching prebuilt binary
+    committed at Tools/bootloaders/<board>_bl.bin
   - defaults.parm does not set parameters that belong in hwdef.dat
 
 AP_FLAKE8_CLEAN
@@ -112,6 +114,19 @@ class TestNewBoards(BuildScriptBase):
 
     # markdown image reference: ![alt](path), capturing the path
     IMG_MD_RE = re.compile(r'!\[[^\]]*\]\(([^)#?\s]+)')
+
+    BOOTLOADER_DIR = 'Tools/bootloaders'
+
+    def check_new_bootloader_binary(self, board_name: str, added_files: Set[str]) -> None:
+        '''A board that introduces a new bootloader hwdef (hwdef-bl.dat) must also
+        commit the matching prebuilt bootloader binary into Tools/bootloaders/.'''
+        binary = f"{self.BOOTLOADER_DIR}/{board_name}_bl.bin"
+        if binary not in added_files:
+            raise ValueError(
+                f"new bootloader hwdef for board {board_name} requires its prebuilt "
+                f"bootloader binary to be committed at {binary}; build it with "
+                f"Tools/scripts/build_bootloaders.py {board_name}"
+            )
 
     def is_odid_board(self, board: board_list.Board) -> bool:
         '''True if the board enables OpenDroneID in its hwdef'''
@@ -255,6 +270,12 @@ class TestNewBoards(BuildScriptBase):
             defaults_parm_path = os.path.join(hwdef_dir, 'defaults.parm')
             if os.path.exists(defaults_parm_path):
                 self.check_defaults_parm(defaults_parm_path, board_name)
+
+        # A board that adds a new bootloader hwdef must also commit its prebuilt
+        # bootloader binary into Tools/bootloaders/.
+        for board_name, board_to_test in sorted(boards_to_test.items()):
+            if board_to_test.test_bootloader:
+                self.check_new_bootloader_binary(board_name, added_files)
 
         for board_name in sorted(boards_to_test.keys()):
             # Find the board object
