@@ -226,6 +226,11 @@ public:
     // log number for GPS::update_file()
     AP_Int16 gps_log_num;
 
+    // Simulated maximum size for the SITL working filesystem in MB. 0
+    // disables the cap. Used to exercise AP_Logger ENOSPC handling
+    // and free-space recovery paths without filling the host disk.
+    AP_Int32 sim_disk_max_mb;
+
     AP_Float batt_voltage; // battery voltage base
     AP_Float batt_capacity_ah; // battery capacity in Ah
     AP_Int8  rc_fail;     // fail RC input
