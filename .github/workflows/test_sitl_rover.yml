@@ -172,7 +172,7 @@ jobs:
         ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
       # Put ccache into github cache for faster build
@@ -220,7 +220,7 @@ jobs:
 
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
 

@@ -155,7 +155,7 @@ jobs:
           - config: disco
             toolchain: chibios
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ env.BASE_REF }}
           path: base_branch
@@ -227,7 +227,7 @@ jobs:
           fi
           cp -r $BIN_SRC/* "$NO_VERSIONS_DIR"
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           path: 'pr'
@@ -378,7 +378,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           persist-credentials: false
