@@ -640,6 +640,9 @@ private:
     // are we in spin recovery?
     bool in_spin_recovery;
 
+    // minimum throttle for airbraking
+    AP_Int8 airbrake_thr_pct;
+
     /*
       return true if current mission item is a vtol takeoff
      */
