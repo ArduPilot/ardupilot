@@ -1024,7 +1024,9 @@ private:
     void handle_vicon_position_estimate(const mavlink_message_t &msg);
     void handle_vision_position_estimate(const mavlink_message_t &msg);
     void handle_global_vision_position_estimate(const mavlink_message_t &msg);
+#if AP_AHRS_POSITION_RESET_ENABLED
     void handle_global_position_sensor(const mavlink_message_t &msg);
+#endif
     void handle_att_pos_mocap(const mavlink_message_t &msg);
     void handle_odometry(const mavlink_message_t &msg);
     void handle_common_vision_position_estimate_data(const uint64_t usec,

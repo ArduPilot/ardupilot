@@ -4053,6 +4053,7 @@ void GCS_MAVLINK::handle_vicon_position_estimate(const mavlink_message_t &msg)
                                                 PAYLOAD_SIZE(chan, VICON_POSITION_ESTIMATE));
 }
 
+#if AP_AHRS_POSITION_RESET_ENABLED
 /*
   handle GLOBAL_POSITION_SENSOR message
 */
@@ -4078,6 +4079,7 @@ void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
     AP_AHRS &ahrs = AP::ahrs();
     ahrs.handle_external_position_estimate(loc, accuracy, timestamp_ms);
 }
+#endif
 
 /*
   handle ODOMETRY message. This message combines position, velocity
@@ -4708,11 +4710,13 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_generator_message(msg);
         break;
 #endif
+#if AP_AHRS_POSITION_RESET_ENABLED
     case MAVLINK_MSG_ID_GLOBAL_POSITION_SENSOR:
     {
         handle_global_position_sensor(msg);
         break;
     }
+#endif
     }
 
 }
