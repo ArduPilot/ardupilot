@@ -215,6 +215,22 @@ void Sub::update_batt_compass()
     }
 }
 
+#if AP_SCRIPTING_ENABLED
+// set target roll pitch and yaw angles with throttle (for use by scripting)
+bool Sub::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if (!flightmode->in_guided_mode()) {
+        return false;
+    }
+
+    Quaternion q;
+    q.from_euler(radians(roll_deg), radians(pitch_deg), radians(yaw_deg));
+
+    mode_guided.guided_set_angle(q, climb_rate_ms * 100);
+    return true;
+}
+#endif // AP_SCRIPTING_ENABLED
 #if HAL_LOGGING_ENABLED
 // ten_hz_logging_loop
 // should be run at 10hz
