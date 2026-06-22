@@ -1115,7 +1115,7 @@ bool AP_AHRS::_get_secondary_position(Location &loc) const
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         // return DCM position
-        loc = dcm_estimates.location;
+        UNUSED_RESULT(dcm_estimates.get_location(loc));
         // FIXME: we intentionally do not return whether location is
         // actually valid here so we continue to send mavlink messages
         // and log data:
@@ -1125,14 +1125,14 @@ bool AP_AHRS::_get_secondary_position(Location &loc) const
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
         // EKF2 is secondary
-        ekf2_estimates.get_location(loc);
+        UNUSED_RESULT(ekf2_estimates.get_location(loc));
         return ekf2.started;
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
         // EKF3 is secondary
-        ekf3_estimates.get_location(loc);
+        UNUSED_RESULT(ekf3_estimates.get_location(loc));
         return ekf3.started;
 #endif
 
