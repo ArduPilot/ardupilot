@@ -14305,7 +14305,8 @@ switch value'''
         self.customise_SITL_commandline([
             "--serial5=tcp:%u" % port # serial5 spews to localhost port
         ])
-        frsky = FRSkyPassThrough(("127.0.0.1", port))
+        frsky = FRSkyPassThrough(("127.0.0.1", port),
+                                 get_time=self.get_sim_time_cached)
         frsky.connect()
 
         sport_to_mavlite = SPortToMAVlite()
