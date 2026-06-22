@@ -1139,6 +1139,14 @@ public:
     const Vector3f& get_target_vel_NED_ms() const;
     const Vector3f& get_target_accel_NED_mss() const;
 
+    // get the last commanded yaw / yaw-rate (earth-frame, radians) so the
+    // POSITION_TARGET_LOCAL_NED telemetry message can echo the requested yaw.
+    // *_is_ignored() return true when no yaw / yaw-rate has been commanded.
+    float get_reported_yaw_rad() const { return _reported_yaw_rad; }
+    float get_reported_yaw_rate_rads() const { return _reported_yaw_rate_rads; }
+    bool reported_yaw_is_ignored() const { return _reported_yaw_ignore; }
+    bool reported_yaw_rate_is_ignored() const { return _reported_yaw_rate_ignore; }
+
     // returns true if GUIDED_OPTIONS param suggests SET_ATTITUDE_TARGET's "thrust" field should be interpreted as thrust instead of climb rate
     bool set_attitude_target_provides_thrust() const;
     bool stabilizing_pos_NE() const;
@@ -1240,6 +1248,15 @@ private:
 
     // guided mode is paused or not
     bool _paused;
+
+    // last yaw state commanded via set_yaw_state_rad(), recorded so the
+    // POSITION_TARGET_LOCAL_NED telemetry message can echo the requested
+    // yaw / yaw-rate rather than reporting zero (issue #13932). Yaw is stored
+    // in earth-frame radians (body-relative requests are converted on input).
+    float _reported_yaw_rad = 0.0f;
+    float _reported_yaw_rate_rads = 0.0f;
+    bool  _reported_yaw_ignore = true;
+    bool  _reported_yaw_rate_ignore = true;
 };
 
 #if AP_SCRIPTING_ENABLED
