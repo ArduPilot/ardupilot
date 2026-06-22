@@ -187,15 +187,23 @@ SCRIPT_DIR=$(dirname $(grealpath ${BASH_SOURCE[0]}))
 ARDUPILOT_ROOT=$(grealpath "$SCRIPT_DIR/../../")
 
 if [[ $DO_AP_STM_ENV -eq 1 ]]; then
-exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
-grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
-    if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
-        echo $exportline >> ~/$SHELL_LOGIN
-        eval $exportline
+    # The build discovers this toolchain automatically (see the install-dir lookup in
+    # Tools/ardupilotwaf/toolchain.py), it is opt-in and NOT added by default -- and,
+    # unlike the rest of the installer, it is deliberately not auto-confirmed by -y.
+    exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
+    if grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null; then
+        : # already present in ~/$SHELL_LOGIN
+    elif $ASSUME_YES; then
+        echo "Not adding $OPT/$ARM_ROOT/bin to PATH (opt-in; the build finds it automatically)."
     else
-        echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
+        read -p "Add $OPT/$ARM_ROOT/bin to your PATH? Optional, the build finds it without this [y/N] "
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "$exportline" >> ~/$SHELL_LOGIN
+            eval "$exportline"
+        else
+            echo "Not adding $OPT/$ARM_ROOT/bin to PATH (the build finds it automatically)."
+        fi
     fi
-}
 fi
 
 exportline2="export PATH=$ARDUPILOT_ROOT/$ARDUPILOT_TOOLS:\$PATH";
