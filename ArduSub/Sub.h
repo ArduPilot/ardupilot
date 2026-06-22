@@ -642,6 +642,7 @@ public:
     // For Lua scripting, so index is 1..4, not 0..3
     uint8_t get_and_clear_button_count(uint8_t index);
 
+    bool set_target_velocity_NED(const Vector3f& target_vel_ned_ms, bool align_yaw_to_target) override;
     bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) override;
 
 #if AP_RANGEFINDER_ENABLED
