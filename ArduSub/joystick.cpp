@@ -10,8 +10,6 @@ namespace {
 float cam_tilt = 1500.0;
 float cam_pan = 1500.0;
 #endif  // HAL_MOUNT_ENABLED
-float lights1 = 0;
-float lights2 = 0;
 int16_t rollTrim = 0;
 int16_t pitchTrim = 0;
 int16_t zTrim = 0;
@@ -235,60 +233,32 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
 #endif  // HAL_MOUNT_ENABLED
     case JSButton::button_function_t::k_lights1_cycle:
         if (!held) {
-            static bool increasing = true;
-            uint16_t step = 1000.0 / g.lights_steps;
-            if (increasing) {
-                lights1 = constrain_float(lights1 + step, 0.0, 1000.0);
-            } else {
-                lights1 = constrain_float(lights1 - step, 0.0, 1000.0);
-            }
-            if (lights1 >= 1000.0 || lights1 <= 0.0) {
-                increasing = !increasing;
-            }
-            SRV_Channels::set_output_scaled(SRV_Channel::k_lights1, lights1);
+            illuminators[0].cycle_brightness_pct(100.0f / g.lights_steps);
         }
         break;
     case JSButton::button_function_t::k_lights1_brighter:
         if (!held) {
-            uint16_t step = 1000.0 / g.lights_steps;
-            lights1 = constrain_float(lights1 + step, 0.0, 1000.0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_lights1, lights1);
+            illuminators[0].adjust_brightness_pct(100.0f / g.lights_steps);
         }
         break;
     case JSButton::button_function_t::k_lights1_dimmer:
         if (!held) {
-            uint16_t step = 1000.0 / g.lights_steps;
-            lights1 = constrain_float(lights1 - step, 0.0, 1000.0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_lights1, lights1);
+            illuminators[0].adjust_brightness_pct(-100.0f / g.lights_steps);
         }
         break;
     case JSButton::button_function_t::k_lights2_cycle:
-       if (!held) {
-            static bool increasing = true;
-            uint16_t step = 1000.0 / g.lights_steps;
-            if (increasing) {
-                lights2 = constrain_float(lights2 + step, 0.0, 1000.0);
-            } else {
-                lights2 = constrain_float(lights2 - step, 0.0, 1000.0);
-            }
-            if (lights2 >= 1000.0 || lights2 <= 0.0) {
-                increasing = !increasing;
-            }
-            SRV_Channels::set_output_scaled(SRV_Channel::k_lights2, lights2);
+        if (!held) {
+            illuminators[1].cycle_brightness_pct(100.0f / g.lights_steps);
         }
         break;
     case JSButton::button_function_t::k_lights2_brighter:
         if (!held) {
-            uint16_t step = 1000.0 / g.lights_steps;
-            lights2 = constrain_float(lights2 + step, 0.0, 1000.0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_lights2, lights2);
+            illuminators[1].adjust_brightness_pct(100.0f / g.lights_steps);
         }
         break;
     case JSButton::button_function_t::k_lights2_dimmer:
         if (!held) {
-            uint16_t step = 1000.0 / g.lights_steps;
-            lights2 = constrain_float(lights2 - step, 0.0, 1000.0);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_lights2, lights2);
+            illuminators[1].adjust_brightness_pct(-100.0f / g.lights_steps);
         }
         break;
     case JSButton::button_function_t::k_gain_toggle:

@@ -74,6 +74,7 @@
 #include "GCS_Sub.h"
 #include "mode.h"
 #include "script_button.h"
+#include "illuminator.h"
 
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
