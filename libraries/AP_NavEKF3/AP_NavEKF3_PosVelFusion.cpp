@@ -1268,9 +1268,14 @@ void NavEKF3_core::selectHeightForFusion()
         // and rangefinder, so it does not carry that error directly - baro
         // reaches it only through the accel bias the main filter learns.
         ftype heightAboveGnd;
+        // The legacy terrain-offset estimator stalls near the ground, so its
+        // timestamp goes stale and vetoes the switch. Gate on the AGL KF's own
+        // last-fusion time when it is the height authority.
+        uint32_t hgtValidTime_ms = gndHgtValidTime_ms;
 #if EK3_FEATURE_OPTFLOW_AGL_KF
         if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
             heightAboveGnd = aglKfH;
+            hgtValidTime_ms = lastAglRngFuseTime_ms;
         } else
 #endif
         {
@@ -1278,7 +1283,7 @@ void NavEKF3_core::selectHeightForFusion()
         }
 
         bool aboveUpperSwHgt = heightAboveGnd > rangeMaxUse;
-        bool belowLowerSwHgt = (heightAboveGnd < 0.7f * rangeMaxUse) && (imuSampleTime_ms - gndHgtValidTime_ms < 1000);
+        bool belowLowerSwHgt = (heightAboveGnd < 0.7f * rangeMaxUse) && (imuSampleTime_ms - hgtValidTime_ms < 1000);
 
         // The vehicle only marks terrain stable during takeoff and landing, leaving
         // altitude on baro through cruise/hover. When the IMU-aided AGL KF is enabled
