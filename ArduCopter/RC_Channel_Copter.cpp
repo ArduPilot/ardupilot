@@ -222,7 +222,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             if ((ch_flag == AuxSwitchPos::HIGH) &&
                 (copter.flightmode->allows_save_trim()) &&
                 (copter.channel_throttle->get_control_in() == 0)) {
-                copter.g2.rc_channels.save_trim();
+                copter.ahrs_trimming.save_trim();
             }
             break;
 
@@ -727,14 +727,14 @@ void RC_Channel_Copter::do_aux_function_change_force_flying(const AuxSwitchPos c
 // note that this is a method on the RC_Channels object, not the
 // individual channel
 // save_trim - adds roll and pitch trims from the radio to ahrs
-void RC_Channels_Copter::save_trim()
+void Copter::AHRSTrimming::save_trim()
 {
     float roll_trim_rad = 0.0;
     float pitch_trim_rad = 0.0;
 
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
-    if (auto_trim.running) {
-        auto_trim.running = false;
+    if (running) {
+        running = false;
     } else {
 #endif
 
@@ -748,61 +748,72 @@ void RC_Channels_Copter::save_trim()
     // save roll and pitch trim
     AP::ahrs().add_trim(roll_trim_rad, pitch_trim_rad);
     LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
-    gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
+    copter.gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
 }
 
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+
+void Copter::AHRSTrimming::auto_start()
+{
+        if (!copter.flightmode->allows_auto_trim()) {
+            copter.gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim not allowed in this mode");
+            return;
+        }
+        copter.gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim running");
+        // flash the leds
+        AP_Notify::flags.save_trim = true;
+        running = true;
+}
+
+void Copter::AHRSTrimming::auto_stop()
+{
+        if (running) {
+            AP_Notify::flags.save_trim = false;
+            save_trim();
+        }
+}
+
 // start/stop ahrs auto trim
 void RC_Channels_Copter::do_aux_function_ahrs_auto_trim(const RC_Channel::AuxSwitchPos ch_flag)
 {
     switch (ch_flag) {
     case RC_Channel::AuxSwitchPos::HIGH:
-        if (!copter.flightmode->allows_auto_trim()) {
-            gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim not allowed in this mode");
-            break;
-        }
-        gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim running");
-        // flash the leds
-        AP_Notify::flags.save_trim = true;
-        auto_trim.running = true;
+        copter.ahrs_trimming.auto_start();
         break;
     case RC_Channel::AuxSwitchPos::MIDDLE:
         break;
     case RC_Channel::AuxSwitchPos::LOW:
-        if (auto_trim.running) {
-            AP_Notify::flags.save_trim = false;
-            save_trim();
-        }
+        copter.ahrs_trimming.auto_stop();
         break;
     }
 }
 
 // auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
 // meant to be called continuously while the pilot attempts to keep the copter level
-void RC_Channels_Copter::auto_trim_cancel()
+void Copter::AHRSTrimming::auto_cancel()
 {
-    auto_trim.running = false;
+    running = false;
     AP_Notify::flags.save_trim = false;
-    gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim cancelled");
+    copter.gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim cancelled");
     // restore original trims
 }
 
-void RC_Channels_Copter::auto_trim_run()
+void Copter::AHRSTrimming::auto_run()
 {
-        if (!auto_trim.running) {
+        if (!running) {
             return;
         }
 
         // only trim in certain modes:
         if (!copter.flightmode->allows_auto_trim()) {
-            auto_trim_cancel();
+            auto_cancel();
             return;
         }
 
         // must be started and stopped mid-air:
         if (copter.ap.land_complete_maybe) {
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"Must be flying to use AUTOTRIM");
-            auto_trim_cancel();
+            copter.gcs().send_text(MAV_SEVERITY_WARNING,"Must be flying to use AUTOTRIM");
+            auto_cancel();
             return;
         }
         // calculate roll trim adjustment, divisor set subjectively to give same "feel" as previous RC input method

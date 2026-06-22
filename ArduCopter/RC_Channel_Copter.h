@@ -56,13 +56,7 @@ public:
     // aux function
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
     void do_aux_function_ahrs_auto_trim(const RC_Channel::AuxSwitchPos ch_flag);
-    struct {
-        bool running;
-    } auto_trim;
-    void auto_trim_run();
-    void auto_trim_cancel();
 #endif  // AP_COPTER_AHRS_AUTO_TRIM_ENABLED
-    void save_trim();
 
 protected:
 
