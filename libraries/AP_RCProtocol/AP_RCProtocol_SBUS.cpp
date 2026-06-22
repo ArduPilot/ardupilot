@@ -74,6 +74,7 @@
 
 // this is 875
 #define SBUS_SCALE_OFFSET (SBUS_TARGET_MIN - ((SBUS_TARGET_RANGE * SBUS_RANGE_MIN / SBUS_RANGE_RANGE)))
+#define SBUS_FAILSAFE_MIN_VALID 800
 
 #ifndef HAL_SBUS_FRAME_GAP
 #define HAL_SBUS_FRAME_GAP 2000U
@@ -83,15 +84,31 @@
 AP_RCProtocol_SBUS::AP_RCProtocol_SBUS(AP_RCProtocol &_frontend, bool _inverted, uint32_t configured_baud) :
     AP_RCProtocol_Backend(_frontend),
     inverted(_inverted),
-    ss{configured_baud, SoftSerial::SERIAL_CONFIG_8E2I}
+    ss{configured_baud, SoftSerial::SERIAL_CONFIG_8E2I},
+    filtered_failsafe(false),
+    consecutive_failsafe_frames(0),
+    consecutive_good_frames(0)
 {}
 
 // decode a full SBUS frame
 bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, uint16_t *num_values,
                                      bool &sbus_failsafe, uint16_t max_values)
 {
+    const uint8_t sbus_footer = frame[SBUS_FRAME_SIZE-1];
+
     /* check frame boundary markers to avoid out-of-sync cases */
     if ((frame[0] != 0x0f)) {
+        return false;
+    }
+// Validate footer byte.
+// Reject anything else as a stream-alignment error.
+    if (!(sbus_footer == 0x00U || sbus_footer == 0x04U || sbus_footer == 0x14U ||
+          sbus_footer == 0x24U || sbus_footer == 0x34U)) {
+        return false;
+    }
+    // SBUS flags byte uses only the low nibble (ch17/ch18/frame_lost/failsafe).
+    // If upper bits are set, the stream is almost certainly misaligned.
+    if ((frame[SBUS_FLAGS_BYTE] & 0xF0U) != 0U) {
         return false;
     }
 
@@ -121,13 +138,14 @@ bool AP_RCProtocol_SBUS::sbus_decode(const uint8_t frame[25], uint16_t *values, 
      */
     bool invalid_data = false;
     for (uint8_t i=0; i<4; i++) {
-        if (values[i] <= SBUS_SCALE_OFFSET) {
+        if (values[i] < SBUS_FAILSAFE_MIN_VALID) {
             invalid_data = true;
         }
     }
 
     /* decode and handle failsafe and frame-lost flags */
-    if (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FAILSAFE_BIT)) { /* failsafe */
+    if ((frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FAILSAFE_BIT)) &&
+        (frame[SBUS_FLAGS_BYTE] & (1 << SBUS_FRAMELOST_BIT))) { /* failsafe */
         /* report that we failed to read anything valid off the receiver */
         sbus_failsafe = true;
     } else if (invalid_data) {
@@ -169,20 +187,11 @@ void AP_RCProtocol_SBUS::process_pulse(uint32_t width_s0, uint32_t width_s1)
 // support byte input
 void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
 {
-    const bool have_frame_gap = (timestamp_us - byte_input.last_byte_us >= HAL_SBUS_FRAME_GAP);
     byte_input.last_byte_us = timestamp_us;
 
-    if (have_frame_gap) {
-        // if we have a frame gap then this must be the start of a new
-        // frame
-        byte_input.ofs = 0;
-    }
-    if (b != 0x0F && byte_input.ofs == 0) {
-        // definately not SBUS, missing header byte
-        return;
-    }
-    if (byte_input.ofs == 0 && !have_frame_gap) {
-        // must have a frame gap before the start of a new SBUS frame
+// UART byte polling doesn't preserve true wire-time spacing, so don't depend on inter-byte gaps for framing.
+// Build 25-byte packets anchored on the SBUS header and resync by searching the next header on decode failure.
+    if (byte_input.ofs == 0 && b != 0x0F) {
         return;
     }
 
@@ -196,9 +205,41 @@ void AP_RCProtocol_SBUS::_process_byte(uint32_t timestamp_us, uint8_t b)
         if (sbus_decode(byte_input.buf, values, &num_values,
                         sbus_failsafe, SBUS_INPUT_CHANNELS) &&
             num_values >= MIN_RCIN_CHANNELS) {
-            add_input(num_values, values, sbus_failsafe);
+            static const uint8_t SBUS_FAILSAFE_DEBOUNCE_FRAMES = 20;
+
+            if (sbus_failsafe) {
+                consecutive_good_frames = 0;
+                if (consecutive_failsafe_frames < SBUS_FAILSAFE_DEBOUNCE_FRAMES) {
+                    consecutive_failsafe_frames++;
+                }
+                if (consecutive_failsafe_frames >= SBUS_FAILSAFE_DEBOUNCE_FRAMES) {
+                    filtered_failsafe = true;
+                }
+            } else {
+                consecutive_failsafe_frames = 0;
+                if (consecutive_good_frames < SBUS_FAILSAFE_DEBOUNCE_FRAMES) {
+                    consecutive_good_frames++;
+                }
+                if (consecutive_good_frames >= SBUS_FAILSAFE_DEBOUNCE_FRAMES) {
+                    filtered_failsafe = false;
+                }
+            }
+            add_input(num_values, values, filtered_failsafe);
+            byte_input.ofs = 0;
+            return;
         }
-        byte_input.ofs = 0;
+
+        // Decode failed: attempt in-buffer resync to next 0x0F header so we
+        // recover quickly from a single dropped/inserted byte.
+        uint8_t new_ofs = 0;
+        for (uint8_t i = 1; i < sizeof(byte_input.buf); i++) {
+            if (byte_input.buf[i] == 0x0F) {
+                new_ofs = sizeof(byte_input.buf) - i;
+                memmove(byte_input.buf, &byte_input.buf[i], new_ofs);
+                break;
+            }
+        }
+        byte_input.ofs = new_ofs;
     }
 }
 
