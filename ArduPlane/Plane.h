@@ -359,6 +359,9 @@ private:
         // true if an adsb related failsafe has occurred
         bool adsb;
 
+        // true if GPS spoofing failsafe has occurred
+        bool gps_spoof;
+
         // saved flight mode
         enum Mode::Number saved_mode_number;
 
@@ -395,7 +398,7 @@ private:
 #endif
 
     bool any_failsafe_triggered() {
-        return failsafe.state != FAILSAFE_NONE || battery.has_failsafed() || failsafe.adsb;
+        return failsafe.state != FAILSAFE_NONE || battery.has_failsafed() || failsafe.adsb || failsafe.gps_spoof;
     }
 
     // A counter used to count down valid gps fixes to allow the gps estimate to settle
@@ -1061,6 +1064,7 @@ private:
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     bool failsafe_in_landing_sequence() const;  // returns true if the vehicle is in landing sequence.  Intended only for use in failsafe code.
+    void gpsspoof_check();
 
 #if AP_FENCE_ENABLED
     // fence.cpp

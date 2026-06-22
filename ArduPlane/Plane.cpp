@@ -72,6 +72,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
     SCHED_TASK_CLASS(RC_Channels,     (RC_Channels*)&plane.g2.rc_channels, read_mode_switch,           7,    100, 27),
     SCHED_TASK(update_GPS_50Hz,        50,    300,  30),
     SCHED_TASK(update_GPS_10Hz,        10,    400,  33),
+    SCHED_TASK(gpsspoof_check,         10,    100,  34),
     SCHED_TASK(navigate,               10,    150,  36),
     SCHED_TASK(update_compass,         10,    200,  39),
     SCHED_TASK(calc_airspeed_errors,   10,    100,  42),

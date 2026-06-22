@@ -100,6 +100,11 @@
  #define FS_TERRAIN_TIMEOUT_MS          5000     // 5 seconds of missing terrain data will trigger failsafe (RTL)
 #endif
 
+//gps spoofing failsafe
+#ifndef FS_GPS_SPOOF_ACTION_DEFAULT
+ #define FS_GPS_SPOOF_ACTION_DEFAULT              fs_gps_spoof_action::WARN_ONLY     // action taken when GPS spoofing is detected
+#endif
+
 // pre-arm baro vs inertial nav max alt disparity
 #ifndef PREARM_MAX_ALT_DISPARITY_M
  # define PREARM_MAX_ALT_DISPARITY_M    1.0      // barometer and inertial nav altitude must be within this many meters

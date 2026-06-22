@@ -181,6 +181,7 @@ public:
         k_param_failsafe_terrain, // terrain failsafe behavior
         k_param_fs_ekf_thresh,
         k_param_fs_ekf_action,
+        k_param_fs_gps_spoof_action,
         k_param_fs_crash_check,
         k_param_failsafe_battery_enabled, // unused - moved to AP_BattMonitor
         k_param_fs_batt_mah,              // unused - moved to AP_BattMonitor
@@ -301,6 +302,7 @@ public:
     AP_Int32        log_bitmask;
 
     AP_Int8         fs_ekf_action;
+    AP_Int8         fs_gps_spoof_action;
     AP_Int8         fs_crash_check;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;

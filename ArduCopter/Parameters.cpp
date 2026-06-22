@@ -271,6 +271,13 @@ const AP_Param::Info Copter::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_ekf_action, "FS_EKF_ACTION",    static_cast<float>(FS_EKF_ACTION_DEFAULT)),
 
+    // @Param: FS_GPS_SPOOF_ACT
+    // @DisplayName: GPS Spoofing Failsafe Action
+    // @Description: Controls the action taken when GPS spoofing is detected
+    // @Values: 0:Disabled/NoAction,1:Warn only,2:Land,3:AltHold,4:RTL
+    // @User: Advanced
+    GSCALAR(fs_gps_spoof_action, "FS_GPS_SPOOF_ACT", static_cast<float>(FS_GPS_SPOOF_ACTION_DEFAULT)),
+
     // @Param: FS_EKF_THRESH
     // @DisplayName: EKF failsafe variance threshold
     // @Description: Allows setting the maximum acceptable compass, velocity, position and height variances. Used in arming check and EKF failsafe.
