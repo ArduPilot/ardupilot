@@ -1121,6 +1121,8 @@ private:
     Vector6 velPosObs;              // observations for combined velocity and positon group of measurements (3x1 m , 3x1 m/s)
     bool fuseVelData;               // this boolean causes the velNE measurements to be fused
     bool fuseVelVertData;           // this boolean causes the velD measurement to be fused
+    bool fusingAglKfVel;            // when true, the velD observation this step is the AGL KF velocity (uses its own R)
+    bool aglKfVelGateOpen;          // true when the horizontal-speed gate allows AGL KF vertical-velocity fusion
     bool fusePosData;               // this boolean causes the posNE measurements to be fused
     bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
     Vector3F innovMag;              // innovation output from fusion of X,Y,Z compass measurements

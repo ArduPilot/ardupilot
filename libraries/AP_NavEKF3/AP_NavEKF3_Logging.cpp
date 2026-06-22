@@ -216,7 +216,8 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // log the optional "special" KF for HAGL estimation directly via RangeFinder + IMU
-    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) ||
+        frontend->option_is_enabled(NavEKF3::Option::AglKfVelForVelD)) {
         const struct log_XKFA pktfA{
             LOG_PACKET_HEADER_INIT(LOG_XKFA_MSG),
             time_us : time_us,

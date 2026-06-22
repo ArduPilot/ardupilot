@@ -473,6 +473,7 @@ private:
     AP_Enum<LogLevel> _log_level;   // log verbosity level
     AP_Float _gpsVAccThreshold;     // vertical accuracy threshold to use GPS as an altitude source
     AP_Int32 _options;              // bit mask of processing options
+    AP_Float _aglKfVelMaxSpd;       // maximum horizontal speed for AGL KF vertical-velocity fusion
 
     // enum for processing options
     enum class Option {
@@ -480,6 +481,7 @@ private:
         ManualLaneSwitch        = (1<<1),
         OptflowMayUseTerrainAlt = (1<<2),
         AglKfForOptflow         = (1<<3),  // Use IMU-aided 2-state AGL KF for optflow scaling
+        AglKfVelForVelD         = (1<<4),  // Fuse AGL KF vertical velocity as a velD observation (rangefinder-anchored; baro keeps absolute height)
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;
