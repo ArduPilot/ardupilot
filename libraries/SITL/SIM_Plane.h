@@ -21,6 +21,7 @@
 #include "SIM_Aircraft.h"
 #include "SIM_ICEngine.h"
 #include <Filter/LowPassFilter.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <AP_JSON/AP_JSON.h>
 
 namespace SITL {
@@ -136,6 +137,12 @@ private:
     // json parsing helpers (TODO reduce code duplication)
     void parse_float(AP_JSON::value val, const char* label, float &param);
     void parse_vector3(AP_JSON::value val, const char* label, Vector3f &param);
+
+    void update_battery(const struct sitl_input &input) override;
+    // Plane needs the sitl_input, should never use the parent's input-free version.
+    // (Using it would be using the wrong battery model, but it would silently work.)
+    void update_battery() override { INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); };
+    bool battery_is_empty() { return battery_voltage < 0.5f; };
 };
 
 } // namespace SITL
