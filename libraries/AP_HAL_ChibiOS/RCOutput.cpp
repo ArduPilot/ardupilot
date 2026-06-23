@@ -402,8 +402,18 @@ void RCOutput::set_freq_group(pwm_group &group)
         // 1000 steps for smooth output
         group.pwm_cfg.frequency = 8000000;
     } else if (freq_set <= 400) {
+#if defined(RP2350)
+        // At 375 MHz sys_clk, 1 MHz needs INT=375 which overflows the 8-bit
+        // PWM DIV INT field (max 255). Use 3 MHz (INT=125 fits). The existing
+        // push_local scaling (frequency/1M * period_us) auto-adjusts compare
+        // values so pulse widths remain correct in microseconds.
+        group.pwm_cfg.frequency = 3000000;
+        // Force 50 Hz output for ESC compatibility.
+        freq_set = 50;
+#else
         // use a 1MHz clock
         group.pwm_cfg.frequency = 1000000;
+#endif
     }
 
     // check if the frequency is possible, and keep halving

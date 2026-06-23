@@ -20,8 +20,12 @@ INS_GYRO_RATE 0
 FSTRATE_DIV 1
 FSTRATE_ENABLE 1
 
-# Enable watchdog by default.
-BRD_OPTIONS 1
+# Bit 0: watchdog. Bit 2: allow INTERNAL_USE_ONLY params via MAVLink (needed for
+# Mission Planner to write BARO_1_GND_PRESS and other calibration params).
+BRD_OPTIONS 5
+
+# No compass hardware on Laurel — disable to suppress pre-arm warnings.
+COMPASS_ENABLE 0
 
 # Laurel bring-up default: avoid hard pre-arm failure when filesystem logging
 # backend cannot initialise (e.g. no/unstable SPI microSD path).
@@ -64,3 +68,7 @@ GPS1_TYPE 2
 # Preferring 115200 for GPS as less overhead and more proven on this hardware.
 GPS_DRV_OPTIONS 4
 SERIAL2_BAUD 115
+
+# Board is mounted upside-down (ROLL_180). @READONLY forces this even if storage
+# has a stale 0 — without it, a stored value of 0 silently wins over the default.
+AHRS_ORIENTATION 8 @READONLY
