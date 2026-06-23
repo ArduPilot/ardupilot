@@ -428,8 +428,27 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         ESP_ERROR_CHECK(rmt_enable(rmt_chan));
         ch.rmt_chan = rmt_chan; // stored as void* (see RCOutput.h)
 
-        // TODO(dshot, step 3): build the DShot bit-pattern encoder -> ch.rmt_encoder
-        // TODO(dshot, step 4): register this channel with the periodic rcout task
+        // Bytes encoder: maps each frame bit to one RMT symbol that holds the
+        // line high then low. With resolution = bitrate*8, a logical 1 is high
+        // for 6 ticks (75%) then low for 2; a logical 0 is high for 3 (37.5%)
+        // then low for 5. MSB first, matching the DShot wire order.
+        rmt_bytes_encoder_config_t enc_cfg = {};
+        enc_cfg.bit0.duration0 = 3; enc_cfg.bit0.level0 = 1;
+        enc_cfg.bit0.duration1 = 5; enc_cfg.bit0.level1 = 0;
+        enc_cfg.bit1.duration0 = 6; enc_cfg.bit1.level0 = 1;
+        enc_cfg.bit1.duration1 = 2; enc_cfg.bit1.level1 = 0;
+        enc_cfg.flags.msb_first = 1;
+        rmt_encoder_handle_t enc = nullptr;
+        err = rmt_new_bytes_encoder(&enc_cfg, &enc);
+        if (err != ESP_OK) {
+            printf("RCOut: DShot encoder alloc failed on chan %u (err 0x%x)\n",
+                   (unsigned)chan, (int)err);
+            dshot_free_chan(ch); // releases the RMT channel just created
+            continue;
+        }
+        ch.rmt_encoder = enc; // stored as void*
+
+        // TODO(dshot, step 4): drive dshot_send_chan() from a periodic rcout task
     }
 }
 
@@ -449,6 +468,45 @@ void RCOutput::dshot_free_chan(pwm_chan &ch)
         rmt_del_channel(c);
         ch.rmt_chan = nullptr;
     }
+}
+
+/*
+  build a 16-bit DShot frame: 11-bit value, 1 telemetry-request bit, then a 4-bit
+  CRC (XOR of the three nibbles). Matches AP_HAL_ChibiOS::create_dshot_packet()
+  for the non-bidirectional case.
+ */
+uint16_t RCOutput::create_dshot_packet(uint16_t value, bool telem_request)
+{
+    uint16_t packet = (value << 1) | (telem_request ? 1U : 0U);
+    uint16_t csum = 0;
+    uint16_t csum_data = packet;
+    for (uint8_t i = 0; i < 3; i++) {
+        csum ^= csum_data;
+        csum_data >>= 4;
+    }
+    csum &= 0xf;
+    return (packet << 4) | csum;
+}
+
+/*
+  encode and asynchronously transmit one DShot frame on a channel. The RMT driver
+  reads from ch.dshot_buf during the (microseconds-long) transmission, so the
+  buffer is per-channel and must not be reused until the frame completes — which
+  holds because the rcout task re-sends a channel at most once per cycle.
+ */
+void RCOutput::dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request)
+{
+    if (ch.rmt_chan == nullptr || ch.rmt_encoder == nullptr) {
+        return;
+    }
+    const uint16_t packet = create_dshot_packet(value, telem_request);
+    ch.dshot_buf[0] = uint8_t(packet >> 8);
+    ch.dshot_buf[1] = uint8_t(packet & 0xff);
+
+    rmt_transmit_config_t tx_cfg = {};
+    tx_cfg.loop_count = 0; // one frame per call; rcout task re-sends each cycle
+    rmt_transmit((rmt_channel_handle_t)ch.rmt_chan, (rmt_encoder_handle_t)ch.rmt_encoder,
+                 ch.dshot_buf, sizeof(ch.dshot_buf), &tx_cfg);
 }
 
 
