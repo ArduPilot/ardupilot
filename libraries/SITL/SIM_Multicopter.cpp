@@ -74,14 +74,7 @@ void MultiCopter::update(const struct sitl_input &input)
         accel_body.zero();
     }
 
-    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
-    battery_voltage = battery.get_voltage();
-    battery_current = frame->get_current_amp();
-    battery_temperature_degC = battery.get_temperature_degC();
-
-    const uint64_t now_us = AP_HAL::micros64();
-    battery.consume_energy(battery_current, now_us);
-
+    update_battery();
     update_dynamics(rot_accel);
     update_external_payload(input);
 
@@ -93,3 +86,12 @@ void MultiCopter::update(const struct sitl_input &input)
     update_mag_field_bf();
 }
 
+void MultiCopter::update_battery() {
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery_voltage = battery.get_voltage();
+    battery_current = frame->get_current_amp();
+    battery_temperature_degC = battery.get_temperature_degC();
+
+    const uint64_t now_us = AP_HAL::micros64();
+    battery.consume_energy(battery_current, now_us);
+}
