@@ -3,9 +3,6 @@
 
 include ../fmuv3/fmuv3.inc
 
-# does this board really have an IMU heater?  If so set HAL_IMU_TEMP_DEFAULT.
-define HAL_HAVE_IMU_HEATER 1
-
 FLASH_SIZE_KB 1024
 
 # this reduces features to keep the firmware small. This is not
