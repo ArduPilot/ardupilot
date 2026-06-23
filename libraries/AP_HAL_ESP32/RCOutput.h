@@ -120,6 +120,14 @@ private:
 
         uint8_t gpio_num; // associated GPIO number (always defined)
         int value; // output value in microseconds
+
+        // RMT backend handles (rmt_channel_handle_t / rmt_encoder_handle_t), kept
+        // as void* so the new RMT driver headers stay out of RCOutput.h: they
+        // clash with the legacy RMT driver that RCInput (RmtSigReader) uses when
+        // both are pulled into one translation unit. Used only in a DShot mode
+        // (nullptr otherwise). The S3 has 4 RMT TX channels -> max 4 DShot outputs.
+        void *rmt_chan;
+        void *rmt_encoder;
     };
 
     uint32_t fast_channel_mask;
@@ -130,6 +138,7 @@ private:
     // DShot uses the RMT peripheral (MCPWM cannot generate the digital frame).
     // Set up / tear down the RMT backend for a group switched to a DShot mode.
     void set_group_mode_dshot(pwm_group &group);
+    void dshot_free_chan(pwm_chan &ch); // release a channel's RMT resources
 
     void write_int(uint8_t chan, uint16_t period_us);
 
