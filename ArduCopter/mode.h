@@ -705,6 +705,7 @@ private:
     void do_nav_delay(const AP_Mission::Mission_Command& cmd);
     void do_wait_delay(const AP_Mission::Mission_Command& cmd);
     void do_within_distance(const AP_Mission::Mission_Command& cmd);
+    void do_condition_location(const AP_Mission::Mission_Command& cmd);
     void do_yaw(const AP_Mission::Mission_Command& cmd);
     void do_change_speed(const AP_Mission::Mission_Command& cmd);
     void do_set_home(const AP_Mission::Mission_Command& cmd);
@@ -732,6 +733,7 @@ private:
     bool verify_RTL();
     bool verify_wait_delay();
     bool verify_within_distance();
+    bool verify_condition_location();
     bool verify_yaw();
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_circle(const AP_Mission::Mission_Command& cmd);
@@ -764,6 +766,10 @@ private:
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
+
+    // CONDITION_LOCATION command state
+    Location condition_loc;        // target location the vehicle must reach
+    Location condition_loc_start;  // vehicle location when the command began (used to detect flying past the target)
 
     // Land within Auto state
     enum class State {

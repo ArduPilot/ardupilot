@@ -788,6 +788,10 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         do_within_distance(cmd);
         break;
 
+    case MAV_CMD_CONDITION_LOCATION:             // 116
+        do_condition_location(cmd);
+        break;
+
     case MAV_CMD_CONDITION_YAW:             // 115
         do_yaw(cmd);
         break;
@@ -1024,6 +1028,10 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
 
     case MAV_CMD_CONDITION_DISTANCE:
         cmd_complete = verify_within_distance();
+        break;
+
+    case MAV_CMD_CONDITION_LOCATION:
+        cmd_complete = verify_condition_location();
         break;
 
     case MAV_CMD_CONDITION_YAW:
@@ -1975,6 +1983,13 @@ void ModeAuto::do_within_distance(const AP_Mission::Mission_Command& cmd)
     condition_value  = cmd.content.distance.meters;
 }
 
+void ModeAuto::do_condition_location(const AP_Mission::Mission_Command& cmd)
+{
+    condition_loc = cmd.content.location;
+    // record where we started so we can detect when the vehicle has flown past the target
+    condition_loc_start = copter.current_loc;
+}
+
 void ModeAuto::do_yaw(const AP_Mission::Mission_Command& cmd)
 {
     auto_yaw.set_fixed_yaw_rad(
@@ -2257,6 +2272,28 @@ bool ModeAuto::verify_within_distance()
         condition_value = 0;
         return true;
     }
+    return false;
+}
+
+// verify_condition_location - true once the vehicle has reached the target location
+//   the condition is satisfied when within the waypoint radius of the location or once the
+//   vehicle has flown past it, so that the condition cannot stall the mission if the path
+//   never passes within the radius
+bool ModeAuto::verify_condition_location()
+{
+    const Location &current_loc = copter.current_loc;
+
+    // reached the target if within the waypoint radius
+    if (current_loc.get_distance(condition_loc) < copter.wp_nav->get_wp_radius_m()) {
+        return true;
+    }
+
+    // or if we have flown past the target along our approach path
+    if (condition_loc_start.initialised() &&
+        current_loc.past_interval_finish_line(condition_loc_start, condition_loc)) {
+        return true;
+    }
+
     return false;
 }
 
