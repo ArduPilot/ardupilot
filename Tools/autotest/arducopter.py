@@ -3884,6 +3884,60 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # the velocity estimate is diverged, so a normal landing won't settle - force disarm
         self.disarm_vehicle(force=True)
 
+    def EK3_FlowMinHeightFloor(self):
+        '''Below EK3_FLOW_MIN_H the EKF zeroes optical flow so bad flow cannot drive a phantom velocity'''
+        # When the rangefinder shows the height is below the flow focus floor, the flow cannot focus
+        # and the EKF treats it as zero motion, holding velocity near zero rather than dead-reckoning a
+        # phantom an unfocused reading would produce (which a position controller brakes against on the
+        # descent to land). The floor height is raised above the hover altitude here so it engages at a
+        # controllable height. Proved both halves: with the floor active an injected accel bias - which
+        # otherwise drives a flow lockout and a runaway velocity estimate - leaves the EKF groundspeed
+        # bounded; with the floor disabled the same bias diverges it.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "EK3_IMU_MASK": 1,   # single core so the injected bias is not masked by a lane switch
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        def max_groundspeed_with_bad_flow(flow_min_h):
+            self.set_parameters({"EK3_FLOW_MIN_H": flow_min_h, "SIM_FLOW_OFS_X": 0})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            # hover at ~3 m; with the floor at 5 m this is "below focus" so flow is zeroed
+            self.takeoff(alt_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+            self.delay_sim_time(5)
+            # inject a flow-rate offset: the sensor reads a phantom flow, as it does when it
+            # cannot focus near the ground. Implied phantom velocity ~ offset * range.
+            self.set_parameter("SIM_FLOW_OFS_X", 0.7)
+            tstart = self.get_sim_time()
+            maxspd = 0.0
+            while self.get_sim_time() - tstart < 20:
+                m = self.assert_receive_message('GLOBAL_POSITION_INT')
+                maxspd = max(maxspd, math.sqrt(m.vx**2 + m.vy**2) * 0.01)
+            self.set_parameter("SIM_FLOW_OFS_X", 0)
+            self.disarm_vehicle(force=True)
+            return maxspd
+
+        self.start_subtest("Floor active: bad flow below focus height is ignored, velocity stays bounded")
+        spd_floor = max_groundspeed_with_bad_flow(5.0)
+        self.progress("max EKF groundspeed with floor active: %.2f m/s" % spd_floor)
+        if spd_floor > 1.0:
+            raise NotAchievedException(
+                "flow floor failed to bound the velocity estimate (%.2f m/s)" % spd_floor)
+
+        self.start_subtest("Floor disabled: bad flow drives a phantom velocity estimate")
+        spd_nofloor = max_groundspeed_with_bad_flow(0.0)
+        self.progress("max EKF groundspeed with floor disabled: %.2f m/s" % spd_nofloor)
+        if spd_nofloor < 1.5:
+            raise NotAchievedException(
+                "expected the phantom velocity to grow with the floor disabled (%.2f m/s)" % spd_nofloor)
+
+        self.reboot_sitl(force=True)
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -14349,6 +14403,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.EK3_FlowAxisLockoutRecovery,
+             self.EK3_FlowMinHeightFloor,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
