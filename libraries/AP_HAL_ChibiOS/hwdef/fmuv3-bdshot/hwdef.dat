@@ -1,0 +1,8 @@
+# hw definition file for processing by chibios_hwdef.py
+# for FMUv3 hardware (ie. for Pixhawk1, Pixhawk2 cube, XUAV2.1 etc) with
+# bi-directional dshot
+
+# the bulk of the configuration lives in fmuv3-bdshot.inc so that it can
+# be shared by boards which are based on it but do not share all of its
+# hardware (eg. the presence of an IMU heater).
+include fmuv3-bdshot.inc
