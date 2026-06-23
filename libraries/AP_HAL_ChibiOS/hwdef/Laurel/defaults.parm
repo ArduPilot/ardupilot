@@ -22,10 +22,10 @@ FSTRATE_ENABLE 1
 
 # Bit 0: watchdog. Bit 2: allow INTERNAL_USE_ONLY params via MAVLink (needed for
 # Mission Planner to write BARO_1_GND_PRESS and other calibration params).
-BRD_OPTIONS 5
+BRD_OPTIONS 5 @READONLY
 
 # No compass hardware on Laurel — disable to suppress pre-arm warnings.
-COMPASS_ENABLE 0
+COMPASS_ENABLE 0 @READONLY
 
 # Laurel bring-up default: avoid hard pre-arm failure when filesystem logging
 # backend cannot initialise (e.g. no/unstable SPI microSD path).
@@ -49,6 +49,7 @@ SERIAL3_PROTOCOL -1
 # spare UART connector is ready for a telemetry radio or GCS link.
 # Protocol 2 enables PIOUART1 PIO1 state machines (GPIO34/35 FUNCSEL=7).
 SERIAL4_PROTOCOL 2
+SERIAL4_BAUD 57
 #BATT_AMP_PERVLT 1.0
 #BATT_VOLT_MULT 1.0
 
@@ -67,7 +68,11 @@ GPS1_TYPE 2
 # GPS_DRV_OPTIONS bit 2: cap ublox baud at 115200 instead of 230400.
 # Preferring 115200 for GPS as less overhead and more proven on this hardware.
 GPS_DRV_OPTIONS 4
-SERIAL2_BAUD 115
+SERIAL2_BAUD 115 @READONLY
+
+# Throttle FS threshold. Laurel idle is ~994-1006 µs with jitter dipping to ~972;
+# 925 gives headroom below that while still catching genuine receiver FS (≤900 µs).
+FS_THR_VALUE 925 @READONLY
 
 # Board is mounted upside-down (ROLL_180). @READONLY forces this even if storage
 # has a stale 0 — without it, a stored value of 0 silently wins over the default.
