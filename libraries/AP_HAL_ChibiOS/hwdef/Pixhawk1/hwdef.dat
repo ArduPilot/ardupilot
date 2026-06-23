@@ -1,7 +1,10 @@
 # hw definition file for processing by chibios_hwdef.py
 # for pixhawk1, based on fmuv3
 
-include ../fmuv3/hwdef.dat
+include ../fmuv3/fmuv3.inc
+
+# does this board really have an IMU heater?  If so set HAL_IMU_TEMP_DEFAULT.
+define HAL_HAVE_IMU_HEATER 1
 
 # define the IMU types to probe. You can list more IMUs than you
 # actually have. The syntax for IMU declarations is:
