@@ -822,15 +822,17 @@ void NavEKF3_core::UpdateAglKf()
     //   so the velocity uncertainty budget is consistent with the main EKF.
     //   The intended effect is that P[1][1] grows every step when RF is absent, reflecting accumulating IMU integration error in v_agl.
     //
-    // Qbias - slow random walk of the accel-Z bias state.
-    //   Deliberately small relative to the initial bias uncertainty, so b_az is learned from
-    //   the rangefinder rather than left to wander, and stays stable once it has converged.
+    // Qbias - random walk of the accel-Z bias state, from EK3_AGL_ABIAS_P (its own parameter,
+    //   not the main filter's EK3_ABIAS_P_NSE). Sized so the bias can track a slowly drifting
+    //   accelerometer offset (e.g. IMU temperature change in flight) instead of locking to its
+    //   initial value and leaking the residual into the velocity. The bias state only changes in
+    //   the rangefinder measurement update, so loosening this cannot learn a bad bias on stale RF.
     //
     const ftype horizDistSq = MIN(sq(stateStruct.velocity.x * imuDt)
                                   + sq(stateStruct.velocity.y * imuDt), 1.0f);  // cap at 1 m²
     const ftype Qvel = sq(frontend->_accNoise * imuDt);   // matches CovariancePrediction: sq(imuDt*accNoise)
     const ftype Qhgt = sq(frontend->_terrGradMax) * horizDistSq;
-    const ftype Qbias = sq(frontend->_accelBiasProcessNoise.get() * imuDt);
+    const ftype Qbias = sq(frontend->_aglKfAccelBiasPnse.get() * imuDt);
 
     // Capture before overwrite (P is symmetric)
     const ftype P00 = aglKfP[0][0];
