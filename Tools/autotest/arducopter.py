@@ -5351,6 +5351,51 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if calculated_delay < want_delay:
             raise NotAchievedException("Did not delay for long enough")
 
+    def ConditionLocation(self):
+        """Test CONDITION_LOCATION delays following DO_ commands until the vehicle reaches a location."""
+
+        # disable servo 9 so the gated DO_SET_SERVO in the mission is observable
+        self.set_parameter("SERVO9_FUNCTION", 0)
+
+        self.load_mission("copter_condition_location.txt")
+
+        # the location and servo output specified by the mission's
+        # CONDITION_LOCATION (seq 3) and DO_SET_SERVO (seq 4) commands.
+        # The vehicle reaches the seq 2 waypoint first and only then flies
+        # the leg (towards seq 5) on which the condition location lies.
+        condition_loc = mavutil.location(-35.362364, 149.165237, 20, 0)
+        servo_channel = 9
+        servo_value = 1250
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode("AUTO")
+        self.set_rc(3, 1500)
+
+        self.context_set_message_rate_hz('SERVO_OUTPUT_RAW', 10)
+
+        # fly towards the destination, checking the gated DO_SET_SERVO does
+        # not run until the vehicle has reached the condition location
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise AutoTestTimeoutException("Did not reach condition location")
+            m = self.assert_receive_message('SERVO_OUTPUT_RAW')
+            servo_set = getattr(m, "servo%u_raw" % servo_channel) == servo_value
+            dist = self.get_distance(self.mav.location(), condition_loc)
+            if dist < 5:
+                break
+            if servo_set:
+                raise NotAchievedException(
+                    "DO_SET_SERVO ran %.0fm before reaching CONDITION_LOCATION" % dist)
+
+        # the condition is now satisfied so the gated DO_SET_SERVO must run
+        self.wait_servo_channel_value(servo_channel, servo_value, timeout=30)
+        self.progress("DO_SET_SERVO ran after reaching CONDITION_LOCATION")
+
+        self.wait_disarmed(timeout=120)
+
     def RangeFinder(self):
         '''Test RangeFinder Basic Functionality'''
         self.assert_not_receiving_message('RANGEFINDER', timeout=5)
@@ -14242,6 +14287,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.NavDelay,
              self.GuidedSubModeChange,
              self.MAV_CMD_CONDITION_YAW,
+             self.ConditionLocation,
              self.LoiterToAlt,
              self.PayloadPlaceMission,
              self.PayloadPlaceMissionOpenGripper,
