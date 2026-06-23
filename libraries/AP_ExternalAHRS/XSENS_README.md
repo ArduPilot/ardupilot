@@ -115,7 +115,7 @@ On the MTi 1-series, set the interface-select pins to UART:
 | Parameter | Value |
 |---|---|
 | `EAHRS_TYPE` | `12` |
-| `AHRS_EKF_TYPE` | `12` |
+| `AHRS_EKF_TYPE` | `11` |
 | `EAHRS_OPTIONS` | `0` |
 | `SERIAL4_PROTOCOL` | `36` |
 | `SERIAL4_BAUD` | `115` |
@@ -175,7 +175,7 @@ common ground.
 | Parameter | Value |
 |---|---|
 | `EAHRS_TYPE` | `12` |
-| `AHRS_EKF_TYPE` | `12` |
+| `AHRS_EKF_TYPE` | `11` |
 | `EAHRS_OPTIONS` | `16` |
 
 In SPI mode you do not need the `SERIALn_PROTOCOL` / `SERIALn_BAUD` settings.
@@ -217,7 +217,7 @@ the sensor to. Other boards differ — check your board's documentation.
 
 The Xsens sensor feeds ArduPilot acceleration, rate of turn, quaternion
 (attitude), magnetic field, barometric pressure, and (on GNSS models) position
-and velocity. Setting `AHRS_EKF_TYPE = 12` tells ArduPilot to use the Xsens
+and velocity. Setting `AHRS_EKF_TYPE = 11` tells ArduPilot to use the Xsens
 attitude solution directly instead of running its own EKF.
 
 ---
@@ -229,7 +229,7 @@ attitude solution directly instead of running its own EKF.
 | LED on, but no data | Module powered from 5 V | Use a 3.3 V supply |
 | No data (UART) | Wrong PSEL, or TX/RX swapped | Set `PSEL0=GND, PSEL1=GND`; swap TX/RX |
 | No data (SPI) | Wrong PSEL or wiring | Set `PSEL0=GND, PSEL1=float`; recheck CS/SCLK/MOSI/MISO |
-| HUD attitude frozen | `AHRS_EKF_TYPE` not set | Set `AHRS_EKF_TYPE = 12` and reboot |
+| HUD attitude frozen | `AHRS_EKF_TYPE` not set | Set `AHRS_EKF_TYPE = 11` and reboot |
 | Nothing in Messages tab | Firmware not flashed, or wrong port | Re-flash; confirm `SERIALn_PROTOCOL = 36` on the right port |
 
 ---
