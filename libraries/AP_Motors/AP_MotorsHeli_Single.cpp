@@ -573,6 +573,13 @@ bool AP_MotorsHeli_Single::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
+        // returns false if the DDFP RSC control mode is selected for the main rotor. The code does not currently support
+        // DDFP control for the main rotor.
+    if (_main_rotor.get_rsc_control_mode() == ROTOR_CONTROL_MODE_DDFP){
+        hal.util->snprintf(buffer, buflen, "Main rotor RSC does not support Direct Drive Fixed Pitch main rotors");
+        return false;
+    }
+
     return true;
 }
 
