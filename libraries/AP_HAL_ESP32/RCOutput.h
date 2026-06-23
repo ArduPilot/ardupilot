@@ -128,6 +128,7 @@ private:
         // (nullptr otherwise). The S3 has 4 RMT TX channels -> max 4 DShot outputs.
         void *rmt_chan;
         void *rmt_encoder;
+        uint8_t dshot_buf[2]; // persistent TX buffer for the async RMT frame
     };
 
     uint32_t fast_channel_mask;
@@ -139,6 +140,10 @@ private:
     // Set up / tear down the RMT backend for a group switched to a DShot mode.
     void set_group_mode_dshot(pwm_group &group);
     void dshot_free_chan(pwm_chan &ch); // release a channel's RMT resources
+    // build a 16-bit DShot frame (value<<1 | telem, then 4-bit CRC)
+    static uint16_t create_dshot_packet(uint16_t value, bool telem_request);
+    // encode + asynchronously transmit one DShot frame on a channel
+    void dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request);
 
     void write_int(uint8_t chan, uint16_t period_us);
 
