@@ -3,8 +3,5 @@
 
 include ../fmuv3/fmuv3.inc
 
-# does this board really have an IMU heater?  If so set HAL_IMU_TEMP_DEFAULT.
-define HAL_HAVE_IMU_HEATER 1
-
 
 define BOARD_TYPE_DEFAULT 20
