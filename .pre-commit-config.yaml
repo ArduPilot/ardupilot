@@ -94,6 +94,11 @@ repos:
             --ignore=Tools/ros2/ardupilot_dds_tests/test/test_copyright.py,
         ]
 
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.6
+    hooks:
+    -   id: ruff-check
+
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort
 #       rev: 5.12.0

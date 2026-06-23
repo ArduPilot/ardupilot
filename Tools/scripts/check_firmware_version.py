@@ -31,7 +31,7 @@ def check_fw_version(version):
     try:
         (version_numbers, release_type) = version.split("-")
         (_, _, _) = version_numbers.split(".")
-    except Exception:
+    except ValueError:
         return False
     return True
 

@@ -1,9 +1,9 @@
 # SVFFI Generator Driver
 
 This driver implements support for the SVFFI generator serial protocol for
-this system http://www.svffi.com/en/
+this system [SVFFI](http://www.svffi.com/en/)
 
-# Parameters
+## Parameters
 
 The script used the following parameters:
 
@@ -11,17 +11,17 @@ The script used the following parameters:
 
 this must be set to 1 to enable the driver
 
-# Operation
+## Operation
 
 This driver should be loaded by placing the lua script in the
 APM/SCRIPTS directory on the microSD card, which can be done either
 directly or via MAVFTP. The following key parameters should be set:
 
- - SCR_ENABLE should be set to 1
- - EFI_TYPE should be set to 7
- - EFI_SVF_ENABLE should be set to 1
- - SERIALn_PROTOCOL should be set to 28 for the connected serial port
- - RPM_TYPE1 should be set to 3
+- SCR_ENABLE should be set to 1
+- EFI_TYPE should be set to 7
+- EFI_SVF_ENABLE should be set to 1
+- SERIALn_PROTOCOL should be set to 28 for the connected serial port
+- RPM_TYPE1 should be set to 3
 
 then the flight controller should rebooted and parameters should be
 refreshed.

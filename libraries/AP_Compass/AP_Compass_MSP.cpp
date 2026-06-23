@@ -53,10 +53,5 @@ void AP_Compass_MSP::handle_msp(const MSP::msp_compass_data_message_t &pkt)
     accumulate_sample(field, instance);
 }
 
-void AP_Compass_MSP::read(void)
-{
-    drain_accumulated_samples();
-}
-
 #endif // AP_COMPASS_MSP_ENABLED
 

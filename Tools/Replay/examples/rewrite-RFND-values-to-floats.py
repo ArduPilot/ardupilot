@@ -11,9 +11,9 @@ that older logs can be replayed with newer code.
 AP_FLAKE8_CLEAN
 '''
 
-from argparse import ArgumentParser
-
 import struct
+
+from argparse import ArgumentParser
 
 from pymavlink import DFReader
 from pymavlink import mavutil
@@ -100,7 +100,6 @@ parser.add_argument("logout")
 args = parser.parse_args()
 
 login = mavutil.mavlink_connection(args.login)
-output = open(args.logout, mode='wb')
 
 type_name_map = {}
 
@@ -127,8 +126,9 @@ def rewrite_message(m):
     return buf
 
 
-while True:
-    m = login.recv_msg()
-    if m is None:
-        break
-    output.write(rewrite_message(m))
+with open(args.logout, mode='wb') as out_file:
+    while True:
+        m = login.recv_msg()
+        if m is None:
+            break
+        out_file.write(rewrite_message(m))

@@ -181,6 +181,11 @@ void LR_MsgHandler_RISI::process_message(uint8_t *msgbytes)
     MSG_CREATE(RISI, msgbytes);
     AP::dal().handle_message(msg);
 }
+void LR_MsgHandler_RISJ::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RISJ, msgbytes);
+    AP::dal().handle_message(msg);
+}
 
 void LR_MsgHandler_RASH::process_message(uint8_t *msgbytes)
 {

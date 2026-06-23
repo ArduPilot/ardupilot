@@ -153,15 +153,15 @@ float AP_TemperatureSensor_MAX31865::calculate_temperature(const uint16_t raw) c
 
     float rpoly = norm_resistance;
     temp = -242.02;
-    temp += 2.2228 * norm_resistance;
+    temp += 2.2228 * rpoly;
     rpoly *= norm_resistance;
-    temp += 2.5859e-3 * norm_resistance;
+    temp += 2.5859e-3 * rpoly;
     rpoly *= norm_resistance;
-    temp -= 4.8260e-6 * norm_resistance;
+    temp -= 4.8260e-6 * rpoly;
     rpoly *= norm_resistance;
-    temp -= 2.8183e-8 * norm_resistance;
+    temp -= 2.8183e-8 * rpoly;
     rpoly *= norm_resistance;
-    temp += 1.5243e-10 * norm_resistance;
+    temp += 1.5243e-10 * rpoly;
 
     return temp;
 }

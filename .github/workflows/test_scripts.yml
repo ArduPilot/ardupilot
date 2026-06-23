@@ -6,27 +6,47 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-base:v0.1.3
+    runs-on: ubuntu-slim
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         config: [
-            check_autotest_options,
-            param_parse,
-            python-cleanliness,
             astyle-cleanliness,
-            validate_board_list,
+            check_autotest_options,
             logger_metadata,
+            param_parse,
             param-file-validation,
-       ]
+            python-cleanliness,
+            shellcheck,
+            validate_board_list,
+          ]
     steps:
       # git checkout the PR
       - uses: actions/checkout@v6
         with:
-          submodules: 'recursive'
+          submodules: false
+          persist-credentials: false
+
+      - name: checkout waf submodule
+        run: git submodule update --init --recursive --depth 1 modules/waf
+
+      - name: install pip dependencies
+        shell: bash
+        run: |
+          python3 -m pip install flake8 lxml pexpect
+
+      - name: Install astyle
+        if: matrix.config == 'astyle-cleanliness'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes astyle
+
       - name: test ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}

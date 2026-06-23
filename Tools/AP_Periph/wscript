@@ -86,7 +86,8 @@ def build(bld):
                      'GCS_MAVLink',
                      'AP_Relay',
                      'AP_MultiHeap',
-                     'AP_DAC'
+                     'AP_DAC',
+                     'AP_Servo_Telem',
                      ]
 
     bld.ap_stlib(

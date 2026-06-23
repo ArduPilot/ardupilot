@@ -539,10 +539,12 @@ def configure(cfg):
         # also in env for hrt.c
         cfg.env.AP_BOARD_START_TIME = cfg.options.board_start_time
 
-    # require python 3.8.x or later
-    # also update `MIN_VER` in `./waf`
+    # default Python of the oldest Standard Support Debian + Ubuntu LTS.
+    # Debian releases: https://www.debian.org/releases
+    # Ubuntu releases: https://releases.ubuntu.com
+    # also update `MIN_VER` in `./waf` and `target-version` in `pyproject.toml`
     cfg.load('python')
-    cfg.check_python_version(minver=(3,8,0))
+    cfg.check_python_version(minver=(3, 9, 0))
 
     cfg.load('ap_library')
 
@@ -702,6 +704,20 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 def list_boards(ctx):
     print(*boards.get_boards_names())
 
+
+class ScriptingDocsCtx(Build.BuildContext):
+    '''generate scripting docs'''
+    cmd = 'scripting_docs'
+    fun = 'scripting_docs'
+
+
+def scripting_docs(bld):
+    '''Generate Lua scripting docs by reusing the AP_Scripting build() tasks'''
+    bld.add_group('dynamic_sources')
+    bld.options.scripting_docs = True
+    bld.options.enable_scripting = True
+    bld.recurse('libraries/AP_Scripting', name='build')
+
 def list_ap_periph_boards(ctx):
     print(*boards.get_ap_periph_boards())
 
@@ -728,7 +744,7 @@ def generate_tasklist(ctx, do_print=True):
             elif 'iofirmware' in board:
                 task['targets'] = ['iofirmware', 'bootloader']
             else:
-                if boards.is_board_based(board, boards.sitl):
+                if boards.is_board_based(board, boards.SITLBoard):
                     task['targets'] = vehicles + ['replay']
                 elif boards.is_board_based(board, boards.LinuxBoard):
                     task['targets'] = vehicles
@@ -818,6 +834,17 @@ def _build_dynamic_sources(bld):
     ])
 
 def _build_common_taskgens(bld):
+    # Compile the DroneCAN/libcanard generated sources once into a shared
+    # objects target that every stlib links via 'use' (see ap_stlib)
+    if (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and not bld.env.AP_PERIPH:
+        bld.objects(
+            name='dronecan_libs',
+            source=[],
+            features=['c', 'ap_dynamic_source'],
+            dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
+            use=['dronecan', 'mavlink'],
+        )
+
     # NOTE: Static library with vehicle set to UNKNOWN, shared by all
     # the tools and examples. This is the first step until the
     # dependency on the vehicles is reduced. Later we may consider

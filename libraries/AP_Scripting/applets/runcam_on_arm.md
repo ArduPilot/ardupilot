@@ -4,7 +4,7 @@ ArduPilot can control RunCam devices out of the box.
 Normally, you use a 2-position switch with `RCx_OPTION=78:RunCamControl` to start and stop video recording.
 This applet starts recording automatically when your vehicle arms and stops on disarm.
 
-Information on setting up RunCam devices with ArduPilot is on this page: https://ardupilot.org/plane/docs/common-camera-runcam.html
+Information on setting up RunCam devices with ArduPilot is on this page: [ArduPilot RunCam documentation](https://ardupilot.org/plane/docs/common-camera-runcam.html)
 You need a free serial port.
 You need to set these three parameters: `SERIALx_PROTOCOL=26`, `SERIALx_BAUD=115` (where `x` is your serial port) and `CAM_RC_TYPE=y` where `y` depends on the RunCam model you are using.
 You do not need to configure any `RCx_OPTION`s.

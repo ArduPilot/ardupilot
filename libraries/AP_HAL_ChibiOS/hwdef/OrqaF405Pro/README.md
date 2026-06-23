@@ -4,16 +4,16 @@ The Orqa FC 3030 F405 is a flight controller produced by [Orqa](https://enterpri
 
 ## Features
 
- - MCU - STM32F405 32-bit processor
- - IMU - MPU6000
- - Barometer - DPS310
- - OSD - AT7456E
- - Onboard Flash: 128Mbit
- - 4x UARTs
- - 8x PWM Outputs (8 Motor Output)
- - Battery input voltage: 2S-6S
- - BEC 5V 2A
- - BEC 10V 2A
+- MCU - STM32F405 32-bit processor
+- IMU - MPU6000
+- Barometer - DPS310
+- OSD - AT7456E
+- Onboard Flash: 128Mbit
+- 4x UARTs
+- 8x PWM Outputs (8 Motor Output)
+- Battery input voltage: 2S-6S
+- BEC 5V 2A
+- BEC 10V 2A
 
 ## Pinout
 
@@ -24,11 +24,11 @@ The Orqa FC 3030 F405 is a flight controller produced by [Orqa](https://enterpri
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (RX/GHST, DMA-enabled)
- - SERIAL3 -> UART3 (GPS, DMA-enabled)
- - SERIAL5 -> UART5 (ESC Telemetry)
- - SERIAL6 -> UART6 (Sik/MAVLink)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (RX/GHST, DMA-enabled)
+- SERIAL3 -> UART3 (GPS, DMA-enabled)
+- SERIAL5 -> UART5 (ESC Telemetry)
+- SERIAL6 -> UART6 (Sik/MAVLink)
 
 ## RC Input
 
@@ -44,9 +44,9 @@ The Orqa FC 3030 F405 supports up to 8 PWM outputs in the JST-GH ESC and MFC con
 
 The PWM is in 3 groups:
 
- - PWM 1,4-6 in group1
- - PWM 2-3 in group2
- - PWM 7-8 in group3
+- PWM 1,4-6 in group1
+- PWM 2-3 in group2
+- PWM 7-8 in group3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -61,11 +61,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 13
- - BATT_CURR_PIN 12
- - BATT_VOLT_MULT 8.3
- - BATT_AMP_PERVLT 92.6
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 13
+- BATT_CURR_PIN 12
+- BATT_VOLT_MULT 8.3
+- BATT_AMP_PERVLT 92.6
 
 ## VTX Control
 
@@ -84,4 +84,3 @@ firmware, using your favourite DFU loading tool.
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
 *.apj firmware files.
-

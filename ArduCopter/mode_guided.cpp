@@ -30,13 +30,7 @@ struct Guided_Limit {
     Vector3p start_pos_ned_m;   // start position as an offset from home in m. used for checking horiz_max limit
 } static guided_limit;
 
-// controls which controller is run (pos or vel):
-ModeGuided::SubMode ModeGuided::guided_mode = SubMode::TakeOff;
-bool ModeGuided::send_notification;     // used to send one time notification to ground station
 bool ModeGuided::takeoff_complete;      // true once takeoff has completed (used to trigger retracting of landing gear)
-
-// guided mode is paused or not
-bool ModeGuided::_paused;
 
 // init - initialise guided controller
 bool ModeGuided::init(bool ignore_checks)
@@ -51,6 +45,18 @@ bool ModeGuided::init(bool ignore_checks)
     _paused = false;
 
     return true;
+}
+
+// hold_position - bring vehicle to a stop and hold current position
+// using velocity/acceleration control with zero velocity and acceleration targets
+void ModeGuided::hold_position()
+{
+    // check we are in velocity and acceleration control mode
+    if (guided_mode != SubMode::VelAccel) {
+        velaccel_control_start();
+    }
+    guided_vel_target_ned_ms.zero();
+    guided_accel_target_ned_mss.zero();
 }
 
 // run - runs the guided controller
@@ -363,7 +369,7 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
     const Location dest_loc = Location::from_ekf_offset_NED_m(pos_ned_m, is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-    if (!copter.fence.check_destination_within_fence(dest_loc)) {
+    if (!copter.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -403,7 +409,7 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
         float terrain_d_m;
         if (!wp_nav->get_terrain_D_m(terrain_d_m)) {
             // if we don't have terrain altitude then stop
-            init(true);
+            hold_position();
             return false;
         }
         // convert origin to alt-above-terrain if necessary
@@ -462,7 +468,7 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
 #if AP_FENCE_ENABLED
     // reject destination outside the fence.
     // Note: there is a danger that a target specified as a terrain altitude might not be checked if the conversion to alt-above-home fails
-    if (!copter.fence.check_destination_within_fence(dest_loc)) {
+    if (!copter.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -516,13 +522,13 @@ bool ModeGuided::set_destination(const Location& dest_loc, bool use_yaw, float y
         float terrain_d_m;
         if (!wp_nav->get_terrain_D_m(terrain_d_m)) {
             // if we don't have terrain altitude then stop
-            init(true);
+            hold_position();
             return false;
         }
         // convert origin to alt-above-terrain if necessary
         if (!guided_is_terrain_alt) {
             // new destination is alt-above-terrain, previous destination was alt-above-ekf-origin
-            pos_control->init_pos_terrain_D_m(-terrain_d_m);
+            pos_control->init_pos_terrain_D_m(terrain_d_m);
         }
     } else {
         pos_control->init_pos_terrain_D_m(0.0);
@@ -614,7 +620,7 @@ bool ModeGuided::set_pos_vel_accel_NED_m(const Vector3p& pos_ned_m, const Vector
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
     const Location dest_loc = Location::from_ekf_offset_NED_m(pos_ned_m, Location::AltFrame::ABOVE_ORIGIN);
-    if (!copter.fence.check_destination_within_fence(dest_loc)) {
+    if (!copter.fence.check_location_within_fence(dest_loc)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
         // failure is propagated to GCS with NAK
         return false;
@@ -886,12 +892,12 @@ void ModeGuided::pause_control_run()
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // set the horizontal velocity and acceleration targets to zero
-    Vector2f vel_xy, accel_xy;
-    pos_control->input_vel_accel_NE_m(vel_xy, accel_xy, false);
+    Vector2f vel_xy_zero, accel_xy_zero;
+    pos_control->input_vel_accel_NE_m(vel_xy_zero, accel_xy_zero, false);
 
     // set the vertical velocity and acceleration targets to zero
-    float vel_z = 0.0;
-    pos_control->input_vel_accel_D_m(vel_z, 0.0, false);
+    float vel_d_zero = 0.0;
+    pos_control->input_vel_accel_D_m(vel_d_zero, 0.0, false);
 
     // call velocity controller which includes z axis controller
     pos_control->NE_update_controller();

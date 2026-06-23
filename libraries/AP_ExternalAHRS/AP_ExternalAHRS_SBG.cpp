@@ -28,6 +28,7 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/crc.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_Common/time.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <GCS_MAVLink/GCS.h>
@@ -93,7 +94,7 @@ void AP_ExternalAHRS_SBG::update_thread()
         hal.scheduler->delay_microseconds(250);
 
         const uint32_t now_ms = AP_HAL::millis();
-        if (cached.sbg.sbgEComDeviceInfo.firmwareRev == 0 && now_ms - version_check_ms >= 5000) {
+        if (cached.sbg.deviceInfo.firmwareRev == 0 && now_ms - version_check_ms >= 5000) {
             // request Device Info every few seconds until we get a response
             version_check_ms = now_ms;
 
@@ -282,6 +283,30 @@ bool AP_ExternalAHRS_SBG::parse_byte(const uint8_t data, sbgMessage &msg, SBG_PA
     return false;
 }
 
+uint16_t AP_ExternalAHRS_SBG::make_gps_week(const SbgEComLogUtc *utc_data)
+{
+    const struct tm tm {
+        .tm_sec = utc_data->second,
+        .tm_min = utc_data->minute,
+        .tm_hour = utc_data->hour,
+        .tm_mday = utc_data->day,
+        .tm_mon  = utc_data->month - 1,
+        .tm_year = utc_data->year - 1900,
+    };
+
+
+    // convert from time structure to unix time
+    const time_t unix_time = ap_mktime(&tm);
+
+    // convert to time since GPS epoch
+    const uint32_t gps_time = unix_time - ((utc_data->gpsTimeOfWeek + UNIX_OFFSET_MSEC) / 1000);
+
+    // get GPS week
+    const uint16_t gps_week = gps_time / AP_SEC_PER_WEEK;
+
+    return gps_week;
+}
+
 void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
 {
     const uint32_t now_ms = AP_HAL::millis();
@@ -293,29 +318,29 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
                 break;
 
             case SBG_ECOM_CMD_INFO: // 4
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgEComDeviceInfo, sizeof(cached.sbg.sbgEComDeviceInfo), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.deviceInfo, sizeof(cached.sbg.deviceInfo), msg.data, msg.len);
 
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: %s", cached.sbg.sbgEComDeviceInfo.productCode);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: %s", cached.sbg.deviceInfo.productCode);
                 // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: %u, %u, %u, %u, %u, %u, %u: %u.%u.%u",
-                //                 (unsigned)cached.sbg.sbgEComDeviceInfo.serialNumber,
-                //                 (unsigned)cached.sbg.sbgEComDeviceInfo.calibationRev,
-                //                 (unsigned)cached.sbg.sbgEComDeviceInfo.calibrationYear,
-                //                 (unsigned)cached.sbg.sbgEComDeviceInfo.calibrationMonth,
-                //                 (unsigned)cached.sbg.sbgEComDeviceInfo.calibrationDay,
-                //                 (unsigned)cached.sbg.sbgEComDeviceInfo.hardwareRev,
-                //                 (unsigned)cached.sbg.sbgEComDeviceInfo.firmwareRev,
-                //                 (cached.sbg.sbgEComDeviceInfo.firmwareRev >> 22) & 0x3F,
-                //                 (cached.sbg.sbgEComDeviceInfo.firmwareRev >> 16) & 0x3F,
-                //                 cached.sbg.sbgEComDeviceInfo.firmwareRev & 0xFFFF
+                //                 (unsigned)cached.sbg.deviceInfo.serialNumber,
+                //                 (unsigned)cached.sbg.deviceInfo.calibationRev,
+                //                 (unsigned)cached.sbg.deviceInfo.calibrationYear,
+                //                 (unsigned)cached.sbg.deviceInfo.calibrationMonth,
+                //                 (unsigned)cached.sbg.deviceInfo.calibrationDay,
+                //                 (unsigned)cached.sbg.deviceInfo.hardwareRev,
+                //                 (unsigned)cached.sbg.deviceInfo.firmwareRev,
+                //                 (cached.sbg.deviceInfo.firmwareRev >> 22) & 0x3F,
+                //                 (cached.sbg.deviceInfo.firmwareRev >> 16) & 0x3F,
+                //                 cached.sbg.deviceInfo.firmwareRev & 0xFFFF
 
-                // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: Serial Number: %u",(unsigned)cached.sbg.sbgEComDeviceInfo.serialNumber);
+                // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: Serial Number: %u",(unsigned)cached.sbg.deviceInfo.serialNumber);
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: Version HW v%u.%u   FW v%u.%u.%u",
-                                (unsigned)(cached.sbg.sbgEComDeviceInfo.hardwareRev >> 24) & 0x00FF,
-                                (unsigned)(cached.sbg.sbgEComDeviceInfo.hardwareRev >> 16) & 0x00FF,
+                                (unsigned)(cached.sbg.deviceInfo.hardwareRev >> 24) & 0x00FF,
+                                (unsigned)(cached.sbg.deviceInfo.hardwareRev >> 16) & 0x00FF,
 
-                                (unsigned) (cached.sbg.sbgEComDeviceInfo.firmwareRev >> 22) & 0x003F,
-                                (unsigned)(cached.sbg.sbgEComDeviceInfo.firmwareRev >> 16) & 0x003F,
-                                (unsigned)cached.sbg.sbgEComDeviceInfo.firmwareRev & 0xFFFF);
+                                (unsigned) (cached.sbg.deviceInfo.firmwareRev >> 22) & 0x003F,
+                                (unsigned)(cached.sbg.deviceInfo.firmwareRev >> 16) & 0x003F,
+                                (unsigned)cached.sbg.deviceInfo.firmwareRev & 0xFFFF);
                 break;
 
                 case SBG_ECOM_CMD_COMPUTE_MAG_CALIB: // 15
@@ -335,6 +360,8 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
         return;
     }
 
+    const bool use_ekf_as_gnss = option_is_set(AP_ExternalAHRS::OPTIONS::SBG_EKF_AS_GNSS);
+
     bool updated_gps = false;
     bool updated_baro = false;
     bool updated_ins = false;
@@ -346,18 +373,18 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
 
         switch (msg.msgid) {  // (_SbgEComLog)
             case SBG_ECOM_LOG_FAST_IMU_DATA: // 0
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogFastImuData, sizeof(cached.sbg.sbgLogFastImuData), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.imuFastLegacy, sizeof(cached.sbg.imuFastLegacy), msg.data, msg.len);
 
-                state.accel = Vector3f(cached.sbg.sbgLogFastImuData.accelerometers[0], cached.sbg.sbgLogFastImuData.accelerometers[1], cached.sbg.sbgLogFastImuData.accelerometers[2]);
-                state.gyro = Vector3f(cached.sbg.sbgLogFastImuData.gyroscopes[0], cached.sbg.sbgLogFastImuData.gyroscopes[1], cached.sbg.sbgLogFastImuData.gyroscopes[2]);
+                state.accel = Vector3f(cached.sbg.imuFastLegacy.accelerometers[0], cached.sbg.imuFastLegacy.accelerometers[1], cached.sbg.imuFastLegacy.accelerometers[2]);
+                state.gyro = Vector3f(cached.sbg.imuFastLegacy.gyroscopes[0], cached.sbg.imuFastLegacy.gyroscopes[1], cached.sbg.imuFastLegacy.gyroscopes[2]);
                 updated_ins = true;
                 break;
 
             case SBG_ECOM_LOG_UTC_TIME: // 2
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogUtcData, sizeof(cached.sbg.sbgLogUtcData), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.utc, sizeof(cached.sbg.utc), msg.data, msg.len);
 
-                if (sbgEComLogUtcGetClockStatus(cached.sbg.sbgLogUtcData.status)    != SBG_ECOM_CLOCK_VALID ||
-                    sbgEComLogUtcGetClockUtcStatus(cached.sbg.sbgLogUtcData.status) != SBG_ECOM_UTC_VALID)
+                if (sbgEComLogUtcGetClockStatus(cached.sbg.utc.status)    != SBG_ECOM_CLOCK_VALID ||
+                    sbgEComLogUtcGetClockUtcStatus(cached.sbg.utc.status) != SBG_ECOM_UTC_VALID)
                 {
                     // Data is not valid, ignore it.
                     // This will happen even with a GPS fix = 3. A 3D lock is not enough, a valid
@@ -368,163 +395,189 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
 
                 // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "------------------");
                 // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "SBG: %u-%u-%u %02u:%02u:%02u",
-                //     cached.sbg.sbgLogUtcData.year,
-                //     (unsigned)cached.sbg.sbgLogUtcData.month,
-                //     (unsigned)cached.sbg.sbgLogUtcData.day,
-                //     (unsigned)cached.sbg.sbgLogUtcData.hour,
-                //     (unsigned)cached.sbg.sbgLogUtcData.minute,
-                //     (unsigned)cached.sbg.sbgLogUtcData.second);
+                //     cached.sbg.utc.year,
+                //     (unsigned)cached.sbg.utc.month,
+                //     (unsigned)cached.sbg.utc.day,
+                //     (unsigned)cached.sbg.utc.hour,
+                //     (unsigned)cached.sbg.utc.minute,
+                //     (unsigned)cached.sbg.utc.second);
 
 #if AP_RTC_ENABLED
                 {
                     const uint32_t utc_epoch_sec = AP::rtc().date_fields_to_clock_s(
-                        cached.sbg.sbgLogUtcData.year,
-                        cached.sbg.sbgLogUtcData.month,
-                        cached.sbg.sbgLogUtcData.day,
-                        cached.sbg.sbgLogUtcData.hour,
-                        cached.sbg.sbgLogUtcData.minute,
-                        cached.sbg.sbgLogUtcData.second);
+                        cached.sbg.utc.year,
+                        cached.sbg.utc.month - 1,
+                        cached.sbg.utc.day,
+                        cached.sbg.utc.hour,
+                        cached.sbg.utc.minute,
+                        cached.sbg.utc.second);
 
-                    const uint64_t utc_epoch_usec = ((uint64_t)utc_epoch_sec) * 1E6 + (cached.sbg.sbgLogUtcData.nanoSecond * 1E-3);
+                    const uint64_t utc_epoch_usec = ((uint64_t)utc_epoch_sec) * 1E6 + (cached.sbg.utc.nanoSecond * 1E-3);
                     AP::rtc().set_utc_usec(utc_epoch_usec, AP_RTC::SOURCE_GPS);
 
                 }
 #endif // AP_RTC_ENABLED
 
-                cached.sensors.gps_data.ms_tow = cached.sbg.sbgLogUtcData.gpsTimeOfWeek;
-                cached.sensors.gps_data.gps_week = cached.sbg.sbgLogUtcData.gpsTimeOfWeek / AP_MSEC_PER_WEEK;
+                cached.sensors.gps_data.ms_tow = cached.sbg.utc.gpsTimeOfWeek;
+                cached.sensors.gps_data.gps_week = make_gps_week(&cached.sbg.utc);
                 updated_gps = true;
                 break;
             
             case SBG_ECOM_LOG_IMU_SHORT: // 44
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgEComLogImuShort, sizeof(cached.sbg.sbgEComLogImuShort), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.imuShort, sizeof(cached.sbg.imuShort), msg.data, msg.len);
 
                 {
                     Vector3f temp;
                     /*!< X, Y, Z delta velocity. Unit is 1048576 LSB for 1 m.s^-2. */
-                    temp = Vector3f(cached.sbg.sbgEComLogImuShort.deltaVelocity[0], cached.sbg.sbgEComLogImuShort.deltaVelocity[1], cached.sbg.sbgEComLogImuShort.deltaVelocity[2]);
+                    temp = Vector3f(cached.sbg.imuShort.deltaVelocity[0], cached.sbg.imuShort.deltaVelocity[1], cached.sbg.imuShort.deltaVelocity[2]);
                     state.accel = temp / SBG_ECOM_LOG_IMU_ACCEL_SCALE_STD;
 
                     /*!< X, Y, Z delta angle. Unit is either 67108864 LSB for 1 rad.s^-1 (standard) or 12304174 LSB for 1 rad.s^-1 (high range), managed automatically. */
-                    temp = Vector3f(cached.sbg.sbgEComLogImuShort.deltaAngle[0], cached.sbg.sbgEComLogImuShort.deltaAngle[1], cached.sbg.sbgEComLogImuShort.deltaAngle[2]);
-                    const float scaleFactor = (cached.sbg.sbgEComLogImuShort.status & SBG_ECOM_IMU_GYROS_USE_HIGH_SCALE) ? SBG_ECOM_LOG_IMU_GYRO_SCALE_HIGH : SBG_ECOM_LOG_IMU_GYRO_SCALE_STD;
+                    temp = Vector3f(cached.sbg.imuShort.deltaAngle[0], cached.sbg.imuShort.deltaAngle[1], cached.sbg.imuShort.deltaAngle[2]);
+                    const float scaleFactor = (cached.sbg.imuShort.status & SBG_ECOM_IMU_GYROS_USE_HIGH_SCALE) ? SBG_ECOM_LOG_IMU_GYRO_SCALE_HIGH : SBG_ECOM_LOG_IMU_GYRO_SCALE_STD;
                     state.gyro = temp / scaleFactor;
                 }
-                cached.sensors.ins_data.temperature = (cached.sbg.sbgEComLogImuShort.temperature / SBG_ECOM_LOG_IMU_TEMP_SCALE_STD);
+                cached.sensors.ins_data.temperature = (cached.sbg.imuShort.temperature / SBG_ECOM_LOG_IMU_TEMP_SCALE_STD);
                 updated_ins = true;
                 break;
 
             case SBG_ECOM_LOG_IMU_DATA: // 3
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogImuData, sizeof(cached.sbg.sbgLogImuData), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.imuLegacy, sizeof(cached.sbg.imuLegacy), msg.data, msg.len);
 
-                state.accel = Vector3f(cached.sbg.sbgLogImuData.accelerometers[0], cached.sbg.sbgLogImuData.accelerometers[1], cached.sbg.sbgLogImuData.accelerometers[2]);
-                state.gyro = Vector3f(cached.sbg.sbgLogImuData.gyroscopes[0], cached.sbg.sbgLogImuData.gyroscopes[1], cached.sbg.sbgLogImuData.gyroscopes[2]);
-                cached.sensors.ins_data.temperature = cached.sbg.sbgLogImuData.temperature;
+                state.accel = Vector3f(cached.sbg.imuLegacy.accelerometers[0], cached.sbg.imuLegacy.accelerometers[1], cached.sbg.imuLegacy.accelerometers[2]);
+                state.gyro = Vector3f(cached.sbg.imuLegacy.gyroscopes[0], cached.sbg.imuLegacy.gyroscopes[1], cached.sbg.imuLegacy.gyroscopes[2]);
+                cached.sensors.ins_data.temperature = cached.sbg.imuLegacy.temperature;
                 updated_ins = true;
                 break;
 
             case SBG_ECOM_LOG_MAG: // 4
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogMag, sizeof(cached.sbg.sbgLogMag), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.mag, sizeof(cached.sbg.mag), msg.data, msg.len);
 
-                state.accel = Vector3f(cached.sbg.sbgLogMag.accelerometers[0], cached.sbg.sbgLogMag.accelerometers[1], cached.sbg.sbgLogMag.accelerometers[2]);
+                state.accel = Vector3f(cached.sbg.mag.accelerometers[0], cached.sbg.mag.accelerometers[1], cached.sbg.mag.accelerometers[2]);
                 updated_ins = true;
 
-                cached.sensors.mag_data.field = Vector3f(cached.sbg.sbgLogMag.magnetometers[0], cached.sbg.sbgLogMag.magnetometers[1], cached.sbg.sbgLogMag.magnetometers[2]);
+                cached.sensors.mag_data.field = Vector3f(cached.sbg.mag.magnetometers[0], cached.sbg.mag.magnetometers[1], cached.sbg.mag.magnetometers[2]);
                 updated_mag = true;
                 break;
 
             case SBG_ECOM_LOG_EKF_EULER: // 6
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogEkfEulerData, sizeof(cached.sbg.sbgLogEkfEulerData), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.ekfEuler, sizeof(cached.sbg.ekfEuler), msg.data, msg.len);
 
                 // float	euler[3];				/*!< Roll, Pitch and Yaw angles in rad. */
                 // float	eulerStdDev[3];			/*!< Roll, Pitch and Yaw angles 1 sigma standard deviation in rad. */
-                state.quat.from_euler(cached.sbg.sbgLogEkfEulerData.euler[0], cached.sbg.sbgLogEkfEulerData.euler[1], cached.sbg.sbgLogEkfEulerData.euler[2]);
+                state.quat.from_euler(cached.sbg.ekfEuler.euler[0], cached.sbg.ekfEuler.euler[1], cached.sbg.ekfEuler.euler[2]);
                 state.have_quaternion = true;
                 break;
             
             case SBG_ECOM_LOG_EKF_QUAT: // 7
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogEkfQuatData, sizeof(cached.sbg.sbgLogEkfQuatData), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.ekfQuat, sizeof(cached.sbg.ekfQuat), msg.data, msg.len);
 
                 // float	quaternion[4];			/*!< Orientation quaternion stored in W, X, Y, Z form. */
                 // float	eulerStdDev[3];			/*!< Roll, Pitch and Yaw angles 1 sigma standard deviation in rad. */
-                memcpy(&state.quat, cached.sbg.sbgLogEkfQuatData.quaternion, sizeof(state.quat));
+                memcpy(&state.quat, cached.sbg.ekfQuat.quaternion, sizeof(state.quat));
                 state.have_quaternion = true;
                 break;
 
             case SBG_ECOM_LOG_EKF_NAV: // 8
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogEkfNavData, sizeof(cached.sbg.sbgLogEkfNavData), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.ekfNav, sizeof(cached.sbg.ekfNav), msg.data, msg.len);
 
-                state.velocity = Vector3f(cached.sbg.sbgLogEkfNavData.velocity[0], cached.sbg.sbgLogEkfNavData.velocity[1], cached.sbg.sbgLogEkfNavData.velocity[2]);
+                state.velocity = Vector3f(cached.sbg.ekfNav.velocity[0], cached.sbg.ekfNav.velocity[1], cached.sbg.ekfNav.velocity[2]);
                 state.have_velocity = true;
 
-                state.location = Location(cached.sbg.sbgLogEkfNavData.position[0]*1e7, cached.sbg.sbgLogEkfNavData.position[1]*1e7, cached.sbg.sbgLogEkfNavData.position[2]*1e2, Location::AltFrame::ABSOLUTE);
+                state.location = Location(cached.sbg.ekfNav.position[0]*1e7, cached.sbg.ekfNav.position[1]*1e7, cached.sbg.ekfNav.position[2]*1e2, Location::AltFrame::ABSOLUTE);
                 state.last_location_update_us = AP_HAL::micros();
-                if (!state.have_location) {
+
+                ekf_is_full_nav = SbgEkfStatus_is_fullNav(cached.sbg.ekfNav.status);
+
+                if (!state.have_location && ekf_is_full_nav) {
                     state.have_location = true;
-                } else if (!state.have_origin && cached.sensors.gps_data.fix_type >= AP_GPS_FixType::FIX_3D && SbgEkfStatus_is_fullNav(cached.sbg.sbgLogEkfNavData.status)) {
+                } else if (!state.have_origin && cached.sensors.gps_data.fix_type >= AP_GPS_FixType::FIX_3D && ekf_is_full_nav) {
                     // this is in an else so that origin doesn't get set on the very very first sample, do it on the second one just to give us a tiny bit more chance of a better origin
                     state.origin = state.location;
                     state.have_origin = true;
+                }
+
+                if (ekf_is_full_nav && use_ekf_as_gnss) {
+                    cached.sensors.gps_data.latitude = cached.sbg.ekfNav.position[0] * 1E7;
+                    cached.sensors.gps_data.longitude = cached.sbg.ekfNav.position[1] * 1E7;
+                    cached.sensors.gps_data.msl_altitude = cached.sbg.ekfNav.position[2] * 100;
+
+                    cached.sensors.gps_data.horizontal_pos_accuracy = Vector2f(cached.sbg.ekfNav.positionStdDev[0], cached.sbg.ekfNav.positionStdDev[1]).length();
+                    cached.sensors.gps_data.hdop = cached.sensors.gps_data.horizontal_pos_accuracy;
+                    cached.sensors.gps_data.vertical_pos_accuracy = cached.sbg.ekfNav.positionStdDev[2];
+                    cached.sensors.gps_data.vdop =  cached.sensors.gps_data.vertical_pos_accuracy;
+
+                    cached.sensors.gps_data.fix_type = AP_GPS_FixType::FIX_3D;
+
+                    cached.sensors.gps_data.ned_vel_north = cached.sbg.ekfNav.velocity[0];
+                    cached.sensors.gps_data.ned_vel_east = cached.sbg.ekfNav.velocity[1];
+                    cached.sensors.gps_data.ned_vel_down = cached.sbg.ekfNav.velocity[2];
+                    cached.sensors.gps_data.horizontal_vel_accuracy = Vector2f(cached.sbg.ekfNav.velocityStdDev[0], cached.sbg.ekfNav.velocityStdDev[1]).length();
+
+                    updated_gps = true;
                 }
                 break;
 
             case SBG_ECOM_LOG_GPS1_VEL: // 13
             case SBG_ECOM_LOG_GPS2_VEL: // 16
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogGpsVel, sizeof(cached.sbg.sbgLogGpsVel), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.gnssVel, sizeof(cached.sbg.gnssVel), msg.data, msg.len);
 
-                cached.sensors.gps_data.ms_tow = cached.sbg.sbgLogGpsVel.timeOfWeek;
-                cached.sensors.gps_data.ned_vel_north = cached.sbg.sbgLogGpsVel.velocity[0];
-                cached.sensors.gps_data.ned_vel_east = cached.sbg.sbgLogGpsVel.velocity[1];
-                cached.sensors.gps_data.ned_vel_down = cached.sbg.sbgLogGpsVel.velocity[2];
-                cached.sensors.gps_data.horizontal_vel_accuracy = Vector2f(cached.sensors.gps_data.ned_vel_north, cached.sensors.gps_data.ned_vel_east).length();
-                // unused - cached.sbg.sbgLogGpsVel.course
-                // unused - cached.sbg.sbgLogGpsVel.courseAcc
-                updated_gps = true;
+                if ((!use_ekf_as_gnss) || (use_ekf_as_gnss && !ekf_is_full_nav)) {
+                    cached.sensors.gps_data.ms_tow = cached.sbg.gnssVel.timeOfWeek;
+                    cached.sensors.gps_data.ned_vel_north = cached.sbg.gnssVel.velocity[0];
+                    cached.sensors.gps_data.ned_vel_east = cached.sbg.gnssVel.velocity[1];
+                    cached.sensors.gps_data.ned_vel_down = cached.sbg.gnssVel.velocity[2];
+                    cached.sensors.gps_data.horizontal_vel_accuracy = Vector2f(cached.sbg.gnssVel.velocityAcc[0], cached.sbg.gnssVel.velocityAcc[1]).length();
+                    // unused - cached.sbg.gnssVel.course
+                    // unused - cached.sbg.gnssVel.courseAcc
+                    updated_gps = true;
+                }
                 break;
 
             case SBG_ECOM_LOG_GPS1_POS: // 14
             case SBG_ECOM_LOG_GPS2_POS: // 17
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogGpsPos, sizeof(cached.sbg.sbgLogGpsPos), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.gnssPos, sizeof(cached.sbg.gnssPos), msg.data, msg.len);
 
-                cached.sensors.gps_data.ms_tow = cached.sbg.sbgLogGpsPos.timeOfWeek;
-                cached.sensors.gps_data.gps_week = cached.sbg.sbgLogGpsPos.timeOfWeek / AP_MSEC_PER_WEEK;
-                cached.sensors.gps_data.latitude = cached.sbg.sbgLogGpsPos.latitude * 1E7;
-                cached.sensors.gps_data.longitude = cached.sbg.sbgLogGpsPos.longitude * 1E7;
-                cached.sensors.gps_data.msl_altitude = cached.sbg.sbgLogGpsPos.altitude * 100;
-                // unused - cached.sbg.sbgLogGpsPos.undulation
-                cached.sensors.gps_data.horizontal_pos_accuracy = Vector2f(cached.sbg.sbgLogGpsPos.latitudeAccuracy, cached.sbg.sbgLogGpsPos.longitudeAccuracy).length();
-                cached.sensors.gps_data.hdop = cached.sensors.gps_data.horizontal_pos_accuracy;
-                cached.sensors.gps_data.vertical_pos_accuracy = cached.sbg.sbgLogGpsPos.altitudeAccuracy;
-                cached.sensors.gps_data.vdop =  cached.sensors.gps_data.vertical_pos_accuracy;
-                cached.sensors.gps_data.satellites_in_view = cached.sbg.sbgLogGpsPos.numSvUsed;
-                // unused - cached.sbg.sbgLogGpsPos.baseStationId
-                // unused - cached.sbg.sbgLogGpsPos.differentialAge
-                cached.sensors.gps_data.fix_type = SbgGpsPosStatus_to_GpsFixType(cached.sbg.sbgLogGpsPos.status);
-                updated_gps = true;
+                if ((!use_ekf_as_gnss) || (use_ekf_as_gnss && !ekf_is_full_nav)) {
+                    cached.sensors.gps_data.ms_tow = cached.sbg.gnssPos.timeOfWeek;
+                    cached.sensors.gps_data.latitude = cached.sbg.gnssPos.latitude * 1E7;
+                    cached.sensors.gps_data.longitude = cached.sbg.gnssPos.longitude * 1E7;
+                    cached.sensors.gps_data.msl_altitude = cached.sbg.gnssPos.altitude * 100;
+                    // unused - cached.sbg.gnssPos.undulation
+                    cached.sensors.gps_data.horizontal_pos_accuracy = Vector2f(cached.sbg.gnssPos.latitudeAccuracy, cached.sbg.gnssPos.longitudeAccuracy).length();
+                    cached.sensors.gps_data.hdop = cached.sensors.gps_data.horizontal_pos_accuracy;
+                    cached.sensors.gps_data.vertical_pos_accuracy = cached.sbg.gnssPos.altitudeAccuracy;
+                    cached.sensors.gps_data.vdop =  cached.sensors.gps_data.vertical_pos_accuracy;
+                    cached.sensors.gps_data.satellites_in_view = cached.sbg.gnssPos.numSvUsed;
+                    // unused - cached.sbg.gnssPos.baseStationId
+                    // unused - cached.sbg.gnssPos.differentialAge
+                    cached.sensors.gps_data.fix_type = SbgGpsPosStatus_to_GpsFixType(cached.sbg.gnssPos.status);
+                    updated_gps = true;
+                }
                 break;
 
             case SBG_ECOM_LOG_AIR_DATA: // 36
-                safe_copy_msg_to_object((uint8_t*)&cached.sbg.sbgLogAirData, sizeof(cached.sbg.sbgLogAirData), msg.data, msg.len);
+                safe_copy_msg_to_object((uint8_t*)&cached.sbg.airData, sizeof(cached.sbg.airData), msg.data, msg.len);
                 
-                if (cached.sbg.sbgLogAirData.status & SBG_ECOM_AIR_DATA_PRESSURE_ABS_VALID) {
-                    cached.sensors.baro_data.pressure_pa = cached.sbg.sbgLogAirData.pressureAbs;
+                if (cached.sbg.airData.status & SBG_ECOM_AIR_DATA_PRESSURE_ABS_VALID) {
+                    cached.sensors.baro_data.pressure_pa = cached.sbg.airData.pressureAbs;
                     updated_baro = true;
                 }
-                if (cached.sbg.sbgLogAirData.status & SBG_ECOM_AIR_DATA_ALTITUDE_VALID) {
-                    cached.sensors.baro_height = cached.sbg.sbgLogAirData.altitude;
+                if (cached.sbg.airData.status & SBG_ECOM_AIR_DATA_ALTITUDE_VALID) {
+                    cached.sensors.baro_height = cached.sbg.airData.altitude;
                     updated_baro = true;
                 }
-                if (cached.sbg.sbgLogAirData.status & SBG_ECOM_AIR_DATA_PRESSURE_DIFF_VALID) {
-                    cached.sensors.airspeed_data.differential_pressure = cached.sbg.sbgLogAirData.pressureDiff;
+                if (cached.sbg.airData.status & SBG_ECOM_AIR_DATA_PRESSURE_DIFF_VALID) {
+                    cached.sensors.airspeed_data.differential_pressure = cached.sbg.airData.pressureDiff;
                     updated_airspeed = true;
                 }
-                // if (cached.sbg.sbgLogAirData.status & SBG_ECOM_AIR_DATA_AIRPSEED_VALID) {
+                // if (cached.sbg.airData.status & SBG_ECOM_AIR_DATA_AIRPSEED_VALID) {
                 //     // we don't accept airspeed directly, we compute it ourselves in AP_Airspeed via diff pressure
                 // }
                 
-                if ((cached.sbg.sbgLogAirData.status & SBG_ECOM_AIR_DATA_TEMPERATURE_VALID) && (updated_baro || updated_airspeed)) {
-                    cached.sensors.airspeed_data.temperature = cached.sbg.sbgLogAirData.airTemperature;
-                    cached.sensors.baro_data.temperature = cached.sbg.sbgLogAirData.airTemperature;
+                if ((cached.sbg.airData.status & SBG_ECOM_AIR_DATA_TEMPERATURE_VALID) && (updated_baro || updated_airspeed)) {
+                    cached.sensors.airspeed_data.temperature = cached.sbg.airData.airTemperature;
+                    cached.sensors.baro_data.temperature = cached.sbg.airData.airTemperature;
                 }
                 break;
 
@@ -612,20 +665,20 @@ AP_GPS_FixType AP_ExternalAHRS_SBG::SbgGpsPosStatus_to_GpsFixType(const uint32_t
             return AP_GPS_FixType::NONE;
 
         case SBG_ECOM_POS_SINGLE:           /*!< Single point solution position. */
+        case SBG_ECOM_POS_FIXED:            /*!< Fixed location solution position. */
             return AP_GPS_FixType::FIX_3D;
 
         case SBG_ECOM_POS_PSRDIFF:          /*!< Standard Pseudorange Differential Solution (DGPS). */
         case SBG_ECOM_POS_SBAS:             /*!< SBAS satellite used for differential corrections. */
-        case SBG_ECOM_POS_OMNISTAR:         /*!< Omnistar VBS Position (L1 sub-meter). */
             return AP_GPS_FixType::DGPS;
 
         case SBG_ECOM_POS_RTK_FLOAT:        /*!< Floating RTK ambiguity solution (20 cms RTK). */
         case SBG_ECOM_POS_PPP_FLOAT:        /*!< Precise Point Positioning with float ambiguities. */
+        case SBG_ECOM_POS_OMNISTAR:         /*!< Omnistar VBS Position (L1 sub-meter). */
             return AP_GPS_FixType::RTK_FLOAT;
 
         case SBG_ECOM_POS_RTK_INT:          /*!< Integer RTK ambiguity solution (2 cms RTK). */
         case SBG_ECOM_POS_PPP_INT:          /*!< Precise Point Positioning with fixed ambiguities. */
-        case SBG_ECOM_POS_FIXED:            /*!< Fixed location solution position. */
             return AP_GPS_FixType::RTK_FIXED;
     }
     return AP_GPS_FixType::NONE;
@@ -678,7 +731,7 @@ bool AP_ExternalAHRS_SBG::pre_arm_check(char *failure_msg, uint8_t failure_msg_l
 #if AP_COMPASS_ENABLED
 bool AP_ExternalAHRS_SBG::send_MagData(AP_HAL::UARTDriver *_uart)
 {
-    SbgLogMag mag_data_log {};
+    SbgEComLogMag mag_data_log {};
     mag_data_log.timeStamp = AP_HAL::micros();
 
     const auto &compass = AP::compass();
@@ -700,7 +753,7 @@ bool AP_ExternalAHRS_SBG::send_MagData(AP_HAL::UARTDriver *_uart)
 
 bool AP_ExternalAHRS_SBG::send_AirData(AP_HAL::UARTDriver *_uart)
 {
-    SbgLogAirData air_data_log {};
+    SbgEComLogAirData air_data_log {};
     air_data_log.timeStamp = 0;
     air_data_log.status |= SBG_ECOM_AIR_DATA_TIME_IS_DELAY;
 
@@ -732,6 +785,17 @@ bool AP_ExternalAHRS_SBG::send_AirData(AP_HAL::UARTDriver *_uart)
 
     const sbgMessage msg = sbgMessage(SBG_ECOM_CLASS_LOG_ECOM_0, SBG_ECOM_LOG_AIR_DATA, (uint8_t*)&air_data_log, sizeof(air_data_log));
     return send_sbgMessage(_uart, msg);
+}
+
+// get variances
+bool AP_ExternalAHRS_SBG::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+{
+    velVar = cached.sensors.gps_data.horizontal_vel_accuracy * vel_gate_scale;
+    posVar = cached.sensors.gps_data.horizontal_pos_accuracy * pos_gate_scale;
+    hgtVar = cached.sensors.gps_data.vertical_pos_accuracy * hgt_gate_scale;
+    magVar.zero(); // Not provided, set to 0.
+    tasVar = 0;
+    return true;
 }
 
 #endif  // AP_EXTERNAL_AHRS_SBG_ENABLED

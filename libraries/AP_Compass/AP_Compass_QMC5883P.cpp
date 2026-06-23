@@ -197,11 +197,6 @@ void AP_Compass_QMC5883P::timer()
     accumulate_sample(field, 20);
 }
 
-void AP_Compass_QMC5883P::read()
-{
-    drain_accumulated_samples();
-}
-
 void AP_Compass_QMC5883P::_dump_registers()
 {
     printf("QMC5883P registers dump\n");

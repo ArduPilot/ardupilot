@@ -10,7 +10,7 @@
 --
 -- Thanks to @yuri_rage and Peter Barker for help with the Lua and Autotests
 
-SCRIPT_VERSION = "4.7.0-021"
+SCRIPT_VERSION = "4.7.0-022"
 SCRIPT_NAME = "Arming Checks"
 SCRIPT_NAME_SHORT = "ArmCk"
 
@@ -116,7 +116,8 @@ FOLL_SYSID = Parameter("FOLL_SYSID")
 RALLY_LIMIT_KM = Parameter("RALLY_LIMIT_KM")
 
 if FWVersion:type() == FIRMWARE.COPTER then -- Copter specific paramters
-    RTL_ALT = Parameter("RTL_ALT")
+    RTL_ALTITUDE = Parameter("RTL_ALT_M")
+    RTL_CLIMB_MIN = Parameter("RTL_CLIMB_MIN_M")
 elseif FWVersion:type() == FIRMWARE.PLANE then -- Plane specific Parameters
     RTL_ALTITUDE = Parameter("RTL_ALTITUDE")
     RTL_CLIMB_MIN = Parameter("RTL_CLIMB_MIN")
@@ -218,7 +219,7 @@ end
 
 -- is the RTL altitude legal? This defaults to 120m (400') as set in ARM_ALT_LEGAL
 local function rtl_altitude_legal()
-    -- plane uses RTL_ALTITUDE in m
+    -- plane uses RTL_ALTITUDE in meters, copter uses RTL_ALT_M also in meters
     -- RTL_ALTITUDE will be correct for either plane or copter
     if (RTL_ALTITUDE ~= nil and (RTL_ALTITUDE:get()) > alt_legal_max) then
         return false
@@ -469,14 +470,14 @@ local arming_checks = {}
 -- ArduCopter specific checks. Note that the index number starts from 1 for FIRMWARE.COPTER (ARM_C_ parameters)
 if FWVersion:type() == FIRMWARE.COPTER then -- add Copter specific Parameters
 --[[
-    // @Param: ARM_C_RTL_ALT
-    // @DisplayName: RTL_ALT should be a valid value
-    // @Description: RTL_ALT should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
+    // @Param: ARM_C_RTL_ALT_M
+    // @DisplayName: RTL_ALT_M should be a valid value
+    // @Description: RTL_ALT_M should be < 120m (400ft). 3 or less to prevent arming. -1 to disable.
     // @Values: -1:Disabled,0:Emergency(PreArm),1:Alert(PreArm),2:Critical(PreArm),3:Error(PreArm),4:Warning,5:Notice,6:Info,7:Debug
     // @User: Standard
 --]]
     table.insert(arming_checks, Arming_Check(FIRMWARE.COPTER, 1,
-                    rtl_altitude_legal, "RTL_ALT", "RTL_AL too high", MAV_SEVERITY.ERROR, false, false))
+                    rtl_altitude_legal, "RTL_ALT", "RTL_ALT_M too high", MAV_SEVERITY.ERROR, false, false))
 elseif FWVersion:type() == FIRMWARE.PLANE then -- add Plane specific Parameters
 -- ArduPlane specific checks. Note that the index number starts from 1 for FIRMWARE.PLANE (ARM_P_ parameters)
 --[[

@@ -15,6 +15,7 @@
 #pragma once
 
 #include "AP_GPS_config.h"
+#include "AP_GPS_FixType.h"
 
 #if AP_GPS_ENABLED
 
@@ -36,10 +37,6 @@
 #define GPS_LEAPSECONDS_MILLIS 18000ULL
 
 #define UNIX_OFFSET_MSEC (17000ULL * 86400ULL + 52ULL * 10ULL * AP_MSEC_PER_WEEK - GPS_LEAPSECONDS_MILLIS)
-
-#ifndef GPS_MOVING_BASELINE
-#define GPS_MOVING_BASELINE GPS_MAX_RECEIVERS>1
-#endif
 
 #if GPS_MOVING_BASELINE
 #include "MovingBase.h"
@@ -68,6 +65,7 @@ class AP_GPS
     friend class AP_GPS_UBLOX;
     friend class AP_GPS_Backend;
     friend class AP_GPS_DroneCAN;
+    friend class AP_GPS_UBLOX_CFGv2;
 
 public:
     AP_GPS();
@@ -128,7 +126,7 @@ public:
         Params(void);
 
         AP_Enum<GPS_Type> type;
-        AP_Int8 gnss_mode;
+        AP_Int16 gnss_mode;
         AP_Int16 rate_ms;   // this parameter should always be accessed using get_rate_ms()
         AP_Vector3f antenna_offset;
         AP_Int16 delay_ms;
@@ -144,17 +142,16 @@ public:
         static const struct AP_Param::GroupInfo var_info[];
     };
 
-    /// GPS status codes.  These are kept aligned with MAVLink by
-    /// static_assert in AP_GPS.cpp
-    enum GPS_Status {
-        NO_GPS = 0,                  ///< No GPS connected/detected
-        NO_FIX = 1,                  ///< Receiving valid GPS messages but no lock
-        GPS_OK_FIX_2D = 2,           ///< Receiving valid messages and 2D lock
-        GPS_OK_FIX_3D = 3,           ///< Receiving valid messages and 3D lock
-        GPS_OK_FIX_3D_DGPS = 4,      ///< Receiving valid messages and 3D lock with differential improvements
-        GPS_OK_FIX_3D_RTK_FLOAT = 5, ///< Receiving valid messages and 3D RTK Float
-        GPS_OK_FIX_3D_RTK_FIXED = 6, ///< Receiving valid messages and 3D RTK Fixed
-    };
+    // Aliases for AP_GPS_FixType values, for backwards compatibility with scripting
+    static constexpr uint8_t NO_GPS                  = (uint8_t)AP_GPS_FixType::NO_GPS;
+    static constexpr uint8_t NO_FIX                  = (uint8_t)AP_GPS_FixType::NONE;
+    static constexpr uint8_t GPS_OK_FIX_2D           = (uint8_t)AP_GPS_FixType::FIX_2D;
+    static constexpr uint8_t GPS_OK_FIX_3D           = (uint8_t)AP_GPS_FixType::FIX_3D;
+    static constexpr uint8_t GPS_OK_FIX_3D_DGPS      = (uint8_t)AP_GPS_FixType::DGPS;
+    static constexpr uint8_t GPS_OK_FIX_3D_RTK_FLOAT = (uint8_t)AP_GPS_FixType::RTK_FLOAT;
+    static constexpr uint8_t GPS_OK_FIX_3D_RTK_FIXED = (uint8_t)AP_GPS_FixType::RTK_FIXED;
+    static constexpr uint8_t GPS_OK_FIX_TYPE_STATIC = (uint8_t)AP_GPS_FixType::STATIC;
+    static constexpr uint8_t GPS_OK_FIX_TYPE_PPP =    (uint8_t)AP_GPS_FixType::PPP;
 
     // GPS navigation engine settings. Not all GPS receivers support
     // this
@@ -193,7 +190,7 @@ public:
         uint8_t instance; // the instance number of this GPS
 
         // all the following fields must all be filled by the backend driver
-        GPS_Status status;                  ///< driver fix status
+        AP_GPS_FixType status;              ///< driver fix status
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
@@ -284,13 +281,13 @@ public:
     }
 
     /// Query GPS status
-    GPS_Status status(uint8_t instance) const {
-        if (_force_disable_gps && state[instance].status > NO_FIX) {
-            return NO_FIX;
+    AP_GPS_FixType status(uint8_t instance) const {
+        if (_force_disable_gps && state[instance].status > AP_GPS_FixType::NONE) {
+            return AP_GPS_FixType::NONE;
         }
         return state[instance].status;
     }
-    GPS_Status status(void) const {
+    AP_GPS_FixType status(void) const {
         return status(primary_instance);
     }
 
@@ -298,27 +295,31 @@ public:
     // fix type.  For space-constrained human-readable displays
     char status_onechar(void) const {
         switch (status()) {
-        case AP_GPS::NO_GPS:
+        case AP_GPS_FixType::NO_GPS:
             return ' ';
-        case AP_GPS::NO_FIX:
+        case AP_GPS_FixType::NONE:
             return '-';
-        case AP_GPS::GPS_OK_FIX_2D:
+        case AP_GPS_FixType::FIX_2D:
             return '2';
-        case AP_GPS::GPS_OK_FIX_3D:
+        case AP_GPS_FixType::FIX_3D:
             return '3';
-        case AP_GPS::GPS_OK_FIX_3D_DGPS:
+        case AP_GPS_FixType::DGPS:
             return '4';
-        case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
+        case AP_GPS_FixType::RTK_FLOAT:
             return '5';
-        case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+        case AP_GPS_FixType::RTK_FIXED:
             return '6';
+        case AP_GPS_FixType::STATIC:
+            return '7';
+        case AP_GPS_FixType::PPP:
+            return '8';
         }
         // should never reach here; compiler flags guarantees this.
         return '?';
     }
 
-    // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
-    GPS_Status highest_supported_status(uint8_t instance) const WARN_IF_UNUSED;
+    // Query the highest status this GPS supports (always reports FIX_3D for the blended GPS)
+    AP_GPS_FixType highest_supported_status(uint8_t instance) const WARN_IF_UNUSED;
 
     // location of last fix
     const Location &location(uint8_t instance) const {
@@ -629,11 +630,12 @@ protected:
         GPSL5HealthOverride = (1U << 5),
         AlwaysRTCMDecode = (1U << 6),
         DisableRTCMDecode = (1U << 7),
+        ForceUBXConfigV2 = (1U << 8U)
     };
 
     // check if an option is set
     bool option_set(const DriverOptions option) const {
-        return (uint8_t(_driver_options.get()) & uint8_t(option)) != 0;
+        return (uint16_t(_driver_options.get()) & uint16_t(option)) != 0;
     }
 
 private:
@@ -772,6 +774,7 @@ private:
         GPS_AUTO_CONFIG_DISABLE = 0,
         GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY  = 1,
         GPS_AUTO_CONFIG_ENABLE_ALL = 2,
+        GPS_AUTO_CLEAR_CONFIG_UBLOX_SERIAL_ONLY = 3,  // then acts like GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY
     };
 
     enum class GPSAutoSwitch {

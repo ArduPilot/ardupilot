@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import annotations
-
 '''
 Look at the difference between this and its merge-base with master
 
@@ -10,14 +8,18 @@ for each new hwdef file, build the board
 AP_FLAKE8_CLEAN
 '''
 
+from __future__ import annotations
+
 import optparse
 import os
+import re
 import shutil
 
 from dataclasses import dataclass
 from typing import Set
 
 import board_list
+
 from build_script_base import BuildScriptBase
 
 
@@ -61,6 +63,39 @@ class TestNewBoards(BuildScriptBase):
             ret.add(filepath)
 
         return ret
+
+    # Each tuple: (param name regex, re.sub template producing the hwdef define name)
+    DEFAULTS_PARM_CHECKS = [
+        (r'^SERIAL(\d+)_(PROTOCOL|BAUD|OPTIONS)$', r'DEFAULT_SERIAL\1_\2'),
+        (r'^ADSB_TYPE$',                           r'AP_ADSB_TYPE_DEFAULT'),
+        (r'^NTF_LED_TYPES$',                       r'NTF_LED_TYPES'),
+        (r'^BRD_TYPE$',                            r'BOARD_TYPE_DEFAULT'),
+    ]
+
+    def check_defaults_parm(self, defaults_parm_path: str, board_name: str) -> None:
+        issues = []
+        with open(defaults_parm_path) as f:
+            for line in f:
+                line = line.split('#')[0].strip()
+                if not line:
+                    continue
+                m = re.match(r'^(\w+)[\s,]+(\S+)', line)
+                if not m:
+                    continue
+                param, value = m.group(1), m.group(2)
+                for pattern, template in self.DEFAULTS_PARM_CHECKS:
+                    if re.match(pattern, param):
+                        hwdef_name = re.sub(pattern, template, param)
+                        issues.append(
+                            f"  {param} {value}"
+                            f"  ->  add to hwdef.dat: define {hwdef_name} {value}"
+                        )
+                        break
+        if issues:
+            raise ValueError(
+                f"defaults.parm for board {board_name} contains parameters that must be "
+                f"defined in hwdef.dat instead:\n" + "\n".join(issues)
+            )
 
     def build_board(self, board : board_list.Board):
         self.run_waf(["configure", "--board", board.name], show_output=False)
@@ -136,12 +171,18 @@ class TestNewBoards(BuildScriptBase):
             if board is None:
                 raise ValueError(f"Board {board_name} not found in board list")
 
+            hwdef_dir = os.path.join(*parts[:hwdef_idx + 2])
+
             # Only require README.md for non-AP_Periph boards
             if not board.is_ap_periph:
-                hwdef_dir = os.path.join(*parts[:hwdef_idx + 2])
                 readme_path = os.path.join(hwdef_dir, 'README.md')
                 if not os.path.exists(readme_path):
                     raise ValueError(f"Missing README.md for new board: {readme_path} does not exist")
+
+            defaults_parm_path = os.path.join(hwdef_dir, 'defaults.parm')
+            if os.path.exists(defaults_parm_path):
+                self.check_defaults_parm(defaults_parm_path, board_name)
+
         for board_name in sorted(boards_to_test.keys()):
             # Find the board object
             board = None
@@ -156,6 +197,16 @@ class TestNewBoards(BuildScriptBase):
             # Skip ESP32 boards - CI machine can't build them
             if board.hal == "ESP32":
                 self.progress(f"Skipping ESP32 board {board.name}")
+                continue
+
+            # Skip QURT boards - CI machine can't build them
+            if board.hal == "QURT":
+                self.progress(f"Skipping QURT board {board.name}")
+                continue
+
+            # Skip arms board - CI machine can't build it
+            if board.toolchain == "arm-linux-gnueabihf":
+                self.progress(f"Skipping arm-linux board {board.name}")
                 continue
 
             self.progress(f"Building board {board.name}")

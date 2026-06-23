@@ -11,16 +11,24 @@ import copy
 import os
 import re
 import sys
+
 from argparse import ArgumentParser
 
-from param import (Library, Parameter, Vehicle, known_group_fields,
-                   known_param_fields, required_param_fields, required_library_param_fields, known_units)
 from htmlemit import HtmlEmit
 from rstemit import RSTEmit
 from rstlatexpdfemit import RSTLATEXPDFEmit
 from xmlemit import XmlEmit
-from mdemit import MDEmit
+
 from jsonemit import JSONEmit
+from mdemit import MDEmit
+from param import Library
+from param import Parameter
+from param import Vehicle
+from param import known_group_fields
+from param import known_param_fields
+from param import known_units
+from param import required_library_param_fields
+from param import required_param_fields
 
 parser = ArgumentParser(description="Parse ArduPilot parameters.")
 parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
@@ -263,6 +271,7 @@ def applicable_to_vehicle(vehicle: str, vehicle_list: list) -> bool:
 def process_library(vehicle, library, pathprefix=None):
     '''process one library'''
     paths = library.Path.split(',')
+    processed_group_paths = set()  # tracks (group_name, path) tuples across all files
     for path in paths:
         path = path.strip()
         global current_file
@@ -404,7 +413,7 @@ def process_library(vehicle, library, pathprefix=None):
         group_matches = prog_groups.findall(p_text)
         debug("Found %u groups" % len(group_matches))
         debug(group_matches)
-        done_groups = dict()
+        done_groups = dict()  # per-file: handles same group declared twice in same file
         for group_match in group_matches:
             group = group_match[0].strip()
             debug("Group: %s" % group)
@@ -428,6 +437,14 @@ def process_library(vehicle, library, pathprefix=None):
                     setattr(p, field_name, field_value)
                 else:
                     error(f"unknown parameter metadata field '{field_name}'")
+
+            group_path_key = (group, getattr(lib, 'Path', None))
+            if group_path_key in processed_group_paths:
+                # Same group+path already processed in a previous file - skip duplicates
+                debug(f"Skipping duplicate group '{group}' with path '{getattr(lib, 'Path', None)}'")
+                continue
+
+            processed_group_paths.add(group_path_key)
             if not any(lib.Path == parsed_l.Path for parsed_l in libraries):
                 if do_append:
                     lib.set_name(library.name + lib.name)

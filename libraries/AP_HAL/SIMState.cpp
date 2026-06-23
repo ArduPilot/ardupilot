@@ -211,7 +211,7 @@ void SIMState::fdm_input_local(void)
         gyus42v2->update(sitl_model->rangefinder_range());
     }
     if (efi_ms != nullptr) {
-        efi_ms->update();
+        efi_ms->update(*sitl_model);
     }
 
     if (frsky_d != nullptr) {

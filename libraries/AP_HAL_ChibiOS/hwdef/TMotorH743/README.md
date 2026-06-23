@@ -4,15 +4,15 @@ The T-Motor H7 Mini is a flight controller produced by [T-Motor](https://store.t
 
 ## Features
 
- - MCU - STM32H743 32-bit processor running at 480 MHz
- - IMU - ICM42688/BMI270
- - Barometer - DPS310
- - OSD - AT7456E
- - Onboard Flash: 128Mbits
- - 6x UARTs (1,5,6,7,9)
- - 9x PWM Outputs (8 Motor Output, 1 LED)
- - Battery input voltage: 2S-6S
- - BEC 5V/2A, 10V/1.5A
+- MCU - STM32H743 32-bit processor running at 480 MHz
+- IMU - ICM42688/BMI270
+- Barometer - DPS310
+- OSD - AT7456E
+- Onboard Flash: 128Mbits
+- 6x UARTs (1,5,6,7,9)
+- 9x PWM Outputs (8 Motor Output, 1 LED)
+- Battery input voltage: 2S-6S
+- BEC 5V/2A, 10V/1.5A
 
 ## Pinout
 
@@ -23,13 +23,13 @@ The T-Motor H7 Mini is a flight controller produced by [T-Motor](https://store.t
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (ESC Telemetry)
- - SERIAL3 -> UART3
- - SERIAL5 -> UART5 (GPS, DMA-enabled)
- - SERIAL6 -> UART6 (RX, DMA-enabled)
- - SERIAL7 -> UART7 (DJI VTX, DMA-enabled)
- - SERIAL8 -> UART8 (SBUS, DMA-enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (ESC Telemetry)
+- SERIAL3 -> UART3
+- SERIAL5 -> UART5 (GPS, DMA-enabled)
+- SERIAL6 -> UART6 (RX, DMA-enabled)
+- SERIAL7 -> UART7 (DJI VTX, DMA-enabled)
+- SERIAL8 -> UART8 (SBUS, DMA-enabled)
 
 ## RC Input
 
@@ -49,8 +49,8 @@ M5 for LED strip or another PWM output.
 
 The PWM is in 2 groups:
 
- - PWM 1-4 in group1
- - PWM 5 in group2
+- PWM 1-4 in group1
+- PWM 5 in group2
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -64,11 +64,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 11
- - BATT_CURR_PIN 13
- - BATT_VOLT_MULT 11.0
- - BATT_AMP_PERVLT 50.0
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 11
+- BATT_CURR_PIN 13
+- BATT_VOLT_MULT 11.0
+- BATT_AMP_PERVLT 50.0
 
 ## Compass
 
@@ -83,4 +83,3 @@ firmware, using your favourite DFU loading tool.
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
 *.apj firmware files.
-

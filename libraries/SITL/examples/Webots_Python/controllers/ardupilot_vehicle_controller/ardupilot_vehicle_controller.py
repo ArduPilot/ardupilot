@@ -7,8 +7,9 @@ AP_FLAKE8_CLEAN
 '''
 
 
-import time
 import argparse
+import time
+
 from webots_vehicle import WebotsArduVehicle
 
 

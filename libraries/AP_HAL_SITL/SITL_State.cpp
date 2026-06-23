@@ -31,39 +31,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-void SITL_State::_set_param_default(const char *parm)
-{
-    char *pdup = strdup(parm);
-    char *p = strchr(pdup, '=');
-    if (p == nullptr) {
-        printf("Please specify parameter as NAME=VALUE");
-        exit(1);
-    }
-    float value = strtof(p+1, nullptr);
-    *p = 0;
-    enum ap_var_type var_type;
-    AP_Param *vp = AP_Param::find(pdup, &var_type);
-    if (vp == nullptr) {
-        printf("Unknown parameter %s\n", pdup);
-        exit(1);
-    }
-    if (var_type == AP_PARAM_FLOAT) {
-        ((AP_Float *)vp)->set_and_save(value);
-    } else if (var_type == AP_PARAM_INT32) {
-        ((AP_Int32 *)vp)->set_and_save(value);
-    } else if (var_type == AP_PARAM_INT16) {
-        ((AP_Int16 *)vp)->set_and_save(value);
-    } else if (var_type == AP_PARAM_INT8) {
-        ((AP_Int8 *)vp)->set_and_save(value);
-    } else {
-        printf("Unable to set parameter %s\n", pdup);
-        exit(1);
-    }
-    printf("Set parameter %s to %f\n", pdup, value);
-    free(pdup);
-}
-
-
 /*
   setup for SITL handling
  */
@@ -82,7 +49,9 @@ void SITL_State::_sitl_setup()
         _update_airspeed(0);
 #if AP_SIM_SOLOGIMBAL_ENABLED
         if (enable_gimbal) {
-            gimbal = NEW_NOTHROW SITL::SoloGimbal();
+            // the gimbal connects back to the vehicle's SERIAL2 MAVLink
+            // port, which is base_port + 2 (offset by the SITL instance):
+            gimbal = NEW_NOTHROW SITL::SoloGimbal(base_port() + 2);
         }
 #endif
 
@@ -176,7 +145,11 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
                 }
             }
 #endif
-            usleep(1000);
+            // most devices can't sleep for 10us - so this is also
+            // essentially a yield.  At 30x speedup a 10us wall-clock
+            // sleep here can equate to your thread sleeping for 300us
+            // of simulated time
+            usleep(10);
         }
     }
     // check the outbound TCP queue size.  If it is too long then
@@ -348,7 +321,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         }
     }
 
-    float throttle = 0.0f;
+    float throttle = 0.0f; // 0 is 'no throttle', 1.0 is 'full' throttle
     if (_vehicle == ArduPlane) {
         float forward_throttle = constrain_float((input.servos[2] - 1000) / 1000.0f, 0.0f, 1.0f);
         // do a little quadplane dance

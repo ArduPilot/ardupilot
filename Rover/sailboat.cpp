@@ -446,7 +446,7 @@ float Sailboat::calc_heading(float desired_heading_cd)
 
     // trigger tack if cross track error larger than xtrack_max parameter
     // this effectively defines a 'corridor' of width 2*xtrack_max that the boat will stay within
-    const float cross_track_error = rover.g2.wp_nav.crosstrack_error();
+    const float cross_track_error = rover.g2.wp_nav.crosstrack_error_m();
     if ((fabsf(cross_track_error) >= xtrack_max) && !is_zero(xtrack_max) && !should_tack && !currently_tacking) {
         // make sure the new tack will reduce the cross track error
         // if were on starboard tack we are traveling towards the left hand boundary

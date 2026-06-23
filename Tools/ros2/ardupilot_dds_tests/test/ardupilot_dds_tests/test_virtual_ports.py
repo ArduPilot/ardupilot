@@ -18,7 +18,6 @@ import launch_pytest
 import pytest
 
 from launch import LaunchDescription
-
 from launch_pytest.tools import process as process_tools
 
 WAIT_FOR_START_TIMEOUT = 5.0

@@ -213,10 +213,6 @@ private:
     int32_t roll_limit_cd;
     float pitch_limit_min;
 
-    // flight modes convenience array
-    AP_Int8 *flight_modes = &g.flight_mode1;
-    const uint8_t num_flight_modes = 6;
-
 #if AP_RANGEFINDER_ENABLED
     AP_FixedWing::Rangefinder_State rangefinder_state;
 
@@ -955,6 +951,9 @@ private:
     void Log_Write_OFG_Guided();
     void Log_Write_Guided(void);
     void Log_Write_Nav_Tuning();
+#if AP_RANGEFINDER_ENABLED
+    void Log_Write_RFNS();
+#endif
     void Log_Write_Status();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
@@ -1146,6 +1145,9 @@ private:
     void notify_mode(const Mode& mode);
     bool gcs_mode_enabled(const Mode::Number mode_num) const;
 
+    // Return mask of enabled modes, order does not matter, its just for tracking changes
+    uint32_t get_available_mode_enabled_mask() const override;
+
     // takeoff.cpp
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
@@ -1313,10 +1315,10 @@ public:
 #if AP_SCRIPTING_ENABLED
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
-    bool set_velocity_match(const Vector2f &velocity) override;
+    bool set_velocity_match(const Vector2f &velocity_ne_ms) override;
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
-    bool set_land_descent_rate(float descent_rate) override;
+    bool set_land_descent_rate(float descent_rate_ms) override;
 
     // allow scripts to override mission/guided crosstrack behaviour
     // It's up to the Lua script to ensure the provided location makes sense

@@ -2,25 +2,34 @@
 
 # flake8: noqa
 
-import re
+import re, sys
 from enum import StrEnum # requires Python >= 3.11
 from pathlib import Path
 from itertools import chain
+from importlib import import_module
 from dataclasses import dataclass, astuple
 
-from pymavlink.dialects.v20 import (
-    common, icarous, cubepilot, uAvionix, ardupilotmega
-)
-
+# MAVLink message sets included in ArduPilot, determined manually via recursion
+# through https://mavlink.io/en/messages/ardupilotmega.html#mavlink-include-files
 class MAVLinkDialect(StrEnum):
     # in subset, superset, unknown order, for correct links
     # supported values must match imported dialect names
-    COMMON = 'common'
+    MINIMAL = 'minimal'
+    CSAIRLINK = 'csAirLink'
     ICAROUS = 'icarous'
+    LOWEHEISER = 'loweheiser'
+    STANDARD = 'standard'
+    COMMON = 'common'
     CUBEPILOT = 'cubepilot'
     UAVIONIX = 'uAvionix'
     ARDUPILOTMEGA = 'ardupilotmega'
+    DEVELOPMENT = 'development'
+    ALL = 'all'
     UNKNOWN = 'UNKNOWN'
+
+for dialect in MAVLinkDialect:
+    if dialect == MAVLinkDialect.UNKNOWN: continue
+    globals()[dialect] = import_module(f'pymavlink.dialects.v20.{dialect}')
 
 
 @dataclass(slots=True, order=True)
@@ -28,6 +37,7 @@ class MAVLinkMessage:
     name: str
     source: str
     dialect: MAVLinkDialect = MAVLinkDialect.UNKNOWN
+    id_number: int | None = None
 
     PREFIX = 'MAVLINK_MSG_ID_'
 
@@ -35,19 +45,25 @@ class MAVLinkMessage:
     #  Function is required because of Python's class scoping rules.
     #  See https://stackoverflow.com/questions/13905741.
     def _get_known_messages(prefix):
-        ''' Returns a dictionary of {dialect: {messages}} given 'prefix'. '''
-        return {
-            dialect: set(m for m in dir(globals()[dialect])
-                         if m.startswith(prefix))
-            for dialect in MAVLinkDialect
-            if dialect != MAVLinkDialect.UNKNOWN
-        }
+        ''' Returns a dictionary of {dialect: {message: id}} given 'prefix'. '''
+        dialects = {}
+        for dialect in MAVLinkDialect:
+            if dialect == MAVLinkDialect.UNKNOWN: continue
+            mavlink_module = globals()[dialect]
+            dialects[dialect] = {
+                message: getattr(mavlink_module, message)
+                for message in dir(mavlink_module)
+                if message.startswith(prefix)
+            }
+        return dialects
     KNOWN_DIALECTS = _get_known_messages(PREFIX)
 
-    # Try to determine dialect if initialised without one specified.
+    # Try to determine dialect and ID number if initialised without them specified.
     def __post_init__(self):
         if self.dialect == MAVLinkDialect.UNKNOWN:
             self.determine_dialect()
+        if self.id_number is None:
+            self.determine_id()
 
     @property
     def id_name(self):
@@ -57,9 +73,13 @@ class MAVLinkMessage:
         for dialect, message_set in self.KNOWN_DIALECTS.items():
             if self.id_name in message_set:
                 self.dialect = dialect
+                self.id_number = message_set[self.id_name]
                 break # dialect found, no need to continue searching
         else:
             self.dialect = MAVLinkDialect.UNKNOWN
+
+    def determine_id(self):
+        self.id_number = self.KNOWN_DIALECTS.get(self.dialect, {}).get(self.id_name, None)
 
     def as_tuple(self):
         return astuple(self)
@@ -72,8 +92,8 @@ class MAVLinkMessage:
         ''' Yields known messages that are not included in 'supported'. '''
         offset = len(cls.PREFIX) if remove_prefix else 0
         known_missing = set() # don't double-count for supersets
-        for dialect, message_set in cls.KNOWN_DIALECTS.items():
-            missing_names = message_set - supported - known_missing
+        for dialect, messages in cls.KNOWN_DIALECTS.items():
+            missing_names = set(messages) - supported - known_missing
             for name in missing_names:
                 yield cls(name[offset:], 'UNSUPPORTED', dialect)
             known_missing |= missing_names
@@ -100,8 +120,9 @@ class MAVLinkCommand(MAVLinkMessage):
 
 class MAVLinkDetector:
     # file paths
-    BASE_DIR = Path(__file__).parent / '../..'
+    BASE_DIR = Path(__file__).parent.parent.parent
     COMMON_FILE = BASE_DIR / 'libraries/GCS_MAVLink/GCS_Common.cpp'
+    # file no longer in new firmware releases, but neither are stream groups
     STREAM_GROUP_FILE = 'GCS_MAVLink.cpp'
 
     # regex for messages handled by the autopilot
@@ -109,7 +130,7 @@ class MAVLinkDetector:
     # regex for commands handled by the autopilot
     INCOMING_COMMANDS = re.compile(r'case (MAV_CMD_[A-Z0-9_]*)')
     # regex for messages that can be requested from the autopilot
-    REQUESTABLE_REGION = re.compile(' map\[\]([^;]*);')
+    REQUESTABLE_REGION = re.compile(r' map\[\]([^;]*);')
     REQUESTABLE_MAP = re.compile(r'MAVLINK_MSG_ID_([A-Z0-9_]*),\s*MSG_([A-Z0-9_]*)')
     # regex for messages the autopilot might send, but cannot be requested
     OUTGOING_MESSAGES = re.compile(r'mavlink_msg_([a-z0-9_]*)_send\(')
@@ -154,7 +175,8 @@ class MAVLinkDetector:
     ARDUPILOT_URL = 'https://github.com/ArduPilot/ardupilot/tree/{branch}/{source}'
     EXPORT_FILETYPES = {
         'csv': 'csv',
-        'markdown': 'md'
+        'markdown': 'md',
+        'rst': 'rst',
     }
 
     MARKDOWN_INTRO = (
@@ -172,7 +194,10 @@ class MAVLinkDetector:
         ' to do something meaningful with it.{unsupported}{stream_groups}'
     )
 
-    VEHICLES = ('AntennaTracker', 'ArduCopter', 'ArduPlane', 'ArduSub', 'Rover')
+    # Convert markdown hyperlinks into rst syntax
+    RST_INTRO = MARKDOWN_INTRO.replace('[', '`').replace('](', ' <').replace(')', '>`_')
+
+    VEHICLES = ('AntennaTracker', 'ArduCopter', 'ArduPlane', 'ArduSub', 'Blimp', 'Rover')
 
     def __init__(self, common_files, vehicle='ALL',
                  exclude_libraries=['SITL', 'AP_Scripting']):
@@ -195,7 +220,13 @@ class MAVLinkDetector:
             folder = file.parent.stem
             if folder in exclude_libraries:
                 continue
-            text = file.read_text()
+
+            try:
+                text = file.read_text()
+            except FileNotFoundError as e:  # Broken symlink
+                print(e, file=sys.stderr)
+                continue
+
             source = f'{folder}/{file.name}'
             if file == self.COMMON_FILE:
                 for mavlink, ap_message in self.find_requestable_messages(text):
@@ -206,13 +237,16 @@ class MAVLinkDetector:
 
             named_types = ('float', 'int') if folder in vehicles else ()
             for type_ in named_types:
+                message = f'NAMED_VALUE_{type_.upper()}'
+                mavlink_name = MAVLinkMessage.PREFIX + message
+                id_number = MAVLinkMessage.KNOWN_DIALECTS['common'][mavlink_name]
                 substring = f'named_{type_}s'
                 method = getattr(self, f'find_{substring}')
                 names = getattr(self, substring)
                 new_names = set(method(text)) - names.keys()
                 for name in new_names:
-                    names[name] = MAVLinkMessage(f'NAMED_VALUE_{type_.upper()}:{name}',
-                                                 source, MAVLinkDialect.COMMON)
+                    names[name] = MAVLinkMessage(f'{message}:{name}', source,
+                                                 MAVLinkDialect.COMMON, id_number)
             
             for method, data, type_ in (
                 (self.find_incoming_messages, self.incoming_messages, 'messages'),
@@ -264,7 +298,12 @@ class MAVLinkDetector:
     def get_stream_groups(self, vehicle):
         stream_groups = ['stream_groups']
 
-        text = (self.BASE_DIR / vehicle / self.STREAM_GROUP_FILE).read_text()
+        try:
+            text = (self.BASE_DIR / vehicle / self.STREAM_GROUP_FILE).read_text()
+        except FileNotFoundError:  # No stream groups
+            print('Could not find stream groups for', vehicle, file=sys.stderr)
+            return []
+
         for group_name, message_data in self.STREAM_GROUPS.findall(text):
             stream_groups.extend(sorted(
                 MAVLinkMessage(self._ap_to_mavlink.get(ap_message, ap_message),
@@ -345,7 +384,7 @@ class MAVLinkDetector:
                           **export_options, **iter_options)
 
     def export_csv(self, file, iterable, **ignore):
-        file.write('MAVLinkMessage,CodeSource,MAVLinkDialect,MessageType\n')
+        file.write('MAVLinkID,MessageName,CodeSource,MAVLinkDialect,MessageType\n')
         for data in iterable:
             match data:
                 case str():
@@ -407,10 +446,10 @@ class MAVLinkDetector:
                     )
                     print(f'## {heading}',
                           self.get_description(type_),
-                          f'\nMAVLink Message | {source_header} | MAVLink Dialect',
-                          '--- | --- | ---', sep='\n', file=file)
+                          f'\nID | MAVLink Message | {source_header} | MAVLink Dialect',
+                          '--- | --- | --- | ---', sep='\n', file=file)
                 case MAVLinkMessage() as message:
-                    name, source, dialect = message.as_tuple()
+                    name, source, dialect, id_number = message.as_tuple()
                     if dialect != MAVLinkDialect.UNKNOWN:
                         msg_url = self.MAVLINK_URL.format(dialect=dialect,
                                                           message_name=name.split(':')[0])
@@ -421,8 +460,80 @@ class MAVLinkDetector:
                         code_url = self.ARDUPILOT_URL.format(branch=branch,
                                                              source=base+source)
                         source = f'[{source}]({code_url})'
+                    if id_number is None:
+                        id_number = '??'
 
-                    print(name, source, dialect, sep=' | ', file=file)
+                    print(f'#{id_number}', name, source, dialect, sep=' | ', file=file)
+
+    def export_rst(self, file, iterable, branch='master', header=None, 
+                        use_intro=True, **extra_kwargs):
+        if header == 'ardupilot_wiki':
+            header = '\n'.join((
+                '.. _mavlink_support:',
+                '',
+                '===============',
+                'MAVLink Support',
+                '===============',
+                '\n',
+            ))
+
+        if header:
+            print(header, file=file)
+
+        if use_intro:
+            commands = stream_groups = unsupported = ''
+            if extra_kwargs['include_commands']:
+                commands = ' (and commands)'
+            if extra_kwargs['include_unsupported']:
+                unsupported = (
+                    '\n\nKnown :ref:`unsupported messages <mavlink_missing_messages>`'
+                    f'{commands} are shown at the end.'
+                )
+            if extra_kwargs['include_stream_groups']:
+                stream_groups = (
+                    '\n\nThe autopilot includes a set of :ref:`mavlink_stream_groups`'
+                    ' for convenience, which allow configuring the stream rates of'
+                    ' groups of requestable messages by setting parameter values. '
+                    'It is also possible to manually request messages, and request'
+                    ' individual messages be streamed at a specified rate.'
+                )
+            vehicle = self.vehicle.replace('ALL', 'ArduPilot')
+             
+            print(self.RST_INTRO.format(
+                vehicle=vehicle, commands=commands, 
+                stream_groups=stream_groups, unsupported=unsupported
+            ), '\n', file=file)
+            
+        for data in iterable:
+            match data:
+                case str() as type_:
+                    reference = f'mavlink_{type_}'
+                    heading = type_.title().replace('_', ' ')
+                    source_header = (
+                        'Code Source' if type_ != 'stream_groups' else
+                        'Stream Group Parameter'
+                    )
+                    print(f'\n.. _{reference}:\n\n{heading}\n{"="*len(heading)}\n',
+                          self.get_description(type_).replace('`','``'),
+                          '\n.. csv-table::',
+                          f'  :header: ID, MAVLink Message, {source_header}, MAVLink Dialect\n\n',
+                          sep='\n', file=file)
+                case MAVLinkMessage() as message:
+                    name, source, dialect, id_number = message.as_tuple()
+                    if dialect != MAVLinkDialect.UNKNOWN:
+                        msg_url = self.MAVLINK_URL.format(dialect=dialect,
+                                                          message_name=name.split(':')[0])
+                        name = f'`{name} <{msg_url}>`_'
+                    if source != 'UNSUPPORTED' and not source.startswith('SRn'):
+                        folder = source.split('/')[0]
+                        base = 'libraries/' if folder not in self.VEHICLES else '' 
+                        code_url = self.ARDUPILOT_URL.format(branch=branch,
+                                                             source=base+source)
+                        source = f'`{source} <{code_url}>`_'
+                    if id_number is None:
+                        id_number = '??'
+
+                    print(f'  #{id_number}', name, source, dialect, sep=', ', file=file)
 
 
 if __name__ == '__main__':
@@ -433,6 +544,7 @@ if __name__ == '__main__':
     default_vehicle = detector_init_params['vehicle'].default
     vehicle_options = [default_vehicle, *MAVLinkDetector.VEHICLES]
     default_exclusions = detector_init_params['exclude_libraries'].default
+    format_options = [*MAVLinkDetector.EXPORT_FILETYPES, 'none']
 
     parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
     parse_opts = parser.add_argument_group('parsing options')
@@ -451,15 +563,15 @@ if __name__ == '__main__':
     export_opts.add_argument('-q', '--quiet', action='store_true',
                              help='Disable printout, only export a file.')
     export_opts.add_argument('-f', '--format', default='markdown',
-                             choices=['csv', 'markdown', 'none'],
+                             choices=format_options,
                              help='Desired format for the exported file.')
     export_opts.add_argument('-b', '--branch',
-                             help=('The branch to link to in markdown mode.'
+                             help=('The branch to link to in markdown/rst mode.'
                                    ' Defaults to the branch in the working directory.'))
     export_opts.add_argument('--filename', help='Override default filename.')
-    export_opts.add_argument('--header', help='Header for the markdown file.')
+    export_opts.add_argument('--header', help='Header for the exported markdown/rst file.')
     export_opts.add_argument('--no-intro', action='store_true',
-                             help="Flag to not use the automatic markdown intro.")
+                             help="Flag to not use the automatic markdown/rst intro.")
     
     args = parser.parse_args()
 

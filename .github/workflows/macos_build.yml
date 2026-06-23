@@ -4,11 +4,9 @@ on:
   push:
     paths-ignore:
       # remove other env install scripts
-      - 'Tools/environment_install/APM_install.sh'
       - 'Tools/environment_install/install-ROS-ubuntu.sh'
       - 'Tools/environment_install/install-prereqs-arch.sh'
       - 'Tools/environment_install/install-prereqs-ubuntu.sh'
-      - 'Tools/environment_install/install-prereqs-windows-andAPMSource.ps1'
       - 'Tools/environment_install/install-prereqs-windows.ps1'
       # remove non esp32 HAL
       - 'libraries/AP_HAL_ESP32/**'
@@ -46,17 +44,17 @@ on:
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.pydevproject'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -64,16 +62,16 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/macos_build.yml'  # except this one
+
 
   pull_request:
     paths-ignore:
       # remove other env install scripts
-      - 'Tools/environment_install/APM_install.sh'
       - 'Tools/environment_install/install-ROS-ubuntu.sh'
       - 'Tools/environment_install/install-prereqs-arch.sh'
       - 'Tools/environment_install/install-prereqs-ubuntu.sh'
-      - 'Tools/environment_install/install-prereqs-windows-andAPMSource.ps1'
       - 'Tools/environment_install/install-prereqs-windows.ps1'
       # remove non esp32 HAL
       - 'libraries/AP_HAL_ESP32/**'
@@ -112,17 +110,17 @@ on:
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.pydevproject'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -130,7 +128,8 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/macos_build.yml'  # except this one
 
   workflow_dispatch:
 
@@ -169,7 +168,7 @@ jobs:
           NOW=$(date -u +"%F-%T")
           echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
       - name: ccache cache files
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.ccache
           key: ${{github.workflow}}-ccache-${{matrix.config}}-${{steps.ccache_cache_timestamp.outputs.timestamp}}

@@ -20,7 +20,9 @@
 #endif
 #include <hrt.h>
 #include <ch.h>
-#endif // HAL_BOARD_CHIBIOS
+#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <fenv.h>
+#endif  // HAL_BOARD_CHIBIOS
 
 void setup();
 void loop();
@@ -105,7 +107,12 @@ volatile uint8_t mbuf1[128], mbuf2[128];
 volatile uint64_t v_64 = 1;
 volatile uint64_t v_out_64 = 1;
 
+//Main loop where the action takes place
+#if defined(__clang_major__)
+// clang doesn't understand -Wframe-larger-than=
+#else
 #pragma GCC diagnostic error "-Wframe-larger-than=2000"
+#endif
 static void show_timings(void)
 {
 
@@ -247,6 +254,10 @@ static void test_div1000(void)
 
 void loop()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // pretend we are embedded so that 1.0/0 "works"
+    fedisableexcept(FE_ALL_EXCEPT);
+#endif
     show_sizes();
     hal.console->printf("\n");
     show_timings();

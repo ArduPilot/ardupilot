@@ -1206,6 +1206,12 @@ bool NavEKF2::use_compass(void) const
     return core[primary].use_compass();
 }
 
+// are we using a gps?
+bool NavEKF2::using_gps(void) const
+{
+    return _fusionModeGPS != 3;
+}
+
 // write the raw optical flow measurements
 // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
 // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.
@@ -1289,11 +1295,12 @@ void  NavEKF2::getFilterGpsStatus(nav_gps_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF2::send_status_report(GCS_MAVLINK &link) const
+bool NavEKF2::getTerrainAltVariance(float &terrainAltVar) const
 {
     if (core) {
-        core[primary].send_status_report(link);
+        return core[primary].getTerrainAltVariance(terrainAltVar);
     }
+    return false;
 }
 
 // provides the height limit to be observed by the control loops

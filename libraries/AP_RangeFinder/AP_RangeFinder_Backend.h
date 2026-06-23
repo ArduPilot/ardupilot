@@ -66,6 +66,7 @@ public:
     bool has_data() const;
 
     // returns count of consecutive good readings
+    // note that this method returning zero does not mean that the device is unhealthy:
     uint8_t range_valid_count() const { return state.range_valid_count; }
 
     // return a 3D vector defining the position offset of the sensor

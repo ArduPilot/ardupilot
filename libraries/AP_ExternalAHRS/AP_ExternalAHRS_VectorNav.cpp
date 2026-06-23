@@ -351,7 +351,10 @@ bool AP_ExternalAHRS_VectorNav::decode(char c)
         }
         if (nmea.term_is_checksum) {
             nmea.sentence_done = true;
-            uint8_t checksum = 16 * char_to_hex(nmea.term[0]) + char_to_hex(nmea.term[1]);
+            uint8_t checksum;
+            if (!hex_twochars_to_uint8(nmea.term, checksum)) {
+                return false;
+            }
             return ((checksum == nmea.checksum) && nmea.sentence_valid);
         }
 

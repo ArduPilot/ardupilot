@@ -10,17 +10,11 @@
 
 AP_CRSF_Telem::ScriptedParameter* CRSFMenu::add_parameter(uint8_t length, const char* data)
 {
-    if (menu == nullptr) {
-        return nullptr;
-    }
     return menu->add_parameter(length, data);
 }
 
 AP_CRSF_Telem::ScriptedMenu* CRSFMenu::add_menu(const char* menu_name)
 {
-    if (menu == nullptr) {
-        return nullptr;
-    }
     return menu->add_menu(menu_name, 2, menu->id);
 }
 
@@ -30,13 +24,16 @@ int lua_CRSF_new_menu(lua_State *L)
 
     const char * name = luaL_checkstring(L, 1);
 
+    // create Lua object first in case of errors so we don't leak the menu
+    auto *m = new_CRSFMenu(L);
+
     AP_CRSF_Telem::ScriptedMenu* menu = AP::crsf_telem()->add_menu(name);
 
     if (menu == nullptr) {
-        return luaL_error(L, "No menu named: %s", name);
+        return luaL_error(L, "out of memory");
     }
 
-    *new_CRSFMenu(L) = CRSFMenu(menu);
+    *m = CRSFMenu(menu);
 
     return 1;
 }
@@ -104,14 +101,14 @@ int lua_CRSF_add_parameter(lua_State *L)
     CRSFMenu* ud = check_CRSFMenu(L, 1);
     size_t len = 0;
     const char * data = luaL_checklstring(L, 2, &len);
+
+    // create Lua object first in case of errors so we don't leak the param
+    auto *p = new_CRSFParameter(L);
+
     AP_CRSF_Telem::ScriptedParameter* param = ud->add_parameter(len, data);
 
     if (param) {
-#if 2 > LUA_MINSTACK
-        luaL_checkstack(L, 2, nullptr);
-#endif
-
-        *new_CRSFParameter(L) = CRSFParameter(ud->menu, param);
+        *p = CRSFParameter(ud->get_menu(), param);
         return 1;
     }
     return 0;
@@ -123,13 +120,14 @@ int lua_CRSF_add_menu(lua_State *L)
 
     CRSFMenu* ud = check_CRSFMenu(L, 1);
     const char * name = luaL_checkstring(L, 2);
+
+    // create Lua object first in case of errors so we don't leak the menu
+    auto *m = new_CRSFMenu(L);
+
     AP_CRSF_Telem::ScriptedMenu* menu = ud->add_menu(name);
 
     if (menu) {
-#if 2 > LUA_MINSTACK
-        luaL_checkstack(L, 2, nullptr);
-#endif
-        *new_CRSFMenu(L) = CRSFMenu(menu);
+        *m = CRSFMenu(menu);
         return 1;
     }
     return 0;
@@ -140,14 +138,14 @@ int lua_CRSF_add_root_menu(lua_State *L)
     binding_argcheck(L, 2);
 
     const char * name = luaL_checkstring(L, 2);
+
+    // create Lua object first in case of errors so we don't leak the menu
+    auto *m = new_CRSFMenu(L);
+
     AP_CRSF_Telem::ScriptedMenu* menu = AP::crsf_telem()->add_menu(name);
 
     if (menu) {
-#if 2 > LUA_MINSTACK
-        luaL_checkstack(L, 2, nullptr);
-#endif
-
-        *new_CRSFMenu(L) = CRSFMenu(menu);
+        *m = CRSFMenu(menu);
         return 1;
     }
     return 0;
@@ -159,6 +157,10 @@ int lua_CRSF_param_data(lua_State *L)
 
     CRSFParameter * ud = check_CRSFParameter(L, 1);
     AP_CRSF_Telem::ScriptedParameter* param = ud->get_parameter();
+    if (param == nullptr) {
+        return luaL_error(L, "internal error: %s is null", "CRSFParameter");
+    }
+
     lua_pushlstring(L, param->data, param->length);
     return 1;
 }

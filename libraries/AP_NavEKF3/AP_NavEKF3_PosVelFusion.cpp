@@ -38,8 +38,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
     velResetNE.y = stateStruct.velocity.y;
 
     // reset the corresponding covariances
-    zeroRows(P,4,5);
-    zeroCols(P,4,5);
+    zeroStatesVarCov(4, 5);
 
     if (PV_AidingMode != AID_ABSOLUTE) {
         stateStruct.velocity.xy().zero();
@@ -47,7 +46,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
         P[5][5] = P[4][4] = sq(frontend->_gpsHorizVelNoise);
     } else {
         // reset horizontal velocity states to the GPS velocity if available
-        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && velResetSource == resetDataSource::DEFAULT) || velResetSource == resetDataSource::GPS) {
+        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250) && (velResetSource == resetDataSource::DEFAULT || velResetSource == resetDataSource::GPS)) {
             // correct for antenna position
             gps_elements gps_corrected = gpsDataNew;
             CorrectGPSForAntennaOffset(gps_corrected);
@@ -56,7 +55,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
             // set the variances using the reported GPS speed accuracy
             P[5][5] = P[4][4] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
 #if EK3_FEATURE_EXTERNAL_NAV
-        } else if ((imuSampleTime_ms - extNavVelMeasTime_ms < 250 && velResetSource == resetDataSource::DEFAULT) || velResetSource == resetDataSource::EXTNAV) {
+        } else if ((imuSampleTime_ms - extNavVelMeasTime_ms < 250) && (velResetSource == resetDataSource::DEFAULT || velResetSource == resetDataSource::EXTNAV)) {
             // use external nav data as the 2nd preference
             // already corrected for sensor position
             stateStruct.velocity.x = extNavVelDelayed.vel.x;
@@ -118,8 +117,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
     posResetNE.y = stateStruct.position.y;
 
     // reset the corresponding covariances
-    zeroRows(P,7,8);
-    zeroCols(P,7,8);
+    zeroStatesVarCov(7, 8);
 
     if (PV_AidingMode != AID_ABSOLUTE) {
         // reset all position state history to the last known position
@@ -129,7 +127,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
         P[7][7] = P[8][8] = sq(frontend->_gpsHorizPosNoise);
     } else  {
         // Use GPS data as first preference if fresh data is available
-        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::GPS) {
+        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::GPS)) {
             // correct for antenna position
             gps_elements gps_corrected = gpsDataNew;
             CorrectGPSForAntennaOffset(gps_corrected);
@@ -145,7 +143,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             // set the variances using the position measurement noise parameter
             P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
 #if EK3_FEATURE_BEACON_FUSION
-        } else if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::RNGBCN) {
+        } else if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::RNGBCN)) {
             // use the range beacon data as a second preference
             stateStruct.position.x = rngBcn.receiverPos.x;
             stateStruct.position.y = rngBcn.receiverPos.y;
@@ -154,7 +152,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             P[8][8] = rngBcn.receiverPosCov[1][1];
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
-        } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::EXTNAV) {
+        } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::EXTNAV)) {
             // use external nav data as the third preference
             stateStruct.position.x = extNavDataDelayed.pos.x;
             stateStruct.position.y = extNavDataDelayed.pos.y;
@@ -201,8 +199,7 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
     posResetNE.y = stateStruct.position.y;
 
     // reset the corresponding covariances
-    zeroRows(P,7,8);
-    zeroCols(P,7,8);
+    zeroStatesVarCov(7, 8);
 
     // handle unknown accuracy
     if (isnan(posAccuracy)) {
@@ -318,8 +315,7 @@ void NavEKF3_core::ResetHeight(void)
     lastHgtPassTime_ms = imuSampleTime_ms;
 
     // reset the corresponding covariances
-    zeroRows(P,9,9);
-    zeroCols(P,9,9);
+    zeroStatesVarCov(9, 9);
 
     // set the variances to the measurement variance
     P[9][9] = posDownObsNoise;
@@ -347,8 +343,7 @@ void NavEKF3_core::ResetHeight(void)
     vertCompFiltState.vel = outputDataNew.velocity.z;
 
     // reset the corresponding covariances
-    zeroRows(P,6,6);
-    zeroCols(P,6,6);
+    zeroStatesVarCov(6, 6);
 
     // set the variances to the measurement variance
 #if EK3_FEATURE_EXTERNAL_NAV
@@ -376,8 +371,30 @@ bool NavEKF3_core::resetHeightDatum(void)
     ftype oldHgt = -stateStruct.position.z;
     // reset the barometer so that it reads zero at the current height
     dal.baro().update_calibration();
-    // reset the height state
+
+    // clear the baro data buffer
+    storedBaro.reset();
+
+    // reset the vertical position and velocity states
     stateStruct.position.z = 0.0f;
+    stateStruct.velocity.z = 0.0f;
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
+        storedOutput[i].position.z = stateStruct.position.z;
+        storedOutput[i].velocity.z = stateStruct.velocity.z;
+    }
+    outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
+    outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
+    vertCompFiltState.vel = outputDataNew.velocity.z;
+
+    // baroHgtOffset is a slow first-order filter (calcFiltBaroOffset)
+    // tracking baroDataDelayed.hgt + position.z.  Post-reset baro
+    // reads 0 and position.z is 0 so the steady-state offset is 0;
+    // without this, hgtMea = baroDataDelayed.hgt - baroHgtOffset
+    // would feed a non-zero observation into the EKF for the ~1 s
+    // the filter takes to relax, producing a post-reset altitude
+    // transient.
+    baroHgtOffset = 0.0f;
+
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
     if (validOrigin) {
         if (!gpsGoodToAlign) {
@@ -644,6 +661,8 @@ void NavEKF3_core::SelectVelPosFusion()
     // If we are operating without any aiding, fuse in constant position of constant
     // velocity measurements to constrain tilt drift. This assumes a non-manoeuvring
     // vehicle. Do this to coincide with the height fusion.
+    fusingStationaryZeroVel = false;
+
     if (fuseHgtData && PV_AidingMode == AID_NONE) {
         if (assume_zero_sideslip() && tiltAlignComplete && motorsArmed) {
             // handle special case where we are launching a FW aircraft without magnetometer
@@ -672,10 +691,59 @@ void NavEKF3_core::SelectVelPosFusion()
             }
         } else {
             fusePosData = true;
-            fuseVelData = false;
-            fuseVelVertData = false;
+            // When stationary on ground, fuse zero velocity
+            // to constrain gyro bias and Z-axis accel bias learning. XY accel biases
+            // remain unobservable until the vehicle accelerates and are separately
+            // inhibited by dvelBiasAxisInhibit in CovariancePrediction.
+            // Use onGroundNotMoving to avoid fusing zero velocity when the vehicle
+            // is being moved (e.g. on a boat or carried by hand).
+            const bool onGroundNotFlying = onGroundNotMoving;
+            if (onGroundNotFlying && tiltAlignComplete) {
+                fuseVelData = true;
+                fusingStationaryZeroVel = true;
+                velPosObs[0] = 0.0f;
+                velPosObs[1] = 0.0f;
+                velPosObs[2] = 0.0f;
+            } else {
+                fuseVelData = false;
+            }
             velPosObs[3] = lastKnownPositionNE.x;
             velPosObs[4] = lastKnownPositionNE.y;
+        }
+    }
+
+    // When in AID_RELATIVE or AID_ABSOLUTE mode but stationary on ground without velocity
+    // aiding, fuse synthetic zero velocity to constrain gyro bias and Z-axis accel bias
+    // learning. XY accel biases are unobservable on the ground and are inhibited by
+    // dvelBiasAxisInhibit. Without this, configurations like optical flow where
+    // PV_AidingMode is AID_RELATIVE but no velocity data is available when stationary
+    // have no velocity observations at all, causing unchecked bias drift. The timeout
+    // check on each velocity source ensures we only inject zero velocity when no real
+    // sensor data is being fused. Use onGroundNotMoving to avoid injecting zero velocity
+    // when the vehicle is being moved, and takeoff_expected for armed-on-ground.
+    // Gate behind fuseHgtData to limit fusion rate to baro rate (~10Hz) and avoid
+    // overconstraining the filter by fusing at IMU rate.
+    const bool onGroundNotFlying = onGroundNotMoving;
+
+    if (fuseHgtData && PV_AidingMode != AID_NONE && onGroundNotFlying) {
+        // Check if we have recent velocity aiding from any source
+        const uint32_t velAidTimeout_ms = 1000;
+        const bool haveRecentGpsVel = (imuSampleTime_ms - lastVelPassTime_ms < velAidTimeout_ms);
+#if EK3_FEATURE_OPTFLOW_FUSION
+        const bool haveRecentFlowVel = (imuSampleTime_ms - prevFlowFuseTime_ms < velAidTimeout_ms);
+#else
+        const bool haveRecentFlowVel = false;
+#endif
+        const bool haveRecentBodyVel = (imuSampleTime_ms - prevBodyVelFuseTime_ms < velAidTimeout_ms);
+
+        if (!haveRecentGpsVel && !haveRecentFlowVel && !haveRecentBodyVel) {
+            // No velocity aiding available while stationary - fuse synthetic zero velocity
+            // to constrain gyro bias and gravity-aligned accel bias
+            fuseVelData = true;
+            fusingStationaryZeroVel = true;
+            velPosObs[0] = 0.0f;
+            velPosObs[1] = 0.0f;
+            velPosObs[2] = 0.0f;
         }
     }
 
@@ -713,7 +781,14 @@ void NavEKF3_core::FuseVelPosNED()
         // estimate the velocity, horiz position and height measurement variances.
         // Use different errors if operating without external aiding using an assumed position or velocity of zero
         if (PV_AidingMode == AID_NONE) {
-            if (tiltAlignComplete && motorsArmed) {
+            if (fusingStationaryZeroVel) {
+                // Synthetic zero velocity on ground: use 1 m/s noise (variance = 1 m^2/s^2).
+                // This is tighter than _noaidHorizNoise (default 10 m/s) used when armed,
+                // giving stronger velocity/bias convergence while we have high confidence
+                // the vehicle is stationary. Not as tight as a real sensor since
+                // the measurement is an assumption, not a physical observation.
+                R_OBS[0] = sq(MIN(frontend->_noaidHorizNoise, 1.0f));
+            } else if (tiltAlignComplete && motorsArmed) {
                 // This is a compromise between corrections for gyro errors and reducing effect of manoeuvre accelerations on tilt estimate
                 R_OBS[0] = sq(constrain_ftype(frontend->_noaidHorizNoise, 0.5f, 50.0f));
             } else {
@@ -725,6 +800,29 @@ void NavEKF3_core::FuseVelPosNED()
             R_OBS[3] = R_OBS[0];
             R_OBS[4] = R_OBS[0];
             for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+        } else if (fusingStationaryZeroVel) {
+            // Synthetic zero velocity in AID_RELATIVE or AID_ABSOLUTE mode when no
+            // velocity sensor data is available (e.g. GPS configured but not yet locked,
+            // or optical flow with no movement). Use 1 m/s noise for velocity — same
+            // rationale as the AID_NONE case above. Position noise uses actual sensor
+            // characteristics when available (extNav posErr, GPS accuracy), falling back
+            // to _gpsHorizPosNoise as a conservative default since it is the only
+            // position noise parameter available regardless of aiding source.
+            R_OBS[0] = sq(1.0f);
+            R_OBS[1] = R_OBS[0];
+            R_OBS[2] = R_OBS[0];
+            for (uint8_t i=0; i<=2; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+#if EK3_FEATURE_EXTERNAL_NAV
+            if (extNavUsedForPos) {
+                R_OBS[3] = sq(constrain_ftype(extNavDataDelayed.posErr, 0.01f, 10.0f));
+            } else
+#endif
+            if (gpsPosAccuracy > 0.0f) {
+                R_OBS[3] = sq(constrain_ftype(gpsPosAccuracy, frontend->_gpsHorizPosNoise, 100.0f));
+            } else {
+                R_OBS[3] = sq(constrain_ftype(frontend->_gpsHorizPosNoise, 0.1f, 10.0f));
+            }
+            R_OBS[4] = R_OBS[3];
         } else {
 #if EK3_FEATURE_EXTERNAL_NAV
             const bool extNavUsedForVel = extNavVelToFuse && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV, core_index);
@@ -850,8 +948,7 @@ void NavEKF3_core::FuseVelPosNED()
                     fusePosData = false;
 
                     // Reset the position variances and corresponding covariances to a value that will pass the checks
-                    zeroRows(P,7,8);
-                    zeroCols(P,7,8);
+                    zeroStatesVarCov(7, 8);
                     P[7][7] = sq(ftype(0.5f*frontend->_gpsGlitchRadiusMax));
                     P[8][8] = P[7][7];
 
@@ -988,8 +1085,7 @@ void NavEKF3_core::FuseVelPosNED()
         if (fuseVelData) {
             fuseData[0] = true;
             fuseData[1] = true;
-            // currently we do not support independant vertical velocity measurement fuision
-            if (fuseVelVertData) {
+            if (fuseVelVertData || fusingStationaryZeroVel) {
                 fuseData[2] = true;
             }
         }
@@ -1039,9 +1135,8 @@ void NavEKF3_core::FuseVelPosNED()
                 // calculate the Kalman gain and calculate innovation variances
                 varInnovVelPos[obsIndex] = P[stateIndex][stateIndex] + R_OBS[obsIndex];
                 SK = 1.0f/varInnovVelPos[obsIndex];
-                for (uint8_t i= 0; i<=9; i++) {
-                    Kfusion[i] = P[i][stateIndex]*SK;
-                }
+
+                uint32_t kalman_mask = (1<<10)-1; // values to calculate in Kfusion (others are set to zero)
 
                 // inhibit delta angle bias state estimation by setting Kalman gains to zero
                 if (!inhibitDelAngBiasStates) {
@@ -1059,15 +1154,10 @@ void NavEKF3_core::FuseVelPosNED()
                                 poorObservability = fabsF(prevTnb.c.z) > M_SQRT1_2;
                             }
                         }
-                        if (poorObservability) {
-                            Kfusion[i] = 0.0;
-                        } else {
-                            Kfusion[i] = P[i][stateIndex]*SK;
+                        if (!poorObservability) {
+                            kalman_mask |= (1<<i);
                         }
                     }
-                } else {
-                    // zero indexes 10 to 12
-                    zero_range(&Kfusion[0], 10, 12);
                 }
 
                 // Inhibit delta velocity bias state estimation by setting Kalman gains to zero
@@ -1077,96 +1167,60 @@ void NavEKF3_core::FuseVelPosNED()
                 if (!horizInhibit && !inhibitDelVelBiasStates && !badIMUdata) {
                     for (uint8_t i = 13; i<=15; i++) {
                         if (!dvelBiasAxisInhibit[i-13]) {
-                            Kfusion[i] = P[i][stateIndex]*SK;
-                        } else {
-                            Kfusion[i] = 0.0f;
+                            kalman_mask |= (1<<i);
                         }
                     }
-                } else {
-                    // zero indexes 13 to 15
-                    zero_range(&Kfusion[0], 13, 15);
                 }
 
                 // inhibit magnetic field state estimation by setting Kalman gains to zero
                 if (!inhibitMagStates) {
-                    for (uint8_t i = 16; i<=21; i++) {
-                        Kfusion[i] = P[i][stateIndex]*SK;
-                    }
-                } else {
-                    // zero indexes 16 to 21
-                    zero_range(&Kfusion[0], 16, 21);
+                    kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
                 }
 
                 // inhibit wind state estimation by setting Kalman gains to zero
                 if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                    Kfusion[22] = P[22][stateIndex]*SK;
-                    Kfusion[23] = P[23][stateIndex]*SK;
-                } else {
-                    // zero indexes 22 to 23
-                    zero_range(&Kfusion[0], 22, 23);
+                    kalman_mask |= (1<<22) | (1<<23);
                 }
 
-                // update the covariance - take advantage of direct observation of a single state at index = stateIndex to reduce computations
-                // this is a numerically optimised implementation of standard equation P = (I - K*H)*P;
-                for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                        KHP[i][j] = Kfusion[i] * P[stateIndex][j];
+                for (auto i=0; i<24; i++) {
+                    ftype res = 0;
+                    if (kalman_mask & (1<<i)) {
+                        res = P[i][stateIndex]*SK;
+                    }
+                    Kfusion[i] = res;
+                }
+
+                // one element of H is 1, compiler will optimize it away
+                Vector24 Hfusion;
+                Hfusion[stateIndex] = 1;
+
+                // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+                // the zero elements of H to reduce the number of operations.
+                for (unsigned i = 0; i<=stateIndexLim; i++) {
+                    // j as the inner loop allows the compiler to hoist the KH product
+                    // to save computation, and do the inner indexing more efficiently.
+                    for (unsigned j = 0; j<=stateIndexLim; j++) {
+                        ftype res = 0;
+                        res += (Kfusion[i] * Hfusion[stateIndex]) * P[stateIndex][j];
+                        KHP[i][j] = res;
                     }
                 }
-                // Check that we are not going to drive any variances negative and skip the update if so
-                bool healthyFusion = true;
-                for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    if (KHP[i][i] > P[i][i]) {
-                        healthyFusion = false;
-                    }
-                }
-                if (healthyFusion) {
-                    // update the covariance matrix
-                    for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                        for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                            P[i][j] = P[i][j] - KHP[i][j];
-                        }
-                    }
 
-                    // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                    ForceSymmetry();
-                    ConstrainVariances();
-
-                    // update states and renormalise the quaternions
-                    for (uint8_t i = 0; i<=stateIndexLim; i++) {
-                        statesArray[i] = statesArray[i] - Kfusion[i] * innovVelPos[obsIndex];
-                    }
-                    stateStruct.quat.normalize();
-
-                    // record good fusion status
-                    if (obsIndex == 0) {
-                        faultStatus.bad_nvel = false;
-                    } else if (obsIndex == 1) {
-                        faultStatus.bad_evel = false;
-                    } else if (obsIndex == 2) {
-                        faultStatus.bad_dvel = false;
-                    } else if (obsIndex == 3) {
-                        faultStatus.bad_npos = false;
-                    } else if (obsIndex == 4) {
-                        faultStatus.bad_epos = false;
-                    } else if (obsIndex == 5) {
-                        faultStatus.bad_dpos = false;
-                    }
-                } else {
-                    // record bad fusion status
-                    if (obsIndex == 0) {
-                        faultStatus.bad_nvel = true;
-                    } else if (obsIndex == 1) {
-                        faultStatus.bad_evel = true;
-                    } else if (obsIndex == 2) {
-                        faultStatus.bad_dvel = true;
-                    } else if (obsIndex == 3) {
-                        faultStatus.bad_npos = true;
-                    } else if (obsIndex == 4) {
-                        faultStatus.bad_epos = true;
-                    } else if (obsIndex == 5) {
-                        faultStatus.bad_dpos = true;
-                    }
+                // finish fusion from KHP and Kfusion
+                const bool fault = FinishFusion(innovVelPos[obsIndex]);
+                // record health status
+                if (obsIndex == 0) {
+                    faultStatus.bad_nvel = fault;
+                } else if (obsIndex == 1) {
+                    faultStatus.bad_evel = fault;
+                } else if (obsIndex == 2) {
+                    faultStatus.bad_dvel = fault;
+                } else if (obsIndex == 3) {
+                    faultStatus.bad_npos = fault;
+                } else if (obsIndex == 4) {
+                    faultStatus.bad_epos = fault;
+                } else if (obsIndex == 5) {
+                    faultStatus.bad_dpos = fault;
                 }
             }
         }
@@ -1373,7 +1427,7 @@ void NavEKF3_core::selectHeightForFusion()
         // enable fusion
         fuseHgtData = true;
         // set the observation noise
-        posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.1f, 100.0f));
+        posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.01f, 100.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
         if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;
@@ -1580,51 +1634,37 @@ void NavEKF3_core::FuseBodyVel()
             Kfusion[4] = t77*(t69+P[4][5]*t4+P[4][0]*t14-P[4][6]*t11+P[4][1]*t18-P[4][2]*t21+P[4][3]*t24);
             Kfusion[5] = t77*(t32+P[5][4]*t9+P[5][0]*t14-P[5][6]*t11+P[5][1]*t18-P[5][2]*t21+P[5][3]*t24);
             Kfusion[6] = t77*(-t81+P[6][5]*t4+P[6][4]*t9+P[6][0]*t14+P[6][1]*t18-P[6][2]*t21+P[6][3]*t24);
-            Kfusion[7] = t77*(P[7][5]*t4+P[7][4]*t9+P[7][0]*t14-P[7][6]*t11+P[7][1]*t18-P[7][2]*t21+P[7][3]*t24);
-            Kfusion[8] = t77*(P[8][5]*t4+P[8][4]*t9+P[8][0]*t14-P[8][6]*t11+P[8][1]*t18-P[8][2]*t21+P[8][3]*t24);
-            Kfusion[9] = t77*(P[9][5]*t4+P[9][4]*t9+P[9][0]*t14-P[9][6]*t11+P[9][1]*t18-P[9][2]*t21+P[9][3]*t24);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t77*(P[10][5]*t4+P[10][4]*t9+P[10][0]*t14-P[10][6]*t11+P[10][1]*t18-P[10][2]*t21+P[10][3]*t24);
-                Kfusion[11] = t77*(P[11][5]*t4+P[11][4]*t9+P[11][0]*t14-P[11][6]*t11+P[11][1]*t18-P[11][2]*t21+P[11][3]*t24);
-                Kfusion[12] = t77*(P[12][5]*t4+P[12][4]*t9+P[12][0]*t14-P[12][6]*t11+P[12][1]*t18-P[12][2]*t21+P[12][3]*t24);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = t77*(P[stateIndex][5]*t4+P[stateIndex][4]*t9+P[stateIndex][0]*t14-P[stateIndex][6]*t11+P[stateIndex][1]*t18-P[stateIndex][2]*t21+P[stateIndex][3]*t24);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15 = 3
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = t77*(P[16][5]*t4+P[16][4]*t9+P[16][0]*t14-P[16][6]*t11+P[16][1]*t18-P[16][2]*t21+P[16][3]*t24);
-                Kfusion[17] = t77*(P[17][5]*t4+P[17][4]*t9+P[17][0]*t14-P[17][6]*t11+P[17][1]*t18-P[17][2]*t21+P[17][3]*t24);
-                Kfusion[18] = t77*(P[18][5]*t4+P[18][4]*t9+P[18][0]*t14-P[18][6]*t11+P[18][1]*t18-P[18][2]*t21+P[18][3]*t24);
-                Kfusion[19] = t77*(P[19][5]*t4+P[19][4]*t9+P[19][0]*t14-P[19][6]*t11+P[19][1]*t18-P[19][2]*t21+P[19][3]*t24);
-                Kfusion[20] = t77*(P[20][5]*t4+P[20][4]*t9+P[20][0]*t14-P[20][6]*t11+P[20][1]*t18-P[20][2]*t21+P[20][3]*t24);
-                Kfusion[21] = t77*(P[21][5]*t4+P[21][4]*t9+P[21][0]*t14-P[21][6]*t11+P[21][1]*t18-P[21][2]*t21+P[21][3]*t24);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = t77*(P[22][5]*t4+P[22][4]*t9+P[22][0]*t14-P[22][6]*t11+P[22][1]*t18-P[22][2]*t21+P[22][3]*t24);
-                Kfusion[23] = t77*(P[23][5]*t4+P[23][4]*t9+P[23][0]*t14-P[23][6]*t11+P[23][1]*t18-P[23][2]*t21+P[23][3]*t24);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = t77*(P[i][5]*t4+P[i][4]*t9+P[i][0]*t14-P[i][6]*t11+P[i][1]*t18-P[i][2]*t21+P[i][3]*t24);
+                }
+                Kfusion[i] = res;
             }
         } else if (obsIndex == 1) {
             // calculate Y axis observation Jacobian
@@ -1757,51 +1797,37 @@ void NavEKF3_core::FuseBodyVel()
             Kfusion[4] = t77*(-t78+P[4][5]*t8+P[4][0]*t15+P[4][6]*t12+P[4][1]*t18+P[4][2]*t22-P[4][3]*t25);
             Kfusion[5] = t77*(t69-P[5][4]*t3+P[5][0]*t15+P[5][6]*t12+P[5][1]*t18+P[5][2]*t22-P[5][3]*t25);
             Kfusion[6] = t77*(t38-P[6][4]*t3+P[6][5]*t8+P[6][0]*t15+P[6][1]*t18+P[6][2]*t22-P[6][3]*t25);
-            Kfusion[7] = t77*(-P[7][4]*t3+P[7][5]*t8+P[7][0]*t15+P[7][6]*t12+P[7][1]*t18+P[7][2]*t22-P[7][3]*t25);
-            Kfusion[8] = t77*(-P[8][4]*t3+P[8][5]*t8+P[8][0]*t15+P[8][6]*t12+P[8][1]*t18+P[8][2]*t22-P[8][3]*t25);
-            Kfusion[9] = t77*(-P[9][4]*t3+P[9][5]*t8+P[9][0]*t15+P[9][6]*t12+P[9][1]*t18+P[9][2]*t22-P[9][3]*t25);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t77*(-P[10][4]*t3+P[10][5]*t8+P[10][0]*t15+P[10][6]*t12+P[10][1]*t18+P[10][2]*t22-P[10][3]*t25);
-                Kfusion[11] = t77*(-P[11][4]*t3+P[11][5]*t8+P[11][0]*t15+P[11][6]*t12+P[11][1]*t18+P[11][2]*t22-P[11][3]*t25);
-                Kfusion[12] = t77*(-P[12][4]*t3+P[12][5]*t8+P[12][0]*t15+P[12][6]*t12+P[12][1]*t18+P[12][2]*t22-P[12][3]*t25);
-            } else {
-                // zero indexes 10 to 12 = 3
-                zero_range(&Kfusion[0], 10, 12);
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = t77*(-P[stateIndex][4]*t3+P[stateIndex][5]*t8+P[stateIndex][0]*t15+P[stateIndex][6]*t12+P[stateIndex][1]*t18+P[stateIndex][2]*t22-P[stateIndex][3]*t25);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = t77*(-P[16][4]*t3+P[16][5]*t8+P[16][0]*t15+P[16][6]*t12+P[16][1]*t18+P[16][2]*t22-P[16][3]*t25);
-                Kfusion[17] = t77*(-P[17][4]*t3+P[17][5]*t8+P[17][0]*t15+P[17][6]*t12+P[17][1]*t18+P[17][2]*t22-P[17][3]*t25);
-                Kfusion[18] = t77*(-P[18][4]*t3+P[18][5]*t8+P[18][0]*t15+P[18][6]*t12+P[18][1]*t18+P[18][2]*t22-P[18][3]*t25);
-                Kfusion[19] = t77*(-P[19][4]*t3+P[19][5]*t8+P[19][0]*t15+P[19][6]*t12+P[19][1]*t18+P[19][2]*t22-P[19][3]*t25);
-                Kfusion[20] = t77*(-P[20][4]*t3+P[20][5]*t8+P[20][0]*t15+P[20][6]*t12+P[20][1]*t18+P[20][2]*t22-P[20][3]*t25);
-                Kfusion[21] = t77*(-P[21][4]*t3+P[21][5]*t8+P[21][0]*t15+P[21][6]*t12+P[21][1]*t18+P[21][2]*t22-P[21][3]*t25);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = t77*(-P[22][4]*t3+P[22][5]*t8+P[22][0]*t15+P[22][6]*t12+P[22][1]*t18+P[22][2]*t22-P[22][3]*t25);
-                Kfusion[23] = t77*(-P[23][4]*t3+P[23][5]*t8+P[23][0]*t15+P[23][6]*t12+P[23][1]*t18+P[23][2]*t22-P[23][3]*t25);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = t77*(-P[i][4]*t3+P[i][5]*t8+P[i][0]*t15+P[i][6]*t12+P[i][1]*t18+P[i][2]*t22-P[i][3]*t25);
+                }
+                Kfusion[i] = res;
             }
         } else if (obsIndex == 2) {
             // calculate Z axis observation Jacobian
@@ -1926,7 +1952,7 @@ void NavEKF3_core::FuseBodyVel()
             // calculate innovation for Z axis observation
             innovBodyVel[2] = bodyVelPred.z - bodyOdmDataDelayed.vel.z;
 
-            // calculate Kalman gains for X-axis observation
+            // calculate Kalman gains for Z-axis observation
             Kfusion[0] = t77*(t29+P[0][4]*t4+P[0][6]*t9-P[0][5]*t11-P[0][1]*t17+P[0][2]*t20+P[0][3]*t24);
             Kfusion[1] = t77*(P[1][4]*t4+P[1][0]*t14+P[1][6]*t9-P[1][5]*t11-P[1][1]*t17+P[1][2]*t20+P[1][3]*t24);
             Kfusion[2] = t77*(t58+P[2][4]*t4+P[2][0]*t14+P[2][6]*t9-P[2][5]*t11-P[2][1]*t17+P[2][3]*t24);
@@ -1934,52 +1960,37 @@ void NavEKF3_core::FuseBodyVel()
             Kfusion[4] = t77*(t31+P[4][0]*t14+P[4][6]*t9-P[4][5]*t11-P[4][1]*t17+P[4][2]*t20+P[4][3]*t24);
             Kfusion[5] = t77*(-t80+P[5][4]*t4+P[5][0]*t14+P[5][6]*t9-P[5][1]*t17+P[5][2]*t20+P[5][3]*t24);
             Kfusion[6] = t77*(t69+P[6][4]*t4+P[6][0]*t14-P[6][5]*t11-P[6][1]*t17+P[6][2]*t20+P[6][3]*t24);
-            Kfusion[7] = t77*(P[7][4]*t4+P[7][0]*t14+P[7][6]*t9-P[7][5]*t11-P[7][1]*t17+P[7][2]*t20+P[7][3]*t24);
-            Kfusion[8] = t77*(P[8][4]*t4+P[8][0]*t14+P[8][6]*t9-P[8][5]*t11-P[8][1]*t17+P[8][2]*t20+P[8][3]*t24);
-            Kfusion[9] = t77*(P[9][4]*t4+P[9][0]*t14+P[9][6]*t9-P[9][5]*t11-P[9][1]*t17+P[9][2]*t20+P[9][3]*t24);
+
+            // values to calculate in Kfusion (others are set to zero, indices 0-6 ignored)
+            uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                Kfusion[10] = t77*(P[10][4]*t4+P[10][0]*t14+P[10][6]*t9-P[10][5]*t11-P[10][1]*t17+P[10][2]*t20+P[10][3]*t24);
-                Kfusion[11] = t77*(P[11][4]*t4+P[11][0]*t14+P[11][6]*t9-P[11][5]*t11-P[11][1]*t17+P[11][2]*t20+P[11][3]*t24);
-                Kfusion[12] = t77*(P[12][4]*t4+P[12][0]*t14+P[12][6]*t9-P[12][5]*t11-P[12][1]*t17+P[12][2]*t20+P[12][3]*t24);
-            } else {
-                // zero indexes 10 to 12
-                zero_range(&Kfusion[0], 10, 12);
-
+                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
-                        Kfusion[stateIndex] = t77*(P[stateIndex][4]*t4+P[stateIndex][0]*t14+P[stateIndex][6]*t9-P[stateIndex][5]*t11-P[stateIndex][1]*t17+P[stateIndex][2]*t20+P[stateIndex][3]*t24);
-                    } else {
-                        Kfusion[stateIndex] = 0.0f;
+                        kalman_mask |= (1<<stateIndex);
                     }
                 }
-            } else {
-                // zero indexes 13 to 15
-                zero_range(&Kfusion[0], 13, 15);
             }
 
             if (!inhibitMagStates) {
-                Kfusion[16] = t77*(P[16][4]*t4+P[16][0]*t14+P[16][6]*t9-P[16][5]*t11-P[16][1]*t17+P[16][2]*t20+P[16][3]*t24);
-                Kfusion[17] = t77*(P[17][4]*t4+P[17][0]*t14+P[17][6]*t9-P[17][5]*t11-P[17][1]*t17+P[17][2]*t20+P[17][3]*t24);
-                Kfusion[18] = t77*(P[18][4]*t4+P[18][0]*t14+P[18][6]*t9-P[18][5]*t11-P[18][1]*t17+P[18][2]*t20+P[18][3]*t24);
-                Kfusion[19] = t77*(P[19][4]*t4+P[19][0]*t14+P[19][6]*t9-P[19][5]*t11-P[19][1]*t17+P[19][2]*t20+P[19][3]*t24);
-                Kfusion[20] = t77*(P[20][4]*t4+P[20][0]*t14+P[20][6]*t9-P[20][5]*t11-P[20][1]*t17+P[20][2]*t20+P[20][3]*t24);
-                Kfusion[21] = t77*(P[21][4]*t4+P[21][0]*t14+P[21][6]*t9-P[21][5]*t11-P[21][1]*t17+P[21][2]*t20+P[21][3]*t24);
-            } else {
-                // zero indexes 16 to 21
-                zero_range(&Kfusion[0], 16, 21);
+                kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
             }
 
             if (!inhibitWindStates && !treatWindStatesAsTruth) {
-                Kfusion[22] = t77*(P[22][4]*t4+P[22][0]*t14+P[22][6]*t9-P[22][5]*t11-P[22][1]*t17+P[22][2]*t20+P[22][3]*t24);
-                Kfusion[23] = t77*(P[23][4]*t4+P[23][0]*t14+P[23][6]*t9-P[23][5]*t11-P[23][1]*t17+P[23][2]*t20+P[23][3]*t24);
-            } else {
-                // zero indexes 22 to 23
-                zero_range(&Kfusion[0], 22, 23);
+                kalman_mask |= (1<<22) | (1<<23);
+            }
+
+            for (auto i=7; i<24; i++) { // 0-6 are already computed
+                ftype res = 0;
+                if (kalman_mask & (1<<i)) {
+                    res = t77*(P[i][4]*t4+P[i][0]*t14+P[i][6]*t9-P[i][5]*t11-P[i][1]*t17+P[i][2]*t20+P[i][3]*t24);
+                }
+                Kfusion[i] = res;
             }
         } else {
             return;
@@ -1999,59 +2010,28 @@ void NavEKF3_core::FuseBodyVel()
                 bodyVelFusionActive = true;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing odometry",(unsigned)imu_index);
             }
-            // correct the covariance P = (I - K*H)*P
-            // take advantage of the empty columns in KH to reduce the
-            // number of operations
+
+            // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
+            // the zero elements of H to reduce the number of operations.
             for (unsigned i = 0; i<=stateIndexLim; i++) {
-                for (unsigned j = 0; j<=6; j++) {
-                    KH[i][j] = Kfusion[i] * H_VEL[j];
-                }
-                for (unsigned j = 7; j<=stateIndexLim; j++) {
-                    KH[i][j] = 0.0f;
-                }
-            }
-            for (unsigned j = 0; j<=stateIndexLim; j++) {
-                for (unsigned i = 0; i<=stateIndexLim; i++) {
+                // j as the inner loop allows the compiler to hoist the KH product
+                // to save computation, and do the inner indexing more efficiently.
+                for (unsigned j = 0; j<=stateIndexLim; j++) {
                     ftype res = 0;
-                    res += KH[i][0] * P[0][j];
-                    res += KH[i][1] * P[1][j];
-                    res += KH[i][2] * P[2][j];
-                    res += KH[i][3] * P[3][j];
-                    res += KH[i][4] * P[4][j];
-                    res += KH[i][5] * P[5][j];
-                    res += KH[i][6] * P[6][j];
+                    res += (Kfusion[i] * H_VEL[0]) * P[0][j];
+                    res += (Kfusion[i] * H_VEL[1]) * P[1][j];
+                    res += (Kfusion[i] * H_VEL[2]) * P[2][j];
+                    res += (Kfusion[i] * H_VEL[3]) * P[3][j];
+                    res += (Kfusion[i] * H_VEL[4]) * P[4][j];
+                    res += (Kfusion[i] * H_VEL[5]) * P[5][j];
+                    res += (Kfusion[i] * H_VEL[6]) * P[6][j];
                     KHP[i][j] = res;
                 }
             }
 
-            // Check that we are not going to drive any variances negative and skip the update if so
-            bool healthyFusion = true;
-            for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                if (KHP[i][i] > P[i][i]) {
-                    healthyFusion = false;
-                }
-            }
-
-            if (healthyFusion) {
-                // update the covariance matrix
-                for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                        P[i][j] = P[i][j] - KHP[i][j];
-                    }
-                }
-
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                ForceSymmetry();
-                ConstrainVariances();
-
-                // correct the state vector
-                for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                    statesArray[j] = statesArray[j] - Kfusion[j] * innovBodyVel[obsIndex];
-                }
-                stateStruct.quat.normalize();
-
-            } else {
-                // record bad axis
+            // finish fusion from KHP and Kfusion
+            if (FinishFusion(innovBodyVel[obsIndex])) {
+                // fault, record bad axis
                 if (obsIndex == 0) {
                     faultStatus.bad_xvel = true;
                 } else if (obsIndex == 1) {
@@ -2059,7 +2039,6 @@ void NavEKF3_core::FuseBodyVel()
                 } else if (obsIndex == 2) {
                     faultStatus.bad_zvel = true;
                 }
-
             }
         }
     }

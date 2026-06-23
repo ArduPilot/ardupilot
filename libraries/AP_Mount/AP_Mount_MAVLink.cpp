@@ -25,15 +25,7 @@ void AP_Mount_MAVLink::update()
 
     update_mnt_target();
 
-    // FIXME: create and use MountTargetType::RETRACTED
-    if (get_mode() == MAV_MOUNT_MODE_RETRACT) {
-        mnt_target.target_type = MountTargetType::ANGLE;
-        mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
-        send_gimbal_device_retract();
-        return;
-    }
-
-    // send target angles or rates depending on the target type
+    // send target angles/rates/retract depending on the target type
     send_target_to_gimbal();
 }
 
@@ -144,6 +136,12 @@ void AP_Mount_MAVLink::handle_gimbal_device_information(const mavlink_message_t 
     const uint8_t fw_ver_revision = (info.firmware_version & 0x00FF0000) >> 16;
     const uint8_t fw_ver_build = (info.firmware_version & 0xFF000000) >> 24;
 
+    strncpy(vendor_name, info.vendor_name, ARRAY_SIZE(vendor_name));
+    strncpy(model_name, info.model_name, ARRAY_SIZE(model_name));
+
+    // prefer the 32-bit extension, fall back to the 16-bit field:
+    device_capapability_flags = (info.cap_flags2 != 0) ? info.cap_flags2 : info.cap_flags;
+
     // display gimbal info to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: %s %s fw:%u.%u.%u.%u",
             info.vendor_name,
@@ -208,8 +206,13 @@ bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to command gimbal to retract (aka relax)
-void AP_Mount_MAVLink::send_gimbal_device_retract() const
+void AP_Mount_MAVLink::send_target_retracted()
 {
+    // update the target angles.  These may be absolutely bogus, of
+    // course, but may be useful in logs to see what the gimbal was
+    // doing.  This is also preserving existing behaviour in a change...
+    mnt_target.angle_rad.set(Vector3f{0,0,0}, false);
+
     const mavlink_gimbal_device_set_attitude_t pkt {
         {NAN, NAN, NAN, NAN},  // attitude
         0,   // angular velocity x
@@ -278,6 +281,30 @@ void AP_Mount_MAVLink::send_target_angles(const MountAngleTarget &angle_rad)
     };
 
     _link->send_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt);
+}
+
+// Send MAV_CMD_DO_SET_ROI_LOCATION  to gimbal
+void AP_Mount_MAVLink::send_target_location(const Location &roi_loc)
+{
+    if (_link == nullptr) {
+        return;
+    }
+
+    mavlink_command_int_t pkt {};
+    pkt.target_system = _sysid;
+    pkt.target_component = _compid;
+
+    if (roi_loc.initialised()) {
+        pkt.command = MAV_CMD_DO_SET_ROI_LOCATION;
+        pkt.x = roi_loc.lat,  // param5 / local: x position in meters * 1e4, global: latitude in degrees * 10^7
+        pkt.y = roi_loc.lng,  // param6 / local: y position in meters * 1e4, global: longitude in degrees * 10^7
+        pkt.z = roi_loc.alt  * 0.01f;  // param7 / z position: global: altitude in meters (relative or absolute, depending on frame).
+        pkt.frame = (uint8_t)roi_loc.get_alt_frame();
+    } else {
+        pkt.command = MAV_CMD_DO_SET_ROI_NONE;
+    }
+
+    _link->send_message(MAVLINK_MSG_ID_COMMAND_INT, (const char*)&pkt);
 }
 
 #endif // HAL_MOUNT_MAVLINK_ENABLED

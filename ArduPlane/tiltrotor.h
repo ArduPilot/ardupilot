@@ -148,6 +148,9 @@ public:
 
     bool use_multirotor_control_in_fwd_transition() const override;
 
+    // Return true if forward throttle should be allowed for position control, see Q_FWD_THR_USE
+    virtual bool allow_vfwd() const override;
+
 private:
 
     Tiltrotor& tiltrotor;

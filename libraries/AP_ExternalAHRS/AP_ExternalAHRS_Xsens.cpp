@@ -988,27 +988,27 @@ bool AP_ExternalAHRS_Xsens::parse_mtdata2(const uint8_t* xbus_data, SensorData& 
     return true;
 }
 
-AP_GPS::GPS_Status AP_ExternalAHRS_Xsens::convert_fix_type(uint8_t fix_type, uint8_t flags) const
+AP_GPS_FixType AP_ExternalAHRS_Xsens::convert_fix_type(uint8_t fix_type, uint8_t flags) const
 {
     switch (fix_type) {
         case 0:
         case 1:
-            return AP_GPS::NO_FIX;
+            return AP_GPS_FixType::NONE;
         case 2:
-            return AP_GPS::GPS_OK_FIX_2D;
+            return AP_GPS_FixType::FIX_2D;
         case 3:
             if (flags & 0b00000010)  // diffsoln
-                return AP_GPS::GPS_OK_FIX_3D_DGPS;
+                return AP_GPS_FixType::DGPS;
             if (flags & 0b01000000)  // carrsoln - float
-                return AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                return AP_GPS_FixType::RTK_FLOAT;
             if (flags & 0b10000000)  // carrsoln - fixed
-                return AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
-            return AP_GPS::GPS_OK_FIX_3D;
+                return AP_GPS_FixType::RTK_FIXED;
+            return AP_GPS_FixType::FIX_3D;
         case 4:
-            return AP_GPS::GPS_OK_FIX_3D;
+            return AP_GPS_FixType::FIX_3D;
         case 5:
         default:
-            return AP_GPS::NO_FIX;
+            return AP_GPS_FixType::NONE;
     }
 }
 
@@ -1025,7 +1025,7 @@ void AP_ExternalAHRS_Xsens::publish_gnss_pvt_data(const GnssPvtData &gnss_pvt)
     // Use the more accurate iTOW for ms_tow
     gps.ms_tow = gnss_pvt.iTOW;
     
-    gps.fix_type = static_cast<AP_GPS_FixType>(convert_fix_type(gnss_pvt.fixType, gnss_pvt.flags));
+    gps.fix_type = convert_fix_type(gnss_pvt.fixType, gnss_pvt.flags);
     gps.satellites_in_view = gnss_pvt.numSv;
     
     // Convert accuracies from mm to m
@@ -1186,7 +1186,7 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
         }
         
         // Always use the last known GPS status from GNSSPVTDATA - this is the TRUTH
-        gps.fix_type = static_cast<AP_GPS_FixType>(last_valid_fix_type);
+        gps.fix_type = last_valid_fix_type;
         gps.satellites_in_view = last_satellites_in_view;
         gps.horizontal_pos_accuracy = last_horizontal_pos_accuracy;
         gps.vertical_pos_accuracy = last_vertical_pos_accuracy;
@@ -1198,7 +1198,7 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
         uint32_t now = AP_HAL::millis();
         if (has_buffered_gnss_pvt && (now - last_gnss_pvt_update) > 15000) { // 15 second timeout
             // GNSS data is very stale, indicate degraded status but don't fake it
-            gps.fix_type = static_cast<AP_GPS_FixType>(AP_GPS::NO_FIX);
+            gps.fix_type = AP_GPS_FixType::NONE;
             gps.satellites_in_view = 0;
             gps.hdop = 99.9f;
             gps.vdop = 99.9f;
@@ -1320,7 +1320,7 @@ bool AP_ExternalAHRS_Xsens::healthy(void) const
     bool position_data_recent = (now - last_gps_pkt < 2000);
     bool gnss_status_valid = is_gnss_status_valid();
     bool gps_healthy = position_data_recent && gnss_status_valid && 
-                      (last_valid_fix_type >= AP_GPS::GPS_OK_FIX_2D);
+                      ((uint8_t)last_valid_fix_type >= (uint8_t)AP_GPS_FixType::FIX_2D);
     
     return ins_healthy && gps_healthy;
 }

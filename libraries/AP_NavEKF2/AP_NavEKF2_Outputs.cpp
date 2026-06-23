@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL.h>
 
+#include "AP_NavEKF2.h"
 #include "AP_NavEKF2_core.h"
 #include <AP_DAL/AP_DAL.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -222,7 +223,7 @@ bool NavEKF2_core::getPosNE(Vector2p &posNE) const
     } else {
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
-            if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if ((dal.gps().status(dal.gps().primary_sensor()) >= AP_GPS_FixType::FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const Location &gpsloc = dal.gps().location();
                 posNE = EKF_origin.get_distance_NE_postype(gpsloc);
@@ -302,7 +303,7 @@ bool NavEKF2_core::getLLH(Location &loc) const
         } else {
             // we could be in constant position mode  because the vehicle has taken off without GPS, or has lost GPS
             // in this mode we cannot use the EKF states to estimate position so will return the best available data
-            if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if ((gps.status() >= AP_GPS_FixType::FIX_2D)) {
                 // we have a GPS position fix to return
                 const Location &gpsloc = gps.location();
                 loc.lat = gpsloc.lat;
@@ -324,7 +325,7 @@ bool NavEKF2_core::getLLH(Location &loc) const
     } else {
         // If no origin has been defined for the EKF, then we cannot use its position states so return a raw
         // GPS reading if available and return false
-        if ((gps.status() >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
+        if ((gps.status() >= AP_GPS_FixType::FIX_3D)) {
             loc = gps.location();
         }
         return false;
@@ -497,68 +498,21 @@ void  NavEKF2_core::getFilterGpsStatus(nav_gps_status &faults) const
     faults.flags.bad_horiz_vel      = gpsCheckStatus.bad_horiz_vel; // The GPS horizontal speed is excessive (check assumes the vehicle is static)
 }
 
-#if HAL_GCS_ENABLED
-// send an EKF_STATUS message to GCS
-void NavEKF2_core::send_status_report(GCS_MAVLINK &link) const
+// return a terrain altitude variance
+bool NavEKF2_core::getTerrainAltVariance(float &temp) const
 {
-    // prepare flags
-    uint16_t flags = 0;
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-
-    // get variances
-    float velVar = 0, posVar = 0, hgtVar = 0, tasVar = 0;
-    Vector3f magVar;
-    Vector2f offset;
-    getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-
-    const float mag_max = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
-
     // Only report range finder normalised innovation levels if the EKF needs the data for primary
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
-    float temp;
     if (((frontend->_useRngSwHgt > 0) && activeHgtSource == HGT_SOURCE_RNG) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
         temp = sqrtF(auxRngTestRatio);
     } else {
         temp = 0.0f;
     }
-
-    // send message
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
+    // we always successfully return a value, even if that value is a
+    // "nothing to look at here" 0 value:
+    return true;
 }
-#endif  // HAL_GCS_ENABLED
 
 // report the reason for why the backend is refusing to initialise
 const char *NavEKF2_core::prearm_failure_reason(void) const

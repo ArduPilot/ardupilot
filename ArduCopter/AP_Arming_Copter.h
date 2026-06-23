@@ -44,7 +44,7 @@ protected:
     // NOTE! the following check functions *DO NOT* call into AP_Arming!
     bool parameter_checks(bool display_failure);
     bool oa_checks(bool display_failure);
-    bool mandatory_gps_checks(bool display_failure);
+    bool mandatory_position_checks(bool display_failure);
     bool gcs_failsafe_check(bool display_failure);
     bool winch_checks(bool display_failure) const;
     bool alt_checks(bool display_failure);

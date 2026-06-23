@@ -51,7 +51,6 @@
 #include <AP_Relay/AP_Relay.h>           // APM relay
 #include <AP_Mount/AP_Mount.h>           // Camera/Antenna mount
 #include <AP_Vehicle/AP_Vehicle.h>         // needed for AHRS build
-#include <AP_InertialNav/AP_InertialNav.h>     // inertial navigation library
 #include <AC_WPNav/AC_WPNav.h>           // Waypoint navigation library
 #include <AC_WPNav/AC_Loiter.h>
 #include <AC_WPNav/AC_Circle.h>          // circle navigation library
@@ -130,9 +129,6 @@ protected:
 
 private:
 
-    // key aircraft parameters passed to multiple libraries
-    AP_MultiCopter aparm;
-
     // Global parameters are all contained within the 'g' class.
     Parameters g;
     ParametersG2 g2;
@@ -144,12 +140,6 @@ private:
     RC_Channel *channel_yaw;
     RC_Channel *channel_forward;
     RC_Channel *channel_lateral;
-    
-#if AP_SUB_RC_ENABLED  
-    // flight modes convenience array
-    AP_Int8 *flight_modes;
-    const uint8_t num_flight_modes = 6;
-#endif
 
     AP_LeakDetector leak_detector;
 
@@ -291,10 +281,6 @@ private:
 
     AP_Arming_Sub arming;
 
-    // Altitude
-    // The cm/s we are moving up or down based on filtered data - Positive = UP
-    int16_t climb_rate;
-
     // Turn counter
     int32_t quarter_turn_count;
     uint8_t last_turn_state;
@@ -320,7 +306,7 @@ private:
     bool yaw_rate_only;
 
     // Yaw will point at this location if auto_yaw_mode is set to AUTO_YAW_ROI
-    Vector3f roi_WP;
+    Vector3f roi_WP_neu_cm;
 
     // bearing from current location to the yaw_look_at_WP
     float yaw_look_at_WP_bearing;
@@ -339,9 +325,6 @@ private:
     // Delay Mission Scripting Command
     int32_t condition_value;  // used in condition commands (eg delay, change alt, etc.)
     uint32_t condition_start;
-
-    // Inertial Navigation
-    AP_InertialNav inertial_nav;
 
     AP_AHRS_View ahrs_view;
 
@@ -391,7 +374,7 @@ private:
     // setup the var_info table
     AP_Param param_loader;
 
-    uint32_t last_pilot_heading;
+    float last_pilot_heading_rad;
     uint32_t last_pilot_yaw_input_ms;
     uint32_t fs_terrain_recover_start_ms;
 
@@ -434,7 +417,7 @@ private:
     void Log_Write_Data(LogDataID id, int16_t value);
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
-    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target_neu_cm, const Vector3f& vel_target_neu_cms);
     void Log_Write_Vehicle_Startup_Messages();
 #endif
     void load_parameters(void) override;
@@ -445,14 +428,12 @@ private:
     void userhook_SlowLoop();
     void userhook_SuperSlowLoop();
     void update_home_from_EKF();
-    void set_home_to_current_location_inflight();
     bool set_home_to_current_location(bool lock) override WARN_IF_UNUSED;
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     float get_alt_rel() const WARN_IF_UNUSED;
     float get_alt_msl() const WARN_IF_UNUSED;
     void exit_mission();
     void set_origin(const Location& loc);
-    bool ensure_ekf_origin();
     bool verify_loiter_unlimited();
     bool verify_loiter_time();
     bool verify_wait_delay();
@@ -514,6 +495,7 @@ private:
     JSButton* get_button(uint8_t index);
     void default_js_buttons(void);
     void clear_input_hold();
+    bool jsbutton_function_is_assigned(JSButton::button_function_t function);
     void read_barometer(void);
     void init_rangefinder(void);
     void read_rangefinder(void);
@@ -584,6 +566,9 @@ private:
 #if AP_RELAY_ENABLED
     void update_relay_pins();
 #endif
+
+    void update_actuators_from_jsbuttons();
+    void update_lights_from_rcin();
     bool handle_do_motor_test(mavlink_command_int_t command);
     bool init_motor_test();
     bool verify_motor_test();

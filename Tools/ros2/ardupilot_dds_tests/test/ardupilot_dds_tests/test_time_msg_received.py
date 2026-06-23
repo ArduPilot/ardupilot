@@ -14,19 +14,16 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """Bring up ArduPilot SITL check the Time message is being published."""
+import threading
+
 import pytest
 import rclpy
 import rclpy.node
-import threading
-
-from launch_pytest.tools import process as process_tools
 
 from builtin_interfaces.msg import Time
-
-from launch_fixtures import (
-    launch_sitl_copter_dds_serial,
-    launch_sitl_copter_dds_udp,
-)
+from launch_fixtures import launch_sitl_copter_dds_serial
+from launch_fixtures import launch_sitl_copter_dds_udp
+from launch_pytest.tools import process as process_tools
 
 TOPIC = "ap/time"
 WAIT_FOR_START_TIMEOUT = 5.0

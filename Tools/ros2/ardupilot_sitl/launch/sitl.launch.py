@@ -24,8 +24,8 @@ Show launch arguments:
 
 ros2 launch ardupilot_sitl sitl.launch.py --show-args
 """
-from launch import LaunchDescription
 from ardupilot_sitl.launch import SITLLaunch
+from launch import LaunchDescription
 
 
 def generate_launch_description() -> LaunchDescription:

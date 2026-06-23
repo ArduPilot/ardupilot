@@ -4,11 +4,11 @@ The Mamba Basic line of flight controllers are produced by [Diatone](https://www
 
 ## Features
 
- - STM32F405RGT6 microcontroller
- - MPU6000 IMU
- - AT7456E OSD
- - 4 UARTs
- - 7 PWM outputs (6 Motor Output, 1 LED)
+- STM32F405RGT6 microcontroller
+- MPU6000 IMU
+- AT7456E OSD
+- 4 UARTs
+- 7 PWM outputs (6 Motor Output, 1 LED)
 
 ## Pinout
 
@@ -27,11 +27,10 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL4|TX4/RX4|UART4 (Empty)|
 |SERIAL6|TX6/RX6|UART6 (GPS, DMA-enabled)|
 
-
 ## RC Input
- 
+
 RC input is configured on the PPM (UART1_RX) pin. It supports all RC protocols.
-  
+
 ## OSD Support
 
 The Mamba F405 MK4 supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -42,10 +41,10 @@ The Mamba F405 MK4 supports up to 7 PWM outputs. The pads for motor output ESC1 
 
 The PWM is in 4 groups:
 
- - PWM 1,2 in group1
- - PWM 3,4 in group2
- - PWM 5,6 in group3
- - PWM 7   in group4
+- PWM 1,2 in group1
+- PWM 3,4 in group2
+- PWM 5,6 in group3
+- PWM 7   in group4
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -58,11 +57,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 3
- - BATT_VOLT_PIN 11
- - BATT_VOLT_MULT around 11.0
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT around 28 with the 20x20 40A ESC (calculated, needs to be verified)
+- BATT_MONITOR 3
+- BATT_VOLT_PIN 11
+- BATT_VOLT_MULT around 11.0
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT around 28 with the 20x20 40A ESC (calculated, needs to be verified)
 
 ## Compass
 

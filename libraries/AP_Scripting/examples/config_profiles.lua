@@ -85,20 +85,20 @@ local config_domains = {
       param_name = "ARMS",
       all_param_defaults = {  -- all parameters present in the params for each option
          ["ACRO_BAL_PITCH"] = 1,
-         ["ATC_ACCEL_P_MAX"] = 30000,
+         ["ATC_ACC_P_MAX"] = 300,
       },
       default_sel_value = 50,
       profiles = {
          [50] = {
             name = "Callisto 50",
             params = {
-               ["ATC_ACCEL_P_MAX"] = 40000,
+               ["ATC_ACC_P_MAX"] = 400,
             },
          },
          [25] = {
             name = "Callisto 25",
             params = {
-               ["ATC_ACCEL_P_MAX"] = 50000,
+               ["ATC_ACC_P_MAX"] = 500,
             },
          },
       },
@@ -287,9 +287,9 @@ local parameters_which_can_be_set = {
     ["LOG_DISARMED"] = true,
     ["LOG_FILE_DSRMROT"] = true,
 
-    ["RTL_ALT"] = true,
+    ["RTL_ALT_M"] = true,
     ["RTL_LOIT_TIME"] = true,
-    ["RTL_SPEED"] = true,
+    ["RTL_SPEED_MS"] = true,
 }
 
 local msg_pfx = "CFG: "

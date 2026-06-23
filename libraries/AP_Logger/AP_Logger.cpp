@@ -171,7 +171,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Range: 0 1000
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
+    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 10),
 #endif
 
 #if HAL_LOGGING_BLOCK_ENABLED
@@ -375,7 +375,7 @@ bool AP_Logger::labels_string_is_good(const char *labels) const
 {
     bool passed = true;
     if (strlen(labels) >= LS_LABELS_SIZE) {
-        Debug("Labels string too long (%u > %u)", unsigned(strlen(labels)), unsigned(LS_LABELS_SIZE));
+        Debug("Labels string too long (%u >= %u)", unsigned(strlen(labels)), unsigned(LS_LABELS_SIZE));
         passed = false;
     }
     // This goes through and slices labels up into substrings by
@@ -699,6 +699,14 @@ void AP_Logger::setVehicle_Startup_Writer(vehicle_startup_message_Writer writer)
     _vehicle_messages = writer;
 }
 
+#if AP_RTC_LOGGING_ENABLED
+// Write RTC data
+void AP_Logger::Write_RTC()
+{
+    FOR_EACH_BACKEND(Write_RTC());
+}
+#endif  // AP_RTC_LOGGING_ENABLED
+
 void AP_Logger::set_vehicle_armed(const bool armed_state)
 {
     if (armed_state == _armed) {
@@ -953,7 +961,7 @@ void AP_Logger::Write_Fence()
 
 void AP_Logger::Write_NamedValueFloat(const char *name, float value)
 {
-    WriteStreaming(
+    Write(
         "NVF",
         "TimeUS,Name,Value",
         "s#-",

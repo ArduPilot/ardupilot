@@ -369,7 +369,12 @@ public:
         AUTOLAND =           183,  //Fixed Wing AUTOLAND Mode
         SYSTEMID =           184,  // system ID as an aux switch
         MOUNT_RP_LOCK =      185,  // mount lock modes for roll and pitch axes, for all mounts that support it
-
+#if AP_MOUNT_POI_LOCK_ENABLED
+        MOUNT_POI_LOCK =     186,  // Lock mount target to current ROI seen and switch mount to GPS Targeting mode
+#endif  // AP_MOUNT_POI_LOCK_ENABLED
+#if AP_AHRS_EKF_RESET_ENABLED
+        EKF_RESET =          187, // trigger full EKF bootstrap reset
+#endif  // AP_AHRS_EKF_RESET_ENABLED
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
@@ -520,8 +525,10 @@ protected:
 
 private:
 
-    // pwm is stored here
+    // pwm is stored here; if an override is active, override_value is stored instead
     int16_t     radio_in;
+    // stores the raw pwm value read from hal.rcin
+    int16_t     raw_radio_in;
 
     // value generated from PWM normalised to configured scale
     int16_t    control_in;
@@ -539,6 +546,10 @@ private:
     // overrides
     uint16_t override_value;
     uint32_t last_override_time;
+
+    // return true if raw input is within deadzone of trim
+    bool in_raw_trim_dz() const;
+    int16_t get_raw_radio_in() const { return raw_radio_in; }
 
     float pwm_to_angle() const;
     float pwm_to_angle_dz(uint16_t dead_zone) const;
@@ -599,22 +610,10 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    // compatability functions for Plane:
-    static uint16_t get_radio_in(const uint8_t chan) {
-        RC_Channel *c = _singleton->channel(chan);
-        if (c == nullptr) {
-            return 0;
-        }
-        return c->get_radio_in();
-    }
-    static RC_Channel *rc_channel(const uint8_t chan) {
-        return _singleton->channel(chan);
-    }
-    //end compatability functions for Plane
-
     // this function is implemented in the child class in the vehicle
     // code
     virtual RC_Channel *channel(uint8_t chan) = 0;
+    virtual const RC_Channel *channel(uint8_t chan) const = 0;
     // helper used by scripting to convert the above function from 0 to 1 indexeing
     // range is checked correctly by the underlying channel function
     RC_Channel *lua_rc_channel(const uint8_t chan) {
@@ -674,6 +673,7 @@ public:
         USE_CRSF_LQ_AS_RSSI     = (1U << 11), // returns CRSF link quality as RSSI value, instead of RSSI
         CRSF_FM_DISARM_STAR     = (1U << 12), // when disarmed, add a star at the end of the flight mode in CRSF telemetry
         ELRS_420KBAUD           = (1U << 13), // use 420kbaud for ELRS protocol
+        CLEAR_OVERRIDES_BY_RC   = (1U << 14), // clear MAVLink overrides when the pilot moves the RC sticks (per-vehicle definition)
     };
 
     bool option_is_enabled(Option option) const {
@@ -722,7 +722,7 @@ public:
     // method for other parts of the system (e.g. Button and mavlink)
     // to trigger auxiliary functions
     bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTrigger::Source source, uint16_t source_index) {
-        return rc_channel(0)->run_aux_function(ch_option, pos, source, source_index);
+        return channel(0)->run_aux_function(ch_option, pos, source, source_index);
     }
 
     // check if flight mode channel is assigned RC option
@@ -751,14 +751,24 @@ public:
     uint32_t get_fs_timeout_ms() const { return MAX(_fs_timeout * 1000, 100); }
 
     // methods which return RC input channels used for various axes.
-    RC_Channel &get_roll_channel() const;
-    RC_Channel &get_pitch_channel() const;
-    RC_Channel &get_yaw_channel() const;
-    RC_Channel &get_throttle_channel() const;
-    RC_Channel &get_forward_channel() const;
-    RC_Channel &get_lateral_channel() const;
+    const RC_Channel &get_roll_channel() const;
+    const RC_Channel &get_pitch_channel() const;
+    const RC_Channel &get_yaw_channel() const;
+    const RC_Channel &get_throttle_channel() const;
+    const RC_Channel &get_forward_channel() const;
+    const RC_Channel &get_lateral_channel() const;
+
+    RC_Channel &get_roll_channel();
+    RC_Channel &get_pitch_channel();
+    RC_Channel &get_yaw_channel();
+    RC_Channel &get_throttle_channel();
+    RC_Channel &get_forward_channel();
+    RC_Channel &get_lateral_channel();
 
     bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
+
+    // returns true when pilot input should clear an active MAVLink override; vehicles override to define which axes count
+    virtual bool has_pilot_input_for_override_clear();
 
 protected:
 
@@ -766,6 +776,12 @@ protected:
         has_new_overrides = true;
         _has_had_override = true;
     }
+
+    // returns true if the channel's raw pwm is outside its trim deadzone
+    static bool channel_outside_trim_dz(const RC_Channel &ch);
+
+    // returns true if throttle moved beyond deadzone since override start
+    bool throttle_moved_since_override_start() const;
 
 private:
     static RC_Channels *_singleton;
@@ -776,6 +792,7 @@ private:
     bool has_new_overrides;
     bool _has_had_rc_receiver; // true if we have had a direct detach RC receiver, does not include overrides
     bool _has_had_override; // true if we have had an override on any channel
+    int16_t override_start_throttle; // throttle value at the moment an override was activated
 
     AP_Float _override_timeout;
     AP_Int32  _options;
@@ -785,7 +802,8 @@ private:
     // set to true if we see overrides or other RC input
     bool _has_ever_seen_rc_input;
 
-    RC_Channel *flight_mode_channel() const;
+    RC_Channel *flight_mode_channel();
+    const RC_Channel *flight_mode_channel() const;
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
@@ -802,7 +820,8 @@ private:
     void set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwitchPos pos);
 #endif
 
-    RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
+    const RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
+    RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number);
 
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
@@ -812,6 +831,9 @@ private:
     // check for arm/disarm command based on rudder stick position:
     void rudder_arm_disarm_check();
 
+    // returns true if pilot stick input has exited any deadzone (or throttle moved)
+    bool should_ignore_overrides(void);
+    void set_override_start_throttle(int16_t pwm) { override_start_throttle = pwm; }
 };
 
 RC_Channels &rc();

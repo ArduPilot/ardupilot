@@ -209,6 +209,13 @@ private:
     static void update_topic(rosgraph_msgs_msg_Clock& msg);
 #endif // AP_DDS_CLOCK_PUB_ENABLED
 
+#if AP_DDS_CLOCK_SUB_ENABLED
+    // incoming external clock for simulation time sync
+    static rosgraph_msgs_msg_Clock rx_clock_topic;
+    static builtin_interfaces_msg_Time external_clock_time;
+    static bool has_received_clock;
+#endif // AP_DDS_CLOCK_SUB_ENABLED
+
 #if AP_DDS_STATUS_PUB_ENABLED
     ardupilot_msgs_msg_Status status_topic;
     bool update_topic(ardupilot_msgs_msg_Status& msg);
@@ -306,8 +313,17 @@ private:
     // pointer to transport's communication structure
     uxrCommunication *comm{nullptr};
 
-    // client key we present
-    static constexpr uint32_t key = 0xAAAABBBB;
+    // client key prefix
+    static constexpr uint32_t key_base = 0xAD000000;
+
+    // DDS constants
+    static constexpr const char *dds_pubsub_prefix = "rt";
+    static constexpr const char *dds_service_prefix = "rs";
+    static constexpr const char *dds_service_request_prefix = "rq";
+    static constexpr const char *dds_service_reply_prefix = "rr";
+    static constexpr const char *participant_name_prefix = "ap";
+
+    static void dds_format_name(char* buf, const char* dds_prefix, uint8_t sysid, const char* name, bool use_sysid_ns);
 
 
 public:
@@ -346,6 +362,9 @@ public:
 
     //! @brief Maximum number of attempts to ping the XRCE agent before exiting
     AP_Int8 ping_max_retry;
+
+    //! @brief Use namespace when enabled
+    AP_Int8 use_ns;
 
     //! @brief Enum used to mark a topic as a data reader or writer
     enum class Topic_rw : uint8_t {

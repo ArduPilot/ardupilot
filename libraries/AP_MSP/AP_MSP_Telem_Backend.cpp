@@ -208,7 +208,7 @@ void AP_MSP_Telem_Backend::update_gps_state(gps_state_t &gps_state)
     memset(&gps_state, 0, sizeof(gps_state));
 
     WITH_SEMAPHORE(gps.get_semaphore());
-    gps_state.fix_type = gps.status() >= AP_GPS::GPS_Status::GPS_OK_FIX_3D? 2:0;
+    gps_state.fix_type = gps.status() >= AP_GPS_FixType::FIX_3D? 2:0;
     gps_state.num_sats = gps.num_sats();
 
     if (gps_state.fix_type > 0) {

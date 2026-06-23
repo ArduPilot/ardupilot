@@ -7,15 +7,10 @@ AP_FLAKE8_CLEAN
 """
 import argparse
 import re
-import sys
+
 import build_options
+
 from build_script_base import BuildScriptBase
-
-
-if sys.version_info[0] < 3:
-    running_python3 = False
-else:
-    running_python3 = True
 
 
 class ExtractFeatures(BuildScriptBase):
@@ -50,8 +45,10 @@ class ExtractFeatures(BuildScriptBase):
             ('HAL_ADSB_{type}_ENABLED', r'AP_ADSB_(?P<type>.*)::update',),
             ('HAL_ADSB_UCP_ENABLED', 'AP_ADSB_uAvionix_UCP::update',),
 
-            ('AP_COMPASS_{type}_ENABLED', r'AP_Compass_(?P<type>.*)::read\b',),
+            ('AP_COMPASS_{type}_ENABLED', r'AP_Compass_(?P<type>.*)::probe\b',),
             ('AP_COMPASS_ICM20948_ENABLED', r'AP_Compass_AK09916::probe_ICM20948',),
+            ('AP_COMPASS_AK8963_ENABLED', r'AP_Compass_AK8963::probe_mpu9250',),
+            ('AP_COMPASS_HMC5843_ENABLED', r'AP_Compass_HMC5843::probe_mpu6000',),
             ('AP_COMPASS_DRONECAN_HIRES_ENABLED', r'AP_Compass_DroneCAN::handle_magnetic_field_hires',),
 
             ('AP_AIS_ENABLED', 'AP_AIS::decode_position_report',),
@@ -59,6 +56,7 @@ class ExtractFeatures(BuildScriptBase):
             ('HAL_EFI_ENABLED', 'AP_EFI::AP_EFI',),
             ('AP_EFI_{type}_ENABLED', 'AP_EFI_(?P<type>.*)::update',),
 
+            ('HAL_WITH_ESC_TELEM', r'AP_ESC_Telem::AP_ESC_Telem\b',),
             ('AP_EXTENDED_ESC_TELEM_ENABLED', r'AP_DroneCAN::handle_esc_ext_status\b',),
 
             ('AP_TEMPERATURE_SENSOR_ENABLED', 'AP_TemperatureSensor::AP_TemperatureSensor',),
@@ -86,6 +84,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RANGEFINDER_JRE_SERIAL_ENABLED', r'AP_RangeFinder_JRE_Serial::get_reading\b',),
             ('AP_RANGEFINDER_RDS02UF_ENABLED', r'AP_RangeFinder_RDS02UF::get_reading\b',),
             ('AP_RANGEFINDER_HEXSOONRADAR_ENABLED', r'AP_RangeFinder_NRA24_CAN::handle_frame'),
+            ('AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED', 'AP_RangeFinder_LightWareGRF::get_reading'),
 
             ('AP_GPS_NMEA_UNICORE_ENABLED', r'AP_GPS_NMEA::parse_agrica_field',),
             ('AP_GPS_{type}_ENABLED', r'AP_GPS_(?P<type>.*)::read\b',),
@@ -107,13 +106,14 @@ class ExtractFeatures(BuildScriptBase):
 
             ('AP_BATTERY_{type}_ENABLED', r'AP_BattMonitor_(?P<type>.*)::init\b',),
             ('AP_BATTERY_ESC_TELEM_OUTBOUND_ENABLED', r'AP_BattMonitor_Backend::update_esc_telem_outbound\b',),
-            ('AP_BATTERY_WATT_MAX_ENABLED', 'Plane::throttle_watt_limiter',),
+            ('AP_BATTERY_WATT_MAX_ENABLED', r'Plane::throttle_watt_limiter|AP_MotorsUGV::get_power_limit_max_throttle',),
 
             ('HAL_MOUNT_ENABLED', 'AP_Mount::AP_Mount',),
             ('HAL_MOUNT_{type}_ENABLED', r'AP_Mount_(?P<type>.*)::update\b',),
             ('HAL_SOLO_GIMBAL_ENABLED', 'AP_Mount_SoloGimbal::init',),
             ('HAL_MOUNT_STORM32SERIAL_ENABLED', 'AP_Mount_SToRM32_serial::update',),
             ('HAL_MOUNT_STORM32MAVLINK_ENABLED', 'AP_Mount_SToRM32::update',),
+            ('AP_MOUNT_POI_LOCK_ENABLED', 'AP_Mount::set_poi_lock'),
 
             ('HAL_SPEKTRUM_TELEM_ENABLED', r'AP::spektrum_telem',),
             ('HAL_{type}_TELEM_ENABLED', r'AP_(?P<type>.*)_Telem::init',),
@@ -153,9 +153,12 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
             ('HAL_RALLY_ENABLED', 'AP_Rally::find_nearest_rally_point',),
             ('AP_AVOIDANCE_ENABLED', 'AC_Avoid::AC_Avoid',),
+            ('AP_AVOIDANCE_ALTHOLD_ENABLED', 'AC_Avoid::adjust_roll_pitch',),
             ('AP_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
             ('AC_PAYLOAD_PLACE_ENABLED', 'PayloadPlace::start_descent'),
             ('AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', ExtractFeatures.FindString('PayloadPlace')),
+            ('AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED', 'AP_Mount_Backend::get_angle_target_to_wpnext_offset'),
+            ('AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED', 'AP_Mission::start_command_do_set_roi_wpnext_offset'),
             ('AP_ICENGINE_ENABLED', 'AP_ICEngine::AP_ICEngine',),
             ('HAL_EFI_ENABLED', 'AP_RPM_EFI::AP_RPM_EFI',),
             ('AP_EFI_NWPWU_ENABLED', r'AP_EFI_NWPMU::update\b',),
@@ -210,6 +213,7 @@ class ExtractFeatures(BuildScriptBase):
             ('GPS_MOVING_BASELINE', r'MovingBase::var_info',),
             ('AP_DRONECAN_SEND_GPS', r'AP_GPS_DroneCAN::instance_exists\b',),
             ('AP_GPS_BLENDED_ENABLED', r'AP_GPS::calc_blend_weights\b',),
+            ('AP_GPS_DEBUG_LOGGING_ENABLED', 'AP_GPS_Backend::log_data',),
 
             ('HAL_WITH_DSP', r'AP_HAL::DSP::find_peaks\b',),
             ('AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED', r'AP_InertialSensor::HarmonicNotch::update_params\b',),
@@ -222,11 +226,12 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_BARO_THST_COMP_ENABLED', r'AP_Baro::thrust_pressure_correction\b',),
             ('AP_TEMPCALIBRATION_ENABLED', r'AP_TempCalibration::apply_calibration',),
 
-            ('HAL_PICCOLO_CAN_ENABLE', r'AP_PiccoloCAN::update',),
+            ('AP_PICCOLOCAN_ENABLED', r'AP_PiccoloCAN::update',),
             ('EK3_FEATURE_EXTERNAL_NAV', r'NavEKF3_core::CorrectExtNavVelForSensorOffset'),
             ('EK3_FEATURE_DRAG_FUSION', r'NavEKF3_core::FuseDragForces'),
             ('EK3_FEATURE_OPTFLOW_FUSION', r'NavEKF3_core::FuseOptFlow'),
             ('EK3_FEATURE_OPTFLOW_SRTM', r'NavEKF3_core::writeTerrainData'),
+            ('AP_AHRS_EKF_RESET_ENABLED', r'AP_AHRS::reset_configured_backend'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
             ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
@@ -245,9 +250,8 @@ class ExtractFeatures(BuildScriptBase):
 
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_ENABLED', 'CrashCatcher_DumpMemory'),
+            ('AP_MAVLINK_FAILURE_CREATION_ENABLED', 'GCS_MAVLINK::deadlock_sem'),
             ('AP_CAN_SLCAN_ENABLED', 'SLCAN::CANIface::var_info'),
-            ('AC_POLYFENCE_FENCE_POINT_PROTOCOL_SUPPORT', 'AC_PolyFence_loader::handle_msg_fetch_fence_point'),
-            ('AP_MAVLINK_RALLY_POINT_PROTOCOL_ENABLED', 'GCS_MAVLINK::handle_common_rally_message'),
             ('AP_ADSB_AVOIDANCE_ENABLED', 'AP_Avoidance::init'),
 
             ('AP_SDCARD_STORAGE_ENABLED', 'StorageAccess::attach_file'),
@@ -261,6 +265,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_MAVLINK_MSG_RC_CHANNELS_RAW_ENABLED', r'GCS_MAVLINK::send_rc_channels_raw\b'),
             ('AP_MAVLINK_FTP_ENABLED', 'GCS_FTP::init'),
             ('AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED', 'Plane::handle_external_hagl'),
+            ('AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED', 'GCS_MAVLINK::handle_command_get_home_position'),  # noqa
             ('AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED', 'AP_Camera::send_video_stream_information'),
             ('AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED', 'GCS_MAVLINK::send_flight_information'),
             ('AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED', r'GCS_MAVLINK::send_rangefinder'),
@@ -312,6 +317,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_PERIPH_RELAY_ENABLED', r'AP_Periph_FW::handle_hardpoint_command'),
             ('AP_PERIPH_BATTERY_BALANCE_ENABLED', r'AP_Periph_FW::batt_balance_update'),
             ('AP_PERIPH_BATTERY_TAG_ENABLED', r'BatteryTag::update'),
+            ('AP_PERIPH_BATTERY_BMS_ENABLED', r'BatteryBMS::update'),
             ('AP_PERIPH_PROXIMITY_ENABLED', r'AP_Periph_FW::can_proximity_update'),
             ('AP_PERIPH_GPS_ENABLED', r'AP_Periph_FW::can_gps_update'),
             ('AP_PERIPH_ADSB_ENABLED', r'AP_Periph_FW::adsb_update'),
@@ -420,7 +426,7 @@ class ExtractFeatures(BuildScriptBase):
         text_output = self.run_program('EF', [
             self.strings,
             filename
-        ], show_output=False)
+        ], show_output=False, show_command=False)
         return text_output.split("\n")
 
     def extract(self):

@@ -256,8 +256,8 @@ public:
     */
     void  getFilterStatus(nav_filter_status &status) const;
 
-    // send an EKF_STATUS_REPORT message to GCS
-    void send_status_report(class GCS_MAVLINK &link) const;
+    // return a terrain altitude variance
+    bool getTerrainAltVariance(float &terrain_alt_variance) const;
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
@@ -787,6 +787,9 @@ private:
     static const uint32_t OBS_BUFFER_LENGTH = 5;
     static const uint32_t FLOW_BUFFER_LENGTH = 15;
     static const uint32_t EXTNAV_BUFFER_LENGTH = 15;
+
+    static Matrix24 KH;             // intermediate result used for covariance updates
+    static Matrix24 nextP;          // Predicted covariance matrix before addition of process noise to diagonals
 
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised

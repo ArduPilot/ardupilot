@@ -66,12 +66,12 @@ void ModeAuto::run()
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void ModeAuto::auto_wp_start(const Vector3f& destination)
+void ModeAuto::auto_wp_start(const Vector3f& destination_neu_cm)
 {
     sub.auto_mode = Auto_WP;
 
     // initialise wpnav (no need to check return status because terrain data is not used)
-    sub.wp_nav.set_wp_destination_NEU_cm(destination, false);
+    sub.wp_nav.set_wp_destination_NEU_cm(destination_neu_cm, false);
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
@@ -111,7 +111,7 @@ void ModeAuto::auto_wp_run()
         // call attitude controller
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         sub.wp_nav.wp_and_spline_init_m();                                                // Reset xy target
         return;
@@ -155,7 +155,7 @@ void ModeAuto::auto_wp_run()
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, sub.aparm.angle_max);
+    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
@@ -208,7 +208,7 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        float dist_to_center = get_horizontal_distance(inertial_nav.get_position_xy_cm().topostype(), sub.circle_nav.get_center_NEU_cm().xy());
+        float dist_to_center = get_horizontal_distance((position_control->get_pos_estimate_NED_m().xy() * 100.0f).tofloat(), sub.circle_nav.get_center_NEU_cm().xy().tofloat());
         if (dist_to_center > sub.circle_nav.get_radius_cm() && dist_to_center > 500) {
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {
@@ -302,7 +302,7 @@ void ModeAuto::auto_loiter_run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when disarmed
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
 
         sub.wp_nav.wp_and_spline_init_m();                                                // Reset xy target
@@ -336,7 +336,7 @@ void ModeAuto::auto_loiter_run()
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, sub.aparm.angle_max);
+    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     // roll & pitch & yaw rate from pilot
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
@@ -401,7 +401,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the sub
         if (!sub.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
+            if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP_neu_cm)) {
                 set_auto_yaw_mode(AUTO_YAW_ROI);
             }
         }
@@ -416,7 +416,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the sub at the location
-        if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
+        if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP_neu_cm)) {
             set_auto_yaw_mode(AUTO_YAW_ROI);
         }
 #endif  // HAL_MOUNT_ENABLED
@@ -479,7 +479,7 @@ void ModeAuto::auto_terrain_recover_run()
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
 
         sub.loiter_nav.init_target();                                       // Reset xy target
@@ -571,7 +571,7 @@ void ModeAuto::auto_terrain_recover_run()
 
     // convert pilot input to lean angles
     // To-Do: convert sub.get_pilot_desired_lean_angles to return angles as floats
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, sub.aparm.angle_max);
+    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     float target_yaw_rate = 0;
 

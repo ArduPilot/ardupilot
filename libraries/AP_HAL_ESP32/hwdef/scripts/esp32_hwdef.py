@@ -7,10 +7,10 @@ AP_FLAKE8_CLEAN
 '''
 
 import argparse
-import shlex
-import re
-import sys
 import os
+import re
+import shlex
+import sys
 
 from dataclasses import dataclass
 

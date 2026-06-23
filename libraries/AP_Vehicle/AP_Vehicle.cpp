@@ -194,6 +194,8 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Bitmask{Plane}: 17:QLOITER
     // @Bitmask{Plane}: 18:QACRO
     // @Bitmask{Plane}: 19:QAUTOTUNE
+    // @Bitmask{Plane}: 20:Loiter to QLand
+    // @Bitmask{Plane}: 21:Autoland
     // @Bitmask{Rover}: 0:Manual
     // @Bitmask{Rover}: 1:Acro
     // @Bitmask{Rover}: 2:Steering
@@ -1103,6 +1105,18 @@ void AP_Vehicle::one_Hz_update(void)
 #endif
 #endif
 
+#if HAL_GCS_ENABLED
+    // Check if available modes have changed
+    const uint32_t available_mode_enabled_mask = get_available_mode_enabled_mask();
+    if (available_mode_enabled_mask != last_available_mode_enabled_mask) {
+        if (last_available_mode_enabled_mask != 0) {
+            // Last value is only zero at init, track changes after that
+            gcs().available_modes_changed();
+        }
+        last_available_mode_enabled_mask = available_mode_enabled_mask;
+    }
+#endif
+
 }
 
 void AP_Vehicle::check_motor_noise()
@@ -1150,8 +1164,9 @@ bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
     }
 
     // clear warning timer when disarmed
+    uint32_t now_ms = AP_HAL::millis();
     if (!motors->armed()) {
-        takeoff_check_state.warning_ms = 0;
+        takeoff_check_state.warning_ms = now_ms;
         return false;
     }
 
@@ -1165,12 +1180,8 @@ bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
         return true;
     }
 
-    // warn user telem inactive or rpm is inadequate every 5 seconds
-    uint32_t now_ms = AP_HAL::millis();
-    if (takeoff_check_state.warning_ms == 0) {
-        takeoff_check_state.warning_ms = now_ms;
-    }
-    if (now_ms - takeoff_check_state.warning_ms > 5000) {
+    // warn the user every 2 seconds that telemetry is inactive or rpm is inadequate
+    if (now_ms - takeoff_check_state.warning_ms > 2000) {
         takeoff_check_state.warning_ms = now_ms;
         const char* prefix_str = "Takeoff blocked:";
         if (!telem_active) {
