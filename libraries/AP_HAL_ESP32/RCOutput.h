@@ -127,6 +127,9 @@ private:
     uint32_t constrain_freq(pwm_group &group);
 
     void set_group_mode(pwm_group &group);
+    // DShot uses the RMT peripheral (MCPWM cannot generate the digital frame).
+    // Set up / tear down the RMT backend for a group switched to a DShot mode.
+    void set_group_mode_dshot(pwm_group &group);
 
     void write_int(uint8_t chan, uint16_t period_us);
 
