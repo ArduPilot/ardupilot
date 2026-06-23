@@ -930,6 +930,7 @@ bool AP_Mission::stored_in_location(uint16_t id)
     case MAV_CMD_NAV_FENCE_RETURN_POINT:
     case MAV_CMD_NAV_RALLY_POINT:
     case MAV_CMD_NAV_ARC_WAYPOINT:
+    case MAV_CMD_CONDITION_LOCATION:
         return true;
     default:
         return false;
@@ -1218,6 +1219,10 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.yaw.turn_rate_dps = packet.param2;  // 0 = use default turn rate otherwise specific turn rate in deg/sec
         cmd.content.yaw.direction = packet.param3;      // -1 = ccw, +1 = cw
         cmd.content.yaw.relative_angle = packet.param4; // lng=0: absolute angle provided, lng=1: relative angle provided
+        break;
+
+    case MAV_CMD_CONDITION_LOCATION:                   // MAV ID: 116
+        // location is stored in the command's location field (see stored_in_location)
         break;
 
     case MAV_CMD_DO_JUMP:                               // MAV ID: 177
@@ -1749,6 +1754,10 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param2 = cmd.content.yaw.turn_rate_dps;  // 0 = use default turn rate otherwise specific turn rate in deg/sec
         packet.param3 = cmd.content.yaw.direction;      // -1 = ccw, +1 = cw
         packet.param4 = cmd.content.yaw.relative_angle; // 0 = absolute angle provided, 1 = relative angle provided
+        break;
+
+    case MAV_CMD_CONDITION_LOCATION:                   // MAV ID: 116
+        // location is stored in the command's location field (see stored_in_location)
         break;
 
     case MAV_CMD_DO_JUMP:                               // MAV ID: 177
@@ -2855,6 +2864,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "CondDelay";
     case MAV_CMD_CONDITION_DISTANCE:
         return "CondDist";
+    case MAV_CMD_CONDITION_LOCATION:
+        return "CondLoc";
     case MAV_CMD_DO_CHANGE_SPEED:
         return "ChangeSpeed";
     case MAV_CMD_DO_SET_HOME:
