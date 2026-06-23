@@ -111,19 +111,9 @@ void Helicopter::update(const struct sitl_input &input)
     float lateral_x_thrust = 0;
     float lateral_y_thrust = 0;
 
-    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
-    battery_voltage = battery.get_voltage();
-
-    float power = 1.0f;
-    if (motor_interlock) {
-        // calculate current
-        power = 1000.0;
-    }
-    battery_current = power / MAX(battery_voltage, 0.1);
-
-    const uint64_t now_us = AP_HAL::micros64();
-    battery.consume_energy(battery_current, now_us);
-
+    update_battery();
+    // for a very simple battery depletion model
+    constexpr float amps_per_newton_thrust = 0.5f;
 
     if (_time_delay == 0) {
         for (uint8_t i = 0; i < 6; i++) {
@@ -166,6 +156,9 @@ void Helicopter::update(const struct sitl_input &input)
         // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
         float coll = 50.0f * (swash1+swash2+swash3) / 3.0f - 25.0f;
         thrust = (rpm[0] / nominal_rpm) * thrust_scale * sq(nominal_rpm * 0.104667f) * coll;
+        if (battery_is_empty()) {
+            thrust = 0.0f;
+        }
 
         // determine RPM
         rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
@@ -179,6 +172,11 @@ void Helicopter::update(const struct sitl_input &input)
         float yaw_cmd = 2.0f * tail_rotor - 1.0f; // convert range to -1 to 1
         float tail_rotor_torque = (21.6f * 2.96f * yaw_cmd - 2.96f * gyro.z) * sq(rpm[0]/nominal_rpm);
         float tail_rotor_thrust =  -1.0f * tail_rotor_torque * izz / tr_dist;  //right pedal produces left body accel
+        if (battery_is_empty()) {
+            tail_rotor_thrust = 0.0f;
+        }
+
+        battery_current = amps_per_newton_thrust * (fabsf(thrust) + fabsf(tail_rotor_thrust));
 
         // rotational acceleration, in rad/s/s, in body frame
         rot_accel.x = _tpp_angle.x * Lb1s + Lv * velocity_air_bf.y;
@@ -212,6 +210,9 @@ void Helicopter::update(const struct sitl_input &input)
         // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
         float coll = 50.0f * (swash1+swash2+swash3) / 3.0f - 25.0f;
         thrust = (rpm[0] / nominal_rpm) * thrust_scale * sq(nominal_rpm * 0.104667f) * coll;
+        if (battery_is_empty()) {
+            thrust = 0.0f;
+        }
 
         // determine RPM
         rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
@@ -225,6 +226,11 @@ void Helicopter::update(const struct sitl_input &input)
         float yaw_cmd = 2.0f * tail_rotor - 1.0f; // convert range to -1 to 1
         float tail_rotor_torque = (21.6f * 2.96f * yaw_cmd - 2.96f * gyro.z) * tailrsc * sq(rpm[0]/nominal_rpm);
         float tail_rotor_thrust =  -1.0f * tail_rotor_torque * izz / tr_dist;  //right pedal produces left body accel
+        if (battery_is_empty()) {
+            tail_rotor_thrust = 0.0f;
+        }
+
+        battery_current = amps_per_newton_thrust * (fabsf(thrust) + fabsf(tail_rotor_thrust));
 
         // rotational acceleration, in rad/s/s, in body frame
         rot_accel.x = _tpp_angle.x * Lb1s + Lv * velocity_air_bf.y;
@@ -256,6 +262,9 @@ void Helicopter::update(const struct sitl_input &input)
         // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
         float coll = 50.0f * (swash1+swash2+swash3) / 3.0f - 25.0f;
         thrust = (rpm[0] / nominal_rpm) * thrust_scale * sq(nominal_rpm * 0.104667f) * coll;
+        if (battery_is_empty()) {
+            thrust = 0.0f;
+        }
 
         // determine RPM
         rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
@@ -269,6 +278,11 @@ void Helicopter::update(const struct sitl_input &input)
         // tail rotor output is modified by the ratio of current battery voltage to max battery voltage
         float tail_rotor_torque = (21.6f * 2.96f - 2.96f * gyro.z) * sq(tail_rotor * battery_voltage / sitl->batt_voltage);
         float tail_rotor_thrust =  -1.0f * tail_rotor_torque * izz / tr_dist;  //right pedal produces left body accel
+        if (battery_is_empty()) {
+            tail_rotor_thrust = 0.0f;
+        }
+
+        battery_current = amps_per_newton_thrust * (fabsf(thrust) + fabsf(tail_rotor_thrust));
 
         // rotational acceleration, in rad/s/s, in body frame
         rot_accel.x = _tpp_angle.x * Lb1s + Lv * velocity_air_bf.y;
@@ -328,7 +342,12 @@ void Helicopter::update(const struct sitl_input &input)
         lateral_y_thrust = GRAVITY_MSS * _tpp_angle.x + Yv * velocity_air_bf.y + Yp * gyro.x - 3.2 * 0.01745 * GRAVITY_MSS;
         lateral_x_thrust = -1.0f * GRAVITY_MSS * _tpp_angle.y + Xu * velocity_air_bf.x;
         float vertical_thrust = Zcol * coll * sq(rpm[0]/nominal_rpm) + velocity_air_bf.z * Zw;
+        if (battery_is_empty()) {
+            vertical_thrust = 0.0f;
+        }
         accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, vertical_thrust);
+
+        battery_current = amps_per_newton_thrust * fabsf(vertical_thrust);
 
         break;
     }
@@ -373,6 +392,10 @@ void Helicopter::update(const struct sitl_input &input)
 
         thrust_1 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * coll_1;
         thrust_2 = 0.5f * thrust_scale * sq(rpm[0] * 0.104667f) * coll_2;
+        if (battery_is_empty()) {
+            thrust_1 = 0.0f;
+            thrust_2 = 0.0f;
+        }
 
         // rotational acceleration, in rad/s/s, in body frame
         rot_accel.x = (_tpp_angle_1.x + _tpp_angle_2.x) * Lb1s + Lv * velocity_air_bf.y;
@@ -383,6 +406,7 @@ void Helicopter::update(const struct sitl_input &input)
         lateral_x_thrust = -1.0f * GRAVITY_MSS * (_tpp_angle_1.y + _tpp_angle_2.y) + Xu * velocity_air_bf.x;
         accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, -(thrust_1 + thrust_2) / mass + velocity_air_bf.z * Zw);
 
+        battery_current = amps_per_newton_thrust * (fabsf(thrust_1) + fabsf(thrust_2));
 
         break;
     }
@@ -401,6 +425,9 @@ void Helicopter::update(const struct sitl_input &input)
         // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
         float coll = 50.0f * (swash1+swash2+swash3) / 3.0f - 25.0f;
         thrust = thrust_scale * sq(rpm[0] * 0.104667f) * coll;
+        if (battery_is_empty()) {
+            thrust = 0.0f;
+        }
 
         // determine RPM
         rpm[0] = update_rpm(rpm[0], rsc, eng_torque, coll, dt);
@@ -422,6 +449,10 @@ void Helicopter::update(const struct sitl_input &input)
 
         float right_thruster_force = -1.0f * right_thruster_torque * izz / (0.5f * tr_dist);
         float left_thruster_force = left_thruster_torque * izz / (0.5f * tr_dist);
+        if (battery_is_empty()) {
+            right_thruster_force = 0.0f;
+            left_thruster_force = 0.0f;
+        }
 
         // rotational acceleration, in rad/s/s, in body frame
         rot_accel.x = _tpp_angle.x * Lb1s + Lv * velocity_air_bf.y;
@@ -431,6 +462,8 @@ void Helicopter::update(const struct sitl_input &input)
         lateral_y_thrust = GRAVITY_MSS * _tpp_angle.x + Yv * velocity_air_bf.y;
         lateral_x_thrust = (right_thruster_force + left_thruster_force) / mass - GRAVITY_MSS * _tpp_angle.y + Xu * velocity_air_bf.x;
         accel_body = Vector3f(lateral_x_thrust, lateral_y_thrust, -thrust / mass + velocity_air_bf.z * Zw);
+
+        battery_current = amps_per_newton_thrust * (fabsf(right_thruster_force) + fabsf(left_thruster_force) + fabsf(thrust));
 
         break;
     }
@@ -446,8 +479,6 @@ void Helicopter::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
-
-    update_battery();
 }
 
 void Helicopter::update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector2f &tpp_angle, float dt)
@@ -648,6 +679,14 @@ void Helicopter::pull_from_buffer(uint16_t servos_delayed[6])
     servos_delayed[4] = sample.servo5;
     servos_delayed[5] = sample.servo6;
 
+}
+
+void Helicopter::update_battery()
+{
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    const uint64_t now_us = AP_HAL::micros64();
+    battery.consume_energy(battery_current, now_us);
+    battery_voltage = battery.get_voltage();
 }
 
 } // namespace SITL
