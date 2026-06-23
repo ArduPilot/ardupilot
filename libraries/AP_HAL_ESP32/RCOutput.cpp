@@ -25,6 +25,10 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "driver/rtc_io.h"
+// New RMT driver for DShot output. Included only here (not in RCOutput.h) to
+// avoid a type clash with the legacy RMT driver used by RCInput/RmtSigReader.
+#include "driver/rmt_tx.h"
+#include "driver/rmt_encoder.h"
 
 #include <stdio.h>
 
@@ -362,21 +366,89 @@ void RCOutput::set_group_mode(pwm_group &group)
   set up a group for DShot output.
 
   DShot (DSHOT150/300/600) is a digital protocol generated with the RMT
-  peripheral; MCPWM cannot produce the bit pattern. The full backend is built up
-  over the following steps (see planning/PLAN_DSHOT_UPSTREAM.md):
-    - allocate a DMA-backed RMT TX channel + bit-pattern encoder per output,
-    - detach the MCPWM generator from the pin and drive it from RMT,
-    - run a periodic, core-pinned rcout task that re-transmits each frame at the
-      DShot rate (ESCs disarm if frames stop).
+  peripheral; MCPWM cannot produce the bit pattern. This allocates one RMT TX
+  channel per output in the group. We use the RMT in non-DMA mode: each of the
+  S3's 4 TX channels owns a 48-symbol memory block and a DShot frame is only ~17
+  symbols, so it fits with room to spare. (The S3's RMT-DMA is a single shared
+  connection that can't back all 4 channels at once, so DMA is reserved for a
+  future single-channel multiplexed >4-output path.) Creating the RMT channel
+  re-routes the GPIO (via the matrix) away from the inert MCPWM generator made in
+  init().
 
-  For now this is a recognised no-op: selecting a DShot mode is routed here
-  instead of falling through to the MCPWM PWM path. Throttle values written via
+  The bit-pattern encoder (step 3) and the periodic rcout task that re-transmits
+  each frame at the DShot rate (step 4) are added next; until then nothing is
+  transmitted, so the line idles low (ESC disarmed). Throttle values written via
   write()/write_int() are stashed in pwm_chan::value, ready for the rcout task.
+
+  Note: the ESP32-S3 has only 4 RMT TX channels, so at most 4 DShot outputs (a
+  quad) can be allocated; a 5th+ fails gracefully and stays inactive.
  */
 void RCOutput::set_group_mode_dshot(pwm_group &group)
 {
-    // TODO(dshot): RMT TX channel + encoder allocation and rcout task wiring.
-    (void)group;
+    uint32_t bitrate;
+    switch (group.current_mode) {
+    case MODE_PWM_DSHOT150: bitrate = 150000; break;
+    case MODE_PWM_DSHOT300: bitrate = 300000; break;
+    case MODE_PWM_DSHOT600: bitrate = 600000; break;
+    default:
+        return; // not a DShot mode we support
+    }
+
+    // Each DShot bit spans 8 RMT ticks: a logical 0 holds the line high for 3
+    // ticks (37.5%), a logical 1 for 6 ticks (75%) — the DShot line spec.
+    const uint32_t resolution_hz = bitrate * 8;
+
+    for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
+        pwm_chan &ch = pwm_chan_list[chan];
+        if (ch.group != &group) {
+            continue;
+        }
+
+        // idempotent: release any RMT resources from a previous mode change
+        dshot_free_chan(ch);
+
+        rmt_tx_channel_config_t cfg = {};
+        cfg.gpio_num = (gpio_num_t)ch.gpio_num;
+        cfg.clk_src = RMT_CLK_SRC_DEFAULT;
+        cfg.resolution_hz = resolution_hz;
+        cfg.mem_block_symbols = 48; // full per-channel block (non-DMA); frame is ~17
+        cfg.trans_queue_depth = 2;
+        cfg.flags.with_dma = false;
+
+        rmt_channel_handle_t rmt_chan = nullptr;
+        esp_err_t err = rmt_new_tx_channel(&cfg, &rmt_chan);
+        if (err != ESP_OK) {
+            // most likely no free RMT channel (S3 has 4) — leave it inactive
+            // rather than aborting the whole board.
+            ch.rmt_chan = nullptr;
+            printf("RCOut: DShot RMT alloc failed on chan %u (err 0x%x); S3 has 4 RMT channels\n",
+                   (unsigned)chan, (int)err);
+            continue;
+        }
+        ESP_ERROR_CHECK(rmt_enable(rmt_chan));
+        ch.rmt_chan = rmt_chan; // stored as void* (see RCOutput.h)
+
+        // TODO(dshot, step 3): build the DShot bit-pattern encoder -> ch.rmt_encoder
+        // TODO(dshot, step 4): register this channel with the periodic rcout task
+    }
+}
+
+/*
+  release the RMT channel/encoder held by a channel, if any. Safe to call on a
+  channel that is not RMT-backed.
+ */
+void RCOutput::dshot_free_chan(pwm_chan &ch)
+{
+    if (ch.rmt_encoder != nullptr) {
+        rmt_del_encoder((rmt_encoder_handle_t)ch.rmt_encoder);
+        ch.rmt_encoder = nullptr;
+    }
+    if (ch.rmt_chan != nullptr) {
+        rmt_channel_handle_t c = (rmt_channel_handle_t)ch.rmt_chan;
+        rmt_disable(c);
+        rmt_del_channel(c);
+        ch.rmt_chan = nullptr;
+    }
 }
 
 
