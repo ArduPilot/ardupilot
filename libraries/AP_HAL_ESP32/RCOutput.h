@@ -144,6 +144,12 @@ private:
     static uint16_t create_dshot_packet(uint16_t value, bool telem_request);
     // encode + asynchronously transmit one DShot frame on a channel
     void dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request);
+    // scale an ArduPilot PWM value (us) to a DShot throttle command (0, 48..2047)
+    static uint16_t dshot_throttle_from_pwm(uint16_t period_us);
+    // periodic task that re-transmits DShot frames at the DShot rate
+    void start_dshot_task();
+    void dshot_task();
+    static void dshot_task_entry(void *arg);
 
     void write_int(uint8_t chan, uint16_t period_us);
 
@@ -170,6 +176,7 @@ private:
 
 
     bool _initialized;
+    bool _dshot_task_started = false; // periodic DShot transmit task running?
 
 };
 
