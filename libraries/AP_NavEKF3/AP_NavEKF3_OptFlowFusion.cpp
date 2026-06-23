@@ -772,7 +772,7 @@ bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, 
  * Input:       u  = -velDotNED.z * imuDt        (main filter's accel bias estimate removed)
  * Noise:       Qvel = sq(EK3_ACC_P_NSE * imuDt)
  *              Qhgt = sq(EK3_TERR_GRAD) * horizDist^2
- *              Qbias = sq(EK3_ABIAS_P_NSE * imuDt)
+ *              Qbias = sq(EK3_AGL_ABIAS_P * imuDt)
  *
  * Prediction:  x(k+1) = F*x(k) + [0, u, 0]'
  *              P(k+1) = F*P*F' + Q
@@ -848,15 +848,14 @@ void NavEKF3_core::UpdateAglKf()
     //   so the velocity uncertainty budget is consistent with the main EKF.
     //   The intended effect is that P[1][1] grows every step when RF is absent, reflecting accumulating IMU integration error in v_agl.
     //
-    // Qbias - slow random walk of the accel-Z bias state.
-    //   Deliberately small relative to the initial bias uncertainty, so b_az is learned from
-    //   the rangefinder rather than left to wander, and stays stable once it has converged.
+    // Qbias - random walk of the accel-Z bias state, from EK3_AGL_ABIAS_P rather than the main
+    //   filter's EK3_ABIAS_P_NSE; its parameter description gives the response it sets.
     //
     const ftype horizDistSq = MIN(sq(stateStruct.velocity.x * imuDt)
                                   + sq(stateStruct.velocity.y * imuDt), 1.0f);  // cap at 1 m^2
     const ftype Qvel = sq(frontend->_accNoise * imuDt);   // matches CovariancePrediction: sq(imuDt*accNoise)
     const ftype Qhgt = sq(frontend->_terrGradMax) * horizDistSq;
-    const ftype Qbias = sq(frontend->_accelBiasProcessNoise.get() * imuDt);
+    const ftype Qbias = sq(constrain_ftype(frontend->_aglKfAccelBiasPnse.get(), 0.0f, 1.0f) * imuDt);
 
     // Capture before overwrite (P is symmetric)
     const ftype P00 = aglKfP[0][0];
