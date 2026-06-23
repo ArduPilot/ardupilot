@@ -1164,17 +1164,31 @@ void NavEKF3_core::FuseVelPosNED()
                 // Don't use 'fake' horizontal measurements used to constrain attitude drift during
                 // periods of non-aiding to learn bias as these can give incorrect esitmates.
                 const bool horizInhibit = PV_AidingMode == AID_NONE && obsIndex != 2 && obsIndex != 5;
-                // Inhibit Z-axis accel bias learning during ground effect because motor
-                // vibration causes a rectification offset in AccZ that differs between
-                // ground and flight conditions.
-                // When out of ground effect (controlled by TKOFF_GNDEFF_ALT on Copter side),
-                // allow bias learning from baro position corrections - this allows the EKF to
-                // adapt to in-flight AccZ offsets (vibration rectification) that differ from
-                // ground conditions.
+                // Learn the Z-axis accel bias only where it is observable from a trustworthy
+                // reference: stationary on the ground (zero-velocity fusion pins it) or airborne
+                // with a good height reference. Inhibit when armed on the ground (motor vibration,
+                // no real observation) or airborne on a corrupt height reference (baro in ground
+                // effect), where learning would drive the bias to a wrong value.
                 const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
+                bool heightRefGood;
+                switch (activeHgtSource) {
+                case AP_NavEKF_Source::SourceZ::RANGEFINDER:
+                    heightRefGood = (imuSampleTime_ms - rngValidMeaTime_ms < 500);
+                    break;
+                case AP_NavEKF_Source::SourceZ::BARO:
+                    heightRefGood = !gndEffectActive;
+                    break;
+                case AP_NavEKF_Source::SourceZ::GPS:
+                    heightRefGood = gpsAccuracyGoodForAltitude;
+                    break;
+                default:
+                    heightRefGood = false;
+                    break;
+                }
+                const bool learnZBias = onGroundNotMoving || (takeOffDetected && heightRefGood);
                 if (!horizInhibit && !accelBiasLearningInhibited() && !badIMUdata) {
                     for (uint8_t i = 13; i<=15; i++) {
-                        const bool zAxisInhibit = (i == 15) && gndEffectActive;
+                        const bool zAxisInhibit = (i == 15) && !learnZBias;
                         if (!dvelBiasAxisInhibit[i-13] && !zAxisInhibit) {
                             kalman_mask |= (1<<i);
                         }
