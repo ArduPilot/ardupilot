@@ -1150,17 +1150,16 @@ void NavEKF3_core::FuseVelPosNED()
                 // Don't use 'fake' horizontal measurements used to constrain attitude drift during
                 // periods of non-aiding to learn bias as these can give incorrect esitmates.
                 const bool horizInhibit = PV_AidingMode == AID_NONE && obsIndex != 2 && obsIndex != 5;
-                // Inhibit Z-axis accel bias learning during ground effect because motor
-                // vibration causes a rectification offset in AccZ that differs between
-                // ground and flight conditions.
-                // When out of ground effect (controlled by GNDEFF_ALT on Copter side),
-                // allow bias learning from baro position corrections - this allows the EKF to
-                // adapt to in-flight AccZ offsets (vibration rectification) that differ from
-                // ground conditions.
-                const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
+                // Ground effect corrupts the baro, so a Z accel bias learned from a baro
+                // height observation taken there is wrong. Other height sources are immune,
+                // and selectHeightForFusion() has already switched to baro if they went
+                // stale, so gating the baro case alone keeps a low rangefinder hover learning.
+                const bool hgtObsInGndEffect = (obsIndex == 5) &&
+                                               (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) &&
+                                               (dal.get_takeoff_expected() || dal.get_touchdown_expected());
                 if (!horizInhibit && !accelBiasLearningInhibited() && !badIMUdata) {
                     for (uint8_t i = 13; i<=15; i++) {
-                        const bool zAxisInhibit = (i == 15) && gndEffectActive;
+                        const bool zAxisInhibit = (i == 15) && hgtObsInGndEffect;
                         if (!dvelBiasAxisInhibit[i-13] && !zAxisInhibit) {
                             kalman_mask |= (1<<i);
                         }
