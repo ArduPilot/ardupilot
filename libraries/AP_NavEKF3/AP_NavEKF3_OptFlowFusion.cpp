@@ -50,6 +50,21 @@ void NavEKF3_core::SelectFlowFusion()
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
     }
+#if AP_RANGEFINDER_ENABLED
+    // In flight, also zero the flow once the rangefinder shows the height is below the sensor's
+    // focus floor (EK3_FLOW_MIN_H). The flow cannot focus that low and returns unfocused garbage;
+    // treating it as zero motion holds the velocity near zero - and makes the lockout reset, which
+    // reads flowRadXYcomp, reset to zero - instead of dead-reckoning a phantom that a position
+    // controller would brake against on the descent to land. The rangefinder stays valid down to
+    // the ground, unlike the flow, so it is the trustworthy near-ground height here.
+    else if (takeOffDetected && (frontend->_flowMinHgt > 0.0f) &&
+             (imuSampleTime_ms - rngValidMeaTime_ms < 500) &&
+             (rangeDataDelayed.rng * prevTnb.c.z < frontend->_flowMinHgt)) {
+        ofDataDelayed.flowRadXYcomp.zero();
+        ofDataDelayed.flowRadXY.zero();
+        flowDataValid = true;
+    }
+#endif
 
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
     if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {

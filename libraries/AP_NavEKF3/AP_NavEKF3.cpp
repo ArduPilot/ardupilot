@@ -770,6 +770,15 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
 
+    // @Param: FLOW_MIN_H
+    // @DisplayName: Optical flow minimum operating height
+    // @Description: Height above ground below which the optical flow sensor cannot focus on the ground. When the rangefinder reports the vehicle is below this height in flight, the flow is treated as zero motion so the EKF holds zero velocity instead of dead-reckoning a phantom from unfocused flow (which a position controller would brake against on the descent to land). Set to 0 to disable.
+    // @Range: 0.0 0.5
+    // @Increment: 0.01
+    // @User: Advanced
+    // @Units: m
+    AP_GROUPINFO("FLOW_MIN_H", 15, NavEKF3, _flowMinHgt, 0.1f),
+
     AP_GROUPEND
 };
 
