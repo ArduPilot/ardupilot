@@ -30,6 +30,9 @@
 #include "driver/rmt_tx.h"
 #include "driver/rmt_encoder.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
 #include <stdio.h>
 
 #include "esp_log.h"
@@ -447,9 +450,13 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
             continue;
         }
         ch.rmt_encoder = enc; // stored as void*
-
-        // TODO(dshot, step 4): drive dshot_send_chan() from a periodic rcout task
     }
+
+    // start the periodic transmit task now that DShot output exists. Note: it
+    // reads pwm_chan RMT handles without a lock, so DShot modes should be set at
+    // boot (the normal case), not reconfigured live alongside an active task.
+    // TODO(dshot): guard the channel list if runtime mode switching is needed.
+    start_dshot_task();
 }
 
 /*
@@ -507,6 +514,63 @@ void RCOutput::dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request)
     tx_cfg.loop_count = 0; // one frame per call; rcout task re-sends each cycle
     rmt_transmit((rmt_channel_handle_t)ch.rmt_chan, (rmt_encoder_handle_t)ch.rmt_encoder,
                  ch.dshot_buf, sizeof(ch.dshot_buf), &tx_cfg);
+}
+
+/*
+  scale an ArduPilot PWM value (microseconds) to a DShot throttle command.
+  Below 1000us (disarmed / safety / no signal) -> 0; 1000..2000us maps linearly
+  to 48..2047 (DShot min..max throttle; 1..47 are reserved for commands).
+ */
+uint16_t RCOutput::dshot_throttle_from_pwm(uint16_t period_us)
+{
+    if (period_us < 1000) {
+        return 0;
+    }
+    const uint16_t us = period_us > 2000 ? 2000 : period_us;
+    return 48 + (uint16_t)(((uint32_t)(us - 1000) * (2047 - 48)) / 1000);
+}
+
+/*
+  start the periodic DShot transmit task once. Pinned to the APP CPU so motor
+  output stays off the core that runs WiFi/lwIP (a non-issue on this FC since
+  WiFi is disabled, but correct in general and helps timing determinism).
+ */
+void RCOutput::start_dshot_task()
+{
+    if (_dshot_task_started) {
+        return;
+    }
+    _dshot_task_started = true;
+#if defined(CONFIG_FREERTOS_NUMBER_OF_CORES) && CONFIG_FREERTOS_NUMBER_OF_CORES > 1
+    const BaseType_t core = 1; // APP_CPU
+#else
+    const BaseType_t core = tskNO_AFFINITY;
+#endif
+    xTaskCreatePinnedToCore(dshot_task_entry, "dshot", 4096, this, 12, nullptr, core);
+}
+
+void RCOutput::dshot_task_entry(void *arg)
+{
+    static_cast<RCOutput *>(arg)->dshot_task();
+}
+
+/*
+  re-transmit the latest throttle on every DShot channel, forever. DShot ESCs
+  disarm if frames stop, so this runs continuously regardless of new writes; the
+  main loop just updates pwm_chan::value via write()/push().
+ */
+void RCOutput::dshot_task()
+{
+    while (true) {
+        for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
+            pwm_chan &ch = pwm_chan_list[chan];
+            if (ch.rmt_chan == nullptr) {
+                continue; // PWM channel, not DShot
+            }
+            dshot_send_chan(ch, dshot_throttle_from_pwm((uint16_t)ch.value), false);
+        }
+        vTaskDelay(pdMS_TO_TICKS(1)); // ~1 kHz frame rate
+    }
 }
 
 
