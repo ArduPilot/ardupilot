@@ -3,7 +3,10 @@
 # this is based on the FMUv3 hwdef, with Solo's required parameter defaults
 # do not use this hwdef for any other vehicle or configuration
 
-include ../fmuv3/hwdef.dat
+include ../fmuv3/fmuv3.inc
+
+# does this board really have an IMU heater?  If so set HAL_IMU_TEMP_DEFAULT.
+define HAL_HAVE_IMU_HEATER 1
 
 define BOARD_TYPE_DEFAULT 3  # FMUv3
 

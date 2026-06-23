@@ -5,3 +5,6 @@
 # be shared by boards which are based on FMUv3 but do not share all of
 # its hardware (eg. the presence of an IMU heater).
 include fmuv3.inc
+
+# the FMUv3 reference board (Pixhawk2/Cube) has an IMU heater
+define HAL_HAVE_IMU_HEATER 1

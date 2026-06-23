@@ -429,10 +429,6 @@ define HAL_HAVE_SAFETY_SWITCH 1
 # Enable RAMTRON parameter storage.
 define HAL_WITH_RAMTRON 1
 
-# Setup for the possibility of an IMU heater since the pixhawk2 cube has
-# an IMU heater.
-define HAL_HAVE_IMU_HEATER 1
-
 # Enable FAT filesystem support (needs a microSD defined via SDIO).
 define HAL_OS_FATFS_IO 1
 

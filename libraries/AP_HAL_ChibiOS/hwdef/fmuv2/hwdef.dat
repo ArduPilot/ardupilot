@@ -1,7 +1,10 @@
 # FMUv2 build, same as fmuv3, but 1M flash to avoid hardware issue
 # with 2nd half of flash on early STM32F427 chips
 
-include ../fmuv3/hwdef.dat
+include ../fmuv3/fmuv3.inc
+
+# does this board really have an IMU heater?  If so set HAL_IMU_TEMP_DEFAULT.
+define HAL_HAVE_IMU_HEATER 1
 
 FLASH_SIZE_KB 1024
 

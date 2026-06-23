@@ -2,7 +2,10 @@
 # for Pixhawk1-1M, based on Pixhawk1
 
 
-include ../fmuv3-bdshot/hwdef.dat
+include ../fmuv3-bdshot/fmuv3-bdshot.inc
+
+# does this board really have an IMU heater?  If so set HAL_IMU_TEMP_DEFAULT.
+define HAL_HAVE_IMU_HEATER 1
 
 # define the IMU types to probe. You can list more IMUs than you
 # actually have. The syntax for IMU declarations is:
