@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_VIEWPRO_EO_ZOOM_SPEED     0x07    // hard-coded zoom speed (fast)
 #define AP_MOUNT_VIEWPRO_IR_ZOOM_SPEED     1 
 #define AP_MOUNT_VIEWPRO_ZOOM_MAX       10      // hard-coded absolute zoom times max
-#define AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT  (65536.0 / 360.0)   // scalar to convert degrees to the viewpro angle scaling
+#define AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT  (65536.0 / M_2PI)   // scalar to convert radians to the viewpro angle scaling
 #define AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG  (360.0 / 65536.0)   // scalar to convert viewpro angle scaling to degrees
 
 #define AP_MOUNT_VIEWPRO_DEBUG 0
@@ -494,8 +494,8 @@ void AP_Mount_Viewpro::send_target_angles(const MountAngleTarget &angle_rad)
     }
 
     // scale pitch and yaw to values gimbal understands
-    const int16_t pitch_angle_output = -degrees(pitch_rad) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT;
-    const int16_t yaw_angle_output = degrees(yaw_bf_rad) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT;
+    const int16_t pitch_angle_output = -pitch_rad * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT;
+    const int16_t yaw_angle_output = yaw_bf_rad * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT;
 
     // fill in packet
     const A1Packet a1_packet {
@@ -628,13 +628,13 @@ bool AP_Mount_Viewpro::send_m_ahrs()
     // get vehicle velocity in m/s in NED Frame
     Vector3f vel_NED;
     IGNORE_RETURN(AP::ahrs().get_velocity_NED(vel_NED));
-    float vel_yaw_deg = wrap_360(degrees(vel_NED.xy().angle()));
+    const float vel_yaw_rad = wrap_2PI(vel_NED.xy().angle());
 
     // get GPS vdop
     uint16_t gps_vdop = AP::gps().get_vdop();
 
-    // get vehicle yaw in the range 0 to 360
-    const uint16_t veh_yaw_deg = AP::ahrs().get_yaw_deg();
+    // get vehicle yaw in the range 0 to 2*pi
+    const float veh_yaw_rad = wrap_2PI(AP::ahrs().get_yaw_rad());
 
     // fill in packet
     const M_AHRSPacket mahrs_packet {
@@ -642,14 +642,14 @@ bool AP_Mount_Viewpro::send_m_ahrs()
             frame_id: FrameId::M_AHRS,
             data_type: 0x07,                        // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
             unused2to8 : {0, 0, 0, 0, 0, 0, 0},
-            roll_be: htobe16(AP::ahrs().get_roll_deg() * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
-            pitch_be: htobe16(-AP::ahrs().get_pitch_deg() * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
-            yaw_be: htobe16(veh_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
+            roll_be: htobe16(AP::ahrs().get_roll_rad() * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
+            pitch_be: htobe16(-AP::ahrs().get_pitch_rad() * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
+            yaw_be: htobe16(veh_yaw_rad * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
             date_be: htobe16(date),                 // bit0~6:year, bit7~10:month, bit11~15:day
             seconds_utc: {uint8_t((second_hundredths & 0xFF0000ULL) >> 16), // seconds * 100 MSB.  1bit = 0.01sec
                           uint8_t((second_hundredths & 0xFF00ULL) >> 8),    // seconds * 100 next MSB.  1bit = 0.01sec
                           uint8_t(second_hundredths & 0xFFULL)},            // seconds * 100 LSB.  1bit = 0.01sec
-            gps_yaw_be: htobe16(vel_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),  // GPS yaw
+            gps_yaw_be: htobe16(vel_yaw_rad * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT),  // GPS yaw
             position_mark_bitmask: 0x0F,            // bit0:new position, bit1:clock fix calced, bit2:horiz calced, bit3:alt calced
             latitude_be: htobe32(loc.lat),          // latitude.  1bit = 10e-7
             longitude_be: htobe32(loc.lng),         // longitude.  1bit = 10e-7
