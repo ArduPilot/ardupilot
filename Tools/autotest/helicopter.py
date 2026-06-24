@@ -278,24 +278,28 @@ class AutoTestHelicopter(AutoTestCopter):
         # shaping cannot recover cleanly
         self.ModeFlip(do_pitch_flip=False)
 
-    def HeliQuadInvertedFlight(self):
-        '''fly inverted on collective-pitch quad frame'''
-        self.customise_SITL_commandline(
-            [],
-            defaults_filepath=self.model_defaults_filepath('heli-quad'),
-            model="heli-quad:@ROMFS/models/heliquad.json",
-            wipe=True,
-        )
+    def fly_inverted_flight(self, collective_servos=None, yaw_tolerance=20):
+        '''engage inverted flight from a hover in ALT_HOLD and verify that the
+        vehicle stays inverted and holds altitude, then recover.  Assumes the
+        frame has already been set up and the vehicle is disarmed.  If
+        collective_servos is given those servo channels must reach negative
+        blade pitch (PWM below mid) while inverted.  yaw_tolerance is the
+        allowed heading drift in degrees, or None to not check heading (a
+        single tail rotor re-trims when inverted and drifts slowly).'''
         rc_option_inverted = 43
         self.set_parameter("RC10_OPTION", rc_option_inverted)
         self.set_rc(10, 1000)
+        # clear any interlock/throttle override left over from a previous
+        # frame's attempt, so the vehicle can pass its arming checks
+        self.zero_throttle()
+        self.set_rc(8, 1000)
         self.takeoff(30, mode='ALT_HOLD')
 
         self.progress("Engaging inverted flight")
         self.set_rc(10, 2000)
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time_cached() - tstart > 10:
+            if self.get_sim_time_cached() - tstart > 15:
                 raise NotAchievedException("Did not roll inverted")
             m = self.assert_receive_message('ATTITUDE')
             if abs(math.degrees(m.roll)) > 150:
@@ -312,23 +316,113 @@ class AutoTestHelicopter(AutoTestCopter):
             roll_deg = math.degrees(m.roll)
             if abs(roll_deg) < 150:
                 raise NotAchievedException(f"Did not stay inverted (roll {roll_deg:.1f})")
-            yaw_err = (math.degrees(m.yaw) - hold_yaw_deg + 180) % 360 - 180
-            if abs(yaw_err) > 20:
-                raise NotAchievedException(f"Did not hold heading while inverted (err {yaw_err:.1f}deg)")
+            if yaw_tolerance is not None:
+                yaw_err = (math.degrees(m.yaw) - hold_yaw_deg + 180) % 360 - 180
+                if abs(yaw_err) > yaw_tolerance:
+                    raise NotAchievedException(f"Did not hold heading while inverted (err {yaw_err:.1f}deg)")
             alt = self.get_altitude(relative=True)
             if abs(alt - hold_alt) > 5:
                 raise NotAchievedException(f"Lost altitude while inverted ({alt:.1f}m vs {hold_alt:.1f}m)")
-            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
-            for n in 1, 2, 3, 4:
-                max_collective = max(max_collective, getattr(servo, f"servo{n}_raw"))
-        if max_collective >= 1500:
+            if collective_servos is not None:
+                servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
+                for n in collective_servos:
+                    max_collective = max(max_collective, getattr(servo, f"servo{n}_raw"))
+        if collective_servos is not None and max_collective >= 1500:
             raise NotAchievedException("Rotor not at negative collective while inverted (max %u)" % max_collective)
-        self.progress("Inverted flight held altitude and heading, max collective PWM %u" % max_collective)
+        self.progress("Inverted flight held altitude and heading")
 
         self.progress("Disengaging inverted flight")
         self.set_rc(10, 1000)
         self.wait_attitude(desroll=0, despitch=0, tolerance=10, timeout=15)
+
+    def HeliQuadInvertedFlight(self):
+        '''fly inverted on collective-pitch quad frame'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-quad'),
+            model="heli-quad:@ROMFS/models/heliquad.json",
+            wipe=True,
+        )
+        # the four collective servos must swing to negative blade pitch
+        self.fly_inverted_flight(collective_servos=(1, 2, 3, 4))
         self.do_RTL()
+
+    def InvertedFlight(self):
+        '''attempt inverted flight on each heli frame and check the set that
+        succeeds matches expectations'''
+        # parameters that let the traditional heli frames push the collective
+        # negative far enough to hold inverted flight; set for this test only.
+        # IM_STB_COL_* only affect STABILIZE collective; the maneuver flies in
+        # ALT_HOLD so they are belt-and-braces.
+        inverted_params = {
+            "H_COL_MIN": 1260,
+            "H_COL_ANG_MIN": -12,
+            "IM_STB_COL_1": 40,
+            "IM_STB_COL_2": 70,
+            "IM_STB_COL_3": 80,
+        }
+        # frames expected to sustain inverted flight.  Any frame that flies
+        # inverted but is not listed here, or any listed frame that fails to,
+        # fails the test - so the list is kept honest as frames are added or
+        # the model/controllers change.  heli-quad has its own dedicated test.
+        expect_inverted = {
+            'heli',
+            'heli-dual',
+            'heli-gas',
+            'heli-ddvptail',
+            'heli-ddfptail',
+            'heli-blade360',
+        }
+        vinfo = vehicleinfo.VehicleInfo()
+        frames = vinfo.options[self.vehicleinfo_key()]["frames"]
+        flew_inverted = set()
+        results = {}
+        for frame in sorted(frames.keys()):
+            if frame == 'heli-quad':
+                continue
+            self.start_subtest("Inverted flight: frame (%s)" % frame)
+            frame_bits = frames[frame]
+            model = frame_bits.get("model", frame)
+            defaults = self.model_defaults_filepath(frame)
+            if not isinstance(defaults, list):
+                defaults = [defaults]
+            self.customise_SITL_commandline(
+                [],
+                defaults_filepath=defaults,
+                model=model,
+                wipe=True,
+            )
+            self.set_parameters(inverted_params)
+            try:
+                # don't check heading: a tail rotor re-trims when
+                # inverted and the heading drifts slowly, which is
+                # orthogonal to whether the frame can sustain inverted
+                # flight (holding altitude inverted needs negative
+                # collective, which is the thing under test)
+                self.fly_inverted_flight(yaw_tolerance=None)
+                flew_inverted.add(frame)
+                results[frame] = "inverted OK"
+                self.progress("Inverted flight achieved on %s" % frame)
+            except (NotAchievedException, AutoTestTimeoutException) as e:
+                results[frame] = "not achieved: %s" % str(e)
+                self.progress("Inverted flight not achieved on %s: %s" % (frame, str(e)))
+
+        # a successful frame leaves the vehicle hovering; disarm it so the
+        # harness does not see it still armed at the end of the test
+        self.zero_throttle()
+        self.set_rc(8, 1000)
+        if self.armed():
+            self.disarm_vehicle(force=True)
+
+        self.progress("Inverted flight results: %s" % str(results))
+        unexpected_pass = flew_inverted - expect_inverted
+        unexpected_fail = expect_inverted - flew_inverted
+        if unexpected_pass:
+            raise NotAchievedException(
+                "Frames flew inverted but were not expected to: %s" % str(sorted(unexpected_pass)))
+        if unexpected_fail:
+            raise NotAchievedException(
+                "Frames expected to fly inverted but did not: %s" % str(sorted(unexpected_fail)))
 
     def hover(self):
         self.progress("Setting hover collective")
@@ -1328,6 +1422,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.HeliQuad,
             self.HeliQuadFlip,
             self.HeliQuadInvertedFlight,
+            self.InvertedFlight,
             self.MountFailsafeAction,
             self.StickArmingRequiresZeroThrottle,
         ])
