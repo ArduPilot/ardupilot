@@ -1470,7 +1470,12 @@ void AP_Logger::io_thread(void)
 
         last_run_us = AP_HAL::micros();
 
-        FOR_EACH_BACKEND(io_timer());
+        {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            WITH_SEMAPHORE(io_timer_backend_calls_sem);
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            FOR_EACH_BACKEND(io_timer());
+        }
 
         if (now - last_stack_us > 100000U) {
             last_stack_us = now;

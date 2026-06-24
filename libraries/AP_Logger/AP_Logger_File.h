@@ -57,7 +57,7 @@ public:
     uint16_t find_oldest_log() override;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    void flush(void) override;
+    void flush(bool do_fsync=true) override;
 #endif
     void periodic_1Hz() override;
     void periodic_fullrate() override;

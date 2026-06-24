@@ -104,8 +104,10 @@ public:
     void Fill_Format_Units(const struct LogStructure *s, struct log_Format_Units &pkt);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    // currently only AP_Logger_File support this:
-    virtual void flush(void) { }
+    // currently only AP_Logger_File support this.  do_fsync may be set
+    // false to drain the buffer to the OS without forcing a disk sync
+    // (the sync can block the calling thread for a long time under load).
+    virtual void flush(bool do_fsync=true) { }
 #endif
 
      // for Logger_MAVlink

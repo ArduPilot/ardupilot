@@ -14,6 +14,7 @@
 #include <Filter/Filter.h>
 #include "AP_Logger.h"
 #include <AP_IOMCU/AP_IOMCU.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
@@ -464,6 +465,38 @@ bool AP_Logger_Backend::WritePrioritisedBlock(const void *pBuffer, uint16_t size
     if (!ensure_format_emitted(pBuffer, size)) {
         return false;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // When generating replay logs while disarmed under SITL we must not
+    // drop blocks or the resulting log will not replay correctly.  A
+    // failed write here means the buffer has filled faster than the IO
+    // thread can drain it to disk; flush the buffer ourselves to make
+    // space and retry rather than dropping the block.  We hold
+    // io_timer_backend_calls_sem across the flush so we don't race the
+    // IO thread's io_timer() calls, and (since we are on the main thread
+    // and may be armed) we briefly permit main-thread filesystem I/O
+    // around the write.  Give up after 30 seconds of wall-clock time in
+    // case something is wrong.
+    if (_front.log_replay() && _front.log_while_disarmed()) {
+        const uint64_t start_us = hal.util->get_hw_rtc();
+        const uint32_t dropped_before = _dropped;
+        while (!_WritePrioritisedBlock(pBuffer, size, is_critical)) {
+            if (hal.util->get_hw_rtc() - start_us > 30U * 1000U * 1000U) {
+                AP_HAL::panic("Failed to log replay block");
+            }
+            WITH_SEMAPHORE(_front.io_timer_backend_calls_sem);
+            AP::FS().set_file_op_allowed_main_thread(true);
+            flush(false);  // drain to the OS, but don't force a slow fsync
+            AP::FS().set_file_op_allowed_main_thread(false);
+        }
+        // a failed attempt above will have incremented the dropped
+        // counter, but we did not actually lose the block - we drained
+        // and wrote it - so restore the counter to avoid the log being
+        // reported as having dropped blocks.
+        _dropped = dropped_before;
+        return true;
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
     return _WritePrioritisedBlock(pBuffer, size, is_critical);
 }

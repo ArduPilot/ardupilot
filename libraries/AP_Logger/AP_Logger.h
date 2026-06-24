@@ -522,6 +522,13 @@ private:
     void io_thread();
     bool check_crash_dump_save(void);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // serialises the IO thread's io_timer() pass against a backend
+    // draining its own buffer (the SITL replay-block retry path) so the
+    // two never consume the write buffer concurrently
+    HAL_Semaphore io_timer_backend_calls_sem;
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 #if HAL_LOGGER_FILE_CONTENTS_ENABLED
     // support for logging file content
     struct file_list {

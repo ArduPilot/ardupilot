@@ -879,17 +879,20 @@ bool AP_Logger_File::write_lastlog_file(uint16_t log_num)
 }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-void AP_Logger_File::flush(void)
-#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
+void AP_Logger_File::flush(bool do_fsync)
+#if APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN) || CONFIG_HAL_BOARD == HAL_BOARD_SITL
 {
     uint32_t tnow = AP_HAL::millis();
     while (_write_fd != -1 && _initialised && !recent_open_error() && _writebuf.available()) {
         // convince the IO timer that it really is OK to write out
         // less than _writebuf_chunk bytes:
-        if (tnow > 2001) { // avoid resetting _last_write_time to 0
-            _last_write_time = tnow - 2001;
-        }
+        _last_write_time = tnow - 2001;
         io_timer();
+    }
+    if (!do_fsync) {
+        // caller just wants the buffer drained to the OS, not a
+        // (potentially slow) forced disk sync
+        return;
     }
     if (write_fd_semaphore.take(1)) {
         if (_write_fd != -1) {
@@ -903,9 +906,10 @@ void AP_Logger_File::flush(void)
 #else
 {
     // flush is for replay and examples only
+    (void)do_fsync;
 }
-#endif // APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
-#endif
+#endif // APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN) || CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 
 void AP_Logger_File::io_timer(void)
 {
