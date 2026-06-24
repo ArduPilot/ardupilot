@@ -91,7 +91,9 @@ private:
 
     // battery resistance reference value in Ohms
     float refBatRes = 0.01;
-
+    void update_battery() override;
+    bool battery_is_empty() { return battery_voltage < 0.5f; };
+    
 };
 
 } // namespace SITL
