@@ -12970,6 +12970,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LOG_DARM_RATEMAX": 0,
             "LOG_FILE_RATEMAX": 0,
+            "LOG_FILE_BUFSIZE": 32767,
         })
 
         bits = [
