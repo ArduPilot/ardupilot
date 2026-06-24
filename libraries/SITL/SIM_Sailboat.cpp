@@ -332,6 +332,7 @@ void Sailboat::update(const struct sitl_input &input)
     // update wave calculations
     update_wave(delta_time);
 
+    update_battery();
 }
 
 } // namespace SITL

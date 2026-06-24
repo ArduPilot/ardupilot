@@ -88,7 +88,6 @@ void SITL_State::_usage(void)
            "\t--rate|-r RATE           set SITL framerate\n"
            "\t--console|-C             use console instead of TCP ports\n"
            "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
-           "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set start location (lat,lng,alt,yaw) or location name\n"
            "\t--model|-M MODEL         set simulation model\n"
            "\t--config string          set additional simulation config string\n"
@@ -323,7 +322,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"rate",            true,   0, 'r'},
         {"console",         false,  0, 'C'},
         {"instance",        true,   0, 'I'},
-        {"synthetic-clock", false,  0, 'S'},
+        {"synthetic-clock", false,  0, 'S'}, // kept to warn that it's always enabled
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
         {"config",          true,   0, 'c'},
@@ -445,7 +444,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
         break;
         case 'S':
-            printf("Ignoring stale command-line parameter '-S'");
+            printf("Ignoring obsolete command-line parameter '-S'/'--synthetic-clock'. Synthetic clock mode is now always enabled.\n");
             break;
         case 'O':
             home_str = gopt.optarg;
@@ -794,6 +793,12 @@ static void append_frame_defaults(std::string &joined, const AP_JSON::value &fra
 /*
   search a single vehicle entry for a frame matching model_str. Returns
   true and fills `joined` if found.
+
+  A frame matches when either its JSON key equals model_str (e.g. "X",
+  "octa-quad") or its explicit "model" field equals model_str (e.g.
+  "Callisto" defines model "octa-quad:@ROMFS/models/Callisto.json").
+  Without the second check, frames with a custom model string would
+  not load their per-frame defaults.
  */
 static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
                                      const char *model_str,
@@ -809,6 +814,18 @@ static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
     if (frames.contains(std::string(model_str))) {
         append_frame_defaults(joined, frames.get(std::string(model_str)));
         return true;
+    }
+    const AP_JSON::value::object &frames_obj = frames.get<AP_JSON::value::object>();
+    for (const auto &kv : frames_obj) {
+        if (!kv.second.is<AP_JSON::value::object>()) {
+            continue;
+        }
+        const AP_JSON::value &model_val = kv.second.get("model");
+        if (model_val.is<std::string>() &&
+            model_val.get<std::string>() == model_str) {
+            append_frame_defaults(joined, kv.second);
+            return true;
+        }
     }
     return false;
 }

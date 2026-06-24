@@ -452,6 +452,7 @@ void Morse::output_pwm(const struct sitl_input &input)
  */
 void Morse::update(const struct sitl_input &input)
 {
+    update_battery();
     if (!connect_sockets()) {
         return;
     }

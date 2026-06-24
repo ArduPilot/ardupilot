@@ -484,7 +484,7 @@ void SITL_State_Common::sim_update(void)
 /*
   update voltage and current pins
  */
-void SITL_State_Common::update_voltage_current(struct sitl_input &input, float throttle)
+void SITL_State_Common::update_voltage_current(float throttle)
 {
     float voltage = 0;
     float current = 0;
@@ -492,24 +492,11 @@ void SITL_State_Common::update_voltage_current(struct sitl_input &input, float t
     if (_sitl != nullptr) {
         if (_sitl->state.battery_voltage <= 0) {
             if (_vehicle == ArduSub) {
-                voltage = _sitl->batt_voltage;
-                for (uint8_t i=0; i<6; i++) {
-                    float pwm = input.servos[i];
-                    //printf("i: %d, pwm: %.2f\n", i, pwm);
-                    float fraction = fabsf((pwm - 1500) / 500.0f);
-
-                    voltage -= fraction * 0.5f;
-
-                    float draw = fraction * 15;
-                    current += draw;
-                }
+                voltage = sitl_model->get_battery_voltage();
+                current = sitl_model->get_battery_current();
             } else {
-                // simulate simple battery setup
-                // lose 0.7V at full throttle
-                voltage = _sitl->batt_voltage - 0.7f * throttle;
-
-                // assume 50A at full throttle
-                current = 50.0f * throttle;
+                voltage = sitl_model->get_battery_voltage();
+                current = sitl_model->get_battery_current();
             }
         } else {
             // FDM provides voltage and current

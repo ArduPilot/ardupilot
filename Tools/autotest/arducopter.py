@@ -108,7 +108,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Returns kwargs for a SITL commandline to fly the Callisto. Wipes params."""
         return {
             "defaults_filepath": self.model_defaults_filepath('Callisto'),
-            "model": "octa-quad:@ROMFS/models/Callisto.json",
+            "model": "octa-quad-cwx:@ROMFS/models/Callisto.json",
             "wipe": True
         }
 
@@ -4982,6 +4982,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # do a simple up-and-down flight to gather data:
         self.takeoff(15, mode="ALT_HOLD")
+        # let the vehicle settle into a stable hover before measuring, so the
+        # climb-out transient does not leak into the noise-suppression FFT
+        self.wait_altitude(13, 17, relative=True, minimum_duration=10)
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         self.set_parameter("SIM_VIB_MOT_MAX", 0)
         self.do_RTL()
@@ -8187,6 +8190,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # find a motor peak
         if takeoff:
             self.takeoff(10, mode="ALT_HOLD")
+            self.wait_altitude(8, 12, relative=True, minimum_duration=10)
 
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         self.do_RTL()
@@ -8870,6 +8874,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # do test flight:
         self.takeoff(10, mode="ALT_HOLD")
+        # let the vehicle settle into a stable hover before measuring, so the
+        # climb-out transient does not leak into the noise-suppression FFT
+        self.wait_altitude(8, 12, relative=True, minimum_duration=10)
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         # fly fast forrest!
         self.set_rc(3, 1900)
@@ -12934,10 +12941,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
-        # configure for the sitl board explicitly: another test (e.g. a
-        # CAN/periph test) may have left the shared build directory
-        # configured for a different board, which would fail this build:
-        util.build_SITL('tool/Replay', board='sitl', clean=False, configure=True)
+        self.build_replay()
         self.set_parameters({
             "LOG_DARM_RATEMAX": 0,
             "LOG_FILE_RATEMAX": 0,
@@ -14725,7 +14729,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test land detector with significant AHRS trim'''
         self.context_push()
         self.set_parameters({
-            "SIM_ACC_TRIM_X": 0.12,
+            "SIM_BRD_TRIM_X": 0.12,
             "AHRS_TRIM_X": 0.12,
         })
         self.reboot_sitl()

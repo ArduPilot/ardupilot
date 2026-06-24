@@ -120,6 +120,22 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     add_shove_forces(rot_accel, body_accel);
 }
 
+// Note: Sub does not comply with SIM_BATT_CAP_AH, instead it always
+// uses an unlimited-capacity battery model.
+void Submarine::update_battery(const struct sitl_input &input)
+{
+    battery_voltage = sitl->batt_voltage;
+    battery_current = 0.0f;
+    // Model battery usage via linear voltage-sag and current draw for every actuator
+    constexpr float voltage_sag_scaler_volts = 0.5f;
+    constexpr float current_draw_scaler_amps = 15.0f;
+    for (uint8_t i=0; i<6; i++) {
+        const float pwm = input.servos[i];
+        const float fraction = fabsf(pwm - 1500) / 500.0f;
+        battery_voltage -= fraction * voltage_sag_scaler_volts;
+        battery_current += fraction * current_draw_scaler_amps;
+    }
+}
 
 /**
  * @brief Calculate the torque induced by buoyancy foam
@@ -239,6 +255,7 @@ void Submarine::update(const struct sitl_input &input)
     Vector3f rot_accel;
 
     calculate_forces(input, rot_accel, accel_body);
+    update_battery(input);
 
     update_dynamics(rot_accel);
     update_external_payload(input);

@@ -375,7 +375,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     }
     _sitl->throttle = throttle;
 
-    update_voltage_current(input, throttle);
+    update_voltage_current(throttle);
 }
 
 void SITL_State::init(int argc, char * const argv[])

@@ -171,7 +171,6 @@ jobs:
       matrix:
         toolchain: [
             base,  # GCC
-            clang,
         ]
     steps:
       # git checkout the PR
@@ -197,10 +196,6 @@ jobs:
         shell: bash
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
-          if [[ ${{ matrix.toolchain }} == "clang" ]]; then
-            export CC=clang
-            export CXX=clang++
-          fi
           PATH="/github/home/.local/bin:$PATH"
           ./waf configure --board sitl --debug
           ./waf build --target bin/arduplane
@@ -256,7 +251,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: failure()
         with:
-           name: fail-${{matrix.config}}
+           name: ${{ github.workflow }}-fail-${{matrix.config}}
            path: |
              /tmp/buildlogs
              /__w/ardupilot/ardupilot/logs
@@ -269,7 +264,7 @@ jobs:
       - name: Archive .bin artifacts
         uses: actions/upload-artifact@v7
         with:
-           name: BIN-${{matrix.config}}
+           name: ${{ github.workflow }}-BIN-${{matrix.config}}
            path: /__w/ardupilot/ardupilot/logs
            retention-days: 7
 

@@ -125,6 +125,14 @@ void AP_Compass_SITL::_timer()
         // rotate compass
         f.rotate_inverse((enum Rotation)_sitl->mag_orient[sitl_instance].get());
         f.rotate(get_board_orientation());
+        // SIM_BRD_TRIM: rigid board mounting offset (same rotation applied to
+        // the accels and gyros), keeping the compass consistent with the IMU
+        const Vector3f &board_trim = _sitl->board_trim.get();
+        if (!board_trim.is_zero()) {
+            Matrix3f trim_rotation;
+            trim_rotation.from_euler(board_trim.x, board_trim.y, board_trim.z);
+            f = trim_rotation.transposed() * f;
+        }
         // scale the compass to simulate sensor scale factor errors
         f *= _sitl->mag_scaling[sitl_instance];
 

@@ -687,6 +687,8 @@ void XPlane::update(const struct sitl_input &input)
         send_drefs(input);
     }
 
+    update_battery();
+
     uint32_t now = AP_HAL::millis();
     if (report.last_report_ms == 0) {
         report.last_report_ms = now;

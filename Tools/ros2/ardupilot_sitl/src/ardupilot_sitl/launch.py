@@ -58,6 +58,7 @@ class VirtualPortsLaunch:
         action = ExecuteProcess(
             cmd=[
                 [
+                    "exec ",  # take place of shell so socat gets signals
                     "socat ",
                     "-d -d ",
                     f"pty,raw,echo=0,link={tty0} ",
@@ -302,6 +303,7 @@ class MAVProxyLaunch:
         print(f"map:              {map}")
 
         cmd = [
+            "exec ",  # take place of shell so mavproxy (though not its subprocesses!) get signals
             f"{command} ",
             f"--out {out} ",
             "--out ",

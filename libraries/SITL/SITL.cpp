@@ -1119,12 +1119,12 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("ACC3_SCAL",    24, SIM, accel_scale[2], 0),
 #endif
-    // @Param: ACC_TRIM
-    // @DisplayName: Accelerometer trim
-    // @Description: Trim applied to simulated accelerometer
+    // @Param: BRD_TRIM
+    // @DisplayName: Board mounting trim
+    // @Description: Rigid board mounting offset (roll, pitch, yaw in radians) applied as a rotation to the simulated accelerometers, gyros and compasses, as a tilted autopilot mounting would be. Intended to be cancelled by AHRS_TRIM.
     // @User: Advanced
     // @Vector3Parameter: 1
-    AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
+    AP_GROUPINFO("BRD_TRIM",     25, SIM, board_trim, 0),
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param{Rover}: SAIL_TYPE

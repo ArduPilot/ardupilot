@@ -14,7 +14,7 @@ _ap_bin() {
     '(-C --console)'{-C,--console}'[use console instead of TCP ports]' \
     '(-I --instance)'{-I,--instance}'[set instance of SITL (adds 10*instance to all port numbers)]:int:' \
     '(-O --home)'{-O,--home}'[set start location (lat,lng,alt,yaw)]:int:' \
-    '(-M --model)'{-M,--model}'[set simulation model]' \
+    '(-M --model)'{-M,--model}'[set simulation model]:model:_ap_bin_models' \
     '--config[set additional simulation config string]:CONFIG' \
     '(-F --fg)'{-F,--fg}'[set Flight Gear view address, defaults to 127.0.0.1]:ADDRESS' \
     '--enable-fgview[disable Flight Gear view]' \
@@ -31,7 +31,9 @@ _ap_bin() {
     '--serial7[set device string for SERIAL7]:DEVICE:' \
     '--serial8[set device string for SERIAL8]:DEVICE:' \
     '--serial9[set device string for SERIAL9]:DEVICE:' \
-    '--rtscts[enable rtscts on serial ports (default false)]' \
+    '--start-time[set simulation start time in UNIX timestamp]:TIMESTR:' \
+    '--sysid[set MAV_SYSID]:ID:' \
+    '--slave[set the number of JSON slaves]:number:' \
     '--base-port[set port num for base port(default 5670) must be before -I option]:PORT:' \
     '--rc-in-port[set port num for rc in]:PORT:' \
     '--sim-address[set address string for simulator]:STRING:' \
@@ -39,6 +41,14 @@ _ap_bin() {
     '--sim-port-out[set port num for simulator out]:PORT:' \
     '--irlock-port[set port num for irlock]:PORT:' \
   && ret=0
+}
+
+(( $+functions[_ap_bin_models] )) ||
+_ap_bin_models() {
+  # extract the frame names from the embedded vehicleinfo.json
+  local models
+  models=( $($words[1] --list-models 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(" ".join(sorted({f for v in d.values() for f in v.get("frames", {})})))' 2>/dev/null) )
+  _describe -t models 'model' models "$@" && ret=0
 }
 
 _ap_bin "$@"
