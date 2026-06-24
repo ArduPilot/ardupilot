@@ -84,6 +84,7 @@ public:
         float yaw_rad;
         Matrix3f dcm_matrix;
         Quaternion quaternion;
+        uint16_t attitude_reset_count;  // counter incremented each time a sudden shift happens in attitude
 
         // backends must always return the result in the vehicle body
         // frame.  A backend using the autopilot sensors will need to

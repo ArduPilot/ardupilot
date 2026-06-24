@@ -6,6 +6,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -50,6 +51,16 @@ void AP_AHRS_NavEKF2::update()
         return;
     }
     EKF2.UpdateFilter();
+
+    // check the current primary core; if it has changed then assume
+    // our attitude is reset:
+    const int8_t primary_core = EKF2.getPrimaryCoreIndex();
+    if (old_primary_core != primary_core) {
+        old_primary_core = primary_core;
+        attitude_reset_count++;
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary_core));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 primary changed:%d", (unsigned)primary_core);
+    }
 }
 
 void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
@@ -100,6 +111,8 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     results.quaternion.rotate(-AP::ahrs().get_trim());
 
     results.attitude_valid = started;
+
+    results.attitude_reset_count = attitude_reset_count;
 
     /*
      * acceleration estimates

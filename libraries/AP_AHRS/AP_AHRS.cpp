@@ -453,7 +453,6 @@ void AP_AHRS::update_state(void)
 
     state.primary_accel = active_estimates->primary_accel;
 
-    state.primary_core = _get_primary_core_index();
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
     state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
     state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
@@ -609,13 +608,24 @@ void AP_AHRS::update(bool skip_ins_update)
     // update blinking lights, buzzer etc bsaed on active EKF type:
     update_notify_from_filter_status(active_estimates->filter_status);
 
-#if HAL_GCS_ENABLED
+    bool attitude_was_reset = false;
     if (state.active_EKF_type != last_active_ekf_type) {
         last_active_ekf_type = state.active_EKF_type;
-        const char *shortname = active_backend->shortname();
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", shortname);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: %s active", active_backend->shortname());
+        last_active_estimates_attitude_reset_count = active_estimates->attitude_reset_count;
+        attitude_was_reset = true;
+    } else {
+        // estimator has not changed - but perhaps the estimator's
+        // output might have reset:
+        if (active_estimates->attitude_reset_count != last_active_estimates_attitude_reset_count) {
+            last_active_estimates_attitude_reset_count = active_estimates->attitude_reset_count;
+            attitude_was_reset = true;
+        }
     }
-#endif // HAL_GCS_ENABLED
+    if (attitude_was_reset) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AHRS attitude reset");
+        state.attitude_reset_count++;
+    }
 
     // update published state, including copying state from the active backend:
     update_state();
@@ -2252,42 +2262,6 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
 
     return 0;
 #endif // AP_AIRSPEED_ENABLED
-}
-
-// return the index of the primary core or -1 if no primary core selected
-int8_t AP_AHRS::_get_primary_core_index() const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // we have only one core
-        return 0;
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        // we have only one core
-        return 0;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        // we have only one core
-        return 0;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.EKF2.getPrimaryCoreIndex();
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.getPrimaryCoreIndex();
-#endif
-    }
-
-    // we should never get here
-    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-    return -1;
 }
 
 #if AP_AHRS_EKF_RESET_ENABLED
