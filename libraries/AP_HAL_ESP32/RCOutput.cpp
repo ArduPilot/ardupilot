@@ -397,9 +397,16 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         return; // not a DShot mode we support
     }
 
-    // Each DShot bit spans 8 RMT ticks: a logical 0 holds the line high for 3
-    // ticks (37.5%), a logical 1 for 6 ticks (75%) — the DShot line spec.
-    const uint32_t resolution_hz = bitrate * 8;
+    // Run the RMT at the full 80 MHz APB clock (divider 1, 12.5 ns/tick). Deriving
+    // the resolution as bitrate*8 would request e.g. 4.8 MHz for DShot600, which
+    // 80 MHz cannot divide evenly — the driver rounds to 5 MHz ("resolution loss"),
+    // making DShot600 ~4% fast. A fine fixed resolution keeps the error <0.3%.
+    // Each DShot bit holds the line high for 0.75*bit (logical 1) or 0.375*bit
+    // (logical 0), then low for the remainder.
+    const uint32_t resolution_hz = 80 * 1000 * 1000;
+    const uint32_t bit_ticks  = (resolution_hz + bitrate / 2) / bitrate; // ticks per bit
+    const uint32_t t1h_ticks  = (bit_ticks * 3 + 2) / 4;  // 0.75 * bit
+    const uint32_t t0h_ticks  = (bit_ticks * 3 + 4) / 8;  // 0.375 * bit
 
     for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
         pwm_chan &ch = pwm_chan_list[chan];
@@ -431,15 +438,15 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         ESP_ERROR_CHECK(rmt_enable(rmt_chan));
         ch.rmt_chan = rmt_chan; // stored as void* (see RCOutput.h)
 
-        // Bytes encoder: maps each frame bit to one RMT symbol that holds the
-        // line high then low. With resolution = bitrate*8, a logical 1 is high
-        // for 6 ticks (75%) then low for 2; a logical 0 is high for 3 (37.5%)
-        // then low for 5. MSB first, matching the DShot wire order.
+        // Bytes encoder: each frame bit -> one RMT symbol, high then low, in
+        // 12.5 ns ticks. Logical 1 is high for t1h_ticks (0.75 bit), logical 0
+        // for t0h_ticks (0.375 bit); the rest of the bit is held low. MSB first,
+        // matching the DShot wire order.
         rmt_bytes_encoder_config_t enc_cfg = {};
-        enc_cfg.bit0.duration0 = 3; enc_cfg.bit0.level0 = 1;
-        enc_cfg.bit0.duration1 = 5; enc_cfg.bit0.level1 = 0;
-        enc_cfg.bit1.duration0 = 6; enc_cfg.bit1.level0 = 1;
-        enc_cfg.bit1.duration1 = 2; enc_cfg.bit1.level1 = 0;
+        enc_cfg.bit0.duration0 = t0h_ticks;             enc_cfg.bit0.level0 = 1;
+        enc_cfg.bit0.duration1 = bit_ticks - t0h_ticks; enc_cfg.bit0.level1 = 0;
+        enc_cfg.bit1.duration0 = t1h_ticks;             enc_cfg.bit1.level0 = 1;
+        enc_cfg.bit1.duration1 = bit_ticks - t1h_ticks; enc_cfg.bit1.level1 = 0;
         enc_cfg.flags.msb_first = 1;
         rmt_encoder_handle_t enc = nullptr;
         err = rmt_new_bytes_encoder(&enc_cfg, &enc);
