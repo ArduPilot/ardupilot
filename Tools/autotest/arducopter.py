@@ -4769,7 +4769,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         def statustext_hook(mav, message):
             if message.get_type() != 'STATUSTEXT':
                 return
-            if message.text.startswith("EKF primary changed:"):
+            if message.text.startswith("EKF3 primary changed:"):
                 try:
                     lane = int(message.text.strip().split(":")[-1])
                     self.lane_switches.append(lane)
@@ -4808,7 +4808,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # Wait for automatic lane switch to occur
         self.wait_statustext(
-            text="EKF primary changed:1",
+            text="EKF3 primary changed:1",
             timeout=30,
             check_context=True
         )
