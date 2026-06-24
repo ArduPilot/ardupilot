@@ -111,19 +111,7 @@ void Helicopter::update(const struct sitl_input &input)
     float lateral_x_thrust = 0;
     float lateral_y_thrust = 0;
 
-    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
-    battery_voltage = battery.get_voltage();
-
-    float power = 1.0f;
-    if (motor_interlock) {
-        // calculate current
-        power = 1000.0;
-    }
-    battery_current = power / MAX(battery_voltage, 0.1);
-
-    const uint64_t now_us = AP_HAL::micros64();
-    battery.consume_energy(battery_current, now_us);
-
+    update_battery();
 
     if (_time_delay == 0) {
         for (uint8_t i = 0; i < 6; i++) {
@@ -447,7 +435,6 @@ void Helicopter::update(const struct sitl_input &input)
     // update magnetic field
     update_mag_field_bf();
 
-    update_battery();
 }
 
 void Helicopter::update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector2f &tpp_angle, float dt)
@@ -648,6 +635,22 @@ void Helicopter::pull_from_buffer(uint16_t servos_delayed[6])
     servos_delayed[4] = sample.servo5;
     servos_delayed[5] = sample.servo6;
 
+}
+
+void Helicopter::update_battery()
+{
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery_voltage = battery.get_voltage();
+
+    float power = 1.0f;
+    if (motor_interlock) {
+        // calculate current
+        power = 1000.0;
+    }
+    battery_current = power / MAX(battery_voltage, 0.1);
+
+    const uint64_t now_us = AP_HAL::micros64();
+    battery.consume_energy(battery_current, now_us);
 }
 
 } // namespace SITL
