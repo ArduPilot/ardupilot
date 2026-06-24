@@ -139,7 +139,7 @@ adaptivity.
 | XIP lockout deadlock (IRQ26 priority) | ✓ Fixed |
 | Log_Write_GSF restored (was commented out) | ✓ Done (yawEstimator null-check in place) |
 | main loop rate (target 400 Hz) | **360–367 Hz** (Config E: SPI on Core1 + DCM/8 + ekf_decim_min=2) |
-| `main=500+Hz` INTERNAL ERROR crash | ✓ Fixed (root cause: c1_vtable bank conflict) |
+| `main=700+Hz` INTERNAL ERROR crash | ✓ Fixed (root cause: c1_vtable bank conflict) |
 
 ---
 
@@ -155,11 +155,12 @@ SCRATCH[2] = 0xC1FA0001  (fault handler fired)
 SCRATCH[3] = 0x00000100  (CFSR = IBUSERR, BusFault bit 8)
 ```
 
-### Why `main=500+Hz` means INTERNAL ERROR, not performance
+### Why `main=700+Hz` means INTERNAL ERROR, not performance
 When ArduPilot raises an `AP_InternalError` (e.g. `flow_of_control`, `invalid_arg`),
 the scheduler enters a fast-spinning empty loop. The main loop counter increments
-rapidly with zero real work — hence 500–700 Hz readings. A settled healthy rate is
-≤300 Hz; target is 400 Hz. Never interpret 500+ Hz as "running fast."
+rapidly with zero real work — hence very high Hz readings. A settled healthy rate is
+500–600 Hz (post EKF -O2 and semaphore optimisations); target is 400 Hz.
+Never interpret 700+ Hz as "running fast" — diagnose the internal error first.
 
 ### Root Cause
 `c1_vtable` was declared as a 64-entry uint32_t array in striped SRAM (was at
