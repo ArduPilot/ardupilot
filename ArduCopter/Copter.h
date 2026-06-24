@@ -312,7 +312,8 @@ private:
 
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms;
-    int8_t ekf_primary_core;
+    // old value of counter which increments when our attitude estimate is reset
+    uint16_t attitude_reset_count;
 
     // vibration check
     struct {
