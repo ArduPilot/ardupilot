@@ -2661,7 +2661,7 @@ bool AP_AHRS::airspeed_vector_TAS(Vector3f &vec) const
     return state.airspeed_TAS_vec_ok;
 }
 
-// return the quaternion defining the rotation from NED to XYZ (body) axes
+// return the quaternion defining the rotation from XYZ (body) to NED axes
 bool AP_AHRS::get_quaternion(Quaternion &quat) const
 {
     quat = state.quat;
