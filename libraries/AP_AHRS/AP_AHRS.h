@@ -405,6 +405,11 @@ public:
         return active_backend->getLastPosDownReset(posDelta);
     }
 
+    // returns a counter which is incremented each time the estimator's output resets
+    uint16_t get_last_attitude_reset_count() const {
+        return state.attitude_reset_count;
+    }
+
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
@@ -475,9 +480,6 @@ public:
     // to use, i.e, the one being used by the primary lane. A lane switch could have happened due to an 
     // airspeed sensor fault, which makes this even more necessary
     uint8_t get_active_airspeed_index() const;
-
-    // return the index of the primary core or -1 if no primary core selected
-    int8_t get_primary_core_index() const { return state.primary_core; }
 
     // get the index of the current primary accelerometer sensor
     uint8_t get_primary_accel_index(void) const { return state.primary_accel; }
@@ -991,9 +993,6 @@ private:
     // get secondary EKF type.  returns false if no secondary (i.e. only using DCM)
     bool _get_secondary_EKF_type(EKFType &secondary_ekf_type) const;
 
-    // return the index of the primary core or -1 if no primary core selected
-    int8_t _get_primary_core_index() const;
-
     // get current location estimate
     bool _get_location(Location &loc) const;
 
@@ -1021,7 +1020,6 @@ private:
         EKFType configured_ekf_type;  // vetted parameter-configured EKFType
         uint8_t primary_gyro;
         uint8_t primary_accel;
-        uint8_t primary_core;
         Vector3f gyro_estimate;
         Matrix3f dcm_matrix;
         Vector3f gyro_drift;
@@ -1037,6 +1035,7 @@ private:
         bool airspeed_TAS_vec_ok;
         Quaternion quat;
         bool quat_ok;
+        uint16_t attitude_reset_count;
         Vector3f secondary_attitude;
         bool secondary_attitude_ok;
         Quaternion secondary_quat;
@@ -1152,6 +1151,8 @@ private:
     AP_AHRS_Backend::Estimates *active_estimates;
 
     const AP_AHRS_Backend::Estimates *get_secondary_estimates() const;
+
+    uint16_t last_active_estimates_attitude_reset_count;
 };
 
 namespace AP {

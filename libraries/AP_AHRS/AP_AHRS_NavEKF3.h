@@ -98,6 +98,10 @@ public:
     bool start();
     bool started;
     uint32_t start_time_ms;  // timer used to delay starting the filter
+
+    // a counter which is incremented each time the primary core changes:
+    uint16_t attitude_reset_count;
+    int8_t old_primary_core;
 };
 
 #endif  // AP_AHRS_NAVEKF3_ENABLED
