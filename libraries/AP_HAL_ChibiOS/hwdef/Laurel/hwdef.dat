@@ -214,7 +214,7 @@ define AP_FLASH_STORAGE_QUAD_PAGE 1
 define HAL_HAVE_SAFETY_SWITCH 0
 define HAL_WITH_MCU_MONITORING 1
 define HAL_HAVE_IMU_HEATER 0
-define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 0
+define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 1
 # DO NOT CHANGE AP_SCHEDULER_FAST_TASK_MODULO NO MATTER WHAT.
 # Reducing EKF/FAST_TASK frequency is not an acceptable workaround.
 # Look for improvements elsewhere (ramfunc, dual-core, etc).
@@ -232,7 +232,7 @@ define HAL_OS_FATFS_IO 1
 define MMC_CONNECT_IDLE_TIMEOUT_MS 20
 # On SPI-only card detection (no dedicated CD GPIO), avoid repeated long
 # connect attempts when no card is fitted.
-define HAL_SDCARD_SPI_INIT_TRIES 1
+define HAL_SDCARD_SPI_INIT_TRIES 3
 # SD mount retry: outer Scheduler gate and inner sdcard_retry() gate.
 # Keep both long to avoid SPI bus stalls from repeated failed card probes.
 define HAL_FS_MOUNT_RETRY_MS 30000
