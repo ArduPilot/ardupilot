@@ -69,11 +69,22 @@ void AP_Filesystem_Backend::unload_file(FileData *fd)
 }
 
 // return true if file operations are allowed
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+bool AP_Filesystem_Backend::_file_op_allowed_main_thread;
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 bool AP_Filesystem_Backend::file_op_allowed(void) const
 {
     if (!hal.util->get_soft_armed() || !hal.scheduler->in_main_thread()) {
         return true;
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // the AP_Logger replay-block drain deliberately writes from the main
+    // thread while armed; it sets this around its write
+    if (_file_op_allowed_main_thread) {
+        return true;
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
     return false;
 }
 

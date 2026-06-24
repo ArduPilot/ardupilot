@@ -100,9 +100,23 @@ public:
     // unload data from load_file()
     virtual void unload_file(FileData *fd);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // SITL-only: filesystem operations from the main thread while armed
+    // are normally an internal error (they would stall the flight loop).
+    // The AP_Logger replay-block drain deliberately writes from the main
+    // thread; it sets this around its brief write to permit it.
+    static void set_file_op_allowed_main_thread(bool allowed) {
+        _file_op_allowed_main_thread = allowed;
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 protected:
     // return true if file operations are allowed
     bool file_op_allowed(void) const;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    static bool _file_op_allowed_main_thread;
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 };
 
 

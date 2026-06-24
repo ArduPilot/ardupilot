@@ -151,6 +151,15 @@ public:
     // get_singleton for scripting
     static AP_Filesystem *get_singleton(void);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // SITL-only: permit filesystem operations from the main thread while
+    // armed for the duration of a deliberate write (the AP_Logger
+    // replay-block drain).  See AP_Filesystem_Backend::file_op_allowed().
+    void set_file_op_allowed_main_thread(bool allowed) {
+        AP_Filesystem_Backend::set_file_op_allowed_main_thread(allowed);
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 private:
     struct Backend {
         const char *prefix;
