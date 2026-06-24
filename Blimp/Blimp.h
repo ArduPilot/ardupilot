@@ -117,7 +117,6 @@ private:
 
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms;
-    int8_t ekf_primary_core;
 
     // vibration check
     struct {
