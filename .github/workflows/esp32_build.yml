@@ -146,6 +146,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    # ESP-IDF toolchain is baked into this image (see ardupilot_dev_docker
+    # Dockerfile_dev-esp32). Keep the tag in sync with the rest of CI.
+    container: ardupilot/ardupilot-dev-esp32:v0.2.0
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -160,6 +166,10 @@ jobs:
         with:
           submodules: 'recursive'
 
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: ${{ matrix.config }}
+
       - name: Register gcc problem matcher
         run: echo "::add-matcher::.github/problem-matchers/gcc.json"
 
@@ -172,37 +182,18 @@ jobs:
       - name: Register autotest fail matcher
         run: echo "::add-matcher::.github/problem-matchers/autotestfail.json"
 
-      - name: Install Prerequisites
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install git wget libncurses-dev flex bison gperf python3 python3-pip python3-venv python3-setuptools python3-serial python3-gevent python3-cryptography python3-pyparsing python3-pyelftools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0 cmake
-          python3 --version
-          python3 -m pip install gevent
-
-          git submodule update --init --recursive --depth=1
-          ./Tools/scripts/esp32_get_idf.sh
-
-          sudo ln -s /usr/bin/ninja /usr/bin/ninja-build
-
-          
       - name: build ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
+          IDF_CCACHE_ENABLE: 1
+          CCACHE_MAXSIZE: 1G  # ESP32 plane+copter objects exceed ccache.env's 400M default; env overrides the conf
         shell: bash
         run: |
-          source ~/.bash_profile
-          PATH="/github/home/.local/bin:$PATH"
-          echo $PATH
-          echo "### Configure ${{matrix.config}} :rocket:" >> $GITHUB_STEP_SUMMARY
-          echo "Installing ESP-IDF tools...."
-          cd modules/esp_idf
-          ./install.sh esp32,esp32s3
-          source ./export.sh
-          cd ../..
-          python3 -m pip install --progress-bar off lxml pymavlink MAVProxy pexpect flake8 geocoder empy==3.3.4 dronecan "pydantic<2.12"
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          # ESP-IDF and its toolchain are baked into the container at $IDF_PATH
+          source $IDF_PATH/export.sh
           which cmake
-          ./waf configure --board ${{matrix.config}} 
+          ./waf configure --board ${{matrix.config}}
           echo './waf configure --board ${{matrix.config}}' >> $GITHUB_STEP_SUMMARY  
           echo "### Build Plane ${{matrix.config}} :rocket:" >> $GITHUB_STEP_SUMMARY
           echo './waf plane' >> $GITHUB_STEP_SUMMARY  
@@ -225,6 +216,11 @@ jobs:
 
           echo "### Assets avail in artifact:" >> $GITHUB_STEP_SUMMARY
           ls bootloader* partition* Ardu*.elf Ardu*.bin >> $GITHUB_STEP_SUMMARY
+          ccache -s
+
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.config }}
 
       - name: Archive artifacts
         uses: actions/upload-artifact@v7
