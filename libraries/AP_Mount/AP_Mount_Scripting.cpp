@@ -13,7 +13,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_SCRIPTING_TIMEOUT_MS    1000   // scripting mount becomes unhealthy after 1sec with no updates
 
 #define AP_MOUNT_SCRIPTING_DEBUG 0
-#define debug(fmt, args ...) do { if (AP_MOUNT_SCRIPTING_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Siyi: " fmt, ## args); } } while (0)
+#define debug(fmt, args ...) do { if (AP_MOUNT_SCRIPTING_DEBUG) { GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Scripting: " fmt, ## args); } } while (0)
 
 // update mount position - should be called periodically
 void AP_Mount_Scripting::update()
