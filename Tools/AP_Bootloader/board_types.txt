@@ -65,6 +65,9 @@ Reserved "GUMSTIX [BL] FMU v6"         54
 Reserved "ARK CAN FLOW"                80
 Reserved "NXP ucans32k146"             34
 
+# IDs 110-119 reserved for Syro
+TARGET_HW_SYRO_V6X                     110
+
 # values from external vendors
 EXT_HW_RADIOLINK_MINI_PIX               3
 
