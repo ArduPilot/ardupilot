@@ -27,10 +27,10 @@ BRD_OPTIONS 5 @READONLY
 # No compass hardware on Laurel — disable to suppress pre-arm warnings.
 COMPASS_ENABLE 0 @READONLY
 
-# Laurel bring-up default: avoid hard pre-arm failure when filesystem logging
-# backend cannot initialise (e.g. no/unstable SPI microSD path).
-# 0 = no logger backend enabled by default.
-LOG_BACKEND_TYPE 0
+# 1 = file (SD card via SPI FATFS). SD card is present on Laurel (SPI1,
+# GPIO24-27, CS=GPIO25). Set @READONLY so a stale stored 0 never silently
+# disables logging after reflash.
+LOG_BACKEND_TYPE 1 @READONLY
 
 # Quad-X frame with 4 motors (matches the 4 PWM outputs on GPIO28-31).
 FRAME_CLASS 1
