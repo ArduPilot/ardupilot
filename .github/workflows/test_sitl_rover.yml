@@ -49,10 +49,12 @@ on:
       - 'Tools/autotest/arducopter.py'
       - 'Tools/autotest/arduplane.py'
       - 'Tools/autotest/ardusub.py'
+      - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
       - 'Tools/autotest/location.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/swarminit.txt'
+      - 'Tools/autotest/sim_vehicle.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
@@ -126,10 +128,12 @@ on:
       - 'Tools/autotest/arducopter.py'
       - 'Tools/autotest/arduplane.py'
       - 'Tools/autotest/ardusub.py'
+      - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
       - 'Tools/autotest/location.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/swarminit.txt'
+      - 'Tools/autotest/sim_vehicle.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
