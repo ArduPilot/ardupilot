@@ -612,98 +612,16 @@ SCHED_LOOP_RATE = 400  (Core0 main loop target — never lower this)
 
 ## Open Issues / Next Steps
 
-### ~~Priority 1 — Re-enable Log_Write_GSF~~ ✓ DONE
-`AP_NavEKF3_Logging.cpp`: restored. `yawEstimator != nullptr` check is in place.
-No crash. EKF GSF logging working. Settled main=296 Hz.
-
-### Core0 Tasks Profile comparison (tasks.txt, settled)
-
-| Task | Config A (296Hz) | Config A+DCM/8 (310Hz) | Config E (363Hz) |
-|---|---|---|---|
-| `update_flight_mode*` | 37.7%, AVG=2297µs, OVR=4 | 40.5%, AVG=2333µs, OVR=4 | **34.3%, AVG=1744µs, OVR=0!** |
-| `read_AHRS*` | 23.2%, AVG=1412µs | 19.7%, AVG=1134µs | 21.0%, AVG=1070µs |
-| `GCS::update_receive` | 5.2%, AVG=1265µs | 5.5%, AVG=1269µs | 8.7%, AVG=1773µs ← worse |
-| `InertialSensor::update*` | 2.6%, AVG=156µs | 2.7%, AVG=155µs | 8.0%, AVG=405µs ← cross-core penalty |
-| `read_inertia*` | 4.1%, AVG=249µs | 4.0%, AVG=232µs | 3.3%, AVG=165µs |
-| `AP_ESC_Telem` | 2.1% | 2.1% | 2.5% |
-
-**Config E improvement mechanics:** Removing SPI IRQs from Core0 eliminated cascading
-overruns in `update_flight_mode`. Its MAX dropped from 5509µs → 2357µs, OVR dropped
-to 0. At 34% of Core0, zero overruns in the biggest task makes the entire scheduler
-more regular. This is the dominant win (+54 Hz over baseline).
-
-**Config E regressions:**
-1. `InertialSensor::update*` 156µs → 405µs: cross-core SPI round-trip (Core0 signals
-   Core1 SPI thread, waits for DMA completion, reads result). At 181Hz (fast task rate
-   at 363Hz main): +45ms/s = +4.5% Core0.
-2. `GCS::update_receive` 1269µs → 1773µs: Core1 at 97% means each `chSysLock()` on
-   Core0 contends with Core1's SMP spinlock more often. GCS parsing calls many AP
-   functions with internal locks. +32ms/s = +3.2% Core0.
-
-Net: flight_mode saved 107ms/s, regressions cost 77ms/s. Net +30ms/s = +3% Core0 freed.
-Plus reduced overrun cascades: effectively much more stable scheduling → 363Hz.
-
-**EKF adaptive in Config E:** With SPI on Core1, Core1 load jumped. Adaptive algorithm
-correctly increased decim from 2 → 8 over ~63 seconds (decim=2→3→4→5→6→7→8).
-EKF settled at 61Hz (decim=8), ekf_dur≈8ms, ekf_duty≈72%, core1load=97%.
-At 61Hz the EKF is above its 50Hz minimum. Functionally acceptable.
-
-### Priority 1 — Lock-free EKF result sharing (potential +40 Hz)
-
-`read_AHRS*` at 1070µs in Config E is the #2 consumer. Its MIN=243µs (fast path when
-semaphore available) vs MAX=5547µs (when Core1 publishes simultaneously). The slow path
-is `WITH_SEMAPHORE(_rsem)` waiting for Core1's EKF publish.
-
-**Proposed fix:** Replace `_rsem` mutex with atomic triple/double buffer:
-- Core1 EKF writes to slot `write_idx`, then atomically stores `write_idx` in
-  a `std::atomic<uint8_t>` "published" index using `store(release)`.
-- Core0 `read_AHRS` reads from `published.load(acquire)` — no blocking ever.
-- No semaphore; no stall; eliminates the MIN→MAX variance entirely.
-
-Expected `read_AHRS` drop: 1070µs → ~400-500µs.
-At 181Hz: (1070-450) × 181Hz = 112ms/s freed = +11.2% Core0 → ~+40Hz.
-Combined: 363 + 40 = **~403 Hz**.
-
-Implementation risk: medium. Needs careful memory ordering (ARM `dmb`/`dsb` or
-C++11 `atomic` with `memory_order_acquire/release`). Only affects the EKF result
-publish/consume path (not the EKF computation itself).
-
-### Priority 2 — InertialSensor cross-core latency (potential +18 Hz)
-
-`InertialSensor::update*` costs 405µs in Config E vs 155µs in Config A.
-The 250µs extra = Core0 waiting for Core1's SPI thread to complete IMU DMA.
-Core1 at 97% means the SPI thread may queue behind rate+EKF before serving Core0.
-
-**Option A:** Raise SPI thread priority above EKF on Core1 so Core0-initiated SPI
-requests get served immediately. Risk: EKF preempted more often, higher ekf_dur jitter.
-
-**Option B:** Change IMU read to "push not pull": SPI thread posts completed IMU
-frames to a Core0-readable ring buffer (no blocking). Core0 reads the latest frame
-without waiting. Already how it works in theory; investigate why it still blocks.
-
-### ~~Priority 3 — GCS rate reduction~~ ✓ DONE
-
-`GCS::update_receive` / `update_send` reduced from 50Hz to 25Hz on RP2350
-(guarded by `#if defined(RP2350)` in `ArduCopter/Copter.cpp`).
-
-### Priority 4 — AP_InternalError clean read via GDB
-
-### Priority 5 — AP_InternalError clean read via GDB
-Add a dedicated WATCHDOG SCRATCH write when `INTERNAL_ERROR()` fires so the
-error bitmask survives reset and is readable via OpenOCD after the fact.
-Filed as design intent; not yet implemented.
-
-### Priority 6 — Symmetric XIP lockout (future)
-If Core1 ever writes to flash, implement Core1→Core0 lockout:
-`rpEflBeforeXipOff()` reads `SIO->CPUID` to determine direction, then rings the
-other core's doorbell. Core0 needs a matching SRAM-resident handler installed in
-`rp2350_vectors[42]` (Core0's RAM vector table, defined in `board_rp2350.c`).
-
-### Priority 7 — Rate thread immune to XIP lockout (research)
-A thread whose entire call chain runs from SRAM would not need to be parked during
-flash writes and could maintain exact 1 kHz. Requires moving the rate loop body,
-AP_InertialSensor fast path, and motor output path entirely to SRAM. Very large
-SRAM footprint. Not currently feasible without significant refactoring.
+| Item | Status |
+|---|---|
+| ~~Re-enable Log_Write_GSF~~ | ✓ DONE — null-guard in place, no crash |
+| ~~GCS update rate reduction (50Hz → 25Hz on RP2350)~~ | ✓ DONE |
+| Main loop 400 Hz target not yet met (best: 360–367 Hz Config E, gap ~35 Hz) | **Open — see BUGS.md PERF-002** |
+| Lock-free EKF result sharing to eliminate `_rsem` stall in `read_AHRS` (~+40 Hz) | **Open — see BUGS.md PERF-003** |
+| `InertialSensor::update` cross-core latency 405 µs → 156 µs target (~+18 Hz) | **Open — see BUGS.md PERF-004** |
+| `AP_InternalError` bitmask not preserved across WD reset (invisible post-reboot) | **Open — see BUGS.md DIAG-001** |
+| Symmetric XIP lockout (Core1 → Core0) needed if Core1 ever writes flash | **Deferred — see BUGS.md ARCH-001** |
+| Rate thread XIP-lockout-immune (full SRAM call chain) to avoid tick gaps at boot | **Research — see BUGS.md ARCH-002** |
 
 ---
 

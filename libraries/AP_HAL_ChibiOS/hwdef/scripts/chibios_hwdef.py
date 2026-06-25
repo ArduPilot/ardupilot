@@ -1710,10 +1710,15 @@ INCLUDE common.ld
             sck_pin = self.bylabel['SPI%s_SCK' % n]
             sck_line = self.make_pal_line(sck_pin.port, sck_pin.pin)
             if self.mcu_series.startswith('PICO2'):
-# RP2350: DMA is managed internally by the SPIv1 LLD driver (channels assigned via RP_DMA_CHANNEL_ID_ANY in rp2350_mcuconf.h).
-# SPIDriverInfo fields: {driver, busid, dma_ch_tx=0, dma_ch_rx=0, sck_line}
+# RP2350 has 16 dedicated DMA channels (none shared between peripherals).
+# ChibiOS SPIv1 LLD allocates them internally via RP_DMA_CHANNEL_ID_ANY.
+# SHARED_DMA_NONE tells ArduPilot's Shared_DMA framework to leave SPI DMA alone.
+# DO NOT use real channel numbers here: Shared_DMA would then call dma_deallocate/
+# spiStop on an SPI bus that another peripheral happened to share the "same" slot,
+# killing active ChibiOS MMC-SPI transfers (SD card) mid-flight and hanging the
+# AP_Logger IO thread permanently.
                 f.write(
-                    '#define HAL_SPI%u_CONFIG { &SPID%u, %u, 0, 0, %s }\n'
+                    '#define HAL_SPI%u_CONFIG { &SPID%u, %u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s }\n'
                     % (n, n, n, sck_line))
             else:
                 f.write(
