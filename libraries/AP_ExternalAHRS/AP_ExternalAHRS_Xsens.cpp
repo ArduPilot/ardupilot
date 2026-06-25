@@ -1491,7 +1491,7 @@ void AP_ExternalAHRS_Xsens::spi_transfer(uint8_t opcode,
 // Read pipe status
 void AP_ExternalAHRS_Xsens::read_pipe_status(uint16_t &notif_size, uint16_t &meas_size)
 {
-    uint8_t status[4];
+    uint8_t status[4] {};
     spi_transfer(XBUS_PIPE_STATUS, status, 4, true);
     
     notif_size = status[0] | (status[1] << 8);
