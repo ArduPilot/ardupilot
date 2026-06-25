@@ -188,8 +188,6 @@ jobs:
         shell: bash
         # Need --enable-math-check-indexes to match build_ci.sh build phase
         run: |
-          sudo apt-get update || true
-          sudo apt-get -y install ppp || true
           pppd --help # fail with `command not found` if ppp install failed
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
           PATH="/github/home/.local/bin:$PATH"
