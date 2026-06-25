@@ -11,10 +11,17 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   location-ratchet:
     if: github.repository == 'ArduPilot/ardupilot'
     runs-on: ubuntu-slim
+    # the base ref reaches run: blocks through env, never through ${{ }}
+    # interpolation, which a branch name could otherwise break out of
+    env:
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
 
     steps:
       # the default (merge-ref) checkout is deliberate: it tests the PR as
@@ -28,9 +35,9 @@ jobs:
 
       - name: Fetch base branch
         run: |
-          git fetch origin ${{ github.event.pull_request.base.ref }}
+          git fetch origin "$BASE_REF"
 
       - name: Check mavutil.location ratchet
         shell: bash
         run: |
-          Tools/scripts/check_mavutil_location_ratchet.py --base-ref "origin/${{ github.event.pull_request.base.ref }}"
+          Tools/scripts/check_mavutil_location_ratchet.py --base-ref "origin/$BASE_REF"

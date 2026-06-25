@@ -18,11 +18,16 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-22.04
     container:
-      image: ${{matrix.os}}:${{matrix.name}}
+      # deliberately floating: this checks the install scripts against
+      # whatever the distros ship today, which a digest pin would freeze
+      image: ${{matrix.os}}:${{matrix.name}}  # zizmor: ignore[unpinned-images]
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -143,7 +148,8 @@ jobs:
   build-alpine:  # special case for alpine as it doesn't have bash by default
     runs-on: ubuntu-22.04
     container:
-      image: alpine:latest
+      # see the note on the build job above
+      image: alpine:latest  # zizmor: ignore[unpinned-images]
       options: --privileged
     steps:
       - name: Install Git
