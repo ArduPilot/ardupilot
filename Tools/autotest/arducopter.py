@@ -10198,7 +10198,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             new_pos = self.get_global_position_int()
             pos_delta = self.get_distance_int(old_pos, new_pos)
             max_delta = 1
-            self.progress("delta=%u want <= %u" % (pos_delta, max_delta))
+            self.progress(f"delta={pos_delta:.2f} want <= {max_delta}")
             if pos_delta <= max_delta:
                 break
 
