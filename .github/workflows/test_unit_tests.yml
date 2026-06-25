@@ -161,8 +161,6 @@ jobs:
           PYTHONPATH: "${{ github.workspace }}/Tools/scripts"
         if: matrix.config == 'unit-tests'
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install requests mock
           Tools/autotest/unittest/annotate_params_unittest.py
 
       - name: Archive buildlog artifacts
