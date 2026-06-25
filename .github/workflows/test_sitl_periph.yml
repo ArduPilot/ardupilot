@@ -170,7 +170,7 @@ jobs:
       actions: write  # save-ccache prunes the previous cache entry
     runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-periph:v0.1.3
+      image: ardupilot/ardupilot-dev-periph:v0.2.0
       options: --privileged
     steps:
       # git checkout the PR
