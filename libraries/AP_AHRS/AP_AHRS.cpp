@@ -1223,60 +1223,6 @@ bool AP_AHRS::get_vert_pos_rate_D(float &velocity) const
     return active_estimates->get_vert_pos_rate_D(velocity);
 }
 
-/*
-  return a relative NED position from the origin in meters
-*/
-bool AP_AHRS::get_relative_position_NED_origin(Vector3p &vec) const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.get_relative_position_NED_origin(vec);
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO: {
-        Vector2p posNE;
-        postype_t posD;
-        if (ekf2.EKF2.getPosNE(posNE) && ekf2.EKF2.getPosD(posD)) {
-            // position is valid
-            vec.x = posNE.x;
-            vec.y = posNE.y;
-            vec.z = posD;
-            return true;
-        }
-        return false;
-    }
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE: {
-            Vector2p posNE;
-            postype_t posD;
-            if (ekf3.EKF3.getPosNE(posNE) && ekf3.EKF3.getPosD(posD)) {
-                // position is valid
-                vec.x = posNE.x;
-                vec.y = posNE.y;
-                vec.z = posD;
-                return true;
-            }
-            return false;
-        }
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.get_relative_position_NED_origin(vec);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL: {
-        return external.get_relative_position_NED_origin(vec);
-    }
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return false;
-}
-
 bool AP_AHRS::get_relative_position_NED_origin_float(Vector3f &vec) const
 {
     Vector3p tmp_posNED;
@@ -1299,44 +1245,6 @@ bool AP_AHRS::get_relative_position_NED_home(Vector3f &vec) const
     }
     vec = _home.get_distance_NED(loc);
     return true;
-}
-
-/*
-  return a relative position estimate from the origin in meters
-*/
-bool AP_AHRS::get_relative_position_NE_origin(Vector2p &posNE) const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.get_relative_position_NE_origin(posNE);
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO: {
-        bool position_is_valid = ekf2.EKF2.getPosNE(posNE);
-        return position_is_valid;
-    }
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE: {
-        bool position_is_valid = ekf3.EKF3.getPosNE(posNE);
-        return position_is_valid;
-    }
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM: {
-        return sim.get_relative_position_NE_origin(posNE);
-    }
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.get_relative_position_NE_origin(posNE);
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return false;
 }
 
 bool AP_AHRS::get_relative_position_NE_origin_float(Vector2f &posNE) const
@@ -1362,46 +1270,6 @@ bool AP_AHRS::get_relative_position_NE_home(Vector2f &posNE) const
 
     posNE = _home.get_distance_NE(loc);
     return true;
-}
-
-// write a relative ground position estimate to the origin in meters, North/East order
-
-
-/*
-  return a relative ground position from the origin in meters, down
-*/
-bool AP_AHRS::get_relative_position_D_origin(postype_t &posD) const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.get_relative_position_D_origin(posD);
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO: {
-        bool position_is_valid = ekf2.EKF2.getPosD(posD);
-        return position_is_valid;
-    }
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE: {
-        bool position_is_valid = ekf3.EKF3.getPosD(posD);
-        return position_is_valid;
-    }
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.get_relative_position_D_origin(posD);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.get_relative_position_D_origin(posD);
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return false;
 }
 
 bool AP_AHRS::get_relative_position_D_origin_float(float &posD) const
@@ -1445,6 +1313,7 @@ void AP_AHRS::get_relative_position_D_home(float &posD) const
     posD = originD - ((originLLH.alt - _home.alt) * 0.01f);
     return;
 }
+
 /*
   canonicalise _ekf_type, forcing it to be 0, 2 or 3
   type 1 has been deprecated
