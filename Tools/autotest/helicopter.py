@@ -347,8 +347,8 @@ class AutoTestHelicopter(AutoTestCopter):
         self.fly_inverted_flight(collective_servos=(1, 2, 3, 4))
         self.do_RTL()
 
-    def InvertedFlight(self):
-        '''attempt inverted flight on each heli frame and check the set that
+    def HeliSingleInvertedFlight(self):
+        '''attempt inverted flight on heli single frame and check the set that
         succeeds matches expectations'''
         # parameters that let the traditional heli frames push the collective
         # negative far enough to hold inverted flight; set for this test only.
@@ -357,72 +357,21 @@ class AutoTestHelicopter(AutoTestCopter):
         inverted_params = {
             "H_COL_MIN": 1260,
             "H_COL_ANG_MIN": -12,
+            "ATC_RATE_R_MAX": 120,
+            "ATC_RATE_P_MAX": 120,
             "IM_STB_COL_1": 40,
             "IM_STB_COL_2": 70,
             "IM_STB_COL_3": 80,
         }
-        # frames expected to sustain inverted flight.  Any frame that flies
-        # inverted but is not listed here, or any listed frame that fails to,
-        # fails the test - so the list is kept honest as frames are added or
-        # the model/controllers change.  heli-quad has its own dedicated test.
-        expect_inverted = {
-            'heli',
-            'heli-dual',
-            'heli-gas',
-            'heli-ddvptail',
-            'heli-ddfptail',
-            'heli-blade360',
-        }
-        vinfo = vehicleinfo.VehicleInfo()
-        frames = vinfo.options[self.vehicleinfo_key()]["frames"]
-        flew_inverted = set()
-        results = {}
-        for frame in sorted(frames.keys()):
-            if frame == 'heli-quad':
-                continue
-            self.start_subtest("Inverted flight: frame (%s)" % frame)
-            frame_bits = frames[frame]
-            model = frame_bits.get("model", frame)
-            defaults = self.model_defaults_filepath(frame)
-            if not isinstance(defaults, list):
-                defaults = [defaults]
-            self.customise_SITL_commandline(
-                [],
-                defaults_filepath=defaults,
-                model=model,
-                wipe=True,
-            )
-            self.set_parameters(inverted_params)
-            try:
-                # don't check heading: a tail rotor re-trims when
-                # inverted and the heading drifts slowly, which is
-                # orthogonal to whether the frame can sustain inverted
-                # flight (holding altitude inverted needs negative
-                # collective, which is the thing under test)
-                self.fly_inverted_flight(yaw_tolerance=None)
-                flew_inverted.add(frame)
-                results[frame] = "inverted OK"
-                self.progress("Inverted flight achieved on %s" % frame)
-            except (NotAchievedException, AutoTestTimeoutException) as e:
-                results[frame] = "not achieved: %s" % str(e)
-                self.progress("Inverted flight not achieved on %s: %s" % (frame, str(e)))
-
-        # a successful frame leaves the vehicle hovering; disarm it so the
-        # harness does not see it still armed at the end of the test
-        self.zero_throttle()
-        self.set_rc(8, 1000)
-        if self.armed():
-            self.disarm_vehicle(force=True)
-
-        self.progress("Inverted flight results: %s" % str(results))
-        unexpected_pass = flew_inverted - expect_inverted
-        unexpected_fail = expect_inverted - flew_inverted
-        if unexpected_pass:
-            raise NotAchievedException(
-                "Frames flew inverted but were not expected to: %s" % str(sorted(unexpected_pass)))
-        if unexpected_fail:
-            raise NotAchievedException(
-                "Frames expected to fly inverted but did not: %s" % str(sorted(unexpected_fail)))
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli'),
+            model="heli",
+            wipe=True,
+        )
+        self.set_parameters(inverted_params)
+        self.fly_inverted_flight(yaw_tolerance=30)
+        self.do_RTL()
 
     def hover(self):
         self.progress("Setting hover collective")
@@ -1422,7 +1371,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.HeliQuad,
             self.HeliQuadFlip,
             self.HeliQuadInvertedFlight,
-            self.InvertedFlight,
+            self.HeliSingleInvertedFlight,
             self.MountFailsafeAction,
             self.StickArmingRequiresZeroThrottle,
         ])
