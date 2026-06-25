@@ -382,7 +382,9 @@ void Xsens::send_gnsspvt_packet()
     
     struct timeval tv;
     simulation_timeval(&tv);
-    struct tm *utc_tm = gmtime(&tv.tv_sec);
+    const time_t time_sec = tv.tv_sec;
+    struct tm tmd {};
+    struct tm *utc_tm = gmtime_r(&time_sec, &tmd);
     
     write_uint32_be(&payload[payload_idx], tv.tv_usec * 1000); // Nanoseconds
     payload_idx += 4;
@@ -533,7 +535,9 @@ void Xsens::send_mtdata2_packet()
     
     struct timeval tv;
     simulation_timeval(&tv);
-    struct tm *utc_tm = gmtime(&tv.tv_sec);
+    const time_t time_sec = tv.tv_sec;
+    struct tm tmd {};
+    struct tm *utc_tm = gmtime_r(&time_sec, &tmd);
     
     write_uint32_be(&payload[payload_idx], tv.tv_usec * 1000); // Nanoseconds
     payload_idx += 4;
