@@ -33,6 +33,7 @@
 #include <AP_NavEKF/EKF_Buffer.h>
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Beacon/AP_Beacon.h>
 
 #include "AP_NavEKF/EKFGSF_yaw.h"
 
@@ -1467,7 +1468,7 @@ private:
         bool health;                  // boolean true if range beacon measurements have passed innovation consistency check
         ftype varInnov;               // range beacon observation innovation variance (m^2)
         ftype innov;                  // range beacon observation innovation (m)
-        uint32_t lastTime_ms[4];      // last time we received a range beacon measurement (msec)
+        uint32_t lastTime_ms[AP_BEACON_MAX_BEACONS];    // last time we received a range beacon measurement (msec)
         bool dataToFuse;              // true when there is new range beacon data to fuse
         Vector3F vehiclePosNED;       // NED position estimate from the beacon system (NED)
         ftype vehiclePosErr;          // estimated position error from the beacon system (m)
