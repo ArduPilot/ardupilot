@@ -654,9 +654,11 @@ void AP_Baro::init(void)
 #endif
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
-    const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::BARO);
-    _add_backend(NEW_NOTHROW AP_Baro_ExternalAHRS(*this, serial_port));
-    RETURN_IF_NO_SPACE;
+    if (AP::externalAHRS().enabled()) {
+        const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::BARO);
+        _add_backend(NEW_NOTHROW AP_Baro_ExternalAHRS(*this, serial_port));
+        RETURN_IF_NO_SPACE;
+    }
 #endif
 
 #if AP_SIM_BARO_ENABLED
