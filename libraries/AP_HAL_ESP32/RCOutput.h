@@ -56,6 +56,11 @@ public:
 
     void set_output_mode(uint32_t mask, const enum output_mode mode) override;
 
+    // queue a DShot special command (arm/beep/spin-direction/3D/save) on a single
+    // DShot channel or all of them; the rcout task transmits it repeat_count times.
+    void send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms,
+                            uint16_t repeat_count, bool priority) override;
+
     void cork() override;
     void push() override;
 
@@ -129,6 +134,16 @@ private:
         void *rmt_chan;
         void *rmt_encoder;
         uint8_t dshot_buf[2]; // persistent TX buffer for the async RMT frame
+
+        // Pending DShot special command (arm/beep/spin-direction/3D/save). While
+        // dshot_command_repeat > 0 the rcout task transmits dshot_command (value
+        // 0..47, telemetry bit set, as commands require) instead of the throttle,
+        // decrementing once per frame; 0 means "send throttle normally". Updated
+        // lock-free from the main thread (same approach as `value`): the writer
+        // sets dshot_command before dshot_command_repeat so the task, which gates
+        // on the count, never pairs a fresh count with a stale command.
+        uint16_t dshot_command;
+        uint16_t dshot_command_repeat;
     };
 
     uint32_t fast_channel_mask;

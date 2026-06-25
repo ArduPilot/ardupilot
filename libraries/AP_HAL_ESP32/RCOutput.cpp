@@ -574,9 +574,53 @@ void RCOutput::dshot_task()
             if (ch.rmt_chan == nullptr) {
                 continue; // PWM channel, not DShot
             }
-            dshot_send_chan(ch, dshot_throttle_from_pwm((uint16_t)ch.value), false);
+            if (ch.dshot_command_repeat > 0) {
+                // a special command is pending: send it with the telemetry bit set
+                // (DShot commands require it) and count down. Throttle output is
+                // suspended on this channel until the repeats are exhausted.
+                dshot_send_chan(ch, ch.dshot_command, true);
+                ch.dshot_command_repeat--;
+            } else {
+                dshot_send_chan(ch, dshot_throttle_from_pwm((uint16_t)ch.value), false);
+            }
         }
         vTaskDelay(pdMS_TO_TICKS(1)); // ~1 kHz frame rate
+    }
+}
+
+/*
+  queue a DShot special command (arm, beep, spin direction, 3D mode, save
+  settings, ...) on a single DShot channel or, with chan == ALL_CHANNELS, on all
+  of them. DShot commands occupy the reserved value range 0..47 and must be sent
+  with the telemetry bit set and repeated to be accepted; the rcout task does the
+  repeating (see dshot_task). Throttle output on a channel is suspended while its
+  command repeats are pending. command_timeout_ms and priority are accepted for
+  API compatibility but unused here: pacing comes from the ~1 kHz rcout task, so
+  repeat_count frames span ~repeat_count ms, and there is no separate command queue
+  to prioritise. Caller (AP_Motors/AP_BLHeli) is responsible for only issuing
+  commands such as direction/save while disarmed.
+ */
+void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms,
+                                  uint16_t repeat_count, bool priority)
+{
+    (void)command_timeout_ms;
+    (void)priority;
+    if (command > 47 || repeat_count == 0) {
+        return; // not a special command, or nothing to send
+    }
+    for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
+        if (chan != ALL_CHANNELS && i != chan) {
+            continue;
+        }
+        pwm_chan &ch = pwm_chan_list[i];
+        if (ch.rmt_chan == nullptr) {
+            continue; // not a DShot channel
+        }
+        // command before count (see pwm_chan in the header): the rcout task gates
+        // on dshot_command_repeat, so this ordering prevents it pairing a new count
+        // with a stale command value.
+        ch.dshot_command = command;
+        ch.dshot_command_repeat = repeat_count;
     }
 }
 
