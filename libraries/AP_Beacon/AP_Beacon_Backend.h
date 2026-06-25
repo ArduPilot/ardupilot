@@ -34,6 +34,9 @@ public:
     // update
     virtual void update() = 0;
 
+    // handle mavlink message
+    virtual void handle_msg(const struct __mavlink_message &msg) {}
+
     // set vehicle position
     // pos should be in meters in NED frame from the beacon's local origin
     // accuracy_estimate is also in meters

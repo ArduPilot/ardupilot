@@ -41,6 +41,7 @@ public:
         Pozyx  = 1,
         Marvelmind = 2,
         Nooploop  = 3,
+        Sine   = 4,
 #if AP_BEACON_SITL_ENABLED
         SITL   = 10
 #endif
@@ -66,6 +67,9 @@ public:
 
     // update state of all beacons
     void update(void);
+
+    // handle mavlink message
+    void handle_msg(const struct __mavlink_message &msg);
 
     // return origin of position estimate system in lat/lon
     bool get_origin(Location &origin_loc) const;
