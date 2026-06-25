@@ -212,22 +212,9 @@ public:
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
 
-    // return secondary attitude solution if available, as eulers in radians
-    bool get_secondary_attitude(Vector3f &eulers) const {
-        eulers = state.secondary_attitude;
-        return state.secondary_attitude_ok;
-    }
-
-    // return secondary attitude solution if available, as quaternion
-    bool get_secondary_quaternion(Quaternion &quat) const {
-        quat = state.secondary_quat;
-        return state.secondary_quat_ok;
-    }
-
-    // return secondary position solution if available
-    bool get_secondary_position(Location &loc) const {
-        loc = state.secondary_pos;
-        return state.secondary_pos_ok;
+    // return secondary estimates; note that this may return nullptr!
+    const AP_AHRS_Backend::Estimates *get_secondary_estimates() const {
+        return secondary_estimates;
     }
 
     // EKF has a better ground speed vector estimate
@@ -948,17 +935,14 @@ private:
     // if we have an estimate
     bool _airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &status) const;
 
-    // return secondary attitude solution if available, as eulers in radians
-    bool _get_secondary_attitude(Vector3f &eulers) const;
-
-    // return secondary attitude solution if available, as quaternion
-    bool _get_secondary_quaternion(Quaternion &quat) const;
-
     // set state.configured_ekf_type and the pointer to the configured backend
     void update_configured_ekf_type();
 
     // set state.active_EKF_type and the pointer to the active backend
     void update_active_EKF_type();
+
+    // update secondary backend pointers:
+    void update_secondary_backend_pointers();
 
     // get active EKF type
     EKFType _active_EKF_type(void) const;
@@ -973,9 +957,6 @@ private:
     // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
     bool _airspeed_TAS(Vector3f &vec) const;
-
-    // return secondary position solution if available
-    bool _get_secondary_position(Location &loc) const;
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     bool _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const WARN_IF_UNUSED;
@@ -1036,14 +1017,8 @@ private:
         Quaternion quat;
         bool quat_ok;
         uint16_t attitude_reset_count;
-        Vector3f secondary_attitude;
-        bool secondary_attitude_ok;
-        Quaternion secondary_quat;
-        bool secondary_quat_ok;
         Location location;
         bool location_ok;
-        Location secondary_pos;
-        bool secondary_pos_ok;
         Vector2f ground_speed_vec;
         float ground_speed;
         bool corrected_dv_valid;
@@ -1150,9 +1125,15 @@ private:
     AP_AHRS_Backend *active_backend;
     AP_AHRS_Backend::Estimates *active_estimates;
 
-    const AP_AHRS_Backend::Estimates *get_secondary_estimates() const;
-
     uint16_t last_active_estimates_attitude_reset_count;
+
+    // secondary estimates - used for reporting purposes.  If the
+    // primary backend fails this is the backend/result pair likely to
+    // be used by the vehicle.  In the case that the primary *has*
+    // failed this *continues* to be the same estimates.  For now.
+    // Note that these pointers *must* be nullptr-checked before use!
+    // AP_AHRS_Backend *secondary_backend;
+    AP_AHRS_Backend::Estimates *secondary_estimates;
 };
 
 namespace AP {

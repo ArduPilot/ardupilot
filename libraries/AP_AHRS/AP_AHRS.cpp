@@ -252,6 +252,7 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
     // sure it is set early:
     update_configured_ekf_type();
     update_active_EKF_type();
+    update_secondary_backend_pointers();
 
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduSub)
     // Copter and Sub force the use of EKF
@@ -322,6 +323,17 @@ void AP_AHRS::update_active_EKF_type()
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
+// update the pointer to the estimates containing the secondary backend's data
+void AP_AHRS::update_secondary_backend_pointers()
+{
+    EKFType secondary_type;
+    if (!_get_secondary_EKF_type(secondary_type)) {
+        secondary_estimates = nullptr;
+        return;
+    }
+    secondary_estimates = estimates_for_type(secondary_type);
+}
+
 // init sets up INS board orientation
 void AP_AHRS::init()
 {
@@ -356,6 +368,7 @@ void AP_AHRS::init()
     // we may have updated ekf_type()'s results, so set the backend again:
     update_configured_ekf_type();
     update_active_EKF_type();
+    update_secondary_backend_pointers();
 
 #if AP_CUSTOMROTATIONS_ENABLED
     // convert to new custom rotation
@@ -474,15 +487,12 @@ void AP_AHRS::update_state(void)
     update_trig();
 
     state.quat_ok = active_estimates->get_quaternion(state.quat);
-    state.secondary_attitude_ok = _get_secondary_attitude(state.secondary_attitude);
-    state.secondary_quat_ok = _get_secondary_quaternion(state.secondary_quat);
     state.location_ok = _get_location(state.location);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (state.location_ok && !state.location.initialised()) {
         AP_HAL::panic("uninitialised location returned by _get_location");
     }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    state.secondary_pos_ok = _get_secondary_position(state.secondary_pos);
     state.ground_speed_vec = active_estimates->velocity_NE;
     state.ground_speed = state.ground_speed_vec.length();
     state.corrected_dv_valid = _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
@@ -604,6 +614,7 @@ void AP_AHRS::update(bool skip_ins_update)
 
     update_configured_ekf_type();
     update_active_EKF_type();
+    update_secondary_backend_pointers();
 
     // update blinking lights, buzzer etc bsaed on active EKF type:
     update_notify_from_filter_status(active_estimates->filter_status);
@@ -981,15 +992,6 @@ bool AP_AHRS::use_compass(void)
     return active_backend->use_compass();
 }
 
-const AP_AHRS_Backend::Estimates *AP_AHRS::get_secondary_estimates() const
-{
-    EKFType secondary_ekf_type;
-    if (!_get_secondary_EKF_type(secondary_ekf_type)) {
-        return nullptr;
-    }
-    return estimates_for_type(secondary_ekf_type);
-}
-
 AP_AHRS_Backend::Estimates *AP_AHRS::estimates_for_type(EKFType type)
 {
     switch (type) {
@@ -1019,80 +1021,6 @@ AP_AHRS_Backend::Estimates *AP_AHRS::estimates_for_type(EKFType type)
 #endif
     }
     return nullptr;
-}
-
-// return secondary attitude solution if available, as eulers in radians
-bool AP_AHRS::_get_secondary_attitude(Vector3f &eulers) const
-{
-    const auto *estimates = get_secondary_estimates();
-    if (estimates == nullptr) {
-        return false;
-    }
-    eulers[0] = estimates->roll_rad;
-    eulers[1] = estimates->pitch_rad;
-    eulers[2] = estimates->yaw_rad;
-    return estimates->attitude_valid;
-}
-
-// return secondary attitude solution if available, as quaternion
-bool AP_AHRS::_get_secondary_quaternion(Quaternion &quat) const
-{
-    const auto *estimates = get_secondary_estimates();
-    if (estimates == nullptr) {
-        return false;
-    }
-    return estimates->get_quaternion(quat);
-}
-
-// return secondary position solution if available
-bool AP_AHRS::_get_secondary_position(Location &loc) const
-{
-    EKFType secondary_ekf_type;
-    if (!_get_secondary_EKF_type(secondary_ekf_type)) {
-        return false;
-    }
-
-    switch (secondary_ekf_type) {
-
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // return DCM position
-        loc = dcm_estimates.location;
-        // FIXME: we intentionally do not return whether location is
-        // actually valid here so we continue to send mavlink messages
-        // and log data:
-        return true;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        // EKF2 is secondary
-        ekf2_estimates.get_location(loc);
-        return ekf2.started;
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        // EKF3 is secondary
-        ekf3_estimates.get_location(loc);
-        return ekf3.started;
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        // SITL is secondary (should never happen)
-        return false;
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        // External is secondary
-        return external_estimates.get_location(loc);
-#endif
-    }
-
-    // since there is no default case above, this is unreachable
-    return false;
 }
 
 // set the EKF's origin location in 10e7 degrees.  This should only
