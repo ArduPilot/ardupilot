@@ -1,0 +1,345 @@
+# ==============================================================
+# Lectron FMU_CM5(pi5-autopilot) - ArduPilot Hardware Definition
+# ==============================================================
+# Board     : FMU BOARD ver1.0 / FMU_CM5_REV1.3
+# MCU       : STM32H753IIK6TR (BGA256)
+# Reference : PX4 lectron/pi5-autopilot board files
+#
+# APJ_BOARD_ID : AP_HW_LECTRON_FMU_CM5 = 7130
+# board_types.txt entry: AP_HW_LECTRON_FMU_CM5   7130
+# ==============================================================
+
+MCU STM32H7xx STM32H753xx
+OSCILLATOR_HZ 16000000
+FLASH_SIZE_KB 2048
+FLASH_RESERVE_START_KB 128
+APJ_BOARD_ID AP_HW_LECTRON_FMU_CM5
+
+# ============================================================
+# SERIAL / UART ORDER  (Pixhawk6X standard)
+# SERIAL0 = OTG1   -> USB-C                (PA11/PA12)
+# SERIAL1 = UART7  -> TELEM1               (PE8 TX, PF6 RX)
+# SERIAL2 = UART5  -> TELEM2               (PC12 TX, PD2 RX)
+# SERIAL3 = USART1 -> GPS1                 (PB6 TX, PB7 RX)
+# SERIAL4 = UART8  -> GPS2                 (PE1 TX, PE0 RX)
+# SERIAL5 = USART2 -> TELEM3 / CM5 link   (PD5 TX, PA3 RX)
+# SERIAL6 = UART4  -> External UART        (PH13 TX, PH14 RX)
+# SERIAL7 = USART3 -> DEBUG                (PD8 TX, PD9 RX)
+# -      = USART6 -> IO MCU               (PC6 TX, PC7 RX)  - IOMCU_UART, NOT in SERIAL_ORDER
+# ============================================================
+SERIAL_ORDER OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+PA9  VBUS INPUT OPENDRAIN
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# ============================================================
+# LEDs - active LOW (board_config.h: PE3/PE4/PE5 TRACE pins)
+# ============================================================
+PE3 LED_RED   OUTPUT LOW ACTIVE_LOW
+PE4 LED_GREEN OUTPUT LOW ACTIVE_LOW
+PE5 LED_BLUE  OUTPUT LOW ACTIVE_LOW
+define HAL_LED_ON 0
+
+PD10 LED_SAFETY OUTPUT HIGH ACTIVE_LOW
+
+# ============================================================
+# SPI1 - ICM-42670-P (FMU baseboard)
+# SCK:PA5 MISO:PG9 MOSI:PB5 | CS:PI9 DRDY:PF2 PWREN:PI11
+# ============================================================
+PA5 SPI1_SCK  SPI1
+PG9 SPI1_MISO SPI1
+PB5 SPI1_MOSI SPI1
+PI9  SP1_CS1    CS
+PF2  SP1_DRDY1  INPUT
+PI11 IMU1_PWR_EN OUTPUT HIGH
+
+# ============================================================
+# SPI2 - ICM-42670-P (Sensor board)
+# SCK:PI1 MISO:PI2 MOSI:PI3 | CS:PH5 DRDY:PA10 PWREN:PF4
+# ============================================================
+PI1 SPI2_SCK  SPI2
+PI2 SPI2_MISO SPI2
+PI3 SPI2_MOSI SPI2
+PH5  SP2_CS1    CS
+PA10 SP2_DRDY1  INPUT
+PF4  IMU2_PWR_EN OUTPUT HIGH
+
+# ============================================================
+# SPI3 - BMI270 (Sensor board)
+# SCK:PC10 MISO:PC11 MOSI:PB2 | CS:PI4 DRDY:PI6 PWREN:PE7
+# ============================================================
+PC10 SPI3_SCK  SPI3
+PC11 SPI3_MISO SPI3
+PB2  SPI3_MOSI SPI3
+PI4  SP3_CS1    CS
+PI6  SP3_DRDY1  INPUT
+PE7  IMU3_PWR_EN OUTPUT HIGH
+
+# ============================================================
+# SPI5 - FM25V02A FRAM
+# SCK:PF7 MISO:PH7 MOSI:PF11 | CS:PG7
+# ============================================================
+PF7  SPI5_SCK  SPI5
+PH7  SPI5_MISO SPI5
+PF11 SPI5_MOSI SPI5
+PG7  FRAM_CS CS
+
+# ============================================================
+# SPI6 - External SPI expansion
+# SCK:PB3 MISO:PA6 MOSI:PG14 | CS0:PI10 CS1:PA15 DRDY:PD12
+# ============================================================
+PB3  SPI6_SCK  SPI6
+PA6  SPI6_MISO SPI6
+PG14 SPI6_MOSI SPI6
+PI10 SP6_CS1   CS
+PA15 SP6_CS2   CS
+PD12 SP6_DRDY1 INPUT
+
+# ============================================================
+# SPI DEVICE TABLE
+# ============================================================
+SPIDEV icm42670_fmu   SPI1 DEVID1 SP1_CS1  MODE3 2*MHZ 8*MHZ
+SPIDEV icm42670_sens  SPI2 DEVID1 SP2_CS1  MODE3 2*MHZ 8*MHZ
+SPIDEV bmi270         SPI3 DEVID1 SP3_CS1  MODE3 2*MHZ 8*MHZ
+SPIDEV ramtron        SPI5 DEVID1 FRAM_CS  MODE3 8*MHZ 8*MHZ
+SPIDEV external0      SPI6 DEVID1 SP6_CS1  MODE3 2*MHZ 8*MHZ
+SPIDEV external1      SPI6 DEVID2 SP6_CS2  MODE3 2*MHZ 8*MHZ
+
+# ============================================================
+# I2C BUSES
+# I2C1: PB8/PB9   - GPS1/MAG/PM1
+# I2C2: PF1/PF0   - GPS2/MAG/PM2
+# I2C3: PA8/PH8   - External baro / ext connector
+# I2C4: PF14/PF15 - Internal sensor bus (BMM350, BMP388)
+# ============================================================
+# I2C bus internal/external bus separation
+# Bitmask: bit N = bus N marks bus as internal
+# Bus 3 (I2C4, PF14/PF15) = internal (BMM350, BMP388)
+# Bus 0 (I2C1, PB8/PB9)   = external (GPS1 MAG)
+# Bus 1 (I2C2, PF1/PF0)   = external (GPS2 MAG)
+define HAL_I2C_INTERNAL_MASK 8
+
+I2C_ORDER I2C1 I2C2 I2C3 I2C4
+
+# I2C1, GPS+MAG
+PB8  I2C1_SCL I2C1
+PB9  I2C1_SDA I2C1
+
+# I2C2, GPS2+MAG
+PF1  I2C2_SCL I2C2
+PF0  I2C2_SDA I2C2
+
+PA8  I2C3_SCL I2C3
+PH8  I2C3_SDA I2C3
+
+# I2C4 internal
+PF14 I2C4_SCL I2C4
+PF15 I2C4_SDA I2C4
+
+# ============================================================
+# SENSOR CONFIGURATION
+# ============================================================
+
+# IMUs - rotation values to be verified on first bench test
+IMU Invensensev3 SPI:icm42670_fmu  ROTATION_ROLL_180
+IMU Invensensev3 SPI:icm42670_sens ROTATION_ROLL_180_YAW_270
+IMU BMI270       SPI:bmi270        ROTATION_PITCH_180
+
+# Barometers
+# FMU baseboard BMP388: I2C2 (idx 1) addr 0x77
+# Sensor board  BMP388: I2C4 (idx 3) addr 0x77
+BARO BMP388 I2C:1:0x77
+BARO BMP388 I2C:3:0x77
+
+# compass
+define AP_COMPASS_PROBING_ENABLED 1
+
+# Magnetometer - BMM350 on I2C4 (idx 3) addr 0x14 (internal)
+COMPASS BMM350 I2C:3:0x14 false ROTATION_NONE
+
+# ============================================================
+# STORAGE
+# ============================================================
+define HAL_WITH_RAMTRON 1
+define HAL_STORAGE_SIZE 16384
+
+# ============================================================
+# HEATER - PB10 / TIM2_CH3 (board_config.h GPIO_HEATER_OUTPUT)
+# ============================================================
+PB10 HEATER OUTPUT LOW
+define HAL_HEATER_GPIO_PIN PB10
+
+# ============================================================
+# UART PINS
+# ============================================================
+PB6  USART1_TX USART1
+PB7  USART1_RX USART1
+
+PD5  USART2_TX USART2
+PA3  USART2_RX USART2
+PD4  USART2_RTS USART2
+PD3  USART2_CTS USART2
+
+PD8  USART3_TX USART3
+PD9  USART3_RX USART3
+
+PH13 UART4_TX UART4
+PH14 UART4_RX UART4
+
+PC12 UART5_TX UART5
+PD2  UART5_RX UART5
+PC9  UART5_CTS UART5
+
+PC6  USART6_TX USART6
+PC7  USART6_RX USART6
+IOMCU_UART USART6
+
+PE8  UART7_TX UART7
+PF6  UART7_RX UART7
+PF8  UART7_RTS UART7
+PE10 UART7_CTS UART7
+
+PE1  UART8_TX UART8
+PE0  UART8_RX UART8
+
+# ============================================================
+# FMU PWM (timer_config.cpp)
+# CH1:PI0/TIM5_CH4  CH2:PH12/TIM5_CH3
+# CH3:PH11/TIM5_CH2 CH4:PH10/TIM5_CH1
+# CH5:PD13/TIM4_CH2 CH6:PD14/TIM4_CH3
+# CH7:PH6/TIM12_CH1 CH8:PH9/TIM12_CH2
+# ============================================================
+PI0  TIM5_CH4  TIM5  PWM(1)
+PH12 TIM5_CH3  TIM5  PWM(2)
+PH11 TIM5_CH2  TIM5  PWM(3)
+PH10 TIM5_CH1  TIM5  PWM(4)
+PD13 TIM4_CH2  TIM4  PWM(5)
+PD14 TIM4_CH3  TIM4  PWM(6)
+PH6  TIM12_CH1 TIM12 PWM(7) NODMA
+PH9  TIM12_CH2 TIM12 PWM(8) NODMA
+
+# ============================================================
+# SDMMC2 (board.h: CK:PD6 CMD:PD7 D0:PB14 D1:PB15 D2:PG11 D3:PB4)
+# SD card detect: PC13 (board_config.h GPIO_VDD_3V3_SD_CARD_EN area)
+# ============================================================
+PD6  SDMMC2_CK   SDMMC2
+PD7  SDMMC2_CMD  SDMMC2
+PB14 SDMMC2_D0   SDMMC2
+PB15 SDMMC2_D1   SDMMC2
+PG11 SDMMC2_D2   SDMMC2
+PB4  SDMMC2_D3   SDMMC2
+# SDCARD_DETECT: pin TBD - verify from schematic
+define FATFS_HAL_DEVICE SDCD2
+define HAL_OS_FATFS_IO 1
+
+# ============================================================
+# CAN  (board.h: CAN1=PD0/PD1, CAN2=PB12/PB13)
+# ============================================================
+PD0  CAN1_RX CAN1
+PD1  CAN1_TX CAN1
+PB12 CAN2_RX CAN2
+PB13 CAN2_TX CAN2
+
+# ============================================================
+# ETHERNET - RMII
+# ETH TXD via PG13/PG12 (not PB12/PB13 - those are CAN2)
+# ETH power enable: PG15 (board_config.h GPIO_ETH_POWER_EN)
+# ============================================================
+PA1  ETH_RMII_REF_CLK ETH1
+PA2  ETH_MDIO         ETH1
+PC1  ETH_MDC          ETH1
+PA7  ETH_RMII_CRS_DV  ETH1
+PC4  ETH_RMII_RXD0    ETH1
+PC5  ETH_RMII_RXD1    ETH1
+PB11 ETH_RMII_TX_EN   ETH1
+PG13 ETH_RMII_TXD0    ETH1
+PG12 ETH_RMII_TXD1    ETH1
+PG15 VDD_ETH_EN OUTPUT LOW
+define BOARD_PHY_ID  MII_LAN8742A_ID
+define BOARD_PHY_RMII
+
+# ============================================================
+# POWER CONTROL (board_config.h)
+# ============================================================
+PG1  nVDD_BRICK1_VALID  INPUT PULLUP
+PG2  nVDD_BRICK2_VALID  INPUT PULLUP
+PG3  nVDD_USB_VALID     INPUT PULLUP
+PG4  VDD_5V_PERIPH_nEN  OUTPUT LOW   # active LOW - LOW = enabled
+PE15 VDD_5V_PERIPH_nOC  INPUT        # BQ24315 overcurrent flag (active LOW)
+PG10 VDD_5V_HIPOWER_nEN OUTPUT HIGH
+PG8  VDD_3V3_SENSORS4_EN OUTPUT LOW
+PC13 VDD_3V3_SD_CARD_EN  OUTPUT LOW
+PH2  VDD_3V3_SPEKTRUM_EN OUTPUT LOW
+
+# ============================================================
+# SAFETY SWITCH (board_config.h: PF5 in, PD10 LED)
+# ============================================================
+PF5  FMU_SAFETY_SWITCH_IN  INPUT PULLUP
+define HAL_HAVE_SAFETY_SWITCH 1
+
+# ============================================================
+# BUZZER - PF9 / TIM14_CH1 (board_config.h GPIO_BUZZER_1)
+# ============================================================
+PF9 TIM14_CH1 TIM14 GPIO(77) ALARM
+
+# ============================================================
+# RC INPUT (PPM) - PI5 / TIM8_CH1 (board_config.h GPIO_PPM_IN)
+# ============================================================
+PI5 TIM8_CH1 TIM8 RCININT PULLDOWN LOW
+
+# ============================================================
+# ADC (board_config.h PX4_ADC_GPIO)
+# ============================================================
+PA0  SCALED_VDD_3V3_S1  ADC1 SCALE(1)
+PA4  SCALED_VDD_3V3_S2  ADC1 SCALE(1)
+PB0  SCALED_VDD_3V3_S3  ADC1 SCALE(1)
+# PB1: no VDD_5V_SENS circuit - define as GPIO to prevent ADC auto-assignment
+PB1  UNUSED_PB1 OUTPUT LOW
+PC2  ADC_6V6            ADC1 SCALE(2)
+# PC3: battery voltage via divider 28V->3V (ratio 28/3 = 9.333)
+PC3  BATT_VOLT_SENS     ADC1 SCALE(9.33)
+PF12 SCALED_VDD_3V3_S4  ADC1 SCALE(1)
+
+# Battery monitor - INA238 on I2C1 (idx 0, PB8/PB9) addr 0x40
+# INA238 reads bus voltage directly; external shunt for current
+BATT_MONITOR INA238 I2C:0:0x40
+
+# ============================================================
+# MISC GPIO
+# ============================================================
+PG0  HW_VER_REV_DRIVE OUTPUT LOW
+PC0  NFC_GPIO INPUT
+
+# ============================================================
+# IO MCU - STM32F103 on PA2/PA3 connected to H7 PC6/PC7 (USART6)
+# IOMCU_UART USART6 defined above in UART section
+# ============================================================
+ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_lowpolh.bin
+# Use TIM2 for ChibiOS system tick (TIM5 is used for PWM outputs)
+STM32_ST_USE_TIMER 2
+
+# ============================================================
+# SERIAL DEFAULTS  (Pixhawk6X standard)
+# ============================================================
+# SERIAL_ORDER: OTG1 UART7 UART5 USART1 UART8 USART2 UART4 USART3
+# SERIAL0=OTG1(USB)    SERIAL1=UART7(TELEM1)  SERIAL2=UART5(TELEM2)
+# SERIAL3=USART1(GPS1) SERIAL4=UART8(GPS2)    SERIAL5=USART2(TELEM3)
+# SERIAL6=UART4(EXT)   SERIAL7=USART3(DEBUG)
+define DEFAULT_SERIAL5_PROTOCOL  2   # MAVLink2 - TELEM3
+define DEFAULT_SERIAL6_PROTOCOL  2   # MAVLink2 - External
+define DEFAULT_SERIAL7_PROTOCOL  2   # MAVLink2 - DEBUG
+
+
+# ============================================================
+# BOARD DEFINES
+# ============================================================
+define HAL_PWM_COUNT  8
+
+DMA_PRIORITY SPI1* SPI2* SPI3* SPI5* USART* UART* SDMMC*
+
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+env BUILD_ABIN True
