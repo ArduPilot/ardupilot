@@ -279,22 +279,36 @@ public:
     // order. Must only be called if have_inertial_nav() is true
     bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED;
 
-    // return the relative position NED from either home or origin
+    // return the relative position NED from home
     // return true if the estimate is valid
     bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED;
-    bool get_relative_position_NED_origin(Vector3p &vec) const WARN_IF_UNUSED;
+    bool get_relative_position_NE_home(Vector2f &posNE) const WARN_IF_UNUSED;
+    void get_relative_position_D_home(float &posD) const;
+
+    // return the relative position NED from origin
+    // return true if the estimate is valid
+    bool get_relative_position_NED_origin(Vector3p &vec) const WARN_IF_UNUSED {
+        vec.xy() = active_estimates->position_NE;
+        vec.z = active_estimates->position_D;
+        return (active_estimates->position_NE_valid && active_estimates->position_D_valid);
+    }
     bool get_relative_position_NED_origin_float(Vector3f &vec) const WARN_IF_UNUSED;
 
     // return the relative position NE from home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NE_home(Vector2f &posNE) const WARN_IF_UNUSED;
-    bool get_relative_position_NE_origin(Vector2p &posNE) const WARN_IF_UNUSED;
+    bool get_relative_position_NE_origin(Vector2p &posNE) const WARN_IF_UNUSED {
+        posNE = active_estimates->position_NE;
+        return active_estimates->position_NE_valid;
+    }
     bool get_relative_position_NE_origin_float(Vector2f &posNE) const WARN_IF_UNUSED;
 
     // return the relative position down from home or origin
     // baro will be used for the _home relative one if the EKF isn't
-    void get_relative_position_D_home(float &posD) const;
-    bool get_relative_position_D_origin(postype_t &posD) const WARN_IF_UNUSED;
+    bool get_relative_position_D_origin(postype_t &posD) const WARN_IF_UNUSED {
+        posD = active_estimates->position_D;
+        return active_estimates->position_D_valid;
+    }
+
     bool get_relative_position_D_origin_float(float &posD) const WARN_IF_UNUSED;
 
     // return location corresponding to vector relative to the

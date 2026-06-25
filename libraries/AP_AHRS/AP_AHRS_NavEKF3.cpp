@@ -142,6 +142,10 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     // origin-relative functions
     results.provides_common_origin = true;
 
+    // origin-relative position:
+    results.position_NE_valid = EKF3.getPosNE(results.position_NE);
+    results.position_D_valid = EKF3.getPosD(results.position_D);
+
     results.hagl_valid = EKF3.getHAGL(results.hagl);
 
     /*

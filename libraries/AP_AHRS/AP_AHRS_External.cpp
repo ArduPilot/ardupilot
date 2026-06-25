@@ -70,6 +70,17 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // origin-relative functions
     results.provides_common_origin = true;
 
+    // origin-relative position:
+    Location orgn;
+    if (extahrs.get_origin(orgn) &&
+        results.location_valid) {
+        const Vector3p posNED = orgn.get_distance_NED_postype(results.location);
+        results.position_NE = posNED.xy();
+        results.position_NE_valid = true;
+        results.position_D = posNED.z;
+        results.position_D_valid = true;
+    }
+
     // hagl is not supplied:
     // results.hagl_valid = false;
     // results.hagl = 0;
@@ -121,46 +132,6 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.terrain_alt_variance = 0;
     results.terrain_alt_variance_valid = true;
-}
-
-bool AP_AHRS_External::get_relative_position_NED_origin(Vector3p &vec) const
-{
-    auto &extahrs = AP::externalAHRS();
-    Location loc, orgn;
-    if (extahrs.get_origin(orgn) &&
-        extahrs.get_location(loc)) {
-        const Vector2f diff2d = orgn.get_distance_NE(loc);
-        vec = Vector3p(diff2d.x, diff2d.y,
-                       -(loc.alt - orgn.alt)*0.01);
-        return true;
-    }
-    return false;
-}
-
-bool AP_AHRS_External::get_relative_position_NE_origin(Vector2p &posNE) const
-{
-    auto &extahrs = AP::externalAHRS();
-
-    Location loc, orgn;
-    if (!extahrs.get_location(loc) ||
-        !extahrs.get_origin(orgn)) {
-        return false;
-    }
-    posNE = orgn.get_distance_NE_postype(loc);
-    return true;
-}
-
-bool AP_AHRS_External::get_relative_position_D_origin(postype_t &posD) const
-{
-    auto &extahrs = AP::externalAHRS();
-
-    Location orgn, loc;
-    if (!extahrs.get_origin(orgn) ||
-        !extahrs.get_location(loc)) {
-        return false;
-    }
-    posD = -(loc.alt - orgn.alt)*0.01;
-    return true;
 }
 
 bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
