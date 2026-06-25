@@ -21,8 +21,6 @@ The FMU follows the Pixhawk FMUv6X open standard with triple-redundant IMUs and 
 
 ## Processors and Sensors
 
-### FMU
-
 - **FMU Processor:** STM32H753IIK6TR (32-bit Arm Cortex-M7, 480 MHz, 2 MB flash, 1 MB RAM)
 - **IO Processor:** STM32F103 (32-bit Arm Cortex-M3, 72 MHz, 64 KB SRAM)
 - **Onboard sensors:**
