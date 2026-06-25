@@ -192,6 +192,7 @@ struct PACKED log_XKF3 {
 // @FieldBitmaskEnum: SS: NavFilterStatusBit
 // @Field: GPS: Filter GPS status
 // @Field: PI: Primary core index
+// @Field: AID: Position and velocity aiding mode (0:absolute, 1:none, 2:relative)
 struct PACKED log_XKF4 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -209,6 +210,7 @@ struct PACKED log_XKF4 {
     uint32_t solution;
     uint16_t gps;
     int8_t primary;
+    uint8_t aiding_mode;
 };
 
 
@@ -462,7 +464,7 @@ struct PACKED log_XKV {
     { LOG_XKF3_MSG, sizeof(log_XKF3), \
       "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGGd?--", "F-BBBBBBCCCBB00" , true }, \
     { LOG_XKF4_MSG, sizeof(log_XKF4), \
-      "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
+      "XKF4","QBcccccfffHBIHbB","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI,AID", "s#------mm------", "F-------??------" , true }, \
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
       "XKF5","QBBhhhcccCCffff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,TOfs,RI,rng,Herr,eAng,eVel,ePos,BOf", "s#----m???mrnmm", "F-----BBBBB0000" , true }, \
     { LOG_XKFA_MSG, sizeof(log_XKFA), \
