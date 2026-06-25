@@ -2,8 +2,22 @@ name: test size
 
 on:
   push:
-    paths-ignore:  # ignore autotest stuffs
-      - 'Tools/autotest/**'
+    paths-ignore:
+      # remove non chibios HAL
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_SITL/**'
+      - 'libraries/SITL/**'
+      # remove non related tools
+      - 'Tools/**'
+      - '!Tools/ardupilotwaf/**'
+      - '!Tools/AP_Bootloader/**'
+      - '!Tools/AP_Periph/**'
+      - '!Tools/scripts/build_tests/pretty_diff_size.py '
+      - '!Tools/scripts/extract_features.py'
+      - '!Tools/scripts/build_tests/global_size_summary.py'
+      - '!Tools/scripts/build_options.py'
+      - '!Tools/scripts/build_script_base.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
@@ -24,36 +38,27 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
-      # Remove generic tools
-      - 'Tools/CHDK-Script/**'
-      - 'Tools/CodeStyle/**'
-      - 'Tools/completion/**'
-      - 'Tools/CPUInfo/**'
-      - 'Tools/debug/**'
-      - 'Tools/environment_install/**'
-      - 'Tools/FilterTestTool/**'
-      - 'Tools/geotag/**'
-      - 'Tools/GIT_Test/**'
-      - 'Tools/gittools/**'
-      - 'Tools/Hello/**'
-      - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/mavproxy_modules/**'
-      - 'Tools/Pozyx/**'
-      - 'Tools/PrintVersion.py'
-      - 'Tools/simulink/**'
-      - 'Tools/UDP_Proxy/**'
-      - 'Tools/vagrant/**'
-      - 'Tools/Vicon/**'
-      # remove non CHIBIOS HAL
-      - 'libraries/AP_HAL_SITL/**'
-      - 'libraries/AP_HAL_ESP32/**'
-      - 'libraries/AP_HAL_Linux/**'
       # Remove change on other workflows
       - '.github/**'
       - '!.github/workflows/test_size.yml'  # except this one
+
   pull_request:
-    paths-ignore:  # ignore autotest stuffs
-      - 'Tools/autotest/**'
+    paths-ignore:
+      # remove non chibios HAL
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_SITL/**'
+      - 'libraries/SITL/**'
+      # remove non related tools
+      - 'Tools/**'
+      - '!Tools/ardupilotwaf/**'
+      - '!Tools/AP_Bootloader/**'
+      - '!Tools/AP_Periph/**'
+      - '!Tools/scripts/build_tests/pretty_diff_size.py '
+      - '!Tools/scripts/extract_features.py'
+      - '!Tools/scripts/build_tests/global_size_summary.py'
+      - '!Tools/scripts/build_options.py'
+      - '!Tools/scripts/build_script_base.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
@@ -74,30 +79,6 @@ on:
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
-      # Remove generic tools
-      - 'Tools/CHDK-Script/**'
-      - 'Tools/CodeStyle/**'
-      - 'Tools/completion/**'
-      - 'Tools/CPUInfo/**'
-      - 'Tools/debug/**'
-      - 'Tools/environment_install/**'
-      - 'Tools/FilterTestTool/**'
-      - 'Tools/geotag/**'
-      - 'Tools/GIT_Test/**'
-      - 'Tools/gittools/**'
-      - 'Tools/Hello/**'
-      - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/mavproxy_modules/**'
-      - 'Tools/Pozyx/**'
-      - 'Tools/PrintVersion.py'
-      - 'Tools/simulink/**'
-      - 'Tools/UDP_Proxy/**'
-      - 'Tools/vagrant/**'
-      - 'Tools/Vicon/**'
-      # remove non CHIBIOS HAL
-      - 'libraries/AP_HAL_SITL/**'
-      - 'libraries/AP_HAL_ESP32/**'
-      - 'libraries/AP_HAL_Linux/**'
       # Remove change on other workflows
       - '.github/**'
       - '!.github/workflows/test_size.yml'  # except this one
