@@ -2,7 +2,7 @@
 
 #include "AC_CustomControl_config.h"
 
-#if AP_CUSTOMCONTROL_ENABLED
+#if AP_COPTER_CUSTOMCONTROL_ENABLED
 
 #include "AC_CustomControl.h"
 
@@ -36,4 +36,4 @@ protected:
     AC_CustomControl& _frontend;
 };
 
-#endif  // AP_CUSTOMCONTROL_ENABLED
+#endif  // AP_COPTER_CUSTOMCONTROL_ENABLED
