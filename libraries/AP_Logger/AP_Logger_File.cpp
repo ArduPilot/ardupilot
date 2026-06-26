@@ -792,11 +792,13 @@ void AP_Logger_File::start_new_log(void)
         _read_fd = -1;
     }
 
-    if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
-        DEV_PRINTF("Out of space for logging\n");
-        return;
-    }
+    // disk_space_avail() calls f_getfree() which traverses the entire FAT on first
+    // call -- can take many seconds on a large card under SMP load. Skip it here:
+    // the write path in io_timer() already checks disk_space_avail() before each
+    // write and handles ENOSPC cleanly.
 
+    last_io_operation = "start_new_log/find_last";
+    _io_timer_heartbeat = AP_HAL::millis();
     uint16_t log_num = find_last_log();
     // re-use empty logs if possible
     if (_get_log_size(log_num) > 0 || log_num == 0) {
@@ -806,15 +808,17 @@ void AP_Logger_File::start_new_log(void)
         log_num = 1;
     }
     if (!write_fd_semaphore.take(1)) {
+        last_io_operation = "";
         return;
     }
     if (_write_filename) {
         free(_write_filename);
-        _write_filename = nullptr;        
+        _write_filename = nullptr;
     }
     _write_filename = _log_file_name(log_num);
     if (_write_filename == nullptr) {
         write_fd_semaphore.give();
+        last_io_operation = "";
         return;
     }
 
@@ -827,8 +831,12 @@ void AP_Logger_File::start_new_log(void)
 #endif
 
     // create the log directory if need be
+    last_io_operation = "start_new_log/mkdir";
+    _io_timer_heartbeat = AP_HAL::millis();
     ensure_log_directory_exists();
 
+    last_io_operation = "start_new_log/open";
+    _io_timer_heartbeat = AP_HAL::millis();
     EXPECT_DELAY_MS(3000);
     _writebuf.clear();
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
@@ -843,6 +851,7 @@ void AP_Logger_File::start_new_log(void)
             DEV_PRINTF("Log open fail for %s - %s\n",
                                 _write_filename, strerror(saved_errno));
         }
+        last_io_operation = "";
         return;
     }
     _last_write_ms = AP_HAL::millis();
@@ -852,9 +861,12 @@ void AP_Logger_File::start_new_log(void)
 
     // now update lastlog.txt with the new log number
     last_log_is_marked_discard = _front._params.log_disarmed == AP_Logger::LogDisarmed::LOG_WHILE_DISARMED_DISCARD;
+    last_io_operation = "start_new_log/lastlog";
+    _io_timer_heartbeat = AP_HAL::millis();
     if (!write_lastlog_file(log_num)) {
         _open_error_ms = AP_HAL::millis();
     }
+    last_io_operation = "";
 }
 
 /*
@@ -948,8 +960,14 @@ void AP_Logger_File::io_timer(void)
     }
 
 #if !AP_FILESYSTEM_LITTLEFS_ENABLED // too expensive on littlefs, rely on ENOSPC below
+    // On RP2350, f_getfree() traverses the entire FAT on its first call after mount
+    // (no cached value yet).  Over SPI with SMP contention this can exceed 5 s and
+    // trigger a false "stuck thread" report.  Skip the proactive check and rely on
+    // ENOSPC from write() below -- the same policy used for LittleFS.
+#if !defined(RP2350)
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
+        _io_timer_heartbeat = AP_HAL::millis();
         last_io_operation = "disk_space_avail";
         if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
             DEV_PRINTF("Out of space for logging\n");
@@ -960,7 +978,8 @@ void AP_Logger_File::io_timer(void)
         }
         last_io_operation = "";
     }
-#endif
+#endif // !defined(RP2350)
+#endif // !AP_FILESYSTEM_LITTLEFS_ENABLED
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer
