@@ -1927,9 +1927,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             })
             self.reboot_sitl()
             self.delay_sim_time(5, reason="allow DCM to settle")
-            # the secondary estimator has no valid estimate, so no AHRS2
-            # message is sent:
-            self.assert_not_receive_message('AHRS2', timeout=5)
+            # the secondary estimate is now reported even though it has no
+            # valid location; AHRS2 is sent regardless of estimate validity:
+            self.assert_receive_message('AHRS2', timeout=5)
         finally:
             self.context_pop()
             self.reboot_sitl()
