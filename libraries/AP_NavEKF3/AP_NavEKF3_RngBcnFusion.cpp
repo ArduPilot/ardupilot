@@ -94,6 +94,14 @@ void NavEKF3_core::SelectRngBcnFusion()
 
 void NavEKF3_core::FuseRngBcn()
 {
+    // Save raw beacon position before any modification (for fusionReport)
+    const Vector3F raw_beacon_posNED = rngBcn.dataDelayed.beacon_posNED;
+
+    // Apply XY posOffsetNED in-place to convert beacon frame -> EKF frame.
+    // Must happen before CalcRangeBeaconPosDownOffset (which reads beacon_posNED.xy).
+    rngBcn.dataDelayed.beacon_posNED.x -= rngBcn.posOffsetNED.x;
+    rngBcn.dataDelayed.beacon_posNED.y -= rngBcn.posOffsetNED.y;
+
     // declarations
     ftype pn;
     ftype pe;
@@ -269,7 +277,7 @@ void NavEKF3_core::FuseRngBcn()
         // Update the fusion report
         if (rngBcn.dataDelayed.beacon_ID < rngBcn.numFusionReports) {
             auto &report = rngBcn.fusionReport[rngBcn.dataDelayed.beacon_ID];
-            report.beaconPosNED = rngBcn.dataDelayed.beacon_posNED;
+            report.beaconPosNED = raw_beacon_posNED;
             report.innov = rngBcn.innov;
             report.innovVar = rngBcn.varInnov;
             report.rng = rngBcn.dataDelayed.rng;
