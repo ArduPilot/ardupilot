@@ -2,7 +2,7 @@
 
 The Laurel target runs ArduPilot on a custom RP2350B flight controller
 board built around the Raspberry Pi RP2350B (QFN-80, 48 GPIO) running at
-150 MHz. Unlike the Pico2 carrier-board reference target, Laurel has its
+375 MHz. Unlike the Pico2 carrier-board reference target, Laurel has its
 own fixed sensor stack, power rails, PWM outputs, edge buttons, and a
 different bus layout.
 
@@ -24,7 +24,7 @@ header-pin numbering from the Pico2 README does not apply here.
 
 ## Features
 
-- RP2350B dual-core Cortex-M33 @ 150 MHz
+- RP2350B dual-core Cortex-M33 @ 375 MHz
 - 520 KB SRAM
 - 8 MB boot/XIP flash: `W25Q64JVXGIM` (Winbond, 133 MHz max, CS = `QSPI_SS` pin75 — dedicated QMI hardware pin)
 - 16 MB blackbox flash: `W25Q128JVPIM` (Winbond, 133 MHz max, CS = `PA0`/GPIO0/pin77) — SPI bus not yet confirmed in hwdef
@@ -72,7 +72,7 @@ Current hwdef defaults:
 - `SERIAL0`: MAVLink2 over USB
 - `SERIAL1`: MSP DisplayPort
 - `SERIAL2`: GPS
-- `SERIAL3`: disabled by default; `GPIO21` is reserved for PPM-sum edge-capture RC input
+- `SERIAL3`: RCIN protocol by default (`SERIAL3_PROTOCOL=23`); receives CRSF/ELRS from receiver on `GPIO21`
 - `SERIAL4`: MAVLink2
 
 Two additional RX-only pads exist on the Laurel PCB and are not yet declared
@@ -225,8 +225,7 @@ carrier-board example.
 
 ## Storage
 
-Main parameter storage uses the RP2350 XIP flash, while logs and filesystem
-access can use the SPI-mode microSD card on the shared SPI1 bus:
+Main parameter storage uses the RP2350 XIP flash. Logs use the SPI-mode microSD card on the shared SPI1 bus (confirmed working as of 2026-06-26; `LOG_BACKEND_TYPE=1` is set `@READONLY` in defaults.parm):
 
 - main flash size: 8 MB
 - bootloader region: first 32 KB
@@ -450,14 +449,30 @@ That path is useful for:
 
 ### AP bootloader path
 
-Once the ArduPilot bootloader is installed, normal firmware update is
-expected to use the ArduPilot bootloader over USB CDC.  ie uploader.py or './waf copter --upload'
+Once the ArduPilot bootloader is installed, the preferred firmware update path
+is **OpenOCD over SWD** (see below). Do not use `uploader.py` or `./waf copter --upload`
+for Laurel — the uploader sends a MAVLink reboot-to-bootloader command and then waits
+for the board to re-enumerate; if the board does not respond immediately it hangs
+indefinitely and requires manual intervention.
 
-### SWD / OpenOCD path
+### SWD / OpenOCD path (preferred for all development flashing)
 
 Laurel exposes SWD through connector `J12` — see the Connectors section for
-the full pinout. You can flash the ELF over SWD with OpenOCD + GDB when doing
-low-level bring-up or when the USB boot path is unavailable.
+the full pinout. This is the preferred flash path for development: it always
+works regardless of board state, never hangs, and does not require the board
+to be in bootloader mode.
+
+```bash
+~/openocd-pico/openocd \
+  -s ~/openocd-pico/scripts \
+  -f interface/cmsis-dap.cfg \
+  -f target/rp2350.cfg \
+  -c "adapter speed 5000; program build/Laurel/bin/arducopter.bin verify reset exit 0x10010000"
+```
+
+**Important:** always flash `arducopter.bin` at offset `0x10010000` (the app start address,
+after the 64 KB bootloader region). Never flash `arducopter_with_bl.hex` via OpenOCD —
+that file contains segments at STM32 addresses and will overwrite the bootloader.
 
 using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
     https://github.com/raspberrypi/debugprobe/releases/download/debugprobe-v2.3.0/debugprobe_on_pico2.uf2
@@ -531,6 +546,7 @@ landed on the Pico2 base port and inherited by the current Laurel target.
 | Flash-backed parameter storage | Implemented |
 | Watchdog support | Implemented |
 | Dual-core RP2350 dispatch path | Implemented |
+| SPI-mode microSD card and AP_Logger logging | Implemented and confirmed working |
 | Boot without mandatory barometer | Implemented |
 | Boot without mandatory IMU | Implemented |
 | Build-time RP2350 pin validation | Implemented |

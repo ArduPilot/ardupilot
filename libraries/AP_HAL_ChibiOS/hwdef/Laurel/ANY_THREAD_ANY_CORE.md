@@ -138,7 +138,8 @@ adaptivity.
 | XIP lockout protocol (IBUSERR #2) | ✓ Implemented |
 | XIP lockout deadlock (IRQ26 priority) | ✓ Fixed |
 | Log_Write_GSF restored (was commented out) | ✓ Done (yawEstimator null-check in place) |
-| main loop rate (target 400 Hz) | **360–367 Hz** (Config E: SPI on Core1 + DCM/8 + ekf_decim_min=2) |
+| XIP stall crashes: UNDEFINSTR + BusFault (ARCH-003) | ✓ Fixed 2026-06-26 — ChibiOS scheduler in SRAM, `__rp_dma_channels` in SRAM, DMA guards |
+| main loop rate (target 400 Hz) | **296 Hz** settled (Config A, stable). Config E (360–367 Hz) needs re-measurement after XIP stall fixes. |
 | `main=700+Hz` INTERNAL ERROR crash | ✓ Fixed (root cause: c1_vtable bank conflict) |
 
 ---
@@ -158,8 +159,7 @@ SCRATCH[3] = 0x00000100  (CFSR = IBUSERR, BusFault bit 8)
 ### Why `main=700+Hz` means INTERNAL ERROR, not performance
 When ArduPilot raises an `AP_InternalError` (e.g. `flow_of_control`, `invalid_arg`),
 the scheduler enters a fast-spinning empty loop. The main loop counter increments
-rapidly with zero real work — hence very high Hz readings. A settled healthy rate is
-500–600 Hz (post EKF -O2 and semaphore optimisations); target is 400 Hz.
+rapidly with zero real work — hence very high Hz readings. The settled healthy main loop rate on Laurel is ~296 Hz (Config A); target is 400 Hz.
 Never interpret 700+ Hz as "running fast" — diagnose the internal error first.
 
 ### Root Cause
@@ -227,10 +227,11 @@ AP_Param::load_all()
       → rp_flash_enter_xip()  ← XIP RE-ENABLED
 ```
 
-**AP_Logger is NOT the cause.** Laurel defaults have `LOG_BACKEND_TYPE 0`, disabling
-all AP_Logger backends. AP_Logger_Flash uses an external SPI flash chip anyway; it
-does not write to the internal XIP flash. The internal flash writes are exclusively
-from AP_FlashStorage (parameter storage).
+**AP_Logger is NOT the cause of the XIP stall.** AP_Logger_Flash uses an external SPI flash chip
+and does not write to internal XIP flash. The internal flash writes that trigger XIP stall are
+exclusively from AP_FlashStorage (parameter storage). Note: as of 2026-06-26, Laurel defaults
+have `LOG_BACKEND_TYPE 1 @READONLY` (SD card logging enabled) — but this still does not write
+to internal flash and does not affect the XIP lockout protocol.
 
 ### The Hook Point
 The EFL driver provides weak no-op hooks bracketing every XIP-off operation:
@@ -616,7 +617,7 @@ SCHED_LOOP_RATE = 400  (Core0 main loop target — never lower this)
 |---|---|
 | ~~Re-enable Log_Write_GSF~~ | ✓ DONE — null-guard in place, no crash |
 | ~~GCS update rate reduction (50Hz → 25Hz on RP2350)~~ | ✓ DONE |
-| Main loop 400 Hz target not yet met (best: 360–367 Hz Config E, gap ~35 Hz) | **Open — see BUGS.md PERF-002** |
+| Main loop 400 Hz target not yet met (settled: 296 Hz Config A; Config E 360–367 Hz needs re-measurement after 2026-06-26 XIP fixes) | **Open — see BUGS.md PERF-002** |
 | Lock-free EKF result sharing to eliminate `_rsem` stall in `read_AHRS` (~+40 Hz) | **Open — see BUGS.md PERF-003** |
 | `InertialSensor::update` cross-core latency 405 µs → 156 µs target (~+18 Hz) | **Open — see BUGS.md PERF-004** |
 | `AP_InternalError` bitmask not preserved across WD reset (invisible post-reboot) | **Open — see BUGS.md DIAG-001** |
@@ -637,8 +638,10 @@ SCHED_LOOP_RATE = 400  (Core0 main loop target — never lower this)
 | `modules/ChibiOS/os/hal/ports/RP/LLD/TIMERv1/hal_st_lld.c` | ChibiOS tick ISR handlers (Vector40=Core0, Vector44=Core1) |
 | `hwdef/common/rp2350_core_affinity.h` | Per-thread core assignment `#define`s |
 | `hwdef/Laurel/hwdef.dat` | Board config — `RP_CORE1_START TRUE`, `SCHED_LOOP_RATE 400`, `FSTRATE_*` |
-| `AP_NavEKF3/AP_NavEKF3_Logging.cpp` | `Log_Write_GSF` restored — null-guard in place |
-| `AP_NavEKF3/AP_NavEKF3_Logging.cpp` | `Log_Write_GSF` null-guard in place |
+| `AP_NavEKF3/AP_NavEKF3_Logging.cpp` | `Log_Write_GSF` restored with null-guard in place |
+| `modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/compilers/GCC/chcoreasm.S` | Per-function `.section` directives for `PendSV_Handler`, `SVC_Handler`, `__port_thread_start` — enables RAMFUNC2 placement |
+| `modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c` | `__rp_dma_channels` moved to `.data` (SRAM) to survive XIP stall |
+| `modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h` | NULL + DMA base validity guards on `dmaChannelAbortX` and related functions |
 
 
 

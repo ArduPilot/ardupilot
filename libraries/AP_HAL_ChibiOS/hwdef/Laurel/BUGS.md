@@ -1,6 +1,6 @@
 # Laurel / RP2350 Known Bugs and Flight-Blocking Issues
 
-Last updated: 2026-06-26 (SD card / logging fully fixed). Branch: `rp2350-v5-etc-dual-core`.
+Last updated: 2026-06-26 (XIP stall safety fixes + SD card / logging fully fixed). Branch: `rp2350-v5-etc-dual-core`.
 
 ---
 
@@ -8,6 +8,7 @@ Last updated: 2026-06-26 (SD card / logging fully fixed). Branch: `rp2350-v5-etc
 
 ### PERF-001 / FLY-002 — EKF CPU overload → auto-decimates to 8× (123 Hz) → all GPS modes blocked
 **Observed:** 2026-06-24. Tlog: `laurel_2026-06-24_20-36-19.tlog`.
+**⚠️ Re-measurement needed (2026-06-26):** These numbers were taken before the XIP stall safety fixes (ARCH-003 below) and before SD card logging was working. ChibiOS scheduler and DMA code now run from SRAM instead of XIP flash, and the SD card no longer crashes the board at boot — both may shift the EKF duty cycle and Core1 load. Re-run tasks.txt profiling with current firmware before acting on the numbers below.
 **Symptom (boot):** Every boot, EKF auto-decimation cascade fires within the first 40s:
 `EKF CPU 99% (>50), decim->4` → `decim->5` → `decim->6` → `decim->7` → `decim->8`
 Settles at: `C1: rate=988Hz ekf=123Hz ekf_duty=94% decim=8`. Core1 at 99%. Does not
@@ -77,16 +78,17 @@ once, it persists in flash, never needed again until hardware changes.
      No firmware was reflashed between those cal attempts and the flight. This points to
      a separate StorageFlash write/read fault on RP2350: params are written but either
      not flushed to flash or the wrong flash area is being used.
-**Investigation needed:**
+**⚠️ Status update (2026-06-26):** The XIP stall safety fixes (ARCH-003) may have resolved mechanism 2 above. AP_Param flash writes were triggering DMA BusFaults and ChibiOS UNDEFINSTR crashes during the write window. If the write aborted mid-erase due to a crash, the parameter page would be left erased (0xFF) rather than written — appearing as params reverting to defaults after reboot. With the XIP stall fixes in place, flash writes should now complete reliably. **Re-test required before closing this bug:** perform a 6-position accel cal, reboot without reflashing, verify `INS_ACCOFFS_X/Y/Z` persist.
+**Investigation needed (if still failing after re-test):**
   - After 6-position cal completes in Mission Planner, immediately fetch full param list
     and verify `INS_ACCOFFS_X/Y/Z` are non-zero and `INS_ACC_CALTEMP` is non-zero.
   - Reboot (without reflashing) and fetch params again — if INS_ACCOFFS_* revert to 0,
-    the StorageFlash backend is broken.
+    the StorageFlash backend is still broken independently of XIP stall.
   - Check `HAL_STORAGE_SIZE` and StorageFlash page layout in hwdef.dat vs the actual
     binary size to confirm the parameter area is not being overwritten by OpenOCD.
   - Check `AP_Param::save_io_worker()` / `StorageFlash::write()` paths on RP2350 for
     any early-return or failed erase condition.
-**Workaround (none available):** Until fixed, calibration must be redone after every
+**Workaround (none available):** Until confirmed fixed, calibration must be redone after every
 reflash. The flight blocks remain in place until this is resolved. See BUG-004.
 
 ### CAL-002 — RC not calibrated / not found
