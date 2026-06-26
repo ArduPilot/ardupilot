@@ -447,6 +447,9 @@ private:
     AP_Float _rngBcnNoise;          // Range beacon measurement noise (m)
     AP_Int16 _rngBcnInnovGate;      // Percentage number of standard deviations applied to range beacon innovation consistency check
     AP_Int8  _rngBcnDelay_ms;       // effective average delay of range beacon measurements rel to IMU (msec)
+    AP_Float _rngBcnMaxHDOP;        // Maximum usable HDOP of range beacons to perform MLAT recovery
+    AP_Int8  _rngBcnRecPasses;      // Number of consecutive recovery passes before the EKF position is reset
+    AP_Int16 _rngBcnRecFailures;    // Failed-fusion count threshold for MLAT recovery (0 = disabled)
     AP_Float _useRngSwSpd;          // Maximum horizontal ground speed to use range finder as the primary height source (m/s)
     AP_Float _accBiasLim;           // Accelerometer bias limit (m/s/s)
     AP_Int8 _magMask;               // Bitmask forcing specific EKF core instances to use simple heading magnetometer fusion.
