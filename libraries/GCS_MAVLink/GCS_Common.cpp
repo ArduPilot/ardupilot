@@ -51,6 +51,7 @@
 #include <AP_Baro/AP_Baro.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Terrain/AP_Terrain.h>
@@ -4421,6 +4422,17 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
 #if AP_MAVLINK_FTP_ENABLED
     case MAVLINK_MSG_ID_FILE_TRANSFER_PROTOCOL:
         GCS_FTP::handle_file_transfer_protocol(msg, chan);
+        break;
+#endif
+
+#if AP_BEACON_ENABLED
+    case MAVLINK_MSG_ID_RANGING_BEACON:
+        {
+            AP_Beacon *beacon = AP::beacon();
+            if (beacon != nullptr) {
+                beacon->handle_msg(msg);
+            }
+        }
         break;
 #endif
 
