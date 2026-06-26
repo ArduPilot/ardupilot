@@ -392,9 +392,9 @@ void AP_InertialSensor_ADIS16607::read_sensor_fifo(void)
         } else if (ch == ADIS16607_FIFO_CHANNEL_MAX_INDEX) {
             need_sync = false;
         } else {
-            // Read to end of FIFO block
+            // Read to end of FIFO block (data discarded; the read advances the FIFO)
             while (fifo_word_num != 0) {
-                val = read_reg16(REG_FIFO_DATA);
+                UNUSED_RESULT(read_reg16(REG_FIFO_DATA));
                 ch = read_reg16(REG_FIFO_CH_INDEX);
                 fifo_word_num--;
                 if (ch == ADIS16607_FIFO_CHANNEL_MAX_INDEX) {
