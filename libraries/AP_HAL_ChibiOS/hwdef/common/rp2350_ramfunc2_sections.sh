@@ -22,8 +22,12 @@ raw_txt="$tmpdir/raw_symbols.txt"
 map_txt="$tmpdir/mangled_map.txt"
 
 # Collect all defined global symbols from build artifacts (done once, shared).
+# nm cannot read GIMPLE-only LTO objects (empty/guarded-out translation units)
+# and returns non-zero for them; tolerate that under pipefail so those objects
+# are skipped without aborting. Symbols from readable objects in the same batch
+# are still emitted.
 find "$buildroot" -type f \( -name '*.a' -o -name '*.o' \) -print0 \
-    | xargs -0 -r nm --defined-only 2>/dev/null \
+    | { xargs -0 -r nm --defined-only 2>/dev/null || true; } \
   | awk '
       {
           n=NF
@@ -62,6 +66,7 @@ generate_ld_from_registry() {
         /^[[:space:]]*$/ { next }
         NF >= 2 {
             s=$2
+            gsub(/#.*/, "", s)
             gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
             if (s != "") print s
         }
