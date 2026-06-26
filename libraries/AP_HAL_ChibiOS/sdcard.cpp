@@ -34,8 +34,12 @@ static HAL_Semaphore sem;
 #endif
 static bool sdcard_running;
 static uint32_t sdcard_last_fail_ms;
+static uint32_t sdcard_retry_interval_ms;
 #ifndef HAL_SDCARD_RETRY_INTERVAL_MS
 #define HAL_SDCARD_RETRY_INTERVAL_MS 2000U
+#endif
+#ifndef HAL_SDCARD_RETRY_INTERVAL_MAX_MS
+#define HAL_SDCARD_RETRY_INTERVAL_MAX_MS 30000U
 #endif
 #endif
 
@@ -292,11 +296,15 @@ bool sdcard_retry(void)
         // Avoid repeated long probe sequences when no card is present.
         // Boot paths can call retry_mount() many times in a tight loop.
         const uint32_t now_ms = AP_HAL::millis();
-        if ((now_ms - sdcard_last_fail_ms) < HAL_SDCARD_RETRY_INTERVAL_MS) {
+        const uint32_t interval = (sdcard_retry_interval_ms != 0)
+                                  ? sdcard_retry_interval_ms
+                                  : HAL_SDCARD_RETRY_INTERVAL_MS;
+        if ((now_ms - sdcard_last_fail_ms) < interval) {
             return false;
         }
         if (sdcard_init()) {
             sdcard_last_fail_ms = 0;
+            sdcard_retry_interval_ms = 0;
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
 // create APM directory without re-entering AP::FS()
 // callers may already hold the FATFS backend mutex on targets where mutexes are non-recursive.
@@ -305,6 +313,17 @@ bool sdcard_retry(void)
 #endif
         } else {
             sdcard_last_fail_ms = now_ms;
+            // exponential backoff: 1 s → 2 s → 4 s … → 30 s max
+            // fast early retries catch the SD card power-on delay (~1–2 s);
+            // the cap avoids hammering the SPI bus when no card is present.
+            if (sdcard_retry_interval_ms == 0) {
+                sdcard_retry_interval_ms = HAL_SDCARD_RETRY_INTERVAL_MS;
+            } else {
+                sdcard_retry_interval_ms = sdcard_retry_interval_ms * 2;
+                if (sdcard_retry_interval_ms > HAL_SDCARD_RETRY_INTERVAL_MAX_MS) {
+                    sdcard_retry_interval_ms = HAL_SDCARD_RETRY_INTERVAL_MAX_MS;
+                }
+            }
         }
     }
 #if AP_CRASHDUMP_FATFS_ENABLED && (HAL_USE_SDC || \
