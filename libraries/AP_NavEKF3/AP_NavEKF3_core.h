@@ -926,6 +926,10 @@ private:
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
     void UpdateAglKf();
+
+    // Reset horizontal velocity to the optical-flow-derived ground velocity. Used to recover from a
+    // single-axis flow innovation lockout. Only safe when the AGL KF supplies the height (and hence range).
+    void ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody);
 #endif
 
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -1338,6 +1342,14 @@ private:
     ftype hgtMea;                   // height measurement derived from either baro, gps or range finder data (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    uint32_t flowFuseTimeAxis_ms[2];// per-axis time the flow innovation test last passed, used to detect a single-axis lockout
+    uint8_t flowVelResetCount;      // count of horizontal velocity resets triggered by optical flow recovery
+    uint8_t flowVelResetReason;     // reason for the most recent optical-flow horizontal velocity reset
+    uint8_t flowVelResetWindowCount;// count of optical-flow horizontal velocity resets in the current rate window
+    uint32_t flowVelResetWindow_ms; // start time of the optical-flow horizontal velocity reset rate window
+    bool flowVelResetUnhealthy;     // true when repeated flow velocity resets have made flow aiding untrustworthy
+#endif
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
     ftype R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2

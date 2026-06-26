@@ -213,6 +213,14 @@ void NavEKF3_core::InitialiseVariables()
     rngValidMeaTime_ms = imuSampleTime_ms;
     flowMeaTime_ms = 0;
     prevFlowFuseTime_ms = 0;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = 0;
+    flowVelResetCount = 0;
+    flowVelResetReason = 0;
+    flowVelResetWindowCount = 0;
+    flowVelResetWindow_ms = 0;
+    flowVelResetUnhealthy = false;
+#endif
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;

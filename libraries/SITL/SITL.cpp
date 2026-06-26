@@ -184,6 +184,16 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Opflow data delay
     // @Units: ms
     AP_GROUPINFO("FLOW_DELAY",    36, SIM,  flow_delay, 0),
+    // @Param: FLOW_OFS_X
+    // @DisplayName: Optical flow rate offset X
+    // @Description: Constant offset added to the X axis simulated optical flow rate, for fault injection (false motion on one axis while stationary)
+    // @Units: rad/s
+    AP_GROUPINFO("FLOW_OFS_X",      37, SIM,  flow_offset_x, 0),
+    // @Param: FLOW_OFS_Y
+    // @DisplayName: Optical flow rate offset Y
+    // @Description: Constant offset added to the Y axis simulated optical flow rate, for fault injection (false motion on one axis while stationary)
+    // @Units: rad/s
+    AP_GROUPINFO("FLOW_OFS_Y",      38, SIM,  flow_offset_y, 0),
     // @Param: ADSB_COUNT
     // @DisplayName: Number of ADSB aircrafts
     // @Description: Total number of ADSB simulated aircraft

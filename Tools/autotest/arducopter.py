@@ -3824,6 +3824,121 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def EK3_FlowAxisLockoutRecovery(self):
+        '''Recover horizontal velocity from a single-axis optical-flow innovation lockout'''
+        # A residual one-axis accel bias under optical-flow nav can drive that axis's
+        # velocity estimate to diverge: once its flow innovation exceeds the gate the
+        # axis is rejected continuously, while the healthy axis keeps the shared
+        # flow-fusion timer fresh so the 5 s AID_RELATIVE timeout never fires. With the
+        # AGL KF enabled, FuseOptFlow re-anchors horizontal velocity to the flow
+        # measurement (gated on aglKfValid so the range, and thus the flow-derived
+        # velocity, is trustworthy). The rule: the recovery is allowed only when the
+        # AGL KF gate is set. Prove both halves - reset fires and bounds velocity with
+        # the gate on; no reset and a larger velocity error with it off.
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "EK3_OPTIONS": 8,  # AglKfForOptflow
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        # flow is not healthy stationary, so climb in ALT_HOLD to a low hover;
+        # ALT_HOLD leaves horizontal position uncontrolled so the EKF velocity
+        # divergence is observed without the Loiter controller fighting it.
+        self.takeoff(alt_min=2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+        self.delay_sim_time(5)
+
+        self.start_subtest("AGL KF gate on: single-axis lockout is recovered")
+        self.context_collect('STATUSTEXT')
+        # a body-X accel bias drives the X velocity estimate to ramp; once its flow
+        # innovation exceeds the gate the axis locks out and diverges
+        self.set_parameter("SIM_ACC1_BIAS_X", 1.5)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=60)
+        # the injected bias perturbs the estimate, so don't rely on a graceful landing
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("AGL KF gate off: no recovery, velocity diverges")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_X": 0,
+            "EK3_OPTIONS": 0,  # clear AglKfForOptflow
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(alt_min=2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+        self.delay_sim_time(5)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("SIM_ACC1_BIAS_X", 1.5)
+        # the lockout still occurs (proves the case is not vacuous): the EKF velocity
+        # estimate runs away because the rejected axis is never corrected or reset
+        self.wait_groundspeed(4, 1000, timeout=40)
+        # but with the gate off the recovery must not fire
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("flow vel reset fired without the AGL KF gate")
+        # the velocity estimate is diverged, so a normal landing won't settle - force disarm
+        self.disarm_vehicle(force=True)
+
+    def EK3_FlowMinHeightFloor(self):
+        '''Below EK3_FLOW_MIN_H the EKF zeroes optical flow so bad flow cannot drive a phantom velocity'''
+        # When the rangefinder shows the height is below the flow focus floor, the flow cannot focus
+        # and the EKF treats it as zero motion, holding velocity near zero rather than dead-reckoning a
+        # phantom an unfocused reading would produce (which a position controller brakes against on the
+        # descent to land). The floor height is raised above the hover altitude here so it engages at a
+        # controllable height. Proved both halves: with the floor active an injected accel bias - which
+        # otherwise drives a flow lockout and a runaway velocity estimate - leaves the EKF groundspeed
+        # bounded; with the floor disabled the same bias diverges it.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "EK3_IMU_MASK": 1,   # single core so the injected bias is not masked by a lane switch
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        def max_groundspeed_with_bad_flow(flow_min_h):
+            self.set_parameters({"EK3_FLOW_MIN_H": flow_min_h, "SIM_FLOW_OFS_X": 0})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            # hover at ~3 m; with the floor at 5 m this is "below focus" so flow is zeroed
+            self.takeoff(alt_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+            self.delay_sim_time(5)
+            # inject a flow-rate offset: the sensor reads a phantom flow, as it does when it
+            # cannot focus near the ground. Implied phantom velocity ~ offset * range.
+            self.set_parameter("SIM_FLOW_OFS_X", 0.7)
+            tstart = self.get_sim_time()
+            maxspd = 0.0
+            while self.get_sim_time() - tstart < 20:
+                m = self.assert_receive_message('GLOBAL_POSITION_INT')
+                maxspd = max(maxspd, math.sqrt(m.vx**2 + m.vy**2) * 0.01)
+            self.set_parameter("SIM_FLOW_OFS_X", 0)
+            self.disarm_vehicle(force=True)
+            return maxspd
+
+        self.start_subtest("Floor active: bad flow below focus height is ignored, velocity stays bounded")
+        spd_floor = max_groundspeed_with_bad_flow(5.0)
+        self.progress("max EKF groundspeed with floor active: %.2f m/s" % spd_floor)
+        if spd_floor > 1.0:
+            raise NotAchievedException(
+                "flow floor failed to bound the velocity estimate (%.2f m/s)" % spd_floor)
+
+        self.start_subtest("Floor disabled: bad flow drives a phantom velocity estimate")
+        spd_nofloor = max_groundspeed_with_bad_flow(0.0)
+        self.progress("max EKF groundspeed with floor disabled: %.2f m/s" % spd_nofloor)
+        if spd_nofloor < 1.5:
+            raise NotAchievedException(
+                "expected the phantom velocity to grow with the floor disabled (%.2f m/s)" % spd_nofloor)
+
+        self.reboot_sitl(force=True)
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -14289,6 +14404,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
+             self.EK3_FlowAxisLockoutRecovery,
+             self.EK3_FlowMinHeightFloor,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,

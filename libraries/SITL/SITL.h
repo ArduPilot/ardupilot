@@ -246,6 +246,8 @@ public:
     AP_Int8  flow_enable; // enable simulated optflow
     AP_Int16 flow_rate; // optflow data rate (Hz)
     AP_Int8  flow_delay; // optflow data delay
+    AP_Float flow_offset_x; // optflow rate offset (rad/sec) added on x axis, for fault injection
+    AP_Float flow_offset_y; // optflow rate offset (rad/sec) added on y axis, for fault injection
     AP_Int8  terrain_enable; // enable using terrain for height
     AP_Int16 pin_mask; // for GPIO emulation
     AP_Float speedup; // simulation speedup

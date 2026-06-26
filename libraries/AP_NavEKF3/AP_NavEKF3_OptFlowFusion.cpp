@@ -50,6 +50,21 @@ void NavEKF3_core::SelectFlowFusion()
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
     }
+#if AP_RANGEFINDER_ENABLED
+    // In flight, also zero the flow once the rangefinder shows the height is below the sensor's
+    // focus floor (EK3_FLOW_MIN_H). The flow cannot focus that low and returns unfocused garbage;
+    // treating it as zero motion holds the velocity near zero - and makes the lockout reset, which
+    // reads flowRadXYcomp, reset to zero - instead of dead-reckoning a phantom that a position
+    // controller would brake against on the descent to land. The rangefinder stays valid down to
+    // the ground, unlike the flow, so it is the trustworthy near-ground height here.
+    else if (takeOffDetected && (frontend->_flowMinHgt > 0.0f) &&
+             (imuSampleTime_ms - rngValidMeaTime_ms < 500) &&
+             (rangeDataDelayed.rng * prevTnb.c.z < frontend->_flowMinHgt)) {
+        ofDataDelayed.flowRadXYcomp.zero();
+        ofDataDelayed.flowRadXY.zero();
+        flowDataValid = true;
+    }
+#endif
 
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
     if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
@@ -685,6 +700,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         if (really_fuse && (flowTestRatio[obsIndex]) < 1.0f && (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) && (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
             // record the last time observations were accepted for fusion
             prevFlowFuseTime_ms = imuSampleTime_ms;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            // record per-axis acceptance so a single-axis lockout can be detected
+            flowFuseTimeAxis_ms[obsIndex] = imuSampleTime_ms;
+#endif
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;
@@ -722,6 +741,47 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         }
     }
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // Recover from a single-axis flow innovation lockout. When one axis is rejected for longer than
+    // FLOW_AXIS_LOCKOUT_MS while the other keeps passing, the rejected axis's velocity component
+    // diverges undetected because the healthy axis keeps the shared flow-fusion timer fresh, so the
+    // 5 s AID_RELATIVE timeout never fires. Re-anchor horizontal velocity to the flow measurement.
+    // Gated on the AGL KF being valid so range (and thus the flow-derived velocity) is trustworthy.
+    const uint32_t FLOW_AXIS_LOCKOUT_MS = 500;
+    const uint32_t FLOW_RESET_WINDOW_MS = 10000;
+    const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
+    if (really_fuse &&
+        frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
+        PV_AidingMode == AID_RELATIVE && takeOffDetected &&
+        (ofDataDelayed.flowRadXY.x < frontend->_maxFlowRate) &&
+        (ofDataDelayed.flowRadXY.y < frontend->_maxFlowRate)) {
+        const uint32_t stale0 = imuSampleTime_ms - flowFuseTimeAxis_ms[0];
+        const uint32_t stale1 = imuSampleTime_ms - flowFuseTimeAxis_ms[1];
+        // one axis locked out, the other still passing
+        if ((MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) && (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS)) {
+            ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody);
+            flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
+            prevFlowFuseTime_ms = imuSampleTime_ms;
+            if (flowVelResetCount < UINT8_MAX) {
+                flowVelResetCount++;
+            }
+            flowVelResetReason = 1;
+            if (flowVelResetWindow_ms == 0 || imuSampleTime_ms - flowVelResetWindow_ms > FLOW_RESET_WINDOW_MS) {
+                flowVelResetWindow_ms = imuSampleTime_ms;
+                flowVelResetWindowCount = 0;
+            }
+            if (flowVelResetWindowCount < UINT8_MAX) {
+                flowVelResetWindowCount++;
+            }
+            if (!flowVelResetUnhealthy && flowVelResetWindowCount >= FLOW_RESET_MAX_IN_WINDOW) {
+                flowVelResetUnhealthy = true;
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow aiding unhealthy", (unsigned)imu_index);
+            }
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow vel reset (axis lockout)", (unsigned)imu_index);
+        }
+    }
+#endif
+
     // store optical flow rates for use in external calibration
     flowCalSample.timestamp_ms = imuSampleTime_ms;
     flowCalSample.flowRate.x = ofDataDelayed.flowRadXY.x;
@@ -731,6 +791,49 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     flowCalSample.losPred.x = losPred[0];
     flowCalSample.losPred.y = losPred[1];
 }
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+// Reset horizontal velocity to the velocity implied by the optical flow measurement. Inverts the flow
+// observation model losPred = {relVelSensor.y, -relVelSensor.x}/range to recover the sensor-frame
+// relative velocity, removes the sensor lever-arm rotation term and rotates back to NED. The
+// along-boresight component is unobserved by flow, so the current vertical estimate is retained.
+void NavEKF3_core::ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody)
+{
+    // store velocity before the reset so the logged reset delta can be computed
+    velResetNE.x = stateStruct.velocity.x;
+    velResetNE.y = stateStruct.velocity.y;
+
+    // sensor-frame velocity contribution from body rates acting on the sensor lever arm
+    const Vector3F rotVelSensor = ofDataDelayed.bodyRadXYZ % posOffsetBody;
+
+    Vector3F relVelSensorMeas;
+    relVelSensorMeas.x = -ofDataDelayed.flowRadXYcomp.y * range;
+    relVelSensorMeas.y =  ofDataDelayed.flowRadXYcomp.x * range;
+    relVelSensorMeas.z = ((prevTnb * stateStruct.velocity) + rotVelSensor).z;
+
+    const Vector3F velNED = prevTnb.mul_transpose(relVelSensorMeas - rotVelSensor);
+    stateStruct.velocity.x = velNED.x;
+    stateStruct.velocity.y = velNED.y;
+
+    // reset the velocity covariance to the flow-derived velocity uncertainty (flow rate noise * range)
+    zeroStatesVarCov(4, 5);
+    P[4][4] = P[5][5] = sq(MAX(frontend->_flowNoise, 0.05f) * range);
+
+    // propagate the reset through the output observer buffer
+    for (uint8_t i = 0; i < imu_buffer_length; i++) {
+        storedOutput[i].velocity.x = stateStruct.velocity.x;
+        storedOutput[i].velocity.y = stateStruct.velocity.y;
+    }
+    outputDataNew.velocity.x = stateStruct.velocity.x;
+    outputDataNew.velocity.y = stateStruct.velocity.y;
+    outputDataDelayed.velocity.x = stateStruct.velocity.x;
+    outputDataDelayed.velocity.y = stateStruct.velocity.y;
+
+    velResetNE.x = stateStruct.velocity.x - velResetNE.x;
+    velResetNE.y = stateStruct.velocity.y - velResetNE.y;
+    lastVelReset_ms = imuSampleTime_ms;
+}
+#endif // EK3_FEATURE_OPTFLOW_AGL_KF
 
 // retrieve latest corrected optical flow samples (used for calibration)
 bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, Vector2f& bodyRate, Vector2f& losPred) const
