@@ -1,6 +1,30 @@
 ArduPilot Rover Release Notes:
 ------------------------------------------------------------------
-Release 4.7.0-beta7 13-June-2026
+Release 4.7.0-beta8 29-June-2026
+
+Changes from 4.7.0-beta7
+
+1) Board specific changes
+
+- SkystarsH7HDv3 onboard baro changed to SPL06 (@andyp1per, PR:33333)
+- TBS LUCID H7 OEM board added (@andyp1per, PR:33337)
+- TBS LUCID H7 V3 board added (@andyp1per, PR:33337)
+
+2) Driver changes
+
+- ASM330LHH IMU axes order fixed (@n-ito2222, PR:32921)
+
+3) Library changes
+
+- AP_Compass: COMPASS_DISBLMSK bug on internal compasses fixed (@Georacer, PR:33553)
+- AP_MAVLinkCAN: CAN_FORWARD rejects negative CAN bus indices (@CSmith1539, PR:33376)
+- AP_Mount: POI_LOCK does not need terrain to build (@peterbarker, PR:33396)
+- AP_Mount: POI_LOCK function enabled by default in all >2MB boards (@rmackay9, PR:33372)
+- GCS_MAVLink: Serial port blocking write bug fixed (@tridge, PR:33437)
+- Custom Build Server dependency fix for DroneCAN and Generator (@peterbarker, PR:33429)
+
+------------------------------------------------------------------
+Release 4.7.0-beta7 13-June- 2026
 
 Warnings
 
