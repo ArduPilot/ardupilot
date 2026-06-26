@@ -64,14 +64,14 @@
 
 #ifndef TIMER_THD_WA_SIZE
 // Increased from 1536: live threads.txt showed timer at 84% (288 B free).
-#define TIMER_THD_WA_SIZE   2048
+#define TIMER_THD_WA_SIZE   3072
 #endif
 
 #ifndef RCOUT_THD_WA_SIZE
 #if defined(RP2350)
 // RP2350/Pico2 debug builds exercise deeper RCOutput paths and need a larger working area.
-// Bumped 1024 → 1536 → 2048 → 4096 → 8192: threads.new2.txt showed 4168/4352 used (95.8%) with the 4096 allocation.
-#define RCOUT_THD_WA_SIZE    8192
+// Bumped 1024 → 1536 → 2048 → 4096 → 8192 → 10240: threads.new3.txt showed 8280/8448 used (98.0%) with 8192 allocation.
+#define RCOUT_THD_WA_SIZE    14336
 #else
 #define RCOUT_THD_WA_SIZE    512
 #endif
@@ -80,8 +80,8 @@
 #ifndef RCIN_THD_WA_SIZE
 #if defined(RP2350)
 // RP2350/Pico2 RC-in protocol parsing and timing checks exceed the default stack budget in debug builds.
-// Bumped 2048 → 3072 → 4096 → 8192 → 12288: threads.new2.txt showed 8304/8448 used (98.3%) with 8192 allocation.
-#define RCIN_THD_WA_SIZE    12288
+// Bumped 2048 → 3072 → 4096 → 8192 → 12288 → 16384: threads.new3.txt showed 12416/12544 used (99.0%) with 12288 allocation.
+#define RCIN_THD_WA_SIZE    22528
 #else
 #define RCIN_THD_WA_SIZE    1024
 #endif
