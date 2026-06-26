@@ -367,6 +367,9 @@ AP_HW_CBU_H753-SOM                   1302
 
 AP_HW_KHA_ETH                        1315
 
+# IDs 1330-1339 reserved for Nyxtronics
+AP_HW_NYXTRONICS_NYX405V1            1330
+
 AP_HW_FlysparkF4                     1361
 
 # IDs 1362-1369 reserved for SparkNavi
