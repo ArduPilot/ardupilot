@@ -11,6 +11,7 @@ import os
 import signal
 import time
 
+from pymavlink import mavextra
 from pymavlink import mavutil
 from pymavlink import quaternion
 from pymavlink.rotmat import Vector3
@@ -1882,7 +1883,56 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if self.get_distance_int(gpi, ahrs2) > 10:
             raise NotAchievedException("Secondary location looks bad")
 
+        # secondary altitude should be close to the primary altitude
+        # (AHRS2.altitude is MSL in metres, GLOBAL_POSITION_INT.alt is
+        # MSL in mm):
+        if abs(ahrs2.altitude - gpi.alt * 1.0e-3) > 10:
+            raise NotAchievedException(
+                "Secondary altitude looks bad (want=%f got=%f)" %
+                (gpi.alt * 1.0e-3, ahrs2.altitude))
+
+        # secondary yaw should match the simulated yaw; check_attitudes_match
+        # only checks AHRS2 roll and pitch:
+        simstate = self.assert_receive_message('SIMSTATE', verbose=1)
+        want = math.degrees(simstate.yaw)
+        got = math.degrees(ahrs2.yaw)
+        if abs(mavextra.angle_diff(want, got)) > 15:
+            raise NotAchievedException(
+                "Secondary yaw looks bad (want=%f got=%f)" % (want, got))
+
         self.check_attitudes_match()
+
+    def AHRS2Logging(self):
+        '''check the secondary AHRS estimate is logged to the AHR2 message'''
+        self.wait_ready_to_arm()
+        self.takeoff(alt=100, mode='TAKEOFF')
+        self.change_mode('LOITER')
+        # loiter long enough to sweep the yaw through a full circle so the
+        # secondary yaw and position are meaningfully exercised:
+        self.delay_sim_time(60, reason="sweep yaw through a circle")
+        self.fly_home_land_and_disarm()
+        self.assert_AHR2_log_matches_primary()
+
+    def AHRS2NoSecondaryEstimate(self):
+        '''check AHRS2 mavlink reporting when the secondary estimator has no
+        valid estimate.  Disabling the EKFs leaves DCM as the active
+        estimator and the configured-but-unstarted EKF3 as the secondary;
+        that secondary has no valid attitude or location.'''
+        self.context_push()
+        try:
+            self.set_parameters({
+                "EK2_ENABLE": 0,
+                "EK3_ENABLE": 0,
+                "AHRS_EKF_TYPE": 3,
+            })
+            self.reboot_sitl()
+            self.delay_sim_time(5, reason="allow DCM to settle")
+            # the secondary estimator has no valid estimate, so no AHRS2
+            # message is sent:
+            self.assert_not_receive_message('AHRS2', timeout=5)
+        finally:
+            self.context_pop()
+            self.reboot_sitl()
 
     def MainFlight(self):
         '''Lots of things in one flight'''
@@ -8398,6 +8448,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.RCDisableAirspeedUse,
             self.AHRS_ORIENTATION,
             self.AHRSTrim,
+            self.AHRS2Logging,
+            self.AHRS2NoSecondaryEstimate,
             self.LandingDrift,
             self.TakeoffAuto1,
             self.TakeoffAuto2,

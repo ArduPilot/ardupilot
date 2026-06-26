@@ -15084,6 +15084,78 @@ switch value'''
             raise NotAchievedException("quat pitch differs from attitude pitch; want=%f got=%f" %
                                        (want, got))
 
+    def assert_AHR2_log_matches_primary(self):
+        '''check the AHR2 dataflash message (the secondary AHRS estimate) is
+        present in the current onboard log, that it tracks the primary
+        estimate (ATT/POS) and that its logged quaternion is consistent
+        with its logged eulers.  AHR2 and ATT are co-logged at the same
+        rate so the most-recently-seen ATT/POS is a valid comparison.'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        att = None
+        pos = None
+        checked_attitude = 0
+        checked_position = 0
+        while True:
+            m = dfreader.recv_match(type=['ATT', 'POS', 'AHR2'])
+            if m is None:
+                break
+            m_type = m.get_type()
+            if m_type == 'ATT':
+                att = m
+                continue
+            if m_type == 'POS':
+                pos = m
+                continue
+
+            # m_type == 'AHR2'; compare the secondary attitude against
+            # the primary (ATT):
+            if att is not None:
+                for (field, secondary, primary) in [
+                        ('roll', m.Roll, att.Roll),
+                        ('pitch', m.Pitch, att.Pitch),
+                        ('yaw', m.Yaw, att.Yaw),
+                ]:
+                    if abs(mavextra.angle_diff(secondary, primary)) > 15:
+                        raise NotAchievedException(
+                            "AHR2.%s (%f) does not match ATT.%s (%f)" %
+                            (field, secondary, field, primary))
+                checked_attitude += 1
+
+            # the logging reads estimates->quaternion directly, so check
+            # the logged quaternion is normalised and consistent with the
+            # logged eulers:
+            qmag = math.sqrt(m.Q1**2 + m.Q2**2 + m.Q3**2 + m.Q4**2)
+            if abs(qmag - 1) > 0.02:
+                raise NotAchievedException(
+                    "AHR2 quaternion not normalised (mag=%f)" % qmag)
+            euler = quaternion.Quaternion([m.Q1, m.Q2, m.Q3, m.Q4]).euler
+            for (field, from_euler, from_log) in [
+                    ('roll', math.degrees(euler[0]), m.Roll),
+                    ('pitch', math.degrees(euler[1]), m.Pitch),
+                    ('yaw', math.degrees(euler[2]), m.Yaw),
+            ]:
+                if abs(mavextra.angle_diff(from_euler, from_log)) > 10:
+                    raise NotAchievedException(
+                        "AHR2 quaternion %s (%f) inconsistent with euler (%f)" %
+                        (field, from_euler, from_log))
+
+            # the secondary position should be close to the primary (POS):
+            if pos is not None and m.Lat != 0 and m.Lng != 0:
+                secondary_loc = mavutil.location(m.Lat, m.Lng, 0, 0)
+                primary_loc = mavutil.location(pos.Lat, pos.Lng, 0, 0)
+                dist = self.get_distance(primary_loc, secondary_loc)
+                if dist > 50:
+                    raise NotAchievedException(
+                        "AHR2 position %fm from primary (POS)" % dist)
+                checked_position += 1
+
+        if checked_attitude == 0:
+            raise NotAchievedException("Found no AHR2 messages to check attitude")
+        if checked_position == 0:
+            raise NotAchievedException("Found no AHR2 messages to check position")
+        self.progress("Checked AHR2 log (attitude=%u position=%u)" %
+                      (checked_attitude, checked_position))
+
     def MultipleGPS(self):
         '''check ArduPilot behaviour across multiple GPS units'''
         self.assert_message_rate_hz('GPS2_RAW', 0)
