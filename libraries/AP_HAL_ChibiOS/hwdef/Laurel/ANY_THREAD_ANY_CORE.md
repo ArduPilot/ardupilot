@@ -159,8 +159,11 @@ SCRATCH[3] = 0x00000100  (CFSR = IBUSERR, BusFault bit 8)
 ### Why `main=700+Hz` means INTERNAL ERROR, not performance
 When ArduPilot raises an `AP_InternalError` (e.g. `flow_of_control`, `invalid_arg`),
 the scheduler enters a fast-spinning empty loop. The main loop counter increments
-rapidly with zero real work — hence very high Hz readings. The settled healthy main loop rate on Laurel is ~296 Hz (Config A); target is 400 Hz.
-Never interpret 700+ Hz as "running fast" — diagnose the internal error first.
+rapidly with zero real work — hence very high Hz readings.
+Thresholds (updated 2026-06-26, confirmed with core0load data):
+- ≤550 Hz with non-trivial core0 load: genuine performance (post-XIP-fix Laurel hits 508–535 Hz)
+- 650 Hz+: check console for "InternalError" before concluding it's real
+- 700 Hz+: almost certainly AP_InternalError empty fast-loop — diagnose first
 
 ### Root Cause
 `c1_vtable` was declared as a 64-entry uint32_t array in striped SRAM (was at
