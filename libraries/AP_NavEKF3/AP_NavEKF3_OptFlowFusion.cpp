@@ -40,6 +40,13 @@ void NavEKF3_core::SelectFlowFusion()
     flowDataValid = ((imuSampleTime_ms - flowValidMeaTime_ms) < 1000);
     // check is the terrain offset estimate is still valid - if we are using range finder as the main height reference, the ground is assumed to be at 0
     gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) || (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER);
+    // the flat-ground assumption is authorised by a terrain offset this flight actually
+    // measured, not by the validity gndOffsetValid grants a range finder height source
+    if (!inFlight) {
+        gndOffsetMeasured = false;
+    } else if ((gndHgtValidTime_ms != 0) && ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000)) {
+        gndOffsetMeasured = true;
+    }
     // Perform tilt check
     bool tiltOK = (prevTnb.c.z > frontend->DCM33FlowMin);
     // Constrain measurements to zero if takeoff is not detected and the height above ground

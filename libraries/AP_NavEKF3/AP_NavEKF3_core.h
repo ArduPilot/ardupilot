@@ -725,6 +725,12 @@ private:
     // update the navigation filter status
     void updateFilterStatus(void);
 
+    // true when optical flow navigation may continue above the range finder's range on the
+    // assumption that the ground stays flat at its last measured height. SourceZ::NONE is
+    // excluded because the constant zero it fuses holds hgtTimeout clear while the vertical
+    // position state the frozen offset is differenced against carries no height
+    bool flatGroundAssumed(void) const;
+
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
 
@@ -1363,6 +1369,7 @@ private:
     AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
     AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
+    bool gndOffsetMeasured;         // true when the ground offset state has been measured during this flight
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active
