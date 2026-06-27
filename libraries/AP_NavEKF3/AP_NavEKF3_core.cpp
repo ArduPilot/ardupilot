@@ -284,6 +284,7 @@ void NavEKF3_core::InitialiseVariables()
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
     gndOffsetValid =  false;
+    gndOffsetMeasured = false;
     validOrigin = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
