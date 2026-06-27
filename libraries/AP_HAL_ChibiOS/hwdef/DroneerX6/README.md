@@ -95,7 +95,7 @@ All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you 
 | IO Pins |  | FMU Pins |
 | --- | --- | --- |
 | Name | Value | Option |
-| M1 | 101 | MainOut1 | 
+| M1 | 101 | MainOut1 |
 | M2 | 102 | MainOut2 |
 | M3 | 103 | MainOut3 |
 | M4 | 104 | MainOut4 |
@@ -103,9 +103,9 @@ All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you 
 | M6 | 106 | MainOut6 |
 | M7 | 107 | MainOut7 |
 | M8 | 108 | MainOut8 |
-| M9 | 50 | AuxOut1 | 
+| M9 | 50 | AuxOut1 |
 | M10 | 51 | AuxOut2 |
-| M11 | 52 |AuxOut3 | 
+| M11 | 52 |AuxOut3 |
 | M12 | 53 | AuxOut4 |
 | M13 | 54 | AuxOut5 |
 | M14 | 55 | AuxOut6 |
