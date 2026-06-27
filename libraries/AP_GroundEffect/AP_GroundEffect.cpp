@@ -79,8 +79,12 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
     // takeoff state machine
     if (!_takeoff_expected) {
         _state.takeoff_expected = false;
-    } else if (land_complete) {
-        // armed and not yet airborne - takeoff is imminent
+    } else {
+        // Vehicle allows the takeoff window: assert it. Normally this latches
+        // while still on the ground (takeoff imminent); modes that spool up
+        // after they are already airborne - e.g. THROW drop, where prop wash
+        // contaminates the baro once the drop is detected - assert it in the
+        // air. The release check below and the 5 s hard cap bound it either way.
         _state.takeoff_expected = true;
     }
 
