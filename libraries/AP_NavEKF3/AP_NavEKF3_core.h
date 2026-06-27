@@ -728,6 +728,22 @@ private:
     // update the navigation filter status
     void updateFilterStatus(void);
 
+    // true when the vertical position state carries height information, so a terrain
+    // height differenced against it gives a usable height above ground for flow scaling.
+    // SourceZ::NONE is excluded because the constant zero it fuses holds hgtTimeout clear
+    // while the state carries no height at all
+    bool flowScaleHgtUsable(void) const;
+
+    // true when optical flow navigation may continue above the range finder's range on the
+    // assumption that the ground stays flat at its last measured height
+    bool flatGroundAssumed(void) const;
+
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // true when the terrain database height may be differenced against the vertical position
+    // state to scale optical flow. Bit 2 keeps the behaviour it has always had
+    bool terrainAltUsable(void) const;
+#endif
+
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
 
@@ -1378,6 +1394,7 @@ private:
     AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
     AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
+    bool gndOffsetMeasured;         // true when the ground offset state has been measured during this flight
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active

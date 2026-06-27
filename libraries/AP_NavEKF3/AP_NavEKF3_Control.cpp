@@ -762,6 +762,27 @@ void NavEKF3_core::checkGyroCalStatus(void)
     }
 }
 
+bool NavEKF3_core::flowScaleHgtUsable(void) const
+{
+    return !hgtTimeout && (activeHgtSource != AP_NavEKF_Source::SourceZ::NONE);
+}
+
+bool NavEKF3_core::flatGroundAssumed(void) const
+{
+    return frontend->option_is_enabled(NavEKF3::Option::OptflowAssumeFlatGnd) &&
+           gndOffsetMeasured && flowScaleHgtUsable();
+}
+
+#if EK3_FEATURE_OPTFLOW_SRTM
+bool NavEKF3_core::terrainAltUsable(void) const
+{
+    return terrain_srtm_alt_valid &&
+           (frontend->option_is_enabled(NavEKF3::Option::OptflowMayUseTerrainAlt) ||
+            (frontend->option_is_enabled(NavEKF3::Option::OptflowAssumeFlatGnd) &&
+             flowScaleHgtUsable()));
+}
+#endif
+
 // Update the filter status
 void  NavEKF3_core::updateFilterStatus(void)
 {
@@ -784,10 +805,11 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.horiz_vel = someHorizRefData && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
 
+    const bool flatGndAssumed = flatGroundAssumed();
 #if EK3_FEATURE_OPTFLOW_SRTM
-    const bool optflow_gnd_offset = gndOffsetValid || terrain_srtm_alt_valid;
+    const bool optflow_gnd_offset = gndOffsetValid || terrainAltUsable() || flatGndAssumed;
 #else
-    const bool optflow_gnd_offset = gndOffsetValid;
+    const bool optflow_gnd_offset = gndOffsetValid || flatGndAssumed;
 #endif
     status.flags.horiz_pos_rel = ((doingFlowNav && optflow_gnd_offset) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthy;   // relative horizontal position estimate valid
 
