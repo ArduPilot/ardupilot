@@ -405,6 +405,7 @@ AP_HW_StellarH7V2                    1503
 AP_HW_StellarF4V2                    1504
 
 AP_HW_HGLRCF405V4                    1524
+AP_HW_HGLRC_H743_EVO                 1525
 
 AP_HW_F4BY_F427                      1530
 AP_HW_F4BY_H743                      1531

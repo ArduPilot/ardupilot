@@ -1,0 +1,29 @@
+# Battery monitor on (analog voltage + current)
+BATT_MONITOR 4
+
+# Serial port protocol defaults
+# SERIAL1 = VTX (MSP DisplayPort)
+SERIAL1_PROTOCOL 42
+# SERIAL2 = RC input (CRSF/ELRS)
+SERIAL2_PROTOCOL 23
+# SERIAL5 = telemetry (MAVLink2)
+SERIAL5_PROTOCOL 2
+# SERIAL6 = GPS
+SERIAL6_PROTOCOL 5
+
+# OSD
+OSD_TYPE 1
+
+# VTX 12V BEC power switch on GPIO 81 (IO_BEC12V)
+# Relay 2 controls VTX power; defaults to ON so the VTX is powered at boot.
+# Assign an RC channel with RCx_OPTION 34 (Relay2 Control) to toggle in flight.
+RELAY2_FUNCTION 1
+RELAY2_PIN 81
+RELAY2_DEFAULT 1
+
+# Camera switch on GPIO 82 (IO_CAM)
+# Relay 3 selects CAM1 / CAM2; defaults to CAM1.
+# Assign an RC channel with RCx_OPTION 35 (Relay3 Control) to switch.
+RELAY3_FUNCTION 1
+RELAY3_PIN 82
+RELAY3_DEFAULT 0
