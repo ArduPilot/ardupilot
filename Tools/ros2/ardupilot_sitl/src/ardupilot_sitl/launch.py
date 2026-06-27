@@ -58,6 +58,7 @@ class VirtualPortsLaunch:
         action = ExecuteProcess(
             cmd=[
                 [
+                    "exec ",  # take place of shell so socat gets signals
                     "socat ",
                     "-d -d ",
                     f"pty,raw,echo=0,link={tty0} ",
@@ -302,6 +303,7 @@ class MAVProxyLaunch:
         print(f"map:              {map}")
 
         cmd = [
+            "exec ",  # take place of shell so mavproxy (though not its subprocesses!) get signals
             f"{command} ",
             f"--out {out} ",
             "--out ",
@@ -395,6 +397,7 @@ class SITLLaunch:
         instance = LaunchConfiguration("instance").perform(context)
         defaults = LaunchConfiguration("defaults").perform(context)
         use_instance_dir = LaunchConfiguration("use_instance_dir").perform(context)
+        use_sim_time = LaunchConfiguration("use_sim_time").perform(context)
 
         # Display launch arguments.
         print(f"command:          {command}")
@@ -405,16 +408,22 @@ class SITLLaunch:
         print(f"instance:         {instance}")
         print(f"defaults:         {defaults}")
         print(f"use_instance_dir: {use_instance_dir}")
+        print(f"use_sim_time:     {use_sim_time}")
 
         # Required arguments.
         cmd_args = [
-            f"{command} ",
+            # Use 'exec' so the /bin/sh -c wrapper is replaced by the
+            # arducopter process: the launch service then delivers its
+            # shutdown signals (SIGINT/SIGTERM) to arducopter directly
+            # rather than to the shell.
+            f"exec {command} ",
             f"--model {model} ",
             f"--speedup {speedup} ",
             f"--slave {slave} ",
             f"--sim-address={sim_address} ",
             f"--instance {instance} ",
             f"--defaults {defaults} ",
+            f"--use_sim_time {use_sim_time} ",
         ]
 
         # Optional arguments.
@@ -649,6 +658,12 @@ class SITLLaunch:
                 "use_instance_dir",
                 default_value="False",
                 description="If True create instance directories for the eeprom.bin.",
+                choices=BOOL_STRING_CHOICES,
+            ),
+            DeclareLaunchArgument(
+                "use_sim_time",
+                default_value="True",
+                description="Use simulation time.",
                 choices=BOOL_STRING_CHOICES,
             ),
         ]

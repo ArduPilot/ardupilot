@@ -64,10 +64,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
-    def default_speedup(self):
-        '''QuadPlane seems to be race-free'''
-        return 100
-
     def log_name(self):
         return "QuadPlane"
 
@@ -688,6 +684,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.takeoff(10, mode="QHOVER")
+        # let the vehicle settle into a stable hover before measuring, so the
+        # climb-out transient does not leak into the noise-suppression FFT
+        self.wait_altitude(8, 12, relative=True, minimum_duration=10)
         hover_time = 15
         ignore_bins = 20
 
@@ -1147,6 +1146,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def GUIDEDToAUTO(self):
         '''Test using GUIDED mode for takeoff before shifting to auto'''
+        self.install_terrain_handlers_context()  # mission.txt uses terrain-frame
+
         self.load_mission("mission.txt")
         self.takeoff(30, mode='GUIDED')
 

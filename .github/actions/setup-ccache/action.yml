@@ -1,0 +1,40 @@
+name: setup-ccache
+description: >
+  Restore the ccache directory from the GitHub Actions cache and apply the
+  shared ccache configuration. This only restores; jobs that should persist the
+  cache call the save-ccache action after their build step. Autotest/test jobs
+  use this action alone (read-only).
+
+inputs:
+  key-suffix:
+    description: >
+      Suffix appended to the cache key, e.g. the toolchain ("base"). Jobs that
+      consume a build job's cache must pass the same suffix it saved with, and a
+      job that saves must pass the same suffix to setup-ccache and save-ccache.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: restore ccache (unix)
+      if: runner.os != 'Windows'
+      uses: actions/cache/restore@v5
+      with:
+        path: ~/.ccache
+        # one entry per branch/PR; restore-keys falls back to the latest cache
+        # for this suffix (this branch, then master) to warm a fresh branch.
+        key: ${{ github.workflow }}-ccache-${{ inputs.key-suffix }}-${{ github.head_ref || github.ref_name }}
+        restore-keys: ${{ github.workflow }}-ccache-${{ inputs.key-suffix }}-
+
+    - name: restore ccache (windows)
+      if: runner.os == 'Windows'
+      uses: actions/cache/restore@v5
+      with:
+        path: D:/a/${{ github.event.repository.name }}/${{ github.event.repository.name }}/ccache
+        key: ${{ github.workflow }}-ccache-${{ inputs.key-suffix }}-${{ github.head_ref || github.ref_name }}
+        restore-keys: ${{ github.workflow }}-ccache-${{ inputs.key-suffix }}-
+
+    - name: setup ccache
+      if: runner.os != 'Windows'
+      shell: bash
+      run: . "$GITHUB_WORKSPACE/.github/workflows/ccache.env"

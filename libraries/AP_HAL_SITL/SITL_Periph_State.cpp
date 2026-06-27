@@ -134,7 +134,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             struct sitl_input input {};
             sitl_model->update(input); // delays up to 1 millisecond
             sim_update();
-            update_voltage_current(input, 0);
+            set_voltage_current_pins(sitl_model->get_battery_voltage(), sitl_model->get_battery_current());
         } else {
             usleep(1000);
         }

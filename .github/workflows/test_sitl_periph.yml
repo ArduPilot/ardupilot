@@ -160,30 +160,26 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
+
 jobs:
-  build-gcc-ap_periph:
+  build-test:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
     runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-periph:v0.1.3
+    container:
+      image: ardupilot/ardupilot-dev-periph:v0.1.3
+      options: --privileged
     steps:
       # git checkout the PR
       - uses: actions/checkout@v6
         with:
           submodules: 'recursive'
-      # Put ccache into github cache for faster build
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-      - name: ccache cache files
-        uses: actions/cache@v5
+      - uses: ./.github/actions/setup-ccache
         with:
-          path: ~/.ccache
-          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
-      - name: setup ccache
-        run: |
-          . .github/workflows/ccache.env
+          key-suffix: periph
 
       - name: run dronecan dsdlc generator test
         run: |
@@ -200,43 +196,13 @@ jobs:
           ./waf build --target bin/AP_Periph
           ccache -s
           ccache -z
-
-  autotest-can:
-    needs: build-gcc-ap_periph  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
-    runs-on: ubuntu-22.04
-    container: 
-      image: ardupilot/ardupilot-dev-periph:v0.1.3
-      options: --privileged
-    strategy:
-      fail-fast: false  # don't cancel if a job from the matrix fails
-      matrix:
-        config: [
-            sitltest-can,
-        ]
-
-    steps:
-      # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: ./.github/actions/save-ccache
         with:
-          submodules: 'recursive'
-      # Put ccache into github cache for faster build
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-      - name: ccache cache files
-        uses: actions/cache@v5
-        with:
-          path: ~/.ccache
-          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
-      - name: setup ccache
-        run: |
-          . .github/workflows/ccache.env
-      - name: test ${{matrix.config}}
+          key-suffix: periph
+
+      - name: test sitltest-can
         env:
-          CI_BUILD_TARGET: ${{matrix.config}}
+          CI_BUILD_TARGET: sitltest-can
         shell: bash
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}

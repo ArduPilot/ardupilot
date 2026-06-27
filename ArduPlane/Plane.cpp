@@ -494,9 +494,6 @@ void Plane::update_GPS_10Hz(void)
                 ground_start_count = 0;
             }
         }
-
-        // update wind estimate
-        ahrs.estimate_wind();
     } else if (gps.status() < AP_GPS_FixType::FIX_3D && ground_start_count != 0) {
         // lost 3D fix, start again
         ground_start_count = 5;

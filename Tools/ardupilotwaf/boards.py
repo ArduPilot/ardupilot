@@ -288,7 +288,7 @@ class Board:
             '-Wextra',
             '-Werror=format',
             '-Wpointer-arith',
-            '-Wcast-align',
+            '-Werror=cast-align',
             '-Wno-missing-field-initializers',
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
@@ -344,6 +344,7 @@ class Board:
             env.CFLAGS += [
                 '-Wno-format-contains-nul',
                 '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
+                '-Wcast-align=strict',
             ]
 
         if cfg.env.DEBUG:
@@ -472,6 +473,7 @@ class Board:
                 '-Werror=unused-but-set-variable',
                 '-fsingle-precision-constant',
                 '-Wno-psabi',
+                '-Wcast-align=strict',
             ]
             if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [

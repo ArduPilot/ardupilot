@@ -5,24 +5,18 @@
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-// true if the AHRS has completed initialisation
-bool AP_AHRS_External::initialised(void) const
-{
-    return AP::externalAHRS().initialised();
-}
-
 void AP_AHRS_External::update()
 {
     AP::externalAHRS().update();
 }
 
-bool AP_AHRS_External::healthy() const {
-    return AP::externalAHRS().healthy();
-}
-
 void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 {
     auto &extahrs = AP::externalAHRS();
+
+    results.initialised = extahrs.initialised();
+
+    results.healthy = extahrs.healthy();
 
 #if AP_INERTIALSENSOR_ENABLED
     const AP_InertialSensor &_ins = AP::ins();
@@ -73,9 +67,19 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = AP::externalAHRS().get_location(results.location);
 
+    // origin-relative functions
+    results.provides_common_origin = true;
+
     // hagl is not supplied:
     // results.hagl_valid = false;
     // results.hagl = 0;
+
+    /*
+     * air data estimates
+     */
+    // wind estimate is not supplied:
+    // results.wind = {};
+    // results.wind_valid = false;
 
     /*
      * Sensor-related information
@@ -94,6 +98,29 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 
     // are we consuming yaw from a source which is *not* a compass
     // results.using_noncompass_for_yaw = false;
+
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+    // estimators can provide their predicted magnetic fields:
+    // ... but External does not, and probably should not as the
+    // external unit will be experiencing a different magnetic
+    // environment to the autopilot.
+    // results.mag_field_NED = {};
+    // results.mag_field_NED_valid = false;
+    // results.mag_field_corrections = {};
+    // results.mag_field_corrections_valid = false;
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
+
+    /*
+     * filter status and estimates quality values:
+     */
+    AP::externalAHRS().get_filter_status(results.filter_status);
+    results.filter_status_valid = true;
+
+    // provides the innovations normalised between 0 and 1:
+    results.variances_valid = AP::externalAHRS().get_variances(results.velVar, results.posVar, results.hgtVar, results.magVar, results.tasVar);
+
+    results.terrain_alt_variance = 0;
+    results.terrain_alt_variance_valid = true;
 }
 
 bool AP_AHRS_External::get_relative_position_NED_origin(Vector3p &vec) const
@@ -141,25 +168,14 @@ bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, 
     return AP::externalAHRS().pre_arm_check(failure_msg, failure_msg_len);
 }
 
-bool AP_AHRS_External::get_filter_status(nav_filter_status &status) const
-{
-    AP::externalAHRS().get_filter_status(status);
-    return true;
-}
-
-bool AP_AHRS_External::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
-{
-    return AP::externalAHRS().get_variances(velVar, posVar, hgtVar, magVar, tasVar);
-}
-
-void AP_AHRS_External::send_ekf_status_report(GCS_MAVLINK &link) const
-{
-    AP::externalAHRS().send_status_report(link);
-}
-
 bool AP_AHRS_External::get_origin(Location &ret) const
 {
     return AP::externalAHRS().get_origin(ret);
+}
+
+bool AP_AHRS_External::set_origin(const Location &loc)
+{
+    return AP::externalAHRS().set_origin(loc);
 }
 
 void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const

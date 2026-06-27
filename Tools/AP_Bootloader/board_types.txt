@@ -65,6 +65,9 @@ Reserved "GUMSTIX [BL] FMU v6"         54
 Reserved "ARK CAN FLOW"                80
 Reserved "NXP ucans32k146"             34
 
+# IDs 110-119 reserved for Syro
+TARGET_HW_SYRO_V6X                     110
+
 # values from external vendors
 EXT_HW_RADIOLINK_MINI_PIX               3
 
@@ -336,6 +339,7 @@ AP_HW_JPilot-C                       1214
 AP_HW_SIYI-UniFC-6-PICO              1215
 AP_HW_CSKY_AVEGA6X                   1216
 AP_HW_CSKY_AVEGALITER03              1217
+AP_HW_AMOV_FLYCORE                   1218
 
 AP_HW_MUPilot                        1222
 AP_HW_HWH7                           1223
@@ -354,7 +358,10 @@ AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
 
+AP_HW_GPILOT_P1						 1275
+
 AP_HW_SKYDROID-S3                    1300
+
 AP_HW_CBUnmanned-CM405-FC            1301
 AP_HW_CBU_H753-SOM                   1302
 
@@ -434,12 +441,18 @@ AP_HW_AET-H743-Basic                 2024
 
 AP_HW_BOTWINGF405                    2501
 
+AP_HW_AET-H743-AIR                   2509
+AP_HW_AET-U7                         2510
+AP_HW_AET-AT405A                     2511
+AP_HW_AET-405-Mini                   2512
+
 AP_HW_SakuraRC-H743                  2714
 
 AP_HW_SkyRukh_Surge_H7               2815
 
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
+AP_HW_KARSHAKH743VTOL                4002
 
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
@@ -494,6 +507,8 @@ AP_HW_TBS_LUCID_PRO                  5251
 AP_HW_TBS_L431_PERIPH                5252
 AP_HW_TBS_LUCID_H7_WING              5253
 AP_HW_TBS_LUCID_H7_WING_AIO          5254
+AP_HW_TBS_LUCID_H7_OEM               5255
+AP_HW_TBS_LUCID_H7V3                 5256
 
 # IDs 5270-5279 reserved for SpeedyBee
 AP_HW_SpeedyBeeF405WINGV2            5270
@@ -589,7 +604,9 @@ AP_HW_VUAV-TinyV7                    7101
 AP_HW_AEROFOX_H7                     7110
 
 # IDs 7120-7129 reserved for Accton Godwit
-AP_HW_Accton_Godwit_GA1        7120
+AP_HW_Accton_Godwit_GA1              7120
+AP_HW_Accton_Godwit_GFF4             7121
+AP_HW_Accton_Godwit_GFH7             7122
 
 # please fill gaps in the above ranges rather than adding past ID #7199
 
@@ -606,6 +623,12 @@ AP_HW_SKYDROID-S3_ODID              11300
 AP_HW_CUBEORANGEPLUS_ODID           11063
 AP_HW_SIYI_N7_ODID                  11123
 AP_HW_SIYI-UniFC-6-PICO_ODID        11215
+
+AP_HW_AET-H743-AIR_ODID             12509
+AP_HW_AET-U7_ODID                   12510
+AP_HW_AET-AT405A_ODID               12511
+AP_HW_AET-405-Mini_ODID             12512
+
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.

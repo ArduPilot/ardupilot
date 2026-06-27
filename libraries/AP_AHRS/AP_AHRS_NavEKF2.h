@@ -35,19 +35,9 @@ public:
 
     const char *shortname() const override { return "EKF2"; }
 
-    bool healthy(void) const override {
-        if (!started) {
-            return false;
-        }
-        if (!EKF2.healthy()) {
-            return false;
-        }
-        return true;
-    }
-
     void reset_gyro_drift() override { EKF2.resetGyroBias(); }
 
-    void update() override { EKF2.UpdateFilter(); }
+    void update() override;
 
     void get_results(Estimates &results) override;
     void reset() override {
@@ -62,12 +52,6 @@ public:
     }
     bool set_origin(const Location &loc) override {
         return EKF2.setOriginLLH(loc);
-    }
-
-    // // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override {
-        EKF2.getWind(wind);
-        return true;
     }
 
     bool use_compass() override {
@@ -96,25 +80,10 @@ public:
         return EKF2.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
     }
 
-    void send_ekf_status_report(class GCS_MAVLINK &link) const override {
-        EKF2.send_status_report(link);
-    }
-
-    // // get_filter_status - returns filter status as a series of flags
-    bool get_filter_status(nav_filter_status &status) const override {
-        EKF2.getFilterStatus(status);
-        return true;
-    }
-
     // // return the innovations for the specified instance
     // // An out of range instance (eg -1) returns data for the primary instance
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override {
         return EKF2.getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
-    }
-
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override {
-        Vector2f offset;
-        return EKF2.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
     }
 
     void request_yaw_reset(void) override {
@@ -127,7 +96,9 @@ public:
     // this is out here so parameters can be poked into it
     static NavEKF2 EKF2;
 
+    bool start();
     bool started;
+    uint32_t start_time_ms;  // timer used to delay starting the filter
 };
 
 #endif  // AP_AHRS_NAVEKF2_ENABLED

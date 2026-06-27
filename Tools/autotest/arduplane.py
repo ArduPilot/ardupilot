@@ -57,9 +57,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def log_name(self):
         return "ArduPlane"
 
-    def default_speedup(self):
-        return 100
-
     def test_filepath(self):
         return os.path.realpath(__file__)
 
@@ -3109,6 +3106,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def fly_external_AHRS(self, sim, eahrs_type,
                           dist_to_final_wp_threshold_m: float | None = None):
         """Fly with external AHRS"""
+        # The external AHRS drivers parse their serial stream on a
+        # real-time thread.  At the default plane speedup (100x) that
+        # thread cannot keep the simulated GPS within its health window
+        # on a loaded CI runner, producing intermittent "GPS 1: not
+        # healthy" arm failures.  Run these tests at a reduced speedup so
+        # the thread keeps up.
+        self.context_set_speedup(20)
         self.customise_SITL_commandline(["--serial4=sim:%s" % sim])
 
         self.set_parameters({
@@ -3216,6 +3220,84 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             )
         self.fly_home_land_and_disarm()
 
+    def WindEstimatesTrim(self):
+        '''DCM wind estimate must be unchanged by a board mounting offset that
+        is corrected by AHRS_TRIM, i.e. it must use the trimmed (vehicle)
+        fuselage axis, not the raw IMU/board axis.
+
+        In straight-and-level flight the wind triangle's airspeed-fed branch
+        projects the measured airspeed along the fuselage axis, so a pitched
+        board axis injects a vertical wind of ~airspeed*sin(tilt).  We fly
+        straight and level on DCM and compare the steady vertical wind
+        estimate with no mount offset against the estimate with an 8-degree
+        offset (SIM_BRD_TRIM, a rigid board mounting tilt of both the accel
+        and gyro) corrected by AHRS_TRIM.  The trim must not change it.
+
+        We compare the two rather than assert ~zero because the wind triangle
+        ignores angle-of-attack, so there is always a small AoA-induced
+        vertical wind present in both cases; only the *difference* isolates
+        the trim error.
+        '''
+        def avg_wind(duration=15):
+            # average horizontal speed and vertical speed_z of the WIND message
+            spd = []
+            spd_z = []
+            tstart = self.get_sim_time()
+            while self.get_sim_time() - tstart < duration:
+                m = self.assert_receive_message('WIND', timeout=5)
+                spd.append(m.speed)
+                spd_z.append(m.speed_z)
+            return sum(spd) / len(spd), sum(spd_z) / len(spd_z)
+
+        self.set_parameters({
+            "SIM_WIND_SPD": 5,
+            "SIM_WIND_DIR": 45,
+            "SIM_WIND_DIR_Z": 0,    # purely horizontal truth wind
+        })
+        self.reboot_sitl()
+        # arm and take off with the default estimator (AHRS_EKF_TYPE=0 has no
+        # EKF, so arming readiness would time out); switch to DCM in flight:
+        self.wait_ready_to_arm()
+        self.takeoff(70)  # default wind sim wind is a sqrt function up to 60m
+        self.set_parameter("AHRS_EKF_TYPE", 0)  # use DCM
+        # straight and level so the airspeed-fed straight-flight branch runs:
+        self.change_mode('CRUISE')
+        self.delay_sim_time(40, reason="settle into straight level flight and let the DCM wind estimate converge")
+        baseline_spd, baseline_z = avg_wind()
+
+        # introduce an 8-degree rigid board pitch mounting offset (accel and
+        # gyro rotated together) and correct it with AHRS_TRIM, exactly as a
+        # tilted real mount would be handled.  Applied together, the AHRS
+        # attitude output is unchanged, so the vehicle keeps flying level:
+        trim_rad = math.radians(8)
+        self.set_parameters({
+            "SIM_BRD_TRIM_Y": trim_rad,
+            "AHRS_TRIM_Y": trim_rad,
+        })
+        self.delay_sim_time(40, reason="let the attitude and wind estimate resettle after introducing the mount offset")
+        trimmed_spd, trimmed_z = avg_wind()
+
+        # The board mount offset (corrected by trim) must not move the wind
+        # estimate.  The dominant error is vertical: the straight-flight
+        # branch projects airspeed along the fuselage axis, so the raw
+        # (pitched) board axis shifts speed_z by ~airspeed*sin(8deg).  The
+        # horizontal must also be invariant (it was only corrupted when the
+        # simulated compass was not rotated with the board, leaving a yaw
+        # error; SIM_BRD_TRIM now rotates the compass too).
+        self.progress("WIND.speed_z:   baseline=%.2f trimmed=%.2f (d=%.2f)" %
+                      (baseline_z, trimmed_z, trimmed_z - baseline_z))
+        self.progress("WIND.speed(hz): baseline=%.2f trimmed=%.2f (d=%.2f)" %
+                      (baseline_spd, trimmed_spd, trimmed_spd - baseline_spd))
+        if abs(trimmed_z - baseline_z) > 1.0:
+            raise NotAchievedException(
+                "AHRS trim changed the vertical wind estimate: speed_z baseline=%.2f trimmed=%.2f" %
+                (baseline_z, trimmed_z))
+        if abs(trimmed_spd - baseline_spd) > 1.0:
+            raise NotAchievedException(
+                "AHRS trim changed the horizontal wind estimate: speed baseline=%.2f trimmed=%.2f" %
+                (baseline_spd, trimmed_spd))
+        self.fly_home_land_and_disarm()
+
     def WindMessageSpeed(self):
         '''Test that WIND.speed is horizontal (ground-plane) speed only'''
         # SIM_WIND_DIR_Z is an elevation angle (degrees from horizontal).
@@ -3255,7 +3337,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
-        util.build_SITL('tool/Replay', clean=False, configure=False)
+        self.build_replay()
         self.set_parameters({
             "LOG_DARM_RATEMAX": 0,
             "LOG_FILE_RATEMAX": 0,
@@ -3276,6 +3358,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Running replay on (%s) (%u bytes)" % (
             (current_log_filepath, os.path.getsize(current_log_filepath))
         ))
+
+        # a log with dropped blocks is incomplete and cannot be replayed
+        # faithfully, so check before wasting time on the replay itself:
+        self.assert_log_has_no_dropped_blocks(current_log_filepath)
 
         self.zero_throttle()
         self.run_replay(current_log_filepath)
@@ -3395,6 +3481,107 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.fly_mission("ap1.txt", mission_timeout=120)
         self.disarm_vehicle(force=True)
+
+    def check_ekf_status_report(self, ahrs_type, m):
+        '''return None if EKF_STATUS_REPORT m looks healthy, else a string
+        describing the problem'''
+        variances = {
+            "velocity_variance": m.velocity_variance,
+            "pos_horiz_variance": m.pos_horiz_variance,
+            "pos_vert_variance": m.pos_vert_variance,
+            "compass_variance": m.compass_variance,
+            "terrain_alt_variance": m.terrain_alt_variance,
+            "airspeed_variance": m.airspeed_variance,
+        }
+        # all variance fields must be finite and non-negative:
+        for name, value in variances.items():
+            if not math.isfinite(value):
+                return "%s not finite (%s)" % (name, value)
+            if value < 0:
+                return "%s negative (%f)" % (name, value)
+        # the normalised innovation variances should be below 1.0 for a
+        # vehicle established in a loiter (1.0 == the maximum
+        # inconsistency the filter will accept before rejecting the
+        # measurement):
+        for name in "velocity_variance", "pos_horiz_variance", "pos_vert_variance":
+            if variances[name] > 1.0:
+                return "%s too high (%f)" % (name, variances[name])
+        # the filter should be healthy and initialised:
+        required = (mavutil.mavlink.EKF_ATTITUDE |
+                    mavutil.mavlink.EKF_VELOCITY_HORIZ |
+                    mavutil.mavlink.EKF_POS_HORIZ_ABS)
+        if (m.flags & required) != required:
+            return "missing health flags (flags=0x%x)" % m.flags
+        if m.flags & mavutil.mavlink.EKF_UNINITIALIZED:
+            return "reports EKF_UNINITIALIZED (flags=0x%x)" % m.flags
+        return None
+
+    def wait_ekf_status_report_ok(self, ahrs_type, timeout=15):
+        '''wait for a fresh EKF_STATUS_REPORT which passes the sanity checks'''
+        tstart = self.get_sim_time()
+        problem = "no EKF_STATUS_REPORT received"
+        while self.get_sim_time_cached() - tstart < timeout:
+            m = self.assert_receive_message("EKF_STATUS_REPORT", timeout=5)
+            problem = self.check_ekf_status_report(ahrs_type, m)
+            if problem is None:
+                self.progress("AHRS_EKF_TYPE=%u: EKF_STATUS_REPORT OK (flags=0x%x)" %
+                              (ahrs_type, m.flags))
+                return
+        raise NotAchievedException(
+            "AHRS_EKF_TYPE=%u: EKF_STATUS_REPORT not OK: %s" % (ahrs_type, problem))
+
+    def EKF_STATUS_REPORT(self):
+        '''check EKF_STATUS_REPORT is assembled correctly for each AHRS_EKF_TYPE'''
+        # bring up a VectorNav external AHRS on serial4 so that
+        # AHRS_EKF_TYPE=11 (EXTERNAL) is a valid selection.  EK2/EK3 are
+        # enabled so that AHRS_EKF_TYPE=2 and =3 also have a running
+        # backend to report on:
+        self.customise_SITL_commandline(["--serial4=sim:VectorNav"])
+        self.set_parameters({
+            "EAHRS_TYPE": 1,            # VectorNav
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 230400,
+            "GPS1_TYPE": 21,           # GPS from the external AHRS
+            "EK2_ENABLE": 1,
+            "EK3_ENABLE": 1,
+            "AHRS_EKF_TYPE": 11,
+            "INS_GYR_CAL": 1,
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(5, reason="external AHRS to initialise")
+
+        self.progress("Running accelcal")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,
+            timeout=5,
+        )
+
+        # request EKF_STATUS_REPORT often enough to be responsive to
+        # AHRS_EKF_TYPE changes:
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EKF_STATUS_REPORT, 10)
+
+        self.wait_ready_to_arm()
+        self.takeoff(70, mode='TAKEOFF')
+        self.change_mode('LOITER')
+        self.delay_sim_time(10, reason="settle into loiter")
+
+        # 0=DCM (deliberately sends no report), 2=EKF2, 3=EKF3,
+        # 10=SIM, 11=EXTERNAL:
+        for ahrs_type in [0, 2, 3, 10, 11]:
+            self.start_subtest("Checking EKF_STATUS_REPORT for AHRS_EKF_TYPE=%u" % ahrs_type)
+            self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
+            # allow the configured backend to switch over and produce a
+            # fresh report before we look at it:
+            self.delay_sim_time(3, reason="AHRS_EKF_TYPE change to take effect")
+            self.drain_mav()
+            if ahrs_type == 0:
+                # DCM does not emit an EKF_STATUS_REPORT
+                self.assert_not_receive_message("EKF_STATUS_REPORT", timeout=5)
+                continue
+            self.wait_ekf_status_report_ok(ahrs_type)
+
+        self.fly_home_land_and_disarm()
 
     def GpsSensorPreArmEAHRS(self):
         '''Test pre-arm checks related to EAHRS_SENSORS using the MicroStrain7 driver'''
@@ -4744,46 +4931,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Note that I is not checked directly, its value is derived from P, FF, and TCONST which are all checked.
         self.assert_parameter_value_pct("RLL_RATE_P", 1.222702146, 2)
         self.assert_parameter_value_pct("RLL_RATE_FF", 0.229291457, 2)
+        self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
 
         self.assert_parameter_value_pct("PTCH_RATE_FF", 0.503520715, 5)
 
-        # there are sometimes multiple solutions for roll but the distribution
-        # is much more skewed than pitch below
-        try:
-            self.assert_parameter_value_pct("RLL_RATE_D", 0.070284024, 2)
-        except ValueError:
-            self.assert_parameter_value_pct("RLL_RATE_D", 0.091369226, 2) # added 2025-10
+        # PTCH_RATE_P solutions, most likely to least likely: 1.746 (~99%), 1.343 (~1%), 2.270 (<1%)
+        acceptable_ptch_rate_p = [1.746079683, 1.343138218, 2.26990366]
+        ptch_rate_p = self.get_parameter("PTCH_RATE_P")
+        if not any(abs(ptch_rate_p - v) <= v * 0.02 for v in acceptable_ptch_rate_p):
+            raise NotAchievedException("PTCH_RATE_P=%f is not an expected value" % ptch_rate_p)
 
-        # There seem to be multiple solutions for pitch. I'm not sure why this is.
-        # Each value is quite consistent because of the fixed steps that autotune takes
-        try:
-            # Expect this about 84% of the time
-            self.assert_parameter_value_pct("PTCH_RATE_P", 1.746079683, 2)
-        except ValueError:
-            try:
-                # 12%
-                self.assert_parameter_value_pct("PTCH_RATE_P", 1.343138218, 2)
-            except ValueError:
-                # 4%
-                self.assert_parameter_value_pct("PTCH_RATE_P", 2.26990366, 2)
-
-        try:
-            # 64%
-            self.assert_parameter_value_pct("PTCH_RATE_D", 0.108, 2)
-        except ValueError:
-            try:
-                # 28%
-                self.assert_parameter_value_pct("PTCH_RATE_D", 0.141, 2)
-            except ValueError:
-                try:
-                    # 4%
-                    self.assert_parameter_value_pct("PTCH_RATE_D", 0.049, 2)
-                except ValueError:
-                    # 4%
-                    try:
-                        self.assert_parameter_value_pct("PTCH_RATE_D", 0.0836, 2)
-                    except ValueError:
-                        self.assert_parameter_value_pct("PTCH_RATE_D", 0.0380, 2) # added 2025-10
+        # PTCH_RATE_D solutions, most likely to least likely: 0.108 (~99%), 0.141 (<1%), 0.049 (<1%), 0.0836 (<1%), 0.038 (<1%)
+        acceptable_ptch_rate_d = [0.108, 0.141, 0.049, 0.0836, 0.0380]
+        ptch_rate_d = self.get_parameter("PTCH_RATE_D")
+        if not any(abs(ptch_rate_d - v) <= v * 0.02 for v in acceptable_ptch_rate_d):
+            raise NotAchievedException("PTCH_RATE_D=%f is not an expected value" % ptch_rate_d)
 
     def run_autotune(self):
         self.takeoff(100)
@@ -4794,16 +4956,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         rc_value = 1000
         while True:
             timeout = 600
-            if self.get_sim_time() - tstart > timeout:
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not complete within %u seconds" % timeout)
-            try:
-                m = self.wait_statustext("%s: Finished" % axis, check_context=True, timeout=0.1)
+            m = self.statustext_in_collections("%s: Finished" % axis)
+            if m is not None:
                 self.progress("Got %s" % str(m))
                 if axis == "Roll":
                     axis = "Pitch"
                     # Center sticks to allow roll to return to neutral before starting pitch
-                    self.set_rc(1, 1500)
-                    self.set_rc(2, 1500)
+                    self.set_rc_from_map({1: 1500, 2: 1500})
                     self.delay_sim_time(15, reason="vehicle to stabilise between tune axes")
 
                     # Reset toggle value so the initial input is in a consistent direction
@@ -4813,33 +4974,30 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     break
                 else:
                     raise ValueError("Bug: %s" % axis)
-            except AutoTestTimeoutException:
-                pass
-            self.delay_sim_time(1, reason="autotune iteration")
+            # clear collected statustexts so the next poll stays cheap; the
+            # autopilot re-sends "<axis>: Finished" continuously so we won't
+            # miss it
+            self.context_clear_collection("STATUSTEXT")
+            self.delay_sim_time(2, reason="autotune iteration")
 
             if rc_value == 1000:
                 rc_value = 2000
             elif rc_value == 2000:
                 rc_value = 1000
-            elif rc_value == 1000:
-                rc_value = 2000
             else:
                 raise ValueError("Bug")
 
             if axis == "Roll":
-                self.set_rc(1, rc_value)
-                self.set_rc(2, 1500)
+                self.set_rc_from_map({1: rc_value, 2: 1500})
             elif axis == "Pitch":
-                self.set_rc(1, 1500)
-                self.set_rc(2, rc_value)
+                self.set_rc_from_map({1: 1500, 2: rc_value})
             else:
                 raise ValueError("Bug")
 
         tdelta = self.get_sim_time() - tstart
         self.progress("Finished in %0.1f seconds" % (tdelta,))
 
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({1: 1500, 2: 1500})
 
         self.change_mode('FBWA')
         self.fly_home_land_and_disarm(timeout=tdelta+240)
@@ -6955,7 +7113,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             home = self.home_position_as_mav_location()
             target_alt = 20
             self.takeoff(target_alt, mode="TAKEOFF")
-            self.delay_sim_time(20, reason="altitude to stabilise")  # Give some time to altitude to stabilize.
+            self.wait_altitude(
+                home.alt+target_alt-5,
+                home.alt+target_alt+5,
+                relative=False,
+                minimum_duration=20,
+                timeout=60,
+            )
             self.set_rc(3, 1500)
             self.change_mode(mode)
             higher_home = copy.copy(home)
@@ -7155,7 +7319,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def LoggedNamedValueFloat(self):
         '''ensure that sent named value floats are logged'''
-        self.context_push()
         self.install_example_script_context('simple_loop.lua')
         self.set_parameters({
             'SCR_ENABLE': 1,
@@ -7167,16 +7330,33 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "name": "Lua Float",
         })
         dfreader = self.dfreader_for_current_onboard_log()
-        self.context_pop()
 
         m = dfreader.recv_match(type='NVF')
         if m is None:
             raise NotAchievedException("Did not find NVF message")
         self.progress(f"Received NVF with value {m.Value}")
 
+    def LoggedNamedValueInt(self):
+        '''ensure that sent named value ints are logged'''
+        self.install_example_script_context('simple_loop.lua')
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.wait_statustext('hello, world')
+        m = self.assert_received_message_field_values('NAMED_VALUE_INT', {
+            "name": "Lua Int",
+        })
+        dfreader = self.dfreader_for_current_onboard_log()
+
+        m = dfreader.recv_match(type='NVI')
+        if m is None:
+            raise NotAchievedException("Did not find NVI message")
+        self.progress(f"Received NVI with value {m.Value}")
+
     def LoggedNamedValueString(self):
         '''ensure that sent named value strings are logged'''
-        self.context_push()
         self.install_example_script_context('simple_named_string.lua')
         self.set_parameters({
             'SCR_ENABLE': 1,
@@ -7188,7 +7368,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "value": "Lua String Value",
         })
         dfreader = self.dfreader_for_current_onboard_log()
-        self.context_pop()
 
         m = dfreader.recv_match(type='NVS')
         if m is None:
@@ -8205,6 +8384,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.KebniSensAItionExternalINS,
             self.KebniSensAItionExternalIMU,
             self.GpsSensorPreArmEAHRS,
+            self.EKF_STATUS_REPORT,
             self.Deadreckoning,
             self.EKFlaneswitch,
             self.AirspeedDrivers,
@@ -8251,6 +8431,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MANUAL_CONTROL,
             self.RunMissionScript,
             self.WindEstimates,
+            self.WindEstimatesTrim,
             self.WindMessageSpeed,
             self.AltResetBadGPS,
             self.AirspeedCal,
@@ -8293,6 +8474,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.mavlink_AIRSPEED,
             self.Volz,
             self.LoggedNamedValueFloat,
+            self.LoggedNamedValueInt,
             self.LoggedNamedValueString,
             self.AdvancedFailsafeBadBaro,
             self.DO_CHANGE_ALTITUDE,

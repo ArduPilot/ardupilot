@@ -303,6 +303,7 @@ void AP_AHRS::update_configured_ekf_type()
     if (new_backend != nullptr) {
         state.configured_ekf_type = new_type;
         configured_backend = new_backend;
+        configured_estimates = estimates_for_type(new_type);
         return;
     }
     INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -355,14 +356,6 @@ void AP_AHRS::init()
     // we may have updated ekf_type()'s results, so set the backend again:
     update_configured_ekf_type();
     update_active_EKF_type();
-
-    // init backends
-#if AP_AHRS_DCM_ENABLED
-    dcm.init();
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    external.init();
-#endif
 
 #if AP_CUSTOMROTATIONS_ENABLED
     // convert to new custom rotation
@@ -461,7 +454,6 @@ void AP_AHRS::update_state(void)
     state.primary_accel = active_estimates->primary_accel;
 
     state.primary_core = _get_primary_core_index();
-    state.wind_estimate_ok = active_backend->wind_estimate(state.wind_estimate);
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
     state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
     state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
@@ -522,6 +514,40 @@ void AP_AHRS::update_state(void)
     state.velocity_NED_ok = active_estimates->get_velocity_NED(state.velocity_NED);
 }
 
+void AP_AHRS::try_set_common_origin(const AP_AHRS_Backend &source_backend, const AP_AHRS_Backend::Estimates &source_estimates)
+{
+    if (done_common_origin) {
+        return;
+    }
+
+    /*
+      if we now have an origin then set in all backends
+    */
+    if (!source_estimates.provides_common_origin) {
+        // e.g. DCM doesn't provide an origin which can be set
+        // into the other backends
+        return;
+    }
+    Location new_origin;
+    if (!source_backend.get_origin(new_origin)) {
+        // no valid origin from this backend
+        return;
+    }
+    // set the origin in all backends which can take it (except
+    // the one which supplied it).  Invoking AP_AHRS::set_origin
+    // here will cause warnings from the EKFs.
+    for (auto &dest_backend_and_estimates : backends_and_estimates) {
+        if (&dest_backend_and_estimates.estimates == &source_estimates) {
+            continue;
+        }
+        // note that SITL and DCM ignore this set_origin call via
+        // an empty base-class implementation:
+        dest_backend_and_estimates.backend.set_origin(new_origin);
+    }
+
+    done_common_origin = true;
+}
+
 // update run at loop rate
 void AP_AHRS::update(bool skip_ins_update)
 {
@@ -552,42 +578,36 @@ void AP_AHRS::update(bool skip_ins_update)
     // update autopilot-body-to-vehicle-body from _trim parameters:
     update_trim_rotation_matrices();
 
-#if AP_AHRS_DCM_ENABLED
-    update_DCM();
-#endif
-
     // update takeoff/touchdown flags
     update_flags();
 
-#if AP_AHRS_SIM_ENABLED
-    update_SITL();
-#endif
+    // update the backends, configured-first.  Some backends look at
+    // loop-time-remaining and opt-out of their full update if there
+    // isn't enough time left.  Copy back their results while we are
+    // at it.
+    configured_backend->update();
+    *configured_estimates = {};
+    configured_backend->get_results(*configured_estimates);
+    // if we don't have an origin, maybe set one:
+    try_set_common_origin(*configured_backend, *configured_estimates);
 
-#if AP_AHRS_EXTERNAL_ENABLED
-    update_external();
-#endif
-    
-    if (_ekf_type == 2) {
-        // if EK2 is primary then run EKF2 first to give it CPU
-        // priority
-#if HAL_NAVEKF2_AVAILABLE
-        update_EKF2();
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-        update_EKF3();
-#endif
-    } else {
-        // otherwise run EKF3 first
-#if HAL_NAVEKF3_AVAILABLE
-        update_EKF3();
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-        update_EKF2();
-#endif
+    for (auto &backend_and_estimates : backends_and_estimates) {
+        if (&backend_and_estimates.backend == configured_backend) {
+            // already updated
+            continue;
+        }
+        backend_and_estimates.backend.update();
+        backend_and_estimates.estimates = {};
+        backend_and_estimates.backend.get_results(backend_and_estimates.estimates);
+        // if we don't have an origin, maybe set one:
+        try_set_common_origin(backend_and_estimates.backend, backend_and_estimates.estimates);
     }
 
     update_configured_ekf_type();
     update_active_EKF_type();
+
+    // update blinking lights, buzzer etc bsaed on active EKF type:
+    update_notify_from_filter_status(active_estimates->filter_status);
 
 #if HAL_GCS_ENABLED
     if (state.active_EKF_type != last_active_ekf_type) {
@@ -630,156 +650,12 @@ void AP_AHRS::update(bool skip_ins_update)
 #endif
 }
 
-#if AP_AHRS_DCM_ENABLED
-void AP_AHRS::update_DCM()
-{
-    dcm.update();
-    dcm.get_results(dcm_estimates);
-}
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-void AP_AHRS::update_SITL(void)
-{
-    sim.update();
-    sim.get_results(sim_estimates);
-}
-#endif
-
 void AP_AHRS::update_notify_from_filter_status(const nav_filter_status &status)
 {
     AP_Notify::flags.gps_fusion = status.flags.using_gps; // Drives AP_Notify flag for usable GPS.
     AP_Notify::flags.gps_glitching = status.flags.gps_glitching;
     AP_Notify::flags.have_pos_abs = status.flags.horiz_pos_abs;
 }
-
-#if HAL_NAVEKF2_AVAILABLE
-void AP_AHRS::update_EKF2(void)
-{
-    if (!ekf2.started) {
-        // wait 1 second for DCM to output a valid tilt error estimate
-        if (start_time_ms == 0) {
-            start_time_ms = AP_HAL::millis();
-        }
-#if HAL_LOGGING_ENABLED
-        // if we're doing Replay logging then don't allow any data
-        // into the EKF yet.  Don't allow it to block us for long.
-        if (!hal.util->was_watchdog_reset()) {
-            if (AP_HAL::millis() - start_time_ms < 5000) {
-                if (!AP::logger().allow_start_ekf()) {
-                    return;
-                }
-            }
-        }
-#endif
-
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
-            ekf2.started = ekf2.EKF2.InitialiseFilter();
-        }
-    }
-    if (ekf2.started) {
-        ekf2.update();
-        ekf2_estimates = {};
-        ekf2.get_results(ekf2_estimates);
-        if (_active_EKF_type() == EKFType::TWO) {
-            nav_filter_status filt_state;
-            ekf2.get_filter_status(filt_state);
-            update_notify_from_filter_status(filt_state);
-        }
-
-        /*
-          if we now have an origin then set in all backends
-        */
-        if (!done_common_origin) {
-            Location new_origin;
-            if (ekf2.get_origin(new_origin)) {
-                done_common_origin = true;
-#if HAL_NAVEKF3_AVAILABLE
-                ekf3.set_origin(new_origin);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-                external.set_origin(new_origin);
-#endif
-            }
-        }
-    }
-}
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-void AP_AHRS::update_EKF3(void)
-{
-    if (!ekf3.started) {
-        // wait 1 second for DCM to output a valid tilt error estimate
-        if (start_time_ms == 0) {
-            start_time_ms = AP_HAL::millis();
-        }
-#if HAL_LOGGING_ENABLED
-        // if we're doing Replay logging then don't allow any data
-        // into the EKF yet.  Don't allow it to block us for long.
-        if (!hal.util->was_watchdog_reset()) {
-            if (AP_HAL::millis() - start_time_ms < 5000) {
-                if (!AP::logger().allow_start_ekf()) {
-                    return;
-                }
-            }
-        }
-#endif
-        if (AP_HAL::millis() - start_time_ms > startup_delay_ms) {
-            ekf3.started = ekf3.EKF3.InitialiseFilter();
-        }
-    }
-    if (ekf3.started) {
-        ekf3.update();
-        ekf3_estimates = {};
-        ekf3.get_results(ekf3_estimates);
-        if (_active_EKF_type() == EKFType::THREE) {
-            nav_filter_status filt_state;
-            ekf3.get_filter_status(filt_state);
-            update_notify_from_filter_status(filt_state);
-        }
-        /*
-          if we now have an origin then set in all backends
-        */
-        if (!done_common_origin) {
-            Location new_origin;
-            if (ekf3.get_origin(new_origin)) {
-                done_common_origin = true;
-#if HAL_NAVEKF2_AVAILABLE
-                ekf2.set_origin(new_origin);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-                external.set_origin(new_origin);
-#endif
-            }
-        }
-    }
-}
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-void AP_AHRS::update_external(void)
-{
-    external.update();
-    external.get_results(external_estimates);
-
-    /*
-      if we now have an origin then set in all backends
-    */
-    if (!done_common_origin) {
-        Location new_origin;
-        if (external.get_origin(new_origin)) {
-            done_common_origin = true;
-#if HAL_NAVEKF2_AVAILABLE
-            ekf2.set_origin(new_origin);
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-            ekf3.set_origin(new_origin);
-#endif
-        }
-    }
-}
-#endif // AP_AHRS_EXTERNAL_ENABLED
 
 void AP_AHRS::reset()
 {
@@ -943,7 +819,8 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
 
 #if HAL_NAVEKF3_AVAILABLE
     case EKFType::THREE:
-        have_wind = ekf3.wind_estimate(wind_vel);
+        wind_vel = ekf3_estimates.wind;
+        have_wind = ekf3_estimates.wind_valid;
         break;
 #endif
 
@@ -1327,71 +1204,6 @@ bool AP_AHRS::have_inertial_nav(void) const
     return true;
 }
 
-// returns the expected NED magnetic field
-bool AP_AHRS::get_mag_field_NED(Vector3f &vec) const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return false;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        ekf2.EKF2.getMagNED(vec);
-        return true;
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        ekf3.EKF3.getMagNED(vec);
-        return true;
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return false;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return false;
-#endif
-    }
-    return false;
-}
-
-// returns the estimated magnetic field offsets in body frame
-bool AP_AHRS::get_mag_field_correction(Vector3f &vec) const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return false;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        ekf2.EKF2.getMagXYZ(vec);
-        return true;
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        ekf3.EKF3.getMagXYZ(vec);
-        return true;
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return false;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return false;
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return false;
-}
-
 // get velocity down in m/s.  This returns get_velocity_NED.z() if available, otherwise falls back to get_vert_pos_rate_D()
 // if high_vibes is true then this is equivalent to get_vert_pos_rate_D
 bool AP_AHRS::get_velocity_D(float &velD, bool high_vibes) const
@@ -1705,7 +1517,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             if (ekf2_faults == 0) {
                 ret = EKFType::TWO;
             }
-        } else if (ekf2.healthy()) {
+        } else if (ekf2_estimates.healthy) {
             ret = EKFType::TWO;
         }
         break;
@@ -1724,7 +1536,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             if (ekf3_faults == 0) {
                 ret = EKFType::THREE;
             }
-        } else if (ekf3.healthy()) {
+        } else if (ekf3_estimates.healthy) {
             ret = EKFType::THREE;
         }
         break;
@@ -1755,24 +1567,24 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             break;
 #if HAL_NAVEKF2_AVAILABLE
         case EKFType::TWO:
-            ekf2.get_filter_status(filt_state);
+            filt_state = ekf2_estimates.filter_status;
             should_use_gps = ekf2.EKF2.configuredToUseGPSForPosXY();
             break;
 #endif
 #if HAL_NAVEKF3_AVAILABLE
         case EKFType::THREE:
-            ekf3.get_filter_status(filt_state);
+            filt_state = ekf3_estimates.filter_status;
             should_use_gps = ekf3.EKF3.configuredToUseGPSForPosXY();
             break;
 #endif
 #if AP_AHRS_SIM_ENABLED
         case EKFType::SIM:
-            get_filter_status(filt_state);
+            filt_state = sim_estimates.filter_status;
             break;
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
         case EKFType::EXTERNAL:
-            get_filter_status(filt_state);
+            filt_state = external_estimates.filter_status;
             should_use_gps = true;
             break;
 #endif
@@ -1780,7 +1592,10 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 
         // Handle fallback for the case where the DCM or EKF is unable to provide attitude or height data.
         const bool can_use_dcm = dcm.yaw_source_available() || fly_forward;
-        const bool can_use_ekf = filt_state.flags.attitude && filt_state.flags.vert_vel && filt_state.flags.vert_pos;
+        // ground vehicles only require attitude from the EKF, other vehicles also require vertical velocity and position
+        const bool can_use_ekf = filt_state.flags.attitude &&
+            ((_vehicle_class == VehicleClass::GROUND) ||
+             (filt_state.flags.vert_vel && filt_state.flags.vert_pos));
         if (!can_use_dcm && can_use_ekf) {
             // no choice - continue to use EKF
             return ret;
@@ -1867,7 +1682,7 @@ AP_AHRS::EKFType AP_AHRS::fallback_active_EKF_type(void) const
 #endif
 
 #if AP_AHRS_EXTERNAL_ENABLED
-    if (external.healthy()) {
+    if (external_estimates.healthy) {
         return EKFType::EXTERNAL;
     }
 #endif
@@ -1936,58 +1751,16 @@ bool AP_AHRS::_get_secondary_EKF_type(EKFType &secondary_ekf_type) const
 */
 bool AP_AHRS::healthy(void) const
 {
-    // If EKF is started we switch away if it reports unhealthy. This could be due to bad
-    // sensor data. If EKF reversion is inhibited, we only switch across if the EKF encounters
-    // an internal processing error, but not for bad sensor data.
-    switch (configured_ekf_type()) {
-
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.healthy();
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO: {
-        if (!ekf2.healthy()) {
-            return false;
-        }
-        if ((_vehicle_class == VehicleClass::FIXED_WING ||
-                _vehicle_class == VehicleClass::GROUND) &&
-                active_EKF_type() != EKFType::TWO) {
-            // on fixed wing we want to be using EKF to be considered
-            // healthy if EKF is enabled
-            return false;
-        }
-        return true;
-    }
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        if (!ekf3.healthy()) {
-            return false;
-        }
-        if ((_vehicle_class == VehicleClass::FIXED_WING ||
-                _vehicle_class == VehicleClass::GROUND) &&
-                active_EKF_type() != EKFType::THREE) {
-            // on fixed wing we want to be using EKF to be considered
-            // healthy if EKF is enabled
-            return false;
-        }
-        return true;
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.healthy();
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.healthy();
-#endif
+    if (!configured_estimates->healthy) {
+        return false;
     }
 
-    return false;
+    // we must be using the configured type to be considered healthy:
+    if (configured_backend != active_backend) {
+        return false;
+    }
+
+    return true;
 }
 
 // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
@@ -2025,39 +1798,6 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
     return (configured_backend->pre_arm_check(requires_position, failure_msg, failure_msg_len) && ret);
 }
-
-// true if the AHRS has completed initialisation
-bool AP_AHRS::initialised(void) const
-{
-    switch (configured_ekf_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return true;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        // initialisation complete 10sec after ekf has started
-        return (ekf2.started && (AP_HAL::millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        // initialisation complete 10sec after ekf has started
-        return (ekf3.started && (AP_HAL::millis() - start_time_ms > AP_AHRS_NAVEKF_SETTLE_TIME_MS));
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return true;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return external.initialised();
-#endif
-    }
-    return false;
-};
 
 // write optical flow data to EKF
 void  AP_AHRS::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
@@ -2312,11 +2052,77 @@ void AP_AHRS::resetHeightDatum(void)
     }
 }
 
+#if HAL_GCS_ENABLED
 // send a EKF_STATUS_REPORT for configured EKF
 void AP_AHRS::send_ekf_status_report(GCS_MAVLINK &link) const
 {
-    configured_backend->send_ekf_status_report(link);
+    // get filter status
+    if (!configured_estimates->filter_status_valid) {
+        return;
+    }
+
+    // get variances
+    if (!configured_estimates->variances_valid) {
+        return;
+    }
+
+    if (!configured_estimates->terrain_alt_variance_valid) {
+        return;
+    }
+
+    // prepare flags
+    uint16_t flags = 0;
+    if (configured_estimates->filter_status.flags.attitude) {
+        flags |= EKF_ATTITUDE;
+    }
+    if (configured_estimates->filter_status.flags.horiz_vel) {
+        flags |= EKF_VELOCITY_HORIZ;
+    }
+    if (configured_estimates->filter_status.flags.vert_vel) {
+        flags |= EKF_VELOCITY_VERT;
+    }
+    if (configured_estimates->filter_status.flags.horiz_pos_rel) {
+        flags |= EKF_POS_HORIZ_REL;
+    }
+    if (configured_estimates->filter_status.flags.horiz_pos_abs) {
+        flags |= EKF_POS_HORIZ_ABS;
+    }
+    if (configured_estimates->filter_status.flags.vert_pos) {
+        flags |= EKF_POS_VERT_ABS;
+    }
+    if (configured_estimates->filter_status.flags.terrain_alt) {
+        flags |= EKF_POS_VERT_AGL;
+    }
+    if (configured_estimates->filter_status.flags.const_pos_mode) {
+        flags |= EKF_CONST_POS_MODE;
+    }
+    if (configured_estimates->filter_status.flags.pred_horiz_pos_rel) {
+        flags |= EKF_PRED_POS_HORIZ_REL;
+    }
+    if (configured_estimates->filter_status.flags.pred_horiz_pos_abs) {
+        flags |= EKF_PRED_POS_HORIZ_ABS;
+    }
+    if (!configured_estimates->filter_status.flags.initalized) {
+        flags |= EKF_UNINITIALIZED;
+    }
+    if (configured_estimates->filter_status.flags.gps_glitching) {
+        flags |= (1<<15);
+    }
+
+    const mavlink_ekf_status_report_t packet{
+        configured_estimates->velVar,
+        configured_estimates->posVar,
+        configured_estimates->hgtVar,
+        fmaxf(fmaxf(configured_estimates->magVar.x, configured_estimates->magVar.y), configured_estimates->magVar.z),
+        configured_estimates->terrain_alt_variance,
+        flags,
+        configured_estimates->tasVar
+    };
+
+    // send message
+    mavlink_msg_ekf_status_report_send_struct(link.get_chan(), &packet);
 }
+#endif  // HAL_GCS_ENABLED
 
 // return origin for a specified EKF type
 bool AP_AHRS::_get_origin(EKFType type, Location &ret) const
@@ -2751,11 +2557,11 @@ bool AP_AHRS::get_location(Location &loc) const
     return state.location_ok;
 }
 
-// return a wind estimation vector, in m/s; returns 0,0,0 on failure
+// return a wind estimation vector in "wind" (m/s); returns false on failure
 bool AP_AHRS::wind_estimate(Vector3f &wind) const
 {
-    wind = state.wind_estimate;
-    return state.wind_estimate_ok;
+    wind = active_estimates->wind;
+    return active_estimates->wind_valid;
 }
 
 // return an airspeed estimate if available. return true

@@ -83,9 +83,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def test_filepath(self):
         return os.path.realpath(__file__)
 
-    def default_speedup(self):
-        return 100
-
     def set_current_test_name(self, name):
         self.current_test_name_directory = "ArduCopter_Tests/" + name + "/"
 
@@ -111,7 +108,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Returns kwargs for a SITL commandline to fly the Callisto. Wipes params."""
         return {
             "defaults_filepath": self.model_defaults_filepath('Callisto'),
-            "model": "octa-quad:@ROMFS/models/Callisto.json",
+            "model": "octa-quad-cwx:@ROMFS/models/Callisto.json",
             "wipe": True
         }
 
@@ -3449,7 +3446,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Landing and disarming")
         self.land_and_disarm()
 
-    def ModeFlip(self):
+    def ModeFlip(self, do_pitch_flip=True):
         '''Fly Flip Mode'''
         class WatchForMode(vehicle_test_suite.TestSuite.MessageHook):
             """Records whether specified mode was ever entered."""
@@ -3518,46 +3515,47 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             relative=True,
         )
 
-        self.start_subtest("Test 2: flip in a pilot-directed direction initialized by mode-change to FLIP.")
-        get_ready_for_flip()
+        if do_pitch_flip:
+            self.start_subtest("Test 2: flip in a pilot-directed direction initialized by mode-change to FLIP.")
+            get_ready_for_flip()
 
-        def wait_for_pitch_back_flip():
-            """These checkpoints and thresholds need hand-tuning to avoid flakes.
+            def wait_for_pitch_back_flip():
+                """These checkpoints and thresholds need hand-tuning to avoid flakes.
 
-            Due to Euler-angle choices, a pitch-back flip progresses like:
-              Roll = 0, pitch 0 -> +90
-              (instantly with pitch = +90) Roll 0 -> 180
-              Roll = 180, pitch +90 -> 0 -> -90
-              (instantly with pitch = -90) Roll 180 -> 0
-              Roll = 0, pitch -90 -> 0
-              (Note that Roll ~180 might be positive or negative, or even flip-flop)
+                Due to Euler-angle choices, a pitch-back flip progresses like:
+                  Roll = 0, pitch 0 -> +90
+                  (instantly with pitch = +90) Roll 0 -> 180
+                  Roll = 180, pitch +90 -> 0 -> -90
+                  (instantly with pitch = -90) Roll 180 -> 0
+                  Roll = 0, pitch -90 -> 0
+                  (Note that Roll ~180 might be positive or negative, or even flip-flop)
 
-            In the future, the detection logic may be replaced by a lower-overhead solution,
-            such as a MessageHook + logic to analyze the observed values to find
-            if the flip happened or not.
-            """
-            self.wait_attitude(despitch=60, desroll=0, tolerance=30)
-            self.wait_attitude(despitch=60, tolerance=30) # desroll is +/-180
-            self.wait_attitude(despitch=-60, desroll=0, tolerance=30)
-            self.wait_attitude(despitch=0, desroll=0, tolerance=30)
+                In the future, the detection logic may be replaced by a lower-overhead solution,
+                such as a MessageHook + logic to analyze the observed values to find
+                if the flip happened or not.
+                """
+                self.wait_attitude(despitch=60, desroll=0, tolerance=30)
+                self.wait_attitude(despitch=60, tolerance=30) # desroll is +/-180
+                self.wait_attitude(despitch=-60, desroll=0, tolerance=30)
+                self.wait_attitude(despitch=0, desroll=0, tolerance=30)
 
-        self.progress("Flipping in pitch-back")
-        gentle_positive_stick = 1700
-        self.set_rc(2, gentle_positive_stick)
-        self.send_cmd_do_set_mode('FLIP') # don't wait for success
-        try:
-            wait_for_pitch_back_flip()
-        except AutoTestTimeoutException:
-            raise NotAchievedException("Flip not confirmed. (If the flip did happen, our detection needs tuning.)")
-        self.progress("Waiting for level")
-        self.set_rc(2, neutral_stick)
-        self.wait_attitude(despitch=0, desroll=0, tolerance=5)
-        self.wait_mode('ALT_HOLD')
-        self.wait_altitude(
-            pre_flip_altitude_m - acceptable_altitude_loss_during_flip_m,
-            pre_flip_altitude_m + acceptable_altitude_loss_during_flip_m,
-            relative=True,
-        )
+            self.progress("Flipping in pitch-back")
+            gentle_positive_stick = 1700
+            self.set_rc(2, gentle_positive_stick)
+            self.send_cmd_do_set_mode('FLIP') # don't wait for success
+            try:
+                wait_for_pitch_back_flip()
+            except AutoTestTimeoutException:
+                raise NotAchievedException("Flip not confirmed. (If the flip did happen, our detection needs tuning.)")
+            self.progress("Waiting for level")
+            self.set_rc(2, neutral_stick)
+            self.wait_attitude(despitch=0, desroll=0, tolerance=5)
+            self.wait_mode('ALT_HOLD')
+            self.wait_altitude(
+                pre_flip_altitude_m - acceptable_altitude_loss_during_flip_m,
+                pre_flip_altitude_m + acceptable_altitude_loss_during_flip_m,
+                relative=True,
+            )
 
         self.start_subtest("Test 3: Enter & abandon the flip using RC Aux")
         get_ready_for_flip()
@@ -4985,6 +4983,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # do a simple up-and-down flight to gather data:
         self.takeoff(15, mode="ALT_HOLD")
+        # let the vehicle settle into a stable hover before measuring, so the
+        # climb-out transient does not leak into the noise-suppression FFT
+        self.wait_altitude(13, 17, relative=True, minimum_duration=10)
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         self.set_parameter("SIM_VIB_MOT_MAX", 0)
         self.do_RTL()
@@ -8190,6 +8191,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # find a motor peak
         if takeoff:
             self.takeoff(10, mode="ALT_HOLD")
+            self.wait_altitude(8, 12, relative=True, minimum_duration=10)
 
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         self.do_RTL()
@@ -8873,6 +8875,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # do test flight:
         self.takeoff(10, mode="ALT_HOLD")
+        # let the vehicle settle into a stable hover before measuring, so the
+        # climb-out transient does not leak into the noise-suppression FFT
+        self.wait_altitude(8, 12, relative=True, minimum_duration=10)
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         # fly fast forrest!
         self.set_rc(3, 1900)
@@ -12860,6 +12865,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'heli-blade360': "wrong binary, different takeoff regime",
             'heli-ddvptail': "wrong binary, different takeoff regime",
             'heli-ddfptail': "wrong binary, different takeoff regime",
+            'heli-quad': "wrong binary, different takeoff regime",
             "quad-can" : "needs CAN periph",
         }
         for frame in sorted(copter_vinfo_options["frames"].keys()):
@@ -12937,7 +12943,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
-        util.build_SITL('tool/Replay', clean=False, configure=False)
+        self.build_replay()
         self.set_parameters({
             "LOG_DARM_RATEMAX": 0,
             "LOG_FILE_RATEMAX": 0,
@@ -12963,6 +12969,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Running replay on (%s) (%u bytes)" % (
             (current_log_filepath, os.path.getsize(current_log_filepath))
         ))
+
+        # a log with dropped blocks is incomplete and cannot be replayed
+        # faithfully, so check before wasting time on the replay itself:
+        self.assert_log_has_no_dropped_blocks(current_log_filepath)
 
         self.zero_throttle()
         self.run_replay(current_log_filepath)
@@ -13427,6 +13437,83 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if abs(m.yaw - want) > 500:
             raise NotAchievedException("Expected to get GPS-from-yaw (want %f got %f)" % (want, m.yaw))
         self.wait_ready_to_arm()
+
+    def GPS_INPUT(self):
+        '''Test GPS data injected via the GPS_INPUT MAVLink message (GPS_TYPE=MAV)'''
+        # feed the first GPS instance over MAVLink rather than a simulated
+        # serial backend.  Disable the simulated serial GPS so the only GPS
+        # data ArduPilot sees is what we inject below:
+        self.set_parameters({
+            "GPS1_TYPE": 14,        # MAV
+            "SIM_GPS1_ENABLE": 0,   # no simulated serial GPS
+        })
+        self.reboot_sitl()
+
+        # we will echo the simulator's true state back as GPS_INPUT, so make
+        # sure SIM_STATE (which carries truth lat/lng/alt/velocity) is streamed:
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
+
+        class GPSInputFeeder(vehicle_test_suite.TestSuite.MessageHook):
+            '''emit a GPS_INPUT message for each SIM_STATE, pretending to be a
+            companion computer supplying the GPS solution'''
+            def __init__(self, suite):
+                super().__init__(suite)
+                self.count = 0
+
+            def progress_prefix(self):
+                return "GPSIN: "
+
+            def process(self, mav, m):
+                if m.get_type() != 'SIM_STATE':
+                    return
+                self.count += 1
+                now_s = self.suite.get_sim_time_cached()
+                # an arbitrary but valid GPS week and ms-of-week; ArduPilot
+                # only requires week>0 and fix>=3 to apply jitter correction:
+                time_week = 2345
+                time_week_ms = int(now_s * 1000) % (7 * 86400 * 1000)
+                mav.mav.gps_input_send(
+                    int(now_s * 1e6),   # time_usec
+                    0,                  # gps_id (first instance)
+                    0,                  # ignore_flags: 0 == every field is valid
+                    time_week_ms,
+                    time_week,
+                    3,                  # fix_type: 3D fix
+                    m.lat_int,          # 1e7 degrees
+                    m.lon_int,          # 1e7 degrees
+                    m.alt,              # metres
+                    1.0,                # hdop
+                    1.5,                # vdop
+                    m.vn, m.ve, m.vd,   # NED velocity, m/s
+                    0.2,                # speed_accuracy, m/s
+                    0.5,                # horiz_accuracy, m
+                    0.8,                # vert_accuracy, m
+                    15,                 # satellites_visible
+                    0,                  # yaw (0 == not provided)
+                )
+
+        feeder = GPSInputFeeder(self)
+        self.install_message_hook_context(feeder)
+
+        # confirm ArduPilot consumed the injected GPS:
+        self.wait_gps_fix_type_gte(3, timeout=60, verbose=True)
+        self.wait_gps_satellite_count("GPS_RAW_INT", 15, timeout=30)
+
+        # the EKF should accept the MAVLink GPS and allow arming:
+        self.wait_ready_to_arm()
+
+        # the estimated position should track the truth we are feeding in:
+        self.install_message_hook_context(
+            vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(self, max_allowed_divergence=25))
+
+        # and we should be able to fly under position control:
+        self.takeoff(10, mode='GUIDED')
+        self.fly_guided_move_local(20, 0, 10)
+        self.do_RTL()
+
+        if feeder.count == 0:
+            raise NotAchievedException("Never sent any GPS_INPUT messages")
+        self.progress("Sent %u GPS_INPUT messages" % feeder.count)
 
     def SMART_RTL_EnterLeave(self):
         '''check SmartRTL behaviour when entering/leaving'''
@@ -14721,7 +14808,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test land detector with significant AHRS trim'''
         self.context_push()
         self.set_parameters({
-            "SIM_ACC_TRIM_X": 0.12,
+            "SIM_BRD_TRIM_X": 0.12,
             "AHRS_TRIM_X": 0.12,
         })
         self.reboot_sitl()
@@ -16356,8 +16443,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def CommonOrigin(self):
         """Test common origin between EKF2 and EKF3"""
-        self.context_push()
-
         # start on EKF2
         self.set_parameters({
             'AHRS_EKF_TYPE': 2,
@@ -16372,11 +16457,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("EKF2 IMU0 is using GPS", timeout=60, check_context=True)
         self.wait_statustext("EKF2 active", timeout=60, check_context=True)
 
-        self.context_collect('GPS_GLOBAL_ORIGIN')
-
         # get EKF2 origin
-        self.run_cmd(mavutil.mavlink.MAV_CMD_GET_HOME_POSITION)
-        ek2_origin = self.assert_receive_message('GPS_GLOBAL_ORIGIN', check_context=True)
+        ek2_origin = self.poll_message('GPS_GLOBAL_ORIGIN')
 
         # switch to EKF3
         self.set_parameters({
@@ -16387,8 +16469,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("EKF3 IMU0 is using GPS", timeout=60, check_context=True)
         self.wait_statustext("EKF3 active", timeout=60, check_context=True)
 
-        self.run_cmd(mavutil.mavlink.MAV_CMD_GET_HOME_POSITION)
-        ek3_origin = self.assert_receive_message('GPS_GLOBAL_ORIGIN', check_context=True)
+        ek3_origin = self.poll_message('GPS_GLOBAL_ORIGIN')
 
         self.progress("Checking origins")
         if ek2_origin.time_usec == ek3_origin.time_usec:
@@ -16401,10 +16482,104 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 ek2_origin.altitude != ek3_origin.altitude):
             raise NotAchievedException("Did not get matching EK2 and EK3 origins")
 
-        self.context_pop()
-
-        # restart GPS driver
+    def CommonOriginExternalAHRS(self):
+        '''ensure an ExternalAHRS origin is shared into EKF2 and EKF3'''
+        # Run an ExternalAHRS (MicroStrain7, which supplies GPS) alongside
+        # EKF2 and EKF3.  The ExternalAHRS derives its origin from the true
+        # vehicle position and so is unaffected by the SITL GPS glitch, while
+        # the EKFs are made slow to get an origin and use the (glitched) SITL
+        # GPS.  The ExternalAHRS therefore wins the race to set the common
+        # origin; if that origin is correctly shared the EKFs report the
+        # un-glitched ExternalAHRS origin rather than their own glitched one.
+        self.customise_SITL_commandline([
+            "--serial4=sim:MicroStrain7",
+        ])
+        self.set_parameters({
+            'EK2_ENABLE': 1,
+            'EK3_ENABLE': 1,
+            'EK2_CHECK_SCALE': 1,        # make the EKFs slow to get an origin
+            'EK3_CHECK_SCALE': 1,
+            'SIM_GPS1_GLTCH_X': 0.001,   # about 100m, only affects the SITL GPS
+            'EAHRS_TYPE': 7,             # MicroStrain7
+            'SERIAL4_PROTOCOL': 36,      # ExternalAHRS
+            'SERIAL4_BAUD': 230400,
+            'EAHRS_SENSORS': 0xD,        # GPS|BARO|COMPASS (exclude IMU)
+            'AHRS_EKF_TYPE': 11,         # read the ExternalAHRS origin below
+        })
         self.reboot_sitl()
+
+        # The ExternalAHRS obtains an origin from its (un-glitched) GPS well
+        # before the deliberately-slowed EKFs get one of their own; the
+        # common-origin code then pushes that origin into the EKFs.
+        self.delay_sim_time(15, reason="ExternalAHRS to get origin and share it")
+
+        # read the ExternalAHRS origin (AHRS_EKF_TYPE==11 selects it)
+        ext_origin = self.poll_message('GPS_GLOBAL_ORIGIN')
+
+        # confirm the ExternalAHRS really was the source: its origin matches
+        # the true home rather than the ~100m-glitched SITL GPS position
+        ext_loc = mavutil.location(ext_origin.latitude * 1e-7, ext_origin.longitude * 1e-7)
+        dist = self.get_distance(self.sitl_start_location(), ext_loc)
+        if dist > 30:
+            raise NotAchievedException(
+                "ExternalAHRS origin too far from home (%.1fm) - glitched GPS won the race" % dist)
+
+        # each EKF must report the same origin: the common-origin code shared
+        # the ExternalAHRS origin into them, so despite their own GPS being
+        # glitched they hold the un-glitched ExternalAHRS origin
+        for ekf_type, name in (3, "EKF3"), (2, "EKF2"):
+            self.set_parameter('AHRS_EKF_TYPE', ekf_type)
+            ekf_origin = self.poll_message('GPS_GLOBAL_ORIGIN')
+            if (ext_origin.latitude != ekf_origin.latitude or
+                    ext_origin.longitude != ekf_origin.longitude or
+                    ext_origin.altitude != ekf_origin.altitude):
+                raise NotAchievedException("%s did not adopt the ExternalAHRS origin" % name)
+
+    def CommonOriginExternalAHRSReceives(self):
+        '''ensure an EKF-established origin is shared into the ExternalAHRS'''
+        # SensAItion in legacy IMU-only mode is a healthy ExternalAHRS which
+        # never establishes an origin of its own: it emits only IMU packets,
+        # never the INS packet that would set one.  EKF3 obtains the origin
+        # from the SITL GPS, and the common-origin code must then share that
+        # origin into the ExternalAHRS.  With AHRS_EKF_TYPE=11 the ExternalAHRS
+        # pre-arm check requires an origin, so a failure to share it surfaces
+        # as the "ExternalAHRS: No origin" pre-arm message.
+        self.customise_SITL_commandline(["--serial4=sim:SensAItion"])
+        self.set_parameters({
+            'EAHRS_TYPE': 11,        # SensAItion
+            'EAHRS_SENSORS': 14,     # IMU|BARO|COMPASS (no GPS)
+            'EAHRS_OPTIONS': 0,      # legacy IMU-only mode (never sets own origin)
+            'SERIAL4_PROTOCOL': 36,
+            'SERIAL4_BAUD': 460800,
+            'GPS1_TYPE': 1,          # SITL GPS feeds the EKFs
+            'EK3_ENABLE': 1,
+            'AHRS_EKF_TYPE': 11,     # configured EXTERNAL: origin pre-arm check active
+            'INS_GYR_CAL': 1,
+        })
+        self.reboot_sitl()
+
+        self.context_collect('STATUSTEXT')
+
+        # EKF3 obtains an origin from the SITL GPS:
+        self.wait_statustext("EKF3 IMU0 origin set", timeout=60, check_context=True)
+        self.delay_sim_time(2, reason="origin to be shared into the ExternalAHRS")
+
+        # The ExternalAHRS must now hold that origin.  Run the pre-arm checks
+        # and confirm the "No origin" failure does not appear (other failures
+        # are expected as the IMU-only ExternalAHRS supplies no position).
+        saw_prearm = False
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 20:
+            self.send_mavlink_run_prearms_command()
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+            if m is None:
+                continue
+            if "ExternalAHRS: No origin" in m.text:
+                raise NotAchievedException("ExternalAHRS did not receive the EKF3 origin")
+            if "PreArm" in m.text:
+                saw_prearm = True
+        if not saw_prearm:
+            raise NotAchievedException("pre-arm checks did not run")
 
     def AHRSOriginRecorded(self):
         """Test AHRS option to record and reuse origin"""
@@ -16736,6 +16911,8 @@ RTL_ALT_M 111
                 'AHRS_TRIM_Y': -0.1,
             })
             self.takeoff(mode=mode)
+            self.progress("Ensuring the bad trims actually cause a drift")
+            self.wait_groundspeed(1.5, 1000, timeout=30)
             self.set_rc(9, 2000)
             tstart = self.get_sim_time()
             while True:
@@ -16744,16 +16921,17 @@ RTL_ALT_M 111
                     raise ValueError(f"Failed to reduce trims in {mode}!")
                 lpn = self.assert_receive_message('LOCAL_POSITION_NED')
                 delta = 40
+                deadband = 0.1  # m/s; don't trim against residual drift
                 roll_input = 1500
-                if lpn.vx > 0:
+                if lpn.vx > deadband:
                     roll_input -= delta
-                elif lpn.vx < 0:
+                elif lpn.vx < -deadband:
                     roll_input += delta
 
                 pitch_input = 1500
-                if lpn.vy > 0:
+                if lpn.vy > deadband:
                     pitch_input += delta
-                elif lpn.vy < 0:
+                elif lpn.vy < -deadband:
                     pitch_input -= delta
                 self.set_rc_from_map({
                     1: roll_input,
@@ -16766,11 +16944,13 @@ RTL_ALT_M 111
                     trim_x = self.get_parameter('AHRS_TRIM_X', verbose=False)
                     trim_y = self.get_parameter('AHRS_TRIM_Y', verbose=False)
                     self.progress(f"trim_x={trim_x} trim_y={trim_y}")
-                    if abs(trim_x) < 0.01 and abs(trim_y) < 0.01:
+                    if abs(trim_x) < 0.005 and abs(trim_y) < 0.005:
                         self.progress("Good AHRS trims")
-                        self.progress(f"vx={lpn.vx} vy={lpn.vy}")
-                        if abs(lpn.vx) > 1 or abs(lpn.vy) > 1:
-                            raise NotAchievedException("Velocity after trimming?!")
+                        self.set_rc_from_map({
+                            1: 1500,
+                            2: 1500,
+                        }, quiet=True)
+                        self.wait_groundspeed(0, 0.3, minimum_duration=5, timeout=30)
                         break
             self.context_collect('STATUSTEXT')
             self.set_rc(9, 1000)
@@ -17719,6 +17899,7 @@ return update, 1000
             self.DO_WINCH,
             self.SensorErrorFlags,
             self.GPSForYaw,
+            self.GPS_INPUT,
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,
@@ -17804,6 +17985,8 @@ return update, 1000
             self.ScriptingAHRSSource,
             self.FTPScriptUpload,
             self.CommonOrigin,
+            self.CommonOriginExternalAHRS,
+            self.CommonOriginExternalAHRSReceives,
             self.AHRSOriginRecorded,
             self.TestTetherStuck,
             self.ScriptingFlipMode,

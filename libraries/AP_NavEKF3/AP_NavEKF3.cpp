@@ -96,6 +96,32 @@
 #define FLOW_USE_DEFAULT        2
 #define WIND_P_NSE_DEFAULT      0.1
 
+#elif APM_BUILD_TYPE(APM_BUILD_ArduSub)
+// Sub defaults
+#define VELNE_M_NSE_DEFAULT     0.5f
+#define VELD_M_NSE_DEFAULT      0.7f
+#define POSNE_M_NSE_DEFAULT     0.5f
+#define ALT_M_NSE_DEFAULT       0.01f
+#define MAG_M_NSE_DEFAULT       0.05f
+#define GYRO_P_NSE_DEFAULT      1.5E-02f
+#define ACC_P_NSE_DEFAULT       3.5E-01f
+#define GBIAS_P_NSE_DEFAULT     1.0E-03f
+#define ABIAS_P_NSE_DEFAULT     2.0E-02f
+#define MAGB_P_NSE_DEFAULT      1.0E-04f
+#define MAGE_P_NSE_DEFAULT      1.0E-03f
+#define VEL_I_GATE_DEFAULT      500
+#define POS_I_GATE_DEFAULT      500
+#define HGT_I_GATE_DEFAULT      500
+#define MAG_I_GATE_DEFAULT      300
+#define MAG_CAL_DEFAULT         3
+#define GLITCH_RADIUS_DEFAULT   25
+#define FLOW_MEAS_DELAY         10
+#define FLOW_M_NSE_DEFAULT      0.25f
+#define FLOW_I_GATE_DEFAULT     300
+#define CHECK_SCALER_DEFAULT    100
+#define FLOW_USE_DEFAULT        1
+#define WIND_P_NSE_DEFAULT      0.1
+
 #else
 // build type not specified, use copter defaults
 #define VELNE_M_NSE_DEFAULT     0.5f
@@ -211,7 +237,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @Param: ALT_M_NSE
     // @DisplayName: Altitude measurement noise (m)
     // @Description: This is the RMS value of noise in the altitude measurement. Increasing it reduces the weighting of the baro measurement and will make the filter respond more slowly to baro measurement errors, but will make it more sensitive to GPS and accelerometer errors. A larger value for EK3_ALT_M_NSE may be required when operating with EK3_SRCx_POSZ = 0. This parameter also sets the noise for the 'synthetic' zero height measurement that is used when EK3_SRCx_POSZ = 0.
-    // @Range: 0.1 100.0
+    // @Range: 0.01 100.0
     // @Increment: 0.1
     // @User: Advanced
     // @Units: m
@@ -1917,11 +1943,12 @@ void NavEKF3::getFilterStatus(nav_filter_status &status) const
 }
 
 // send an EKF_STATUS_REPORT message to GCS
-void NavEKF3::send_status_report(GCS_MAVLINK &link) const
+bool NavEKF3::getTerrainAltVariance(float &terrainAltVar) const
 {
     if (core) {
-        core[primary].send_status_report(link);
+        return core[primary].getTerrainAltVariance(terrainAltVar);
     }
+    return false;
 }
 
 // provides the height limit to be observed by the control loops

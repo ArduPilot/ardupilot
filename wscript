@@ -113,15 +113,17 @@ def add_build_options(g):
                      help=disable_description)
 
         # also add entirely-lower-case equivalents with underscores
-        # replaced with dashes::
+        # replaced with dashes, unless the option is already defined
+        # explicitly: the parser resolves conflicts by replacing the
+        # existing option, which would hide its help text:
         lower_enable_option = enable_option.lower().replace("_", "-")
-        if lower_enable_option != enable_option:
+        if lower_enable_option != enable_option and not g.has_option(lower_enable_option):
             g.add_option(lower_enable_option,
                          action='store_true',
                          default=False,
                          help=optparse.SUPPRESS_HELP)
         lower_disable_option = disable_option.lower().replace("_", "-")
-        if lower_disable_option != disable_option:
+        if lower_disable_option != disable_option and not g.has_option(lower_disable_option):
             g.add_option(lower_disable_option,
                          action='store_true',
                          default=False,
@@ -703,6 +705,20 @@ def collect_dirs_to_recurse(bld, globs, **kw):
 
 def list_boards(ctx):
     print(*boards.get_boards_names())
+
+
+class ScriptingDocsCtx(Build.BuildContext):
+    '''generate scripting docs'''
+    cmd = 'scripting_docs'
+    fun = 'scripting_docs'
+
+
+def scripting_docs(bld):
+    '''Generate Lua scripting docs by reusing the AP_Scripting build() tasks'''
+    bld.add_group('dynamic_sources')
+    bld.options.scripting_docs = True
+    bld.options.enable_scripting = True
+    bld.recurse('libraries/AP_Scripting', name='build')
 
 def list_ap_periph_boards(ctx):
     print(*boards.get_ap_periph_boards())

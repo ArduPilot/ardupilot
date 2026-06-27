@@ -49,7 +49,9 @@ void SITL_State::_sitl_setup()
         _update_airspeed(0);
 #if AP_SIM_SOLOGIMBAL_ENABLED
         if (enable_gimbal) {
-            gimbal = NEW_NOTHROW SITL::SoloGimbal();
+            // the gimbal connects back to the vehicle's SERIAL2 MAVLink
+            // port, which is base_port + 2 (offset by the SITL instance):
+            gimbal = NEW_NOTHROW SITL::SoloGimbal(base_port() + 2);
         }
 #endif
 
@@ -73,6 +75,9 @@ void SITL_State::_sitl_setup()
         _sitl->irlock_port = _irlock_port;
 
         _sitl->rcin_port = _rcin_port;
+
+        fprintf(stdout, "Using \\clock topic for DDS timing: %s\n", _use_dds_sim_time ? "enabled" : "disabled");
+        _sitl->use_dds_sim_time = _use_dds_sim_time;
     }
 
     // start with non-zero clock
@@ -189,8 +194,24 @@ void SITL_State::_output_to_flightgear(void)
     fdm.vcas  = sfdm.velocity_air_bf.length()/0.3048;
     if (_vehicle == ArduCopter) {
         fdm.num_engines = 4;
-        for (uint8_t i=0; i<4; i++) {
-            fdm.rpm[i] = constrain_float((pwm_output[i]-1000), 0, 1000);
+        if (_model_str != nullptr && strstr(_model_str, "heliquad") != nullptr) {
+            // copter variable-pitch quad (heli-quad). The packet has no
+            // field for blade collective, so it rides in an unused
+            // per-engine field which only the heliquad aircraft model XML
+            // reads:
+            //   rpm[i]       - rotor speed, from the shared RSC output
+            //   fuel_flow[i] - blade collective, -1..1 about trim
+            // collective servos are SERVO1-4, RSC is SERVO8 (copter-heli convention)
+            const float rsc = constrain_float((pwm_output[7]-1000)*0.001f, 0, 1);
+            for (uint8_t i=0; i<4; i++) {
+                fdm.rpm[i] = rsc * 1500;  // nominal head speed, rev/min
+                fdm.fuel_flow[i] = constrain_float((pwm_output[i]-1500)*0.002f, -1, 1);
+            }
+        } else {
+            // normal direct-drive fixed-pitch quadcopter
+            for (uint8_t i=0; i<4; i++) {
+                fdm.rpm[i] = constrain_float((pwm_output[i]-1000), 0, 1000);
+            }
         }
     } else {
         fdm.num_engines = 4;
@@ -373,7 +394,7 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
     }
     _sitl->throttle = throttle;
 
-    update_voltage_current(input, throttle);
+    set_voltage_current_pins(sitl_model->get_battery_voltage(), sitl_model->get_battery_current());
 }
 
 void SITL_State::init(int argc, char * const argv[])

@@ -26,6 +26,8 @@
 #include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Common/Location.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
+#include <AP_NavEKF/AP_Nav_Common.h>
+#include "AP_AHRS_config.h"
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -59,6 +61,12 @@ public:
         friend class AP_AHRS_External;
         friend class AP_AHRS_NavEKF2;
         friend class AP_AHRS_NavEKF3;
+
+        // is the AHRS subsystem healthy?
+        bool healthy;
+
+        // true if the AHRS has completed initialisation
+        bool initialised;
 
         // inertial sensor information
         uint8_t primary_gyro;
@@ -136,10 +144,22 @@ public:
             return location_valid;
         };
 
+        /*
+         * origin-relative functions
+         */
+        bool provides_common_origin;
+
         bool get_hagl(float &height) const WARN_IF_UNUSED {
             height = hagl;
             return hagl_valid;
         }
+
+        /*
+         * air data estimates
+         */
+        // estimated wind in m/s, NED frame
+        Vector3f wind;
+        bool wind_valid;
 
         /*
          * Sensor-related information
@@ -164,13 +184,36 @@ public:
         // a compass was not involved:
         bool using_noncompass_for_yaw;
 
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+        // estimators can provide their predicted magnetic fields:
+        Vector3f mag_field_NED;
+        bool mag_field_NED_valid;
+        Vector3f mag_field_corrections;
+        bool mag_field_corrections_valid;
+#endif // AP_AHRS_GET_MAG_DATA_ENABLED
+
+        /*
+         * filter status and estimates quality values:
+         */
+        nav_filter_status filter_status;
+        bool filter_status_valid;
+
+        // the innovations normalised using the innovation variance
+        // where a value of 0 indicates perfect consistency between
+        // the measurement and the EKF solution and a value of 1 is
+        // the maximum inconsistency that will be accepted by the
+        // filter:
+        float velVar, posVar, hgtVar, tasVar;
+        Vector3f magVar;
+        bool variances_valid;
+
+        float terrain_alt_variance;
+        bool terrain_alt_variance_valid;
+
     private:
         bool hagl_valid;
         float hagl;
     };
-
-    // init sets up INS board orientation
-    virtual void init();
 
     // Methods
     virtual void update() = 0;
@@ -196,9 +239,6 @@ public:
 
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
-
-    // return a wind estimation vector, in m/s
-    virtual bool wind_estimate(Vector3f &wind) const = 0;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
@@ -268,17 +308,6 @@ public:
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
 
-    // is the AHRS subsystem healthy?
-    virtual bool healthy(void) const = 0;
-
-    // true if the AHRS has completed initialisation
-    virtual bool initialised(void) const {
-        return true;
-    };
-    virtual bool started(void) const {
-        return initialised();
-    };
-
     // return the amount of yaw angle change due to the last yaw angle reset in radians
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     virtual uint32_t getLastYawResetAngle(float &yawAng) {
@@ -313,20 +342,6 @@ public:
     virtual bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const {
         return false;
     }
-
-    virtual bool get_filter_status(union nav_filter_status &status) const {
-        return false;
-    }
-
-    // get_variances - provides the innovations normalised using the innovation variance where a value of 0
-    // indicates perfect consistency between the measurement and the EKF solution and a value of 1 is the maximum
-    // inconsistency that will be accepted by the filter
-    // boolean false is returned if variances are not available
-    virtual bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const {
-        return false;
-    }
-
-    virtual void send_ekf_status_report(class GCS_MAVLINK &link) const = 0;
 
     virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
 };

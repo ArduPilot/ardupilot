@@ -2048,8 +2048,8 @@ class TestSuite(abc.ABC):
         self.tlog = None
         self.enable_fgview = enable_fgview
 
-        self.rc_thread = None
-        self.rc_thread_should_quit = False
+        self.rc_thread: threading.Thread | None = None
+        self.rc_thread_should_quit: bool = False
         self.rc_queue = queue.Queue()
 
         self.expect_list = []
@@ -2082,7 +2082,7 @@ class TestSuite(abc.ABC):
             self.rc_thread = None
 
     def default_speedup(self):
-        return 8
+        return 100
 
     def progress(self, text, send_statustext=True):
         """Display autotest progress text."""
@@ -5881,40 +5881,28 @@ class TestSuite(abc.ABC):
                 raise ValueError("RC thread is dead")  # FIXME: type
 
     def rc_thread_main(self):
-        chan16 = [1000] * 16
-
+        """When this function completes, the thread terminates."""
         sitl_output = mavutil.mavudp("127.0.0.1:%u" % self.sitl_rcin_port(), input=False)
-        buf = None
+        num_rc_channels = 16
 
-        while True:
-            if self.rc_thread_should_quit:
-                break
+        # Pay attention, there are race conditions /
+        # wallclock-vs-simtime issues to worry about here.
+        max_wait_before_sending_values = 0.2 / self.speedup
 
-            # the 0.05 here means we're updating the RC values into
-            # the autopilot at 20Hz - that's our 50Hz wallclock, , not
-            # the autopilot's simulated 20Hz, so if speedup is 10 the
-            # autopilot will see ~2Hz.
-            timeout = 0.02
-            # ... and 2Hz is too slow when we now run at 100x speedup:
-            timeout /= (self.speedup / 10.0)
-
+        format_str = "<" + "H" * num_rc_channels
+        rc_values = [1000] * num_rc_channels
+        while not self.rc_thread_should_quit:
             try:
-                map_copy = self.rc_queue.get(timeout=timeout)
-
-                # 16 packed entries:
-                for i in range(1, 17):
-                    if i in map_copy:
-                        chan16[i-1] = map_copy[i]
-
+                rc_value_updates = self.rc_queue.get(timeout=max_wait_before_sending_values)
+                for chan, val in rc_value_updates.items():
+                    if not isinstance(chan, int):
+                        raise ValueError(f"{chan} is not a valid RC channel, must be an int.")
+                    if not (1 <= chan <= num_rc_channels):
+                        raise ValueError(f"{chan} is not a valid RC channel, must be in range [1, {num_rc_channels}].")
+                    rc_values[chan-1] = val
             except queue.Empty:
                 pass
-
-            buf = struct.pack('<HHHHHHHHHHHHHHHH', *chan16)
-
-            if buf is None:
-                continue
-
-            sitl_output.write(buf)
+            sitl_output.write(struct.pack(format_str, *rc_values))
 
     def set_rc_default(self):
         """Setup all simulated RC control to 1500."""
@@ -9202,7 +9190,7 @@ Also, ignores heartbeats not from our target system'''
         dest = os.path.join("scripts", "modules", "mavlink")
         ardupilotmega_xml = os.path.join(self.rootdir(), "modules", "mavlink",
                                          "message_definitions", "v1.0", "ardupilotmega.xml")
-        mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua'), [ardupilotmega_xml])
+        mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua', validate=False), [ardupilotmega_xml])
         self.progress("Installed mavlink module")
 
     def install_script_content(self, scriptname, content):
@@ -9466,7 +9454,7 @@ Also, ignores heartbeats not from our target system'''
                     self.message_hooks.remove(h)
             hooks_removed = True
         self.test_timings[desc] = time.time() - start_time
-        reset_needed = self.contexts[-1].sitl_commandline_customised
+        reset_needed = any(ctx.sitl_commandline_customised for ctx in self.contexts[old_contexts_length:])
 
         passed = True
         if ex is not None:
@@ -9517,8 +9505,13 @@ Also, ignores heartbeats not from our target system'''
                 self.reboot_sitl(startup_location_dist_max=1000000) # that'll learn it
             passed = False
         elif ardupilot_alive and not passed:  # implicit reboot after a failed test:
-            self.progress("Test failed but ArduPilot process alive; rebooting")
-            self.reboot_sitl() # that'll learn it
+            if reset_needed:
+                self.progress("Test failed but ArduPilot process alive; resetting")
+                self.reset_SITL_commandline()
+                reset_needed = False
+            else:
+                self.progress("Test failed but ArduPilot process alive; rebooting")
+                self.reboot_sitl() # that'll learn it
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
@@ -12962,6 +12955,25 @@ switch value'''
     def dfreader_for_current_onboard_log(self):
         return self.dfreader_for_path(self.current_onboard_log_filepath())
 
+    def assert_log_has_no_dropped_blocks(self, path):
+        '''check the DSF.Dp (dropped-block) counter in a dataflash log is
+        zero throughout.  A non-zero count means the logging backend could
+        not keep up and silently discarded log blocks; any log produced in
+        that state is incomplete and unusable (e.g. for Replay).'''
+        dfreader = self.dfreader_for_path(path)
+        max_dropped = 0
+        while True:
+            m = dfreader.recv_match(type='DSF')
+            if m is None:
+                break
+            max_dropped = max(max_dropped, m.Dp)
+        if max_dropped != 0:
+            raise NotAchievedException(
+                "Log (%s) has %u dropped block(s) (DSF.Dp); logging could not "
+                "keep up so the log is incomplete (try a lower --speedup)" %
+                (path, max_dropped))
+        self.progress("Log (%s) has no dropped blocks" % path)
+
     def current_onboard_log_contains_message(self, messagetype):
         self.progress("Checking (%s) for (%s)" %
                       (self.current_onboard_log_filepath(), messagetype))
@@ -13462,7 +13474,7 @@ switch value'''
                          ("INS_ACC2OFFS", "SIM_ACC2_BIAS", pre_aofs[1], aofs[1]),
                          ("INS_ACCSCAL", "SIM_ACC1_SCAL", pre_ascale[0], ascale[0]),
                          ("INS_ACC2SCAL", "SIM_ACC2_SCAL", pre_ascale[1], ascale[1]),
-                         ("AHRS_TRIM", "SIM_ACC_TRIM", pre_atrim, atrim)]
+                         ("AHRS_TRIM", "SIM_BRD_TRIM", pre_atrim, atrim)]
             axes = ['X', 'Y', 'Z']
 
             # form the pre-calibration params
@@ -13538,8 +13550,8 @@ switch value'''
             "SIM_ACC2_BIAS_Z": 2.3,
             "AHRS_TRIM_X": 0.05,
             "AHRS_TRIM_Y": -0.03,
-            "SIM_ACC_TRIM_X": -0.04,
-            "SIM_ACC_TRIM_Y": 0.05,
+            "SIM_BRD_TRIM_X": -0.04,
+            "SIM_BRD_TRIM_Y": 0.05,
         })
         expected_parms = {
             "AHRS_TRIM_X": -0.04,
@@ -13651,8 +13663,8 @@ switch value'''
                     self.set_parameters({
                         'AHRS_TRIM_X': math.radians(r),
                         'AHRS_TRIM_Y': math.radians(p),
-                        "SIM_ACC_TRIM_X": math.radians(r),
-                        "SIM_ACC_TRIM_Y": math.radians(p),
+                        "SIM_BRD_TRIM_X": math.radians(r),
+                        "SIM_BRD_TRIM_Y": math.radians(p),
                     })
                     self.reboot_sitl()
                     self.ahrstrim_attitude_correctness_test_attitude(11)
@@ -13671,8 +13683,8 @@ switch value'''
                     self.set_parameters({
                         'AHRS_TRIM_X': math.radians(r),
                         'AHRS_TRIM_Y': math.radians(p),
-                        "SIM_ACC_TRIM_X": math.radians(r),
-                        "SIM_ACC_TRIM_Y": math.radians(p),
+                        "SIM_BRD_TRIM_X": math.radians(r),
+                        "SIM_BRD_TRIM_Y": math.radians(p),
                     })
                     self.reboot_sitl()
                     self.ahrstrim_attitude_correctness_test_attitude(ahrs_type)
@@ -14127,6 +14139,9 @@ switch value'''
 
     def FRSkyPassThroughSensorIDs(self):
         '''test FRSKy protocol's telem-passthrough functionality (sensor IDs)'''
+        # the terrain sensor (0x500B) validation compares the vehicle's
+        # height-above-terrain, so the autopilot needs terrain data:
+        self.install_terrain_handlers_context()
         self.set_parameters({
             "SERIAL5_PROTOCOL": 10, # serial5 is FRSky passthrough
             "RPM1_TYPE": 10, # enable RPM output
@@ -14901,6 +14916,25 @@ switch value'''
         # EKF will maintain a 10-degree offset from the true compass
         # heading seemingly indefinitely.
         self.reboot_sitl()
+
+    def build_replay(self):
+        '''build the Replay tool with the same configuration as the vehicle
+        binary under test.
+
+        The Replay tool runs the EKF over the logged inputs and the test
+        requires its output to match the live solution bit-for-bit, so the
+        tool must be compiled identically to the vehicle.  Any compile-time
+        difference (num_aux_imus, ekf_single, postype_single, debug, ...)
+        changes the EKF result and makes replay diverge from the live log.
+
+        configure=True is forced because a preceding test (e.g. a CAN/periph
+        test) may have left the shared build directory configured for a
+        different board; we reconfigure for the sitl board but keep the
+        vehicle's configure options.'''
+        build_opts = copy.copy(self.build_opts)
+        build_opts["clean"] = False
+        build_opts["configure"] = True
+        util.build_SITL('tool/Replay', board='sitl', **build_opts)
 
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''

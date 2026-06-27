@@ -53,6 +53,7 @@ The script covers the following parameters on quadplanes:
 - Q_P_D_POS_*
 - Q_P_NE_VEL_*
 - Q_P_NE_POS_*
+- Q_M_THST_EXPO
 
 The script covers the following parameters on copters:
 
@@ -68,6 +69,7 @@ The script covers the following parameters on copters:
 - PSC_D_POS_*
 - PSC_NE_VEL_*
 - PSC_NE_POS_*
+- MOT_THST_EXPO
 
 For fixed wing the following parameters are covered:
 

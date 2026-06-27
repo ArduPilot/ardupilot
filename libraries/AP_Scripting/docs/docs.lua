@@ -1,7 +1,7 @@
 ---@meta
 -- ArduPilot lua scripting documentation in EmmyLua Annotations
 -- This file should be auto generated and then manual edited
--- generate with --scripting-docs, eg  ./waf copter --scripting-docs
+-- generate with scripting-docs, eg  ./waf scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
 -- luacheck: ignore 121 (Setting a read-only global variable)
 -- luacheck: ignore 122 (Setting a read-only field of a global variable)
@@ -2978,6 +2978,11 @@ gcs = {}
 ---@param name string -- up to 10 chars long
 ---@param value number -- value to send
 function gcs:send_named_float(name, value) end
+
+-- send named integer value using NAMED_VALUE_INT message
+---@param name string -- up to 10 chars long
+---@param value integer -- value to send
+function gcs:send_named_int(name, value) end
 
 -- send named string value using NAMED_VALUE_STRING message
 ---@param name string -- up to 10 chars long

@@ -102,6 +102,18 @@ AP_AHRS_DCM::update()
     // remember the last origin for fallback support
     IGNORE_RETURN(AP::ahrs().get_origin(last_origin));
 
+    // update our wind estimate when a new GPS sample arrives and we
+    // have a 3D fix; the GPS velocity is what feeds the wind triangle.
+    // estimate_wind itself is rate-limited.
+    const AP_GPS &gps = AP::gps();
+    if (gps.status() >= AP_GPS_FixType::FIX_3D) {
+        const uint32_t last_gps_ms = gps.last_message_time_ms();
+        if (last_gps_ms != _last_wind_gps_ms) {
+            _last_wind_gps_ms = last_gps_ms;
+            estimate_wind();
+        }
+    }
+
 #if HAL_LOGGING_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - last_log_ms >= 100) {
@@ -143,6 +155,14 @@ AP_AHRS_DCM::update()
 
 void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+    const auto now_ms = AP_HAL::millis();
+
+    // always initialised
+    results.initialised = true;
+
+    // consider ourselves healthy if there have been no failures for 5 seconds
+    results.healthy = (_last_failure_ms == 0 || now_ms - _last_failure_ms > 5000);
+
     // not using a specific sensor:
     results.primary_gyro = AP::ins().get_first_usable_gyro();
     results.primary_accel = AP::ins().get_first_usable_accel();
@@ -181,9 +201,18 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = get_location(results.location);
 
+    // origin-relative functions
+    // results.provides_common_origin = false;
+
     // hagl is not supplied:
     // results.hagl_valid = false;
     // results.hagl = 0;
+
+    /*
+     * air data estimates
+     */
+    results.wind = _wind;
+    results.wind_valid = true;
 
     /*
      * Sensor-related information
@@ -201,6 +230,26 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // are we consuming yaw from a source which is *not* a compass
     // results.using_noncompass_for_yaw = false;
+
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+    // estimators can provide their predicted magnetic fields:
+    // ... but DCM does not:
+    // results.mag_field_NED = {};
+    // results.mag_field_NED_valid = false;
+    // results.mag_field_corrections = {};
+    // results.mag_field_corrections_valid = false;
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
+
+    /*
+     * filter status and estimates quality values:
+     */
+    // getFilterStatus(results.filter_status);
+    // results.filter_status_valid = false;
+
+    // provides the innovations normalised between 0 and 1:
+    // results.variances_valid = false;
+
+    // terrain_alt_variance_valid = false;
 }
 
 /*
@@ -1029,14 +1078,29 @@ void AP_AHRS_DCM::estimate_wind(void)
     if (!AP::ahrs().get_wind_estimation_enabled()) {
         return;
     }
+
+    // the wind-triangle filters below blend a fixed fraction of the new
+    // estimate on each call, and the straight-flight branch does not
+    // update _last_wind_time, so the effective filter time constant is
+    // set by the call rate.  Now that this is driven on each new GPS
+    // sample rather than by a fixed-rate vehicle task, limit to 10Hz
+    // here so the time constant stays sane:
+    const uint32_t now = AP_HAL::millis();
+    if (now - _last_wind_estimate_ms < 100) {
+        return;
+    }
+    _last_wind_estimate_ms = now;
+
     const Vector3f &velocity = _last_velocity;
 
     // this is based on the wind speed estimation code from MatrixPilot by
     // Bill Premerlani. Adaption for ArduPilot by Jon Challinger
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
-    const Vector3f fuselageDirection = _dcm_matrix.colx();
+    // use the trim-corrected (vehicle body) forward axis, not the raw board
+    // axis _dcm_matrix.colx(): a non-zero AHRS_TRIM otherwise feeds the wind
+    // triangle the sensor-board direction rather than the fuselage direction.
+    const Vector3f fuselageDirection = _body_dcm_matrix.colx();
     const Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
-    const uint32_t now = AP_HAL::millis();
 
     // scrap our data and start over if we're taking too long to get a direction change
     if (now - _last_wind_time > 10000) {
@@ -1084,14 +1148,14 @@ void AP_AHRS_DCM::estimate_wind(void)
 #if AP_AIRSPEED_ENABLED
     if (now - _last_wind_time > 2000 && airspeed_sensor_enabled()) {
         // when flying straight use airspeed to get wind estimate if available
-        const Vector3f airspeed = _dcm_matrix.colx() * AP::airspeed()->get_airspeed();
+        const Vector3f airspeed = fuselageDirection * AP::airspeed()->get_airspeed();
         const Vector3f wind = velocity - (airspeed * get_EAS2TAS());
         _wind = _wind * 0.92f + wind * 0.08f;
     }
 #endif
 }
 
-#ifdef AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+#if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
 void AP_AHRS_DCM::set_external_wind_estimate(float speed, float direction) {
     _wind.x = -cosf(radians(direction)) * speed;
     _wind.y = -sinf(radians(direction)) * speed;
@@ -1197,15 +1261,6 @@ bool AP_AHRS_DCM::get_unconstrained_airspeed_EAS(uint8_t airspeed_index, float &
 }
 
 /*
-  check if the AHRS subsystem is healthy
-*/
-bool AP_AHRS_DCM::healthy(void) const
-{
-    // consider ourselves healthy if there have been no failures for 5 seconds
-    return (_last_failure_ms == 0 || AP_HAL::millis() - _last_failure_ms > 5000);
-}
-
-/*
   return NED velocity if we have GPS lock
  */
 bool AP_AHRS_DCM::get_velocity_NED(Vector3f &vec) const
@@ -1229,9 +1284,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     const bool gotGPS = (AP::gps().status() >= AP_GPS_FixType::FIX_2D);
     if (gotAirspeed) {
         const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        gndVelADS = airspeed_vector + wind.xy();
+        gndVelADS = airspeed_vector + _wind.xy();
     }
 
     // Generate estimate of ground speed vector using GPS
@@ -1276,10 +1329,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
         Vector2f ret{_cos_yaw, _sin_yaw};
         ret *= airspeed;
         // adjust for estimated wind
-        Vector3f wind;
-        UNUSED_RESULT(wind_estimate(wind));
-        ret.x += wind.x;
-        ret.y += wind.y;
+        ret += _wind.xy();
         return ret;
     }
 
@@ -1299,17 +1349,6 @@ bool AP_AHRS_DCM::get_vert_pos_rate_D(float &velocity) const
         return true;
     }
     return false;
-}
-
-// returns false if we fail arming checks, in which case the buffer will be populated with a failure message
-// requires_position should be true if horizontal position configuration should be checked (not used)
-bool AP_AHRS_DCM::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
-{
-    if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "Not healthy");
-        return false;
-    }
-    return true;
 }
 
 /*
@@ -1357,10 +1396,6 @@ bool AP_AHRS_DCM::get_relative_position_D_origin(postype_t &posD) const
     }
     posD = posNED.z;
     return true;
-}
-
-void AP_AHRS_DCM::send_ekf_status_report(GCS_MAVLINK &link) const
-{
 }
 
 // return true if DCM has a yaw source available
