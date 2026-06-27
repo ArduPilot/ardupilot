@@ -423,14 +423,14 @@ bool AP_Landing_Deepstall::get_target_altitude_location(Location &location)
     return true;
 }
 
-int32_t AP_Landing_Deepstall::get_target_airspeed_cm(void) const
+float AP_Landing_Deepstall::get_target_airspeed_ms(void) const
 {
     if (stage == DEEPSTALL_STAGE_APPROACH ||
         stage == DEEPSTALL_STAGE_LAND) {
-        return landing.pre_flare_airspeed * 100;
-    } else {
-        return landing.aparm.airspeed_cruise*100;
+        return landing.pre_flare_airspeed;
     }
+
+    return landing.aparm.airspeed_cruise;
 }
 
 bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
