@@ -627,12 +627,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, (float)ModeThrow::ThrowType::Upward),
 
-    // @Param: THROW_SRC_SET
-    // @DisplayName: Throw mode EKF source set on completion
-    // @Description: EKF source set to activate when throw mode transitions to THROW_NEXTMODE. 0 to leave unchanged.
-    // @Values: 0:No change,1:Source1,2:Source2,3:Source3
-    // @User: Advanced
-    AP_GROUPINFO("THROW_SRC_SET", 60, ParametersG2, throw_srcset, 0),
 #endif
 
     // @Param: GND_EFFECT_COMP
@@ -1184,6 +1178,37 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("THROW_DROP_AG", 21, ParametersG2, throw_drop_ag, 1.0),
+
+    // @Param: THROW_DROP_CNF
+    // @DisplayName: Drop confirmation time
+    // @Description: Minimum freefall time (seconds) before drop detection triggers. Props remain off during this period. At 0, a 100ms minimum applies. For carrier drops use 0.5-1.0s to ensure separation before motors start. For hand drops 0 is normally sufficient as the spool-up freefall check provides additional verification. Independent of THROW_ALT_DCSND (altitude target). Only used when THROW_TYPE=1.
+    // @Range: 0 5
+    // @Units: s
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("THROW_DROP_CNF", 61, ParametersG2, throw_drop_confirm_time, 0),
+
+    // @Param: THROW_SRC_INI
+    // @DisplayName: Throw mode EKF source set on entry
+    // @Description: EKF source set to activate when throw mode is entered. Use a source set with no horizontal aiding to prevent EKF variance growth and nuisance failsafes during the tumble/freefall phase. THROW_SRC_SET restores the operating source set at completion. 0 to leave unchanged.
+    // @Values: 0:No change,1:Source1,2:Source2,3:Source3
+    // @User: Advanced
+    AP_GROUPINFO("THROW_SRC_INI", 63, ParametersG2, throw_src_init, 0),
+
+    // @Param: THROW_YAW_TYPE
+    // @DisplayName: Throw mode uprighting yaw target
+    // @Description: Selects what heading the vehicle should face after uprighting. 0 holds the current yaw at the time of release. 1 faces the direction of travel at release (estimated by IMU integration during the throw, falling back to the EKF velocity captured at throw mode entry - useful for forward-toss hand throws and most carrier drops). 2 faces 180 degrees from the direction of travel - useful for carrier releases where the vehicle should turn back toward the launch point. 3 faces the absolute compass heading set by THROW_YAW_DEG. If the direction-of-travel cannot be estimated with confidence, the current yaw is held silently.
+    // @Values: 0:None,1:Throw direction,2:Reverse throw direction,3:Absolute heading
+    // @User: Advanced
+    AP_GROUPINFO("THROW_YAW_TYPE", 64, ParametersG2, throw_yaw_type, (float)ModeThrow::ThrowYawType::None),
+
+    // @Param: THROW_YAW_DEG
+    // @DisplayName: Throw mode absolute yaw target
+    // @Description: Target compass heading (degrees, 0 = North) used when THROW_YAW_TYPE = 3 (Absolute). Ignored otherwise.
+    // @Range: 0 360
+    // @Units: deg
+    // @User: Advanced
+    AP_GROUPINFO("THROW_YAW_DEG", 65, ParametersG2, throw_yaw_deg, 0),
 #endif
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION

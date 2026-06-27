@@ -546,6 +546,27 @@
 #ifndef THROW_VERTICAL_SPEED_MS
 # define THROW_VERTICAL_SPEED_MS  0.5   // motors start when vehicle reaches this total 3D speed in cm/s
 #endif
+#ifndef THROW_YAW_CATCH_WINDOW_DEG
+# define THROW_YAW_CATCH_WINDOW_DEG  30.0f  // yaw error window (deg) within which the absolute heading is engaged
+#endif
+#ifndef THROW_YAW_ALIGN_TIMEOUT_MS
+# define THROW_YAW_ALIGN_TIMEOUT_MS  2500   // ms floor before yaw alignment hands off regardless of error (scaled up for large rotations)
+#endif
+#ifndef THROW_YAW_ALIGN_MARGIN_MS
+# define THROW_YAW_ALIGN_MARGIN_MS   1000   // ms added to the slew-time estimate when sizing the adaptive alignment timeout (decel + settle)
+#endif
+#ifndef THROW_YAW_ALIGN_TIMEOUT_MAX_MS
+# define THROW_YAW_ALIGN_TIMEOUT_MAX_MS 8000 // absolute ceiling on the adaptive alignment timeout, so a slow yaw tune or a non-decaying spin cannot stall the handoff for tens of seconds
+#endif
+#ifndef THROW_YAW_ALIGN_DONE_DEG
+# define THROW_YAW_ALIGN_DONE_DEG     5.0f  // heading error (deg) within which alignment is converged enough to hand off to the next mode
+#endif
+#ifndef THROW_YAW_RIDE_THRESH_DEG
+# define THROW_YAW_RIDE_THRESH_DEG  120.0f  // gyro Z threshold (deg/s) above which the spin is ridden (no torque)
+#endif
+#ifndef THROW_YAW_SLEW_GAIN
+# define THROW_YAW_SLEW_GAIN          3.0f  // proportional gain (rad/s per rad of error) in the active slew branch
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Logging control
