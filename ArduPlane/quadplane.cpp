@@ -1072,23 +1072,6 @@ void QuadPlane::relax_attitude_control()
     attitude_control->relax_attitude_controllers(!tailsitter.relax_pitch());
 }
 
-/*
-  check for an EKF yaw reset
- */
-void QuadPlane::check_yaw_reset(void)
-{
-    if (!initialised) {
-        return;
-    }
-    float yaw_angle_change_rad = 0.0f;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control->inertial_frame_reset();
-        ekfYawReset_ms = new_ekfYawReset_ms;
-        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
-    }
-}
-
 void QuadPlane::set_climb_rate_ms(float target_climb_rate_ms)
 {
     float vel_d_m = -target_climb_rate_ms;
