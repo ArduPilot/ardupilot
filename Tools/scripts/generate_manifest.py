@@ -94,6 +94,7 @@ brand_map = {
     "modalai_fc-v1" : ('ModalAI FlightCore v1', 'ModalAI'),
     'Pixhawk5X' : ('Pixhawk 5X', 'Holybro'),
     "AIRLink" : ("Sky-Drones Technologies", "AIRLink"),
+    "AIRLinkH7" : ("Sky-Drones Technologies", "AIRLinkH7"),
     "SPRacingH7" : ("Seriously Pro Racing", "H7 Extreme"),
     "SkystarsH7HD" : ("Skystars", "H743 HD"),
     "SkystarsH7HD-bdshot" : ("Skystars", "H743 HD"),
