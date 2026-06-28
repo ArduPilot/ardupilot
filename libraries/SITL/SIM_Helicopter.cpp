@@ -84,7 +84,7 @@ Helicopter::Helicopter(const char *frame_str) :
     motor_mask |= (1U<<0);
 
     battery.setup(sitl->batt_capacity_ah,
-                  refBatRes,
+                  default_battery_resistance_ohm,
                   sitl->batt_voltage,
                   ambient_outside_temperature_degC());
 
@@ -642,12 +642,12 @@ void Helicopter::update_battery()
     battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
     battery_voltage = battery.get_voltage();
 
-    float power = 1.0f;
+    float power_watt = 1.0f;
     if (motor_interlock) {
-        // calculate current
-        power = 1000.0;
+        power_watt = 1000.0;
     }
-    battery_current = power / MAX(battery_voltage, 0.1);
+    // calculate current drawn from battery based on power and voltage.  Use a minimum voltage of 0.1 to avoid divide by zero.
+    battery_current = power_watt / MAX(battery_voltage, 0.1);
 
     const uint64_t now_us = AP_HAL::micros64();
     battery.consume_energy(battery_current, now_us);
