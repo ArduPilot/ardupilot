@@ -90,7 +90,7 @@ private:
     float nominal_rpm;
 
     // battery resistance reference value in Ohms
-    float refBatRes = 0.01;
+    float default_battery_resistance_ohm = 0.01;
     void update_battery() override;
     bool battery_is_empty() { return battery_voltage < 0.5f; };
     
