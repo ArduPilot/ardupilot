@@ -28,6 +28,9 @@ class AutoTestHelicopter(AutoTestCopter):
     def log_name(self):
         return "HeliCopter"
 
+    def param_metadata_vehicle_name(self):
+        return "Heli"
+
     def default_frame(self):
         return "heli"
 
