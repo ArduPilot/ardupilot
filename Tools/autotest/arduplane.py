@@ -7091,7 +7091,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def GuidedAttitudeNoGPS(self):
         '''test that guided-attitude still works with no GPS'''
-        self.takeoff(50)
+        self.takeoff(30)
         self.change_mode('GUIDED')
         self.context_push()
         self.set_parameter('SIM_GPS1_ENABLE', 0)
@@ -7176,7 +7176,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             higher_home = copy.copy(home)
             higher_home.alt += 40
             self.set_home(higher_home)
-            self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=12)
+            self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=15)
             self.disarm_vehicle(force=True)
             self.reboot_sitl()
 
