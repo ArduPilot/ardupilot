@@ -121,6 +121,14 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         frsky_d = NEW_NOTHROW SITL::Frsky_D();
         return frsky_d;
+#if AP_SIM_NOOPLOOP_ENABLED
+    } else if (streq(name, "nooploop")) {
+        if (nooploop != nullptr) {
+            AP_HAL::panic("Only one nooploop at a time");
+        }
+        nooploop = NEW_NOTHROW SITL::Beacon_NoopLoop();
+        return nooploop;
+#endif  // AP_SIM_NOOPLOOP_ENABLED
     // } else if (streq(name, "frsky-SPort")) {
     //     if (frsky_sport != nullptr) {
     //         AP_HAL::panic("Only one frsky_sport at a time");
@@ -369,6 +377,11 @@ void SITL_State_Common::sim_update(void)
     for (uint8_t i=0; i<num_serial_rangefinders; i++) {
         serial_rangefinders[i]->update(sitl_model->rangefinder_range());
     }
+#if AP_SIM_NOOPLOOP_ENABLED
+    if (nooploop != nullptr) {
+        nooploop->update();
+    }
+#endif  // AP_SIM_NOOPLOOP_ENABLED
     if (efi_ms != nullptr) {
         efi_ms->update(*sitl_model);
     }
