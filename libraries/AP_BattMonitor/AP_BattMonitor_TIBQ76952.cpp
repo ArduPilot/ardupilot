@@ -492,6 +492,27 @@ extern const AP_HAL::HAL& hal;
 #define HAL_BATTMON_BQ76952_MAX_VOLTAGE 50.0f
 #endif
 
+const AP_Param::GroupInfo AP_BattMonitor_TIBQ76952::var_info[] = {
+
+    // @Param: CFG_UPDATE
+    // @DisplayName: Battery BMS configuration
+    // @Description: Controls startup configuration behavior. 1 writes configuration once then clears to 0. 2 checks current configuration and writes only if needed.
+    // @Values: 0:Disabled,1:Write configuration once,2:Check and update if needed
+    // @User: Advanced
+    AP_GROUPINFO("CFG_UPDATE", 62, AP_BattMonitor_TIBQ76952, cfg_update, 0),
+
+    AP_GROUPEND
+};
+
+AP_BattMonitor_TIBQ76952::AP_BattMonitor_TIBQ76952(AP_BattMonitor &mon,
+                                                   AP_BattMonitor::BattMonitor_State &mon_state,
+                                                   AP_BattMonitor_Params &params)
+        : AP_BattMonitor_Backend(mon, mon_state, params)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    _state.var_info = var_info;
+}
+
 // configuration settings to write during setup
 const AP_BattMonitor_TIBQ76952::ConfigurationSetting AP_BattMonitor_TIBQ76952::config_settings[] {
 
@@ -683,16 +704,28 @@ bool AP_BattMonitor_TIBQ76952::configure()
     direct_command(TIBQ769x2_PFAlertC, 0xFF, CommandType::WRITE);
     direct_command(TIBQ769x2_PFAlertD, 0xFF, CommandType::WRITE);
 
-    // enter CONFIGUPDATE mode (Subcommand 0x0090) - Required to program device RAM settings
-    sub_command(TIBQ769x2_SET_CFGUPDATE);
+    // update configuration
+    ConfigUpdateType update_type = (ConfigUpdateType)cfg_update.get();
+    if ((update_type == ConfigUpdateType::WRITE_ONCE) || (update_type == ConfigUpdateType::CHECK_AND_UPDATE && !check_configuration_ok())) {
+        Debug("BQ76952: updating configuration");
 
-    // write configuration settings to device registers
-    for (uint8_t i = 0; i < ARRAY_SIZE(config_settings); i++) {
-        set_register(config_settings[i].reg_addr, config_settings[i].reg_data, config_settings[i].len);
+        // enter CONFIGUPDATE mode (Subcommand 0x0090) - required to program device RAM settings
+        sub_command(TIBQ769x2_SET_CFGUPDATE);
+
+        // write configuration settings to device registers
+        for (uint8_t i = 0; i < ARRAY_SIZE(config_settings); i++) {
+            set_register(config_settings[i].reg_addr, config_settings[i].reg_data, config_settings[i].len);
+        }
+
+        // exit configuration mode
+        sub_command(TIBQ769x2_EXIT_CFGUPDATE);
+
+        // mode 1 is one-shot and auto-clears; mode 2 remains enabled for future auto-checks
+        if (update_type == ConfigUpdateType::WRITE_ONCE) {
+            cfg_update.set_and_save(ConfigUpdateType::DISABLED);
+        }
     }
 
-    // exit configuration mode
-    sub_command(TIBQ769x2_EXIT_CFGUPDATE);
     sub_command(TIBQ769x2_ALL_FETS_OFF);
     sub_command(TIBQ769x2_FET_ENABLE);
 
@@ -702,6 +735,41 @@ bool AP_BattMonitor_TIBQ76952::configure()
 
     // report success
     return true;
+}
+
+// compare the current configuration against the desired settings
+// returns true if the current device configuration matches, false otherwise
+bool AP_BattMonitor_TIBQ76952::check_configuration_ok() const
+{
+    bool configured_matches = true;
+    for (uint8_t i = 0; i < ARRAY_SIZE(config_settings); i++) {
+        const auto &setting = config_settings[i];
+        uint8_t actual[4] {};
+        uint8_t expected[4] {};
+
+        if (!sub_command(setting.reg_addr, 0, CommandType::READ, actual, setting.len)) {
+            Debug("BQ76952: config read failed reg=0x%04x", setting.reg_addr);
+            configured_matches = false;
+            continue;
+        }
+
+        expected[0] = uint8_t((setting.reg_data >> 0) & 0xFF);
+        expected[1] = uint8_t((setting.reg_data >> 8) & 0xFF);
+        expected[2] = uint8_t((setting.reg_data >> 16) & 0xFF);
+        expected[3] = uint8_t((setting.reg_data >> 24) & 0xFF);
+
+        if (memcmp(actual, expected, setting.len) != 0) {
+            configured_matches = false;
+            Debug("BQ76952: config mismatch reg=0x%04x expected=0x%02lx actual=0x%02x%02x%02x%02x len=%u",
+                  setting.reg_addr,
+                  (unsigned long)setting.reg_data,
+                  actual[3], actual[2], actual[1], actual[0],
+                  setting.len);
+        }
+    }
+
+    Debug("BQ76952: Configuration %s", configured_matches ? "ok" : "requires updating");
+    return configured_matches;
 }
 
 // read battery voltage, current and temperature
