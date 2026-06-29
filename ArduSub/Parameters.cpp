@@ -115,7 +115,7 @@ const AP_Param::Info Sub::var_info[] = {
     
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
-    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
+    // @Description: Flight mode when pwm of Flightmode channel(RC Channel option 250) is <= 1230
     // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,7:Circle,9:Surface,16:PosHold,19:Manual,20:Motor Detect,21:SurfTrak
     // @User: Standard
     GARRAY(flight_modes, 0, "FLTMODE1", (uint8_t)FLIGHT_MODE_1),
@@ -150,12 +150,7 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >=1750
     GARRAY(flight_modes, 5, "FLTMODE6", (uint8_t)FLIGHT_MODE_6),
 
-    // @Param: FLTMODE_CH
-    // @DisplayName: Flightmode channel
-    // @Description: RC Channel to use for flight mode control
-    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8,9:Channel9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15
-    // @User: Advanced
-    GSCALAR(flight_mode_chan, "FLTMODE_CH",         0),
+    // FLTMODE_CH was here
 
     // @Param: THR_ARM_POS
     // @DisplayName: Throttle arming position
@@ -895,6 +890,11 @@ void Sub::convert_old_parameters()
     AP_Param::convert_old_parameters(&filt_conversion_info[0], ARRAY_SIZE(filt_conversion_info));
 
     SRV_Channels::upgrade_parameters();
+
+
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // flight mode channel to RC channel option conversion
+    AP_Param::convert_old_fltmode_ch(Parameters::k_param_flight_mode_chan_old, 0);
 }
 
 #if LEAKDETECTOR_MAX_INSTANCES > 0

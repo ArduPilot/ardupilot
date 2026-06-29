@@ -9,11 +9,6 @@
 
 #include <RC_Channel/RC_Channels_VarInfo.h>
 
-int8_t RC_Channels_Blimp::flight_mode_channel_number() const
-{
-    return blimp.g.flight_mode_chan.get();
-}
-
 void RC_Channel_Blimp::mode_switch_changed(modeswitch_pos_t new_pos)
 {
     if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(blimp.g.flight_modes)) {
