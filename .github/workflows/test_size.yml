@@ -378,6 +378,7 @@ jobs:
     if: always()
     permissions:
       contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v6
         with:
@@ -394,4 +395,21 @@ jobs:
         run: |
           mkdir -p size-diffs/
           python3 Tools/scripts/build_tests/global_size_summary.py \
-            --input-dir size-diffs/ >> $GITHUB_STEP_SUMMARY
+            --input-dir size-diffs/ | tee /tmp/size-summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Post size table to PR
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MARKER="<!-- size-table -->"
+          { echo "$MARKER"; cat /tmp/size-summary.md; } > /tmp/full-comment.md
+          PR=${{ github.event.pull_request.number }}
+          EXISTING=$(gh api "repos/${{ github.repository }}/issues/${PR}/comments" \
+            --jq "[.[] | select(.body | startswith(\"${MARKER}\"))][0].id // empty")
+          if [ -n "$EXISTING" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
+              -X PATCH --field body=@/tmp/full-comment.md
+          else
+            gh pr comment "${PR}" --body-file /tmp/full-comment.md
+          fi
