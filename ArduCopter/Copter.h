@@ -99,11 +99,6 @@
 #include "AP_ExternalControl_Copter.h"
 #endif
 
-#include <AP_Beacon/AP_Beacon_config.h>
-#if AP_BEACON_ENABLED
- #include <AP_Beacon/AP_Beacon.h>
-#endif
-
 #if AP_AVOIDANCE_ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
