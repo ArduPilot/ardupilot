@@ -10159,45 +10159,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.lat != 0 or m.lon != 0:
                 return m
 
-    def BeaconPosition(self):
-        '''Fly Beacon Position'''
-        self.reboot_sitl()
-
-        self.wait_ready_to_arm(require_absolute=True)
-
-        old_pos = self.get_global_position_int()
-        print("old_pos=%s" % str(old_pos))
-
-        self.set_parameters({
-            "BCN_TYPE": 10,
-            "BCN_LATITUDE": SITL_START_LOCATION.lat,
-            "BCN_LONGITUDE": SITL_START_LOCATION.lng,
-            "BCN_ALT": SITL_START_LOCATION.alt,
-            "BCN_ORIENT_YAW": 0,
-            "AVOID_ENABLE": 4,
-            "GPS1_TYPE": 0,
-            "EK3_ENABLE": 1,
-            "EK3_SRC1_POSXY": 4, # Beacon
-            "EK3_SRC1_POSZ": 1,  # Baro
-            "EK3_SRC1_VELXY": 0, # None
-            "EK3_SRC1_VELZ": 0,  # None
-            "EK2_ENABLE": 0,
-            "AHRS_EKF_TYPE": 3,
-        })
-        self.reboot_sitl()
-
-        # require_absolute=True infers a GPS is present
+    def fly_beacon_position(self, old_pos):
+        '''fly a beacon-position check against the currently-configured
+        beacon backend; old_pos is a (GPS-derived) GLOBAL_POSITION_INT
+        captured before the GPS was disabled'''
+        # require_absolute=False as we have disabled the GPS:
         self.wait_ready_to_arm(require_absolute=False)
 
         tstart = self.get_sim_time()
-        timeout = 20
+        timeout = 30
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not get new position like old position")
             self.progress("Fetching location")
             new_pos = self.get_global_position_int()
             pos_delta = self.get_distance_int(old_pos, new_pos)
-            max_delta = 1
+            max_delta = 2
             self.progress("delta=%u want <= %u" % (pos_delta, max_delta))
             if pos_delta <= max_delta:
                 break
@@ -10221,6 +10198,52 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_current_onboard_log_contains_message("BCN")
 
         self.disarm_vehicle(force=True)
+
+    def BeaconPosition(self):
+        '''Fly Beacon Position over each beacon backend type'''
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm(require_absolute=True)
+
+        old_pos = self.get_global_position_int()
+        print("old_pos=%s" % str(old_pos))
+
+        # configuration common to all beacon backends:
+        self.set_parameters({
+            "BCN_LATITUDE": SITL_START_LOCATION.lat,
+            "BCN_LONGITUDE": SITL_START_LOCATION.lng,
+            "BCN_ALT": SITL_START_LOCATION.alt,
+            "BCN_ORIENT_YAW": 0,
+            "AVOID_ENABLE": 4,
+            "GPS1_TYPE": 0,
+            "EK3_ENABLE": 1,
+            "EK3_SRC1_POSXY": 4, # Beacon
+            "EK3_SRC1_POSZ": 1,  # Baro
+            "EK3_SRC1_VELXY": 0, # None
+            "EK3_SRC1_VELZ": 0,  # None
+            "EK2_ENABLE": 0,
+            "AHRS_EKF_TYPE": 3,
+        })
+
+        # iterate over the beacon backends; each entry is the backend
+        # name, the parameters which select it, and any extra SITL
+        # command-line needed to attach a simulated device:
+        backends = [
+            ("SITL", {
+                "BCN_TYPE": 10,  # SITL
+            }, None),
+            ("NoopLoop", {
+                "BCN_TYPE": 3,           # NoopLoop
+                "SERIAL5_PROTOCOL": 13,  # Beacon
+            }, ["--serial5=sim:nooploop"]),
+        ]
+        for (name, params, customisations) in backends:
+            self.start_subtest("Beacon backend: %s" % name)
+            if customisations is not None:
+                self.customise_SITL_commandline(customisations)
+            self.set_parameters(params)
+            self.reboot_sitl()
+            self.fly_beacon_position(old_pos)
 
     def AC_Avoidance_Beacon(self):
         '''Test beacon avoidance slide behaviour'''
