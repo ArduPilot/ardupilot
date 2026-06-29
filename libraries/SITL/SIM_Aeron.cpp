@@ -347,23 +347,28 @@ void Aeron::process_inbound()
 void Aeron::handle_inbound_byte(uint8_t byte)
 {
     switch (rx_state) {
+    case RxParseState::RESET:
+        rx_write_idx    = 0;
+        rx_pkt_len      = 0;
+        rx_sync_count   = 0;
+        rx_state        = RxParseState::SYNC;
+        FALLTHROUGH;
+
     case RxParseState::SYNC:
         if (byte == SYNC_BYTE) {
             rx_buf[rx_write_idx++] = byte;
             if (++rx_sync_count == SYNC_COUNT) {
                 rx_state      = RxParseState::LEN_HIGH;
-                rx_sync_count = 0;
             }
         } else {
-            rx_sync_count = 0;
-            rx_write_idx  = 0;
+            rx_state = RxParseState::RESET;
         }
         return;
 
     case RxParseState::LEN_HIGH:
-        rx_pkt_len = byte;
-        rx_buf[rx_write_idx++] = byte;
-        rx_state = RxParseState::LEN_LOW;
+        rx_pkt_len              = byte;
+        rx_buf[rx_write_idx++]  = byte;
+        rx_state                = RxParseState::LEN_LOW;
         return;
 
     case RxParseState::LEN_LOW:
@@ -390,17 +395,8 @@ void Aeron::handle_inbound_byte(uint8_t byte)
             const uint16_t prp = (uint16_t(rx_buf[6]) << 8) | rx_buf[7];
             handle_inbound_packet(prp, &rx_buf[8], rx_pkt_len - 8);
         }
-        rx_state     = RxParseState::SYNC;
-        rx_write_idx = 0;
-        rx_pkt_len   = 0;
+        rx_state = RxParseState::RESET;
         return;
-    }
-
-    case RxParseState::RESET: {
-        rx_write_idx = 0;
-        rx_pkt_len = 0;
-        rx_state = RxParseState::SYNC;
-        return ;
     }
     }
 

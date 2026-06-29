@@ -41,11 +41,13 @@
 #include <GCS_MAVLink/GCS.h>
 
 // Local debug macro - no-op in release builds.
-// Define AERON_DEBUG before this header to enable.
 #ifndef AERON_DEBUG
-#define debug(...) do {} while (0)
-#else
+#define AERON_DEBUG 0
+#endif
+#if AERON_DEBUG
 #define debug(fmt, args ...) GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Aeron: " fmt, ##args)
+#else
+#define debug(...) do {} while (0)
 #endif
 
 extern const AP_HAL::HAL &hal;
@@ -101,8 +103,6 @@ void AP_ExternalAHRS_Aeron_plx::update_thread()
 // Core pipeline: read -> parse -> publish -> deferred messages.
 void AP_ExternalAHRS_Aeron_plx::check_and_decode()
 {
-    WITH_SEMAPHORE(arn_sem);
-
     if (uart == nullptr) {
         return;
     }
@@ -112,32 +112,24 @@ void AP_ExternalAHRS_Aeron_plx::check_and_decode()
         return;
     }
 
-    const uint16_t n_read = uart->read(chunk_buf, avail);
+    const auto n_read = uart->read(chunk_buf, avail);
 
-    if (n_read == 0) {
+    if (n_read <= 0) {
         return;
     }
 
+    // msgs collects GCS notifications raised mid-parse (CRC failures,
+    // unknown packets, ext-sensor replies) so they are emitted once per
+    // drain instead of from inside the byte loop.
     AeronDeferredMsgs msgs{};
-    if (crc_fail_pending) {
-        msgs.crc_fail    = true;
-        crc_fail_pending = false;
-    }
 
-    for (uint16_t index = 0; index < n_read; index++) {
+    for (auto index = 0; index < n_read; index++) {
         parse_byte(chunk_buf[index], msgs);
     }
 
     send_deferred_messages(msgs);
-
-    // Send the optional external-sensor presence queries once, after the
-    // PLX has had time to boot and start responding to commands.
-    // Responses arrive as EXT_SENSORS_MAG / ASP packets and are routed
-    // through handle_chunk_buf_packet().
-    if (!ext_sensor_query_done && AP_HAL::millis() > 10000) {
-        query_ext_sensors();
-        ext_sensor_query_done = true;
-    }
+    
+    check_for_query_ext_sensors();
 }
 
 // State-machine parser for the Aeron binary protocol.  On a CRC-valid
@@ -160,7 +152,6 @@ void AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte, AeronDeferredMsgs &msgs
             rx_buf[write_idx++] = byte;
             if (++sync_count == SYNC_REQUIRED) {
                 parse_state = ParseState::LEN_HIGH;
-                sync_count  = 0;
             }
         } else {
             parse_state = ParseState::RESET;
@@ -176,7 +167,7 @@ void AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte, AeronDeferredMsgs &msgs
     case ParseState::LEN_LOW:
         rx_buf[write_idx++] = byte;
         pkt_length = (pkt_length << 8) | byte;
-        if (pkt_length >= PKT_LEN_MIN && pkt_length < PKT_LEN_MAX) {
+        if (pkt_length >= PKT_LEN_MIN && pkt_length <= PKT_LEN_MAX) {
             parse_state = ParseState::PAYLOAD;
         } else {
             parse_state = ParseState::RESET;
@@ -196,9 +187,9 @@ void AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte, AeronDeferredMsgs &msgs
         if (valid) {
             const uint16_t prp_id      = be16toh_ptr(&rx_buf[6]);
             const uint16_t payload_len = (pkt_length > 8) ? (pkt_length - 8) : 0;
-            handle_chunk_buf_packet(prp_id, payload_len, msgs);
+            handle_chunk_buf_packet(prp_id, &rx_buf[8], payload_len, msgs);
         } else {
-            crc_fail_pending = true;
+            msgs.crc_fail = true;
             debug("CRC-ID=0x%04X",
                   (uint16_t(rx_buf[6]) << 8) | rx_buf[7]);
         }
@@ -216,11 +207,10 @@ void AP_ExternalAHRS_Aeron_plx::parse_byte(uint8_t byte, AeronDeferredMsgs &msgs
 // Called from inside parse_byte's CRC state so the data hasn't yet been
 // overwritten by the next incoming byte.
 void AP_ExternalAHRS_Aeron_plx::handle_chunk_buf_packet(uint16_t prp_id,
+                                                        const uint8_t *payload,
                                                         uint16_t payload_len,
                                                         AeronDeferredMsgs &msgs)
 {
-    const uint8_t *payload = &rx_buf[8];
-
     switch (AeronPacketID(prp_id)) {
     case AeronPacketID::NAV_PARA1:
         if (payload_len < sizeof(NavPara1Payload)) {
@@ -263,7 +253,11 @@ void AP_ExternalAHRS_Aeron_plx::handle_chunk_buf_packet(uint16_t prp_id,
         return;
 
     case AeronPacketID::EXT_SENSORS_MAG: {
-        WITH_SEMAPHORE(state.sem);
+        if (payload_len < 1) {
+            msgs.garbage = true;
+            return;
+        }
+        WITH_SEMAPHORE(arn_sem);
         shared.ext_mag_present = payload[0];
         shared.ext_mag_checked = true;
         msgs.ext_mag_checked   = true;
@@ -271,7 +265,11 @@ void AP_ExternalAHRS_Aeron_plx::handle_chunk_buf_packet(uint16_t prp_id,
     }
 
     case AeronPacketID::EXT_SENSORS_ASP: {
-        WITH_SEMAPHORE(state.sem);
+        if (payload_len < 1) {
+            msgs.garbage = true;
+            return;
+        }
+        WITH_SEMAPHORE(arn_sem);
         shared.ext_asp_present = payload[0];
         shared.ext_asp_checked = true;
         msgs.ext_asp_checked   = true;
@@ -300,57 +298,71 @@ void AP_ExternalAHRS_Aeron_plx::publish_nav_para1(const NavPara1Payload &data)
 {
     last_nav_ms = AP_HAL::millis();
 
+    float undulation_m;
     {
-        WITH_SEMAPHORE(state.sem);
-
+        WITH_SEMAPHORE(arn_sem);
         memcpy(shared.nav1_pos_deg, data.position, sizeof(data.position));
         shared.nav1_height_m = data.height_abv_ellip;
+        nav1_valid           = true;
+        undulation_m         = shared.gps_undulation_m;
+    }
 
-        state.velocity = Vector3f{data.velocity_ned[0],
-                                  data.velocity_ned[1],
-                                  data.velocity_ned[2]};
+    {
+        WITH_SEMAPHORE(state.sem);
+        state.velocity = {
+            data.velocity_ned[0],
+            data.velocity_ned[1],
+            data.velocity_ned[2]
+        };
         state.have_velocity = true;
 
         state.location = Location{
             int32_t(data.position[0] * 1.0e7),
             int32_t(data.position[1] * 1.0e7),
-            int32_t((data.height_abv_ellip - shared.gps_undulation_m) * 1.0e2),
-            Location::AltFrame::ABSOLUTE};
+            int32_t((data.height_abv_ellip - undulation_m) * 1.0e2),
+            Location::AltFrame::ABSOLUTE
+        };
         state.have_location           = true;
         state.last_location_update_us = AP_HAL::micros();
-
-        nav1_valid = true;
     }
 
-    // Logging is done outside the lock we must not hold state.sem across that.
+    // Logging is done outside the lock. We must not hold state.sem across that.
 #if HAL_LOGGING_ENABLED
-    // @LoggerMessage: AERN
-    // @Description: Aeron PLX fused navigation solution (NAV_PARA1)
-    // @Field: TimeUS: Time since system startup
-    // @Field: Epoch: Unix epoch seconds at sample time
-    // @Field: Lat: Latitude
-    // @Field: Lng: Longitude
-    // @Field: Alt: Height above WGS84 ellipsoid
-    // @Field: VN: Velocity north
-    // @Field: VE: Velocity east
-    // @Field: VD: Velocity down
-    // @Field: Crs: Course over ground
-    // @Field: Roll: Roll angle
-    // @Field: Pitch: Pitch angle
-    // @Field: Yaw: Yaw angle
-    // @Field: InsSt: PLX INS status word
-    // @Field: HwSt: PLX hardware status word
-    AP::logger().WriteStreaming("AERN", "TimeUS,Epoch,Lat,Lng,Alt,VN,VE,VD,Crs,Roll,Pitch,Yaw,InsSt,HwSt",
-                                "ssDUmnnnhrrr--",
-                                "F-------------",
-                                "QIddffffffffII",
-                                AP_HAL::micros64(),
-                                data.epoch_time,
-                                data.position[0], data.position[1], double(data.height_abv_ellip),
-                                data.velocity_ned[0], data.velocity_ned[1], data.velocity_ned[2],
-                                data.course,
-                                data.euler[0], data.euler[1], data.euler[2],
-                                data.ins_status, data.hw_status);
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_aern_log_ms >= LOG_THROTTLE_MS) {
+        last_aern_log_ms = now_ms;
+        // @LoggerMessage: AERN
+        // @Description: Aeron PLX fused navigation solution (NAV_PARA1)
+        // @Field: TimeUS: Time since system startup
+        // @Field: Epoch: Unix epoch seconds at sample time
+        // @Field: Lat: Latitude
+        // @Field: Lng: Longitude
+        // @Field: Alt: Height above WGS84 ellipsoid
+        // @Field: VN: Velocity north
+        // @Field: VE: Velocity east
+        // @Field: VD: Velocity down
+        // @Field: Crs: Course over ground
+        // @Field: Roll: Roll angle
+        // @Field: Pitch: Pitch angle
+        // @Field: Yaw: Yaw angle
+        // @Field: InsSt: PLX INS status word
+        // @Field: HwSt: PLX hardware status word
+        AP::logger().WriteStreaming(
+            "AERN",
+            "TimeUS," "Epoch," "Lat," "Lng," "Alt," "VN," "VE," "VD," "Crs," "Roll," "Pitch," "Yaw," "InsSt," "HwSt",
+            "s"       "s"      "D"    "U"    "m"    "n"   "n"   "n"   "h"    "r"     "r"      "r"    "-"      "-",
+            "F"       "-"      "-"    "-"    "-"    "-"   "-"   "-"   "-"    "-"     "-"      "-"    "-"      "-",
+            "Q"       "I"      "d"    "d"    "f"    "f"   "f"   "f"   "f"    "f"     "f"      "f"    "I"      "I",
+            AP_HAL::micros64(),
+            data.epoch_time,
+            data.position[0], data.position[1], double(data.height_abv_ellip),
+            data.velocity_ned[0], data.velocity_ned[1], data.velocity_ned[2],
+            data.course,
+            data.euler[0], data.euler[1], data.euler[2],
+            data.ins_status, 
+            data.hw_status
+        );
+    }
 #endif
 }
 
@@ -359,11 +371,18 @@ void AP_ExternalAHRS_Aeron_plx::publish_nav_para2(const NavPara2Payload &data)
 {
     last_nav_ms = AP_HAL::millis();
 
-    WITH_SEMAPHORE(state.sem);
+    {
+        WITH_SEMAPHORE(arn_sem);
+        shared.nav2_hw_status = data.hw_status;
+    }
 
-    shared.nav2_hw_status = data.hw_status;
-    state.quat            = Quaternion{data.quat[0], data.quat[1],
-                                       data.quat[2], data.quat[3]};
+    WITH_SEMAPHORE(state.sem);
+    state.quat = {
+        data.quat[0],
+        data.quat[1],
+        data.quat[2],
+        data.quat[3]
+    };
     state.have_quaternion = true;
 }
 
@@ -372,8 +391,8 @@ void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const SensParaPayload &data)
 {
     last_sens_ms = AP_HAL::millis();
 
-    const Vector3f accel{data.accel[0], data.accel[1], data.accel[2]};
-    const Vector3f gyro{data.gyro[0] * DEG_TO_RAD,
+    const Vector3f accel {data.accel[0], data.accel[1], data.accel[2]};
+    const Vector3f gyro {data.gyro[0] * DEG_TO_RAD,
                         data.gyro[1] * DEG_TO_RAD,
                         data.gyro[2] * DEG_TO_RAD};
 
@@ -404,32 +423,41 @@ void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const SensParaPayload &data)
 #endif
 
 #if HAL_LOGGING_ENABLED
-    // @LoggerMessage: AERS
-    // @Description: Aeron PLX raw sensor data (SENS_PARA)
-    // @Field: TimeUS: Time since system startup
-    // @Field: Temp: Sensor temperature
-    // @Field: GX: Gyro X
-    // @Field: GY: Gyro Y
-    // @Field: GZ: Gyro Z
-    // @Field: AX: Accel X
-    // @Field: AY: Accel Y
-    // @Field: AZ: Accel Z
-    // @Field: MX: Mag X
-    // @Field: MY: Mag Y
-    // @Field: MZ: Mag Z
-    // @Field: Pres: Barometric pressure
-    // @Field: BTmp: Barometer temperature
-    // @Field: BAlt: Barometric altitude
-    AP::logger().WriteStreaming("AERS", "TimeUS,Temp,GX,GY,GZ,AX,AY,AZ,MX,MY,MZ,Pres,BTmp,BAlt",
-                                "sOkkkoooGGGPOm",
-                                "F-------------",
-                                "Qfffffffffffff",
-                                AP_HAL::micros64(),
-                                data.temperature,
-                                data.gyro[0], data.gyro[1], data.gyro[2],
-                                data.accel[0], data.accel[1], data.accel[2],
-                                data.mag[0], data.mag[1], data.mag[2],
-                                data.baro_pressure, data.baro_temperature, data.baro_altitude);
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - last_aers_log_ms >= LOG_THROTTLE_MS) {
+        last_aers_log_ms = now_ms;
+        // @LoggerMessage: AERS
+        // @Description: Aeron PLX raw sensor data (SENS_PARA)
+        // @Field: TimeUS: Time since system startup
+        // @Field: Temp: Sensor temperature
+        // @Field: GX: Gyro X
+        // @Field: GY: Gyro Y
+        // @Field: GZ: Gyro Z
+        // @Field: AX: Accel X
+        // @Field: AY: Accel Y
+        // @Field: AZ: Accel Z
+        // @Field: MX: Mag X
+        // @Field: MY: Mag Y
+        // @Field: MZ: Mag Z
+        // @Field: Pres: Barometric pressure
+        // @Field: BTmp: Barometer temperature
+        // @Field: BAlt: Barometric altitude
+        AP::logger().WriteStreaming(
+            "AERS",
+            "TimeUS," "Temp," "GX," "GY," "GZ," "AX," "AY," "AZ," "MX," "MY," "MZ," "Pres," "BTmp," "BAlt",
+            "s"       "O"     "k"   "k"   "k"   "o"   "o"   "o"   "G"   "G"   "G"   "P"     "O"     "m",
+            "F"       "-"     "-"   "-"   "-"   "-"   "-"   "-"   "-"   "-"   "-"   "-"     "-"     "-",
+            "Q"       "f"     "f"   "f"   "f"   "f"   "f"   "f"   "f"   "f"   "f"   "f"     "f"     "f",
+            AP_HAL::micros64(),
+            data.temperature,
+            data.gyro[0], data.gyro[1], data.gyro[2],
+            data.accel[0], data.accel[1], data.accel[2],
+            data.mag[0], data.mag[1], data.mag[2],
+            data.baro_pressure, 
+            data.baro_temperature, 
+            data.baro_altitude
+        );
+    }
 #endif
 }
 
@@ -438,18 +466,20 @@ void AP_ExternalAHRS_Aeron_plx::publish_gps_para(const GpsParaPayload &data)
 {
     last_gnss_ms = AP_HAL::millis();
 
+    bool have_nav1;
     {
-        WITH_SEMAPHORE(state.sem);
+        WITH_SEMAPHORE(arn_sem);
         shared.gps_epoch_s      = data.epoch_time;
         shared.gps_microseconds = data.microseconds;
         shared.gps_status       = data.gps_status;
         shared.gps_undulation_m = data.gps_undulation;
         shared.gps_hdop         = data.hdop;
+        have_nav1               = nav1_valid;
     }
 
-    // build the AP_GPS message only after at least one NAV_PARA1 has
-    // populated shared.nav1_pos_deg / shared.nav1_height_m
-    if (nav1_valid) {
+    // Build the AP_GPS message only after at least one NAV_PARA1 has
+    // populated shared.nav1_pos_deg / shared.nav1_height_m.
+    if (have_nav1) {
         format_and_push_gps();
     }
 }
@@ -457,9 +487,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_gps_para(const GpsParaPayload &data)
 // EXTD_GNSS: accuracy metrics + GNSS NED velocity
 void AP_ExternalAHRS_Aeron_plx::publish_extd_gnss(const ExtdGnssPayload &data)
 {
-    last_gnss_ms = AP_HAL::millis();
-
-    WITH_SEMAPHORE(state.sem);
+    WITH_SEMAPHORE(arn_sem);
 
     shared.cust_hpa_m   = data.hpa;
     shared.cust_vpa_m   = data.vpa;
@@ -467,6 +495,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_extd_gnss(const ExtdGnssPayload &data)
     shared.cust_vdop    = data.vdop;
     memcpy(shared.cust_gnss_vel_ned_mps, data.gnss_vned, sizeof(data.gnss_vned));
 
+    last_extd_ms      = AP_HAL::millis();
     has_variance_data = true;
 }
 
@@ -475,20 +504,24 @@ void AP_ExternalAHRS_Aeron_plx::publish_extd_gnss(const ExtdGnssPayload &data)
  */
 void AP_ExternalAHRS_Aeron_plx::format_and_push_gps()
 {
-    // extract GNSS status bitfields
-    const uint32_t st          = shared.gps_status;
+    // One coherent snapshot of the cross-thread cache, taken under
+    // arn_sem and released immediately. Everything below works off the
+    // local copy, so no shared.* field is read while unlocked.
+    SharedData snap;
+    bool extd_stale;
+    {
+        WITH_SEMAPHORE(arn_sem);
+        snap       = shared;
+        gnss_fix   = (shared.gps_status & 0x00000400U) != 0;
+        extd_stale = (last_extd_ms == 0) ||
+                     (AP_HAL::millis() - last_extd_ms > EXTD_VALIDITY_MS);
+    }
+
+    const uint32_t st          = snap.gps_status;
     const uint16_t num_sats    = st & 0x000003FFU;
-    const bool     fix_present = (st & 0x00000400U) != 0;
     const uint8_t  fix_raw     = (st & 0x00007800U) >> 11;
     const uint8_t  jam         = (st & 0x00030000U) >> 16;
     const uint8_t  spf         = (st & 0x000C0000U) >> 18;
-
-    {
-        WITH_SEMAPHORE(state.sem);
-        gnss_fix     = fix_present;
-        jam_status   = jam;
-        spoof_status = spf;
-    }
 
     // throttled jamming/spoofing warnings - 0.2 Hz
     const uint32_t now = AP_HAL::millis();
@@ -504,15 +537,11 @@ void AP_ExternalAHRS_Aeron_plx::format_and_push_gps()
 
     AP_ExternalAHRS::gps_data_message_t gps_msg{};
 
-    // Guard against epoch underflow if PLX has no time fix yet.
-    if (shared.gps_epoch_s >= GPS_UNIX_OFFSET_S) {
-        const uint32_t gps_time_s = shared.gps_epoch_s - GPS_UNIX_OFFSET_S;
+    if (snap.gps_epoch_s >= GPS_UNIX_OFFSET_S) {
+        const uint32_t gps_time_s = (snap.gps_epoch_s - GPS_UNIX_OFFSET_S) + GPS_LEAP_SECONDS;
         const uint32_t tow_s      = gps_time_s % SECONDS_PER_WEEK;
         gps_msg.gps_week = gps_time_s / SECONDS_PER_WEEK;
-        gps_msg.ms_tow   = (tow_s * 1000) + (shared.gps_microseconds / 1000);
-    } else {
-        gps_msg.gps_week = 0;
-        gps_msg.ms_tow   = 0;
+        gps_msg.ms_tow   = (tow_s * 1000) + (snap.gps_microseconds / 1000);
     }
 
     gps_msg.satellites_in_view = num_sats;
@@ -537,8 +566,7 @@ void AP_ExternalAHRS_Aeron_plx::format_and_push_gps()
             break;
         default:
             // Reserved / unknown PLX fix code - report as no GPS so the
-            // EKF doesn't trust the position. Should not happen in
-            // practice; AeronGnssFix covers all values 0..4.
+            // EKF doesn't trust the position.
             gps_msg.fix_type = AP_GPS_FixType::NO_GPS;
             break;
         }
@@ -546,32 +574,44 @@ void AP_ExternalAHRS_Aeron_plx::format_and_push_gps()
         gps_msg.fix_type = AP_GPS_FixType::NO_GPS;
     }
 
-    // accuracy metrics from EXTD_GNSS
-    gps_msg.horizontal_pos_accuracy = shared.cust_hpa_m;
-    gps_msg.vertical_pos_accuracy   = shared.cust_vpa_m;
-    gps_msg.horizontal_vel_accuracy = shared.cust_hva_mps;
-    gps_msg.hdop                    = shared.gps_hdop  * 1.0e2;
-    gps_msg.vdop                    = shared.cust_vdop * 1.0e2;
+    // Accuracy metrics from EXTD_GNSS. If EXTD is stale, inflate them so
+    // the EKF de-weights this position rather than trusting old numbers.
+    if (extd_stale) {
+        gps_msg.horizontal_pos_accuracy = STALE_POS_ACC_M;
+        gps_msg.vertical_pos_accuracy   = STALE_POS_ACC_M;
+        gps_msg.horizontal_vel_accuracy = STALE_VEL_ACC_MPS;
+    } else {
+        gps_msg.horizontal_pos_accuracy = snap.cust_hpa_m;
+        gps_msg.vertical_pos_accuracy   = snap.cust_vpa_m;
+        gps_msg.horizontal_vel_accuracy = snap.cust_hva_mps;
+    }
+    gps_msg.hdop = snap.gps_hdop  * 1.0e2;
+    gps_msg.vdop = snap.cust_vdop * 1.0e2;
 
-    // position from NAV_PARA1
-    gps_msg.latitude     = shared.nav1_pos_deg[0] * 1.0e7;
-    gps_msg.longitude    = shared.nav1_pos_deg[1] * 1.0e7;
-    gps_msg.msl_altitude = (shared.nav1_height_m - shared.gps_undulation_m) * 1.0e2;
+    // position from NAV_PARA1 (fused INS/GNSS), kept in double end-to-end
+    gps_msg.latitude     = snap.nav1_pos_deg[0] * 1.0e7;
+    gps_msg.longitude    = snap.nav1_pos_deg[1] * 1.0e7;
+    gps_msg.msl_altitude = (snap.nav1_height_m - snap.gps_undulation_m) * 1.0e2;
 
-    // GNSS velocity from EXTD_GNSS
-    gps_msg.ned_vel_north = shared.cust_gnss_vel_ned_mps[0];
-    gps_msg.ned_vel_east  = shared.cust_gnss_vel_ned_mps[1];
-    gps_msg.ned_vel_down  = shared.cust_gnss_vel_ned_mps[2];
+    // GNSS velocity from EXTD_GNSS. Zeroed when stale (accuracy already
+    // inflated above so the EKF will not lean on it).
+    if (!extd_stale) {
+        gps_msg.ned_vel_north = snap.cust_gnss_vel_ned_mps[0];
+        gps_msg.ned_vel_east  = snap.cust_gnss_vel_ned_mps[1];
+        gps_msg.ned_vel_down  = snap.cust_gnss_vel_ned_mps[2];
+    }
 
-    // set origin on first valid 3D fix
+    // Set origin on the first 3D fix. The PLX only declares a 3D fix
+    // after its own internal quality checks, so no extra gating here.
     if (gps_msg.fix_type >= AP_GPS_FixType::FIX_3D) {
         WITH_SEMAPHORE(state.sem);
         if (!state.have_origin) {
             state.origin = Location {
-                int32_t(shared.nav1_pos_deg[0] * 1.0e7),
-                int32_t(shared.nav1_pos_deg[1] * 1.0e7),
-                int32_t((shared.nav1_height_m - shared.gps_undulation_m) * 1.0e2),
-                Location::AltFrame::ABSOLUTE };
+                int32_t(snap.nav1_pos_deg[0] * 1.0e7),
+                int32_t(snap.nav1_pos_deg[1] * 1.0e7),
+                int32_t((snap.nav1_height_m - snap.gps_undulation_m) * 1.0e2),
+                Location::AltFrame::ABSOLUTE
+            };
             state.have_origin = true;
         }
     }
@@ -582,6 +622,7 @@ void AP_ExternalAHRS_Aeron_plx::format_and_push_gps()
     }
 
 #if HAL_LOGGING_ENABLED
+    // AERG follows the GNSS rate (5-10 Hz) so it is logged per-packet.
     // @LoggerMessage: AERG
     // @Description: Aeron PLX GNSS status and accuracy (GPS_PARA + EXTD_GNSS)
     // @Field: TimeUS: Time since system startup
@@ -596,18 +637,25 @@ void AP_ExternalAHRS_Aeron_plx::format_and_push_gps()
     // @Field: HVA: Horizontal velocity accuracy
     // @Field: HDOP: Horizontal dilution of precision
     // @Field: VDOP: Vertical dilution of precision
-    AP::logger().WriteStreaming("AERG", "TimeUS,GMS,GWk,NSat,FixT,Jam,Spf,HPA,VPA,HVA,HDOP,VDOP",
-                                "s-----------",
-                                "F-----------",
-                                "QIHHBBBfffff",
-                                AP_HAL::micros64(),
-                                gps_msg.ms_tow,
-                                gps_msg.gps_week,
-                                num_sats,
-                                uint8_t(gps_msg.fix_type),
-                                jam, spf,
-                                shared.cust_hpa_m, shared.cust_vpa_m, shared.cust_hva_mps,
-                                shared.gps_hdop, shared.cust_vdop);
+    AP::logger().WriteStreaming(
+        "AERG",
+        "TimeUS," "GMS," "GWk," "NSat," "FixT," "Jam," "Spf," "HPA," "VPA," "HVA," "HDOP," "VDOP",
+        "s"       "-"    "-"    "-"     "-"     "-"    "-"    "-"    "-"    "-"    "-"     "-",
+        "F"       "-"    "-"    "-"     "-"     "-"    "-"    "-"    "-"    "-"    "-"     "-",
+        "Q"       "I"    "H"    "H"     "B"     "B"    "B"    "f"    "f"    "f"    "f"     "f",
+        AP_HAL::micros64(),
+        gps_msg.ms_tow,
+        gps_msg.gps_week,
+        num_sats,
+        uint8_t(gps_msg.fix_type),
+        jam, 
+        spf,
+        snap.cust_hpa_m, 
+        snap.cust_vpa_m, 
+        snap.cust_hva_mps,
+        snap.gps_hdop, 
+        snap.cust_vdop
+    );
 #endif
 }
 
@@ -628,7 +676,7 @@ void AP_ExternalAHRS_Aeron_plx::send_deferred_messages(const AeronDeferredMsgs &
     if (msgs.ext_mag_checked) {
         uint8_t present;
         {
-            WITH_SEMAPHORE(state.sem);
+            WITH_SEMAPHORE(arn_sem);
             present = shared.ext_mag_present;
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Ext mag present=%u", present);
@@ -636,10 +684,36 @@ void AP_ExternalAHRS_Aeron_plx::send_deferred_messages(const AeronDeferredMsgs &
     if (msgs.ext_asp_checked) {
         uint8_t present;
         {
-            WITH_SEMAPHORE(state.sem);
+            WITH_SEMAPHORE(arn_sem);
             present = shared.ext_asp_present;
         }
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: Ext airspeed present=%u", present);
+    }
+}
+
+// Fire the external-sensor presence queries once NAV data confirms the
+// PLX is up and producing a fused solution. If NAV data lapses (a device
+// reset or link dropout) and then resumes, re-query so the presence flags
+// reflect the re-initialised device rather than the pre-reset state.
+void AP_ExternalAHRS_Aeron_plx::check_for_query_ext_sensors()
+{
+    const uint32_t nav_ms = last_nav_ms;
+
+    if (nav_ms == 0) {
+        return;   // no NAV yet - PLX not confirmed up
+    }
+
+    // A jump in the NAV timestamp larger than the reset threshold means
+    // NAV stopped and later resumed - treat as a fresh boot and re-query.
+    if (ext_sensor_query_done && prev_nav_ms != 0 &&
+        (nav_ms - prev_nav_ms) > DEVICE_RESET_GAP_MS) {
+        ext_sensor_query_done = false;
+    }
+    prev_nav_ms = nav_ms;
+
+    if (!ext_sensor_query_done) {
+        query_ext_sensors();
+        ext_sensor_query_done = true;
     }
 }
 
@@ -656,7 +730,7 @@ void AP_ExternalAHRS_Aeron_plx::query_ext_sensors()
 
     uart->write(cmd_query_ext_mag, sizeof(cmd_query_ext_mag));
     uart->write(cmd_query_ext_asp, sizeof(cmd_query_ext_asp));
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: External sensor query sent");
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: External sensor query");
 }
 
 const char *AP_ExternalAHRS_Aeron_plx::get_name() const
@@ -684,18 +758,18 @@ bool AP_ExternalAHRS_Aeron_plx::initialised() const
 // fault / recovery messages.
 const AP_ExternalAHRS_Aeron_plx::HwStatusEntry
 AP_ExternalAHRS_Aeron_plx::hw_status_table[] = {
-    { AeronHwStatus::GNSS,     MAV_SEVERITY_NOTICE,    "Aeron: GNSS unhealthy",             "Aeron: GNSS okay" },
-    { AeronHwStatus::ACC,      MAV_SEVERITY_ERROR,     "Aeron: Accelerometer unhealthy",    "Aeron: Accel okay" },
-    { AeronHwStatus::GYR,      MAV_SEVERITY_ERROR,     "Aeron: Gyroscope unhealthy",        "Aeron: Gyro okay" },
-    { AeronHwStatus::MAG,      MAV_SEVERITY_ERROR,     "Aeron: Magnetometer unhealthy",     "Aeron: Mag okay" },
-    { AeronHwStatus::BARO,     MAV_SEVERITY_ERROR,     "Aeron: Barometer unhealthy",        "Aeron: Baro okay" },
-    { AeronHwStatus::SUP_VLTG, MAV_SEVERITY_WARNING,   "Aeron: Supply Voltage Error",       "Aeron: Supply voltage okay" },
-    { AeronHwStatus::CM_PRT,   MAV_SEVERITY_WARNING,   "Aeron: Comport Overrun",            "Aeron: Comport okay" },
-    { AeronHwStatus::RAM,      MAV_SEVERITY_EMERGENCY, "Aeron: RAM Failure",                nullptr },
-    { AeronHwStatus::FIRMWARE, MAV_SEVERITY_EMERGENCY, "Aeron: Firmware Failure",           nullptr },
-    { AeronHwStatus::CONFIG,   MAV_SEVERITY_EMERGENCY, "Aeron: Config Memory Failure",      nullptr },
-    { AeronHwStatus::EXT_MAG,  MAV_SEVERITY_WARNING,   "Aeron: Ext mag not connected",      "Aeron: Ext Mag connected" },
-    { AeronHwStatus::EXT_ASP,  MAV_SEVERITY_WARNING,   "Aeron: Ext airspeed not connected", "Aeron: Ext Airspeed connected" },
+    { AeronHwStatus::GNSS,     MAV_SEVERITY_NOTICE,    "GNSS unhealthy",             "GNSS okay" },
+    { AeronHwStatus::ACC,      MAV_SEVERITY_ERROR,     "Accelerometer unhealthy",    "Accel okay" },
+    { AeronHwStatus::GYR,      MAV_SEVERITY_ERROR,     "Gyroscope unhealthy",        "Gyro okay" },
+    { AeronHwStatus::MAG,      MAV_SEVERITY_ERROR,     "Magnetometer unhealthy",     "Mag okay" },
+    { AeronHwStatus::BARO,     MAV_SEVERITY_ERROR,     "Barometer unhealthy",        "Baro okay" },
+    { AeronHwStatus::SUP_VLTG, MAV_SEVERITY_WARNING,   "Supply Voltage Error",       "Supply voltage okay" },
+    { AeronHwStatus::CM_PRT,   MAV_SEVERITY_WARNING,   "Comport Overrun",            "Comport okay" },
+    { AeronHwStatus::RAM,      MAV_SEVERITY_EMERGENCY, "RAM Failure",                nullptr },
+    { AeronHwStatus::FIRMWARE, MAV_SEVERITY_EMERGENCY, "Firmware Failure",           nullptr },
+    { AeronHwStatus::CONFIG,   MAV_SEVERITY_EMERGENCY, "Config Memory Failure",      nullptr },
+    { AeronHwStatus::EXT_MAG,  MAV_SEVERITY_WARNING,   "Ext Mag not connected",      "Ext Mag connected" },
+    { AeronHwStatus::EXT_ASP,  MAV_SEVERITY_WARNING,   "Ext Airspeed not connected", "Ext Airspeed connected" },
 };
 
 /*
@@ -728,7 +802,7 @@ void AP_ExternalAHRS_Aeron_plx::report_hw_status()
     bool     ext_mag_checked;
     bool     ext_asp_checked;
     {
-        WITH_SEMAPHORE(state.sem);
+        WITH_SEMAPHORE(arn_sem);
         hw              = shared.nav2_hw_status;
         ext_mag_present = shared.ext_mag_present;
         ext_asp_present = shared.ext_asp_present;
@@ -759,7 +833,7 @@ void AP_ExternalAHRS_Aeron_plx::report_hw_status()
 
         // Recovery message on falling edge.
         if ((newly_clear & mask) != 0U && entry.clear_msg != nullptr) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s", entry.clear_msg);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Aeron: %s", entry.clear_msg);
         }
 
         if ((errors & mask) == 0U) {
@@ -774,7 +848,7 @@ void AP_ExternalAHRS_Aeron_plx::report_hw_status()
             continue;
         }
 
-        GCS_SEND_TEXT(MAV_SEVERITY(entry.severity), "%s", entry.fault_msg);
+        GCS_SEND_TEXT(MAV_SEVERITY(entry.severity), "Aeron: %s", entry.fault_msg);
         last_warned_ms[status_index] = now;
     }
 
@@ -786,6 +860,10 @@ void AP_ExternalAHRS_Aeron_plx::report_hw_status()
  */
 bool AP_ExternalAHRS_Aeron_plx::healthy() const
 {
+    if (!initialised()) {
+        return false;
+    }
+
     const uint32_t now = AP_HAL::millis();
     return (now - last_sens_ms) < SENS_TIMEOUT_MS
         && (now - last_nav_ms)  < NAV_TIMEOUT_MS
@@ -836,7 +914,7 @@ void AP_ExternalAHRS_Aeron_plx::get_filter_status(nav_filter_status &status) con
 
     bool fix;
     {
-        WITH_SEMAPHORE(state.sem);
+        WITH_SEMAPHORE(arn_sem);
         fix = gnss_fix;
     }
 
@@ -869,7 +947,7 @@ bool AP_ExternalAHRS_Aeron_plx::get_variances(float &velVar, float &posVar,
     float vpa;
     float hva;
     {
-        WITH_SEMAPHORE(state.sem);
+        WITH_SEMAPHORE(arn_sem);
 
         if (!has_variance_data) {
             return false;
@@ -883,6 +961,7 @@ bool AP_ExternalAHRS_Aeron_plx::get_variances(float &velVar, float &posVar,
     velVar = hva * vel_gate_scale;
     posVar = hpa * pos_gate_scale;
     hgtVar = vpa * hgt_gate_scale;
+    magVar.zero();
     tasVar = 0;
     return true;
 }

@@ -177,6 +177,7 @@ private:
     uint64_t _tick;
 
     // Per-packet schedule — period and phase (both in milliseconds of simulated time).
+    // Sent at SENS @50Hz, NAV1 @50Hz, NAV2 @50Hz, GPS & EXTD @10Hz. (Respected the Scheduler of Fixed Wing) (Bare Min Requirement)
     static constexpr uint32_t SENS_PERIOD_MS = 20;
     static constexpr uint32_t SENS_PHASE_MS  = 0;
     static constexpr uint32_t NAV1_PERIOD_MS = 20;

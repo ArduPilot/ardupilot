@@ -74,7 +74,7 @@ public:
     void        get_filter_status(nav_filter_status &status) const override;
     bool        get_variances(float &velVar, float &posVar, float &hgtVar,
                               Vector3f &magVar, float &tasVar) const override;
-    void        update() override { check_and_decode(); }
+    void        update() override {}    // all work happens in update_thread()
 
 protected:
     uint8_t num_gps_sensors() const override
@@ -220,7 +220,8 @@ private:
     void check_and_decode();
     void report_hw_status();
     void parse_byte(uint8_t byte, AeronDeferredMsgs &msgs);
-    void handle_chunk_buf_packet(uint16_t prp_id, uint16_t payload_len, AeronDeferredMsgs &msgs);
+    void handle_chunk_buf_packet(uint16_t prp_id, const uint8_t *payload,
+                                 uint16_t payload_len, AeronDeferredMsgs &msgs);
 
     void publish_nav_para1(const NavPara1Payload &p);
     void publish_nav_para2(const NavPara2Payload &p);
@@ -234,6 +235,7 @@ private:
     // utility
     void send_deferred_messages(const AeronDeferredMsgs &msgs);
     void query_ext_sensors();
+    void check_for_query_ext_sensors();
 
     // UART interface (read-only after construction)
     AP_HAL::UARTDriver *uart;
@@ -290,18 +292,17 @@ private:
     volatile uint32_t last_sens_ms;
     volatile uint32_t last_nav_ms;
     volatile uint32_t last_gnss_ms;
+    volatile uint32_t last_extd_ms;
 
     // GNSS state
     bool     gnss_fix;
-    uint8_t  jam_status;
-    uint8_t  spoof_status;
     uint32_t last_jam_warn_ms;
 
-    // one-time init flags
+    // init / gating flags
     bool ext_sensor_query_done;
-    bool crc_fail_pending;
     bool nav1_valid;          // gates the GPS message construction
     bool has_variance_data;   // gates get_variances() reporting
+    uint32_t prev_nav_ms;     // last NAV timestamp seen by maybe_query_ext_sensors
 
     // throttled-warning state for hw_status flags. Rising edges fire
     // immediately; persistent faults re-warn every HEALTH_REPEAT_INTERVAL_MS.
@@ -312,10 +313,28 @@ private:
     uint32_t last_crc_warn_ms;
     uint32_t last_garbage_warn_ms;
 
+    // Per-message log decimation timestamps (high-rate messages only).
+    uint32_t last_aern_log_ms;
+    uint32_t last_aers_log_ms;
+
     // Per-group staleness deadlines for healthy().
     static constexpr uint32_t SENS_TIMEOUT_MS = 40;
     static constexpr uint32_t NAV_TIMEOUT_MS  = 200;
     static constexpr uint32_t GNSS_TIMEOUT_MS = 500;
+
+    // EXTD_GNSS validity window. Past this, accuracy/velocity from EXTD
+    // are treated as stale in format_and_push_gps().
+    static constexpr uint32_t EXTD_VALIDITY_MS = 500;
+
+    // Inflated accuracy presented to the EKF when EXTD is stale.
+    static constexpr float STALE_POS_ACC_M   = 100.0f;
+    static constexpr float STALE_VEL_ACC_MPS = 10.0f;
+
+    // NAV gap beyond which the PLX is assumed to have reset (re-query
+    // external sensors on resumption).
+    static constexpr uint32_t DEVICE_RESET_GAP_MS = 2000;
+
+    static constexpr uint32_t LOG_THROTTLE_MS = 10;
 
     static constexpr uint32_t HEALTH_REPEAT_INTERVAL_MS = 10000;
 
@@ -330,6 +349,7 @@ private:
     // Unix epoch -> GPS epoch (Jan 6 1980) offset
     static constexpr uint32_t GPS_UNIX_OFFSET_S = 315964800;
     static constexpr uint32_t SECONDS_PER_WEEK  = 604800;
+    static constexpr uint32_t GPS_LEAP_SECONDS  = 18;
 };
 
 #endif  // AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
