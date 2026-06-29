@@ -474,6 +474,15 @@ extern const AP_HAL::HAL& hal;
 #define AP_BATTMON_CELL_COUNT 6
 #endif
 
+// Current Calibration Coulomb Counter Gain and Capacity Gain
+// Boards with different resistor values should override in hwdef.
+#ifndef HAL_BATTMON_BQ76952_CC_GAIN
+#define HAL_BATTMON_BQ76952_CC_GAIN 0x412A38FF
+#endif
+#ifndef HAL_BATTMON_BQ76952_CAPACITY_GAIN
+#define HAL_BATTMON_BQ76952_CAPACITY_GAIN 0x4A41ACF0
+#endif
+
 #define DEBUG_PRINT 1
 
 #if DEBUG_PRINT
@@ -611,6 +620,14 @@ const AP_BattMonitor_TIBQ76952::ConfigurationSetting AP_BattMonitor_TIBQ76952::c
     // Set up SCDL Latch Limit to 1 to set SCD recovery only with load removal 0x9295 = 0x01
     // If this is not set, then SCD will recover based on time (SCD Recovery Time parameter).
     {TIBQ769x2_SCDLLatchLimit, 0x01, 1},
+
+    // Current Calibration Coulomb Counter Gain
+    // Converts ADC value to current
+    // CC Gain = 10 × VREF2 / (5 × 32768 × Rsense in mΩ)
+    {TIBQ769x2_CCGain, HAL_BATTMON_BQ76952_CC_GAIN, 4},
+
+    // Capacity Gain
+    {TIBQ769x2_CapacityGain, HAL_BATTMON_BQ76952_CAPACITY_GAIN, 4},
 };
 
 // initialise the TIBQ76952 battery monitor
