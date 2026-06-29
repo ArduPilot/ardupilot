@@ -424,11 +424,6 @@ extern const AP_HAL::HAL& hal;
 #define TIBQ769x2_SWAP_TO_SPI 0x7C35
 #define TIBQ769x2_SWAP_TO_HDQ 0x7C40
 
-// bit masks
-#define MfgStatusInit_FET_EN 0x08   //bit 4
-#define FET_STATUS_DSG_FET_EN 0x04  //bit 3
-#define FET_STATUS_CHG_FET_EN 0x01  //bit 1
-
 // Alarm Status bits
 #define ALARM_STATUS_WAKE       (1 << 0)    // device is wakened from sleep mode
 #define ALARM_STATUS_ADSCAN     (1 << 1)    // voltage ADC scan complete
@@ -481,6 +476,11 @@ extern const AP_HAL::HAL& hal;
 #endif
 #ifndef HAL_BATTMON_BQ76952_CAPACITY_GAIN
 #define HAL_BATTMON_BQ76952_CAPACITY_GAIN 0x4A41ACF0
+#endif
+
+// Discharge voltage detection threshold in volts
+#ifndef HAL_BATTMON_BQ76952_DISCHARGE_THRESHOLD_V
+#define HAL_BATTMON_BQ76952_DISCHARGE_THRESHOLD_V (AP_BATTMON_CELL_COUNT * 2)
 #endif
 
 #define DEBUG_PRINT 1
@@ -838,19 +838,28 @@ void AP_BattMonitor_TIBQ76952::read_charging_state()
 {
     AP_BattMonitor::ChargingState new_state = _state.charging_state;
 
-    const uint16_t mfg_status = direct_command_read_2bytes(TIBQ769x2_MfgStatusInit);
-    const uint8_t fet_status = direct_command_read_1byte(TIBQ769x2_FETStatus);
-
-    if (mfg_status & MfgStatusInit_FET_EN) {
+    const uint16_t alarm_raw_status = direct_command_read_2bytes(TIBQ769x2_AlarmRawStatus);
+    if (!(alarm_raw_status & ALARM_STATUS_WAKE)) {
         new_state = AP_BattMonitor::ChargingState::IDLE;
-        if (fet_status & FET_STATUS_CHG_FET_EN && accumulate.current > 0) {
-            // Charging if CHG_FET bit is set
+    } else {
+        // Charging if current is positive
+        if ((int16_t)direct_command_read_2bytes(TIBQ769x2_CC2Current) > 0) {
             new_state = AP_BattMonitor::ChargingState::CHARGING;
+        } else {
+            // Discharging if pack voltage above threshold
+            // Note: after charging stops this will momentarily report discharging but this is unavoidable
+            const uint16_t pack_voltage = direct_command_read_2bytes(TIBQ769x2_PACKPinVoltage);
+            if (pack_voltage > (HAL_BATTMON_BQ76952_DISCHARGE_THRESHOLD_V * 100)) {
+                new_state = AP_BattMonitor::ChargingState::DISCHARGING;
+            } else {
+                new_state = AP_BattMonitor::ChargingState::IDLE;
+            }
         }
-        if (fet_status & FET_STATUS_DSG_FET_EN) {
-            // Discharging if DSG_FET bit is set
-            new_state = AP_BattMonitor::ChargingState::DISCHARGING;
-        }
+    }
+
+    // debug output of charging state
+    if (new_state != _state.charging_state) {
+        Debug("BQ76952: Charging state changed to %d (1:idle, 2:charging, 3:discharging)", (int)new_state);
     }
 
     _state.charging_state = new_state;
