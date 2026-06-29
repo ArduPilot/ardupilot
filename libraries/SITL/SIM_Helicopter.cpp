@@ -111,6 +111,12 @@ void Helicopter::update(const struct sitl_input &input)
     float lateral_x_thrust = 0;
     float lateral_y_thrust = 0;
 
+    if (gas_heli) {
+        power_consumption_watts = 1.0f;
+    } else {
+        power_consumption_watts = 1000.0f;
+    }
+
     update_battery();
 
     if (_time_delay == 0) {
@@ -549,6 +555,10 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
             motor_status = 1; // idle
         }
 
+        if (battery_is_empty()) {
+            motor_status = 1; // battery empty and motor shuts down prematurely
+        }
+
         float runup_time = 8.0f;
         if (motor_status == 2) {
             runup_time = 2.0f;
@@ -642,9 +652,11 @@ void Helicopter::update_battery()
     battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
     battery_voltage = battery.get_voltage();
 
+    // initially set power consumption for just running the servos and electronics.
     float power_watt = 1.0f;
     if (motor_interlock) {
-        power_watt = 1000.0;
+        // set the power consumption for the rotors turning at operational speed.
+        power_watt = power_consumption_watts;
     }
     // calculate current drawn from battery based on power and voltage.  Use a minimum voltage of 0.1 to avoid divide by zero.
     battery_current = power_watt / MAX(battery_voltage, 0.1);
