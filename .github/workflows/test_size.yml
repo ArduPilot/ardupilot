@@ -411,5 +411,6 @@ jobs:
             gh api "repos/${{ github.repository }}/issues/comments/${EXISTING}" \
               -X PATCH --field body=@/tmp/full-comment.md
           else
-            gh pr comment "${PR}" --body-file /tmp/full-comment.md
+            gh api "repos/${{ github.repository }}/issues/${PR}/comments" \
+              -X POST --field body=@/tmp/full-comment.md
           fi
