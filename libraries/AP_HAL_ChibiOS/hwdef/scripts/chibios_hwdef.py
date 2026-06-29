@@ -8,6 +8,7 @@ AP_FLAKE8_CLEAN
 
 import argparse
 import fnmatch
+import importlib
 import os
 import re
 import shlex
@@ -2660,6 +2661,35 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.add_iomcu_firmware_defaults(f)
         self.add_normal_firmware_defaults(f)
 
+    def get_dmamux_requests(self):
+        '''return the set of DMAMUX request names ChibiOS defines for this
+        MCU (e.g. "TIM4_CH3", "TIM4_UP"), or None if the MCU family has no
+        DMAMUX (e.g. F4/F7, where an unsupported channel is already caught
+        by the resolver's DMA map lookup)'''
+        if not hasattr(self, 'dmamux_requests'):
+            self.dmamux_requests = None
+            # the hwdef "MCU" series field is not always the ChibiOS port
+            # directory (e.g. "STM32H7" vs "STM32H7xx"), so locate the header
+            # via the MCU module's ChibiOS platform path instead
+            try:
+                platform_mk = importlib.import_module(self.mcu_type).build['CHIBIOS_PLATFORM_MK']
+            except (ImportError, AttributeError, KeyError):
+                platform_mk = None
+            if platform_mk is not None:
+                path = os.path.join(
+                    os.path.dirname(os.path.realpath(__file__)),
+                    '../../../../modules/ChibiOS',
+                    os.path.dirname(platform_mk), 'stm32_dmamux.h')
+                if os.path.exists(path):
+                    reqs = set()
+                    with open(path) as fh:
+                        for line in fh:
+                            m = re.match(r'\s*#define\s+STM32_DMAMUX\d+_(\S+)\s+\d+', line)
+                            if m:
+                                reqs.add(m.group(1))
+                    self.dmamux_requests = reqs
+        return self.dmamux_requests
+
     def build_peripheral_list(self):
         '''build a list of peripherals for DMA resolver to work on'''
         peripherals = []
@@ -2720,6 +2750,12 @@ Please run: Tools/scripts/build_bootloaders.py %s
                     ch_label = type
                     (_, _, compl) = self.parse_timer(ch_label)
                     if ch_label not in peripherals and p.has_extra('BIDIR') and not compl:
+                        dmamux = self.get_dmamux_requests()
+                        if dmamux is not None and ch_label not in dmamux:
+                            self.error(
+                                "%s is marked BIDIR but %s has no DMAMUX "
+                                "request for it; bidirectional dshot is not "
+                                "possible on this channel" % (ch_label, self.mcu_series))
                         peripherals.append(ch_label)
                     if label not in self.shared_up and p.has_extra('UP_SHARED') and not compl:
                         self.shared_up.append(label)
