@@ -172,7 +172,7 @@ jobs:
 
       - uses: ./.github/actions/setup-ccache
         with:
-          key-suffix: ${{ matrix.toolchain }}
+          key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
       - name: Build ${{ env.BASE_REF }} ${{matrix.config}} ${{ matrix.toolchain }}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
@@ -370,7 +370,7 @@ jobs:
 
       - uses: ./.github/actions/save-ccache
         with:
-          key-suffix: ${{ matrix.toolchain }}
+          key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
 
   global-summary:
     needs: build
