@@ -72,6 +72,20 @@ union nav_filter_status {
 
 static_assert(sizeof(uint32_t) == sizeof(nav_filter_status), "nav_filter_status must be uint32_t");
 
+// enumeration corresponding to the bits within the filter-faults
+// bitmask returned by the EKF getFilterFaults() methods.  NavEKF2 and
+// NavEKF3 both populate this mask with identical meanings.
+enum class NavFilterFaultBit {
+    BAD_QUATERNION   =   1, // 0 - quaternion attitude estimate is NaN
+    BAD_VELOCITY     =   2, // 1 - velocity estimate is NaN
+    BAD_XMAG         =   4, // 2 - X magnetometer measurement is bad
+    BAD_YMAG         =   8, // 3 - Y magnetometer measurement is bad
+    BAD_ZMAG         =  16, // 4 - Z magnetometer measurement is bad
+    BAD_AIRSPEED     =  32, // 5 - airspeed measurement is bad
+    BAD_SIDESLIP     =  64, // 6 - synthetic sideslip measurement is bad
+    NOT_INITIALISED  = 128, // 7 - filter states have not been initialised
+};
+
 union nav_gps_status {
     struct {
         bool bad_sAcc           : 1; // 0 - true if reported gps speed accuracy is insufficient to start using GPS
