@@ -495,16 +495,19 @@ extern const AP_HAL::HAL& hal;
 // configuration settings to write during setup
 const AP_BattMonitor_TIBQ76952::ConfigurationSetting AP_BattMonitor_TIBQ76952::config_settings[] {
 
-    // 'Power Config' - 0x9234 = 0x2D80
-    // Setting the DSLP_LDO bit allows the LDOs to remain active when the device goes into Deep Sleep mode
-    // Set wake speed bits to 00 for best performance
-    {TIBQ769x2_PowerConfig, 0x2D80, 2},
+    // 'Power Config' - 0x9234 = 0x2980, b00101001 10000000
+    // bit 0~1: WKS_SPD, wake speeds set to zero for lower noise
+    // bit 7: OTSD, over-temperature shutdown enabled (0 = disable shutdown, 1 = enable shutdown)
+    // bit 8: SLEEP, default value of sleep mode: 0: disable sleep, 1: enable sleep
+    // bit 11: DPSLP_PD, determines if REG1, REG2 are disabled in deep sleep mode (0: disable REG1/2, 1:leave REG2, REG2 in current state)
+    // bit 13: DPSLP_OT, enable transition from deep sleep to shutdown based on over-temp detection (0: in deepsleep, on-chip over temp is disabled, 1: On-chip over-temp enabled in deep sleep allowing shutdown)
+    {TIBQ769x2_PowerConfig, 0x2980, 2},
 
     // 'REG0 Config' - set REG0_EN bit to enable pre-regulator
     {TIBQ769x2_REG0Config, 0x01, 1},
 
-    // 'REG12 Config' - Enable REG1 with 3.3V output (0x0D for 3.3V, 0x0F for 5V)
-    {TIBQ769x2_REG12Config, 0x0D, 1},
+    // 'REG12 Config' - Enable REG1 with 5V output, REG2 with 3.3V (0x0D for 3.3V, 0x0F for 5V)
+    {TIBQ769x2_REG12Config, 0xDF, 1},
 
     // Set DFETOFF pin to control BOTH CHG and DSG FET - 0x92FB = 0x42 (set to 0x00 to disable)
     {TIBQ769x2_DFETOFFPinConfig, 0x42, 1},
@@ -667,9 +670,6 @@ bool AP_BattMonitor_TIBQ76952::configure()
     const uint32_t hw_version = sub_command_read_4bytes(TIBQ769x2_HW_VERSION);
     Debug("BQ76952 detected, fw: 0x%08lX, hw: 0x%08lX", (unsigned long)fw_version, (unsigned long)hw_version);
 #endif
-
-    // enable REG1 3.3v to provide power to the MCU
-    set_register(TIBQ769x2_REG12Config, 0x01, 1);
 
     // wake up device
     sub_command(TIBQ769x2_EXIT_DEEPSLEEP);
