@@ -6,13 +6,15 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/I2CDevice.h>
+#include <AP_Param/AP_Param.h>
 #include "AP_BattMonitor_Backend.h"
 
 class AP_BattMonitor_TIBQ76952 : public AP_BattMonitor_Backend
 {
 public:
-    // inherit constructor
-    using AP_BattMonitor_Backend::AP_BattMonitor_Backend;
+    AP_BattMonitor_TIBQ76952(AP_BattMonitor &mon,
+                             AP_BattMonitor::BattMonitor_State &mon_state,
+                             AP_BattMonitor_Params &params);
 
     // initialise
     void init() override;
@@ -29,6 +31,8 @@ public:
     // set desired powered state (enabled/disabled) by enabling/disabling discharge FET
     void set_powered_state(bool power_on) override;
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     // Subcommand operation types
@@ -43,6 +47,10 @@ protected:
     // configure device
     // this includes delays so it should only be called during startup configuration
     bool configure();
+
+    // compare the current configuration against the desired settings
+    // returns true if the current device configuration matches, false otherwise
+    bool check_configuration_ok() const;
 
     // read state from BMS device
     void read_voltage_current_temperature();
@@ -77,6 +85,17 @@ protected:
     // this includes delays so it should only be called during startup configuration
     uint32_t sub_command_read_4bytes(uint16_t reg) const;
 
+    // enum for CFG_UPDATE parameter
+    enum class ConfigUpdateType : int8_t {
+        DISABLED = 0,
+        WRITE_ONCE = 1,
+        CHECK_AND_UPDATE = 2
+    };
+
+    // parameters
+    AP_Enum<ConfigUpdateType> cfg_update;
+
+    // internal variables
     AP_HAL::I2CDevice *dev; // I2C device
     bool configured;        // true once device has been configured
 

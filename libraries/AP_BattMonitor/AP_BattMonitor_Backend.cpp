@@ -43,6 +43,7 @@
     45-48:  AP_BattMonitor_FuelLevel_Analog.cpp
     50-51:  AP_BattMonitor_Synthetic_Current.cpp
     56-61:  AP_BattMonitor_AD7091R5.cpp
+    62:     AP_BattMonitor_TIBQ76952.cpp
 
   Usage does not need to be contiguous. The maximum possible index is 63.
 */
