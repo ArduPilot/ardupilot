@@ -562,10 +562,12 @@ const AP_BattMonitor_TIBQ76952::ConfigurationSetting AP_BattMonitor_TIBQ76952::c
 #if defined(DISABLE_PROTECTION_A)
     {TIBQ769x2_EnabledProtectionsA, 0x00, 1},
 #else
-    // Enable protections in 'Enabled Protections A' 0x9261 = 0xBC
-    // Enables SCD (short-circuit), OCD1 (over-current in discharge), OCC (over-current in charge),
-    // COV (over-voltage), CUV (under-voltage)
-    {TIBQ769x2_EnabledProtectionsA, 0xBC, 1},
+    // Enable protections in 'Enabled Protections A' 0x9261 = 0xB8, b10111000
+    // bit 3: cell overvoltage safety alert is present
+    // bit 4: overcurrent in charge safety alert is present
+    // bit 5: overcurrent in discharge 1 safety alert is present
+    // bit 7: short circuit in discharge safety alert is present
+    {TIBQ769x2_EnabledProtectionsA, 0xB8, 1},
 #endif
 
 #if defined(DISABLE_PROTECTION_B)
@@ -576,6 +578,9 @@ const AP_BattMonitor_TIBQ76952::ConfigurationSetting AP_BattMonitor_TIBQ76952::c
     // OTC (over-temperature in charge), UTINT (internal under-temperature), UTD (under-temperature in discharge), UTC (under-temperature in charge)
     {TIBQ769x2_EnabledProtectionsB, 0xF7, 1},
 #endif
+
+    // Disable protections C
+    {TIBQ769x2_EnabledProtectionsC, 0x00, 1},
 
     // 'Default Alarm Mask' - 0x926D Enables the FullScan and ADScan bits, default value = 0xF800
     {TIBQ769x2_DefaultAlarmMask, 0xF882, 2},
