@@ -6,7 +6,6 @@
 #include <AC_Avoidance/AC_Avoid.h>
 #include "AC_Sprayer/AC_Sprayer.h"
 #include <AP_AIS/AP_AIS.h>
-#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Follow/AP_Follow.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "AP_Rally.h"
@@ -291,10 +290,6 @@ public:
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     // advanced failsafe library
     AP_AdvancedFailsafe_Rover afs;
-#endif
-
-#if AP_BEACON_ENABLED
-    AP_Beacon beacon;
 #endif
 
     // wheel encoders
