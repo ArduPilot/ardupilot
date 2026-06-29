@@ -676,7 +676,7 @@ void AP_BattMonitor_TIBQ76952::set_powered_state(bool power_on)
     if (!configured) {
         return;
     }
-    sub_command(power_on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_ALL_FETS_OFF);
+    sub_command(power_on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_DSG_PDSG_OFF);
 }
 
 // periodic timer callback
@@ -748,8 +748,13 @@ bool AP_BattMonitor_TIBQ76952::configure()
         }
     }
 
-    sub_command(TIBQ769x2_ALL_FETS_OFF);
+    // enable charging FET only
+    sub_command(TIBQ769x2_ALL_FETS_ON);
+    hal.scheduler->delay(1);
+    sub_command(TIBQ769x2_DSG_PDSG_OFF);
+    hal.scheduler->delay(1);
     sub_command(TIBQ769x2_FET_ENABLE);
+    hal.scheduler->delay(1);
 
     // mark configuration as complete to prevent repeated attempts
     configured = true;
