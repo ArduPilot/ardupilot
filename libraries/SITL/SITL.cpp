@@ -61,9 +61,9 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #if APM_BUILD_TYPE(APM_BUILD_Heli)
-    #define SIM_DEFAULT_BATT_VOLTAGE 50.4f
+#define SIM_DEFAULT_BATT_VOLTAGE 50.4f
 #else
-    #define SIM_DEFAULT_BATT_VOLTAGE 12.6f
+#define SIM_DEFAULT_BATT_VOLTAGE 12.6f
 #endif
 
 namespace SITL {
