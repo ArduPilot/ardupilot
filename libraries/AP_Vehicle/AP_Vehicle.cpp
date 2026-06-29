@@ -292,6 +292,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(rpm_sensor, "RPM", 32, AP_Vehicle, AP_RPM),
 #endif
 
+#if AP_BEACON_ENABLED
+    // @Group: BCN
+    // @Path: ../AP_Beacon/AP_Beacon.cpp
+    AP_SUBGROUPINFO(beacon, "BCN", 33, AP_Vehicle, AP_Beacon),
+#endif  // AP_BEACON_ENABLED
+
     AP_GROUPEND
 };
 
@@ -427,6 +433,11 @@ void AP_Vehicle::setup()
 #if AP_GRIPPER_ENABLED
     AP::gripper().init();
 #endif
+
+    // init beacons used for non-gps position estimation
+#if AP_BEACON_ENABLED
+    beacon.init();
+#endif  // AP_BEACON_ENABLED
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
@@ -621,6 +632,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_GYROFFT_ENABLED
     FAST_TASK_CLASS(AP_GyroFFT,    &vehicle.gyro_fft,       sample_gyros),
 #endif
+#if AP_BEACON_ENABLED
+    SCHED_TASK_CLASS(AP_Beacon,    &vehicle.beacon,         update,                  400, 200, 24),
+#endif  // AP_BEACON_ENABLED
 #if AP_AIRSPEED_ENABLED
     SCHED_TASK_CLASS(AP_Airspeed,  &vehicle.airspeed,       update,                   10, 100, 41),    // NOTE: the priority number here should be right before Plane's calc_airspeed_errors
 #endif
