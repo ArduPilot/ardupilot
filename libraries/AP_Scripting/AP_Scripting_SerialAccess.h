@@ -19,6 +19,9 @@ public:
     void set_stop_bits(uint8_t stop_bits);
     void set_unbuffered_writes(bool on);
 
+    bool set_options(uint16_t options);
+    uint16_t get_options(void);
+
     size_t write(uint8_t c);
     size_t write(const uint8_t *buffer, size_t size);
 
