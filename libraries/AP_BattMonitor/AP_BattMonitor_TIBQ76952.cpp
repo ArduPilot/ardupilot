@@ -928,7 +928,7 @@ void AP_BattMonitor_TIBQ76952::set_register(uint16_t reg_addr, uint32_t reg_data
     hal.scheduler->delay(2);
 
     // write checksum and length
-    const uint8_t tx_buffer[2] {crc_sum_of_bytes(tx_reg_data, 3), uint8_t(len + 4)};
+    const uint8_t tx_buffer[2] {calculate_checksum(tx_reg_data, len + 2), uint8_t(len + 4)};
     write_register(0x60, tx_buffer, 2);
     hal.scheduler->delay(2);
 }
@@ -971,7 +971,7 @@ bool AP_BattMonitor_TIBQ76952::sub_command(uint16_t command, uint16_t data, Comm
             return false;
         }
         hal.scheduler->delay(1);
-        const uint8_t tx_buffer[2] {crc_sum_of_bytes(tx_reg, 3), 0x05}; // 0x05 is combined length of registers address and data
+        const uint8_t tx_buffer[2] {calculate_checksum(tx_reg, 3), 0x05}; // 0x05 is combined length of registers address and data
         if (!write_register(0x60, tx_buffer, 2)) {
             return false;
         }
@@ -991,6 +991,12 @@ uint32_t AP_BattMonitor_TIBQ76952::sub_command_read_4bytes(uint16_t reg) const
         return UINT32_VALUE(rx_data[3], rx_data[2], rx_data[1], rx_data[0]);
     }
     return 0;
+}
+
+// calculate checksum for given data buffer and length
+uint8_t AP_BattMonitor_TIBQ76952::calculate_checksum(const uint8_t* data, uint8_t len) const
+{
+    return ~crc_sum_of_bytes(data, len);
 }
 
 #endif // AP_BATTERY_TIBQ76952_ENABLED

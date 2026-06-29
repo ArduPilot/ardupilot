@@ -85,6 +85,9 @@ protected:
     // this includes delays so it should only be called during startup configuration
     uint32_t sub_command_read_4bytes(uint16_t reg) const;
 
+    // calculate checksum for given data buffer and length
+    uint8_t calculate_checksum(const uint8_t* data, uint8_t len) const;
+
     // enum for CFG_UPDATE parameter
     enum class ConfigUpdateType : int8_t {
         DISABLED = 0,
