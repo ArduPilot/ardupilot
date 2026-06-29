@@ -394,7 +394,22 @@ jobs:
           path: size-diffs/
 
       - name: Generate global size summary
+        # shell: bash brings -o pipefail; without it tee swallows a failure of
+        # the generator and the step passes with an empty summary
+        shell: bash
         run: |
           mkdir -p size-diffs/
           python3 Tools/scripts/build_tests/global_size_summary.py \
-            --input-dir size-diffs/ >> $GITHUB_STEP_SUMMARY
+            --input-dir size-diffs/ | tee size-summary.md >> $GITHUB_STEP_SUMMARY
+
+      # This job builds and runs code from the pull request, so its token is
+      # read-only and it cannot comment.  Hand the table to test_size_comment.yml,
+      # which runs on workflow_run with the permission to post it.
+      - name: Upload size summary
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: size-summary
+          path: size-summary.md
+          if-no-files-found: ignore
+          retention-days: 2
