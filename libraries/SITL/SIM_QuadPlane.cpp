@@ -132,6 +132,7 @@ void QuadPlane::update(const struct sitl_input &input)
 
     motor_mask |= ((1U<<frame->num_motors)-1U) << frame->motor_offset;
     frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, rpm, false);
+    update_battery(input);
 
     // rotate frames for copter tailsitters
     if (copter_tailsitter) {
@@ -139,24 +140,6 @@ void QuadPlane::update(const struct sitl_input &input)
         quad_accel_body.rotate(ROTATION_PITCH_270);
     }
 
-    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
-    battery_voltage = battery.get_voltage();
-    battery_current = frame->get_current_amp();
-    battery_temperature_degC = battery.get_temperature_degC();
-
-    const uint64_t now_us = AP_HAL::micros64();
-    battery.consume_energy(battery_current, now_us);
-
-    float throttle;
-    if (reverse_thrust) {
-        throttle = filtered_servo_angle(input, 2);
-    } else {
-        throttle = filtered_servo_range(input, 2);
-    }
-    // assume 20A at full fwd throttle
-    throttle = fabsf(throttle);
-    battery_current += 20 * throttle;
-    
     rot_accel += quad_rot_accel;
     accel_body += quad_accel_body;
 
@@ -169,4 +152,25 @@ void QuadPlane::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+}
+
+void QuadPlane::update_battery(const struct sitl_input &input)
+{
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery_voltage = battery.get_voltage();
+    battery_temperature_degC = battery.get_temperature_degC();
+
+    battery_current = frame->get_current_amp();
+
+    float throttle;
+    if (reverse_thrust) {
+        throttle = filtered_servo_angle(input, 2);
+    } else {
+        throttle = filtered_servo_range(input, 2);
+    }
+    // assume 20A at full fwd throttle
+    throttle = fabsf(throttle);
+    battery_current += 20 * throttle;
+
+    battery.consume_energy(battery_current, AP_HAL::micros64());
 }
