@@ -13,6 +13,10 @@
 #define AP_SIM_AIS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif  // AP_SIM_AIS_ENABLED
 
+#ifndef AP_SIM_NOOPLOOP_ENABLED
+#define AP_SIM_NOOPLOOP_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif  // AP_SIM_NOOPLOOP_ENABLED
+
 /*
  * Simulated proximity sensor configuration:
  */
