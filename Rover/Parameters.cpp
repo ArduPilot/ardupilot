@@ -1,5 +1,6 @@
 #include "Rover.h"
 
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Gripper/AP_Gripper.h>
 
 /*
@@ -364,11 +365,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
 #endif
 
-#if AP_BEACON_ENABLED
-    // @Group: BCN
-    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
-    AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
-#endif
+    // 6 was AP_Beacon
 
     // 7 was used by AP_VisualOdometry
 
@@ -672,9 +669,6 @@ ParametersG2::ParametersG2(void)
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     afs(),
 #endif
-#if AP_BEACON_ENABLED
-    beacon(),
-#endif
     wheel_rate_control(wheel_encoder),
     motors(wheel_rate_control),
     attitude_control(),
@@ -844,6 +838,10 @@ void Rover::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
         { &gripper, gripper.var_info, 39 },
 #endif
+#if AP_BEACON_ENABLED
+    // PARAMETER_CONVERSION - Added: Jun-2026 for Rover-4.8
+        { &beacon, beacon.var_info, 6 },
+#endif  // AP_BEACON_ENABLED
     };
 
     AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
