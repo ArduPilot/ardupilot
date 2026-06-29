@@ -474,6 +474,12 @@ void AP_Airspeed::allocate()
         case TYPE_AUAV_30IN:
             sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 30);
             break;
+        case TYPE_AUAV_60IN:
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 60);
+            break;
+        case TYPE_AUAV_100IN:
+            sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 100);
+            break;
 #endif  // AP_AIRSPEED_AUAV_ENABLED
         }
         if (sensor[i] && !sensor[i]->init()) {
