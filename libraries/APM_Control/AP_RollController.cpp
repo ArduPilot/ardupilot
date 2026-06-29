@@ -181,13 +181,13 @@ AP_RollController::AP_RollController(const AP_FixedWing &parms)
 }
 
 // Return the measured roll angle in degrees
-float AP_RollController::get_measured_angle() const
+float AP_RollController::get_measured_angle_deg() const
 {
     return AP::ahrs().get_roll_deg();
 }
 
 // Return the measured roll rate in radians per second
-float AP_RollController::get_measured_rate() const
+float AP_RollController::get_measured_rate_rads() const
 {
     return AP::ahrs().get_gyro().x;
 }
@@ -199,15 +199,15 @@ bool AP_RollController::is_underspeed() const
 }
 
 // Return positive rate limit in deg per second, zero if disabled
-float AP_RollController::get_positive_rate_limit() const
+float AP_RollController::get_positive_rate_limit_degs() const
 {
     return MAX(gains.rmax_pos.get(), 0.0);
 }
 
 // Return negative rate limit in deg per second (as a positive number) zero if disabled
-float AP_RollController::get_negative_rate_limit() const
+float AP_RollController::get_negative_rate_limit_degs() const
 {
-    return get_positive_rate_limit();
+    return get_positive_rate_limit_degs();
 }
 
 // Return true if rate limits should be applied
@@ -220,7 +220,7 @@ bool AP_RollController::should_apply_rate_limits() const
  Function returns an equivalent aileron deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
 */
-float AP_RollController::run_axis_rate_control(float desired_rate, float scaler, bool disable_integrator, bool ground_mode)
+float AP_RollController::run_axis_rate_control(float desired_rate_degs, float scaler, bool disable_integrator, bool ground_mode)
 {
     /*
       prevent indecision in the roll controller when target roll is
@@ -231,19 +231,19 @@ float AP_RollController::run_axis_rate_control(float desired_rate, float scaler,
     const float abs_angle_err_deg = fabsf(angle_err_deg);
     if (abs_angle_err_deg > indecision_threshold_deg &&
         angle_err_deg <= 180) {
-        if (desired_rate * last_desired_rate < 0) {
-            desired_rate = -desired_rate;
+        if (desired_rate_degs * last_desired_rate < 0) {
+            desired_rate_degs = -desired_rate_degs;
             // increase the desired rate in proportion to the extra
             // angle we are requesting
             const float new_angle_err_deg = abs_angle_err_deg + (180 - abs_angle_err_deg)*2;
-            desired_rate *= new_angle_err_deg / abs_angle_err_deg;
+            desired_rate_degs *= new_angle_err_deg / abs_angle_err_deg;
         }
     }
 
     // in_recovery flag is only valid for single loop, clear it
     in_recovery = false;
 
-    return run_rate_control(desired_rate, scaler, disable_integrator, ground_mode);
+    return run_rate_control(desired_rate_degs, scaler, disable_integrator, ground_mode);
 }
 
 /*
