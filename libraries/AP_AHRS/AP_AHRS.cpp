@@ -623,7 +623,6 @@ void AP_AHRS::update(bool skip_ins_update)
         }
     }
     if (attitude_was_reset) {
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "AHRS attitude reset");
         state.attitude_reset_count++;
     }
 
