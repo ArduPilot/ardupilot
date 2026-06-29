@@ -197,13 +197,13 @@ AP_PitchController::AP_PitchController(const AP_FixedWing &parms)
 }
 
 // Return the measured pitch angle in degrees
-float AP_PitchController::get_measured_angle() const
+float AP_PitchController::get_measured_angle_deg() const
 {
     return AP::ahrs().get_pitch_deg();
 }
 
 // Return the measured pitch rate in radians per second
-float AP_PitchController::get_measured_rate() const
+float AP_PitchController::get_measured_rate_rads() const
 {
     return AP::ahrs().get_gyro().y;
 }
@@ -221,13 +221,13 @@ bool AP_PitchController::is_inverted() const
 }
 
 // Return positive rate limit in deg per second, zero if disabled
-float AP_PitchController::get_positive_rate_limit() const
+float AP_PitchController::get_positive_rate_limit_degs() const
 {
     return MAX(gains.rmax_pos.get(), 0.0);
 }
 
 // Return negative rate limit in deg per second (as a positive number) zero if disabled
-float AP_PitchController::get_negative_rate_limit() const
+float AP_PitchController::get_negative_rate_limit_degs() const
 {
     return MAX(gains.rmax_neg.get(), 0.0);
 }
@@ -239,7 +239,7 @@ bool AP_PitchController::should_apply_rate_limits() const
 }
 
 // get the rate offset in degrees/second needed for pitch in body frame to maintain height in a coordinated turn.
-float AP_PitchController::get_rate_target_offset() const
+float AP_PitchController::get_rate_target_offset_degs() const
 {
     const AP_AHRS &_ahrs = AP::ahrs();
 
@@ -274,11 +274,11 @@ float AP_PitchController::get_rate_target_offset() const
 
 // Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
 // A positive demand is up
-float AP_PitchController::run_axis_rate_control(float desired_rate, float scaler, bool disable_integrator, bool ground_mode)
+float AP_PitchController::run_axis_rate_control(float desired_rate_degs, float scaler, bool disable_integrator, bool ground_mode)
 {
     // Invert desired if vehicle is inverted.
     if (is_inverted()) {
-        desired_rate *= -1.0;
+        desired_rate_degs *= -1.0;
     }
 
     /*
@@ -298,10 +298,10 @@ float AP_PitchController::run_axis_rate_control(float desired_rate, float scaler
     const float roll_limit_margin = MIN(aparm.roll_limit*100 + 500.0, 8500.0);
     if (roll_wrapped > roll_limit_margin && labs(_ahrs.pitch_sensor) < 7000) {
         float roll_prop = (roll_wrapped - roll_limit_margin) / (float)(9000 - roll_limit_margin);
-        desired_rate *= (1 - roll_prop);
+        desired_rate_degs *= (1 - roll_prop);
     }
 
-    return run_rate_control(desired_rate, scaler, disable_integrator, ground_mode);
+    return run_rate_control(desired_rate_degs, scaler, disable_integrator, ground_mode);
 }
 
 /*

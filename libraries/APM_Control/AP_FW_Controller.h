@@ -16,7 +16,7 @@ public:
     float run_angle_control(int32_t desired_angle_cd, float scaler, bool disable_integrator, bool ground_mode);
 
     // Run pure rate control
-    float run_rate_control(float desired_rate, float scaler);
+    float run_rate_control(float desired_rate_degs, float scaler);
 
     // setup a one loop FF scale multiplier. This replaces any previous scale applied
     // so should only be used when only one source of scaling is needed
@@ -51,7 +51,7 @@ public:
     AP_Float &tau(void) { return gains.tau; }
 
     // Get input shaping angle, rate, and accel for logging
-    void get_input_shaping(float &angle, float &rate, float &accel) const;
+    void get_input_shaping(float &angle_deg, float &rate_degs, float &accel_degss) const;
 
     // Get the angle error in degrees
     float get_angle_error_deg() const { return angle_err_deg; }
@@ -74,9 +74,9 @@ protected:
 
     AP_PIDInfo _pid_info;
 
-    virtual float run_axis_rate_control(float desired_rate, float scaler, bool disable_integrator, bool ground_mode) = 0;
+    virtual float run_axis_rate_control(float desired_rate_degs, float scaler, bool disable_integrator, bool ground_mode) = 0;
 
-    float run_rate_control(float desired_rate, float scaler, bool disable_integrator, bool ground_mode);
+    float run_rate_control(float desired_rate_degs, float scaler, bool disable_integrator, bool ground_mode);
 
     // Return true if the airspeed should be considered as under speed
     virtual bool is_underspeed() const = 0;
@@ -85,10 +85,10 @@ protected:
     float get_airspeed() const;
 
     // Return the measured angle in degrees
-    virtual float get_measured_angle() const = 0;
+    virtual float get_measured_angle_deg() const = 0;
 
     // Return the measured rate in radians per second
-    virtual float get_measured_rate() const = 0;
+    virtual float get_measured_rate_rads() const = 0;
 
     // Return true if input shaping should be used
     bool should_apply_input_shaping() const;
@@ -97,24 +97,24 @@ protected:
     virtual bool should_apply_rate_limits() const = 0;
 
     // Apply positive and negative rate limits to passed in value
-    float rate_limit(float rate) const;
+    float rate_limit_degs(float rate_degs) const;
 
     // Return rate target offset in deg per second, this is used in angle control
-    virtual float get_rate_target_offset() const { return 0.0; }
+    virtual float get_rate_target_offset_degs() const { return 0.0; }
 
     // Return positive rate limit in deg per second, zero if disabled
-    virtual float get_positive_rate_limit() const = 0;
+    virtual float get_positive_rate_limit_degs() const = 0;
 
     // Return negative rate limit in deg per second, zero if disabled
-    virtual float get_negative_rate_limit() const = 0;
+    virtual float get_negative_rate_limit_degs() const = 0;
 
     // Reset input shaping to the given values
-    void reset_input_shaping(const float angle, const float rate);
+    void reset_input_shaping_deg(const float angle_deg, const float rate_degs);
 
     // Set point tracking for input shaping
     float angle_target_deg;
-    float rate_target_deg;
-    float accel_target_deg;
+    float rate_target_degs;
+    float accel_target_degss;
 
     // Input shaping accel limit and angle P gain
     AP_Float accel_limit;
