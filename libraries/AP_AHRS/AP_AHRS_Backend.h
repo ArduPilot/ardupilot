@@ -68,6 +68,11 @@ public:
         // true if the AHRS has completed initialisation
         bool initialised;
 
+        // filter fault status bitmask (see NavFilterFaultBit); non-zero
+        // if the backend is reporting one or more filter faults.
+        // Backends with no concept of filter faults leave this zero.
+        uint16_t filter_faults;
+
         // inertial sensor information
         uint8_t primary_gyro;
 

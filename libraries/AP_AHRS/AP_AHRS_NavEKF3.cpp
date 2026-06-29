@@ -181,6 +181,8 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     EKF3.getFilterStatus(results.filter_status);
     results.filter_status_valid = true;
 
+    EKF3.getFilterFaults(results.filter_faults);
+
     // provides the innovations normalised between 0 and 1:
     Vector2f offset;
     results.variances_valid = EKF3.getVariances(results.velVar, results.posVar, results.hgtVar, results.magVar, results.tasVar, offset);

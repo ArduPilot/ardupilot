@@ -1512,9 +1512,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             return fallback_active_EKF_type();
         }
         if (always_use_EKF()) {
-            uint16_t ekf2_faults;
-            ekf2.EKF2.getFilterFaults(ekf2_faults);
-            if (ekf2_faults == 0) {
+            if (ekf2_estimates.filter_faults == 0) {
                 ret = EKFType::TWO;
             }
         } else if (ekf2_estimates.healthy) {
@@ -1531,9 +1529,7 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             return fallback_active_EKF_type();
         }
         if (always_use_EKF()) {
-            uint16_t ekf3_faults;
-            ekf3.EKF3.getFilterFaults(ekf3_faults);
-            if (ekf3_faults == 0) {
+            if (ekf3_estimates.filter_faults == 0) {
                 ret = EKFType::THREE;
             }
         } else if (ekf3_estimates.healthy) {
