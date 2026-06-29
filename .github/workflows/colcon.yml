@@ -152,14 +152,14 @@ jobs:
       image: ardupilot/ardupilot-dev-ros:latest
     steps:
       # Sparse checkout to make .github/actions/* available without polluting the colcon workspace
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
           persist-credentials: false
           sparse-checkout: .github
           sparse-checkout-cone-mode: false
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
           path: src/ardupilot

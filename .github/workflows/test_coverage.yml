@@ -44,7 +44,7 @@ jobs:
             type: coverage
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
       - uses: ./.github/actions/setup-ccache
