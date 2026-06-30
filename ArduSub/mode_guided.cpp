@@ -163,37 +163,6 @@ void ModeGuided::guided_angle_control_start()
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
-// guided_set_destination - sets guided mode's target destination
-// Returns true if the fence is enabled and guided waypoint is within the fence
-// else return false if the waypoint is outside the fence
-bool ModeGuided::guided_set_destination(const Vector3f& destination_neu_cm)
-{
-#if AP_FENCE_ENABLED
-    // reject destination if outside the fence
-    const Location dest_loc(destination_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
-    if (!sub.fence.check_location_within_fence(dest_loc)) {
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
-        // failure is propagated to GCS with NAK
-        return false;
-    }
-#endif
-
-    // ensure we are in position control mode
-    if (sub.guided_mode != Guided_WP) {
-        guided_pos_control_start();
-    }
-
-    // no need to check return status because terrain data is not used
-    sub.wp_nav.set_wp_destination_NEU_cm(destination_neu_cm, false);
-
-#if HAL_LOGGING_ENABLED
-    // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, Vector3f());
-#endif
-
-    return true;
-}
-
 // sets guided mode's target from a Location object
 // returns false if destination could not be set (probably caused by missing terrain data)
 // or if the fence is enabled and guided waypoint is outside the fence
