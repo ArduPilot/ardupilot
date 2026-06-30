@@ -762,33 +762,21 @@ void Plane::check_ahrs_reset()
 {
     bool should_reset = false;
 
-    // Check for change in ahrs type
-    const AP_AHRS::EKFType ahrs_type = ahrs.active_EKF_type();
-    if (ahrs_check.last_ahrs_type != ahrs_type) {
-        should_reset = true;
-    }
-    ahrs_check.last_ahrs_type = ahrs_type;
-
-    // Check for change in core
-    const int8_t primary_core = ahrs.get_primary_core_index();
-    if (ahrs_check.last_primary_core != primary_core) {
-        if (!should_reset) {
-            // Don't report to user if an EKF type change has already been reported
-            gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)primary_core);
-        }
-        should_reset = true;
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary_core));
-    }
-    ahrs_check.last_primary_core = primary_core;
-
     // Check for yaw reset
     float yaw_angle_change_rad;
     const uint32_t yaw_reset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
     if (ahrs_check.last_yaw_reset_ms != yaw_reset_ms) {
         should_reset = true;
+        ahrs_check.last_yaw_reset_ms = yaw_reset_ms;
         LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
     }
-    ahrs_check.last_yaw_reset_ms = yaw_reset_ms;
+
+    // check for change in primary EKF, or EKF lane.
+    const uint16_t new_reset_count = ahrs.get_last_attitude_reset_count();
+    if (new_reset_count != ahrs_check.attitude_reset_count) {
+        should_reset = true;
+        ahrs_check.attitude_reset_count = new_reset_count;
+    }
 
     // Nothing to do if there are no resets
     if (!should_reset) {
