@@ -297,6 +297,17 @@ void ModeGuided::guided_set_velocity(const Vector3f& velocity_neu_cms, bool use_
 
 }
 
+// expose the current Guided_PosVel position target so the GCS layer can
+// report POSITION_TARGET_GLOBAL_INT in that submode.
+bool ModeGuided::get_posvel_target_NEU_cm(Vector3f &pos) const
+{
+    if (sub.guided_mode != Guided_PosVel) {
+        return false;
+    }
+    pos = posvel_pos_target_cm.tofloat();
+    return true;
+}
+
 // set guided mode posvel target
 bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms)
 {
