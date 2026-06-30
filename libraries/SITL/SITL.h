@@ -328,7 +328,7 @@ public:
         }
         static const struct AP_Param::GroupInfo var_info[];
 
-        AP_Float noise; // amplitude of the gps altitude error
+        AP_Float noise_vertical; // amplitude of the gps altitude error
         AP_Int16 lock_time; // delay in seconds before GPS gets lock
         AP_Int16 alt_offset; // gps alt error
         AP_Int8  enabled; // enable simulated GPS
@@ -347,6 +347,7 @@ public:
         AP_Float heading_offset; // heading offset in degrees
         AP_Int32 options; // GPS options bitmask
         AP_Int8 fix_type; // GPS fix type
+        AP_Float noise_horizontal; // horizontal noise radius in meters
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
