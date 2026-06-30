@@ -3779,6 +3779,76 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.land_and_disarm()
 
+    def xkfa_recent_bias_mean(self, nsamples=50):
+        '''mean of the most recent valid XKFA (core 0) accel-Z bias estimates'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        vals = []
+        while True:
+            m = dfreader.recv_match(type='XKFA', condition='XKFA.C==0')
+            if m is None:
+                break
+            if m.Valid:
+                vals.append(m.Bias)
+        if len(vals) < nsamples:
+            raise NotAchievedException("insufficient XKFA samples (%u)" % len(vals))
+        return sum(vals[-nsamples:]) / nsamples
+
+    def OpticalFlowAGLKalmanFilter(self):
+        '''AGL KF estimates an accel-Z bias that tracks an injected IMU bias'''
+        # The AGL KF (XKFA, enabled by EK3_OPTIONS bit 3) used for optical-flow
+        # height scaling carries an accel-Z bias state so its rangefinder-anchored
+        # height stays independent of the vehicle's accel-Z bias. The bias is only
+        # observable in flight (on the ground the height is clamped and the
+        # innovation carries no bias signal), so fly an optical-flow hover and
+        # confirm the estimate moves to track an injected IMU accel-Z bias. XKFA
+        # is logged for the primary core only, so run a single lane and inject the
+        # bias on its IMU. A before/after delta is used rather than an absolute
+        # value: with only the scaling option set the main-filter altitude is not
+        # anchored, so the exact converged bias depends on the resulting vertical
+        # motion, but it must still shift in the direction of the injected bias.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "EK3_IMU_MASK": 1,  # single lane: primary is core 0 (IMU1) throughout
+            "EK3_OPTIONS": 8,   # bit 3: use the AGL KF for optical-flow scaling
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(alt_min=10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+
+        # let the AGL KF settle on the rangefinder, then confirm it is valid and
+        # record the bias estimate baseline
+        self.delay_sim_time(15, reason="AGL KF to settle on the rangefinder")
+        self.assert_dataflash_message_field_level_at(
+            "XKFA", "Valid", 1,
+            condition="XKFA.C==0",
+            tolerance=0.5,
+            maintain=1,
+        )
+        bias_before = self.xkfa_recent_bias_mean()
+
+        # inject an accel-Z bias on IMU1 and confirm the AGL KF bias estimate
+        # follows it
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0.7,
+        })
+        self.delay_sim_time(30, reason="AGL KF to learn the injected accel-Z bias")
+        bias_after = self.xkfa_recent_bias_mean()
+        self.progress("AGL KF accel-Z bias before=%.3f after=%.3f" %
+                      (bias_before, bias_after))
+        if bias_after - bias_before < 0.1:
+            raise NotAchievedException(
+                "AGL KF did not learn injected accel-Z bias (before=%.3f after=%.3f)" %
+                (bias_before, bias_after))
+
+        self.land_and_disarm()
+
+        self.land_and_disarm()
+
     def LoiterNoCompassYawGPS(self):
         '''Loiter with GPS and no optical flow, compass not an EK3 yaw source'''
         # GPS-aided, no optical flow. Compass enabled but not an EK3 yaw source
@@ -14439,6 +14509,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.OpticalFlowLimits,
              self.LoiterNoCompassYaw,
              self.LoiterNoCompassYawGPS,
+             self.OpticalFlowAGLKalmanFilter,
              self.OpticalFlowCalibration,
              self.MotorFail,
              self.ModeFlip,
