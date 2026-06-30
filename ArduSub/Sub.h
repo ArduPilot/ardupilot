@@ -74,6 +74,7 @@
 #include "GCS_Sub.h"
 #include "mode.h"
 #include "script_button.h"
+#include "illuminator.h"
 
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
@@ -122,6 +123,10 @@ public:
     friend class ModeMotordetect;
 
     Sub(void);
+
+    // Number of autopilot-attached illuminators (lights1, lights2) addressable
+    // by MAV_CMD_ILLUMINATOR_* commands. Id 0 targets all of them.
+    static constexpr uint8_t illuminator_count = 2;
 
 protected:
 
@@ -290,6 +295,14 @@ private:
 
     // Flag indicating if we are currently using input hold
     bool input_hold_engaged;
+
+    // Autopilot-attached illuminators (lights1, lights2), addressed by
+    // MAV_CMD_ILLUMINATOR_* commands and the joystick light button functions.
+    // Indexed by illuminator id - 1.
+    AP_Illuminator illuminators[illuminator_count] {
+        AP_Illuminator(SRV_Channel::k_lights1),
+        AP_Illuminator(SRV_Channel::k_lights2),
+    };
 
     // Flag indicating if we are currently controlling Pitch and Roll instead of forward/lateral
     bool roll_pitch_flag = false;
@@ -533,6 +546,8 @@ private:
     void do_set_home(const AP_Mission::Mission_Command& cmd);
     void do_roi(const AP_Mission::Mission_Command& cmd);
     void do_mount_control(const AP_Mission::Mission_Command& cmd);
+    void do_illuminator_on_off(const AP_Mission::Mission_Command& cmd);
+    void do_illuminator_configure(const AP_Mission::Mission_Command& cmd);
 
     bool verify_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool verify_surface(const AP_Mission::Mission_Command& cmd);
@@ -628,6 +643,11 @@ private:
 public:
     void mainloop_failsafe_check();
     bool rangefinder_alt_ok() const WARN_IF_UNUSED;
+
+    // Return the illuminator addressed by a MAV_CMD_ILLUMINATOR_* id
+    // (1 = lights1, 2 = lights2), or nullptr for any id that does not name a
+    // single illuminator (including id 0, "all").
+    AP_Illuminator *get_illuminator(uint8_t id);
 
     static Sub *_singleton;
 

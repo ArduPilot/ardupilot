@@ -7,6 +7,19 @@ static enum AutoSurfaceState auto_surface_state = AUTO_SURFACE_STATE_GO_TO_LOCAT
 // start_command - this function will be called when the ap_mission lib wishes to start a new command
 bool Sub::start_command(const AP_Mission::Mission_Command& cmd)
 {
+    // Commands that do not store a Location are dispatched here so the
+    // alt-frame validation below (which reinterprets cmd.content as a Location)
+    // does not reject them.
+    switch (cmd.id) {
+    case MAV_CMD_ILLUMINATOR_ON_OFF:                    // 405
+        do_illuminator_on_off(cmd);
+        return true;
+
+    case MAV_CMD_DO_ILLUMINATOR_CONFIGURE:              // 406
+        do_illuminator_configure(cmd);
+        return true;
+    }
+
     const Location &target_loc = cmd.content.location;
     auto alt_frame = target_loc.get_alt_frame();
 
@@ -650,4 +663,35 @@ void Sub::do_mount_control(const AP_Mission::Mission_Command& cmd)
 #if HAL_MOUNT_ENABLED
     camera_mount.set_angle_target(cmd.content.mount_control.roll, cmd.content.mount_control.pitch, cmd.content.mount_control.yaw, false);
 #endif
+}
+
+void Sub::do_illuminator_on_off(const AP_Mission::Mission_Command& cmd)
+{
+    const auto &content = cmd.content.illuminator_on_off;
+    // id 0 addresses all autopilot-attached illuminators.
+    const uint8_t first = (content.id == 0) ? 1 : content.id;
+    const uint8_t last = (content.id == 0) ? illuminator_count : content.id;
+    for (uint8_t i = first; i <= last; i++) {
+        AP_Illuminator *illuminator = get_illuminator(i);
+        if (illuminator != nullptr) {
+            illuminator->on_off(content.enable == MAV_BOOL_TRUE);
+        }
+    }
+}
+
+void Sub::do_illuminator_configure(const AP_Mission::Mission_Command& cmd)
+{
+    const auto &content = cmd.content.illuminator_configure;
+    // ArduSub illuminators only support brightness control: ignore mode/strobe
+    // fields silently in a mission context.  id 0 addresses all of them.
+    const uint8_t first = (content.id == 0) ? 1 : content.id;
+    const uint8_t last = (content.id == 0) ? illuminator_count : content.id;
+    for (uint8_t i = first; i <= last; i++) {
+        AP_Illuminator *illuminator = get_illuminator(i);
+        if (illuminator != nullptr) {
+            // no command-ack path from a mission item: an out-of-range
+            // brightness simply leaves the output unchanged.
+            IGNORE_RETURN(illuminator->set_brightness_pct(content.brightness_pct));
+        }
+    }
 }
