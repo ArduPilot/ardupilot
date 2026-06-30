@@ -763,8 +763,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_mode('AUTO')
         self.reboot_sitl()
         self.wait_ready_to_arm()
-        self.delay_sim_time(20, reason="EKF to initialise")
-        self.assert_current_waypoint(1)
+        self.wait_current_waypoint(1, timeout=30)
         self.arm_vehicle()
         self.wait_altitude(9, 11, relative=True)  # value from mission file is 10
         distance = self.distance_to_home()
@@ -1202,7 +1201,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.progress("Starting LOITER")
         self.change_mode("LOITER")
         self.context_collect("STATUSTEXT")
-        self.delay_sim_time(20, reason="transition to complete")  # Wait for the transition to be done and no longer assisting.
+        # Wait for the transition to be done and no longer assisting.  A
+        # settle-then-check is used here rather than polling for the servo
+        # value: the VTOL motor output passes transiently through min_pwm
+        # while it is still assisting.
+        self.delay_sim_time(20, reason="transition to complete")
         servo_pwm = self.get_servo_channel_value(servo_under_test)
         if servo_pwm != min_pwm:
             raise NotAchievedException(f"The VTOL motor did not stop: {servo_pwm} != {min_pwm}")
@@ -1411,7 +1414,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.start_subtest("Check start chan control disable")
             old_start_channel_value = self.get_rc_channel_value(rc_engine_start_chan)
             self.set_rc(rc_engine_start_chan, 1000)
-            self.delay_sim_time(1, reason="RC change to register") # Make sure the RC change has registered
+            self.wait_rc_channel_value(rc_engine_start_chan, 1000, timeout=5)
             self.context_collect('STATUSTEXT')
             method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
             self.wait_statustext("start control disabled", check_context=True)
@@ -1806,7 +1809,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''
         self.set_parameter("RC9_OPTION", 106)
-        self.delay_sim_time(5, reason="RC option to register")
         self.set_rc(9, 1000)
         self.wait_sensor_state(
             mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,

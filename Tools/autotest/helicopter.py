@@ -947,9 +947,8 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameter("MNT1_NEUTRAL_X", retract_roll)
         self.progress("Killing RC")
         self.set_parameter("SIM_RC_FAIL", 2)
-        self.delay_sim_time(10, reason="RC failsafe to trigger")
         want_servo_channel_value = int(1500 + 500*retract_roll/roll_limit)
-        self.wait_servo_channel_value(roll_servo, want_servo_channel_value, epsilon=1)
+        self.wait_servo_channel_value(roll_servo, want_servo_channel_value, epsilon=1, timeout=12)
 
         self.progress("Resurrecting RC")
         self.set_parameter("SIM_RC_FAIL", 0)
