@@ -10,7 +10,7 @@ Custom controller library allows you to implement and easily run your own contro
   - Bumpless transfer when switching from custom to the main controller
 - Ground and in-flight spool state separation to avoid build-up during arming and take-off with the custom controller
 - Frontend-backend separation that allows adding a new controller with very little overhead
-- Flag to compile out custom controller related code on hardware, --enable-custom-controller
+- Flag to compile out custom controller related code on hardware, --enable-COPTER_CUSTOM_CONTROL
 - Proper parameter table implementation that allows adding new custom controller parameter table without corruption
 - Single parameter to switch between different custom controllers, reboot required
 - Multiple checks to avoid accidentally running mis-un/configured custom controller with RC switch
@@ -96,10 +96,16 @@ rc 6 2000
 
 It is recommended that you always arm, take-off, land, and disarm while the main controller is running. You should switch to the custom controller while the vehicle is hovering steadily. This will reduce the effect of improper filter resetting. You should arm and take off with the custom controller only if proper ground idling is implemented.
 
-To test it on hardware compile with "--enable-custom-controller" flag.
+To test it on hardware compile with "--enable-COPTER_CUSTOM_CONTROL" flag.
 
 ```C++
-./waf configure --board CubeOrange copter --enable-custom-controller
+./waf configure --board CubeOrange copter --enable-COPTER_CUSTOM_CONTROL
+```
+
+You can also enable the feature in a custom hwdef board definition by setting
+
+```text
+define AP_COPTER_CUSTOMCONTROL_ENABED 1
 ```
 
 ### Post Flight Logs
@@ -241,8 +247,8 @@ default:
 Add the following lines in the `AC_CustomControl_config.h` file.
 
 ```cpp
-#ifndef AP_CUSTOMCONTROL_XYZ_ENABLED
-#define AP_CUSTOMCONTROL_XYZ_ENABLED AP_CUSTOMCONTROL_BACKEND_DEFAULT_ENABLED
+#ifndef AP_COPTER_CUSTOMCONTROL_XYZ_ENABLED
+#define AP_COPTER_CUSTOMCONTROL_XYZ_ENABLED AP_COPTER_CUSTOMCONTROL_BACKEND_DEFAULT_ENABLED
 #endif
 ```
 
