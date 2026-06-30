@@ -3740,6 +3740,60 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Alt should be limited by EKF optical flow limits")
         self.reboot_sitl(force=True)
 
+    def OpticalFlowGPSLossAiding(self):
+        '''EKF falls back to relative aiding when flow replaces lost GPS in flight'''
+        # A vehicle that takes off on GPS is in AID_ABSOLUTE.  When it switches to
+        # a flow-only source set it loses GPS position but keeps aiding on optical
+        # flow, and must fall back to AID_RELATIVE - otherwise it stays stuck in
+        # AID_ABSOLUTE and the optical-flow control limits never apply.  XKF4.AID
+        # exposes the mode (0:absolute, 1:none, 2:relative).
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC2_POSXY": 0,   # none
+            "EK3_SRC2_VELXY": 5,   # optical flow
+            "EK3_SRC2_POSZ": 1,    # baro
+            "EK3_SRC2_VELZ": 0,    # none
+            "EK3_SRC2_YAW": 1,     # compass
+            "RC8_OPTION": 90,      # EKF source selector
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_rc(8, 1000)       # source set 1 (GPS)
+        self.reboot_sitl()
+
+        self.takeoff(8, mode='LOITER')   # AID_ABSOLUTE on GPS
+
+        self.progress("switching to optical-flow source set")
+        self.set_rc(8, 1500)
+
+        # GPS position times out, then the filter must fall back to AID_RELATIVE
+        self.delay_sim_time(15)
+
+        # switch back to GPS and return
+        self.set_rc(8, 1000)
+        self.delay_sim_time(2)
+        self.do_RTL()
+
+        # confirm the EKF was AID_ABSOLUTE on GPS and fell back to AID_RELATIVE
+        # on flow.  without the fallback AID never reaches 2.
+        dfreader = self.dfreader_for_current_onboard_log()
+        saw_absolute = False
+        saw_relative = False
+        while True:
+            m = dfreader.recv_match(type='XKF4')
+            if m is None:
+                break
+            if m.AID == 0:
+                saw_absolute = True
+            elif m.AID == 2:
+                saw_relative = True
+        if not saw_absolute:
+            raise NotAchievedException("expected AID_ABSOLUTE while navigating on GPS")
+        if not saw_relative:
+            raise NotAchievedException(
+                "EKF did not fall back to AID_RELATIVE after GPS-to-flow switch")
+
     def LoiterNoCompassYaw(self):
         '''Loiter indoors with optical flow and no GPS, compass not an EK3 yaw source'''
         # Indoor case: position from optical flow + rangefinder, no GPS. The
@@ -14437,6 +14491,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.OpticalFlow,
              self.OpticalFlowLocation,
              self.OpticalFlowLimits,
+             self.OpticalFlowGPSLossAiding,
              self.LoiterNoCompassYaw,
              self.LoiterNoCompassYawGPS,
              self.OpticalFlowCalibration,
