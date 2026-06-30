@@ -939,8 +939,7 @@ private:
     void check_ahrs_reset();
     struct {
         uint32_t last_yaw_reset_ms;
-        int8_t last_primary_core;
-        AP_AHRS::EKFType last_ahrs_type;
+        uint16_t attitude_reset_count;
     } ahrs_check;
 
 #if HAL_LOGGING_ENABLED
