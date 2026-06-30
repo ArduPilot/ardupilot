@@ -442,6 +442,11 @@ extern const AP_HAL::HAL& hal;
 #define ALARM_STATUS_SSA        (1 << 14)   // hardware safety status.  set if a bit in Safety Status A is set
 #define ALARM_STATUS_SSBC       (1 << 15)   // safety status.  set if a bit in Safety Status B~C is set
 
+// Battery Status bits
+#define BATTERY_STATUS_PF       (1 << 12)   // Permanent Failure
+#define BATTERY_STATUS_SAFETY   (1 << 11)   // Safety alert
+#define BATTERY_STATUS_FUSE     (1 << 10)   // Fuse status
+
 /*
   TI bq76952 register definitions from datasheet SLUUBY2B
   Uses direct commands (7-bit addresses) for voltage readings
@@ -641,6 +646,9 @@ void AP_BattMonitor_TIBQ76952::read(void)
     // take semaphore before accessing accumulate struct
     WITH_SEMAPHORE(accumulate_sem);
 
+    // always update health
+    _state.healthy = healthy();
+
     // exit immediately if no sensor updates
     if (accumulate.count == 0) {
         return;
@@ -648,7 +656,6 @@ void AP_BattMonitor_TIBQ76952::read(void)
 
     // copy accumulated values to state
     _state.last_time_micros = AP_HAL::micros();
-    _state.healthy = true;
     _state.voltage = accumulate.voltage / accumulate.count;
     _state.state_of_health_pct = accumulate.health_pct / accumulate.count;
     _state.has_state_of_health_pct = true;
@@ -681,8 +688,9 @@ void AP_BattMonitor_TIBQ76952::timer(void)
     }
 
     // read data from device
-    read_voltage_current_temperature();
-    read_charging_state();
+    if (read_voltage_current_temperature()) {
+        read_charging_state();
+    }
 }
 
 // configure device
@@ -792,14 +800,31 @@ bool AP_BattMonitor_TIBQ76952::check_configuration_ok() const
     return configured_matches;
 }
 
-// read battery voltage, current and temperature
-void AP_BattMonitor_TIBQ76952::read_voltage_current_temperature()
+// returns true if the device is configured and responding to commands
+bool AP_BattMonitor_TIBQ76952::healthy() const
+{
+    if (!configured || bms_fault) {
+        return false;
+    }
+
+    // healthy if last successful read was within 1 second
+    return ((AP_HAL::millis() - last_read_time_ms) <= 1000);
+}
+
+// read voltage, current and temperature from BMS device, returns true on success
+bool AP_BattMonitor_TIBQ76952::read_voltage_current_temperature()
 {
     // exit immediately if full voltage scan has not completed (FULL_SCAN bit 7)
     const uint16_t alarm_raw_status = direct_command_read_2bytes(TIBQ769x2_AlarmRawStatus);
     if (!(alarm_raw_status & ALARM_STATUS_FULLSCAN)) {
-        return;
+        return false;
     }
+
+    // check for faults
+    const uint16_t battery_status = direct_command_read_2bytes(TIBQ769x2_BatteryStatus);
+    bms_fault = (battery_status & BATTERY_STATUS_PF) != 0 ||
+                (battery_status & BATTERY_STATUS_SAFETY) != 0 ||
+                (battery_status & BATTERY_STATUS_FUSE) != 0;
 
     // get semaphore before updating accumulate structure
     WITH_SEMAPHORE(accumulate_sem);
@@ -824,6 +849,10 @@ void AP_BattMonitor_TIBQ76952::read_voltage_current_temperature()
 
     // increment number of readings
     accumulate.count++;
+
+    // record time of successful read
+    last_read_time_ms = AP_HAL::millis();
+    return true;
 }
 
 // read battery charging state (e.g. idle, charging, discharging)
@@ -835,8 +864,11 @@ void AP_BattMonitor_TIBQ76952::read_charging_state()
     if (!(alarm_raw_status & ALARM_STATUS_WAKE)) {
         new_state = AP_BattMonitor::ChargingState::IDLE;
     } else {
+        // take semaphore before accessing accumulate struct
+        WITH_SEMAPHORE(accumulate_sem);
+
         // Charging if current is positive
-        if ((int16_t)direct_command_read_2bytes(TIBQ769x2_CC2Current) > 0) {
+        if (accumulate.current > 0) {
             new_state = AP_BattMonitor::ChargingState::CHARGING;
         } else {
             // Discharging if pack voltage above threshold
