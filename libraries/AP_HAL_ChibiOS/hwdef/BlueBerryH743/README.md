@@ -41,7 +41,7 @@ The BlueBerry_H743 supports 3-12s Li battery input. It provides 3 on-board BEC r
 |--------------|--------------|---------------------|
 | 5V | from 5V BEC | 15W (3A) |
 | 9V | from 9V BEC | 27W (3A) |
-| VX | from Servo rail VX BEC, default 5V, can be changed to 6V or 7.2V or 8.4V | 70W (14A) |S
+| VX | Servo rail VX BEC, default 5V, can be changed to 6V or 7.2V or 8.4V | 70W (14A) |
 
 ## Loading Firmware
 
