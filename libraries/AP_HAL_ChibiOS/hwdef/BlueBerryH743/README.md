@@ -111,7 +111,7 @@ The first voltage/current sensor is enabled by default and the pin inputs for th
 
 ## Compass
 
-The BlueBerry_H743 has no built-in compass, so if needed, you should use an external compass.
+The BlueBerry_H743 has no built-in compass. An external compass can be attached to either set of SDA/SCL pins or via DroneCAN.
 
 ## Camera Switch
 
