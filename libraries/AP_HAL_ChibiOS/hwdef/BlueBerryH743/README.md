@@ -98,7 +98,7 @@ The board has two internal voltage sensors and one integrated current sensor, an
 
 The voltage sensors can handle up to 12S LiPo batteries.
 
-The first voltage/current sensor is enabled by default and the pin inputs for the second, unenabled sensor are also set by default:
+The first voltage/current sensor is enabled by default and the pin inputs and voltage scale for the second, unenabled, sensor are also set by default:
 
 - BATT_MONITOR 4
 - BATT_VOLT_PIN 10
