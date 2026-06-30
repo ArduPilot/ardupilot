@@ -579,7 +579,20 @@ bool AP_MotorsHeli_Single::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
-        // returns false if the DDFP RSC control mode is selected for the main rotor. The code does not currently support
+    // returns false if tailRSC is not set as a Servo output for DDVP or DDFP tail.  This is required for DDVP adn DDFP tails to work properly.
+    uint8_t tail_rsc_channel;
+    if (use_tail_RSC() && !SRV_Channels::find_channel(SRV_Channel::k_heli_tail_rsc, tail_rsc_channel)) {
+        hal.util->snprintf(buffer, buflen, "DDVP and DDFP tails require a servo output to be assigned to tailRSC");
+        return false;
+    }
+
+    // returns false if RSC Mode is not set to DDFP for a DDFP tail
+    if (have_DDFP_tail() && _tail_rotor._rsc_mode.get() != (int8_t)ROTOR_CONTROL_MODE_DDFP) {
+        hal.util->snprintf(buffer, buflen, "DDFP tail requires RSC mode to be set to DDFP");
+        return false;
+    }
+
+    // returns false if the DDFP RSC control mode is selected for the main rotor. The code does not currently support
         // DDFP control for the main rotor.
     if (_main_rotor.get_rsc_control_mode() == ROTOR_CONTROL_MODE_DDFP){
         hal.util->snprintf(buffer, buflen, "Main rotor RSC does not support Direct Drive Fixed Pitch main rotors");
