@@ -494,13 +494,6 @@ extern const AP_HAL::HAL& hal;
 // Expected device IDs
 #define DEVICE_ID_TIBQ7695 0x7695
 
-// Note: BQ76952 doesn't have a simple device ID register at 0x00
-// Device identification requires subcommands, not direct commands
-
-#ifndef HAL_BATTMON_BQ76952_MAX_VOLTAGE
-#define HAL_BATTMON_BQ76952_MAX_VOLTAGE 50.0f
-#endif
-
 const AP_Param::GroupInfo AP_BattMonitor_TIBQ76952::var_info[] = {
 
     // @Param: CFG_UPDATE
