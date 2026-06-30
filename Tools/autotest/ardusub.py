@@ -1478,6 +1478,119 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_statustext("Terrain failsafe recovery timeout!")
         self.wait_statustext("Disarming motors")
 
+    def GuidedPosVelAccel(self):
+        """Test Guided_PosVelAccel mode via SET_POSITION_TARGET_LOCAL_NED"""
+
+        pva_mode = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE |
+                    mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE)
+
+        speed = 0.5
+
+        self.set_parameter('WP_SPD', speed)
+
+        self.dive(-15)
+
+        # Run back and forth between 2 locations
+        distance = 30
+        timeout = distance / speed + 20  # Add time to accelerate and decelerate
+
+        runs = [{
+            'bearing': 180,
+            'target_alt': -15,
+        }, {
+            'bearing': 0,
+            'target_alt': -15,
+        }]
+
+        # Stay in GUIDED mode for the duration
+        self.change_mode('GUIDED')
+
+        import math
+        for run in runs:
+            msg = self.assert_receive_message('LOCAL_POSITION_NED')
+            start_x = msg.x
+            start_y = msg.y
+
+            dx = distance * math.cos(math.radians(run['bearing']))
+            dy = distance * math.sin(math.radians(run['bearing']))
+            dest_x = start_x + dx
+            dest_y = start_y + dy
+            dest_z = -run['target_alt']
+
+            self.progress(f"Sending target: x={dest_x:.2f}, y={dest_y:.2f}, z={dest_z:.2f} (bearing={run['bearing']})")
+
+            self.mav.mav.set_position_target_local_ned_send(
+                0,  # timestamp
+                1,  # target system_id
+                1,  # target component id
+                mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                pva_mode,
+                dest_x,  # x
+                dest_y,  # y
+                dest_z,  # z
+                0,  # vx
+                0,  # vy
+                0,  # vz
+                0,  # afx
+                0,  # afy
+                0,  # afz
+                0,  # yaw
+                0,  # yawrate
+            )
+
+            self.wait_distance_to_local_position((dest_x, dest_y, dest_z), 0, 0.5, timeout=timeout)
+
+        self.disarm_vehicle()
+
+    def GuidedAboveTerrain(self):
+        """Test Guided_PosVelAccel mode and position offsets via Lua"""
+        self.context_collect("STATUSTEXT")
+
+        seafloor_depth = 15
+        match_distance = 2    # Target distance from seafloor (HAGL)
+        xy_margin = 1         # Allowed error horizontal
+        z_margin = 2          # Allowed error vertical
+
+        # Install the GAT PVA script
+        # This will send rapid updates to Guided_PosVelAccel and poscontrol
+        self.install_example_script_context("gat_pva_sub.lua")
+
+        # Install the synthetic seafloor rangefinder script and reboot
+        self.prepare_synthetic_seafloor_test(seafloor_depth, match_distance)
+
+        # Set the desired forward speed
+        speed = 0.5
+        self.set_parameter('SCR_USER1', speed)
+
+        # Minimize vertical oscillation due to sensor delay
+        self.set_parameter('PSC_JERK_D', 4.0)
+        self.set_parameter('WP_ACC_Z', 5.0)
+
+        # Aim south (180 deg) so the sub travels over the simulated ridge
+        # self.reach_heading_manual(180)
+
+        self.dive(-seafloor_depth + match_distance, mode="ALT_HOLD")
+
+        start_loc = self.mav.location()
+        timeout = 60
+
+        # Activate the GAT script
+        self.change_mode("GUIDED")
+        self.wait_text("GAT: active", check_context=True)
+
+        # Verify the sub maintains the target distance over the terrain
+        self.watch_true_distance_maintained(match_distance, delta=z_margin, timeout=timeout)
+
+        # Verify that we moved the expected distance
+        end_loc = self.mav.location()
+        distance_travelled = self.get_distance(start_loc, end_loc)
+        expected_distance = speed * timeout
+        self.progress(f"Expected distance {expected_distance}m, got {distance_travelled}m")
+        if abs(distance_travelled - expected_distance) > xy_margin:
+            raise NotAchievedException("Failed to achieve distance")
+
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1524,6 +1637,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.UpsideDown,
             self.GuidedWP,
             self.AutoTerrainRecover,
+            self.GuidedPosVelAccel,
+            self.GuidedAboveTerrain,
         ])
 
         return ret
