@@ -357,64 +357,135 @@ void NavEKF3_core::ResetHeight(void)
     vertVelVarClipCounter = 0;
 }
 
-// Zero the EKF height datum
-// Return true if the height datum reset has been performed
-bool NavEKF3_core::resetHeightDatum(void)
+// Reset the EKF height datum and clear accumulated baro drift.
+// origin_alt_tolerance_m: see NavEKF3::resetHeightDatum declaration.
+// Return true if the height datum reset has been performed.
+bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
 {
-    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround) {
-        // only allow resets when on the ground.
-        // If using using rangefinder for height then never perform a
-        // reset of the height datum
+    if (!onGround) {
+        // only allow resets when on the ground
+        return false;
+    }
+    // Only reset the datum when height is referenced to the baro or GPS.  For
+    // rangefinder, beacon or external-nav height the estimate is referenced to
+    // that source rather than the baro; zeroing position.z and recalibrating
+    // the baro would corrupt it (e.g. external-nav height snaps to the takeoff
+    // altitude after a disarm), and there is no baro drift to clear in that
+    // case anyway.
+    if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO &&
+        activeHgtSource != AP_NavEKF_Source::SourceZ::GPS) {
         return false;
     }
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;
-    // reset the barometer so that it reads zero at the current height
-    dal.baro().update_calibration();
 
-    // clear the baro data buffer
-    storedBaro.reset();
-
-    // reset the vertical position and velocity states
-    stateStruct.position.z = 0.0f;
-    stateStruct.velocity.z = 0.0f;
-    for (uint8_t i=0; i<imu_buffer_length; i++) {
-        storedOutput[i].position.z = stateStruct.position.z;
-        storedOutput[i].velocity.z = stateStruct.velocity.z;
-    }
-    outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
-    outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
-    vertCompFiltState.vel = outputDataNew.velocity.z;
-
-    // baroHgtOffset is a slow first-order filter (calcFiltBaroOffset)
-    // tracking baroDataDelayed.hgt + position.z.  Post-reset baro
-    // reads 0 and position.z is 0 so the steady-state offset is 0;
-    // without this, hgtMea = baroDataDelayed.hgt - baroHgtOffset
-    // would feed a non-zero observation into the EKF for the ~1 s
-    // the filter takes to relax, producing a post-reset altitude
-    // transient.
-    baroHgtOffset = 0.0f;
-
-    // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
-    if (validOrigin) {
-        if (!gpsGoodToAlign) {
-            // if we don't have GPS lock then we shouldn't be doing a
-            // resetHeightDatum, but if we do then the best option is
-            // to maintain the old error
-            EKF_origin.alt += (int32_t)(100.0f * oldHgt);
-        } else {
-            // if we have a good GPS lock then reset to the GPS
-            // altitude. This ensures the reported AMSL alt from
-            // getLLH() is equal to GPS altitude, while also ensuring
-            // that the relative alt is zero
-            EKF_origin.copy_alt_from(dal.gps().location());
+    // Decide between a full reset and a no-op based on whether the
+    // EKF_origin altitude is consistent with current GPS altitude.
+    //
+    // A full reset zeroes position.z/velocity.z, recalibrates the
+    // baro to read 0 at the current height, flushes the baro
+    // observation buffer (so stale pre-recal samples are not fused
+    // as delayed observations and produce a post-reset altitude
+    // transient), and snaps ekfGpsRefHgt so AMSL reporting from
+    // getLLH() is unchanged across the reset.
+    //
+    // A full reset is only safe when EKF_origin.alt matches current
+    // physical altitude.  If the user pinned the origin elsewhere
+    // (AHRS_ORIGIN_ALT, MAV_CMD_DO_SET_GLOBAL_ORIGIN), zeroing
+    // position.z would corrupt AMSL once GPS fusion pulls
+    // position.z back to track the origin/GPS offset.  In that case
+    // the EKF state is already correct: position.z encodes the
+    // origin-vs-physical offset, baroHgtOffset has been tracking
+    // baroDataDelayed.hgt + position.z via calcFiltBaroOffset's
+    // slow filter throughout disarm and is already converged, and
+    // the baro itself carries the absolute pressure reference we
+    // depend on for AMSL.  Doing anything -- even just recalibrating
+    // the baro to 0 -- would destroy state we explicitly want to
+    // preserve.  So the partial-reset branch is a true no-op.
+    // Only take the partial (skip) branch when genuinely stationary on
+    // the ground.  onGround alone is true for a disarmed vehicle that is
+    // still airborne (e.g. after flight termination), where the GPS-vs-
+    // origin difference reflects transient altitude rather than a moved
+    // ground elevation; skipping there leaves the height datum stale.
+    bool full_reset = true;
+    if (origin_alt_tolerance_m >= 0 && validOrigin && gpsGoodToAlign && onGroundNotMoving) {
+        const float gps_origin_diff_m = fabsf(0.01f *
+            (float)(dal.gps().location().alt - EKF_origin.alt));
+        if (gps_origin_diff_m > origin_alt_tolerance_m) {
+            full_reset = false;
         }
-        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     }
 
-    // set the terrain state to zero (on ground). The adjustment for
-    // frame height will get added in the later constraints
-    terrainState = 0;
+    if (full_reset) {
+        // Recalibrate the baro to read zero at the current height and
+        // discard any pre-recalibration samples still in the
+        // observation buffer.  Without the buffer flush those stale
+        // samples would be fused as delayed observations and produce
+        // a post-reset altitude transient.  This MUST stay scoped to
+        // the full-reset branch -- on the partial-reset branch we
+        // deliberately keep the baro's pre-arm calibration so the
+        // AMSL reference is preserved.
+        dal.baro().update_calibration();
+        storedBaro.reset();
+
+        // reset the vertical position and velocity states
+        stateStruct.position.z = 0.0f;
+        stateStruct.velocity.z = 0.0f;
+        for (uint8_t i=0; i<imu_buffer_length; i++) {
+            storedOutput[i].position.z = stateStruct.position.z;
+            storedOutput[i].velocity.z = stateStruct.velocity.z;
+        }
+        outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
+        outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
+        vertCompFiltState.vel = outputDataNew.velocity.z;
+
+        // baroHgtOffset (calcFiltBaroOffset) is a slow first-order
+        // filter tracking baroDataDelayed.hgt + position.z.  Post-reset
+        // baro reads 0 and position.z is 0, so the steady-state offset
+        // is 0.  Without this, hgtMea = baroDataDelayed.hgt -
+        // baroHgtOffset would feed a non-zero observation into the EKF
+        // for the ~1 s the filter takes to relax, producing a post-reset
+        // altitude transient.
+        baroHgtOffset = 0.0f;
+
+        // set the terrain state to zero (on ground). The adjustment for
+        // frame height will get added in the later constraints.
+        terrainState = 0;
+
+        // shift the WGS-84 reference height so that getLLH() reports the
+        // same AMSL before and after the reset.  EKF_origin.alt itself
+        // is left unchanged -- it is the NED reference frame anchor and
+        // must be immutable once set, otherwise a user-configured origin
+        // (set via AHRS_ORIGIN parameters or MAV_CMD_DO_SET_GLOBAL_ORIGIN)
+        // gets corrupted.
+        if (validOrigin) {
+            if (!gpsGoodToAlign) {
+                // without GPS (e.g. indoor / GPS-denied flight), preserve
+                // the pre-reset height estimate by carrying it into
+                // ekfGpsRefHgt.  Any baro drift that had accumulated in
+                // position.z is absorbed into the reference height; we
+                // have no independent truth source to correct it against.
+                ekfGpsRefHgt += (double)oldHgt;
+            } else {
+                // with a good GPS lock, reset ekfGpsRefHgt to GPS
+                // altitude so the reported AMSL alt from getLLH() is
+                // equal to GPS altitude post-reset.
+                ekfGpsRefHgt = (double)0.01 * (double)dal.gps().location().alt;
+            }
+        }
+    } else {
+        // Partial-reset path: explicit no-op.  Leave position.z,
+        // velocity.z and the output observer chain alone -- they
+        // correctly encode the GPS-vs-origin altitude offset for a
+        // user-pinned origin.  Leave the baro alone -- its absolute
+        // pressure reference is what makes AMSL reporting correct at
+        // this elevation.  Leave storedBaro alone -- its samples are
+        // consistent with the unchanged baro calibration.  Leave
+        // baroHgtOffset alone -- calcFiltBaroOffset has been
+        // converging on baroDataDelayed.hgt + position.z throughout
+        // disarm, so it is already at the right value; snapping it
+        // would actually introduce error rather than remove one.
+    }
 
     return true;
 }
@@ -1041,6 +1112,11 @@ void NavEKF3_core::FuseVelPosNED()
             const bool onGroundNotNavigating = (PV_AidingMode == AID_NONE) && onGround;
             const float maxTestRatio = onGroundNotNavigating ? 3.0f : 1.0f;
             bool hgtCheckPassed = false; // boolean true if height measurements have passed innovation consistency check
+            // Restrict ground-effect handling to non-fly-forward vehicles: on
+            // fly-forward types takeoff_expected is is_flying() based and can latch
+            // in flight, where suppressing the height reset would be unsafe.
+            const bool gndEffectActive = (dal.get_takeoff_expected() || dal.get_touchdown_expected()) &&
+                                         !assume_zero_sideslip();
             if (hgtTestRatio < maxTestRatio) {
                 hgtCheckPassed = true;
                 lastHgtPassTime_ms = imuSampleTime_ms;
@@ -1070,9 +1146,16 @@ void NavEKF3_core::FuseVelPosNED()
                 }
 
                 if (hgtTimeout) {
-                    ResetHeight();
+                    // Do not reset height during ground effect — baro is
+                    // known to be corrupted by prop wash and would drive
+                    // the state estimate to a fictitious altitude.
+                    if (!gndEffectActive) {
+                        ResetHeight();
+                    }
 
-                    // Don't fuse the same data we have used to reset states.
+                    // Don't fuse the same data we have used to reset
+                    // states, or that we have rejected due to ground
+                    // effect.
                     fuseHgtData = false;
                 }
 
@@ -1115,10 +1198,17 @@ void NavEKF3_core::FuseVelPosNED()
                     }
                 } else if (obsIndex == 5) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
-                    const ftype gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0);
+                    const ftype gndMaxBaroErr = fabsF(frontend->_baroGndEffectDeadZone);
                     const ftype gndBaroInnovFloor = -0.5;
 
-                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
+                    // Skip the floor while the pre-liftoff clean-reference substitution
+                    // is active (selectHeightForFusion uses meaHgtAtTakeOff): that
+                    // observation is not corrupt, so its drift correction must not be
+                    // clamped by the corrupt-baro floor.
+                    const bool usingGndBaroRef = is_negative(frontend->_baroGndEffectDeadZone) &&
+                                                 !assume_zero_sideslip() && dal.get_time_flying_ms() == 0;
+                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) &&
+                        activeHgtSource == AP_NavEKF_Source::SourceZ::BARO && !usingGndBaroRef) {
                         // when baro positive pressure error due to ground effect is expected,
                         // floor the barometer innovation at gndBaroInnovFloor
                         // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
@@ -1430,7 +1520,30 @@ void NavEKF3_core::selectHeightForFusion()
         posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.01f, 100.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
         if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
-            posDownObsNoise *= frontend->gndEffectBaroScaler;
+            if (is_negative(frontend->_baroGndEffectDeadZone) &&
+                !assume_zero_sideslip() && dal.get_time_flying_ms() == 0) {
+                // Restricted to non-fly-forward vehicles: on fly-forward types
+                // get_time_flying_ms() is is_flying() based and can read zero in
+                // flight, which would wrongly anchor altitude to the takeoff height.
+                // Before the vehicle is flying, replace the corrupt
+                // baro with a synthetic observation at the pre-ground-
+                // effect baro reference.  This anchors PD near zero and
+                // prevents IMU drift during the spool-up phase when the
+                // baro is most severely corrupted.  Use moderate noise
+                // so the anchor counters AccZ bias drift.
+                // time_flying_ms comes from the Copter land detector
+                // (throttle + IMU based, not baro) and is zero until
+                // land_complete goes false at actual liftoff.
+                hgtMea = meaHgtAtTakeOff;
+                posDownObsNoise = sq(MAX(fabsF(frontend->_baroGndEffectDeadZone) * 0.1f, 1.0f));
+            } else if (is_negative(frontend->_baroGndEffectDeadZone)) {
+                // After liftoff, use the noise floor to deweight the
+                // baro while still allowing it to contribute weakly.
+                const ftype gnd_eff_noise_m = fabsF(frontend->_baroGndEffectDeadZone);
+                posDownObsNoise = sq(MAX(gnd_eff_noise_m, 1.0f));
+            } else {
+                posDownObsNoise *= frontend->gndEffectBaroScaler;
+            }
         }
         velPosObs[5] = -hgtMea;
     } else if ((activeHgtSource == AP_NavEKF_Source::SourceZ::NONE && imuSampleTime_ms - lastHgtPassTime_ms > 70)) {

@@ -91,10 +91,12 @@ public:
     uint32_t millis() const { return _millis; }
 
     void log_event2(Event event);
+    void log_resetHeightDatum2(float origin_alt_tolerance_m);
     void log_SetOriginLLH2(const Location &loc);
     void log_writeDefaultAirSpeed2(const float aspeed, const float uncertainty);
 
     void log_event3(Event event);
+    void log_resetHeightDatum3(float origin_alt_tolerance_m);
     void log_SetOriginLLH3(const Location &loc);
     void log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms);
 
@@ -436,4 +438,3 @@ namespace AP {
 
 // replay printf for debugging
 void rprintf(const char *format, ...);
-
