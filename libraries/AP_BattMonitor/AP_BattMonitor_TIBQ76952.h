@@ -52,8 +52,13 @@ protected:
     // returns true if the current device configuration matches, false otherwise
     bool check_configuration_ok() const;
 
-    // read state from BMS device
-    void read_voltage_current_temperature();
+    // returns true if the device is configured and responding to commands
+    bool healthy() const;
+
+    // read voltage, current and temperature from BMS device, returns true on success
+    bool read_voltage_current_temperature();
+
+    // read charging state (e.g. idle, charging, discharging)
     void read_charging_state();
 
     // read bytes from a register. returns true on success
@@ -118,6 +123,8 @@ protected:
         float health_pct;   // battery health percentage
     } accumulate;
     HAL_Semaphore accumulate_sem;   // semaphore for accumulate structure
+    uint32_t last_read_time_ms;     // timestamp of last read
+    bool bms_fault;         // true if BMS reports some kind of failure or fault
 };
 
 #endif // AP_BATTERY_TIBQ76952_ENABLED
