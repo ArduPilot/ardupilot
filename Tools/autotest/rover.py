@@ -1153,7 +1153,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 raise NotAchievedException("Value reverted after %f seconds when it should not have (got=%u) (want=%u)" % (delta, m_value, ch_override_value))  # noqa
         self.set_parameter("RC_OVERRIDE_TIME", old)
 
-        self.delay_sim_time(10, reason="RC override to revert")
+        self.wait_rc_channel_value(ch, 1000, timeout=15)
 
         self.start_subtest("Checking higher-channel semantics")
         self.context_push()
@@ -3742,7 +3742,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.start_subsubtest("wp slope")
         mavproxy.send('wp slope\n')
         mavproxy.expect("WP3: slope 0.1")
-        self.delay_sim_time(5, reason="waypoint slope calculation")
         self.end_subsubtest("wp slope")
 
         if not self.mavproxy_can_do_mision_item_protocols():
@@ -4067,11 +4066,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                         self.progress("Seemed to have stopped at stopping point")
                         return
 
-    def assert_fence_breached(self):
-        m = self.assert_receive_message('FENCE_STATUS', timeout=10)
-        if m.breach_status != 1:
-            raise NotAchievedException("Expected to be breached")
-
     def wait_fence_not_breached(self, timeout=5):
         tstart = self.get_sim_time()
         while True:
@@ -4096,7 +4090,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameters({
             "FENCE_TYPE": 2,    # circle only
         })
-        self.delay_sim_time(5, reason="fence breaches to clear") # let breaches clear
+        self.wait_fence_not_breached()
         # FIXME: should we allow this?
         self.progress("Ensure we can arm with no poly in place")
         self.change_mode("GUIDED")
@@ -4157,9 +4151,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ]
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            items)
-        self.delay_sim_time(5, reason="fence breach check") # ArduPilot only checks for breaches @1Hz
-        self.drain_mav()
-        self.assert_fence_breached()
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1})
         try:
             self.arm_motors_with_rc_input()
         except NotAchievedException:
@@ -4213,9 +4205,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         ]
         self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_FENCE,
                                            items)
-        self.delay_sim_time(5, reason="fence breach check") # ArduPilot only checks for breaches @1Hz
-        self.drain_mav()
-        self.assert_fence_breached()
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1})
         try:
             self.arm_motors_with_rc_input()
         except NotAchievedException:
@@ -4249,9 +4239,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, 50, -50), # tl,
             ]),
         ])
-        self.delay_sim_time(5, reason="fence breach check") # ArduPilot only checks for breaches @1Hz
-        self.drain_mav()
-        self.assert_fence_breached()
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1})
         try:
             self.arm_motors_with_rc_input()
         except NotAchievedException:
@@ -4285,9 +4273,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, 50, -50), # tl,
             ]),
         ])
-        self.delay_sim_time(5, reason="fence breach check") # ArduPilot only checks for breaches @1Hz
-        self.drain_mav()
-        self.assert_fence_breached()
+        self.wait_message_field_values('FENCE_STATUS', {'breach_status': 1})
         try:
             self.arm_motors_with_rc_input()
         except NotAchievedException:
@@ -4553,7 +4539,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.delay_sim_time(5, reason="RTL to complete")
         self.progress("Drive outside bottom circle")
         fence_middle = self.offset_location_ne(here, 150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -4588,7 +4573,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.delay_sim_time(5, reason="RTL to complete")
         self.progress("Drive outside circle")
         fence_middle = self.offset_location_ne(here, 150, 0)
         self.drive_somewhere_breach_boundary_and_rtl(
@@ -5873,13 +5857,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # Wait for the rover to reach and begin the circle waypoint
         self.wait_current_waypoint(2, timeout=60)
 
-        self.delay_sim_time(10, reason="circle waypoint traversal")
-
-        # Check that POSITION_TARGET_GLOBAL_INT reports the correct AMSL
-        # altitude
-        self.assert_received_message_field_values("POSITION_TARGET_GLOBAL_INT", {
+        # Wait for POSITION_TARGET_GLOBAL_INT to report the correct AMSL altitude
+        self.wait_message_field_values("POSITION_TARGET_GLOBAL_INT", {
             "alt": home_alt_amsl,
-        }, epsilon=10)
+        }, epsilon=10, timeout=30)
 
         self.disarm_vehicle()
 
@@ -6097,8 +6078,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # Set SIM parameter after reboot when AIS sim is loaded
         self.set_parameter("SIM_AIS_COUNT", 5)
-
-        self.delay_sim_time(10, reason="AIS simulation to initialise")
 
         m = self.assert_receive_message('AIS_VESSEL', timeout=60)
 
@@ -6895,7 +6874,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.offset_location_ne(here, 50, -50), # tl,
             ]),
         ])
-        self.delay_sim_time(5, reason="fence to be uploaded")
         self.wait_ready_to_arm()
 
         self.reboot_sitl()

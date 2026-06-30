@@ -1207,8 +1207,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 #        if (m.onboard_control_sensors_health & receiver_bit):
 #            raise NotAchievedException("Sensor healthy when it shouldn't be")
         self.set_parameter("SIM_RC_FAIL", 0)
-        # have to allow time for RC to be fetched from SITL
-        self.delay_sim_time(0.5, reason="RC to be fetched from SITL")
+        # wait for RC to be fetched from SITL and the receiver to recover
+        self.wait_sensor_state(receiver_bit, True, True, True)
         self.do_timesync_roundtrip()
         m = self.assert_receive_message('SYS_STATUS')
         self.progress("Testing receiver enabled")
@@ -1243,9 +1243,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Sensor healthy when it shouldn't be")
         self.progress("Making RC work again")
         self.set_parameter("SIM_RC_FAIL", 0)
-        # have to allow time for RC to be fetched from SITL
         self.progress("Giving receiver time to recover")
-        self.delay_sim_time(0.5, reason="receiver to recover")
+        self.wait_sensor_state(receiver_bit, True, True, True)
         self.do_timesync_roundtrip()
         m = self.assert_receive_message('SYS_STATUS')
         self.progress("Testing receiver enabled")
@@ -1433,21 +1432,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("Auto disarmed", timeout=60)
 
     def assert_fence_sys_status(self, present, enabled, health):
-        self.delay_sim_time(1, reason="fence status to propagate")
-        self.do_timesync_roundtrip()
-        m = self.assert_receive_message('SYS_STATUS')
-        tests = [
-            ("present", present, m.onboard_control_sensors_present),
-            ("enabled", enabled, m.onboard_control_sensors_enabled),
-            ("health", health, m.onboard_control_sensors_health),
-        ]
-        bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
-        for test in tests:
-            (name, want, field) = test
-            got = (field & bit) != 0
-            if want != got:
-                raise NotAchievedException("fence status incorrect; %s want=%u got=%u" %
-                                           (name, want, got))
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE, present, enabled, health)
 
     def MODE_SWITCH_RESET(self):
         '''test the MODE_SWITCH_RESET auxiliary function'''
@@ -1982,11 +1967,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.takeoff(alt=50, mode='TAKEOFF')
         # simulate the effect of a blocked pitot tube
         self.set_parameter("ARSPD_RATIO", 0.1)
-        self.delay_sim_time(10, reason="blocked pitot to be detected")
-        if (self.get_parameter("ARSPD_USE") == 0):
-            self.progress("Faulty Sensor Disabled")
-        else:
-            raise NotAchievedException("Airspeed Sensor Not Disabled")
+        self.wait_parameter_value("ARSPD_USE", 0, timeout=15)
+        self.progress("Faulty Sensor Disabled")
         self.delay_sim_time(20, reason="sensor fault monitoring period")
         # simulate the effect of blockage partially clearing
         self.set_parameter("ARSPD_RATIO", 1.0)
@@ -1997,11 +1979,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Fault Sensor Re-Enabled")
         # simulate the effect of blockage fully clearing
         self.set_parameter("ARSPD_RATIO", 2.0)
-        self.delay_sim_time(60, reason="airspeed sensor to re-enable")
-        if (self.get_parameter("ARSPD_USE") == 1):
-            self.progress("Sensor Re-Enabled")
-        else:
-            raise NotAchievedException("Airspeed Sensor Not Re-Enabled")
+        self.wait_parameter_value("ARSPD_USE", 1, timeout=70)
+        self.progress("Sensor Re-Enabled")
         self.fly_home_land_and_disarm()
 
     def AIRSPEED_AUTOCAL(self):
@@ -4322,12 +4301,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(7, 2000)
         self.delay_sim_time(2, reason="fence switch to register")
         self.set_rc(7, 1000)
-        self.delay_sim_time(2, reason="fence switch to register")
 
         self.progress("Check fence is disabled")
-        m = self.assert_receive_message('SYS_STATUS')
-        if (m.onboard_control_sensors_enabled & fence_bit):
-            raise NotAchievedException("Fence disable with switch failed")
+        self.wait_sensor_state(fence_bit, present=True, enabled=False, healthy=True)
 
         self.progress("Fly below floor and check for no breach")
         self.change_altitude(40, relative=True)

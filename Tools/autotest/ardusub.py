@@ -882,10 +882,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist_to_final_wp_m=5)
-        self.delay_sim_time(3, reason="final waypoint to settle")
 
         # Expect sub to hover at final altitude
-        self.assert_altitude(-36.0)
+        self.wait_altitude(altitude_min=-37, altitude_max=-35, relative=False, minimum_duration=2, timeout=30)
 
         self.disarm_vehicle()
         self.progress("Mission OK")

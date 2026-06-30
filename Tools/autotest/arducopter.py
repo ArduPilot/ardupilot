@@ -1494,12 +1494,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'SIM_BATT_VOLTAGE': 11.4,
         })
         self.wait_statustext("Battery 1 is low", timeout=60)
-        self.delay_sim_time(5, reason="battery failsafe to trigger")
         self.wait_mode("RTL")
         self.delay_sim_time(10, reason="RTL to progress")
         self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
         self.wait_statustext("Battery 1 is critical", timeout=60)
-        self.delay_sim_time(5, reason="battery critical failsafe to trigger")
         self.wait_mode("LAND")
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
@@ -1516,13 +1514,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(10, reason="vehicle to move away")
         self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
         self.wait_statustext("Battery 1 is low", timeout=60)
-        self.delay_sim_time(5, reason="battery failsafe to trigger")
         self.wait_mode("SMART_RTL")
         self.change_mode("LOITER")
         self.delay_sim_time(10, reason="loiter to stabilise before critical voltage")
         self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
         self.wait_statustext("Battery 1 is critical", timeout=60)
-        self.delay_sim_time(5, reason="battery critical failsafe to trigger")
         self.wait_mode("SMART_RTL")
         self.wait_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
@@ -3621,7 +3617,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, True, True, True, verbose=True)
 
         self.change_mode('LOITER')
-        self.delay_sim_time(5, reason="mode change to take effect")
         self.wait_statustext("Need Position Estimate", timeout=300)
 
         self.context_pop()
@@ -5384,20 +5379,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Laser not enabled in SYS_STATUS")
         self.progress("Disabling laser using switch")
         self.set_rc(9, 1000)
-        self.delay_sim_time(1, reason="rangefinder switch to take effect")
         self.progress("Checking RangeFinder is marked as disabled in mavlink")
-        m = self.assert_receive_message('SYS_STATUS', timeout=10)
-        flags = m.onboard_control_sensors_enabled
-        if flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
-            raise NotAchievedException("Laser enabled in SYS_STATUS")
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, False, False)
 
         self.progress("Re-enabling rangefinder")
         self.set_rc(9, 2000)
-        self.delay_sim_time(1, reason="rangefinder switch to take effect")
-        m = self.assert_receive_message('SYS_STATUS', timeout=10)
-        flags = m.onboard_control_sensors_enabled
-        if not flags & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION:
-            raise NotAchievedException("Laser not enabled in SYS_STATUS")
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, True)
 
         self.takeoff(10, mode="LOITER")
 
@@ -8108,7 +8095,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 p3=mount_yaw,
                 p7=mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING,
             )
-            self.delay_sim_time(5, reason="mount to reach target angles and copter to yaw")
+            self.wait_heading(heading + mount_yaw, accuracy=1, minimum_duration=2)
             # We have disabled yaw servo, so expect mount yaw to be zero
             self.assert_mount_rpy(r, p, 0)
             # But we expect the copter to yaw instead
@@ -9540,7 +9527,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "EK3_SRC1_VELXY": 0,
         })
         self.reboot_sitl()
-        self.delay_sim_time(30, reason="accels/gyros to settle")  # wait for accels/gyros to settle
+        # allow the vehicle to settle after reboot; the EKF flags come
+        # good long before the accelerometers are consistent enough to
+        # pass the arm-time "Accels inconsistent" check
+        self.delay_sim_time(30, reason="accels/gyros to settle")
 
         # check for expected EKF flags
         ahrs_ekf_type = self.get_parameter("AHRS_EKF_TYPE")
@@ -10680,10 +10670,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subsubtest("Protocol %i: Checking original voltage (electrical)" % proto_ver)
         # ArduPilot spits out essentially uninitialised battery
         # messages until we read things from the battery:
-        self.delay_sim_time(30, reason="generator battery data to initialise")
         original_elec_m = self.wait_message_field_values('BATTERY_STATUS', {
             "charge_state": mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK
-        }, instance=elec_battery_instance)
+        }, instance=elec_battery_instance, timeout=60)
 
         if original_elec_m.battery_remaining < 90:
             raise NotAchievedException("Bad original percentage")
@@ -10804,7 +10793,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         #######################################################################
         self.start_subtest("Checking GENERATOR_STATUS while OFF.")
         self.set_message_rate_hz("GENERATOR_STATUS", 10)
-        self.delay_sim_time(1, reason="message rate to take effect")
 
         self.wait_generator_speed_and_state(0, 0, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_OFF)
 
@@ -11107,7 +11095,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         #######################################################################
         self.start_subtest("Checking GENERATOR_STATUS while OFF.")
         self.set_message_rate_hz("GENERATOR_STATUS", 10)
-        self.delay_sim_time(1, reason="message rate to take effect")
 
         self.wait_generator_speed_and_state(0, 0, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_OFF)
 
@@ -11435,7 +11422,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(set_wp, timeout=10)
         self.progress("Reset mission")
         self.set_rc(7, 2000)
-        self.delay_sim_time(1, reason="switch to debounce")
         self.wait_current_waypoint(0, timeout=10)
         self.set_rc(7, 1000)
 
@@ -11632,8 +11618,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.delay_sim_time(0.1, reason="poll interval")
 
         self.progress("Should be unhealthy again if we stop sending messages")
-        self.delay_sim_time(1, reason="sensor timeout to expire")
-        self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_PROXIMITY, True, True, False)
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_PROXIMITY, True, True, False)
 
         # now make sure we get echoed back the same sorts of things we send:
         # distances are in cm
@@ -11735,8 +11720,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.delay_sim_time(0.1, reason="poll interval")
 
             self.progress("Should be unhealthy again if we stop sending messages")
-            self.delay_sim_time(1, reason="sensor timeout to expire")
-            self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False)
+            self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False)
 
             self.progress("Landing gear should deploy with current_distance below min_distance")
             self.change_mode('STABILIZE')
@@ -15616,7 +15600,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.check_fence_upload_download([
             self.fence_item_NAV_FENCE_HOME_CIRCLE_INCLUSION(radius=50),
         ])
-        self.delay_sim_time(2, "wait for mode to settle")  # fixme; wait_mode needs maintain=
         self.wait_mode('LOITER')
         # be careful of AC_FENCE_GIVE_UP_DISTANCE here (100m default)
         self.progress("Move home 60m North")
@@ -15933,15 +15916,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.set_rc(6, RC6_MIN)
-        self.delay_sim_time(1, reason="RC6 change to update parameter")
-        self.assert_parameter_value("LOIT_SPEED_MS", TUNE_MIN)
+        self.wait_parameter_value("LOIT_SPEED_MS", TUNE_MIN)
 
         self.set_rc(6, RC6_MAX)
-        self.delay_sim_time(1, reason="RC6 change to update parameter")
-        self.assert_parameter_value("LOIT_SPEED_MS", TUNE_MAX)
+        self.wait_parameter_value("LOIT_SPEED_MS", TUNE_MAX)
         self.set_rc(6, RC6_MIN)
-        self.delay_sim_time(1, reason="RC6 change to update parameter")
-        self.assert_parameter_value("LOIT_SPEED_MS", TUNE_MIN)
+        self.wait_parameter_value("LOIT_SPEED_MS", TUNE_MIN)
 
         self.set_rc(6, int((RC6_MIN+RC6_MAX)/2))
         self.delay_sim_time(1, reason="RC6 change to update parameter")
@@ -15949,12 +15929,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_parameter_value("LOIT_SPEED_MS", int((TUNE_MIN+TUNE_MAX)/2), epsilon=1)
 
         self.set_rc(7, RC7_MIN)
-        self.delay_sim_time(1, reason="RC7 change to update parameter")
-        self.assert_parameter_value("PSC_NE_VEL_I", TUNE2_MIN)
+        self.wait_parameter_value("PSC_NE_VEL_I", TUNE2_MIN)
 
         self.set_rc(7, RC7_MAX)
-        self.delay_sim_time(1, reason="RC7 change to update parameter")
-        self.assert_parameter_value("PSC_NE_VEL_I", TUNE2_MAX)
+        self.wait_parameter_value("PSC_NE_VEL_I", TUNE2_MAX)
 
         # make sure RC6 is unaffected:
         self.assert_parameter_value("LOIT_SPEED_MS", int((TUNE_MIN+TUNE_MAX)/2), epsilon=1)
@@ -17072,9 +17050,8 @@ RTL_ALT_M 111
         self.wait_altitude(300, 20000, relative=True)
         self.set_rc(3, 1000)
         self.set_rc(4, 1000)
-        self.delay_sim_time(11, reason="rudder disarm to trigger")
         self.progress("Checking we disarm")
-        self.wait_disarmed(timeout=5)
+        self.wait_disarmed(timeout=20)
         self.set_rc(4, 1500)
         self.arm_vehicle()
         self.set_rc(3, 1600)
@@ -17322,7 +17299,6 @@ RTL_ALT_M 111
         self.arm_vehicle()
         self.progress("Takeoff throttle")
         rc3_value = 1800
-        self.delay_sim_time(1, reason="throttle override to take effect")
         self.wait_altitude(20, 30, relative=True)
         self.progress("Neutral throttle")
         rc3_value = 1600
