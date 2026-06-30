@@ -182,21 +182,27 @@ struct PACKED log_GuidedTarget {
     float vel_target_x;
     float vel_target_y;
     float vel_target_z;
+    float acc_target_x;
+    float acc_target_y;
+    float acc_target_z;
 };
 
 // Write a Guided mode target
-void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target_neu_cm, const Vector3f& vel_target_neu_cms)
+void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target_neu_cm, const Vector3f& vel_target_neu_cms, const Vector3f& acc_target_neu_cmss)
 {
     struct log_GuidedTarget pkt = {
         LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : target_type,
-        pos_target_x    : pos_target_neu_cm.x,
-        pos_target_y    : pos_target_neu_cm.y,
-        pos_target_z    : pos_target_neu_cm.z,
-        vel_target_x    : vel_target_neu_cms.x,
-        vel_target_y    : vel_target_neu_cms.y,
-        vel_target_z    : vel_target_neu_cms.z
+        pos_target_x    : pos_target_neu_cm.x * 0.01f,
+        pos_target_y    : pos_target_neu_cm.y * 0.01f,
+        pos_target_z    : pos_target_neu_cm.z * 0.01f,
+        vel_target_x    : vel_target_neu_cms.x * 0.01f,
+        vel_target_y    : vel_target_neu_cms.y * 0.01f,
+        vel_target_z    : vel_target_neu_cms.z * 0.01f,
+        acc_target_x    : acc_target_neu_cmss.x * 0.01f,
+        acc_target_y    : acc_target_neu_cmss.y * 0.01f,
+        acc_target_z    : acc_target_neu_cmss.z * 0.01f
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -257,6 +263,9 @@ void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target
 // @Field: vX: Target velocity, X-Axis
 // @Field: vY: Target velocity, Y-Axis
 // @Field: vZ: Target velocity, Z-Axis
+// @Field: aX: Target acceleration, X-Axis
+// @Field: aY: Target acceleration, Y-Axis
+// @Field: aZ: Target acceleration, Z-Axis
 
 // type and unit information can be found in
 // libraries/AP_Logger/Logstructure.h; search for "log_Units" for
@@ -276,7 +285,7 @@ const struct LogStructure Sub::log_structure[] = {
     { LOG_DATA_FLOAT_MSG, sizeof(log_Data_Float),         
       "DFLT",  "QBf",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_GUIDEDTARGET_MSG, sizeof(log_GuidedTarget),
-      "GUIP",  "QBffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ", "s-mmmnnn", "F-000000" },
+      "GUIP",  "QBfffffffff",    "TimeUS,Type,pX,pY,pZ,vX,vY,vZ,aX,aY,aZ", "s-mmmnnnooo", "F-000000000" },
 };
 
 uint8_t Sub::get_num_log_structures() const
