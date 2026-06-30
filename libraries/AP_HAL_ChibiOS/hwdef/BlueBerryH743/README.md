@@ -22,6 +22,7 @@ The BlueBerry_H743 is a flight controller designed and produced by blueberry
 ## Physical
 
 ![BlueBerry_H743 overview](BlueBerry_H743_overview.jpg)
+## Pinout
 
 ![BlueBerry_H743 pinout](BlueBerry_H743_pinout.png)
 
