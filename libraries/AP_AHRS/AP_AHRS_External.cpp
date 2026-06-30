@@ -30,6 +30,10 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.control_gain_scaler_XY = 1;
     results.control_gain_scaler_Z = 1;
 
+    // control height is never limited:
+    // results.control_height_limit_valid = false;
+    // results.control_height_limit_m = 0;
+
     if (!extahrs.get_quaternion(results.quaternion)) {
         results.attitude_valid = false;
         return;
