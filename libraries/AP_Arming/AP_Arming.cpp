@@ -855,7 +855,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
             };
             for (const auto &channel_to_check : channels_to_check) {
                 const auto *c = channel_to_check.channel;
-                if (c->get_control_in() != 0) {
+                if (!is_zero(c->norm_input_dz())) {
                     if ((method != Method::RUDDER) || (c != rc().get_arming_channel())) { // ignore the yaw input channel if rudder arming
                         check_failed(Check::RC, true, "%s (RC%d) is not neutral", channel_to_check.name, c->ch());
                         check_passed = false;
@@ -867,8 +867,8 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
         // if throttle check is enabled, require zero input
         if (rc().arming_check_throttle()) {
             const RC_Channel *c = &rc().get_throttle_channel();
-                if (c->get_control_in() != 0) {
-                    check_failed(Check::RC, true, "%s (RC%d) is not neutral", "Throttle", c->ch());
+                if (!is_zero(c->norm_input_dz())) {
+                    check_failed(Check::RC, true, "%s (RC%d) is not neutral (%f)", "Throttle", c->ch(), c->norm_input_dz());
                     check_passed = false;
                 }
             c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
@@ -1958,7 +1958,7 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
     }
     if (method == AP_Arming::Method::RUDDER) {
         // if throttle is not down, then pilot cannot rudder arm/disarm
-        if (rc().get_throttle_channel().get_control_in() > 0) {
+        if (rc().get_throttle_channel().norm_input_dz() > 0.0f) {
             return false;
         }
         // option must be enabled:

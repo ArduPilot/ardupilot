@@ -81,9 +81,8 @@ void ModeDrift::run()
     vel_right_ms   = constrain_float(vel_right_ms,   -DRIFT_SPEEDLIMIT_MS, DRIFT_SPEEDLIMIT_MS);
     vel_forward_ms = constrain_float(vel_forward_ms, -DRIFT_SPEEDLIMIT_MS, DRIFT_SPEEDLIMIT_MS);
 
-    // roll_input from yaw stick (convert centidegrees -> radians before LP)
-    // (channel_yaw->get_control_in() returns centidegrees)
-    const float yaw_stick_rad = cd_to_rad((float)channel_yaw->get_control_in());
+    // roll_input from yaw stick (convert to radians before LP)
+    const float yaw_stick_rad = cd_to_rad(channel_yaw->norm_input_dz() * 4500.0f);
     roll_input_rad = roll_input_rad * 0.96f + yaw_stick_rad * 0.04f;
 
     // convert user input into desired roll velocity term (m/s equivalent)

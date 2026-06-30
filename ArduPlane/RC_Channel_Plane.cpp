@@ -207,7 +207,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
         // setup input throttle as a range. This is needed as init_aux_function is called
         // after set_control_channels()
         if (plane.channel_throttle) {
-            plane.channel_throttle->set_range(100);
+            plane.channel_throttle->set_range();
         }
         // note that we don't call do_aux_function() here as we don't
         // want to startup with reverse thrust

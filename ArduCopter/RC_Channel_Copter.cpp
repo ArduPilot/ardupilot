@@ -221,7 +221,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
         case AUX_FUNC::SAVE_TRIM:
             if ((ch_flag == AuxSwitchPos::HIGH) &&
                 (copter.flightmode->allows_save_trim()) &&
-                (copter.channel_throttle->get_control_in() == 0)) {
+                (is_zero(copter.channel_throttle->norm_input_dz()))) {
                 copter.g2.rc_channels.save_trim();
             }
             break;
@@ -237,7 +237,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
                 }
 
                 // do not allow saving the first waypoint with zero throttle
-                if (!copter.mode_auto.mission.present() && (copter.channel_throttle->get_control_in() == 0)) {
+                if (!copter.mode_auto.mission.present() && (is_zero(copter.channel_throttle->norm_input_dz()))) {
                     break;
                 }
 
@@ -262,7 +262,7 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
                 cmd.content.location = copter.current_loc;
 
                 // if throttle is above zero, create waypoint command
-                if (copter.channel_throttle->get_control_in() > 0) {
+                if (copter.channel_throttle->norm_input_dz() > 0.0f) {
                     cmd.id = MAV_CMD_NAV_WAYPOINT;
                 } else {
                     // with zero throttle, create LAND command

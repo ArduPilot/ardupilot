@@ -379,7 +379,7 @@ private:
     void enable_motor_output();
     void read_radio();
     void set_throttle_and_failsafe(uint16_t throttle_pwm);
-    void set_throttle_zero_flag(int16_t throttle_control);
+    void set_throttle_zero_flag(float throttle_control);
 
     // sensors.cpp
     void read_barometer(void);

@@ -63,11 +63,11 @@ bool ModeFlip::init(bool ignore_checks)
     roll_dir = pitch_dir = 0;
 
     // choose direction based on pilot's roll and pitch sticks
-    if (channel_pitch->get_control_in() > 300) {
+    if (channel_pitch->norm_input_dz() > 300.0f/4500.0f) {
         pitch_dir = FLIP_PITCH_BACK;
-    } else if (channel_pitch->get_control_in() < -300) {
+    } else if (channel_pitch->norm_input_dz() < -300.0f/4500.0f) {
         pitch_dir = FLIP_PITCH_FORWARD;
-    } else if (channel_roll->get_control_in() >= 0) {
+    } else if (channel_roll->norm_input_dz() >= 0.0f) {
         roll_dir = FLIP_ROLL_RIGHT;
     } else {
         roll_dir = FLIP_ROLL_LEFT;
@@ -219,7 +219,7 @@ void ModeFlip::abandon_flip()
 
 bool ModeFlip::input_is_high_magnitude(RC_Channel &input) const
 {
-    return abs(input.get_control_in()) >= 4000;
+    return fabsf(channel_roll->norm_input_dz()) >= 4000.0f/4500.0f;
 }
 
 #endif

@@ -179,7 +179,7 @@ float Plane::stabilize_roll_get_roll_out()
 #endif
 
     bool disable_integrator = false;
-    if (control_mode == &mode_stabilize && channel_roll->get_control_in() != 0) {
+    if (control_mode == &mode_stabilize && !is_zero(channel_roll->norm_input_dz())) {
         disable_integrator = true;
     }
     return rollController.get_servo_out(nav_roll_cd - ahrs.roll_sensor, speed_scaler, disable_integrator,
@@ -249,7 +249,7 @@ float Plane::stabilize_pitch_get_pitch_out()
 
     int32_t demanded_pitch = nav_pitch_cd + int32_t(g.pitch_trim * 100.0) + SRV_Channels::get_output_scaled(SRV_Channel::k_throttle) * g.kff_throttle_to_pitch;
     bool disable_integrator = false;
-    if (control_mode == &mode_stabilize && channel_pitch->get_control_in() != 0) {
+    if (control_mode == &mode_stabilize && !is_zero(channel_pitch->norm_input_dz())) {
         disable_integrator = true;
     }
     /* force landing pitch if:
@@ -374,7 +374,7 @@ void Plane::stabilize_yaw()
     } else {
         // otherwise use ground steering when no input control and we
         // are below the GROUND_STEER_ALT
-        ground_steering = (channel_roll->get_control_in() == 0 && 
+        ground_steering = (is_zero(channel_roll->norm_input_dz()) &&
                                             fabsf(relative_altitude) < g.ground_steer_alt);
         if (!landing.is_ground_steering_allowed()) {
             // don't use ground steering on landing approach
@@ -479,7 +479,7 @@ void Plane::stabilize()
     /*
       see if we should zero the attitude controller integrators. 
      */
-    if (is_zero(get_throttle_input()) &&
+    if (is_zero(get_throttle_input_norm()) &&
         fabsf(relative_altitude) < 5.0f && 
         fabsf(barometer.get_climb_rate()) < 0.5f &&
         ahrs.groundspeed() < 3) {
@@ -589,7 +589,7 @@ int16_t Plane::calc_nav_yaw_course(void)
 int16_t Plane::calc_nav_yaw_ground(void)
 {
     if (gps.ground_speed() < 1 && 
-        is_zero(get_throttle_input()) &&
+        is_zero(get_throttle_input_norm()) &&
         flight_stage != AP_FixedWing::FlightStage::TAKEOFF &&
         flight_stage != AP_FixedWing::FlightStage::ABORT_LANDING) {
         // manual rudder control while still
