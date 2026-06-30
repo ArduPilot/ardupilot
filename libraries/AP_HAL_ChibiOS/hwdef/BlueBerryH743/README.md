@@ -32,7 +32,7 @@ The BlueBerry_H743 is a flight controller designed and produced by blueberry
 - Dimensions: 34 x 51 x 15 mm
 - Weight: 40g
 
-## Power supply
+## Power supplies
 
 The BlueBerry_H743 supports 3-12s Li battery input. It has 3 ways of BEC. Please see the table below.
 
