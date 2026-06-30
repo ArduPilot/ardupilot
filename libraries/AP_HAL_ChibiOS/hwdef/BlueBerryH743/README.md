@@ -91,7 +91,7 @@ Outputs are grouped and every output within a group must use the same output pro
 
 13(LED) is Group 5;
 
-Output 13 can be used as LED neopixel output;
+Output 13 , marked LED, can be used as a  neopixel output
 
 ## Battery Monitoring
 
