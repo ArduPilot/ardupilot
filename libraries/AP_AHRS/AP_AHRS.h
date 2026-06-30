@@ -407,7 +407,10 @@ public:
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
-    bool get_hgt_ctrl_limit(float &limit) const;
+    bool get_hgt_ctrl_limit(float &limit) const {
+        limit = active_estimates->control_height_limit;
+        return active_estimates->control_height_limit_valid;
+    }
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // this is not related to terrain following

@@ -2008,41 +2008,6 @@ void AP_AHRS::load_watchdog_home()
     }
 }
 
-// get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
-// this is used to limit height during optical flow navigation
-// it will return false when no limiting is required
-bool AP_AHRS::get_hgt_ctrl_limit(float& limit) const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // We are not using an EKF so no limiting applies
-        return false;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.EKF2.getHeightControlLimit(limit);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.getHeightControlLimit(limit);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return false;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return false;
-#endif
-    }
-
-    return false;
-}
-
 // Set to true if the terrain underneath is stable enough to be used as a height reference
 // this is not related to terrain following
 void AP_AHRS::set_terrain_hgt_stable(bool stable)

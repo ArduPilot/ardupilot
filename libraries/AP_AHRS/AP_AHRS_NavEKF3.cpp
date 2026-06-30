@@ -208,6 +208,8 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 
     EKF3.getEkfControlLimits(results.control_ground_speed_limit, results.control_gain_scaler_XY);
     results.control_gain_scaler_Z = 1;
+
+    results.control_height_limit_valid = EKF3.getHeightControlLimit(results.control_height_limit);
 }
 
 bool AP_AHRS_NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

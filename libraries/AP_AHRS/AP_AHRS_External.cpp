@@ -137,6 +137,10 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.control_ground_speed_limit = 400.0;
     results.control_gain_scaler_XY = 1;
     results.control_gain_scaler_Z = 1;
+
+    // control height is ever limited:
+    // results.control_height_limit_valid = false;
+    // results.control_height_limit = 0;
 }
 
 bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

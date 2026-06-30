@@ -230,6 +230,11 @@ public:
         float control_gain_scaler_XY;
         float control_gain_scaler_Z;
 
+        // hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
+        // this is used to limit height during optical flow navigation
+        float control_height_limit;
+        bool control_height_limit_valid; // false when no limiting is required
+
     private:
         bool hagl_valid;
         float hagl;

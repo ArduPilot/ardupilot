@@ -269,6 +269,9 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.control_ground_speed_limit = 50.0;
     results.control_gain_scaler_XY = 0.5;
     results.control_gain_scaler_Z = 0.25;
+    // control height is ever limited:
+    // results.control_height_limit_valid = false;
+    // results.control_height_limit = 0;
 }
 
 /*
