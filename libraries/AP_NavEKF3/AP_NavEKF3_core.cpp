@@ -545,6 +545,9 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     // initialise static process model states
     stateStruct.gyro_bias.zero();
     stateStruct.accel_bias.zero();
+    // Note: Z-axis accel bias initialization from learned hover value (EK3_ABIAS_HVR_Z)
+    // is done in Control.cpp after tilt alignment completes, to ensure it doesn't
+    // get overwritten by covariance maintenance
     stateStruct.wind_vel.zero();
     stateStruct.earth_magfield.zero();
     stateStruct.body_magfield.zero();
@@ -749,6 +752,19 @@ void NavEKF3_core::correctDeltaAngle(Vector3F &delAng, ftype delAngDT, uint8_t g
 void NavEKF3_core::correctDeltaVelocity(Vector3F &delVel, ftype delVelDT, uint8_t accel_index)
 {
     delVel -= inactiveBias[accel_index].accel_bias * (delVelDT / dtEkfAvg);
+
+    // Apply hover Z-bias correction for vibration rectification compensation.
+    // Uses a value FROZEN at boot (not the learning parameter) to avoid feedback
+    // instability. Each IMU has its own learned correction value.
+    //
+    // Only applied when enabled by vehicle code and motors are armed.
+    // Z-bias learning is already inhibited during ground effect (takeoff_expected
+    // or touchdown_expected), so the EKF won't learn to compensate for this
+    // correction while on the ground. Applying immediately on arm avoids a
+    // sudden shift when transitioning above ground effect altitude.
+    if (dal.get_hover_z_bias_enabled() && motorsArmed) {
+        delVel.z -= frontend->_accelBiasHoverZ_correction[accel_index] * delVelDT;
+    }
 }
 
 /*

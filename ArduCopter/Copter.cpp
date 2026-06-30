@@ -783,6 +783,9 @@ void Copter::one_hz_loop()
 #endif
 
     if (!motors->armed()) {
+        // Set hover Z-bias corrections in EKF once it's active
+        set_hover_z_bias_correction();
+
         update_using_interlock();
 
         // check the user hasn't updated the frame class or type
@@ -793,6 +796,9 @@ void Copter::one_hz_loop()
         motors->update_throttle_range();
 #endif
     }
+
+    // Update EKF accel bias learning inhibit based on armed state
+    update_accel_bias_inhibit();
 
     // update assigned functions and enable auxiliary servos
     AP::srv().enable_aux_servos();
