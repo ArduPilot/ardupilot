@@ -264,6 +264,11 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     // results.variances_valid = false;
 
     // terrain_alt_variance_valid = false;
+
+    // lower gains in VTOL controllers when flying on DCM
+    results.control_ground_speed_limit = 50.0;
+    results.control_gain_scaler_XY = 0.5;
+    results.control_gain_scaler_Z = 0.25;
 }
 
 /*
@@ -1382,13 +1387,6 @@ bool AP_AHRS_DCM::get_origin(Location &ret) const
 bool AP_AHRS_DCM::yaw_source_available(void) const
 {
     return AP::compass().use_for_yaw();
-}
-
-void AP_AHRS_DCM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // lower gains in VTOL controllers when flying on DCM
-    ekfGndSpdLimit = 50.0;
-    ekfNavVelGainScaler = 0.5;
 }
 
 #endif  // AP_AHRS_DCM_ENABLED

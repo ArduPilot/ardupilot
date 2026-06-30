@@ -1678,21 +1678,6 @@ void AP_AHRS::writeTerrainAMSL(float alt_amsl_m)
 #endif
 }
 
-/*
-  get gain factor for Z controllers
- */
-float AP_AHRS::getControlScaleZ(void) const
-{
-#if AP_AHRS_DCM_ENABLED
-    if (active_EKF_type() == EKFType::DCM) {
-        // when flying on DCM lower gains by 4x to cope with the high
-        // lag
-        return 0.25;
-    }
-#endif
-    return 1;
-}
-
 // get compass offset estimates
 // true if offsets are valid
 bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const

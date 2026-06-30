@@ -132,6 +132,11 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.terrain_alt_variance = 0;
     results.terrain_alt_variance_valid = true;
+
+    // no limit on gains, large vel limit
+    results.control_ground_speed_limit = 400.0;
+    results.control_gain_scaler_XY = 1;
+    results.control_gain_scaler_Z = 1;
 }
 
 bool AP_AHRS_External::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
@@ -147,13 +152,6 @@ bool AP_AHRS_External::get_origin(Location &ret) const
 bool AP_AHRS_External::set_origin(const Location &loc)
 {
     return AP::externalAHRS().set_origin(loc);
-}
-
-void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // no limit on gains, large vel limit
-    ekfGndSpdLimit = 400.0;
-    ekfNavVelGainScaler = 1;
 }
 
 #endif

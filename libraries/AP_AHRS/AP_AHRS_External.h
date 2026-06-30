@@ -63,8 +63,6 @@ public:
     // AHRS backend to be shared with the external AHRS
     bool set_origin(const Location &loc) override;
     bool get_origin(Location &ret) const override;
-
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 };
 
 #endif
