@@ -100,8 +100,6 @@ public:
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
 
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
-
 private:
 
     // Get a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.

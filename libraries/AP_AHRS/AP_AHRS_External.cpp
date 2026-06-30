@@ -25,6 +25,11 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.primary_accel = _ins.get_first_usable_accel();
 #endif  // AP_INERTIALSENSOR_ENABLED
 
+    // no limit on gains, large vel limit
+    results.control_ground_speed_limit_ms = 400.0;
+    results.control_gain_scaler_XY = 1;
+    results.control_gain_scaler_Z = 1;
+
     if (!extahrs.get_quaternion(results.quaternion)) {
         results.attitude_valid = false;
         return;
@@ -147,13 +152,6 @@ bool AP_AHRS_External::get_origin(Location &ret) const
 bool AP_AHRS_External::set_origin(const Location &loc)
 {
     return AP::externalAHRS().set_origin(loc);
-}
-
-void AP_AHRS_External::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // no limit on gains, large vel limit
-    ekfGndSpdLimit = 400.0;
-    ekfNavVelGainScaler = 1;
 }
 
 #endif

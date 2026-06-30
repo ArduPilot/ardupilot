@@ -79,7 +79,6 @@ public:
     // relative-origin functions for fallback in AP_InertialNav
     bool get_origin(Location &ret) const override;
 
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
 
 private:

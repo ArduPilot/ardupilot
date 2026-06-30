@@ -226,6 +226,14 @@ public:
         float terrain_alt_variance;
         bool terrain_alt_variance_valid;
 
+        // impositions on control placed on it by the estimator.  So,
+        // for example, if Optical flow is in play then perhaps we
+        // can't travel as fast:
+        float control_ground_speed_limit_ms;
+        // or we want to scale down the control magnitudes:
+        float control_gain_scaler_XY;
+        float control_gain_scaler_Z;
+
     private:
         bool hagl_valid;
         float hagl;
@@ -315,8 +323,6 @@ public:
     virtual bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const {
         return false;
     }
-
-    virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
 };
 
 // Converts an upstream "something changed" key (an EKF reset
