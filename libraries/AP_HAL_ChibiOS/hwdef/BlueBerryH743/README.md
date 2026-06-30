@@ -35,7 +35,7 @@ The BlueBerry_H743 is a flight controller designed and produced by blueberry
 
 ## Power supplies
 
-The BlueBerry_H743 supports 3-12s Li battery input. It has 3 ways of BEC. Please see the table below.
+The BlueBerry_H743 supports 3-12s Li battery input. It provides 3 on-board BEC regulators. Please see the table below.
 
 | Power symbol | Power source | Max power (current) |
 |--------------|--------------|---------------------|
