@@ -880,7 +880,10 @@ void NavEKF3_core::readAirSpdData()
         }
         // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
         tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
-    } else {
+    } else if (assume_zero_sideslip()) {
+        // synthetic airspeed is only valid for 'fly forward' vehicles that
+        // do not sideslip; fusing it on a multicopter corrupts the attitude
+        // and velocity states when dead reckoning (see issue #33451)
         if (is_positive(defaultAirSpeed)) {
             // this is the preferred method with the autopilot providing a model based airspeed estimate
             if (imuDataDelayed.time_ms - prevTasStep_ms > 200 ) {
@@ -908,6 +911,9 @@ void NavEKF3_core::readAirSpdData()
                 tasDataDelayed.allowFusion = false;
             }
         }
+    } else {
+        tasDataToFuse = false;
+        tasDataDelayed.allowFusion = false;
     }
 }
 
