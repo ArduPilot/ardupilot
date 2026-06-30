@@ -272,16 +272,22 @@ void AP_MotorsHeli_Single::calculate_scalars()
     // configure main rotor and update scalars
     _main_rotor.configure();
 
-    // send setpoints to DDVP rotor controller or DDFP and trigger recalculation of scalars
-    if (use_tail_RSC()) {
-        if (get_tail_type() == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW || get_tail_type() == TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW) {
+    // configure DDVP and DDFP tail rotor controllers
+    switch (get_tail_type()) {
+        case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CCW:
+        case TAIL_TYPE::DIRECTDRIVE_FIXEDPITCH_CW:
             _tail_rotor.configure(ROTOR_CONTROL_MODE_DDFP, _direct_drive_ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
-        } else if (get_tail_type() == TAIL_TYPE::DIRECTDRIVE_VARPITCH || get_tail_type() == TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV) {
+            break;
+        case TAIL_TYPE::DIRECTDRIVE_VARPITCH:
+        case TAIL_TYPE::DIRECTDRIVE_VARPIT_EXT_GOV:
             _tail_rotor.configure(ROTOR_CONTROL_MODE_SETPOINT, _direct_drive_ramp_time.get(), _main_rotor._runup_time.get(), _main_rotor._critical_speed.get(), _main_rotor._idle_output.get());
             _tail_rotor.set_setpoint_desired_rotor_speed(_direct_drive_tailspeed.get());
-        }
-    } else {
-        _tail_rotor.configure(ROTOR_CONTROL_MODE_DISABLED, 0, 0, 0, 0);
+            break;
+        case TAIL_TYPE::SERVO:
+        default:
+            // disable for all other tail types as they do not use the RSC controller for the tail rotor
+            _tail_rotor.configure(ROTOR_CONTROL_MODE_DISABLED, 0, 0, 0, 0);
+            break;
     }
 
     // calculate armed scalars for both main and tail rotor
