@@ -747,6 +747,37 @@ void NavEKF3_core::SelectVelPosFusion()
         }
     }
 
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // Fuse the rangefinder-aided AGL KF vertical velocity as a velD observation.
+    // This anchors the main filter's vertical velocity - and makes the Z accel
+    // bias observable - without making the rangefinder a height source, so absolute
+    // height stays baro-referenced. Only when: no vertical-velocity source is active
+    // (a real velZ source is always preferred), the AGL KF is valid, not already
+    // fusing synthetic zero velocity on the ground, and horizontal speed is low
+    // enough that terrain-relative velocity approximates the inertial vertical
+    // velocity. Gated on fuseHgtData to fuse at baro cadence.
+    fusingAglKfVel = false;
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfVelForVelD) &&
+        aglKfValid && !fusingStationaryZeroVel &&
+        !(useGpsVertVel || useExtNavVel)) {
+        if (fuseHgtData) {
+            const ftype horizSpeedSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
+            const ftype aglKfVelMaxSpd = (frontend->_aglKfVelMaxSpd < 0.0f) ?
+                                         frontend->_useRngSwSpd.get() : frontend->_aglKfVelMaxSpd.get();
+            const ftype aglKfVelGateSpd = MAX(aglKfVelMaxSpd, 0.0f) +
+                                           (aglKfVelGateOpen ? 0.5f : 0.0f);
+            aglKfVelGateOpen = horizSpeedSq < sq(aglKfVelGateSpd);
+            if (aglKfVelGateOpen) {
+                fuseVelVertData = true;
+                velPosObs[2] = -aglKfV;   // AGL KF velocity is +up; the NED velD observation is its negative
+                fusingAglKfVel = true;
+            }
+        }
+    } else {
+        aglKfVelGateOpen = false;
+    }
+#endif
+
     // perform fusion
     if (fuseVelData|| fuseVelVertData || fusePosData || fuseHgtData) {
         FuseVelPosNED();
@@ -755,6 +786,7 @@ void NavEKF3_core::SelectVelPosFusion()
         fuseVelVertData = false;
         fuseHgtData = false;
         fusePosData = false;
+        fusingAglKfVel = false;
     }
 }
 
@@ -870,6 +902,18 @@ void NavEKF3_core::FuseVelPosNED()
         }
         R_OBS[5] = posDownObsNoise;
         for (uint8_t i=3; i<=5; i++) R_OBS_DATA_CHECKS[i] = R_OBS[i];
+
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        if (fusingAglKfVel) {
+            // velD observation comes from the AGL KF: use its own (self-managed)
+            // velocity variance, with only a small numerical floor. Trusting it is
+            // what gives the fusion authority even when the main filter is
+            // over-confident in velD (small P[6][6]); a large floor here would
+            // collapse the Kalman gain and make the fusion ineffective.
+            R_OBS[2] = MAX(aglKfP[1][1], sq(0.05f));
+            R_OBS_DATA_CHECKS[2] = R_OBS[2];
+        }
+#endif
 
         // if vertical GPS velocity data and an independent height source is being used, check to see if the GPS vertical velocity and altimeter
         // innovations have the same sign and are outside limits. If so, then it is likely aliasing is affecting
@@ -1089,6 +1133,13 @@ void NavEKF3_core::FuseVelPosNED()
                 fuseData[2] = true;
             }
         }
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        // AGL KF supplies a vertical-velocity-only observation (no horizontal
+        // velocity), so enable velD fusion independently of fuseVelData.
+        if (fusingAglKfVel) {
+            fuseData[2] = true;
+        }
+#endif
         if (fusePosData) {
             fuseData[3] = true;
             fuseData[4] = true;
@@ -1105,7 +1156,14 @@ void NavEKF3_core::FuseVelPosNED()
                 // adjust scaling on GPS measurement noise variances if not enough satellites
                 if (obsIndex <= 2) {
                     innovVelPos[obsIndex] = stateStruct.velocity[obsIndex] - velPosObs[obsIndex];
-                    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index)) {
+                    bool applyGpsScaler = frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index);
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+                    // the AGL KF velD observation carries its own variance, not GPS-scaled
+                    if (fusingAglKfVel && obsIndex == 2) {
+                        applyGpsScaler = false;
+                    }
+#endif
+                    if (applyGpsScaler) {
                         R_OBS[obsIndex] *= sq(gpsNoiseScaler);
                     }
                 } else if (obsIndex == 3 || obsIndex == 4) {
