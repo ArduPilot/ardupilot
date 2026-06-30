@@ -67,7 +67,7 @@ All UARTs are DMA capable.
 
 ## RC Input
 
-When the SERIALn_PROTOCOL parameter for RCin is 23, it accepts SBUS protocol input; when set to 0, it supports CRSF protocol input.
+RC input is provided on UART6 for all ArduPilot supported protocols except PPM. The SBUS pin on the HD VTX connector is tied to RX6. See [RC Systems](https://ardupilot.org/plane/docs/common-rc-systems.html) for details for each protocol type.
 
 ## OSD Support
 
