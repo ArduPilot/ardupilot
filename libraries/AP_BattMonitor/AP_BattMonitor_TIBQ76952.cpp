@@ -652,7 +652,7 @@ void AP_BattMonitor_TIBQ76952::read(void)
     _state.voltage = accumulate.voltage / accumulate.count;
     _state.state_of_health_pct = accumulate.health_pct / accumulate.count;
     _state.has_state_of_health_pct = true;
-    _state.current_amps = fabsf(accumulate.current / accumulate.count);
+    _state.current_amps = -accumulate.current / accumulate.count;
     _state.temperature = accumulate.temp / accumulate.count;
     const uint8_t num_cells = MIN(AP_BATTMON_CELL_COUNT, MIN(ARRAY_SIZE(_state.cell_voltages.cells), ARRAY_SIZE(accumulate.cell_voltages_mv)));
     for (uint8_t i = 0; i < num_cells; i++) {
@@ -797,7 +797,7 @@ void AP_BattMonitor_TIBQ76952::read_voltage_current_temperature()
 {
     // exit immediately if full voltage scan has not completed (FULL_SCAN bit 7)
     const uint16_t alarm_raw_status = direct_command_read_2bytes(TIBQ769x2_AlarmRawStatus);
-    if (alarm_raw_status & ALARM_STATUS_FULLSCAN) {
+    if (!(alarm_raw_status & ALARM_STATUS_FULLSCAN)) {
         return;
     }
 
@@ -814,7 +814,7 @@ void AP_BattMonitor_TIBQ76952::read_voltage_current_temperature()
         accumulate.cell_voltages_mv[i] += cell_voltage_mv;
     }
 
-    // read current (positive values = discharging, negative = charging)
+    // read current (positive values = charging, negative = discharging)
     const int16_t cc2_current = direct_command_read_2bytes(TIBQ769x2_CC2Current);
     accumulate.current += cc2_current * 0.001f; // convert to Amps
 
