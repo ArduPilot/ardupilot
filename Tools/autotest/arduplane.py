@@ -3583,6 +3583,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def XsensEAHRS(self):
+        '''Test Xsens EAHRS support'''
+        self.fly_external_AHRS("Xsens", 12, "ap1.txt")
+
     def GpsSensorPreArmEAHRS(self):
         '''Test pre-arm checks related to EAHRS_SENSORS using the MicroStrain7 driver'''
         self.customise_SITL_commandline(["--serial4=sim:MicroStrain7"])
@@ -8381,6 +8385,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MicroStrainEAHRS5,
             self.MicroStrainEAHRS7,
             self.InertialLabsEAHRS,
+            self.XsensEAHRS,
             self.KebniSensAItionExternalINS,
             self.KebniSensAItionExternalIMU,
             self.GpsSensorPreArmEAHRS,
