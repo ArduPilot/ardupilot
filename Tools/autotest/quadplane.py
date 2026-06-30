@@ -1453,7 +1453,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_rc(3, 1700)
-        # self.delay_sim_time(1)
+        # self.delay_sim_time(1, "let data in log accrue")
         # self.send_debug_trap()
         # output here is a bit weird as we also receive altitude from
         # the simulated ship....
@@ -2478,7 +2478,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         def hover_voltage():
             # let the 10Hz sim voltage filter settle, then average a few samples
-            self.delay_sim_time(2)
+            self.delay_sim_time(2, "let hover voltage settle")
             samples = 10
             total = 0
             for _ in range(samples):
