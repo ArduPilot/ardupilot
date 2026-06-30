@@ -10,7 +10,7 @@ class GCS_Sub;
 enum GuidedSubMode {
     Guided_WP,
     Guided_Velocity,
-    Guided_PosVel,
+    Guided_PosVelAccel,
     Guided_Angle,
 };
 
@@ -266,8 +266,8 @@ public:
     void guided_set_angle(const Quaternion &q, float climb_rate_cms, bool use_yaw_rate, float yaw_rate_rads);
     void guided_set_angle(const Quaternion&, float);
     void guided_limit_set(uint32_t timeout_ms, float alt_min_cm, float alt_max_cm, float horiz_max_cm);
-    bool guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms);
-    bool guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
+    bool guided_set_posvelaccel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss);
+    bool guided_set_posvelaccel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
     bool guided_set_destination(const Vector3f& destination_neu_cm);
     bool guided_set_destination(const Location&);
     bool guided_set_destination(const Vector3f& destination_neu_cm, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw);
@@ -289,12 +289,12 @@ protected:
 private:
     void guided_pos_control_run();
     void guided_vel_control_run();
-    void guided_posvel_control_run();
+    void guided_posvelaccel_control_run();
     void guided_angle_control_run();
     void guided_takeoff_run();
     void guided_pos_control_start();
     void guided_vel_control_start();
-    void guided_posvel_control_start();
+    void guided_posvelaccel_control_start();
     void guided_angle_control_start();
 };
 

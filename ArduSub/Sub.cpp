@@ -465,6 +465,23 @@ void Sub::rc_loop()
 }
 #endif
 
+#if AP_SCRIPTING_ENABLED
+// set target position, velocity and acceleration (for use by scripting)
+bool Sub::set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative)
+{
+    // exit if vehicle is not in Guided mode or Auto-Guided mode
+    if ((control_mode != Mode::Number::GUIDED) && !(control_mode == Mode::Number::AUTO && auto_mode == Auto_NavGuided)) {
+        return false;
+    }
+
+    const Vector3f pos_neu_cm(target_pos_ned_m.x * 100.0f, target_pos_ned_m.y * 100.0f, -target_pos_ned_m.z * 100.0f);
+    const Vector3f vel_neu_cms(target_vel_ned_ms.x * 100.0f, target_vel_ned_ms.y * 100.0f, -target_vel_ned_ms.z * 100.0f);
+    const Vector3f accel_neu_cmss(target_accel_ned_mss.x * 100.0f, target_accel_ned_mss.y * 100.0f, -target_accel_ned_mss.z * 100.0f);
+
+    return mode_guided.guided_set_posvelaccel(pos_neu_cm, vel_neu_cms, accel_neu_cmss, use_yaw, yaw_deg * 100.0f, use_yaw_rate, yaw_rate_degs * 100.0f, yaw_relative);
+}
+#endif
+
 Sub *Sub::_singleton = nullptr;
 
 Sub sub;
