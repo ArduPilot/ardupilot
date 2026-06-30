@@ -3772,7 +3772,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # confirm Loiter stays engaged and armed (no EKF failsafe / mode
         # revert). A lat/lon position-hold check is not used: with no GPS the
         # EKF has no absolute origin, so global position is not valid here.
-        self.delay_sim_time(15)
+        self.delay_sim_time(15, "confirm Loiter stays engaged and armed")
         self.wait_mode('LOITER')
         if not self.armed():
             raise NotAchievedException("Disarmed during Loiter without compass yaw source")
@@ -3817,7 +3817,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # usable; switch to it and confirm it stays engaged and armed.
         self.wait_ekf_happy(require_absolute=True, timeout=30)
         self.change_mode('LOITER')
-        self.delay_sim_time(15)
+        self.delay_sim_time(15, "confirm Loiter stays engaged and armed")
         self.wait_mode('LOITER')
         if not self.armed():
             raise NotAchievedException("Disarmed during Loiter without compass yaw source")
@@ -5608,19 +5608,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         threshold = self.get_parameter("SURFTRAK_GLDST")
         # Glitch it below the threshold, observe that the reading is not rejected and there is no reset.
         self.set_parameter("SIM_SONAR_OFFSET", -(threshold-glitch_offset))
-        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.delay_sim_time(5, "wait for the vehicle altitude to stabilize")
         self.assert_altitude(alt_initial + (threshold - glitch_offset), accuracy=0.5)
         restore_offset(10)
-        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.delay_sim_time(5, "wait for the vehicle altitude to stabilize")
         self.assert_altitude(alt_initial, accuracy=0.5)
 
         # Glitch it over the threshold, observe there is reset.
         self.set_parameter("SIM_SONAR_OFFSET", -(threshold+glitch_offset))
-        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.delay_sim_time(5, "wait for the vehicle altitude to stabilize")
         # Vehicle doesn't change altitude, because the rangefinder offset has been reset.
         self.assert_altitude(alt_initial, accuracy=0.5)
         restore_offset(10)
-        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.delay_sim_time(5, "wait for the vehicle altitude to stabilize")
         self.assert_altitude(alt_initial - (threshold + glitch_offset), accuracy=0.5)
 
         self.start_subtest("Testing that the glitch threshold can be extended.")
@@ -5632,18 +5632,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         threshold = self.get_parameter("SURFTRAK_GLDST")
         # Glitch it below the threshold, observe that the reading is not rejected and there is no reset.
         self.set_parameter("SIM_SONAR_OFFSET", -(threshold-glitch_offset))
-        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.delay_sim_time(5, "wait for the vehicle altitude to stabilize")
         self.assert_altitude(alt_initial + (threshold - glitch_offset), accuracy=0.5)
         restore_offset(10)
-        self.delay_sim_time(5) # Wait for the vehicle to stabilize again.
+        self.delay_sim_time(5, "wait for the vehicle to stabilize again")
         self.assert_altitude(alt_initial, accuracy=0.5)
 
         # Glitch it over the threshold, observe there is reset.
         self.set_parameter("SIM_SONAR_OFFSET", -(threshold+glitch_offset))
-        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.delay_sim_time(5, "wait for the vehicle altitude to stabilize")
         self.assert_altitude(alt_initial, accuracy=0.5)
         restore_offset(10)
-        self.delay_sim_time(5) # Wait for the vehicle to stabilize again.
+        self.delay_sim_time(5, "wait for the vehicle to stabilize again")
         self.assert_altitude(alt_initial - (threshold + glitch_offset), accuracy=0.5)
 
         self.start_subtest("Testing that the glitch reset can be disabled.")
@@ -5651,10 +5651,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SURFTRAK_GLSAM", 0)  # Disable resetting.
         # Glitch it above the threshold, observe that the reading is rejected and there is no reset.
         self.set_parameter("SIM_SONAR_OFFSET", -(threshold+glitch_offset))
-        self.delay_sim_time(5) # Wait for the vehicle altitude to stabilize.
+        self.delay_sim_time(5, "wait for the vehicle altitude to stabilize")
         self.assert_altitude(alt_initial, accuracy=0.5)  # The aircraft should reject the measurements and not climb.
         restore_offset(10)
-        self.delay_sim_time(5) # Wait for the vehicle to stabilize again.
+        self.delay_sim_time(5, "wait for the vehicle to stabilize again")
         self.assert_altitude(alt_initial, accuracy=0.5)  # The aircraft should have maintained the same altitude reference.
 
         self.do_RTL()
@@ -15405,7 +15405,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.check_fence_upload_download([
             self.fence_item_NAV_FENCE_HOME_CIRCLE_INCLUSION(radius=50),
         ])
-        self.delay_sim_time(2)  # fixme; wait_mode needs maintain=
+        self.delay_sim_time(2, "wait for mode to settle")  # fixme; wait_mode needs maintain=
         self.wait_mode('LOITER')
         # be careful of AC_FENCE_GIVE_UP_DISTANCE here (100m default)
         self.progress("Move home 60m North")
@@ -17133,7 +17133,7 @@ RTL_ALT_M 111
         self.reboot_sitl()
 
         self.set_rc(12, 2000)
-        self.delay_sim_time(0.2)
+        self.delay_sim_time(0.2, "allow aux switch change to register")
 
         bit_clear_by_rc = 1 << 14
 

@@ -927,7 +927,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # switch ch10 LOW to disable overrides; verify GCS overrides are now blocked
         self.set_rc(10, 1000)
-        self.delay_sim_time(0.5)  # allow debounce to complete
+        self.delay_sim_time(0.5, "allow debounce to complete")
 
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < 15:
@@ -1194,7 +1194,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
 
         self.set_rc(12, 2000)
-        self.delay_sim_time(0.2)
+        self.delay_sim_time(0.2, "allow aux switch change to register")
 
         bit_clear_by_rc = 1 << 14
 
@@ -7204,7 +7204,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_clear_collection('STATUSTEXT')
         self.set_parameter("AHRS_OPTIONS", 0)
         self.reboot_sitl()
-        self.delay_sim_time(60)
+        self.delay_sim_time(60, "allow time for AHRS to select an estimator")
         if self.statustext_in_collections("AHRS: EKF3 active"):
             raise NotAchievedException("AHRS used EKF3 without EKF height data")
 
