@@ -657,8 +657,6 @@ void AP_BattMonitor_TIBQ76952::read(void)
     // copy accumulated values to state
     _state.last_time_micros = AP_HAL::micros();
     _state.voltage = accumulate.voltage / accumulate.count;
-    _state.state_of_health_pct = accumulate.health_pct / accumulate.count;
-    _state.has_state_of_health_pct = true;
     _state.current_amps = -accumulate.current / accumulate.count;
     _state.temperature = accumulate.temp / accumulate.count;
     const uint8_t num_cells = MIN(AP_BATTMON_CELL_COUNT, MIN(ARRAY_SIZE(_state.cell_voltages.cells), ARRAY_SIZE(accumulate.cell_voltages_mv)));

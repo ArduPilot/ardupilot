@@ -127,7 +127,6 @@ protected:
         uint32_t cell_voltages_mv[AP_BATT_MONITOR_CELLS_MAX];   // individual cell voltages in mv
         float current;      // battery current in amps
         float temp;         // battery temperature in degrees Celsius
-        float health_pct;   // battery health percentage
     } accumulate;
     HAL_Semaphore accumulate_sem;   // semaphore for accumulate structure
     uint32_t last_read_time_ms;     // timestamp of last read
