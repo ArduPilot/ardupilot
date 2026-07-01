@@ -681,7 +681,7 @@ void AP_BattMonitor_TIBQ76952::set_powered_state(bool power_on)
     if (!configured) {
         return;
     }
-    sub_command(power_on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_DSG_PDSG_OFF);
+    indirect_send_command(power_on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_DSG_PDSG_OFF);
 }
 
 // periodic timer callback
@@ -708,7 +708,7 @@ bool AP_BattMonitor_TIBQ76952::configure()
     }
 
     // check device id, exit on failure
-    const uint32_t device_number = sub_command_read_4bytes(TIBQ769x2_DEVICE_NUMBER);
+    const uint32_t device_number = indirect_read_4bytes(TIBQ769x2_DEVICE_NUMBER);
     if (device_number != DEVICE_ID_TIBQ7695) {
         Debug("BQ76952: Unknown device detected - ID: 0x%08lX", (unsigned long)device_number);
         return false;
@@ -716,15 +716,15 @@ bool AP_BattMonitor_TIBQ76952::configure()
 
     // check device's firmware and hardware versions
 #if DEBUG_PRINT
-    const uint32_t fw_version = sub_command_read_4bytes(TIBQ769x2_FW_VERSION);
-    const uint32_t hw_version = sub_command_read_4bytes(TIBQ769x2_HW_VERSION);
+    const uint32_t fw_version = indirect_read_4bytes(TIBQ769x2_FW_VERSION);
+    const uint32_t hw_version = indirect_read_4bytes(TIBQ769x2_HW_VERSION);
     Debug("BQ76952 detected, fw: 0x%08lX, hw: 0x%08lX", (unsigned long)fw_version, (unsigned long)hw_version);
 #endif
 
     // wake up device
-    sub_command(TIBQ769x2_EXIT_DEEPSLEEP);
+    indirect_send_command(TIBQ769x2_EXIT_DEEPSLEEP);
     hal.scheduler->delay(10);
-    sub_command(TIBQ769x2_SLEEP_DISABLE);
+    indirect_send_command(TIBQ769x2_SLEEP_DISABLE);
     hal.scheduler->delay(10);
 
     // clear any remaining permanent failure alerts
@@ -739,15 +739,15 @@ bool AP_BattMonitor_TIBQ76952::configure()
         Debug("BQ76952: updating configuration");
 
         // enter CONFIGUPDATE mode (Subcommand 0x0090) - required to program device RAM settings
-        sub_command(TIBQ769x2_SET_CFGUPDATE);
+        indirect_send_command(TIBQ769x2_SET_CFGUPDATE);
 
         // write configuration settings to device registers
         for (uint8_t i = 0; i < ARRAY_SIZE(config_settings); i++) {
-            set_register(config_settings[i].reg_addr, config_settings[i].reg_data, config_settings[i].len);
+            indirect_write(config_settings[i].reg_addr, config_settings[i].reg_data, config_settings[i].len);
         }
 
         // exit configuration mode
-        sub_command(TIBQ769x2_EXIT_CFGUPDATE);
+        indirect_send_command(TIBQ769x2_EXIT_CFGUPDATE);
 
         // mode 1 is one-shot and auto-clears; mode 2 remains enabled for future auto-checks
         if (update_type == ConfigUpdateType::WRITE_ONCE) {
@@ -756,11 +756,11 @@ bool AP_BattMonitor_TIBQ76952::configure()
     }
 
     // enable charging FET only
-    sub_command(TIBQ769x2_ALL_FETS_ON);
+    indirect_send_command(TIBQ769x2_ALL_FETS_ON);
     hal.scheduler->delay(1);
-    sub_command(TIBQ769x2_DSG_PDSG_OFF);
+    indirect_send_command(TIBQ769x2_DSG_PDSG_OFF);
     hal.scheduler->delay(1);
-    sub_command(TIBQ769x2_FET_ENABLE);
+    indirect_send_command(TIBQ769x2_FET_ENABLE);
     hal.scheduler->delay(1);
 
     // mark configuration as complete to prevent repeated attempts
@@ -781,7 +781,7 @@ bool AP_BattMonitor_TIBQ76952::check_configuration_ok() const
         uint8_t actual[4] {};
         uint8_t expected[4] {};
 
-        if (!sub_command(setting.reg_addr, 0, CommandType::READ, actual, setting.len)) {
+        if (!indirect_read(setting.reg_addr, actual, setting.len)) {
             Debug("BQ76952: config read failed reg=0x%04x", setting.reg_addr);
             configured_matches = false;
             continue;
@@ -921,8 +921,8 @@ void AP_BattMonitor_TIBQ76952::check_sleep_timeout()
         Debug("BQ76952: sleep timeout");
 
         // sleep mode commands must be sent twice
-        sub_command(TIBQ769x2_DEEPSLEEP);
-        sub_command(TIBQ769x2_DEEPSLEEP);
+        indirect_send_command(TIBQ769x2_DEEPSLEEP);
+        indirect_send_command(TIBQ769x2_DEEPSLEEP);
     }
 }
 
@@ -975,91 +975,76 @@ bool AP_BattMonitor_TIBQ76952::direct_command_write_1byte(uint16_t reg, uint8_t 
     return write_register(reg, &data, 1);
 }
 
-// write 1, 2, or 4 bytes to a RAM data memory register (0x9xxx addresses)
-// this includes delays so it should only be called during startup configuration
-// uses subcommand protocol: write address+data to 0x3E, then checksum+length to 0x60
-void AP_BattMonitor_TIBQ76952::set_register(uint16_t reg_addr, uint32_t reg_data, uint8_t len) const
-{
-    // sanity check len argument
-    if (len != 1 && len != 2 && len != 4) {
-        return;
-    }
-
-    // prepare transmit data
-    const uint8_t tx_reg_data[6] {
-        LOWBYTE(reg_addr),
-        HIGHBYTE(reg_addr),
-        uint8_t((reg_data >> 0) & 0xFF),
-        uint8_t((reg_data >> 8) & 0xFF),
-        uint8_t((reg_data >> 16) & 0xFF),
-        uint8_t((reg_data >> 24) & 0xFF)
-    };
-
-    // write sub command address
-    write_register(0x3E, tx_reg_data, len + 2);
-    hal.scheduler->delay(2);
-
-    // write checksum and length
-    const uint8_t tx_buffer[2] {calculate_checksum(tx_reg_data, len + 2), uint8_t(len + 4)};
-    write_register(0x60, tx_buffer, 2);
-    hal.scheduler->delay(2);
-}
-
-// send a command-only subcommand (no data payload, no checksum)
+// send a command with no data payload and no checksum
 // used for commands like ALL_FETS_ON, SLEEP_DISABLE, EXIT_CFGUPDATE, etc.
-bool AP_BattMonitor_TIBQ76952::sub_command(uint16_t command) const
+bool AP_BattMonitor_TIBQ76952::indirect_send_command(uint16_t command) const
 {
     const uint8_t tx_buffer[2] {LOWBYTE(command), HIGHBYTE(command)};
     return write_register(0x3E, tx_buffer, 2);
 }
 
-// send a subcommand with read or write capability
+// write 1, 2 or 4 bytes to a Data Memory address (0x9xxx) or Subcommand with data
 // this includes delays so it should only be called during startup configuration
-// READ: writes command to 0x3E, reads response from 0x40
-// WRITE: writes command+data to 0x3E, then checksum+length to 0x60
-bool AP_BattMonitor_TIBQ76952::sub_command(uint16_t command, uint16_t data, CommandType type, uint8_t *rx_data, uint8_t rx_len) const
+// writes address/command+data to 0x3E, then checksum+length to 0x60 to commit the write
+bool AP_BattMonitor_TIBQ76952::indirect_write(uint16_t addr, uint32_t data, uint8_t len) const
 {
-    switch (type) {
-    case CommandType::READ: {
-        // read subcommand
-        const uint8_t tx_reg[2] {LOWBYTE(command), HIGHBYTE(command)};
-        if (!write_register(0x3E, tx_reg, 2)) {
-            return false;
-        }
-        hal.scheduler->delay(2);
-        if (rx_data && rx_len > 0) {
-            // read into provided buffer
-            if (!read_register(0x40, rx_data, rx_len)) {
-                return false;
-            }
-            return true;
-        }
-        break;
+    // sanity check len argument
+    if (len != 1 && len != 2 && len != 4) {
+        return false;
     }
-    case CommandType::WRITE: {
-        // write subcommand with 1 byte data (FET_Control, REG12_Control)
-        const uint8_t tx_reg[3] {LOWBYTE(command), HIGHBYTE(command), uint8_t(data & 0xFF)};
-        if (!write_register(0x3E, tx_reg, 3)) {
-            return false;
-        }
-        hal.scheduler->delay(1);
-        const uint8_t tx_buffer[2] {calculate_checksum(tx_reg, 3), 0x05}; // 0x05 is combined length of registers address and data
-        if (!write_register(0x60, tx_buffer, 2)) {
-            return false;
-        }
-        hal.scheduler->delay(1);
-        break;
+
+    // prepare transmit data
+    const uint8_t tx_reg_data[6] {
+        LOWBYTE(addr),
+        HIGHBYTE(addr),
+        uint8_t((data >> 0) & 0xFF),
+        uint8_t((data >> 8) & 0xFF),
+        uint8_t((data >> 16) & 0xFF),
+        uint8_t((data >> 24) & 0xFF)
+    };
+
+    // write address/command and data
+    if (!write_register(0x3E, tx_reg_data, len + 2)) {
+        return false;
     }
+    hal.scheduler->delay(2);
+
+    // write checksum and length to commit the write
+    const uint8_t tx_buffer[2] {calculate_checksum(tx_reg_data, len + 2), uint8_t(len + 4)};
+    if (!write_register(0x60, tx_buffer, 2)) {
+        return false;
     }
+    hal.scheduler->delay(2);
 
     return true;
 }
 
-// subcommands are sent using a 16 bit command address and support block data transfers
-uint32_t AP_BattMonitor_TIBQ76952::sub_command_read_4bytes(uint16_t reg) const
+// read 1, 2 or 4 bytes from a Data Memory address (0x9xxx) or Subcommand response
+// this includes delays so it should only be called during startup configuration
+// writes address/command to 0x3E, then reads the response from 0x40
+bool AP_BattMonitor_TIBQ76952::indirect_read(uint16_t addr, uint8_t *rx_data, uint8_t len) const
+{
+    // sanity check read buffer
+    if (rx_data == nullptr || len == 0) {
+        return false;
+    }
+
+    // write address/command
+    const uint8_t tx_reg[2] {LOWBYTE(addr), HIGHBYTE(addr)};
+    if (!write_register(0x3E, tx_reg, 2)) {
+        return false;
+    }
+    hal.scheduler->delay(2);
+
+    // read response into provided buffer
+    return read_register(0x40, rx_data, len);
+}
+
+// read 4 bytes via the indirect mechanism (e.g. DEVICE_NUMBER, FW_VERSION, HW_VERSION)
+uint32_t AP_BattMonitor_TIBQ76952::indirect_read_4bytes(uint16_t addr) const
 {
     uint8_t rx_data[4];
-    if (sub_command(reg, 0x00, CommandType::READ, rx_data, 4)) {
+    if (indirect_read(addr, rx_data, 4)) {
         return UINT32_VALUE(rx_data[3], rx_data[2], rx_data[1], rx_data[0]);
     }
     return 0;
