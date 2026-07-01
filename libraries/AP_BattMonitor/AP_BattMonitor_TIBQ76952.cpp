@@ -959,42 +959,11 @@ bool AP_BattMonitor_TIBQ76952::write_register(uint8_t reg_addr, const uint8_t *r
     return true;
 }
 
-// read or write a direct command. returns true on success
-// direct commands are send using a 7-bit command address and may trigger an action or read/write a datavalue
-bool AP_BattMonitor_TIBQ76952::direct_command(uint16_t command, uint16_t data, CommandType type, uint8_t *rx_data, uint8_t rx_len) const
-{
-    // sanity check read buffer
-    if (type == CommandType::READ && rx_data == nullptr) {
-        return false;
-    }
-
-    // prepare transmit buffer
-    const uint8_t tx_buffer[2] {LOWBYTE(data), HIGHBYTE(data)};
-    switch (type) {
-    case CommandType::READ:
-        return read_register(command, rx_data, rx_len);
-    case CommandType::WRITE:
-        return write_register(command, tx_buffer, rx_len);
-    }
-
-    return false;
-}
-
-// send a direct command to read 1 byte
-uint8_t AP_BattMonitor_TIBQ76952::direct_command_read_1byte(uint16_t reg) const
-{
-    uint8_t rx_data;
-    if (direct_command(reg, 0x00, CommandType::READ, &rx_data, 1)) {
-        return rx_data;
-    }
-    return 0;
-}
-
 // send a direct command to read 2 bytes
 uint16_t AP_BattMonitor_TIBQ76952::direct_command_read_2bytes(uint16_t reg) const
 {
     uint8_t rx_data[2];
-    if (direct_command(reg, 0x00, CommandType::READ, rx_data, 2)) {
+    if (read_register(reg, rx_data, 2)) {
         return UINT16_VALUE(rx_data[1], rx_data[0]);
     }
     return 0;

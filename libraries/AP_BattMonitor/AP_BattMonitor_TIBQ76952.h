@@ -70,12 +70,7 @@ protected:
     // write a single byte to consecutive registers. returns true on success
     bool write_register(uint8_t reg_addr, const uint8_t *reg_data, uint8_t len) const;
 
-    // read or write a direct command. returns true on success
-    // direct commands are send using a 7-bit command address and may trigger an action or read/write a datavalue
-    bool direct_command(uint16_t command, uint16_t data, CommandType type, uint8_t *rx_data = nullptr, uint8_t rx_len = 2) const;
-
-    // send a direct command to read 1 or 2 bytes
-    uint8_t direct_command_read_1byte(uint16_t reg) const;
+    // send a direct command to read 2 bytes
     uint16_t direct_command_read_2bytes(uint16_t reg) const;
 
     // send a direct command to write 1byte
