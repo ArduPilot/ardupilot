@@ -12954,10 +12954,15 @@ switch value'''
         return sorted(logs.keys())[-1]
 
     def current_onboard_log_filepath(self):
-        '''return filepath to currently open dataflash log.  We assume that's
-        the latest log...'''
+        '''return filepath to the currently-open dataflash log.  This is the
+        most-recently-modified log, which is not necessarily the one with the
+        highest-numbered filename: once the onboard log count reaches
+        LOG_MAX_FILES the numbering wraps, so the current log can have a lower
+        number than stale logs left on disk from earlier in the run.  Picking
+        the lexicographically-highest name then returns a stale log with none
+        of the current messages.'''
         logs = self.log_list()
-        latest = logs[-1]
+        latest = max(logs, key=lambda p: os.path.getmtime(p))
         return latest
 
     def dfreader_for_path(self, path):
