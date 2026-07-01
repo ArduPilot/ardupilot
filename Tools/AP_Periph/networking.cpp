@@ -142,13 +142,13 @@ const AP_Param::GroupInfo Networking_Periph::var_info[] {
     // @DisplayName: PPP serial port
     // @Description: PPP serial port
     // @Range: -1 10
-    AP_GROUPINFO("PPP_PORT", 20, Networking_Periph, ppp_port, AP_PERIPH_NET_PPP_PORT_DEFAULT),
+    AP_SUBGROUPINFO("PPP_PORT", 20, Networking_Periph, ppp_port, AP_PERIPH_NET_PPP_PORT_DEFAULT),
 
     // @Param: PPP_BAUD
     // @DisplayName: PPP serial baudrate
     // @Description: PPP serial baudrate
     // @CopyFieldsFrom: SERIAL1_BAUD
-    AP_GROUPINFO("PPP_BAUD", 21, Networking_Periph, ppp_baud, AP_PERIPH_NET_PPP_BAUD_DEFAULT),
+    AP_SUBGROUPINFO("PPP_BAUD", 21, Networking_Periph, ppp_baud, AP_PERIPH_NET_PPP_BAUD_DEFAULT),
 #endif
 
     AP_GROUPEND
