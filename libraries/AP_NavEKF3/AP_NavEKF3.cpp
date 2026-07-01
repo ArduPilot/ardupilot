@@ -770,6 +770,30 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
 
+    // @Param: BCN_MAX_HDOP
+    // @DisplayName: Range beacon maximum HDOP
+    // @Description: Maximum horizontal dilution of precision (HDOP) of the range beacon geometry allowed for MLAT recovery to proceed. Lower values require better beacon geometry before recovery is attempted.
+    // @Range: 1.0 20.0
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("BCN_MAX_HDOP", 12, NavEKF3, _rngBcnMaxHDOP, 5.0f),
+
+    // @Param: BCN_REC_PASS
+    // @DisplayName: Range beacon MLAT recovery passes
+    // @Description: Number of consecutive successful recovery passes required before the EKF horizontal position is reset to the MLAT solution.
+    // @Range: 1 20
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("BCN_REC_PASS", 13, NavEKF3, _rngBcnRecPasses, 5),
+
+    // @Param: BCN_FUS_FAIL
+    // @DisplayName: Beacon fusion failure count threshold
+    // @Description: Number of failed beacon range innovation-gate checks before triggering MLAT position recovery. Set 0 to disable recovery.
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("BCN_FUS_FAIL", 14, NavEKF3, _rngBcnRecFailures, 0),
+
     AP_GROUPEND
 };
 
