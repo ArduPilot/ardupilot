@@ -11,8 +11,10 @@ profile-guided optimisation (PGO) is worth the build complexity.
 Plan: Step 0 measure, Step 1 data-driven SRAM relocation, Step 2 (only if
 warranted) full GCC `-fprofile-use` with linker hot/cold clustering.
 
-Status: Step 0 and Step 1 tooling landed and verified in software. Hardware
-baseline numbers still to be collected.
+Status: Steps 0-1 tooling landed; the Step 1c on-chip timer PC sampler is
+implemented and working on hardware (2026-07-02) and gives the first EKF-active
+core1 profile. Next: a full-histogram MAVLink-FTP readout to rank the spread
+EKF math for relocation (Step 2 gate).
 
 ## Step 0 - XIP cache hit-rate counter in perf_report
 
@@ -253,30 +255,75 @@ Mechanism (validated as far as building):
   `addr count`; attribute the bucket addresses to functions offline with the
   existing profiler's ELF symbol table.
 
-Status when parked (2026-06-26): a per-core counter hung off
-`CH_CFG_SYSTEM_TICK_HOOK` was wired up to confirm the hook fires on core1, but it
-was not flashed (the Debug Probe dropped off USB) and is moot anyway once the
-tickless caveat above is accounted for - the tick hook is the wrong source. To
-resume, skip it and go straight to the hardware TIMER alarm: program a free
-alarm for a fixed interval, enable its IRQ on core1's NVIC from core1, and in the
-ISR read `*(uint32_t *)(__get_PSP() + 0x18)` into the per-core bucket histogram.
-Verify on the bench that the histogram's top buckets attribute to the expected
-core1 hot functions (rate controller, EKF, IMU read_fifo) before trusting it.
-All prototype/verification code was reverted; not committed. The PGO go/no-go
-this profiler informs is already answered (xip=99%), so this is lower priority.
+This was implemented and is working on hardware (2026-07-02). See Step 1c.
 
-## Baseline numbers (to fill in on hardware)
+## Step 1c - on-chip timer PC sampler (implemented, working)
+
+`libraries/AP_HAL_ChibiOS/rp2350_pc_sampler.cpp`, enabled by
+`AP_RP2350_PC_SAMPLER_ENABLED` in the Laurel hwdef (investigation-only, strip
+before upstreaming). The SMP tickless scheduler binds TIMER0 ALARM0/ALARM1 to
+the two cores' per-core ticks and leaves ALARM2/ALARM3 free, so each core
+samples itself from a free alarm at ~5 kHz (197 us, prime). Reads out over
+MAVLink from `perf_report` as `PROFc1` STATUSTEXT; attributed offline with
+`Tools/debug/rp2350_pc_profiler.py --histogram` (paste the MP text). Token
+tags: F=flash from 0x10010000, S=sram from 0x20000000, C=scratch from
+0x20080000. No SWD, so it profiles the armed EKF path in flight.
+
+Four design points, each learned the hard way - do not undo them:
+
+- Priority 0 (zero-latency), NOT the tick priority. `PORT_FAST_PRIORITIES` is 0
+  so `CORTEX_MAX_KERNEL_PRIORITY` is 1; the kernel raises BASEPRI to mask every
+  IRQ at priority >= 1 (including the tick at 2) inside critical sections. A
+  masked sampler defers its ticks and they all fire the instant BASEPRI drops -
+  i.e. at `chSysUnlock` (chsys.h:385) - manufacturing a ~15% false hotspot.
+  Priority 0 is unmaskable and samples uniformly. It requires a bare naked
+  handler (OSAL_IRQ_PROLOGUE/EPILOGUE are illegal above kernel priority): the
+  stub reads EXC_RETURN bit 2 to pick MSP vs PSP, loads the stacked PC at
+  frame+0x18, and tail-calls the C sink with LR still holding EXC_RETURN so the
+  sink's return is the exception return.
+- Own the vectors via strong `Vector48`/`Vector4C` symbols with the ST-LLD
+  handlers suppressed (`ST_TIMER_ALARM2/3_SUPPRESS_ISR` in the hwdef). Core0 and
+  core1 use SEPARATE vector tables (core0 `rp2350_vectors`; core1 at
+  0x20081000), both copied from the flash table, so a strong symbol there covers
+  both cores; runtime-patching one table would not.
+- Full-resolution PC hash (4096 slots/core), NOT a bucketed array. The LTO build
+  packs functions into 24-200 B sections; 512 B buckets merged 5-16 functions
+  and bucket starts landed in padding, un-attributable. Exact PCs map 1:1 to
+  functions via nm.
+- Sampler entry (Vector48/4C + sink) lives in `.ramtext` (SRAM) so the ~5 kHz
+  path never XIP-stalls and runs during XIP lockout. Read-only, per-core arrays,
+  no locks - safe at priority 0 because it makes no OS calls.
+
+Gotchas hit (recorded so we do not repeat them):
+
+- AP `gcs().send_text` / vsnprintf has no `%.*s` (variable precision); it
+  silently prints nothing. NUL-terminate each line and use plain `%s`.
+- The RAMFUNC2 generator `rp2350_ramfunc2_sections.sh` aborted under
+  `set -o pipefail` when `nm` hit a GIMPLE-only LTO object; the nm scan is now
+  tolerant of unreadable objects.
+
+## Step 2 blocked on full-histogram readout
+
+`perf_report` emits only the top-16 hottest PCs, which on the EKF-active bench
+are ~8% of all samples: the EKF math is spread over hundreds of low-count PCs,
+so no single EKF instruction reaches the top-16 and per-function EKF cost is
+invisible. Planned fix: a `@SYS/pcprof.txt` MAVLink-FTP virtual file dumping the
+full per-core hash (addr count), aggregated by function offline. Needed before
+picking EKF relocation candidates.
+
+## Baseline numbers
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| `xip=` hit rate, armed, release build | TBD | from perf_report |
-| `xip=` hit rate, idle bench | 99% | disarmed, IMU + 335 Hz rate loop running (Run 1) |
-| core0 XIP / SRAM / invalid sample split | 94.1% / 5.3% / 0% | disarmed bench, 30k samples (Run 1) |
-| core1 XIP / SRAM / invalid sample split | 98.4% / 1.5% / 0% | disarmed; 81.4% is `__idle_thread` busy-spin, active core1 ~18% (Run 1) |
+| `xip=` hit rate, EKF3 active bench | 90% | disarmed but EKF3 active + core1 saturated (Run 2) |
+| `xip=` hit rate, idle bench | 99% | disarmed, IMU + rate loop, EKF not yet active (Run 1/2) |
+| core1 timer-sampler F/S/o split | 89% / 4% / 6% | EKF3 active, priority-0 unbiased (Run 2) |
+| core0 XIP / SRAM / invalid sample split | 94.1% / 5.3% / 0% | disarmed bench, 30k SWD samples (Run 1) |
+| core1 XIP / SRAM / invalid sample split | 98.4% / 1.5% / 0% | disarmed; 81.4% is `__idle_thread` busy-spin (Run 1, EKF idle) |
 | `read_AHRS` AVG us | TBD | current ~4220 us baseline (FEATURE_GAP) |
-| `glat` avg/max us | 186 / 644-1832 | disarmed; high jitter, max >> avg (Run 1) |
-| `rtc` avg us | 94 | disarmed; steady, well below glat (Run 1) |
-| free SRAM | TBD | headroom for more relocation |
+| `glat` avg/max us | 205 / 412-4466 | EKF3 active; high jitter, max >> avg (Run 2) |
+| `rtc` avg us | 85 | EKF3 active; steady, well below glat (Run 2) |
+| free SRAM | ~196 KB heap | after +48 KB sampler BSS; from map (Run 2) |
 
 ### Run 1 - 2026-06-26 (disarmed bench, first hardware capture)
 
@@ -328,6 +375,37 @@ Two reads from this:
 Note core load is ~55% peak, not the 100% saturation of the older
 `XIP.notes.md` runs - the current RAMFUNC2 set plus 93.75 MHz flash
 already removed the CPU-bound regime.
+
+### Run 2 - 2026-07-02 (on-chip timer sampler, EKF3 active)
+
+First capture from the Step 1c on-chip sampler. Two vehicle states seen on the
+same boot: (a) EKF "waiting for GPS config data" - only the rate loop and
+scheduler run, core1 ~90%; (b) EKF3 initialised on the IMU (no GPS needed to go
+active) and `AHRS: EKF3 active` - core1 saturates: `ekf_duty` 93-99%,
+`ekf_dur` ~8 ms, the adaptive decimation forced 3 -> 7, `core1load` 100%, and
+`xip` fell 99% -> 90%. State (b) is the representative heavy EKF workload.
+
+With the priority-0 sampler the `chSysUnlock` bias is gone. Hottest core1
+functions (EKF3 active, n=254k):
+
+```
+3.3% SRV_Channels::set_output_pwm   (xip, motor output every rate cycle)
+1.4% memset                         (xip, EKF matrix zeroing)
+1.9% __stats_*_measure_crit_thd + chTMStartMeasurementX  (ChibiOS TM/stats)
+1.0% calc_pwm + RCOutput::write + check_for_failed_motor  (motor chain, xip)
+```
+
+Two takeaways:
+
+- The motor-output chain (`set_output_pwm` + `calc_pwm` + `write` +
+  `check_for_failed_motor`, ~4.3%) is a clean, concentrated relocation cluster.
+- `CH_DBG_STATISTICS` / `CH_CFG_USE_TM` per-critical-section timing costs ~2% on
+  core1 - a free win to disable if `@SYS/threads.txt` stats are not needed.
+
+Open item: the emitted top-16 PCs are only ~8% of samples; the EKF bulk is
+spread and invisible in top-N. Blocked on the full-histogram readout (see "Step
+2 blocked on full-histogram readout" above) before ranking EKF relocation
+candidates. Do NOT draw Step 2 conclusions from top-N alone.
 
 ## Decision gate for Step 2 (full PGO)
 
