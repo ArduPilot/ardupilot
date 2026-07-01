@@ -68,6 +68,7 @@ void GCS_Plane::update_vehicle_sensor_status_flags(void)
     case Mode::Number::LOITER:
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
+    case Mode::Number::FOLLOW_TARGET:
     case Mode::Number::CIRCLE:
     case Mode::Number::TAKEOFF:
 #if HAL_QUADPLANE_ENABLED

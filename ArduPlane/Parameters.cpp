@@ -1267,7 +1267,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15
     AP_GROUPINFO("ONESHOT_MASK", 32, ParametersG2, oneshot_mask, 0),
 
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+#if AP_FOLLOW_ENABLED
     // @Group: FOLL
     // @Path: ../libraries/AP_Follow/AP_Follow.cpp
     AP_SUBGROUPINFO(follow, "FOLL", 33, ParametersG2, AP_Follow),
@@ -1302,7 +1302,227 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: systemid.cpp
     AP_SUBGROUPINFO(systemid, "SID", 38, ParametersG2, AP_SystemID),
 #endif
+
+    // @Param: FT_ALT
+    // @DisplayName: Follow target altitude
+    // @Description: Target altitude above home used by FOLLOW_TARGET mode
+    // @Units: m
+    // @Range: 10 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_ALT", 39, ParametersG2, follow_target_alt, 130.0f),
+
+    // @Param: FT_RADIUS
+    // @DisplayName: Follow target orbit radius
+    // @Description: Nominal orbit radius around the followed vehicle in FOLLOW_TARGET mode
+    // @Units: m
+    // @Range: 20 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_RADIUS", 40, ParametersG2, follow_target_radius, 100.0f),
+
+    // @Param: FT_RAD_MIN
+    // @DisplayName: Follow target minimum orbit radius
+    // @Description: Minimum adaptive orbit radius around the followed vehicle in FOLLOW_TARGET mode
+    // @Units: m
+    // @Range: 20 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_RAD_MIN", 41, ParametersG2, follow_target_radius_min, 90.0f),
+
+    // @Param: FT_RAD_MAX
+    // @DisplayName: Follow target maximum orbit radius
+    // @Description: Maximum adaptive orbit radius around the followed vehicle in FOLLOW_TARGET mode
+    // @Units: m
+    // @Range: 20 1500
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_RAD_MAX", 42, ParametersG2, follow_target_radius_max, 150.0f),
+
+    // @Param: FT_MAX_DIST
+    // @DisplayName: Follow target catch-up entry distance
+    // @Description: FOLLOW_TARGET mode enters catch-up behaviour when the aircraft is farther from the followed vehicle than this distance
+    // @Units: m
+    // @Range: 50 5000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_MAX_DIST", 43, ParametersG2, follow_target_max_dist, 260.0f),
+
+    // @Param: FT_CATCH_DIST
+    // @DisplayName: Follow target catch-up exit distance
+    // @Description: FOLLOW_TARGET mode exits catch-up behaviour when the aircraft is closer to the followed vehicle than this distance
+    // @Units: m
+    // @Range: 20 5000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_CATCH_DIST", 44, ParametersG2, follow_target_catchup_exit_dist, 190.0f),
+
+    // @Param: FT_PREDICT
+    // @DisplayName: Follow target prediction time
+    // @Description: Seconds of target velocity prediction used for the moving orbit centre in normal FOLLOW_TARGET mode
+    // @Units: s
+    // @Range: 0 20
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_PREDICT", 45, ParametersG2, follow_target_predict_time, 3.0f),
+
+    // @Param: FT_CATCH_PRED
+    // @DisplayName: Follow target catch-up prediction time
+    // @Description: Seconds of target velocity prediction used for the moving orbit centre while catching up in FOLLOW_TARGET mode
+    // @Units: s
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_CATCH_PRED", 46, ParametersG2, follow_target_catchup_predict_time, 5.0f),
+
+    // @Param: FT_SPEED_MIN
+    // @DisplayName: Follow target minimum airspeed
+    // @Description: Lower bound for target airspeed selected by FOLLOW_TARGET mode
+    // @Units: m/s
+    // @Range: 5 60
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_SPEED_MIN", 47, ParametersG2, follow_target_speed_min, 15.0f),
+
+    // @Param: FT_SPEED_CRUISE
+    // @DisplayName: Follow target cruise airspeed
+    // @Description: Nominal target airspeed selected by FOLLOW_TARGET mode
+    // @Units: m/s
+    // @Range: 5 80
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_SPEED_CRUISE", 48, ParametersG2, follow_target_speed_cruise, 19.0f),
+
+    // @Param: FT_SPEED_MAX
+    // @DisplayName: Follow target maximum airspeed
+    // @Description: Upper bound for target airspeed selected by FOLLOW_TARGET mode
+    // @Units: m/s
+    // @Range: 5 100
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_SPEED_MAX", 49, ParametersG2, follow_target_speed_max, 27.0f),
+
+    // @Param: FT_TGT_MINSPD
+    // @DisplayName: Follow target minimum expected target speed
+    // @Description: Target speed used as the low end of adaptive radius scaling in FOLLOW_TARGET mode
+    // @Units: m/s
+    // @Range: 0 50
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_TGT_MINSPD", 50, ParametersG2, follow_target_target_speed_min, 4.0f),
+
+    // @Param: FT_TGT_MAXSPD
+    // @DisplayName: Follow target maximum expected target speed
+    // @Description: Target speed used as the high end of adaptive radius scaling in FOLLOW_TARGET mode
+    // @Units: m/s
+    // @Range: 0 80
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_TGT_MAXSPD", 51, ParametersG2, follow_target_target_speed_max, 11.0f),
+
+    // @Param: FT_DIR
+    // @DisplayName: Follow target orbit direction
+    // @Description: Orbit direction used by FOLLOW_TARGET mode
+    // @Values: 0:Clockwise,1:Counter-clockwise
+    // @User: Standard
+    AP_GROUPINFO("FT_DIR", 52, ParametersG2, follow_target_direction, 0),
+
+    // @Param: FT_ADAPTIVE
+    // @DisplayName: Follow target adaptive speed and radius
+    // @Description: Enables adaptive orbit radius and target airspeed selection in FOLLOW_TARGET mode
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("FT_ADAPTIVE", 53, ParametersG2, follow_target_adaptive, 1),
+
+    // @Param: FT_PRE_DIST
+    // @DisplayName: Follow target pre-catch distance
+    // @Description: FOLLOW_TARGET mode enters PRE_CATCH when aircraft-target distance exceeds this value. Set to 0 to use the midpoint between FT_CATCH_DIST and FT_MAX_DIST
+    // @Units: m
+    // @Range: 0 5000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_PRE_DIST", 54, ParametersG2, follow_target_precatch_dist, 0.0f),
+
+    // @Param: FT_PRE_RATE
+    // @DisplayName: Follow target pre-catch distance rate
+    // @Description: FOLLOW_TARGET mode may enter PRE_CATCH when range is opening faster than this value
+    // @Units: m/s
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_PRE_RATE", 55, ParametersG2, follow_target_precatch_rate, 0.5f),
+
+    // @Param: FT_RATE_TAU
+    // @DisplayName: Follow target distance-rate filter
+    // @Description: Low-pass filter time constant for aircraft-target distance rate in FOLLOW_TARGET mode
+    // @Units: s
+    // @Range: 0 20
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_RATE_TAU", 56, ParametersG2, follow_target_rate_tau, 4.0f),
+
+    // @Param: FT_STOP_SPD
+    // @DisplayName: Follow target stop speed
+    // @Description: Target speed below which FOLLOW_TARGET mode starts stop-orbit detection
+    // @Units: m/s
+    // @Range: 0 20
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_STOP_SPD", 57, ParametersG2, follow_target_stop_speed, 1.0f),
+
+    // @Param: FT_STOP_SEC
+    // @DisplayName: Follow target stop time
+    // @Description: Time target speed must remain below FT_STOP_SPD before FOLLOW_TARGET enters STOP_ORBIT
+    // @Units: s
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_STOP_SEC", 58, ParametersG2, follow_target_stop_time, 3.0f),
+
+    // @Param: FT_RESUME_SPD
+    // @DisplayName: Follow target resume speed
+    // @Description: Target speed above which FOLLOW_TARGET mode starts resume detection from STOP_ORBIT
+    // @Units: m/s
+    // @Range: 0 40
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_RESUME_SPD", 59, ParametersG2, follow_target_resume_speed, 3.0f),
+
+    // @Param: FT_RESUME_SEC
+    // @DisplayName: Follow target resume time
+    // @Description: Time target speed must remain above FT_RESUME_SPD before FOLLOW_TARGET leaves STOP_ORBIT
+    // @Units: s
+    // @Range: 0 30
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("FT_RESUME_SEC", 60, ParametersG2, follow_target_resume_time, 4.0f),
+
+    // @Param: FT_CMD_RATE
+    // @DisplayName: Follow target command rate limit
+    // @Description: Maximum horizontal rate at which the FOLLOW_TARGET loiter centre may move. Set to 0 to disable
+    // @Units: m/s
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_CMD_RATE", 61, ParametersG2, follow_target_command_rate, 30.0f),
+
+    // @Param: FT_STOP_RAD
+    // @DisplayName: Follow target stop recovery radius
+    // @Description: Maximum loiter radius used by STOP_ORBIT recovery when the aircraft is far from a stopped target
+    // @Units: m
+    // @Range: 20 2000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_STOP_RAD", 62, ParametersG2, follow_target_stop_radius, 500.0f),
     
+    // @Param: FT_SYSID
+    // @DisplayName: Follow target MAVLink system id
+    // @Description: MAVLink system id of the vehicle followed by FOLLOW_TARGET mode. Set to 0 to allow AP_Follow to use the first non-own sysid it receives
+    // @Range: 0 255
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("FT_SYSID", 63, ParametersG2, follow_target_sysid, 2),
+
     AP_GROUPEND
 };
 

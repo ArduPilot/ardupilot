@@ -563,9 +563,35 @@ public:
     AC_PID guidedHeading{5000.0,  0.0,   0.0, 0 ,  10.0,   5.0,  5.0 ,  5.0  , 0.0};
 #endif
 
-#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+#if AP_FOLLOW_ENABLED
     AP_Follow follow;
 #endif
+
+    AP_Float follow_target_alt;
+    AP_Float follow_target_radius;
+    AP_Float follow_target_radius_min;
+    AP_Float follow_target_radius_max;
+    AP_Float follow_target_max_dist;
+    AP_Float follow_target_catchup_exit_dist;
+    AP_Float follow_target_predict_time;
+    AP_Float follow_target_catchup_predict_time;
+    AP_Float follow_target_speed_min;
+    AP_Float follow_target_speed_cruise;
+    AP_Float follow_target_speed_max;
+    AP_Float follow_target_target_speed_min;
+    AP_Float follow_target_target_speed_max;
+    AP_Int8 follow_target_direction;
+    AP_Int8 follow_target_adaptive;
+    AP_Float follow_target_precatch_dist;
+    AP_Float follow_target_precatch_rate;
+    AP_Float follow_target_rate_tau;
+    AP_Float follow_target_stop_speed;
+    AP_Float follow_target_stop_time;
+    AP_Float follow_target_resume_speed;
+    AP_Float follow_target_resume_time;
+    AP_Float follow_target_command_rate;
+    AP_Float follow_target_stop_radius;
+    AP_Int16 follow_target_sysid;
 
     AP_Float        fs_ekf_thresh;
 

@@ -16,7 +16,7 @@
    This ArduPilot lua module should be in stalled in a "modules" subdirectory under the scripts
    directory on your SD card or execution directory in SITL.
 
-   This module provides wrapper functions for some commonly used Lua bindings 
+   This module provides wrapper functions for some commonly used Lua bindings
    for MAVLink MAV_CMD command_int commands.
 
 --]]
@@ -36,7 +36,7 @@ MAVLink.ALT_FRAME = { ABSOLUTE = 0, ABOVE_HOME = 1, ABOVE_ORIGIN = 2, ABOVE_TERR
 MAVLink.CMD_INT = { DO_SET_MODE = 176, DO_CHANGE_SPEED = 178, DO_REPOSITION = 192,
                     GUIDED_CHANGE_SPEED = 43000, GUIDED_CHANGE_ALTITUDE = 43001, GUIDED_CHANGE_HEADING = 43002 }
 MAVLink.SPEED_TYPE = { AIRSPEED = 0, GROUNDSPEED = 1, CLIMB_SPEED = 2, DESCENT_SPEED = 3 }
-MAVLink.HEADING_TYPE = { COG = 0, HEADING = 1} -- COG = Course over Ground, i.e. where you want to go, HEADING = which way the vehicle points 
+MAVLink.HEADING_TYPE = { COG = 0, HEADING = 1} -- COG = Course over Ground, i.e. where you want to go, HEADING = which way the vehicle points
 
 MAVLink.PLANE_FLIGHT_MODE = {MANUAL=0, CIRCLE=1, STABILIZE=2, TRAINING=3, ACRO=4,
                                 FLY_BY_WIRE_A = 5, FLY_BY_WIRE_B = 6, CRUISE        = 7, AUTOTUNE      = 8,
@@ -44,7 +44,7 @@ MAVLink.PLANE_FLIGHT_MODE = {MANUAL=0, CIRCLE=1, STABILIZE=2, TRAINING=3, ACRO=4
                                 AVOID_ADSB    = 14,GUIDED        = 15,INITIALISING  = 16,
                                 QSTABILIZE    = 17,QHOVER        = 18,QLOITER       = 19,QLAND         = 20,
                                 QRTL          = 21,QAUTOTUNE     = 22,QACRO         = 23,
-                                THERMAL       = 24,LOITER_ALT_QLAND = 25,AUTOLAND      = 26}
+                                THERMAL       = 24,LOITER_ALT_QLAND = 25,AUTOLAND      = 26,FOLLOW_TARGET = 26}
 
 function MAVLink.NaN()
     return 0/0
@@ -90,7 +90,7 @@ function MAVLink.set_vehicle_target_location(target)
     local bitmask = target.bitmask or 0
     local radius = target.radius or 0
     local yaw = target.yaw or MAVLink.NaN()
-    local mavlink_result = gcs:run_command_int(MAVLink.CMD_INT.DO_REPOSITION, { 
+    local mavlink_result = gcs:run_command_int(MAVLink.CMD_INT.DO_REPOSITION, {
             frame = MAVLink.alt_frame_to_mavlink(alt_frame),
             p1 = groundspeed,
             p2 = bitmask,

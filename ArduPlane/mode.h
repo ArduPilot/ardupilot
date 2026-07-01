@@ -62,6 +62,7 @@ public:
 #if HAL_QUADPLANE_ENABLED
         LOITER_ALT_QLAND = 25,
 #endif
+        FOLLOW_TARGET = 26,
     };
 
     // Constructor
@@ -345,6 +346,113 @@ protected:
 
 private:
     float active_radius_m;
+};
+
+class ModeFollowTarget : public Mode
+{
+public:
+
+    Number mode_number() const override { return Number::FOLLOW_TARGET; }
+    const char *name() const override { return "FOLLOW_TARGET"; }
+    const char *name4() const override { return "FOLL"; }
+
+    void update() override;
+
+    void navigate() override;
+
+    bool is_guided_mode() const override { return true; }
+
+    bool does_auto_navigation() const override { return true; }
+
+    bool does_auto_throttle() const override { return true; }
+
+    void update_target_altitude() override;
+
+protected:
+
+    bool _enter() override;
+    void _exit() override;
+    bool _pre_arm_checks(size_t buflen, char *buffer) const override { return true; }
+
+private:
+    enum class FollowState : uint8_t {
+        ORBIT,
+        PRE_CATCH,
+        CATCH_UP,
+        STOP_ORBIT,
+    };
+    enum class GuidanceMode : uint8_t {
+        ORBIT,
+        DIRECT,
+    };
+    enum class DirectStrategy : uint8_t {
+        DIRECT,
+        TANGENT,
+    };
+
+    FollowState follow_state;
+    GuidanceMode guidance_mode;
+    DirectStrategy direct_strategy;
+    bool active_direct_navigation;
+    bool airspeed_guard_active;
+    uint32_t last_target_warning_ms;
+    uint32_t last_update_ms;
+    uint32_t stop_candidate_ms;
+    uint32_t resume_candidate_ms;
+    uint32_t last_log_ms;
+    float active_radius_m;
+    float active_airspeed_m_s;
+    float active_command_radius_m;
+    float command_heading_error_deg;
+    float command_bearing_rate_deg_s;
+    float command_lead_m;
+    float command_predict_s;
+    float previous_target_heading_rad;
+    float active_predict_s;
+    float plane_to_target_m;
+    float previous_plane_to_target_m;
+    float distance_rate_m_s;
+    float raw_distance_rate_m_s;
+    float command_move_rate_m_s;
+    float target_speed_m_s;
+    bool have_previous_distance;
+    bool have_previous_predict;
+    bool have_previous_center;
+    bool have_previous_command;
+    bool have_previous_target_heading;
+    bool stop_orbit_active;
+    bool stop_orbit_recovery_active;
+    Location previous_center_loc;
+    Location previous_command_loc;
+    uint32_t direct_entry_candidate_ms;
+    uint32_t direct_exit_candidate_ms;
+    uint32_t direct_hold_until_ms;
+    uint32_t direct_strategy_exit_candidate_ms;
+    uint32_t direct_strategy_hold_until_ms;
+
+    void reset_direct_state();
+    void set_hold_target_to_current_location();
+    void set_follow_state(FollowState new_state);
+    void update_stop_orbit_state(float target_speed_ms, uint32_t now_ms);
+    bool update_follow_target();
+    float select_precatch_distance(float exit_dist_m, float max_dist_m) const;
+    float select_predict_time(float distance_m, float exit_dist_m, float max_dist_m) const;
+    float select_orbit_radius(float target_speed_ms, float distance_m) const;
+    float select_airspeed(float target_speed_ms, float distance_m, float radius_m, GuidanceMode guidance) const;
+    float dynamic_predict_time(float raw_predict_s, float max_dist_m, float exit_dist_m, float dt_s, float target_heading_rad);
+    float estimate_half_turn_time_s(float speed_m_s) const;
+    float heading_error_to_target_deg(const Location &target) const;
+    bool solve_intercept_time_s(const Vector2f &relative_ne, const Vector2f &target_vel_ne, float intercept_speed_m_s, float &time_s) const;
+    bool update_guidance_mode(uint32_t now_ms, float max_dist_m, float exit_dist_m, float precatch_dist_m);
+    Location compute_direct_target(const Location &target_loc, const Vector3f &target_vel_ned, float &predict_s, float &lead_m) const;
+    Location compute_tangent_target(const Location &center_loc, float radius_m) const;
+    Location smooth_center_step(const Location &previous, const Location &target, float tau_s, float dt_s) const;
+    Location limit_command_step(const Location &previous, const Location &target, float dt_s);
+    Location limit_command_bearing(const Location &previous, const Location &target, float dt_s);
+    void set_navigation_target(const Location &target, bool direct_navigation, float radius_m);
+    void update_distance_rate(float distance_m, float dt_s);
+    void write_follow_log(const Location &target_loc, const Location &center_loc);
+    static const char *follow_state_name(FollowState state);
 };
 
 class ModeCircle: public Mode

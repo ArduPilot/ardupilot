@@ -229,8 +229,8 @@ void Plane::calc_airspeed_errors()
     } else if (flight_stage == AP_FixedWing::FlightStage::LAND) {
         // Landing airspeed target
         target_airspeed_cm = landing.get_target_airspeed_cm();
-    } else if (control_mode == &mode_guided && new_airspeed_cm > 0) { //DO_CHANGE_SPEED overrides onboard guided speed commands, user would have re-enter guided mode to revert
-                       target_airspeed_cm = new_airspeed_cm;
+    } else if ((control_mode == &mode_guided || control_mode == &mode_follow_target) && new_airspeed_cm > 0) { //DO_CHANGE_SPEED overrides onboard guided speed commands, user would have re-enter guided mode to revert
+        target_airspeed_cm = new_airspeed_cm;
     } else if (control_mode == &mode_auto) {
         target_airspeed_cm = mode_auto_target_airspeed_cm();
 #if HAL_QUADPLANE_ENABLED

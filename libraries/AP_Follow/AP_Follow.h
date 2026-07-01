@@ -56,7 +56,10 @@ public:
     bool enabled() const { return _enabled; }
 
     // set which target to follow
-    void set_target_sysid(uint8_t sysid) { _sysid.set(sysid); }
+    void set_target_sysid(uint8_t sysid) {
+        _sysid.set(sysid);
+        _automatic_sysid = (sysid == 0);
+    }
 
     // restore offsets to zero if necessary, should be called when vehicle exits follow mode
     void clear_offsets_if_required();
