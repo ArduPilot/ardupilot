@@ -721,10 +721,10 @@ bool AP_BattMonitor_TIBQ76952::configure()
     hal.scheduler->delay(10);
 
     // clear any remaining permanent failure alerts
-    direct_command(TIBQ769x2_PFAlertA, 0xFF, CommandType::WRITE);
-    direct_command(TIBQ769x2_PFAlertB, 0xFF, CommandType::WRITE);
-    direct_command(TIBQ769x2_PFAlertC, 0xFF, CommandType::WRITE);
-    direct_command(TIBQ769x2_PFAlertD, 0xFF, CommandType::WRITE);
+    direct_command_write_1byte(TIBQ769x2_PFAlertA, 0xFF);
+    direct_command_write_1byte(TIBQ769x2_PFAlertB, 0xFF);
+    direct_command_write_1byte(TIBQ769x2_PFAlertC, 0xFF);
+    direct_command_write_1byte(TIBQ769x2_PFAlertD, 0xFF);
 
     // update configuration
     ConfigUpdateType update_type = (ConfigUpdateType)cfg_update.get();
@@ -990,6 +990,12 @@ uint16_t AP_BattMonitor_TIBQ76952::direct_command_read_2bytes(uint16_t reg) cons
         return UINT16_VALUE(rx_data[1], rx_data[0]);
     }
     return 0;
+}
+
+// send a direct command to write 1byte
+bool AP_BattMonitor_TIBQ76952::direct_command_write_1byte(uint16_t reg, uint8_t data) const
+{
+    return write_register(reg, &data, 1);
 }
 
 // write 1, 2, or 4 bytes to a RAM data memory register (0x9xxx addresses)
