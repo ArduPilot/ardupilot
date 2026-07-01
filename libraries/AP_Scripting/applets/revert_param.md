@@ -74,7 +74,11 @@ The script covers the following parameters on copters:
 For fixed wing the following parameters are covered:
 
 - RLL_RATE_*
-- PTCH_RATE_*
 - RLL2SRV_TCONST
+- RLL_ANGLE_P
+- RLL2SRV_ACCEL
+- PTCH_RATE_*
 - PTCH2SRV_TCONST
+- PTCH_ANGLE_P
+- PTCH2SRV_ACCEL
 - all TECS parameters
