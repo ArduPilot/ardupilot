@@ -175,7 +175,7 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     // true if GPS is configured as the horizontal position source
     // for this estimator.  Used to decide whether GPS will set
     // the navigation origin:
-    results.configured_to_use_gps_for_pos_XY = EKF3.configuredToUseGPSForPos();
+    results.configured_to_use_gps_for_pos_XY = EKF3.configuredToUseGPSForPosXY();
 
     // are we consuming yaw from an external (e.g. vision-based) source?
     results.using_extnav_for_yaw = EKF3.using_extnav_for_yaw();
