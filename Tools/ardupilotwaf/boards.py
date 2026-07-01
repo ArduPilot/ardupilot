@@ -122,6 +122,19 @@ class Board:
                     AP_DDS_ENABLED=0,
                 )
 
+        # Full-disk SD card encryption. When a ChibiOS board enables
+        # AP_FATFS_CRYPTO_ENABLED, the FatFS diskio binding (compiled into
+        # libch.a) calls the AP_DiskCrypto shim, which lives in an AP library
+        # archived and linked ahead of libch.a. Force those symbols to be
+        # pulled in so the back-reference from libch.a resolves.
+        if env.BOARD_CLASS == "ChibiOS":
+            with open(env.BUILDROOT + "/hwdef.h", 'r', encoding="utf8") as file:
+                if "#define AP_FATFS_CRYPTO_ENABLED 1" in file.read():
+                    env.LINKFLAGS += [
+                        '-Wl,-u,ap_diskcrypto_encrypt',
+                        '-Wl,-u,ap_diskcrypto_decrypt',
+                    ]
+
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
             cfg.recurse('libraries/AP_ONVIF')
