@@ -82,6 +82,9 @@ public:
     // true if we are considered to be autorotating or bailing out of an autorotation
     bool        in_autorotation(void) const;
 
+    // true if we are using a manual collective flight mode
+    void        set_using_manual_collective_mode(bool using_manual_collective_mode) { _using_manual_collective_mode = using_manual_collective_mode; }
+
     // turbine start initialize sequence
     void        set_turbine_start(bool turbine_start) {_turbine_start = turbine_start; }
 
@@ -141,6 +144,7 @@ private:
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
     float           _governor_torque_reference;   // governor reference for load calculations
     float           _idle_throttle;               // current idle throttle setting
+    bool            _using_manual_collective_mode; // flag to determine if we are using a manual collective flight mode
 
     RotorControlState _rsc_state;
 
