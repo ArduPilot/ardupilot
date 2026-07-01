@@ -29,5 +29,6 @@ public:
         Scripting2 = 12,
         TOFSenseP = 13,
         RadarCAN = 14,  // used by NanoRadar and Hexsoon
+        JIYI = 15,      // used by JIYI Microbrain UAV-R21-1 / UAV-H30-1
     };
 };
