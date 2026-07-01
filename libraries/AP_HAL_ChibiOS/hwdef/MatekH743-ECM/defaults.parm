@@ -1,0 +1,8 @@
+# USB-ECM lab: MAVLink2 on UDP server so GCS can connect over the NIC
+# Host: 192.168.144.2  FC: 192.168.144.14  GCS: udpin:0.0.0.0:14550 or udp:192.168.144.14:14550
+NET_ENABLE 1
+NET_DHCP 0
+NET_P1_TYPE 2
+NET_P1_PROTOCOL 2
+NET_P1_PORT 14550
+# NET_P1_IP 0.0.0.0 = listen all (default zeros)
