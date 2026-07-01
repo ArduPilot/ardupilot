@@ -16173,8 +16173,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(1, 1500)
         self.set_rc(2, 1500)
 
-        dfreader = self.dfreader_for_current_onboard_log()
         self.do_RTL()
+
+        # Open the log only after do_RTL(): the vehicle disarms at the end of
+        # RTL, which flushes the log and ensures all the CAM messages written
+        # when the camera was triggered are present.  Opening it beforehand
+        # snapshots the file (DFReader maps it at construction) while CAM
+        # records may still be unflushed, so recv_match() returns None and the
+        # test crashes with AttributeError on the missing message.
+        dfreader = self.dfreader_for_current_onboard_log()
 
         for i in range(len(gpis)):
             gpi = gpis[i]
