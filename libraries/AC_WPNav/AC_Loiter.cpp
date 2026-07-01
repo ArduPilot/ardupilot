@@ -341,7 +341,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     // update the desired velocity using our predicted acceleration
     desired_vel_ne_ms += _predicted_accel_ne_mss * dt_s;
 
-    Vector2f loiter_accel_brake_mss;
+    Vector2f loiter_accel_decel_mss;
     float desired_speed_ms = desired_vel_ne_ms.length();
     if (!is_zero(desired_speed_ms)) {
         Vector2f desired_vel_norm = desired_vel_ne_ms / desired_speed_ms;
@@ -363,15 +363,19 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
 
         // Integrate jerk-limited brake acceleration
         _brake_accel_mss += constrain_float(loiter_brake_accel_mss - _brake_accel_mss, -_brake_jerk_max_msss * dt_s, _brake_jerk_max_msss * dt_s);
-        loiter_accel_brake_mss = desired_vel_norm * _brake_accel_mss;
+        // drag and braking both decelerate the desired velocity below, so both
+        // must be removed from the feed-forward acceleration to keep it equal to
+        // d(desired_vel)/dt; leaving drag in over-drives the vehicle past the
+        // speed-limited desired velocity and builds a position error
+        loiter_accel_decel_mss = desired_vel_norm * (_brake_accel_mss + drag_decel_mss);
 
         // Update desired speed based on braking and drag
         desired_speed_ms = MAX(desired_speed_ms - (drag_decel_mss + _brake_accel_mss) * dt_s, 0.0f);
         desired_vel_ne_ms = desired_vel_norm * desired_speed_ms;
     }
 
-    // Apply braking acceleration to overall feed-forward acceleration
-    _desired_accel_ne_mss -= loiter_accel_brake_mss;
+    // Apply braking and drag deceleration to the feed-forward acceleration
+    _desired_accel_ne_mss -= loiter_accel_decel_mss;
 
     // Apply final velocity magnitude constraint
     float desired_vel_ms = desired_vel_ne_ms.length();
