@@ -1187,13 +1187,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(10, reason="RC failsafe passthrough to settle")
 
     # Tests all actions and logic behind the GCS failsafe
-    def GCSFailsafe(self, side=60, timeout=360):
-        '''Test GCS Failsafe'''
-        # Test double-SmartRTL; ensure we do SmarRTL twice rather than
+    def gcs_failsafe_init(self):
+        '''configure the common GCS failsafe parameters shared by the
+        individual GCSFailsafe* tests'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            # ensure a known-clean FS_OPTIONS baseline; the individual
+            # tests that need option bits (or to continue) set them
+            # themselves.  Without this a non-zero default would make the
+            # failsafe "continue" rather than take its configured action.
+            "FS_OPTIONS": 0,
+        })
+
+    def GCSFailsafeSmartRTLTwice(self):
+        '''Test GCS failsafe performs SmartRTL twice rather than landing'''
+        # Test double-SmartRTL; ensure we do SmartRTL twice rather than
         # landing (tests fix for actual bug)
-        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.gcs_failsafe_init()
         self.context_push()
-        self.start_subtest("GCS failsafe SmartRTL twice")
         self.setGCSfailsafe(3)
         self.set_parameter('FS_OPTIONS', 8)
         self.takeoffAndMoveAway()
@@ -1223,13 +1234,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed()
 
-        self.end_subtest("GCS failsafe SmartRTL twice")
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
         self.context_pop()
 
+    def GCSFailsafeDisabled(self):
+        '''Test GCS failsafe disabled (FS_GCS_ENABLE=0) takes no action'''
         # Trigger telemetry loss with failsafe disabled. Verify no action taken.
-        self.start_subtest("GCS failsafe disabled test: FS_GCS_ENABLE=0 should take no failsafe action")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(0)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1238,27 +1250,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_heartbeat_rate(self.speedup)
         self.delay_sim_time(5, reason="GCS link to restore")
         self.wait_mode("ALT_HOLD")
-        self.end_subtest("Completed GCS failsafe disabled test")
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
 
+    def GCSFailsafeRecoveryRTL(self):
+        '''Test GCS failsafe RTL recovery: FS_GCS_ENABLE=1 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify
         # failsafe triggers to RTL. Restore telemetry, verify failsafe
         # clears, and change modes.
-        self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(1)
         self.set_parameter('FS_OPTIONS', 0)
+        self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
         self.wait_mode("RTL")
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
         self.change_mode("LOITER")
-        self.end_subtest("Completed GCS failsafe recovery test")
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
 
-        # Trigger telemetry loss with failsafe enabled. Verify
-        # failsafe triggers to RTL. Restore telemetry, verify failsafe
-        # clears, and change modes.
-        self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1 & FS_OPTIONS=0 & FS_GCS_TIMEOUT=10")
+    def GCSFailsafeRecoveryRTLWithTimeout(self):
+        '''Test GCS failsafe RTL recovery honours an increased FS_GCS_TIMEOUT'''
+        # Trigger telemetry loss with failsafe enabled and a doubled
+        # FS_GCS_TIMEOUT.  Verify failsafe triggers to RTL only after the
+        # longer timeout, then restore telemetry and verify it clears.
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(1)
         self.set_parameter('FS_OPTIONS', 0)
+        self.takeoffAndMoveAway()
+        self.change_mode("LOITER")
         old_gcs_timeout = self.get_parameter("FS_GCS_TIMEOUT")
         new_gcs_timeout = old_gcs_timeout * 2
         self.set_parameter("FS_GCS_TIMEOUT", new_gcs_timeout)
@@ -1270,21 +1291,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
         self.change_mode("LOITER")
         self.set_parameter('FS_GCS_TIMEOUT', old_gcs_timeout)
-        self.end_subtest("Completed GCS failsafe recovery test")
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
 
+    def GCSFailsafeRTLComplete(self):
+        '''Test GCS failsafe triggers RTL which completes: FS_GCS_ENABLE=1 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and RTL completes
-        self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(1)
         self.set_parameter('FS_OPTIONS', 0)
+        self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
         self.wait_mode("RTL")
         self.wait_rtl_complete()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe RTL with no options test")
 
+    def GCSFailsafeLand(self):
+        '''Test GCS failsafe LAND action: FS_GCS_ENABLE=5 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and land completes
-        self.start_subtest("GCS failsafe LAND with no options test: FS_GCS_ENABLE=5 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(5)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1292,10 +1318,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_landed_and_disarmed()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe land with no options test")
 
+    def GCSFailsafeSmartRTL(self):
+        '''Test GCS failsafe SmartRTL->RTL action: FS_GCS_ENABLE=3 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and SmartRTL completes
-        self.start_subtest("GCS failsafe SmartRTL->RTL with no options test: FS_GCS_ENABLE=3 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(3)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1303,10 +1330,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe SmartRTL->RTL with no options test")
 
+    def GCSFailsafeSmartRTLLand(self):
+        '''Test GCS failsafe SmartRTL->Land action: FS_GCS_ENABLE=4 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and SmartRTL completes
-        self.start_subtest("GCS failsafe SmartRTL->Land with no options test: FS_GCS_ENABLE=4 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(4)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1314,10 +1342,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe SmartRTL->Land with no options test")
 
+    def GCSFailsafeInvalidValue(self):
+        '''Test GCS failsafe with an invalid value defaults to RTL: FS_GCS_ENABLE=99 & FS_OPTIONS=0'''
         # Trigger telemetry loss with an invalid failsafe value. Verify failsafe triggers and RTL completes
-        self.start_subtest("GCS failsafe invalid value with no options test: FS_GCS_ENABLE=99 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(99)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1325,10 +1354,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_rtl_complete()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe invalid value with no options test")
 
+    def GCSFailsafeOptions(self):
+        '''Test GCS failsafe FS_OPTIONS continue bits: FS_GCS_ENABLE=1 & FS_OPTIONS=64/2/16'''
         # Trigger telemetry loss with failsafe enabled to test FS_OPTIONS settings
-        self.start_subtest("GCS failsafe with option bit tests: FS_GCS_ENABLE=1 & FS_OPTIONS=64/2/16")
+        self.gcs_failsafe_init()
         num_wp = self.load_mission("copter_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
@@ -1365,11 +1395,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_landed_and_disarmed()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe with option bits")
 
         self.setGCSfailsafe(0)
         self.set_parameter('FS_OPTIONS', 0)
-        self.progress("All GCS failsafe tests complete")
 
     def TerrainFailsafe(self):
         '''test that auto mode triggers terrain failsafe if waypoint alt frame is terrain and terrain database is disabled'''
@@ -1442,8 +1470,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Custom controller test complete")
 
     # Tests all actions and logic behind the battery failsafe
-    def BatteryFailsafe(self, timeout=300):
-        '''Fly Battery Failsafe'''
+    def batt_failsafe_init(self):
+        '''configure the common battery failsafe parameters shared by the
+        individual BatteryFailsafe* tests'''
         self.progress("Configure battery failsafe parameters")
         self.set_parameters({
             'SIM_SPEEDUP': 4,
@@ -1455,9 +1484,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'SIM_BATT_VOLTAGE': 12.5,
         })
 
+    def clear_battery_failsafe(self):
+        '''clears battery failsafe (and resets % to 100)'''
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_BATTERY_RESET,
+            p1=65535,   # battery mask
+            p2=100,      # percentage
+        )
+
+    def BatteryFailsafeDisabled(self):
+        '''Test that with battery failsafe disabled no action is taken'''
         # Trigger low battery condition with failsafe disabled. Verify
         # no action taken.
-        self.start_subtest("Batt failsafe disabled test")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         m = self.assert_receive_message('BATTERY_STATUS')
         if m.charge_state != mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK:
@@ -1479,13 +1518,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode("RTL")
         self.wait_rtl_complete()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.reboot_sitl()
-        self.end_subtest("Completed Batt failsafe disabled test")
 
+    def BatteryFailsafeTwoStage(self):
+        '''Two stage battery failsafe test with RTL and Land'''
         # TWO STAGE BATTERY FAILSAFE: Trigger low battery condition,
         # then critical battery condition. Verify RTL and Land actions
         # complete.
-        self.start_subtest("Two stage battery failsafe test with RTL and Land")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.delay_sim_time(3, reason="vehicle to move away")
         self.set_parameters({
@@ -1503,13 +1542,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_mode("LAND")
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.reboot_sitl()
-        self.end_subtest("Completed two stage battery failsafe test with RTL and Land")
+        self.clear_battery_failsafe()
 
+    def BatteryFailsafeTwoStageSmartRTL(self):
+        '''Two stage battery failsafe test with SmartRTL'''
         # TWO STAGE BATTERY FAILSAFE: Trigger low battery condition,
         # then critical battery condition. Verify both SmartRTL
         # actions complete
-        self.start_subtest("Two stage battery failsafe test with SmartRTL")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.set_parameter('BATT_FS_LOW_ACT', 3)
         self.set_parameter('BATT_FS_CRT_ACT', 4)
@@ -1526,13 +1566,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_mode("SMART_RTL")
         self.wait_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.reboot_sitl()
-        self.end_subtest("Completed two stage battery failsafe test with SmartRTL")
+        self.clear_battery_failsafe()
 
+    def BatteryFailsafeOptionsContinueLanding(self):
+        '''Battery failsafe with FS_OPTIONS set to continue landing'''
         # Trigger low battery condition in land mode with FS_OPTIONS
         # set to allow land mode to continue. Verify landing completes
         # uninterrupted.
-        self.start_subtest("Battery failsafe with FS_OPTIONS set to continue landing")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.set_parameter('FS_OPTIONS', 8)
         self.change_mode("LAND")
@@ -1543,13 +1584,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_mode("LAND")
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
-        self.reboot_sitl()
-        self.end_subtest("Completed battery failsafe with FS_OPTIONS set to continue landing")
+        self.clear_battery_failsafe()
 
+    def BatteryFailsafeCriticalLanding(self):
+        '''Battery failsafe critical landing not interrupted by RC failure'''
         # Trigger a critical battery condition, which triggers a land
         # mode failsafe. Trigger an RC failure. Verify the RC failsafe
         # is prevented from stopping the low battery landing.
-        self.start_subtest("Battery failsafe critical landing")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway(100, 50)
         self.set_parameters({
             'FS_OPTIONS': 0,
@@ -1568,12 +1610,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.set_parameter("SIM_RC_FAIL", 0)
-        self.reboot_sitl()
-        self.end_subtest("Completed battery failsafe critical landing")
+        self.reboot_sitl()  # reset to starting position
 
+    def BatteryFailsafeBrakeLand(self):
+        '''Battery failsafe brake/land action triggers BRAKE'''
         # Trigger low battery condition with failsafe set to brake/land
-        self.start_subtest("Battery failsafe brake/land")
-        self.context_push()
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.set_parameter('BATT_FS_LOW_ACT', 7)
         self.delay_sim_time(10, reason="vehicle to move away")
@@ -1585,12 +1627,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_mode('BRAKE')
         self.set_rc(1, 1500)
         self.disarm_vehicle(force=True)
-        self.context_pop()
-        self.reboot_sitl()
-        self.end_subtest("Completed brake/land failsafe test")
+        self.reboot_sitl()  # reset to starting position
 
-        self.start_subtest("Battery failsafe brake/land - land")
-        self.context_push()
+    def BatteryFailsafeBrakeLandNoGPS(self):
+        '''Battery failsafe brake/land action falls back to LAND without GPS'''
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.set_parameter('BATT_FS_LOW_ACT', 7)
         self.set_parameter('SIM_GPS1_ENABLE', 0)
@@ -1599,21 +1640,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("Battery 1 is low", timeout=60)
         self.wait_mode('LAND')
         self.disarm_vehicle(force=True)
-        self.reboot_sitl()
-        self.context_pop()
-        self.end_subtest("Completed brake/land failsafe test")
+        self.reboot_sitl()  # reset to starting position
 
+    def BatteryFailsafeTerminate(self):
+        '''Battery failsafe terminate action - copter disarms and crashes'''
         # Trigger low battery condition with failsafe set to terminate. Copter will disarm and crash.
-        self.start_subtest("Battery failsafe terminate")
+        self.batt_failsafe_init()
         self.takeoffAndMoveAway()
         self.set_parameter('BATT_FS_LOW_ACT', 5)
         self.delay_sim_time(10, reason="vehicle to move away")
         self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
         self.wait_statustext("Battery 1 is low", timeout=60)
         self.wait_disarmed()
-        self.end_subtest("Completed terminate failsafe test")
-
-        self.progress("All Battery failsafe tests complete")
+        self.reboot_sitl()  # Copter should start at home
 
     def BatteryMissing(self):
         ''' Test battery health pre-arm and missing failsafe'''
@@ -1627,15 +1666,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'BATT_VOLT_PIN': -1,
         })
 
-        self.drain_mav()
-
         # Battery should go unhealthy immediately
         self.assert_prearm_failure("Battery 1 unhealthy", other_prearm_failures_fatal=False)
 
         # Return monitor to health
         self.context_pop()
-        self.context_push()
 
+        self.context_push()
         self.wait_ready_to_arm()
 
         # take off and then trigger in flight
@@ -1647,10 +1684,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # Should trigger missing failsafe
         self.wait_statustext("Battery 1 is missing")
 
-        # Done, reset params and reboot to clear failsafe
+        # Done, reset params and clear failsafe
         self.land_and_disarm()
         self.context_pop()
-        self.reboot_sitl()
+        self.clear_battery_failsafe()
 
     def VibrationFailsafe(self):
         '''Test Vibration Failsafe'''
@@ -14511,7 +14548,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.RecordThenPlayMission,
              self.ThrottleFailsafe,
              self.ThrottleFailsafePassthrough,
-             self.GCSFailsafe,
+             self.GCSFailsafeSmartRTLTwice,
+             self.GCSFailsafeDisabled,
+             self.GCSFailsafeRecoveryRTL,
+             self.GCSFailsafeRecoveryRTLWithTimeout,
+             self.GCSFailsafeRTLComplete,
+             self.GCSFailsafeLand,
+             self.GCSFailsafeSmartRTL,
+             self.GCSFailsafeSmartRTLLand,
+             self.GCSFailsafeInvalidValue,
+             self.GCSFailsafeOptions,
              self.TerrainFailsafe,
              self.CustomController,
              self.WPArcs,
@@ -14523,7 +14569,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def tests1c(self):
         '''return list of all tests'''
         ret = ([
-             self.BatteryFailsafe,
+             self.BatteryFailsafeDisabled,
+             self.BatteryFailsafeTwoStage,
+             self.BatteryFailsafeTwoStageSmartRTL,
+             self.BatteryFailsafeOptionsContinueLanding,
+             self.BatteryFailsafeCriticalLanding,
+             self.BatteryFailsafeBrakeLand,
+             self.BatteryFailsafeBrakeLandNoGPS,
+             self.BatteryFailsafeTerminate,
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
