@@ -91,6 +91,7 @@ function millis() end
 function micros() end
 
 -- receive mission command from running mission
+-- up to 5 items can be queued, if the queue is full further entries will be discarded
 ---@return uint32_t_ud|nil -- command start time milliseconds
 ---@return integer|nil -- command param 1
 ---@return number|nil -- command param 2
