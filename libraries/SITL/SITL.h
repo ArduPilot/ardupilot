@@ -255,6 +255,7 @@ public:
     AP_Int8  baro_count; // number of simulated baros to create
     AP_Int8  imu_count; // number of simulated IMUs to create
     AP_Int32 loop_delay; // extra delay to add to every loop
+    AP_Int8  trusted_flight_validate_pause; // pause trusted flight validation updates
     AP_Float mag_scaling[MAX_CONNECTED_MAGS]; // scaling factor
     AP_Int32 mag_devid[MAX_CONNECTED_MAGS]; // Mag devid
     AP_Float buoyancy; // submarine buoyancy in Newtons

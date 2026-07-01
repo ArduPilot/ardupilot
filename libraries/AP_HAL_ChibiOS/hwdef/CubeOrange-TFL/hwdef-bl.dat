@@ -1,0 +1,9 @@
+include ../CubeOrange/hwdef-bl.dat
+
+# use a different board ID, so vehicles with TrustedFlight enabled are
+# prevented from loading the firmware without TrustedFlight enabled
+APJ_BOARD_ID AP_HW_CubeOrange_TFL
+
+# enable Trusted Flight
+define AP_TRUSTED_FLIGHT_ENABLED 1
+define AP_TRUSTED_FLIGHT_ISSUER_LENGTH 0
