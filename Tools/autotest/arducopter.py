@@ -12520,19 +12520,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             for name in param_names:
                 sp[name] = param_value
             self.set_parameters(sp)
-            self.delay_sim_time(1, reason="sensor state to update in log")
-            mlog = self.dfreader_for_current_onboard_log()
+            # The sensor health change takes time to be detected (up to the
+            # baro/compass health timeouts) and the ERR message is flushed to
+            # the onboard log asynchronously.  Poll the log until the expected
+            # ERR appears rather than reading it once after a fixed delay,
+            # which races against detection/flush and makes this test flaky.
+            tstart = self.get_sim_time()
             success = False
-            while True:
-                m = mlog.recv_match(type='ERR')
-                print("Got (%s)" % str(m))
-                if m is None:
-                    break
-                if m.Subsys == expected_subsys and m.ECode == expected_ecode:  # baro / ecode
-                    success = True
-                    break
-            if not success:
-                raise NotAchievedException("Did not find %s log message" % desc)
+            while not success:
+                if self.get_sim_time_cached() - tstart > 5:
+                    raise NotAchievedException("Did not find %s log message" % desc)
+                self.delay_sim_time(1, reason="sensor state to update in log")
+                mlog = self.dfreader_for_current_onboard_log()
+                while True:
+                    m = mlog.recv_match(type='ERR')
+                    if m is None:
+                        break
+                    if m.Subsys == expected_subsys and m.ECode == expected_ecode:  # baro / ecode
+                        success = True
+                        break
 
     def AltEstimation(self):
         '''Test that Alt Estimation is mandatory for ALT_HOLD'''
