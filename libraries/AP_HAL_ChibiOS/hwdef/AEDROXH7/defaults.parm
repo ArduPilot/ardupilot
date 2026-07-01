@@ -1,3 +1,7 @@
 # setup for LEDs on chan9
 SERVO9_FUNCTION 120
-OSD_TYPE2 5 
+OSD_TYPE2 5
+
+# Logs Limitation
+LOG_MAX_FILES 20
+LOG_FILE_RATEMAX 10
