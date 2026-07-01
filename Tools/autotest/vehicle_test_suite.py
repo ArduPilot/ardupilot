@@ -3890,7 +3890,7 @@ class TestSuite(abc.ABC):
                     raise NotAchievedException("Sequence not increasing")
                 if m.num_logs != num_logs:
                     raise NotAchievedException("Number of logs changed")
-                if m.time_utc < 1000 and m.id != m.num_logs:
+                if m.time_utc < 1000 and m.id != m.last_log_num:
                     raise NotAchievedException("Bad timestamp")
                 if m.id != m.last_log_num:
                     if m.size == 0:
