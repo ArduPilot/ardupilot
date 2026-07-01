@@ -39,12 +39,6 @@ public:
 
 protected:
 
-    // Subcommand operation types
-    enum class CommandType {
-        READ = 0,    // Read operation (R)
-        WRITE = 1,   // Write operation with 1 byte data (W)
-    };
-
     // periodic timer callback
     void timer();
 
@@ -80,20 +74,20 @@ protected:
     // send a direct command to write 1byte
     bool direct_command_write_1byte(uint16_t reg, uint8_t data) const;
 
-    // write 1, 2, or 4 bytes to a RAM data memory register (0x9xxx addresses)
-    // this includes delays so it should only be called during startup configuration
-    void set_register(uint16_t reg_addr, uint32_t reg_data, uint8_t len) const;
+    // send a command with no data payload and no checksum (e.g. ALL_FETS_ON, SLEEP_DISABLE)
+    bool indirect_send_command(uint16_t command) const;
 
-    // send a command-only subcommand (no data payload, no checksum)
-    bool sub_command(uint16_t command) const;
-
-    // send a subcommand with read or write capability
+    // write 1, 2 or 4 bytes to a Data Memory address (0x9xxx) or Subcommand with data
     // this includes delays so it should only be called during startup configuration
-    bool sub_command(uint16_t command, uint16_t data, CommandType type, uint8_t *rx_data = nullptr, uint8_t rx_len = 32) const;
+    bool indirect_write(uint16_t addr, uint32_t data, uint8_t len) const;
 
-    // subcommands are sent using a 16 bit command address and support block data transfers
+    // read 1, 2 or 4 bytes from a Data Memory address (0x9xxx) or Subcommand response
     // this includes delays so it should only be called during startup configuration
-    uint32_t sub_command_read_4bytes(uint16_t reg) const;
+    bool indirect_read(uint16_t addr, uint8_t *rx_data, uint8_t len) const;
+
+    // read 4 bytes via the indirect mechanism (e.g. DEVICE_NUMBER, FW_VERSION, HW_VERSION)
+    // this includes delays so it should only be called during startup configuration
+    uint32_t indirect_read_4bytes(uint16_t addr) const;
 
     // calculate checksum for given data buffer and length
     uint8_t calculate_checksum(const uint8_t* data, uint8_t len) const;
