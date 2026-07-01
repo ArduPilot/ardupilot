@@ -1,8 +1,34 @@
-# USB-ECM lab: MAVLink2 on UDP server so GCS can connect over the NIC
-# Host: 192.168.144.2  FC: 192.168.144.14  GCS: udpin:0.0.0.0:14550 or udp:192.168.144.14:14550
+# MatekH743-ECM (USB CDC-ACM + CDC-ECM lab board)
+# FC static IP on ECM; GCS connects as UDP client to FC (FC does not need GCS IP).
+# Example host: 192.168.144.2/24 on ECM NIC; GCS: udpout:192.168.144.14:14550 / QGC target 192.168.144.14:14550
+
 NET_ENABLE 1
 NET_DHCP 0
+
+# Vehicle address on USB ECM (lwIP netif)
+NET_IPADDR0 192
+NET_IPADDR1 168
+NET_IPADDR2 144
+NET_IPADDR3 14
+NET_NETMASK 24
+NET_GWADDR0 192
+NET_GWADDR1 168
+NET_GWADDR2 144
+NET_GWADDR3 1
+
+# Optional MAC (must match USB ECM iMACAddress / netif when customized)
+NET_MACADDR0 2
+NET_MACADDR1 0
+NET_MACADDR2 0
+NET_MACADDR3 0
+NET_MACADDR4 1
+NET_MACADDR5 20
+
+# MAVLink2 UDP server — bind all / no peer IP required (0.0.0.0)
 NET_P1_TYPE 2
 NET_P1_PROTOCOL 2
 NET_P1_PORT 14550
-# NET_P1_IP 0.0.0.0 = listen all (default zeros)
+NET_P1_IP0 0
+NET_P1_IP1 0
+NET_P1_IP2 0
+NET_P1_IP3 0
