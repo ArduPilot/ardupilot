@@ -17072,6 +17072,8 @@ RTL_ALT_M 111
                 'WP_YAW_BEHAVIOR': behaviour,
             })
             self.change_mode('GUIDED')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
             original_heading = self.get_heading()
             target_heading = 100
             if original_heading - target_heading < 90:
