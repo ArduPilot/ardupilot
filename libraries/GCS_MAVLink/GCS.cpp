@@ -262,6 +262,12 @@ MissionItemProtocol *GCS::missionitemprotocols[3];
 void GCS::init()
 {
     mavlink_system.sysid = sysid_this_mav();
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    if (option_is_enabled(Option::GCS_SYSID_ENFORCE)) {
+        _operator_control_sysid = mav_gcs_sysid;
+        _operator_control_sysid_high = mav_gcs_sysid_high;
+    }
+#endif
 }
 
 /*
@@ -726,10 +732,87 @@ MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
 */
 bool GCS::sysid_is_gcs(uint8_t _sysid) const
 {
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+    if (_operator_control_sysid != 0) {
+        if (_operator_control_sysid_high <= _operator_control_sysid) {
+            return _operator_control_sysid == _sysid;
+        }
+        return _sysid >= _operator_control_sysid && _sysid <= _operator_control_sysid_high;
+    }
+#endif
     if (mav_gcs_sysid_high <= mav_gcs_sysid) {
         return mav_gcs_sysid == _sysid;
     }
     return _sysid >= mav_gcs_sysid && _sysid <= mav_gcs_sysid_high;
 }
+
+#if AP_MAVLINK_GCS_CONTROL_ENABLED
+void GCS::set_operator_control(uint8_t oc_sysid, uint8_t oc_sysid_high, bool allow_takeover)
+{
+    _operator_control_sysid = oc_sysid;
+    _operator_control_sysid_high = oc_sysid_high;
+    _operator_control_allow_takeover = allow_takeover;
+    // clear secondary cache on any ownership change
+    memset(_secondary_gcs, 0, sizeof(_secondary_gcs));
+    send_message(MSG_CONTROL_STATUS);
+}
+
+void GCS::queue_operator_control_notification(uint8_t req_sysid, uint8_t req_sysid_high,
+                                               bool allow_takeover, float timeout)
+{
+    _oc_notification.pending       = true;
+    _oc_notification.req_sysid     = req_sysid;
+    _oc_notification.req_sysid_high = req_sysid_high;
+    _oc_notification.allow_takeover = allow_takeover;
+    _oc_notification.timeout       = timeout;
+    send_message(MSG_OPERATOR_CONTROL_NOTIFICATION);
+}
+
+void GCS::note_secondary_gcs_seen(uint8_t gcs_sysid)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    // update existing entry if present
+    for (auto &entry : _secondary_gcs) {
+        if (entry.gcs_sysid == gcs_sysid) {
+            entry.last_seen_ms = now_ms;
+            return;
+        }
+    }
+    // insert into first empty slot
+    for (auto &entry : _secondary_gcs) {
+        if (entry.gcs_sysid == 0) {
+            entry.gcs_sysid = gcs_sysid;
+            entry.last_seen_ms = now_ms;
+            return;
+        }
+    }
+    // replace oldest entry
+    uint8_t oldest_idx = 0;
+    uint32_t oldest_ms = _secondary_gcs[0].last_seen_ms;
+    for (uint8_t i = 1; i < ARRAY_SIZE(_secondary_gcs); i++) {
+        if (_secondary_gcs[i].last_seen_ms < oldest_ms) {
+            oldest_ms = _secondary_gcs[i].last_seen_ms;
+            oldest_idx = i;
+        }
+    }
+    _secondary_gcs[oldest_idx].gcs_sysid = gcs_sysid;
+    _secondary_gcs[oldest_idx].last_seen_ms = now_ms;
+}
+
+void GCS::get_secondary_gcs(uint8_t (&out)[10]) const
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    uint8_t idx = 0;
+    for (const auto &entry : _secondary_gcs) {
+        if (idx >= ARRAY_SIZE(out)) {
+            break;
+        }
+        if (entry.gcs_sysid != 0 &&
+            now_ms - entry.last_seen_ms < GCS_OPERATOR_HEARTBEAT_TIMEOUT_MS) {
+            out[idx++] = entry.gcs_sysid;
+        }
+    }
+}
+#endif
 
 #endif  // HAL_GCS_ENABLED
