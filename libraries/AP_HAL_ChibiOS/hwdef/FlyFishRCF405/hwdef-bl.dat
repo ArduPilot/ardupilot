@@ -1,0 +1,41 @@
+# hw definition file for FlyFishRC F405 bootloader
+
+MCU STM32F4xx STM32F405xx
+
+APJ_BOARD_ID AP_HW_FlyFishRCF405
+
+# Use internal HSI (16 MHz) as clock source.
+# When OSCILLATOR_HZ is 0, stm32f47_mcuconf.h automatically enables HSI
+# and sets correct PLL values (PLLM=16 PLLN=336 /2 /7 → 168MHz/48MHz USB).
+# This avoids the infinite hang at the HSERDY wait loop that occurs when no
+# working external crystal is present (the ROM DFU has a timeout fallback;
+# our ChibiOS clock init does not).
+OSCILLATOR_HZ 0
+# bypass VBUS sensing so USB starts regardless of PA9 connection state
+define BOARD_OTG_NOVBUSSENS
+
+FLASH_SIZE_KB 1024
+
+# bootloader must fit within 16KB
+FLASH_USE_MAX_KB 16
+
+# bootloader is installed at address 0
+FLASH_RESERVE_START_KB 0
+
+# firmware is placed starting at 48KB
+FLASH_BOOTLOADER_LOAD_KB 48
+
+STM32_VDD 330U
+
+# USB only during bootloader
+SERIAL_ORDER OTG1
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# status LEDs (active low)
+PC15 LED_BOOTLOADER OUTPUT LOW
+PC14 LED_ACTIVITY   OUTPUT LOW
+define HAL_LED_ON 0
+
+# disable fast-boot so bootloader always initializes USB before jumping to app
+define AP_FASTBOOT_ENABLED 0

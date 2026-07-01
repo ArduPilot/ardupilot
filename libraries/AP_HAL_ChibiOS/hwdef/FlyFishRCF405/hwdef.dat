@@ -1,0 +1,189 @@
+# hw definition file for processing by chibios_hwdef.py
+# FlyFishRC F405 (board_name FLYFISHRCF405, manufacturer FFRC)
+# MCU: STM32F405, IMU: ICM-42688-P (SPI1), BARO: DPS310 (I2C1),
+# OSD: MAX7456 (SPI2), Dataflash: SPI3
+# Derived from Betaflight FLYFISHRCF405 target (BF 4.5.1)
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware update
+APJ_BOARD_ID AP_HW_FlyFishRCF405
+
+OSCILLATOR_HZ 0
+
+# 3.3V board voltage
+STM32_VDD 330U
+
+FLASH_SIZE_KB 1024
+# 48KB reserved for bootloader; firmware starts at 48KB offset
+FLASH_RESERVE_START_KB 48
+define HAL_STORAGE_SIZE 16384
+define STORAGE_FLASH_PAGE 1
+
+# TIM5 is a 32-bit timer free from motor/LED assignments
+STM32_ST_USE_TIMER 5
+define CH_CFG_ST_RESOLUTION 32
+
+# I2C bus order
+I2C_ORDER I2C1
+
+# SERIAL0=USB  SERIAL1=USART1  SERIAL2=USART2  SERIAL3=USART3
+# SERIAL4=UART4  SERIAL5=UART5  SERIAL6=USART6
+SERIAL_ORDER OTG1 USART1 USART2 USART3 UART4 UART5 USART6
+
+# ---- USB ----
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# ---- SWD debug ----
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# ======== SPI buses ========
+
+# SPI1 — ICM-42688-P IMU
+PA5 SPI1_SCK  SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+PA4 GYRO1_CS CS
+
+# SPI2 — MAX7456 analog OSD
+PB13 SPI2_SCK  SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+PB12 OSD1_CS CS
+
+# SPI3 — dataflash blackbox
+# NOTE: PC12 is shared with UART5_TX; UART5 TX is therefore unavailable
+PC10 SPI3_SCK  SPI3
+PC11 SPI3_MISO SPI3
+PC12 SPI3_MOSI SPI3
+PA15 FLASH1_CS CS
+
+# ======== UART ports ========
+
+# SERIAL1 / USART1 — RC receiver (CRSF/ELRS on RC pad)
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_RCIN
+
+# SERIAL2 / USART2 — general purpose; inverter IC on PC0 enables SBUS
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+# Inverter control: drive LOW to invert RX (for SBUS); POL(0) = active-low
+PC0 USART2_RXINV OUTPUT HIGH GPIO(78) POL(0)
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+
+# SERIAL3 / USART3 — general purpose (e.g. VTX SmartAudio/Tramp)
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_None
+
+# SERIAL4 / UART4 — general purpose (e.g. MSP / DJI FPV system)
+PA0 UART4_TX UART4 NODMA
+PA1 UART4_RX UART4 NODMA
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
+
+# SERIAL5 / UART5 — RX only (TX conflicts with SPI3 MOSI on PC12)
+PD2 UART5_RX UART5 NODMA
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_None
+
+# SERIAL6 / USART6 — GPS (matches Betaflight serial 5 = GPS @ 57600)
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_GPS
+
+# ======== I2C ========
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+# ======== ADC ========
+# PC1 = ADC1_IN11 → battery voltage
+PC1 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+define HAL_BATT_VOLT_PIN 11
+# BF vbat_scale=110, vbat_divider=10 → 11:1 divider
+define HAL_BATT_VOLT_SCALE 11.0
+
+# PC3 = ADC1_IN13 → battery current
+PC3 BATT_CURRENT_SENS ADC1 SCALE(1)
+define HAL_BATT_CURR_PIN 13
+# Starting value; calibrate with BATT_AMP_PERVLT parameter after install
+define HAL_BATT_CURR_SCALE 40.0
+
+define HAL_BATT_MONITOR_DEFAULT 4
+
+# ======== Motor outputs ========
+# Motors 1-2: TIM8 channels (DMA2)
+PC8 TIM8_CH3 TIM8 PWM(1) GPIO(50)
+PC9 TIM8_CH4 TIM8 PWM(2) GPIO(51)
+
+# Motors 3-5: TIM1 channels (DMA2)
+PA8  TIM1_CH1 TIM1 PWM(3) GPIO(52)
+PA9  TIM1_CH2 TIM1 PWM(4) GPIO(53)
+PA10 TIM1_CH3 TIM1 PWM(5) GPIO(54)
+
+# Motors 6-8: TIM3 channels (DMA1)
+PB4 TIM3_CH1 TIM3 PWM(6) GPIO(55)
+PB0 TIM3_CH3 TIM3 PWM(7) GPIO(56)
+PB1 TIM3_CH4 TIM3 PWM(8) GPIO(57)
+
+# LED strip output (WS2812 / NeoPixel)
+PB3 TIM2_CH2 TIM2 PWM(9) GPIO(58)
+
+# ======== Status LEDs ========
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+PC15 LED0 OUTPUT LOW GPIO(90)
+PC14 LED1 OUTPUT LOW GPIO(91)
+define HAL_GPIO_A_LED_PIN 90
+define HAL_GPIO_B_LED_PIN 91
+define HAL_LED_ON 0
+
+# ======== Buzzer ========
+PC13 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+
+# ======== PINIO (VTX power / camera switch) ========
+PC2 PINIO1 OUTPUT LOW GPIO(81)
+PC5 PINIO2 OUTPUT LOW GPIO(82)
+
+# ======== SPI device table ========
+SPIDEV icm42688  SPI1 DEVID1 GYRO1_CS  MODE3  1*MHZ 10*MHZ
+SPIDEV dataflash SPI3 DEVID1 FLASH1_CS MODE3 32*MHZ 32*MHZ
+SPIDEV osd       SPI2 DEVID4 OSD1_CS   MODE0 10*MHZ 10*MHZ
+
+# ======== IMU ========
+# ICM-42688-P; CW90 yaw rotation (BF gyro_1_align_yaw=900 / CW90)
+IMU Invensensev3 SPI:icm42688 ROTATION_YAW_90
+
+# ======== Barometer ========
+BARO DPS310 I2C:0:0x76
+define AP_BARO_BACKEND_DEFAULT_ENABLED 0
+define AP_BARO_DPS280_ENABLED 1
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+# ======== Compass ========
+# No internal compass; probe I2C bus for any external mag
+define ALLOW_ARM_NO_COMPASS
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# ======== Logging ========
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+
+# ======== OSD ========
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# ======== DMA ========
+DMA_PRIORITY TIM1* TIM8* TIM3* TIM2* SPI1*
+
+# ======== DShot ========
+define HAL_DEFAULT_INS_FAST_SAMPLE 3
+
+# Motor layout matches Betaflight/X quad frame numbering
+define HAL_FRAME_TYPE_DEFAULT 12
+
+include ../include/minimize_fpv_osd.inc
