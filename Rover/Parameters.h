@@ -338,6 +338,18 @@ public:
     // pitch/roll angle for crash check
     AP_Int8 crash_angle;
 
+    // min throttle for crash check
+    AP_Float crash_thr_min;
+
+    // velocity threshold for crash check
+    AP_Float crash_vel_min;
+
+    // turn rate threshold for crash check
+    AP_Float crash_turn_rate_min;
+
+    // crash trigger time in seconds
+    AP_Float crash_timeout;
+
 #if AP_FOLLOW_ENABLED
     // follow mode library
     AP_Follow follow;
