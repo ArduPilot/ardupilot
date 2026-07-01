@@ -222,6 +222,19 @@ define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 1
 define AP_SCHEDULER_FAST_TASK_MODULO 2
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
+
+# Timer-driven statistical PC sampler (rp2350_pc_sampler.cpp), used to guide
+# __RAMFUNC2__ relocation. Samples the interrupted PC on each core via a free
+# TIMER0 alarm and dumps per-core histograms from perf_report. See
+# Laurel/xip-cache-and-pgo.md. Off by default; set to 1 to profile.
+define AP_RP2350_PC_SAMPLER_ENABLED 0
+
+# When enabled the PC sampler owns TIMER0 ALARM2 (core0) and ALARM3 (core1)
+# with its own zero-latency vectors, so the ChibiOS ST-LLD handlers for those
+# two alarms stay suppressed either way (the SMP scheduler only uses
+# ALARM0/ALARM1) and turning the sampler on needs no further hwdef edits.
+define ST_TIMER_ALARM2_SUPPRESS_ISR
+define ST_TIMER_ALARM3_SUPPRESS_ISR
 define HAL_MAIN_LOOP_STUCK_THRESHOLD_MS 1200
 # Enable SPI microSD via the shared SPI1 bus. Storage parameters remain on
 # XIP flash; FATFS is for logs/files only.
