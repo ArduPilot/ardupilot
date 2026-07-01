@@ -21,6 +21,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Servo_Telem/AP_Servo_Telem.h>
+#include <AP_RangeFinder/AP_RangeFinder.h>
 
 /*
   All backends use the same parameter table and set of indices. Therefore, two
@@ -137,6 +138,16 @@ void AP_TemperatureSensor_Backend::update_external_libraries(const float tempera
             servo_telem->update_telem_data(_params.source_id-1, servo_telem_data);
             break;
 #endif // AP_SERVO_TELEM_ENABLED
+
+#if AP_RANGEFINDER_ENABLED
+        case AP_TemperatureSensor_Params::Source::Rangefinder: {
+            auto *rangefinder = AP::rangefinder();
+            if (rangefinder != nullptr) {
+                rangefinder->set_temperature(_params.source_id-1, temperature);
+            }
+            break;
+        }
+#endif
 
         case AP_TemperatureSensor_Params::Source::None:
         case AP_TemperatureSensor_Params::Source::Pitot_tube:
