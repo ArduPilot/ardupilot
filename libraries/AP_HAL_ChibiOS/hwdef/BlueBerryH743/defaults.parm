@@ -1,0 +1,3 @@
+# settings for battery monitoring
+BATT_AMP_OFFSET 0.126
+OSD_TYPE2 5
