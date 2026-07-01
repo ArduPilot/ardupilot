@@ -499,6 +499,18 @@ public:
         uint32_t start_ms;
     } twist;
 
+    // ground relocation: smoothly move the vehicle on the ground (NED metres, duration ms)
+    struct {
+        AP_Float x;
+        AP_Float y;
+        AP_Float z;
+        AP_Int32 t;
+        uint32_t start_ms;
+        float moved_x;
+        float moved_y;
+        float moved_z;
+    } move;
+
     AP_Int8 gnd_behav;
 
     AP_Enum<Rotation> imu_orientation;

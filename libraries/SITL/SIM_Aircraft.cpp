@@ -721,6 +721,7 @@ void Aircraft::update_model(const struct sitl_input &input)
     } else {
         time_advance();
     }
+    apply_move();
 }
 
 /*
@@ -1271,6 +1272,72 @@ void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
         sitl->shove.start_ms = 0;
         sitl->shove.t.set(0);
     }
+}
+
+/*
+  smoothly move the vehicle on the ground by interpolating position over SIM_MOVE_TIME ms.
+  Called each simulation step; does nothing unless SIM_MOVE_TIME is non-zero.
+*/
+void Aircraft::apply_move(void)
+{
+    if (sitl == nullptr) {
+        return;
+    }
+    auto &m = sitl->move;
+    if (m.t <= 0) {
+        return;
+    }
+    const uint32_t now = AP_HAL::millis();
+    if (m.start_ms == 0) {
+        m.start_ms = now;
+        m.moved_x = 0.0f;
+        m.moved_y = 0.0f;
+        m.moved_z = 0.0f;
+    }
+    // abort if the vehicle has taken off (significant upward velocity, not just a ground shift)
+    if (velocity_ef.z < -1.0f) {
+        m.start_ms = 0;
+        m.x.set_and_save(0);
+        m.y.set_and_save(0);
+        m.z.set_and_save(0);
+        m.t.set_and_save(0);
+        return;
+    }
+
+    const uint32_t elapsed = now - m.start_ms;
+
+    if (elapsed >= uint32_t(m.t)) {
+        // final step: snap to exact destination and clear
+        position.x += float(m.x) - m.moved_x;
+        position.y += float(m.y) - m.moved_y;
+        ground_level -= float(m.z) - m.moved_z;
+        m.start_ms = 0;
+        m.x.set_and_save(0);
+        m.y.set_and_save(0);
+        m.z.set_and_save(0);
+        m.t.set_and_save(0);
+    } else {
+        // fractional step this frame
+        const float dt = frame_time_us * 1.0e-6f;
+        const float total_t = float(m.t) * 1.0e-3f;
+        const float dn = float(m.x) * (dt / total_t);
+        const float de = float(m.y) * (dt / total_t);
+        const float dd = float(m.z) * (dt / total_t);
+        position.x += dn;
+        position.y += de;
+        ground_level -= dd;
+        m.moved_x += dn;
+        m.moved_y += de;
+        m.moved_z += dd;
+    }
+    // Shifting ground_level makes hagl() > 0 so the clamp in update_position()
+    // won't fire. Explicitly keep position.z on the new ground level each frame.
+    position.z = -(ground_level + frame_height - home.alt * 0.01f + ground_height_difference());
+
+    // zero velocity so physics doesn't fight the move
+    velocity_ef.x = 0.0f;
+    velocity_ef.y = 0.0f;
+    velocity_ef.z = 0.0f;
 }
 
 float Aircraft::get_local_updraft(const Vector3d &currentPos)
