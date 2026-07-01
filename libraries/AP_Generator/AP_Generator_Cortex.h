@@ -110,9 +110,20 @@ private:
 
     // Last telemetry reading from the generator
     uint32_t last_reading_ms;
+    uint32_t last_rail_reading_ms;
+
+    uint32_t _last_logged_reading_ms;
+    uint32_t _last_logged_rail_reading_ms;
 
     // Connection state, used to detect changes
     bool connected;
+
+    uint8_t  get_warning_mask(void) const;
+    uint16_t get_error_mask(void) const;
+
+#if HAL_LOGGING_ENABLED
+    void Log_Write(void);
+#endif
 
     bool send_message(AP_HAL::CANFrame &frame);
 };
