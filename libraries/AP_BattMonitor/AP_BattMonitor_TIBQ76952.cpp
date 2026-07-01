@@ -690,6 +690,7 @@ void AP_BattMonitor_TIBQ76952::timer(void)
     // read data from device
     if (read_voltage_current_temperature()) {
         read_charging_state();
+        check_sleep_timeout();
     }
 }
 
@@ -888,6 +889,35 @@ void AP_BattMonitor_TIBQ76952::read_charging_state()
     }
 
     _state.charging_state = new_state;
+}
+
+// check if the BMS should sleep
+void AP_BattMonitor_TIBQ76952::check_sleep_timeout()
+{
+    // exit immediately if sleep mode is disabled
+    if (sleep_timeout_sec <= 0) {
+        return;
+    }
+
+    // update activity time if not idle
+    uint32_t now_ms = AP_HAL::millis();
+    if (_state.charging_state != AP_BattMonitor::ChargingState::IDLE) {
+        activity_timer_ms = now_ms;
+        return;
+    }
+
+    // check for timeout
+    if (now_ms - activity_timer_ms > sleep_timeout_sec * 1000) {
+        // reset activity counter to avoid resending sleep commands in case BMS decides not to sleep
+        activity_timer_ms = now_ms;
+
+        // send debug message
+        Debug("BQ76952: sleep timeout");
+
+        // sleep mode commands must be sent twice
+        sub_command(TIBQ769x2_DEEPSLEEP);
+        sub_command(TIBQ769x2_DEEPSLEEP);
+    }
 }
 
 // read bytes from a register. returns true on success
