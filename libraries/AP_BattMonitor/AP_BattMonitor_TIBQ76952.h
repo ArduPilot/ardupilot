@@ -78,6 +78,9 @@ protected:
     uint8_t direct_command_read_1byte(uint16_t reg) const;
     uint16_t direct_command_read_2bytes(uint16_t reg) const;
 
+    // send a direct command to write 1byte
+    bool direct_command_write_1byte(uint16_t reg, uint8_t data) const;
+
     // write 1, 2, or 4 bytes to a RAM data memory register (0x9xxx addresses)
     // this includes delays so it should only be called during startup configuration
     void set_register(uint16_t reg_addr, uint32_t reg_data, uint8_t len) const;
