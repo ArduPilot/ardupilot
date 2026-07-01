@@ -111,8 +111,8 @@ bool ModePosHold::init(bool ignore_checks)
 void ModePosHold::run()
 {
     const uint32_t now_ms = AP_HAL::millis();
-    float controller_to_pilot_roll_mix;     // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
-    float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  0 = fully last controller controls, 1 = fully pilot controls
+    float controller_to_pilot_roll_mix;     // mix of controller and pilot controls.  1 = fully last controller controls, 0 = fully pilot controls
+    float controller_to_pilot_pitch_mix;    // mix of controller and pilot controls.  1 = fully last controller controls, 0 = fully pilot controls
     const Vector3f& vel_ned_ms = pos_control->get_vel_estimate_NED_ms();
 
     // enforce minimum allowed value for poshold_brake_rate_degs
@@ -311,7 +311,8 @@ void ModePosHold::run()
             }
 
             // calculate controller_to_pilot mix ratio
-            controller_to_pilot_roll_mix = (float)(now_ms - controller_to_pilot_start_time_roll_ms) / (float)POSHOLD_CONTROLLER_TO_PILOT_MIX_TIME_MS;
+            const float roll_elapsed_ms = now_ms - controller_to_pilot_start_time_roll_ms;
+            controller_to_pilot_roll_mix = 1.0f - (roll_elapsed_ms / (float)POSHOLD_CONTROLLER_TO_PILOT_MIX_TIME_MS);
 
             // mix final loiter lean angle and pilot desired lean angles
             roll_rad = mix_controls(controller_to_pilot_roll_mix, controller_final_roll_rad, pilot_roll_rad + wind_comp_roll_rad);
@@ -404,7 +405,8 @@ void ModePosHold::run()
             }
 
             // calculate controller_to_pilot mix ratio
-            controller_to_pilot_pitch_mix = (float)(now_ms - controller_to_pilot_start_time_pitch_ms) / (float)POSHOLD_CONTROLLER_TO_PILOT_MIX_TIME_MS;
+            const float pitch_elapsed_ms = now_ms - controller_to_pilot_start_time_pitch_ms;
+            controller_to_pilot_pitch_mix = 1.0f - (pitch_elapsed_ms / (float)POSHOLD_CONTROLLER_TO_PILOT_MIX_TIME_MS);
 
             // mix final loiter lean angle and pilot desired lean angles
             pitch_rad = mix_controls(controller_to_pilot_pitch_mix, controller_final_pitch_rad, pilot_pitch_rad + wind_comp_pitch_rad);
