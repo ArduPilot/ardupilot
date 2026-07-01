@@ -27,7 +27,8 @@ private:
     void request_display_percentage();
 
     // display battery SOC percentage using LEDs
-    void display_percentage();
+    // last_led_off allows blinking the last LED to indicate charging
+    void display_percentage(bool last_led_off = false);
 
     // get battery SOC percentage (0-100). returns true on success
     bool get_percentage(uint8_t &percentage);
