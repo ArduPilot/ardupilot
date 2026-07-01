@@ -33,6 +33,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>
+#include <AP_Actuators/AP_Actuators.h>
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Camera/AP_Camera.h>
@@ -5334,6 +5335,16 @@ bool GCS_MAVLINK::command_long_stores_location(const MAV_CMD command)
     return false;
 }
 
+bool GCS_MAVLINK::command_long_requires_scaling(const MAV_CMD command)
+{
+    switch (command) {
+    case MAV_CMD_DO_SET_ACTUATOR:
+        return true;
+    default:
+        return false;
+    }
+}
+
 #if AP_MAVLINK_COMMAND_LONG_ENABLED
 // when conveyed via COMMAND_LONG, a command doesn't come with an
 // explicit frame.  When conveying a location they do have an assumed
@@ -5394,6 +5405,20 @@ static int32_t convert_COMMAND_LONG_loc_param(float param, bool stores_location)
     return param;
 }
 
+// returns a value suitable for COMMAND_INT.x or y based on a float
+// param5/param6 from a COMMAND_LONG when the command is specified for
+// fractional-precision scaling (see command_long_requires_scaling).
+// NaN is encoded as INT32_MAX so that "ignore this slot" survives the
+// COMMAND_LONG -> COMMAND_INT canonicalisation; the receiving handler
+// is responsible for decoding INT32_MAX back to NaN.
+static int32_t convert_COMMAND_LONG_scaled_param(float param)
+{
+    if (isnan(param)) {
+        return INT32_MAX;
+    }
+    return param * 1e7;
+}
+
 void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long_t &in, mavlink_command_int_t &out, MAV_FRAME frame)
 {
     out = {};
@@ -5407,9 +5432,14 @@ void GCS_MAVLINK::convert_COMMAND_LONG_to_COMMAND_INT(const mavlink_command_long
     out.param2 = in.param2;
     out.param3 = in.param3;
     out.param4 = in.param4;
-    const bool stores_location = command_long_stores_location((MAV_CMD)in.command);
-    out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
-    out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
+    if (command_long_requires_scaling((MAV_CMD)in.command)) {
+        out.x = convert_COMMAND_LONG_scaled_param(in.param5);
+        out.y = convert_COMMAND_LONG_scaled_param(in.param6);
+    } else {
+        const bool stores_location = command_long_stores_location((MAV_CMD)in.command);
+        out.x = convert_COMMAND_LONG_loc_param(in.param5, stores_location);
+        out.y = convert_COMMAND_LONG_loc_param(in.param6, stores_location);
+    }
     out.z = in.param7;
 }
 
@@ -5591,6 +5621,50 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_external_wind_estimate(const mavlink_
     return MAV_RESULT_ACCEPTED;
 }
 #endif // AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+
+#if AP_ACTUATORS_ENABLED
+MAV_RESULT GCS_MAVLINK::handle_command_do_set_actuator(const mavlink_command_int_t &packet)
+{
+    // param1..param4 : actuator 1..4 value, [-1,1], NaN to ignore
+    // x  (==param5)  : actuator 5 value, scaled by 1e7 in COMMAND_LONG
+    //                  -> COMMAND_INT (see command_long_requires_scaling
+    //                  / convert_COMMAND_LONG_scaled_param). INT32_MAX
+    //                  is the encoded NaN ("ignore") sentinel.
+    // y  (==param6)  : actuator 6 value, encoded the same way as x.
+    // z  (==param7)  : index of actuator set (only 0 supported)
+    AP_Actuators *actuators = AP_Actuators::get_singleton();
+    if (actuators == nullptr) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+
+    // packet.z carries the integer actuator-set index per MAVLink spec.
+    if (static_cast<uint8_t>(packet.z) != 0) {
+        return MAV_RESULT_DENIED;
+    }
+
+    // decode the scaled-int x/y back to floats, restoring NaN from the
+    // INT32_MAX sentinel produced by convert_COMMAND_LONG_scaled_param.
+    const float actuator5 = (packet.x == INT32_MAX) ? NAN : packet.x * 1e-7f;
+    const float actuator6 = (packet.y == INT32_MAX) ? NAN : packet.y * 1e-7f;
+
+    const float actuator_values[] = {
+        packet.param1,
+        packet.param2,
+        packet.param3,
+        packet.param4,
+        actuator5,
+        actuator6,
+    };
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(actuator_values); i++) {
+        if (isnan(actuator_values[i])) {
+            continue;
+        }
+        actuators->set_actuator(i, actuator_values[i]);
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+#endif // AP_ACTUATORS_ENABLED
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &packet)
 {
@@ -5850,6 +5924,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_servorelay_message(packet);
 #endif
 
+#if AP_ACTUATORS_ENABLED
+    case MAV_CMD_DO_SET_ACTUATOR:
+        return handle_command_do_set_actuator(packet);
+#endif
 #if AP_MAVLINK_MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES_ENABLED
     case MAV_CMD_REQUEST_AUTOPILOT_CAPABILITIES:
         return handle_command_request_autopilot_capabilities(packet);
