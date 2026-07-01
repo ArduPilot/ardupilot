@@ -101,6 +101,15 @@ void Copter::update_heli_control_dynamics(void)
 
     // set hover roll trim scalar, will ramp from 0 to 1 over 1 second after we think helicopter has taken off
     attitude_control->set_hover_roll_trim_scalar((float) hover_roll_trim_scalar_slew/(float) scheduler.get_loop_rate_hz());
+
+    // set manual collective mode in motors to aid in runup complete determination in RSC
+    if (flightmode->has_manual_throttle()) {
+        // if we are in a manual throttle mode, then we are using a manual collective flight mode
+        motors->set_using_manual_collective_mode(true);
+    } else {
+        // if we are not in a manual throttle mode, then we are not using a manual collective flight mode
+        motors->set_using_manual_collective_mode(false);
+    }
 }
 
 bool Copter::should_use_landing_swash() const
