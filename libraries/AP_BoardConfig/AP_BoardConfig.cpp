@@ -483,8 +483,8 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if AP_CPU_IDLE_STATS_ENABLED
     // @Param: IDLE_STATS
     // @DisplayName: Capture and calculate true CPU load using idle threads
-    // @Description: Capture and calculate true CPU load using idle threads
-    // @Values: 0:Disable,1:Enable
+    // @Description: Capture and calculate true CPU load using idle threads. When set to File the average and peak load are reported via @SYS/threads.txt and reset each time the file is read. When set to Log the average and peak load are written to the PM2 log message and reset each time it is logged.
+    // @Values: 0:Disable,1:File,2:Log
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("IDLE_STATS", 33, AP_BoardConfig, state.idle_stats, 0),

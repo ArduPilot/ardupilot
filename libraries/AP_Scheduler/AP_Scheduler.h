@@ -117,6 +117,11 @@ public:
     // write out PERF message to logger
     void Log_Write_Performance();
 
+#if AP_CPU_IDLE_STATS_ENABLED
+    // write out PM2 message with true CPU load when BRD_IDLE_STATS=Log
+    void Log_Write_CPU_Load();
+#endif
+
     // call when one tick has passed
     void tick(void);
 
