@@ -602,8 +602,12 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
         return;
     }
 
-    // if rotor ramp and runup are both at full speed, then run-up has been completed
-    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && (_rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : true)) {
+    // rotor runup complete depends on the use of autothrottle RSC mode and the manual collective flight mode
+    // if autothrottle is used and a non-manual collective mode is used, then the governor must be engaged for runup to be complete. Otherwise,
+    // runup is complete when the rotor ramp and runup outputs are both at 1.0.  
+    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && 
+        ((!_using_manual_collective_mode && _rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : true) 
+        || (_using_manual_collective_mode && _rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : false))) {
         _runup_complete = true;
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Runup Complete");
     }
