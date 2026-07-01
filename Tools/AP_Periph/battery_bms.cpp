@@ -69,6 +69,9 @@ bool BatteryBMS::configured()
 
     // mark configuration as complete
     config_complete = true;
+
+    // display battery percentage after startup
+    request_display_percentage();
     return true;
 }
 
