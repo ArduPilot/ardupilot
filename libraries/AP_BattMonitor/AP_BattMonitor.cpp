@@ -1290,6 +1290,16 @@ bool AP_BattMonitor::handle_scripting(uint8_t idx, const BattMonitorScript_State
 }
 #endif
 
+// set battery BMS sleep timeout in seconds
+// set to zero to disable sleep
+void AP_BattMonitor::set_sleep_timeout(uint8_t instance, uint16_t timeout_sec)
+{
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
+        return;
+    }
+    drivers[instance]->set_sleep_timeout(timeout_sec);
+}
+
 namespace AP {
 
 AP_BattMonitor &battery()
