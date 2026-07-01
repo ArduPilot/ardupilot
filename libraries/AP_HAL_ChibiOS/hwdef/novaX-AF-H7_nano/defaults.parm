@@ -1,0 +1,4 @@
+# novaX AF-H7 nano default parameters
+
+# WS2812 LED strip on the PWM11 output (PA8)
+SERVO11_FUNCTION 120
