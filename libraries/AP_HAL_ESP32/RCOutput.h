@@ -248,9 +248,6 @@ private:
     // channel while the task is mid-transmit on it -> use-after-free crash.
     HAL_Semaphore _dshot_sem;
 
-    // mask of channels with bidirectional DShot enabled (mirrors per-channel pwm_chan.bidir)
-    uint32_t _bidir_mask = 0;
-
     // bidirectional DShot decoded telemetry (12 = max channels on current chips)
     struct {
         uint16_t erpm[12] {};             // last decoded eRPM per channel

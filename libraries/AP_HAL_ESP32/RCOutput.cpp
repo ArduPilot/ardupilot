@@ -469,6 +469,10 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
                 ESP_ERROR_CHECK(rmt_enable(rx));
                 ch.rmt_rx_chan = rx; // stored as void* (see RCOutput.h)
             } else {
+                // no RX channel: fall back to plain (non-inverted) DShot on this
+                // channel, else we'd send inverted-CRC frames the ESC rejects with
+                // no line-turnaround to read.
+                ch.bidir = false;
                 printf("RCOut: bidir DShot RX alloc failed on chan %u (err 0x%x); S3 has 4 RX channels\n",
                        (unsigned)chan, (int)rxerr);
             }
@@ -617,10 +621,18 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
     rmt_channel_handle_t tx = (rmt_channel_handle_t)ch.rmt_chan;
     rmt_channel_handle_t rx = (rmt_channel_handle_t)ch.rmt_rx_chan;
 
-    // make sure the frame is fully on the wire before we release the pad
-    rmt_tx_wait_all_done(tx, 2);
+    // make sure the frame is fully on the wire before we release the pad; if it
+    // hasn't finished, skip the turnaround this cycle rather than tri-state a pad
+    // that is still transmitting (which would truncate the DShot frame).
+    if (rmt_tx_wait_all_done(tx, 2) != ESP_OK) {
+        return; // pad stays OUTPUT; try the turnaround next frame
+    }
 
-    // RELEASE: tri-state the pad; the pull-up idles it high and the ESC pulls low
+    // RELEASE: tri-state the pad; the pull-up idles it high and the ESC pulls low.
+    // NOTE (Phase 6 HW-verify): the spike proved the RX/tri-state side, but NOT that
+    // gpio_set_direction(OUTPUT) below re-attaches the RMT TX signal to the pad so
+    // frames keep reaching the ESC after the first turnaround. Confirm on hardware; if
+    // TX stops, re-select the RMT out signal on the matrix instead of a direction flip.
     gpio_set_direction((gpio_num_t)ch.gpio_num, GPIO_MODE_INPUT);
 
     rmt_receive_config_t rxcfg = {};
@@ -634,6 +646,10 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
             esp_rom_delay_us(10);
         }
         if (bdshot_rx_done[chan]) {
+            // the RMT ISR (which fills bdshot_rx_buf) may run on a different core than
+            // this pinned task; barrier so we see the completed symbol buffer, not a
+            // partial one, after observing the done flag.
+            __sync_synchronize();
             ch.rx_nsymbols = bdshot_rx_nsym[chan];
             // telemetry bit period: the ESC replies at 5/4 the DShot bitrate.
             uint32_t telem_rate;
@@ -679,8 +695,8 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
   (0xffff = invalid). Ported from AP_HAL_ChibiOS::bdshot_decode_telemetry_packet
   (originally betaflight, https://github.com/betaflight/betaflight/pull/8554), but
   fed from RMT symbol run-durations instead of timer input-capture timestamps:
-  each rmt_symbol_word_t contributes a high run (duration0) then a low run (duration1),
-  which we accumulate into edge timestamps and run the same reconstruction.
+  each rmt_symbol_word_t is a high run (duration0) then a low run (duration1), so we
+  reconstruct the 21-bit value directly from the run lengths (no timestamp round-trip).
  */
 uint32_t RCOutput::bdshot_decode_erpm(const void *symbols, uint32_t nsym, uint32_t bit_ticks)
 {
@@ -688,38 +704,32 @@ uint32_t RCOutput::bdshot_decode_erpm(const void *symbols, uint32_t nsym, uint32
     if (bit_ticks == 0) {
         return BDSHOT_INVALID_ERPM;
     }
-
-    // build cumulative edge timestamps (RMT ticks) from the symbol run durations
-    uint32_t ts[BDSHOT_RX_SYMBOLS * 2 + 1];
-    uint32_t n = 0, acc = 0;
-    ts[n++] = 0;
-    for (uint32_t i = 0; i < nsym && n < BDSHOT_RX_SYMBOLS * 2; i++) {
-        if (sym[i].duration0 == 0) { break; }
-        acc += sym[i].duration0; ts[n++] = acc;
-        if (sym[i].duration1 == 0) { break; }
-        acc += sym[i].duration1; ts[n++] = acc;
-    }
-    if (n < 2) {
-        return BDSHOT_INVALID_ERPM;
+    if (nsym > BDSHOT_RX_SYMBOLS) {
+        nsym = BDSHOT_RX_SYMBOLS; // clamp: never index past this channel's buffer row
     }
 
-    // reconstruct the 21-bit GCR value: each run of `len` bit-periods encodes a 1
-    // in its MSB position (GCR "toggle" encoding).
-    uint32_t value = 0, bits = 0, len;
-    uint32_t old = ts[0];
-    for (uint32_t i = 1; i <= n; i++) {
-        if (i < n) {
-            if (bits >= 21U) { break; }
-            const int32_t diff = (int32_t)ts[i] - (int32_t)old;
-            len = ((uint32_t)diff + bit_ticks / 2) / bit_ticks;
-        } else {
-            len = 21U - bits;
+    // reconstruct the 21-bit GCR value from run durations: a run of `len` telemetry-bit
+    // periods encodes a 1 in its MSB position (GCR "toggle" encoding).
+    uint32_t value = 0, bits = 0;
+    bool ended = false;
+    for (uint32_t i = 0; i < nsym && !ended; i++) {
+        const uint16_t dur[2] = { sym[i].duration0, sym[i].duration1 };
+        for (uint8_t k = 0; k < 2 && !ended; k++) {
+            if (dur[k] == 0) { ended = true; break; } // 0-duration marks end of capture
+            uint32_t len = ((uint32_t)dur[k] + bit_ticks / 2) / bit_ticks;
+            if (len == 0) { len = 1; }
+            if (len > 21U - bits) { len = 21U - bits; }
+            value <<= len;
+            value |= 1U << (len - 1);
+            bits += len;
+            if (bits >= 21U) { ended = true; }
         }
-        if (len == 0) { len = 1; }
-        if (len > 21U - bits) { len = 21U - bits; }
+    }
+    // the trailing idle isn't a real edge, so fill any remaining bits as one final run
+    if (bits < 21U) {
+        const uint32_t len = 21U - bits;
         value <<= len;
         value |= 1U << (len - 1);
-        if (i < n) { old = ts[i]; }
         bits += len;
     }
     if (bits != 21U) {
@@ -939,14 +949,13 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
 }
 
 /*
-  enable bidirectional DShot on the given channel mask. Stores the mask and mirrors
-  it into each channel's `bidir` flag; the DShot frame CRC is then inverted for those
-  channels and (once implemented) the rcout task performs the TX->RX pad turnaround to
-  read the ESC's eRPM reply. Gated upstream by SERVO_BLH_BDMASK via AP_BLHeli.
+  enable bidirectional DShot on the given channel mask by mirroring it into each
+  channel's `bidir` flag; the DShot frame CRC is then inverted for those channels and
+  the rcout task performs the TX->RX pad turnaround to read the ESC's eRPM reply.
+  Gated upstream by SERVO_BLH_BDMASK via AP_BLHeli.
  */
 void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 {
-    _bidir_mask = mask;
     for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
         pwm_chan_list[chan].bidir = (mask & (1U << chan)) != 0;
     }
