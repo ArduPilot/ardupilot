@@ -18,6 +18,7 @@
 #include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_InertialLabs.h>
 #include <SITL/SIM_SensAItion.h>
+#include <SITL/SIM_Aeron.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -181,6 +182,9 @@ public:
 
     // simulated SensAItion system:
     SITL::SensAItion *sensaition;
+
+    // simulated Aeron INS PLX3
+    SITL::Aeron *aeron;
 
 #if AP_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend

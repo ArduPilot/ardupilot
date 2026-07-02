@@ -314,6 +314,12 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         sensaition = NEW_NOTHROW SITL::SensAItion(true);
         return sensaition;
+    } else if (streq(name, "Aeron-PLX3")) {
+        if (aeron != nullptr) {
+            AP_HAL::panic("Only one Aeron-PLX3 INS at a time");
+        }
+        aeron = NEW_NOTHROW SITL::Aeron();
+        return aeron;
 
 #if AP_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
@@ -464,6 +470,9 @@ void SITL_State_Common::sim_update(void)
     }
     if (inertiallabs != nullptr) {
         inertiallabs->update();
+    }
+    if (aeron != nullptr) {
+        aeron->update();
     }
 
 #if AP_SIM_AIS_ENABLED
