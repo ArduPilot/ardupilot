@@ -1683,7 +1683,7 @@ float AC_PosControl::calculate_overspeed_gain()
 void AC_PosControl::NE_init_ekf_reset()
 {
     Vector2f pos_shift;
-    _ekf_ne_reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
+    _ahrs_position_NE_reset_count = _ahrs.get_position_NE_reset_count(pos_shift);
 }
 
 // Handles NE position reset detection and response (e.g., clearing accumulated errors).
@@ -1691,11 +1691,11 @@ void AC_PosControl::NE_handle_ekf_reset()
 {
     // Check for EKF-reported NE position shift since last update
     Vector2f pos_shift_ne_m;
-    uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift_ne_m);
+    const uint16_t reset_count = _ahrs.get_position_NE_reset_count(pos_shift_ne_m);
     // todo: the actual difference in position and velocity estimation.
     // This will prevent the need to pause error calculation for one cycle.
 
-    if (reset_ms != _ekf_ne_reset_ms) {
+    if (reset_count != _ahrs_position_NE_reset_count) {
         // This ensures controller output remains continuous after EKF realigns the origin.
 
         // Reconstruct position target relative to the to new EKF estimation to maintain the current position error
@@ -1718,7 +1718,7 @@ void AC_PosControl::NE_handle_ekf_reset()
             _vel_offset_ned_ms.xy() += delta_vel_estimate_ne_ms;
             break;
         }
-        _ekf_ne_reset_ms = reset_ms;
+        _ahrs_position_NE_reset_count = reset_count;
     }
 }
 
@@ -1726,7 +1726,7 @@ void AC_PosControl::NE_handle_ekf_reset()
 void AC_PosControl::D_init_ekf_reset()
 {
     float alt_shift_d_m;
-    _ekf_d_reset_ms = _ahrs.getLastPosDownReset(alt_shift_d_m);
+    _ahrs_position_D_reset_count = _ahrs.get_position_D_reset_count(alt_shift_d_m);
 }
 
 // Handles U EKF reset detection and response.
@@ -1734,11 +1734,11 @@ void AC_PosControl::D_handle_ekf_reset()
 {
     // Check for EKF-reported Down-axis shift since last update
     float pos_shift_d_m;
-    uint32_t reset_ms = _ahrs.getLastPosDownReset(pos_shift_d_m);
+    const uint16_t reset_count = _ahrs.get_position_D_reset_count(pos_shift_d_m);
     // todo: the actual difference in position and velocity estimation.
     // This will prevent the need to pause error calculation for one cycle.
 
-    if (reset_ms != 0 && reset_ms != _ekf_d_reset_ms) {
+    if (reset_count != _ahrs_position_D_reset_count) {
         // This ensures controller output remains continuous after EKF realigns the origin.
         // Reconstruct position target relative to the to new EKF estimation to maintain the current position error
         postype_t delta_pos_estimate_d_m = _p_pos_d_m.get_error() - (_pos_target_ned_m.z - _pos_estimate_ned_m.z);
@@ -1760,7 +1760,7 @@ void AC_PosControl::D_handle_ekf_reset()
             _vel_offset_ned_ms.z += delta_vel_estimate_d_ms;
             break;
         }
-        _ekf_d_reset_ms = reset_ms;
+        _ahrs_position_D_reset_count = reset_count;
     }
 }
 
