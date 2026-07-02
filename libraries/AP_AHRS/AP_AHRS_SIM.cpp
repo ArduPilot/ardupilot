@@ -122,6 +122,7 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // always initialised once sitl pointer is good
     results.initialised = true;
+    results.started = true;
 
     // always healthy
     results.healthy = true;
