@@ -407,7 +407,7 @@ void AR_PosControl::write_log()
 void AR_PosControl::init_ekf_xy_reset()
 {
     Vector2f pos_shift;
-    _ekf_xy_reset_ms = AP::ahrs().getLastPosNorthEastReset(pos_shift);
+    _ekf_xy_reset_count = AP::ahrs().get_position_NE_reset_count(pos_shift);
 }
 
 /// handle_ekf_xy_reset - check for ekf position reset and adjust loiter or brake target position
@@ -415,8 +415,8 @@ void AR_PosControl::handle_ekf_xy_reset()
 {
     // check for position shift
     Vector2f pos_shift;
-    uint32_t reset_ms = AP::ahrs().getLastPosNorthEastReset(pos_shift);
-    if (reset_ms != _ekf_xy_reset_ms) {
+    const uint16_t reset_count = AP::ahrs().get_position_NE_reset_count(pos_shift);
+    if (reset_count != _ekf_xy_reset_count) {
         Vector2p pos_ne_m;
         if (!AP::ahrs().get_relative_position_NE_origin(pos_ne_m)) {
             return;
@@ -429,6 +429,6 @@ void AR_PosControl::handle_ekf_xy_reset()
         }
         _vel_desired = vel_NED.xy() + _pid_vel.get_error();
 
-        _ekf_xy_reset_ms = reset_ms;
+        _ekf_xy_reset_count = reset_count;
     }
 }
