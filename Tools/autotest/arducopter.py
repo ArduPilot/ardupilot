@@ -16459,13 +16459,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         original_heading = self.get_heading()
-        if abs(original_heading) < 5:
+        if self.heading_delta(original_heading, 0) < 5:
             raise NotAchievedException(f"Bad original heading {original_heading}")
         self.arm_vehicle()
         self.wait_current_waypoint(3)
         self.wait_rtl_complete()
         self.wait_disarmed()
-        if abs(self.get_heading()) > 5:
+        if self.heading_delta(self.get_heading(), 0) > 5:
             raise NotAchievedException("Should have yaw zero without option")
 
         # must change out of auto and back in again to reset state machine:
@@ -16485,14 +16485,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         original_heading = self.get_heading()
-        if abs(original_heading) > 1:
+        if self.heading_delta(original_heading, 0) > 1:
             raise NotAchievedException("Bad original heading")
         self.arm_vehicle()
         self.wait_current_waypoint(3)
         self.wait_rtl_complete()
         self.wait_disarmed()
         new_heading = self.get_heading()
-        if abs(new_heading - original_heading) > 5:
+        if self.heading_delta(new_heading, original_heading) > 5:
             raise NotAchievedException(f"Should return to original heading want={original_heading} got={new_heading}")
 
     def BatteryInternalUseOnly(self):
@@ -16917,6 +16917,8 @@ RTL_ALT_M 111
                 'WP_YAW_BEHAVIOR': behaviour,
             })
             self.change_mode('GUIDED')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
             original_heading = self.get_heading()
             target_heading = 100
             if original_heading - target_heading < 90:
