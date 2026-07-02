@@ -23,12 +23,13 @@
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_OSD/AP_OSD.h>
+#include <AP_VideoTX/AP_VideoTX.h>
 
 #include "msp.h"
 
 #include <time.h>
 
-#define MSP_TIME_SLOT_MAX 12
+#define MSP_TIME_SLOT_MAX 13
 #define CELLFULL 4.35
 #define MSP_TXT_BUFFER_SIZE     15U // 11 + 3 utf8 chars + terminator
 #define MSP_TXT_VISIBLE_CHARS   11U
@@ -109,6 +110,9 @@ protected:
         ESC_SENSOR_DATA,
 #endif
         RTC_DATETIME,
+#if AP_MSP_VIDEOTX_ENABLED
+        VTX_PARAMETERS,
+#endif
     };
 
     const uint16_t msp_packet_type_map[MSP_TIME_SLOT_MAX] = {
@@ -125,7 +129,10 @@ protected:
 #if HAL_WITH_ESC_TELEM
         MSP_ESC_SENSOR_DATA,
 #endif
-        MSP_RTC
+        MSP_RTC,
+#if AP_MSP_VIDEOTX_ENABLED
+        MSP_VTX_CONFIG,
+#endif
     };
 
     /* UTF-8 encodings
@@ -148,6 +155,26 @@ protected:
 
     // MSP decoder status
     MSP::msp_port_t _msp_port;
+
+#if AP_MSP_VIDEOTX_ENABLED
+    // set once the VTX has uploaded its own config (MSP_SET_VTX_CONFIG),
+    // completing the betaflight-style boot handshake; gates deviceIsReady
+    bool _vtx_config_received;
+    // push the VTX config on change, repeated this many times for delivery
+    // robustness; the air unit does not report its state back so we cannot
+    // confirm receipt the way the Tramp backend does
+    static const uint8_t MSP_VTX_CONFIG_PUSH_COUNT = 3;
+    uint8_t _vtx_config_push_remaining;
+    // last configured VTX settings pushed to the air unit, to detect changes
+    struct {
+        uint8_t band;
+        uint8_t channel;
+        uint16_t freq_mhz;
+        uint16_t power_mw;
+        bool pitmode;
+        bool valid;
+    } _vtx_pushed;
+#endif
 
     // passthrough WFQ scheduler
     bool is_packet_ready(uint8_t idx, bool queue_empty) override;
@@ -173,7 +200,7 @@ protected:
     void msp_process_received_command();
     MSP::MSPCommandResult msp_process_command(MSP::msp_packet_t *cmd, MSP::msp_packet_t *reply);
     MSP::MSPCommandResult msp_process_sensor_command(uint16_t cmd_msp, MSP::sbuf_t *src);
-    MSP::MSPCommandResult msp_process_out_command(uint16_t cmd_msp, MSP::sbuf_t *dst);
+    MSP::MSPCommandResult msp_process_out_command(uint16_t cmd_msp, MSP::sbuf_t *src, MSP::sbuf_t *dst);
 
     // MSP send
     void msp_send_packet(uint16_t cmd, MSP::msp_version_e msp_version, const void *p, uint16_t size, bool is_request);
@@ -206,6 +233,7 @@ protected:
     virtual MSP::MSPCommandResult msp_process_out_name(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_status(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_osd_config(MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_out_osd_canvas(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_raw_gps(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_comp_gps(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_attitude(MSP::sbuf_t *dst);
@@ -215,6 +243,25 @@ protected:
     virtual MSP::MSPCommandResult msp_process_out_esc_sensor_data(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_rtc(MSP::sbuf_t *dst);
     virtual MSP::MSPCommandResult msp_process_out_rc(MSP::sbuf_t *dst);
+#if AP_MSP_VIDEOTX_ENABLED
+    virtual MSP::MSPCommandResult msp_process_out_vtx_config(MSP::sbuf_t *src, MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_in_vtx_config(MSP::sbuf_t *src, MSP::sbuf_t *dst);
+    virtual MSP::MSPCommandResult msp_process_in_vtxtable_powerlevel(MSP::sbuf_t *src, MSP::sbuf_t *dst);
+    // true when a VTX config push is due this scheduler tick (push on change,
+    // then repeat MSP_VTX_CONFIG_PUSH_COUNT times)
+    bool vtx_should_push_config();
+#endif
+
+private:
+#if AP_MSP_VIDEOTX_ENABLED
+    // helpers operating on the AP::vtx() singleton, applying a betaflight-style
+    // MSP_SET_VTX_CONFIG / MSP_SET_VTXTABLE_POWERLEVEL onto the configured VTX
+    void msp_vtx_set_band_and_channel(uint8_t band, uint8_t channel);
+    void msp_vtx_set_frequency(uint16_t freq_mhz);
+    void msp_vtx_set_power_index(uint8_t index);
+    uint8_t msp_vtx_get_power_index() const;
+    void msp_vtx_set_pitmode(bool pitmode);
+#endif
 };
 
 #endif  //HAL_MSP_ENABLED
