@@ -938,7 +938,7 @@ private:
     // Check if there has been a change in attitude estimate which the attitude controllers should be told about
     void check_ahrs_reset();
     struct {
-        uint32_t last_yaw_reset_ms;
+        uint16_t ahrs_yaw_reset_count;
         uint16_t attitude_reset_count;
     } ahrs_check;
 
