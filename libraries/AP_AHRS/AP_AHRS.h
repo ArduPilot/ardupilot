@@ -90,10 +90,10 @@ public:
     }
 
     // return the smoothed gyro vector corrected for drift
-    const Vector3f &get_gyro(void) const { return state.gyro_estimate; }
+    const Vector3f &get_gyro(void) const { return active_estimates->gyro_estimate; }
 
     // return the current drift correction integrator value
-    const Vector3f &get_gyro_drift(void) const { return state.gyro_drift; }
+    const Vector3f &get_gyro_drift(void) const { return active_estimates->gyro_drift; }
 
     // reset the current gyro drift estimate
     //  should be called if gyro offsets are recalculated
@@ -210,7 +210,9 @@ public:
     bool use_compass();
 
     // return the quaternion defining the rotation from NED to XYZ (body) axes
-    bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
+    bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED {
+        return active_estimates->get_quaternion(quat);
+    }
 
     // return secondary estimates; note that this may return nullptr!
     const AP_AHRS_Backend::Estimates *get_secondary_estimates() const {
@@ -218,13 +220,13 @@ public:
     }
 
     // EKF has a better ground speed vector estimate
-    const Vector2f &groundspeed_vector() const { return state.ground_speed_vec; }
+    const Vector2f &groundspeed_vector() const { return active_estimates->velocity_NE; }
 
     // return ground speed estimate in meters/second. Used by ground vehicles.
     float groundspeed(void) const { return state.ground_speed; }
 
     const Vector3f &get_accel_ef() const {
-        return state.accel_ef;
+        return active_estimates->accel_ef;
     }
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
@@ -264,7 +266,9 @@ public:
 
     // return a ground velocity in meters/second, North/East/Down
     // order. Must only be called if have_inertial_nav() is true
-    bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED;
+    bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED {
+        return active_estimates->get_velocity_NED(vec);
+    }
 
     // return the relative position NED from home
     // return true if the estimate is valid
@@ -469,7 +473,7 @@ public:
     uint8_t get_active_airspeed_index() const;
 
     // get the index of the current primary accelerometer sensor
-    uint8_t get_primary_accel_index(void) const { return state.primary_accel; }
+    uint8_t get_primary_accel_index(void) const { return active_estimates->primary_accel; }
 
     // get the index of the current primary gyro sensor
     uint8_t get_primary_gyro_index(void) const { return state.primary_gyro; }
@@ -673,7 +677,7 @@ public:
     int32_t pitch_sensor;
     int32_t yaw_sensor;
 
-    const Matrix3f &get_rotation_body_to_ned(void) const { return state.dcm_matrix; }
+    const Matrix3f &get_rotation_body_to_ned(void) const { return active_estimates->dcm_matrix; }
 
     // return a Quaternion representing our current attitude in NED frame
     void get_quat_body_to_ned(Quaternion &quat) const;
@@ -716,7 +720,7 @@ public:
     // get_accel() vector to get best current body frame accel
     // estimate
     const Vector3f &get_accel_bias(void) const {
-        return state.accel_bias;
+        return active_estimates->accel_bias;
     }
     
     /*
@@ -1000,12 +1004,6 @@ private:
         EKFType active_EKF_type;  // EKFType of backend these results are for
         EKFType configured_ekf_type;  // vetted parameter-configured EKFType
         uint8_t primary_gyro;
-        uint8_t primary_accel;
-        Vector3f gyro_estimate;
-        Matrix3f dcm_matrix;
-        Vector3f gyro_drift;
-        Vector3f accel_ef;
-        Vector3f accel_bias;
         float EAS2TAS;
         bool airspeed_EAS_ok;
         float airspeed_EAS;
@@ -1014,20 +1012,15 @@ private:
         float airspeed_TAS;
         Vector3f airspeed_TAS_vec;
         bool airspeed_TAS_vec_ok;
-        Quaternion quat;
-        bool quat_ok;
         uint16_t attitude_reset_count;
         Location location;
         bool location_ok;
-        Vector2f ground_speed_vec;
         float ground_speed;
         bool corrected_dv_valid;
         Vector3f corrected_dv;
         float corrected_dv_dt;
         Location origin;
         bool origin_ok;
-        Vector3f velocity_NED;
-        bool velocity_NED_ok;
     } state;
 
     /*
