@@ -249,11 +249,10 @@ void Copter::check_ekf_reset()
 {
     // check for yaw reset
     float yaw_angle_change_rad;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
+    const uint16_t new_yaw_reset_count = ahrs.get_yaw_reset_count(yaw_angle_change_rad);
+    if (new_yaw_reset_count != ahrs_yaw_reset_count) {
         attitude_control->inertial_frame_reset();
-        ekfYawReset_ms = new_ekfYawReset_ms;
-        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
+        ahrs_yaw_reset_count = new_yaw_reset_count;
     }
 
     // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
