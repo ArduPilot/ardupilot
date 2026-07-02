@@ -84,6 +84,11 @@ public:
         // true if the AHRS has completed initialisation
         bool initialised;
 
+        // true once the backend's estimator has been started (e.g. its
+        // filter has been allocated).  Backends with no such concept
+        // report true once they are able to run.
+        bool started;
+
         // filter fault status bitmask (see NavFilterFaultBit); non-zero
         // if the backend is reporting one or more filter faults.
         // Backends with no concept of filter faults leave this zero.
