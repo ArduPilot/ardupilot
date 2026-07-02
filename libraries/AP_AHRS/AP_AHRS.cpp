@@ -363,12 +363,13 @@ void AP_AHRS::init()
     }
 #endif
 
-    last_active_ekf_type = (EKFType)_ekf_type.get();
-
     // we may have updated ekf_type()'s results, so set the backend again:
     update_configured_ekf_type();
     update_active_EKF_type();
     update_secondary_backend_pointers();
+
+    // initialise this as no-change from the active type:
+    last_active_ekf_type = state.active_EKF_type;
 
 #if AP_CUSTOMROTATIONS_ENABLED
     // convert to new custom rotation
