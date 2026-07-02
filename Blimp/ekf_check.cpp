@@ -174,18 +174,6 @@ void Blimp::failsafe_ekf_off_event(void)
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
-// check for ekf yaw reset and adjust target heading, also log position reset
-void Blimp::check_ekf_reset()
-{
-    // check for yaw reset
-    float yaw_angle_change_rad;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        ekfYawReset_ms = new_ekfYawReset_ms;
-        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
-    }
-}
-
 // check for high vibrations affecting altitude control
 void Blimp::check_vibration()
 {
