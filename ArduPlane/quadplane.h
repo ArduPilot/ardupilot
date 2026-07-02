@@ -522,7 +522,7 @@ private:
         uint32_t last_velocity_match_ms;
         float target_speed_ms;
         float target_accel_mss;
-        uint32_t last_pos_reset_ms;
+        uint16_t ahrs_position_NE_reset_count;
         bool overshoot;
 
         float override_descent_rate_ms;
