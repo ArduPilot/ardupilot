@@ -58,18 +58,6 @@ public:
         return EKF2.use_compass();
     }
 
-    uint32_t getLastYawResetAngle(float &yawAng) override {
-        return EKF2.getLastYawResetAngle(yawAng);
-    };
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) override WARN_IF_UNUSED {
-        return EKF2.getLastPosNorthEastReset(pos);
-    };
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const override WARN_IF_UNUSED {
-        return EKF2.getLastVelNorthEastReset(vel);
-    };
-    uint32_t getLastPosDownReset(float &posDelta) override WARN_IF_UNUSED {
-        return EKF2.getLastPosDownReset(posDelta);
-    };
     void resetHeightDatum(void) override {
         EKF2.resetHeightDatum();
     }
@@ -103,6 +91,10 @@ public:
     // a counter which is incremented each time the primary core changes:
     uint16_t attitude_reset_count;
     int8_t old_primary_core;
+
+    AP_AHRS_ResetTracker<float, uint32_t> yaw_reset_tracker;
+    AP_AHRS_ResetTracker<Vector2f, uint32_t> position_NE_reset_tracker;
+    AP_AHRS_ResetTracker<float, uint32_t> position_D_reset_tracker;
 };
 
 #endif  // AP_AHRS_NAVEKF2_ENABLED
