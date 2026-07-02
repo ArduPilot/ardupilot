@@ -11893,6 +11893,162 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def AHRSSwitchBackendPositionNEReset(self):
+        '''vehicle must not lurch when the active AHRS estimator is changed with divergent NE positions'''
+        # glitch the GPS; EKF3 eventually adopts the glitched position
+        # while the SIM backend continues to report truth.  Switching
+        # estimators then implies a large NE position reset which must
+        # be handled by the position controller.
+        self.set_parameter("FS_EKF_THRESH", 1)  # avoid EKF failsafe while the glitch is being rejected
+        self.takeoff(20, mode='GUIDED')
+
+        # hold in LOITER; unlike GUIDED it moves the position target,
+        # not the vehicle, when handling an estimate reset:
+        self.set_rc(3, 1500)
+        self.change_mode('LOITER')
+
+        self.progress("Applying GPS glitch")
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0.0003)  # ~33m north
+
+        self.progress("Waiting for EKF3 to adopt the glitched position")
+        tstart = self.get_sim_time()
+        divergence = 0
+        while divergence < 15:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise PreconditionFailedException(f"estimates did not diverge ({divergence:.1f}m)")
+            divergence = self.get_distance(self.sim_location(), self.get_mav_location())
+            self.progress(f"NE divergence={divergence:.1f}m")
+        self.delay_sim_time(10, reason="let position controller settle after glitch adoption")
+
+        start_loc = self.sim_location()
+        self.context_collect('STATUSTEXT')
+        self.progress("Switching active estimator from EKF3 to SIM")
+        self.set_parameter("AHRS_EKF_TYPE", 10)
+        self.wait_statustext("AHRS: SIM active", check_context=True, timeout=10)
+
+        # the vehicle must stay physically put; an unhandled reset
+        # leaves it permanently displaced by the position controller's
+        # error limit:
+        moved = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 20:
+            moved = self.get_distance(start_loc, self.sim_location())
+            self.progress(f"moved={moved:.1f}m")
+            if moved > 8:
+                raise NotAchievedException(f"Vehicle lurched {moved:.1f}m after estimator switch")
+        if moved > 3:
+            raise NotAchievedException(f"Vehicle displaced {moved:.1f}m by estimator switch")
+        self.progress("Vehicle stayed put across estimator switch")
+
+        # remove the glitch and switch back to EKF3 - yet another
+        # reset which must be handled.  Flying home on EKF3 also
+        # ensures we navigate in the frame home was recorded in:
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0)
+        self.set_parameter("AHRS_EKF_TYPE", 3)
+        self.wait_statustext("AHRS: EKF3 active", check_context=True, timeout=10)
+
+        # wait for EKF3 to shed the glitch so the vehicle agrees with
+        # truth about where it is:
+        tstart = self.get_sim_time()
+        while True:
+            residual = self.get_distance(self.sim_location(), self.get_mav_location())
+            self.progress(f"post-switch-back residual={residual:.1f}m")
+            if residual < 5:
+                break
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException(f"EKF3 did not shed the GPS glitch (residual={residual:.1f}m)")
+
+        self.do_RTL()
+
+    def EK3SrcSwitchPosDownReset(self):
+        '''in-filter EKF position-down resets must be handled by the position controller'''
+        # EKF3 uses the baro for height by default; drift the baro,
+        # then switch EKF3's height source to GPS mid-flight.  EKF3
+        # performs an in-filter position-down reset (ResetPositionD)
+        # which must flow through the AHRS reset counters to the
+        # position controller.
+        self.takeoff(30, mode='GUIDED')
+        self.set_rc(3, 1500)
+        self.change_mode('LOITER')
+
+        self.progress("Diverging EKF3 altitude from truth using baro drift")
+        self.set_parameter("SIM_BARO_DRIFT", -0.3)
+        self.delay_sim_time(75, reason="allow altitude estimates to diverge")
+        self.set_parameter("SIM_BARO_DRIFT", 0)
+        self.wait_climbrate(-0.1, 0.1, minimum_duration=10, timeout=60)
+
+        truth_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+        estimated_alt = self.get_altitude(altitude_source='GLOBAL_POSITION_INT.alt')
+        divergence = abs(truth_alt - estimated_alt)
+        self.progress(f"truth_alt={truth_alt:.1f} estimated_alt={estimated_alt:.1f} divergence={divergence:.1f}")
+        if divergence < 8:
+            raise PreconditionFailedException(f"estimates did not diverge ({divergence:.1f}m)")
+
+        self.progress("Switching EKF3 height source to GPS")
+        self.set_parameter("EK3_SRC1_POSZ", 3)
+
+        # EKF3 resets its height estimate to the GPS altitude; the
+        # vehicle must stay physically put:
+        moved = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 20:
+            current_truth_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+            moved = abs(current_truth_alt - truth_alt)
+            self.progress(f"truth_alt={current_truth_alt:.1f} moved={moved:.1f}")
+            if moved > 5:
+                raise NotAchievedException(f"Vehicle lurched {moved:.1f}m after height source switch")
+        if moved > 1.5:
+            raise NotAchievedException(f"Vehicle displaced {moved:.1f}m by height source switch")
+
+        # confirm the EKF actually adopted the GPS height, else the
+        # test is vacuous:
+        estimated_alt = self.get_altitude(altitude_source='GLOBAL_POSITION_INT.alt')
+        current_truth_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+        residual = abs(current_truth_alt - estimated_alt)
+        self.progress(f"post-switch estimate residual={residual:.1f}m")
+        if residual > 5:
+            raise NotAchievedException(f"EKF3 did not adopt GPS height (residual {residual:.1f}m)")
+        self.progress("In-filter height reset handled cleanly")
+
+        self.do_RTL()
+
+    def EKFYawResetLogged(self):
+        '''in-filter EKF yaw resets must propagate through AHRS and be logged'''
+        self.context_push()
+        self.set_parameters({
+            "COMPASS_ORIENT": 4,    # yaw 180
+            "COMPASS_USE2": 0,      # disable backup compasses to avoid pre-arm failures
+            "COMPASS_USE3": 0,
+        })
+        self.reboot_sitl()
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=5)
+
+        # the mis-oriented compass causes an in-filter emergency yaw
+        # reset shortly after takeoff:
+        self.wait_text("EKF3 IMU. emergency yaw reset", timeout=5, regex=True)
+        self.delay_sim_time(5, reason="let the event reach the log")
+        self.do_RTL()
+
+        # the EKF's internal yaw reset must be noticed by AHRS, which
+        # logs an EKF_YAW_RESET event:
+        dfreader = self.dfreader_for_current_onboard_log()
+        armed = False
+        while True:
+            m = dfreader.recv_match(type='EV')
+            if m is None:
+                raise NotAchievedException("Did not find EKF_YAW_RESET event after arming")
+            if m.Id == 10:  # LogEvent::ARMED
+                armed = True
+            if armed and m.Id == 62:  # LogEvent::EKF_YAW_RESET
+                break
+        self.progress("Found EKF_YAW_RESET event in log")
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def FlyRangeFinderMAVlink(self):
         '''fly mavlink-connected rangefinder'''
         self.fly_rangefinder_mavlink_distance_sensor()
@@ -18137,6 +18293,9 @@ return update, 1000
             self.GSF,
             self.GSF_reset,
             self.EKFBootstrapReset,
+            self.AHRSSwitchBackendPositionNEReset,
+            self.EK3SrcSwitchPosDownReset,
+            self.EKFYawResetLogged,
             self.AP_Avoidance,
             self.RTL_ALT_FINAL_M,
             self.SMART_RTL,
