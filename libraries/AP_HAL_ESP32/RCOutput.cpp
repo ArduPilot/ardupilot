@@ -111,6 +111,7 @@ static_assert(NEEDED_GROUPS <= MAX_GROUPS, "not enough hardware PWM groups");
 // time, but each channel keeps its own buffer + last count for Phase-4 decoding.
 // A bidir GCR reply is ~21 transitions; 48 leaves margin (and matches the block size).
 #define BDSHOT_RX_SYMBOLS 48
+#define BDSHOT_INVALID_ERPM 0xffffU
 static rmt_symbol_word_t bdshot_rx_buf[MAX_CHANNELS][BDSHOT_RX_SYMBOLS];
 static volatile uint16_t bdshot_rx_nsym[MAX_CHANNELS];
 static volatile bool     bdshot_rx_done[MAX_CHANNELS];
@@ -634,6 +635,17 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
         }
         if (bdshot_rx_done[chan]) {
             ch.rx_nsymbols = bdshot_rx_nsym[chan];
+            // telemetry bit period: the ESC replies at 5/4 the DShot bitrate.
+            uint32_t telem_rate;
+            switch (ch.group->current_mode) {
+            case MODE_PWM_DSHOT150: telem_rate = 150000U * 5 / 4; break;
+            case MODE_PWM_DSHOT300: telem_rate = 300000U * 5 / 4; break;
+            case MODE_PWM_DSHOT600: telem_rate = 600000U * 5 / 4; break;
+            default:                telem_rate = 600000U * 5 / 4; break;
+            }
+            const uint32_t bit_ticks = (80000000U + telem_rate / 2) / telem_rate; // RMT ticks/bit
+            const uint32_t erpm = bdshot_decode_erpm(bdshot_rx_buf[chan], bdshot_rx_nsym[chan], bit_ticks);
+            bdshot_store_erpm(erpm, chan);
         } else {
             // no reply in the window (disarmed ESC / none attached): abort the
             // pending receive so the next frame re-arms cleanly.
@@ -645,6 +657,118 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
 
     // restore the pad to output for the next frame's push-pull transmit
     gpio_set_direction((gpio_num_t)ch.gpio_num, GPIO_MODE_OUTPUT);
+}
+
+/*
+  decode a captured bidirectional-DShot GCR reply into the 12-bit encoded eRPM word
+  (0xffff = invalid). Ported from AP_HAL_ChibiOS::bdshot_decode_telemetry_packet
+  (originally betaflight, https://github.com/betaflight/betaflight/pull/8554), but
+  fed from RMT symbol run-durations instead of timer input-capture timestamps:
+  each rmt_symbol_word_t contributes a high run (duration0) then a low run (duration1),
+  which we accumulate into edge timestamps and run the same reconstruction.
+ */
+uint32_t RCOutput::bdshot_decode_erpm(const void *symbols, uint32_t nsym, uint32_t bit_ticks)
+{
+    const rmt_symbol_word_t *sym = (const rmt_symbol_word_t *)symbols;
+    if (bit_ticks == 0) {
+        return BDSHOT_INVALID_ERPM;
+    }
+
+    // build cumulative edge timestamps (RMT ticks) from the symbol run durations
+    uint32_t ts[BDSHOT_RX_SYMBOLS * 2 + 1];
+    uint32_t n = 0, acc = 0;
+    ts[n++] = 0;
+    for (uint32_t i = 0; i < nsym && n < BDSHOT_RX_SYMBOLS * 2; i++) {
+        if (sym[i].duration0 == 0) { break; }
+        acc += sym[i].duration0; ts[n++] = acc;
+        if (sym[i].duration1 == 0) { break; }
+        acc += sym[i].duration1; ts[n++] = acc;
+    }
+    if (n < 2) {
+        return BDSHOT_INVALID_ERPM;
+    }
+
+    // reconstruct the 21-bit GCR value: each run of `len` bit-periods encodes a 1
+    // in its MSB position (GCR "toggle" encoding).
+    uint32_t value = 0, bits = 0, len;
+    uint32_t old = ts[0];
+    for (uint32_t i = 1; i <= n; i++) {
+        if (i < n) {
+            if (bits >= 21U) { break; }
+            const int32_t diff = (int32_t)ts[i] - (int32_t)old;
+            len = ((uint32_t)diff + bit_ticks / 2) / bit_ticks;
+        } else {
+            len = 21U - bits;
+        }
+        if (len == 0) { len = 1; }
+        if (len > 21U - bits) { len = 21U - bits; }
+        value <<= len;
+        value |= 1U << (len - 1);
+        if (i < n) { old = ts[i]; }
+        bits += len;
+    }
+    if (bits != 21U) {
+        return BDSHOT_INVALID_ERPM;
+    }
+
+    // GCR 5-bit -> 4-bit nibble decode (0 entries are invalid quintets)
+    static const uint32_t gcr[32] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 11, 0, 13, 14, 15,
+        0, 0, 2, 3, 0, 5, 6, 7, 0, 0, 8, 1, 0, 4, 12, 0 };
+    uint32_t dv = gcr[value & 0x1fU];
+    dv |= gcr[(value >> 5U)  & 0x1fU] << 4U;
+    dv |= gcr[(value >> 10U) & 0x1fU] << 8U;
+    dv |= gcr[(value >> 15U) & 0x1fU] << 12U;
+
+    // bidir DShot uses an inverted CRC: the folded xor must equal 0xf
+    uint32_t csum = dv;
+    csum ^= csum >> 8U;
+    csum ^= csum >> 4U;
+    if ((csum & 0xfU) != 0xfU) {
+        return BDSHOT_INVALID_ERPM;
+    }
+    return dv >> 4U; // 12-bit encoded eRPM (3-bit exponent + 9-bit mantissa)
+}
+
+/*
+  convert a decoded eRPM word (3-bit exponent + 9-bit mantissa period) to eRPM and
+  store it for the channel. RPM = 60 * 1e6 / (period_us * 100), i.e. eRPM below.
+ */
+void RCOutput::bdshot_store_erpm(uint32_t encodederpm, uint8_t chan)
+{
+    if (encodederpm == BDSHOT_INVALID_ERPM || chan >= 12) {
+        return;
+    }
+    const uint8_t expo = (encodederpm >> 9U) & 0x7U;
+    const uint16_t mant = encodederpm & 0x1ffU;
+    const uint32_t period = (uint32_t)mant << expo;
+    if (period == 0) {
+        return;
+    }
+    const uint32_t erpm = (1000000U * 60U / 100U + period / 2U) / period;
+    if (erpm < BDSHOT_INVALID_ERPM) {
+        _bdshot.erpm[chan] = (uint16_t)erpm;
+        _bdshot.update_mask |= 1U << chan;
+    }
+}
+
+uint16_t RCOutput::get_erpm(uint8_t chan) const
+{
+    return chan < 12 ? _bdshot.erpm[chan] : 0;
+}
+
+bool RCOutput::new_erpm()
+{
+    return _bdshot.update_mask != 0;
+}
+
+uint32_t RCOutput::read_erpm(uint16_t* erpm, uint8_t len)
+{
+    const uint8_t n = len < 12 ? len : 12;
+    memcpy(erpm, _bdshot.erpm, sizeof(uint16_t) * n);
+    const uint32_t mask = _bdshot.update_mask;
+    _bdshot.update_mask = 0;
+    return mask;
 }
 
 /*
