@@ -1309,10 +1309,13 @@ private:
     // ---- 2-state AGL Kalman Filter ----
     // Uses bias-corrected IMU delta-velocity for prediction and downward rangefinder
     // as measurement, decoupled from the main filter's vertical position state.
-    // State: x = [aglKfH (m, +up), aglKfV (m/s, +up)]
+    // State: x = [aglKfH (m, +up), aglKfV (m/s, +up), aglKfB (m/s/s)]
+    // aglKfB is the vertical accel bias in velDotNED.z; estimating it here keeps the
+    // AGL height independent of the main filter's (potentially wrong) accel-Z bias.
     ftype aglKfH;                   // AGL height estimate (m, positive up from ground)
     ftype aglKfV;                   // AGL velocity estimate (m/s, positive = climbing)
-    ftype aglKfP[2][2];             // 2x2 covariance matrix (upper triangle, symmetric)
+    ftype aglKfB;                   // AGL accel-Z bias estimate (m/s/s, bias in velDotNED.z)
+    ftype aglKfP[3][3];             // 3x3 covariance matrix (symmetric)
     bool  aglKfValid;               // true when RF has been fused within the last 5 s
     uint32_t lastAglRngFuseTime_ms; // timestamp of last successful RF fusion into AGL KF
 #endif

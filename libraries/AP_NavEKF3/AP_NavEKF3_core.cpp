@@ -285,14 +285,15 @@ void NavEKF3_core::InitialiseVariables()
     baroHgtOffset = 0.0f;
     rngOnGnd = 0.05f;
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    // 2-state AGL KF initialisation
+    // 3-state AGL KF initialisation
     // Start with generous uncertainty; the first valid RF measurement will hard-reset the state
     aglKfH = rngOnGnd;      // assume sitting on ground at minimum range
     aglKfV = 0.0f;
+    aglKfB = 0.0f;
+    memset(aglKfP, 0, sizeof(aglKfP));
     aglKfP[0][0] = 25.0f;   // 5 m initial std-dev in height
-    aglKfP[0][1] = 0.0f;
-    aglKfP[1][0] = 0.0f;
     aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
+    aglKfP[2][2] = 1.0f;    // 1 m/s/s initial std-dev in accel-Z bias (learn it quickly)
     aglKfValid = false;
     lastAglRngFuseTime_ms = 0;
 #endif
