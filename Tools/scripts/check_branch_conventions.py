@@ -106,18 +106,18 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             # strip leading hash from --oneline format
             subject = line.split(" ", 1)[1] if " " in line else line
             if ":" not in subject:
-                print(f"{FAIL} Missing subsystem prefix: {line}")
+                print(f"{FAIL} Commit is missing subsystem prefix: {line}")
                 print(f"       Reword to e.g. 'AP_Compass: {subject}'")
                 print(f"       See: {DOCS_URL}")
                 ok = False
                 continue
             prefix = subject.split(":")[0]
             if prefix.strip().upper() in BLACKLISTED_PREFIXES:
-                print(f"{FAIL} Bad subsystem prefix '{prefix}': {line}")
+                print(f"{FAIL} Commit has bad subsystem prefix '{prefix}': {line}")
                 print(f"       See: {DOCS_URL}")
                 ok = False
             if not PREFIX_RE.match(prefix):
-                print(f"{FAIL} Malformed subsystem prefix '{prefix}': {line}")
+                print(f"{FAIL} Commit has malformed subsystem prefix '{prefix}': {line}")
                 print("       Prefix must contain only letters, digits, '.', '_', '/', '-', spaces, quotes.")
                 print(f"       See: {DOCS_URL}")
                 ok = False
