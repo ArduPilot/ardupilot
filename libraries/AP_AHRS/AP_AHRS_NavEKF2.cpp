@@ -61,6 +61,15 @@ void AP_AHRS_NavEKF2::update()
         LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary_core));
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 primary changed:%d", (unsigned)primary_core);
     }
+
+    float yaw_delta;
+    yaw_reset_tracker.update(EKF2.getLastYawResetAngle(yaw_delta), yaw_delta);
+
+    Vector2f pos_ne_delta;
+    position_NE_reset_tracker.update(EKF2.getLastPosNorthEastReset(pos_ne_delta), pos_ne_delta);
+
+    float pos_d_delta;
+    position_D_reset_tracker.update(EKF2.getLastPosDownReset(pos_d_delta), pos_d_delta);
 }
 
 void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
@@ -114,6 +123,9 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.attitude_reset_count = attitude_reset_count;
 
+    // copy results from the yaw reset tracker into results:
+    yaw_reset_tracker.get(results.yaw_reset_count, results.yaw_reset_delta);
+
     /*
      * acceleration estimates
      */
@@ -157,7 +169,12 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
 
     // origin-relative position:
     results.position_NE_valid = EKF2.getPosNE(results.position_NE);
+    // copy results from the position_NE reset tracker into results:
+    position_NE_reset_tracker.get(results.position_NE_reset_count, results.position_NE_reset_delta);
+
     results.position_D_valid = EKF2.getPosD(results.position_D);
+    // copy results from the position_D reset tracker into results:
+    position_D_reset_tracker.get(results.position_D_reset_count, results.position_D_reset_delta);
 
     results.hagl_valid = EKF2.getHAGL(results.hagl);
 
