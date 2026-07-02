@@ -310,8 +310,8 @@ private:
 #endif
 
 
-    // system time in milliseconds of last recorded yaw reset from ekf
-    uint32_t ekfYawReset_ms;
+    // old value of counter which increments when our yaw estimate is reset
+    uint16_t ahrs_yaw_reset_count;
     // old value of counter which increments when our attitude estimate is reset
     uint16_t attitude_reset_count;
 
