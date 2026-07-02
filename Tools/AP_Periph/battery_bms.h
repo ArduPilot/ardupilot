@@ -66,7 +66,6 @@ private:
         bool startup_complete;      // true once startup delay has completed
         bool pressed_prev;          // true if button was pressed during previous iteration
         uint32_t pressed_start_ms;  // system time that button was first detected as pressed
-        bool short_press_handled;   // true once a short press has been detected and handled
         bool long_press_handled;    // true once a long pressed has been detected and handled
     } button;
     static const uint32_t BUTTON_SHORT_PRESS_THRESHOLD_MS = 10; // 10 ms for short press
