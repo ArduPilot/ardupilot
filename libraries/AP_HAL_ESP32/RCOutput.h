@@ -57,6 +57,10 @@ public:
 
     void set_output_mode(uint32_t mask, const enum output_mode mode) override;
 
+    // enable bidirectional DShot (ESC RPM telemetry) on the given channel mask.
+    // Gated upstream by SERVO_BLH_BDMASK via AP_BLHeli.
+    void set_bidir_dshot_mask(uint32_t mask) override;
+
     // queue a DShot special command (arm/beep/spin-direction/3D/save) on a single
     // DShot channel or all of them; the rcout task transmits it repeat_count times.
     void send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms,
@@ -148,6 +152,11 @@ private:
         // reordering or caching the two fields.
         volatile uint16_t dshot_command;
         volatile uint16_t dshot_command_repeat;
+
+        // bidirectional DShot enabled on this channel (set from set_bidir_dshot_mask).
+        // When true the frame CRC is inverted; the rcout task also does the TX->RX
+        // pad turnaround to read the ESC's eRPM telemetry reply.
+        bool bidir;
     };
 
     uint32_t fast_channel_mask;
@@ -159,8 +168,9 @@ private:
     // Set up / tear down the RMT backend for a group switched to a DShot mode.
     void set_group_mode_dshot(pwm_group &group);
     void dshot_free_chan(pwm_chan &ch); // release a channel's RMT resources
-    // build a 16-bit DShot frame (value<<1 | telem, then 4-bit CRC)
-    static uint16_t create_dshot_packet(uint16_t value, bool telem_request);
+    // build a 16-bit DShot frame (value<<1 | telem, then 4-bit CRC). The CRC is
+    // inverted for bidirectional DShot.
+    static uint16_t create_dshot_packet(uint16_t value, bool telem_request, bool bidir);
     // encode + asynchronously transmit one DShot frame on a channel
     void dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request);
     // scale an ArduPilot PWM value (us) to a DShot throttle command (0, 48..2047)
@@ -202,6 +212,9 @@ private:
     // it, a re-entrant set_output_mode() at boot can rmt_disable()/rmt_del_channel() a
     // channel while the task is mid-transmit on it -> use-after-free crash.
     HAL_Semaphore _dshot_sem;
+
+    // mask of channels with bidirectional DShot enabled (mirrors per-channel pwm_chan.bidir)
+    uint32_t _bidir_mask = 0;
 
 };
 

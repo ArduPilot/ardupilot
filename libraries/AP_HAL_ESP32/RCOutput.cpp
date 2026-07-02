@@ -507,10 +507,10 @@ void RCOutput::dshot_free_chan(pwm_chan &ch)
 
 /*
   build a 16-bit DShot frame: 11-bit value, 1 telemetry-request bit, then a 4-bit
-  CRC (XOR of the three nibbles). Matches AP_HAL_ChibiOS::create_dshot_packet()
-  for the non-bidirectional case.
+  CRC (XOR of the three nibbles). For bidirectional DShot the CRC is inverted.
+  Matches AP_HAL_ChibiOS::create_dshot_packet().
  */
-uint16_t RCOutput::create_dshot_packet(uint16_t value, bool telem_request)
+uint16_t RCOutput::create_dshot_packet(uint16_t value, bool telem_request, bool bidir)
 {
     uint16_t packet = (value << 1) | (telem_request ? 1U : 0U);
     uint16_t csum = 0;
@@ -518,6 +518,10 @@ uint16_t RCOutput::create_dshot_packet(uint16_t value, bool telem_request)
     for (uint8_t i = 0; i < 3; i++) {
         csum ^= csum_data;
         csum_data >>= 4;
+    }
+    if (bidir) {
+        // bidirectional DShot inverts the checksum nibble
+        csum = ~csum;
     }
     csum &= 0xf;
     return (packet << 4) | csum;
@@ -534,7 +538,7 @@ void RCOutput::dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request)
     if (ch.rmt_chan == nullptr || ch.rmt_encoder == nullptr) {
         return;
     }
-    const uint16_t packet = create_dshot_packet(value, telem_request);
+    const uint16_t packet = create_dshot_packet(value, telem_request, ch.bidir);
     ch.dshot_buf[0] = uint8_t(packet >> 8);
     ch.dshot_buf[1] = uint8_t(packet & 0xff);
 
@@ -683,6 +687,20 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
                 mask &= ~(1U << chan);
             }
         }
+    }
+}
+
+/*
+  enable bidirectional DShot on the given channel mask. Stores the mask and mirrors
+  it into each channel's `bidir` flag; the DShot frame CRC is then inverted for those
+  channels and (once implemented) the rcout task performs the TX->RX pad turnaround to
+  read the ESC's eRPM reply. Gated upstream by SERVO_BLH_BDMASK via AP_BLHeli.
+ */
+void RCOutput::set_bidir_dshot_mask(uint32_t mask)
+{
+    _bidir_mask = mask;
+    for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
+        pwm_chan_list[chan].bidir = (mask & (1U << chan)) != 0;
     }
 }
 
