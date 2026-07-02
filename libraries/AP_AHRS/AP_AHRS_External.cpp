@@ -15,6 +15,7 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     auto &extahrs = AP::externalAHRS();
 
     results.initialised = extahrs.initialised();
+    results.started = extahrs.initialised();
 
     results.healthy = extahrs.healthy();
 
