@@ -28,7 +28,9 @@
 // New RMT driver for DShot output. Included only here (not in RCOutput.h) to
 // avoid a type clash with the legacy RMT driver used by RCInput/RmtSigReader.
 #include "driver/rmt_tx.h"
+#include "driver/rmt_rx.h"      // bidirectional DShot: capture the ESC eRPM reply
 #include "driver/rmt_encoder.h"
+#include "esp_rom_sys.h"        // esp_rom_delay_us (bounded wait for the reply)
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -103,6 +105,28 @@ static_assert(MAX_CHANNELS < 32, "overrunning bitfields");
 
 #define NEEDED_GROUPS ((MAX_CHANNELS+SOC_MCPWM_COMPARATORS_PER_OPERATOR-1)/SOC_MCPWM_COMPARATORS_PER_OPERATOR)
 static_assert(NEEDED_GROUPS <= MAX_GROUPS, "not enough hardware PWM groups");
+
+// Bidirectional DShot: per-channel capture state for the ESC eRPM reply. The rcout
+// task processes channels sequentially, so a single RX capture is in flight at a
+// time, but each channel keeps its own buffer + last count for Phase-4 decoding.
+// A bidir GCR reply is ~21 transitions; 48 leaves margin (and matches the block size).
+#define BDSHOT_RX_SYMBOLS 48
+static rmt_symbol_word_t bdshot_rx_buf[MAX_CHANNELS][BDSHOT_RX_SYMBOLS];
+static volatile uint16_t bdshot_rx_nsym[MAX_CHANNELS];
+static volatile bool     bdshot_rx_done[MAX_CHANNELS];
+
+// RX-done ISR callback: user_data is the channel index. received_symbols points into
+// bdshot_rx_buf[chan] (we passed it to rmt_receive), so we only record the count + flag.
+static bool IRAM_ATTR bdshot_on_rx_done(rmt_channel_handle_t ch,
+                                        const rmt_rx_done_event_data_t *ed, void *user)
+{
+    const uint32_t c = (uint32_t)(uintptr_t)user;
+    if (c < MAX_CHANNELS) {
+        bdshot_rx_nsym[c] = ed->num_symbols;
+        bdshot_rx_done[c] = true;
+    }
+    return false; // no higher-priority task woken
+}
 
 RCOutput::pwm_group RCOutput::pwm_group_list[NEEDED_GROUPS];
 RCOutput::pwm_chan RCOutput::pwm_chan_list[MAX_CHANNELS];
@@ -423,6 +447,32 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         // idempotent: release any RMT resources from a previous mode change
         dshot_free_chan(ch);
 
+        // Bidirectional DShot: create the RX channel on the SAME pad BEFORE the TX
+        // channel (v5.3 shared-pad ordering rule). It captures the ESC's eRPM reply
+        // after the per-frame TX->RX pad turnaround done in dshot_task. The S3 has 4
+        // RX-capable RMT channels, so a bidir quad consumes all 8 (4 TX + 4 RX).
+        ch.rmt_rx_chan = nullptr;
+        ch.rx_nsymbols = 0;
+        if (ch.bidir) {
+            rmt_rx_channel_config_t rxcfg = {};
+            rxcfg.gpio_num = (gpio_num_t)ch.gpio_num;
+            rxcfg.clk_src = RMT_CLK_SRC_DEFAULT;
+            rxcfg.resolution_hz = resolution_hz;
+            rxcfg.mem_block_symbols = BDSHOT_RX_SYMBOLS;
+            rmt_channel_handle_t rx = nullptr;
+            esp_err_t rxerr = rmt_new_rx_channel(&rxcfg, &rx);
+            if (rxerr == ESP_OK) {
+                rmt_rx_event_callbacks_t rxcbs = {};
+                rxcbs.on_recv_done = bdshot_on_rx_done;
+                rmt_rx_register_event_callbacks(rx, &rxcbs, (void*)(uintptr_t)chan);
+                ESP_ERROR_CHECK(rmt_enable(rx));
+                ch.rmt_rx_chan = rx; // stored as void* (see RCOutput.h)
+            } else {
+                printf("RCOut: bidir DShot RX alloc failed on chan %u (err 0x%x); S3 has 4 RX channels\n",
+                       (unsigned)chan, (int)rxerr);
+            }
+        }
+
         rmt_tx_channel_config_t cfg = {};
         cfg.gpio_num = (gpio_num_t)ch.gpio_num;
         cfg.clk_src = RMT_CLK_SRC_DEFAULT;
@@ -503,6 +553,12 @@ void RCOutput::dshot_free_chan(pwm_chan &ch)
         rmt_del_channel((rmt_channel_handle_t)ch.rmt_chan);
         ch.rmt_chan = nullptr;
     }
+    if (ch.rmt_rx_chan != nullptr) {
+        rmt_channel_handle_t r = (rmt_channel_handle_t)ch.rmt_rx_chan;
+        rmt_disable(r);
+        rmt_del_channel(r);
+        ch.rmt_rx_chan = nullptr;
+    }
 }
 
 /*
@@ -546,6 +602,49 @@ void RCOutput::dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request)
     tx_cfg.loop_count = 0; // one frame per call; rcout task re-sends each cycle
     rmt_transmit((rmt_channel_handle_t)ch.rmt_chan, (rmt_encoder_handle_t)ch.rmt_encoder,
                  ch.dshot_buf, sizeof(ch.dshot_buf), &tx_cfg);
+}
+
+/*
+  bidirectional DShot turnaround: after the frame is transmitted, tri-state the
+  shared pad (via GPIO direction, since disabling the TX channel does NOT release
+  the pad — proven on hardware) so the ESC can drive its eRPM reply, arm the RX
+  channel to capture it, then restore the pad to output for the next frame.
+  Raw symbols land in bdshot_rx_buf[chan]; Phase 4 decodes them to eRPM.
+ */
+void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
+{
+    rmt_channel_handle_t tx = (rmt_channel_handle_t)ch.rmt_chan;
+    rmt_channel_handle_t rx = (rmt_channel_handle_t)ch.rmt_rx_chan;
+
+    // make sure the frame is fully on the wire before we release the pad
+    rmt_tx_wait_all_done(tx, 2);
+
+    // RELEASE: tri-state the pad; the pull-up idles it high and the ESC pulls low
+    gpio_set_direction((gpio_num_t)ch.gpio_num, GPIO_MODE_INPUT);
+
+    rmt_receive_config_t rxcfg = {};
+    rxcfg.signal_range_min_ns = 50;      // glitch filter
+    rxcfg.signal_range_max_ns = 30000;   // reply is a short burst; a long idle ends it
+
+    bdshot_rx_done[chan] = false;
+    if (rmt_receive(rx, bdshot_rx_buf[chan], sizeof(bdshot_rx_buf[chan]), &rxcfg) == ESP_OK) {
+        // the ESC replies ~30 us after the frame; bounded poll (~200 us max)
+        for (int i = 0; i < 20 && !bdshot_rx_done[chan]; i++) {
+            esp_rom_delay_us(10);
+        }
+        if (bdshot_rx_done[chan]) {
+            ch.rx_nsymbols = bdshot_rx_nsym[chan];
+        } else {
+            // no reply in the window (disarmed ESC / none attached): abort the
+            // pending receive so the next frame re-arms cleanly.
+            rmt_disable(rx);
+            rmt_enable(rx);
+            ch.rx_nsymbols = 0;
+        }
+    }
+
+    // restore the pad to output for the next frame's push-pull transmit
+    gpio_set_direction((gpio_num_t)ch.gpio_num, GPIO_MODE_OUTPUT);
 }
 
 /*
@@ -624,6 +723,10 @@ void RCOutput::dshot_task()
                 } else {
                     dshot_send_chan(ch, dshot_throttle_from_pwm((uint16_t)ch.value), false);
                 }
+            }
+            // bidirectional DShot: turn the line around and capture the ESC reply
+            if (ch.bidir && ch.rmt_rx_chan != nullptr) {
+                bdshot_capture_reply(ch, chan);
             }
         }
         vTaskDelay(pdMS_TO_TICKS(1)); // ~1 kHz frame rate

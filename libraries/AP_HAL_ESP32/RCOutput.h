@@ -140,6 +140,12 @@ private:
         void *rmt_encoder;
         uint8_t dshot_buf[2]; // persistent TX buffer for the async RMT frame
 
+        // Bidirectional DShot: an RMT RX channel bound to the SAME pad as rmt_chan,
+        // used to capture the ESC's eRPM reply after the TX->RX pad turnaround.
+        // void* for the same header-isolation reason as rmt_chan. nullptr unless bidir.
+        void *rmt_rx_chan;
+        uint16_t rx_nsymbols; // symbols captured in the last reply (0 = none); Phase 4 decodes them
+
         // Pending DShot special command (arm/beep/spin-direction/3D/save). While
         // dshot_command_repeat > 0 the rcout task transmits dshot_command (value
         // 0..47, telemetry bit set, as commands require) instead of the throttle,
@@ -173,6 +179,9 @@ private:
     static uint16_t create_dshot_packet(uint16_t value, bool telem_request, bool bidir);
     // encode + asynchronously transmit one DShot frame on a channel
     void dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request);
+    // bidirectional DShot: after a frame, tri-state the shared pad and capture the
+    // ESC's eRPM reply on the channel's RX channel (raw symbols; decode is Phase 4)
+    void bdshot_capture_reply(pwm_chan &ch, uint8_t chan);
     // scale an ArduPilot PWM value (us) to a DShot throttle command (0, 48..2047)
     static uint16_t dshot_throttle_from_pwm(uint16_t period_us);
     // periodic task that re-transmits DShot frames at the DShot rate
