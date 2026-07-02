@@ -2596,8 +2596,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Stick mixing must be enabled so this roll is carried over into loiter
         self.set_rc(1, 1600)
 
-        # Wait a short time for vehicle to settle
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, "wait a short time for vehicle to settle")
 
         # Push context so we can remove the message hook
         self.context_push()

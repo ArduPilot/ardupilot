@@ -7574,14 +7574,11 @@ class TestSuite(abc.ABC):
     #################################################
     # WAIT UTILITIES
     #################################################
-    def delay_sim_time(self, seconds_to_wait, reason=None):
+    def delay_sim_time(self, seconds_to_wait, reason):
         """Wait some second in SITL time."""
         tstart = self.get_sim_time()
         tnow = tstart
-        r = "Delaying %f seconds"
-        if reason is not None:
-            r += " for %s" % reason
-        self.progress(r % (seconds_to_wait,))
+        self.progress("Delaying %f seconds for %s" % (seconds_to_wait, reason))
         while tstart + seconds_to_wait > tnow:
             tnow = self.get_sim_time(drain_mav=False)
 
@@ -8556,12 +8553,12 @@ class TestSuite(abc.ABC):
 
             # toggle ch12 to recover override-enable after a prior clear-by-pilot
             self.set_rc(12, 1000)
-            self.delay_sim_time(0.2)
+            self.delay_sim_time(0.2, "allow aux switch change to register")
             self.set_rc(12, 2000)
-            self.delay_sim_time(0.5)
+            self.delay_sim_time(0.5, "allow aux switch change to register")
 
             self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
-            self.delay_sim_time(0.5)
+            self.delay_sim_time(0.5, "let RC inputs settle")
 
             self._rc_overrides_send_single(override_ch, override_pwm)
             self.wait_rc_channel_value(override_ch, override_pwm, timeout=5)
@@ -8578,13 +8575,13 @@ class TestSuite(abc.ABC):
                 self.wait_rc_channel_value(override_ch, 1500, timeout=3)
             else:
                 # re-send override since it may have just expired
-                self.delay_sim_time(1.0)
+                self.delay_sim_time(1.0, "allow override to expire")
                 self._rc_overrides_send_single(override_ch, override_pwm)
                 self.wait_rc_channel_value(override_ch, override_pwm, timeout=2)
         finally:
             self._rc_overrides_release_single(override_ch)
             self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
-            self.delay_sim_time(0.2)
+            self.delay_sim_time(0.2, "let RC inputs settle")
             self.context_pop()
 
     def send_do_reposition(self,
