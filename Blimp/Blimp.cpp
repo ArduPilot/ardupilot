@@ -57,8 +57,6 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     FAST_TASK(read_AHRS),
     // Inertial Nav
     FAST_TASK(read_inertia),
-    // check if ekf has reset target heading or position
-    FAST_TASK(check_ekf_reset),
     // run the attitude controllers
     FAST_TASK(update_flight_mode),
     // update home from EKF if necessary
