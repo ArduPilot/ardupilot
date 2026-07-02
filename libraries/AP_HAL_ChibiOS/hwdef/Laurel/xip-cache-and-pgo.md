@@ -302,14 +302,22 @@ Gotchas hit (recorded so we do not repeat them):
   `set -o pipefail` when `nm` hit a GIMPLE-only LTO object; the nm scan is now
   tolerant of unreadable objects.
 
-## Step 2 blocked on full-histogram readout
+## Step 1d - full-histogram readout over MAVLink FTP
 
 `perf_report` emits only the top-16 hottest PCs, which on the EKF-active bench
-are ~8% of all samples: the EKF math is spread over hundreds of low-count PCs,
-so no single EKF instruction reaches the top-16 and per-function EKF cost is
-invisible. Planned fix: a `@SYS/pcprof.txt` MAVLink-FTP virtual file dumping the
-full per-core hash (addr count), aggregated by function offline. Needed before
-picking EKF relocation candidates.
+are ~8% of all samples - too few, because the load is spread over many
+functions. So the sampler also serves the top ~512 PCs as `@SYS/pcprof.txt`
+(`AP_Filesystem_Sys`), fetched with `ftp get @SYS/pcprof.txt` and attributed by
+`rp2350_pc_profiler.py --histogram`. Constraints learned:
+
+- Runtime free heap is only ~20 KB after EKF init (NOT the ~196 KB static heap
+  region); a 48 KB dump fails with ENOMEM and returns an empty file. The dump is
+  a bounded top-N (~512 PCs, ~7 KB) into a static selection buffer, sized like
+  the working `tasks.txt` fetch.
+- The sampler hash was cut to 2048 slots/core (24 KB, was 48 KB) to give that
+  scarce heap back - it was itself part of the squeeze.
+
+See Run 3 for the first full attribution.
 
 ## Baseline numbers
 
@@ -402,10 +410,40 @@ Two takeaways:
 - `CH_DBG_STATISTICS` / `CH_CFG_USE_TM` per-critical-section timing costs ~2% on
   core1 - a free win to disable if `@SYS/threads.txt` stats are not needed.
 
-Open item: the emitted top-16 PCs are only ~8% of samples; the EKF bulk is
-spread and invisible in top-N. Blocked on the full-histogram readout (see "Step
-2 blocked on full-histogram readout" above) before ranking EKF relocation
-candidates. Do NOT draw Step 2 conclusions from top-N alone.
+Open item: the emitted top-16 PCs are only ~8% of samples; resolved by the
+full-histogram readout (Step 1d) - see Run 3.
+
+### Run 3 - 2026-07-02 (full histogram via @SYS/pcprof.txt, EKF3 active)
+
+First full per-function attribution (n=480k, top-512 PCs = 54% of samples;
+drop=18% - the 2048-slot table overflows on the full working set, so the cold
+tail is partial but the top ranking is solid). Key result: core1 is dominated
+by the 1 kHz rate loop and ChibiOS overhead, NOT the NavEKF3 fusion math (the
+EKF thread was decimated to 167 Hz/7, so its covariance work is a minor spread
+contributor). Rough clusters, as fraction of all core1 samples:
+
+```
+~12% motor output   SRV_Channels::set_output_pwm 3.6, RCOutput::write 2.4,
+                    calc_pwm 1.4, check_for_failed_motor 1.4, output_ch 1.2, ...
+~5%  filters + PID  calc_lowpass_alpha_dt 1.6, SlewLimiter::modifier 1.2,
+                    LowPassFilter2p::apply, DigitalLPF::_apply, AC_PID::update_i
+~5%  ChibiOS TM/stats  chTM*MeasurementX + __stats_*_measure_crit_*
+~6%  ChibiOS locking   chMtxLock/Unlock, chSysLock/Unlock, WithSemaphore
+6%   idle           rp2350_idle_c1
+```
+
+Two takeaways:
+
+- The motor-output chain (~12%, concentrated in a few SRV_Channels/RCOutput
+  functions, run every rate cycle) is the top data-driven RAMFUNC2 cluster.
+- CH_CFG_USE_TM + CH_DBG_STATISTICS cost ~5% of core1 (measure-every-critical-
+  section). Disabling them reclaims that outright if per-thread @SYS stats are
+  not needed - bigger than most single relocations. Verify core1load reporting
+  first (it may read thread cumulative time).
+
+Limitations: many hot AP functions have no source path from nm (LTO-merged), so
+the path|symbol registry form does not apply - they need symbol-based .ld picks.
+And a GPS-fused flight would weight the EKF math more than this bench.
 
 ## Decision gate for Step 2 (full PGO)
 

@@ -210,3 +210,16 @@ modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/compilers/GCC/chcoreasm.S|__port_
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelAbortX
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelDisableX
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelGetAndClearInterrupts
+
+# Motor output chain - hottest core1 cluster from Run 3 PC-sampler profiling
+# (~12% of core1, run every rate cycle). Paths are documentation only; the
+# generator matches on the symbol. See Laurel/xip-cache-and-pgo.md.
+libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::set_output_pwm  # 3.6%, 60 B
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::write  # 2.4%, 94 B
+libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::calc_pwm  # 1.4%, 212 B
+libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::check_for_failed_motor  # 1.4%, 336 B
+libraries/SRV_Channel/SRV_Channel_aux.cpp|SRV_Channel::output_ch  # 1.2%, 328 B
+libraries/SRV_Channel/SRV_Channel.cpp|SRV_Channel::calc_pwm  # 0.5%, 68 B
+libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::function_assigned  # 0.5%, 72 B
+libraries/SRV_Channel/SRV_Channel_aux.cpp|SRV_Channels::output_ch_all  # 0.4%, 60 B
+libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::get_motor_function  # 0.3%, 22 B

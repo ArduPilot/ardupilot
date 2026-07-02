@@ -44,15 +44,19 @@
 
 #if defined(RP2350) && defined(AP_RP2350_PC_SAMPLER_ENABLED)
 
+#include <AP_Common/ExpandingString.h>
+
 /*
  * Sampling period in TIMER0 ticks (1 MHz). A prime, non-harmonic with the main
  * (~250 Hz), rate (~335 Hz) and EKF loops to avoid aliasing. ~5.08 kHz.
  */
 #define PROF_INTERVAL_US   197u
 
-/* Per-core PC hash table: 4096 slots holds the hot working set with a low load
- * factor (few hundred to ~1k distinct hot PCs), so probe chains stay short. */
-#define PROF_HASH_BITS     12u
+/* Per-core PC hash table. 2048 slots/core keeps the BSS to 24 KB total, which
+ * matters because runtime free heap is tight (~20 KB after EKF init). Colder
+ * PCs beyond the table capacity drop (counted), but the hot set we rank stays
+ * resident. */
+#define PROF_HASH_BITS     11u
 #define PROF_HASH_SIZE     (1u << PROF_HASH_BITS)
 #define PROF_HASH_MASK     (PROF_HASH_SIZE - 1u)
 #define PROF_PROBE_MAX     8u
@@ -320,6 +324,65 @@ uint32_t rp2350_pc_sampler_dump(unsigned core, unsigned maxn,
     }
     buf[used] = '\0';
     return used;
+}
+
+/*
+ * Runtime free heap is tight (~20 KB after EKF init), so dump only the hottest
+ * PROF_FULL_TOPN PCs rather than the whole table - 32x the STATUSTEXT top-16,
+ * enough to rank functions, but a few KB. Selection buffers are static (BSS),
+ * not on the FTP thread's stack.
+ */
+#define PROF_FULL_TOPN 512u
+static uint32_t full_pc[PROF_FULL_TOPN];
+static uint16_t full_cnt[PROF_FULL_TOPN];
+
+void rp2350_pc_sampler_dump_full(ExpandingString &str, unsigned core)
+{
+    if (core > 1) {
+        return;
+    }
+    const struct prof_core *pc = &prof[core];
+
+    unsigned ntop = 0;
+    for (unsigned i = 0; i < PROF_HASH_SIZE; i++) {
+        const uint32_t addr = pc->pc[i];
+        const uint16_t c = pc->cnt[i];
+        if (addr == 0u || c == 0u) {
+            continue;
+        }
+        if (ntop < PROF_FULL_TOPN || c > full_cnt[PROF_FULL_TOPN - 1]) {
+            unsigned j = (ntop < PROF_FULL_TOPN) ? ntop++ : (PROF_FULL_TOPN - 1);
+            while (j > 0 && full_cnt[j - 1] < c) {
+                full_cnt[j] = full_cnt[j - 1];
+                full_pc[j] = full_pc[j - 1];
+                j--;
+            }
+            full_cnt[j] = c;
+            full_pc[j] = addr;
+        }
+    }
+
+    str.printf("PROF c%u n=%lu drop=%lu top=%u\n", core,
+               (unsigned long)pc->total, (unsigned long)pc->dropped, ntop);
+
+    /* Region-tagged offset:count tokens, ~12 per line; the offline tool
+     * aggregates by function. */
+    unsigned per_line = 0;
+    for (unsigned k = 0; k < ntop; k++) {
+        uint32_t off = 0;
+        const char tag = region_of(full_pc[k], &off);
+        if (per_line == 0) {
+            str.printf("PROF");
+        }
+        str.printf(" %c%lx:%u", tag, (unsigned long)off, (unsigned)full_cnt[k]);
+        if (++per_line >= 12) {
+            str.printf("\n");
+            per_line = 0;
+        }
+    }
+    if (per_line != 0) {
+        str.printf("\n");
+    }
 }
 
 #endif /* RP2350 && AP_RP2350_PC_SAMPLER_ENABLED */
