@@ -139,7 +139,7 @@ void QuadPlane::update(const struct sitl_input &input)
         quad_accel_body.rotate(ROTATION_PITCH_270);
     }
 
-    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah, sitl->batt_resistance);
     battery_voltage = battery.get_voltage();
     battery_current = frame->get_current_amp();
     battery_temperature_degC = battery.get_temperature_degC();
