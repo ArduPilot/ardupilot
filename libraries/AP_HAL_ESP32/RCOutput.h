@@ -61,6 +61,11 @@ public:
     // Gated upstream by SERVO_BLH_BDMASK via AP_BLHeli.
     void set_bidir_dshot_mask(uint32_t mask) override;
 
+    // bidirectional DShot telemetry readback (decoded eRPM per channel)
+    uint16_t get_erpm(uint8_t chan) const override;
+    bool new_erpm() override;
+    uint32_t read_erpm(uint16_t* erpm, uint8_t len) override;
+
     // queue a DShot special command (arm/beep/spin-direction/3D/save) on a single
     // DShot channel or all of them; the rcout task transmits it repeat_count times.
     void send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms,
@@ -180,8 +185,13 @@ private:
     // encode + asynchronously transmit one DShot frame on a channel
     void dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request);
     // bidirectional DShot: after a frame, tri-state the shared pad and capture the
-    // ESC's eRPM reply on the channel's RX channel (raw symbols; decode is Phase 4)
+    // ESC's eRPM reply on the channel's RX channel, then decode it.
     void bdshot_capture_reply(pwm_chan &ch, uint8_t chan);
+    // decode a captured GCR reply (RMT symbols, passed as void* to keep the RMT type
+    // out of the header) into the 12-bit encoded eRPM word; 0xffff = invalid.
+    static uint32_t bdshot_decode_erpm(const void *symbols, uint32_t nsym, uint32_t bit_ticks);
+    // convert a decoded eRPM word to eRPM and store it for the channel
+    void bdshot_store_erpm(uint32_t encodederpm, uint8_t chan);
     // scale an ArduPilot PWM value (us) to a DShot throttle command (0, 48..2047)
     static uint16_t dshot_throttle_from_pwm(uint16_t period_us);
     // periodic task that re-transmits DShot frames at the DShot rate
@@ -224,6 +234,13 @@ private:
 
     // mask of channels with bidirectional DShot enabled (mirrors per-channel pwm_chan.bidir)
     uint32_t _bidir_mask = 0;
+
+    // bidirectional DShot decoded telemetry (12 = max channels on current chips)
+    struct {
+        uint16_t erpm[12] {};      // last decoded eRPM per channel
+        uint32_t update_mask = 0;  // channels updated since the last read_erpm()
+        uint8_t  motor_poles = 14; // for eRPM->mechanical RPM (Phase 5 / set_motor_poles)
+    } _bdshot;
 
 };
 
