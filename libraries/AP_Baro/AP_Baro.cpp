@@ -135,12 +135,12 @@ const AP_Param::GroupInfo AP_Baro::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_EXT_BUS", 7, AP_Baro, _ext_bus, HAL_BARO_EXTERNAL_BUS_DEFAULT),
 
-    // @Param{Sub}: _SPEC_GRAV
+    // @Param{Sub,Rover}: _SPEC_GRAV
     // @DisplayName: Specific Gravity (For water depth measurement)
     // @Description: This sets the specific gravity of the fluid when flying an underwater ROV.
     // @Values: 1.0:Freshwater,1.024:Saltwater
     // @Range: 0.98 1.05
-    AP_GROUPINFO_FRAME("_SPEC_GRAV", 8, AP_Baro, _specific_gravity, 1.0, AP_PARAM_FRAME_SUB),
+    AP_GROUPINFO_FRAME("_SPEC_GRAV", 8, AP_Baro, _specific_gravity, 1.0, AP_PARAM_FRAME_SUB | AP_PARAM_FRAME_ROVER),
 
 #if BARO_MAX_INSTANCES > 1
     // @Param: 2_GND_PRESS
@@ -718,7 +718,9 @@ void AP_Baro::init(void)
 
     // can optionally have baro on I2C too
     if (_ext_bus >= 0) {
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Rover)
+        // Only probe water barometers if specific gravity is set !0
+        if (_specific_gravity.get() > 0.0f) {
 #if AP_BARO_MS5837_ENABLED
         probe_i2c_dev(AP_Baro_MS5837::probe, _ext_bus, HAL_BARO_MS5837_I2C_ADDR);
         RETURN_IF_NO_SPACE;
@@ -727,12 +729,13 @@ void AP_Baro::init(void)
         probe_i2c_dev(AP_Baro_KellerLD::probe, _ext_bus, HAL_BARO_KELLERLD_I2C_ADDR);
         RETURN_IF_NO_SPACE;
 #endif
+        }
 #else
 #if AP_BARO_MS5611_ENABLED
         probe_i2c_dev(AP_Baro_MS5611::probe, _ext_bus, HAL_BARO_MS5611_I2C_ADDR);
         RETURN_IF_NO_SPACE;
 #endif
-#endif
+#endif // APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Rover)
     }
 
 #if AP_BARO_PROBE_EXTERNAL_I2C_BUSES
@@ -852,14 +855,14 @@ void AP_Baro::_probe_i2c_barometers(void)
         { PROBE_AUAV, AP_Baro_AUAV::probe, HAL_BARO_AUAV_I2C_ADDR },
 #endif
 
-#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Rover)
 #if AP_BARO_KELLERLD_ENABLED
         { PROBE_KELLER, AP_Baro_KellerLD::probe, HAL_BARO_KELLERLD_I2C_ADDR },
 #endif
 #if AP_BARO_MS5837_ENABLED
         { PROBE_MS5837, AP_Baro_MS5837::probe, HAL_BARO_MS5837_I2C_ADDR },
 #endif
-#endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub)
+#endif  // APM_BUILD_TYPE(APM_BUILD_ArduSub) || APM_BUILD_TYPE(APM_BUILD_Rover)
     };
 
     for (const auto &spec : baroprobespec) {
