@@ -33,6 +33,7 @@ TARGET_HW_CUBE_F4                       9
 TARGET_HW_AV_V1                        29
 TARGET_HW_KAKUTEF7                    123
 TARGET_HW_SMARTAP_AIRLINK              55
+TARGET_HW_SMARTAP_AIRLINKH7            75
 TARGET_HW_SMARTAP_PRO                  32
 TARGET_HW_MODALAI_FC_V1             41775
 TARGET_HW_MODALAI_FC_V2             41776
