@@ -332,6 +332,20 @@ bool AC_AutoTune::currently_level()
         // reset if the target yaw rate is above half the slew rate
         level_start_time_ms = now_ms;
     }
+    if (fabsf(wrap_PI(attitude_control->get_att_target_euler_rad().z - desired_yaw_rad)) > cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+        // the attitude controller is still slewing its yaw target towards
+        // desired_yaw_rad (e.g. after position-hold commands a large
+        // re-point); the vehicle cannot be at the desired yaw until the
+        // commanded target arrives there, so do not run the level timeout.
+        // A target-rate check does not cover this: a shaped re-point's
+        // spin-up and spin-down tails run below any useful rate
+        // threshold while the target is still far from desired, and
+        // with low yaw acceleration those tails alone can exceed the
+        // timeout (measured: rate-target-based deferral at
+        // AUTOTUNE_LEVEL_RATE_Y_CD still failed the low-acceleration
+        // repro 2 runs in 4).
+        level_start_time_ms = now_ms;
+    }
     if (now_ms - level_start_time_ms > 3 * AUTOTUNE_LEVEL_TIMEOUT_MS) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "AutoTune: Failed to level, please tune manually");
         mode = TuneMode::FAILED;
