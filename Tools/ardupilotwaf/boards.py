@@ -339,6 +339,7 @@ class Board:
                 '-cl-single-precision-constant',
                 '-Wno-vla-extension',
                 '-ftrapping-math',  # prevent re-ordering of sanity checks
+                '-Werror=absolute-value',
             ]
         else:
             env.CFLAGS += [
@@ -464,6 +465,7 @@ class Board:
                 '-Werror=implicit-fallthrough',
                 '-cl-single-precision-constant',
                 '-ftrapping-math',  # prevent re-ordering of sanity checks
+                '-Werror=absolute-value',
             ]
             if self.cc_version_gte(cfg, 10, 0):
                 use_prefix_map = True
