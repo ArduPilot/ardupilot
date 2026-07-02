@@ -52,6 +52,16 @@ uint32_t rp2350_pc_sampler_dump(unsigned core, unsigned maxn,
 
 #ifdef __cplusplus
 }
+
+/*
+ * Dump the whole per-core hash (every live PC, not just the top-N) into str as
+ * PROF-prefixed token lines, for bulk readout over MAVLink FTP (@SYS/pcprof.txt)
+ * and offline attribution with rp2350_pc_profiler.py --histogram. The top-N
+ * STATUSTEXT dump only covers the concentrated hotspots; the spread EKF math
+ * needs the full table.
+ */
+class ExpandingString;
+void rp2350_pc_sampler_dump_full(ExpandingString &str, unsigned core);
 #endif
 
 #endif /* RP2350 && AP_RP2350_PC_SAMPLER_ENABLED */
