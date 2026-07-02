@@ -709,8 +709,10 @@ void AC_PosControl::NE_update_controller()
     }
     _last_update_ne_ticks = AP::scheduler().ticks32();
 
-    float ahrsGndSpdLimit, ahrsControlScaleXY;
-    AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY);
+    // the estimator might require scaling down of control
+    // (e.g. because of sensors being used to arrive at attitude
+    // estimate):
+    const float ahrsControlScaleXY = AP::ahrs().get_control_gain_scaler_XY();
 
     // Update lateral position, velocity, and acceleration offsets using path shaping
     NE_update_offsets();
@@ -1095,7 +1097,7 @@ void AC_PosControl::D_update_controller()
 
     // P controller: convert position error to velocity target
     _vel_target_ned_ms.z = _p_pos_d_m.update_all(_pos_target_ned_m.z, _pos_estimate_ned_m.z);
-    _vel_target_ned_ms.z *= AP::ahrs().getControlScaleZ();
+    _vel_target_ned_ms.z *= AP::ahrs().get_control_gain_scaler_Z();
 
     _pos_desired_ned_m.z = _pos_target_ned_m.z - (_pos_offset_ned_m.z + _pos_terrain_d_m);
 
@@ -1106,7 +1108,7 @@ void AC_PosControl::D_update_controller()
 
     // PID controller: convert velocity error to acceleration
     _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
-    _accel_target_ned_mss.z *= AP::ahrs().getControlScaleZ();
+    _accel_target_ned_mss.z *= AP::ahrs().get_control_gain_scaler_Z();
 
     // add feed forward component
     _accel_target_ned_mss.z += _accel_desired_ned_mss.z + _accel_offset_ned_mss.z + _accel_terrain_d_mss;
