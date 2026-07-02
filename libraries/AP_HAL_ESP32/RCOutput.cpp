@@ -32,6 +32,8 @@
 #include "driver/rmt_encoder.h"
 #include "esp_rom_sys.h"        // esp_rom_delay_us (bounded wait for the reply)
 #include "soc/gpio_struct.h"    // toggle only the pad output-enable for the bidir turnaround
+#include "soc/io_mux_reg.h"     // PIN_INPUT_ENABLE — keep the shared pad readable for RX
+#include "soc/gpio_periph.h"    // GPIO_PIN_MUX_REG[]
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -448,36 +450,12 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
 
         // idempotent: release any RMT resources from a previous mode change
         dshot_free_chan(ch);
-
-        // Bidirectional DShot: create the RX channel on the SAME pad BEFORE the TX
-        // channel (v5.3 shared-pad ordering rule). It captures the ESC's eRPM reply
-        // after the per-frame TX->RX pad turnaround done in dshot_task. The S3 has 4
-        // RX-capable RMT channels, so a bidir quad consumes all 8 (4 TX + 4 RX).
         ch.rmt_rx_chan = nullptr;
         ch.rx_nsymbols = 0;
-        if (ch.bidir) {
-            rmt_rx_channel_config_t rxcfg = {};
-            rxcfg.gpio_num = (gpio_num_t)ch.gpio_num;
-            rxcfg.clk_src = RMT_CLK_SRC_DEFAULT;
-            rxcfg.resolution_hz = resolution_hz;
-            rxcfg.mem_block_symbols = BDSHOT_RX_SYMBOLS;
-            rmt_channel_handle_t rx = nullptr;
-            esp_err_t rxerr = rmt_new_rx_channel(&rxcfg, &rx);
-            if (rxerr == ESP_OK) {
-                rmt_rx_event_callbacks_t rxcbs = {};
-                rxcbs.on_recv_done = bdshot_on_rx_done;
-                rmt_rx_register_event_callbacks(rx, &rxcbs, (void*)(uintptr_t)chan);
-                ESP_ERROR_CHECK(rmt_enable(rx));
-                ch.rmt_rx_chan = rx; // stored as void* (see RCOutput.h)
-            } else {
-                // no RX channel: fall back to plain (non-inverted) DShot on this
-                // channel, else we'd send inverted-CRC frames the ESC rejects with
-                // no line-turnaround to read.
-                ch.bidir = false;
-                printf("RCOut: bidir DShot RX alloc failed on chan %u (err 0x%x); S3 has 4 RX channels\n",
-                       (unsigned)chan, (int)rxerr);
-            }
-        }
+        // NOTE: for bidirectional DShot the RX channel is created AFTER the TX channel
+        // (below), not before. HW-proven (2026-07-03): creating RX first lets the later
+        // TX-channel creation clobber the RX input routing on the shared pad → RX never
+        // captures. TX-then-RX keeps both working.
 
         rmt_tx_channel_config_t cfg = {};
         cfg.gpio_num = (gpio_num_t)ch.gpio_num;
@@ -528,6 +506,36 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
             continue;
         }
         ch.rmt_encoder = enc; // stored as void*
+
+        // Bidirectional DShot: NOW (after the TX channel) create the RX channel on the
+        // SAME pad to capture the ESC's eRPM reply after the per-frame turnaround.
+        // Creating it after TX avoids TX clobbering the RX input routing (HW-proven).
+        // The S3 has 4 RX-capable RMT channels, so a bidir quad consumes all 8 (4TX+4RX).
+        if (ch.bidir) {
+            rmt_rx_channel_config_t rxcfg = {};
+            rxcfg.gpio_num = (gpio_num_t)ch.gpio_num;
+            rxcfg.clk_src = RMT_CLK_SRC_DEFAULT;
+            rxcfg.resolution_hz = resolution_hz;
+            rxcfg.mem_block_symbols = BDSHOT_RX_SYMBOLS;
+            rmt_channel_handle_t rx = nullptr;
+            esp_err_t rxerr = rmt_new_rx_channel(&rxcfg, &rx);
+            if (rxerr == ESP_OK) {
+                rmt_rx_event_callbacks_t rxcbs = {};
+                rxcbs.on_recv_done = bdshot_on_rx_done;
+                rmt_rx_register_event_callbacks(rx, &rxcbs, (void*)(uintptr_t)chan);
+                ESP_ERROR_CHECK(rmt_enable(rx));
+                ch.rmt_rx_chan = rx; // stored as void* (see RCOutput.h)
+                // keep the pad readable: creating the TX channel leaves it output-only,
+                // so force input-enable (a pad can hold IE+OE; we gate OE in the turnaround).
+                PIN_INPUT_ENABLE(GPIO_PIN_MUX_REG[ch.gpio_num]);
+            } else {
+                // no RX channel: fall back to plain (non-inverted) DShot on this channel,
+                // else we'd send inverted-CRC frames the ESC rejects with no turnaround.
+                ch.bidir = false;
+                printf("RCOut: bidir DShot RX alloc failed on chan %u (err 0x%x); S3 has 4 RX channels\n",
+                       (unsigned)chan, (int)rxerr);
+            }
+        }
     }
 
     // start the periodic transmit task now that DShot output exists. It reads the
