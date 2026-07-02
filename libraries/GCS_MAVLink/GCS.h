@@ -1236,6 +1236,7 @@ public:
 
     enum class Option {
       GCS_SYSID_ENFORCE = (1U << 0),
+      ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS = (1U << 1),
     };
     bool option_is_enabled(Option option) const {
         return (mav_options & (uint16_t)option) != 0;
