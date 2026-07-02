@@ -24,6 +24,7 @@
 #include "HAL_ESP32_Namespace.h"
 #include <AP_HAL/Util.h>
 #include <AP_HAL/Semaphores.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
 #include "driver/gpio.h"
 #include "driver/mcpwm_prelude.h"
@@ -32,6 +33,9 @@ namespace ESP32
 {
 
 class RCOutput : public AP_HAL::RCOutput
+#if HAL_WITH_ESC_TELEM
+    , public AP_ESC_Telem_Backend   // bidir DShot RPM feeds the ESC telemetry frontend
+#endif
 {
 public:
     RCOutput() {};
@@ -65,6 +69,18 @@ public:
     uint16_t get_erpm(uint8_t chan) const override;
     bool new_erpm() override;
     uint32_t read_erpm(uint16_t* erpm, uint8_t len) override;
+    float get_erpm_error_rate(uint8_t chan) const override {
+        if (chan >= 12) {
+            return 100.0f;
+        }
+        return 100.0f * float(_bdshot.erpm_errors[chan]) /
+               (1 + _bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan]);
+    }
+
+    // motor pole count (eRPM -> mechanical RPM) and ESC type (for EDT), from AP_BLHeli
+    void set_motor_poles(uint8_t poles) override { _bdshot.motor_poles = poles; }
+    void set_dshot_esc_type(DshotEscType type) override { _dshot_esc_type = type; }
+    DshotEscType get_dshot_esc_type() const override { return _dshot_esc_type; }
 
     // queue a DShot special command (arm/beep/spin-direction/3D/save) on a single
     // DShot channel or all of them; the rcout task transmits it repeat_count times.
@@ -237,10 +253,14 @@ private:
 
     // bidirectional DShot decoded telemetry (12 = max channels on current chips)
     struct {
-        uint16_t erpm[12] {};      // last decoded eRPM per channel
-        uint32_t update_mask = 0;  // channels updated since the last read_erpm()
-        uint8_t  motor_poles = 14; // for eRPM->mechanical RPM (Phase 5 / set_motor_poles)
+        uint16_t erpm[12] {};             // last decoded eRPM per channel
+        uint32_t update_mask = 0;         // channels updated since the last read_erpm()
+        uint8_t  motor_poles = 14;        // for eRPM->mechanical RPM (set_motor_poles)
+        uint16_t erpm_errors[12] {};      // decode failures per channel (for error rate)
+        uint16_t erpm_clean_frames[12] {};// good decodes per channel
     } _bdshot;
+
+    DshotEscType _dshot_esc_type = DSHOT_ESC_NONE;
 
 };
 

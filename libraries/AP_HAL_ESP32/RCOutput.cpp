@@ -645,13 +645,28 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
             }
             const uint32_t bit_ticks = (80000000U + telem_rate / 2) / telem_rate; // RMT ticks/bit
             const uint32_t erpm = bdshot_decode_erpm(bdshot_rx_buf[chan], bdshot_rx_nsym[chan], bit_ticks);
-            bdshot_store_erpm(erpm, chan);
+            if (chan < 12) {
+                if (erpm == BDSHOT_INVALID_ERPM) {
+                    _bdshot.erpm_errors[chan]++;
+                } else {
+                    _bdshot.erpm_clean_frames[chan]++;
+                    bdshot_store_erpm(erpm, chan);
+                }
+                // keep the error-rate window bounded (avoid uint16 overflow)
+                if (_bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan] >= 4000) {
+                    _bdshot.erpm_errors[chan] /= 2;
+                    _bdshot.erpm_clean_frames[chan] /= 2;
+                }
+            }
         } else {
             // no reply in the window (disarmed ESC / none attached): abort the
-            // pending receive so the next frame re-arms cleanly.
+            // pending receive so the next frame re-arms cleanly, and count an error.
             rmt_disable(rx);
             rmt_enable(rx);
             ch.rx_nsymbols = 0;
+            if (chan < 12) {
+                _bdshot.erpm_errors[chan]++;
+            }
         }
     }
 
@@ -749,6 +764,12 @@ void RCOutput::bdshot_store_erpm(uint32_t encodederpm, uint8_t chan)
     if (erpm < BDSHOT_INVALID_ERPM) {
         _bdshot.erpm[chan] = (uint16_t)erpm;
         _bdshot.update_mask |= 1U << chan;
+#if HAL_WITH_ESC_TELEM
+        // feed the ESC telemetry frontend: mechanical RPM = eRPM * 200 / poles
+        if (_bdshot.motor_poles > 0) {
+            update_rpm(chan, erpm * 200U / _bdshot.motor_poles, get_erpm_error_rate(chan));
+        }
+#endif
     }
 }
 
