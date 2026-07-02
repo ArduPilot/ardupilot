@@ -31,6 +31,7 @@
 #include "driver/rmt_rx.h"      // bidirectional DShot: capture the ESC eRPM reply
 #include "driver/rmt_encoder.h"
 #include "esp_rom_sys.h"        // esp_rom_delay_us (bounded wait for the reply)
+#include "soc/gpio_struct.h"    // toggle only the pad output-enable for the bidir turnaround
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -609,31 +610,47 @@ void RCOutput::dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request)
                  ch.dshot_buf, sizeof(ch.dshot_buf), &tx_cfg);
 }
 
+// Release / re-drive the shared pad for the bidir turnaround by toggling ONLY the
+// GPIO output-enable, leaving the RMT->pad matrix routing intact. HW-proven (2026-07-03):
+// gpio_set_direction() resets the pad's out signal to plain GPIO and breaks RMT TX,
+// and disabling the TX channel does not release the pad either.
+static inline void bdshot_pad_oe(uint8_t gpio, bool drive)
+{
+    if (gpio < 32) {
+        if (drive) { ::GPIO.enable_w1ts = (1U << gpio); }
+        else       { ::GPIO.enable_w1tc = (1U << gpio); }
+    } else {
+        if (drive) { ::GPIO.enable1_w1ts.val = (1U << (gpio - 32)); }
+        else       { ::GPIO.enable1_w1tc.val = (1U << (gpio - 32)); }
+    }
+}
+
 /*
-  bidirectional DShot turnaround: after the frame is transmitted, tri-state the
-  shared pad (via GPIO direction, since disabling the TX channel does NOT release
-  the pad — proven on hardware) so the ESC can drive its eRPM reply, arm the RX
-  channel to capture it, then restore the pad to output for the next frame.
-  Raw symbols land in bdshot_rx_buf[chan]; Phase 4 decodes them to eRPM.
+  bidirectional DShot turnaround: after the frame is transmitted, release the shared
+  pad (output-enable only) so the ESC can drive its eRPM reply, arm the RX channel to
+  capture it, then re-drive the pad for the next frame.
+  Raw symbols land in bdshot_rx_buf[chan]; bdshot_decode_erpm() turns them into eRPM.
+  NOTE: we deliberately do NOT call rmt_tx_wait_all_done() here — it deadlocks
+  ("flush timeout") once the pad is released. A timed wait for the frame duration is
+  used instead (HW-proven 2026-07-03).
  */
 void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
 {
-    rmt_channel_handle_t tx = (rmt_channel_handle_t)ch.rmt_chan;
     rmt_channel_handle_t rx = (rmt_channel_handle_t)ch.rmt_rx_chan;
 
-    // make sure the frame is fully on the wire before we release the pad; if it
-    // hasn't finished, skip the turnaround this cycle rather than tri-state a pad
-    // that is still transmitting (which would truncate the DShot frame).
-    if (rmt_tx_wait_all_done(tx, 2) != ESP_OK) {
-        return; // pad stays OUTPUT; try the turnaround next frame
+    // let the frame finish on the wire (timed, not rmt_tx_wait_all_done): a 16-bit
+    // frame takes ~27us (DShot600) / ~53us (300) / ~107us (150), plus margin.
+    uint32_t frame_us;
+    switch (ch.group->current_mode) {
+    case MODE_PWM_DSHOT150: frame_us = 120; break;
+    case MODE_PWM_DSHOT300: frame_us = 60;  break;
+    case MODE_PWM_DSHOT600: frame_us = 32;  break;
+    default:                frame_us = 120; break;
     }
+    esp_rom_delay_us(frame_us);
 
-    // RELEASE: tri-state the pad; the pull-up idles it high and the ESC pulls low.
-    // NOTE (Phase 6 HW-verify): the spike proved the RX/tri-state side, but NOT that
-    // gpio_set_direction(OUTPUT) below re-attaches the RMT TX signal to the pad so
-    // frames keep reaching the ESC after the first turnaround. Confirm on hardware; if
-    // TX stops, re-select the RMT out signal on the matrix instead of a direction flip.
-    gpio_set_direction((gpio_num_t)ch.gpio_num, GPIO_MODE_INPUT);
+    // RELEASE the pad (OE off); the pull-up idles it high and the ESC pulls low
+    bdshot_pad_oe(ch.gpio_num, false);
 
     rmt_receive_config_t rxcfg = {};
     rxcfg.signal_range_min_ns = 50;      // glitch filter
@@ -686,8 +703,8 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
         }
     }
 
-    // restore the pad to output for the next frame's push-pull transmit
-    gpio_set_direction((gpio_num_t)ch.gpio_num, GPIO_MODE_OUTPUT);
+    // re-drive the pad (OE on) for the next frame's transmit
+    bdshot_pad_oe(ch.gpio_num, true);
 }
 
 /*
