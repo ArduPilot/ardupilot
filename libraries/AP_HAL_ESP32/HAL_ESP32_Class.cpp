@@ -21,6 +21,7 @@
 #include "I2CDevice.h"
 #include "SPIDevice.h"
 #include "UARTDriver.h"
+#include "USBSerialDriver.h"
 #include "WiFiDriver.h"
 #include "WiFiUdpDriver.h"
 #include "RCInput.h"
@@ -47,7 +48,11 @@ static Empty::UARTDriver serial1Driver;
 #endif
 static ESP32::UARTDriver serial2Driver(2);
 static ESP32::UARTDriver serial3Driver(1);
+#if defined(HAL_ESP32_S3_USB_SERIAL4_ENABLED) && HAL_ESP32_S3_USB_SERIAL4_ENABLED
+static ESP32::USBSerialDriver serial4Driver;
+#else
 static Empty::UARTDriver serial4Driver;
+#endif
 static Empty::UARTDriver serial5Driver;
 static Empty::UARTDriver serial6Driver;
 static Empty::UARTDriver serial7Driver;
@@ -98,7 +103,7 @@ HAL_ESP32::HAL_ESP32() :
         &serial1Driver, //Telem 1
         &serial2Driver, //Telem 2
         &serial3Driver, //GPS 1
-        &serial4Driver, //GPS 2
+        &serial4Driver, //GPS 2 / USB companion on boards that enable it
         &serial5Driver, //Extra 1
         &serial6Driver, //Extra 2
         &serial7Driver, //Extra 3
@@ -140,4 +145,3 @@ void HAL_ESP32::run(int argc, char * const argv[], Callbacks* callbacks) const
 void AP_HAL::init()
 {
 }
-
