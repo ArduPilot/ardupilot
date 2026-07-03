@@ -776,6 +776,10 @@ uint64_t GCS_MAVLINK_Sub::capabilities() const
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_flight_termination(const mavlink_command_int_t &packet)
 {
+    if (command_addressed_to_other_component(packet)) {
+        // don't terminate the flight on a command addressed to another component
+        return MAV_RESULT_DENIED;
+    }
     if (packet.param1 > 0.5f) {
         sub.arming.disarm(AP_Arming::Method::TERMINATION);
         return MAV_RESULT_ACCEPTED;
