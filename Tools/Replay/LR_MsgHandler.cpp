@@ -240,6 +240,12 @@ void LR_MsgHandler_RGPJ::process_message(uint8_t *msgbytes)
     AP::dal().handle_message(msg);
 }
 
+void LR_MsgHandler_RGPK::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RGPK, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
 void LR_MsgHandler_RMGH::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RMGH, msgbytes);
