@@ -218,7 +218,13 @@ void Scheduler::delay_microseconds(uint16_t usec)
         return;
     }
     uint32_t ticks;
+#if CH_CFG_ST_FREQUENCY == 1000000U
+    // 1 us == 1 tick: chTimeUS2I() is the identity but still emits a 64-bit
+    // divide. Skip it - this runs on the RP2350 core1 rate-thread poll path.
+    ticks = usec;
+#else
     ticks = chTimeUS2I(usec);
+#endif
     if (ticks == 0) {
         // calling with ticks == 0 causes a hard fault on ChibiOS
         ticks = 1;
