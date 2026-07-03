@@ -121,7 +121,12 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
            positive isn't found by the bootloader (eg. ROMFS) */
         KEEP(*(.apsec_data));
         KEEP(*(.app_descriptor));
-        *(.text)
+        /* memcpy/memset are relocated into .ramtext (SRAM) below so the hot
+           rate/IMU copy path stops fetching them from XIP flash. Exclude them
+           from the flash sweep here so the .ramtext pick can claim them. The
+           boot-order hazard (the .ramtext copy loop itself calling memcpy) is
+           handled in rp_clocks.c. */
+        *(EXCLUDE_FILE(*lib_a-memcpy.o *lib_a-memcpy-stub.o *lib_a-memset.o *lib_a-aeabi_memcpy.o *lib_a-aeabi_memcpy-armv7a.o *lib_a-aeabi_memset.o *lib_a-aeabi_memset-soft.o) .text)
         *(.rodata)
         *(.rodata.*)
     } > flash
@@ -140,6 +145,17 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
         *(.ramtext)
         *(.ramtext.*)
         INCLUDE rp2350_ramfunc2_sections.ld
+        /* newlib memcpy/memset pulled out of XIP flash (excluded from .text
+           above). Safe now that rp_clocks.c copies .ramtext without calling
+           memcpy. -soft variant only exists on the fp multilibs; unmatched
+           picks are ignored. */
+        *lib_a-memcpy.o(.text .text.*)
+        *lib_a-memcpy-stub.o(.text .text.*)
+        *lib_a-memset.o(.text .text.*)
+        *lib_a-aeabi_memcpy.o(.text .text.*)
+        *lib_a-aeabi_memcpy-armv7a.o(.text .text.*)
+        *lib_a-aeabi_memset.o(.text .text.*)
+        *lib_a-aeabi_memset-soft.o(.text .text.*)
         . = ALIGN(16);
         __ramfunc_end__ = .;
         __ramfunc_size__ = __ramfunc_end__ - __ramfunc_start__;
