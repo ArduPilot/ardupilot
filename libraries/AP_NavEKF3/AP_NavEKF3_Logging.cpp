@@ -295,7 +295,57 @@ void NavEKF3_core::Log_Write_Beacon(uint64_t time_us)
         posD : (int16_t)(100*rngBcn.receiverPos.z)
     };
     AP::logger().WriteBlock(&pkt10, sizeof(pkt10));
+
+    Log_Write_XKRB(time_us);
+
     rngBcn.fuseDataReportIndex++;
+}
+
+void NavEKF3_core::Log_Write_XKRB(uint64_t time_us)
+{
+    const auto &report = rngBcn.fusionReport[rngBcn.fuseDataReportIndex];
+
+    const struct log_XKRB pkt{
+        LOG_PACKET_HEADER_INIT(LOG_XKRB_MSG),
+        time_us : time_us,
+        core    : DAL_CORE(core_index),
+        bcnID   : rngBcn.fuseDataReportIndex,
+        rng     : (float)report.rng,
+        innov   : (float)report.innov,
+        bcnPN   : (float)report.beaconPosNED.x,
+        bcnPE   : (float)report.beaconPosNED.y,
+        bcnPD   : (float)report.beaconPosNED.z,
+        health  : rngBcn.health ? 1u : 0u,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+}
+
+void NavEKF3_core::Log_Write_RngBcnPos(uint64_t time_us)
+{
+    if (core_index != frontend->primary) {
+        // log only primary instance for now
+        return;
+    }
+
+    if (!statesInitialised || rngBcn.N == 0) {
+        return;
+    }
+
+    const struct log_XKRP pkt{
+        LOG_PACKET_HEADER_INIT(LOG_XKRP_MSG),
+        time_us : time_us,
+        core    : DAL_CORE(core_index),
+        posN    : (float)rngBcn.receiverPos.x,
+        posE    : (float)rngBcn.receiverPos.y,
+        posD    : (float)rngBcn.receiverPos.z,
+        covN    : (float)rngBcn.receiverPosCov[0][0],
+        covE    : (float)rngBcn.receiverPosCov[1][1],
+        covD    : (float)rngBcn.receiverPosCov[2][2],
+        mode    : (uint8_t)rngBcn.fusionMode,
+        hdop    : (uint8_t)constrain_float((float)rngBcn.hdop * 10.0f, 0.0f, 255.0f),
+        failCnt : rngBcn.failFusionCount,
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
 #endif  // EK3_FEATURE_BEACON_FUSION
 
@@ -423,6 +473,7 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
 #if EK3_FEATURE_BEACON_FUSION
     // write range beacon fusion debug packet if the range value is non-zero
     Log_Write_Beacon(time_us);
+    Log_Write_RngBcnPos(time_us);
 #endif
 
 #if EK3_FEATURE_BODY_ODOM
