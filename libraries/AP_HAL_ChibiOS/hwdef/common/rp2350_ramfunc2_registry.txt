@@ -223,3 +223,210 @@ libraries/SRV_Channel/SRV_Channel.cpp|SRV_Channel::calc_pwm  # 0.5%, 68 B
 libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::function_assigned  # 0.5%, 72 B
 libraries/SRV_Channel/SRV_Channel_aux.cpp|SRV_Channels::output_ch_all  # 0.4%, 60 B
 libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::get_motor_function  # 0.3%, 22 B
+
+# Core1 rate/IMU full in-memory path - every flash function sampled on
+# core1 (rate loop + IMU/DMA + the ChibiOS sync/sched/TM primitives they
+# use). Relocating the whole set stops core1 touching the shared 16 KB XIP
+# cache, leaving it to core0's EKF. ~10 KB SRAM. Generated from Run 4
+# (@SYS/pcprof.txt) profiling; generator matches on symbol so placeholder
+# paths are cosmetic. See Laurel/xip-cache-and-pgo.md.
+modules/ChibiOS/os/rt/src/chstats.c|__stats_start_measure_crit_thd
+modules/ChibiOS/os/rt/src/chstats.c|__stats_stop_measure_crit_thd
+(profiled)|std::__atomic_base<unsigned long>::operator unsigned long
+modules/ChibiOS/os/rt/src/chtm.c|chTMStartMeasurementX
+modules/ChibiOS/os/rt/include/chsys.h|chSysLock
+modules/ChibiOS/os/hal/src/hal_st.c|stGetCounter
+modules/ChibiOS/os/rt/src/chtm.c|chTMStopMeasurementX
+modules/ChibiOS/os/rt/include/chthreads.h|chThdGetSelfX
+modules/ChibiOS/os/rt/src/chmtx.c|chMtxUnlock
+(profiled)|memset
+(profiled)|calc_lowpass_alpha_dt
+modules/ChibiOS/os/rt/src/chmtx.c|chMtxLockS
+modules/ChibiOS/os/rt/include/chsys.h|chSysUnlock
+(profiled)|memcpy
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|dmaChannelAllocI
+(profiled)|DigitalLPF<float>::_apply
+(profiled)|float constrain_value_line<float>
+(profiled)|ChibiOS::Semaphore::give
+(profiled)|get_main_thread
+modules/ChibiOS/os/rt/src/chmtx.c|chMtxLock
+(profiled)|AP_InertialSensor::BatchSampler::should_log
+(profiled)|AP_InertialSensor_Backend::should_log_imu_raw
+(profiled)|AP_MotorsMulticopter::output_to_pwm
+(profiled)|SlewLimiter::modifier
+(profiled)|LowPassFilter<float>::apply
+modules/ChibiOS/os/hal/ports/RP/LLD/GPIOv1/hal_pal_lld.c|_pal_lld_setgroupmode
+libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis32
+(profiled)|WithSemaphore::~WithSemaphore
+modules/ChibiOS/os/rt/src/chstats.c|__stats_ctxswc
+(profiled)|SRV_Channels::set_output_scaled
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|Vector6C
+(profiled)|AP_MotorsMulticopter::update_throttle_filter
+(profiled)|AP_AHRS::get_air_density_ratio
+(profiled)|AC_PID::update_i
+(profiled)|ChibiOS::Shared_DMA::lock_core
+(profiled)|ChibiOS::Semaphore::check_owner
+(profiled)|ChibiOS::Semaphore::take
+modules/ChibiOS/os/rt/src/chtm.c|chTMChainMeasurementToX
+(profiled)|ChibiOS::Scheduler::in_main_thread
+(profiled)|__udivmoddi4
+(profiled)|WithSemaphore::WithSemaphore
+(profiled)|AP_InertialSensor::BatchSampler::sample
+(profiled)|LowPassFilter<Vector3<float> >::apply
+(profiled)|Vector3<float>::rotate
+(profiled)|run_decimated_callback
+(profiled)|__aeabi_uldivmod
+libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_finish_read
+(profiled)|ByteBuffer::available
+libraries/AP_HAL_ChibiOS/hwdef/common/sysperf.c|sysIdleEnterMeasure
+libraries/AP_HAL_ChibiOS/hwdef/common/sysperf.c|sysIdleLeaveMeasure
+(profiled)|DigitalLPF<float>::get
+(profiled)|AP_InertialSensor::BatchSampler::doing_post_filter_logging
+(profiled)|SRV_Channel::set_output_pwm
+(profiled)|ChibiOS::Shared_DMA::lock_stream
+(profiled)|DigitalLPF<Vector3<float> >::_apply
+(profiled)|AP_InertialSensor_Backend::log_accel_raw
+modules/ChibiOS/os/rt/src/chstats.c|__stats_increase_irq
+(profiled)|copter_rate_timing_record
+modules/ChibiOS/os/hal/src/hal_pwm.c|pwmEnableChannel
+(profiled)|ChibiOS::RCOutput::_safety_switch_state
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_serve_tx_interrupt
+(profiled)|AP::ahrs
+(profiled)|Vector3<float>::operator+=
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|serve_interrupt
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|dmaChannelFreeI
+(profiled)|AC_PID::get_ff
+(profiled)|DerivativeFilter<float,
+(profiled)|ChibiOS::DeviceBus::bus_thread
+(profiled)|AP_InertialSensor::set_accel_peak_hold
+(profiled)|ByteBuffer::peekiovec
+(profiled)|ChibiOS::Scheduler::delay_microseconds
+(profiled)|AP_InertialSensor_Backend::update_primary
+(profiled)|LowPassFilter2p<Vector3<float> >::apply
+(profiled)|AP_Motors::rc_write
+modules/ChibiOS/os/rt/src/chstats.c|__stats_start_measure_crit_isr
+(profiled)|Mode::output_to_motors
+libraries/AP_HAL_ChibiOS/hwdef/common/malloc.c|mem_is_dma_safe
+(profiled)|AC_AttitudeControl_Multi::get_rate_roll_pid
+(profiled)|AC_AttitudeControl_Multi::get_rate_pitch_pid
+(profiled)|ChibiOS::RCOutput::cork
+modules/ChibiOS/os/hal/src/hal_st.c|stSetAlarmN
+libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_setup_read
+(profiled)|AP_InertialSensor::push_next_gyro_sample
+(profiled)|ByteBuffer::peekbytes
+(profiled)|AP_HAL::Semaphore::take_blocking
+(profiled)|AP_InertialSensor::get_raw_gyro_rate_hz
+(profiled)|AP_HAL::Device::read_registers
+(profiled)|ChibiOS::Shared_DMA::unlock_stream
+(profiled)|ChibiOS::DeviceBus::bouncebuffer_finish
+(profiled)|Copter::should_log
+(profiled)|short constrain_value<short>
+(profiled)|ByteBuffer::advance
+(profiled)|Thrust_Linearization::get_compensation_gain
+modules/ChibiOS/os/hal/ports/RP/LLD/PWMv1/hal_pwm_lld.c|pwm_lld_enable_channel
+(profiled)|DigitalLPF<float>::reset
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelEnableInterruptX
+modules/ChibiOS/os/rt/src/chsem.c|chSemSignalI
+modules/ChibiOS/os/hal/src/hal_spi_v1.inc|spiReleaseBus
+(profiled)|ChibiOS::DeviceBus::adjust_timer
+(profiled)|LowPassFilter2p<float>::apply
+(profiled)|AP_InertialSensor_Backend::log_gyro_raw
+modules/ChibiOS/os/rt/include/chsys.h|chSysLockFromISR
+(profiled)|ByteBuffer::space
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelSetModeX
+modules/ChibiOS/os/hal/src/hal_spi_v1.inc|spiAcquireBus
+(profiled)|AP_Motors::get_throttle
+(profiled)|AP_InertialSensor_Invensensev3::block_read
+(profiled)|AP_HAL::RCOutput::is_dshot_protocol
+(profiled)|AP_InertialSensor::get_num_gyro_samples
+(profiled)|AP_InertialSensor::is_rate_loop_gyro_enabled
+(profiled)|AP_InertialSensor::calc_vibration_and_clipping
+(profiled)|AP::scheduler
+(profiled)|ChibiOS::Shared_DMA::lock
+modules/ChibiOS/os/hal/ports/common/ARMCMx/nvic.c|nvicEnableVector
+(profiled)|AC_PID::get_filt_T_alpha
+(profiled)|ChibiOS::Util::was_watchdog_reset
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelEnableX.isra.0
+(profiled)|ChibiOS::DeviceBus::bouncebuffer_setup
+(profiled)|ByteBuffer::read
+(profiled)|AC_PID::get_filt_D_alpha
+modules/ChibiOS/os/rt/src/chthreads.c|chThdResumeI
+(profiled)|ChibiOS::SPIDevice::adjust_periodic_callback
+(profiled)|AC_PID::get_filt_E_alpha
+(profiled)|AP_InertialSensor_Backend::_rotate_and_correct_gyro
+modules/ChibiOS/os/hal/ports/common/ARMCMx/nvic.c|nvicDisableVector
+(profiled)|Thrust_Linearization::update_lift_max_from_batt_voltage
+(profiled)|AP_HAL::Device::check_next_register
+(profiled)|ChibiOS::BinarySemaphore::signal
+modules/ChibiOS/os/rt/src/chstats.c|__stats_stop_measure_crit_isr
+(profiled)|Empty::OpticalFlow::push_gyro
+
+# Core1 rate/IMU path, second pass: the residual flash functions the first
+# pass exposed (Vector3 math, ByteBuffer, SPI/DMA glue, TCal, AP_Logger
+# gates, motor mixing tail). ~3.5 KB.
+(profiled)|AP_Logger::should_log
+(profiled)|SRV_Channels::cork
+(profiled)|AP_Logger::log_while_disarmed
+(profiled)|AP_InertialSensor_TCal::correct_sensor
+(profiled)|AP_Motors::AP_Motors_limit::set_all
+(profiled)|AP_BattMonitor::voltage_resting_estimate
+(profiled)|AP_MotorsMatrix::thrust_compensation
+(profiled)|AP_BattMonitor_Backend::voltage_resting_estimate
+modules/ChibiOS/os/hal/src/hal_spi_v1.inc|spiStop
+(profiled)|AP_InertialSensor_TCal::correct_gyro
+modules/ChibiOS/os/rt/src/chsem.c|chSemWaitS
+modules/ChibiOS/os/hal/src/hal_spi_v1.inc|spiStart
+(profiled)|std::enable_if<std::is_floating_point<std::common_type<float, float>::type>::value, bool>::type is_equal<float, float>
+(profiled)|AP_MotorsMulticopter::output_rpyt
+(profiled)|void Functor<void>::method_wrapper<AP_InertialSensor_Invensensev3, &AP_InertialSensor_Invensensev3::read_fifo>
+libraries/AP_HAL_ChibiOS/hwdef/common/watchdog.c|rp2350_was_watchdog_reset
+libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_setup_write
+(profiled)|Vector3<float>::operator*=
+(profiled)|AP_Logger::in_log_persistance
+(profiled)|ChibiOS::Shared_DMA::unlock
+(profiled)|AP_MotorsMulticopter::output_boost_throttle
+(profiled)|ByteBuffer::write
+(profiled)|Vector3<float>::is_inf
+libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_finish_write
+(profiled)|Vector3<float>::operator+
+(profiled)|ChibiOS::SPIDevice::set_speed
+(profiled)|ChibiOS::BinarySemaphore::wait_blocking
+(profiled)|ChibiOS::SPIDevice::set_chip_select
+(profiled)|AP_MotorsMulticopter::update_external_limits
+(profiled)|ByteBuffer::readptr
+(profiled)|Vector3<float>::is_nan
+(profiled)|ByteBuffer::reserve
+(profiled)|AP_InertialSensor_TCal::correct_accel
+modules/ChibiOS/os/rt/src/chsem.c|chSemWait
+(profiled)|ChibiOS::SPIDevice::transfer_fullduplex
+modules/ChibiOS/os/hal/ports/RP/LLD/TIMERv1/hal_st_lld.c|Vector44
+(profiled)|AC_AttitudeControl_Multi::get_rate_yaw_pid
+(profiled)|ChibiOS::Util::safety_switch_state
+(profiled)|AP::srv
+(profiled)|AP_SerialManager::protocol_match
+(profiled)|AP::battery
+modules/ChibiOS/os/rt/src/chthreads.c|chThdSuspendTimeoutS
+(profiled)|AP_InertialSensor::set_rate_decimation
+(profiled)|ByteBuffer::commit
+(profiled)|AP_Volz_Protocol::update
+(profiled)|AP_FETtecOneWire::init_uart
+(profiled)|Vector3<float>::operator-
+(profiled)|AP_SerialManager::find_serial
+(profiled)|AP_FETtecOneWire::init
+(profiled)|SRV_Channels::push
+(profiled)|AP_SBusOut::update
+(profiled)|AP_RobotisServo::update
+(profiled)|AP_BLHeli::update_telemetry
+(profiled)|AP::serialmanager
+(profiled)|AP_SerialManager::find_protocol_instance
+modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
+(profiled)|AP_FETtecOneWire::update
+(profiled)|AP_InertialSensor_Backend::update_accel_filters
+
+# DO NOT relocate the libc helpers memcpy, memset, __udivmoddi4 or
+# __aeabi_uldivmod. They profile hot on core1 (~4.4% of active time) but must
+# stay in flash: the compiler lowers struct/array init in early boot into
+# implicit calls to them, and those run before rp_clock_init() copies .ramtext
+# to SRAM (rp_clocks.c). Relocating them executes uninitialised SRAM and the FC
+# double-faults at boot. To claw back their cost, remove the calls (e.g. use
+# 32-bit micros() deltas to avoid __udivmoddi4) rather than move the symbol.
