@@ -1,0 +1,94 @@
+# Laurel RP2350 de-overclocked baseline
+
+The stable target configuration for Laurel, reached by moving the core1 rate
+path into SRAM so the core clock and voltage could be walked back down from the
+original 375 MHz / 1.30 V overclock. Confirmed on hardware.
+
+## Configuration
+
+| Item              | Value                          | Where                     |
+|-------------------|--------------------------------|---------------------------|
+| Core clock        | 225 MHz (1.5x the 150 MHz spec)| `hwdef.dat`               |
+| PLL_SYS           | 900 MHz VCO / POSTDIV 4x1      | `RP_PLL_SYS_VCO_FREQ`      |
+| Core voltage      | 1.15 V (VSEL 0x0c, ~312 MHz cap)| `RP_VREG_VSEL`           |
+| QMI flash timing  | CLKDIV 3 / RXDELAY 2 (75 MHz SCK)| `RP_QMI_CLKDIV/RXDELAY`  |
+| Main loop         | 200 Hz                         | `SCHED_LOOP_RATE`         |
+| Gyro backend      | 4 kHz (INS_GYRO_RATE 2)        | `defaults.parm`           |
+| Rate thread       | 2 kHz (FSTRATE_DIV 2, ENABLE 2)| `defaults.parm`           |
+
+Measured on the bench at this config: core0 ~65%, core1 ~37%, core1 flash
+share ~0.7%, rate-loop gyro-to-output latency ~190 us average.
+
+A 1500 MHz VCO cannot divide to 225 MHz (1500 / 225 is not integer), so the VCO
+itself drops to 900 MHz (FBDIV 75) and POSTDIV 4x1 yields 225 MHz.
+`clk_peri = clk_sys`, so the SPI clock scales down with the core clock - this
+only makes the IMU SPI safer. `HAL_EXPECTED_SYSCLOCK` is cosmetic on RP2350 (the
+compile-time check is skipped for dynamic-clock parts).
+
+## How the clock came down
+
+The overclock existed to hide XIP flash latency: both cores fetch instructions
+through a shared 16 KB XIP cache, and core0's EKF plus core1's rate loop were
+both thrashing it. The fix was to make core1's hot path SRAM-resident so it
+stops competing for the cache, leaving it to core0:
+
+1. Relocate the core1 rate/IMU path (rate controller, IMU read, motor mixing,
+   filters, scheduler glue) into `.ramtext` via the RAMFUNC2 registry.
+2. Remove the flash-resident 64-bit divide from the hot path (see below).
+3. Relocate newlib memcpy/memset into `.ramtext` (see below).
+4. With core1 off flash and core0 owning the cache, drop the clock 375 -> 225
+   and the voltage 1.30 -> 1.15 V.
+
+The EKF runs inline in the 200 Hz main loop on core0. It is deliberately not a
+thread: the earlier threaded-EKF scaffolding was removed as it only added a
+one-tick lag and shared-state locking for no benefit at these loop rates.
+
+## memcpy/memset relocation - the boot-order gotcha
+
+memcpy/memset are the top flash-resident functions on the core1 rate/IMU path
+(IMU FIFO reads and servo/motor output copies). Relocating them into `.ramtext`
+is worth ~4% of core1 flash time and a large cut in XIP-cache eviction pressure
+on core0 - but it double-faults at boot unless one subtlety is handled first.
+
+`rp_clock_init()` (ChibiOS `rp_clocks.c`) copies `.ramtext` into SRAM early,
+before the PLL switch, using a word loop. GCC recognises that loop as a memcpy
+idiom and lowers it to a `memcpy()` call. That is harmless while memcpy lives in
+flash, but once memcpy is relocated into `.ramtext`, the copy loop calls the
+very memcpy it has not finished copying into SRAM yet - executing uninitialised
+memory. The loop that copies memcpy was calling memcpy.
+
+Fix, in two parts:
+
+- `rp_clocks.c`: mark the copy-loop pointers `volatile` so GCC keeps the
+  explicit word loop and emits no `memcpy` call. (On the
+  `andyp1per/ChibiOS rp2350_baseline` submodule branch.)
+- `common_rp2350_smp.ld`: `EXCLUDE_FILE` the newlib mem* objects from the flash
+  `.text` sweep and pull them into `.ramtext`. Note the linked memcpy is the
+  *stub* variant `lib_a-memcpy-stub.o`, not `lib_a-memcpy.o` - excluding only
+  the latter silently leaves memcpy in flash.
+
+After this, memcpy/memset live in SRAM, boot is clean, and core1 flash drops to
+~0.7% (the residual is two small C++ template thunks, not worth chasing).
+
+## TIME_US2I 64-bit divide bypass
+
+`TIME_US2I()` / `chTimeUS2I()` convert microseconds to systick intervals with a
+64-bit multiply and divide (`__udivmoddi4`), a 748-byte flash routine. At
+Laurel's 1 MHz systick the conversion is the identity, yet the compiler still
+emits the divide. It appears on the hot path via the per-transfer SPI timeout
+(`SPIDevice::do_transfer`) and the rate-thread poll sleep
+(`Scheduler::delay_microseconds`). Both bypass it when
+`CH_CFG_ST_FREQUENCY == 1000000`, keeping `__udivmoddi4` off the rate path.
+
+## Profiling
+
+The relocation decisions were driven by an on-chip PC sampler; see
+`xip-cache-and-pgo.md` and the `PROFc1` STATUSTEXT lines
+(`AP_RP2350_PC_SAMPLER_ENABLED`, investigation-only).
+
+## Open items
+
+- Flight validation: the numbers above are bench-only (disarmed).
+- `glat` average ~190 us is higher than the ~19 us seen at an earlier 375 MHz /
+  1 kHz-rate config. That gap is now the clock plus the 4 kHz/2 kHz rates, not
+  flash; a live-param sweep of `FSTRATE_DIV` / `INS_GYRO_RATE` would isolate it.
