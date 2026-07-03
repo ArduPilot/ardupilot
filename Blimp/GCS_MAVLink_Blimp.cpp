@@ -274,6 +274,10 @@ void GCS_MAVLINK_Blimp::handle_message(const mavlink_message_t &msg)
 
 MAV_RESULT GCS_MAVLINK_Blimp::handle_flight_termination(const mavlink_command_int_t &packet)
 {
+    if (command_addressed_to_other_component(packet)) {
+        // don't terminate the flight on a command addressed to another component
+        return MAV_RESULT_DENIED;
+    }
     MAV_RESULT result = MAV_RESULT_FAILED;
     if (packet.param1 > 0.5f) {
         blimp.arming.disarm(AP_Arming::Method::TERMINATION);
