@@ -404,16 +404,21 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
 
         {
             // at this point the offsets are looking okay, go ahead and actually calculate a useful heading
+            // the bearing of the offset is only exact when the vehicle is level; the
+            // offset is exported in mb_yaw_offset so consumers with an attitude
+            // estimate can correct the yaw for vehicle roll and pitch
             const float rotation_offset_rad = Vector2f(-offset.x, -offset.y).angle();
             interim_state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
             interim_state.have_gps_yaw = true;
             interim_state.gps_yaw_time_ms = AP_HAL::millis();
+            interim_state.mb_yaw_offset = offset;
         }
         goto good_yaw;
     }
 
 bad_yaw:
     interim_state.have_gps_yaw = false;
+    interim_state.mb_yaw_offset.zero();
 
 good_yaw:
 
