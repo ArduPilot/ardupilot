@@ -271,6 +271,9 @@ bool AP_GPS_NMEA::_have_new_message()
         if (_last_AGRICA_ms != 0) {
             // we have lost AGRICA
             state.have_gps_yaw = false;
+            // the moving baseline offset must not outlive the yaw solution it
+            // was calculated for
+            state.mb_yaw_offset.zero();
             state.have_vertical_velocity = false;
             state.have_speed_accuracy = false;
             state.have_horizontal_accuracy = false;
@@ -389,6 +392,10 @@ bool AP_GPS_NMEA::_term_complete()
                 state.gps_yaw = wrap_360(_new_gps_yaw*0.01f);
                 state.have_gps_yaw = true;
                 state.gps_yaw_time_ms = now;
+                // this yaw is the device-reported heading, not one calculated
+                // from a moving baseline offset; clear any stale offset so no
+                // attitude correction is applied to it
+                state.mb_yaw_offset.zero();
                 // remember that we are setup to provide yaw. With
                 // a NMEA GPS we can only tell if the GPS is
                 // configured to provide yaw when it first sends a
@@ -447,6 +454,10 @@ bool AP_GPS_NMEA::_term_complete()
                     state.have_gps_yaw = true;
                     state.gps_yaw_time_ms = now;
                     state.gps_yaw_configured = true;
+                    // this yaw is the receiver's own heading, not one calculated
+                    // from the configured moving baseline offset; clear any stale
+                    // offset so no attitude correction is applied to it
+                    state.mb_yaw_offset.zero();
                 }
                 break;
 #if AP_GPS_NMEA_UNICORE_ENABLED
