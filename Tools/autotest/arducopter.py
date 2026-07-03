@@ -14499,6 +14499,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.AutoTune,
              self.AutoTuneYawD,
              self.NoRCOnBootPreArmFailure,
+             self.CommandComponentID,
         ])
         return ret
 
@@ -15126,6 +15127,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_prearm_failure("safety switch")
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, mavutil.mavlink.SAFETY_SWITCH_STATE_DANGEROUS)
         self.wait_ready_to_arm()
+
+    def CommandComponentID(self):
+        '''autopilot-wide commands addressed to another component must be denied'''
+        # A command addressed to a specific component that is neither the
+        # autopilot nor the broadcast component must be denied, not actioned
+        # (see GCS_MAVLINK::command_addressed_to_other_component). Covers the
+        # shared base handlers plus Copter's SOLO_BTN and flight-termination
+        # overrides.
+        self.wait_ready_to_arm()
+        for command in (
+                mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+                mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
+                mavutil.mavlink.MAV_CMD_SOLO_BTN_FLY_HOLD,
+        ):
+            self.run_cmd_int(
+                command,
+                p1=1,
+                target_compid=mavutil.mavlink.MAV_COMP_ID_GIMBAL,
+                want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+            )
+        if self.armed():
+            raise NotAchievedException("Armed by a command addressed to another component")
+
+        # positive control: the same arm command addressed to the autopilot is accepted
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+            p1=1,
+            target_compid=1,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
+        self.wait_armed()
+        self.disarm_vehicle()
 
     def ArmSwitchAfterReboot(self):
         '''test that the arming switch does not trigger after a reboot'''
