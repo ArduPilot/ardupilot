@@ -95,6 +95,9 @@ bool AP_FlashStorage::init(void)
         first_sector = 0;
     }
 
+    // update current sector in case first sector has changed
+    current_sector = first_sector;
+
     // load data from any current sectors
     for (uint8_t i=0; i<2; i++) {
         uint8_t sector = (first_sector + i) & 1;
