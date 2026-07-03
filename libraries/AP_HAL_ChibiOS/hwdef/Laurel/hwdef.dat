@@ -216,10 +216,12 @@ define HAL_HAVE_SAFETY_SWITCH 0
 define HAL_WITH_MCU_MONITORING 1
 define HAL_HAVE_IMU_HEATER 0
 define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 1
-# DO NOT CHANGE AP_SCHEDULER_FAST_TASK_MODULO NO MATTER WHAT.
-# Reducing EKF/FAST_TASK frequency is not an acceptable workaround.
-# Look for improvements elsewhere (ramfunc, dual-core, etc).
-define AP_SCHEDULER_FAST_TASK_MODULO 2
+# Standard 1:1 scheduling. The main-loop tick and the FAST_TASKs both run
+# at SCHED_LOOP_RATE (200 Hz), paced by the INS 200 Hz main-loop sample.
+# MODULO 2 ran the tick at 2x (400 Hz) with the fast tasks still at 200 Hz -
+# a wasteful spin here, since the 1 kHz rate loop on core1 is independent of
+# the main tick.
+define AP_SCHEDULER_FAST_TASK_MODULO 1
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
 
