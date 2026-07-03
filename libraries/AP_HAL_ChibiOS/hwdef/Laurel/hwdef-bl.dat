@@ -7,15 +7,15 @@ APJ_BOARD_ID AP_HW_RASPBERRYPI_LAUREL
 
 OSCILLATOR_HZ 12000000
 
-FLASH_SIZE_KB 8192
+FLASH_SIZE_KB 4096
 FLASH_RESERVE_START_KB 0
 
 FLASH_BOOTLOADER_LOAD_KB 32
 APP_START_OFFSET_KB 32
 define APP_START_ADDRESS 0x10010000
 
-# Override the ChibiOS EFLv1 default (4MB) with the actual W25Q64JVXGIM capacity so
-# efl_lld_program and efl_lld_start_erase_block accept full-range addresses.
+# Tie RP_FLASH_SIZE to the hwdef flash size so efl_lld_program and
+# efl_lld_start_erase_block bounds-check against the real part.
 define RP_FLASH_SIZE (BOARD_FLASH_SIZE * 1024U)
 
 define HAL_USE_EFL                         TRUE

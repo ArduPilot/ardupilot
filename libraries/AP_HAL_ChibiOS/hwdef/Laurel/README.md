@@ -26,8 +26,7 @@ header-pin numbering from the Pico2 README does not apply here.
 
 - RP2350B dual-core Cortex-M33 @ 375 MHz
 - 520 KB SRAM
-- 8 MB boot/XIP flash: `W25Q64JVXGIM` (Winbond, 133 MHz max, CS = `QSPI_SS` pin75 — dedicated QMI hardware pin)
-- 16 MB blackbox flash: `W25Q128JVPIM` (Winbond, 133 MHz max, CS = `PA0`/GPIO0/pin77) — SPI bus not yet confirmed in hwdef
+- 4 MB boot/XIP flash (Winbond, 133 MHz max, CS = `QSPI_SS` pin75 - dedicated QMI hardware pin)
 - USB CDC serial on `SERIAL0`
 - 2 hardware UARTs + 2 PIO UARTs in the current Laurel hwdef
 - 4 PWM motor outputs on GPIO28-31
@@ -227,17 +226,14 @@ carrier-board example.
 
 Main parameter storage uses the RP2350 XIP flash. Logs use the SPI-mode microSD card on the shared SPI1 bus (confirmed working as of 2026-06-26; `LOG_BACKEND_TYPE=1` is set `@READONLY` in defaults.parm):
 
-- main flash size: 8 MB
+- main flash size: 4 MB
 - bootloader region: first 32 KB
 - parameter storage region: next 32 KB
 - application region: remainder of flash
 - logical parameter capacity: 8 KB with `AP_FLASH_STORAGE_QUAD_PAGE 1`
 
-The Laurel board carries a secondary `W25Q128JVPIM` (Winbond 128 Mbit / 16 MB)
-blackbox flash in addition to the boot flash. Its chip-select is `PA0` (GPIO0,
-pin77), confirmed from the Betaflight board config. The SPI bus it shares has
-not yet been confirmed from the schematic. Storage currently consists of the
-main XIP flash (`W25Q64JVXGIM`) plus the SPI-mode microSD card.
+This board revision carries no secondary blackbox flash. Storage is the boot
+XIP flash plus the SPI-mode microSD card.
 
 ## Connectors
 
@@ -498,7 +494,6 @@ using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
 - `HAL_HAVE_SAFETY_SWITCH` is disabled.
 - `HAL_HAVE_IMU_HEATER` is disabled.
 - `HAL_BARO_ALLOW_INIT_NO_BARO` and `AP_INERTIALSENSOR_ALLOW_NO_SENSORS` are enabled to keep bring-up practical.
-- The current target intentionally does not model the secondary blackbox flash.
 - The current target intentionally does not expose the RX-only Laurel pads yet.
 - The current target intentionally leaves the onboard RGB LED on `GPIO39` undocumented as a firmware feature because serial LED support is still disabled on RP2350.
 
@@ -509,7 +504,6 @@ using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
 | DShot / BLHeli / SerialLED | Not supported on current RP2350 target |
 | CAN / DroneCAN | Not supported by RP2350 hardware |
 | Hardware OSD and microSD together | Not possible on Laurel hardware; current target chooses microSD |
-| Secondary blackbox flash (`W25Q128JVPIM`) | CS = `PA0`/GPIO0/pin77 confirmed; SPI bus not yet confirmed — not modelled in hwdef |
 | RX-only extra serial pads | Not yet represented in current serial definitions |
 | Analog scaling calibration | Placeholder scale factors still in use |
 
