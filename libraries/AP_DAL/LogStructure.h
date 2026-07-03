@@ -27,6 +27,7 @@
     LOG_RGPH_MSG, \
     LOG_RGPI_MSG, \
     LOG_RGPJ_MSG, \
+    LOG_RGPK_MSG, \
     LOG_RASH_MSG, \
     LOG_RASI_MSG, \
     LOG_RBCH_MSG, \
@@ -343,6 +344,18 @@ struct log_RGPJ {
     uint8_t _end;
 };
 
+// @LoggerMessage: RGPK
+// @Description: Replay Data GPS Instance - moving baseline yaw antenna offset (low-rate, only logged when changed)
+// @Field: OX: moving baseline antenna offset used to calculate GPS yaw, X-axis
+// @Field: OY: moving baseline antenna offset used to calculate GPS yaw, Y-axis
+// @Field: OZ: moving baseline antenna offset used to calculate GPS yaw, Z-axis
+// @Field: I: GPS sensor instance number
+struct log_RGPK {
+    Vector3f mb_yaw_offset;
+    uint8_t instance;
+    uint8_t _end;
+};
+
 // @LoggerMessage: RASH
 // @Description: Replay Airspeed Sensor Header
 // @Field: Primary: airspeed instance number
@@ -649,6 +662,8 @@ struct log_RTER {
       "RGPI", "ffffBBBB", "OX,OY,OZ,Lg,Flags,Stat,NSats,I", "-------#", "--------" }, \
     { LOG_RGPJ_MSG, RLOG_SIZE(RGPJ),                                   \
       "RGPJ", "IffffffIiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,YT,Lat,Lon,Alt,HA,VA,HD,I", "--------------#", "---------------" }, \
+    { LOG_RGPK_MSG, RLOG_SIZE(RGPK),                                   \
+      "RGPK", "fffB", "OX,OY,OZ,I", "---#", "----" }, \
     { LOG_RMGH_MSG, RLOG_SIZE(RMGH),                                   \
       "RMGH", "fBBBBBBB", "Dec,Avail,NumInst,AutoDec,NumEna,LOE,C,FUsable", "--------", "--------" },  \
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \
