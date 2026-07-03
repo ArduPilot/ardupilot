@@ -433,6 +433,12 @@ void rp2350_board_init(void)
 volatile uint32_t c1_xip_lock = 0U;
 volatile uint32_t c1_xip_lock_ready = 0U;
 
+/* Diagnostic: how often and how long Core1 is parked for a flash op (during
+ * which the rate loop on Core1 is frozen - a candidate for the glat jitter). */
+volatile uint32_t rp2350_xip_park_count = 0U;
+volatile uint32_t rp2350_xip_park_max_us = 0U;
+static uint32_t xip_park_start_us = 0U;
+
 void rpEflBeforeXipOff(void)
 {
     if (!c1_xip_lock_ready) {
@@ -449,12 +455,31 @@ void rpEflBeforeXipOff(void)
             break;  /* timeout — proceed; Core1 may not have responded */
         }
     }
+    xip_park_start_us = TIMER0->TIMERAWL;
 }
 
 void rpEflAfterXipOn(void)
 {
+    const uint32_t dur = TIMER0->TIMERAWL - xip_park_start_us;
+    rp2350_xip_park_count++;
+    if (dur > rp2350_xip_park_max_us) {
+        rp2350_xip_park_max_us = dur;
+    }
     c1_xip_lock = 0U;
     __DSB();
+}
+
+/* Read and reset the Core1 park diagnostics (called from perf_report). */
+void rp2350_xip_park_stats(uint32_t *count, uint32_t *max_us)
+{
+    if (count != NULL) {
+        *count = rp2350_xip_park_count;
+    }
+    if (max_us != NULL) {
+        *max_us = rp2350_xip_park_max_us;
+    }
+    rp2350_xip_park_count = 0U;
+    rp2350_xip_park_max_us = 0U;
 }
 #endif /* RP_CORE1_START */
 
