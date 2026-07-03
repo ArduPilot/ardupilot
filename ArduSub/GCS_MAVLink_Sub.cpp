@@ -501,6 +501,10 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_CHANGE_SPEED(const mavlink_command
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_MISSION_START(const mavlink_command_int_t &packet)
 {
+        if (command_addressed_to_other_component(packet)) {
+            // don't start the mission on a command addressed to another component
+            return MAV_RESULT_DENIED;
+        }
         if (sub.motors.armed() && sub.set_mode(Mode::Number::AUTO, ModeReason::GCS_COMMAND)) {
             return MAV_RESULT_ACCEPTED;
         }
@@ -509,6 +513,10 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_MISSION_START(const mavlink_command_i
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_DO_MOTOR_TEST(const mavlink_command_int_t &packet)
 {
+        if (command_addressed_to_other_component(packet)) {
+            // don't run a motor test on a command addressed to another component
+            return MAV_RESULT_DENIED;
+        }
         // param1 : motor sequence number (a number from 1 to max number of motors on the vehicle)
         // param2 : throttle type (0=throttle percentage, 1=PWM, 2=pilot throttle channel pass-through. See MOTOR_TEST_THROTTLE_TYPE enum)
         // param3 : throttle (range depends upon param2)

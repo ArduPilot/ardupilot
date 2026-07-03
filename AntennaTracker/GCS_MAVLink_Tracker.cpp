@@ -374,6 +374,10 @@ MAV_RESULT GCS_MAVLINK_Tracker::handle_command_int_packet(const mavlink_command_
 
         // mavproxy/mavutil sends this when auto command is entered 
     case MAV_CMD_MISSION_START:
+        if (command_addressed_to_other_component(packet)) {
+            // don't start the mission on a command addressed to another component
+            return MAV_RESULT_DENIED;
+        }
         tracker.set_mode(tracker.mode_auto, ModeReason::GCS_COMMAND);
         return MAV_RESULT_ACCEPTED;
 

@@ -15133,20 +15133,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # A command addressed to a specific component that is neither the
         # autopilot nor the broadcast component must be denied, not actioned
         # (see GCS_MAVLINK::command_addressed_to_other_component). Covers the
-        # shared base handlers plus Copter's SOLO_BTN and flight-termination
-        # overrides.
+        # shared base handlers plus the Copter arm / motor-test / takeoff /
+        # parachute / mission-start / Solo-button / flight-termination handlers.
+        # Params are chosen so that MAV_RESULT_DENIED can only come from the
+        # component-id guard, not from an unrelated pre-check in the handler
+        # (e.g. MISSION_START rejects p1!=0, NAV_TAKEOFF rejects a non
+        # GLOBAL_RELATIVE_ALT frame - so those would give DENIED even without
+        # the guard).
         self.wait_ready_to_arm()
-        for command in (
-                mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-                mavutil.mavlink.MAV_CMD_DO_SET_MODE,
-                mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
-                mavutil.mavlink.MAV_CMD_SOLO_BTN_FLY_HOLD,
-        ):
+        for command, kwargs in [
+                (mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, {"p1": 1}),
+                (mavutil.mavlink.MAV_CMD_DO_SET_MODE, {"p1": 1}),
+                (mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION, {"p1": 1}),
+                (mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST, {"p1": 1}),
+                (mavutil.mavlink.MAV_CMD_MISSION_START, {"p1": 0}),
+                (mavutil.mavlink.MAV_CMD_DO_PARACHUTE, {"p1": mavutil.mavlink.PARACHUTE_ENABLE}),
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, {"frame": mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT}),
+                (mavutil.mavlink.MAV_CMD_SOLO_BTN_FLY_HOLD, {}),
+                (mavutil.mavlink.MAV_CMD_SOLO_BTN_FLY_CLICK, {}),
+                (mavutil.mavlink.MAV_CMD_SOLO_BTN_PAUSE_CLICK, {}),
+        ]:
             self.run_cmd_int(
                 command,
-                p1=1,
                 target_compid=mavutil.mavlink.MAV_COMP_ID_GIMBAL,
                 want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+                **kwargs,
             )
         if self.armed():
             raise NotAchievedException("Armed by a command addressed to another component")
