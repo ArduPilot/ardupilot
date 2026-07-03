@@ -757,6 +757,10 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_CLICK(const mavlink_c
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_HOLD(const mavlink_command_int_t &packet)
 {
+        if (command_addressed_to_other_component(packet)) {
+            // don't arm the autopilot on a command addressed to another component
+            return MAV_RESULT_DENIED;
+        }
         if (copter.failsafe.radio) {
             return MAV_RESULT_ACCEPTED;
         }
@@ -1202,6 +1206,10 @@ void GCS_MAVLINK_Copter::handle_message(const mavlink_message_t &msg)
 }
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_flight_termination(const mavlink_command_int_t &packet) {
+    if (command_addressed_to_other_component(packet)) {
+        // don't terminate the flight on a command addressed to another component
+        return MAV_RESULT_DENIED;
+    }
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     if (GCS_MAVLINK::handle_flight_termination(packet) == MAV_RESULT_ACCEPTED) {
         return MAV_RESULT_ACCEPTED;
