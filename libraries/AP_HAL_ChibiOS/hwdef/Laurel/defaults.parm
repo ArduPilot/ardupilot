@@ -14,7 +14,10 @@
 #
 #   INS_FAST_SAMPLE=1: enables fast-sample window for the rate thread (required
 #     for AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW).
-SCHED_LOOP_RATE 400
+# Main loop at 200 Hz: the 1 kHz rate loop on core1 handles the fast attitude
+# path, so core0's main loop (nav, EKF inline, GCS, logging) needs only a modest
+# rate. Lower main rate = less core0 load = headroom to drop the CPU clock.
+SCHED_LOOP_RATE 200
 INS_FAST_SAMPLE 1
 INS_GYRO_RATE 0
 FSTRATE_DIV 1
@@ -64,7 +67,7 @@ SCHED_OPTIONS 1
 
 
 # 2 = ublox serial (GPS1_TYPE was GPS_TYPE in older ArduPilot)
-GPS1_TYPE 2
+#GPS1_TYPE 2
 # GPS_DRV_OPTIONS bit 2: cap ublox baud at 115200 instead of 230400.
 # Preferring 115200 for GPS as less overhead and more proven on this hardware.
 GPS_DRV_OPTIONS 4
