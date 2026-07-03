@@ -330,7 +330,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     gnd_speed_limit_ms = MAX(gnd_speed_limit_ms, LOITER_SPEED_MIN_MS);
 
     // Determine acceleration limit based on maximum allowed lean angle
-    float pilot_acceleration_max_mss = angle_rad_to_accel_mss(get_angle_max_rad());
+    float pilot_acceleration_max_mss = (gnd_speed_limit_ms / _speed_max_ne_ms) * angle_rad_to_accel_mss(get_angle_max_rad());
 
     // Check for invalid dt
     if (is_negative(dt_s)) {
