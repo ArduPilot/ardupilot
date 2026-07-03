@@ -141,6 +141,13 @@ private:
         uint32_t rc_frequency; // frequency in Hz
         uint32_t ch_mask; // mask of channels in this group
         enum output_mode current_mode; // output mode (none, normal, brushed)
+
+        // bidirectional DShot: precomputed at set_group_mode_dshot() so the rcout
+        // task doesn't recompute per frame. telem_bit_ticks = RMT ticks per reply
+        // bit (ESC replies at 5/4 the DShot rate); frame_us = time to let a 16-bit
+        // frame finish before the turnaround.
+        uint32_t telem_bit_ticks;
+        uint16_t frame_us;
     };
 
     struct pwm_chan {
@@ -165,7 +172,6 @@ private:
         // used to capture the ESC's eRPM reply after the TX->RX pad turnaround.
         // void* for the same header-isolation reason as rmt_chan. nullptr unless bidir.
         void *rmt_rx_chan;
-        uint16_t rx_nsymbols; // symbols captured in the last reply (0 = none); Phase 4 decodes them
 
         // Pending DShot special command (arm/beep/spin-direction/3D/save). While
         // dshot_command_repeat > 0 the rcout task transmits dshot_command (value

@@ -111,7 +111,7 @@ static_assert(NEEDED_GROUPS <= MAX_GROUPS, "not enough hardware PWM groups");
 
 // Bidirectional DShot: per-channel capture state for the ESC eRPM reply. The rcout
 // task processes channels sequentially, so a single RX capture is in flight at a
-// time, but each channel keeps its own buffer + last count for Phase-4 decoding.
+// time, but each channel keeps its own buffer + count so the decode reads a stable one.
 // A bidir GCR reply is ~21 transitions; 48 leaves margin (and matches the block size).
 #define BDSHOT_RX_SYMBOLS 48
 #define BDSHOT_INVALID_ERPM 0xffffU
@@ -127,6 +127,7 @@ static bool IRAM_ATTR bdshot_on_rx_done(rmt_channel_handle_t ch,
     const uint32_t c = (uint32_t)(uintptr_t)user;
     if (c < MAX_CHANNELS) {
         bdshot_rx_nsym[c] = ed->num_symbols;
+        __sync_synchronize(); // publish the count (and the driver-filled buffer) before the flag
         bdshot_rx_done[c] = true;
     }
     return false; // no higher-priority task woken
@@ -442,6 +443,14 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
     // a channel under it without the lock is a use-after-free (observed as a boot crash).
     WITH_SEMAPHORE(_dshot_sem);
 
+    // Bidirectional DShot reply timing, precomputed once so the rcout task doesn't
+    // recompute per frame: the ESC replies at 5/4 the DShot bitrate, and frame_us is
+    // how long to let a 16-bit frame finish before the TX->RX turnaround. Written
+    // under _dshot_sem: the task reads these group fields during the turnaround.
+    const uint32_t telem_rate = bitrate * 5 / 4;
+    group.telem_bit_ticks = (resolution_hz + telem_rate / 2) / telem_rate;
+    group.frame_us = (uint16_t)((16u * 1000000u) / bitrate + 5); // 16 bits + margin
+
     for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
         pwm_chan &ch = pwm_chan_list[chan];
         if (ch.group != &group) {
@@ -450,12 +459,7 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
 
         // idempotent: release any RMT resources from a previous mode change
         dshot_free_chan(ch);
-        ch.rmt_rx_chan = nullptr;
-        ch.rx_nsymbols = 0;
-        // NOTE: for bidirectional DShot the RX channel is created AFTER the TX channel
-        // (below), not before. HW-proven (2026-07-03): creating RX first lets the later
-        // TX-channel creation clobber the RX input routing on the shared pad → RX never
-        // captures. TX-then-RX keeps both working.
+        ch.rmt_rx_chan = nullptr; // bidir RX channel is created below, AFTER the TX channel
 
         rmt_tx_channel_config_t cfg = {};
         cfg.gpio_num = (gpio_num_t)ch.gpio_num;
@@ -487,15 +491,19 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         }
         ch.rmt_chan = rmt_chan; // stored as void* (see RCOutput.h)
 
-        // Bytes encoder: each frame bit -> one RMT symbol, high then low, in
-        // 12.5 ns ticks. Logical 1 is high for t1h_ticks (0.75 bit), logical 0
-        // for t0h_ticks (0.375 bit); the rest of the bit is held low. MSB first,
-        // matching the DShot wire order.
+        // Bytes encoder: each frame bit -> one RMT symbol, a pulse then the rest of
+        // the bit, in 12.5 ns ticks. Logical 1 pulses for t1h_ticks (0.75 bit),
+        // logical 0 for t0h_ticks (0.375 bit). MSB first (DShot wire order).
+        // Normal DShot idles LOW and pulses HIGH; BIDIRECTIONAL DShot inverts the
+        // line (idles HIGH, pulses LOW) — a real bidir ESC detects the mode by this
+        // inverted signalling — so the pulse/idle levels are flipped for bidir channels.
+        const uint8_t pulse_lvl = ch.bidir ? 0 : 1;
+        const uint8_t idle_lvl  = ch.bidir ? 1 : 0;
         rmt_bytes_encoder_config_t enc_cfg = {};
-        enc_cfg.bit0.duration0 = t0h_ticks;             enc_cfg.bit0.level0 = 1;
-        enc_cfg.bit0.duration1 = bit_ticks - t0h_ticks; enc_cfg.bit0.level1 = 0;
-        enc_cfg.bit1.duration0 = t1h_ticks;             enc_cfg.bit1.level0 = 1;
-        enc_cfg.bit1.duration1 = bit_ticks - t1h_ticks; enc_cfg.bit1.level1 = 0;
+        enc_cfg.bit0.duration0 = t0h_ticks;             enc_cfg.bit0.level0 = pulse_lvl;
+        enc_cfg.bit0.duration1 = bit_ticks - t0h_ticks; enc_cfg.bit0.level1 = idle_lvl;
+        enc_cfg.bit1.duration0 = t1h_ticks;             enc_cfg.bit1.level0 = pulse_lvl;
+        enc_cfg.bit1.duration1 = bit_ticks - t1h_ticks; enc_cfg.bit1.level1 = idle_lvl;
         enc_cfg.flags.msb_first = 1;
         rmt_encoder_handle_t enc = nullptr;
         err = rmt_new_bytes_encoder(&enc_cfg, &enc);
@@ -646,16 +654,9 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
 {
     rmt_channel_handle_t rx = (rmt_channel_handle_t)ch.rmt_rx_chan;
 
-    // let the frame finish on the wire (timed, not rmt_tx_wait_all_done): a 16-bit
-    // frame takes ~27us (DShot600) / ~53us (300) / ~107us (150), plus margin.
-    uint32_t frame_us;
-    switch (ch.group->current_mode) {
-    case MODE_PWM_DSHOT150: frame_us = 120; break;
-    case MODE_PWM_DSHOT300: frame_us = 60;  break;
-    case MODE_PWM_DSHOT600: frame_us = 32;  break;
-    default:                frame_us = 120; break;
-    }
-    esp_rom_delay_us(frame_us);
+    // let the frame finish on the wire (timed, not rmt_tx_wait_all_done — that
+    // deadlocks once the pad is released). frame_us is precomputed per mode.
+    esp_rom_delay_us(ch.group->frame_us);
 
     // RELEASE the pad (OE off); the pull-up idles it high and the ESC pulls low
     bdshot_pad_oe(ch.gpio_num, false);
@@ -666,26 +667,19 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
 
     bdshot_rx_done[chan] = false;
     if (rmt_receive(rx, bdshot_rx_buf[chan], sizeof(bdshot_rx_buf[chan]), &rxcfg) == ESP_OK) {
-        // the ESC replies ~30 us after the frame; bounded poll (~200 us max)
+        // The ESC replies ~30 us after the frame. Bounded busy-poll (~200 us max):
+        // the RMT RX completion is delivered by ISR, but at this sub-tick timescale a
+        // FreeRTOS block (1 ms tick) is far too coarse, so we spin briefly instead.
         for (int i = 0; i < 20 && !bdshot_rx_done[chan]; i++) {
             esp_rom_delay_us(10);
         }
         if (bdshot_rx_done[chan]) {
             // the RMT ISR (which fills bdshot_rx_buf) may run on a different core than
-            // this pinned task; barrier so we see the completed symbol buffer, not a
-            // partial one, after observing the done flag.
+            // this pinned task; barrier so we see the completed symbol buffer + count,
+            // not a partial one, after observing the done flag.
             __sync_synchronize();
-            ch.rx_nsymbols = bdshot_rx_nsym[chan];
-            // telemetry bit period: the ESC replies at 5/4 the DShot bitrate.
-            uint32_t telem_rate;
-            switch (ch.group->current_mode) {
-            case MODE_PWM_DSHOT150: telem_rate = 150000U * 5 / 4; break;
-            case MODE_PWM_DSHOT300: telem_rate = 300000U * 5 / 4; break;
-            case MODE_PWM_DSHOT600: telem_rate = 600000U * 5 / 4; break;
-            default:                telem_rate = 600000U * 5 / 4; break;
-            }
-            const uint32_t bit_ticks = (80000000U + telem_rate / 2) / telem_rate; // RMT ticks/bit
-            const uint32_t erpm = bdshot_decode_erpm(bdshot_rx_buf[chan], bdshot_rx_nsym[chan], bit_ticks);
+            const uint32_t nsym = bdshot_rx_nsym[chan];
+            const uint32_t erpm = bdshot_decode_erpm(bdshot_rx_buf[chan], nsym, ch.group->telem_bit_ticks);
             if (chan < 12) {
                 if (erpm == BDSHOT_INVALID_ERPM) {
                     _bdshot.erpm_errors[chan]++;
@@ -700,11 +694,13 @@ void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
                 }
             }
         } else {
-            // no reply in the window (disarmed ESC / none attached): abort the
-            // pending receive so the next frame re-arms cleanly, and count an error.
+            // No reply in the window (disarmed ESC / none attached). The receive is
+            // still pending, and rmt_receive() can't be re-armed while pending, so
+            // reset the channel with disable/enable. This runs every frame on an idle
+            // ESC (~1 kHz) but is the only way to re-arm; it's cheap and only on the
+            // no-telemetry path.
             rmt_disable(rx);
             rmt_enable(rx);
-            ch.rx_nsymbols = 0;
             if (chan < 12) {
                 _bdshot.erpm_errors[chan]++;
             }
@@ -975,14 +971,35 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
 
 /*
   enable bidirectional DShot on the given channel mask by mirroring it into each
-  channel's `bidir` flag; the DShot frame CRC is then inverted for those channels and
-  the rcout task performs the TX->RX pad turnaround to read the ESC's eRPM reply.
-  Gated upstream by SERVO_BLH_BDMASK via AP_BLHeli.
+  channel's `bidir` flag; the DShot frame is then inverted (CRC + waveform) for those
+  channels and the rcout task performs the TX->RX pad turnaround to read the ESC's eRPM
+  reply. Gated upstream by SERVO_BLH_BDMASK via AP_BLHeli.
+
+  The per-channel RX RMT channel and the inverted encoder are set up in
+  set_group_mode_dshot() based on ch.bidir. AP_BLHeli calls set_output_mode() (which
+  runs that) BEFORE this, so the mode was configured while ch.bidir was still false —
+  we must re-run the DShot setup for the affected groups so the RX channels and inverted
+  encoders actually get created. Called at boot, so this is not a live-reconfig hazard.
  */
 void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 {
+    bool changed = false;
     for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
-        pwm_chan_list[chan].bidir = (mask & (1U << chan)) != 0;
+        const bool b = (mask & (1U << chan)) != 0;
+        if (pwm_chan_list[chan].bidir != b) {
+            pwm_chan_list[chan].bidir = b;
+            changed = true;
+        }
+    }
+    if (!changed || !_initialized) {
+        return;
+    }
+    // re-apply DShot setup so bidir channels get their RX channel + inverted encoder
+    for (uint8_t g = 0; g < NEEDED_GROUPS; g++) {
+        pwm_group &group = pwm_group_list[g];
+        if (is_dshot_protocol(group.current_mode)) {
+            set_group_mode_dshot(group);
+        }
     }
 }
 
