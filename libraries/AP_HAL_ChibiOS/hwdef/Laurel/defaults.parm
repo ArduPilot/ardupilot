@@ -1,27 +1,26 @@
 # Laurel defaults tuned for the onboard ICM42688P sensor stack.
 #
-# IMU / rate-loop split — 1 kHz backend, 1 kHz rate thread on core1:
+# IMU / rate-loop split - 4 kHz gyro backend, 2 kHz rate thread on core1:
 #
-#   INS_GYRO_RATE=0  → get_fast_sampling_rate()=1, Invensensev3 SPI FIFO at
-#     1000 Hz backend rate.
+#   INS_GYRO_RATE=2 -> get_fast_sampling_rate()=4, Invensensev3 SPI FIFO at
+#     4000 Hz backend rate.
 #
-#   FSTRATE_ENABLE=1 (FAST_RATE_DYNAMIC): rate thread active, pinned to core1
-#     via ChibiOS SMP thread affinity.
+#   FSTRATE_ENABLE=2 (FAST_RATE_FIXED_ARMED): rate thread active and pinned to
+#     core1 via ChibiOS SMP affinity. The divisor is fixed to FSTRATE_DIV once
+#     armed; while disarmed it is scaled dynamically to avoid gyro-buffer overrun.
 #
-#   FSTRATE_DIV=1: rate thread runs at 1000 Hz / 1 = 1000 Hz. DO NOT CHANGE.
-#     Any value > 1 divides the rate thread frequency (DIV=3 gives 333 Hz).
-#     1 kHz on core1 is required. FSTRATE_DIV=1 is non-negotiable.
+#   FSTRATE_DIV=2: rate thread runs at 4000 Hz / 2 = 2000 Hz on core1.
 #
 #   INS_FAST_SAMPLE=1: enables fast-sample window for the rate thread (required
 #     for AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW).
-# Main loop at 200 Hz: the 1 kHz rate loop on core1 handles the fast attitude
+# Main loop at 200 Hz: the 2 kHz rate loop on core1 handles the fast attitude
 # path, so core0's main loop (nav, EKF inline, GCS, logging) needs only a modest
-# rate. Lower main rate = less core0 load = headroom to drop the CPU clock.
+# rate. This is the target baseline at the 225 MHz core clock.
 SCHED_LOOP_RATE 200
 INS_FAST_SAMPLE 1
-INS_GYRO_RATE 0
-FSTRATE_DIV 1
-FSTRATE_ENABLE 1
+INS_GYRO_RATE 2
+FSTRATE_DIV 2
+FSTRATE_ENABLE 2
 
 # Bit 0: watchdog. Bit 2: allow INTERNAL_USE_ONLY params via MAVLink (needed for
 # Mission Planner to write BARO_1_GND_PRESS and other calibration params).
