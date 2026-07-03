@@ -3526,7 +3526,7 @@ bool GCS_MAVLINK::command_addressed_to_other_component(const mavlink_command_int
 }
 
 /*
-  handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
+  handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command
 
   Optionally disable PX4IO overrides. This is done for quadplanes to
   prevent the mixer running while rebooting which can start the VTOL
@@ -3535,8 +3535,8 @@ bool GCS_MAVLINK::command_addressed_to_other_component(const mavlink_command_int
  */
 MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    if ((packet.target_component != MAV_COMP_ID_ALL) && (packet.target_component != mavlink_system.compid)) {
-        // Make sure reboot/shutdown commands sent to a component don't cause the autopilot to reboot.
+    if (command_addressed_to_other_component(packet)) {
+        // don't reboot/shutdown the autopilot on a command addressed to another component
         return MAV_RESULT_DENIED;
     }
 
@@ -3729,6 +3729,10 @@ void GCS_MAVLINK::deadlock_sem(void)
  */
 MAV_RESULT GCS_MAVLINK::handle_flight_termination(const mavlink_command_int_t &packet)
 {
+    if (command_addressed_to_other_component(packet)) {
+        // don't terminate the flight on a command addressed to another component
+        return MAV_RESULT_DENIED;
+    }
 #if AP_ADVANCEDFAILSAFE_ENABLED
     AP_AdvancedFailsafe *failsafe = AP::advancedfailsafe();
     if (failsafe == nullptr) {
@@ -4877,6 +4881,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_global_origin(const mavlink_comman
 #if AP_BOOTLOADER_FLASHING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_flash_bootloader(const mavlink_command_int_t &packet)
 {
+    if (command_addressed_to_other_component(packet)) {
+        // don't reflash the autopilot's bootloader on a command addressed to another component
+        return MAV_RESULT_DENIED;
+    }
     if (packet.x != 290876) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Magic not set");
         return MAV_RESULT_FAILED;
@@ -4999,6 +5007,10 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration(const mavlink_comm
 
 MAV_RESULT GCS_MAVLINK::handle_command_preflight_calibration(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
+    if (command_addressed_to_other_component(packet)) {
+        // don't calibrate the autopilot on a command addressed to another component
+        return MAV_RESULT_DENIED;
+    }
     if (hal.util->get_soft_armed()) {
         // *preflight*, remember?
         GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Disarm to allow calibration");
@@ -5122,6 +5134,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_autopilot_capabilities(const mavl
 
 MAV_RESULT GCS_MAVLINK::handle_command_do_set_mode(const mavlink_command_int_t &packet)
 {
+    if (command_addressed_to_other_component(packet)) {
+        // don't change the autopilot's mode on a command addressed to another component
+        return MAV_RESULT_DENIED;
+    }
     const uint8_t _base_mode = (uint8_t)packet.param1;
     const uint32_t _custom_mode = (uint32_t)packet.param2;
 
@@ -5270,8 +5286,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_mount(const mavlink_command_int_t &packet
 #if AP_ARMING_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_command_int_t &packet)
 {
-    if ((packet.target_component != MAV_COMP_ID_ALL) && (packet.target_component != mavlink_system.compid)) {
-        // Make sure an arm/disarm command addressed to a component doesn't arm or disarm the autopilot. Arming is vehicle-wide; there is no per-component arming.
+    if (command_addressed_to_other_component(packet)) {
+        // don't arm/disarm the autopilot on a command addressed to another component
         return MAV_RESULT_DENIED;
     }
     if (is_equal(packet.param1,1.0f)) {
@@ -5632,6 +5648,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_set_roi(const mavlink_command_int_t &p
 #if AP_FILESYSTEM_FORMAT_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
+    if (command_addressed_to_other_component(packet)) {
+        // don't format the autopilot's storage on a command addressed to another component
+        return MAV_RESULT_DENIED;
+    }
     if (!is_equal(packet.param1, 1.0f) ||
         !is_equal(packet.param2, 1.0f)) {
         return MAV_RESULT_UNSUPPORTED;
@@ -5650,6 +5670,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_storage_format(const mavlink_command_int_
 
 MAV_RESULT GCS_MAVLINK::handle_do_set_safety_switch_state(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
+    if (command_addressed_to_other_component(packet)) {
+        // don't change the autopilot's safety state on a command addressed to another component
+        return MAV_RESULT_DENIED;
+    }
     switch ((SAFETY_SWITCH_STATE)packet.param1) {
     case SAFETY_SWITCH_STATE_DANGEROUS:
         // turn safety off (pwm outputs flow to the motors)
@@ -5843,6 +5867,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_preflight_calibration(packet, msg);
 
     case MAV_CMD_PREFLIGHT_STORAGE:
+        if (command_addressed_to_other_component(packet)) {
+            // don't reset the autopilot's parameters on a command addressed to another component
+            return MAV_RESULT_DENIED;
+        }
         if (uint8_t(packet.param1) == PARAM_RESET_FACTORY_DEFAULT ||
             uint8_t(packet.param1) == PARAM_RESET_ALL_DEFAULT) {
             AP_Param::erase_all();
