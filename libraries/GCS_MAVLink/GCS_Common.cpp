@@ -3514,6 +3514,17 @@ void GCS_MAVLINK::send_vfr_hud()
 }
 #endif  // AP_AHRS_ENABLED
 
+// returns true if this command is addressed to a specific component other
+// than this autopilot (i.e. neither the broadcast component nor our own
+// component id). Autopilot-wide commands (arm/disarm, reboot, set-mode,
+// calibration, flight termination, etc) must not be actioned in that case,
+// as there is no per-component version of those actions.
+bool GCS_MAVLINK::command_addressed_to_other_component(const mavlink_command_int_t &packet) const
+{
+    return (packet.target_component != MAV_COMP_ID_ALL) &&
+           (packet.target_component != mavlink_system.compid);
+}
+
 /*
   handle a MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN command 
 

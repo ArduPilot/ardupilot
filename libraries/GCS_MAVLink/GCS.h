@@ -630,6 +630,14 @@ protected:
     void handle_set_gps_global_origin(const mavlink_message_t &msg);
 #endif  // AP_MAVLINK_SET_GPS_GLOBAL_ORIGIN_MESSAGE_ENABLED
     void handle_setup_signing(const mavlink_message_t &msg) const;
+
+    // returns true if the command is addressed to a specific component
+    // other than this autopilot (i.e. neither the broadcast component nor
+    // our own component id). Autopilot-wide commands (arm/disarm, reboot,
+    // set-mode, calibration, flight termination, etc) must not be actioned
+    // in that case, as there is no per-component version of those actions.
+    bool command_addressed_to_other_component(const mavlink_command_int_t &packet) const;
+
     virtual MAV_RESULT handle_preflight_reboot(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 #if AP_MAVLINK_FAILURE_CREATION_ENABLED
     struct {
