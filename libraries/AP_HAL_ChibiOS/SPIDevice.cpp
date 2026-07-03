@@ -213,6 +213,21 @@ void SPIDevice::set_slowdown(uint8_t slowdown)
 }
 
 /*
+  On a 1 MHz systick TIME_US2I() is the identity, but its generic form still
+  emits a 64-bit divide (__udivmoddi4) on every transfer. Skip it. This matters
+  most on RP2350 where that routine runs from flash and thrashes the shared XIP
+  cache from the core1 rate path.
+ */
+static inline sysinterval_t spidev_us_to_ticks(uint32_t us)
+{
+#if CH_CFG_ST_FREQUENCY == 1000000U
+    return (sysinterval_t)us;
+#else
+    return TIME_US2I(us);
+#endif
+}
+
+/*
   low level transfer function
  */
 bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
@@ -253,9 +268,9 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     const uint32_t timeout_us = 20000U + len * 32U;
 #if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
     // ChibiOS SPIv2 uses sync_transfer instead of thread
-    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, TIME_US2I(timeout_us));
+    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, spidev_us_to_ticks(timeout_us));
 #else
-    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
+    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
 #endif
     osalSysUnlock();
     if (msg == MSG_TIMEOUT) {
@@ -287,9 +302,9 @@ bool SPIDevice::clock_pulse(uint32_t n)
         osalSysLock();
         spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
 #if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, TIME_US2I(timeout_us));
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, spidev_us_to_ticks(timeout_us));
 #else
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
 #endif
         osalSysUnlock();
         if (msg == MSG_TIMEOUT) {
@@ -306,9 +321,9 @@ bool SPIDevice::clock_pulse(uint32_t n)
         osalSysLock();
         spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
 #if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, TIME_US2I(timeout_us));
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, spidev_us_to_ticks(timeout_us));
 #else
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
 #endif
         osalSysUnlock();
         if (msg == MSG_TIMEOUT) {
