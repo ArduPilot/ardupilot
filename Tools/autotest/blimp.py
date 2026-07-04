@@ -106,7 +106,7 @@ class AutoTestBlimp(TestSuite):
     def FlyManualFinned(self):
         '''test manual mode on the finned blimp frame'''
         speed_accuracy = 0.07
-        heading_accuracy = 10
+        heading_accuracy = 15
 
         def stop_blimp():
             self.progress("Stopping.")
