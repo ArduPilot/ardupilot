@@ -84,9 +84,46 @@ emits the divide. It appears on the hot path via the per-transfer SPI timeout
 
 The relocation decisions were driven by an on-chip PC sampler; see
 `xip-cache-and-pgo.md` and the `PROFc1` STATUSTEXT lines
-(`AP_RP2350_PC_SAMPLER_ENABLED`, investigation-only).
+(`AP_RP2350_PC_SAMPLER_ENABLED`, investigation-only). Core0 has its own readout at
+`@SYS/pcprof0.txt` (core1 is `pcprof.txt`); `Tools/debug/rp2350_pc_profiler.py
+--histogram` attributes either and labels the report by core.
+
+## Core0 is compute-bound
+
+Unlike core1, core0 does not benefit from relocation, and this was measured, not
+assumed. Core0 runs the 200 Hz main loop plus the inline EKF from XIP flash at a
+high cache hit rate (87-99%, varying with bench USB traffic), ~65% load / ~35%
+idle, spread over a broad flat instruction footprint - there is no hot kernel to
+move, and the sampler drops ~42% of samples to hash saturation precisely because
+the footprint is so wide. At these clocks a cache-served flash fetch costs about
+the same as an SRAM fetch, so pulling code out of flash only saves the miss
+fraction.
+
+Three relocations were tried and reverted:
+
+- Hot libm `sin`/`cos`/`fmod` chains into Scratch X (SRAM8, core0's zero-contention
+  I-code bus): they left the flash hot list but core0 load did not change. Not
+  worth 1.1 KB of a 4 KB core0-critical bank.
+- `constrain_value_line<float>` back to flash: it looked core1-cold by sample
+  count but is on the rate path - it became a three-cache-line flash hotspot,
+  taking core1 from 0 to 3% flash time and `glat` from 190 to 204 us. A function
+  that is fast in SRAM shows few samples, so sample count understates how much the
+  rate thread depends on it staying fast; flash execution reveals the real call
+  frequency through miss latency. See the note in `rp2350_ramfunc2_registry.txt`.
+- `AP::ahrs` back to flash: genuinely core1-cold, but no measurable core0 gain.
+
+The remaining core0 levers are production-only (dropping
+`HAL_ENABLE_THREAD_STATISTICS` saves ~1.5%/core but also disables the
+`coreNload%` telemetry, which reads the idle thread's `.stats.cumulative`) or
+bench-only (USB `Vector78`/`sduSOFHookI`, absent in flight).
 
 ## Open items
+
+- Flight validation: the numbers above are bench-only (disarmed).
+- `glat` average ~190 us is higher than the ~19 us seen at an earlier 375 MHz /
+  1 kHz-rate config. That gap is the clock plus the 4 kHz/2 kHz rates, not flash or
+  core0 code placement (both were ruled out above); a live-param sweep of
+  `FSTRATE_DIV` / `INS_GYRO_RATE` would isolate it.
 
 - Flight validation: the numbers above are bench-only (disarmed).
 - `glat` average ~190 us is higher than the ~19 us seen at an earlier 375 MHz /
