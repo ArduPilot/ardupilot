@@ -232,7 +232,8 @@ public:
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
         float temperature_C;            // externally-supplied temperature, e.g. from AP_TemperatureSensor (TEMPx_SRC=Rangefinder)
-        bool temperature_valid;         // true if temperature_C has been set by an external source
+        bool temperature_valid;         // true if a valid temperature has been set by an external source
+        uint32_t temperature_update_ms; // system time of last external temperature update
 #endif
 
         const struct AP_Param::GroupInfo *var_info;
