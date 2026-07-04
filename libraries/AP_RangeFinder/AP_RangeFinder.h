@@ -231,7 +231,7 @@ public:
         uint32_t last_reading_ms;       // system time of last successful update from sensor
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
-        float temperature_C;            // externally-supplied temperature, e.g. from AP_TemperatureSensor (TEMPx_SRC=Rangefinder)
+        float temperature_C;            // externally-supplied fluid temperature (e.g. air, water) for speed-of-sound compensation, not the rangefinder sensors own temperature, e.g. from AP_TemperatureSensor (TEMPx_SRC=Rangefinder)
         bool temperature_valid;         // true if a valid temperature has been set by an external source
         uint32_t temperature_update_ms; // system time of last external temperature update
 #endif
