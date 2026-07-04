@@ -865,6 +865,7 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
     return backend->get_temp(temp);
 }
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
 // set an externally-measured temperature (C) for a rangefinder instance.
 // used by AP_TemperatureSensor when TEMPx_SRC is set to Rangefinder.
 void RangeFinder::set_temperature_C(uint8_t instance, float temperature_C)
@@ -875,6 +876,7 @@ void RangeFinder::set_temperature_C(uint8_t instance, float temperature_C)
     state[instance].temperature_C = temperature_C;
     state[instance].temperature_valid = true;
 }
+#endif
 
 #if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
