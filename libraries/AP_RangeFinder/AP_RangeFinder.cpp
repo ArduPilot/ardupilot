@@ -897,6 +897,12 @@ void RangeFinder::Log_RFND() const
             continue;
         }
 
+        float temperature = logger.quiet_nanf();
+#if AP_TEMPERATURE_SENSOR_ENABLED
+        if (state[i].temperature_valid) {
+            temperature = state[i].temperature_C;
+        }
+#endif
         const struct log_RFND pkt = {
                 LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
                 time_us      : AP_HAL::micros64(),
@@ -905,6 +911,7 @@ void RangeFinder::Log_RFND() const
                 status       : (uint8_t)s->status(),
                 orient       : s->orientation(),
                 quality      : s->signal_quality_pct(),
+                temperature  : temperature,
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
