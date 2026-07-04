@@ -1008,6 +1008,7 @@ struct PACKED log_VER {
 // @Field: Orient: Sensor orientation
 // @FieldValueEnum: Orient: Rotation
 // @Field: Quality: Signal quality. -1 means invalid, 0 is no signal, 100 is perfect signal
+// @Field: Temp: Temperature reported by external source
 
 // @LoggerMessage: RSSI
 // @Description: Received Signal Strength Indicator for RC receiver
