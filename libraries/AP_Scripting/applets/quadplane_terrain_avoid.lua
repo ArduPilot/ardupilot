@@ -35,7 +35,7 @@ CMTC can be disabled by setting TA_CMTC_ENABLE = 0. The loiter radius will be TA
 
 SCRIPT_NAME = "Terrain Avoid"
 SCRIPT_NAME_SHORT = "TerrAvoid"
-SCRIPT_VERSION = "4.6.0-023"
+SCRIPT_VERSION = "4.7.0-024"
 
 STARTUP_DELAY = 25  -- wait this many seconds for the FC to come up before starting the script
 
@@ -250,46 +250,6 @@ THROTTLE_HOVER_PWM = (THROTTLE_CHANNEL_MAX - THROTTLE_CHANNEL_MIN) * 0.5 + THROT
 PITCH_TOLERANCE = 1.1
 QUAD_TOLERANCE = 1.5
 
-local vehicle_mode = vehicle:get_mode()
-
-local current_location = ahrs:get_location()
-local current_wp_bearing_deg = 0.0
-local previous_location
-local current_altitude_m = 0.0
-local current_location_target
-local current_heading_deg = -1
-local new_location_target
-local terrain_altitude = terrain:height_above_terrain(true)
-local terrain_max_exceeded = false
-local groundspeed_vector = ahrs:groundspeed_vector()
-local groundspeed_current = groundspeed_vector:length()
-local airspeed_current = ahrs:airspeed_EAS()
-local airspeed_desired = airspeed_current
-
-local now_ms = millis()
-local old_now_ms = now_ms
-
-local pitch_last_good_timestamp_ms = now_ms
-local pitch_last_bad_timestamp_ms = now_ms
-local pitch_bad_timer = -10
-
-local slowdown_quading = false
-
-local q_wvane_enable_save = Q_WVANE_ENABLE:get()
-local avoid_enter_mode = -1
-
--- function forward declarations
-local avoid_terrain
-local terrain_approaching
-local pitch_obstacle_detected
-local pitch_obstacle_down
-local pitch_obstacle_forward
-local quading
-
-local mavlink = require("mavlink_wrappers")
-
-local location_tracker  -- forward declaration. See below for definition and instantiation.
-
 -------------------------------------------------
 -- deal with deprecations in 4.7
 -------------------------------------------------
@@ -333,6 +293,56 @@ function Get_Pitch_Deg()
     return math.deg(Get_Pitch_Function(ahrs))
 end
 
+-- airspeed_estimate changed to airspeed_EAS() in 4.7
+Get_Airspeed_Function = ahrs.airspeed_EAS
+if Get_Airspeed_Function == nil then
+    ---@diagnostic disable-next-line:deprecated
+    Get_Airspeed_Function = ahrs.airspeed_estimate
+end
+
+-------------------------------------------------
+-- variable declarations
+-------------------------------------------------
+
+local vehicle_mode = vehicle:get_mode()
+
+local current_location = ahrs:get_location()
+local current_wp_bearing_deg = 0.0
+local previous_location
+local current_altitude_m = 0.0
+local current_location_target
+local current_heading_deg = -1
+local new_location_target
+local terrain_altitude = terrain:height_above_terrain(true)
+local terrain_max_exceeded = false
+local groundspeed_vector = ahrs:groundspeed_vector()
+local groundspeed_current = groundspeed_vector:length()
+local airspeed_current = Get_Airspeed_Function(ahrs)
+local airspeed_desired = airspeed_current
+
+local now_ms = millis()
+local old_now_ms = now_ms
+
+local pitch_last_good_timestamp_ms = now_ms
+local pitch_last_bad_timestamp_ms = now_ms
+local pitch_bad_timer = -10
+
+local slowdown_quading = false
+
+local q_wvane_enable_save = Q_WVANE_ENABLE:get()
+local avoid_enter_mode = -1
+
+-- function forward declarations
+local avoid_terrain
+local terrain_approaching
+local pitch_obstacle_detected
+local pitch_obstacle_down
+local pitch_obstacle_forward
+local quading
+
+local mavlink = require("mavlink_wrappers")
+
+local location_tracker  -- forward declaration. See below for definition and instantiation.
 
 -- constrain a value between limits
 local function constrain(v, vmin, vmax)
@@ -1223,7 +1233,7 @@ function Update()
     current_heading_deg = math.deg(Get_Yaw_Function(ahrs) or 0)
     groundspeed_vector = ahrs:groundspeed_vector()
     groundspeed_current = groundspeed_vector:length()
-    airspeed_current = ahrs:airspeed_EAS()
+    airspeed_current = Get_Airspeed_Function(ahrs)
 
     -- save the previous target location only if in auto mode, if restoring it in AUTO mode
     -- don't update it if already pitching or quading because the altitude change will mess up the history
