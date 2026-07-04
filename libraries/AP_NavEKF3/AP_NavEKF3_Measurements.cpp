@@ -1051,7 +1051,12 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     } else {
         return;
     }
-    yawAngDataNew.time_ms = timeStamp_ms;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer. Without
+    // this a configured delay larger than the fusion time horizon leaves every
+    // measurement outside the recall window and the yaw source silently stops
+    // fusing. The raw timestamp is still used for new-measurement detection and
+    // rate limiting via yawMeasTime_ms
+    yawAngDataNew.time_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
 
     storedYawAng.push(yawAngDataNew);
 
