@@ -1,21 +1,31 @@
 # RP2350 Scratch Y registry — SRAM9 (0x20081000, 4 KB), core1 dedicated I-CODE bus.
 # Functions here get single-cycle instruction fetch on core1 with zero bus-fabric contention.
-# Rule: core1-only hot paths (rate controller thread at 1 kHz + notch filter chain).
-# Budget: 4096 B total.  Current usage: ~2048 B.
+# Rule: core1-EXCLUSIVE hot paths only. If core0 also executes a function parked here it
+# reaches SRAM9 over the bus fabric and contends with core1's dedicated I-CODE fetch.
+# Budget: 3840 B (first 256 B of SRAM9 reserved for c1_vtable, see common_rp2350_smp.ld).
 #
 # IMPORTANT: functions listed here must NOT also appear in rp2350_ramfunc2_registry.txt.
 # The linker claims .text sections first-come-first-served; duplicates would be silently dropped.
 #
-# Rate controller PID (core1, 1 kHz — called 3x per tick for roll/pitch/yaw):
-#libraries/AC_PID/AC_PID.cpp|AC_PID::update_all
-# Rate controller entry point (core1, 1 kHz):
-#libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run_dt
-# NOTE: HarmonicNotchFilter::update is called from core0 (update_dynamic_notch_at_ in scheduler),
-# and HarmonicNotchFilter::apply / NotchFilter::apply are called from AP_InertialSensor::update on
-# core0 as well as the rate thread on core1.  Placing these in SRAM9 creates AHB bus contention
-# (core0 accessing SRAM9 via bus fabric while core1 fetches from SRAM9 via dedicated I-CODE).
-# Keep them in flash (XIP cache) where both cores benefit from the shared 16 KB I-cache.
+# Rate controller fast half (core1 only): the rate thread runs rate_controller_run_dt at the
+# gyro/rate rate, which calls AC_PID::update_all 3x per tick (roll/pitch/yaw). AC_PID (scalar) is
+# used ONLY by the rate controllers - position control uses AC_PID_2D/AC_P_2D/AC_PID_Basic/AC_P_1D,
+# so update_all/update_i/get_ff never run on core0.
+libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run_dt
+libraries/AC_PID/AC_PID.cpp|AC_PID::update_all
+libraries/AC_PID/AC_PID.cpp|AC_PID::update_i
+libraries/AC_PID/AC_PID.cpp|AC_PID::get_ff
 #
-# Gyro sample fetch (core1, 1 kHz — feeds rate controller):
-#libraries/AP_InertialSensor/FastRateBuffer.cpp|FastRateBuffer::get_next_gyro_sample
-#libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor::get_next_gyro_sample
+# Gyro filter fast half (core1 only): apply_gyro_filters runs the harmonic notch and gyro LPF per
+# sample, called from AP_InertialSensor_Invensensev3::read_fifo on the SPI0 device-bus thread,
+# pinned to core1 (HAL_CORE_SPI0=1). The Vector3 notch apply is reached only through this path.
+# Only exercised when INS_HNTCH is configured. HarmonicNotchFilter::update (coeff recalc) stays in
+# RAMFUNC2 - it is the slow half and is also reachable from the core0 AP_Vehicle path.
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::apply_gyro_filters
+libraries/Filter/NotchFilter.h|NotchFilter<Vector3<float>>::apply
+libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::apply
+#
+# NOT the motor mixing. AP_MotorsMatrix output_armed_stabilizing/output_to_motors/
+# check_for_failed_motor are core1-only and the biggest core1 consumer (~2.1% armed), but moving
+# them here showed no improvement - they are data-heavy mixing math (thrust factors, per-motor
+# loops), not fetch-bound, so the dedicated I-code bus does nothing. They stay in RAMFUNC2.
