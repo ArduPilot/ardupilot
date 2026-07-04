@@ -367,9 +367,6 @@ AP_HW_CBU_H753-SOM                   1302
 
 AP_HW_KHA_ETH                        1315
 
-# IDs 1330-1339 reserved for Nyxtronics
-AP_HW_NYXTRONICS_NYX405V1            1330
-
 AP_HW_FlysparkF4                     1361
 
 # IDs 1362-1369 reserved for SparkNavi
@@ -586,6 +583,9 @@ AP_HW_PixSurveyA2-IND                6104
 
 # IDs 6110 - 6119 for S-vehicle
 AP_HW_SVehicle-E2                    6110
+
+# IDs 6200-6209 reserved for novaX
+AP_HW_novaX-AF-H7_nano               6200
 
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
