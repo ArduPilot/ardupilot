@@ -239,6 +239,10 @@ __INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
         state[i].range_valid_count = 0;
         // initialize signal_quality_pct for drivers that don't handle it.
         state[i].signal_quality_pct = SIGNAL_QUALITY_UNKNOWN;
+#if AP_TEMPERATURE_SENSOR_ENABLED
+        state[i].temperature_valid = false;
+        state[i].temperature_update_ms = 0;
+#endif
     }
 }
 
@@ -875,6 +879,7 @@ void RangeFinder::set_temperature_C(uint8_t instance, float temperature_C)
     }
     state[instance].temperature_C = temperature_C;
     state[instance].temperature_valid = true;
+    state[instance].temperature_update_ms = AP_HAL::millis();
 }
 #endif
 
@@ -899,7 +904,7 @@ void RangeFinder::Log_RFND() const
 
         float temperature = logger.quiet_nanf();
 #if AP_TEMPERATURE_SENSOR_ENABLED
-        if (state[i].temperature_valid) {
+        if (state[i].temperature_valid && (AP_HAL::millis() - state[i].temperature_update_ms < 5000U)) {
             temperature = state[i].temperature_C;
         }
 #endif
