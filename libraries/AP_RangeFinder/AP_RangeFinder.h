@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
+#include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 
 // Maximum number of range finder instances available on this platform
 #ifndef RANGEFINDER_MAX_INSTANCES 
@@ -229,8 +230,10 @@ public:
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
         uint32_t last_reading_ms;       // system time of last successful update from sensor
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
         float temperature_C;            // externally-supplied temperature, e.g. from AP_TemperatureSensor (TEMPx_SRC=Rangefinder)
         bool temperature_valid;         // true if temperature_C has been set by an external source
+#endif
 
         const struct AP_Param::GroupInfo *var_info;
     };
@@ -320,11 +323,13 @@ public:
     // get temperature reading in C.  returns true on success and populates temp argument
     bool get_temp(enum Rotation orientation, float &temp) const;
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
     // set an externally-measured temperature (C) for a rangefinder instance.
     // used by AP_TemperatureSensor when TEMPx_SRC is set to Rangefinder, for
     // sensors (e.g. ultrasonic) whose readings can benefit from external
     // temperature compensation but which have no onboard temperature sensor.
     void set_temperature_C(uint8_t instance, float temperature_C);
+#endif
 
     /*
       set an externally estimated terrain height. Used to enable power
