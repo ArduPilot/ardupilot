@@ -246,6 +246,9 @@ modules/ChibiOS/os/rt/include/chsys.h|chSysUnlock
 (profiled)|memcpy
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|dmaChannelAllocI
 (profiled)|DigitalLPF<float>::_apply
+# constrain_value_line<float>: keep in SRAM. It looks core1-cold by sample count
+# (few samples because it is fast in SRAM), but un-relocating it turned it into a
+# 3-cache-line flash hotspot on the core1 rate path (F=3%, glat 190->204us).
 (profiled)|float constrain_value_line<float>
 (profiled)|ChibiOS::Semaphore::give
 (profiled)|get_main_thread
