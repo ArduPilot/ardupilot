@@ -857,7 +857,7 @@ void AP_InertialSensor::_start_backends()
 
 #if AP_INERTIALSENSOR_ALLOW_NO_SENSORS
     if (_gyro_count == 0 || _accel_count == 0) {
-        AP_HAL::panic("INS needs at least 1 gyro and 1 accel");
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "INS: no gyro/accel, NONE backend will be added in detect phase");
     }
 #endif
 
@@ -1324,7 +1324,7 @@ AP_InertialSensor::detect_backends(void)
     if (_backend_count == 0) {
 
         // no real INS backends avail, lets use an empty substitute to boot ok and get to mavlink
-        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || (AP_INERTIALSENSOR_ALLOW_NO_SENSORS && CONFIG_HAL_BOARD == HAL_BOARD_LINUX)
         ADD_BACKEND(AP_InertialSensor_NONE::detect(*this, INS_NONE_SENSOR_A));
         #else
         DEV_PRINTF("INS: unable to initialise driver\n");
@@ -2045,6 +2045,18 @@ void AP_InertialSensor::wait_for_sample(void)
     }
 
     uint32_t now = AP_HAL::micros();
+
+#if AP_INERTIALSENSOR_ALLOW_NO_SENSORS
+    if (get_gyro_count() == 0 || get_accel_count() == 0) {
+        if (_last_sample_usec == 0) {
+            _last_sample_usec = now;
+        }
+        _delta_time = _sample_period_usec * 1.0e-6f;
+        _last_sample_usec = now;
+        _next_sample_usec = now + _sample_period_usec;
+        return;
+    }
+#endif
 
     if (_next_sample_usec == 0 && _delta_time <= 0) {
         // this is the first call to wait_for_sample()

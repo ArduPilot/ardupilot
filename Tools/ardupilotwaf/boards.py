@@ -1466,7 +1466,7 @@ class navio(linux):
         )
 
 class navio2(linux):
-    toolchain = 'arm-linux-gnueabihf'
+    toolchain = 'native'
 
     def configure_env(self, cfg, env):
         super(navio2, self).configure_env(cfg, env)

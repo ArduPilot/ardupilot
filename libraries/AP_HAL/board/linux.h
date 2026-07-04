@@ -421,3 +421,4 @@
 #else
 #define HAL_LINUX_USE_VIRTUAL_CAN 0
 #endif
+#define HAL_BARO_MS5611_I2C_BUS 1

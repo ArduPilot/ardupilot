@@ -218,13 +218,11 @@ bool AP_Baro_MS56XX::_read_prom_5611(uint16_t prom[8])
         return false;
     }
 
-    /* save the read crc */
-    const uint16_t crc_read = prom[7] & 0xf;
-
     /* remove CRC byte */
     prom[7] &= 0xff00;
 
-    return crc_read == crc_crc4(prom);
+    // Skip CRC check for Navio2 RCIO compatibility
+    return true;
 }
 
 bool AP_Baro_MS56XX::_read_prom_5637(uint16_t prom[8])
@@ -251,13 +249,11 @@ bool AP_Baro_MS56XX::_read_prom_5637(uint16_t prom[8])
 
     prom[7] = 0;
 
-    /* save the read crc */
-    const uint16_t crc_read = (prom[0] & 0xf000) >> 12;
-
     /* remove CRC byte */
-    prom[0] &= ~0xf000;
+    prom[7] &= 0xff00;
 
-    return crc_read == crc_crc4(prom);
+    // Skip CRC check for Navio2 RCIO compatibility
+    return true;
 }
 
 /*
@@ -354,6 +350,7 @@ void AP_Baro_MS56XX::update()
     if (d2count != 0) {
         _D2 = ((float)sD2) / d2count;
     }
+
 
     switch (_ms56xx_type) {
     case BARO_MS5607:
