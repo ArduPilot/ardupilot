@@ -22,6 +22,11 @@ INS_GYRO_RATE 2
 FSTRATE_DIV 2
 FSTRATE_ENABLE 2
 
+INS_HNTCH_ENABLE 1
+INS_HNTCH_REF 0.2
+INS_HNTCH_MODE 0
+INS_HNTCH_OPTS 2
+
 # Bit 0: watchdog. Bit 2: allow INTERNAL_USE_ONLY params via MAVLink (needed for
 # Mission Planner to write BARO_1_GND_PRESS and other calibration params).
 BRD_OPTIONS 5 @READONLY

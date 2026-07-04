@@ -181,8 +181,11 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
 
     /* RP2350 Scratch Y — SRAM9 (0x20081000, 4 KB), wired to core1's dedicated I-CODE bus.
        Functions here get single-cycle instruction fetch on core1 with zero bus-fabric contention.
-       MUST appear before .text_rest so the section can claim .text.* before the flash sweep. */
-    .ram5_init : ALIGN(4)
+       MUST appear before .text_rest so the section can claim .text.* before the flash sweep.
+       c1_main.c writes c1_vtable to SRAM9 base (0x20081000) at runtime but it is not a linker
+       section, so reserve the first 256 B: the explicit VMA starts code at 0x20081100 and keeps
+       LOADADDR/__ram5_init__ aligned so the crt copy never touches the vtable. */
+    .ram5_init 0x20081100 : ALIGN(4)
     {
         __ram5_init_text__ = LOADADDR(.ram5_init);
         __ram5_init__ = .;
@@ -191,7 +194,7 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
         __ram5_clear__ = .;
         __ram5_noinit__ = .;
     } > ram5 AT > flash
-    ASSERT(SIZEOF(.ram5_init) <= 4096,
+    ASSERT(SIZEOF(.ram5_init) <= 4096 - 256,
            "Scratch Y (SRAM9) overflow: reduce rp2350_scratchy_registry.txt entries")
 
     .text_rest : ALIGN(4) SUBALIGN(4)

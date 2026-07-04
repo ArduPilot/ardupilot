@@ -60,11 +60,15 @@ generate_ld_from_registry() {
     local header="$3"
 
     local symbols_txt="$tmpdir/syms_$(basename "$registry").txt"
+    local archives_txt="$tmpdir/arch_$(basename "$registry").txt"
 
     awk -F'|' '
         /^[[:space:]]*#/ { next }
         /^[[:space:]]*$/ { next }
         NF >= 2 {
+            p=$1
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", p)
+            if (p == "(archive)") { next }
             s=$2
             gsub(/#.*/, "", s)
             gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
@@ -72,11 +76,29 @@ generate_ld_from_registry() {
         }
     ' "$registry" | sort -u > "$symbols_txt"
 
+    # Archive-member entries pick a whole object out of a prebuilt library.
+    # Toolchain libraries such as newlib are not compiled with
+    # -ffunction-sections, so they have one .text per object and there is no
+    # per-function section to select by name.
+    awk -F'|' '
+        /^[[:space:]]*#/ { next }
+        /^[[:space:]]*$/ { next }
+        NF >= 2 {
+            p=$1
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", p)
+            if (p != "(archive)") { next }
+            s=$2
+            gsub(/#.*/, "", s)
+            gsub(/^[[:space:]]+|[[:space:]]+$/, "", s)
+            if (s != "") print s
+        }
+    ' "$registry" | sort -u > "$archives_txt"
+
     {
         echo "/* auto-generated from $(basename "$registry"); do not edit */"
         while IFS= read -r wanted; do
             norm_wanted="$(printf '%s' "$wanted" | sed 's/[[:space:]]//g')"
-            awk -F'|' -v want="$norm_wanted" '
+            picks="$(awk -F'|' -v want="$norm_wanted" '
                 $1 == want {
                     raw=$2
                     print "        *(.text." raw ")"
@@ -85,8 +107,19 @@ generate_ld_from_registry() {
                     print "        *(.text.unlikely." raw ")"
                     print "        *(.gnu.linkonce.t." raw ")"
                 }
-            ' "$map_txt"
+            ' "$map_txt")"
+            if [[ -z "$picks" ]]; then
+                # Silent misses are a trap: the build succeeds, the binary is
+                # unchanged, and the entry looks like it took effect.
+                echo "rp2350_ramfunc2_sections: $(basename "$registry"): no symbol match for '$wanted'" >&2
+                continue
+            fi
+            printf '%s\n' "$picks"
         done < "$symbols_txt"
+        while IFS= read -r member; do
+            [[ -n "$member" ]] || continue
+            printf '        *%s(.text .text.*)\n' "$member"
+        done < "$archives_txt"
     } | awk '!seen[$0]++' > "$out_ld"
 }
 

@@ -27,7 +27,9 @@ libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::drift_correction
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_micros64  # 84 B (sram)
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_micros32
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis64  # 84 B (sram)
-libraries/AP_HAL_ChibiOS/xip_profiler.cpp|ap_xip_cs_hook
+# ap_xip_cs_hook only exists when AP_XIP_PROFILER_ENABLED is defined in the
+# board hwdef. Re-enable this line alongside that define.
+#libraries/AP_HAL_ChibiOS/xip_profiler.cpp|ap_xip_cs_hook
 libraries/AP_HAL_ChibiOS/system.cpp|fault_capture  # 108 B (sram)
 libraries/AP_HAL_ChibiOS/system.cpp|HardFault_Handler  # 20 B (sram)
 libraries/AP_HAL_ChibiOS/system.cpp|BusFault_Handler  # 20 B (sram)
@@ -42,17 +44,14 @@ libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Back
 # via SMP XIP cache corruption. tanf slow-path still hits flash but only when cutoff actually changes.
 libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<Vector3<float>>::set_cutoff_frequency  # 164 B (sram)
 libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<float>::set_cutoff_frequency  # 164 B (sram)
-# apply_gyro_filters: called per-gyro-sample (1 kHz) from SPI thread; calls HarmonicNotchFilter::apply chain
-# Moving to SRAM eliminates 260+94+308+108 = 770 B of per-sample XIP pressure from core0 SPI thread.
-libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::apply_gyro_filters  # 260 B (sram)
-# NotchFilter<Vector3f>::apply (308 B) + NotchFilter<float>::apply (108 B): the inner biquad compute loop.
-# Called at 1 kHz by apply_gyro_filters on core0, and indirectly by HarmonicNotchFilter::apply.
-# NotchFilter and HarmonicNotchFilter apply/update: called from BOTH cores (core0 SPI thread and
-# core1 rate thread), so keeping in main SRAM (RAMFUNC2) where both cores get shared fast access.
-# Scratch Y caused cross-core contention on SRAM9's AHB port.
-libraries/Filter/NotchFilter.h|NotchFilter<Vector3<float>>::apply  # 308 B (sram)
+# The gyro-notch apply chain (apply_gyro_filters + NotchFilter<Vector3>::apply +
+# HarmonicNotchFilter<Vector3>::apply) moved to Scratch Y - it runs per gyro sample only on core1
+# (IMU SPI0 device-bus thread, HAL_CORE_SPI0=1). See rp2350_scratchy_registry.txt.
+# NotchFilter<float>::apply (PID target/error notch) stays here pending a check of whether the
+# core0 position-control PIDs use it; keep it in shared SRAM until then.
 libraries/Filter/NotchFilter.h|NotchFilter<float>::apply  # 108 B (sram)
-libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::apply  # 94 B (sram)
+# HarmonicNotchFilter::update (coeff recalc, 100-500 Hz) stays: the slow half, reachable from the
+# core0 AP_Vehicle path as well as the core1 rate thread. The per-sample apply is the win.
 libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::update  # 352 B (sram)
 # update_dynamic_notch (252 B) + update_throttle_notch (204 B): called at 500 Hz from rate thread core1.
 # Previously in FLASH — both cores share the 16 KB XIP cache, causing cache evictions to stall core1.
@@ -105,15 +104,15 @@ modules/ChibiOS/os/hal/lib/streams/chprintf.c|chvprintf
 modules/ChibiOS/os/hal/lib/streams/chprintf.c|chprintf
 libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_gain_boost  # 140 B (sram)
 libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_rpy_mix  # 260 B (sram)
-# rate_controller_run_dt + AC_PID::update_all: core1-only at 1 kHz, but keeping in RAMFUNC2 (main SRAM)
-# rather than Scratch Y (SRAM9) because the Scratch Y dedicated bus only helps core1's I-CODE path;
-# data-path accesses (shared struct fields) still go through AXI fabric regardless.
-# Measured: Scratch Y placement showed no rate improvement vs RAMFUNC2. RAMFUNC2 avoids XIP pressure.
-libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run_dt  # 346 B (sram)
-libraries/AC_PID/AC_PID.cpp|AC_PID::update_all  # 632 B (sram)
+# rate_controller_run_dt + AC_PID::update_all/update_i/get_ff moved to Scratch Y (SRAM9,
+# core1-dedicated bus) - see rp2350_scratchy_registry.txt. All core1-exclusive. Scratch Y relieves
+# only instruction-fetch contention; the PID data still lives in striped SRAM, so the gain is bounded.
 # rate_controller_run (44 B wrapper) stays in main SRAM; it's a trivial dispatcher.
 libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run  # 42 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::wait_for_sample  # 412 B (sram)
+# output_to_motors/output_armed_stabilizing (and check_for_failed_motor below): core1-only, but
+# tested in Scratch Y with no improvement - data-heavy mixing math is not fetch-bound, so the
+# dedicated I-code bus does not help. Keep in RAMFUNC2. See rp2350_scratchy_registry.txt.
 libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_to_motors  # 214 B (sram)
 libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_armed_stabilizing  # 932 B (sram)
 libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output  # 86 B (sram)
@@ -124,7 +123,10 @@ libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaAngle
 #libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readBaroData
 ArduCopter/inertia.cpp|Copter::read_inertia  # 160 B (sram)
 libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_tx_poll_drain  # 146 B (sram)
-libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_try_write_direct
+# usb_try_write_direct is static with a single call site and is inlined into
+# ChibiOS::UARTDriver::_write, so no symbol is emitted to match. Relocating it
+# means relocating _write instead.
+#libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_try_write_direct
 libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_try_read_direct  # 96 B (sram)
 libraries/AP_HAL_ChibiOS/UARTDriver.cpp|ChibiOS::UARTDriver::write_pending_bytes_NODMA  # 476 B (sram)
 libraries/AP_HAL_ChibiOS/UARTDriver.cpp|ChibiOS::UARTDriver::read_bytes_NODMA  # 106 B (sram)
@@ -266,19 +268,16 @@ modules/ChibiOS/os/rt/src/chstats.c|__stats_ctxswc
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|Vector6C
 (profiled)|AP_MotorsMulticopter::update_throttle_filter
 (profiled)|AP_AHRS::get_air_density_ratio
-(profiled)|AC_PID::update_i
 (profiled)|ChibiOS::Shared_DMA::lock_core
 (profiled)|ChibiOS::Semaphore::check_owner
 (profiled)|ChibiOS::Semaphore::take
 modules/ChibiOS/os/rt/src/chtm.c|chTMChainMeasurementToX
 (profiled)|ChibiOS::Scheduler::in_main_thread
-(profiled)|__udivmoddi4
 (profiled)|WithSemaphore::WithSemaphore
 (profiled)|AP_InertialSensor::BatchSampler::sample
 (profiled)|LowPassFilter<Vector3<float> >::apply
 (profiled)|Vector3<float>::rotate
 (profiled)|run_decimated_callback
-(profiled)|__aeabi_uldivmod
 libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_finish_read
 (profiled)|ByteBuffer::available
 libraries/AP_HAL_ChibiOS/hwdef/common/sysperf.c|sysIdleEnterMeasure
@@ -298,7 +297,6 @@ modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_serve_tx_interru
 (profiled)|Vector3<float>::operator+=
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|serve_interrupt
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|dmaChannelFreeI
-(profiled)|AC_PID::get_ff
 (profiled)|DerivativeFilter<float,
 (profiled)|ChibiOS::DeviceBus::bus_thread
 (profiled)|AP_InertialSensor::set_accel_peak_hold
@@ -426,10 +424,39 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
 (profiled)|AP_FETtecOneWire::update
 (profiled)|AP_InertialSensor_Backend::update_accel_filters
 
-# DO NOT relocate the libc helpers memcpy, memset, __udivmoddi4 or
-# __aeabi_uldivmod. They profile hot on core1 (~4.4% of active time) but must
-# stay in flash: the compiler lowers struct/array init in early boot into
-# implicit calls to them, and those run before rp_clock_init() copies .ramtext
-# to SRAM (rp_clocks.c). Relocating them executes uninitialised SRAM and the FC
-# double-faults at boot. To claw back their cost, remove the calls (e.g. use
-# 32-bit micros() deltas to avoid __udivmoddi4) rather than move the symbol.
+# Boot-order hazard for the libc helpers. The compiler lowers struct/array init
+# in early boot into implicit calls to memcpy/memset and the 64-bit divide
+# helpers, and those run before rp_clock_init() copies .ramtext to SRAM
+# (rp_clocks.c). Relocating a helper that early boot calls executes
+# uninitialised SRAM and the FC double-faults.
+#
+# memcpy and memset ARE relocated (entries above): the copy loop in rp_clocks.c
+# was rewritten as a volatile word loop so it no longer calls them. See the
+# memcpy/memset section of hwdef/Laurel/BASELINE.md before touching that.
+#
+# __udivmoddi4 and __aeabi_uldivmod are NOT relocated and must stay in flash -
+# nothing has been done to keep them off the early-boot path. They profile hot
+# on core1 (~4.4% of active time); claw that back by removing the calls (e.g.
+# 32-bit micros() deltas) rather than by moving the symbol. They also live in
+# libgcc, which has no per-function sections, so a symbol entry silently
+# matches nothing - an (archive) entry would be needed, and would boot-fault.
+
+# newlib single-precision trig, from a core0 PC-sampler run on RPI_UAVFC.
+# The AHRS/EKF math on core0 keeps these in the XIP working set: atan2f 0.4%,
+# kernel_cosf/kernel_sinf/sinf 0.2% each, atanf 0.1% of all core0 samples,
+# ~1.3% together and all flash-resident. cosf is included for symmetry with
+# sinf rather than on its own sample count.
+# Unlike memcpy/memset these are not reachable from early boot, so there is no
+# .ramtext copy-order hazard.
+# Deliberately not relocated: __ieee754_rem_pio2f and __kernel_rem_pio2f are
+# the large-argument reduction path and did not profile, and tanf is only
+# reached when a filter cutoff actually changes.
+# newlib is not built with -ffunction-sections, so these have to be picked as
+# whole archive members rather than by symbol. Each member holds one function.
+(archive)|lib_a-ef_atan2.o   # __ieee754_atan2f, 344 B
+(archive)|lib_a-wf_atan2.o   # atan2f wrapper, 4 B
+(archive)|lib_a-sf_atan.o    # atanf, 432 B
+(archive)|lib_a-kf_cos.o     # __kernel_cosf, 260 B
+(archive)|lib_a-kf_sin.o     # __kernel_sinf, 144 B
+(archive)|lib_a-sf_sin.o     # sinf, 140 B
+(archive)|lib_a-sf_cos.o     # cosf, 136 B
