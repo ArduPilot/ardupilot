@@ -456,6 +456,7 @@ public:
             MAVLINK,   // Source index is MAVLink channel number
             MISSION,   // Source index is mission item index
             SCRIPTING, // Source index is not used (always 0)
+            LOGIC,     // Source index is the RC logic table term index
         } source;
         uint16_t source_index;
     };
