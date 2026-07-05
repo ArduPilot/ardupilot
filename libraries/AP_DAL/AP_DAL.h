@@ -180,9 +180,9 @@ public:
         return _RFRN.ahrs_airspeed_sensor_enabled;
     }
 
-    // this replaces AP::ahrs()->EAS2TAS(), which should probably go
-    // away in favour of just using the Baro method.
-    // get apparent to true airspeed ratio
+    // get apparent to true airspeed ratio; this is a sensor input
+    // to the EKFs, captured from the barometer's atmosphere model
+    // in start_frame():
     float get_EAS2TAS(void) const {
         return _RFRN.EAS2TAS;
     }
