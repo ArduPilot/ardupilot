@@ -276,9 +276,6 @@ void StratoBlimp::calculate_forces(const struct sitl_input &input, Vector3f &bod
  */
 void StratoBlimp::update(const struct sitl_input &input)
 {
-    air_density = get_air_density(location.alt*0.01);
-    EAS2TAS = sqrtf(SSL_AIR_DENSITY / air_density);
-
     calculate_coefficients();
 
     float delta_time = frame_time_us * 1.0e-6f;
