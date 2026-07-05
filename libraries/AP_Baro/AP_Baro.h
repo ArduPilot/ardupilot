@@ -142,8 +142,15 @@ public:
     float get_sealevel_pressure(float pressure, float altitude) const;
 
     // get scale factor required to convert equivalent to true
-    // airspeed. This should only be used to update the AHRS value
-    // once per loop. Please use AP::ahrs().get_EAS2TAS()
+    // airspeed.  This is a cached value, updated once per loop in
+    // update().  You probably want AP::ahrs().get_EAS2TAS() - the
+    // value could reasonably come from an ExternalAHRS system instead
+    // of this library.
+    float get_EAS2TAS(void) const { return _EAS2TAS; }
+
+    // calculate scale factor required to convert equivalent to true
+    // airspeed.  This is called once per loop from update() to
+    // refresh the value returned by get_EAS2TAS():
     float _get_EAS2TAS(void) const;
 
     // get current climb rate in meters/s. A positive number means
@@ -311,6 +318,7 @@ private:
 
     AP_Float                            _alt_offset;
     float                               _alt_offset_active;
+    float                               _EAS2TAS = 1.0;         // cached scale factor converting equivalent to true airspeed, updated in update()
     AP_Float                            _field_elevation;       // field elevation in meters
     float                               _field_elevation_active;
     uint32_t                            _field_elevation_last_ms;
