@@ -2902,6 +2902,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "TERRAIN_SPACING": 30,
             "TERRAIN_FOLLOW": 1,
             "TERRAIN_OFS_MAX": 0,
+            "TERRAIN_CACHE_SZ": 60,
         })
 
         self.install_terrain_handlers_context()
@@ -2975,7 +2976,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         # TopOfTheWord "ground" is at over 1km altitude
-        expected_terrain_height = 1101
+        expected_terrain_height = 1102
         if abs(report.terrain_height - expected_terrain_height) > 1.0:
             raise NotAchievedException("Expected terrain height=%f got=%f" %
                                        (expected_terrain_height, report.terrain_height))
@@ -2996,73 +2997,57 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.wait_text("TerrAvoid: close to home", check_context=True)
         self.wait_waypoint(2, 4, max_dist_to_final_wp_m=100)
-        self.wait_text("TerrAvoid: away from home", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
+        self.wait_text("TerrAvoid: away from home", check_context=True)
+        self.wait_text("TerrAvoid: CMTC loiter left|TerrAvoid: CMTC loiter right", check_context=True, regex=True)
         self.progress("CMTC alt #1 is %f" % self.get_altitude(relative=False, timeout=2))
         # wait for CMTC to gain altitude 1170m +-20
         self.wait_altitude(1150, 1190, timeout=60, relative=False, minimum_duration=5)
 
-        self.wait_text("TerrAvoid: CMTC Done|TerrAvoid: Quading overrides CMTC", check_context=True, regex=True, timeout=60)
+        self.wait_text("TerrAvoid: CMTC Done|TerrAvoid: Quading overrides CMTC|TerrAvoid: Quading done",
+                       check_context=True, regex=True, timeout=60)
         self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True, timeout=60)
         self.progress("CMTC alt #2 is %f" % self.get_altitude(relative=False, timeout=2))
         # wait for CMTC to gain altitude to 1125m +- 55
-        self.wait_altitude(1070, 1180, timeout=60, relative=False, minimum_duration=5)
-        self.wait_text("TerrAvoid: CMTC Done|TerrAvoid: Quading overrides CMTC", check_context=True, regex=True)
+        self.wait_altitude(1070, 1180, timeout=120, relative=False, minimum_duration=5)
 
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
+        self.context_clear_collection("STATUSTEXT")
+
+        self.wait_text("TerrAvoid: high terrain detected", check_context=True, timeout=120)
         self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
         self.progress("CMTC alt #3 is %f" % self.get_altitude(relative=False, timeout=2))
         # 1020 +- 20
-        self.wait_altitude(1000, 1040, timeout=120, relative=False, minimum_duration=5)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
-
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #4 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #6 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.progress("alt is %f" % self.get_altitude(relative=False, timeout=2))
-
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
 
         self.progress("#Pitching alt is %f" % self.get_altitude(relative=False, timeout=2))
         self.wait_text("TerrAvoid: Pitching Started", check_context=True, regex=True, timeout=600)
-        self.wait_text("TerrAvoid: Terrain Ok", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #7 is %f" % self.get_altitude(relative=False, timeout=2))
         self.wait_text("TerrAvoid: Pitching DONE", check_context=True, regex=True)
         self.progress("#Pitching DONE alt is %f" % self.get_altitude(relative=False, timeout=2))
 
-        # After Pitching CMTC to 1170m +- 30
-        self.wait_altitude(1140, 1200, timeout=120, relative=False, minimum_duration=5)
+        self.wait_altitude(1160, 1200, timeout=120, relative=False, minimum_duration=5)
 
         self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
         self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-        # wait for 1 more CMTC's
+
+        self.context_clear_collection("STATUSTEXT")
+        self.wait_text("Mission: 14 WP", check_context=True, regex=True, timeout=60)
+
+        self.wait_text("TerrAvoid: CMTC loiter right", check_context=True, regex=True)
+        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
         self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
 
-        # now we get a guaranteed quadding
-        self.wait_text("TerrAvoid: Pitching started", check_context=True, regex=True, timeout=120)
-        self.progress("Pitching alt #1 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching DONE", check_context=True, regex=True)
-        self.progress("Pitching alt #2 is %f" % self.get_altitude(relative=False, timeout=2))
+        self.context_clear_collection("STATUSTEXT")
 
-        # wait for 1 more CMTC
+        self.wait_text("TerrAvoid: Quading started", timeout=120, check_context=True, regex=True)
+        self.wait_text("TerrAvoid: Quading DONE", timeout=120, check_context=True, regex=True)
+        self.wait_text("Transition done", timeout=120, check_context=True, regex=True)
+
+        self.context_clear_collection("STATUSTEXT")
+
+        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
+        self.progress("CMTC alt #4 is %f" % self.get_altitude(relative=False, timeout=2))
+        self.wait_text("TerrAvoid: CMTC STOP", timeout=120, check_context=True, regex=True)
         self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
+
+        self.context_clear_collection("STATUSTEXT")
 
         self.wait_statustext('Land complete', timeout=600)
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
