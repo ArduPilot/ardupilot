@@ -297,6 +297,11 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Path: ../AP_Beacon/AP_Beacon.cpp
     AP_SUBGROUPINFO(beacon, "BCN", 33, AP_Vehicle, AP_Beacon),
 #endif  // AP_BEACON_ENABLED
+#if AP_RC_LOGIC_ENABLED
+    // @Group: RCL
+    // @Path: ../AP_RC_Logic/AP_RC_Logic.cpp
+    AP_SUBGROUPINFO(rc_logic, "RCL", 34, AP_Vehicle, AP_RC_Logic),
+#endif
 
     AP_GROUPEND
 };
@@ -699,6 +704,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_GRIPPER_ENABLED
     SCHED_TASK_CLASS(AP_Gripper,   &vehicle.gripper,        update,                   10,  75, 251),
+#endif
+#if AP_RC_LOGIC_ENABLED
+    SCHED_TASK_CLASS(AP_RC_Logic,  &vehicle.rc_logic,       update,                   50, 100, 251),
 #endif
     SCHED_TASK(one_Hz_update,                                                         1, 100, 252),
 #if HAL_WITH_ESC_TELEM && HAL_GYROFFT_ENABLED
