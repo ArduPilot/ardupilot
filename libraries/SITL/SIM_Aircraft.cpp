@@ -31,7 +31,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_JSON/AP_JSON.h>
 #include <AP_Filesystem/AP_Filesystem.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL_SITL/HAL_SITL_Class.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -729,12 +728,6 @@ void Aircraft::update_model(const struct sitl_input &input)
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
     WITH_SEMAPHORE(pose_sem);
-
-    // update eas2tas and air density
-#if AP_AHRS_ENABLED
-    eas2tas = AP::ahrs().get_EAS2TAS();
-#endif
-    air_density = SSL_AIR_DENSITY / sq(eas2tas);
 
     const float delta_time = frame_time_us * 1.0e-6f;
 
