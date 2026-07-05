@@ -148,11 +148,6 @@ public:
     // of this library.
     float get_EAS2TAS(void) const { return _EAS2TAS; }
 
-    // calculate scale factor required to convert equivalent to true
-    // airspeed.  This is called once per loop from update() to
-    // refresh the value returned by get_EAS2TAS():
-    float _get_EAS2TAS(void) const;
-
     // get current climb rate in meters/s. A positive number means
     // going up
     float get_climb_rate(void);
@@ -319,6 +314,12 @@ private:
     AP_Float                            _alt_offset;
     float                               _alt_offset_active;
     float                               _EAS2TAS = 1.0;         // cached scale factor converting equivalent to true airspeed, updated in update()
+
+    // calculate scale factor required to convert equivalent to true
+    // airspeed.  This is called once per loop from update() to
+    // refresh the value returned by get_EAS2TAS():
+    float _get_EAS2TAS(void) const;
+
     AP_Float                            _field_elevation;       // field elevation in meters
     float                               _field_elevation_active;
     uint32_t                            _field_elevation_last_ms;
