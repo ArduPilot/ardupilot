@@ -146,10 +146,6 @@ public:
     // once per loop. Please use AP::ahrs().get_EAS2TAS()
     float _get_EAS2TAS(void) const;
 
-    // get air density / sea level density - decreases as altitude climbs
-    // please use AP::ahrs()::get_air_density_ratio()
-    float _get_air_density_ratio(void);
-
     // get current climb rate in meters/s. A positive number means
     // going up
     float get_climb_rate(void);

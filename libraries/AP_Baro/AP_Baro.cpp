@@ -418,17 +418,6 @@ void AP_Baro::update_calibration()
 }
 #endif  // AP_BARO_CALIBRATION_ENABLED
 
-// return air density / sea level density - decreases as altitude climbs
-float AP_Baro::_get_air_density_ratio(void)
-{
-    const float eas2tas = _get_EAS2TAS();
-    if (eas2tas > 0.0f) {
-        return 1.0f/(sq(eas2tas));
-    } else {
-        return 1.0f;
-    }
-}
-
 // return current climb_rate estimate relative to time that calibrate()
 // was called. Returns climb rate in meters/s, positive means up
 // note that this relies on read() being called regularly to get new data
