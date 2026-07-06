@@ -672,38 +672,27 @@ void AP_Logger_File::get_log_info(const uint16_t list_entry, uint32_t &size, uin
 
 
 /*
-  get the number of logs - note that the log numbers must be consecutive
+  get the number of logs - note that the log numbers must be
+  consecutive from the oldest log to the last log, modulo the maximum
+  log number.  The count is taken from the oldest log actually present
+  rather than assuming logs start at number 1 - the oldest logs may
+  have been removed to free space (Prep_MinSpace).
+  log_num_from_list_entry maps list entries using the same oldest log,
+  keeping the advertised count and the list entries consistent.
  */
 uint16_t AP_Logger_File::get_num_logs()
 {
-    auto *d = AP::FS().opendir(_log_directory);
-    if (d == nullptr) {
+    const uint16_t oldest = find_oldest_log();
+    if (oldest == 0) {
+        // no logs
         return 0;
     }
-    uint16_t high = find_last_log();
-    uint16_t ret = high;
-    uint16_t smallest_above_last = 0;
-
-    EXPECT_DELAY_MS(2000);
-    for (struct dirent *de=AP::FS().readdir(d); de; de=AP::FS().readdir(d)) {
-        EXPECT_DELAY_MS(100);
-        uint16_t thisnum;
-        if (!dirent_to_log_num(de, thisnum)) {
-            // not a log filename
-            continue;
-        }
-
-        if (thisnum > high && (smallest_above_last == 0 || thisnum < smallest_above_last)) {
-            smallest_above_last = thisnum;
-        }
+    const uint16_t last = find_last_log();
+    if (oldest > last) {
+        // the log numbers have wrapped
+        return (_front.get_max_num_logs() - oldest + 1) + last;
     }
-    AP::FS().closedir(d);
-    if (smallest_above_last != 0) {
-        // we have wrapped, add in the logs with high numbers
-        ret += (_front.get_max_num_logs() - smallest_above_last) + 1;
-    }
-
-    return ret;
+    return last - oldest + 1;
 }
 
 /*
