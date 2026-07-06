@@ -119,13 +119,15 @@ void shape_angle_vel_accel(float angle_input, float angle_vel_input, float angle
                          float angle_vel_max, float angle_accel_max,
                          float angle_jerk_max, float dt, bool limit_total);
 
-/* limit_accel_xy limits the acceleration to prioritise acceleration perpendicular to the provided velocity vector.
- Input parameters are:
-    vel is the velocity vector used to define the direction acceleration limit is biased in.
-    accel is the acceleration vector to be limited.
-    accel_max is the maximum length of the acceleration vector after being limited.
- Returns true when accel vector has been limited.
-*/
+// Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.
+// - `vel` defines the current direction of motion (used to split the acceleration).
+// - `accel` is modified in-place to remain within `accel_max`.
+// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize lateral correction.
+// - Near zero speed the cross-track prioritisation is faded out to a simple
+//   direction-preserving magnitude limit, avoiding a lateral acceleration spike
+//   as the direction of travel rotates through zero (e.g. a hard stick reversal).
+// - If `vel` is zero, a simple magnitude limit is applied.
+// Returns true if the acceleration vector was modified.
 bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
 
 // sqrt_controller calculates the correction based on a proportional controller with piecewise sqrt sections to constrain second derivative.

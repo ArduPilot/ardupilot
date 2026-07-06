@@ -27,6 +27,14 @@
 // control default definitions
 #define CORNER_ACCELERATION_RATIO   1.0/safe_sqrt(2.0)   // acceleration reduction to enable zero overshoot corners
 
+// Speed (m/s) below which limit_accel_xy() fades out cross-track prioritisation.
+// Near zero speed the direction of travel is ill-defined, so prioritising
+// "cross-track" acceleration re-projects a saturated command onto a rapidly
+// rotating axis and injects a lateral acceleration spike (e.g. the roll wobble
+// seen at the zero-crossing of a hard Loiter stick reversal). Below this speed
+// we fade to an isotropic magnitude limit that preserves the commanded direction.
+#define LIMIT_ACCEL_XY_MIN_SPEED_MS   1.0f
+
 // update_vel_accel - single axis projection of velocity, vel, forwards in time based on a time step of dt and acceleration of accel.
 // the velocity is not moved in the direction of limit if limit is not set to zero.
 // limit - specifies if the system is unable to continue to accelerate.
@@ -413,44 +421,63 @@ void shape_angle_vel_accel(float angle_input, float angle_vel_input, float angle
     shape_vel_accel(angle_vel_target, angle_accel_input, angle_vel, angle_accel, -angle_accel_max, angle_accel_max, angle_jerk_max, dt, limit_total);
 }
 
-/* limit_accel_xy limits the acceleration to prioritise acceleration perpendicular to the provided velocity vector.
- Input parameters are:
-    vel is the velocity vector used to define the direction acceleration limit is biased in.
-    accel is the acceleration vector to be limited.
-    accel_max is the maximum length of the acceleration vector after being limited.
- Returns true when accel vector has been limited.
-*/
+// Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.
+// - `vel` defines the current direction of motion (used to split the acceleration).
+// - `accel` is modified in-place to remain within `accel_max`.
+// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize lateral correction.
+// - If `vel` is zero, a simple magnitude limit is applied.
+// Returns true if the acceleration vector was modified.
 bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
 {
     // check accel_max is defined
     if (!is_positive(accel_max)) {
         return false;
     }
-    // limit acceleration to accel_max while prioritizing cross track acceleration
-    if (accel.length_squared() > sq(accel_max)) {
-        if (vel.is_zero()) {
-            // We do not have a direction of travel so do a simple vector length limit
-            accel.limit_length(accel_max);
-        } else {
-            // calculate acceleration in the direction of and perpendicular to the velocity input
-            const Vector2f vel_input_unit = vel.normalized();
-            // acceleration in the direction of travel
-            float accel_dir = vel_input_unit * accel;
-            // cross track acceleration
-            Vector2f accel_cross = accel - (vel_input_unit * accel_dir);
-            if (accel_cross.limit_length(accel_max)) {
-                accel_dir = 0.0;
-            } else {
-                // limit_length can't absolutely guarantee this subtraction
-                // won't be slightly negative, so safe_sqrt is used
-                float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());
-                accel_dir = constrain_float(accel_dir, -accel_max_dir, accel_max_dir);
-            }
-            accel = accel_cross + vel_input_unit * accel_dir;
-        }
+    // nothing to do unless the acceleration vector exceeds the limit
+    if (accel.length_squared() <= sq(accel_max)) {
+        return false;
+    }
+
+    // isotropic (direction-preserving) magnitude limit. Used directly when there
+    // is no meaningful direction of travel, and blended in at low speed below.
+    Vector2f accel_isotropic = accel;
+    accel_isotropic.limit_length(accel_max);
+
+    const float speed_ms = vel.length();
+    if (!is_positive(speed_ms)) {
+        // We do not have a direction of travel so do a simple vector length limit
+        accel = accel_isotropic;
         return true;
     }
-    return false;
+
+    // limit acceleration to accel_max while prioritizing cross track acceleration
+    // calculate acceleration in the direction of and perpendicular to the velocity input
+    const Vector2f vel_unit = vel / speed_ms;
+    // acceleration in the direction of travel
+    float accel_dir = vel_unit * accel;
+    // cross track acceleration
+    Vector2f accel_cross = accel - (vel_unit * accel_dir);
+    if (accel_cross.limit_length(accel_max)) {
+        accel_dir = 0.0;
+    } else {
+        // limit_length can't absolutely guarantee this subtraction
+        // won't be slightly negative, so safe_sqrt is used
+        float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());
+        accel_dir = constrain_float(accel_dir, -accel_max_dir, accel_max_dir);
+    }
+    const Vector2f accel_prioritised = accel_cross + vel_unit * accel_dir;
+
+    // Fade between the isotropic limit (at zero speed) and the cross-track
+    // prioritised limit (at and above LIMIT_ACCEL_XY_MIN_SPEED_MS). As the
+    // velocity vector rotates through zero (e.g. a hard stick reversal in
+    // Loiter), vel_unit spins and the prioritised split would re-project the
+    // saturated braking command into a lateral acceleration spike. Fading to the
+    // direction-preserving limit removes that spike. Both blend inputs have
+    // magnitude <= accel_max, so the result does too.
+    const float prioritise_ratio = constrain_float(speed_ms / LIMIT_ACCEL_XY_MIN_SPEED_MS, 0.0f, 1.0f);
+    accel = accel_isotropic * (1.0f - prioritise_ratio) + accel_prioritised * prioritise_ratio;
+
+    return true;
 }
 
 // sqrt_controller calculates the correction based on a proportional controller with piecewise sqrt sections to constrain second derivative.
