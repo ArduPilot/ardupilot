@@ -406,10 +406,19 @@ void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
     // If relying on optical flow, limit speed to prevent sensor limit being exceeded and adjust
     // nav gains to prevent body rate feedback into flow rates destabilising the control loop
     if (PV_AidingMode == AID_RELATIVE && relyingOnFlowData) {
+        // height above ground that scales both limits; prefer the IMU-aided AGL KF
+        // when enabled and valid so the cap matches the height used for flow velocity
+        // scaling (see EstimateOptFlowDataFrame) instead of the drift-prone terrainState
+        ftype heightAboveGndEst = MAX((terrainState - stateStruct.position[2]), rngOnGnd);
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+            heightAboveGndEst = MAX(aglKfH, rngOnGnd);
+        }
+#endif
         // allow 1.0 rad/sec margin for angular motion
-        ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * MAX((terrainState - stateStruct.position[2]), rngOnGnd);
+        ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * heightAboveGndEst;
         // use standard gains up to 5.0 metres height and reduce above that
-        ekfNavVelGainScaler = 4.0f / MAX((terrainState - stateStruct.position[2]),4.0f);
+        ekfNavVelGainScaler = 4.0f / MAX(heightAboveGndEst, 4.0f);
     } else {
         ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
         ekfNavVelGainScaler = 1.0f;
