@@ -23,6 +23,10 @@ static_assert(AP_IBUS2_MAX_CHANNELS <= MAX_RCIN_CHANNELS,
               "AP_IBUS2_MAX_CHANNELS must not exceed MAX_RCIN_CHANNELS");
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_BattMonitor/AP_BattMonitor.h>
+#include <AP_GPS/AP_GPS.h>
+#include <AP_AHRS/AP_AHRS.h>
+#include <AP_Baro/AP_Baro.h>
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
@@ -95,8 +99,20 @@ void AP_IBus2_Slave::log_raw_frame(const uint8_t *buf, uint8_t len) const
 
 AP_IBus2_Slave *AP_IBus2_Slave::_singleton;
 
+const AP_Param::GroupInfo AP_IBus2_Slave::var_info[] = {
+    // @Param: TYPE
+    // @DisplayName: IBUS2 slave device type
+    // @Description: Device type reported in the GET_TYPE enumeration response. 248 is the documented digital-servo type; other values are experimental, for finding a type the receiver offers to the transmitter as a sensor source.
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("TYPE", 1, AP_IBus2_Slave, _device_type, (int16_t)IBUS2DeviceType::DIGITAL_SERVO),
+
+    AP_GROUPEND
+};
+
 AP_IBus2_Slave::AP_IBus2_Slave()
 {
+    AP_Param::setup_object_defaults(this, var_info);
     _singleton = this;
 }
 
@@ -464,7 +480,7 @@ void AP_IBus2_Slave::send_resp_get_type()
         IBUS2_PKT_RESPONSE,
         (uint8_t)IBUS2Cmd::GET_TYPE,
         IBUS2_Resp_GetType{
-            (uint8_t)IBUS2DeviceType::DIGITAL_SERVO,
+            (uint8_t)_device_type.get(),
             16,  // value_length: use max as recommended
             (uint8_t)((_required_resources & REQUIRED_CHANNEL_TYPES) != 0),
             (uint8_t)((_required_resources & REQUIRED_FAILSAFE) != 0),
@@ -475,12 +491,13 @@ void AP_IBus2_Slave::send_resp_get_type()
 
 void AP_IBus2_Slave::send_resp_get_value()
 {
-    // No sensor data points yet: empty value block identifying VID/PID only
-    const IBUS2_Pkt<IBUS2_Resp_GetValue> r{
+    IBUS2_Pkt<IBUS2_Resp_GetValue> r{
         IBUS2_PKT_RESPONSE,
         (uint8_t)IBUS2Cmd::GET_VALUE,
         IBUS2_Resp_GetValue{{}, IBUS2_TELEM_VID, IBUS2_TELEM_PID},
     };
+    populate_sensor_data(r.msg.value);
+    r.update_crc();
     port_write((const uint8_t *)&r, sizeof(r));
 }
 
@@ -504,5 +521,135 @@ void AP_IBus2_Slave::send_resp_set_param(const IBUS2_Cmd_SetParam *cmd)
     port_write((const uint8_t *)&r, sizeof(r));
 }
 
+// ---------------------------------------------------------------------------
+// Telemetry data-point providers for GET_VALUE responses.
+// All getters read cheap cached frontend state (same sources as AP_IBus_Telem)
+// so they are safe to call from the IBus2 slave thread.
+// ---------------------------------------------------------------------------
+
+static int16_t telem_clamp(float v)
+{
+    return (int16_t)constrain_int32((int32_t)v, INT16_MIN, INT16_MAX);
+}
+
+#if AP_BATTERY_ENABLED
+static int16_t telem_voltage()
+{
+    return telem_clamp(AP::battery().voltage() * 100);
+}
+
+static int16_t telem_current()
+{
+    float amps;
+    if (!AP::battery().current_amps(amps)) {
+        return 0;
+    }
+    return telem_clamp(amps * 100);
+}
+
+static int16_t telem_consumed_mah()
+{
+    float mah;
+    if (!AP::battery().consumed_mah(mah)) {
+        return 0;
+    }
+    return telem_clamp(mah);
+}
+#endif  // AP_BATTERY_ENABLED
+
+#if AP_AHRS_ENABLED
+static int16_t telem_roll_ddeg()
+{
+    return telem_clamp(AP::ahrs().roll_sensor * 0.1f);
+}
+
+static int16_t telem_pitch_ddeg()
+{
+    return telem_clamp(AP::ahrs().pitch_sensor * 0.1f);
+}
+
+static int16_t telem_yaw_ddeg()
+{
+    return telem_clamp(AP::ahrs().yaw_sensor * 0.1f);
+}
+#endif  // AP_AHRS_ENABLED
+
+#if AP_GPS_ENABLED
+static int16_t telem_groundspeed()
+{
+    return telem_clamp(AP::gps().ground_speed() * 10);
+}
+#endif  // AP_GPS_ENABLED
+
+#if AP_BARO_ENABLED
+static int16_t telem_baro_alt()
+{
+    return telem_clamp(AP::baro().get_altitude() * 10);
+}
+
+static int16_t telem_baro_temp()
+{
+    return telem_clamp(AP::baro().get_temperature() * 10);
+}
+#endif  // AP_BARO_ENABLED
+
+struct TelemProvider {
+    IBUS2SensorType type;
+    IBUS2DataFormat format;
+    IBUS2DataUnit unit;
+    int16_t (*get)();
+};
+
+static const TelemProvider telem_providers[] {
+#if AP_BATTERY_ENABLED
+    { IBUS2SensorType::VOLTAGE,       IBUS2DataFormat::TWO_DP,  IBUS2DataUnit::VOLT,          telem_voltage },
+    { IBUS2SensorType::CURRENT,       IBUS2DataFormat::TWO_DP,  IBUS2DataUnit::AMP,           telem_current },
+    { IBUS2SensorType::CONS_CAPACITY, IBUS2DataFormat::INTEGER, IBUS2DataUnit::MILLIAMP_HOUR, telem_consumed_mah },
+#endif
+#if AP_AHRS_ENABLED
+    { IBUS2SensorType::ROLL_ANGLE,    IBUS2DataFormat::ONE_DP,  IBUS2DataUnit::DEGREE,        telem_roll_ddeg },
+    { IBUS2SensorType::PITCH_ANGLE,   IBUS2DataFormat::ONE_DP,  IBUS2DataUnit::DEGREE,        telem_pitch_ddeg },
+    { IBUS2SensorType::YAW_ANGLE,     IBUS2DataFormat::ONE_DP,  IBUS2DataUnit::DEGREE,        telem_yaw_ddeg },
+#endif
+#if AP_GPS_ENABLED
+    { IBUS2SensorType::SPEED,         IBUS2DataFormat::ONE_DP,  IBUS2DataUnit::M_PER_S,       telem_groundspeed },
+#endif
+#if AP_BARO_ENABLED
+    { IBUS2SensorType::ALTITUDE,      IBUS2DataFormat::ONE_DP,  IBUS2DataUnit::METRE,         telem_baro_alt },
+    { IBUS2SensorType::TEMPERATURE,   IBUS2DataFormat::ONE_DP,  IBUS2DataUnit::CELSIUS,       telem_baro_temp },
+#endif
+};
+
+uint8_t AP_IBus2_Slave::populate_sensor_data(uint8_t *value14)
+{
+    memset(value14, 0, sizeof(IBUS2_GetValueTelem));
+    auto *telem = reinterpret_cast<IBUS2_GetValueTelem *>(value14);
+
+    constexpr uint8_t n_points = ARRAY_SIZE(telem_providers);
+    constexpr uint8_t n_packets =
+        (n_points + IBUS2_TELEM_POINTS_PER_PACKET - 1) / IBUS2_TELEM_POINTS_PER_PACKET;
+    static_assert(n_points > 0, "IBUS2 slave telemetry needs at least one provider");
+
+    telem->pack_type = 0;
+    telem->pack_length = n_packets;
+    telem->pack_cur_index = _telem_pkt_index + 1;  // 1-based per spec
+
+    uint8_t n = 0;
+    for (uint8_t slot = 0; slot < IBUS2_TELEM_POINTS_PER_PACKET; slot++) {
+        const uint8_t idx = _telem_pkt_index * IBUS2_TELEM_POINTS_PER_PACKET + slot;
+        if (idx >= n_points) {
+            break;  // remaining slots stay type=0 ("no data, do not parse")
+        }
+        const TelemProvider &p = telem_providers[idx];
+        telem->points[slot].type   = (uint8_t)p.type;
+        telem->points[slot].format = (uint8_t)p.format;
+        telem->points[slot].unit   = (uint8_t)p.unit;
+        telem->points[slot].value  = p.get();
+        n++;
+    }
+
+    _telem_pkt_index = (_telem_pkt_index + 1) % n_packets;
+    return n;
+}
 
 #endif  // AP_IBUS2_SLAVE_ENABLED

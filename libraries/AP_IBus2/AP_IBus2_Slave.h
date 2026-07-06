@@ -46,6 +46,9 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_SerialManager/AP_SerialManager.h>
+#include <AP_AHRS/AP_AHRS_config.h>
+#include <AP_BattMonitor/AP_BattMonitor_config.h>
+#include <AP_GPS/AP_GPS_config.h>
 
 class AP_IBus2_Slave
 {
@@ -55,6 +58,8 @@ public:
     CLASS_NO_COPY(AP_IBus2_Slave);
 
     void init();
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     // Singleton accessor (set in constructor)
     static AP_IBus2_Slave *get_singleton() { return _singleton; }
@@ -78,6 +83,12 @@ public:
 
 private:
     AP_HAL::UARTDriver *_port;
+
+    // Device type reported in the GET_TYPE enumeration response.  0xF8
+    // (digital servo) is the only value the spec documents; the type a
+    // genuine telemetry adapter reports is unknown, so this is settable
+    // to allow experimentation with sensor discovery.
+    AP_Int16 _device_type;
 
     void thread_main();
 
@@ -148,6 +159,9 @@ private:
     // only push it later, which receivers measurably tolerate.
     static const uint32_t TX_START_FLOOR_US = 55;
 
+    // Which telemetry packet of the multi-packet GET_VALUE cycle to send next
+    uint8_t _telem_pkt_index;
+
     void process_rx();
     void handle_frame1(const uint8_t *buf, uint8_t len);
 #if AP_IBUS2_LOG_RAW_FRAMES
@@ -177,6 +191,10 @@ private:
         _tx_pending_echo += _port->write(buf, size);
         _last_tx_us = AP_HAL::micros();
     }
+
+    // Populate sensor data into a GET_VALUE response value[14] buffer.
+    // Returns number of data points written.
+    uint8_t populate_sensor_data(uint8_t *value14);
 };
 
 #endif  // AP_IBUS2_SLAVE_ENABLED

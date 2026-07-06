@@ -63,10 +63,101 @@ enum class IBUS2Cmd : uint8_t {
 };
 
 // -----------------------------------------------------------------------
+// Sensor types (returned parameter name / sensor type table from spec)
+// -----------------------------------------------------------------------
+enum class IBUS2SensorType : uint8_t {
+    ERROR_TYPE      = 0,
+    VOLTAGE         = 1,
+    CURRENT         = 2,
+    RPM             = 3,
+    AIR_PRESSURE    = 4,
+    HYDRAULICS      = 5,
+    SPEED           = 6,
+    POWER           = 7,
+    TIME            = 8,
+    CONS_CAPACITY   = 9,
+    REMA_CAPACITY   = 10,
+    RUN_TIME        = 11,
+    REMA_TIME       = 12,
+    MAX_VOLTAGE     = 13,
+    MIN_VOLTAGE     = 14,
+    MAX_CURRENT     = 15,
+    AVE_CURRENT     = 16,
+    YAW_ANGLE       = 17,
+    PITCH_ANGLE     = 18,
+    ROLL_ANGLE      = 19,
+    START_ANGLE     = 20,
+    ALTITUDE        = 21,
+    HEIGHT          = 22,
+    DISTANCE        = 23,
+    SIGNAL          = 24,
+    CONDITION       = 25,
+    FLOWMETER       = 26,
+    TEMPERATURE     = 27,
+    ANGLE           = 28,
+    ANGULAR_SPEED   = 29,
+    ACCELERATION    = 30,
+    ANG_ACCEL       = 31,
+    THROTTLE        = 32,
+    AIRSPEED        = 33,
+    MOTOR_TEMP      = 34,
+    MCU_TEMP        = 35,
+    MOS_TEMP        = 36,
+    SBEC_VOLTAGE    = 37,
+    ELEC_ANGLE      = 38,
+    TIMING          = 39,
+    NUM_CELLS       = 40,
+};
+
+// -----------------------------------------------------------------------
 // Device return type (Appendix 5 of spec)
 // -----------------------------------------------------------------------
 enum class IBUS2DeviceType : uint8_t {
     DIGITAL_SERVO = 0xF8,
+};
+
+// -----------------------------------------------------------------------
+// Data formats (Telemetry Adapter spec, appendix "Data format")
+// Values 1-8 are decimal places; 9-16 are powers of ten.
+// -----------------------------------------------------------------------
+enum class IBUS2DataFormat : uint8_t {
+    INTEGER     = 0,
+    ONE_DP      = 1,   // value is ×10
+    TWO_DP      = 2,   // value is ×100
+    THREE_DP    = 3,   // value is ×1000
+};
+
+// -----------------------------------------------------------------------
+// Data units (Telemetry Adapter spec, appendix "Data Units")
+// -----------------------------------------------------------------------
+enum class IBUS2DataUnit : uint8_t {
+    UNITLESS      = 0,
+    VOLT          = 1,
+    AMP           = 2,
+    MILLIAMP      = 3,
+    RPM           = 4,
+    PASCAL        = 5,
+    KILOGRAM      = 6,
+    KM_PER_H      = 7,
+    M_PER_S       = 8,
+    WATT          = 9,
+    MILLIWATT     = 10,
+    MILLIAMP_HOUR = 11,
+    MILLILITRE    = 12,
+    LITRE         = 13,
+    DECILITRE     = 14,
+    MILLIVOLT     = 15,
+    DEG_PER_S     = 16,
+    REV_PER_S     = 17,
+    PER_S         = 18,
+    M_PER_S2      = 19,
+    PER_S2        = 20,
+    DEGREE        = 21,
+    CELSIUS       = 22,
+    PERCENT       = 23,
+    METRE         = 24,
+    KILOMETRE     = 25,
+    SECOND        = 26,
 };
 
 // -----------------------------------------------------------------------
@@ -234,6 +325,35 @@ public:
     uint8_t reserved[3];
 };
 static_assert(sizeof(IBUS2_Resp_GetValue) == 19, "IBUS2_Resp_GetValue size");
+
+// -----------------------------------------------------------------------
+// GET_VALUE Value[14] telemetry payload (Telemetry Adapter spec §3.3).
+//
+// A device with more than 3 data points sends them across several
+// GET_VALUE responses: pack_length is the total packet count and
+// pack_cur_index (1-based) identifies this packet within the cycle.
+// Unused data-point slots keep type=0 (ERROR_TYPE: "no data, do not parse").
+// -----------------------------------------------------------------------
+class PACKED IBUS2_TelemDataPoint {
+public:
+    uint16_t type   : 6;   // IBUS2SensorType
+    uint16_t format : 5;   // IBUS2DataFormat
+    uint16_t unit   : 5;   // IBUS2DataUnit
+    int16_t  value;        // S16 scaled per format
+};
+static_assert(sizeof(IBUS2_TelemDataPoint) == 4, "IBUS2_TelemDataPoint size");
+
+#define IBUS2_TELEM_POINTS_PER_PACKET 3
+
+class PACKED IBUS2_GetValueTelem {
+public:
+    uint16_t pack_type      : 4;  // 0 = normal command
+    uint16_t pack_length    : 6;  // total number of packets in the cycle
+    uint16_t pack_cur_index : 6;  // 1-based index of this packet
+    IBUS2_TelemDataPoint points[IBUS2_TELEM_POINTS_PER_PACKET];
+};
+static_assert(sizeof(IBUS2_GetValueTelem) == sizeof(IBUS2_Resp_GetValue::value),
+              "IBUS2_GetValueTelem must fill Value[14]");
 
 // -----------------------------------------------------------------------
 // Frame 2 GET_PARAM command payload (CommandCode=3)
