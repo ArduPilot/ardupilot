@@ -4421,6 +4421,83 @@ class TestSuite(abc.ABC):
                 "Log list count does not match logs on disk (want=%u got=%u)" %
                 (remaining_count, len(logs)))
 
+    def TestLogDownloadLogGap(self):
+        '''check the log list after a log is removed from the middle of the sequence'''
+        # The autopilot never creates a hole in the middle of the log
+        # sequence itself - this is a user deleting a single log from
+        # the SD card.  The log list maps entries linearly from the
+        # oldest log present, so the expected behaviour is that the
+        # hole appears as a single zero-size/zero-time-utc entry while
+        # the logs either side of it remain listed at their usual
+        # positions with their usual sizes.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.reboot_sitl()
+
+        self.progress("Creating some logs")
+        for i in range(0, 4):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1, reason="log data to accumulate")
+            self.disarm_vehicle()
+
+        log_list = self.log_list()
+        if len(log_list) < 4:
+            raise NotAchievedException("Expected at least 4 logs, got (%s)" % str(log_list))
+
+        def log_num_from_filepath(filepath):
+            return int(os.path.basename(filepath)[:-4])
+
+        victim = log_list[-3]  # neither the oldest nor the most recent
+        self.progress("Removing %s from the middle of the log sequence" % victim)
+        os.unlink(victim)
+
+        oldest_num = log_num_from_filepath(log_list[0])
+        last_num = log_num_from_filepath(log_list[-1])
+        expected_count = last_num - oldest_num + 1  # the hole is counted
+        expected_gap_id = log_num_from_filepath(victim) - oldest_num + 1
+
+        # reboot so the autopilot rediscovers its log state from the
+        # disk contents:
+        self.reboot_sitl()
+
+        # can't use download_full_log_list here; it (correctly) balks
+        # at the zero-size/zero-time-utc entry the hole leaves behind:
+        tstart = self.get_sim_time()
+        self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                           1,  # target component
+                                           0,
+                                           0xffff)
+        logs = {}
+        while True:
+            if self.get_sim_time_cached() - tstart > 5:
+                raise NotAchievedException("Did not download list")
+            m = self.mav.recv_match(type='LOG_ENTRY', blocking=True, timeout=1)
+            if m is None:
+                continue
+            self.progress("Received (%s)" % str(m))
+            logs[m.id] = m
+            if m.id == m.last_log_num:
+                break
+        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+
+        if sorted(logs.keys()) != list(range(1, expected_count + 1)):
+            raise NotAchievedException(
+                "Expected entries 1..%u got (%s)" % (expected_count, sorted(logs.keys())))
+        for m in logs.values():
+            if m.id == expected_gap_id:
+                if m.size != 0 or m.time_utc != 0:
+                    raise NotAchievedException(
+                        "Expected zero-size/zero-time entry for the hole, got (%s)" % str(m))
+                continue
+            if m.size == 0:
+                raise NotAchievedException("Zero-sized entry for a log which exists (%s)" % str(m))
+            if m.time_utc < 1000:
+                raise NotAchievedException("Bad timestamp on a log which exists (%s)" % str(m))
+
     #################################################
     # SIM UTILITIES
     #################################################
