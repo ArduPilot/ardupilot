@@ -27,6 +27,24 @@ extern AP_Periph_FW periph;
 // GPIO pins used for BMS LEDs
 const uint8_t BatteryBMS::led_gpios[] = {AP_PERIPH_BMS_LED_PINS};
 
+const AP_Param::GroupInfo BatteryBMS::var_info[] {
+
+    // @Param: SLEEP_SEC
+    // @DisplayName: Battery Sleep Timeout
+    // @Description: Battery sleep timeout in seconds.  If there is no activity for this many seconds the battery will enter sleep mode.  Set to 0 to disable sleep mode
+    // @Range: 0 600
+    // @User: Advanced
+    AP_GROUPINFO("SLEEP_SEC", 1, BatteryBMS, sleep_timeout_sec, 30),
+
+    AP_GROUPEND
+};
+
+// constructor
+BatteryBMS::BatteryBMS(void)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 // configure gpio pins. returns true once configured
 bool BatteryBMS::configured()
 {
@@ -66,6 +84,9 @@ void BatteryBMS::update(void)
     if (!configured()) {
         return;
     }
+
+    // update sleep timeout
+    periph.battery_lib.set_sleep_timeout(constrain_uint16(sleep_timeout_sec.get(), 0, INT16_MAX));
 
 #ifdef HAL_GPIO_PIN_BMS_BTN1
     // check and handle button press events
