@@ -134,6 +134,9 @@ void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float a
 // - `vel` defines the current direction of motion (used to split the acceleration).
 // - `accel` is modified in-place to remain within `accel_max`.
 // - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize lateral correction.
+// - Near zero speed the cross-track prioritisation is faded out to a simple
+//   direction-preserving magnitude limit, avoiding a lateral acceleration spike
+//   as the direction of travel rotates through zero (e.g. a hard stick reversal).
 // - If `vel` is zero, a simple magnitude limit is applied.
 // Returns true if the acceleration vector was modified.
 bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
