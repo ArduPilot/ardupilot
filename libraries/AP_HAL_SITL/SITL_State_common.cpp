@@ -225,6 +225,24 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
     } else if (streq(name, "ibus2master")) {
         sitl_model->set_ibus2master(&_sitl->ibus2master_sim);
         return &_sitl->ibus2master_sim;
+    } else if (strncmp(name, "ibus2slave", 10) == 0) {
+        // "ibus2slave" (no digit) is an alias for "ibus2slave0"
+        const uint8_t idx = (name[10] >= '0' && name[10] <= '9') ? (name[10] - '0') : 0;
+        for (auto &sim : _sitl->ibus2slave_sim) {
+            if (sim._dev_idx.get() == idx) {
+                sitl_model->set_ibus2slave(&sim, &sim - _sitl->ibus2slave_sim);
+                return &sim;
+            }
+        }
+    } else if (strncmp(name, "ibus2esc", 8) == 0) {
+        // "ibus2esc" (no digit) is an alias for "ibus2esc0"
+        const uint8_t idx = (name[8] >= '0' && name[8] <= '9') ? (name[8] - '0') : 0;
+        for (auto &sim : _sitl->ibus2esc_sim) {
+            if (sim._dev_idx.get() == idx) {
+                sitl_model->set_ibus2esc(&sim, &sim - _sitl->ibus2esc_sim);
+                return &sim;
+            }
+        }
     } else if (streq(name, "ie24")) {
         sitl_model->set_ie24(&_sitl->ie24_sim);
         return &_sitl->ie24_sim;

@@ -645,6 +645,22 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Path: ./SIM_IBus2_Master.cpp
     AP_SUBGROUPINFO(ibus2master_sim, "IBUS2M_", 57, SIM, IBus2Master),
 
+    // @Group: IBUS2S1_
+    // @Path: ./SIM_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(ibus2slave_sim[0], "IBUS2S1_", 58, SIM, IBus2SlaveDevice),
+
+    // @Group: IBUS2E1_
+    // @Path: ./SIM_IBus2_ESC.cpp
+    AP_SUBGROUPINFO(ibus2esc_sim[0], "IBUS2E1_", 59, SIM, IBus2ESC),
+
+    // @Group: IBUS2S2_
+    // @Path: ./SIM_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(ibus2slave_sim[1], "IBUS2S2_", 60, SIM, IBus2SlaveDevice),
+
+    // @Group: IBUS2E2_
+    // @Path: ./SIM_IBus2_ESC.cpp
+    AP_SUBGROUPINFO(ibus2esc_sim[1], "IBUS2E2_", 61, SIM, IBus2ESC),
+
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK

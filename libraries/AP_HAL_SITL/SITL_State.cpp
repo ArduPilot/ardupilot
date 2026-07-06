@@ -313,6 +313,32 @@ void SITL_State::_simulator_servos(struct sitl_input &input)
         }
     }
 
+    {
+        bool any_ibus2esc = false;
+        for (auto &esc_sim : _sitl->ibus2esc_sim) {
+            if (esc_sim.enabled()) {
+                any_ibus2esc = true;
+                break;
+            }
+        }
+        if (any_ibus2esc) {
+            // IBUS2ESC is the authoritative source of motor values; clear the
+            // normal servo outputs so a broken IBUS2 path doesn't silently fall
+            // back to the PWM servo path.
+            memset(input.servos, 0, sizeof(input.servos));
+            for (auto &esc_sim : _sitl->ibus2esc_sim) {
+                if (esc_sim.enabled()) {
+                    esc_sim.update_sitl_input_pwm(input);
+                }
+            }
+            for (uint8_t i=0; i<ARRAY_SIZE(input.servos); i++) {
+                if (input.servos[i] != 0 && input.servos[i] < 1000) {
+                    AP_HAL::panic("Bad input servo value (%u)", input.servos[i]);
+                }
+            }
+        }
+    }
+
 #if AP_SIM_VOLZ_ENABLED
     // update simulation input based on data received via "serial" to
     // Volz servos:
