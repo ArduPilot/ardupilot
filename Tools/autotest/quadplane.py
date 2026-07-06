@@ -4604,6 +4604,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.AHRSSwitchBackendResets,
             self.PilotYaw,
             self.TestLogDownloadWrap,
+            self.TestLogDownloadAfterPrune,
             self.EXTENDED_SYS_STATE,
             self.QRTLGradualAltDescentTerrain,
             self.Mission,
