@@ -298,6 +298,18 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(beacon, "BCN", 33, AP_Vehicle, AP_Beacon),
 #endif  // AP_BEACON_ENABLED
 
+#if AP_IBUS2_MASTER_ENABLED
+    // @Group: IBUS2M_
+    // @Path: ../AP_IBus2/AP_IBus2_Masters.cpp
+    AP_SUBGROUPINFO(ibus2_masters, "IBUS2M_", 34, AP_Vehicle, AP_IBus2_Masters),
+#endif  // AP_IBUS2_MASTER_ENABLED
+
+#if AP_IBUS2_SLAVE_ENABLED
+    // @Group: IBUS2S_
+    // @Path: ../AP_IBus2/AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(ibus2_slave, "IBUS2S_", 35, AP_Vehicle, AP_IBus2_Slave),
+#endif  // AP_IBUS2_SLAVE_ENABLED
+
     AP_GROUPEND
 };
 
@@ -563,6 +575,10 @@ void AP_Vehicle::setup()
 
 #if AP_IBUS_TELEM_ENABLED
     ibus_telem.init();
+#endif
+
+#if AP_IBUS2_MASTER_ENABLED
+    ibus2_masters.init();  // each enabled instance registers its own timer callback
 #endif
 
 #if AP_IBUS2_SLAVE_ENABLED
