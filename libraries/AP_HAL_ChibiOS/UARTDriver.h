@@ -236,6 +236,10 @@ private:
     event_listener_t hd_listener;
     eventflags_t hd_tx_active;
     void half_duplex_setup_tx(void);
+
+    // listener waking the uart thread on received data in half-duplex mode
+    event_listener_t hd_rx_listener;
+    bool hd_rx_listener_registered;
 #endif
 
     // set to true for unbuffered writes (low latency writes)
