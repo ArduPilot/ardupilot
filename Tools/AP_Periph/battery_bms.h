@@ -6,8 +6,14 @@ class BatteryBMS {
 public:
     friend class AP_Periph_FW;
 
+    // constructor
+    BatteryBMS();
+
     // main update function
     void update(void);
+
+    // var_info for holding parameters
+    static const struct AP_Param::GroupInfo var_info[];
 
 private:
 
@@ -50,6 +56,9 @@ private:
 
     // configuration variables
     bool config_complete;           // true once configuration has been completed
+
+    // parameters
+    AP_Int16 sleep_timeout_sec;     // battery sleep timeout in seconds
 
     // button handling variables
     struct {
