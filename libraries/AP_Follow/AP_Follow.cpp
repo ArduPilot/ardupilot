@@ -617,7 +617,7 @@ float AP_Follow::calc_max_velocity_change(float accel_max, float jerk_max, float
     } else {
         // timeout too short: pure triangle profile
         const float t_half = timeout_sec * 0.5f;
-        return 0.5f * jerk_max * sq(t_half);
+        return jerk_max * sq(t_half);
     }
 }
 
