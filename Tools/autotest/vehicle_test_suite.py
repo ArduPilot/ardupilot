@@ -4377,6 +4377,50 @@ class TestSuite(abc.ABC):
         if len(new_content) == 0:
             raise NotAchievedException(f"Unexpected length {len(new_content)=}")
 
+    def TestLogDownloadAfterPrune(self):
+        '''check the log list is sane after the oldest logs are removed'''
+        # When the autopilot removes its oldest logs to free space
+        # (Prep_MinSpace), or this test framework moves logs away after
+        # a failed test, the logs on disk no longer start at log 1.
+        # AP_Logger_File::get_num_logs() must count the logs actually
+        # present rather than assuming 1..last-log-number all exist; if
+        # it over-counts then the log list contains phantom
+        # zero-size/zero-time-utc entries for logs which do not exist.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.reboot_sitl()
+
+        self.progress("Creating some logs")
+        for i in range(0, 4):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1, reason="log data to accumulate")
+            self.disarm_vehicle()
+
+        log_list = self.log_list()
+        if len(log_list) < 4:
+            raise NotAchievedException("Expected at least 4 logs, got (%s)" % str(log_list))
+
+        self.progress("Removing the oldest two logs, as Prep_MinSpace would")
+        for log in log_list[0:2]:
+            os.unlink(log)
+        remaining_count = len(self.log_list())
+
+        # reboot so the autopilot rediscovers its log state from the disk
+        # contents, as it would after the in-flight pruning of a
+        # power-cycled vehicle:
+        self.reboot_sitl()
+
+        self.progress("Checking the log list matches the logs on disk")
+        logs = self.download_full_log_list()
+        if len(logs) != remaining_count:
+            raise NotAchievedException(
+                "Log list count does not match logs on disk (want=%u got=%u)" %
+                (remaining_count, len(logs)))
+
     #################################################
     # SIM UTILITIES
     #################################################
