@@ -130,6 +130,7 @@ class ExtractFeatures(BuildScriptBase):
             ('HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL', 'AP_Frsky_SPort_Passthrough::set_telem_data'),
 
             ('AP_IBUS_TELEM_ENABLED', 'AP_IBus_Telem::init',),
+            ('AP_IBUS2_MASTER_ENABLED', 'AP_IBus2_Master::init'),
             ('AP_IBUS2_SLAVE_ENABLED', 'AP_IBus2_Slave::init'),
 
             ('MODE_AUTOLAND_ENABLED', 'ModeAutoLand::update'),
