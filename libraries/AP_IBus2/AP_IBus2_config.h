@@ -21,3 +21,7 @@
 // Must not exceed MAX_RCIN_CHANNELS (18) defined in AP_RCProtocol/AP_RCProtocol.h.
 // Kept here to avoid a circular include: AP_RCProtocol → AP_RCProtocol_IBus2 → AP_IBus2_Slave.
 #define AP_IBUS2_MAX_CHANNELS 18
+
+#ifndef AP_IBUS2_MAX_MASTER_INSTANCES
+#define AP_IBUS2_MAX_MASTER_INSTANCES 4
+#endif
