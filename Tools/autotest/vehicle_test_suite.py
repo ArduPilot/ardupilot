@@ -5079,6 +5079,14 @@ class TestSuite(abc.ABC):
 
     def TestLogDownloadMAVProxy(self):
         """Download latest log."""
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.progress("Creating some logs")
+        for i in range(0, 4):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1, reason="log data to accumulate")
+            self.disarm_vehicle()
+
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
         self.mavproxy_load_module(mavproxy, 'log')
@@ -5090,6 +5098,59 @@ class TestSuite(abc.ABC):
         mavproxy.expect("Finished downloading", timeout=120)
         self.mavproxy_unload_module(mavproxy, 'log')
         self.stop_mavproxy(mavproxy)
+
+        # again with the oldest logs removed, as AP_Logger's
+        # Prep_MinSpace would remove them: the log list must match the
+        # logs actually present rather than assuming logs
+        # 1..last-log-number all exist, and downloading the latest log
+        # must fetch the newest log on disk:
+        # ensure no log is created (and left open, growing) at the
+        # reboot so the logs on disk are static for the checks below:
+        self.set_parameter("LOG_DISARMED", 0)
+        log_list = self.log_list()
+        if len(log_list) < 3:
+            raise NotAchievedException("Expected at least 3 logs, got (%s)" % str(log_list))
+        self.progress("Removing the oldest two logs")
+        for log in log_list[0:2]:
+            os.unlink(log)
+        # reboot so the autopilot rediscovers its log state from the
+        # disk contents:
+        self.reboot_sitl()
+        expected_count = len(self.log_list())
+
+        filename = "MAVProxy-downloaded-log-pruned.BIN"
+        mavproxy = self.start_mavproxy()
+        self.mavproxy_load_module(mavproxy, 'log')
+        mavproxy.send("log list\n")
+        mavproxy.expect(r"\bLog (\d+) .* lastLog \1 ")
+        lastlog = int(mavproxy.match.group(1))
+        if lastlog != expected_count:
+            raise NotAchievedException(
+                "Log list does not match logs on disk (want=%u got=%u)" %
+                (expected_count, lastlog))
+        mavproxy.send("set shownoise 0\n")
+        mavproxy.send("log download latest %s\n" % filename)
+        mavproxy.expect("Finished downloading", timeout=120)
+        self.mavproxy_unload_module(mavproxy, 'log')
+        self.stop_mavproxy(mavproxy)
+
+        self.progress("Comparing downloaded log to newest log on disk")
+        newest = self.log_list()[-1]
+        tstart = time.time()
+        while True:
+            if time.time() - tstart > 30:
+                raise NotAchievedException(
+                    "Downloaded log did not match newest log on disk (%s)" % newest)
+            try:
+                with open(filename, 'rb') as f:
+                    downloaded = f.read()
+                with open(newest, 'rb') as f:
+                    ondisk = f.read()
+                if downloaded == ondisk:
+                    break
+            except FileNotFoundError:
+                pass
+            time.sleep(1)
 
     def TestLogDownloadMAVProxyNetwork(self):
         """Download latest log over network port"""
