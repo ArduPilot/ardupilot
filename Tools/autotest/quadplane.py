@@ -4733,6 +4733,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.PilotYaw,
             self.TestLogDownloadWrap,
             self.TestLogDownloadAfterPrune,
+            self.TestLogDownloadLogGap,
             self.EXTENDED_SYS_STATE,
             self.QRTLGradualAltDescentTerrain,
             self.Mission,
