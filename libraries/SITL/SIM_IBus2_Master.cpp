@@ -23,6 +23,7 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_IBus2/AP_IBus2_Slave.h>
+#include <GCS_MAVLink/GCS.h>
 #include <stdio.h>
 
 using namespace SITL;
@@ -311,6 +312,40 @@ void IBus2Master::send_frame2()
     write_to_autopilot((const char *)buf, sizeof(buf));
 }
 
+// Decode the telemetry data points in a GET_VALUE response.  Each sensor
+// type's decoded point is reported via statustext so the autotest can verify
+// the values the slave transports; reports are limited to one per type per
+// TELEM_REPORT_INTERVAL_MS to avoid flooding the GCS.
+void IBus2Master::handle_get_value_response(const IBUS2_Resp_GetValue *r)
+{
+    const auto *telem = reinterpret_cast<const IBUS2_GetValueTelem *>(r->value);
+    ::fprintf(stderr, "IBus2Master: GET_VALUE VID=%u PID=%u pack %u/%u\n",
+              (unsigned)r->vid, (unsigned)r->pid,
+              (unsigned)telem->pack_cur_index, (unsigned)telem->pack_length);
+
+    static const uint32_t TELEM_REPORT_INTERVAL_MS = 5000;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _telem_seen_reset_ms > TELEM_REPORT_INTERVAL_MS) {
+        _telem_seen_reset_ms = now_ms;
+        _telem_types_seen = 0;
+    }
+
+    for (uint8_t i = 0; i < IBUS2_TELEM_POINTS_PER_PACKET; i++) {
+        const IBUS2_TelemDataPoint &p = telem->points[i];
+        if (p.type == (uint16_t)IBUS2SensorType::ERROR_TYPE) {
+            continue;  // empty slot
+        }
+        const uint64_t type_bit = (uint64_t)1U << p.type;
+        if (_telem_types_seen & type_bit) {
+            continue;
+        }
+        _telem_types_seen |= type_bit;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBus2M: telem t=%u f=%u u=%u v=%d",
+                      (unsigned)p.type, (unsigned)p.format, (unsigned)p.unit,
+                      (int)p.value);
+    }
+}
+
 void IBus2Master::read_frame3()
 {
     char buf[IBUS2_FRAME3_SIZE];
@@ -349,8 +384,7 @@ void IBus2Master::read_frame3()
                 }
                 case IBUS2Cmd::GET_VALUE: {
                     const auto *r = reinterpret_cast<const IBUS2_Resp_GetValue *>(msg);
-                    ::fprintf(stderr, "IBus2Master: GET_VALUE VID=%u PID=%u\n",
-                              (unsigned)r->vid, (unsigned)r->pid);
+                    handle_get_value_response(r);
                     break;
                 }
                 case IBUS2Cmd::GET_PARAM: {

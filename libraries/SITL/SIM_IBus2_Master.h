@@ -72,12 +72,18 @@ private:
     uint8_t _rx_buf[IBUS2_FRAME3_SIZE];
     uint8_t _rx_len;
 
+    // Bitmask of telemetry sensor types (6-bit) already reported via
+    // statustext in the current reporting interval
+    uint64_t _telem_types_seen;
+    uint32_t _telem_seen_reset_ms;
+
     void send_frame1(const class Aircraft &aircraft);
     void send_frame1_subtype1(const uint16_t *channels, uint8_t n);
     void send_frame1_subtype2(uint8_t n);
     void send_frame1_subtype0(const uint16_t *channels, uint8_t n);
     void send_frame2();
     void read_frame3();
+    void handle_get_value_response(const IBUS2_Resp_GetValue *r);
 };
 
 }  // namespace SITL
