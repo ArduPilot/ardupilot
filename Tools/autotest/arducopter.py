@@ -14336,6 +14336,102 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("IBUS2: GET_PARAM cmd from master", timeout=10, check_context=True)
         self.wait_statustext("IBUS2: SET_PARAM cmd from master", timeout=10, check_context=True)
 
+        # Frame 3 GET_VALUE telemetry: the SIM master decodes the data points
+        # the slave transports and reports each sensor type via statustext
+        # ("IBus2M: telem t=<type> f=<format> u=<unit> v=<value>") every few
+        # seconds.  Voltage (type 1) is sent in 0.01V units; wait for a live
+        # report matching the simulated battery voltage (early reports can
+        # pre-date battery monitor init).
+        want_volts = self.get_parameter("SIM_BATT_VOLTAGE")
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException(
+                    "IBus2 telemetry voltage never matched SIM_BATT_VOLTAGE %.2f" % want_volts)
+            m = self.wait_statustext("IBus2M: telem t=1 f=2 u=1 v=", timeout=30)
+            reported_volts = int(m.text.split("v=")[1]) * 0.01
+            if abs(reported_volts - want_volts) <= 1.0:
+                break
+            self.progress("Waiting for good voltage (got %.2f want %.2f)" %
+                          (reported_volts, want_volts))
+
+        # pitch (type 18) is in 0.1 degree units; on the ground it must be near-level:
+        m = self.wait_statustext("IBus2M: telem t=18 f=1 u=21 v=", timeout=10, check_context=True)
+        pitch_ddeg = int(m.text.split("v=")[1])
+        if abs(pitch_ddeg) > 100:
+            raise NotAchievedException("IBus2 telemetry pitch %u ddeg not level" % pitch_ddeg)
+
+        # remaining data points from the multi-packet rotation are present:
+        for sensor_type, fmt, unit in [
+                (2, 2, 2),    # current, 0.01A
+                (9, 0, 11),   # consumed capacity, mAh
+                (19, 1, 21),  # roll, 0.1deg
+                (17, 1, 21),  # yaw, 0.1deg
+                (6, 1, 8),    # ground speed, 0.1m/s
+                (21, 1, 24),  # baro altitude, 0.1m
+                (27, 1, 22),  # baro temperature, 0.1degC
+        ]:
+            self.wait_statustext(
+                "IBus2M: telem t=%u f=%u u=%u v=" % (sensor_type, fmt, unit),
+                timeout=10,
+                check_context=True,
+            )
+
+    def IBus2Master(self):
+        '''Test AP as IBUS2 master polling telemetry from a slave device'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 51,   # SerialProtocol_IBUS2_Master
+            "IBUS2M_1_ENABLE": 1,
+            "IBUS2M_1_SMASK": 3,  # bit0=GET_TYPE, bit1=GET_VALUE
+            "SIM_IBUS2S1_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2slave0"])
+        # Phase 1: enumerate device (GET_TYPE, Frame 2/3 code=1) then read
+        # sensor data (GET_VALUE, Frame 2/3 code=2).
+        # The statustext is emitted on the first valid GET_VALUE response.
+        self.wait_statustext("IBUS2: device 0 VID=1 PID=3", timeout=15, check_context=True)
+
+        # Phase 2: exercise GET_PARAM (Frame 2/3 code=3).
+        self.set_parameter("IBUS2M_1_SMASK", 4)  # bit2=GET_PARAM only
+        self.wait_statustext("IBUS2: device 0 GET_PARAM ack", timeout=15, check_context=True)
+
+        # Phase 3: exercise SET_PARAM (Frame 2/3 code=4) with a
+        # ReceiverInternalSensors payload (ParamType=0xC000, spec Appendix 1).
+        self.set_parameter("IBUS2M_1_SMASK", 8)  # bit3=SET_PARAM only
+        self.wait_statustext("IBUS2: device 0 SET_PARAM ack", timeout=15, check_context=True)
+
+    def IBus2ESC_flight(self):
+        '''fly with motor outputs driven by IBUS2 ESC'''
+        self.start_subtest("IBUS2 ESC flight")
+        num_wp = self.load_mission("copter_mission.txt", strict=False)
+        self.fly_loaded_mission(num_wp)
+
+    def IBus2ESC(self):
+        '''Test IBUS2 ESC motor control across two master buses'''
+        # Bus 0 (serial5) and bus 1 (serial6) both receive Frame 1 motor
+        # commands.  Both ESC sims are enabled so the flight verifies that
+        # SITL motor inputs arrive correctly from each bus independently.
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 51,   # SerialProtocol_IBUS2_Master — bus 0
+            "SERIAL6_PROTOCOL": 51,   # SerialProtocol_IBUS2_Master — bus 1
+            "IBUS2M_1_ENABLE": 1,
+            "IBUS2M_1_SMASK": 0,  # Frame 1 only
+            "IBUS2M_2_ENABLE": 1,
+            "IBUS2M_2_SMASK": 0,  # Frame 1 only
+            "SIM_IBUS2E1_ENA": 1,
+            "SIM_IBUS2E2_ENA": 1,
+            "SERVO1_FUNCTION": 33,    # k_motor1
+            "SERVO2_FUNCTION": 34,    # k_motor2
+            "SERVO3_FUNCTION": 35,    # k_motor3
+            "SERVO4_FUNCTION": 36,    # k_motor4
+        })
+        self.customise_SITL_commandline([
+            "--serial5=sim:ibus2esc0",
+            "--serial6=sim:ibus2esc1",
+        ])
+        self.IBus2ESC_flight()
+
     def IBus2RCInput(self):
         '''Test that IBUS2 slave RC channels reach AP_RCProtocol'''
         self.set_parameters({
@@ -18269,6 +18365,8 @@ return update, 1000
             self.AHRSTrimLand,
             self.IBus,
             self.IBus2Slave,
+            self.IBus2Master,
+            self.IBus2ESC,
             self.IBus2RCInput,
             self.IBus2RCInputViaUDP,
             self.WaitAndMaintainAttitude_RCFlight,
