@@ -3642,6 +3642,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.QAUTOTUNEYawRepoint,
             self.TestLogDownload,
             self.TestLogDownloadWrap,
+            self.TestLogDownloadAfterPrune,
             self.EXTENDED_SYS_STATE,
             self.Mission,
             self.Weathervane,
