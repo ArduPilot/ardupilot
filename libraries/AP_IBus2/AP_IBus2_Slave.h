@@ -195,6 +195,10 @@ private:
     // Populate sensor data into a GET_VALUE response value[14] buffer.
     // Returns number of data points written.
     uint8_t populate_sensor_data(uint8_t *value14);
+
+    // Raw single-sensor value for plain sensor device types; returns false
+    // when the configured type uses the pack format instead.
+    bool raw_sensor_value(int16_t &value) const;
 };
 
 #endif  // AP_IBUS2_SLAVE_ENABLED

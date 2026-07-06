@@ -474,14 +474,46 @@ void AP_IBus2_Slave::send_frame3()
     }
 }
 
+// When the configured device type is a plain sensor the radio reads the
+// GET_VALUE payload as a bare little-endian value (of the size advertised
+// in ValueLength) rather than the telemetry-adapter pack format.  Returns
+// false for non-sensor types (e.g. digital servo), which use pack format.
+bool AP_IBus2_Slave::raw_sensor_value(int16_t &value) const
+{
+    switch (_device_type.get()) {
+    case 0x01:  // temperature; 0.1 degC units with a +40 degC offset
+                // (bench-verified: radio displays (value-400)/10 degC,
+                // matching the iBus1 convention in AP_IBus_Telem)
+#if AP_BARO_ENABLED
+        value = (int16_t)((AP::baro().get_temperature() + 40) * 10);
+#else
+        value = 40 * 10;
+#endif
+        return true;
+    case 0x03:  // external voltage; 0.01V units
+#if AP_BATTERY_ENABLED
+        value = (int16_t)(AP::battery().voltage() * 100);
+#else
+        value = 0;
+#endif
+        return true;
+    default:
+        return false;
+    }
+}
+
 void AP_IBus2_Slave::send_resp_get_type()
 {
+    int16_t raw_unused;
+    const bool raw = raw_sensor_value(raw_unused);
     const IBUS2_Pkt<IBUS2_Resp_GetType> r{
         IBUS2_PKT_RESPONSE,
         (uint8_t)IBUS2Cmd::GET_TYPE,
         IBUS2_Resp_GetType{
             (uint8_t)_device_type.get(),
-            16,  // value_length: use max as recommended
+            // plain sensors advertise the size of their raw value; the
+            // pack format uses the recommended maximum
+            (uint8_t)(raw ? 2 : 16),
             (uint8_t)((_required_resources & REQUIRED_CHANNEL_TYPES) != 0),
             (uint8_t)((_required_resources & REQUIRED_FAILSAFE) != 0),
         },
@@ -496,7 +528,13 @@ void AP_IBus2_Slave::send_resp_get_value()
         (uint8_t)IBUS2Cmd::GET_VALUE,
         IBUS2_Resp_GetValue{{}, IBUS2_TELEM_VID, IBUS2_TELEM_PID},
     };
-    populate_sensor_data(r.msg.value);
+    int16_t raw;
+    if (raw_sensor_value(raw)) {
+        r.msg.value[0] = (uint8_t)(raw & 0xFF);
+        r.msg.value[1] = (uint8_t)((raw >> 8) & 0xFF);
+    } else {
+        populate_sensor_data(r.msg.value);
+    }
     r.update_crc();
     port_write((const uint8_t *)&r, sizeof(r));
 }
