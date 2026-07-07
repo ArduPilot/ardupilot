@@ -14432,6 +14432,43 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ])
         self.IBus2ESC_flight()
 
+    def IBus2Hub(self):
+        '''Test IBus2 slave hub-tree sensor exposure'''
+        # default slots: 1=battery voltage, 2=temperature
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 52,  # SerialProtocol_IBUS2_Slave
+            "SIM_IBUS2M_ENA": 1,
+            "IBUS2S_TYPE": -1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
+        # voltage leaf at (0,7), temperature leaf at (1,7).  Early reports
+        # can pre-date battery monitor init, so wait for a live match.
+        want = self.get_parameter("SIM_BATT_VOLTAGE")
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("hub voltage never matched %.2f" % want)
+            m = self.wait_statustext("IBus2M: dev 0,7 type=3 v=", timeout=30)
+            volts = int(m.text.split("v=")[1]) * 0.01
+            if abs(volts - want) <= 1.0:
+                break
+        m = self.wait_statustext("IBus2M: dev 1,7 type=1 v=", timeout=30, check_context=True)
+        temp_raw = int(m.text.split("v=")[1])
+        if not 400 < temp_raw < 1200:
+            raise NotAchievedException("hub temperature raw %d insane" % temp_raw)
+
+        # more than 7 slots forces grouping under nested hubs
+        params = {"IBUS2S_%u_TYPE" % n: 1 for n in range(1, 9)}
+        self.set_parameters(params)
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
+        self.wait_statustext("IBus2M: dev 0,7 hub7", timeout=30, check_context=True)
+        self.wait_statustext("IBus2M: dev 1,7 hub1", timeout=30, check_context=True)
+        self.wait_statustext("IBus2M: dev 0,0 type=1 v=", timeout=30, check_context=True)
+        self.wait_statustext("IBus2M: dev 0,6 type=1 v=", timeout=30, check_context=True)
+        self.wait_statustext("IBus2M: dev 1,0 type=1 v=", timeout=30, check_context=True)
+
     def IBus2RCInput(self):
         '''Test that IBUS2 slave RC channels reach AP_RCProtocol'''
         self.set_parameters({
@@ -18367,6 +18404,7 @@ return update, 1000
             self.IBus2Slave,
             self.IBus2Master,
             self.IBus2ESC,
+            self.IBus2Hub,
             self.IBus2RCInput,
             self.IBus2RCInputViaUDP,
             self.WaitAndMaintainAttitude_RCFlight,
