@@ -156,7 +156,7 @@ An **SH1.0 6P** connector supports a standard DJI HD VTX connection. `SERIAL3` i
 | 5   | GND          |
 | 6   | SBUS (R4)    |
 
-> **Note:** Pin 6 is wired to UART4 RX. `SERIAL4` is `None` by default, and RC input defaults to UART5 — so this pin does nothing until you set `SERIAL4_PROTOCOL` (e.g. `= 23` for RCIN) to match what you connect here.
+> **Note:** Pin 6 is wired to UART4 RX. `SERIAL4` is `None` by default, and RC input defaults to UART5 — if you use the pin on the HD VTX connection, you must set `SERIAL4_PROTOCOL` to `23` and set `SERIAL5_PROTOCOL` to something besides.
 
 ## DShot Capability
 
@@ -225,9 +225,9 @@ GPIO 83 is the former PPM receiver solder pad, repurposed as a general-purpose o
 
 Example (using Channel 12 to control PINIO3 via Relay 4):
 
-- [RELAY4_FUNCTION](https://ardupilot.org/copter/docs/parameters.html#relay4-function-relay-function) = 1 (already set as default)
-- [RELAY4_PIN](https://ardupilot.org/copter/docs/parameters.html#relay4-pin-relay-pin) = 83  (already set as default)
-- [RC12_OPTION](https://ardupilot.org/copter/docs/parameters.html#rc12-option-rc-input-option) = 36  ; Relay4 Control
+- `RELAY4_FUNCTION` = 1 (already set as default)
+- `RELAY4_PIN` = 83 (already set as default)
+- `RC12_OPTION` = 36; Relay4 Control
 
 ## Battery Monitor Settings
 
