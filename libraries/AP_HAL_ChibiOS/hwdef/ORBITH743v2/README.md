@@ -29,7 +29,7 @@ The above image and some content courtesy of [orbitteknoloji.com.tr](https://orb
 - USB Type-C port
 - 8x UARTs
 - 13x PWM outputs(one for serial LED by default) via two 8-pin ESC connectors and/or solder pads
-- 1x RC input (PWM/SBUS)
+- 1x RC input (serial: SBUS/DSM/SRXL2/CRSF/FPort via UART5)
 - I2C port for external compass, airspeed sensor, etc.
 - 1x CAN port
 - HD VTX support
@@ -92,7 +92,7 @@ These connectors are intended for external serial peripherals such as telemetry 
 
 RC input is configured by default on `SERIAL5` (UART5). The 5V pin is powered by both USB and the onboard 5V BEC from the battery.
 
-- PPM is supported via a dedicated solder pad on the board.  
+- A PPM solder pad is present on the board, but is **not supported in firmware**. This pad is instead configured as `PINIO3` — see the [GPIOs](#gpios) section. Use one of the serial protocols below for RC input.
 - SBUS/DSM/SRXL connects to the RX5 pin.
 - FPort requires connection to TX5. Set [SERIAL5_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial5-options-serial5-options) = 7  
 - CRSF also requires both TX5 and RX5 connections and provides telemetry automatically.
@@ -156,6 +156,8 @@ An **SH1.0 6P** connector supports a standard DJI HD VTX connection. `SERIAL3` i
 | 5   | GND          |
 | 6   | SBUS (R4)    |
 
+> **Note:** Pin 6 is wired to UART4 RX. `SERIAL4` is `None` by default, and RC input defaults to UART5 — so this pin does nothing until you set `SERIAL4_PROTOCOL` (e.g. `= 23` for RCIN) to match what you connect here.
+
 ## DShot Capability
 
 All motor outputs (M1-M8) support:
@@ -192,6 +194,7 @@ Set the `SERVOx_FUNCTION = -1` to enable GPIO functionality. See [ArduPilot GPIO
 - BUZZER → 80  
 - VTX PWR → 81 (internal)  
 - PINIO2 → 82
+- PINIO3 → 83 (PPM pad, repurposed)
 
 ## VTX Power Control
 
@@ -215,6 +218,16 @@ Example (using Channel 11 to control PINIO2 via Relay 3):
 - [RELAY3_FUNCTION](https://ardupilot.org/copter/docs/parameters.html#relay3-function-relay-function) = 1 (already set as default)
 - [RELAY3_PIN](https://ardupilot.org/copter/docs/parameters.html#relay3-pin-relay-pin) = 82  (already set as default)
 - [RC11_OPTION](https://ardupilot.org/copter/docs/parameters.html#rc11-option-rc-input-option) = 35  ; Relay3 Control
+
+## PINIO3
+
+GPIO 83 is the former PPM receiver solder pad, repurposed as a general-purpose output since PPM is not supported in firmware. Unlike PINIO1/PINIO2, it defaults **LOW** (off) at boot, since its intended use depends entirely on what you wire to it.
+
+Example (using Channel 12 to control PINIO3 via Relay 4):
+
+- [RELAY4_FUNCTION](https://ardupilot.org/copter/docs/parameters.html#relay4-function-relay-function) = 1 (already set as default)
+- [RELAY4_PIN](https://ardupilot.org/copter/docs/parameters.html#relay4-pin-relay-pin) = 83  (already set as default)
+- [RC12_OPTION](https://ardupilot.org/copter/docs/parameters.html#rc12-option-rc-input-option) = 36  ; Relay4 Control
 
 ## Battery Monitor Settings
 
