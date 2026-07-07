@@ -388,6 +388,8 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_DO_AUX_FUNCTION:
     case MAV_CMD_DO_SET_RESUME_REPEAT_DIST:
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+    case MAV_CMD_ILLUMINATOR_ON_OFF:
+    case MAV_CMD_DO_ILLUMINATOR_CONFIGURE:
     case MAV_CMD_JUMP_TAG:
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
@@ -1335,6 +1337,19 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 #endif
 
+    case MAV_CMD_ILLUMINATOR_ON_OFF:                    // MAV ID: 405
+        cmd.content.illuminator_on_off.enable = packet.param1;
+        cmd.content.illuminator_on_off.id = packet.param2;
+        break;
+
+    case MAV_CMD_DO_ILLUMINATOR_CONFIGURE:              // MAV ID: 406
+        cmd.content.illuminator_configure.mode = packet.param1;
+        cmd.content.illuminator_configure.brightness_pct = packet.param2;
+        cmd.content.illuminator_configure.strobe_period_s = packet.param3;
+        cmd.content.illuminator_configure.strobe_duty_pct = packet.param4;
+        cmd.content.illuminator_configure.id = packet.x;
+        break;
+
     case MAV_CMD_DO_GUIDED_LIMITS:                      // MAV ID: 222
         cmd.p1 = packet.param1;                         // max time in seconds the external controller will be allowed to control the vehicle
         cmd.content.guided_limits.alt_min = packet.param2;  // min alt below which the command will be aborted.  0 for no lower alt limit
@@ -1870,6 +1885,19 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
         packet.param2 = cmd.content.gripper.action;     // action 0=release, 1=grab.  See GRIPPER_ACTION enum
         break;
 #endif
+
+    case MAV_CMD_ILLUMINATOR_ON_OFF:                    // MAV ID: 405
+        packet.param1 = cmd.content.illuminator_on_off.enable;
+        packet.param2 = cmd.content.illuminator_on_off.id;
+        break;
+
+    case MAV_CMD_DO_ILLUMINATOR_CONFIGURE:              // MAV ID: 406
+        packet.param1 = cmd.content.illuminator_configure.mode;
+        packet.param2 = cmd.content.illuminator_configure.brightness_pct;
+        packet.param3 = cmd.content.illuminator_configure.strobe_period_s;
+        packet.param4 = cmd.content.illuminator_configure.strobe_duty_pct;
+        packet.x = cmd.content.illuminator_configure.id;
+        break;
 
     case MAV_CMD_DO_GUIDED_LIMITS:                      // MAV ID: 222
         packet.param1 = cmd.p1;                         // max time in seconds the external controller will be allowed to control the vehicle
@@ -2931,6 +2959,10 @@ const char *AP_Mission::Mission_Command::type() const
         return "Sprayer";
     case MAV_CMD_DO_AUX_FUNCTION:
         return "AuxFunction";
+    case MAV_CMD_ILLUMINATOR_ON_OFF:
+        return "IlluminatorOnOff";
+    case MAV_CMD_DO_ILLUMINATOR_CONFIGURE:
+        return "IlluminatorCfg";
     case MAV_CMD_DO_MOUNT_CONTROL:
         return "MountControl";
     case MAV_CMD_DO_WINCH:
