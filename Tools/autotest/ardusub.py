@@ -1477,6 +1477,76 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_statustext("Terrain failsafe recovery timeout!")
         self.wait_statustext("Disarming motors")
 
+    def setup_guided_scripting_test(self, scriptname, ready_text):
+        """Boot the 6dof frame with the given helper script and enter armed GUIDED mode"""
+        # use the 6dof frame so roll/pitch and forward/lateral are all controllable
+        self.customise_SITL_commandline(
+            [],
+            model="vectored_6dof",
+            defaults_filepath=self.model_defaults_filepath('vectored_6dof'),
+        )
+
+        # the helper script registers its own parameter table, which is only
+        # available once scripting has run, so enable it and reboot first
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SCR_ENABLE", 1)
+        self.install_example_script_context(scriptname)
+        self.reboot_sitl()
+        self.wait_statustext(ready_text, timeout=30, check_context=True)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('GUIDED')
+
+    def ScriptingSetTargetAngleAndClimbrate(self):
+        """Test the set_target_angle_and_climbrate scripting binding"""
+        self.setup_guided_scripting_test(
+            "sub_test_set_target_angle_and_climbrate.lua",
+            "set_target_angle_and_climbrate test ready")
+
+        self.start_subtest("Descend using a negative climb rate")
+        self.set_parameter("ANGLE_CLIMB_MPS", -0.5)  # negative = descend
+        self.wait_altitude(altitude_min=-30, altitude_max=-5, relative=False, timeout=60)
+
+        self.start_subtest("Hold depth with a zero climb rate")
+        self.set_parameter("ANGLE_CLIMB_MPS", 0)
+        self.delay_sim_time(2, reason="vehicle to settle")
+        self.watch_altitude_maintained(delta=1.5, timeout=5)
+
+        self.start_subtest("Command a roll angle")
+        self.set_parameter("ANGLE_ROLL_DEG", 20)
+        self.wait_roll(20, accuracy=5, minimum_duration=2, timeout=30)
+        self.set_parameter("ANGLE_ROLL_DEG", 0)
+        self.wait_roll(0, accuracy=5, minimum_duration=2, timeout=30)
+
+        self.start_subtest("Command a pitch angle")
+        self.set_parameter("ANGLE_PITCH_DEG", 20)
+        self.wait_pitch(20, accuracy=5, minimum_duration=2, timeout=30)
+        self.set_parameter("ANGLE_PITCH_DEG", 0)
+        self.wait_pitch(0, accuracy=5, minimum_duration=2, timeout=30)
+
+        self.disarm_vehicle()
+
+    def ScriptingSetTargetVelocityNED(self):
+        """Test the set_target_velocity_NED scripting binding"""
+        self.setup_guided_scripting_test(
+            "sub_test_set_target_velocity_NED.lua",
+            "set_target_velocity_NED test ready")
+
+        self.start_subtest("Command a forward velocity")
+        self.set_parameter("VELNED_FWD_MPS", 1.0)
+        self.wait_groundspeed(0.3, 100, minimum_duration=3, timeout=40)
+
+        self.start_subtest("Descend using a downward velocity")
+        start_alt = self.get_altitude(relative=False)
+        self.set_parameters({
+            "VELNED_FWD_MPS": 0,
+            "VELNED_DOWN_MPS": 0.5,  # NED positive = descend
+        })
+        self.wait_altitude(altitude_min=-40, altitude_max=start_alt - 2, relative=False, timeout=60)
+
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1523,6 +1593,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.UpsideDown,
             self.GuidedWP,
             self.AutoTerrainRecover,
+            self.ScriptingSetTargetAngleAndClimbrate,
+            self.ScriptingSetTargetVelocityNED,
         ])
 
         return ret
