@@ -50,6 +50,24 @@
 #include <AP_BattMonitor/AP_BattMonitor_config.h>
 #include <AP_GPS/AP_GPS_config.h>
 
+// One configurable sensor slot: the IBus2 sensor type presented to the
+// radio and the ArduPilot source instance backing it.
+class AP_IBus2_SensorSlot
+{
+public:
+    AP_IBus2_SensorSlot(int8_t def_type, int8_t def_instance) :
+        default_type(def_type), default_instance(def_instance)
+    {
+        AP_Param::setup_object_defaults(this, var_info);
+    }
+    AP_Int8 type;      // 0 disabled; else IBus2 sensor type (1 temp, 2 rpm, 3 voltage)
+    AP_Int8 instance;  // source instance within the type's subsystem
+    static const struct AP_Param::GroupInfo var_info[];
+private:
+    const int8_t default_type;
+    const int8_t default_instance;
+};
+
 class AP_IBus2_Slave
 {
 public:
@@ -89,6 +107,27 @@ private:
     // genuine telemetry adapter reports is unknown, so this is settable
     // to allow experimentation with sensor discovery.
     AP_Int16 _device_type;
+
+    // Configurable sensor slots exposed as a hub tree when IBUS2S_TYPE=-1
+    AP_IBus2_SensorSlot _slots[AP_IBUS2_SENSOR_SLOTS] {
+        {3, 0}, {1, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+        {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+    };
+
+    // What lives at an (AddressLevel1, AddressLevel2) pair in the hub tree
+    struct AddrNode {
+        enum Kind : uint8_t {
+            EMPTY,
+            HUB,
+            SENSOR,
+        };
+        Kind kind;
+        uint8_t slot;   // _slots index when kind==SENSOR
+        uint8_t ports;  // port count when kind==HUB
+    };
+    AddrNode resolve_addr(uint8_t l1, uint8_t l2) const;
+    uint8_t active_slots(uint8_t idx[AP_IBUS2_SENSOR_SLOTS]) const;
+    int16_t slot_value(const AP_IBus2_SensorSlot &slot) const;
 
     void thread_main();
 
@@ -199,6 +238,18 @@ private:
     // Raw single-sensor value for plain sensor device types; returns false
     // when the configured type uses the pack format instead.
     bool raw_sensor_value(int16_t &value) const;
+
+    // AddressLevel fields of the most recent Frame 1: they name the
+    // addressee of the Frame 2 that follows.  In hub mode each sub-address
+    // is presented as an independent single-value sensor.
+    uint8_t _last_f1_addr1;
+    uint8_t _last_f1_addr2;
+
+    // Address pair the pending command was received under (snapshot taken
+    // when the command is accepted, so a late response cannot pick up the
+    // NEXT frame's address and answer with the wrong identity)
+    uint8_t _pending_addr1;
+    uint8_t _pending_addr2;
 };
 
 #endif  // AP_IBUS2_SLAVE_ENABLED

@@ -25,3 +25,9 @@
 #ifndef AP_IBUS2_MAX_MASTER_INSTANCES
 #define AP_IBUS2_MAX_MASTER_INSTANCES 4
 #endif
+
+// Number of configurable sensor slots the IBus2 slave can expose as a
+// hub tree (up to 49 fit the two-level addressing).
+#ifndef AP_IBUS2_SENSOR_SLOTS
+#define AP_IBUS2_SENSOR_SLOTS 14
+#endif

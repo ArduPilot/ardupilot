@@ -27,6 +27,7 @@ static_assert(AP_IBUS2_MAX_CHANNELS <= MAX_RCIN_CHANNELS,
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Baro/AP_Baro.h>
+#include <AP_RPM/AP_RPM.h>
 #include <AP_Logger/AP_Logger.h>
 
 extern const AP_HAL::HAL &hal;
@@ -102,10 +103,84 @@ AP_IBus2_Slave *AP_IBus2_Slave::_singleton;
 const AP_Param::GroupInfo AP_IBus2_Slave::var_info[] = {
     // @Param: TYPE
     // @DisplayName: IBUS2 slave device type
-    // @Description: Device type reported in the GET_TYPE enumeration response. 248 is the documented digital-servo type; other values are experimental, for finding a type the receiver offers to the transmitter as a sensor source.
-    // @Range: 0 255
+    // @Description: Device type reported in the GET_TYPE enumeration response. -1 exposes all available sensors as an IBus2 hub (one radio sensor per sub-address). 1 (temperature) and 3 (external voltage) present a single plain sensor. 248 is the documented digital-servo type and responds with telemetry-adapter pack-format data.
+    // @Range: -1 255
     // @User: Advanced
     AP_GROUPINFO("TYPE", 1, AP_IBus2_Slave, _device_type, (int16_t)IBUS2DeviceType::DIGITAL_SERVO),
+
+    // @Group: 1_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[0], "1_", 3, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 2_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[1], "2_", 4, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 3_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[2], "3_", 5, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 4_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[3], "4_", 6, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 5_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[4], "5_", 7, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 6_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[5], "6_", 8, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 7_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[6], "7_", 9, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 8_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[7], "8_", 10, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 9_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[8], "9_", 11, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 10_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[9], "10_", 12, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 11_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[10], "11_", 13, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 12_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[11], "12_", 14, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 13_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[12], "13_", 15, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    // @Group: 14_
+    // @Path: AP_IBus2_Slave.cpp
+    AP_SUBGROUPINFO(_slots[13], "14_", 16, AP_IBus2_Slave, AP_IBus2_SensorSlot),
+
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo AP_IBus2_SensorSlot::var_info[] = {
+    // @Param: TYPE
+    // @DisplayName: IBus2 sensor slot type
+    // @Description: IBus2 sensor type presented to the radio for this slot. Slots with a non-zero type are exposed as a hub tree when IBUS2S_TYPE is -1; the radio's sensor list must be re-discovered after changing slots.
+    // @Values: 0:Disabled,1:Temperature,2:RPM,3:BatteryVoltage,127:TXVoltage
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("TYPE", 1, AP_IBus2_SensorSlot, type, default_type),
+
+    // @Param: INST
+    // @DisplayName: IBus2 sensor slot source instance
+    // @Description: Source instance backing this slot: battery monitor instance for voltage, RPM instance for RPM, barometer instance for temperature.
+    // @Range: 0 9
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("INST", 2, AP_IBus2_SensorSlot, instance, default_instance),
 
     AP_GROUPEND
 };
@@ -303,6 +378,11 @@ void AP_IBus2_Slave::handle_frame1(const uint8_t *buf, uint8_t len)
     const IBUS2_Frame1_Header *hdr = reinterpret_cast<const IBUS2_Frame1_Header *>(buf);
     const bool failsafe = hdr->failsafe || hdr->sync_lost;
 
+    // the Frame 1 address fields name the addressee of the following
+    // Frame 2 (base spec 1.1.f); 7 is the primary device address
+    _last_f1_addr1 = hdr->addr_level1;
+    _last_f1_addr2 = hdr->addr_level2;
+
     const uint8_t *payload     = buf + 3;
     const uint8_t  payload_len = len - 4;  // exclude 3-byte header and 1-byte CRC
 
@@ -418,7 +498,18 @@ void AP_IBus2_Slave::handle_frame2(const IBUS2_Pkt<IBUS2_Frame2> *f2)
     if (_response_pending) {
         return;
     }
+    if (_device_type.get() < 0) {
+        // hub-tree mode: stay silent at unoccupied addresses — the master
+        // probes the whole address space and an answer means occupancy
+        uint8_t idx[AP_IBUS2_SENSOR_SLOTS];
+        if (active_slots(idx) > 0 &&
+            resolve_addr(_last_f1_addr1, _last_f1_addr2).kind == AddrNode::EMPTY) {
+            return;
+        }
+    }
     memcpy(&_pending_cmd, f2, sizeof(_pending_cmd));
+    _pending_addr1 = _last_f1_addr1;
+    _pending_addr2 = _last_f1_addr2;
     // Estimate when Frame 2's last byte finished on the wire rather than
     // using the (platform-dependent) time we got around to parsing it, so
     // the response delay below is the spec figure on any hardware.
@@ -478,19 +569,109 @@ void AP_IBus2_Slave::send_frame3()
 // GET_VALUE payload as a bare little-endian value (of the size advertised
 // in ValueLength) rather than the telemetry-adapter pack format.  Returns
 // false for non-sensor types (e.g. digital servo), which use pack format.
+uint8_t AP_IBus2_Slave::active_slots(uint8_t idx[AP_IBUS2_SENSOR_SLOTS]) const
+{
+    uint8_t n = 0;
+    for (uint8_t i = 0; i < AP_IBUS2_SENSOR_SLOTS; i++) {
+        if (_slots[i].type.get() > 0) {
+            idx[n++] = i;
+        }
+    }
+    return n;
+}
+
+/*
+  Hub-tree layout (bench-verified addressing): the top device node is
+  AddressLevel1=7; the device attached to port k of a hub is addressed at
+  (k, 7); if that device is itself a hub its members live at (k, 0..6).
+  With up to 7 active slots each sensor sits directly on a top-level port;
+  beyond that, slots are grouped in sevens under nested hubs.  Devices must
+  stay silent at unoccupied addresses: the master probes the whole address
+  space and treats any answer as occupancy.
+ */
+AP_IBus2_Slave::AddrNode AP_IBus2_Slave::resolve_addr(uint8_t l1, uint8_t l2) const
+{
+    AddrNode r { AddrNode::EMPTY, 0, 0 };
+    uint8_t idx[AP_IBUS2_SENSOR_SLOTS];
+    const uint8_t m = active_slots(idx);
+    if (m == 0) {
+        return r;
+    }
+    if (m <= 7) {
+        if (l1 == 7) {
+            r.kind = AddrNode::HUB;
+            r.ports = m;
+        } else if (l1 < m && l2 == 7) {
+            r.kind = AddrNode::SENSOR;
+            r.slot = idx[l1];
+        }
+        return r;
+    }
+    const uint8_t nsub = (m + 6) / 7;
+    if (l1 == 7) {
+        r.kind = AddrNode::HUB;
+        r.ports = nsub;
+        return r;
+    }
+    if (l1 < nsub) {
+        const uint8_t base = l1 * 7;
+        const uint8_t size = MIN((uint8_t)7, (uint8_t)(m - base));
+        if (l2 == 7) {
+            r.kind = AddrNode::HUB;
+            r.ports = size;
+        } else if (l2 < size) {
+            r.kind = AddrNode::SENSOR;
+            r.slot = idx[base + l2];
+        }
+    }
+    return r;
+}
+
+int16_t AP_IBus2_Slave::slot_value(const AP_IBus2_SensorSlot &slot) const
+{
+    const uint8_t inst = (uint8_t)slot.instance.get();
+    switch (slot.type.get()) {
+    case 1:  // temperature; 0.1 degC + 40 degC offset
+#if AP_BARO_ENABLED
+        if (inst < AP::baro().num_instances()) {
+            return (int16_t)((AP::baro().get_temperature(inst) + 40) * 10);
+        }
+#endif
+        return 40 * 10;
+    case 2:  // rotation speed; raw rpm
+#if AP_RPM_ENABLED
+        {
+            const AP_RPM *rpm = AP_RPM::get_singleton();
+            float value;
+            if (rpm != nullptr && rpm->get_rpm(inst, value)) {
+                return (int16_t)constrain_int32((int32_t)value, 0, INT16_MAX);
+            }
+        }
+#endif
+        return 0;
+    case 3:  // external voltage; 0.01V units
+#if AP_BATTERY_ENABLED
+        if (inst < AP::battery().num_instances()) {
+            return (int16_t)(AP::battery().voltage(inst) * 100);
+        }
+#endif
+        return 0;
+    default:
+        return 0;
+    }
+}
+
 bool AP_IBus2_Slave::raw_sensor_value(int16_t &value) const
 {
     switch (_device_type.get()) {
-    case 0x01:  // temperature; 0.1 degC units with a +40 degC offset
-                // (bench-verified: radio displays (value-400)/10 degC,
-                // matching the iBus1 convention in AP_IBus_Telem)
+    case 0x01:
 #if AP_BARO_ENABLED
         value = (int16_t)((AP::baro().get_temperature() + 40) * 10);
 #else
         value = 40 * 10;
 #endif
         return true;
-    case 0x03:  // external voltage; 0.01V units
+    case 0x03:
 #if AP_BATTERY_ENABLED
         value = (int16_t)(AP::battery().voltage() * 100);
 #else
@@ -504,16 +685,28 @@ bool AP_IBus2_Slave::raw_sensor_value(int16_t &value) const
 
 void AP_IBus2_Slave::send_resp_get_type()
 {
-    int16_t raw_unused;
-    const bool raw = raw_sensor_value(raw_unused);
+    uint8_t type;
+    uint8_t value_length;
+    const AddrNode node = (_device_type.get() < 0) ?
+        resolve_addr(_pending_addr1, _pending_addr2) : AddrNode{AddrNode::EMPTY, 0, 0};
+    if (node.kind != AddrNode::EMPTY) {
+        type = (node.kind == AddrNode::HUB) ?
+            (uint8_t)(0xF0 + node.ports) : (uint8_t)_slots[node.slot].type.get();
+        value_length = 2;
+    } else {
+        int16_t raw_unused;
+        const bool raw = raw_sensor_value(raw_unused);
+        type = (uint8_t)_device_type.get();
+        // plain sensors advertise the size of their raw value; the
+        // pack format uses the recommended maximum
+        value_length = raw ? 2 : 16;
+    }
     const IBUS2_Pkt<IBUS2_Resp_GetType> r{
         IBUS2_PKT_RESPONSE,
         (uint8_t)IBUS2Cmd::GET_TYPE,
         IBUS2_Resp_GetType{
-            (uint8_t)_device_type.get(),
-            // plain sensors advertise the size of their raw value; the
-            // pack format uses the recommended maximum
-            (uint8_t)(raw ? 2 : 16),
+            type,
+            value_length,
             (uint8_t)((_required_resources & REQUIRED_CHANNEL_TYPES) != 0),
             (uint8_t)((_required_resources & REQUIRED_FAILSAFE) != 0),
         },
@@ -529,7 +722,14 @@ void AP_IBus2_Slave::send_resp_get_value()
         IBUS2_Resp_GetValue{{}, IBUS2_TELEM_VID, IBUS2_TELEM_PID},
     };
     int16_t raw;
-    if (raw_sensor_value(raw)) {
+    const AddrNode node = (_device_type.get() < 0) ?
+        resolve_addr(_pending_addr1, _pending_addr2) : AddrNode{AddrNode::EMPTY, 0, 0};
+    if (node.kind != AddrNode::EMPTY) {
+        // the polled address selects the sensor slot; hub nodes report 0
+        raw = (node.kind == AddrNode::SENSOR) ? slot_value(_slots[node.slot]) : 0;
+        r.msg.value[0] = (uint8_t)(raw & 0xFF);
+        r.msg.value[1] = (uint8_t)((raw >> 8) & 0xFF);
+    } else if (raw_sensor_value(raw)) {
         r.msg.value[0] = (uint8_t)(raw & 0xFF);
         r.msg.value[1] = (uint8_t)((raw >> 8) & 0xFF);
     } else {
