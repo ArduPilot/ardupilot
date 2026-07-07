@@ -135,8 +135,11 @@ define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
-# DPS310 integrated on I2C2 bus, multiple possible choices for external barometer
+# Onboard barometer: LPS22 (0x5C) or BMP581 (0x46) depending on board revision.
+# All options are probed at boot; whichever chip is physically present is used,
+# so a single firmware supports both baro variants.
 BARO LPS2XH I2C:1:0x5C
+BARO BMP581 I2C:1:0x46
 
 # setup for OSD
 define OSD_ENABLED 1
