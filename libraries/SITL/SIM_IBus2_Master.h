@@ -68,6 +68,26 @@ private:
     bool _have_dev_resources;
     uint8_t _dev_resources;
 
+    // Hub-tree scan: when the top node reports a hub type (0xF1..0xF7),
+    // probe port nodes at (k,7), descend into nested members (k,0..6),
+    // then rotate GET_VALUE over discovered sensor leaves.
+    uint8_t _top_type;
+    bool _scan_seeded;
+    struct Addr { uint8_t l1, l2; };
+    Addr _scan_queue[64];
+    uint8_t _scan_n;
+    uint8_t _scan_head;
+    struct Leaf { uint8_t l1, l2, type; bool value_reported; int16_t last_value; };
+    Leaf _leaves[49];
+    uint8_t _n_leaves;
+    uint8_t _leaf_poll_idx;
+    // address carried in Frame 1 for the Frame 2 that follows
+    uint8_t _addr_l1;
+    uint8_t _addr_l2;
+    Addr _last_cmd_addr;
+
+    void plan_cycle();
+
     // Frame reception from AP (Frame 3)
     uint8_t _rx_buf[IBUS2_FRAME3_SIZE];
     uint8_t _rx_len;

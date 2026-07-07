@@ -55,7 +55,7 @@
 class AP_IBus2_SensorSlot
 {
 public:
-    AP_IBus2_SensorSlot(int8_t def_type, int8_t def_instance) :
+    AP_IBus2_SensorSlot(float def_type, float def_instance) :
         default_type(def_type), default_instance(def_instance)
     {
         AP_Param::setup_object_defaults(this, var_info);
@@ -64,8 +64,9 @@ public:
     AP_Int8 instance;  // source instance within the type's subsystem
     static const struct AP_Param::GroupInfo var_info[];
 private:
-    const int8_t default_type;
-    const int8_t default_instance;
+    // AP_GROUPINFO_FLAGS_DEFAULT_POINTER reads defaults as float
+    const float default_type;
+    const float default_instance;
 };
 
 class AP_IBus2_Slave

@@ -176,8 +176,39 @@ void IBus2Master::update(const Aircraft &aircraft)
     }
     _last_send_us = now_us;
 
+    plan_cycle();
     send_frame1(aircraft);
     send_frame2();
+}
+
+// Decide which address this cycle's Frame 2 targets; the preceding
+// Frame 1 carries it in its AddressLevel fields.
+void IBus2Master::plan_cycle()
+{
+    _addr_l1 = 7;
+    _addr_l2 = 0;
+    if (!_have_dev_resources || _dev_resources != 0) {
+        return;  // still enumerating the top node
+    }
+    if (_top_type < 0xF1 || _top_type > 0xF7) {
+        return;  // not a hub: classic single-device commands at the top
+    }
+    if (!_scan_seeded) {
+        _scan_seeded = true;
+        const uint8_t ports = _top_type - 0xF0;
+        for (uint8_t k = 0; k < ports && _scan_n < ARRAY_SIZE(_scan_queue); k++) {
+            _scan_queue[_scan_n++] = Addr{k, 7};
+        }
+    }
+    if (_scan_head < _scan_n) {
+        const Addr a = _scan_queue[_scan_head];
+        _addr_l1 = a.l1;
+        _addr_l2 = a.l2;
+    } else if (_n_leaves > 0) {
+        const Leaf &lf = _leaves[_leaf_poll_idx % _n_leaves];
+        _addr_l1 = lf.l1;
+        _addr_l2 = lf.l2;
+    }
 }
 
 void IBus2Master::send_frame1(const Aircraft &aircraft)
@@ -215,7 +246,7 @@ void IBus2Master::send_frame1_subtype1(const uint16_t *channels, uint8_t n)
     uint8_t buf[IBUS2_FRAME1_MAX] {};
     buf[0] = IBUS2_PKT_CHANNELS | (1U << 2);  // subtype=1
     buf[1] = total_len;
-    buf[2] = 7;  // addr_level1=7
+    buf[2] = (uint8_t)(_addr_l1 | (_addr_l2 << 3));
 
     uint8_t *payload = buf + 3;
     uint16_t bit_pos = 0;
@@ -237,7 +268,7 @@ void IBus2Master::send_frame1_subtype2(uint8_t n)
     uint8_t buf[IBUS2_FRAME1_MAX] {};
     buf[0] = IBUS2_PKT_CHANNELS | (2U << 2);  // subtype=2
     buf[1] = total_len;
-    buf[2] = 7;  // addr_level1=7
+    buf[2] = (uint8_t)(_addr_l1 | (_addr_l2 << 3));
 
     uint8_t *payload = buf + 3;
     uint16_t bit_pos = 0;
@@ -258,7 +289,7 @@ void IBus2Master::send_frame1_subtype0(const uint16_t *channels, uint8_t n)
     uint8_t buf[IBUS2_FRAME1_MAX] {};
     buf[0] = IBUS2_PKT_CHANNELS;  // subtype=0, sync_lost=0, failsafe=0
     buf[1] = total_len;
-    buf[2] = 7;  // addr_level1=7
+    buf[2] = (uint8_t)(_addr_l1 | (_addr_l2 << 3));
 
     uint8_t *payload = buf + 3;
     uint16_t bit_pos = 0;
@@ -285,6 +316,17 @@ void IBus2Master::send_frame2()
         // enumeration incomplete: the device has not yet confirmed receipt
         // of all resources it requires, so keep polling GET_TYPE only
         cmd = IBUS2Cmd::GET_TYPE;
+    } else if (_top_type >= 0xF1 && _top_type <= 0xF7) {
+        // hub-tree device: GET_TYPE while probing queued addresses, then
+        // GET_VALUE rotation over discovered sensor leaves
+        if (_scan_head < _scan_n) {
+            cmd = IBUS2Cmd::GET_TYPE;
+        } else if (_n_leaves > 0) {
+            cmd = IBUS2Cmd::GET_VALUE;
+            _leaf_poll_idx++;
+        } else {
+            cmd = IBUS2Cmd::GET_TYPE;
+        }
     } else {
         // Primarily GET_VALUE; occasionally GET_PARAM / SET_PARAM to exercise those paths.
         static const IBUS2Cmd connected_cmds[] = {
@@ -308,6 +350,7 @@ void IBus2Master::send_frame2()
         sp->param_length = sizeof(IBUS2_PA_ReceiverInternalSensors);
     }
 
+    _last_cmd_addr = Addr{_addr_l1, _addr_l2};
     sitl_ibus2_crc8_write(buf, sizeof(buf));
     write_to_autopilot((const char *)buf, sizeof(buf));
 }
@@ -318,6 +361,22 @@ void IBus2Master::send_frame2()
 // TELEM_REPORT_INTERVAL_MS to avoid flooding the GCS.
 void IBus2Master::handle_get_value_response(const IBUS2_Resp_GetValue *r)
 {
+    // hub-tree leaf poll: raw little-endian value; report first value once
+    for (uint8_t i = 0; i < _n_leaves; i++) {
+        Leaf &lf = _leaves[i];
+        if (lf.l1 == _last_cmd_addr.l1 && lf.l2 == _last_cmd_addr.l2) {
+            const int16_t v = (int16_t)(r->value[0] | (r->value[1] << 8));
+            // report the first value and any change (sources settle after boot)
+            if (!lf.value_reported || v != lf.last_value) {
+                lf.value_reported = true;
+                lf.last_value = v;
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBus2M: dev %u,%u type=%u v=%d",
+                              (unsigned)lf.l1, (unsigned)lf.l2,
+                              (unsigned)lf.type, (int)v);
+            }
+            return;
+        }
+    }
     const auto *telem = reinterpret_cast<const IBUS2_GetValueTelem *>(r->value);
     ::fprintf(stderr, "IBus2Master: GET_VALUE VID=%u PID=%u pack %u/%u\n",
               (unsigned)r->vid, (unsigned)r->pid,
@@ -380,6 +439,28 @@ void IBus2Master::read_frame3()
                     _dev_resources = (uint8_t)(r->channels_types |
                                                (r->failsafe << 1) |
                                                (r->rx_internal_sens << 2));
+                    if (_last_cmd_addr.l1 == 7) {
+                        _top_type = r->type;
+                    } else if (_scan_head < _scan_n) {
+                        // response to a scan probe
+                        _scan_head++;
+                        if (r->type >= 0xF1 && r->type <= 0xF7 &&
+                            _last_cmd_addr.l2 == 7) {
+                            // nested hub: probe its members
+                            const uint8_t ports = r->type - 0xF0;
+                            for (uint8_t m2 = 0; m2 < ports && _scan_n < ARRAY_SIZE(_scan_queue); m2++) {
+                                _scan_queue[_scan_n++] = Addr{_last_cmd_addr.l1, m2};
+                            }
+                            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "IBus2M: dev %u,%u hub%u",
+                                          (unsigned)_last_cmd_addr.l1,
+                                          (unsigned)_last_cmd_addr.l2,
+                                          (unsigned)ports);
+                        } else if (_n_leaves < ARRAY_SIZE(_leaves)) {
+                            _leaves[_n_leaves++] = Leaf{_last_cmd_addr.l1,
+                                                        _last_cmd_addr.l2,
+                                                        r->type, false};
+                        }
+                    }
                     break;
                 }
                 case IBUS2Cmd::GET_VALUE: {
