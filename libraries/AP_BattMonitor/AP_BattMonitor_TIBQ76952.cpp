@@ -770,22 +770,26 @@ bool AP_BattMonitor_TIBQ76952::check_configuration_ok() const
 {
     bool configured_matches = true;
     for (uint8_t i = 0; i < ARRAY_SIZE(config_settings); i++) {
-        const auto &setting = config_settings[i];
         uint8_t actual[4] {};
-        uint8_t expected[4] {};
-
-        if (!indirect_read(setting.reg_addr, actual, setting.len)) {
+        const auto &setting = config_settings[i];
+        const uint8_t setting_len = constrain_uint8(setting.len, 1, sizeof(actual));
+        if (!indirect_read(setting.reg_addr, actual, setting_len)) {
             Debug("BQ76952: config read failed reg=0x%04x", setting.reg_addr);
             configured_matches = false;
             continue;
         }
 
-        expected[0] = uint8_t((setting.reg_data >> 0) & 0xFF);
-        expected[1] = uint8_t((setting.reg_data >> 8) & 0xFF);
-        expected[2] = uint8_t((setting.reg_data >> 16) & 0xFF);
-        expected[3] = uint8_t((setting.reg_data >> 24) & 0xFF);
+        uint8_t expected[] {
+            uint8_t((setting.reg_data >> 0) & 0xFF),
+            uint8_t((setting.reg_data >> 8) & 0xFF),
+            uint8_t((setting.reg_data >> 16) & 0xFF),
+            uint8_t((setting.reg_data >> 24) & 0xFF)
+        };
 
-        if (memcmp(actual, expected, setting.len) != 0) {
+        // ensure actual and expected are the same size
+        static_assert(sizeof(actual) == sizeof(expected), "check_configuration_ok actual and expected size mismatch");        
+
+        if (memcmp(actual, expected, setting_len) != 0) {
             configured_matches = false;
             Debug("BQ76952: config mismatch reg=0x%04x expected=0x%02lx actual=0x%02x%02x%02x%02x len=%u",
                   setting.reg_addr,
