@@ -177,12 +177,6 @@ TEST(AP_RTC, get_time_utc)
           12, 30, 45, 250,  -1, 30, 40, 0,    3594750 },
         { "ignored ms with target next second",
           12, 0, 10, 250,   -1, -1, 11, -1,   750 },
-
-#if 0   // these cases document the intended handling of ignored
-        // values below the largest specified element and fail before
-        // the get_time_utc() ignored-values fix
-        // (https://github.com/ArduPilot/ardupilot/pull/33667); remove
-        // this #if 0 when that PR lands
         { "ignored minutes just before target hour must not delay a day",
           12, 59, 30, 250,  13, -1, 0, 0,     29750 },
         { "ignored minutes within target hour waits for next minute",
@@ -203,7 +197,6 @@ TEST(AP_RTC, get_time_utc)
           12, 30, 45, 250,  -1, 45, -1, -1,   854750 },
         { "ignored seconds with target hour in the past rolls over a day",
           14, 30, 0, 250,   13, 0, -1, 0,     80999750 },
-#endif
 
         // everything ignored:
         { "all fields ignored returns zero",
