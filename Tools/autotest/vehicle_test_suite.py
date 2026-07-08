@@ -4459,11 +4459,24 @@ class TestSuite(abc.ABC):
             31.0000, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
-    def upload_simple_relhome_mission(self, items, target_system=1, target_component=1):
+    def upload_simple_relhome_mission(self, items, target_system=1, target_component=1, start_index=None):
+        '''if start_index is supplied the items replace existing mission
+        items starting at that index, using MISSION_WRITE_PARTIAL_LIST'''
         mission = self.create_simple_relhome_mission(
             items,
             target_system=target_system,
             target_component=target_component)
+        if start_index is not None:
+            # drop the dummy home item and renumber the remaining
+            # items to start at start_index:
+            mission = mission[1:]
+            for item in mission:
+                item.seq += start_index - 1
+            self.upload_using_mission_protocol(
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+                mission,
+                start_index=start_index)
+            return
         self.check_mission_upload_download(mission)
 
     def upload_simple_relloc_mission(self, loc, items, target_system=1, target_component=1):
@@ -9780,17 +9793,29 @@ Also, ignores heartbeats not from our target system'''
 
         self.progress("Ready to start testing!")
 
-    def upload_using_mission_protocol(self, mission_type, items, verbose=True):
-        '''mavlink2 required'''
+    def upload_using_mission_protocol(self, mission_type, items, verbose=True, start_index=None):
+        '''mavlink2 required.  If start_index is supplied then a partial
+        update is done using MISSION_WRITE_PARTIAL_LIST; items must have
+        sequence numbers starting from start_index'''
         target_system = 1
         target_component = 1
         self.do_timesync_roundtrip()
         tstart = self.get_sim_time()
-        self.mav.mav.mission_count_send(target_system,
-                                        target_component,
-                                        len(items),
-                                        mission_type)
-        remaining_to_send = set(range(0, len(items)))
+        if start_index is not None:
+            item_base = start_index
+            self.mav.mav.mission_write_partial_list_send(
+                target_system,
+                target_component,
+                start_index,
+                start_index + len(items) - 1,
+                mission_type)
+        else:
+            item_base = 0
+            self.mav.mav.mission_count_send(target_system,
+                                            target_component,
+                                            len(items),
+                                            mission_type)
+        remaining_to_send = set(range(item_base, item_base + len(items)))
         sent = set()
         timeout = (10 + len(items)/10.0)
         while True:
@@ -9815,8 +9840,7 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(f"Received unexpected mission ack {self.dump_message_verbose(m)}")
 
             if verbose:
-                self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
-                self.progress("Item (%s)" % str(items[m.seq]))
+                self.progress("Handling request for item %u/%u" % (m.seq, item_base + len(items)-1))
             if m.seq in sent:
                 self.progress("received duplicate request for item %u" % m.seq)
                 continue
@@ -9827,18 +9851,22 @@ Also, ignores heartbeats not from our target system'''
             if m.mission_type != mission_type:
                 raise NotAchievedException("received request for item from wrong mission type")
 
-            if items[m.seq].mission_type != mission_type:
-                raise NotAchievedException(f"supplied item not of correct mission type (want={mission_type} got={items[m.seq].mission_type}")  # noqa: E501
-            if items[m.seq].target_system != target_system:
-                raise NotAchievedException("supplied item not of correct target system")
-            if items[m.seq].target_component != target_component:
-                raise NotAchievedException("supplied item not of correct target component")
-            if items[m.seq].seq != m.seq:
-                raise NotAchievedException("supplied item has incorrect sequence number (%u vs %u)" %
-                                           (items[m.seq].seq, m.seq))
+            item = items[m.seq - item_base]
+            if verbose:
+                self.progress("Item (%s)" % str(item))
 
-            items[m.seq].pack(self.mav.mav)
-            self.mav.mav.send(items[m.seq])
+            if item.mission_type != mission_type:
+                raise NotAchievedException(f"supplied item not of correct mission type (want={mission_type} got={item.mission_type}")  # noqa: E501
+            if item.target_system != target_system:
+                raise NotAchievedException("supplied item not of correct target system")
+            if item.target_component != target_component:
+                raise NotAchievedException("supplied item not of correct target component")
+            if item.seq != m.seq:
+                raise NotAchievedException("supplied item has incorrect sequence number (%u vs %u)" %
+                                           (item.seq, m.seq))
+
+            item.pack(self.mav.mav)
+            self.mav.mav.send(item)
             remaining_to_send.discard(m.seq)
             sent.add(m.seq)
 
