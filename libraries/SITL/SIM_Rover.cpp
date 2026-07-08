@@ -172,10 +172,11 @@ void SimRover::update_ackermann_or_skid(const struct sitl_input &input, float de
 
             // vectored thrust conversion
             if (vectored_thrust) {
+                const float thrust = throttle;
                 const float steering_angle_rad = radians(steering * vectored_angle_max);
-                steering = sinf(steering_angle_rad) * throttle;
-                throttle *= cosf(steering_angle_rad);
-                battery_current = 20.0f * fabsf(throttle);
+                steering = sinf(steering_angle_rad) * thrust;
+                throttle = cosf(steering_angle_rad) * thrust;
+                battery_current = 20.0f * fabsf(thrust);
             }
         }
     } else {
