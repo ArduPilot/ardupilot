@@ -62,6 +62,7 @@ ModeTakeoff::ModeTakeoff() :
 
 bool ModeTakeoff::_enter()
 {
+    gcs().send_text(MAV_SEVERITY_WARNING, "HELLO");
     takeoff_mode_setup = false;
     have_autoenabled_fences = false;
 
