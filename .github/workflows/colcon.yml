@@ -149,7 +149,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     container:
-      image: ardupilot/ardupilot-dev-ros:latest
+      # pinned by digest as :latest is re-pushed nightly; this is v0.2.0 (2026-06-25)
+      image: ardupilot/ardupilot-dev-ros@sha256:4f60bb4aaf08eddd2463f61a9f2d2d12d52de56c8dcb9687ef2b53dc7164960e
     steps:
       # Sparse checkout to make .github/actions/* available without polluting the colcon workspace
       - uses: actions/checkout@v7
