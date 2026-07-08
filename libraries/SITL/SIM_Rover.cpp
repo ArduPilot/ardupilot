@@ -287,6 +287,7 @@ void SimRover::update_battery()
     const uint64_t now_us = AP_HAL::micros64();
     battery.consume_energy(battery_current, now_us);
     battery_voltage = battery.get_voltage();
+    battery_temperature_degC = battery.get_temperature_degC();
 }
 
 } // namespace SITL
