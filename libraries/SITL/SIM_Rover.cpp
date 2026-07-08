@@ -28,6 +28,13 @@ namespace SITL {
 SimRover::SimRover(const char *frame_str) :
     Aircraft(frame_str)
 {
+    constexpr float default_battery_resistance_ohm = 0.01f;
+    battery.setup(sitl->batt_capacity_ah,
+                  default_battery_resistance_ohm,
+                  sitl->batt_voltage,
+                  ambient_outside_temperature_degC());
+    battery_voltage = battery.get_voltage();
+
     skid_steering = strstr(frame_str, "skid") != nullptr;
 
     if (skid_steering) {
@@ -50,13 +57,6 @@ SimRover::SimRover(const char *frame_str) :
     }
 
     lock_step_scheduled = true;
-
-    constexpr float default_battery_resistance_ohm = 0.01f;
-    battery.setup(sitl->batt_capacity_ah,
-                  default_battery_resistance_ohm,
-                  sitl->batt_voltage,
-                  ambient_outside_temperature_degC());
-    battery_voltage = battery.get_voltage();
 }
 
 /*
