@@ -6269,6 +6269,34 @@ class TestSuite(abc.ABC):
 
     def plane_CPUFailsafe(self):
         '''In lockup Plane should copy RC inputs to RC outputs'''
+        def expected_output(channel, rc_value, params):
+            rc_min = params["RC%u_MIN" % channel]
+            rc_max = params["RC%u_MAX" % channel]
+            rc_trim = params["RC%u_TRIM" % channel]
+            servo_min = params["SERVO%u_MIN" % channel]
+            servo_max = params["SERVO%u_MAX" % channel]
+            servo_trim = params["SERVO%u_TRIM" % channel]
+
+            if rc_value < rc_trim:
+                output = servo_trim - (rc_trim - rc_value) * (servo_trim - servo_min) / (rc_trim - rc_min)
+            else:
+                output = servo_trim + (rc_value - rc_trim) * (servo_max - servo_trim) / (rc_max - rc_trim)
+            return int(output)
+
+        channel = 2
+        low_rc = 1200
+        high_rc = 1700
+        params = self.get_parameters([
+            "RC%u_MIN" % channel,
+            "RC%u_MAX" % channel,
+            "RC%u_TRIM" % channel,
+            "SERVO%u_MIN" % channel,
+            "SERVO%u_MAX" % channel,
+            "SERVO%u_TRIM" % channel,
+        ])
+        low_output = expected_output(channel, low_rc, params)
+        high_output = expected_output(channel, high_rc, params)
+
         # customising the SITL commandline ensures the process will
         # get stopped/started at the end of the test
         self.customise_SITL_commandline([])
@@ -6294,12 +6322,12 @@ class TestSuite(abc.ABC):
         self.context_pop()
         # Different scaling for RC input and servo output means the
         # servo output value isn't the rc input value:
-        self.progress("Setting RC to 1200")
-        self.rc_queue.put({2: 1200})
-        self.progress("Waiting for servo of 1260")
-        self.cpufailsafe_wait_servo_channel_value(2, 1260)
-        self.rc_queue.put({2: 1700})
-        self.cpufailsafe_wait_servo_channel_value(2, 1660)
+        self.progress("Setting RC to %u" % low_rc)
+        self.rc_queue.put({channel: low_rc})
+        self.progress("Waiting for servo of %u" % low_output)
+        self.cpufailsafe_wait_servo_channel_value(channel, low_output)
+        self.rc_queue.put({channel: high_rc})
+        self.cpufailsafe_wait_servo_channel_value(channel, high_output)
         self.reset_SITL_commandline()
 
     def mavproxy_arm_vehicle(self, mavproxy):
