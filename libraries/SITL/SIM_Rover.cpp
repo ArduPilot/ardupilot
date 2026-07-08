@@ -56,6 +56,7 @@ SimRover::SimRover(const char *frame_str) :
                   default_battery_resistance_ohm,
                   sitl->batt_voltage,
                   ambient_outside_temperature_degC());
+    battery_voltage = battery.get_voltage();
 }
 
 /*
