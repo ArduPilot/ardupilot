@@ -221,7 +221,7 @@ void SimRover::update_omni3(const struct sitl_input &input, float delta_time)
     battery_current = 0.0f;
     for (uint8_t i=0; i<3; i++) {
         wheel_ang_vel[i] = input.servos[i] ? normalise_servo_input(input.servos[i]) : 0;
-        battery_current += 10.0f * wheel_ang_vel[i];
+        battery_current += 10.0f * fabsf(wheel_ang_vel[i]);
     };
     wheel_ang_vel *= omni3_wheel_max_ang_vel;
 
