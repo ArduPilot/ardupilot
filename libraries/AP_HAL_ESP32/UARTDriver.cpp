@@ -61,16 +61,28 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                          uart_desc[uart_num].rx,
                          UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
             //uart_driver_install(p, 2*UART_FIFO_LEN, 0, 0, nullptr, 0);
-            uart_driver_install(p, 2*UART_HW_FIFO_LEN(p), 0, 0, nullptr, 0);
+            // Enlarge the ESP-IDF RX ring for headroom: the previous size (2*HW FIFO = 256 B) is easily
+            // overrun by a continuous fast signal (e.g. 420k CRSF/ELRS) clocked at a wrong baud
+            // during AP_RCProtocol's serial-RC baud scan. Install runs once at first-init, so the
+            // size cannot depend on the eventual protocol; applied to all ports (cost ~1 KB each).
+            uart_driver_install(p, MAX(1024, 2*UART_HW_FIFO_LEN(p)), 0, 0, nullptr, 0);
             _readbuf.set_size(RX_BUF_SIZE);
             _writebuf.set_size(TX_BUF_SIZE);
             _uart_owner_thd = xTaskGetCurrentTaskHandle();
 
             _initialized = true;
         } else {
-            flush();
             uart_set_baudrate(p, b);
-
+            // uart_set_baudrate() only reprograms the clock divider; it does NOT reset the RX
+            // state machine. Switching baud under a continuous fast signal (e.g. CRSF/ELRS during
+            // AP_RCProtocol's serial-RC baud scan) can leave the RX FIFO/framing stuck so it never
+            // recovers once the scan reaches the correct baud (e.g. 416666). Discard RX AFTER the
+            // change with uart_flush_input(), which resets the RX FIFO, so it is clean at the new
+            // baud. (Was flushed BEFORE the change, which left the receiver stuck.) Use the ESP-IDF
+            // call directly rather than flush(): AP_HAL's _flush() is TX-oriented on other HALs (e.g.
+            // ChibiOS), and relying on ESP32's flush() aliasing RX-discard would silently break if
+            // that is ever corrected.
+            uart_flush_input(p);
         }
     }
     _baudrate = b;
