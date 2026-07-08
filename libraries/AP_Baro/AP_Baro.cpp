@@ -40,6 +40,7 @@
 #include "AP_Baro_MS5611.h"
 #include "AP_Baro_ICM20789.h"
 #include "AP_Baro_LPS2XH.h"
+#include "AP_Baro_LPS22DF.h"
 #include "AP_Baro_FBM320.h"
 #include "AP_Baro_DPS280.h"
 #include "AP_Baro_Dummy.h"

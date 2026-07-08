@@ -264,6 +264,7 @@ class TestBuildOptions(object):
             'AP_BARO_FBM320_ENABLED',
             'AP_BARO_KELLERLD_ENABLED',
             'AP_BARO_LPS2XH_ENABLED',
+            'AP_BARO_LPS22DF_ENABLED',
             'AP_BARO_MS5607_ENABLED',
             'AP_BARO_MS5611_ENABLED',
             'AP_BARO_MS5637_ENABLED',
