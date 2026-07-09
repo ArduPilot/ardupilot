@@ -449,7 +449,7 @@ void ModeFlowHold::update_height_estimate(void)
       for each axis update the height estimate
      */
     float delta_height_m = 0;
-    uint8_t total_weight = 0;
+    float total_weight = 0;
     float height_estimate_m = ins_height_m + height_offset_m;
 
     for (uint8_t i=0; i<2; i++) {
