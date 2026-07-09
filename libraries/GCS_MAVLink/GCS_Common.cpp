@@ -4730,11 +4730,19 @@ void GCS_MAVLINK::handle_common_mission_message(const mavlink_message_t &msg)
         handle_mission_request_int(msg);
         break;
 
-#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
     case MAVLINK_MSG_ID_MISSION_REQUEST:
+#if AP_MAVLINK_MSG_MISSION_REQUEST_ENABLED
         handle_mission_request(msg);
-        break;
+#else
+        // this is temporary code which is slated to be removed in
+        // ArduPilot-4.10:
+        static bool mission_request_warning_sent;
+        if (!mission_request_warning_sent) {
+            mission_request_warning_sent = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "got MISSION_REQUEST; use MISSION_REQUEST_INT!");
+        }
 #endif
+        break;
 
 #if AP_MAVLINK_MISSION_SET_CURRENT_ENABLED
     case MAVLINK_MSG_ID_MISSION_SET_CURRENT:    // MAV ID: 41
