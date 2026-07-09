@@ -39,6 +39,7 @@ from rclpy.qos import QoSHistoryPolicy
 
 from sensor_msgs.msg import BatteryState
 
+from conftest import shutdown_node
 from launch_fixtures import (
     launch_sitl_copter_dds_serial,
     launch_sitl_copter_dds_udp,
@@ -119,7 +120,7 @@ def test_dds_serial_battery_msg_recv(launch_context, launch_sitl_copter_dds_seri
         battery_incorrect_flag = not node.frame_id_incorrect_object.wait(timeout=10.0)
         assert battery_correct_flag, f"Did received incorrect battery ID."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
 
 
@@ -148,5 +149,5 @@ def test_dds_udp_battery_msg_recv(launch_context, launch_sitl_copter_dds_udp):
         assert battery_correct_flag, f"Did received incorrect battery ID."
 
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield

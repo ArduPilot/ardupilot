@@ -25,6 +25,7 @@ import rclpy
 import rclpy.node
 
 from builtin_interfaces.msg import Time
+from conftest import shutdown_node
 from launch_fixtures import launch_sitl_copter_dds_udp_use_ns
 from launch_pytest.tools import process as process_tools
 from std_srvs.srv import Trigger
@@ -88,7 +89,7 @@ def test_dds_udp_time_msg_recv(launch_context, launch_sitl_copter_dds_udp_use_ns
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
 
 
@@ -157,5 +158,5 @@ def test_dds_udp_prearm_service_call(launch_context, launch_sitl_copter_dds_udp_
         is_armable_flag = node.is_armable_object.wait(timeout=25.0)
         assert is_armable_flag, f"Vehicle not armable."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield

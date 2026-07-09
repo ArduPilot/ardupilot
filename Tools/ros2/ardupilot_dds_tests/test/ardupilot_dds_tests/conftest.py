@@ -18,6 +18,7 @@
 """Common fixtures."""
 import os
 import pytest
+import rclpy
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -31,6 +32,26 @@ from ardupilot_sitl.launch import VirtualPortsLaunch
 from ardupilot_sitl.launch import MicroRosAgentLaunch
 from ardupilot_sitl.launch import MAVProxyLaunch
 from ardupilot_sitl.launch import SITLLaunch
+
+
+def shutdown_node(node, thread_join_timeout=5.0):
+    """
+    Shut down an rclpy node's worker threads before destroying it.
+
+    rclpy.shutdown() alone doesn't wait for a node's spin thread (or any
+    other background thread touching the node) to unwind before the launch
+    service tears down the SITL/DDS processes underneath it. That race is
+    what caused intermittent segfaults in DDS/rmw teardown code, so every
+    test must join its threads and destroy the node before returning.
+    """
+    rclpy.shutdown()
+    for attr in ("ros_spin_thread", "prearm_thread", "arm_thread", "climb_thread"):
+        thread = getattr(node, attr, None)
+        if thread is not None:
+            thread.join(timeout=thread_join_timeout)
+            if thread.is_alive():
+                node.get_logger().warn(f"{attr} did not stop within {thread_join_timeout}s of shutdown")
+    node.destroy_node()
 
 
 @pytest.fixture(scope="function")

@@ -30,6 +30,7 @@ import rclpy
 import rclpy.node
 
 from ardupilot_msgs.msg import Airspeed
+from conftest import shutdown_node
 from launch import LaunchDescription
 from launch_pytest.tools import process as process_tools
 from rclpy.qos import QoSHistoryPolicy
@@ -156,7 +157,7 @@ def test_dds_serial_airspeed_msg_recv_copter(launch_context, launch_sitl_copter_
         msgs_received_flag = node.msg_event_object.wait(timeout=AIRSPEED_RECV_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
 
 
@@ -181,7 +182,7 @@ def test_dds_udp_airspeed_msg_recv_copter(launch_context, launch_sitl_copter_dds
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
 
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
 
 
@@ -207,7 +208,7 @@ def test_dds_serial_airspeed_msg_recv_plane(launch_context, launch_sitl_plane_dd
         msgs_received_flag = node.msg_event_object.wait(timeout=AIRSPEED_RECV_TIMEOUT)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
 
 
@@ -232,5 +233,5 @@ def test_dds_udp_airspeed_msg_recv_plane(launch_context, launch_sitl_plane_dds_u
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
 
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield

@@ -38,6 +38,7 @@ from rclpy.qos import QoSHistoryPolicy
 
 from geographic_msgs.msg import GeoPoseStamped
 
+from conftest import shutdown_node
 from launch_fixtures import (
     launch_sitl_copter_dds_serial,
     launch_sitl_copter_dds_udp,
@@ -167,7 +168,7 @@ def test_dds_serial_geopose_msg_recv(launch_context, launch_sitl_copter_dds_seri
         orientation_correct_flag = node.orientation_event_object.wait(timeout=10.0)
         assert orientation_correct_flag, f"Did not receive correct orientation."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
 
 
@@ -193,5 +194,5 @@ def test_dds_udp_geopose_msg_recv(launch_context, launch_sitl_copter_dds_udp):
         pose_correct_flag = node.position_correct_event_object.wait(timeout=10.0)
         assert pose_correct_flag, f"Did not receive correct position."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield

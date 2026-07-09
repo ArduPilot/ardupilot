@@ -44,6 +44,8 @@ from rcl_interfaces.srv import GetParameters
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.msg import Parameter
 
+from conftest import shutdown_node
+
 WAIT_FOR_START_TIMEOUT = 5.0
 
 # Enums for parameter type
@@ -197,5 +199,5 @@ def test_dds_udp_parameter_services(launch_context, launch_sitl_copter_dds_udp):
         assert set_param_changed_flag, f"Did not confirm '{parameter_name}' value change"
 
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield

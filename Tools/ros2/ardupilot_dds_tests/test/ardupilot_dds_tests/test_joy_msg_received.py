@@ -40,6 +40,7 @@ import pytest
 from launch_pytest.tools import process as process_tools
 import threading
 
+from conftest import shutdown_node
 from launch_fixtures import launch_sitl_copter_dds_udp
 
 WAIT_FOR_START_TIMEOUT = 5.0
@@ -204,5 +205,5 @@ def test_dds_udp_joy_msg_recv(launch_context, launch_sitl_copter_dds_udp):
         climb_flag = node.climbing_event_object.wait(10)
         assert climb_flag, "Could not climb"
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
