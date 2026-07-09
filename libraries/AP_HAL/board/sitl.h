@@ -7,6 +7,9 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
 #define HAL_OS_SOCKETS 1
 
+// build AP_BLHeli under SITL so the SERVO_BLH_* params exist; serial passthrough and DShot reversing are no-ops here
+#define HAL_SUPPORT_RCOUT_SERIAL 1
+
 #define AP_FLASHSTORAGE_TYPE 3
 
 #if AP_FLASHSTORAGE_TYPE == 1
