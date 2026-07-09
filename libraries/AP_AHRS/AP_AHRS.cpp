@@ -258,7 +258,6 @@ AP_AHRS::AP_AHRS(uint8_t flags) :
     // Copter and Sub force the use of EKF
     _ekf_flags |= AP_AHRS::FLAG_ALWAYS_USE_EKF;
 #endif
-    state.dcm_matrix.identity();
 
     // initialise the controller-to-autopilot-body trim state:
     _last_trim = _trim.get();
@@ -464,8 +463,6 @@ void AP_AHRS::update_state(void)
 #endif
     state.primary_gyro = primary_gyro;
 
-    state.primary_accel = active_estimates->primary_accel;
-
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
     state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
     state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
@@ -475,26 +472,16 @@ void AP_AHRS::update_state(void)
     pitch = active_estimates->pitch_rad;
     yaw = active_estimates->yaw_rad;
 
-    state.dcm_matrix = active_estimates->dcm_matrix;
-
-    state.gyro_estimate = active_estimates->gyro_estimate;
-    state.gyro_drift = active_estimates->gyro_drift;
-
-    state.accel_ef = active_estimates->accel_ef;
-    state.accel_bias = active_estimates->accel_bias;
-
     update_cd_values();
     update_trig();
 
-    state.quat_ok = active_estimates->get_quaternion(state.quat);
     state.location_ok = _get_location(state.location);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (state.location_ok && !state.location.initialised()) {
         AP_HAL::panic("uninitialised location returned by _get_location");
     }
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    state.ground_speed_vec = active_estimates->velocity_NE;
-    state.ground_speed = state.ground_speed_vec.length();
+    state.ground_speed = active_estimates->velocity_NE.length();
     state.corrected_dv_valid = _getCorrectedDeltaVelocityNED(state.corrected_dv, state.corrected_dv_dt);
 
     // check if origin has been set
@@ -519,8 +506,6 @@ void AP_AHRS::update_state(void)
     if (!state.origin_ok) {
         use_recorded_origin_maybe();
     }
-
-    state.velocity_NED_ok = active_estimates->get_velocity_NED(state.velocity_NED);
 }
 
 void AP_AHRS::try_set_common_origin(const AP_AHRS_Backend &source_backend, const AP_AHRS_Backend::Estimates &source_estimates)
@@ -1733,7 +1718,7 @@ bool AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
         return false;
     }
     ret -= active_estimates->accel_bias * dt;
-    ret = state.dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
+    ret = active_estimates->dcm_matrix * get_rotation_autopilot_body_to_vehicle_body() * ret;
     ret.z += GRAVITY_MSS*dt;
     return true;
 }
@@ -2363,26 +2348,11 @@ bool AP_AHRS::airspeed_vector_TAS(Vector3f &vec) const
     return state.airspeed_TAS_vec_ok;
 }
 
-// return the quaternion defining the rotation from NED to XYZ (body) axes
-bool AP_AHRS::get_quaternion(Quaternion &quat) const
-{
-    quat = state.quat;
-    return state.quat_ok;
-}
-
 // returns the inertial navigation origin in lat/lon/alt
 bool AP_AHRS::get_origin(Location &ret) const
 {
     ret = state.origin;
     return state.origin_ok;
-}
-
-// return a ground velocity in meters/second, North/East/Down
-// order. Must only be called if have_inertial_nav() is true
-bool AP_AHRS::get_velocity_NED(Vector3f &vec) const
-{
-    vec = state.velocity_NED;
-    return state.velocity_NED_ok;
 }
 
 // return location corresponding to vector relative to the
