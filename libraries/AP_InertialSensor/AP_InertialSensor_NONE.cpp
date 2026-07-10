@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_SYSFS_PWM
 
 
 static float sim_rand_float(void)
@@ -317,4 +318,4 @@ void AP_InertialSensor_NONE::start()
 
 }
 
-#endif // HAL_BOARD_NONE
+#endif
