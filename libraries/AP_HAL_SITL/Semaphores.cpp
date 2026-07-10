@@ -22,11 +22,11 @@ Semaphore::Semaphore()
 bool Semaphore::give()
 {
     take_count--;
-    if (pthread_mutex_unlock(&_lock) != 0) {
-        AP_HAL::panic("Bad semaphore usage");
-    }
     if (take_count == 0) {
         owner = (pthread_t)-1;
+    }
+    if (pthread_mutex_unlock(&_lock) != 0) {
+        AP_HAL::panic("Bad semaphore usage");
     }
     return true;
 }
