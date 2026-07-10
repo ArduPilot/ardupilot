@@ -1,95 +1,435 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
-SCRIPT_DIR=$(dirname $(realpath ${BASH_SOURCE[0]}))
-GIT_DIR=$(git rev-parse --git-dir)
-GIT_ROOT=$(git rev-parse --show-toplevel)
-
-MSG_FILE="$GIT_DIR/SUBSYSTEMS_SPLIT_MSG"
-
-usage() {
-    cat >&$1 <<EOF
+'''
 git subsystems-split [OPTIONS]
 
-Ardupilot's git extension.
+ArduPilot's git extension.
 
-Split HEAD commit into commits separated by subsystems (vehicles, libraries and
-folders in the project's root). Basically, reset and call commit-subsystems.
+Make each commit touch a single subsystem (vehicles, libraries and tooling
+directories), the way Tools/scripts/check_branch_conventions.py requires.  The
+subsystem a file belongs to is decided by Tools/scripts/allowed_subsystems.py.
 
-If neither --copy or --edit is passed, then subsystems-split will try to make
-the original commit's message into a template for commit-subsystems.
+Per commit the tool either:
+  - leaves it alone if it is already a single, correctly-labelled subsystem,
+  - relabels the subsystem prefix (keeping the rest of the message) if all its
+    files share one subsystem but the prefix is wrong or mistyped, or
+  - splits it into one commit per subsystem if its files genuinely span more
+    than one, reusing the original message as a "$subsystem: ..." template.
+
+By default it operates on the HEAD commit.  With --branch it processes the
+whole branch.
 
 Options:
-    --copy
-    Make all commits have exactly the same message as the HEAD commit.
+    -n, --dry-run   Show what would happen; make no changes.
+    --branch [BASE] Process every commit in BASE..HEAD instead of just HEAD.
+                    BASE defaults to the merge base with origin/master (then
+                    master).  This rewrites history, so the working tree must
+                    be clean; the original HEAD is printed for recovery.
+    --copy          (HEAD only) give every commit the HEAD message verbatim.
+    --edit          (HEAD only) edit the HEAD message as a template first.
+    -h, --help      Show this help.
 
-    --edit
-    Edit the commit message as a template for commit-subsystems.
-EOF
-}
+AP_FLAKE8_CLEAN
+'''
 
-option_copy=false
-option_edit=false
+from __future__ import annotations
 
-while [[ -n "$1" ]]; do
-    opt="$1"
-    case "$opt" in
-    -h|--help)
-        usage 1
-        exit 0
-        ;;
-    --copy)
-        option_copy=true
-        ;;
-    --edit)
-        option_edit=true
-        ;;
-    *)
-        usage 2
-        exit 1
-        ;;
-    esac
-    shift
-done
+import os
+import subprocess
+import sys
 
-if $option_copy && $option_edit; then
-    echo "Options --copy and --edit can't be combined." >&2
-    exit 1
-fi
 
-author_name=$(git log -n 1 --format=%an)
-author_email=$(git log -n 1 --format=%ae)
-author="$author_name <$author_email>"
-git log -n 1 --format=%B > "$MSG_FILE"
+class GitSubsystemsSplit(object):
 
-if $option_edit; then
-    if [[ -z $EDITOR ]]; then
-        echo "Environment variable EDITOR is required for option --edit." >&2
-        exit 1
-    fi
-    ($EDITOR "$MSG_FILE")
-elif ! $option_copy; then
-    if head -n 1 "$MSG_FILE" | grep "^[^: ]\+\s*:" -q; then
-        sed '1 s,^[^: ]\+\s*,$subsystem,' -i "$MSG_FILE"
-    else
-        buff_file="$(mktemp)"
-        awk '
-            NR == 1 {
-                l=sub(/^\s\+/, "", $line);
-                print "$subsystem: " \
-                      tolower(substr($l, 1, 1)) \
-                      substr($l, 2);
-            }
-            NR != 1
-            ' "$MSG_FILE" > "$buff_file"
-        mv "$buff_file" "$MSG_FILE"
-        rm "$buff_file"
-    fi
-fi
+    USAGE = __doc__
 
-HEAD=$(git rev-parse HEAD)
-git reset HEAD~1 --soft
-if ! "$SCRIPT_DIR/git-commit-subsystems" -F "$MSG_FILE" --author="$author"; then
-    echo "Error on calling git-commit-subsystems." >&2
-    git reset $HEAD
-    exit 1
-fi
+    def __init__(self, argv=None):
+        self.argv = sys.argv[1:] if argv is None else argv
+        self.option_copy = False
+        self.option_edit = False
+        self.option_dry_run = False
+        self.branch_mode = False
+        self.branch_base = None
+
+    @staticmethod
+    def progress(message):
+        print(f"***** {message}")
+
+    def usage(self, stream=sys.stdout):
+        print(self.USAGE, file=stream)
+
+    def git(self, args, capture=True, check=True):
+        '''run a git command; return stripped stdout when capturing'''
+        cmd = ["git"] + list(args)
+        if capture:
+            result = subprocess.run(cmd, check=check, text=True,
+                                    stdout=subprocess.PIPE)
+            return result.stdout.strip()
+        subprocess.run(cmd, check=check)
+        return None
+
+    def git_ok(self, args):
+        '''run a git command quietly; return (returncode, stdout)'''
+        result = subprocess.run(["git"] + list(args), text=True,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL)
+        return result.returncode, result.stdout.strip()
+
+    def parse_args(self):
+        args = self.argv
+        i = 0
+        while i < len(args):
+            opt = args[i]
+            if opt in ("-h", "--help"):
+                self.usage()
+                sys.exit(0)
+            elif opt == "--copy":
+                self.option_copy = True
+            elif opt == "--edit":
+                self.option_edit = True
+            elif opt in ("-n", "--dry-run"):
+                self.option_dry_run = True
+            elif opt == "--branch":
+                self.branch_mode = True
+                if i + 1 < len(args) and not args[i + 1].startswith("-"):
+                    self.branch_base = args[i + 1]
+                    i += 1
+            elif opt.startswith("--branch="):
+                self.branch_mode = True
+                self.branch_base = opt.split("=", 1)[1]
+            else:
+                self.usage(sys.stderr)
+                return False
+            i += 1
+        if self.option_copy and self.option_edit:
+            print("Options --copy and --edit can't be combined.",
+                  file=sys.stderr)
+            return False
+        if self.branch_mode and (self.option_copy or self.option_edit):
+            print("--branch can't be combined with --copy/--edit.",
+                  file=sys.stderr)
+            return False
+        return True
+
+    def make_subsystems(self, repo_root):
+        '''build an AllowedSubsystems from the Tools/scripts module'''
+        scripts_dir = os.path.join(repo_root, "Tools", "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        import allowed_subsystems
+        return allowed_subsystems.AllowedSubsystems(repo_root)
+
+    # -- message handling ---------------------------------------------------
+
+    def build_template(self, message):
+        '''turn a commit message into a $subsystem template'''
+        lines = message.splitlines()
+        if not lines:
+            return "$subsystem: \n"
+        first = lines[0]
+        head = first.split(":", 1)
+        if len(head) == 2 and head[0] and " " not in head[0].strip():
+            # existing "prefix: text" subject
+            lines[0] = f"$subsystem:{head[1]}"
+        else:
+            stripped = first.lstrip()
+            if stripped:
+                stripped = stripped[0].lower() + stripped[1:]
+            lines[0] = f"$subsystem: {stripped}"
+        return "\n".join(lines) + "\n"
+
+    def declared_prefix(self, subject):
+        '''the subsystem prefix declared in a subject, or None'''
+        if ":" in subject:
+            return subject.split(":", 1)[0].strip()
+        return None
+
+    def new_subject(self, subject, subsystem):
+        '''the subject a commit would get once labelled with subsystem'''
+        templated = self.build_template(subject).splitlines()[0]
+        return templated.replace("$subsystem", subsystem)
+
+    def make_message_file(self, git_dir, message):
+        '''write the (possibly templated) commit message to a file, honouring
+        --copy / --edit, and return its path'''
+        msg_file = os.path.join(git_dir, "SUBSYSTEMS_SPLIT_MSG")
+        if self.option_edit:
+            editor = os.environ.get("EDITOR")
+            if not editor:
+                print("Environment variable EDITOR is required for --edit.",
+                      file=sys.stderr)
+                sys.exit(1)
+            with open(msg_file, "w") as fh:
+                fh.write(message if message.endswith("\n") else message + "\n")
+            subprocess.run([editor, msg_file], check=True)
+        elif self.option_copy:
+            with open(msg_file, "w") as fh:
+                fh.write(message if message.endswith("\n") else message + "\n")
+        else:
+            with open(msg_file, "w") as fh:
+                fh.write(self.build_template(message))
+        return msg_file
+
+    # -- classification -----------------------------------------------------
+
+    def commit_files(self, commit):
+        '''the list of paths changed by a commit'''
+        out = self.git(["diff-tree", "--no-commit-id", "--name-only", "-r",
+                        commit])
+        return [line.strip() for line in out.splitlines() if line.strip()]
+
+    def classify_files(self, paths, subsystems, declared):
+        '''group paths into a list of (subsystem, [paths]), minimising splits.
+
+        If one subsystem is common to every path the whole commit stays as a
+        single group -- labelled with the declared prefix when that is already
+        valid, otherwise the most specific shared subsystem.  Only when no
+        shared subsystem exists are the paths split by primary subsystem.
+
+        returns (groups, unmatched).
+        '''
+        paths = [p for p in paths if p]
+        cand = {}
+        unmatched = []
+        for p in paths:
+            c = subsystems.subsystems_for_path(p)
+            if not c:
+                unmatched.append(p)
+            cand[p] = c
+        if unmatched:
+            return [], unmatched
+        if not paths:
+            return [], []
+
+        common = set(cand[paths[0]])
+        for p in paths[1:]:
+            common &= set(cand[p])
+        if common:
+            if declared in common:
+                chosen = declared
+            else:
+                chosen = next(s for s in cand[paths[0]] if s in common)
+            return [(chosen, list(paths))], []
+
+        groups = {}
+        order = []
+        for p in paths:
+            s = cand[p][0]
+            if s not in groups:
+                groups[s] = []
+                order.append(s)
+            groups[s].append(p)
+        return [(s, groups[s]) for s in order], []
+
+    def describe(self, declared, groups):
+        '''one-line description of what would happen to a commit'''
+        if len(groups) == 1:
+            subsystem = groups[0][0]
+            if subsystem == declared:
+                return "keep"
+            return f"relabel '{declared}' -> '{subsystem}'"
+        return "split -> " + ", ".join(s for s, _ in groups)
+
+    def report_unmatched(self, unmatched):
+        print("These files map to no known subsystem:", file=sys.stderr)
+        for path in unmatched:
+            print(f"    {path}", file=sys.stderr)
+        print("Add a rule to Tools/scripts/allowed_subsystems.py.",
+              file=sys.stderr)
+
+    # -- committing ---------------------------------------------------------
+
+    def commit_group(self, subsystem, paths, template, author, date, msg_file):
+        '''stage the given paths and create a single commit for them'''
+        message = template.replace("$subsystem", subsystem)
+        with open(msg_file, "w") as fh:
+            fh.write(message)
+        self.git(["reset", "--quiet"], capture=False)
+        self.git(["add", "--"] + paths, capture=False)
+        self.progress(f"  {subsystem}: {len(paths)} file(s)")
+        cmd = ["commit", "-F", msg_file, f"--author={author}"]
+        if date:
+            cmd.append(f"--date={date}")
+        self.git(cmd, capture=False)
+
+    def commit_author(self, commit):
+        name = self.git(["log", "-n", "1", "--format=%an", commit])
+        email = self.git(["log", "-n", "1", "--format=%ae", commit])
+        return f"{name} <{email}>"
+
+    # -- HEAD mode ----------------------------------------------------------
+
+    def recover(self, original_head, all_paths):
+        '''restore the original HEAD and re-stage the files after a failure'''
+        self.progress("Error; restoring original HEAD...")
+        self.git(["reset", original_head], capture=False, check=False)
+        if all_paths:
+            self.git(["add", "--"] + all_paths, capture=False, check=False)
+        self.progress("Original state restored.")
+
+    def run_head(self, subsystems, git_dir):
+        message = self.git(["log", "-n", "1", "--format=%B"])
+        subject = message.splitlines()[0] if message else ""
+        declared = self.declared_prefix(subject)
+        files = self.commit_files("HEAD")
+
+        groups, unmatched = self.classify_files(files, subsystems, declared)
+        if unmatched:
+            self.report_unmatched(unmatched)
+            return 1
+        if not groups:
+            print("Nothing to commit.", file=sys.stderr)
+            return 1
+
+        if self.option_dry_run:
+            print(f"HEAD  {self.describe(declared, groups)}: {subject}")
+            for subsystem, paths in groups:
+                print(f"      -> {self.new_subject(subject, subsystem)} "
+                      f"({len(paths)} file(s))")
+            return 0
+
+        author = self.commit_author("HEAD")
+        date = self.git(["log", "-n", "1", "--format=%aI"])
+        msg_file = self.make_message_file(git_dir, message)
+        with open(msg_file) as fh:
+            template = fh.read()
+
+        original_head = self.git(["rev-parse", "HEAD"])
+        self.git(["reset", "HEAD~1", "--soft"], capture=False)
+        all_paths = [p for _, paths in groups for p in paths]
+        try:
+            for subsystem, paths in groups:
+                self.commit_group(subsystem, paths, template, author, date,
+                                  msg_file)
+        except (subprocess.CalledProcessError, KeyboardInterrupt):
+            self.recover(original_head, all_paths)
+            return 1
+
+        self.progress(f"Produced {len(groups)} commit(s) from HEAD.")
+        return 0
+
+    # -- branch mode --------------------------------------------------------
+
+    def resolve_base(self):
+        if self.branch_base:
+            rc, out = self.git_ok(["rev-parse", "--verify",
+                                   f"{self.branch_base}^{{commit}}"])
+            if rc != 0:
+                print(f"Not a valid base ref: {self.branch_base}",
+                      file=sys.stderr)
+                return None
+            return out
+        for upstream in ("origin/master", "master"):
+            rc, out = self.git_ok(["merge-base", "HEAD", upstream])
+            if rc == 0 and out:
+                return out
+        print("Could not determine a base; pass --branch <base>.",
+              file=sys.stderr)
+        return None
+
+    def working_tree_clean(self):
+        unstaged = subprocess.run(["git", "diff", "--quiet"]).returncode == 0
+        staged = subprocess.run(["git", "diff", "--cached",
+                                 "--quiet"]).returncode == 0
+        return unstaged and staged
+
+    def replay_commit(self, commit, groups, git_dir):
+        '''re-apply commit's changes as the given (already-computed) groups'''
+        message = self.git(["log", "-n", "1", "--format=%B", commit])
+        author = self.commit_author(commit)
+        date = self.git(["log", "-n", "1", "--format=%aI", commit])
+        template = self.build_template(message)
+        self.git(["cherry-pick", "--no-commit", commit], capture=False)
+        msg_file = os.path.join(git_dir, "SUBSYSTEMS_SPLIT_MSG")
+        for subsystem, paths in groups:
+            self.commit_group(subsystem, paths, template, author, date,
+                              msg_file)
+
+    def run_branch(self, subsystems, git_dir):
+        base = self.resolve_base()
+        if base is None:
+            return 1
+        merges = self.git(["rev-list", "--merges", f"{base}..HEAD"])
+        if merges:
+            print("Cannot process a range containing merge commits.",
+                  file=sys.stderr)
+            return 1
+        commits = self.git(["rev-list", "--reverse", f"{base}..HEAD"]).split()
+        if not commits:
+            print("No commits between base and HEAD.", file=sys.stderr)
+            return 1
+
+        plan = []
+        any_unmatched = False
+        for commit in commits:
+            subject = self.git(["log", "-n", "1", "--format=%s", commit])
+            declared = self.declared_prefix(subject)
+            files = self.commit_files(commit)
+            groups, unmatched = self.classify_files(files, subsystems,
+                                                    declared)
+            plan.append((commit, subject, declared, groups, unmatched))
+            if unmatched:
+                any_unmatched = True
+
+        print(f"Plan for {len(commits)} commit(s) since {base[:12]}:")
+        total_out = 0
+        for commit, subject, declared, groups, unmatched in plan:
+            if unmatched:
+                print(f"  {commit[:12]}  UNMAPPED: {subject}")
+                for path in unmatched:
+                    print(f"      {path}")
+                continue
+            total_out += len(groups)
+            print(f"  {commit[:12]}  {self.describe(declared, groups)}: "
+                  f"{subject}")
+            if len(groups) > 1 or (groups and groups[0][0] != declared):
+                for subsystem, paths in groups:
+                    print(f"      -> {self.new_subject(subject, subsystem)}")
+
+        if any_unmatched:
+            print("Aborting: some files map to no known subsystem; add rules "
+                  "to Tools/scripts/allowed_subsystems.py.", file=sys.stderr)
+            return 1
+
+        if self.option_dry_run:
+            print(f"(dry run) {len(commits)} commit(s) -> {total_out} "
+                  f"commit(s); no changes made.")
+            return 0
+
+        if not self.working_tree_clean():
+            print("Refusing to rewrite history with a dirty working tree; "
+                  "commit or stash first.", file=sys.stderr)
+            return 1
+
+        original_head = self.git(["rev-parse", "HEAD"])
+        self.git(["reset", "--hard", base], capture=False)
+        try:
+            for commit, subject, declared, groups, unmatched in plan:
+                self.replay_commit(commit, groups, git_dir)
+        except (subprocess.CalledProcessError, KeyboardInterrupt) as e:
+            print(f"Error during rewrite ({e}); restoring...", file=sys.stderr)
+            self.git(["cherry-pick", "--abort"], capture=False, check=False)
+            self.git(["reset", "--hard", original_head], capture=False,
+                     check=False)
+            print(f"Restored original HEAD {original_head[:12]}.",
+                  file=sys.stderr)
+            return 1
+
+        print(f"Rewrote {len(commits)} commit(s) into {total_out} commit(s).")
+        print(f"Original HEAD was {original_head[:12]}; recover with: "
+              f"git reset --hard {original_head[:12]}")
+        return 0
+
+    def run(self):
+        if not self.parse_args():
+            return 1
+        repo_root = self.git(["rev-parse", "--show-toplevel"])
+        git_dir = self.git(["rev-parse", "--git-dir"])
+        subsystems = self.make_subsystems(repo_root)
+        if self.branch_mode:
+            return self.run_branch(subsystems, git_dir)
+        return self.run_head(subsystems, git_dir)
+
+
+if __name__ == "__main__":
+    sys.exit(GitSubsystemsSplit().run())
