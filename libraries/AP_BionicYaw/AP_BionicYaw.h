@@ -71,6 +71,9 @@ public:
     // SRV_Channels::set_output_scaled().
     float update_rotator(float yaw) const;
 
+    // Phase 3.1: 
+    float update_rotating_pitch_comp(float pitch_cd, float rot_cd) const;
+
 private:
 
     AP_Float _yaw_gain;

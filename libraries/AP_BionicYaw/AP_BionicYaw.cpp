@@ -141,3 +141,21 @@ float AP_BionicYaw::update_rotator(float yaw) const
 
     return constrain_float(yaw, -max_cd, max_cd);
 }
+
+// Phase 3.1: 
+float AP_BionicYaw::update_rotating_pitch_comp(float pitch_cd, float rot_cd) const
+{
+    if (_enabled <= 0) {
+        return pitch_cd;
+    }
+
+    // rot_cd kommt im gleichen centidegree-Maßstab wie update_rotator() liefert
+    const float rot_rad = radians(rot_cd * 0.01f);
+    float cos_phi = cosf(rot_rad);
+
+    // Schutz gegen Division nahe 0 (bei BYAW_ROT_MAX nahe 90°, bei dir max 45°
+    // ist cos(45°) = 0.707, also unkritisch, aber sauberer Code klemmt trotzdem)
+    cos_phi = MAX(cos_phi, 0.3f);  // entspricht ~72.5° als Untergrenze
+
+    return constrain_float(pitch_cd / cos_phi, -4500.0f, 4500.0f);
+}
