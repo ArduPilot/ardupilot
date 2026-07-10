@@ -27,6 +27,7 @@ import sys
 import urllib.error
 import urllib.request
 
+import allowed_subsystems
 import build_script_base
 
 DOCS_URL = "https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
@@ -123,6 +124,66 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
                 ok = False
         if ok:
             print(f"{PASS} All commit messages have well-formed subsystem tags.")
+        return ok
+
+    def check_commit_subsystems(self) -> bool:
+        '''Verify that every commit touches a single, allowed subsystem:
+           - the declared prefix is in the allowed-subsystem list, and
+           - every file changed in the commit belongs to that subsystem.
+        '''
+        repo_root = self.run_git(
+            ['rev-parse', '--show-toplevel'], show_output=False,
+        ).strip()
+        subsystems = allowed_subsystems.AllowedSubsystems(repo_root)
+        commits_raw = self.run_git(
+            ['log', f'{self.base_branch}..HEAD', '--reverse',
+             '--pretty=format:%H %s'],
+            show_output=False,
+        ).strip()
+
+        ok = True
+        for line in commits_raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            sha, _, subject = line.partition(' ')
+            # revert and fixup commits are handled by other checks; their
+            # prefixes legitimately don't name a single subsystem.
+            if subject.startswith('Revert "') or 'fixup!' in subject:
+                continue
+            if ':' not in subject:
+                # missing prefix is reported by check_commit_messages
+                continue
+            prefix = subject.split(':', 1)[0].strip()
+
+            created = self.created_library_dirs(sha)
+            allowed = subsystems.allowed_subsystems(created)
+
+            if prefix not in allowed:
+                suggestion = subsystems.suggest_subsystem(prefix, allowed)
+                hint = f" (did you mean '{suggestion}'?)" if suggestion else ""
+                print(f"{FAIL} {sha[:12]} unknown subsystem prefix "
+                      f"'{prefix}'{hint}: {subject}")
+                print("       Not in the allowed list; see "
+                      "Tools/scripts/allowed_subsystems.py.")
+                ok = False
+                continue
+
+            for path in self.get_changed_paths_for_commit(sha):
+                candidates = subsystems.subsystems_for_path(path)
+                if not candidates:
+                    print(f"{FAIL} {sha[:12]} {path} maps to no known "
+                          f"subsystem.")
+                    print("       Add a rule to "
+                          "Tools/scripts/allowed_subsystems.py.")
+                    ok = False
+                elif prefix not in candidates:
+                    print(f"{FAIL} {sha[:12]} {path} is not part of subsystem "
+                          f"'{prefix}'; it belongs to: {', '.join(candidates)}")
+                    ok = False
+
+        if ok:
+            print(f"{PASS} All commits touch a single allowed subsystem.")
         return ok
 
     def check_commit_lengths(self, commits: str) -> bool:
@@ -604,6 +665,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             self.check_merge_commits(),
             self.check_fixup_commits(commits),
             self.check_commit_messages(commits),
+            self.check_commit_subsystems(),
             self.check_commit_lengths(commits),
             self.check_author_emails(),
             self.check_submodule_isolation(),

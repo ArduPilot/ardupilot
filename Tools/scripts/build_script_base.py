@@ -362,6 +362,24 @@ class BuildScriptBase(ABC):
         cmd_list.extend(args)
         return self.run_program("SCB-GIT", cmd_list, show_output=show_output, cwd=source_dir)
 
+    def get_added_paths_for_commit(self, commit: str) -> list:
+        '''return the list of paths added (created) in a single commit'''
+        output = self.run_git(
+            ['diff-tree', '--no-commit-id', '-r', '--name-only',
+             '--diff-filter=A', commit],
+            show_output=False,
+        )
+        return [line.strip() for line in output.splitlines() if line.strip()]
+
+    def created_library_dirs(self, commit: str) -> set:
+        '''libraries/<X> subsystem names introduced by files added in commit'''
+        created = set()
+        for path in self.get_added_paths_for_commit(commit):
+            parts = path.split('/')
+            if parts[0] == 'libraries' and len(parts) >= 3:
+                created.add(parts[1])
+        return created
+
     def run_waf(self, args, compiler=None, show_output=True, source_dir=None):
         # try to modify the environment so we can consistent builds:
         consistent_build_envs = {
