@@ -242,7 +242,8 @@ def build_SITL_frame(
     '''Build the main vehicle SITL plus (when defined) the AP_Periph
     companion for a frame entry in pysim/vehicleinfo.json.
 
-    Reads the frame's `waf_target`, `configure_args` and (optional)
+    Reads the frame's `waf_target`, `configure_args`, optional `board`
+    (the vehicle build target board, default sitl) and optional
     `periph_board` fields, then runs `build_SITL()` once for the vehicle
     and (if the frame defines a periph_board) once more for the
     companion AP_Periph build. `configure_args` are passed through to
@@ -263,9 +264,16 @@ def build_SITL_frame(
     if extra_configure_args is not None:
         configure_args += list(extra_configure_args)
 
+    # a frame may name a non-default board (e.g. SITL_Nexus); when it does
+    # the vehicle build targets that board, landing in build/<board>/.
+    vehicle_build_kwargs = dict(build_kwargs)
+    board = frame_opts.get('board')
+    if board is not None:
+        vehicle_build_kwargs['board'] = board
+
     build_SITL(frame_opts['waf_target'],
                extra_configure_args=configure_args,
-               **build_kwargs)
+               **vehicle_build_kwargs)
 
     periph_board = frame_opts.get('periph_board')
     if periph_board is not None:
