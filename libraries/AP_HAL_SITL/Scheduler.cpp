@@ -2,6 +2,7 @@
 
 #include "AP_HAL_SITL.h"
 #include <AP_HAL_SITL/I2CDevice.h>
+#include <AP_HAL_SITL/SPIDevice.h>
 #include "Scheduler.h"
 #include "UARTDriver.h"
 #include <sys/time.h>
@@ -285,6 +286,7 @@ void Scheduler::_run_io_procs()
 
     // in lieu of a thread-per-bus:
     ((HALSITL::I2CDeviceManager*)(hal.i2c_mgr))->_timer_tick();
+    ((HALSITL::SPIDeviceManager*)(hal.spi))->_timer_tick();
 
 #if SITL_STACK_CHECKING_ENABLED
     check_thread_stacks();
