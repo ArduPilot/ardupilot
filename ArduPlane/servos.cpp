@@ -19,6 +19,12 @@
 #include "Plane.h"
 #include <utility>
 
+
+
+
+
+
+
 /*****************************************
 * Throttle slew limit
 *****************************************/
@@ -1023,9 +1029,19 @@ void Plane::servos_output(void)
     // support twin-engine aircraft
     servos_twin_engine_mix();
 
-    // run vtail and elevon mixers
+    // Run vtail and elevon mixers
     channel_function_mixer(SRV_Channel::k_aileron, SRV_Channel::k_elevator, SRV_Channel::k_elevon_left, SRV_Channel::k_elevon_right);
+
+#if AP_BIONICYAW_ENABLED
+    // BionicYaw replaces the standard VTail channel_function_mixer()
+    // call below with a differential mixer that also adds a
+    // turn-coordination roll assist. If BYAW_ENABLE is 0 at runtime,
+    // AP_BionicYaw::update() itself falls back to a plain pitch+/-yaw
+    // mix, so k_vtail_left/right are always driven either way.
+    bionicyaw_update();
+#else
     channel_function_mixer(SRV_Channel::k_rudder,  SRV_Channel::k_elevator, SRV_Channel::k_vtail_right, SRV_Channel::k_vtail_left);
+#endif
 
 #if HAL_QUADPLANE_ENABLED
     // cope with tailsitters and bicopters
@@ -1062,6 +1078,70 @@ void Plane::servos_output(void)
         servos_auto_trim();
     }
 }
+
+#if AP_BIONICYAW_ENABLED
+/*
+  BionicYaw tail actuation, called from servos_output() in place of
+  the standard VTail channel_function_mixer() call for
+  k_vtail_left/k_vtail_right.
+
+  BYAW_MODE selects between the two development phases of this
+  project:
+    0 (DIFFERENTIAL_VTAIL) - two flat tail surfaces mixed
+      differentially via AP_BionicYaw::update() (falls back to a
+      plain pitch+/-yaw mix if BYAW_ENABLE is 0), written to
+      k_vtail_left/k_vtail_right.
+    1 (ROTATING_TAIL) - the whole tail boom rotates as a single
+      actuator, driven from yaw (rudder) demand via
+      AP_BionicYaw::update_rotator(), written to whichever
+      k_scriptingN channel BYAW_ROT_FN selects (SERVOx_FUNCTION must
+      be set to the matching ScriptingN on that physical servo).
+*/
+void Plane::bionicyaw_update(void)
+{
+    switch (g2.bionicyaw.get_mode()) {
+
+    case AP_BionicYaw::Mode::ROTATING_TAIL: {
+        const uint8_t rot_offset = g2.bionicyaw.get_rotator_function_offset();
+        if (rot_offset < 1 || rot_offset > 16) {
+            // invalid BYAW_ROT_FN, nothing sensible to drive
+            return;
+        }
+        const SRV_Channel::Function fn =
+            (SRV_Channel::Function)(SRV_Channel::k_scripting1 + (rot_offset - 1));
+
+        if (!SRV_Channels::function_assigned(fn)) {
+            // no servo configured for the selected ScriptingN output
+            return;
+        }
+
+        const float yaw_cd = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
+        const float rot_cd = g2.bionicyaw.update_rotator(yaw_cd);
+        SRV_Channels::set_output_scaled(fn, rot_cd);
+        break;
+    }
+
+    case AP_BionicYaw::Mode::DIFFERENTIAL_VTAIL:
+    default: {
+        if (!SRV_Channels::function_assigned(SRV_Channel::k_vtail_left) ||
+            !SRV_Channels::function_assigned(SRV_Channel::k_vtail_right)) {
+            // no V-tail configured, nothing to mix onto
+            return;
+        }
+
+        const float roll_cd  = SRV_Channels::get_output_scaled(SRV_Channel::k_aileron);
+        const float pitch_cd = SRV_Channels::get_output_scaled(SRV_Channel::k_elevator);
+        const float yaw_cd   = SRV_Channels::get_output_scaled(SRV_Channel::k_rudder);
+
+        const AP_BionicYaw::Output out = g2.bionicyaw.update(roll_cd, pitch_cd, yaw_cd);
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_vtail_left,  out.left);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_vtail_right, out.right);
+        break;
+    }
+    }
+}
+#endif  // AP_BIONICYAW_ENABLED
 
 void Plane::update_throttle_hover() {
     // update hover throttle at 100Hz
@@ -1155,3 +1235,6 @@ void Plane::servos_auto_trim(void)
     }
     
 }
+
+
+
