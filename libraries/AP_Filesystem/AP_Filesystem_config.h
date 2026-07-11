@@ -77,6 +77,13 @@
 #define AP_FILESYSTEM_ALIAS_PATH_MAX 544
 #endif  // AP_FILESYSTEM_ALIAS_PATH_MAX
 
+// @VTX virtual mount exposing the VTX band table as a blob for MAVLink FTP.
+// AP_Periph links AP_Filesystem but not AP_VideoTX, so it is excluded there
+#ifndef AP_FILESYSTEM_VTX_ENABLED
+#include <AP_VideoTX/AP_VideoTX_config.h>
+#define AP_FILESYSTEM_VTX_ENABLED (AP_VIDEOTX_TABLE_ENABLED && !defined(HAL_BUILD_AP_PERIPH))
+#endif
+
 // last, for HAL_LOGGING_FILESYSTEM_ENABLED: AP_Logger_config.h includes this
 // header, so nothing above may test that value, only name it
 #include <AP_Logger/AP_Logger_config.h>
