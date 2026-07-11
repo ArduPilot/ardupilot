@@ -121,12 +121,10 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
     // handle the last term in a message
     if (_term_is_checksum) {
         _sentence_done = true;
-        uint8_t nibble_high = 0;
-        uint8_t nibble_low  = 0;
-        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
+        uint8_t checksum;
+        if (!hex_twochars_to_uint8(_term, checksum)) {
             return false;
         }
-        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
         if (checksum == _checksum) {
             if ((_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT || _sentence_type == SONAR_HDED) && !is_negative(_distance_m)) {
                 // return true if distance is valid

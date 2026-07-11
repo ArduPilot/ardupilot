@@ -3,11 +3,7 @@
 The **Aeromind6X** flight controller is a cutting-edge, indigenous solution developed by [Arkin Labs Private Limited](https://www.arkinlabs.in/).
 Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it offers high reliability and fast data handling for advanced UAV applications. It also integrates with an **M3 Coprocessor**, allowing sensor expansion and future upgrades.
 
-<img
-  src="fc.png"
-  alt="FC Image"
-  style="width: 100%; height: auto; position: relative; margin-left: 10px;"
-/>
+![FC Image](fc.png)
 
 ---
 
@@ -118,7 +114,7 @@ RC input supports SBUS, PPM, and DSM protocols with dedicated ports available fo
 
 ---
 
-## PWM Outputs
+## PWM Output
 
 Supports up to **16 PWM outputs**:
 

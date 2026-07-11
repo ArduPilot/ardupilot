@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
+import fnmatch
+import importlib
 import os
 import re
-import fnmatch
+import sys
+
 from collections.abc import Collection
 
 '''
@@ -12,12 +15,23 @@ AP_FLAKE8_CLEAN
 '''
 
 
+# Maps Board.hal to the hwdef scripts module name and HWDef subclass name.
+_HAL_HWDEF = {
+    'ChibiOS': ('chibios_hwdef', 'ChibiOSHWDef'),
+    'Linux':   ('linux_hwdef',   'LinuxHWDef'),
+    'ESP32':   ('esp32_hwdef',   'ESP32HWDef'),
+    'QURT':    ('qurt_hwdef',    'QURTHWDef'),
+    'SITL':    ('sitl_hwdef',    'SITLHWDef'),
+}
+
+
 class Board(object):
     def __init__(self, name):
         self.name = name
         self.is_ap_periph = False
         self.toolchain = 'arm-none-eabi'  # FIXME: try to remove this?
         self.hal = None  # filled in below
+        self.hwdef_path = None  # filled in below
         self.autobuild_targets = [
             'Tracker',
             'Blimp',
@@ -27,6 +41,19 @@ class Board(object):
             'Rover',
             'Sub',
         ]
+
+    def get_hwdef(self):
+        '''Return a processed HWDef subclass instance appropriate for this board's HAL.'''
+        # hwdef_path is .../AP_HAL_XXX/hwdef/BOARDNAME/hwdef.dat;
+        # the HAL's hwdef scripts live two levels up under scripts/
+        scripts_dir = os.path.join(os.path.dirname(os.path.dirname(self.hwdef_path)), 'scripts')
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        module_name, class_name = _HAL_HWDEF[self.hal]
+        cls = getattr(importlib.import_module(module_name), class_name)
+        h = cls(hwdef=[self.hwdef_path], quiet=True)
+        h.process_hwdefs()
+        return h
 
 
 def in_boardlist(boards : Collection[str], board : str) -> bool:
@@ -66,7 +93,7 @@ class BoardList(object):
         )
 
         self.hwdef_dir = []
-        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32', 'AP_HAL_SITL':
+        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32', 'AP_HAL_QURT', 'AP_HAL_SITL':
             self.hwdef_dir.append(os.path.join(realpath, haldir, "hwdef"))
 
     def __init__(self):
@@ -96,6 +123,7 @@ class BoardList(object):
             text = self.read_hwdef(filepath)
 
             board = Board(adir)
+            board.hwdef_path = filepath
             self.boards.append(board)
             board_toolchain_set = False
             for line in text:
@@ -130,6 +158,8 @@ class BoardList(object):
                     board.toolchain = 'arm-none-eabi'
                 elif "ESP32" in hwdef_dir:
                     board.toolchain = 'xtensa-esp32-elf'
+                elif "QURT" in hwdef_dir:
+                    board.toolchain = "aarch64-linux-gnu"
                 elif "SITL" in hwdef_dir:
                     board.toolchain = None
                 else:
@@ -143,13 +173,15 @@ class BoardList(object):
                 board.hal = "ESP32"
             elif "SITL" in hwdef_dir:
                 board.hal = "SITL"
+            elif "QURT" in hwdef_dir:
+                board.hal = "QURT"
             else:
                 raise ValueError(f"Unable to determine HAL for {hwdef_dir}")
 
     def read_hwdef(self, filepath):
-        fh = open(filepath)
         ret = []
-        text = fh.readlines()
+        with open(filepath) as in_file:
+            text = in_file.readlines()
         for line in text:
             m = re.match(r"^\s*include\s+(.+)\s*$", line)
             if m is not None:
@@ -157,6 +189,17 @@ class BoardList(object):
             else:
                 ret += [line]
         return ret
+
+    def hwdef_for_board(self, board_name: str):
+        '''return a processed HWDef subclass instance for the named board'''
+        return self.board_by_name(board_name).get_hwdef()
+
+    def board_by_name(self, name: str) -> Board:
+        '''return the Board object for the given board name, raises KeyError if not found'''
+        for board in self.boards:
+            if board.name == name:
+                return board
+        raise KeyError(name)
 
     def find_autobuild_boards(self, build_target=None, skip : Collection[str] = None):
         ret = []

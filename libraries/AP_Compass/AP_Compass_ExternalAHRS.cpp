@@ -39,9 +39,4 @@ void AP_Compass_ExternalAHRS::handle_external(const AP_ExternalAHRS::mag_data_me
     accumulate_sample(field);
 }
 
-void AP_Compass_ExternalAHRS::read(void)
-{
-    drain_accumulated_samples();
-}
-
 #endif // AP_COMPASS_EXTERNALAHRS_ENABLED

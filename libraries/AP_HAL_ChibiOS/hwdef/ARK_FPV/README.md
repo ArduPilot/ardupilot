@@ -20,7 +20,7 @@
 ### Power
 
 - 5.5V - 54V (2S - 12S) input
-- 12V, 2A output
+- 12V, 2A output (POWER AUX; on by default, optionally switchable via RELAY1)
 - 5V, 2A output. 300ma for main system, 200ma for heater
 
 ### Interfaces
@@ -171,8 +171,8 @@ Note: connector pinout not in same order as standard HD VTX cabling
 | Pin | Signal Name     | Voltage |
 |-----|-----------------|---------|
 | 1   | 3V3_FMU        | 3.3V    |
-| 2   | USART4_TX_DEBUG | 3.3V    |
-| 3   | USART4_RX_DEBUG | 3.3V    |
+| 2   | USART3_TX_DEBUG | 3.3V    |
+| 3   | USART3_RX_DEBUG | 3.3V    |
 | 4   | FMU_SWDIO      | 3.3V    |
 | 5   | FMU_SWCLK      | 3.3V    |
 | 6   | GND            | GND     |
@@ -192,14 +192,31 @@ Note: connector pinout not in same order as standard HD VTX cabling
 
 All UARTS support DMA. Any UART may be re-tasked by changing its protocol parameter.
 
+### Using the Debug Port as a Serial Port
+
+The debug connector includes USART3, which is configured as a debug console by default. To use it as a regular serial port (SERIAL8), modify `hwdef.dat` to add USART3 to the end of the SERIAL_ORDER list:
+
+```text
+SERIAL_ORDER OTG1 UART7 UART5 USART1 USART2 UART4 USART6 OTG2 USART3
+```
+
+And remove the debug console lines:
+
+```text
+STDOUT_SERIAL SD3
+STDOUT_BAUDRATE 57600
+```
+
+This requires building custom firmware. See the [Loading Firmware](#loading-firmware) section for build instructions.
+
 ## RC Input
 
-RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols except PPM. See :ref:`Radio Control Systems <common-rc-systems>` for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
+RC input is configured on the RX6 (UART6_RX) pin. It supports all RC protocols except PPM. See [Radio Control Systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details for a specific RC system. [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) is set to “23”, by default, to enable this.
 
 - SBUS/DSM/SRXL connects to the RX6 pin.
-- FPort requires connection to TX6 and :ref:`SERIAL6_OPTIONS<SERIAL2_OPTIONS>` be set to “7”.
-- CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>`
-- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` to “4”. =3.
+- FPort requires connection to TX6 and [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) be set to “7”.
+- CRSF also requires a TX6 connection, in addition to RX6, and automatically provides telemetry. Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options)
+- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set [SERIAL6_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial6-options-serial6-options) to “4”. =3.
 
 ## Battery Monitoring
 
@@ -221,13 +238,22 @@ This autopilot has a built-in compass. The compass is the IIS2MDC
 
 This flight controller has an MSP-DisplayPort output on a 6-pin DJI-compatible JST SH.
 
-## Motor Output
+## PWM Output
 
 All outputs are capable of PWM and DShot. Motors 1-4 are capable of Bidirectional-DSHOT. All outputs in the motor groups below must be either PWM or DShot:
 
 - Motors 1-4  Group1 (TIM5)
 - Motors 5-8  Group2 (TIM8)
 - Motor 9     Group3 (TIM4)
+
+## 12V Peripheral Output (POWER AUX)
+
+The 12V pin on the **POWER AUX** connector is gated by a BEC enable pin. The pin is pre-mapped to GPIO 81 and configured as RELAY1. By default it is ON via `RELAY1_DEFAULT` = 1.
+
+- To change the default state to OFF, set `RELAY1_DEFAULT` = 0.
+- To make it controllable from the transmitter, set `RELAY1_FUNCTION` = 1 (Relay) and assign `RCx_OPTION` = 28 (Relay1 On/Off) to the channel you want to use as the switch.
+
+The VBAT pin on the same connector is a direct battery pass-through and is not controlled by firmware.
 
 ## Loading Firmware
 

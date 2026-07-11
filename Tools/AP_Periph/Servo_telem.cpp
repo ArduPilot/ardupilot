@@ -43,6 +43,11 @@ void AP_Periph_FW::servo_telem_update()
             continue;
         }
 
+        // Don't send stale data, timeout after five seconds
+        if (AP_HAL::timeout_expired(data.last_update_ms, now_ms, 5000U)) {
+            continue;
+        }
+
         // Blank packet
         const float nan = nanf("");
         uavcan_equipment_actuator_Status pkt {

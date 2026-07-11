@@ -20,7 +20,7 @@ The SkySakura H743 is a flight controller produced by [SkySakuraRC]
 
 ## Pinout
 
-![SkySakura H743 Board](SkySakuraH743.png "SkySakura H743")
+![SkySakura H743 Board](SkySakuraH743_top.png "SkySakura H743")
 
 ## UART Mapping
 
@@ -101,7 +101,7 @@ PWM13 provides external NeoPixel LED support.
 
 ## Firmware
 
-Firmware can bee found on the `firmware server < https://firmware.ardupilot.org`__ in the "SkySakuraH743"  folders
+Firmware can bee found on the [firmware server](https://firmware.ardupilot.org) in the "SkySakuraH743"  folders
 
 ## Loading Firmware
 

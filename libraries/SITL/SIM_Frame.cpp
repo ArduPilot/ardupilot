@@ -145,6 +145,19 @@ static Motor tiltquad[] =
     Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
 };
 
+// collective pitch quad helicopter, matching AP_MotorsHeli_Quad's
+// layout, with rotor speed control on channel 8 to match
+// AP_MotorsHeli_RSC's default channel
+// Run in a shell: ./Tools/autotest/fg_heliquad_view.sh
+// then Tools/autotest/sim_vehicle.py -v ArduCopter -f heli-quad --enable-fgview
+static Motor heliquad_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1, 7),
+    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3, 7),
+    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4, 7),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2, 7),
+};
+
 static Motor hexa_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  1),
@@ -261,12 +274,12 @@ static Motor octa_quad_cw_x_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
     Motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
-    Motor(AP_MOTORS_MOT_3,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_3,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
     Motor(AP_MOTORS_MOT_5, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
     Motor(AP_MOTORS_MOT_6, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
-    Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7),
-    Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8)
+    Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8)
 };
 
 
@@ -422,6 +435,7 @@ static const FrameTemplate supported_frame_templates[] =
     {"djix",      4, quad_dji_x_motors},
     {"cwx",       4, quad_cw_x_motors},
     {"tilthvec",  4, tiltquad_h_vectored_motors},
+    {"heli-quad", 4, heliquad_motors},
     {"hexadeca-octa", 16, hexadeca_octa_motors},
     {"hexadeca-octa-cwx", 16, hexadeca_octa_cw_x_motors},
     {"hexax",     6, hexax_motors},
@@ -577,10 +591,9 @@ void Frame::parse_vector3(AP_JSON::value val, const char* label, Vector3f &param
 /*
   initialise the frame
  */
-void Frame::init(const char *frame_str, Battery *_battery)
+void Frame::init(const char *frame_str)
 {
     model = default_model;
-    battery = _battery;
 
     const char *colon = strchr(frame_str, ':');
     size_t slen = strlen(frame_str);
@@ -619,8 +632,6 @@ void Frame::init(const char *frame_str, Battery *_battery)
 
     // power_factor is ratio of power consumed per newton of thrust
     float power_factor = hover_power / hover_thrust;
-
-    battery->setup(model.battCapacityAh, model.refBatRes, model.maxVoltage);
 
     if (uint8_t(model.num_motors) != num_motors) {
         ::printf("Warning model expected %u motors and got %u\n", uint8_t(model.num_motors), num_motors);
@@ -682,7 +693,8 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     const auto *_sitl = AP::sitl();
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mtorque, mthrust;
-        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, gyro, air_density, battery->get_voltage(), use_drag);
+        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf,
+                                   gyro, air_density, aircraft.get_battery_voltage(), use_drag);
         torque += mtorque;
         thrust += mthrust;
         // simulate motor rpm
@@ -727,23 +739,13 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     body_accel = thrust/aircraft.gross_mass();
 }
 
-
-// calculate current and voltage
-void Frame::current_and_voltage(float &voltage, float &current)
+// computes (total) instantaneous current
+float Frame::get_current_amp(void)
 {
-    float param_voltage = AP::sitl()->batt_voltage;
-    if (!is_equal(last_param_voltage,param_voltage)) {
-        battery->init_voltage(param_voltage);
-        last_param_voltage = param_voltage;
-    }
-    const float param_capacity = AP::sitl()->batt_capacity_ah;
-    if (!is_equal(battery->get_capacity(), param_capacity)) {
-        battery->init_capacity(param_capacity);
-    }
-    voltage = battery->get_voltage();
-    current = 0;
+    float current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
         current += motors[i].get_current();
     }
+    return current;
 }
 #endif // AP_SIM_ENABLED

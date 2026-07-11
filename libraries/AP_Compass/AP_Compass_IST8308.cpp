@@ -217,9 +217,4 @@ void AP_Compass_IST8308::timer()
     accumulate_sample(field);
 }
 
-void AP_Compass_IST8308::read()
-{
-    drain_accumulated_samples();
-}
-
 #endif  // AP_COMPASS_IST8308_ENABLED

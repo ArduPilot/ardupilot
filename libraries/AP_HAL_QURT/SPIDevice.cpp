@@ -27,7 +27,11 @@ using namespace QURT;
 #define MHZ (1000U*1000U)
 #define KHZ (1000U)
 
-const char *device_names[] = {"INV1", "INV2", "INV3"};
+#ifdef HAL_SPI_DEVICE_LIST
+const char *device_names[] = {
+    HAL_SPI_DEVICE_LIST
+};
+#endif  // HAL_SPI_DEVICE_LIST
 
 static SPIBus *spi_bus;
 

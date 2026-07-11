@@ -1,0 +1,5 @@
+# setup for LEDs on TIM2chan1
+SERVO11_FUNCTION 120
+
+#enable second OSD type
+OSD_TYPE2 = 5

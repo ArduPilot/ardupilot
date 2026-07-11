@@ -118,37 +118,37 @@ const AP_Param::Info Sub::var_info[] = {
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
     // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,7:Circle,9:Surface,16:PosHold,19:Manual,20:Motor Detect,21:SurfTrak
     // @User: Standard
-    GSCALAR(flight_mode1, "FLTMODE1",               (uint8_t)FLIGHT_MODE_1),
+    GARRAY(flight_modes, 0, "FLTMODE1", (uint8_t)FLIGHT_MODE_1),
 
     // @Param: FLTMODE2
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 2
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1230, <= 1360
-    GSCALAR(flight_mode2, "FLTMODE2",               (uint8_t)FLIGHT_MODE_2),
+    GARRAY(flight_modes, 1, "FLTMODE2", (uint8_t)FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 3
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1360, <= 1490
-    GSCALAR(flight_mode3, "FLTMODE3",               (uint8_t)FLIGHT_MODE_3),
+    GARRAY(flight_modes, 2, "FLTMODE3", (uint8_t)FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 4
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1490, <= 1620
-    GSCALAR(flight_mode4, "FLTMODE4",               (uint8_t)FLIGHT_MODE_4),
+    GARRAY(flight_modes, 3, "FLTMODE4", (uint8_t)FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 5
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1620, <= 1749
-    GSCALAR(flight_mode5, "FLTMODE5",               (uint8_t)FLIGHT_MODE_5),
+    GARRAY(flight_modes, 4, "FLTMODE5", (uint8_t)FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 6
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >=1750
-    GSCALAR(flight_mode6, "FLTMODE6",               (uint8_t)FLIGHT_MODE_6),
+    GARRAY(flight_modes, 5, "FLTMODE6", (uint8_t)FLIGHT_MODE_6),
 
     // @Param: FLTMODE_CH
     // @DisplayName: Flightmode channel
@@ -551,9 +551,9 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,            "INS", AP_InertialSensor),
 
-    // @Group: WPNAV_
+    // @Group: WP_
     // @Path: ../libraries/AC_WPNav/AC_WPNav.cpp
-    GOBJECT(wp_nav, "WPNAV_",       AC_WPNav),
+    GOBJECT(wp_nav, "WP_", AC_WPNav),
 
     // @Group: LOIT_
     // @Path: ../libraries/AC_WPNav/AC_Loiter.cpp
@@ -650,13 +650,13 @@ const AP_Param::Info Sub::var_info[] = {
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-    GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
+    GOBJECTN(ahrs.ekf2.EKF2, NavEKF2, "EK2_", NavEKF2),
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.ekf3.EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
     // @Group: MIS_
@@ -768,6 +768,10 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: ../ArduSub/actuators.cpp
     AP_SUBGROUPINFO(actuators, "ACTUATOR", 23, ParametersG2, Actuators),
 
+    // Hidden param used as a flag for param conversion
+    // This allows one time conversion while allowing user to flash between versions with and without converted params
+    AP_GROUPINFO_FLAGS("PARM_FMT_VER", 24, ParametersG2, param_conversion_increment, 0, AP_PARAM_FLAG_HIDDEN),
+
     AP_GROUPEND
 };
 
@@ -859,6 +863,9 @@ void Sub::load_parameters()
     // upgrade attitude controller parameters
     sub.attitude_control.convert_parameters();
 
+    // upgrade waypoint navigation parameters
+    wp_nav.convert_parameters();
+
     // upgrade loiter navigation parameters
     loiter_nav.convert_parameters();
 
@@ -868,12 +875,12 @@ void Sub::load_parameters()
 
     // PARAMETER_CONVERSION - Added: Jan-2026
     // move ORIGIN_LAT, ORIGIN_LON, ORIGIN_ALT to AHRS
-    static const AP_Param::ConversionInfo gcs_conversion_info[] {
+    static const AP_Param::ConversionInfo origin_conversion_info[] {
         { 2, 19, AP_PARAM_FLOAT, "AHRS_ORIGIN_LAT" },   // ORIGIN_LAT moved to AHRS_ORIGIN_LAT
         { 2, 20, AP_PARAM_FLOAT, "AHRS_ORIGIN_LON" },   // ORIGIN_LON moved to AHRS_ORIGIN_LON
         { 2, 21, AP_PARAM_FLOAT, "AHRS_ORIGIN_ALT" },   // ORIGIN_ALT moved to AHRS_ORIGIN_ALT
     };
-    AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
+    AP_Param::convert_old_parameters(&origin_conversion_info[0], ARRAY_SIZE(origin_conversion_info));
 }
 
 void Sub::convert_old_parameters()
@@ -952,3 +959,160 @@ void Sub::update_relay_pins()
     }
 }
 #endif
+
+// Helper function to set servo function by channel number, 1-indexed
+static void set_servo_function(uint8_t channel, SRV_Channel::Function function)
+{
+    char param_name[20];
+    snprintf(param_name, sizeof(param_name), "SERVO%u_FUNCTION", channel);
+    AP_Param::set_and_save_by_name(param_name, static_cast<int>(function));
+}
+
+
+// PARAMETER_CONVERSION - Added: Mar-2026
+void Sub::update_actuators_from_jsbuttons()
+{
+    /*
+    This function is used to update parameters from Sub <=4.5.4 to the newer actuators implementation.
+    servo_1_inc/min/dec/etc.. were hard-coded to work only on channels 9,10,11. This update means we now have to change
+    these functions to the corresponding actuator function to keep the same functionality.
+    For each of SERVO9,10,11, if they are set to DISABLED, check if there are joystick buttons set to actuator functions.
+    if so, and no other channel is set to that actuator function, set the servo to the actuator function.
+    */
+
+    // Configuration constants
+    const uint8_t FIRST_LEGACY_CHANNEL = 9;
+    const uint8_t NUM_LEGACY_ACTUATORS = 3;
+    const size_t FUNCTIONS_PER_SERVO = 9;
+
+    // Legacy servo button functions mapped to actuators 1-3
+    static constexpr JSButton::button_function_t servo_functions[NUM_LEGACY_ACTUATORS][FUNCTIONS_PER_SERVO] = {
+        {
+            // Actuator 1 (was servo_1_*)
+            JSButton::button_function_t::k_servo_1_inc,
+            JSButton::button_function_t::k_servo_1_dec,
+            JSButton::button_function_t::k_servo_1_min,
+            JSButton::button_function_t::k_servo_1_max,
+            JSButton::button_function_t::k_servo_1_center,
+            JSButton::button_function_t::k_servo_1_min_momentary,
+            JSButton::button_function_t::k_servo_1_max_momentary,
+            JSButton::button_function_t::k_servo_1_min_toggle,
+            JSButton::button_function_t::k_servo_1_max_toggle
+        },
+        {
+            // Actuator 2 (was servo_2_*)
+            JSButton::button_function_t::k_servo_2_inc,
+            JSButton::button_function_t::k_servo_2_dec,
+            JSButton::button_function_t::k_servo_2_min,
+            JSButton::button_function_t::k_servo_2_max,
+            JSButton::button_function_t::k_servo_2_center,
+            JSButton::button_function_t::k_servo_2_min_momentary,
+            JSButton::button_function_t::k_servo_2_max_momentary,
+            JSButton::button_function_t::k_servo_2_min_toggle,
+            JSButton::button_function_t::k_servo_2_max_toggle
+        },
+        {
+            // Actuator 3 (was servo_3_*)
+            JSButton::button_function_t::k_servo_3_inc,
+            JSButton::button_function_t::k_servo_3_dec,
+            JSButton::button_function_t::k_servo_3_min,
+            JSButton::button_function_t::k_servo_3_max,
+            JSButton::button_function_t::k_servo_3_center,
+            JSButton::button_function_t::k_servo_3_min_momentary,
+            JSButton::button_function_t::k_servo_3_max_momentary,
+            JSButton::button_function_t::k_servo_3_min_toggle,
+            JSButton::button_function_t::k_servo_3_max_toggle
+        }
+    };
+
+    // Target actuator functions for assignment
+    static constexpr SRV_Channel::Function actuator_functions[NUM_LEGACY_ACTUATORS] = {
+        SRV_Channel::Function::k_actuator1,
+        SRV_Channel::Function::k_actuator2,
+        SRV_Channel::Function::k_actuator3
+    };
+
+    // Process legacy channels 9-11
+    for (uint8_t actuator_idx = 0; actuator_idx < NUM_LEGACY_ACTUATORS; actuator_idx++) {
+        const uint8_t channel = FIRST_LEGACY_CHANNEL + actuator_idx;
+        const auto target_function = actuator_functions[actuator_idx];
+
+        // Skip if actuator function already assigned to any channel
+        uint8_t existing_channel;
+        if (SRV_Channels::find_channel(target_function, existing_channel)) {
+            continue;
+        }
+
+        // Skip if channel is not disabled
+        if (SRV_Channels::channel_function(channel - 1) != SRV_Channel::Function::k_none) {
+            continue;
+        }
+
+        // Check if any servo/actuator buttons are assigned
+        bool has_assigned_button = false;
+        for (size_t func_idx = 0; func_idx < FUNCTIONS_PER_SERVO; func_idx++) {
+            if (sub.jsbutton_function_is_assigned(servo_functions[actuator_idx][func_idx])) {
+                has_assigned_button = true;
+                break;
+            }
+        }
+
+        if (has_assigned_button) {
+            // Assign actuator function to preserve legacy behavior
+            set_servo_function(channel, target_function);
+        }
+    }
+}
+
+// PARAMETER_CONVERSION - Added: Mar-2026
+void Sub::update_lights_from_rcin()
+{
+    /*
+    Maps older systems from using RCIN9 and RCIN10 to using lights1 and lights2.
+    This is only done if there are joystick buttons assigned to the lights functions and there are no channels assigned to the lights functions.
+    */
+
+    const uint8_t NUM_LIGHTS = 2;
+    const uint8_t FUNCTIONS_PER_LIGHT = 3;
+    static constexpr JSButton::button_function_t lights_button_functions[NUM_LIGHTS][FUNCTIONS_PER_LIGHT] = {
+        {
+            JSButton::button_function_t::k_lights1_brighter,
+            JSButton::button_function_t::k_lights1_dimmer,
+            JSButton::button_function_t::k_lights1_cycle,
+        },
+        {
+            JSButton::button_function_t::k_lights2_brighter,
+            JSButton::button_function_t::k_lights2_dimmer,
+            JSButton::button_function_t::k_lights2_cycle,
+        }
+    };
+
+    // New, dedicated lights output functions
+    const SRV_Channel::Function lights_functions[NUM_LIGHTS] = {
+        SRV_Channel::Function::k_lights1,
+        SRV_Channel::Function::k_lights2
+    };
+
+    // Legacy, overloaded and hardcoded RCIN passthrough outputs
+    const SRV_Channel::Function rcin_functions[NUM_LIGHTS] = {
+        SRV_Channel::Function::k_rcin9,
+        SRV_Channel::Function::k_rcin10
+    };
+
+    // Confirm the new output is not already assigned, and extract the legacy output for remapping
+    for (uint8_t light = 0; light < NUM_LIGHTS; light++) {
+        uint8_t existing_channel;
+        if (SRV_Channels::find_channel(lights_functions[light], existing_channel)
+            || !SRV_Channels::find_channel(rcin_functions[light], existing_channel)) {
+            continue;
+        }
+        // We have a potential lights RCIN channel. Do we have lights buttons?
+        for (uint8_t func_idx = 0; func_idx < FUNCTIONS_PER_LIGHT; func_idx++) {
+            if (sub.jsbutton_function_is_assigned(lights_button_functions[light][func_idx])) {
+                // We have buttons assigned to lights. Set the channel to the new, dedicated lights function.
+                set_servo_function(existing_channel + 1, lights_functions[light]);
+                break;
+            }
+        }
+    }
+}

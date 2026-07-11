@@ -140,6 +140,23 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 9, AP_RollController, AC_PID),
 
+    // @Param: 2SRV_ACCEL
+    // @DisplayName: Roll max acceleration
+    // @Description: Roll acceleration limit. Setting to zero disables input shaping.
+    // @Range: 0 2500
+    // @Units: deg/s/s
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("2SRV_ACCEL", 10, AP_RollController, accel_limit, 500),
+
+    // @Param: _ANGLE_P
+    // @DisplayName: Roll angle P gain
+    // @Description: Roll angle P gain. If zero a gain of (1 / RLL2SRV_TCONST) will be used.
+    // @Range: 0.000 12.000
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("_ANGLE_P", 11, AP_RollController, angle_p, 0.0),
+
     AP_GROUPEND
 };
 
@@ -163,45 +180,48 @@ AP_RollController::AP_RollController(const AP_FixedWing &parms)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-float AP_RollController::get_measured_rate() const
+// Return the measured roll angle in degrees
+float AP_RollController::get_measured_angle_deg() const
+{
+    return AP::ahrs().get_roll_deg();
+}
+
+// Return the measured roll rate in radians per second
+float AP_RollController::get_measured_rate_rads() const
 {
     return AP::ahrs().get_gyro().x;
 }
 
-float AP_RollController::get_airspeed() const
+// Return true if the airspeed should be considered as under speed
+bool AP_RollController::is_underspeed() const
 {
-    float aspeed;
-    if (!AP::ahrs().airspeed_EAS(aspeed)) {
-        // If no airspeed available use 0
-        aspeed = 0.0;
-    }
-    return aspeed;
+    return get_airspeed() <= float(aparm.airspeed_min);
 }
 
-bool AP_RollController::is_underspeed(const float aspeed) const
+// Return positive rate limit in deg per second, zero if disabled
+float AP_RollController::get_positive_rate_limit_degs() const
 {
-    return aspeed <= float(aparm.airspeed_min);
+    return MAX(gains.rmax_pos.get(), 0.0);
+}
+
+// Return negative rate limit in deg per second (as a positive number) zero if disabled
+float AP_RollController::get_negative_rate_limit_degs() const
+{
+    return get_positive_rate_limit_degs();
+}
+
+// Return true if rate limits should be applied
+bool AP_RollController::should_apply_rate_limits() const
+{
+    return !in_recovery;
 }
 
 /*
  Function returns an equivalent aileron deflection in centi-degrees in the range from -4500 to 4500
  A positive demand is up
- Inputs are:
- 1) demanded bank angle in centi-degrees
- 2) control gain scaler = scaling_speed / aspeed
- 3) boolean which is true when stabilise mode is active
- 4) minimum FBW airspeed (metres/sec)
 */
-float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode)
+float AP_RollController::run_axis_rate_control(float desired_rate_degs, float scaler, bool disable_integrator, bool ground_mode)
 {
-    if (gains.tau < 0.05f) {
-        gains.tau.set(0.05f);
-    }
-
-    // Calculate the desired roll rate (deg/sec) from the angle error
-    angle_err_deg = angle_err * 0.01;
-    float desired_rate = angle_err_deg/ gains.tau;
-
     /*
       prevent indecision in the roll controller when target roll is
       close to 180 degrees from the current roll
@@ -211,29 +231,19 @@ float AP_RollController::get_servo_out(int32_t angle_err, float scaler, bool dis
     const float abs_angle_err_deg = fabsf(angle_err_deg);
     if (abs_angle_err_deg > indecision_threshold_deg &&
         angle_err_deg <= 180) {
-        if (desired_rate * last_desired_rate < 0) {
-            desired_rate = -desired_rate;
+        if (desired_rate_degs * last_desired_rate < 0) {
+            desired_rate_degs = -desired_rate_degs;
             // increase the desired rate in proportion to the extra
             // angle we are requesting
             const float new_angle_err_deg = abs_angle_err_deg + (180 - abs_angle_err_deg)*2;
-            desired_rate *= new_angle_err_deg / abs_angle_err_deg;
+            desired_rate_degs *= new_angle_err_deg / abs_angle_err_deg;
         }
     }
 
-    if (!in_recovery) {
-        // Limit the demanded roll rate. When we are in a VTOL
-        // recovery we don't apply the limit
-        if (gains.rmax_pos && desired_rate < -gains.rmax_pos) {
-            desired_rate = - gains.rmax_pos;
-        } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
-            desired_rate = gains.rmax_pos;
-        }
-    }
-
-    // the in_recovery flag is single loop only
+    // in_recovery flag is only valid for single loop, clear it
     in_recovery = false;
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator, get_airspeed(), ground_mode);
+    return run_rate_control(desired_rate_degs, scaler, disable_integrator, ground_mode);
 }
 
 /*

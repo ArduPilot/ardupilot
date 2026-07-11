@@ -42,7 +42,7 @@ The CrazyF405HDAIO is optimized for Digital HD FPV and does not require the anal
 
 ## PWM Output
 
-The Carzyf405HD AIO has 4 PWM outputs internally connected to its 4-in-1 ESC. The pads for motor output are M1 to M4 on the board. All 4 outputs support DShot, as well as all PWM types. The default configuration is for DShot using the already installed BlueJay firmware.
+The CrazyF405HD AIO has 4 PWM outputs internally connected to its 4-in-1 ESC. The pads for motor output are M1 to M4 on the board. All 4 outputs support DShot, as well as all PWM types. The default configuration is for DShot using the already installed BlueJay firmware.
 
 ## Battery Monitoring
 

@@ -50,7 +50,7 @@ All UARTs have full DMA capability. TELEM3 can be used as an RS422 interface, th
 
 ## RC Input
 
-RC input is configured on the RCIN pin, at one end of the servo rail, marked PPM in the above diagram. All ArduPilot supported unidirectional RC protocols can be input here including PPM. For bi-directional or half-duplex protocols, such as CRSF/ELRS a full UART will have to be used. See :ref:`common-rc-systems` for details on USRT setup for other protocols.
+RC input is configured on the RCIN pin, at one end of the servo rail, marked PPM in the above diagram. All ArduPilot supported unidirectional RC protocols can be input here including PPM. For bi-directional or half-duplex protocols, such as CRSF/ELRS a full UART will have to be used. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details on USRT setup for other protocols.
 
 ## PWM Output
 
@@ -124,7 +124,7 @@ The board has connectors for 3 power monitors. The board is configure by default
 
 The E2-Plus has an RM3100 builtin compass, but due to interference the board is usually used with an external I2C or CAN compass as part of a GPS/Compass combination.
 
-## Analog inputs
+## Analog Inputs
 
 The E2-Plus has 6 analog inputs.
 

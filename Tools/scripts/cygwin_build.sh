@@ -21,8 +21,10 @@ echo "SYS_ROOT=$SYS_ROOT"
 rm -rf artifacts
 mkdir artifacts
 
+if [ -z "$GITHUB_ACTIONS" ] || [ "$GITHUB_ACTIONS" != "true" ]; then
 # cygwin doesn't work out the parallelism properly
 WAF_OPTIONS="-j8"
+fi
 
 (
     python ./waf --color yes --toolchain $TOOLCHAIN --board sitl configure 2>&1

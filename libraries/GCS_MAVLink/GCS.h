@@ -378,10 +378,14 @@ public:
     void send_gimbal_manager_information() const;
     void send_gimbal_manager_status() const;
     void send_named_float(const char *name, float value) const;
+    void send_named_int(const char *name, int32_t value) const;
     void send_home_position() const;
     void send_gps_global_origin() const;
     virtual void send_attitude_target() {};
-    virtual void send_position_target_global_int() { };
+    void send_position_target_global_int();
+    // returns a Location to which the vehicle is currently heading,
+    // or would head to in an autonomous mode
+    virtual bool get_target_location(Location &loc) const { return false; }
     virtual void send_position_target_local_ned() { };
     void send_servo_output_raw();
     void send_accelcal_vehicle_position(uint32_t position);
@@ -717,7 +721,9 @@ protected:
     MAV_RESULT handle_command_do_gripper(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_sprayer(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_set_mode(const mavlink_command_int_t &packet);
+#if AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
     MAV_RESULT handle_command_get_home_position(const mavlink_command_int_t &packet);
+#endif  // AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED
     MAV_RESULT handle_command_do_fence_enable(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_debug_trap(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_set_ekf_source_set(const mavlink_command_int_t &packet);
@@ -743,11 +749,12 @@ protected:
     virtual bool try_send_message(enum ap_message id);
     virtual void send_global_position_int();
 
+#if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+    void send_utm_global_position() const;
+#endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+
     // message sending functions:
     bool try_send_mission_message(enum ap_message id);
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-    void send_hwstatus();
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
     void handle_data_packet(const mavlink_message_t &msg);
 
     // these two methods are called after current_loc is updated:
@@ -765,7 +772,7 @@ protected:
 #if HAL_HIGH_LATENCY2_ENABLED
     virtual int16_t high_latency_target_altitude() const { return 0; }
     virtual uint8_t high_latency_tgt_heading() const { return 0; }
-    virtual uint16_t high_latency_tgt_dist() const { return 0; }
+    virtual uint16_t high_latency_tgt_dist_dam() const { return 0; }
     virtual uint8_t high_latency_tgt_airspeed() const { return 0; }
     virtual uint8_t high_latency_wind_speed() const { return 0; }
     virtual uint8_t high_latency_wind_direction() const { return 0; }
@@ -774,7 +781,10 @@ protected:
     MAV_RESULT handle_control_high_latency(const mavlink_command_int_t &packet);
 
 #endif // HAL_HIGH_LATENCY2_ENABLED
-    
+
+    // note that the mavlink specification only uses 21196 as the
+    // magic value to force and arm or disarm.  We continue to support
+    // 2989 for force-arming for backwards-compatability reasons.
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_arm_disarm_value = 21196.0f;
 
@@ -1193,6 +1203,7 @@ public:
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_named_float(const char *name, float value) const;
+    void send_named_int(const char *name, int32_t value) const;
     void send_named_string(const char *name, const char *value) const;
 
     void send_parameter_value(const char *param_name,
@@ -1329,14 +1340,14 @@ private:
 
     static GCS *_singleton;
 
-    void create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart);
+    bool create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) WARN_IF_UNUSED;
 
     char statustext_printf_buffer[256+1];
 
 #if AP_GPS_ENABLED
-    virtual AP_GPS::GPS_Status min_status_for_gps_healthy() const {
+    virtual AP_GPS_FixType min_status_for_gps_healthy() const {
         // NO_FIX simply excludes NO_GPS
-        return AP_GPS::GPS_Status::NO_FIX;
+        return AP_GPS_FixType::NONE;
     }
 #endif
 
@@ -1348,8 +1359,8 @@ private:
     uint32_t _sysid_gcs_last_seen_time_ms;
 
     void service_statustext(void);
-#if HAL_MEM_CLASS <= HAL_MEM_CLASS_192 || CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    static const uint8_t _status_capacity = 7;
+#if HAL_MEM_CLASS <= HAL_MEM_CLASS_192
+    static const uint8_t _status_capacity = 10;
 #else
     static const uint8_t _status_capacity = 30;
 #endif

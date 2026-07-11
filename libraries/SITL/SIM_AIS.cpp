@@ -416,7 +416,7 @@ void AIS::send_position_report(const mavlink_ais_vessel_t &info) {
 
         } else {
             // cdeg/s to deg/min, take abs to allow sqrt
-            const float turn_rate_deg_per_min = fabsf(info.turn_rate) * 60.0 * 0.01;
+            const float turn_rate_deg_per_min = abs(info.turn_rate) * 60.0f * 0.01f;
 
             // Apply scaling, recovering sign
             rot = 4.733 * sqrtf(turn_rate_deg_per_min) * info.turn_rate >= 0 ? 1.0 : -1.0;

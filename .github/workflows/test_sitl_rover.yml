@@ -49,24 +49,26 @@ on:
       - 'Tools/autotest/arducopter.py'
       - 'Tools/autotest/arduplane.py'
       - 'Tools/autotest/ardusub.py'
+      - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
       - 'Tools/autotest/location.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/swarminit.txt'
+      - 'Tools/autotest/sim_vehicle.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.pydevproject'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -74,8 +76,8 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
-
+      - '.github/**'
+      - '!.github/workflows/test_sitl_rover.yml'  # except this one
 
   pull_request:
     paths-ignore:
@@ -126,24 +128,26 @@ on:
       - 'Tools/autotest/arducopter.py'
       - 'Tools/autotest/arduplane.py'
       - 'Tools/autotest/ardusub.py'
+      - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
       - 'Tools/autotest/location.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/swarminit.txt'
+      - 'Tools/autotest/sim_vehicle.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.pydevproject'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -151,7 +155,8 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_sitl_rover.yml'  # except this one
 
   workflow_dispatch:
 
@@ -159,59 +164,50 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
+
 jobs:
   build:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
     runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.3
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.2.0
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
         toolchain: [
             base,  # GCC
-            clang,
         ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
-      # Put ccache into github cache for faster build
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-      - name: ccache cache files
-        uses: actions/cache@v5
+      - uses: ./.github/actions/setup-ccache
         with:
-          path: ~/.ccache
-          key: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-${{ matrix.toolchain }}-  # restore ccache from either previous build on this branch or on master
-      - name: setup ccache
-        run: |
-          . .github/workflows/ccache.env
+          key-suffix: ${{ matrix.toolchain }}
       - name: build rover ${{ matrix.toolchain }}
         shell: bash
+        # Need --enable-math-check-indexes to match build_ci.sh build phase
         run: |
-          sudo apt-get update || true
-          sudo apt-get -y install ppp || true
           pppd --help # fail with `command not found` if ppp install failed
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
-          if [[ ${{ matrix.toolchain }} == "clang" ]]; then
-            export CC=clang
-            export CXX=clang++
-          fi
           PATH="/github/home/.local/bin:$PATH"
           ./waf configure --board sitl --debug --enable-math-check-indexes
           ./waf build --target bin/ardurover
           ccache -s
           ccache -z
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.toolchain }}
 
   autotest:
     needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-base:v0.1.3
+      image: ardupilot/ardupilot-dev-base:v0.2.0
       options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -224,7 +220,7 @@ jobs:
 
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
 
@@ -240,21 +236,9 @@ jobs:
       - name: Register autotest fail matcher
         run: echo "::add-matcher::.github/problem-matchers/autotestfail.json"
 
-      # Put ccache into github cache for faster build
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-      - name: ccache cache files
-        uses: actions/cache/restore@v5
+      - uses: ./.github/actions/setup-ccache
         with:
-          path: ~/.ccache
-          key: ${{github.workflow}}-ccache-base-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-base-  # restore ccache from either previous build on this branch or on master
-      - name: setup ccache
-        run: |
-          . .github/workflows/ccache.env
+          key-suffix: base
       - name: test ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
@@ -265,10 +249,10 @@ jobs:
           Tools/scripts/build_ci.sh
 
       - name: Archive buildlog artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
-           name: fail-${{matrix.config}}
+           name: ${{ github.workflow }}-fail-${{matrix.config}}
            path: |
              /tmp/buildlogs
              /__w/ardupilot/ardupilot/logs
@@ -279,9 +263,9 @@ jobs:
            retention-days: 14
 
       - name: Archive .bin artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
-           name: BIN-${{matrix.config}}
+           name: ${{ github.workflow }}-BIN-${{matrix.config}}
            path: /__w/ardupilot/ardupilot/logs
            retention-days: 7
 

@@ -8,7 +8,7 @@ manoeuvres either in AUTO mission or by triggering using pilot commands
 using RC switches.
 
 As always, but particularly with scripted aerobatics, test in SITL until
-you understand the function and behaviour of each manouver. You will need
+you understand the function and behaviour of each manoeuvre. You will need
 an appropriate aircraft, and be ready to take manual control if necessary!
 
 ## Available Manoeuvres
@@ -59,13 +59,13 @@ Length = 100, num points = 4, hold fraction = 0.5, pts to do = 2.
 
 Remember, the model is now exiting inverted so the next maneuver must be planned to start from this position.
 
-Note: In the script you will find other (specialised) manouvers which do not appear in the
+Note: In the script you will find other (specialised) manoeuvres which do not appear in the
 'command table'. These are not intended to be used for 'tricks on a switch'. These
-manouvers are used in some of the schedules defined below.
+manoeuvres are used in some of the schedules defined below.
 
 Some are explained in the README.md file for the Schedules examples.
 
-## Available Schedules (pre-defined sequences of manouvers)
+## Available Schedules (pre-defined sequences of manoeuvres)
 
 See the Schedules subdirectory for a wide variety of pre-defined
 full aerobatic schedules you can use and instructions for how to
@@ -190,8 +190,8 @@ tracking. Some of the key parameters are:
 - AEROM_KE_RUDD : This is the required rudder percentage in knifeedge flight to hold height at cruise speed.
 - AEROM_KE_RUDD_LK : This is the time ahead in seconds that the anticipated rudder required will be applied
 - AEROM_ENTRY_RATE : roll rate in degrees per second for entering and exiting a roll change
-- AEROM_THR_MIN : minumum throttle percentage for all aerobatic maneuvers
-- AEROM_THR_BOOST: minumum throttle percentage for maneuvers marked as throttle boost
+- AEROM_THR_MIN : minimum throttle percentage for all aerobatic maneuvers
+- AEROM_THR_BOOST: minimum throttle percentage for maneuvers marked as throttle boost
 - AEROM_YAW_ACCEL: maximum yaw acceleration in degrees per second per second. Lower to soften yaw control
 - AEROM_BOX_WIDTH: the length of the aerobatic box whose center is defined by the start of a schedule
 - AEROM_PATH_SCALE: scale factor for all maneuvers. A value above 1.0 will increase the size of the maneuvers. A value below 1.0 will decrease the size. A negative value will mirror the maneuvers, allowing a sequence designed for left-to-right to be flown right-to-left.

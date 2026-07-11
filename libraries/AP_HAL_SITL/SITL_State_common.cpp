@@ -27,6 +27,7 @@
 #include <SITL/SIM_RF_Benewake_TF03.h>
 #include <SITL/SIM_RF_Benewake_TFmini.h>
 #include <SITL/SIM_RF_BLping.h>
+#include <SITL/SIM_RF_DTS6012M.h>
 #include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_RF_JRE.h>
 #include <SITL/SIM_RF_Lanbao.h>
@@ -56,6 +57,7 @@ static const struct {
     { "benewake_tf03", SITL::RF_Benewake_TF03::create },
     { "benewake_tfmini", SITL::RF_Benewake_TFmini::create },
     { "blping", SITL::RF_BLping::create },
+    { "dts6012m", SITL::RF_DTS6012M::create },
     { "gyus42v2", SITL::RF_GYUS42v2::create },
     { "jre", SITL::RF_JRE::create },
     { "lanbao", SITL::RF_Lanbao::create },
@@ -119,6 +121,14 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         frsky_d = NEW_NOTHROW SITL::Frsky_D();
         return frsky_d;
+#if AP_SIM_NOOPLOOP_ENABLED
+    } else if (streq(name, "nooploop")) {
+        if (nooploop != nullptr) {
+            AP_HAL::panic("Only one nooploop at a time");
+        }
+        nooploop = NEW_NOTHROW SITL::Beacon_NoopLoop();
+        return nooploop;
+#endif  // AP_SIM_NOOPLOOP_ENABLED
     // } else if (streq(name, "frsky-SPort")) {
     //     if (frsky_sport != nullptr) {
     //         AP_HAL::panic("Only one frsky_sport at a time");
@@ -221,6 +231,32 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sitl_model->set_volz(&_sitl->volz_sim);
         return &_sitl->volz_sim;
 #endif  // AP_SIM_VOLZ_ENABLED
+#if AP_SIM_SIYI_ZT30_ENABLED
+    } else if (streq(name, "siyi_zt30")) {
+        const auto siyi = NEW_NOTHROW SITL::Siyi_ZT30();
+        sitl_model->add_gimbal_sim(*siyi);
+        return siyi;
+#endif  // AP_SIM_SIYI_ZT30_ENABLED
+#if AP_SIM_TOPOTEK_ENABLED
+    } else if (streq(name, "topotek")) {
+        const auto topotek = NEW_NOTHROW SITL::Topotek();
+        sitl_model->add_gimbal_sim(*topotek);
+        return topotek;
+#endif  // AP_SIM_TOPOTEK_ENABLED
+#if AP_SIM_VIEWPRO_ENABLED
+    } else if (streq(name, "viewpro")) {
+        const auto viewpro = NEW_NOTHROW SITL::Viewpro();
+        sitl_model->add_gimbal_sim(*viewpro);
+        return viewpro;
+#endif  // AP_SIM_VIEWPRO_ENABLED
+#if AP_SIM_AVT_CM62_ENABLED
+    } else if (streq(name, "avt_cm62_gimbal")) {
+        static uint8_t mavlink_gimbal_count;
+        const auto avt_cm62 = NEW_NOTHROW SITL::AVT_CM62();
+        avt_cm62->set_instance(mavlink_gimbal_count++);
+        sitl_model->add_gimbal_sim(*avt_cm62);
+        return avt_cm62;
+#endif  // AP_SIM_AVT_CM62_ENABLED
     } else if (streq(name, "megasquirt")) {
         if (efi_ms != nullptr) {
             AP_HAL::panic("Only one megasquirt at a time");
@@ -265,6 +301,19 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         inertiallabs = NEW_NOTHROW SITL::InertialLabs();
         return inertiallabs;
+
+    } else if (streq(name, "SensAItion")) {
+        if (sensaition != nullptr) {
+            AP_HAL::panic("Only one SensAItion at a time");
+        }
+        sensaition = NEW_NOTHROW SITL::SensAItion(false);
+        return sensaition;
+    } else if (streq(name, "SensAItionINS")) {
+        if (sensaition != nullptr) {
+            AP_HAL::panic("Only one SensAItion at a time");
+        }
+        sensaition = NEW_NOTHROW SITL::SensAItion(true);
+        return sensaition;
 
 #if AP_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
@@ -328,11 +377,16 @@ void SITL_State_Common::sim_update(void)
     for (uint8_t i=0; i<num_serial_rangefinders; i++) {
         serial_rangefinders[i]->update(sitl_model->rangefinder_range());
     }
+#if AP_SIM_NOOPLOOP_ENABLED
+    if (nooploop != nullptr) {
+        nooploop->update();
+    }
+#endif  // AP_SIM_NOOPLOOP_ENABLED
     if (efi_ms != nullptr) {
-        efi_ms->update();
+        efi_ms->update(*sitl_model);
     }
     if (efi_hirth != nullptr) {
-        efi_hirth->update();
+        efi_hirth->update(*sitl_model);
     }
 
     if (frsky_d != nullptr) {
@@ -397,6 +451,10 @@ void SITL_State_Common::sim_update(void)
         vectornav->update();
     }
 
+    if (sensaition != nullptr) {
+        sensaition->update();
+    }
+
     if (microstrain5 != nullptr) {
         microstrain5->update();
     }
@@ -428,45 +486,13 @@ void SITL_State_Common::sim_update(void)
 }
 
 /*
-  update voltage and current pins
+  set voltage and current pin values
  */
-void SITL_State_Common::update_voltage_current(struct sitl_input &input, float throttle)
+void SITL_State_Common::set_voltage_current_pins(float voltage, float current_amp)
 {
-    float voltage = 0;
-    float current = 0;
-    
-    if (_sitl != nullptr) {
-        if (_sitl->state.battery_voltage <= 0) {
-            if (_vehicle == ArduSub) {
-                voltage = _sitl->batt_voltage;
-                for (uint8_t i=0; i<6; i++) {
-                    float pwm = input.servos[i];
-                    //printf("i: %d, pwm: %.2f\n", i, pwm);
-                    float fraction = fabsf((pwm - 1500) / 500.0f);
-
-                    voltage -= fraction * 0.5f;
-
-                    float draw = fraction * 15;
-                    current += draw;
-                }
-            } else {
-                // simulate simple battery setup
-                // lose 0.7V at full throttle
-                voltage = _sitl->batt_voltage - 0.7f * throttle;
-
-                // assume 50A at full throttle
-                current = 50.0f * throttle;
-            }
-        } else {
-            // FDM provides voltage and current
-            voltage = _sitl->state.battery_voltage;
-            current = _sitl->state.battery_current;
-        }
-    }
-
     // assume 3DR power brick
     voltage_pin_voltage = (voltage / 10.1f);
-    current_pin_voltage = current/17.0f;
+    current_pin_voltage = current_amp / 17.0f;
     // fake battery2 as just a 25% gain on the first one
     voltage2_pin_voltage = voltage_pin_voltage * 0.25f;
     current2_pin_voltage = current_pin_voltage * 0.25f;

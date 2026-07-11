@@ -31,7 +31,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_JSON/AP_JSON.h>
 #include <AP_Filesystem/AP_Filesystem.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL_SITL/HAL_SITL_Class.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -50,8 +49,7 @@ Aircraft *Aircraft::instances[MAX_SIM_INSTANCES];
   parent class for all simulator types
  */
 
-Aircraft::Aircraft(const char *frame_str) :
-    frame(frame_str)
+Aircraft::Aircraft(const char *frame_str)
 {
     // make the SIM_* variables available to simulator backends
     sitl = AP::sitl();
@@ -124,7 +122,17 @@ float Aircraft::ground_height_difference() const
     return local_ground_level;
 }
 
-float Aircraft::ambient_temperature_degC() const
+float Aircraft::ambient_outside_temperature_degC() const
+{
+    // FIXME: stop applying autopilot warming to this value
+    return baro_temperature_degC();
+}
+
+// the ambient temperature for the autopilot baro sensors, *not* the
+// ambient temperature for the outside of the vehicle.  This
+// temperature is adjusted for things like the simulated board heating
+// up
+float Aircraft::baro_temperature_degC() const
 {
     // FIXME: AP_Baro_SITL should be getting temperature from the
     // simulated aircraft, not the other way around!
@@ -132,6 +140,15 @@ float Aircraft::ambient_temperature_degC() const
     return AP::baro().get_temperature();
 #endif
     return 25.0;
+}
+
+// returns the expected ambient pressure for the vehicle.  So pressure
+// drops preceived by the sensors due to airflow should not be
+// included in this number.
+float Aircraft::ambient_outside_pressure_Pascal() const
+{
+    // FIXME: this includes airflow-related things
+    return AP::baro().get_pressure();
 }
 
 void Aircraft::set_precland(SIM_Precland *_precland) {
@@ -568,6 +585,8 @@ float Aircraft::rangefinder_range() const
         altitude -= relPosSensorEF.z;
     }
 
+    altitude += sitl->sonar_offset;
+
     const auto orientation = (Rotation)sitl->sonar_rot.get();
 #if SITL_RANGEFINDER_AS_OBJECT_SENSOR
 
@@ -709,12 +728,6 @@ void Aircraft::update_model(const struct sitl_input &input)
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
     WITH_SEMAPHORE(pose_sem);
-
-    // update eas2tas and air density
-#if AP_AHRS_ENABLED
-    eas2tas = AP::ahrs().get_EAS2TAS();
-#endif
-    air_density = SSL_AIR_DENSITY / sq(eas2tas);
 
     const float delta_time = frame_time_us * 1.0e-6f;
 
@@ -1102,6 +1115,21 @@ bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input
     return currently_clamped;
 }
 
+// simple battery consumption model
+// does not support the behavior documented by SIM_BATT_VOLTAGE and SIM_BATT_CAP_AH parameters
+void Aircraft::update_battery()
+{
+    // lose 0.7V at full throttle (from the user-specified voltage)
+    battery_voltage = sitl->batt_voltage - 0.7f * fabsf(sitl->throttle);
+    // assume 50A at full throttle
+    battery_current = 50.0f * fabsf(sitl->throttle);
+}
+
+void Aircraft::update_battery(const struct sitl_input &input)
+{
+    update_battery();
+}
+
 void Aircraft::update_external_payload(const struct sitl_input &input)
 {
     external_payload_mass = 0;
@@ -1164,7 +1192,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 #if AP_SIM_LOWEHEISER_ENABLED
     // update Loweheiser generator
     if (loweheiser) {
-        loweheiser->update();
+        loweheiser->update(*this);
     }
 #endif
 
@@ -1204,6 +1232,14 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 #endif
 #if AP_SIM_GPIO_LED_RGB_ENABLED
     sim_ledrgb.update(*this);
+#endif
+
+#if AP_SIM_MOUNT_ENABLED
+    for (uint8_t i = 0; i < GIMBAL_SIM_MAX; i++) {
+        if (gimbal_sims[i] != nullptr) {
+            gimbal_sims[i]->update(*this);
+        }
+    }
 #endif
 }
 

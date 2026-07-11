@@ -95,12 +95,6 @@ static_assert(STM32_FDCANCLK == 80U*1000U*1000U, "FDCAN clock must be 80MHz, got
 
 using namespace ChibiOS;
 
-#if HAL_CANMANAGER_ENABLED
-#define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANFDIface", fmt, ##args); } while (0)
-#else
-#define Debug(fmt, args...)
-#endif
-
 constexpr CANIface::CanType* const CANIface::Can[];
 static ChibiOS::CANIface* can_ifaces[HAL_NUM_CAN_IFACES];
 
@@ -243,7 +237,6 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
 
     const uint32_t prescaler = prescaler_bs / (1 + bs1_bs2_sum);
     if ((prescaler < 1U) || (prescaler > 1024U)) {
-        Debug("Timings: No Solution found\n");
         return false;              // No solution
     }
 
@@ -296,9 +289,6 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
         solution = BsPair(bs1_bs2_sum, uint8_t((7 * bs1_bs2_sum - 1) / 8));
     }
 
-    Debug("Timings: quanta/bit: %d, sample point location: %.1f%%\n",
-          int(1 + solution.bs1 + solution.bs2), float(solution.sample_point_permill) / 10.F);
-
     /*
      * Final validation
      * Helpful Python:
@@ -309,7 +299,6 @@ bool CANIface::computeTimings(const uint32_t target_bitrate, Timings& out_timing
      *
      */
     if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
-        Debug("Timings: Invalid Solution %lu %lu %d %d %lu \n", pclk, prescaler, int(solution.bs1), int(solution.bs2), (pclk / (prescaler * (1 + solution.bs1 + solution.bs2))));
         return false;
     }
 
@@ -465,9 +454,7 @@ int16_t CANIface::receive(AP_HAL::CANFrame& out_frame, uint64_t& out_timestamp_u
 bool CANIface::clock_init_ = false;
 bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate)
 {
-    Debug("Bitrate %lu", static_cast<unsigned long>(bitrate));
     if (self_index_ > HAL_NUM_CAN_IFACES) {
-        Debug("CAN drv init failed");
         return false;
     }
     if (can_ifaces[self_index_] == nullptr) {
@@ -566,8 +553,6 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate)
         return false;
     }
     _bitrate = bitrate;
-    Debug("Timings: presc=%u sjw=%u bs1=%u bs2=%u\n",
-          unsigned(timings.prescaler), unsigned(timings.sjw), unsigned(timings.bs1), unsigned(timings.bs2));
 
     //setup timing register
     can_->NBTP = (((timings.sjw-1) << FDCAN_NBTP_NSJW_Pos)   |
@@ -587,8 +572,6 @@ bool CANIface::init(const uint32_t bitrate, const uint32_t fdbitrate)
             return false;
         }
         _fdbitrate = fdbitrate;
-        Debug("CANFD Timings: presc=%u bs1=%u bs2=%u\n",
-              unsigned(fdtimings.prescaler), unsigned(fdtimings.bs1), unsigned(fdtimings.bs2));
         can_->DBTP = (((fdtimings.bs1-1) << FDCAN_DBTP_DTSEG1_Pos) |
                       ((fdtimings.bs2-1) << FDCAN_DBTP_DTSEG2_Pos)  |
                       ((fdtimings.prescaler-1) << FDCAN_DBTP_DBRP_Pos) |

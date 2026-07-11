@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Ardupilot contains the DDS Client library, which can run as SITL. Then, the DDS application runs a ROS 2 node, an eProsima Integration Service, and the MicroXRCE Agent. The two systems communicate over serial or UDP.
+ArduPilot contains the DDS Client library, which can run as SITL. Then, the DDS application runs a ROS 2 node, an eProsima Integration Service, and the MicroXRCE Agent. The two systems communicate over serial or UDP.
 
 ```mermaid
 ---
@@ -12,7 +12,7 @@ graph LR
 
   subgraph Linux Computer
 
-    subgraph Ardupilot SITL
+    subgraph ArduPilot SITL
       veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
       xrceClient <--> port1[udp:2019]
     end
@@ -35,7 +35,7 @@ graph LR
 
   subgraph Linux Computer
 
-    subgraph Ardupilot SITL
+    subgraph ArduPilot SITL
       veh[sim_vehicle.py] <--> xrceClient[EProsima Micro XRCE DDS Client]
       xrceClient <--> port1[devUSB1]
     end
@@ -52,7 +52,7 @@ graph LR
 
 ## Installation
 
-While DDS support in Ardupilot is mostly through git submodules,
+While DDS support in ArduPilot is mostly through git submodules,
 you must install Micro XRCE DDS Gen and create a workspace.
 
 Follow the wiki [here](https://ardupilot.org/dev/docs/ros2.html)
@@ -75,6 +75,7 @@ Run the simulator with the following command. If using UDP, the only parameter y
 | Name | Description | Default |
 | - | - | - |
 | DDS_ENABLE | Set to 1 to enable DDS, or 0 to disable | 1 |
+| DDS_USE_NS | Set to 1 to include `v<MAV_SYSID>` in topic/service names | 0 |
 | SERIAL1_BAUD | The serial baud rate for DDS | 57 |
 | SERIAL1_PROTOCOL | Set this to 45 to use DDS on the serial port | 0 |
 
@@ -96,7 +97,7 @@ param set DDS_ENABLE 0
 REBOOT
 ```
 
-## Using the ROS 2 CLI to Read Ardupilot Data
+## Using the ROS 2 CLI to Read ArduPilot Data
 
 After your setup is complete, do the following:
 
@@ -145,7 +146,7 @@ Next, follow the associated section for your chosen transport, and finally you c
 - Run SITL (remember to kill any terminals running ardupilot SITL beforehand)
 
   ```console
-  # assuming we are using /dev/pts/1 for Ardupilot SITL
+  # assuming we are using /dev/pts/1 for ArduPilot SITL
   sim_vehicle.py -v ArduPlane -DG --console --enable-DDS -A "--serial1=uart:/dev/pts/1"
   ```
 
@@ -184,6 +185,7 @@ Subscribed topics:
  * /ap/cmd_vel [geometry_msgs/msg/TwistStamped] 1 subscriber
  * /ap/joy [sensor_msgs/msg/Joy] 1 subscriber
  * /ap/tf [tf2_msgs/msg/TFMessage] 1 subscriber
+ * /clock [rosgraph_msgs/msg/Clock] 1 subscriber
 ```
 
 For a full list of interfaces, see [here](https://ardupilot.org/dev/docs/ros2-interfaces.html).
@@ -307,11 +309,22 @@ publisher: beginning loop
 publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stamp=builtin_interfaces.msg.Time(sec=0, nanosec=0), frame_id=''), coordinate_frame=0, type_mask=0, latitude=34.0, longitude=118.0, altitude=1000.0, velocity=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), acceleration_or_force=geometry_msgs.msg.Twist(linear=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0), angular=geometry_msgs.msg.Vector3(x=0.0, y=0.0, z=0.0)), yaw=0.0)
 ```
 
+## Clock Synchronisation
+
+When running in a simulated environment, The master simulation clock (usually ``/clock``) needs to be provided to Ardupilot to ensure ArduPilot's topics
+have the correct timestamp. This ensure that any sensor fusion (or similar) nodes in ROS 2 fuse the correct data.
+
+ArduPilot SITL uses the standard ROS2 parameter of ``--use-sim-time <true|false>``. If ``true`` ArduPilot will automatically attempt
+to subscribe to ``/clock`` topic and use this for the timestamping of DDS topics. If this is unsuccessful, ArduPilot
+will use it's own internal clock.
+
+In either case, ArduPilot will publish the clock to ``/ap/clock`` (or ``/ap/vN/clock`` if namespacing is used).
+
 ## Contributing to `AP_DDS` library
 
-### Adding DDS messages to Ardupilot
+### Adding DDS messages to ArduPilot
 
-Unlike the use of ROS 2 `.msg` files, since Ardupilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
+Unlike the use of ROS 2 `.msg` files, since ArduPilot supports native DDS, the message files follow [OMG IDL DDS v4.2](https://www.omg.org/spec/IDL/4.2/PDF).
 This package is intended to work with any `.idl` file complying with those extensions.
 
 Over time, these restrictions will ideally go away.

@@ -597,13 +597,13 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_LOIT_BRK_ACC_M", 0.5 },
     { "Q_LOIT_BRK_JRK_M", 2.5 },
     { "Q_LOIT_SPEED_MS",  5.0 },
-    { "Q_WP_SPEED",       500 },
-    { "Q_WP_ACCEL",       100 },
+    { "Q_WP_SPD",         5.0 },
+    { "Q_WP_ACC",         1.0 },
     { "Q_P_JERK_NE",      2   },
     // lower rotational accel limits
-    { "Q_A_ACCEL_R_MAX", 40000 },
-    { "Q_A_ACCEL_P_MAX", 40000 },
-    { "Q_A_ACCEL_Y_MAX", 10000 },
+    { "Q_A_ACC_R_MAX", 400 },
+    { "Q_A_ACC_P_MAX", 400 },
+    { "Q_A_ACC_Y_MAX", 100 },
 };
 
 /*
@@ -830,6 +830,9 @@ bool QuadPlane::setup(void)
 
     // upgrade position controller parameters added Dec 2025
     pos_control->convert_parameters();
+
+    // upgrade waypoint navigation parameters
+    wp_nav->convert_parameters();
 
     // upgrade loiter navigation parameters
     loiter_nav->convert_parameters();
@@ -1067,23 +1070,6 @@ void QuadPlane::relax_attitude_control()
     // disable roll and yaw control for vectored tailsitters
     // if not a vectored tailsitter completely disable attitude control
     attitude_control->relax_attitude_controllers(!tailsitter.relax_pitch());
-}
-
-/*
-  check for an EKF yaw reset
- */
-void QuadPlane::check_yaw_reset(void)
-{
-    if (!initialised) {
-        return;
-    }
-    float yaw_angle_change_rad = 0.0f;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control->inertial_frame_reset();
-        ekfYawReset_ms = new_ekfYawReset_ms;
-        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
-    }
 }
 
 void QuadPlane::set_climb_rate_ms(float target_climb_rate_ms)
@@ -1960,6 +1946,12 @@ void QuadPlane::update_throttle_hover()
  */
 void QuadPlane::motors_output(bool run_rate_controller)
 {
+    // QuadPlane has no pre-takeoff RPM gate that asserts the spool-up block,
+    // so clear it every cycle before motors->output() runs output_logic().
+    // Without this the block set during ground-idle ramp would never clear
+    // and the spool would stay in GROUND_IDLE.
+    motors->set_spoolup_block(false);
+
     /* Delay for ARMING_DELAY_MS after arming before allowing props to spin:
        1) for safety (OPTION_DELAY_ARMING)
        2) to allow motors to return to vertical (OPTION_DISARMED_TILT)
@@ -2590,7 +2582,7 @@ void QuadPlane::vtol_position_controller(void)
         if (poscontrol.reached_wp_speed ||
             rel_groundspeed_sq < sq(wp_speed_ms) ||
             wp_speed_ms > 1.35*scaled_wp_speed_ms) {
-            // once we get below the Q_WP_SPEED then we don't want to
+            // once we get below the Q_WP_SPD then we don't want to
             // speed up again. At that point we should fly within the
             // limits of the configured VTOL controller we also apply
             // this limit when we are more than 45 degrees off the
@@ -2841,7 +2833,9 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
         if (plane.control_mode == &plane.mode_guided || vtol_loiter_auto) {
-            plane.ahrs.get_location(plane.current_loc);
+            // FIXME: we have updated current_loc without updating the
+            // health flag.  And why are we doing this here?!
+            UNUSED_RESULT(plane.ahrs.get_location(plane.current_loc));
             int32_t target_altitude_cm;
             if (!plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN,target_altitude_cm)) {
                 break;
@@ -4185,7 +4179,12 @@ void QuadPlane::update_throttle_mix(void)
           attitude control until LAND_FINAL
          */
         if (in_vtol_land_sequence()) {
-            use_mix_max = !in_vtol_land_final();
+            // during the descent phase we don't want to priortise
+            // attitude too much. Rapid descent on quadplanes often
+            // leads to very poor attitude control and putting more
+            // power into attitude doesn't tend to fix it, what we
+            // need to do is slow the descent.
+            use_mix_max = !in_vtol_land_descent() || poscontrol.get_state() == QPOS_LAND_ABORT;
         }
 
         if (use_mix_max) {
@@ -4627,11 +4626,13 @@ void SLT_Transition::force_transition_complete()
 
 MAV_VTOL_STATE SLT_Transition::get_mav_vtol_state() const
 {
-    if (quadplane.in_vtol_mode()) {
+    if (quadplane.in_vtol_land_approach()) {
         QuadPlane::position_control_state state = quadplane.poscontrol.get_state();
         if ((state == QuadPlane::position_control_state::QPOS_AIRBRAKE) || (state == QuadPlane::position_control_state::QPOS_POSITION1)) {
             return MAV_VTOL_STATE_TRANSITION_TO_MC;
         }
+    }
+    if (quadplane.in_vtol_mode()) {
         return MAV_VTOL_STATE_MC;
     }
 
@@ -4787,8 +4788,8 @@ void QuadPlane::setup_rp_fw_angle_gains(void)
 {
     const float mc_angR = attitude_control->get_angle_roll_p().kP();
     const float mc_angP = attitude_control->get_angle_pitch_p().kP();
-    const float fw_angR = 1.0/plane.rollController.tau();
-    const float fw_angP = 1.0/plane.pitchController.tau();
+    const float fw_angR = plane.rollController.get_angle_p();
+    const float fw_angP = plane.pitchController.get_angle_p();
 
     if (!is_positive(mc_angR) || !is_positive(mc_angP)) {
         // bad configuration, don't scale

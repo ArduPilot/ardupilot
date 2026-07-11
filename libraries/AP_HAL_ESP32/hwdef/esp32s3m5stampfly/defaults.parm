@@ -13,9 +13,9 @@ RC1_MIN 1101 # avoid calibration needed warning
 RC_OPTIONS 96 # ignore rpy stick positions during arming, nice for crap controllers
 
 # tuning parameters from mission planner's wizard
-ATC_ACCEL_P_MAX 200200
-ATC_ACCEL_R_MAX 200200
-ATC_ACCEL_Y_MAX 33800
+ATC_ACC_P_MAX 2002
+ATC_ACC_R_MAX 2002
+ATC_ACC_Y_MAX 338
 ATC_RAT_PIT_FLTD 67
 ATC_RAT_PIT_FLTT 67
 ATC_RAT_RLL_FLTD 67

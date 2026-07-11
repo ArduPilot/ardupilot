@@ -161,9 +161,4 @@ void AP_Compass_IIS2MDC::timer()
     accumulate_sample(field);
 }
 
-void AP_Compass_IIS2MDC::read()
-{
-    drain_accumulated_samples();
-}
-
 #endif //AP_COMPASS_IIS2MDC_ENABLED

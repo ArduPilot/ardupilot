@@ -1,8 +1,9 @@
 '''
 AP_FLAKE8_CLEAN
 '''
-from lxml import etree
 import emitter
+
+from lxml import etree
 
 
 class XMLEmitter(emitter.Emitter):

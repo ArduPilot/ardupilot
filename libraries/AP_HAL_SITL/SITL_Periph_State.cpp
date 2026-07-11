@@ -134,7 +134,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             struct sitl_input input {};
             sitl_model->update(input); // delays up to 1 millisecond
             sim_update();
-            update_voltage_current(input, 0);
+            set_voltage_current_pins(sitl_model->get_battery_voltage(), sitl_model->get_battery_current());
         } else {
             usleep(1000);
         }
@@ -210,6 +210,8 @@ void SimMCast::multicast_read(void)
     }
     if (_sitl->state.timestamp_us == 0) {
         printf("Got multicast state input\n");
+        // Record offset to ensure we start from zero
+        boot_time_us = state.timestamp_us;
     }
     if (state.timestamp_us < _sitl->state.timestamp_us) {
         printf("multicast state time reset\n");
@@ -223,7 +225,7 @@ void SimMCast::multicast_read(void)
     if (home.is_zero()) {
         home = location;
     }
-    hal.scheduler->stop_clock(_sitl->state.timestamp_us + base_time_us);
+    hal.scheduler->stop_clock(_sitl->state.timestamp_us + base_time_us - boot_time_us);
     HALSITL::Scheduler::timer_event();
     if (!servo_sock.is_connected()) {
         servo_fd_open();

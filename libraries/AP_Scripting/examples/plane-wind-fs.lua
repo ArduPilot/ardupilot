@@ -64,7 +64,7 @@ value = param:get('RTL_RADIUS')
 if value then
   value = math.abs(value)
   if value > 0 then
-    home_reached_rad = math.abs(value) * 2
+    home_reached_rad = value * 2
   else 
     value = param:get('WP_LOITER_RAD')
     if value then

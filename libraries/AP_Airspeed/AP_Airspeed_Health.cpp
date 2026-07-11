@@ -41,7 +41,7 @@ void AP_Airspeed::check_sensor_ahrs_wind_max_failures(uint8_t i)
     }
 
     const AP_GPS &gps = AP::gps();
-    if (gps.status() < AP_GPS::GPS_Status::GPS_OK_FIX_3D) {
+    if (gps.status() < AP_GPS_FixType::FIX_3D) {
         // GPS speed can't be trusted, re-enable airspeed as a fallback
         if ((param[i].use == 0) && (state[i].failures.param_use_backup == 1)) {
             GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed sensor %d, Re-enabled as GPS fall-back", i+1);

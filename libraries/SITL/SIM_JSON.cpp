@@ -34,8 +34,6 @@
 
 #define UDP_TIMEOUT_MS 100
 
-#define SITL_JSON_DEBUG 0
-
 extern const AP_HAL::HAL& hal;
 
 using namespace SITL;
@@ -464,11 +462,11 @@ void JSON::recv_fdm(const struct sitl_input &input)
     update_position();
 
     // update range finder distances
-    for (uint8_t i=7; i<13; i++) {
-        if ((received_bitmask &  1ULL << i) == 0) {
+    for (uint8_t i=0; i<6; i++) {
+        if ((received_bitmask & (RNG_1 << i)) == 0) {
             continue;
         }
-        rangefinder_m[i-7] = state.rng[i-7];
+        rangefinder_m[i] = state.rng[i];
     }
 
     // update wind vane
@@ -492,11 +490,17 @@ void JSON::recv_fdm(const struct sitl_input &input)
 
     // update battery state
     if ((received_bitmask & BAT_VOLT) != 0) {
-        battery_voltage = state.bat_volt; 
+        battery_voltage = state.bat_volt;
+    } else {
+        battery_voltage = sitl->batt_voltage;
     }
     if ((received_bitmask & BAT_AMP) != 0) {
-        battery_current = state.bat_amp; 
+        battery_current = state.bat_amp;
+    } else {
+        battery_current = 0.0f;
     }
+    // (temperature is not part of the protocol, just set it explicitly here)
+    battery_temperature_degC = 0.0f;
 
     double deltat;
     if (state.timestamp_s < last_timestamp_s) {

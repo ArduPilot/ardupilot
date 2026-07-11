@@ -23,7 +23,7 @@ void Copter::heli_init()
 // should be called at 50hz
 void Copter::check_dynamic_flight(void)
 {
-    if (motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED ||
+    if ((motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED && !motors->in_autorotation()) ||
         flightmode->is_landing()) {
         heli_dynamic_flight_counter = 0;
         heli_flags.dynamic_flight = false;
@@ -101,6 +101,10 @@ void Copter::update_heli_control_dynamics(void)
 
     // set hover roll trim scalar, will ramp from 0 to 1 over 1 second after we think helicopter has taken off
     attitude_control->set_hover_roll_trim_scalar((float) hover_roll_trim_scalar_slew/(float) scheduler.get_loop_rate_hz());
+
+    // set manual collective mode in motors to aid in runup complete determination in RSC
+    // if copter is set to a manual throttle flight mode, then heli is using a manual collective mode
+    motors->set_using_manual_collective_mode(flightmode->has_manual_throttle());
 }
 
 bool Copter::should_use_landing_swash() const
@@ -160,8 +164,7 @@ void Copter::heli_update_rotor_speed_targets()
     // get rotor control method
     uint8_t rsc_control_mode = motors->get_rsc_mode();
 
-    switch (rsc_control_mode) {
-    case ROTOR_CONTROL_MODE_PASSTHROUGH:
+    if (rsc_control_mode == ROTOR_CONTROL_MODE_PASSTHROUGH) {
         // pass through pilot desired rotor speed from the RC
         if (get_pilot_desired_rotor_speed() > 0.01) {
             ap.motor_interlock_switch = true;
@@ -170,16 +173,6 @@ void Copter::heli_update_rotor_speed_targets()
             ap.motor_interlock_switch = false;
             motors->set_desired_rotor_speed(0.0f);
         }
-        break;
-    case ROTOR_CONTROL_MODE_SETPOINT:
-    case ROTOR_CONTROL_MODE_THROTTLECURVE:
-    case ROTOR_CONTROL_MODE_AUTOTHROTTLE:
-        if (motors->get_interlock()) {
-            motors->set_desired_rotor_speed(motors->get_rsc_setpoint());
-        } else {
-            motors->set_desired_rotor_speed(0.0f);
-        }
-        break;
     }
 
 }

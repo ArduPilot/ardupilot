@@ -10,8 +10,6 @@ public:
     /* Do not allow copies */
     CLASS_NO_COPY(AP_PitchController);
 
-    float get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode) override;
-
     static const struct AP_Param::GroupInfo var_info[];
 
     void convert_pid();
@@ -19,10 +17,30 @@ public:
 private:
     AP_Float _roll_ff;
 
-    float _get_coordination_rate_offset(const float &aspeed, bool &inverted) const;
+    float run_axis_rate_control(float desired_rate_degs, float scaler, bool disable_integrator, bool ground_mode) override;
 
-    float get_airspeed() const override;
-    bool is_underspeed(const float aspeed) const override;
-    float get_measured_rate() const override;
+    // Return true if the airspeed should be considered as under speed
+    bool is_underspeed() const override;
+
+    // Return the measured pitch angle in degrees
+    float get_measured_angle_deg() const override;
+
+    // Return the measured pitch rate in radians per second
+    float get_measured_rate_rads() const override;
+
+    // Return true if rate limits should be applied
+    bool should_apply_rate_limits() const override;
+
+    // Return rate target offset in deg per second, this is used in angle control
+    float get_rate_target_offset_degs() const override;
+
+    // Return positive rate limit in deg per second, zero if disabled
+    float get_positive_rate_limit_degs() const override;
+
+    // Return negative rate limit in deg per second (as a positive number) zero if disabled
+    float get_negative_rate_limit_degs() const override;
+
+    // Return true if the vehicle is inverted
+    bool is_inverted() const;
 
 };

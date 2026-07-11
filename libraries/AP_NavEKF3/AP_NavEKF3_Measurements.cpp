@@ -567,7 +567,7 @@ void NavEKF3_core::readGpsData()
         return;
     }
 
-    if (gps.status(selected_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
+    if (gps.status(selected_gps) < AP_GPS_FixType::FIX_3D) {
         // report GPS fix status
         gpsCheckStatus.bad_fix = true;
         dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "Waiting for 3D fix");
@@ -691,7 +691,7 @@ void NavEKF3_core::readGpsData()
             gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
         }
 
-        if (!setOrigin(gpsloc_fieldelevation)) {
+        if (!setOriginLLH(gpsloc_fieldelevation)) {
             // set an error as an attempt was made to set the origin more than once
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return;
@@ -739,7 +739,7 @@ void NavEKF3_core::readGpsYawData()
     // if the GPS has yaw data then fuse it as an Euler yaw angle
     float yaw_deg, yaw_accuracy_deg;
     uint32_t yaw_time_ms;
-    if (gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D &&
+    if (gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D &&
         dal.gps().gps_yaw_deg(selected_gps, yaw_deg, yaw_accuracy_deg, yaw_time_ms) &&
         yaw_time_ms != yawMeasTime_ms) {
         // GPS modules are rather too optimistic about their
@@ -880,7 +880,10 @@ void NavEKF3_core::readAirSpdData()
         }
         // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
         tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
-    } else {
+    } else if (assume_zero_sideslip()) {
+        // synthetic airspeed is only valid for 'fly forward' vehicles that
+        // do not sideslip; fusing it on a multicopter corrupts the attitude
+        // and velocity states when dead reckoning (see issue #33451)
         if (is_positive(defaultAirSpeed)) {
             // this is the preferred method with the autopilot providing a model based airspeed estimate
             if (imuDataDelayed.time_ms - prevTasStep_ms > 200 ) {
@@ -908,6 +911,9 @@ void NavEKF3_core::readAirSpdData()
                 tasDataDelayed.allowFusion = false;
             }
         }
+    } else {
+        tasDataToFuse = false;
+        tasDataDelayed.allowFusion = false;
     }
 }
 
@@ -1051,7 +1057,12 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     } else {
         return;
     }
-    yawAngDataNew.time_ms = timeStamp_ms;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer. Without
+    // this a configured delay larger than the fusion time horizon leaves every
+    // measurement outside the recall window and the yaw source silently stops
+    // fusing. The raw timestamp is still used for new-measurement detection and
+    // rate limiting via yawMeasTime_ms
+    yawAngDataNew.time_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
 
     storedYawAng.push(yawAngDataNew);
 
@@ -1183,7 +1194,7 @@ void NavEKF3_core::update_gps_selection(void)
             // many GPS sensors available
             preferred_gps = core_index;
         }
-        if (gps.status(preferred_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D) {
+        if (gps.status(preferred_gps) >= AP_GPS_FixType::FIX_3D) {
             // select our preferred_gps if it has a 3D fix, otherwise
             // use the primary GPS
             selected_gps = preferred_gps;
@@ -1388,13 +1399,12 @@ ftype NavEKF3_core::MagDeclination(void) const
 /*
   Update the on ground and not moving check.
   Should be called once per IMU update.
-  Only updates when on ground and when operating without a magnetometer
+  Used for yaw fusion strategy selection, zero velocity fusion gating,
+  and accel bias learning inhibition during ground movement.
 */
 void NavEKF3_core::updateMovementCheck(void)
 {
-    const bool runCheck = onGround && (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS || yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK ||
-                                       yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV || yaw_source_last == AP_NavEKF_Source::SourceYaw::GSF || !use_compass());
-    if (!runCheck)
+    if (!onGround)
     {
         onGroundNotMoving = false;
         return;

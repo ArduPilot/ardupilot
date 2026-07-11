@@ -168,7 +168,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 5
     // @Units: m/s/s
     // @User: Advanced
-    AP_GROUPINFO("_ACCEL_NE", 12, AP_Follow, _accel_max_ne_mss, 2.5),
+    AP_GROUPINFO("_ACCEL_NE", 12, AP_Follow, _accel_max_ne_mss, 5.0),
 
     // @Param: _JERK_NE
     // @DisplayName: Jerk limit for the horizontal kinematic input shaping
@@ -176,7 +176,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 20
     // @Units: m/s/s/s
     // @User: Advanced
-    AP_GROUPINFO("_JERK_NE", 13, AP_Follow, _jerk_max_ne_msss, 5.0),
+    AP_GROUPINFO("_JERK_NE", 13, AP_Follow, _jerk_max_ne_msss, 10.0),
 
     // @Param: _ACCEL_D
     // @DisplayName: Acceleration limit for the vertical kinematic input shaping
@@ -184,7 +184,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 2.5
     // @Units: m/s/s
     // @User: Advanced
-    AP_GROUPINFO("_ACCEL_D", 14, AP_Follow, _accel_max_d_mss, 2.5),
+    AP_GROUPINFO("_ACCEL_D", 14, AP_Follow, _accel_max_d_mss, 5.0),
 
     // @Param: _JERK_D
     // @DisplayName: Jerk limit for the vertical kinematic input shaping
@@ -192,7 +192,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 5
     // @Units: m/s/s/s
     // @User: Advanced
-    AP_GROUPINFO("_JERK_D", 15, AP_Follow, _jerk_max_d_msss, 5.0),
+    AP_GROUPINFO("_JERK_D", 15, AP_Follow, _jerk_max_d_msss, 10.0),
 
     // @Param: _ACCEL_H
     // @DisplayName: Angular acceleration limit for the heading kinematic input shaping
@@ -200,7 +200,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 90
     // @Units: deg/s/s
     // @User: Advanced
-    AP_GROUPINFO("_ACCEL_H", 16, AP_Follow, _accel_max_h_degss, 90.0),
+    AP_GROUPINFO("_ACCEL_H", 16, AP_Follow, _accel_max_h_degss, 360.0),
 
     // @Param: _JERK_H
     // @DisplayName: Angular jerk limit for the heading kinematic input shaping
@@ -208,7 +208,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Range: 0 360
     // @Units: deg/s/s/s
     // @User: Advanced
-    AP_GROUPINFO("_JERK_H", 17, AP_Follow, _jerk_max_h_degsss, 360.0),
+    AP_GROUPINFO("_JERK_H", 17, AP_Follow, _jerk_max_h_degsss, 720.0),
 
     // @Param: _TIMEOUT
     // @DisplayName: Follow timeout
@@ -272,13 +272,19 @@ void AP_Follow::update_estimates()
         // update X/Y position, velocity, acceleration with shaping
         update_pos_vel_accel_xy(_estimate_pos_ned_m.xy(), _estimate_vel_ned_ms.xy(), _estimate_accel_ned_mss.xy(), e_dt, Vector2f(), Vector2f(), Vector2f());
 
-        // update Z axis position, velocity, acceleration without shaping (direct update)
+        // integrate the Z axis estimate forward by e_dt
         update_pos_vel_accel(_estimate_pos_ned_m.z, _estimate_vel_ned_ms.z, _estimate_accel_ned_mss.z, e_dt, 0.0, 0.0, 0.0);
 
         // apply horizontal shaping to refine estimate toward projected target state
         shape_pos_vel_accel_xy(_target_pos_ned_m.xy() + delta_pos_m.xy().topostype(), _target_vel_ned_ms.xy() + delta_vel_ms.xy(), _target_accel_ned_mss.xy(),
                                _estimate_pos_ned_m.xy(), _estimate_vel_ned_ms.xy(), _estimate_accel_ned_mss.xy(),
                                0.0, _accel_max_ne_mss, _jerk_max_ne_msss, e_dt, false);
+
+        // apply vertical shaping to refine the Z estimate toward the projected
+        // target state (jerk-limited, tuned via FOLL_ACCEL_D / FOLL_JERK_D)
+        shape_pos_vel_accel(_target_pos_ned_m.z + delta_pos_m.z, _target_vel_ned_ms.z + delta_vel_ms.z, _target_accel_ned_mss.z,
+                            _estimate_pos_ned_m.z, _estimate_vel_ned_ms.z, _estimate_accel_ned_mss.z,
+                            0.0, 0.0, -_accel_max_d_mss, _accel_max_d_mss, _jerk_max_d_msss, e_dt, false);
 
         // apply angular shaping for heading estimate
         shape_angle_vel_accel(radians(_target_heading_deg) + delta_heading_rad, radians(_target_heading_rate_degs), 0.0,
@@ -295,8 +301,9 @@ void AP_Follow::update_estimates()
         _estimate_pos_ned_m = _target_pos_ned_m + delta_pos_m.topostype();
         _estimate_vel_ned_ms = _target_vel_ned_ms + delta_vel_ms;
         _estimate_accel_ned_mss = _target_accel_ned_mss;
-        _estimate_heading_rad = radians(_target_heading_deg) + delta_heading_rad;  
-        _estimate_heading_rate_rads = radians(_target_heading_rate_degs);  
+        _estimate_heading_rad = radians(_target_heading_deg) + delta_heading_rad;
+        _estimate_heading_rate_rads = radians(_target_heading_rate_degs);
+        _estimate_heading_accel_radss = 0.0;
         _estimate_valid = true;
     }
 
@@ -309,17 +316,25 @@ void AP_Follow::update_estimates()
         _ofs_estimate_vel_ned_ms = _estimate_vel_ned_ms;
         _ofs_estimate_accel_ned_mss = _estimate_accel_ned_mss;
     } else {
-        // offsets are in FRD frame: rotate by heading
+        // offsets are in FRD frame: rotate the FRD offset into NED using the target's heading
         offset_m.xy().rotate(_estimate_heading_rad);
         _ofs_estimate_pos_ned_m = _estimate_pos_ned_m + offset_m.topostype();
+        // seed vel/accel with the target's own translational vel/accel; rotational
+        // contributions from the offset rotating with the target are added below
         _ofs_estimate_vel_ned_ms = _estimate_vel_ned_ms;
         _ofs_estimate_accel_ned_mss = _estimate_accel_ned_mss;
-        // with kinematic shaping of heading we can improve our offset velocity and acceleration of the offset
+        // When heading rate/accel are available (kinematic shaping active), the offset
+        // point is fixed in a frame rotating about the NED down-axis at the target's
+        // heading rate (ω) and heading accel (α), at radius r = offset_m, giving:
+        //   v_rot = ω × r
+        //   a_rot = α × r + ω × (ω × r)   (Euler/tangential term + centripetal term)
+        // These are added on top of the target's translational vel/accel set above.
         if (valid_kinematic_params) {
-            Vector3f offset_cross = offset_m.cross(Vector3f{0.0, 0.0, 1.0});
-            float offset_length_m = offset_m.length();
-            _ofs_estimate_vel_ned_ms += offset_cross * offset_length_m * _estimate_heading_rate_rads;
-            _ofs_estimate_accel_ned_mss += offset_cross * offset_length_m * _estimate_heading_accel_radss;
+            const Vector3f angular_vel{0.0f, 0.0f, _estimate_heading_rate_rads};       // ω: heading rate about NED down-axis
+            const Vector3f angular_accel{0.0f, 0.0f, _estimate_heading_accel_radss};   // α: heading angular acceleration
+            const Vector3f vel_due_to_rotation = angular_vel.cross(offset_m);          // ω × r
+            _ofs_estimate_vel_ned_ms += vel_due_to_rotation;
+            _ofs_estimate_accel_ned_mss += angular_accel.cross(offset_m) + angular_vel.cross(vel_due_to_rotation);  // α × r + ω × (ω × r)
         }
     }
 
@@ -584,6 +599,12 @@ bool AP_Follow::estimate_error_too_large() const
 // Calculates max velocity change under trapezoidal or triangular acceleration profile (jerk-limited).
 float AP_Follow::calc_max_velocity_change(float accel_max, float jerk_max, float timeout_sec) const
 {
+    // a non-positive jerk limit means "no jerk limit": acceleration can be
+    // applied instantly, so the profile is a pure trapezoid. Guarding here also
+    // avoids a divide-by-zero when the FOLL_JERK_* parameter is set to zero.
+    if (!is_positive(jerk_max)) {
+        return accel_max * timeout_sec;
+    }
     const float t_jerk = accel_max / jerk_max;
     const float t_total_jerk = 2.0f * t_jerk;
 
@@ -596,7 +617,7 @@ float AP_Follow::calc_max_velocity_change(float accel_max, float jerk_max, float
     } else {
         // timeout too short: pure triangle profile
         const float t_half = timeout_sec * 0.5f;
-        return 0.5f * jerk_max * sq(t_half);
+        return jerk_max * sq(t_half);
     }
 }
 
@@ -862,11 +883,8 @@ void AP_Follow::update_dist_and_bearing_to_target()
         // if unable to retrieve local position, clear distance/bearing info
         clear_dist_and_bearing_to_target();
     } else {
-        // convert vehicle position to NED meters (NEU -> NED and cm -> m)
-        current_position_ned_m.z = -current_position_ned_m.z; // NEU to NED
-        current_position_ned_m *= 0.01;  // convert cm to m
-
-        // calculate distance vectors to target, both with and without offsets
+        // get_relative_position_NED_origin() already returns metres in the NED
+        // frame, matching _ofs_estimate_pos_ned_m, so no conversion is required.
         const Vector3p ofs_dist_vec = _ofs_estimate_pos_ned_m - current_position_ned_m;
 
         // record distance and bearing to target for reporting/logging

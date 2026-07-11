@@ -67,6 +67,17 @@ repos:
           -   tomli;python_version<'3.11'
           pass_filenames: false
           files: ^Tools/ros2/
+      -   id: serial-protocol-gates
+          name: Check SerialProtocol gate coverage
+          entry: Tools/scripts/check_serial_protocol_gates.py
+          language: script
+          pass_filenames: false
+          files: |
+            (?x)^(
+              libraries/AP_SerialManager/AP_SerialManager\.h |
+              libraries/AP_SerialManager/AP_SerialManager_default_protocol_check\.cpp |
+              Tools/scripts/check_serial_protocol_gates\.py
+            )$
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
@@ -93,6 +104,11 @@ repos:
             --ignore=Tools/ros2/ardupilot_dds_tests/test/test_pep257.py,
             --ignore=Tools/ros2/ardupilot_dds_tests/test/test_copyright.py,
         ]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.6
+    hooks:
+    -   id: ruff-check
 
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort

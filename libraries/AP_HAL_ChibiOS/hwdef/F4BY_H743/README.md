@@ -1,13 +1,13 @@
 # F4BY_H743
 
-The F4BY_H743 autopilot is manufactured by `F4BY Team <https://f4by.com>`__
+The F4BY_H743 autopilot is manufactured by [F4BY Team](https://f4by.com)
 
 ![F4BY_H743](F4BY_H743_board_image.jpg)
 
 ## Where to Buy
 
-Shop `here https://f4by.com/en/?order/our_product`__
-The instructions, schematic, 3D model  are available `here https://f4by.com/en/?doc/fc_f4by_v3.0.1_h743`__
+Shop [here](https://f4by.com/en/?order/our_product)
+The instructions, schematic, 3D model  are available [here](https://f4by.com/en/?doc/fc_f4by_v3.0.1_h743)
 
 ## Specifications
 
@@ -48,13 +48,13 @@ The instructions, schematic, 3D model  are available `here https://f4by.com/en/?
 ## Analog Airspeed
 
 If the ARSPD pin is used for analog airspeed  input.
-Set :ref:`ARSPD_PIN<ARSPD_PIN>` to 10.
-Set :ref:`ARSPD_TYPE<ARSPD_TYPE>` to "1".
+Set [ARSPD_PIN](https://ardupilot.org/copter/docs/parameters.html#arspd-pin-airspeed-pin) to 10.
+Set [ARSPD_TYPE](https://ardupilot.org/copter/docs/parameters.html#arspd-type-airspeed-type) to "1".
 
 ## Analog RSSI
 
-If the RSSI pin is used for analog RSSI input. Set :ref:`RSSI_ANA_PIN<RSSI_ANA_PIN>` to 11.
-Set :ref:`RSSI_TYPE<RSSI_TYPE>` to "1" .
+If the RSSI pin is used for analog RSSI input. Set [RSSI_ANA_PIN](https://ardupilot.org/copter/docs/parameters.html#rssi-ana-pin-receiver-rssi-sensing-pin) to 11.
+Set [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) to "1" .
 
 ## UART Mapping
 
@@ -74,7 +74,7 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 - RCin  PB0
 Using the RCin pin will support all unidirectional RC protocols. (PPM, SBUS, iBus, PPM-Sum, DSM,DSM2,DSM-X,SRXL and SUM-D)
 
-- USART2 for Bi-directional protocols (CRSF/ELRS,SRXL2,IRC Ghost, and FPort) see `here <https://ardupilot.org/sub/docs/common-rc-systems.html#common-rc-systems>`
+- USART2 for Bi-directional protocols (CRSF/ELRS,SRXL2,IRC Ghost, and FPort) see [here](https://ardupilot.org/sub/docs/common-rc-systems.html#common-rc-systems)
 
 ## PWM Output
 
@@ -141,17 +141,17 @@ Group #4
 RCIN solder pad location for board version 3.0.3
 ![RCIN solder pad location](rcin_303.jpg "RCIN solder pad location ")
 
-## Battery Monitor
+## Battery Monitoring
 
 The board has a external current and voltage sensor input. The sensors range from 0v to +6.6V.
 
 The default battery parameters are:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 13
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 12
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 16.04981
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 100 (will need to be adjusted for whichever current sensor is attached)
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 13
+- BATT_CURR_PIN = 12
+- BATT_VOLT_MULT = 16.04981
+- BATT_AMP_PERVLT = 100
 
 ## Compass
 
@@ -159,7 +159,7 @@ The F4BY_H743 has a built-in compass. Due to potential interference, the autopil
 
 ## Firmware
 
-for F4BY_H743 can be found `here <https://firmware.ardupilot.org>`  in sub-folders labeled “F4BY_H743”.
+for F4BY_H743 can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “F4BY_H743”.
 
 ## Loading Firmware
 

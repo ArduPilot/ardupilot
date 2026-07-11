@@ -122,7 +122,7 @@ const AP_Param::GroupInfo HarmonicNotchFilterParams::var_info[] = {
 
     // @Param: MODE
     // @DisplayName: Harmonic Notch Filter dynamic frequency tracking mode
-    // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based harmonic notch cannot be used on fixed wing only planes. It can for Copters, QuaadPlane(while in VTOL modes), and Rovers.
+    // @Description: Harmonic Notch Filter dynamic frequency tracking mode. Dynamic updates can be throttle, RPM sensor, ESC telemetry or dynamic FFT based. Throttle-based harmonic notch cannot be used on fixed wing only planes. It can for Copters, QuadPlane(while in VTOL modes), and Rovers.
     // @Range: 0 5
     // @Values: 0:Fixed,1:Throttle,2:RPM Sensor,3:ESC Telemetry,4:Dynamic FFT,5:Second RPM Sensor
     // @User: Advanced
@@ -491,13 +491,14 @@ void HarmonicNotchFilter<T>::log_notch_centers(uint8_t instance, uint64_t now_us
     float centers[6] {};
     float first_harmonic[6] {};
 
+    // filters are ordered: f1h1, f2h1, ..., fNh1, f1h2, f2h2, ..., fNh2, ...
+    const uint16_t second_harmonic_offset = num_sources * _composite_notches;
     for (uint8_t i=0; i<num_sources; i++) {
-        /*
-          note the ordering of the filters from update() above:
-            f1h1, f2h1, f3h1, f4h1, f1h2, f2h2, f3h2, f4h2 etc
-         */
         centers[i] = _filters[i*_composite_notches].logging_frequency();
-        first_harmonic[i] = _filters[num_sources*_composite_notches + i*_composite_notches].logging_frequency();
+        const uint16_t h2_idx = second_harmonic_offset + i*_composite_notches;
+        if (h2_idx < _num_filters) {
+            first_harmonic[i] = _filters[h2_idx].logging_frequency();
+        }
     }
 
     if (num_sources > 1) {

@@ -144,19 +144,19 @@ void AP_BoardLED::update(void)
 
     // gps light
     switch (AP_Notify::flags.gps_status) {
-        case 0:
+        case AP_GPS_FixType::NO_GPS:
             // no GPS attached
             hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_OFF);
             break;
 
-        case 1:
+        case AP_GPS_FixType::NONE:
             // GPS attached but no lock, blink at 4Hz
             if ((counter2 & 0x3) == 0) {
                 hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
             }
             break;
 
-        case 2:
+        case AP_GPS_FixType::FIX_2D:
             // GPS attached but 2D lock, blink more slowly (around 2Hz)
             if ((counter2 & 0x7) == 0) {
                 hal.gpio->toggle(HAL_GPIO_C_LED_PIN);
@@ -166,7 +166,7 @@ void AP_BoardLED::update(void)
         default:
             // solid blue on gps lock
             hal.gpio->write(HAL_GPIO_C_LED_PIN, HAL_GPIO_LED_ON);
-            break;        
+            break;
     }
 }
 

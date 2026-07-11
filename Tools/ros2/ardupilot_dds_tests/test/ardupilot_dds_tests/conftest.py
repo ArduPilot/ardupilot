@@ -220,6 +220,67 @@ def sitl_copter_dds_udp(micro_ros_agent_udp, mavproxy):
 
 
 @pytest.fixture(scope="function")
+def sitl_copter_dds_udp_use_ns(micro_ros_agent_udp, mavproxy):
+    """Fixture to bring up ArduPilot SITL DDS."""
+    mra_ld, mra_actions = micro_ros_agent_udp
+    mp_ld, mp_actions = mavproxy
+    sitl_ld, sitl_actions = SITLLaunch.generate_launch_description_with_actions()
+
+    sitl_ld_args = IncludeLaunchDescription(
+        LaunchDescriptionSource(sitl_ld),
+        launch_arguments={
+            "command": "arducopter",
+            "synthetic_clock": "True",
+            # "wipe": "True",
+            "wipe": "False",
+            "model": "quad",
+            "speedup": "10",
+            "slave": "0",
+            "instance": "0",
+            "defaults": str(
+                Path(
+                    get_package_share_directory("ardupilot_sitl"),
+                    "config",
+                    "default_params",
+                    "copter.parm",
+                )
+            )
+            + ","
+            + str(
+                Path(
+                    get_package_share_directory("ardupilot_sitl"),
+                    "config",
+                    "default_params",
+                    "dds_udp.parm",
+                )
+            )
+            + ","
+            + str(
+                Path(
+                    get_package_share_directory("ardupilot_sitl"),
+                    "config",
+                    "default_params",
+                    "dds_use_ns.parm",
+                )
+            ),
+        }.items(),
+    )
+
+    ld = LaunchDescription(
+        [
+            mra_ld,
+            mp_ld,
+            sitl_ld_args,
+        ]
+    )
+    actions = {}
+    actions.update(mra_actions)
+    actions.update(mp_actions)
+    actions.update(sitl_actions)
+    yield ld, actions
+
+
+@pytest.fixture(scope="function")
 def sitl_plane_dds_serial(device_dir, virtual_ports, micro_ros_agent_serial, mavproxy):
     """Fixture to bring up ArduPilot SITL DDS."""
     tty1 = Path(device_dir, "dev", "tty1").resolve()

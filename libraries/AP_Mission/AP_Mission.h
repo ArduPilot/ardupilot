@@ -153,6 +153,7 @@ public:
     struct PACKED Cam_Trigg_Distance {
         float meters;           // distance
         uint8_t trigger;        // triggers one image capture immediately
+        uint8_t camera_id;      // which camera to trigger
     };
 
     // gripper command structure
@@ -277,12 +278,14 @@ public:
     struct PACKED set_camera_zoom_Command {
         uint8_t zoom_type;
         float zoom_value;
+        uint8_t camera_id;
     };
 
     // MAV_CMD_SET_CAMERA_FOCUS support
     struct PACKED set_camera_focus_Command {
         uint8_t focus_type;
         float focus_value;
+        uint8_t camera_id;
     };
 
     // MAV_CMD_SET_CAMERA_SOURCE support
@@ -301,6 +304,16 @@ public:
     struct PACKED video_stop_capture_Command {
         uint8_t video_stream_id;
     };
+
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+    // MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET support
+    struct PACKED ROI_WPNext_Offset_Command {
+        int16_t roll_offset_cd;
+        int16_t pitch_offset_cd;
+        int16_t yaw_offset_cd;
+        uint8_t gimbal_id;
+    };
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
 
     union Content {
         // jump structure
@@ -400,6 +413,11 @@ public:
 
         // MAV_CMD_VIDEO_STOP_CAPTURE support
         video_stop_capture_Command video_stop_capture;
+
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+        // MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET
+        ROI_WPNext_Offset_Command wpnext_offset;
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
 
         // location
         Location location{};      // Waypoint location
@@ -538,6 +556,9 @@ public:
 
     /// reset - reset mission to the first command
     void reset();
+
+    /// reset_jump_counters - reset DO_JUMP counters to their initial values without affecting current position
+    void reset_jump_counters() { init_jump_tracking(); }
 
     /// clear - clears out mission
     bool clear();
@@ -960,6 +981,9 @@ private:
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
     bool start_command_fence(const AP_Mission::Mission_Command& cmd);
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+    bool start_command_do_set_roi_wpnext_offset(const AP_Mission::Mission_Command& cmd);
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
 
     /*
       handle format conversion of storage format to allow us to update

@@ -22,14 +22,14 @@ void Plane::update_is_flying_5Hz(void)
     uint32_t now_ms = AP_HAL::millis();
 
     const float ground_speed_thresh_ms = (aparm.min_groundspeed > 0) ? (aparm.min_groundspeed*0.9) : GPS_IS_FLYING_SPEED_MS;
-    bool gps_confirmed_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
+    bool gps_confirmed_movement = (gps.status() >= AP_GPS_FixType::FIX_3D) &&
                                     (gps.ground_speed() >= ground_speed_thresh_ms);
 
     // airspeed at least 75% of stall speed?
     const float airspeed_threshold = MAX(aparm.airspeed_min,2)*0.75f;
     bool airspeed_movement = ahrs.airspeed_EAS(aspeed) && (aspeed >= airspeed_threshold);
 
-    if (gps.status() < AP_GPS::GPS_OK_FIX_2D && arming.is_armed() && !airspeed_movement && isFlyingProbability > 0.3) {
+    if (gps.status() < AP_GPS_FixType::FIX_2D && arming.is_armed() && !airspeed_movement && isFlyingProbability > 0.3) {
         // when flying with no GPS, use the last airspeed estimate to
         // determine if we think we have airspeed movement. This
         // prevents the crash detector from triggering when
@@ -46,7 +46,7 @@ void Plane::update_is_flying_5Hz(void)
         // when armed assuming flying and we need overwhelming evidence that we ARE NOT flying
         // short drop-outs of GPS are common during flight due to banking which points the antenna in different directions
         bool gps_lost_recently = (gps.last_fix_time_ms() > 0) && // we have locked to GPS before
-                        (gps.status() < AP_GPS::GPS_OK_FIX_2D) && // and it's lost now
+                        (gps.status() < AP_GPS_FixType::FIX_2D) && // and it's lost now
                         (now_ms - gps.last_fix_time_ms() < 5000); // but it wasn't that long ago (<5s)
 
         if ((auto_state.last_flying_ms > 0) && gps_lost_recently) {
@@ -296,7 +296,7 @@ void Plane::crash_detection_update(void)
 
     // if we have no GPS lock and we don't have a functional airspeed
     // sensor then don't do crash detection
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.status() < AP_GPS_FixType::FIX_3D) {
 #if AP_AIRSPEED_ENABLED
         if (!airspeed.use() || !airspeed.healthy()) {
             crashed = false;

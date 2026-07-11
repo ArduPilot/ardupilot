@@ -42,9 +42,9 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
     state.time_week = pkt.gps_week;
     state.time_week_ms = pkt.ms_tow;
     if (pkt.fix_type == AP_GPS_FixType::NO_GPS) {
-        state.status = AP_GPS::NO_FIX;
+        state.status = AP_GPS_FixType::NONE;
     } else {
-        state.status = (AP_GPS::GPS_Status)pkt.fix_type;
+        state.status = (AP_GPS_FixType)pkt.fix_type;
     }
     state.num_sats = pkt.satellites_in_view;
 
@@ -55,7 +55,7 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
         Location::AltFrame::ABSOLUTE
     };
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    if (!loc.initialised() && state.status >= AP_GPS::GPS_Status::GPS_OK_FIX_2D) {
+    if (!loc.initialised() && state.status >= AP_GPS_FixType::FIX_2D) {
         AP_HAL::panic("Invalid location passed to AP_GPS_ExternalAHRS");
     }
 #endif

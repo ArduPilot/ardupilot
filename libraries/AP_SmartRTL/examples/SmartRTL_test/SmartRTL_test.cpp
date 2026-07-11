@@ -130,6 +130,10 @@ void check_path(const std::vector<Vector3p>& correct_path, const char* test_name
 }
 
 // gcc9 produces a large frame
+#if defined(__clang_major__)
+// clang doesn't understand -Wframe-larger-than=
+#else
 #pragma GCC diagnostic ignored "-Wframe-larger-than="
+#endif
 
 AP_HAL_MAIN();

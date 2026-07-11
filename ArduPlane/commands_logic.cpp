@@ -341,7 +341,7 @@ void Plane::do_RTL(int32_t rtl_altitude_AMSL_cm)
     prev_WP_loc = current_loc;
     next_WP_loc = calc_best_rally_or_home_location(current_loc, rtl_altitude_AMSL_cm);
 
-    fix_terrain_WP(next_WP_loc, __LINE__);
+    fix_terrain_WP(next_WP_loc, __AP_LINE__);
 
     setup_terrain_target_alt(next_WP_loc);
     set_target_altitude_location(next_WP_loc);
@@ -495,7 +495,7 @@ void Plane::do_continue_and_change_alt(const AP_Mission::Mission_Command& cmd)
     if (!prev_WP_loc.same_latlon_as(next_WP_loc)) {
         // use waypoint based bearing, this is the usual case
         steer_state.hold_course_cd = -1;
-    } else if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
+    } else if (AP::gps().status() >= AP_GPS_FixType::FIX_2D) {
         // use gps ground course based bearing hold
         steer_state.hold_course_cd = -1;
         bearing = AP::gps().ground_course();
@@ -577,7 +577,7 @@ bool Plane::verify_takeoff()
         // course. This keeps wings level until we are ready to
         // rotate, and also allows us to cope with arbitrary
         // compass errors for auto takeoff
-        if (gps.status() >= AP_GPS::GPS_OK_FIX_3D && 
+        if (gps.status() >= AP_GPS_FixType::FIX_3D && 
             gps.ground_speed() > GPS_GND_CRS_MIN_SPD &&
             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
             float takeoff_course = wrap_PI(radians(gps.ground_course())) - steer_state.locked_course_err;
@@ -1004,7 +1004,7 @@ bool Plane::do_change_speed(SPEED_TYPE speedtype, float speed_target_ms, float t
 
 void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
 {
-    if (cmd.p1 == 1 && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (cmd.p1 == 1 && gps.status() >= AP_GPS_FixType::FIX_3D) {
         if (!set_home_persistently(gps.location())) {
             // silently ignore error
         }

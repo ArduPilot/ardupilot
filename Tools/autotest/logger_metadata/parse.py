@@ -13,10 +13,11 @@ import sys
 import emit_html
 import emit_rst
 import emit_xml
-import emit_md
-
 import enum_parse
+
 from enum_parse import EnumDocco
+
+import emit_md
 
 topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 topdir = os.path.realpath(topdir)

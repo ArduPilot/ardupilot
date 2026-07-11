@@ -1,7 +1,7 @@
 # hw definition file for processing by chibios_hwdef.py
 # for pixhawk1, based on fmuv3
 
-include ../fmuv3/hwdef.dat
+include ../fmuv3/fmuv3.inc
 
 # define the IMU types to probe. You can list more IMUs than you
 # actually have. The syntax for IMU declarations is:

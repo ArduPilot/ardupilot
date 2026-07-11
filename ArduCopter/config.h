@@ -30,6 +30,7 @@
 #include <AP_ADSB/AP_ADSB_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AC_Avoidance/AC_Avoidance_config.h>
+#include <AC_CustomControl/AC_CustomControl_config.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -56,7 +57,7 @@
 // TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
-  # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
+  # define WP_YAW_BEHAVIOR_DEFAULT              WPYawBehavior::LOOK_AHEAD
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -72,6 +73,14 @@
 
 #ifndef RANGEFINDER_FILT_DEFAULT
  # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
+#endif
+
+#ifndef AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT  3 // number of rangefinder glitches in a row to take new reading
+#endif
+
+#ifndef AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT 2.00     // amount of rangefinder change to be considered a glitch
 #endif
 
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
@@ -100,7 +109,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_ACTION_DEFAULT
- # define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_LAND  // EKF failsafe triggers land by default
+ # define FS_EKF_ACTION_DEFAULT         FS_EKF_Action::LAND  // EKF failsafe triggers land by default
 #endif
 #ifndef FS_EKF_THRESHOLD_DEFAULT
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
@@ -310,8 +319,8 @@
 //////////////////////////////////////////////////////////////////////////////
 // Takeoff
 //
-#ifndef PILOT_TKOFF_ALT_DEFAULT
- # define PILOT_TKOFF_ALT_DEFAULT           0     // default final alt above home for pilot initiated takeoff
+#ifndef PILOT_TKO_ALT_M_DEFAULT
+ # define PILOT_TKO_ALT_M_DEFAULT 0     // default final alt above home for pilot initiated takeoff
 #endif
 
 
@@ -452,7 +461,7 @@
 
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
- # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+ # define WP_YAW_BEHAVIOR_DEFAULT   WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED_MS
@@ -510,11 +519,11 @@
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
-#ifndef PILOT_SPEED_UP_DEFAULT
- # define PILOT_SPEED_UP_DEFAULT    250     // maximum vertical velocity in cm/s
+#ifndef PILOT_SPD_UP_DEFAULT
+ # define PILOT_SPD_UP_DEFAULT  2.5f    // maximum vertical velocity in m/s
 #endif
-#ifndef PILOT_ACCEL_Z_DEFAULT
- # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
+#ifndef PILOT_ACC_Z_DEFAULT
+ # define PILOT_ACC_Z_DEFAULT   2.5f    // vertical acceleration in m/s/s while altitude is under pilot control
 #endif
 
 #ifndef PILOT_Y_RATE_DEFAULT
@@ -631,7 +640,7 @@
 #endif
 
 #ifndef AC_CUSTOMCONTROL_MULTI_ENABLED
-#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_CUSTOMCONTROL_ENABLED
+#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_COPTER_CUSTOMCONTROL_ENABLED
 #endif
 
 #ifndef AC_PAYLOAD_PLACE_ENABLED

@@ -361,7 +361,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
-    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()) {
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() && motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         mode_change_failed(new_flightmode, "runup not complete");
         return false;
     }
@@ -524,12 +524,6 @@ void Copter::exit_mode(Mode *&old_flightmode,
     old_flightmode->exit();
 
 #if FRAME_CONFIG == HELI_FRAME
-    // firmly reset the flybar passthrough to false when exiting acro mode.
-    if (old_flightmode == &mode_acro) {
-        attitude_control->use_flybar_passthrough(false, false);
-        motors->set_acro_tail(false);
-    }
-
     //last collective output
     input_manager.set_last_coll_output(motors->get_throttle());
 
@@ -1039,8 +1033,6 @@ Mode::AltHoldModeState Mode::get_alt_hold_state_D_ms(float target_climb_rate_ms)
         if (target_climb_rate_ms < 0.0f && !copter.ap.using_interlock) {
             // the aircraft should move to a ground idle state
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        } else if (copter.ap.using_interlock && !motors->get_interlock()) {
-            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
             // the aircraft should prepare for imminent take off
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
@@ -1119,19 +1111,19 @@ GCS_Copter &Mode::gcs() const
 // Returns the pilot’s maximum upward speed in m/s.
 float Mode::get_pilot_speed_up_ms() const
 {
-    return g.pilot_speed_up_cms * 0.01;
+    return g2.pilot_speed_up_ms;
 }
 
 // Returns the pilot’s maximum downward speed in m/s.
 float Mode::get_pilot_speed_dn_ms() const
 {
-    return copter.get_pilot_speed_dn() * 0.01;
+    return copter.get_pilot_speed_dn_ms();
 }
 
 // Returns the pilot’s vertical acceleration limit in m/s².
 float Mode::get_pilot_accel_D_mss() const
 {
-    return g.pilot_accel_d_cmss * 0.01;
+    return g2.pilot_accel_d_mss;
 }
 
 // Return stopping point as a location with above origin alt frame

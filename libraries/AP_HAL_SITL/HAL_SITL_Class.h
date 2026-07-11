@@ -27,6 +27,11 @@ public:
     }
     bool get_storage_fram_enabled() const { return storage_fram_enabled; }
 
+    bool get_dds_use_sim_time() const { return dds_use_sim_time; }
+    void set_dds_use_sim_time(bool _enabled) {
+        dds_use_sim_time = _enabled;
+    }
+
     /*
       instructs the simulation to wipe any storage as it opens it:
      */
@@ -54,6 +59,7 @@ private:
     bool storage_posix_enabled = true;
     bool storage_flash_enabled;
     bool storage_fram_enabled;
+    bool dds_use_sim_time = false;
 
     // set to true if simulation is to wipe storage as it is opened:
     bool wipe_storage;

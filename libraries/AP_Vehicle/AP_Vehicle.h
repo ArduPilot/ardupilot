@@ -81,6 +81,11 @@
 #include <AP_Gripper/AP_Gripper.h>
 #endif
 
+#include <AP_Beacon/AP_Beacon_config.h>
+#if AP_BEACON_ENABLED
+#include <AP_Beacon/AP_Beacon.h>
+#endif  // AP_BEACON_ENABLED
+
 #include <AP_RPM/AP_RPM_config.h>
 #if AP_RPM_ENABLED
 #include <AP_RPM/AP_RPM.h>
@@ -281,6 +286,11 @@ public:
      */
     virtual bool get_wp_distance_m(float &distance) const { return false; }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // return the lat/lon/alt etc of waypoint location:
+    virtual bool get_wp_location(Location &loc) const { return false; }
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
     /*
       get the current wp bearing in degrees
       return false if failed or n/a
@@ -370,6 +380,11 @@ protected:
 #if AP_GRIPPER_ENABLED
     AP_Gripper gripper;
 #endif
+
+#if AP_BEACON_ENABLED
+    // beacon (non-GPS positioning) library
+    AP_Beacon beacon;
+#endif  // AP_BEACON_ENABLED
 
 #if AP_IBUS_TELEM_ENABLED
     AP_IBus_Telem ibus_telem;
@@ -561,6 +576,9 @@ protected:
     void update_dynamic_notch_at_specified_rate();
 #endif // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
 
+    // Bitmask of modes to disable from gcs
+    AP_Int32 flight_mode_GCS_block;
+
 private:
 
 #if AP_SCHEDULER_ENABLED
@@ -607,8 +625,6 @@ private:
     AP_Filters filters;
 #endif
 
-    // Bitmask of modes to disable from gcs
-    AP_Int32 flight_mode_GCS_block;
 };
 
 namespace AP {

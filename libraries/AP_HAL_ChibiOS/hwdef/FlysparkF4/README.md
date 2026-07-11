@@ -98,11 +98,11 @@ If any channel in a group uses DShot, all channels in that group must also use D
 The board includes a built-in voltage and current sensor connected to ADC pins.
 Default configuration:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 10
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 11
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11.0
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 25.0
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.0
+- BATT_AMP_PERVLT = 25.0
 
 Supports direct 3 S-6 S LiPo voltage measurement.
 
@@ -115,13 +115,13 @@ ArduPilot automatically probes for **external I2C compasses** on I2C1.
 
 ---
 
-## Camera Control (CC) Output
+## Camera Control
 
 The **CC pin** is controlled as a standard GPIO via **RELAY2**.
 
 ---
 
-## OSD
+## OSD Support
 
 Analog OSD is supported via the internal **AT7456** chip.
 
@@ -129,7 +129,7 @@ Simultaneously, **DisplayPort HD OSD** is available by default via **UART1**,
 
 ---
 
-## RSSI Input
+## RSSI
 
 Analog RSSI input is supported through **RSSI_ANA_PIN = 15**.
 Connect your receiver’s analog RSSI output to this pad to enable RSSI display in OSD and telemetry.

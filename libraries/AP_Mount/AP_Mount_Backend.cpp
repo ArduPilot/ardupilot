@@ -8,6 +8,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Terrain/AP_Terrain.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -61,6 +62,7 @@ void AP_Mount_Backend::update()
     case MAV_MOUNT_MODE_GPS_POINT:
     case MAV_MOUNT_MODE_SYSID_TARGET:
     case MAV_MOUNT_MODE_HOME_LOCATION:
+    case MAV_MOUNT_MODE_WPNEXT_OFFSET:
          if (!AP::ahrs().get_location(current_loc)) {
              send_warning_to_GCS("not targeting, no location");
          }
@@ -83,7 +85,7 @@ bool AP_Mount_Backend::has_pitch_control() const
 bool AP_Mount_Backend::valid_mode(MAV_MOUNT_MODE mode) const
 {
     switch (mode) {
-    case MAV_MOUNT_MODE_RETRACT...MAV_MOUNT_MODE_HOME_LOCATION:
+    case MAV_MOUNT_MODE_RETRACT...MAV_MOUNT_MODE_WPNEXT_OFFSET:
         return true;
     case MAV_MOUNT_MODE_ENUM_END:
         return false;
@@ -109,6 +111,19 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
             mnt_target.target_type = MountTargetType::ANGLE;
             return;
         }
+        // zero rates when in failsafe
+        if (mnt_target.target_type == MountTargetType::RATE) {
+            // note that we do not change the frame here; if a gimbal
+            // is tracking in earth-frame it will continue to do so.
+            mnt_target.rate_rads.roll = 0;
+            mnt_target.rate_rads.pitch = 0;
+            mnt_target.rate_rads.yaw = 0;
+        }
+        return;
+    }
+
+    if (!rc().has_valid_input()) {
+        return;
     }
 
     // get RC input from pilot
@@ -120,6 +135,9 @@ void AP_Mount_Backend::update_mnt_target_from_rc_target()
     mnt_target.angle_rad.yaw_is_ef = FPV_option ? false : _yaw_lock;
     mnt_target.angle_rad.roll_is_ef = FPV_option ? false : _roll_lock;
     mnt_target.angle_rad.pitch_is_ef = FPV_option ? false : _pitch_lock;
+    mnt_target.rate_rads.yaw_is_ef = FPV_option ? false : _yaw_lock;
+    mnt_target.rate_rads.roll_is_ef = FPV_option ? false : _roll_lock;
+    mnt_target.rate_rads.pitch_is_ef = FPV_option ? false : _pitch_lock;
 
     // if RC_RATE is zero, targets are angle
     if (_params.rc_rate_max <= 0) {
@@ -283,11 +301,14 @@ void AP_Mount_Backend::update_poi_lock_target()
     Location target_location;
 
     if (!mnt_target.pointing_at_poi_at_home_alt) {
-        calculate_poi_at_home_alt(target_location);
-        set_roi_target(target_location);
+        if (calculate_poi_at_home_alt(target_location)) {
+            set_roi_target(target_location);
+        }
+        // attempt the home-alt POI only once per switch engagement; retrying would repeat warnings at the update rate
         mnt_target.pointing_at_poi_at_home_alt = true;
     }
 
+#if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // POI calculation is running and but will silently give up after 3 seconds normally if it does not succeed
     // try to resolve a AuxFunc POI command to a lat/lng/alt using get_poi
     // set up variables for get_poi call
@@ -317,6 +338,10 @@ void AP_Mount_Backend::update_poi_lock_target()
     //stop terrain-based POI calculation
         mnt_target.poi_start_ms = 0;
     }
+#else
+    // terrain-based POI is not available so the home-alt POI stands
+    mnt_target.poi_start_ms = 0;
+#endif // AP_MOUNT_POI_TO_LATLONALT_ENABLED
 }
 
 #endif // AP_MOUNT_POI_LOCK_ENABLED
@@ -351,7 +376,22 @@ void AP_Mount_Backend::clear_roi_target()
         MAV_MOUNT_MODE default_mode = (MAV_MOUNT_MODE)_params.default_mode.get();
         set_mode(default_mode);
     }
+
+    clear_roi_pending = true;
 }
+
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+// set_roi_target_wpnext_offset - point towards next waypoint with a
+// given attitude offset
+void AP_Mount_Backend::set_roi_target_wpnext_offset(const Vector3f &rpy)
+{
+    // set the target gps location
+    _roi_wpnext_rpy = rpy;
+
+    // set the mode to GPS tracking mode
+    set_mode(MAV_MOUNT_MODE_WPNEXT_OFFSET);
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
 // set_sys_target - sets system that mount should attempt to point towards
 void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
@@ -368,6 +408,39 @@ void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
 }
 
 #if HAL_GCS_ENABLED
+// send a CAMERA_INFORMATION message to GCS
+void AP_Mount_Backend::send_camera_information(mavlink_channel_t chan) const
+{
+    if (!has_camera_information()) {
+        return;
+    }
+
+    uint8_t vendor_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_VENDOR_NAME_LEN+1] {};
+    get_camera_vendor_name((char*)vendor_name, ARRAY_SIZE(vendor_name)-1);
+
+    uint8_t model_name[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_MODEL_NAME_LEN+1] {};
+    get_camera_model_name((char*)model_name, ARRAY_SIZE(model_name)-1);
+
+    const char cam_definition_uri[MAVLINK_MSG_CAMERA_INFORMATION_FIELD_CAM_DEFINITION_URI_LEN] {};
+
+    mavlink_msg_camera_information_send(
+        chan,
+        AP_HAL::millis(),              // time_boot_ms
+        vendor_name,                   // vendor_name uint8_t[32]
+        model_name,                    // model_name uint8_t[32]
+        get_camera_firmware_version(), // firmware_version uint32_t
+        get_camera_focal_length_mm(),  // focal_length float (mm)
+        NaNf,                          // sensor_size_h float (mm)
+        NaNf,                          // sensor_size_v float (mm)
+        0,                             // resolution_h uint16_t (pix)
+        0,                             // resolution_v uint16_t (pix)
+        get_camera_lens_id(),          // lens_id uint8_t
+        get_camera_cap_flags(),        // flags uint32_t (CAMERA_CAP_FLAGS)
+        0,                             // cam_definition_version uint16_t
+        cam_definition_uri,            // cam_definition_uri char[140]
+        _instance + 1);                // gimbal_device_id uint8_t
+}
+
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
 void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan)
 {
@@ -614,7 +687,12 @@ void AP_Mount_Backend::write_log(uint64_t timestamp_us)
     float target_pitch = nanf;
     float target_yaw = nanf;
     bool target_yaw_is_ef = false;
-    IGNORE_RETURN(get_angle_target(target_roll, target_pitch, target_yaw, target_yaw_is_ef));
+    if (mnt_target.target_type == MountTargetType::ANGLE) {
+        target_roll = degrees(mnt_target.angle_rad.roll);
+        target_pitch = degrees(mnt_target.angle_rad.pitch);
+        target_yaw = degrees(mnt_target.angle_rad.yaw);
+        target_yaw_is_ef = mnt_target.angle_rad.yaw_is_ef;
+    }
 
     // get rangefinder distance
     float rangefinder_dist = nanf;
@@ -758,8 +836,9 @@ void AP_Mount_Backend::calculate_poi()
         }
     }
 }
+#endif // AP_MOUNT_POI_TO_LATLONALT_ENABLED
 
-
+#if AP_MOUNT_POI_LOCK_ENABLED
 // calculate location gimbal is pointing, at HOME altitude. Used if Terrain is not avaialble
 bool AP_Mount_Backend::calculate_poi_at_home_alt(Location &target_location)
 {
@@ -855,7 +934,7 @@ bool AP_Mount_Backend::calculate_poi_at_home_alt(Location &target_location)
     target_location.alt = home.alt;
     return true;
 }
-#endif
+#endif // AP_MOUNT_POI_LOCK_ENABLED
 
 // change to RC_TARGETING mode if rc inputs have changed by more than the dead zone
 // should be called on every update
@@ -1048,6 +1127,7 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
     switch (_mode) {
     case MAV_MOUNT_MODE_RETRACT:
     case MAV_MOUNT_MODE_NEUTRAL:
+    case MAV_MOUNT_MODE_WPNEXT_OFFSET:
         // these modes always use body-frame yaw (aka follow)
         yaw_lock_state = false;
         break;
@@ -1063,6 +1143,9 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
         case MountTargetType::NEUTRAL:
             yaw_lock_state = false;  // not locked onto the scenery
             break;
+        case MountTargetType::LOCATION:
+            yaw_lock_state = true;
+            break;        
         }
         break;
     case MAV_MOUNT_MODE_RC_TARGETING:
@@ -1099,6 +1182,37 @@ bool AP_Mount_Backend::get_angle_target_to_home(MountAngleTarget& angle_rad) con
     }
     return get_angle_target_to_location(AP::ahrs().get_home(), angle_rad);
 }
+
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+// get angle targets (in radians) to next waypoint, with offsets previously supplied
+// returns true on success, false on failure
+bool AP_Mount_Backend::get_angle_target_to_wpnext_offset(MountAngleTarget& angle_rad) const
+{
+    Location wp_loc;
+
+    if (!AP::vehicle()->get_wp_location(wp_loc)) {
+        return false;
+    }
+
+    if (!get_angle_target_to_location(wp_loc, angle_rad)) {
+        return false;
+    }
+
+    // now add the offsets, wrapping as required:
+    angle_rad.roll += radians(_roi_wpnext_rpy[0]);
+    angle_rad.pitch += radians(_roi_wpnext_rpy[1]);
+    angle_rad.yaw += radians(_roi_wpnext_rpy[2]);
+    angle_rad.roll = wrap_PI(angle_rad.roll);
+    angle_rad.pitch = wrap_PI(angle_rad.pitch);
+    if (angle_rad.yaw_is_ef) {
+        angle_rad.yaw = wrap_2PI(angle_rad.yaw);
+    } else {
+        angle_rad.yaw = wrap_PI(angle_rad.yaw);
+    }
+
+    return true;
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
 // get angle targets (in radians) to a vehicle with sysid of  _target_sysid
 // returns true on success, false on failure
@@ -1166,9 +1280,7 @@ void AP_Mount_Backend::_update_mnt_target()
 
     case MAV_MOUNT_MODE_GPS_POINT:
         // point mount to a GPS point given by the mission planner
-        if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-            mnt_target.target_type = MountTargetType::ANGLE;
-        }
+        mnt_target.target_type = MountTargetType::LOCATION;
         return;
 
     case MAV_MOUNT_MODE_HOME_LOCATION:
@@ -1184,6 +1296,13 @@ void AP_Mount_Backend::_update_mnt_target()
             mnt_target.target_type = MountTargetType::ANGLE;
         }
         return;
+    case MAV_MOUNT_MODE_WPNEXT_OFFSET:
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+        if (get_angle_target_to_wpnext_offset(mnt_target.angle_rad)) {
+            mnt_target.target_type = MountTargetType::ANGLE;
+        }
+#endif
+        return;
     case MAV_MOUNT_MODE_ENUM_END:
         break;
     }
@@ -1193,6 +1312,13 @@ void AP_Mount_Backend::_update_mnt_target()
 
 void AP_Mount_Backend::send_target_to_gimbal()
 {
+    // process any pending clear-roi-target 
+    // it is assumed that we have already zeroed _roi_target
+    if (clear_roi_pending && natively_supports(MountTargetType::LOCATION)) {
+        clear_roi_pending = false;
+        send_target_location(_roi_target);
+    }
+
     // the easy case, where the gimbal natively supports the MntTargetType:
     if (natively_supports(mnt_target.target_type)) {
         switch (mnt_target.target_type) {
@@ -1207,6 +1333,9 @@ void AP_Mount_Backend::send_target_to_gimbal()
             return;
         case MountTargetType::NEUTRAL:
             send_target_neutral();
+            return;
+        case MountTargetType::LOCATION:
+            send_target_location(_roi_target);
             return;
         }
         return;  // should not reach this as all cases return
@@ -1248,12 +1377,21 @@ void AP_Mount_Backend::send_target_to_gimbal()
             return;
         }
         break;
+    case MountTargetType::LOCATION:
+        if (natively_supports(MountTargetType::ANGLE)) {
+            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
+                send_target_angles(mnt_target.angle_rad);
+            }
+            return;
+        }
+        break;
     }
 
     send_warning_to_GCS("Failed to convert mount target to command gimbal");
 }
 
 
+#if AP_SCRIPTING_ENABLED
 // get target rate in deg/sec. returns true on success
 bool AP_Mount_Backend::get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame)
 {
@@ -1280,7 +1418,6 @@ bool AP_Mount_Backend::get_angle_target(float& roll_deg, float& pitch_deg, float
     return false;
 }
 
-#if AP_SCRIPTING_ENABLED
 // return target location if available
 // returns true if a target location is available and fills in target_loc argument
 bool AP_Mount_Backend::get_location_target(Location &_target_loc)
@@ -1301,6 +1438,7 @@ bool AP_Mount_Backend::get_location_target(Location &_target_loc)
             _target_loc = _target_sysid_location;
             return _target_sysid_location.initialised();
 
+        case MAV_MOUNT_MODE_WPNEXT_OFFSET:
         case MAV_MOUNT_MODE_RETRACT:
         case MAV_MOUNT_MODE_NEUTRAL:
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:

@@ -19,8 +19,8 @@ struct PACKED log_Control_Tuning {
     float    desired_rangefinder_alt;
     float    rangefinder_alt;
     float    terr_alt;
-    int16_t  target_climb_rate_cms;
-    int16_t  climb_rate_cms;
+    float    target_climb_rate_ms;
+    float    climb_rate_ms;
 };
 
 // Write a control tuning packet
@@ -67,8 +67,8 @@ void Copter::Log_Write_Control_Tuning()
         rangefinder_alt         : AP_Logger::quiet_nanf(),
 #endif
         terr_alt                : terr_alt,
-        target_climb_rate_cms   : int16_t(target_climb_rate_ms * 100.0),
-        climb_rate_cms          : int16_t(pos_control->get_vel_estimate_U_ms() * 100.0) // float -> int16_t
+        target_climb_rate_ms    : target_climb_rate_ms,
+        climb_rate_ms           : pos_control->get_vel_estimate_U_ms()
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -484,7 +484,7 @@ const struct LogStructure Copter::log_structure[] = {
 // @Field: Value: Value
 
     { LOG_CONTROL_TUNING_MSG, sizeof(log_Control_Tuning),
-      "CTUN", "Qffffffffffhh", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----000000BB" , true },
+      "CTUN", "Qffffffffffff", "TimeUS,ThI,ABst,ThO,ThH,DAlt,Alt,BAlt,DSAlt,SAlt,TAlt,DCRt,CRt", "s----mmmmmmnn", "F----00000000", true },
     { LOG_DATA_INT16_MSG, sizeof(log_Data_Int16t),         
       "D16",   "QBh",         "TimeUS,Id,Value", "s--", "F--" },
     { LOG_DATA_UINT16_MSG, sizeof(log_Data_UInt16t),         

@@ -2,7 +2,10 @@
 # for The CUBE Black and the Cube Purple hardware
 # this is based on fmuv3, but with vendor specific USB IDs
 
-include ../fmuv3/hwdef.dat
+include ../fmuv3/fmuv3.inc
+
+# does this board really have an IMU heater?  If so set HAL_IMU_TEMP_DEFAULT.
+define HAL_HAVE_IMU_HEATER 1
 
 # if the user has both isolated sensors enabled then force-enable the
 #  non-isolated IMU regardless of parameter setting.  This is done in

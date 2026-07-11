@@ -5,7 +5,7 @@
 Clone the project from GitHub:
 
 ```sh
-git clone --recursive https://github.com/ArduPilot/ardupilot.git
+git clone --recurse-submodules https://github.com/ArduPilot/ardupilot.git
 cd ardupilot
 ```
 

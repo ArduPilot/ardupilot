@@ -53,6 +53,7 @@ The script covers the following parameters on quadplanes:
 - Q_P_D_POS_*
 - Q_P_NE_VEL_*
 - Q_P_NE_POS_*
+- Q_M_THST_EXPO
 
 The script covers the following parameters on copters:
 
@@ -68,11 +69,16 @@ The script covers the following parameters on copters:
 - PSC_D_POS_*
 - PSC_NE_VEL_*
 - PSC_NE_POS_*
+- MOT_THST_EXPO
 
 For fixed wing the following parameters are covered:
 
 - RLL_RATE_*
-- PTCH_RATE_*
 - RLL2SRV_TCONST
+- RLL_ANGLE_P
+- RLL2SRV_ACCEL
+- PTCH_RATE_*
 - PTCH2SRV_TCONST
+- PTCH_ANGLE_P
+- PTCH2SRV_ACCEL
 - all TECS parameters

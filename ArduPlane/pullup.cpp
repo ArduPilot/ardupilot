@@ -146,7 +146,7 @@ bool GliderPullup::verify_pullup(void)
         bool pitchup_complete = ahrs.get_pitch_deg() > MIN(0, aparm.pitch_limit_min);
         const float pitch_lag_time = 1.0f * sqrtf(ahrs.get_EAS2TAS());
         float aspeed;
-        const float aspeed_derivative = (ahrs.get_accel().x + GRAVITY_MSS * ahrs.get_DCM_rotation_body_to_ned().c.x) / ahrs.get_EAS2TAS();
+        const float aspeed_derivative = (ahrs.get_accel().x + GRAVITY_MSS * ahrs.get_rotation_body_to_ned().c.x) / ahrs.get_EAS2TAS();
         bool airspeed_low = ahrs.airspeed_EAS(aspeed) ? (aspeed + aspeed_derivative * pitch_lag_time) < 0.01f * (float)plane.target_airspeed_cm : true;
         bool roll_control_lost = fabsf(ahrs.get_roll_deg()) > aparm.roll_limit;
         if (pitchup_complete && airspeed_low && !roll_control_lost) {
@@ -185,7 +185,7 @@ void GliderPullup::stabilize_pullup(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
         plane.nav_pitch_cd = 0;
         plane.nav_roll_cd = 0;
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_rate_out(0, speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.run_rate_control(0, speed_scaler));
         ng_demand = 0.0;
         break;
     }
@@ -194,7 +194,7 @@ void GliderPullup::stabilize_pullup(void)
         plane.nav_roll_cd = 0;
         plane.nav_pitch_cd = 0;
         SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.get_rate_out(0, speed_scaler));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, plane.rollController.run_rate_control(0, speed_scaler));
         float aspeed;
         const auto &ahrs = plane.ahrs;
         if (ahrs.airspeed_EAS(aspeed)) {
@@ -205,7 +205,7 @@ void GliderPullup::stabilize_pullup(void)
             const float pullup_accel = ng_demand * GRAVITY_MSS;
             const float demanded_rate_dps = degrees(pullup_accel / VTAS_ref);
             const uint32_t elev_trim_offset_cd = 4500.0f * elev_offset * (1.0f - ng_demand / ng_limit);
-            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elev_trim_offset_cd + plane.pitchController.get_rate_out(demanded_rate_dps, speed_scaler));
+            SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elev_trim_offset_cd + plane.pitchController.run_rate_control(demanded_rate_dps, speed_scaler));
         } else {
             SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, elev_offset*4500);
         }
