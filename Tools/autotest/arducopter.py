@@ -15447,6 +15447,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.change_mode('RTL')
             self.wait_disarmed()
 
+    def wait_orbit_complete_measure_swept(self, loc, want_radius, epsilon=3, timeout=120):
+        '''watch vehicle orbit loc until it comes to a sustained stop,
+        accumulating the angle swept around loc while the vehicle is
+        on-circle.  Returns (swept_deg, max_groundspeed); swept_deg is
+        signed, positive for clockwise'''
+        swept = 0.0
+        max_groundspeed = 0.0
+        prev_bearing = None
+        stopped_since = None
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException("Orbit did not complete")
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            here = mavutil.location(m.lat*1e-7, m.lon*1e-7, 0, 0)
+            groundspeed = math.hypot(m.vx, m.vy) * 0.01
+            max_groundspeed = max(max_groundspeed, groundspeed)
+            if abs(self.get_distance(loc, here) - want_radius) > epsilon:
+                continue
+            bearing = self.get_bearing(loc, here)
+            if prev_bearing is not None:
+                swept += (bearing - prev_bearing + 180) % 360 - 180
+            prev_bearing = bearing
+            if groundspeed < 0.5 and abs(swept) > 10:
+                if stopped_since is None:
+                    stopped_since = now
+                elif now - stopped_since > 5:
+                    return (swept, max_groundspeed)
+            else:
+                stopped_since = None
+
     def DO_ORBIT(self):
         '''test MAV_CMD_DO_ORBIT in Guided mode'''
         self.takeoff(20, mode='GUIDED')
@@ -15503,13 +15535,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_groundspeed(1.0, 15, minimum_duration=5, timeout=30)
         self.progress("Clockwise orbit speed verified")
         self.start_subtest("NaN turns: second orbit command updates speed but preserves turn count")
-        # Start a 3-turn orbit at 2 m/s
+        # Start a 1.5-turn orbit at 2 m/s; param4 is an angle in radians
         self.run_cmd_int(
             34,  # MAV_CMD_DO_ORBIT
             p1=10,    # radius 10m CW
             p2=2.0,   # speed 2 m/s
             p3=0,
-            p4=3,     # 3 turns
+            p4=3*math.pi,  # 1.5 turns, expressed in radians
             p5=int(orbit_center.lat * 1e7),
             p6=int(orbit_center.lng * 1e7),
             p7=20,
@@ -15519,12 +15551,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             orbit_center,
             want_radius=10,
             epsilon=5,
-            min_circle_time=5,
+            min_circle_time=2,
             timeout=60,
             track_angle=False,
         )
-        self.progress("3-turn orbit started at 2 m/s")
-        # Send second command with NaN turns and different speed - turn count must not change
+        self.progress("1.5-turn orbit started at 2 m/s")
+        # Send second command with NaN turns and different speed - turn
+        # count must not change (although progress towards it restarts)
         self.run_cmd_int(
             34,  # MAV_CMD_DO_ORBIT
             p1=10,
@@ -15537,10 +15570,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
         )
         self.progress("Second command with NaN turns sent - speed updated to 3 m/s")
-        self.wait_groundspeed(2.0, 15, minimum_duration=5, timeout=30)
-        self.progress("Speed update confirmed")
-        # Wait for orbit to complete (vehicle should switch to pos hold after 3 turns)
-        self.wait_mode('GUIDED', timeout=10)
+        # orbit must stop after a further 1.5 turns (540 degrees swept, clockwise)
+        (swept, max_groundspeed) = self.wait_orbit_complete_measure_swept(
+            orbit_center,
+            want_radius=10,
+            timeout=90,
+        )
+        self.progress("Orbit stopped after sweeping %.1f degrees (max speed %.1f m/s)" % (swept, max_groundspeed))
+        if not 450 <= swept <= 630:
+            raise NotAchievedException("Wanted ~540 degrees of orbit, got %.1f" % swept)
+        if max_groundspeed < 2.5:
+            raise NotAchievedException("Speed update to 3 m/s not honoured (max %.1f m/s)" % max_groundspeed)
         self.progress("NaN turns test passed - turn count preserved, speed updated")
         self.do_RTL()
 
