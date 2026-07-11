@@ -32,7 +32,7 @@ Registered on `AP_Vehicle` as subgroup `RCL` (index 33). One `_ENABLE` plus
 |--------------|-----------|---------|
 | `RCL_ENABLE` | Int8      | 0 = engine off, 1 = on |
 | `RCL<n>_FUNC`| Int16     | target `AUX_FUNC` (0 = row disabled). Reuses the `RCx_OPTION` value list. |
-| `RCL<n>_OPT` | Int16     | packed flags — bits 0-1 source type (0 range, 1 link, 2 condition), bit 2 combine (0 OR, 1 AND), bit 3 negate |
+| `RCL<n>_OPT` | Int16     | packed flags — bits 0-1 source type (0 range, 1 link, 2 condition), bit 2 combine (0 OR, 1 AND), bit 3 negate, bits 4-5 output position (0 HIGH, 1 MIDDLE, 2 LOW) |
 | `RCL<n>_SRC` | Int16     | range → RC channel 1-16; link → watched `AUX_FUNC`; condition → condition id |
 | `RCL<n>_MIN` | Int16     | range: PWM low bound |
 | `RCL<n>_MAX` | Int16     | range: PWM high bound |
@@ -81,6 +81,21 @@ Per RC frame, for each distinct `FUNC` referenced by an enabled term:
    `active = (has AND terms AND all AND terms true) OR (any OR term true)`.
 3. Debounce the combined result, then on a state edge invoke
    `run_aux_function(FUNC, active ? HIGH : LOW, Source::LOGIC)`.
+
+### Output position / selector mode
+By default a function is boolean: active rows drive it HIGH, otherwise LOW.
+A row may instead request a specific **output position** via `OPT` bits 4-5
+(0 HIGH, 1 MIDDLE, 2 LOW) so it can drive a **multi-position** target — for
+example VTX power low/mid/high — to a chosen level rather than just on/off.
+
+If any row for a function uses a non-default (non-HIGH) output position, that
+function switches to **selector** mode: the AND/OR combine is skipped and the
+**lowest-numbered active row wins**, driving its output position; if no row is
+active the position is LOW. This gives condition- or range-driven multi-level
+output (e.g. `RC_FAILSAFE` → LOW power, low battery → MIDDLE, normal → HIGH),
+which the boolean combine cannot express. Positions map onto the target's aux
+handler exactly as a physical 3-position switch would. Arm functions are
+always boolean and never enter selector mode.
 
 ### Links and cycles
 A link term may reference only a **range-driven** function, never another

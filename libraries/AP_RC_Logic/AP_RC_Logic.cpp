@@ -123,7 +123,8 @@ bool AP_RC_Logic::committed_state(RC_Channel::AUX_FUNC f) const
     }
     for (uint8_t i = 0; i < AP_RC_LOGIC_NUM_TERMS; i++) {
         if (_states[i].func == (uint16_t)f) {
-            return _states[i].committed;
+            // a link watches whether the function is fully active (HIGH)
+            return _states[i].committed_pos == (uint8_t)RC_Channel::AuxSwitchPos::HIGH;
         }
     }
     return false;
@@ -193,8 +194,8 @@ AP_RC_Logic::FuncState *AP_RC_Logic::state_for(RC_Channel::AUX_FUNC f)
     }
     if (first_free != nullptr) {
         first_free->func = (uint16_t)f;
-        first_free->committed = false;
-        first_free->candidate = false;
+        first_free->committed_pos = (uint8_t)RC_Channel::AuxSwitchPos::LOW;
+        first_free->candidate_pos = (uint8_t)RC_Channel::AuxSwitchPos::LOW;
         first_free->since_ms = 0;
     }
     return first_free;
@@ -202,7 +203,7 @@ AP_RC_Logic::FuncState *AP_RC_Logic::state_for(RC_Channel::AUX_FUNC f)
 
 void AP_RC_Logic::release_slot(FuncState &st)
 {
-    if (st.func != 0 && st.committed) {
+    if (st.func != 0 && st.committed_pos != (uint8_t)RC_Channel::AuxSwitchPos::LOW) {
         const auto f = (RC_Channel::AUX_FUNC)st.func;
         // Releasing drives the function LOW so latching outputs (relays) do
         // not stay stuck on after a re-target or engine disable. Never do
@@ -272,31 +273,66 @@ void AP_RC_Logic::update()
 
         const bool arm_func = is_arm_function(f);
 
-        // combine all rows for this function using the Betaflight rule:
-        // active when all AND terms are true, or any OR term is true.
-        bool has_and = false, all_and = true, any_or = false;
-        for (uint8_t j = i; j < AP_RC_LOGIC_NUM_TERMS; j++) {
-            const Term &tj = terms[j];
-            if (!tj.enabled() || tj.func() != f) {
-                continue;
-            }
-            // arming functions honour range terms only
-            if (arm_func && tj.source_type() != Term::SourceType::RANGE) {
-                continue;
-            }
-            const bool v = eval_term(tj);
-            if (tj.combine_is_and()) {
-                has_and = true;
-                all_and = all_and && v;
-            } else {
-                any_or = any_or || v;
+        // A row may request a specific output position (OPT bits 4-5) to drive
+        // a multi-position function (e.g. VTX power) to a chosen level. If any
+        // row for this function does so, the function runs in "selector" mode:
+        // the lowest-index active row wins and drives its position; if none is
+        // active the position is LOW. Otherwise the classic boolean AND/OR
+        // combine is used. Arm functions are always strictly boolean
+        // (HIGH = arm, LOW = disarm) and never enter selector mode.
+        bool selector = false;
+        if (!arm_func) {
+            for (uint8_t j = i; j < AP_RC_LOGIC_NUM_TERMS; j++) {
+                if (terms[j].enabled() && terms[j].func() == f &&
+                    terms[j].has_output_position()) {
+                    selector = true;
+                    break;
+                }
             }
         }
-        bool raw = (has_and && all_and) || any_or;
 
-        // ARM-class functions fail toward disarm without valid RC input.
-        if (raw && arm_func && !rc_valid) {
-            raw = false;
+        RC_Channel::AuxSwitchPos target;
+        if (selector) {
+            target = RC_Channel::AuxSwitchPos::LOW;
+            for (uint8_t j = i; j < AP_RC_LOGIC_NUM_TERMS; j++) {
+                const Term &tj = terms[j];
+                if (!tj.enabled() || tj.func() != f) {
+                    continue;
+                }
+                if (eval_term(tj)) {
+                    // priority: the first (lowest-index) active row wins
+                    target = tj.output_position();
+                    break;
+                }
+            }
+        } else {
+            // combine all rows for this function using the Betaflight rule:
+            // active when all AND terms are true, or any OR term is true.
+            bool has_and = false, all_and = true, any_or = false;
+            for (uint8_t j = i; j < AP_RC_LOGIC_NUM_TERMS; j++) {
+                const Term &tj = terms[j];
+                if (!tj.enabled() || tj.func() != f) {
+                    continue;
+                }
+                // arming functions honour range terms only
+                if (arm_func && tj.source_type() != Term::SourceType::RANGE) {
+                    continue;
+                }
+                const bool v = eval_term(tj);
+                if (tj.combine_is_and()) {
+                    has_and = true;
+                    all_and = all_and && v;
+                } else {
+                    any_or = any_or || v;
+                }
+            }
+            bool raw = (has_and && all_and) || any_or;
+            // ARM-class functions fail toward disarm without valid RC input.
+            if (raw && arm_func && !rc_valid) {
+                raw = false;
+            }
+            target = raw ? RC_Channel::AuxSwitchPos::HIGH
+                         : RC_Channel::AuxSwitchPos::LOW;
         }
 
         FuncState *st = state_for(f);
@@ -304,19 +340,18 @@ void AP_RC_Logic::update()
             continue;  // no free slot (more distinct funcs than terms)
         }
 
-        // debounce: a changed raw value must settle before it is committed
-        if (raw == st->committed) {
-            st->candidate = raw;  // nothing pending
+        // debounce: a changed position must settle before it is committed
+        const uint8_t tpos = (uint8_t)target;
+        if (tpos == st->committed_pos) {
+            st->candidate_pos = tpos;  // nothing pending
             continue;
         }
-        if (st->candidate != raw) {
-            st->candidate = raw;
+        if (st->candidate_pos != tpos) {
+            st->candidate_pos = tpos;
             st->since_ms = now_ms;
         } else if (now_ms - st->since_ms >= AP_RC_LOGIC_DEBOUNCE_MS) {
-            st->committed = raw;
-            const auto pos = raw ? RC_Channel::AuxSwitchPos::HIGH
-                                 : RC_Channel::AuxSwitchPos::LOW;
-            rc().run_aux_function(f, pos,
+            st->committed_pos = tpos;
+            rc().run_aux_function(f, target,
                                   RC_Channel::AuxFuncTrigger::Source::LOGIC, i);
         }
     }

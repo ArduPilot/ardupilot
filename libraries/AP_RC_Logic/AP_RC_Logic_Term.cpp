@@ -16,8 +16,8 @@ const AP_Param::GroupInfo AP_RC_Logic::Term::var_info[] = {
 
     // @Param: OPT
     // @DisplayName: RC logic term options
-    // @Description: Packed options for this row
-    // @Bitmask: 0:SourceTypeBit0,1:SourceTypeBit1,2:CombineAND,3:Negate
+    // @Description: Packed options for this row. Bits 0-1 are the source type (0 range, 1 link, 2 condition), bit 2 combines this row with AND (else OR), bit 3 negates it. Bits 4-5 set the output position emitted when the row is active for a multi-position target (0 HIGH, 1 MIDDLE, 2 LOW); any row using a non-HIGH position puts the whole function into selector mode where the lowest-numbered active row drives its position (e.g. low/mid/high VTX power).
+    // @Bitmask: 0:SourceTypeBit0,1:SourceTypeBit1,2:CombineAND,3:Negate,4:OutPosBit0,5:OutPosBit1
     // @User: Advanced
     AP_GROUPINFO("OPT", 2, AP_RC_Logic::Term, options, 0),
 
