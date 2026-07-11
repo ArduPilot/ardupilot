@@ -52,7 +52,7 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @DisplayName: Video Transmitter Band
     // @Description: Video Transmitter Band
     // @User: Standard
-    // @Values: 0:Band A,1:Band B,2:Band E,3:Airwave,4:RaceBand,5:Low RaceBand,6:1G3 Band A,7:1G3 Band B,8:Band X,9:3G3 Band A,10:3G3 Band B
+    // @Values: 0:Band A,1:Band B,2:Band E,3:Airwave,4:RaceBand,5:Low RaceBand,6:1G3 Band A,7:1G3 Band B,8:Band X,9:3G3 Band A,10:3G3 Band B,11:User band 1 (Y),12:User band 2 (Z)
     AP_GROUPINFO("BAND",  4, AP_VideoTX, _band, 0),
 
     // @Param: FREQ
@@ -139,6 +139,151 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("PWRTBL6", 15, AP_VideoTX, _power_table[5], 0),
 
+#if AP_VIDEOTX_TABLE_ENABLED
+    // @Param: BND1_REPL
+    // @DisplayName: User band 1 placement
+    // @Description: Where user band 1 goes. -1 adds it as band 11 (Y), which is commanded by frequency. 0 to 10 replaces the set channels of that factory band (numbered as in VTX_BAND), to match a VTX whose own band map differs; the VTX is still commanded by band and channel where the protocol allows it. Other values add the band. If both user bands replace the same factory band, user band 2 takes precedence.
+    // @Values: -1:Add as band 11,0:Replace Band A,1:Replace Band B,2:Replace Band E,3:Replace Airwave,4:Replace RaceBand,5:Replace Low RaceBand,6:Replace 1G3 Band A,7:Replace 1G3 Band B,8:Replace Band X,9:Replace 3G3 Band A,10:Replace 3G3 Band B
+    // @User: Advanced
+    AP_GROUPINFO("BND1_REPL", 16, AP_VideoTX, _user_bands[0].replace, -1),
+
+    // @Param: BND1_CH1
+    // @DisplayName: User band 1 channel 1 frequency
+    // @Description: Frequency of channel 1 of user band 1. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND1_CH1", 17, AP_VideoTX, _user_bands[0].freq[0], 0),
+
+    // @Param: BND1_CH2
+    // @DisplayName: User band 1 channel 2 frequency
+    // @Description: Frequency of channel 2 of user band 1. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND1_CH2", 18, AP_VideoTX, _user_bands[0].freq[1], 0),
+
+    // @Param: BND1_CH3
+    // @DisplayName: User band 1 channel 3 frequency
+    // @Description: Frequency of channel 3 of user band 1. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND1_CH3", 19, AP_VideoTX, _user_bands[0].freq[2], 0),
+
+    // @Param: BND1_CH4
+    // @DisplayName: User band 1 channel 4 frequency
+    // @Description: Frequency of channel 4 of user band 1. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND1_CH4", 20, AP_VideoTX, _user_bands[0].freq[3], 0),
+
+    // @Param: BND1_CH5
+    // @DisplayName: User band 1 channel 5 frequency
+    // @Description: Frequency of channel 5 of user band 1. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND1_CH5", 21, AP_VideoTX, _user_bands[0].freq[4], 0),
+
+    // @Param: BND1_CH6
+    // @DisplayName: User band 1 channel 6 frequency
+    // @Description: Frequency of channel 6 of user band 1. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND1_CH6", 22, AP_VideoTX, _user_bands[0].freq[5], 0),
+
+    // @Param: BND1_CH7
+    // @DisplayName: User band 1 channel 7 frequency
+    // @Description: Frequency of channel 7 of user band 1. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND1_CH7", 23, AP_VideoTX, _user_bands[0].freq[6], 0),
+
+    // @Param: BND1_CH8
+    // @DisplayName: User band 1 channel 8 frequency
+    // @Description: Frequency of channel 8 of user band 1. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND1_CH8", 24, AP_VideoTX, _user_bands[0].freq[7], 0),
+
+    // @Param: BND2_REPL
+    // @DisplayName: User band 2 placement
+    // @Description: Where user band 2 goes. -1 adds it as band 12 (Z), which is commanded by frequency. 0 to 10 replaces the set channels of that factory band (numbered as in VTX_BAND), to match a VTX whose own band map differs; the VTX is still commanded by band and channel where the protocol allows it. Other values add the band. If both user bands replace the same factory band, user band 2 takes precedence.
+    // @Values: -1:Add as band 12,0:Replace Band A,1:Replace Band B,2:Replace Band E,3:Replace Airwave,4:Replace RaceBand,5:Replace Low RaceBand,6:Replace 1G3 Band A,7:Replace 1G3 Band B,8:Replace Band X,9:Replace 3G3 Band A,10:Replace 3G3 Band B
+    // @User: Advanced
+    AP_GROUPINFO("BND2_REPL", 25, AP_VideoTX, _user_bands[1].replace, -1),
+
+    // @Param: BND2_CH1
+    // @DisplayName: User band 2 channel 1 frequency
+    // @Description: Frequency of channel 1 of user band 2. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND2_CH1", 26, AP_VideoTX, _user_bands[1].freq[0], 0),
+
+    // @Param: BND2_CH2
+    // @DisplayName: User band 2 channel 2 frequency
+    // @Description: Frequency of channel 2 of user band 2. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND2_CH2", 27, AP_VideoTX, _user_bands[1].freq[1], 0),
+
+    // @Param: BND2_CH3
+    // @DisplayName: User band 2 channel 3 frequency
+    // @Description: Frequency of channel 3 of user band 2. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND2_CH3", 28, AP_VideoTX, _user_bands[1].freq[2], 0),
+
+    // @Param: BND2_CH4
+    // @DisplayName: User band 2 channel 4 frequency
+    // @Description: Frequency of channel 4 of user band 2. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND2_CH4", 29, AP_VideoTX, _user_bands[1].freq[3], 0),
+
+    // @Param: BND2_CH5
+    // @DisplayName: User band 2 channel 5 frequency
+    // @Description: Frequency of channel 5 of user band 2. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND2_CH5", 30, AP_VideoTX, _user_bands[1].freq[4], 0),
+
+    // @Param: BND2_CH6
+    // @DisplayName: User band 2 channel 6 frequency
+    // @Description: Frequency of channel 6 of user band 2. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND2_CH6", 31, AP_VideoTX, _user_bands[1].freq[5], 0),
+
+    // @Param: BND2_CH7
+    // @DisplayName: User band 2 channel 7 frequency
+    // @Description: Frequency of channel 7 of user band 2. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND2_CH7", 32, AP_VideoTX, _user_bands[1].freq[6], 0),
+
+    // @Param: BND2_CH8
+    // @DisplayName: User band 2 channel 8 frequency
+    // @Description: Frequency of channel 8 of user band 2. 0 leaves the channel unset: unused in an added band, the factory frequency in a replaced band. -1 disables the channel. Other values outside 1000 to 6000 also disable it.
+    // @Units: MHz
+    // @Range: -1 6000
+    // @User: Advanced
+    AP_GROUPINFO("BND2_CH8", 33, AP_VideoTX, _user_bands[1].freq[7], 0),
+
+#endif  // AP_VIDEOTX_TABLE_ENABLED
+
     AP_GROUPEND
 };
 
@@ -150,23 +295,6 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 #endif
 
 extern const AP_HAL::HAL& hal;
-
-const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L","1G3_A","1G3_B","X","3G3_A","3G3_B"};
-
-const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNELS] =
-{
-    { 5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725}, /* Band A */
-    { 5733, 5752, 5771, 5790, 5809, 5828, 5847, 5866}, /* Band B */
-    { 5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945}, /* Band E */
-    { 5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880}, /* Airwave */
-    { 5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917}, /* Race */
-    { 5362, 5399, 5436, 5473, 5510, 5547, 5584, 5621}, /* LO Race */
-    { 1080, 1120, 1160, 1200, 1240, 1280, 1320, 1360}, /* Band 1G3_A */
-    { 1080, 1120, 1160, 1200, 1258, 1280, 1320, 1360}, /* Band 1G3_B */
-    { 4990, 5020, 5050, 5080, 5110, 5140, 5170, 5200}, /* Band X */
-    { 3330, 3350, 3370, 3390, 3410, 3430, 3450, 3470}, /* Band 3G3_A */
-    { 3170, 3190, 3210, 3230, 3250, 3270, 3290, 3310}  /* Band 3G3_B */
-};
 
 // mapping of power level to milliwatt to dbm
 // valid power levels from SmartAudio spec, the adjacent levels might be the actual values
@@ -207,6 +335,10 @@ bool AP_VideoTX::init(void)
         return false;
     }
 
+#if AP_VIDEOTX_TABLE_ENABLED
+    update_user_bands();
+#endif
+
     // find the index into the power table. When the user has declared the
     // levels their VTX supports, take the configured power as-is instead of
     // rounding it down to a built-in level.
@@ -235,16 +367,24 @@ bool AP_VideoTX::init(void)
     return true;
 }
 
+// band/channel (zero-based) -> frequency in MHz via the active table
+uint16_t AP_VideoTX::get_frequency_mhz(uint8_t band, uint8_t channel)
+{
+    if (singleton == nullptr) {
+        return 0;
+    }
+    return singleton->_table.frequency(band, channel);
+}
+
 bool AP_VideoTX::get_band_and_channel(uint16_t freq, VideoBand& band, uint8_t& channel)
 {
-    for (uint8_t i = 0; i < AP_VideoTX::MAX_BANDS; i++) {
-        for (uint8_t j = 0; j < VTX_MAX_CHANNELS; j++) {
-            if (VIDEO_CHANNELS[i][j] == freq) {
-                band = VideoBand(i);
-                channel = j;
-                return true;
-            }
-        }
+    if (singleton == nullptr) {
+        return false;
+    }
+    uint8_t b;
+    if (singleton->_table.band_and_channel_for_frequency(freq, b, channel)) {
+        band = VideoBand(b);
+        return true;
     }
     return false;
 }
@@ -556,6 +696,10 @@ void AP_VideoTX::set_freq_is_current()
 // periodic update
 void AP_VideoTX::update(void)
 {
+#if AP_VIDEOTX_TABLE_ENABLED
+    update_user_bands();
+#endif
+
     if (!_enabled) {
         return;
     }
@@ -641,12 +785,137 @@ bool AP_VideoTX::have_params_changed() const
 // update the configured frequency to match the channel and band
 void AP_VideoTX::update_configured_frequency()
 {
-    _frequency_mhz.set_and_save(get_frequency_mhz(_band, _channel));
+    // a disabled (0 MHz) channel leaves VTX_FREQ alone
+    const uint16_t freq = get_frequency_mhz(_band, _channel);
+    if (freq != 0) {
+        _frequency_mhz.set_and_save(freq);
+    }
+}
+
+#if AP_VIDEOTX_TABLE_ENABLED
+// build the band table from the VTX_BNDn_* parameters at boot, and rebuild it
+// when they change. A new band plan changes what VTX_BAND/VTX_CHANNEL mean, so VTX_FREQ is moved to
+// the frequency they now select and the backends command the VTX as for any
+// other parameter change. A disabled (0 MHz) channel leaves VTX_FREQ alone
+void AP_VideoTX::update_user_bands()
+{
+    AP_VideoTX_Table::UserBand bands[AP_VideoTX_Table::NUM_USER_BANDS];
+    // zeroed so the padding compares equal below
+    memset(bands, 0, sizeof(bands));
+    for (uint8_t u = 0; u < AP_VideoTX_Table::NUM_USER_BANDS; u++) {
+        bands[u].replace = _user_bands[u].replace.get();
+        for (uint8_t c = 0; c < AP_VideoTX_Table::MAX_CHANNELS; c++) {
+            bands[u].freq[c] = _user_bands[u].freq[c].get();
+        }
+    }
+    if (_user_bands_applied && memcmp(bands, _applied_user_bands, sizeof(bands)) == 0) {
+        return;
+    }
+    memcpy(_applied_user_bands, bands, sizeof(bands));
+    _table.set_user_bands(bands);
+    if (!_user_bands_applied) {
+        // at boot the stored VTX_FREQ already goes with these bands
+        _user_bands_applied = true;
+        return;
+    }
+
+    const uint16_t freq = get_frequency_mhz(_band, _channel);
+    if (freq != 0) {
+        _frequency_mhz.set_and_save_ifchanged(freq);
+    }
+}
+#endif
+
+void AP_VideoTX::resolve_reported(const AP_VideoTX_Table &table, uint8_t cfg_band, uint8_t cfg_channel,
+                                  bool by_index, uint8_t &band, uint8_t &channel, uint16_t &freq)
+{
+    // the table may be rebuilt from the main thread while a VTX report is
+    // placed in it from a backend thread
+    WITH_SEMAPHORE(table.get_semaphore());
+
+    // a VTX's own band/channel indices refer to its factory band map, not to
+    // the user table
+    if (freq == 0) {
+        freq = AP_VideoTX_Table::factory_frequency(band, channel);
+    }
+    // a frequency may be in more than one band: the VTX is on the configured
+    // slot when it reports that slot's frequency
+    if (freq != 0 && freq == table.frequency(cfg_band, cfg_channel)) {
+        band = cfg_band;
+        channel = cfg_channel;
+        return;
+    }
+    if (table.band_is_factory(cfg_band)) {
+        // commanded by index, the VTX tunes a factory band from its own map
+        // even if the table's frequencies were edited, so it is on the
+        // configured slot when it reports that slot or the map's frequency
+        // for it, and is shown on the table's frequency
+        if (by_index && selectable(table, cfg_band, cfg_channel) &&
+            ((band == cfg_band && channel == cfg_channel) ||
+             (freq != 0 && freq == AP_VideoTX_Table::factory_frequency(cfg_band, cfg_channel)))) {
+            band = cfg_band;
+            channel = cfg_channel;
+            freq = table.frequency(cfg_band, cfg_channel);
+        }
+        return;
+    }
+    if (freq == 0) {
+        return;
+    }
+    // the VTX's indices mean nothing for a custom band, so place it by
+    // frequency, wherever the table has it
+    uint8_t b, c;
+    if (table.band_and_channel_for_frequency(freq, b, c)) {
+        band = b;
+        channel = c;
+    }
+}
+
+bool AP_VideoTX::keep_reported_frequency(bool custom_band, bool by_index, uint16_t freq)
+{
+    // a VTX commanded by band/channel index tunes a factory band from its own
+    // map, and a frequency off the factory grid is taken to be the configured
+    // one, as before user bands. Keep the reported frequency for a custom
+    // band, or for a VTX commanded by frequency that is on a factory
+    // frequency the user bands have edited away, so that a retune is due
+    return custom_band || (!by_index && AP_VideoTX_Table::is_factory_frequency(freq));
+}
+
+void AP_VideoTX::set_reported_state(uint8_t band, uint8_t channel, uint16_t freq, bool by_index)
+{
+    _reported_by_index = by_index;
+    resolve_reported(_table, _band.get(), _channel.get(), by_index, band, channel, freq);
+    _current_band = band;
+    _current_channel = channel;
+    _current_frequency = freq;
+}
+
+void AP_VideoTX::set_reported_frequency(uint16_t freq)
+{
+    _current_frequency = freq;
+    if (freq == 0) {
+        return;
+    }
+    WITH_SEMAPHORE(_table.get_semaphore());
+    uint8_t band = UINT8_MAX, channel = UINT8_MAX;
+    _table.band_and_channel_for_frequency(freq, band, channel);
+    resolve_reported(_table, _band.get(), _channel.get(), _reported_by_index, band, channel, freq);
+    _current_frequency = freq;
+    if (band != UINT8_MAX) {
+        _current_band = band;
+        _current_channel = channel;
+    }
 }
 
 // update the configured channel and band to match the frequency
 void AP_VideoTX::update_configured_channel_and_band()
 {
+    // a frequency may be in more than one band (a user band, or a factory
+    // band shared with another): stay on the configured slot if it already
+    // gives this frequency
+    if (_frequency_mhz != 0 && get_frequency_mhz(_band, _channel) == _frequency_mhz) {
+        return;
+    }
     VideoBand band;
     uint8_t channel;
     if (get_band_and_channel(_frequency_mhz, band, channel)) {
@@ -675,7 +944,7 @@ bool AP_VideoTX::set_defaults()
             if (get_band_and_channel(_current_frequency, band, channel)) {
                 _current_band = band;
                 _current_channel = channel;
-            } else {
+            } else if (!keep_reported_frequency(configured_band_is_custom(), _reported_by_index, _current_frequency)) {
                 _current_frequency = calced_freq;
             }
         } else {
@@ -718,8 +987,8 @@ bool AP_VideoTX::set_defaults()
 void AP_VideoTX::announce_vtx_settings() const
 {
     // Output a friendly message so the user knows the VTX has been detected
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %s%d %dMHz, PWR: %dmW",
-        band_names[_band.get()], _channel.get() + 1, _frequency_mhz.get(),
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %c%d %dMHz, PWR: %dmW",
+        _table.band_letter(_band.get()), _channel.get() + 1, _frequency_mhz.get(),
         has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get());
 }
 
