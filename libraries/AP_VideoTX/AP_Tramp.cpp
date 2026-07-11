@@ -118,14 +118,7 @@ char AP_Tramp::handle_response(void)
             // update the vtx
             AP_VideoTX& vtx = AP::vtx();
             bool update_pending = vtx.have_params_changed();
-            vtx.set_frequency_mhz(freq);
-
-            AP_VideoTX::VideoBand band;
-            uint8_t channel;
-            if (vtx.get_band_and_channel(freq, band, channel)) {
-                vtx.set_band(band);
-                vtx.set_channel(channel);
-            }
+            vtx.set_reported_frequency(freq);
 
             vtx.set_power_mw(power);
             vtx.set_actual_power_mw(cur_act_power);
@@ -380,7 +373,7 @@ void AP_Tramp::process_requests()
                 set_status(TrampStatus::TRAMP_STATUS_ONLINE_CONFIG);
             }
         } else if (retry_count > 0 && ((now - last_time_us) >= TRAMP_MIN_REQUEST_PERIOD_US)) {
-            if (!is_race_lock_enabled() && vtx.update_frequency()) {
+            if (!is_race_lock_enabled() && vtx.update_frequency() && vtx.configured_selectable()) {
                 debug("Updating frequency to %uMhz", vtx.get_configured_frequency_mhz());
                 // Freq can be and needs to be updated, issue request
                 send_command('F', vtx.get_configured_frequency_mhz());
@@ -548,7 +541,9 @@ void AP_Tramp::update()
                 vtx.update_configured_frequency();
             }
             const uint16_t conf_freq = vtx.get_configured_frequency_mhz();
-            if (conf_freq != _last_conf_freq) {
+            // a band parameter change may have disabled the selected channel, leaving
+            // nothing to command
+            if (vtx.configured_selectable() && conf_freq != _last_conf_freq) {
                 _last_conf_freq = conf_freq;
                 set_frequency(conf_freq);
             }
