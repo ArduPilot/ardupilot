@@ -1376,6 +1376,34 @@ bool AP_Logger::fill_logstructure(struct LogStructure &logstruct, const uint8_t 
     return true;
 }
 
+uint8_t AP_Logger::size_for_format_char(const char c)
+{
+    switch (c) {
+    case 'a' : return sizeof(int16_t[32]);
+    case 'b' : return sizeof(int8_t);
+    case 'c' : return sizeof(int16_t);
+    case 'd' : return sizeof(double);
+    case 'e' : return sizeof(int32_t);
+    case 'f' : return sizeof(float);
+    case 'g' : return sizeof(float16_s);
+    case 'h' : return sizeof(int16_t);
+    case 'i' : return sizeof(int32_t);
+    case 'n' : return sizeof(char[4]);
+    case 'B' : return sizeof(uint8_t);
+    case 'C' : return sizeof(uint16_t);
+    case 'E' : return sizeof(uint32_t);
+    case 'H' : return sizeof(uint16_t);
+    case 'I' : return sizeof(uint32_t);
+    case 'L' : return sizeof(int32_t);
+    case 'M' : return sizeof(uint8_t);
+    case 'N' : return sizeof(char[16]);
+    case 'Z' : return sizeof(char[64]);
+    case 'q' : return sizeof(int64_t);
+    case 'Q' : return sizeof(uint64_t);
+    }
+    return 0;
+}
+
 /* calculate the length of output of a format string.  Note that this
  * returns an int16_t; if it returns -1 then an error has occurred.
  * This was mechanically converted from init_field_types in
@@ -1384,34 +1412,14 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
 {
     size_t len = LOG_PACKET_HEADER_LEN;
     for (size_t i=0; i<strlen(fmt); i++) {
-        switch(fmt[i]) {
-        case 'a' : len += sizeof(int16_t[32]); break;
-        case 'b' : len += sizeof(int8_t); break;
-        case 'c' : len += sizeof(int16_t); break;
-        case 'd' : len += sizeof(double); break;
-        case 'e' : len += sizeof(int32_t); break;
-        case 'f' : len += sizeof(float); break;
-        case 'g' : len += sizeof(float16_s); break;
-        case 'h' : len += sizeof(int16_t); break;
-        case 'i' : len += sizeof(int32_t); break;
-        case 'n' : len += sizeof(char[4]); break;
-        case 'B' : len += sizeof(uint8_t); break;
-        case 'C' : len += sizeof(uint16_t); break;
-        case 'E' : len += sizeof(uint32_t); break;
-        case 'H' : len += sizeof(uint16_t); break;
-        case 'I' : len += sizeof(uint32_t); break;
-        case 'L' : len += sizeof(int32_t); break;
-        case 'M' : len += sizeof(uint8_t); break;
-        case 'N' : len += sizeof(char[16]); break;
-        case 'Z' : len += sizeof(char[64]); break;
-        case 'q' : len += sizeof(int64_t); break;
-        case 'Q' : len += sizeof(uint64_t); break;
-        default:
+        const uint8_t field_size = size_for_format_char(fmt[i]);
+        if (field_size == 0) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             AP_HAL::panic("Unknown format specifier (%c)", fmt[i]);
 #endif
             return -1;
         }
+        len += field_size;
     }
     if (len > LOG_PACKET_MAX_LEN) {
         return -1;

@@ -474,6 +474,11 @@ private:
     // return a msg_type which is not currently in use (or -1 if none available)
     int16_t find_free_msg_type() const;
 
+    // returns the storage size required for a field with the
+    // supplied format character; returns 0 for unknown format
+    // characters
+    static uint8_t size_for_format_char(char c);
+
     // fill LogStructure with information about msg_type
     bool fill_logstructure(struct LogStructure &logstruct, const uint8_t msg_type) const;
 
