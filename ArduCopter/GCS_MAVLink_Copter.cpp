@@ -886,8 +886,9 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_DO_ORBIT(const mavlink_command_int
 
     // param4: Orbit around the centre point for this many radians. 0: Orbit forever
     // NaN means "do not change" - preserve existing turn count
+    // convert to full turns, as counted by AC_Circle
     const bool update_turns = !isnan(packet.param4);
-    const float turns = update_turns ? fabsf(packet.param4) : 0.0f;
+    const float turns = update_turns ? fabsf(packet.param4) / M_2PI : 0.0f;
     // param3: yaw behaviour (ORBIT_YAW_BEHAVIOUR enum), NaN or 0 = face center
     const ORBIT_YAW_BEHAVIOUR yaw_behaviour = (isnan(packet.param3) || packet.param3 < 0) ? ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER : (ORBIT_YAW_BEHAVIOUR)(int)packet.param3;
     copter.mode_guided.orbit_start(circle_center, radius_m, ccw, speed_ms, update_turns, turns, yaw_behaviour);

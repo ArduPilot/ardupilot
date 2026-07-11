@@ -1251,8 +1251,6 @@ private:
     float _orbit_rate_degs = 20.0f;  // desired orbit rate in deg/s (signed for direction)
     ORBIT_YAW_BEHAVIOUR _orbit_yaw_behaviour = ORBIT_YAW_BEHAVIOUR_HOLD_FRONT_TO_CIRCLE_CENTER;
     float _orbit_turns;
-    float _orbit_angle_total_at_start;
-    bool _orbit_update_turns = true;
 #endif
 
     // controls which controller is run (pos or vel):

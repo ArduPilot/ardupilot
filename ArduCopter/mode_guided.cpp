@@ -1296,7 +1296,6 @@ void ModeGuided::orbit_start(const Location &circle_center, float radius_m, bool
     // store requested number of turns (0 = orbit forever)
     if (update_turns) {
         _orbit_turns = turns;
-        _orbit_angle_total_at_start = copter.circle_nav->get_angle_total_rad();
     }
     _orbit_yaw_behaviour = yaw_behaviour;
 
