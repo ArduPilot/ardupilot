@@ -19,6 +19,7 @@
 #if AP_VIDEOTX_ENABLED
 
 #include <AP_Param/AP_Param.h>
+#include "AP_VideoTX_Table.h"
 
 #define VTX_MAX_CHANNELS 8
 #define VTX_MAX_POWER_LEVELS 10
@@ -55,8 +56,6 @@ public:
         VTX_SA_IGNORE_CRC     = (1 << 6),
         VTX_CRSF_IGNORE_STAT  = (1 << 7),
     };
-
-    static const char *band_names[];
 
     enum VideoBand {
         BAND_A,
@@ -96,16 +95,53 @@ public:
 
     static PowerLevel _power_levels[VTX_MAX_POWER_LEVELS];
 
-    static const uint16_t VIDEO_CHANNELS[MAX_BANDS][VTX_MAX_CHANNELS];
-
-    static uint16_t get_frequency_mhz(uint8_t band, uint8_t channel) { return VIDEO_CHANNELS[band][channel]; }
+    // band/channel -> frequency (MHz), resolved through the active VTX table.
+    // 0 if no VTX exists yet or the band/channel is out of range/disabled.
+    static uint16_t get_frequency_mhz(uint8_t band, uint8_t channel);
     static bool get_band_and_channel(uint16_t freq, VideoBand& band, uint8_t& channel);
+
+    // access the user-definable band/frequency table
+    AP_VideoTX_Table& table() { return _table; }
+    const AP_VideoTX_Table& table() const { return _table; }
+    // true when the configured band is a custom (non-factory) band, which the
+    // VTX's own band map does not know, so it must be commanded by frequency
+    bool configured_band_is_custom() const { return !_table.band_is_factory(_band.get()); }
+
+    // record what the VTX reports: its own (factory) band/channel indices,
+    // and the frequency it is on if it reports one (0 if not). by_index is
+    // true when the VTX is commanded by band/channel index, so it tunes a
+    // factory band from its own band map
+    void set_reported_state(uint8_t band, uint8_t channel, uint16_t freq, bool by_index);
+    // record a report that only gives the frequency
+    void set_reported_frequency(uint16_t freq);
+
+    // where a VTX report places the VTX in the active table, given the
+    // configured band/channel. band/channel are the VTX's own indices on
+    // entry (UINT8_MAX if unknown); freq is 0 if the VTX did not report one.
+    // Static for testing
+    static void resolve_reported(const AP_VideoTX_Table &table, uint8_t cfg_band, uint8_t cfg_channel,
+                                 bool by_index, uint8_t &band, uint8_t &channel, uint16_t &freq);
+    // false for a disabled (0 MHz) or out of range table entry
+    static bool selectable(const AP_VideoTX_Table &table, uint8_t band, uint8_t channel) {
+        return table.frequency(band, channel) != 0;
+    }
+    // false when the configured channel is disabled or no frequency is
+    // configured, so there is nothing to command
+    bool configured_selectable() const {
+        return _frequency_mhz != 0 && selectable(_table, _band.get(), _channel.get());
+    }
+#if AP_VIDEOTX_TABLE_ENABLED
+    // called after a new table is accepted, to re-derive VTX_FREQ from
+    // VTX_BAND/VTX_CHANNEL under the new band plan
+    void on_table_updated();
+#endif
 
     void set_frequency_mhz(uint16_t freq) { _current_frequency = freq; }
     void set_configured_frequency_mhz(uint16_t freq) { _frequency_mhz.set_and_save_ifchanged(freq); }
     uint16_t get_frequency_mhz() const { return _current_frequency; }
     uint16_t get_configured_frequency_mhz() const { return _frequency_mhz; }
-    bool update_frequency() const { return _defaults_set && _frequency_mhz != _current_frequency; }
+    // a disabled (0 MHz) table entry is never commanded
+    bool update_frequency() const { return _defaults_set && _frequency_mhz != 0 && _frequency_mhz != _current_frequency; }
     void update_configured_frequency();
     // get / set power level
     void set_power_mw(uint16_t power);
@@ -179,13 +215,13 @@ public:
     void set_configured_band(uint8_t band) { _band.set_and_save_ifchanged(band); }
     uint8_t get_configured_band() const { return _band; }
     uint8_t get_band() const { return _current_band; }
-    bool update_band() const { return _defaults_set && _band != _current_band; }
+    bool update_band() const { return _defaults_set && _band != _current_band && selectable(_table, _band, _channel); }
     // get / set the frequency channel
     void set_channel(uint8_t channel) { _current_channel = channel; }
     void set_configured_channel(uint8_t channel) { _channel.set_and_save_ifchanged(channel); }
     uint8_t get_configured_channel() const { return _channel; }
     uint8_t get_channel() const { return _current_channel; }
-    bool update_channel() const { return _defaults_set && _channel != _current_channel; }
+    bool update_channel() const { return _defaults_set && _channel != _current_channel && selectable(_table, _band, _channel); }
     void update_configured_channel_and_band();
     // get / set vtx option
     void set_options(uint16_t options) { _current_options = options; }
@@ -240,6 +276,8 @@ private:
     // channel frequency
     AP_Int16 _frequency_mhz;
     uint16_t _current_frequency;
+    // the last state report was for a VTX commanded by band/channel index
+    bool _reported_by_index;
 
     // power output in mw
     AP_Int16 _power_mw;
@@ -277,6 +315,10 @@ private:
 
     // types of VTX providers
     uint8_t _types;
+
+    // user-definable band/frequency table (seeded with the historical
+    // defaults); the single source of truth for band/channel -> frequency
+    AP_VideoTX_Table _table;
 };
 
 namespace AP {

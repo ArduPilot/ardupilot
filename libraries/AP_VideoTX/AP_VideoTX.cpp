@@ -151,22 +151,9 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
 extern const AP_HAL::HAL& hal;
 
-const char * AP_VideoTX::band_names[] = {"A","B","E","F","R","L","1G3_A","1G3_B","X","3G3_A","3G3_B"};
-
-const uint16_t AP_VideoTX::VIDEO_CHANNELS[AP_VideoTX::MAX_BANDS][VTX_MAX_CHANNELS] =
-{
-    { 5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725}, /* Band A */
-    { 5733, 5752, 5771, 5790, 5809, 5828, 5847, 5866}, /* Band B */
-    { 5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945}, /* Band E */
-    { 5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880}, /* Airwave */
-    { 5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917}, /* Race */
-    { 5362, 5399, 5436, 5473, 5510, 5547, 5584, 5621}, /* LO Race */
-    { 1080, 1120, 1160, 1200, 1240, 1280, 1320, 1360}, /* Band 1G3_A */
-    { 1080, 1120, 1160, 1200, 1258, 1280, 1320, 1360}, /* Band 1G3_B */
-    { 4990, 5020, 5050, 5080, 5110, 5140, 5170, 5200}, /* Band X */
-    { 3330, 3350, 3370, 3390, 3410, 3430, 3450, 3470}, /* Band 3G3_A */
-    { 3170, 3190, 3210, 3230, 3250, 3270, 3290, 3310}  /* Band 3G3_B */
-};
+// the historical hardcoded band/frequency grid and band-name list now live in
+// AP_VideoTX_Table (as the seeded defaults); band/channel -> frequency resolves
+// through the active table (see get_frequency_mhz / get_band_and_channel below).
 
 // mapping of power level to milliwatt to dbm
 // valid power levels from SmartAudio spec, the adjacent levels might be the actual values
@@ -207,6 +194,12 @@ bool AP_VideoTX::init(void)
         return false;
     }
 
+#if AP_VIDEOTX_TABLE_ENABLED
+    // load the stored band/frequency table, falling back to the compiled
+    // defaults when none is stored (or the board has no table region)
+    _table.init();
+#endif
+
     // find the index into the power table. When the user has declared the
     // levels their VTX supports, take the configured power as-is instead of
     // rounding it down to a built-in level.
@@ -235,16 +228,24 @@ bool AP_VideoTX::init(void)
     return true;
 }
 
+// band/channel (zero-based) -> frequency in MHz via the active table
+uint16_t AP_VideoTX::get_frequency_mhz(uint8_t band, uint8_t channel)
+{
+    if (singleton == nullptr) {
+        return 0;
+    }
+    return singleton->_table.frequency(band, channel);
+}
+
 bool AP_VideoTX::get_band_and_channel(uint16_t freq, VideoBand& band, uint8_t& channel)
 {
-    for (uint8_t i = 0; i < AP_VideoTX::MAX_BANDS; i++) {
-        for (uint8_t j = 0; j < VTX_MAX_CHANNELS; j++) {
-            if (VIDEO_CHANNELS[i][j] == freq) {
-                band = VideoBand(i);
-                channel = j;
-                return true;
-            }
-        }
+    if (singleton == nullptr) {
+        return false;
+    }
+    uint8_t b;
+    if (singleton->_table.band_and_channel_for_frequency(freq, b, channel)) {
+        band = VideoBand(b);
+        return true;
     }
     return false;
 }
@@ -644,9 +645,92 @@ void AP_VideoTX::update_configured_frequency()
     _frequency_mhz.set_and_save(get_frequency_mhz(_band, _channel));
 }
 
+#if AP_VIDEOTX_TABLE_ENABLED
+// a new table changes what VTX_BAND/VTX_CHANNEL mean, so move VTX_FREQ to the
+// frequency they now select; the backends then command the VTX as for any
+// other parameter change. A disabled (0 MHz) channel leaves VTX_FREQ alone
+void AP_VideoTX::on_table_updated()
+{
+    const uint16_t freq = get_frequency_mhz(_band, _channel);
+    if (freq != 0) {
+        _frequency_mhz.set_and_save(freq);
+    }
+}
+#endif
+
+void AP_VideoTX::resolve_reported(const AP_VideoTX_Table &table, uint8_t cfg_band, uint8_t cfg_channel,
+                                  bool by_index, uint8_t &band, uint8_t &channel, uint16_t &freq)
+{
+    // a VTX's own band/channel indices refer to its factory band map, not to
+    // the user table
+    if (freq == 0) {
+        freq = AP_VideoTX_Table::factory_frequency(band, channel);
+    }
+    if (table.band_is_factory(cfg_band)) {
+        // commanded by index, the VTX tunes a factory band from its own map
+        // even if the table's frequencies were edited, so it is on the
+        // configured slot when it reports that slot or the map's frequency
+        // for it, and is shown on the table's frequency
+        if (by_index && selectable(table, cfg_band, cfg_channel) &&
+            ((band == cfg_band && channel == cfg_channel) ||
+             (freq != 0 && freq == AP_VideoTX_Table::factory_frequency(cfg_band, cfg_channel)))) {
+            band = cfg_band;
+            channel = cfg_channel;
+            freq = table.frequency(cfg_band, cfg_channel);
+        }
+        return;
+    }
+    if (freq == 0) {
+        return;
+    }
+    // the VTX's indices mean nothing for a custom band, so place it by
+    // frequency: on the configured slot when it is there, otherwise wherever
+    // the table has that frequency
+    if (freq == table.frequency(cfg_band, cfg_channel)) {
+        band = cfg_band;
+        channel = cfg_channel;
+        return;
+    }
+    uint8_t b, c;
+    if (table.band_and_channel_for_frequency(freq, b, c)) {
+        band = b;
+        channel = c;
+    }
+}
+
+void AP_VideoTX::set_reported_state(uint8_t band, uint8_t channel, uint16_t freq, bool by_index)
+{
+    _reported_by_index = by_index;
+    resolve_reported(_table, _band.get(), _channel.get(), by_index, band, channel, freq);
+    _current_band = band;
+    _current_channel = channel;
+    _current_frequency = freq;
+}
+
+void AP_VideoTX::set_reported_frequency(uint16_t freq)
+{
+    _current_frequency = freq;
+    if (freq == 0) {
+        return;
+    }
+    uint8_t band = UINT8_MAX, channel = UINT8_MAX;
+    _table.band_and_channel_for_frequency(freq, band, channel);
+    resolve_reported(_table, _band.get(), _channel.get(), _reported_by_index, band, channel, freq);
+    _current_frequency = freq;
+    if (band != UINT8_MAX) {
+        _current_band = band;
+        _current_channel = channel;
+    }
+}
+
 // update the configured channel and band to match the frequency
 void AP_VideoTX::update_configured_channel_and_band()
 {
+    // a custom band may share its frequency with a factory channel: stay on
+    // the configured slot if it already gives this frequency
+    if (configured_band_is_custom() && get_frequency_mhz(_band, _channel) == _frequency_mhz) {
+        return;
+    }
     VideoBand band;
     uint8_t channel;
     if (get_band_and_channel(_frequency_mhz, band, channel)) {
@@ -675,7 +759,11 @@ bool AP_VideoTX::set_defaults()
             if (get_band_and_channel(_current_frequency, band, channel)) {
                 _current_band = band;
                 _current_channel = channel;
-            } else {
+            } else if (!configured_band_is_custom() && _reported_by_index) {
+                // a VTX commanded by band/channel index tunes a factory band
+                // from its own map. Otherwise (a custom band, or a VTX
+                // commanded by frequency) keep the reported frequency, which
+                // the table may not have, so that a retune is still due
                 _current_frequency = calced_freq;
             }
         } else {
@@ -718,8 +806,8 @@ bool AP_VideoTX::set_defaults()
 void AP_VideoTX::announce_vtx_settings() const
 {
     // Output a friendly message so the user knows the VTX has been detected
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %s%d %dMHz, PWR: %dmW",
-        band_names[_band.get()], _channel.get() + 1, _frequency_mhz.get(),
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "VTX: %c%d %dMHz, PWR: %dmW",
+        _table.band_letter(_band.get()), _channel.get() + 1, _frequency_mhz.get(),
         has_option(VideoOptions::VTX_PITMODE) ? 0 : _power_mw.get());
 }
 
