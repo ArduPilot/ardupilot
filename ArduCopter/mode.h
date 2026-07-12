@@ -909,6 +909,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return false; };
     bool is_autopilot() const override { return true; }
+    bool use_pilot_yaw() const override;
 
 protected:
 

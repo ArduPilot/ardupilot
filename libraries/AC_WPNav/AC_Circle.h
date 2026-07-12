@@ -187,7 +187,7 @@ private:
     AC_PosControl&              _pos_control;
 
     enum CircleOptions {
-        MANUAL_CONTROL           = 1U << 0, // Enables pilot stick input to adjust circle radius and turn rate.
+        MANUAL_CONTROL           = 1U << 0, // Enables pilot stick input to adjust circle radius, turn rate, yaw and throttle.
         FACE_DIRECTION_OF_TRAVEL = 1U << 1, // Yaw aligns with direction of travel (tangent to circle path).
         INIT_AT_CENTER           = 1U << 2, // Initializes circle with center at current position (instead of radius ahead).
         ROI_AT_CENTER            = 1U << 3, // Sets camera mount ROI to circle center during circle mode.
