@@ -426,6 +426,20 @@ public:
     // the pointer passed can be freed after return.
     void log_file_content(const char *name);
 
+#if AP_LOGGER_SEND_NAMED_VALUES_ENABLED
+    // request a field of a log message be streamed to the GCS as a
+    // NAMED_VALUE_FLOAT, NAMED_VALUE_INT or NAMED_VALUE_STRING
+    // message, the message being chosen based on the field's format
+    // character.  chan_mask is a bitmask of mavlink channels the
+    // value should be sent on.  Returns false if the message or field
+    // can not be found (note that messages logged via Write() can not
+    // be found until they have been written at least once), if
+    // chan_mask is zero, or if memory allocation fails.  If the field
+    // is already being streamed then chan_mask is merged into the
+    // existing stream's mask.
+    bool stream_named_value(const char *msg_name, const char *field_name, uint32_t chan_mask);
+#endif  // AP_LOGGER_SEND_NAMED_VALUES_ENABLED
+
 protected:
 
     const struct LogStructure *_structures;
@@ -519,6 +533,50 @@ private:
 
     // remember formats for replay
     void save_format_Replay(const void *pBuffer);
+
+#if AP_LOGGER_SEND_NAMED_VALUES_ENABLED
+    /*
+     * support for streaming fields of logged messages to the GCS as
+     * named-value messages
+     */
+    union named_value_value {
+        float f;
+        int32_t i;
+        char s[65];  // large enough for a 'Z' field plus nul
+    };
+    struct NamedValueStream {
+        struct NamedValueStream *next;
+        char type;             // format character of the field
+        uint8_t msg_type;      // ID of message the field is in
+        uint8_t field_offset;  // offset of field within message
+        uint8_t field_size;    // storage size of field within message
+        char name[11];         // name the value is streamed under
+        uint32_t chan_mask;    // mavlink channels to send the value on
+        bool value_pending;    // value captured but not yet sent
+        uint32_t last_send_ms; // last time this stream's value was sent
+        union named_value_value value;  // most-recently-captured value
+    };
+    // list of streams; mutated only with named_value_sem held, but
+    // traversed without it, so streams must be fully constructed
+    // before insertion and are never removed:
+    NamedValueStream *named_value_streams;
+    HAL_Semaphore named_value_sem;
+    // sending a named value causes a log message to be written; do
+    // not capture values from those messages:
+    bool sending_named_values;
+
+    // called by backends when a message is being logged; captures
+    // field values for any stream_named_value() stream matching the
+    // message
+    void stream_named_value_capture(const void *msg, uint16_t size);
+
+    // send pending named values, called from periodic_tasks:
+    void stream_named_values_send(void);
+
+    // handle a LOG_STREAM_NAMED_VALUE request; the value is streamed
+    // on the channel the request arrived on:
+    void handle_stream_named_value(class GCS_MAVLINK &link, const mavlink_message_t &msg);
+#endif  // AP_LOGGER_SEND_NAMED_VALUES_ENABLED
 
     // io thread support
     bool _io_thread_started;
