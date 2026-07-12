@@ -127,6 +127,33 @@ function logger:write(name, labels, format, ...) end
 ---@param filename string -- file name
 function logger:log_file_content(filename) end
 
+-- stream a field of a dataflash log message to the GCS as a NAMED_VALUE_FLOAT,
+-- NAMED_VALUE_INT or NAMED_VALUE_STRING message, the message being chosen based
+-- on the field's type.  If name is empty the named value's name is
+-- "message.field", or "message[instance].field" if an instance is given,
+-- truncated to 10 characters.  An interval_us of zero or more streams the field
+-- at the default rate (the only supported rate); a negative interval_us stops
+-- streaming the name instead.  Returns false if the message or field can not be
+-- found (note that messages logged via logger:write() can not be found until
+-- they have been written at least once), if an instance is given but the
+-- message has no instance field, if the name is already streaming a different
+-- field, if chan_mask is zero, if a stop names no existing stream, if the limit
+-- on concurrently-streamed names (16) is reached, or if memory allocation
+-- fails.  If the field is already being streamed under the name then chan_mask
+-- is merged into the existing stream's mask.  Values are captured only when the
+-- message is accepted for onboard logging, so nothing is streamed while
+-- logging is not running (eg. disarmed without LOG_DISARMED).  Integer fields
+-- are sent raw, without the scaling log viewers apply, and values outside the
+-- int32 range are saturated.
+---@param msg_name string -- log message name, eg "ATT"
+---@param field_name string -- log message field name, eg "Roll"
+---@param instance integer -- message instance to stream the field from, -1 for any instance
+---@param name string -- name to stream the value under, maximum 10 characters; "" to derive it from the message and field names
+---@param interval_us integer -- 0 to stream at the default rate (the only supported rate), -1 to stop streaming the name
+---@param chan_mask uint32_t_ud|integer|number -- bitmask of mavlink channels to send on, eg 0xFFFFFFFF for all channels
+---@return boolean -- true if streaming of the field was configured (or stopped)
+function logger:stream_named_value(msg_name, field_name, instance, name, interval_us, chan_mask) end
+
 -- i2c bus interaction
 i2c = {}
 
