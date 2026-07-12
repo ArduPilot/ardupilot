@@ -127,6 +127,20 @@ function logger:write(name, labels, format, ...) end
 ---@param filename string -- file name
 function logger:log_file_content(filename) end
 
+-- stream a field of a dataflash log message to the GCS as a NAMED_VALUE_FLOAT,
+-- NAMED_VALUE_INT or NAMED_VALUE_STRING message, the message being chosen based
+-- on the field's type.  The named value's name is "message.field", truncated to
+-- 10 characters.  Returns false if the message or field can not be found (note
+-- that messages logged via logger:write() can not be found until they have been
+-- written at least once), if chan_mask is zero, or if memory allocation fails.
+-- If the field is already being streamed then chan_mask is merged into the
+-- existing stream's mask.
+---@param msg_name string -- log message name, eg "ATT"
+---@param field_name string -- log message field name, eg "Roll"
+---@param chan_mask uint32_t_ud|integer|number -- bitmask of mavlink channels to send on, eg 0xFFFFFFFF for all channels
+---@return boolean -- true if streaming of the field was configured
+function logger:stream_named_value(msg_name, field_name, chan_mask) end
+
 -- i2c bus interaction
 i2c = {}
 
