@@ -87,16 +87,22 @@ void AP_RangeFinder_DroneCAN::update()
     if ((AP_HAL::millis() - _last_reading_ms) > 500) {
         //if data is older than 500ms, report NoData
         set_status(RangeFinder::Status::NoData);
-    } else if (_status == RangeFinder::Status::Good && new_data) {
-        //copy over states
-        state.distance_m = _distance_cm * 0.01f;
-        state.last_reading_ms = _last_reading_ms;
+        return;
+    }
+    if (!new_data) {
+        return;
+    } 
+    state.distance_m = _distance_cm * 0.01f;
+    state.last_reading_ms = _last_reading_ms;  
+    new_data = false;
+    if (_status == RangeFinder::Status::Good) {
+        // copy over states
         update_status();
-        new_data = false;
-    } else if (_status != RangeFinder::Status::Good) {
-        //handle additional states received by measurement handler
+    } else {
+        // handle additional states received by measurement handler
         set_status(_status);
     }
+    
 }
 
 //RangeFinder message handler
@@ -121,14 +127,18 @@ void AP_RangeFinder_DroneCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const
         //Additional states supported by RFND message
         case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_CLOSE:
         {
+            driver->_distance_cm = msg.range*100.0f;
             driver->_last_reading_ms = AP_HAL::millis();
             driver->_status = RangeFinder::Status::OutOfRangeLow;
+            driver->new_data = true;
             break;
         }
         case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_TOO_FAR:
         {
+            driver->_distance_cm = msg.range*100.0f;
             driver->_last_reading_ms = AP_HAL::millis();
             driver->_status = RangeFinder::Status::OutOfRangeHigh;
+            driver->new_data = true;
             break;
         }
         default:
