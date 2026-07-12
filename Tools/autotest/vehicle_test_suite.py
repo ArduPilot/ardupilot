@@ -5351,6 +5351,24 @@ class TestSuite(abc.ABC):
             self.progress(self.dump_message_verbose(m))
         return m
 
+    def assert_receive_named_value(self, msg_type, name, timeout=10, mav=None):
+        '''wait for a named-value message (e.g. NAMED_VALUE_INT) with the
+        supplied name field'''
+        tstart = time.time()  # timeout in wallclock; mav may not be self.mav
+        while True:
+            if time.time() - tstart > timeout:
+                raise NotAchievedException("Did not get %s %s" % (msg_type, name))
+            if mav is not None and mav is not self.mav:
+                # the simulation stalls if we do not drain the primary
+                # connection while we wait on the other one:
+                self.drain_mav()
+                m = mav.recv_match(type=msg_type, blocking=True, timeout=0.1)
+            else:
+                m = self.assert_receive_message(msg_type, timeout=timeout, mav=mav)
+            if m is None or m.name != name:
+                continue
+            return m
+
     def assert_receive_named_value_float(self, name, timeout=10):
         tstart = self.get_sim_time_cached()
         while True:
