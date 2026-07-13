@@ -525,16 +525,23 @@ void RCOutput::dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request)
 
 /*
   scale an ArduPilot PWM value (microseconds) to a DShot throttle command.
-  Below 1000us (disarmed / safety / no signal) -> 0; 1000..2000us maps linearly
-  to 48..2047 (DShot min..max throttle; 1..47 are reserved for commands).
+  At or below 1000us (disarmed / safety / min / no signal) -> 0 (DShot motor-stop);
+  1001..2000us maps linearly to 50..2047 (values 1..47 are reserved for commands,
+  48 is the lowest throttle step). Sending 0 (not 48) at minimum matches the
+  mainline ChibiOS backend: 48 is the lowest *throttle*, not motor-stop, and a
+  BLHeli_S given a constant 48 at idle behaves unpredictably across power-ups
+  (observed on hardware: either refuses to release motor output, or arms straight
+  into an uncommanded idle spin). 0 is the explicit, safe motor-stop.
  */
 uint16_t RCOutput::dshot_throttle_from_pwm(uint16_t period_us)
 {
-    if (period_us < 1000) {
+    if (period_us <= 1000) {
         return 0;
     }
     const uint16_t us = period_us > 2000 ? 2000 : period_us;
-    return 48 + (uint16_t)(((uint32_t)(us - 1000) * (2047 - 48)) / 1000);
+    // 1001..2000us -> 50..2047; 1000us (handled above) -> 0.
+    uint16_t value = (uint16_t)(((uint32_t)(us - 1000) * (2047 - 48)) / 1000);
+    return value == 0 ? 0 : value + 48;
 }
 
 /*
