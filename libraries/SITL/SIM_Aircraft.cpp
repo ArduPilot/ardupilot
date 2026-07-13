@@ -1129,11 +1129,13 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 {
     external_payload_mass = 0;
 
+#if AP_SIM_SPRAYER_ENABLED
     // update sprayer
     if (sitl->sprayer_sim.is_enabled()) {
         sitl->sprayer_sim.update(input);
         external_payload_mass += sitl->sprayer_sim.payload_mass();
     }
+#endif  // AP_SIM_SPRAYER_ENABLED
 
     {
         const float range = rangefinder_range();
@@ -1148,28 +1150,37 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     // update i2c
     sitl->i2c_sim.update(*this);
 
+#if AP_SIM_BUZZER_ENABLED
     // update buzzer
     if (sitl->buzzer_sim.is_enabled()) {
         sitl->buzzer_sim.update(input);
     }
+#endif  // AP_SIM_BUZZER_ENABLED
 
     // update grippers
+#if AP_SIM_GRIPPER_ENABLED
     if (sitl->gripper_sim.is_enabled()) {
         sitl->gripper_sim.set_alt(hagl());
         sitl->gripper_sim.update(input);
         external_payload_mass += sitl->gripper_sim.payload_mass();
     }
+#endif  // AP_SIM_GRIPPER_ENABLED
+#if AP_SIM_GRIPPER_EPM_ENABLED
     if (sitl->gripper_epm_sim.is_enabled()) {
         sitl->gripper_epm_sim.update(input);
         external_payload_mass += sitl->gripper_epm_sim.payload_mass();
     }
+#endif  // AP_SIM_GRIPPER_EPM_ENABLED
 
+#if AP_SIM_PARACHUTE_ENABLED
     // update parachute
     if (sitl->parachute_sim.is_enabled()) {
         sitl->parachute_sim.update(input);
         // TODO: add drag to vehicle, presumably proportional to velocity
     }
+#endif  // AP_SIM_PARACHUTE_ENABLED
 
+#if AP_SIM_PRECLAND_ENABLED
     // update precland.  The beacon default location is seeded from home
     // (set_default_location is idempotent); the sim is also consumed directly
     // by the IRLock / PrecLand SITL backends, so it must stay seeded regardless
@@ -1181,6 +1192,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
             local_ground_level += sitl->precland_sim._device_height;
         }
     }
+#endif  // AP_SIM_PRECLAND_ENABLED
 
     // update RichenPower generator
     if (richenpower) {

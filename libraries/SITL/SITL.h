@@ -552,17 +552,29 @@ public:
         return spi_sim.ioctl(bus, cs_pin, spi_operation, data);
     }
 
+#if AP_SIM_SPRAYER_ENABLED
     Sprayer sprayer_sim;
+#endif  // AP_SIM_SPRAYER_ENABLED
 
+#if AP_SIM_GRIPPER_ENABLED
     Gripper_Servo gripper_sim;
+#endif  // AP_SIM_GRIPPER_ENABLED
+#if AP_SIM_GRIPPER_EPM_ENABLED
     Gripper_EPM gripper_epm_sim;
+#endif  // AP_SIM_GRIPPER_EPM_ENABLED
 
+#if AP_SIM_PARACHUTE_ENABLED
     Parachute parachute_sim;
+#endif  // AP_SIM_PARACHUTE_ENABLED
+#if AP_SIM_BUZZER_ENABLED
     Buzzer buzzer_sim;
+#endif  // AP_SIM_BUZZER_ENABLED
     I2C i2c_sim;
     SPI spi_sim;
     ToneAlarm tonealarm_sim;
+#if AP_SIM_PRECLAND_ENABLED
     SIM_Precland precland_sim;
+#endif  // AP_SIM_PRECLAND_ENABLED
     RichenPower richenpower_sim;
 #if AP_SIM_LOWEHEISER_ENABLED
     Loweheiser loweheiser_sim;
