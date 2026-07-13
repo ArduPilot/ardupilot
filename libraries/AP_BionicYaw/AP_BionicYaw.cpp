@@ -73,6 +73,13 @@ const AP_Param::GroupInfo AP_BionicYaw::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("ROT_FN", 6, AP_BionicYaw, _rot_fn, 1),
 
+    // @Param: RC_GAIN
+    // @DisplayName: BionicYaw rotator roll-coupling compensation gain
+    // @Description: Feedforward gain applied to the aileron channel to compensate for the roll moment induced by the rotating tail-boom's lateral force component in ROTATING_TAIL mode. 0 disables the compensation. Sign and magnitude must be tuned per airframe (see BYAW_ROT_MAX and tail vertical offset from the roll axis).
+    // @Range: -2.0 2.0
+    // @User: Advanced
+    AP_GROUPINFO("RC_GAIN", 7, AP_BionicYaw, _roll_couple_gain, 0.0f),
+
     AP_GROUPEND
 };
 

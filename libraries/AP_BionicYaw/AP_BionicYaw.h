@@ -80,4 +80,5 @@ private:
     AP_Int8 _mode;       // 0 = differential VTail, 1 = rotating tail
     AP_Float _rot_max_deg; // max rotator deflection in degrees, 0..45
     AP_Int8 _rot_fn;     // which k_scriptingN (1..16) to drive
+    AP_Float _roll_couple_gain;   // BYAW_RC_GAIN: aileron correction per sin(phi), 0 = off
 };
