@@ -22,9 +22,6 @@
 
 
 
-
-
-
 /*****************************************
 * Throttle slew limit
 *****************************************/
@@ -1130,7 +1127,6 @@ void Plane::bionicyaw_update(void)
         const float roll_comp_cd = g2.bionicyaw.update_rotating_roll_comp(roll_cd, rot_cd);
         SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_comp_cd);
 #endif // AP_BIONICYAW_ROT_COMP_ENABLED
-
         break;
     }
 
