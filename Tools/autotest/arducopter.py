@@ -13180,14 +13180,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         vinfo = vehicleinfo.VehicleInfo()
         copter_vinfo_options = vinfo.options[self.vehicleinfo_key()]
         known_broken_frames = {
-            'heli-compound': "wrong binary, different takeoff regime",
-            'heli-dual': "wrong binary, different takeoff regime",
-            'heli': "wrong binary, different takeoff regime",
-            'heli-gas': "wrong binary, different takeoff regime",
-            'heli-blade360': "wrong binary, different takeoff regime",
-            'heli-ddvptail': "wrong binary, different takeoff regime",
-            'heli-ddfptail': "wrong binary, different takeoff regime",
-            'heli-quad': "wrong binary, different takeoff regime",
             "quad-can" : "needs CAN periph",
         }
         for frame in sorted(copter_vinfo_options["frames"].keys()):
