@@ -1,6 +1,53 @@
 ArduPilot Rover Release Notes:
 ------------------------------------------------------------------
-Release 4.7.0-beta7 13-June-2026
+Release 4.7.0-beta8 13-July-2026
+
+Changes from 4.7.0-beta7
+
+1) Board specific changes
+
+- BCubeF745v2 board added (@petrosaccone, PR:32753)
+- CORVON743V2 board added (@holydust, PR:33307)
+- Navigator board supports lsm6dsv IMU (@Williangalvani, PR:33219)
+- SkystarsH7HDv3 onboard baro changed to SPL06 (@andyp1per, PR:33333)
+- TBS LUCID H7 OEM board added (@andyp1per, PR:33337)
+- TBS LUCID H7 V3 board added (@andyp1per, PR:33337)
+
+2) Driver changes
+
+- ASM330LHH IMU axes order fixed (@n-ito2222, PR:32921)
+- TMP119 temperature sensor driver added (@Williangalvani, PR:33322)
+
+3) Library changes
+
+- Compass: COMPASS_DISBLMSK bug on internal compasses fixed (@Georacer, PR:33553)
+- Custom Build Server dependency fix for DroneCAN and Generator (@peterbarker, PR:33429)
+- EKF3: Fix rejected GPS yaw when the measurement is older than the fusion horizon (@lthall, PR:33643)
+- Follow: Small fixes to maths and logic (@lthall, PR:33652)
+- GCS_MAVLink: Serial port blocking write bug fixed (@tridge, PR:33437)
+- MAVLinkCAN: CAN_FORWARD rejects negative CAN bus indices (@CSmith1539, PR:33376)
+- Mount: POI_LOCK does not need terrain to build (@peterbarker, PR:33396)
+- Mount: POI_LOCK function enabled by default in all >2MB boards (@rmackay9, PR:33372)
+- Scripting: New `vehicle:is_crashed()` Lua binding (@yuri-rage, PR:33258)
+
+4) Copter specific changes
+
+- CIRCLE_OPTIONS descriptions improved (@rmackay9, PR:33669)
+- EKF3 prevented from fusing probably-bad airspeed estimate (@peterbarker, PR:33607)
+- Guided mode set-target-angle-and-climbrate scaling used by scripting fixed (@rmackay9, PR:33692)
+- PosHold "jerky" response fixed (@zebulon-86, PR:33590)
+- WPNav: Fixed LOITER breaking, broken by the turn coordinator (@IamPete1, PR:33631)
+
+5) TradHeli specific changes
+
+- Fixed run up complete flag not posting in manual throttle modes when governor doesn't engage (@bgnsgeyer, PR:33693)
+
+6) Rover specific changes
+
+- AHRS does not fall back to DCM when AHRS_OPTIONS=3 (@deepak31296, PR:33392)
+
+------------------------------------------------------------------
+Release 4.7.0-beta7 13-June- 2026
 
 Warnings
 
