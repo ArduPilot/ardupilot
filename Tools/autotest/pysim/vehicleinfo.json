@@ -204,52 +204,6 @@
                 ],
                 "external": true
             },
-            "heli": {
-                "waf_target": "bin/arducopter-heli",
-                "default_params_filename": "default_params/copter-heli.parm"
-            },
-            "heli-gas": {
-                "waf_target": "bin/arducopter-heli",
-                "default_params_filename": [
-                    "default_params/copter-heli.parm",
-                    "default_params/copter-heli-gas.parm"
-                ]
-            },
-            "heli-ddvptail": {
-                "waf_target": "bin/arducopter-heli",
-                "default_params_filename": [
-                    "default_params/copter-heli.parm",
-                    "default_params/copter-heli-ddvptail.parm"
-                ]
-            },
-            "heli-ddfptail": {
-                "waf_target": "bin/arducopter-heli",
-                "default_params_filename": [
-                    "default_params/copter-heli.parm",
-                    "default_params/copter-heli-ddfptail.parm"
-                ]
-            },
-            "heli-dual": {
-                "waf_target": "bin/arducopter-heli",
-                "default_params_filename": [
-                    "default_params/copter-heli.parm",
-                    "default_params/copter-heli-dual.parm"
-                ]
-            },
-            "heli-blade360": {
-                "waf_target": "bin/arducopter-heli",
-                "default_params_filename": [
-                    "default_params/copter-heli.parm"
-                ]
-            },
-            "heli-quad": {
-                "model": "heli-quad:@ROMFS/models/heliquad.json",
-                "waf_target": "bin/arducopter-heli",
-                "default_params_filename": [
-                    "default_params/copter-heli.parm",
-                    "default_params/copter-heliquad.parm"
-                ]
-            },
             "singlecopter": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter-single.parm"
