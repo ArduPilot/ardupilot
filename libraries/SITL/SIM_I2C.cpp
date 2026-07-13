@@ -99,7 +99,7 @@ static TSYS03 tsys03;
 static MCP9600 mcp9600;
 #endif
 #if AP_SIM_ICM40609_ENABLED
-static ICM40609 icm40609;
+static ICM40609_I2C icm40609_i2c;
 #endif
 #if AP_SIM_MS5525_ENABLED
 static MS5525 ms5525;
@@ -166,7 +166,7 @@ struct i2c_device_at_address {
     { 0, 0x71, maxsonari2cxl_2 }, // RNGFNDx_TYPE = 2, RNGFNDx_ADDR = 113
 #endif
 #if AP_SIM_ICM40609_ENABLED
-    { 1, 0x01, icm40609 },
+    { 1, 0x01, icm40609_i2c },
 #endif
 #if AP_SIM_TEMPERATURE_SHT3X_ENABLED
     { 1, 0x44, sht3x },
