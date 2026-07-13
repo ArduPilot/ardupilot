@@ -55,17 +55,6 @@ void SITL_State::_sitl_setup()
         }
 #endif
 
-        sitl_model->set_buzzer(&_sitl->buzzer_sim);
-        sitl_model->set_sprayer(&_sitl->sprayer_sim);
-        sitl_model->set_gripper_servo(&_sitl->gripper_sim);
-        sitl_model->set_gripper_epm(&_sitl->gripper_epm_sim);
-        sitl_model->set_parachute(&_sitl->parachute_sim);
-        sitl_model->set_precland(&_sitl->precland_sim);
-        _sitl->i2c_sim.init();
-        sitl_model->set_i2c(&_sitl->i2c_sim);
-#if AP_TEST_DRONECAN_DRIVERS
-        sitl_model->set_dronecan_device(&_sitl->dronecan_sim);
-#endif
         if (_use_fg_view) {
             fprintf(stdout, "FGView: %s:%u\n", _fg_address, _fg_view_port);
             fg_socket.connect(_fg_address, _fg_view_port);
