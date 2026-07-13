@@ -272,8 +272,10 @@ class TestNewBoards(BuildScriptBase):
             main_hwdef = os.path.join(hwdef_dir, 'hwdef.dat')
             existing_board = os.path.exists(main_hwdef) and main_hwdef not in added_files
             # ODID variants are exempt from the README requirement entirely.
-            # AP_Periph boards must ship a README but are not required to embed
-            # an image.  All other boards require both a README and an image.
+            # AP_Periph and SITL boards must ship a README but are not required
+            # to embed an image (a SITL board has no physical form to
+            # photograph).  All other boards require both a README and an image.
+            is_sitl = 'AP_HAL_SITL' in hwdef_dir.split(os.sep)
             if existing_board:
                 self.progress(f"README.md not required for existing board {board_name}")
             elif self.is_odid_board(board):
@@ -281,7 +283,7 @@ class TestNewBoards(BuildScriptBase):
             else:
                 self.check_new_board_readme(
                     board_name, hwdef_dir, added_files,
-                    image_required=not board.is_ap_periph,
+                    image_required=not (board.is_ap_periph or is_sitl),
                 )
 
             defaults_parm_path = os.path.join(hwdef_dir, 'defaults.parm')
