@@ -53,7 +53,9 @@ public:
         k_param_imu,
         k_param_compass_enabled_deprecated,
         k_param_compass,
-        k_param_ahrs,  // AHRS group
+        k_param_ahrs_old,  // AHRS group
+        k_param_barometer_old,
+        k_param_ahrs_old,  // AHRS group
         k_param_barometer,
         k_param_scheduler,
         k_param_ins,
