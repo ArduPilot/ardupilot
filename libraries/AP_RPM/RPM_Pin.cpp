@@ -32,14 +32,15 @@ AP_RPM_Pin::IrqState AP_RPM_Pin::irq_state[RPM_MAX_INSTANCES];
  */
 void AP_RPM_Pin::irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp)
 {
-    const uint32_t dt = timestamp - irq_state[state.instance].last_pulse_us;
-    irq_state[state.instance].last_pulse_us = timestamp;
+    auto &data = irq_state[state.instance];
+    const uint32_t dt = timestamp - data.last_pulse_us;
+    data.last_pulse_us = timestamp;
     // we don't accept pulses less than 100us. Using an irq for such
     // high RPM is too inaccurate, and it is probably just bounce of
     // the signal which we should ignore
-    if (dt > 100 && dt < 1000*1000) {
-        irq_state[state.instance].dt_sum += dt;
-        irq_state[state.instance].dt_count++;
+    if (dt > 100) {
+        data.buffer[(data.last_sample + 1) % RPM_PIN_BUFFER_SIZE] = dt;
+        data.last_sample++;
     }
 }
 
@@ -52,8 +53,10 @@ void AP_RPM_Pin::update(void)
             IGNORE_RETURN(hal.gpio->detach_interrupt(last_pin));
             interrupt_attached = false;
         }
-        irq_state[state.instance].dt_count = 0;
-        irq_state[state.instance].dt_sum = 0;
+        // set the last sample to 0, next interrupt call will put the value in the next element,
+        // update will see 0 and assume it hit the uninitialized part of the buffer.
+        
+        irq_state[state.instance].buffer[irq_state[state.instance].last_sample] = 0; 
         // attach to new pin
         last_pin = get_pin();
         if (last_pin > 0) {
@@ -68,38 +71,49 @@ void AP_RPM_Pin::update(void)
             }
         }
     }
+    const auto &data = irq_state[state.instance];
 
-    if (irq_state[state.instance].dt_count > 0) {
-
-        // disable interrupts to prevent race with irq_handler
-        void *irqstate = hal.scheduler->disable_interrupts_save();
-        const float dt_avg = static_cast<float>(irq_state[state.instance].dt_sum) / irq_state[state.instance].dt_count;
-        irq_state[state.instance].dt_count = 0;
-        irq_state[state.instance].dt_sum = 0;
-        hal.scheduler->restore_interrupts(irqstate);
-
-        const float scaling = ap_rpm._params[state.instance].scaling;
-        const float maximum = ap_rpm._params[state.instance].maximum;
-        const float minimum = ap_rpm._params[state.instance].minimum;
-        float quality;
-        const float rpm = scaling * (1.0e6 / dt_avg) * 60;
-        const float filter_value = signal_quality_filter.get();
-
-        state.rate_rpm = signal_quality_filter.apply(rpm);
-
-        if ((maximum <= 0 || rpm <= maximum) && (rpm >= minimum)) {
-            if (is_zero(filter_value)){
-                quality = 0;
-            } else {
-                quality = 1 - constrain_float((fabsf(rpm-filter_value))/filter_value, 0.0, 1.0);
-                quality = powf(quality, 2.0);
+    if (last_sample_used != data.last_sample) {
+        last_sample_used = data.last_sample;
+        uint8_t samples_used = 0;
+        uint32_t sample_sum = 0;
+        for(uint8_t i = 0; i < RPM_PIN_BUFFER_SIZE-2; i++){ //skip two oldest samples in the buffer just in case we got unlucky with the interrupt timing
+            uint32_t sample = data.buffer[(last_sample_used - i) % RPM_PIN_BUFFER_SIZE];
+            if (sample<100 || sample >=1000*1000){
+                break; // we have hit either unused or timed out sample;
             }
-            state.last_reading_ms = AP_HAL::millis();
-        } else {
-            quality = 0;
+            sample_sum += sample;
+            samples_used++;
+            if (sample_sum>1000*1000){ //don't add samples that are older than 1s compared to last sample
+                break;
+            }
         }
-        state.signal_quality = (0.1 * quality) + (0.9 * state.signal_quality);
+        if(samples_used > 0) {
+            float dt_avg = static_cast<float>(sample_sum)/samples_used;
+            const float scaling = ap_rpm._params[state.instance].scaling;
+            const float maximum = ap_rpm._params[state.instance].maximum;
+            const float minimum = ap_rpm._params[state.instance].minimum;
+            float quality;
+            const float rpm = scaling * (1.0e6 / dt_avg) * 60;
+            const float filter_value = signal_quality_filter.get();
+
+            state.rate_rpm = signal_quality_filter.apply(rpm);
+
+            if ((maximum <= 0 || rpm <= maximum) && (rpm >= minimum)) {
+                if (is_zero(filter_value)){
+                    quality = 0;
+                } else {
+                    quality = 1 - constrain_float((fabsf(rpm-filter_value))/filter_value, 0.0, 1.0);
+                    quality = powf(quality, 2.0);
+                }
+                state.last_reading_ms = AP_HAL::millis();
+            } else {
+                quality = 0;
+            }
+            state.signal_quality = (0.1 * quality) + (0.9 * state.signal_quality);
+        }
     }
+
 
     // assume we get readings at at least 1Hz, otherwise reset quality to zero
     if (AP_HAL::millis() - state.last_reading_ms > 1000) {
