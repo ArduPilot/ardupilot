@@ -257,6 +257,26 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     return true;
 }
 
+bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
+                                    uint32_t len)
+{
+    bus.sem.check_owner();
+
+    // a single transfer that both sends and receives; the simulated device
+    // reads tx_buf and writes rx_buf (which may alias send)
+    struct spi_ioc_transfer msg {};
+    msg.tx_buf = (uint64_t)send;
+    msg.rx_buf = (uint64_t)recv;
+    msg.len = len;
+
+    const int r = bus.ioctl(device_desc.cs_pin, SPI_TRANSACTION_1LONG, &msg);
+    if (r == -1) {
+        hal.console->printf("SPIDevice: error transferring data\n");
+        return false;
+    }
+    return true;
+}
+
 AP_HAL::Device::PeriodicHandle SPIDevice::register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb)
 {
     return bus.register_periodic_callback(period_usec, cb);
