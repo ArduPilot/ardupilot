@@ -38,6 +38,7 @@ public:
         SHT3x                       = 8,
         MAX31865_3_wire             = 9,
         TMP119                      = 10,
+        MCP9808                     = 11,
     };
 
     // option to map to another system component
