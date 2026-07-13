@@ -55,6 +55,16 @@ void SITL_State::_sitl_setup()
         }
 #endif
 
+#if AP_SIM_PRECLAND_ENABLED
+        // seed the precland simulator's beacon location from home.  This
+        // is done before parameters are loaded from storage so that the
+        // location-is-zero check inside set_default_location sees the
+        // unloaded (zero) values; parameters present in storage then
+        // overwrite the seed, while any absent ones keep it
+        const Location &home = sitl_model->get_home();
+        _sitl->precland_sim.set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(sitl_model->get_home_yaw()));
+#endif
+
         if (_use_fg_view) {
             fprintf(stdout, "FGView: %s:%u\n", _fg_address, _fg_view_port);
             fg_socket.connect(_fg_address, _fg_view_port);
