@@ -85,6 +85,7 @@ void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_State &state_ar
 }
 
 // get temperature reading in C.  returns true on success and populates temp argument
+// checks external temperature source first, then falls back to backend-specific reading
 bool AP_RangeFinder_Backend::get_temp(float &temp) const
 {
 #if AP_TEMPERATURE_SENSOR_ENABLED
@@ -93,7 +94,7 @@ bool AP_RangeFinder_Backend::get_temp(float &temp) const
         return true;
     }
 #endif
-    return false;
+    return _get_temp(temp);
 }
 
 #if AP_SCRIPTING_ENABLED
