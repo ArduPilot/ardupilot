@@ -29,8 +29,6 @@ class SPI {
 public:
     SPI() {}
 
-    void init();
-
     // update spi state
     void update(const class Aircraft &aircraft);
 
@@ -54,6 +52,12 @@ public:
     // end "the following"
 
 private:
+    // one-time setup of the simulated device table.  Self-guarded by
+    // initialised and called lazily from update()/ioctl() (either may
+    // run first), so the simulated bus needs no external init() call.
+    void init();
+    bool initialised;
+
     int ioctl_transaction(uint8_t bus, uint8_t cs_pin, uint8_t count, spi_ioc_transfer *data);
 
 };

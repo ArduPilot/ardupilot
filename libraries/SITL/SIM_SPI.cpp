@@ -52,6 +52,11 @@ struct spi_device_at_cs_pin {
 
 void SPI::init()
 {
+    if (initialised) {
+        return;
+    }
+    initialised = true;
+
     for (auto &i : spi_devices) {
         i.device.init();
     }
@@ -72,6 +77,8 @@ void SPI::init()
 
 void SPI::update(const class Aircraft &aircraft)
 {
+    init();  // lazily set up the device table on first use
+
     for (auto daa : spi_devices) {
         daa.device.update(aircraft);
     }
@@ -94,6 +101,8 @@ int SPI::ioctl_transaction(uint8_t bus, uint8_t cs_pin, uint8_t count, spi_ioc_t
 
 int SPI::ioctl(uint8_t bus, uint8_t cs_pin, uint8_t ioctl_type, void *data)
 {
+    init();  // lazily set up the device table on first use
+
     uint8_t count;
     switch (ioctl_type) {
     case SPI_TRANSACTION_1LONG:
