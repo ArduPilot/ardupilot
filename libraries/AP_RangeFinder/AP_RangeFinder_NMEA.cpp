@@ -56,6 +56,12 @@ bool AP_RangeFinder_NMEA::get_reading(float &reading_m)
 // get temperature reading
 bool AP_RangeFinder_NMEA::get_temp(float &temp) const
 {
+    // an externally-supplied temperature (e.g. AP_TemperatureSensor with
+    // TEMPx_SRC=Rangefinder) takes precedence over our own parsed MTW reading
+    if (AP_RangeFinder_Backend::get_temp(temp)) {
+        return true;
+    }
+
     uint32_t now_ms = AP_HAL::millis();
     if ((_temp_readtime_ms == 0) || ((now_ms - _temp_readtime_ms) > read_timeout_ms())) {
         return false;

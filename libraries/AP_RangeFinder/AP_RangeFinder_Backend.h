@@ -76,8 +76,14 @@ public:
     // return system time of last successful read from the sensor
     uint32_t last_reading_ms() const { return state.last_reading_ms; }
 
-    // get temperature reading in C.  returns true on success and populates temp argument
-    virtual bool get_temp(float &temp) const { return false; }
+    // get temperature reading in C.  returns true on success and populates temp argument.
+    // the base implementation returns the externally-supplied temperature set via
+    // RangeFinder::set_temperature_C() (e.g. from AP_TemperatureSensor, TEMPx_SRC=Rangefinder),
+    // if one has been set recently.  Backends with their own temperature source (e.g. NMEA
+    // depth sounders reporting MTW) should override this, and fall back to calling
+    // AP_RangeFinder_Backend::get_temp() when they have no reading of their own, so that
+    // there remains a single source of truth for a rangefinder's temperature.
+    virtual bool get_temp(float &temp) const;
 
     // return the actual type of the rangefinder, as opposed to the
     // parameter value which may be changed at runtime.
