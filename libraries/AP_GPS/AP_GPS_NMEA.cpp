@@ -493,7 +493,7 @@ bool AP_GPS_NMEA::_term_complete()
                 }
                 const float dist = uh.baseline_length;
                 const float bearing = uh.heading;
-                const float alt_diff = dist*tanf(radians(-uh.pitch));
+                const float alt_diff = dist*sinf(radians(-uh.pitch));
                 state.relPosHeading = bearing;
                 state.relPosLength = dist;
                 state.relPosD = alt_diff;
