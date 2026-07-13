@@ -121,7 +121,8 @@ static const struct SPIDriverInfo {
 // name, bus, cs_pin
 SPIDesc SPIDeviceManager::device_table[] = {
     { "ramtron", 0, 0 },
-    { "dataflash", 1, 0}
+    { "dataflash", 1, 0},
+    { "icm40609", 2, 3 },
 };
 
 AP_HAL::SPIDevice *
