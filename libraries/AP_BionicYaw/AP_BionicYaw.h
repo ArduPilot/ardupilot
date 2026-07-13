@@ -73,15 +73,18 @@ public:
 
     // Phase 3.1: 
     float update_rotating_pitch_comp(float pitch_cd, float rot_cd) const;
+    // Phase 3.2:
+    float update_rotating_roll_comp(float roll_cd, float rot_cd) const;
 
 private:
 
     AP_Float _yaw_gain;
     AP_Float _roll_gain;
     AP_Float _pitch_gain;
-    AP_Int8 _enabled; // 1 = aktiv, 0 = deaktiviert
-    AP_Int8 _mode;       // 0 = differential VTail, 1 = rotating tail
-    AP_Float _rot_max_deg; // max rotator deflection in degrees, 0..45
-    AP_Int8 _rot_fn;     // which k_scriptingN (1..16) to drive
+    AP_Int8 _enabled;             // 1 = active, 0 = disabled
+    AP_Int8 _mode;                // 0 = differential VTail, 1 = rotating tail
+    AP_Float _rot_max_deg;        // max rotator deflection in degrees, 0..45
+    AP_Int8 _rot_fn;              // which k_scriptingN (1..16) to drive
+    // Phase 3.2:
     AP_Float _roll_couple_gain;   // BYAW_RC_GAIN: aileron correction per sin(phi), 0 = off
 };
