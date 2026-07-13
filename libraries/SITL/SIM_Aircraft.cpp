@@ -1181,11 +1181,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
 #endif  // AP_SIM_PARACHUTE_ENABLED
 
 #if AP_SIM_PRECLAND_ENABLED
-    // update precland.  The beacon default location is seeded from home
-    // (set_default_location is idempotent); the sim is also consumed directly
-    // by the IRLock / PrecLand SITL backends, so it must stay seeded regardless
-    // of whether the sim is "enabled".
-    sitl->precland_sim.set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(get_home_yaw()));
+    // update precland
     if (sitl->precland_sim.is_enabled()) {
         sitl->precland_sim.update(get_location());
         if (sitl->precland_sim._over_precland_base) {
