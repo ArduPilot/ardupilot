@@ -18,6 +18,7 @@
    along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #include "AP_BionicYaw.h"
 
 const AP_Param::GroupInfo AP_BionicYaw::var_info[] = {
