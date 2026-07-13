@@ -151,11 +151,6 @@ float Aircraft::ambient_outside_pressure_Pascal() const
     return AP::baro().get_pressure();
 }
 
-void Aircraft::set_precland(SIM_Precland *_precland) {
-    precland = _precland;
-    precland->set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(get_home_yaw()));
-}
-
 /*
    return current height above ground level (metres)
 */
@@ -1135,9 +1130,9 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     external_payload_mass = 0;
 
     // update sprayer
-    if (sprayer && sprayer->is_enabled()) {
-        sprayer->update(input);
-        external_payload_mass += sprayer->payload_mass();
+    if (sitl->sprayer_sim.is_enabled()) {
+        sitl->sprayer_sim.update(input);
+        external_payload_mass += sitl->sprayer_sim.payload_mass();
     }
 
     {
@@ -1151,36 +1146,39 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     }
 
     // update i2c
-    if (i2c) {
-        i2c->update(*this);
-    }
+    sitl->i2c_sim.update(*this);
 
     // update buzzer
-    if (buzzer && buzzer->is_enabled()) {
-        buzzer->update(input);
+    if (sitl->buzzer_sim.is_enabled()) {
+        sitl->buzzer_sim.update(input);
     }
 
     // update grippers
-    if (gripper && gripper->is_enabled()) {
-        gripper->set_alt(hagl());
-        gripper->update(input);
-        external_payload_mass += gripper->payload_mass();
+    if (sitl->gripper_sim.is_enabled()) {
+        sitl->gripper_sim.set_alt(hagl());
+        sitl->gripper_sim.update(input);
+        external_payload_mass += sitl->gripper_sim.payload_mass();
     }
-    if (gripper_epm && gripper_epm->is_enabled()) {
-        gripper_epm->update(input);
-        external_payload_mass += gripper_epm->payload_mass();
+    if (sitl->gripper_epm_sim.is_enabled()) {
+        sitl->gripper_epm_sim.update(input);
+        external_payload_mass += sitl->gripper_epm_sim.payload_mass();
     }
 
     // update parachute
-    if (parachute && parachute->is_enabled()) {
-        parachute->update(input);
+    if (sitl->parachute_sim.is_enabled()) {
+        sitl->parachute_sim.update(input);
         // TODO: add drag to vehicle, presumably proportional to velocity
     }
 
-    if (precland && precland->is_enabled()) {
-        precland->update(get_location());
-        if (precland->_over_precland_base) {
-            local_ground_level += precland->_device_height;
+    // update precland.  The beacon default location is seeded from home
+    // (set_default_location is idempotent); the sim is also consumed directly
+    // by the IRLock / PrecLand SITL backends, so it must stay seeded regardless
+    // of whether the sim is "enabled".
+    sitl->precland_sim.set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(get_home_yaw()));
+    if (sitl->precland_sim.is_enabled()) {
+        sitl->precland_sim.update(get_location());
+        if (sitl->precland_sim._over_precland_base) {
+            local_ground_level += sitl->precland_sim._device_height;
         }
     }
 
@@ -1216,9 +1214,7 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     }
 
 #if AP_TEST_DRONECAN_DRIVERS
-    if (dronecan) {
-        dronecan->update();
-    }
+    sitl->dronecan_sim.update();
 #endif
 
 #if AP_SIM_GPIO_LED_1_ENABLED
