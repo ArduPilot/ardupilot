@@ -116,12 +116,16 @@ static const struct SPIDriverInfo {
 } spi_devices[] = {
     { 0, },
     { 1, },
+    { 2, },
 };
 
 // name, bus, cs_pin
 SPIDesc SPIDeviceManager::device_table[] = {
     { "ramtron", 0, 0 },
     { "dataflash", 1, 0},
+    { "adis16470", 2, 0 },
+    { "adis16507", 2, 1 },
+    { "adis16547", 2, 2 },
     { "icm40609", 2, 3 },
 };
 
