@@ -84,6 +84,18 @@ void AP_RangeFinder_Backend::set_status(RangeFinder::RangeFinder_State &state_ar
     }
 }
 
+// get temperature reading in C.  returns true on success and populates temp argument
+bool AP_RangeFinder_Backend::get_temp(float &temp) const
+{
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    if (state.temperature_valid && (AP_HAL::millis() - state.temperature_update_ms < 5000U)) {
+        temp = state.temperature_C;
+        return true;
+    }
+#endif
+    return false;
+}
+
 #if AP_SCRIPTING_ENABLED
 // get a copy of state structure
 void AP_RangeFinder_Backend::get_state(RangeFinder::RangeFinder_State &state_arg)

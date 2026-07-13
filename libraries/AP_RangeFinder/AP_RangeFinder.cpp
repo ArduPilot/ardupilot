@@ -903,11 +903,10 @@ void RangeFinder::Log_RFND() const
         }
 
         float temperature = logger.quiet_nanf();
-#if AP_TEMPERATURE_SENSOR_ENABLED
-        if (state[i].temperature_valid && (AP_HAL::millis() - state[i].temperature_update_ms < 5000U)) {
-            temperature = state[i].temperature_C;
+        float temp;
+        if (s->get_temp(temp)) {
+            temperature = temp;
         }
-#endif
         const struct log_RFND pkt = {
                 LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
                 time_us      : AP_HAL::micros64(),
