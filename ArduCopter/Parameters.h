@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 #include "RC_Channel_Copter.h"
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_SurfaceDistance/AP_SurfaceDistance.h>
 
 class ModeRTL;
 
@@ -550,11 +551,6 @@ public:
     AP_TempCalibration temp_calibration;
 #endif
 
-#if AP_BEACON_ENABLED
-    // beacon (non-GPS positioning) library
-    AP_Beacon beacon;
-#endif
-
 #if HAL_PROXIMITY_ENABLED
     // proximity (aka object avoidance) library
     AP_Proximity proximity;
@@ -695,6 +691,7 @@ public:
     AP_Int8                 failsafe_dr_enable;
     AP_Int16                failsafe_dr_timeout;
     AP_Float                surftrak_tc;
+    AP_SurfaceDistance::SurfDistParameters surf_dist_parameters;
 
     // ramp time of throttle during take-off
     AP_Float takeoff_throttle_slew_time;

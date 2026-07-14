@@ -31,7 +31,6 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_JSON/AP_JSON.h>
 #include <AP_Filesystem/AP_Filesystem.h>
-#include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL_SITL/HAL_SITL_Class.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
@@ -586,6 +585,8 @@ float Aircraft::rangefinder_range() const
         altitude -= relPosSensorEF.z;
     }
 
+    altitude += sitl->sonar_offset;
+
     const auto orientation = (Rotation)sitl->sonar_rot.get();
 #if SITL_RANGEFINDER_AS_OBJECT_SENSOR
 
@@ -727,12 +728,6 @@ void Aircraft::update_model(const struct sitl_input &input)
 void Aircraft::update_dynamics(const Vector3f &rot_accel)
 {
     WITH_SEMAPHORE(pose_sem);
-
-    // update eas2tas and air density
-#if AP_AHRS_ENABLED
-    eas2tas = AP::ahrs().get_EAS2TAS();
-#endif
-    air_density = SSL_AIR_DENSITY / sq(eas2tas);
 
     const float delta_time = frame_time_us * 1.0e-6f;
 
@@ -1118,6 +1113,21 @@ bool Aircraft::Clamp::clamped(Aircraft &aircraft, const struct sitl_input &input
     currently_clamped = new_clamped;
 
     return currently_clamped;
+}
+
+// simple battery consumption model
+// does not support the behavior documented by SIM_BATT_VOLTAGE and SIM_BATT_CAP_AH parameters
+void Aircraft::update_battery()
+{
+    // lose 0.7V at full throttle (from the user-specified voltage)
+    battery_voltage = sitl->batt_voltage - 0.7f * fabsf(sitl->throttle);
+    // assume 50A at full throttle
+    battery_current = 50.0f * fabsf(sitl->throttle);
+}
+
+void Aircraft::update_battery(const struct sitl_input &input)
+{
+    update_battery();
 }
 
 void Aircraft::update_external_payload(const struct sitl_input &input)

@@ -53,7 +53,10 @@ public:
     void        configure_armed();
 
     // update - runs RSC logic and outputs to motors, returns current spool state for use in motor output logic
-    RSCSpoolState        update(DesiredRSCSpoolState desired_spool_state);
+    void        update(float dt);
+
+    // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
+    RSCSpoolState   update_spool_state(DesiredRSCSpoolState desired_spool_state, float dt);
 
     // output_to_servo - outputs pwm onto output rsc channel.
     void        output_to_servo() { write_rsc(_control_output);}
@@ -67,11 +70,17 @@ public:
     // set_passthru_desired_rotor_speed - this requires input to be 0-1
     void        set_passthru_desired_rotor_speed(float desired_rotor_speed) { _passthru_desired_rotor_speed = desired_rotor_speed; }
 
+    // set_setpoint_desired_rotor_speed - this requires input to be 0-1
+    void        set_setpoint_desired_rotor_speed(float desired_rotor_speed) { _setpoint_desired_rotor_speed = desired_rotor_speed * 0.01f; }
+
     // set_collective. collective for throttle curve calculation
     void        set_collective(float collective) { _collective_in = collective; }
 
     // true if we are considered to be autorotating or bailing out of an autorotation
     bool        in_autorotation(void) const;
+
+    // true if we are using a manual collective flight mode
+    void        set_using_manual_collective_mode(bool using_manual_collective_mode) { _using_manual_collective_mode = using_manual_collective_mode; }
 
     // turbine start initialize sequence
     void        set_turbine_start(bool turbine_start) {_turbine_start = turbine_start; }
@@ -98,9 +107,6 @@ public:
     AP_Int16        _idle_output;             // Rotor control output while at idle
 
 private:
-
-    // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
-    void            update_spool_state();
 
     // set_rsc_control_mode - sets RSC control mode
     void            set_rsc_control_mode(RotorControlMode mode) { _rsc_control_mode = mode; }
@@ -151,6 +157,7 @@ private:
     // internal variables
     RotorControlMode _rsc_control_mode = ROTOR_CONTROL_MODE_DISABLED;   // RSC control mode, Passthrough, Setpoint, Throttle Curve or Autothrottle
     float           _passthru_desired_rotor_speed;// latest pilot desired rotor speed, used for passthrough mode
+    float           _setpoint_desired_rotor_speed;// latest setpoint desired rotor speed
     float           _desired_rotor_speed;         // latest desired rotor speed
     float           _control_output;              // latest logic controlled output
     float           _rotor_ramp_output;           // scalar used to ramp rotor speed between _rsc_idle_output and full speed (0.0-1.0f)
@@ -171,6 +178,7 @@ private:
     float           _governor_torque_reference;   // governor reference for load calculations
     float           _idle_throttle;               // current idle throttle setting
     bool            _save_rsc_mode;               // flag to determine if we should save RSC mode changes to EEPROM, used to prevent saving changes to RSC mode param while armed.
+    bool            _using_manual_collective_mode; // flag to determine if we are using a manual collective flight mode
 
     // parameters
     AP_Int16        _power_slewrate;            // throttle slew rate (percentage per second)

@@ -99,11 +99,6 @@
 #include "AP_ExternalControl_Copter.h"
 #endif
 
-#include <AP_Beacon/AP_Beacon_config.h>
-#if AP_BEACON_ENABLED
- #include <AP_Beacon/AP_Beacon.h>
-#endif
-
 #if AP_AVOIDANCE_ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
@@ -255,8 +250,8 @@ private:
     RC_Channel *rc_tuning2;
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
-    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U};
-    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
+    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U, &g2.surf_dist_parameters};
+    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U, &g2.surf_dist_parameters};
 
     // helper function to get inertially interpolated rangefinder height.
     bool get_rangefinder_height_interpolated_m(float& ret) const;
@@ -317,7 +312,8 @@ private:
 
     // system time in milliseconds of last recorded yaw reset from ekf
     uint32_t ekfYawReset_ms;
-    int8_t ekf_primary_core;
+    // old value of counter which increments when our attitude estimate is reset
+    uint16_t attitude_reset_count;
 
     // vibration check
     struct {
@@ -721,6 +717,9 @@ private:
     void read_AHRS(void);
     void update_altitude();
     bool get_wp_distance_m(float &distance) const override;
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    bool get_wp_location(Location &loc) const override;
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
     bool get_rate_ef_targets(Vector3f& rate_ef_targets_rads) const override;

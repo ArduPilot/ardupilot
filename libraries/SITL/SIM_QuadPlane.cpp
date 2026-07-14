@@ -104,7 +104,8 @@ QuadPlane::QuadPlane(const char *frame_str) :
     frame->init(frame_str);
     battery.setup(frame->get_model_batt_capacity_ah(),
                   frame->get_model_batt_resistance_ohm(),
-                  frame->get_model_batt_max_voltage());
+                  frame->get_model_batt_max_voltage(),
+                  ambient_outside_temperature_degC());
 
     // increase mass for plane components
     mass = frame->get_mass() * 1.5;
@@ -138,9 +139,10 @@ void QuadPlane::update(const struct sitl_input &input)
         quad_accel_body.rotate(ROTATION_PITCH_270);
     }
 
-    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah, sitl->batt_resistance);
     battery_voltage = battery.get_voltage();
     battery_current = frame->get_current_amp();
+    battery_temperature_degC = battery.get_temperature_degC();
 
     const uint64_t now_us = AP_HAL::micros64();
     battery.consume_energy(battery_current, now_us);

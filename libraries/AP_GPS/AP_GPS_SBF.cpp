@@ -598,7 +598,7 @@ AP_GPS_SBF::process_message(void)
                 state.gps_yaw_accuracy = sqrtf(temp.Cov_HeadHead);
                 state.have_gps_yaw_accuracy = true;
             } else {
-                state.gps_yaw_accuracy = false;
+                state.have_gps_yaw_accuracy = false;
             }
         }
         break;

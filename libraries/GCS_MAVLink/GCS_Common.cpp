@@ -616,20 +616,20 @@ void GCS_MAVLINK::send_proximity()
 // report AHRS2 state
 void GCS_MAVLINK::send_ahrs2()
 {
-    const AP_AHRS &ahrs = AP::ahrs();
-    Vector3f euler;
-    Location loc {};
-    // we want one or both of these, use | to avoid short-circuiting:
-    if (uint8_t(ahrs.get_secondary_attitude(euler)) |
-        uint8_t(ahrs.get_secondary_position(loc))) {
+    const auto *estimates = AP::ahrs().get_secondary_estimates();
+    if (estimates == nullptr) {
+        return;
+    }
+
+    const Location &loc = estimates->location;
+
         mavlink_msg_ahrs2_send(chan,
-                               euler.x,
-                               euler.y,
-                               euler.z,
+                               estimates->roll_rad,
+                               estimates->pitch_rad,
+                               estimates->yaw_rad,
                                loc.alt*1.0e-2f,
                                loc.lat,
                                loc.lng);
-    }
 }
 #endif  // AP_AHRS_ENABLED
 
@@ -1100,9 +1100,6 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif  // AP_AHRS_ENABLED
         { MAVLINK_MSG_ID_VFR_HUD,               MSG_VFR_HUD},
 #endif
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-        { MAVLINK_MSG_ID_HWSTATUS,              MSG_HWSTATUS},
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
 #if AP_MAVLINK_MSG_WIND_ENABLED
         { MAVLINK_MSG_ID_WIND,                  MSG_WIND},
 #endif  // AP_MAVLINK_MSG_WIND_ENABLED
@@ -2818,18 +2815,20 @@ void GCS::setup_console()
     if (ARRAY_SIZE(_chan_var_info) == 0) {
         return;
     }
-    create_gcs_mavlink_backend(*uart);
+    if (!create_gcs_mavlink_backend(*uart)) {
+        AP_BoardConfig::config_error("Failed to create MAVLink console backend");
+    }
 }
 
 
-void GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
+bool GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
 {
     if (_num_gcs >= ARRAY_SIZE(_chan_var_info)) {
-        return;
+        return false;
     }
     _chan[_num_gcs] = new_gcs_mavlink_backend(uart);
     if (_chan[_num_gcs] == nullptr) {
-        return;
+        return false;
     }
 
     // prepare parameters:
@@ -2839,23 +2838,15 @@ void GCS::create_gcs_mavlink_backend(AP_HAL::UARTDriver &uart)
     if (!_chan[_num_gcs]->init(_num_gcs)) {
         delete _chan[_num_gcs];
         _chan[_num_gcs] = nullptr;
-        return;
+        return false;
     }
 
     _num_gcs++;
+    return true;
 }
 
 void GCS::setup_uarts()
 {
-    for (uint8_t i = 1; i < MAVLINK_COMM_NUM_BUFFERS; i++) {
-        AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, i);
-        if (uart == nullptr) {
-            // no more mavlink uarts
-            break;
-        }
-        create_gcs_mavlink_backend(*uart);
-    }
-
 #if AP_FRSKY_TELEM_ENABLED
     if (frsky == nullptr) {
         frsky = NEW_NOTHROW AP_Frsky_Telem();
@@ -2873,6 +2864,20 @@ void GCS::setup_uarts()
 #if AP_DEVO_TELEM_ENABLED
     devo_telemetry.init();
 #endif
+
+    for (uint8_t i = 1; i < UINT8_MAX; i++) {  // we really can't have this many serial connections, right?!
+        AP_HAL::UARTDriver *uart = AP::serialmanager().find_serial(AP_SerialManager::SerialProtocol_MAVLink, i);
+        if (uart == nullptr) {
+            // no more mavlink uarts
+            return;
+        }
+        if (!create_gcs_mavlink_backend(*uart)) {
+            AP_BoardConfig::config_error("Failed to create MAVLink backend %u", unsigned(i));
+        }
+    }
+
+    // no way we allocated UINT8_MAX backends, something has gone wrong
+    INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
 }
 
 /*
@@ -3089,6 +3094,13 @@ void GCS_MAVLINK::send_named_float(const char *name, float value) const
     char float_name[MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN+1] {};
     strncpy(float_name, name, MAVLINK_MSG_NAMED_VALUE_FLOAT_FIELD_NAME_LEN);
     mavlink_msg_named_value_float_send(chan, AP_HAL::millis(), float_name, value);
+}
+
+void GCS_MAVLINK::send_named_int(const char *name, int32_t value) const
+{
+    char int_name[MAVLINK_MSG_NAMED_VALUE_INT_FIELD_NAME_LEN+1] {};
+    strncpy(int_name, name, MAVLINK_MSG_NAMED_VALUE_INT_FIELD_NAME_LEN);
+    mavlink_msg_named_value_int_send(chan, AP_HAL::millis(), int_name, value);
 }
 
 #if AP_AHRS_ENABLED
@@ -5276,6 +5288,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_component_arm_disarm(const mavlink_comman
 
 bool GCS_MAVLINK::location_from_command_t(const mavlink_command_int_t &in, Location &out)
 {
+    // sanity check location
+    if (!check_latlng(in.x, in.y)) {
+        return false;
+    }
+
     if (!command_long_stores_location((MAV_CMD)in.command)) {
         return false;
     }
@@ -5968,16 +5985,6 @@ bool GCS_MAVLINK::try_send_mission_message(const enum ap_message id)
     return true;
 }
 
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-void GCS_MAVLINK::send_hwstatus()
-{
-    mavlink_msg_hwstatus_send(
-        chan,
-        hal.analogin->board_voltage()*1000,
-        0);
-}
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
-
 #if AP_RPM_ENABLED
 void GCS_MAVLINK::send_rpm() const
 {
@@ -6628,13 +6635,6 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         last_heartbeat_time = AP_HAL::millis();
         send_heartbeat();
         break;
-
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-    case MSG_HWSTATUS:
-        CHECK_PAYLOAD_SIZE(HWSTATUS);
-        send_hwstatus();
-        break;
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
 
 #if AP_AHRS_ENABLED
     case MSG_LOCATION:
@@ -7748,7 +7748,7 @@ void GCS_MAVLINK::send_high_latency2() const
         high_latency_target_altitude(), // [m] Altitude setpoint
         uint16_t(ahrs.get_yaw_deg()) / 2, // [deg/2] Heading
         high_latency_tgt_heading(), // [deg/2] Heading setpoint
-        high_latency_tgt_dist(), // [dam] Distance to target waypoint or position
+        high_latency_tgt_dist_dam(), // [dam] Distance to target waypoint or position
         abs(vfr_hud_throttle()), // [%] Throttle
         MIN(vfr_hud_airspeed() * 5, UINT8_MAX), // [m/s*5] Airspeed
         high_latency_tgt_airspeed(), // [m/s*5] Airspeed setpoint

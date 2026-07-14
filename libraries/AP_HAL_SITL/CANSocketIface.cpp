@@ -46,12 +46,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace HALSITL;
 
-#if HAL_CANMANAGER_ENABLED
-#define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANSITLIface", fmt, ##args); } while (0)
-#else
-#define Debug(fmt, args...)
-#endif
-
 uint8_t CANIface::_num_interfaces;
 
 bool CANIface::is_initialized() const

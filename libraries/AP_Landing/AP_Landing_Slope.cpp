@@ -344,21 +344,24 @@ void AP_Landing::type_slope_setup_landing_glide_slope(const Location &prev_WP_lo
     constrain_target_altitude_location_fn(loc, prev_WP_loc);
 }
 
-int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
+float AP_Landing::type_slope_get_target_airspeed_ms(void)
 {
     // we're landing, check for custom approach and
     // pre-flare airspeeds. Also increase for head-winds
 
+    // default landing target airspeed is the average of cruise and
+    // minimum airspeed:
+    float target_airspeed_ms = 0.5f * (aparm.airspeed_cruise + aparm.airspeed_min);
+
+    // land airspeed can be explicitly specified:
     const float land_airspeed = tecs_Controller->get_land_airspeed();
-    int32_t target_airspeed_cm = aparm.airspeed_cruise*100;
     if (land_airspeed >= 0) {
-        target_airspeed_cm = land_airspeed * 100;
-    } else {
-        target_airspeed_cm = 100 * 0.5 * (aparm.airspeed_cruise + aparm.airspeed_min);
+        target_airspeed_ms = land_airspeed;
     }
+
     switch (type_slope_stage) {
     case SlopeStage::NORMAL:
-        target_airspeed_cm = aparm.airspeed_cruise*100;
+        target_airspeed_ms = aparm.airspeed_cruise;
         break;
     case SlopeStage::APPROACH:
         break;
@@ -366,19 +369,19 @@ int32_t AP_Landing::type_slope_get_target_airspeed_cm(void)
     case SlopeStage::FINAL:
         if (pre_flare_airspeed > 0) {
             // if we just preflared then continue using the pre-flare airspeed during final flare
-            target_airspeed_cm = pre_flare_airspeed * 100;
+            target_airspeed_ms = pre_flare_airspeed;
         }
         break;
     }
 
-    // when landing, add half of head-wind.
+    // when landing, add scaled amount of head-wind based on a
+    // percentage-parameter
     const float head_wind_comp = constrain_float(wind_comp, 0.0f, 100.0f)*0.01;
-    const int32_t head_wind_compensation_cm = ahrs.head_wind() * head_wind_comp * 100;
+    const float head_wind_compensation_ms = ahrs.head_wind() * head_wind_comp;
 
-    const uint32_t max_airspeed_cm = AP_Landing::allow_max_airspeed_on_land() ? aparm.airspeed_max*100 : aparm.airspeed_cruise*100;
-    
-    return constrain_int32(target_airspeed_cm + head_wind_compensation_cm, target_airspeed_cm, max_airspeed_cm);
-    
+    const float max_airspeed_ms = AP_Landing::allow_max_airspeed_on_land() ? aparm.airspeed_max : aparm.airspeed_cruise;
+
+    return constrain_float(target_airspeed_ms + head_wind_compensation_ms, target_airspeed_ms, max_airspeed_ms);
 }
 
 int32_t AP_Landing::type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd)

@@ -471,9 +471,17 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
             shared = ' // shared %s' % ','.join(stream_assign[stream])
             if stream[0] in [1,2]:
                 shared_set.add("(1U<<STM32_DMA_STREAM_ID(%u,%u))" % (stream[0],stream[1]))
+        # Plain I2C key (no _RX/_TX suffix) is used for the ChibiOS I2Cv4 LLD
+        # which takes a single DMA channel per peripheral via
+        # STM32_I2C_I2Cx_DMA_CHANNEL, and handles DMAMUX request source
+        # selection internally.
+        is_i2cv4 = (key.startswith('I2C') and
+                    not key.endswith('_RX') and not key.endswith('_TX'))
+        stream_suffix = 'CHANNEL' if is_i2cv4 else 'STREAM'
         if curr_dict[key] == "STM32_DMA_STREAM_ID_ANY":
-            f.write("#define %-30s STM32_DMA_STREAM_ID_ANY\n" % (chibios_dma_define_name(key)+'STREAM'))
-            f.write("#define %-30s %s\n" % (chibios_dma_define_name(key)+'CHAN', dmamux_channel(key)))
+            f.write("#define %-30s STM32_DMA_STREAM_ID_ANY\n" % (chibios_dma_define_name(key)+stream_suffix))
+            if not is_i2cv4:
+                f.write("#define %-30s %s\n" % (chibios_dma_define_name(key)+'CHAN', dmamux_channel(key)))
             continue
         else:
             dma_controller = curr_dict[key][0]
@@ -484,7 +492,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                 continue
             else:
                 f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
-                        (chibios_dma_define_name(key)+'STREAM', dma_controller,
+                        (chibios_dma_define_name(key)+stream_suffix, dma_controller,
                              curr_dict[key][1], shared))
             if have_DMAMUX and "_UP" in key:
                 # share the dma with rest of the _CH ports
@@ -495,6 +503,10 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                     f.write("#define %-30s STM32_DMA_STREAM_ID(%u, %u)%s\n" %
                         (chibios_dma_define_name(chkey)+'STREAM', dma_controller,
                             curr_dict[key][1], shared))
+        if is_i2cv4:
+            # I2Cv4 does not need a separate CHAN define; the LLD selects
+            # the DMAMUX request source (STM32_DMAMUX1_I2Cx_TX/RX) itself
+            continue
         for streamchan in sorted(dma_map[key]):
             if stream == (streamchan[0], streamchan[1]):
                 if have_DMAMUX:
@@ -510,7 +522,7 @@ def write_dma_header(f, peripheral_list, mcu_type, dma_exclude=[],
                         if chkey not in timer_ch_periph:
                             continue
                         f.write("#define %-30s %s\n" %
-                                (chibios_dma_define_name(chkey)+'CHAN', 
+                                (chibios_dma_define_name(chkey)+'CHAN',
                                 chan.replace('_UP', '_CH{}'.format(ch))))
                 break
 

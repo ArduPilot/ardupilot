@@ -30,6 +30,7 @@
 #include <AP_ADSB/AP_ADSB_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AC_Avoidance/AC_Avoidance_config.h>
+#include <AC_CustomControl/AC_CustomControl_config.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -72,6 +73,14 @@
 
 #ifndef RANGEFINDER_FILT_DEFAULT
  # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
+#endif
+
+#ifndef AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT  3 // number of rangefinder glitches in a row to take new reading
+#endif
+
+#ifndef AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT 2.00     // amount of rangefinder change to be considered a glitch
 #endif
 
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
@@ -631,7 +640,7 @@
 #endif
 
 #ifndef AC_CUSTOMCONTROL_MULTI_ENABLED
-#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_CUSTOMCONTROL_ENABLED
+#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_COPTER_CUSTOMCONTROL_ENABLED
 #endif
 
 #ifndef AC_PAYLOAD_PLACE_ENABLED

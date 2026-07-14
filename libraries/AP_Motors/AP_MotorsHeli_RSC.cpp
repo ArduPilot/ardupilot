@@ -255,7 +255,11 @@ void AP_MotorsHeli_RSC::configure(RotorControlMode control_mode, int8_t ramp_tim
     set_critical_speed(critical_speed);
     set_idle_output(idle_output);
 
-    configure_armed();
+    // set desired rotor speed for setpoint mode from parameter.
+    if (_rsc_control_mode == ROTOR_CONTROL_MODE_SETPOINT) {
+        _setpoint_desired_rotor_speed = _rsc_setpoint.get() * 0.01f;
+    }
+
 }
 
 // configure - configure the RSC.
@@ -269,7 +273,8 @@ void AP_MotorsHeli_RSC::configure_armed()
             _desired_rotor_speed = _passthru_desired_rotor_speed;
             break;
         case ROTOR_CONTROL_MODE_SETPOINT:
-            _desired_rotor_speed = _rsc_setpoint.get() * 0.01f;
+            // allows setpoint to set from parameter but also allows it to be updated by caller
+            _desired_rotor_speed = _setpoint_desired_rotor_speed;
             break;
         case ROTOR_CONTROL_MODE_THROTTLECURVE:
         case ROTOR_CONTROL_MODE_AUTOTHROTTLE:
@@ -316,19 +321,14 @@ void AP_MotorsHeli_RSC::set_throttle_curve()
 }
 
 // update - ran each loop to update the RSC
-AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState desired_spool_state)
+void AP_MotorsHeli_RSC::update(float dt)
 {
 
-    // if control mode is disabled, then we should always be in SHUT_DOWN spool state and ignore any other desired spool state inputs
+    // if control mode is disabled, then control output is forced to zero and no other updates are needed
     if (_rsc_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
-        _desired_spool_state = DesiredRSCSpoolState::SHUT_DOWN;
-        update_spool_state();
         _control_output = 0.0f;
-        return _spool_state;
+        return;
     }
-
-    // set desired spool state
-    _desired_spool_state = desired_spool_state;
 
     // _rotor_RPM available to the RSC output
 #if AP_RPM_ENABLED
@@ -346,22 +346,10 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
     _rotor_rpm = -1;
 #endif
 
-    float dt;
-    uint64_t now = AP_HAL::micros64();
     float last_control_output = _control_output;
-
-    if (_last_update_us == 0) {
-        _last_update_us = now;
-        dt = 0.001f;
-    } else {
-        dt = 1.0e-6f * (now - _last_update_us);
-        _last_update_us = now;
-    }
 
     switch (_desired_spool_state) {
         case DesiredRSCSpoolState::SHUT_DOWN:
-            // set rotor ramp to decrease speed to zero, this happens instantly inside update_rotor_ramp()
-            update_rotor_ramp(0.0f, dt);
 
             // control output forced to zero
             _control_output = 0.0f;
@@ -384,9 +372,6 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
             break;
 
         case DesiredRSCSpoolState::GROUND_IDLE:
-            // set rotor ramp to decrease speed to zero
-            update_rotor_ramp(0.0f, dt);
-
             // set rotor control speed to engine idle and ensure governor is reset, if used
             governor_reset();
             _autothrottle = false;
@@ -426,9 +411,6 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
             break;
 
         case DesiredRSCSpoolState::THROTTLE_UNLIMITED:
-            // set main rotor ramp to increase to full speed
-            update_rotor_ramp(1.0f, dt);
-
             // set fast idle timer so next time RSC goes to idle, the cooldown timer starts
             if (_cooldown_time.get() > 0) {
                 _fast_idle_timer = _cooldown_time.get();
@@ -454,29 +436,47 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update(DesiredRSCSpoolState 
             break;
     }
 
-    // update rotor speed run-up estimate
-    update_rotor_runup(dt);
-
-    update_spool_state();
-
     if (_power_slewrate > 0) {
         // implement slew rate for throttle
         float max_delta = dt * _power_slewrate * 0.01f;
         _control_output = constrain_float(_control_output, last_control_output-max_delta, last_control_output+max_delta);
     }
-    return _spool_state;
-
 }
 
 // update_spool_state - updates the spool state machine based on the desired spool state and current spool state
-void AP_MotorsHeli_RSC::update_spool_state()
+AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState desired_spool_state, float dt)
 {
 
-    if (_desired_spool_state == DesiredRSCSpoolState::SHUT_DOWN) {
-        // if we are shutting down, we want to immediately go to SHUT_DOWN state and not wait for spool down to complete
-        _spool_state = RSCSpoolState::SHUT_DOWN;
-        return;
+    // if control mode is disabled, then we should always be in SHUT_DOWN spool state and ignore any other desired spool state inputs
+    if (_rsc_control_mode == ROTOR_CONTROL_MODE_DISABLED) {
+        desired_spool_state = DesiredRSCSpoolState::SHUT_DOWN;
     }
+
+    // set desired spool state
+    _desired_spool_state = desired_spool_state;
+
+    switch (_desired_spool_state) {
+        case DesiredRSCSpoolState::SHUT_DOWN:
+            // if we are shutting down, we want to immediately go to SHUT_DOWN state and not wait for spool down to complete
+            _spool_state = RSCSpoolState::SHUT_DOWN;
+            // set rotor ramp to decrease speed to zero, this happens instantly inside update_rotor_ramp()
+            update_rotor_ramp(0.0f, dt);
+            break;
+
+        case DesiredRSCSpoolState::GROUND_IDLE:
+            // set rotor ramp to decrease speed to zero
+            update_rotor_ramp(0.0f, dt);
+            break;
+
+        case DesiredRSCSpoolState::THROTTLE_UNLIMITED:
+            // set main rotor ramp to increase to full speed
+            update_rotor_ramp(1.0f, dt);
+            break;
+    }
+
+    // update rotor speed run-up estimate
+    update_rotor_runup(dt);
+
     switch (_spool_state) {
         case RSCSpoolState::SHUT_DOWN:
             // Motors should be stationary.
@@ -534,6 +534,7 @@ void AP_MotorsHeli_RSC::update_spool_state()
             }
             break;
     }
+    return _spool_state;
 }
 
 // update_rotor_ramp - slews rotor output scalar between 0 and 1, outputs float scalar to _rotor_ramp_output
@@ -559,7 +560,9 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
     }
 }
 
-// update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
+// update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_output
+// Relies on set_using_manual_collective_mode() having been called first.  This method requires this information
+// to determine if the governor must be engaged for runup to be complete when using autothrottle RSC mode.
 void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
 {
     float runup_time = _runup_time;
@@ -601,10 +604,18 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
         return;
     }
 
-    // if rotor ramp and runup are both at full speed, then run-up has been completed
-    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && (_rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : true)) {
+    // rotor runup complete depends on the use of autothrottle RSC mode and the manual collective flight mode
+    // if autothrottle is used and a non-manual collective mode is used, then the governor must be engaged for runup to be complete. Otherwise,
+    // runup is complete when the rotor ramp and runup outputs are both at 1.0.  
+    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && 
+        (_using_manual_collective_mode || _rsc_control_mode != ROTOR_CONTROL_MODE_AUTOTHROTTLE || _governor_engage)) {
+        // warn user if runup timer completed but governor not engaged when using manual collective mode and autothrottle RSC mode
+        if (_using_manual_collective_mode && _rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE && _governor_engage == false) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Governor Failed to Engage when Runup Completed");
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Runup Complete");
+        }
         _runup_complete = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Runup Complete");
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     // this will prevent the case where the target rotor speed is less than critical speed

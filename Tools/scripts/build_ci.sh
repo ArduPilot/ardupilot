@@ -33,7 +33,9 @@ export GIT_VERSION="abcdef"
 export GIT_VERSION_EXTENDED="0123456789abcdef"
 export GIT_VERSION_INT="15"
 export CHIBIOS_GIT_VERSION="12345667"
-export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+if [ -z "$GITHUB_ACTIONS" ] || [ "$GITHUB_ACTIONS" != "true" ]; then
+  export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+fi
 autotest_args=""
 
 # If CI_BUILD_TARGET is not set, build 4 different ones

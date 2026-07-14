@@ -44,17 +44,17 @@ on:
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.pydevproject'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -62,7 +62,9 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/macos_build.yml'  # except this one
+
 
   pull_request:
     paths-ignore:
@@ -108,17 +110,17 @@ on:
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.pydevproject'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -126,7 +128,8 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/macos_build.yml'  # except this one
 
   workflow_dispatch:
 
@@ -134,8 +137,14 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
+
 jobs:
   build:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
     runs-on: macos-latest
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -146,7 +155,7 @@ jobs:
         ]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
       - name: Install Prerequisites
@@ -157,22 +166,9 @@ jobs:
           fi
           Tools/environment_install/install-prereqs-mac.sh -y
           source ~/.bash_profile
-      # Put ccache into github cache for faster build
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        shell: bash
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-      - name: ccache cache files
-        uses: actions/cache@v5
+      - uses: ./.github/actions/setup-ccache
         with:
-          path: ~/.ccache
-          key: ${{github.workflow}}-ccache-${{matrix.config}}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-${{matrix.config}} # restore ccache from either previous build on this branch or on master
-      - name: setup ccache
-        run: |
-          . .github/workflows/ccache.env
+          key-suffix: ${{ matrix.config }}
       - name: test build ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
@@ -187,3 +183,6 @@ jobs:
           ./waf
           ccache -s
           ccache -z
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.config }}

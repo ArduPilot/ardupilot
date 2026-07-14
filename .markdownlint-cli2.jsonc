@@ -4,7 +4,8 @@
   "ignores": [
     "libraries/AP_GyroFFT/CMSIS_5/**",
     "libraries/AP_ADSB/sagetech-sdk/**",
-    "modules/**"
+    "modules/**",
+    "lua-language-server/**"
   ],
   "config": {
     // Disable rules that are currently violated in the codebase

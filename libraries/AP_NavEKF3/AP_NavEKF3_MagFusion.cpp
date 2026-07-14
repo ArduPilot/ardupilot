@@ -1247,8 +1247,7 @@ void NavEKF3_core::alignMagStateDeclination()
         // zero the corresponding state covariances if magnetic field state learning is active
         ftype var_16 = P[16][16];
         ftype var_17 = P[17][17];
-        zeroRows(P,16,17);
-        zeroCols(P,16,17);
+        zeroStatesVarCov(16, 17);
         P[16][16] = var_16;
         P[17][17] = var_17;
 

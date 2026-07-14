@@ -23,6 +23,8 @@
 
 #include <SITL/SIM_SerialRangeFinder.h>
 
+#include <SITL/SIM_Beacon_NoopLoop.h>
+
 #include <SITL/SIM_Siyi_ZT30.h>
 #include <SITL/SIM_Topotek.h>
 #include <SITL/SIM_Viewpro.h>
@@ -117,6 +119,11 @@ public:
 
     SITL::SerialRangeFinder *serial_rangefinders[16];
     uint8_t num_serial_rangefinders;
+
+#if AP_SIM_NOOPLOOP_ENABLED
+    // simulated NoopLoop beacon system:
+    SITL::Beacon_NoopLoop *nooploop;
+#endif  // AP_SIM_NOOPLOOP_ENABLED
 
     // simulated Frsky devices
     SITL::Frsky_D *frsky_d;
@@ -228,7 +235,7 @@ protected:
 
     SITL::SIM *_sitl;
 
-    void update_voltage_current(struct sitl_input &input, float throttle);
+    void set_voltage_current_pins(float voltage, float current_amp);
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

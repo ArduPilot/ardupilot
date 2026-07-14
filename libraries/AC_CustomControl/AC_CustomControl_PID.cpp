@@ -1,6 +1,6 @@
 #include "AC_CustomControl_config.h"
 
-#if AP_CUSTOMCONTROL_PID_ENABLED
+#if AP_COPTER_CUSTOMCONTROL_PID_ENABLED
 
 #include "AC_CustomControl_PID.h"
 #include "AC_AttitudeControl/AC_AttitudeControl_Multi.h"
@@ -405,4 +405,4 @@ void AC_CustomControl_PID::set_notch_sample_rate(float sample_rate)
 #endif
 }
 
-#endif  // AP_CUSTOMCONTROL_PID_ENABLED
+#endif  // AP_COPTER_CUSTOMCONTROL_PID_ENABLED

@@ -111,10 +111,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Path: ./ServoModel.cpp
     AP_SUBGROUPINFO(servo, "SERVO_", 16, SIM, ServoParams),
 
-    // @Param: SONAR_ROT
-    // @DisplayName: Sonar rotation
-    // @Description: Sonar rotation from rotations enumeration
-    AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
+    AP_SUBGROUPEXTENSION("",      17, SIM,  var_sonar),
     // @Param: BATT_VOLTAGE
     // @DisplayName: Simulated battery resting voltage
     // @Description: Simulated battery resting voltage (no load sag). Defaults to and clipped to the battery model's maximum voltage. Changes re-initialize the state of charge, and values below the maximum indicate a partially-charged battery. For batteries with unlimited capacity, see `SIM_BATT_CAP_AH`. Value ignored when receiving battery state updates from an external source.
@@ -127,17 +124,15 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: Ah
     // @User: Advanced
     AP_GROUPINFO("BATT_CAP_AH",   20, SIM,  batt_capacity_ah,  0),
-    // @Param: SONAR_GLITCH
-    // @DisplayName: Sonar glitch probablility
-    // @Description: Probablility a sonar glitch would happen
-    // @Range: 0 1
+    // @Param: BATT_RES_OHM
+    // @DisplayName: Simulated battery internal resistance
+    // @Description: Simulated battery internal resistance, used to model voltage sag under load (sag = current * resistance) and temperature growth. A negative value implies "use previous resistance", which is the default in order that a model-provided resistance is the default behavior. Set to 0 to disable voltage sag and temperature growth entirely.
+    // @Units: Ohm
     // @User: Advanced
-    AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
-    // @Param: SONAR_RND
-    // @DisplayName: Sonar noise factor
-    // @Description: Scaling factor for simulated sonar noise
-    // @User: Advanced
-    AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
+    // @RebootRequired: True
+    AP_GROUPINFO("BATT_RES_OHM",  21, SIM,  batt_resistance,  -1),
+    // 23 was SONAR_GLITCH
+    // 24 was SONAR_RND
     // @Param: RC_FAIL
     // @DisplayName: Simulated RC signal failure
     // @Description: Allows you to emulate rc failures in sim
@@ -175,11 +170,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     AP_GROUPINFO("CAN_TYPE2", 31, SIM,  can_transport[1], uint8_t(CANTransport::MulticastUDP)),
 #endif
 
-    // @Param: SONAR_SCALE
-    // @DisplayName: Sonar conversion scale
-    // @Description: Sonar conversion scale from distance to voltage
-    // @Units: m/V
-    AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
+    // 32 was SONAR_SCALE
     // @Param: FLOW_ENABLE
     // @DisplayName: Opflow Enable
     // @Description: Enable simulated Optical Flow sensor
@@ -236,12 +227,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("IMU_POS",       53, SIM,  imu_pos_offset, 0),
     AP_SUBGROUPEXTENSION("",      54, SIM,  var_ins),
-    // @Param: SONAR_POS
-    // @DisplayName: Sonar Offsets
-    // @Description: XYZ position of the sonar relative to the body frame origin
-    // @Units: m
-    // @Vector3Parameter: 1
-    AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
+    // 55 was SONAR_POS
     // @Param: FLOW_POS
     // @DisplayName: Opflow Pos
     // @Description: XYZ position of the optical flow sensor focal point relative to the body frame origin
@@ -658,6 +644,8 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 #ifdef SFML_JOYSTICK
     AP_SUBGROUPEXTENSION("",      63, SIM,  var_sfml_joystick),
 #endif // SFML_JOYSTICK
+    //
+    // 57 was SONAR_OFFSET
 
     AP_GROUPEND
 };
@@ -1138,12 +1126,12 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("ACC3_SCAL",    24, SIM, accel_scale[2], 0),
 #endif
-    // @Param: ACC_TRIM
-    // @DisplayName: Accelerometer trim
-    // @Description: Trim applied to simulated accelerometer
+    // @Param: BRD_TRIM
+    // @DisplayName: Board mounting trim
+    // @Description: Rigid board mounting offset (roll, pitch, yaw in radians) applied as a rotation to the simulated accelerometers, gyros and compasses, as a tilted autopilot mounting would be. Intended to be cancelled by AHRS_TRIM.
     // @User: Advanced
     // @Vector3Parameter: 1
-    AP_GROUPINFO("ACC_TRIM",     25, SIM, accel_trim, 0),
+    AP_GROUPINFO("BRD_TRIM",     25, SIM, board_trim, 0),
 
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
     // @Param{Rover}: SAIL_TYPE
@@ -1298,6 +1286,27 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @DisplayName: Simulated Clamp Channel
     // @Description: If non-zero the vehicle will be clamped in position until the value on this servo channel passes 1800PWM
     AP_GROUPINFO("CLAMP_CH",     49, SIM, clamp_ch, 0),
+
+    // @Param: AHRS_OFF_RLL
+    // @DisplayName: Sim AHRS offset roll
+    // @Description: Roll offset applied to SIM AHRS type. For testing stepless handover between AHRS estimators.
+    // @Range: -10 10
+    // @Units: deg
+    AP_GROUPINFO("AHRS_OFF_RLL", 50, SIM, sim_ahrs_offset.roll, 0),
+
+    // @Param: AHRS_OFF_PIT
+    // @DisplayName: Sim AHRS offset pitch
+    // @Description: Pitch offset applied to SIM AHRS type. For testing stepless handover between AHRS estimators.
+    // @Range: -10 10
+    // @Units: deg
+    AP_GROUPINFO("AHRS_OFF_PIT", 51, SIM, sim_ahrs_offset.pitch, 0),
+
+    // @Param: AHRS_OFF_YAW
+    // @DisplayName: Sim AHRS offset yaw
+    // @Description: Yaw offset applied to SIM AHRS type. For testing stepless handover between AHRS estimators.
+    // @Range: -10 10
+    // @Units: deg
+    AP_GROUPINFO("AHRS_OFF_YAW", 52, SIM, sim_ahrs_offset.yaw, 0),
 
     // the IMUT parameters must be last due to the enable parameters
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
@@ -1515,6 +1524,41 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     AP_SUBGROUPINFO(imu_tcal[4], "IMUT5_", 59, SIM, AP_InertialSensor_TCal),
 #endif
 #endif  // HAL_INS_TEMPERATURE_CAL_ENABLE
+    AP_GROUPEND
+};
+
+const AP_Param::GroupInfo SIM::var_sonar[] = {
+    // @Param: SONAR_ROT
+    // @DisplayName: Sonar rotation
+    // @Description: Sonar rotation from rotations enumeration
+    AP_GROUPINFO("SONAR_ROT",     17, SIM,  sonar_rot, Rotation::ROTATION_PITCH_270),
+    // @Param: SONAR_GLITCH
+    // @DisplayName: Sonar glitch probablility
+    // @Description: Probablility a sonar glitch would happen
+    // @Range: 0 1
+    // @User: Advanced
+    AP_GROUPINFO("SONAR_GLITCH",  23, SIM,  sonar_glitch, 0),
+    // @Param: SONAR_RND
+    // @DisplayName: Sonar noise factor
+    // @Description: Scaling factor for simulated sonar noise
+    // @User: Advanced
+    AP_GROUPINFO("SONAR_RND",     24, SIM,  sonar_noise, 0),
+    // @Param: SONAR_SCALE
+    // @DisplayName: Sonar conversion scale
+    // @Description: Sonar conversion scale from distance to voltage
+    // @Units: m/V
+    AP_GROUPINFO("SONAR_SCALE",   32, SIM,  sonar_scale, 12.1212f),
+    // @Param: SONAR_POS
+    // @DisplayName: Sonar Offsets
+    // @Description: XYZ position of the sonar relative to the body frame origin
+    // @Units: m
+    // @Vector3Parameter: 1
+    AP_GROUPINFO("SONAR_POS",     55, SIM,  rngfnd_pos_offset, 0),
+    // @Param: SONAR_OFFSET
+    // @DisplayName: Sonar measurement offset.
+    // @Description: Sonar measurement offset, in meters. Can be used for error injection.
+    // @User: Advanced
+    AP_GROUPINFO("SONAR_OFFSET",     57, SIM,  sonar_offset, 0),
     AP_GROUPEND
 };
 

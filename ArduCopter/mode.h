@@ -969,6 +969,8 @@ public:
     bool is_autopilot() const override { return false; }
     bool crash_check_enabled() const override { return false; }
 
+    void abandon_flip();
+
 protected:
 
     const char *name() const override { return "Flip"; }
@@ -976,7 +978,6 @@ protected:
 
 private:
 
-    // Flip
     Vector3f orig_attitude_euler_rad;   // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
@@ -987,11 +988,14 @@ private:
         Recover,
         Abandon
     };
+    bool abandon_requested;
     FlipState _state;                   // current state of flip
     Mode::Number  orig_control_mode;    // flight mode when flip was initiated
-    uint32_t start_time_ms;             // time since flip began
+    uint32_t start_time_ms;
     int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
     int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
+
+    bool input_is_high_magnitude(RC_Channel &input) const;
 };
 
 
@@ -1313,6 +1317,7 @@ public:
     bool controlling_position() const { return control_position; }
 
     void set_land_pause(bool new_value) { land_pause = new_value; }
+    bool use_pilot_yaw() const override;
 
     // parameter accessors
     float get_land_speed_ms() const { return land_speed_ms.get(); }

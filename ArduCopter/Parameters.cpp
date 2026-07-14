@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
@@ -648,11 +649,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
 
-#if AP_BEACON_ENABLED
-    // @Group: BCN
-    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
-    AP_SUBGROUPINFO(beacon, "BCN", 14, ParametersG2, AP_Beacon),
-#endif
+    // 14 was AP_Beacon
 
 #if HAL_PROXIMITY_ENABLED
     // @Group: PRX
@@ -1169,6 +1166,25 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Increment: 0.1
     AP_GROUPINFO("PILOT_TKO_ALT_M", 20, ParametersG2, pilot_takeoff_alt_m, PILOT_TKO_ALT_M_DEFAULT),
 
+#if AP_RANGEFINDER_ENABLED
+    // @Param: SURFTRAK_GLDST
+    // @DisplayName: Surface Tracking Glitch threshold
+    // @Description: When a rangefinder reading differs from the previous by more than this, it will be considered a glitch and will not be used. A value of zero disables this check.
+    // @Units: m
+    // @Range: 0 100
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("SURFTRAK_GLDST", 21, ParametersG2, surf_dist_parameters.glitch_alt, AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT),
+
+    // @Param: SURFTRAK_GLSAM
+    // @DisplayName: Surface Tracking glitched sample count
+    // @Description: When this many consecutive samples are considered a glitch, we give up and accept the new reading. A value of zero disables this behaviour and glitched values are never accepted.
+    // @Range: 0 10
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surf_dist_parameters.glitch_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1184,9 +1200,6 @@ ParametersG2::ParametersG2(void) :
 #endif
 #if AP_TEMPCALIBRATION_ENABLED
     , temp_calibration()
-#endif
-#if AP_BEACON_ENABLED
-    , beacon()
 #endif
 #if HAL_PROXIMITY_ENABLED
     , proximity()
@@ -1270,6 +1283,10 @@ void Copter::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
         { &gripper, gripper.var_info, 13 },
 #endif
+#if AP_BEACON_ENABLED
+    // PARAMETER_CONVERSION - Added: Jun-2026 for Copter-4.8
+        { &beacon, beacon.var_info, 14 },
+#endif  // AP_BEACON_ENABLED
     };
 
     AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));

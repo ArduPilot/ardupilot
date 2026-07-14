@@ -281,10 +281,6 @@ private:
 
     AP_Arming_Sub arming;
 
-    // Altitude
-    // The cm/s we are moving up or down based on filtered data - Positive = UP
-    int16_t climb_rate;
-
     // Turn counter
     int32_t quarter_turn_count;
     uint8_t last_turn_state;
@@ -310,7 +306,7 @@ private:
     bool yaw_rate_only;
 
     // Yaw will point at this location if auto_yaw_mode is set to AUTO_YAW_ROI
-    Vector3f roi_WP;
+    Vector3f roi_WP_neu_cm;
 
     // bearing from current location to the yaw_look_at_WP
     float yaw_look_at_WP_bearing;
@@ -421,7 +417,7 @@ private:
     void Log_Write_Data(LogDataID id, int16_t value);
     void Log_Write_Data(LogDataID id, uint16_t value);
     void Log_Write_Data(LogDataID id, float value);
-    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target);
+    void Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target_neu_cm, const Vector3f& vel_target_neu_cms);
     void Log_Write_Vehicle_Startup_Messages();
 #endif
     void load_parameters(void) override;

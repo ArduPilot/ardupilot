@@ -10,6 +10,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_DDS/AP_DDS_config.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include "SIM_Buzzer.h"
@@ -140,6 +141,7 @@ public:
 #endif
         AP_Param::setup_object_defaults(this, var_mag);
         AP_Param::setup_object_defaults(this, var_ins);
+        AP_Param::setup_object_defaults(this, var_sonar);
 #ifdef SFML_JOYSTICK
         AP_Param::setup_object_defaults(this, var_sfml_joystick);
 #endif // SFML_JOYSTICK
@@ -188,6 +190,7 @@ public:
 #endif
     static const struct AP_Param::GroupInfo var_mag[];
     static const struct AP_Param::GroupInfo var_ins[];
+    static const struct AP_Param::GroupInfo var_sonar[];
 #ifdef SFML_JOYSTICK
     static const struct AP_Param::GroupInfo var_sfml_joystick[];
 #endif //SFML_JOYSTICK
@@ -209,6 +212,7 @@ public:
     AP_Float sonar_noise; // in metres
     AP_Float sonar_scale; // meters per volt
     AP_Int8 sonar_rot;  // from rotations enumeration
+    AP_Float sonar_offset; // offset measurement, in meters. Can be used for error injection.
 
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
@@ -225,6 +229,7 @@ public:
 
     AP_Float batt_voltage; // battery voltage base
     AP_Float batt_capacity_ah; // battery capacity in Ah
+    AP_Float batt_resistance; // battery internal resistance override in ohms
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
     AP_Int8  float_exception; // enable floating point exception checks
@@ -260,6 +265,10 @@ public:
     AP_Int16 on_hardware_relay_enable_mask;   // mask of relays passed through to actual hardware
 
     AP_Float uart_byte_loss_pct;
+
+#ifdef AP_DDS_ENABLED
+    bool use_dds_sim_time = false; // use ROS2 simulation time for DDS topics
+#endif
 
 #ifdef SFML_JOYSTICK
     AP_Int8 sfml_joystick_id;
@@ -320,7 +329,7 @@ public:
         }
         static const struct AP_Param::GroupInfo var_info[];
 
-        AP_Float noise; // amplitude of the gps altitude error
+        AP_Float noise_vertical; // amplitude of the gps altitude error
         AP_Int16 lock_time; // delay in seconds before GPS gets lock
         AP_Int16 alt_offset; // gps alt error
         AP_Int8  enabled; // enable simulated GPS
@@ -339,6 +348,7 @@ public:
         AP_Float heading_offset; // heading offset in degrees
         AP_Int32 options; // GPS options bitmask
         AP_Int8 fix_type; // GPS fix type
+        AP_Float noise_horizontal; // horizontal noise radius in meters
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
@@ -607,7 +617,7 @@ public:
     AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_scale[INS_MAX_INSTANCES]; // in m/s/s
-    AP_Vector3f accel_trim;
+    AP_Vector3f board_trim;  // rigid board mounting offset (rad), rotates accel+gyro+compass
     AP_Float accel_fail[INS_MAX_INSTANCES];  // accelerometer failure value
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;
@@ -621,6 +631,14 @@ public:
 
     // clamp simulation - servo channel starting at offset 1 (usually ailerons)
     AP_Int8 clamp_ch;
+
+    // Offsets applied to SIM AHRS type
+    // For testing stepless handover between AHRS estimators
+    struct {
+        AP_Float roll;
+        AP_Float pitch;
+        AP_Float yaw;
+    } sim_ahrs_offset;
 
 #if AP_SIM_INS_FILE_ENABLED
     enum INSFileMode {

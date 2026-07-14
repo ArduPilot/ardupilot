@@ -393,8 +393,8 @@ public:
     */
     void getFilterStatus(nav_filter_status &status) const;
 
-    // send an EKF_STATUS_REPORT message to GCS
-    void send_status_report(class GCS_MAVLINK &link) const;
+    // return a terrain altitude variance
+    bool getTerrainAltVariance(float &terrain_alt_variance) const;
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
@@ -773,11 +773,8 @@ private:
     // fuse synthetic sideslip measurement of zero
     void FuseSideslip();
 
-    // zero specified range of rows in the state covariance matrix
-    void zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last);
-
-    // zero specified range of columns in the state covariance matrix
-    void zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last);
+    // zero specified state variances and covariances in state covariance matrix
+    void zeroStatesVarCov(uint8_t first, uint8_t last);
 
     // Reset the stored output history to current data
     void StoreOutputReset(void);
@@ -960,11 +957,6 @@ private:
     // Control reset of yaw and magnetic field states
     void controlMagYawReset();
 
-    // set the latitude and longitude and height used to set the NED origin
-    // All NED positions calculated by the filter will be relative to this location
-    // returns false if the origin has already been set
-    bool setOrigin(const Location &loc);
-
     // Assess GPS data quality and set gpsGoodToAlign
     void calcGpsGoodToAlign(void);
 
@@ -1012,9 +1004,6 @@ private:
 
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
-
-    // zero attitude state covariances, but preserve variances
-    void zeroAttCovOnly();
 
     // record all requested yaw resets completed
     void recordYawResetsCompleted();

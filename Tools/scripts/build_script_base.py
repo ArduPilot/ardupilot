@@ -6,13 +6,21 @@ AP_FLAKE8_CLEAN
 
 from __future__ import annotations
 
+import copy
+import fnmatch
 import os
 import pathlib
+import queue
 import re
 import string
 import subprocess
 import sys
+import tempfile
+import threading
 import time
+
+from abc import ABC
+from abc import abstractmethod
 
 import board_list
 
@@ -31,11 +39,247 @@ VEHICLE_MAP = {
 }
 
 
-class BuildScriptBase:
+class BuildScriptBase(ABC):
     """Base class for build scripts with common utilities for running programs"""
 
     def __init__(self):
         self.tmpdir = None  # Can be set by subclasses that need it
+
+    def resolve_board_and_vehicle_lists(self, all_boards=False, all_vehicles=False, exclude_board_glob=None):
+        '''populate self.boards_by_name and self.vehicle_map; expand or
+        validate self.board and self.vehicle; apply exclude globs to
+        self.board'''
+        if exclude_board_glob is None:
+            exclude_board_glob = []
+
+        self.boards_by_name = {}
+        for board in board_list.BoardList().boards:
+            self.boards_by_name[board.name] = board
+
+        self.vehicle_map = VEHICLE_MAP
+
+        if all_boards:
+            self.board = sorted(list(self.boards_by_name.keys()), key=lambda x: x.lower())
+        else:
+            # validate boards
+            for b in self.board:
+                if b not in self.boards_by_name:
+                    raise ValueError("Bad board %s" % str(b))
+
+        if all_vehicles:
+            self.vehicle = sorted(list(self.vehicle_map.keys()), key=lambda x: x.lower())
+        else:
+            for v in self.vehicle:
+                if v not in self.vehicle_map.keys():
+                    raise ValueError("Bad vehicle (%s); choose from %s" % (v, ",".join(self.vehicle_map.keys())))
+
+        # remove boards based on --exclude-board-glob
+        new_self_board = []
+        for board_name in self.board:
+            exclude = False
+            for exclude_glob in exclude_board_glob:
+                if fnmatch.fnmatch(board_name, exclude_glob):
+                    exclude = True
+                    break
+            if not exclude:
+                new_self_board.append(board_name)
+        self.board = new_self_board
+
+    def make_bootloader_blacklist(self):
+        '''return set of board names for which we do not build bootloaders;
+        requires self.boards_by_name to have been populated'''
+        # some boards we don't have a -bl.dat for, so skip them.
+        # TODO: find a way to get this information from board_list:
+        ret = set([
+            'CubeOrange-SimOnHardWare',
+            'CubeOrangePlus-SimOnHardWare',
+            'CubeRedSecondary-IO',
+            'fmuv2',
+            'fmuv3-bdshot',
+            'iomcu',
+            'iomcu-dshot',
+            'iomcu-f103',
+            'iomcu-f103-dshot',
+            'iomcu-f103-8MHz-dshot',
+            'iomcu_f103_8MHz',
+            'luminousbee4',
+            'skyviper-v2450',
+            'skyviper-f412-rev1',
+            'skyviper-journey',
+            'Pixhawk1-1M-bdshot',
+            'Pixhawk1-bdshot',
+            'RADIX2HD',
+            'canzero',
+            't3-gem-o1',
+            'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
+            'kha_eth',  # no hwdef-bl.dat
+            'TBS-L431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
+            'ARKV6X-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
+
+            'MatekL431-ADSB',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-APDTelem',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-AUAV',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-BatteryTag',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-DShot',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-EFI',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-GPS',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-HWTelem',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-MagHiRes',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Periph',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Proximity',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Rangefinder',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-RC',  # uses USE_BOOTLOADER_FROM_BOARD
+            'MatekL431-Serial',  # uses USE_BOOTLOADER_FROM_BOARD
+        ])
+
+        for board in self.boards_by_name.values():
+            if board.hal in ["Linux", "ESP32", "SITL"]:
+                ret.add(board.name)
+
+        return ret
+
+    def vehicles_to_build_for_board_info(self, board_info):
+        vehicles_to_build = []
+        for vehicle in self.vehicle:
+            if vehicle == 'AP_Periph':
+                if not board_info.is_ap_periph:
+                    continue
+            elif vehicle == 'bootloader':
+                # we generally build bootloaders
+                pass
+            else:
+                if board_info.is_ap_periph:
+                    continue
+                # Map vehicle name to autobuild target name
+                # antennatracker (waf target) -> Tracker (autobuild target)
+                vehicle_for_autobuild = vehicle
+                if vehicle.lower() == 'antennatracker':
+                    vehicle_for_autobuild = 'tracker'
+                if vehicle_for_autobuild.lower() not in [x.lower() for x in board_info.autobuild_targets]:
+                    continue
+            vehicles_to_build.append(vehicle)
+
+        return vehicles_to_build
+
+    def extra_hwdef_file(self, more):
+        # create a combined list of hwdefs:
+        extra_hwdefs = []
+        extra_hwdefs.extend(self.extra_hwdef)
+        extra_hwdefs.extend(more)
+        extra_hwdefs = list(filter(lambda x : x is not None, extra_hwdefs))
+        if len(extra_hwdefs) == 0:
+            return None
+
+        # slurp all content into a variable:
+        content = bytearray()
+        for extra_hwdef in extra_hwdefs:
+            with open(extra_hwdef, "r+b") as in_file:
+                content += in_file.read()
+
+        # spew content to single file:
+        with tempfile.NamedTemporaryFile(delete=False) as out_file:
+            out_file.write(content)
+            return out_file.name
+
+    def parallel_thread_main(self, thread_number):
+        # initialisation; make a copy of the source directory
+        my_source_dir = os.path.join(self.tmpdir, f"thread-{thread_number}-source")
+        self.run_program("rsync", [
+            "rsync",
+            "--exclude=build/",
+            "-ap",
+            "./",
+            my_source_dir
+        ])
+
+        while True:
+            try:
+                task = self.parallel_tasks.pop(0)
+            except IndexError:
+                break
+            jobs = None
+            if self.jobs is not None:
+                jobs = int(self.jobs / self.n_threads)
+                if jobs <= 0:
+                    jobs = 1
+            try:
+                self.run_build_task(task, source_dir=my_source_dir, jobs=jobs)
+            except Exception as ex:
+                self.thread_exit_result_queue.put(f"{task}")
+                raise ex
+
+    def check_result_queue(self):
+        while True:
+            try:
+                result = self.thread_exit_result_queue.get_nowait()
+            except queue.Empty:
+                break
+            if result is None:
+                continue
+            self.failure_exceptions.append(result)
+
+    def parallel_progress_hook(self, tasks):
+        '''called periodically while parallel build tasks run; subclasses
+        may override to emit progress information'''
+        pass
+
+    def run_build_tasks_in_parallel(self, tasks):
+        '''runs run_build_task for each of tasks across self.parallel_copies
+        source-directory copies; failed tasks are collected (as strings) in
+        self.failure_exceptions'''
+        self.n_threads = self.parallel_copies
+
+        # shared list for the threads:
+        self.parallel_tasks = copy.copy(tasks)  # make this an argument instead?!
+        threads = []
+        self.thread_exit_result_queue = queue.Queue()
+        tstart = time.time()
+        self.failure_exceptions = []
+
+        thread_number = 0
+        while len(self.parallel_tasks) or len(threads):
+            if len(self.parallel_tasks) < self.n_threads:
+                self.n_threads = len(self.parallel_tasks)
+            while len(threads) < self.n_threads:
+                self.progress(f"Starting thread {thread_number}")
+                t = threading.Thread(
+                    target=self.parallel_thread_main,
+                    name=f'task-builder-{thread_number}',
+                    args=[thread_number],
+                )
+                t.start()
+                threads.append(t)
+                thread_number += 1
+
+            self.check_result_queue()
+
+            new_threads = []
+            for thread in threads:
+                thread.join(0)
+                if thread.is_alive():
+                    new_threads.append(thread)
+            threads = new_threads
+            self.progress(
+                f"remaining-tasks={len(self.parallel_tasks)} " +
+                f"failed-threads={len(self.failure_exceptions)} elapsed={int(time.time() - tstart)}s")  # noqa
+
+            self.parallel_progress_hook(tasks)
+
+            time.sleep(1)
+        self.progress("All threads returned")
+
+        self.check_result_queue()
+
+        if len(self.failure_exceptions):
+            self.progress("Some threads failed:")
+        for ex in self.failure_exceptions:
+            print("Thread failure: %s" % str(ex))
 
     def run_program(self, prefix, cmd_list, show_output=True, env=None, show_output_on_error=True, show_command=None, cwd="."):
         if show_command is None:
@@ -91,7 +335,7 @@ class BuildScriptBase:
             except Exception:  # noqa: BLE001 — best-effort debug-file write
                 self.progress("Writing process failure file failed")
             raise subprocess.CalledProcessError(
-                returncode, cmd_list)
+                status, cmd_list)
         return output
 
     def find_current_git_branch_or_sha1(self):
@@ -231,6 +475,10 @@ class BuildScriptBase:
                     break
 
         return sorted(modified_board_names, key=lambda x: x.lower())
+
+    @abstractmethod
+    def progress_prefix(self) -> str:
+        '''return a short prefix string identifying this script in log output'''
 
     def progress(self, string):
         '''pretty-print progress'''

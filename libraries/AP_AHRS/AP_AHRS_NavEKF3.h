@@ -33,19 +33,11 @@ public:
     CLASS_NO_COPY(AP_AHRS_NavEKF3);
     AP_AHRS_NavEKF3() {}
 
-    bool healthy(void) const override {
-        if (!started) {
-            return false;
-        }
-        if (!EKF3.healthy()) {
-            return false;
-        }
-        return true;
-    }
+    const char *shortname() const override { return "EKF3"; }
 
     void reset_gyro_drift() override { EKF3.resetGyroBias(); }
 
-    void update() override { EKF3.UpdateFilter(); }
+    void update() override;
 
     void get_results(Estimates &results) override;
     void reset() override {
@@ -60,17 +52,6 @@ public:
     }
     bool set_origin(const Location &loc) override {
         return EKF3.setOriginLLH(loc);
-    }
-
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override {
-        return EKF3.getWind(wind);
-    }
-
-    Vector2f groundspeed_vector(void) override {
-        Vector3f vec;
-        EKF3.getVelNED(vec);
-        return vec.xy();
     }
 
     bool            use_compass() override {
@@ -95,24 +76,14 @@ public:
     void request_yaw_reset() override {
         EKF3.requestYawReset();
     }
-    // get latest altitude estimate above ground level in meters and validity flag
-    bool get_hagl(float &hagl) const override WARN_IF_UNUSED {
-        return EKF3.getHAGL(hagl);
+    void check_lane_switch() override {
+        EKF3.checkLaneSwitch();
     }
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
     void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override {
         return EKF3.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
-    }
-    void send_ekf_status_report(class GCS_MAVLINK &link) const override {
-        EKF3.send_status_report(link);
-    }
-
-    // get_filter_status - returns filter status as a series of flags
-    bool get_filter_status(nav_filter_status &status) const override {
-        EKF3.getFilterStatus(status);
-        return true;
     }
 
     // return the innovations for the specified instance
@@ -121,15 +92,16 @@ public:
         return EKF3.getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
     }
 
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override {
-        Vector2f offset;
-        return EKF3.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-    }
-
     // this is out here so parameters can be poked into it
     static NavEKF3 EKF3;
 
+    bool start();
     bool started;
+    uint32_t start_time_ms;  // timer used to delay starting the filter
+
+    // a counter which is incremented each time the primary core changes:
+    uint16_t attitude_reset_count;
+    int8_t old_primary_core;
 };
 
 #endif  // AP_AHRS_NAVEKF3_ENABLED

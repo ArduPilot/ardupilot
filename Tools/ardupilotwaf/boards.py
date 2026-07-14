@@ -169,23 +169,6 @@ class Board:
         else:
             cfg.msg("GPS Debug Logging", 'no', color='YELLOW')
 
-        # allow enable of custom controller for any board
-        # enabled on sitl by default
-        if (cfg.options.enable_custom_controller or self.get_name() == "sitl") and not cfg.options.no_gcs:
-            env.ENABLE_CUSTOM_CONTROLLER = True
-            env.DEFINES.update(
-                AP_CUSTOMCONTROL_ENABLED=1,
-            )
-            env.AP_LIBRARIES += [
-                'AC_CustomControl'
-            ]
-            cfg.msg("Enabled custom controller", 'yes')
-        else:
-            env.DEFINES.update(
-                AP_CUSTOMCONTROL_ENABLED=0,
-            )
-            cfg.msg("Enabled custom controller", 'no', color='YELLOW')
-
         # support enabling any option in build_options.py
         for opt in build_options.BUILD_OPTIONS:
             enable_option = opt.config_option().replace("-","_")
@@ -258,6 +241,13 @@ class Board:
         return (int(major) > want_major or
                 (int(major) == want_major and int(minor) >= want_minor))
 
+    def cc_version_lte(self, cfg, want_major, want_minor):
+        if cfg.env.TOOLCHAIN == "custom":
+            return True
+        (major, minor, patchlevel) = cfg.env.CC_VERSION
+        return (int(major) < want_major or
+                (int(major) == want_major and int(minor) <= want_minor))
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the conventional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -281,7 +271,7 @@ class Board:
             '-Wextra',
             '-Werror=format',
             '-Wpointer-arith',
-            '-Wcast-align',
+            '-Werror=cast-align',
             '-Wno-missing-field-initializers',
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
@@ -337,6 +327,7 @@ class Board:
             env.CFLAGS += [
                 '-Wno-format-contains-nul',
                 '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
+                '-Wcast-align=strict',
             ]
 
         if cfg.env.DEBUG:
@@ -465,6 +456,7 @@ class Board:
                 '-Werror=unused-but-set-variable',
                 '-fsingle-precision-constant',
                 '-Wno-psabi',
+                '-Wcast-align=strict',
             ]
             if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
@@ -488,6 +480,15 @@ class Board:
                 ]
                 env.CFLAGS += [
                     '-Werror=use-after-free',
+                ]
+            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 1):
+                # the following warnings appear to be buggy in later compiler versions
+                # https://github.com/ArduPilot/ardupilot/issues/33206
+                # TODO: readdress following a 16.2+ release
+                env.CXXFLAGS += [
+                    '-Wno-error=maybe-uninitialized',
+                    '-Wno-error=format-truncation',
+                    '-Wno-error=array-bounds',
                 ]
 
         if cfg.env.TOOLCHAIN == "custom":
@@ -859,7 +860,9 @@ class SITLBoard(Board):
                 '-O3',
             ]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
+            if not cfg.env.DEBUG:
+                cfg.fatal('--asan requires --debug for reliable instrumentation')
             env.CXXFLAGS += [
                 '-fsanitize=address',
                 '-fno-omit-frame-pointer',
@@ -874,8 +877,8 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if cfg.env.DEBUG and 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
-             env.LINKFLAGS += ['-fsanitize=address']
+        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+            env.LINKFLAGS += ['-fsanitize=address']
 
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
@@ -908,6 +911,8 @@ class SITLBoard(Board):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
         for f in os.listdir('Tools/autotest/models'):
+            if fnmatch.fnmatch(f, "*.param"):
+                cfg.fatal("Tools/autotest/models/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
             if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
                 env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
 
@@ -919,6 +924,8 @@ class SITLBoard(Board):
         # its parameter defaults from ROMFS without the source tree on disk.
         env.ROMFS_FILES += [('vehicleinfo.json','Tools/autotest/pysim/vehicleinfo.json')]
         for f in os.listdir('Tools/autotest/default_params'):
+            if fnmatch.fnmatch(f, "*.param"):
+                cfg.fatal("Tools/autotest/default_params/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
             if fnmatch.fnmatch(f, "*.parm"):
                 env.ROMFS_FILES += [('default_params/'+f,'Tools/autotest/default_params/'+f)]
 

@@ -450,14 +450,14 @@ return the filter fault status as a bitmasked integer
 */
 void  NavEKF2_core::getFilterFaults(uint16_t &faults) const
 {
-    faults = (stateStruct.quat.is_nan()<<0 |
-              stateStruct.velocity.is_nan()<<1 |
-              faultStatus.bad_xmag<<2 |
-              faultStatus.bad_ymag<<3 |
-              faultStatus.bad_zmag<<4 |
-              faultStatus.bad_airspeed<<5 |
-              faultStatus.bad_sideslip<<6 |
-              !statesInitialised<<7);
+    faults = (stateStruct.quat.is_nan()     * uint16_t(NavFilterFaultBit::BAD_QUATERNION) |
+              stateStruct.velocity.is_nan() * uint16_t(NavFilterFaultBit::BAD_VELOCITY) |
+              faultStatus.bad_xmag          * uint16_t(NavFilterFaultBit::BAD_XMAG) |
+              faultStatus.bad_ymag          * uint16_t(NavFilterFaultBit::BAD_YMAG) |
+              faultStatus.bad_zmag          * uint16_t(NavFilterFaultBit::BAD_ZMAG) |
+              faultStatus.bad_airspeed      * uint16_t(NavFilterFaultBit::BAD_AIRSPEED) |
+              faultStatus.bad_sideslip      * uint16_t(NavFilterFaultBit::BAD_SIDESLIP) |
+              !statesInitialised            * uint16_t(NavFilterFaultBit::NOT_INITIALISED));
 }
 
 /*
@@ -498,68 +498,21 @@ void  NavEKF2_core::getFilterGpsStatus(nav_gps_status &faults) const
     faults.flags.bad_horiz_vel      = gpsCheckStatus.bad_horiz_vel; // The GPS horizontal speed is excessive (check assumes the vehicle is static)
 }
 
-#if HAL_GCS_ENABLED
-// send an EKF_STATUS message to GCS
-void NavEKF2_core::send_status_report(GCS_MAVLINK &link) const
+// return a terrain altitude variance
+bool NavEKF2_core::getTerrainAltVariance(float &temp) const
 {
-    // prepare flags
-    uint16_t flags = 0;
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-
-    // get variances
-    float velVar = 0, posVar = 0, hgtVar = 0, tasVar = 0;
-    Vector3f magVar;
-    Vector2f offset;
-    getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-
-    const float mag_max = fmaxF(fmaxF(magVar.x,magVar.y),magVar.z);
-
     // Only report range finder normalised innovation levels if the EKF needs the data for primary
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
-    float temp;
     if (((frontend->_useRngSwHgt > 0) && activeHgtSource == HGT_SOURCE_RNG) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
         temp = sqrtF(auxRngTestRatio);
     } else {
         temp = 0.0f;
     }
-
-    // send message
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags, velVar, posVar, hgtVar, mag_max, temp, tasVar);
+    // we always successfully return a value, even if that value is a
+    // "nothing to look at here" 0 value:
+    return true;
 }
-#endif  // HAL_GCS_ENABLED
 
 // report the reason for why the backend is refusing to initialise
 const char *NavEKF2_core::prearm_failure_reason(void) const

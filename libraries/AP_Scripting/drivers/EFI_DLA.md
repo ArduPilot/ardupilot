@@ -29,7 +29,7 @@ directly or via MAVFTP. The following key parameters should be set:
 - EFI_TYPE should be set to 7
 - EFI_DLA_ENABLE should be set to 1
 - SERIALn_PROTOCOL should be set to 28 for the connected EFI serial
-- RPM_TYPE1 should be set to 3
+- RPM1_TYPE should be set to 3
 - ICE_ENABLE should be set to 1
 
 then the flight controller should rebooted and parameters should be

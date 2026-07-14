@@ -314,7 +314,7 @@ void ModePosHold::run()
             controller_to_pilot_roll_mix = (float)(now_ms - controller_to_pilot_start_time_roll_ms) / (float)POSHOLD_CONTROLLER_TO_PILOT_MIX_TIME_MS;
 
             // mix final loiter lean angle and pilot desired lean angles
-            roll_rad = mix_controls(controller_to_pilot_roll_mix, controller_final_roll_rad, pilot_roll_rad + wind_comp_roll_rad);
+            roll_rad = mix_controls(controller_to_pilot_roll_mix, pilot_roll_rad + wind_comp_roll_rad, controller_final_roll_rad);
             break;
     }
 
@@ -407,7 +407,7 @@ void ModePosHold::run()
             controller_to_pilot_pitch_mix = (float)(now_ms - controller_to_pilot_start_time_pitch_ms) / (float)POSHOLD_CONTROLLER_TO_PILOT_MIX_TIME_MS;
 
             // mix final loiter lean angle and pilot desired lean angles
-            pitch_rad = mix_controls(controller_to_pilot_pitch_mix, controller_final_pitch_rad, pilot_pitch_rad + wind_comp_pitch_rad);
+            pitch_rad = mix_controls(controller_to_pilot_pitch_mix, pilot_pitch_rad + wind_comp_pitch_rad, controller_final_pitch_rad);
             break;
     }
 

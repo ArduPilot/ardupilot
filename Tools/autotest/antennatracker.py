@@ -26,10 +26,6 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
     def log_name(self):
         return "AntennaTracker"
 
-    def default_speedup(self):
-        '''Tracker seems to be race-free'''
-        return 100
-
     def test_filepath(self):
         return os.path.realpath(__file__)
 
@@ -217,7 +213,7 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
         self.send_statustext(short_message_text)
         self.send_statustext(long_message_text)
 
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="statustext to be logged")
         dfreader = self.dfreader_for_current_onboard_log()
         self.reboot_sitl()
 

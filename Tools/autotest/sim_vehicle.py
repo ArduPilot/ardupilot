@@ -588,6 +588,12 @@ def do_build(opts, frame_options):
     if opts.enable_networking_tests:
         cmd_configure.append("--enable-networking-tests")
 
+    # Per-frame extra configure args from vehicleinfo.json (e.g. quadplane-PPP
+    # implies --enable-PPP so users don't have to pass it manually).
+    for arg in frame_options.get('configure_args', []):
+        if arg not in cmd_configure:
+            cmd_configure.append(arg)
+
     pieces = [shlex.split(x) for x in opts.waf_configure_args]
     for piece in pieces:
         cmd_configure.extend(piece)
@@ -727,8 +733,8 @@ def find_geocoder_location(locname):
     return [lat, lon, alt, 0.0]
 
 
-def find_location_by_name(locname):
-    """Search locations.txt for locname, return GPS coords"""
+def parse_locations():
+    """Yield (name, [lat, lon, alt, heading]) tuples from locations files."""
     locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
                                         get_user_locations_path())
     locations_filepath = os.path.join(autotest_dir, "locations.txt")
@@ -743,8 +749,19 @@ def find_location_by_name(locname):
                 if len(line) == 0:
                     continue
                 (name, loc) = line.split("=")
-                if name == locname:
-                    return [(float)(x) for x in loc.split(",")]
+                yield (name, [float(x) for x in loc.split(",")])
+
+
+def list_locations():
+    """Return the location names from the user and autotest locations.txt"""
+    return [name for name, _ in parse_locations()]
+
+
+def find_location_by_name(locname):
+    """Search locations.txt for locname, return GPS coords"""
+    for name, loc in parse_locations():
+        if name == locname:
+            return loc
 
     # fallback to geocoder if available
     loc = find_geocoder_location(locname)
@@ -856,8 +873,9 @@ def start_antenna_tracker(opts):
 def start_CAN_Periph(opts, frame_info):
     """Compile and run the sitl_periph"""
 
-    progress("Preparing sitl_periph_universal")
-    options = vinfo.options["sitl_periph_universal"]['frames']['universal']
+    periph_board = frame_info.get('periph_board', 'sitl_periph_universal')
+    progress("Preparing %s" % periph_board)
+    options = vinfo.options[periph_board]['frames']['universal']
     defaults_path = frame_info.get('periph_params_filename', None)
     if defaults_path is None:
         defaults_path = options.get('default_params_filename', None)
@@ -870,9 +888,9 @@ def start_CAN_Periph(opts, frame_info):
 
     if not cmd_opts.no_rebuild:
         do_build(opts, options)
-    exe = os.path.join(root_dir, 'build/sitl_periph_universal', 'bin/AP_Periph')
+    exe = os.path.join(root_dir, 'build', periph_board, 'bin/AP_Periph')
     cmd = ["nice"]
-    cmd_name = "sitl_periph_universal"
+    cmd_name = periph_board
     if opts.valgrind:
         cmd_name += " (valgrind)"
         cmd.append("valgrind")
@@ -895,6 +913,12 @@ def start_CAN_Periph(opts, frame_info):
     if defaults_path is not None:
         cmd.append("--defaults")
         cmd.append(defaults_path)
+    # `{port}` in periph_extra_args is a placeholder for the periph TCP
+    # bridge port. sim_vehicle uses the plane's default SITL SERIAL5
+    # listen port (BASE_PORT + 5 = 5765); restart_SITL_frame() in
+    # vehicle_test_suite.py substitutes a dynamically-allocated port.
+    cmd.extend([a.replace('{port}', '5765')
+                for a in frame_info.get('periph_extra_args', [])])
     run_in_terminal_window(cmd_name, cmd)
 
 
@@ -983,12 +1007,14 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                       (file,))
                 sys.exit(1)
 
-            if path is not None:
-                path += "," + str(file)
-            else:
-                path = str(file)
+            file = os.path.abspath(file)
 
-            progress("Adding parameters from (%s)" % (str(file),))
+            if path is not None:
+                path += "," + file
+            else:
+                path = file
+
+            progress("Adding parameters from (%s)" % (file,))
     if opts.param:
         param_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
         atexit.register(os.unlink, param_file.name)
@@ -1623,6 +1649,9 @@ group_completion.add_option("", "--list-frame",
                             type='string',
                             default=None,
                             help="List the vehicle frames")
+group_completion.add_option("", "--list-locations",
+                            action='store_true',
+                            help="List the locations")
 parser.add_option_group(group_completion)
 
 cmd_opts, cmd_args = parser.parse_args()
@@ -1663,6 +1692,9 @@ if cmd_opts.list_frame:
     frame_options = sorted(vinfo.options[cmd_opts.list_frame]["frames"].keys())
     frame_options_string = ' '.join(frame_options)
     print(frame_options_string)
+    sys.exit(1)
+if cmd_opts.list_locations:
+    print(' '.join(list_locations()))
     sys.exit(1)
 
 # clean up processes at exit:

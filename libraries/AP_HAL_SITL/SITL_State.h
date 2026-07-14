@@ -95,8 +95,14 @@ private:
     uint16_t _irlock_port;
 
     bool _use_fg_view;
+
+    bool _use_dds_sim_time = false;
     
     const char *_fg_address;
+
+    // simulation model name as given on the command line, for
+    // model-specific flightgear view output
+    const char *_model_str = nullptr;
 
     // delay buffer variables
     static const uint8_t wind_buffer_length = 50;

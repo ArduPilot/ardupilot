@@ -363,7 +363,7 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
 
     // check if flight mode requires GPS
     const bool mode_requires_position = copter.flightmode->requires_position() || fence_requires_position || (copter.simple_mode == Copter::SimpleMode::SUPERSIMPLE);
-    const bool mode_requires_gps = AP::ahrs().using_gps() && mode_requires_position;
+    const bool mode_requires_gps = AP::ahrs().active_backend_configured_to_use_gps() && mode_requires_position;
 
     // call parent gps checks
     if (mode_requires_gps) {
@@ -628,12 +628,14 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
                 return false;
             }
             // in manual modes throttle must be at zero
-#if FRAME_CONFIG != HELI_FRAME
+#if FRAME_CONFIG == HELI_FRAME
+            if ((copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::DRIFT) && copter.motors->get_takeoff_collective()) {
+#else
             if ((copter.flightmode->has_manual_throttle() || copter.flightmode->mode_number() == Mode::Number::DRIFT) && copter.channel_throttle->get_control_in() > 0) {
+#endif
                 check_failed(Check::RC, true, "%s too high", rc_item);
                 return false;
             }
-#endif
         }
     }
 

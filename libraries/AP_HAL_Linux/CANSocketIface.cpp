@@ -46,12 +46,6 @@ extern const AP_HAL::HAL& hal;
 
 using namespace Linux;
 
-#if HAL_CANMANAGER_ENABLED
-#define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANLinuxIface", fmt, ##args); } while (0)
-#else
-#define Debug(fmt, args...)
-#endif
-
 static can_frame makeSocketCanFrame(const AP_HAL::CANFrame& uavcan_frame)
 {
     can_frame sockcan_frame { uavcan_frame.id& AP_HAL::CANFrame::MaskExtID, uavcan_frame.dlc, { } };
@@ -410,7 +404,6 @@ void CANIface::_updateDownStatusFromPollResult(const pollfd& pfd)
 
         _down= error == ENETDOWN || error == ENODEV;
         stats.num_downs++;
-        Debug("Iface %d is dead; error %d", _fd, error);
     }
 }
 
@@ -428,7 +421,6 @@ bool CANIface::init(const uint32_t bitrate)
     bitrate_ = bitrate;
     // TODO: Add possibility change bitrate
     _fd = _openSocket(iface_name);
-    Debug("Socket opened iface_name: %s fd: %d", iface_name, _fd);
     if (_fd > 0) {
         _bitrate = bitrate;
         _initialized = true;

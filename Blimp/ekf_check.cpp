@@ -184,13 +184,6 @@ void Blimp::check_ekf_reset()
         ekfYawReset_ms = new_ekfYawReset_ms;
         LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
     }
-
-    // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
-    if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
-        ekf_primary_core = ahrs.get_primary_core_index();
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
-    }
 }
 
 // check for high vibrations affecting altitude control

@@ -434,11 +434,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_do_reposition(const mavlink_co
         return MAV_RESULT_DENIED;
     }
 
-    // sanity check location
-    if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_DENIED;
-    }
-
     Location request_location;
     if (!location_from_command_t(packet, request_location)) {
         return MAV_RESULT_DENIED;
@@ -1301,12 +1296,11 @@ uint8_t GCS_MAVLINK_Copter::high_latency_tgt_heading() const
     return 0;     
 }
     
-uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist() const
+uint16_t GCS_MAVLINK_Copter::high_latency_tgt_dist_dam() const
 {
     if (copter.ap.initialised) {
-        // return units are dm
         const Mode *flightmode = copter.flightmode;
-        return MIN(flightmode->wp_distance_m(), UINT16_MAX) / 10;
+        return MIN(static_cast<uint16_t>(flightmode->wp_distance_m() * 0.1), UINT16_MAX);
     }
     return 0;
 }

@@ -516,13 +516,14 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::reset_chip()
 bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::read_product_id()
 {
     uint32_t comp_id = 0, asic_id = 0;
-    register_read(COMP_ID, 0);//the FPGA doesn't process the first instruction,it only starts processing after receiving the second instruction,resulting in the same command being sent twice.
-    register_read(ASIC_ID, &comp_id);
-    register_read(ASIC_ID, &asic_id);
+    // the FPGA ignores the first instruction, so the first read is a dummy
+    UNUSED_RESULT(register_read(COMP_ID, 0));
+    if (!register_read(ASIC_ID, &comp_id) ||
+        !register_read(ASIC_ID, &asic_id)) {
+        return false;
+    }
 
-    bool success = asic_id == 0x21 && comp_id == 0x21;
-
-    return success;
+    return asic_id == 0x21 && comp_id == 0x21;
 }
 
 void AP_InertialSensor_ZeroOne_FPGA_SCH16T::configure_registers()
@@ -530,11 +531,15 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::configure_registers()
     for (auto &r : _registers) {
         register_write(r.addr, r.value);
     }
-    uint32_t reg_value{};
-    register_read(CTRL_USER_IF, 0);//the FPGA doesn't process the first instruction,it only starts processing after receiving the second instruction,resulting in the same command being sent twice.
-    register_read(CTRL_USER_IF, &reg_value);
-    reg_value |= DRY_DRV_EN;
-    register_write(CTRL_USER_IF, reg_value);
+    uint32_t reg_value = 0;
+    // the FPGA ignores the first instruction, so the first read is a dummy
+    UNUSED_RESULT(register_read(CTRL_USER_IF, 0));
+    // only modify-write the register if we actually read it back; otherwise
+    // we would write an uninitialised value to a control register
+    if (register_read(CTRL_USER_IF, &reg_value)) {
+        reg_value |= DRY_DRV_EN;
+        register_write(CTRL_USER_IF, reg_value);
+    }
     register_write(CTRL_MODE, EN_SENSOR);
 }
 
@@ -556,8 +561,12 @@ bool AP_InertialSensor_ZeroOne_FPGA_SCH16T::validate_register_configuration()
     uint32_t value{};
 
     for (auto &r : _registers) {
-        register_read(r.addr,0); ////the FPGA doesn't process the first instruction,it only starts processing after receiving the second instruction,resulting in the same command being sent twice.
-        register_read(r.addr,&value);
+        // the FPGA ignores the first instruction, so the first read is a dummy
+        UNUSED_RESULT(register_read(r.addr, 0));
+        if (!register_read(r.addr, &value)) {
+            // a failed read leaves value unset; treat as validation failure
+            return false;
+        }
 
         if (value != r.value) {
             return false;

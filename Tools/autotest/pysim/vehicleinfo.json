@@ -215,6 +215,20 @@
                     "default_params/copter-heli-gas.parm"
                 ]
             },
+            "heli-ddvptail": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heli-ddvptail.parm"
+                ]
+            },
+            "heli-ddfptail": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heli-ddfptail.parm"
+                ]
+            },
             "heli-dual": {
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": [
@@ -226,6 +240,14 @@
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": [
                     "default_params/copter-heli.parm"
+                ]
+            },
+            "heli-quad": {
+                "model": "heli-quad:@ROMFS/models/heliquad.json",
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heliquad.parm"
                 ]
             },
             "singlecopter": {
@@ -249,7 +271,7 @@
                 "external": true
             },
             "Callisto": {
-                "model": "octa-quad:@ROMFS/models/Callisto.json",
+                "model": "octa-quad-cwx:@ROMFS/models/Callisto.json",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": [
                     "default_params/copter.parm",
@@ -267,6 +289,21 @@
                     "default_params/periph.parm",
                     "default_params/quad-periph.parm"
                 ]
+            },
+            "copter-PPP": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/copter-ppp.parm"
+                ],
+                "periph_params_filename": [
+                    "default_params/periph.parm",
+                    "default_params/periph-ppp.parm",
+                    "default_params/copter-ppp-periph.parm"
+                ],
+                "periph_board": "sitl_periph_PPP",
+                "periph_extra_args": ["--serial1=tcpclient:127.0.0.1:{port}"],
+                "configure_args": ["--enable-PPP", "--enable-networking-tests"]
             },
             "freestyle": {
                 "model": "X:@ROMFS/models/freestyle.json",
@@ -293,6 +330,20 @@
                     "default_params/copter-heli-gas.parm"
                 ]
             },
+            "heli-ddvptail": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heli-ddvptail.parm"
+                ]
+            },
+            "heli-ddfptail": {
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heli-ddfptail.parm"
+                ]
+            },
             "heli-dual": {
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": [
@@ -305,15 +356,27 @@
                 "default_params_filename": [
                     "default_params/copter-heli.parm"
                 ]
+            },
+            "heli-quad": {
+                "model": "heli-quad:@ROMFS/models/heliquad.json",
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heliquad.parm"
+                ]
             }
         }
     },
     "Blimp": {
-        "default_frame": "Blimp",
+        "default_frame": "blimp",
         "frames": {
-            "Blimp": {
+            "blimp": {
                 "waf_target": "bin/blimp",
                 "default_params_filename": "default_params/blimp.parm"
+            },
+            "blimp-motor": {
+                "waf_target": "bin/blimp",
+                "default_params_filename": ["default_params/blimp.parm", "default_params/blimp-motor.parm"]
             }
         }
     },
@@ -377,6 +440,21 @@
                     "default_params/periph.parm",
                     "default_params/quadplane-periph.parm"
                 ]
+            },
+            "quadplane-PPP": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": [
+                    "default_params/quadplane.parm",
+                    "default_params/quadplane-ppp.parm"
+                ],
+                "periph_params_filename": [
+                    "default_params/periph.parm",
+                    "default_params/periph-ppp.parm",
+                    "default_params/quadplane-ppp-periph.parm"
+                ],
+                "periph_board": "sitl_periph_PPP",
+                "periph_extra_args": ["--serial1=tcpclient:127.0.0.1:{port}"],
+                "configure_args": ["--enable-PPP", "--enable-networking-tests"]
             },
             "quadplane-tilt": {
                 "waf_target": "bin/arduplane",
@@ -617,6 +695,19 @@
                 "configure_target": "sitl_periph_universal",
                 "waf_target": "bin/AP_Periph",
                 "default_params_filename": "default_params/periph.parm"
+            }
+        }
+    },
+    "sitl_periph_PPP": {
+        "frames": {
+            "universal": {
+                "configure_target": "sitl_periph_PPP",
+                "waf_target": "bin/AP_Periph",
+                "default_params_filename": [
+                    "default_params/periph.parm",
+                    "default_params/periph-ppp.parm"
+                ],
+                "configure_args": ["--enable-networking-tests"]
             }
         }
     }
