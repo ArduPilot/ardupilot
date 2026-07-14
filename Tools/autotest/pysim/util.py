@@ -531,6 +531,7 @@ def start_SITL(binary,
                supplementary=False,
                stdout_prefix=None,
                asan=False,
+               env: dict | None = None,  # extra environment variables
                ):
     """Launch a SITL instance."""
 
@@ -723,6 +724,8 @@ def start_SITL(binary,
         # all, which is exactly when one is wanted.
         spawn_env.setdefault('AP_SCRIPTS_DIR_PATH',
                              os.path.abspath(reltopdir('Tools/scripts')))
+        if env is not None:
+            spawn_env.update(env)
         if asan:
             log_base = asan_log_filepath(binary=binary, model=model)
             existing = spawn_env.get('ASAN_OPTIONS', '')
