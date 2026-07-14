@@ -475,6 +475,8 @@ bool AP_InertialSensor_LSM6DSV::configure_accel()
         _accel_scale = LSM6DSV_ACCEL_SCALE_16G;
         break;
     case LSM6DSV_Type::LSM6DSV32X:
+        // Keep the validated 16g configuration. Using 32g with high-resolution
+        // output requires separate flight validation.
         fs_xl = LSM6DSV32X_CTRL8_FS_XL_16G;
         _accel_scale = LSM6DSV_ACCEL_SCALE_16G;
         break;
