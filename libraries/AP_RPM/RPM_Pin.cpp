@@ -39,7 +39,7 @@ void AP_RPM_Pin::irq_handler(uint8_t pin, bool pin_state, uint32_t timestamp)
     // high RPM is too inaccurate, and it is probably just bounce of
     // the signal which we should ignore
     if (dt > 100) {
-        data.buffer[(data.last_sample + 1) % RPM_PIN_BUFFER_SIZE] = dt;
+        data.buffer[(uint8_t)(data.last_sample + 1) % RPM_PIN_BUFFER_SIZE] = dt;
         data.last_sample++;
     }
 }
@@ -56,7 +56,7 @@ void AP_RPM_Pin::update(void)
         // set the last sample to 0, next interrupt call will put the value in the next element,
         // update will see 0 and assume it hit the uninitialized part of the buffer.
         
-        irq_state[state.instance].buffer[irq_state[state.instance].last_sample] = 0; 
+        irq_state[state.instance].buffer[irq_state[state.instance].last_sample % RPM_PIN_BUFFER_SIZE ] = 0; 
         // attach to new pin
         last_pin = get_pin();
         if (last_pin > 0) {
@@ -77,8 +77,10 @@ void AP_RPM_Pin::update(void)
         last_sample_used = data.last_sample;
         uint8_t samples_used = 0;
         uint32_t sample_sum = 0;
-        for(uint8_t i = 0; i < RPM_PIN_BUFFER_SIZE-2; i++){ //skip two oldest samples in the buffer just in case we got unlucky with the interrupt timing
-            uint32_t sample = data.buffer[(last_sample_used - i) % RPM_PIN_BUFFER_SIZE];
+        for(uint8_t i = 0; i < RPM_PIN_BUFFER_SIZE-2; i++){ 
+            // skip two oldest samples in the buffer just in case we got unlucky with the interrupt timing
+            // unlucky means sum calculation took more than 100us and in that time we got 2 accepted pulses
+            uint32_t sample = data.buffer[(uint8_t)(last_sample_used - i) % RPM_PIN_BUFFER_SIZE];
             if (sample < 100 || sample >= 1000 * 1000){
                 break; // we have hit either unused or timed out sample;
             }
