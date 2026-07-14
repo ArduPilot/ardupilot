@@ -53,6 +53,12 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override { return getenv("SITL_WATCHDOG_RESET") != nullptr; }
 
+    // allow the log directory to be moved via an environment
+    // variable; autotest uses this to run log-handling tests in a
+    // pristine directory.  Returns nullptr - and thus the default
+    // directory - if the variable is not set:
+    const char *get_custom_log_directory() const override { return getenv("SITL_LOG_DIRECTORY"); }
+
 #if !defined(HAL_BUILD_AP_PERIPH)
     enum safety_state safety_switch_state(void) override;
     void set_cmdline_parameters() override;
