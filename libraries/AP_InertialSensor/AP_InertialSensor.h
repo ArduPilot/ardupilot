@@ -841,6 +841,10 @@ public:
     // is dynamic fifo enabled for this instance
     bool is_dynamic_fifo_enabled(uint8_t instance) const;
     // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+
+    uint8_t get_first_onboard_imu_instance() const { return _first_onboard_imu_instance; }
+private:
+    uint8_t _first_onboard_imu_instance;
 };
 
 namespace AP {
