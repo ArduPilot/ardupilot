@@ -183,7 +183,7 @@ void AP_AccelCal::update()
     }
 }
 
-void AP_AccelCal::start(GCS_MAVLINK *gcs, uint8_t sysid, uint8_t compid)
+void AP_AccelCal::start(GCS_MAVLINK *gcs, uint32_t sysid, uint8_t compid)
 {
     if (gcs == nullptr || _started) {
         return;
@@ -364,7 +364,7 @@ bool AP_AccelCal::client_active(uint8_t client_num)
 }
 
 #if HAL_GCS_ENABLED
-void AP_AccelCal::handle_command_ack(const mavlink_command_ack_t &packet, uint8_t src_sysid, uint8_t src_compid)
+void AP_AccelCal::handle_command_ack(const mavlink_command_ack_t &packet, uint32_t src_sysid, uint8_t src_compid)
 {
     if(_sysid != src_sysid || _compid != src_compid) {
         return;
