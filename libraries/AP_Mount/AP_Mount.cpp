@@ -64,6 +64,11 @@ void AP_Mount::init()
     // perform any required parameter conversion
     convert_params();
 
+    // PARAMETER_CONVERSION - Added: Jul-2026 for 32 bit sysids
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        _params[instance].sysid_default.convert_parameter_width(AP_PARAM_INT8);
+    }
+
     // primary is reset to the first instantiated mount
     bool primary_set = false;
 
@@ -548,7 +553,7 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
 
 MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet)
 {
-    set_target_sysid((uint8_t)packet.param1);
+    set_target_sysid((uint32_t)packet.param1);
     return MAV_RESULT_ACCEPTED;
 }
 
@@ -804,7 +809,7 @@ void AP_Mount::write_log(uint8_t instance, uint64_t timestamp_us)
 #endif
 
 // point at system ID sysid
-void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
+void AP_Mount::set_target_sysid(uint8_t instance, uint32_t sysid)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
