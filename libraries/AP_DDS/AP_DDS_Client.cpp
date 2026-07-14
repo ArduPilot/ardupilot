@@ -1437,10 +1437,10 @@ bool AP_DDS_Client::init_session()
     return true;
 }
 
-void AP_DDS_Client::dds_format_name(char* buf, const char* dds_prefix, const uint8_t sysid, const char* name, bool use_sysid_ns)
+void AP_DDS_Client::dds_format_name(char* buf, const char* dds_prefix, const uint32_t sysid, const char* name, bool use_sysid_ns)
 {
     if (use_sysid_ns) {
-        snprintf(buf, AP_DDS_MAX_NAME_LEN, "%s/%s/v%u/%s", dds_prefix, participant_name_prefix, sysid, name);
+        snprintf(buf, AP_DDS_MAX_NAME_LEN, "%s/%s/v%u/%s", dds_prefix, participant_name_prefix, (unsigned)sysid, name);
     } else {
         snprintf(buf, AP_DDS_MAX_NAME_LEN, "%s/%s/%s", dds_prefix, participant_name_prefix, name);
     }
@@ -1450,7 +1450,7 @@ bool AP_DDS_Client::create()
 {
     WITH_SEMAPHORE(csem);
 
-    const uint8_t sysid = gcs().sysid_this_mav();
+    const uint32_t sysid = gcs().sysid_this_mav();
     const bool use_sysid_ns = use_ns.get() != 0;
 
     // Participant
@@ -1460,7 +1460,7 @@ bool AP_DDS_Client::create()
     };
     char participant_name[AP_DDS_MAX_NAME_LEN];
     if (use_sysid_ns) {
-        snprintf(participant_name, sizeof(participant_name), "%s_v%u", participant_name_prefix, sysid);
+        snprintf(participant_name, sizeof(participant_name), "%s_v%u", participant_name_prefix, (unsigned)sysid);
     } else {
         snprintf(participant_name, sizeof(participant_name), "%s", participant_name_prefix);
     }
