@@ -23,6 +23,7 @@
 #include <AP_HAL/RCOutput.h>
 #include "HAL_ESP32_Namespace.h"
 #include <AP_HAL/Util.h>
+#include <AP_HAL/Semaphores.h>
 
 #include "driver/gpio.h"
 #include "driver/mcpwm_prelude.h"
@@ -192,6 +193,12 @@ private:
 
     bool _initialized;
     bool _dshot_task_started = false; // periodic DShot transmit task running?
+
+    // Serialises RMT channel lifecycle (alloc/free in set_group_mode_dshot) against
+    // the transmit task (dshot_task), which reads the per-channel RMT handles. Without
+    // it, a re-entrant set_output_mode() at boot can rmt_disable()/rmt_del_channel() a
+    // channel while the task is mid-transmit on it -> use-after-free crash.
+    HAL_Semaphore _dshot_sem;
 
 };
 
