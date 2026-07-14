@@ -1377,6 +1377,13 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.set_parameter('WP_SPD', speed)
 
+        # the vehicle reports wp_nav's distance-to-destination in
+        # NAV_CONTROLLER_OUTPUT; we use it to confirm our target has been
+        # accepted.  Ask for it before diving; there is no depth hold
+        # between the dive and entering GUIDED, so sim time spent here is
+        # spent floating away from the dived-to depth
+        self.context_set_message_rate_hz('NAV_CONTROLLER_OUTPUT', 10)
+
         self.dive(-15)
 
         # GLOBAL_POSITION_INT will be our clock
@@ -1412,11 +1419,29 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             current_alt = None
             max_error = 0.0
 
-            # Set the target
-            self.mav.mav.set_position_target_global_int_send(
-                0, 1, 1, run['frame'], pos_mode,
-                int(dest_loc[0] * 1e7), int(dest_loc[1] * 1e7), run['target_alt'],
-                0, 0, 0, 0, 0, 0, 0, 0)
+            # Send the target until the reported distance-to-destination
+            # shows it has become the current destination.  The vehicle
+            # can silently reject the target (e.g. a single bad
+            # rangefinder reading invalidates the terrain frame for an
+            # instant) and there is no acknowledgement to check, so a
+            # single send is not enough.
+            accept_start = self.get_sim_time()
+            accepted = False
+            while not accepted:
+                if self.get_sim_time_cached() - accept_start > 30:
+                    raise NotAchievedException(f'Frame {run["frame"]} target not accepted')
+                self.mav.mav.set_position_target_global_int_send(
+                    0, 1, 1, run['frame'], pos_mode,
+                    int(dest_loc[0] * 1e7), int(dest_loc[1] * 1e7), run['target_alt'],
+                    0, 0, 0, 0, 0, 0, 0, 0)
+                # wait a little for the new distance-to-destination to be
+                # reported before concluding the target was rejected
+                deadline = self.get_sim_time_cached() + 1
+                while self.get_sim_time_cached() < deadline:
+                    msg = self.assert_receive_message('NAV_CONTROLLER_OUTPUT')
+                    if abs(msg.wp_dist - distance) < 5:
+                        accepted = True
+                        break
 
             start_time = self.get_sim_time()
             while True:
