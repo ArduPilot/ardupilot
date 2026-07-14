@@ -79,16 +79,16 @@ void AP_RPM_Pin::update(void)
         uint32_t sample_sum = 0;
         for(uint8_t i = 0; i < RPM_PIN_BUFFER_SIZE-2; i++){ //skip two oldest samples in the buffer just in case we got unlucky with the interrupt timing
             uint32_t sample = data.buffer[(last_sample_used - i) % RPM_PIN_BUFFER_SIZE];
-            if (sample<100 || sample >=1000*1000){
+            if (sample < 100 || sample >= 1000 * 1000){
                 break; // we have hit either unused or timed out sample;
             }
             sample_sum += sample;
             samples_used++;
-            if (sample_sum>1000*1000){ //don't add samples that are older than 1s compared to last sample
+            if (sample_sum > 1000 * 1000){ //don't add samples that are older than 1s compared to last sample
                 break;
             }
         }
-        if(samples_used > 0) {
+        if (samples_used > 0) {
             float dt_avg = static_cast<float>(sample_sum)/samples_used;
             const float scaling = ap_rpm._params[state.instance].scaling;
             const float maximum = ap_rpm._params[state.instance].maximum;
@@ -103,7 +103,7 @@ void AP_RPM_Pin::update(void)
                 if (is_zero(filter_value)){
                     quality = 0;
                 } else {
-                    quality = 1 - constrain_float((fabsf(rpm-filter_value))/filter_value, 0.0, 1.0);
+                    quality = 1 - constrain_float((fabsf(rpm - filter_value)) / filter_value, 0.0, 1.0);
                     quality = powf(quality, 2.0);
                 }
                 state.last_reading_ms = AP_HAL::millis();
