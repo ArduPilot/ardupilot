@@ -21,7 +21,7 @@
 #include "RPM_Backend.h"
 
 #include <Filter/Filter.h>
-#define RPM_PIN_BUFFER_SIZE 16
+#define RPM_PIN_BUFFER_SIZE 16 //must be power of 2 for buffer to work correctly
 
 
 class AP_RPM_Pin : public AP_RPM_Backend
