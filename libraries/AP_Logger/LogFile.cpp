@@ -277,7 +277,7 @@ void AP_Logger::Write_RSSI()
 #endif
 
 void AP_Logger::Write_Command(const mavlink_command_int_t &packet,
-                              uint8_t source_system,
+                              uint32_t source_system,
                               uint8_t source_component,
                               const MAV_RESULT result,
                               bool was_command_long)
