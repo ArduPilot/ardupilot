@@ -2205,6 +2205,11 @@ class TestSuite(abc.ABC):
 
         self.start_mavproxy_count = 0
 
+        # any directory SITL's logging has been redirected into via
+        # the SITL_LOG_DIRECTORY environment variable; None means the
+        # default ("logs"):
+        self.sitl_log_directory = None
+
         self.last_sim_time_cached = 0
         self.last_sim_time_cached_wallclock = 0
 
@@ -3303,6 +3308,30 @@ class TestSuite(abc.ABC):
             self.valgrind_restart_customisations = customisations
             self.valgrind_restart_env = env
 
+    def customise_SITL_log_directory(self, log_directory="pristine-logs"):
+        '''restart SITL logging into an initially-empty log_directory
+        (via the SITL_LOG_DIRECTORY environment variable), so tests
+        see a deterministic set of logs rather than whatever earlier
+        tests left in the default directory.  The redirection survives
+        reboot_sitl() (SITL reboots via execv, preserving its
+        environment) and is removed when the test completes; the
+        directory itself is left for post-mortem and emptied on next
+        use.  Returns the directory path.
+
+        log_directory must be relative; SITL's sandboxed filesystem
+        maps absolute paths back under its working directory, which is
+        also this process's working directory.'''
+        if os.path.isabs(log_directory):
+            raise ValueError("log_directory must be relative")
+        shutil.rmtree(log_directory, ignore_errors=True)
+        self.progress("Redirecting SITL logging to %s" % log_directory)
+        self.customise_SITL_commandline(
+            [],
+            env={"SITL_LOG_DIRECTORY": log_directory},
+        )
+        self.sitl_log_directory = log_directory
+        return log_directory
+
     def restart_SITL_frame(self,
                            frame,
                            vehicleinfo_key=None,
@@ -3415,6 +3444,9 @@ class TestSuite(abc.ABC):
             del self.valgrind_restart_customisations
         except AttributeError:
             pass
+        # SITL is started without any custom environment, so any log
+        # directory redirection is gone:
+        self.sitl_log_directory = None
         self.start_SITL(wipe=True)
         self.set_streamrate(self.sitl_streamrate())
         self.apply_default_parameters()
@@ -4057,8 +4089,7 @@ class TestSuite(abc.ABC):
         self.progress("Ensuring we have contents we care about")
         self.set_parameter("LOG_FILE_DSRMROT", 1)
         self.set_parameter("LOG_DISARMED", 0)
-        self.reboot_sitl()
-        logspath = Path("logs")
+        logspath = Path(self.customise_SITL_log_directory())
 
         def create_num_logs(num_logs, logsdir, clear_logsdir=True):
             if clear_logsdir:
@@ -4160,18 +4191,16 @@ class TestSuite(abc.ABC):
         self.progress("Ensuring we have contents we care about")
         self.set_parameter("LOG_FILE_DSRMROT", 1)
         self.set_parameter("LOG_DISARMED", 0)
-        self.reboot_sitl()
-        original_log_list = self.log_list()
+        self.customise_SITL_log_directory()
         for i in range(0, 10):
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.delay_sim_time(1, reason="log data to accumulate")
             self.disarm_vehicle()
         new_log_list = self.log_list()
-        new_log_count = len(new_log_list) - len(original_log_list)
-        if new_log_count != 10:
-            raise NotAchievedException("Expected exactly 10 new logs got %u (%s) to (%s)" %
-                                       (new_log_count, original_log_list, new_log_list))
+        if len(new_log_list) != 10:
+            raise NotAchievedException("Expected exactly 10 logs got %u (%s)" %
+                                       (len(new_log_list), new_log_list))
         self.progress("Directory contents: %s" % str(new_log_list))
 
         self.download_full_log_list()
@@ -4395,7 +4424,7 @@ class TestSuite(abc.ABC):
             return
         self.set_parameter("LOG_FILE_DSRMROT", 1)
         self.set_parameter("LOG_DISARMED", 0)
-        self.reboot_sitl()
+        self.customise_SITL_log_directory()
 
         self.progress("Creating some logs")
         for i in range(0, 4):
@@ -4405,13 +4434,12 @@ class TestSuite(abc.ABC):
             self.disarm_vehicle()
 
         log_list = self.log_list()
-        if len(log_list) < 4:
-            raise NotAchievedException("Expected at least 4 logs, got (%s)" % str(log_list))
+        if len(log_list) != 4:
+            raise NotAchievedException("Expected exactly 4 logs, got (%s)" % str(log_list))
 
         self.progress("Removing the oldest two logs, as Prep_MinSpace would")
         for log in log_list[0:2]:
             os.unlink(log)
-        remaining_count = len(self.log_list())
 
         # reboot so the autopilot rediscovers its log state from the disk
         # contents, as it would after the in-flight pruning of a
@@ -4420,10 +4448,18 @@ class TestSuite(abc.ABC):
 
         self.progress("Checking the log list matches the logs on disk")
         logs = self.download_full_log_list()
-        if len(logs) != remaining_count:
+        if len(logs) != 2:
             raise NotAchievedException(
-                "Log list count does not match logs on disk (want=%u got=%u)" %
-                (remaining_count, len(logs)))
+                "Log list count does not match logs on disk (want=2 got=%u)" %
+                (len(logs),))
+        self.progress("Checking the entries correspond to the remaining logs")
+        for (entry_id, filepath) in [(1, log_list[2]), (2, log_list[3])]:
+            entry = logs[entry_id]
+            size_on_disk = os.path.getsize(filepath)
+            if entry.size != size_on_disk:
+                raise NotAchievedException(
+                    "Entry %u size does not match %s (want=%u got=%u)" %
+                    (entry_id, filepath, size_on_disk, entry.size))
 
     def TestLogDownloadLogGap(self):
         '''check the log list after a log is removed from the middle of the sequence'''
@@ -4439,7 +4475,7 @@ class TestSuite(abc.ABC):
             return
         self.set_parameter("LOG_FILE_DSRMROT", 1)
         self.set_parameter("LOG_DISARMED", 0)
-        self.reboot_sitl()
+        self.customise_SITL_log_directory()
 
         self.progress("Creating some logs")
         for i in range(0, 4):
@@ -4449,20 +4485,15 @@ class TestSuite(abc.ABC):
             self.disarm_vehicle()
 
         log_list = self.log_list()
-        if len(log_list) < 4:
-            raise NotAchievedException("Expected at least 4 logs, got (%s)" % str(log_list))
+        if len(log_list) != 4:
+            raise NotAchievedException("Expected exactly 4 logs, got (%s)" % str(log_list))
 
-        def log_num_from_filepath(filepath):
-            return int(os.path.basename(filepath)[:-4])
-
-        victim = log_list[-3]  # neither the oldest nor the most recent
+        victim = log_list[1]  # log 2 - neither the oldest nor the most recent
         self.progress("Removing %s from the middle of the log sequence" % victim)
         os.unlink(victim)
 
-        oldest_num = log_num_from_filepath(log_list[0])
-        last_num = log_num_from_filepath(log_list[-1])
-        expected_count = last_num - oldest_num + 1  # the hole is counted
-        expected_gap_id = log_num_from_filepath(victim) - oldest_num + 1
+        expected_count = 4  # the hole is counted
+        expected_gap_id = 2
 
         # reboot so the autopilot rediscovers its log state from the
         # disk contents:
@@ -4497,10 +4528,15 @@ class TestSuite(abc.ABC):
                     raise NotAchievedException(
                         "Expected zero-size/zero-time entry for the hole, got (%s)" % str(m))
                 continue
-            if m.size == 0:
-                raise NotAchievedException("Zero-sized entry for a log which exists (%s)" % str(m))
             if m.time_utc < 1000:
                 raise NotAchievedException("Bad timestamp on a log which exists (%s)" % str(m))
+            # in the pristine directory entry ids and log numbers
+            # coincide, so each entry must match its file on disk:
+            size_on_disk = os.path.getsize(log_list[m.id - 1])
+            if m.size != size_on_disk:
+                raise NotAchievedException(
+                    "Entry size does not match log on disk (want=%u got %s)" %
+                    (size_on_disk, str(m)))
 
     #################################################
     # SIM UTILITIES
@@ -4810,9 +4846,15 @@ class TestSuite(abc.ABC):
         self.set_rc(ch, 1000)
         self.assert_mission_count(0)
 
+    def sitl_log_dir(self):
+        '''return the directory SITL is currently logging into'''
+        if self.sitl_log_directory is not None:
+            return self.sitl_log_directory
+        return "logs"
+
     def log_list(self):
         '''return a list of log files present in POSIX-style logging dir'''
-        ret = sorted(glob.glob("logs/00*.BIN"))
+        ret = sorted(glob.glob(os.path.join(self.sitl_log_dir(), "00*.BIN")))
         self.progress("log list: %s" % str(ret))
         return ret
 
@@ -5224,12 +5266,24 @@ class TestSuite(abc.ABC):
     def TestLogDownloadMAVProxy(self):
         """Download latest log."""
         self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.customise_SITL_log_directory()
         self.progress("Creating some logs")
         for i in range(0, 4):
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.delay_sim_time(1, reason="log data to accumulate")
             self.disarm_vehicle()
+
+        # logging continues for HAL_LOGGER_ARM_PERSIST (15) seconds
+        # after disarming; wait that out so the fourth log closes.  If
+        # we don't, the log transfer below stops logging, and when the
+        # transfer finishes the still-active persistence opens a fifth
+        # log:
+        self.delay_sim_time(20, reason="log persistence to expire")
+        log_list = self.log_list()
+        if len(log_list) != 4:
+            raise NotAchievedException("Expected exactly 4 logs, got (%s)" % str(log_list))
 
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
@@ -5247,20 +5301,16 @@ class TestSuite(abc.ABC):
         # Prep_MinSpace would remove them: the log list must match the
         # logs actually present rather than assuming logs
         # 1..last-log-number all exist, and downloading the latest log
-        # must fetch the newest log on disk:
-        # ensure no log is created (and left open, growing) at the
-        # reboot so the logs on disk are static for the checks below:
-        self.set_parameter("LOG_DISARMED", 0)
-        log_list = self.log_list()
-        if len(log_list) < 3:
-            raise NotAchievedException("Expected at least 3 logs, got (%s)" % str(log_list))
+        # must fetch the newest log on disk.  LOG_DISARMED is zero so
+        # no log is created (and left open, growing) at the reboot and
+        # the logs on disk are static for the checks below:
         self.progress("Removing the oldest two logs")
         for log in log_list[0:2]:
             os.unlink(log)
         # reboot so the autopilot rediscovers its log state from the
         # disk contents:
         self.reboot_sitl()
-        expected_count = len(self.log_list())
+        expected_count = 2
 
         filename = "MAVProxy-downloaded-log-pruned.BIN"
         mavproxy = self.start_mavproxy()
@@ -9730,10 +9780,11 @@ Also, ignores heartbeats not from our target system'''
         return ret
 
     def bin_logs(self):
-        return glob.glob("logs/*.BIN")
+        return glob.glob(os.path.join(self.sitl_log_dir(), "*.BIN"))
 
     def remove_bin_logs(self):
-        util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
+        logdir = self.sitl_log_dir()
+        util.run_cmd('rm -f %s/*.BIN %s/LASTLOG.TXT' % (logdir, logdir))
 
     def remove_ardupilot_terrain_cache(self):
         '''removes the terrain files ArduPilot keeps in its onboiard storage'''

@@ -89,6 +89,7 @@ dataflash.bin
 eeprom.bin
 index.html
 logs/
+pristine-logs/
 mav.log
 mav.log.raw
 mav.parm
