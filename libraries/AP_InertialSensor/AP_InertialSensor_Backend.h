@@ -288,8 +288,10 @@ protected:
         _imu._gyro_raw_sample_rates[instance] = rate_hz;
     }
     
-    // publish a temperature value
-    void _publish_temperature(uint8_t instance, float temperature); /* front end */
+    // publish a temperature value. use_for_heater controls whether the
+    // temperature is fed to the IMU heater control loop; external IMUs must
+    // not drive the heater as it is physically attached to a local IMU
+    void _publish_temperature(uint8_t instance, float temperature, bool use_for_heater=true); /* front end */
 
     // increment accelerometer error_count
     void _inc_accel_error_count(uint8_t instance) __RAMFUNC__;
