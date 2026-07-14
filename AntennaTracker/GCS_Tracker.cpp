@@ -1,7 +1,7 @@
 #include "GCS_Tracker.h"
 #include "Tracker.h"
 
-void GCS_Tracker::request_datastream_position(const uint8_t _sysid, const uint8_t compid)
+void GCS_Tracker::request_datastream_position(const uint32_t _sysid, const uint8_t compid)
 {
     for (uint8_t i=0; i < num_gcs(); i++) {
             // request position
@@ -17,7 +17,7 @@ void GCS_Tracker::request_datastream_position(const uint8_t _sysid, const uint8_
     }
 }
 
-void GCS_Tracker::request_datastream_airpressure(const uint8_t _sysid, const uint8_t compid)
+void GCS_Tracker::request_datastream_airpressure(const uint32_t _sysid, const uint8_t compid)
 {
     for (uint8_t i=0; i < num_gcs(); i++) {
             // request air pressure
