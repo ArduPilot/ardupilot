@@ -36,12 +36,16 @@ extern const AP_HAL::HAL& hal;
  * uint8_t checksum;
  */
 
+#define CMD_SET_DATA_OUT 0x5A, 0x05, 0x07
+#define CMD_ENABLE_DATA_OUT CMD_SET_DATA_OUT, 0x01, 0x67
+#define CMD_DISABLE_DATA_OUT CMD_SET_DATA_OUT, 0x00, 0x66
+
 bool AP_RangeFinder_Benewake_TFMiniPlus::init()
 {
     const uint8_t CMD_FW_VERSION[] =         { 0x5A, 0x04, 0x01, 0x5F };
     const uint8_t CMD_SYSTEM_RESET[] =       { 0x5A, 0x04, 0x04, 0x62 };
     const uint8_t CMD_OUTPUT_FORMAT_CM[] =   { 0x5A, 0x05, 0x05, 0x01, 0x65 };
-    const uint8_t CMD_ENABLE_DATA_OUTPUT[] = { 0x5A, 0x05, 0x07, 0x01, 0x67 };
+    const uint8_t CMD_ENABLE_DATA_OUTPUT[] = { CMD_ENABLE_DATA_OUT };
     const uint8_t CMD_FRAME_RATE_250HZ[] =   { 0x5A, 0x06, 0x03, 0xFA, 0x00, 0x5D };
     const uint8_t CMD_SAVE_SETTINGS[] =      { 0x5A, 0x04, 0x11, 0x6F };
     const uint8_t *cmds[] = {
@@ -106,6 +110,14 @@ void AP_RangeFinder_Benewake_TFMiniPlus::update()
 {
     WITH_SEMAPHORE(_sem);
 
+    // Power down if commanded
+    power_state.commanded_power_down = should_power_down();
+    if (power_state.commanded_power_down || power_state.current_power_down) {
+        set_status(RangeFinder::Status::PoweredDown);
+        return;
+    }
+
+    // Average samples
     if (accum.count > 0) {
         state.distance_m = (accum.sum * 0.01f) / accum.count;
         state.last_reading_ms = AP_HAL::millis();
@@ -113,6 +125,7 @@ void AP_RangeFinder_Benewake_TFMiniPlus::update()
         accum.count = 0;
         update_status();
     } else if (AP_HAL::millis() - state.last_reading_ms > 200) {
+        // Timeout for bad data
         set_status(RangeFinder::Status::NoData);
     }
 }
@@ -154,6 +167,41 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::check_checksum(uint8_t *arr, int pkt_le
 
 void AP_RangeFinder_Benewake_TFMiniPlus::timer()
 {
+    bool change_power_state;
+    bool power_down;
+    {
+        // Update power flags with semaphore
+        WITH_SEMAPHORE(_sem);
+        change_power_state = power_state.current_power_down != power_state.commanded_power_down;
+        power_down = power_state.commanded_power_down;
+    }
+
+    if (change_power_state) {
+        // Change in power state
+        bool success;
+        if (power_down) {
+            // Send power down command
+            const uint8_t CMD_ENABLE[] = { CMD_DISABLE_DATA_OUT };
+            success = dev.transfer(CMD_ENABLE, sizeof(CMD_ENABLE), nullptr, 0);
+
+        } else {
+            // Send power up command
+            const uint8_t CMD_DISABLE[] = { CMD_ENABLE_DATA_OUT };
+            success = dev.transfer(CMD_DISABLE, sizeof(CMD_DISABLE), nullptr, 0);
+
+        }
+        // Mark state as changed if command was written
+        if (success) {
+            WITH_SEMAPHORE(_sem);
+            power_state.current_power_down = power_state.commanded_power_down;
+        }
+        // Wait until next call before trying to read data
+        return;
+    } else if (power_down) {
+        // Powered down, nothing to do
+        return;
+    }
+
     uint8_t CMD_READ_MEASUREMENT[] = { 0x5A, 0x05, 0x00, 0x07, 0x66 };
     union {
         struct PACKED {
