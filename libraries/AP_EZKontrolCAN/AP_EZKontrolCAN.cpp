@@ -150,7 +150,9 @@ void AP_EZKontrolCAN::init()
     _healthy = _can_inited;
 
     _left_state.address = uint8_t(_addr_left.get());
+    _left_state.esc_index = 0;
     _right_state.address = uint8_t(_addr_right.get());
+    _right_state.esc_index = 1;
     const uint32_t now_ms = AP_HAL::millis();
     _left_state.last_handshake_ms = now_ms;
     _right_state.last_handshake_ms = now_ms;
@@ -247,6 +249,7 @@ AP_EZKontrolCAN *AP::ezkontrol_can()
 void AP_EZKontrolCAN::reset_controller_state(ControllerState &state)
 {
     state.handshake_complete = false;
+    state.esc_index = 0;
     state.life_counter = 0;
     state.last_handshake_ms = 0;
     state.last_telem_ms = 0;
@@ -345,6 +348,12 @@ void AP_EZKontrolCAN::handle_telemetry_1(ControllerState &state, const AP_HAL::C
     state.telem.speed_rpm = float(speed_raw) - 32000.0f;
     state.telem.valid = true;
     state.last_telem_ms = _last_update_ms;
+#if HAL_WITH_ESC_TELEM
+    publish_esc_telem(state,
+        AP_ESC_Telem_Backend::TelemetryType::VOLTAGE |
+        AP_ESC_Telem_Backend::TelemetryType::CURRENT,
+        true);
+#endif
     if (_debug.get() != 0 && !state.debug_telem_reported) {
         state.debug_telem_reported = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK telem active addr 0x%02x",
@@ -370,6 +379,12 @@ void AP_EZKontrolCAN::handle_telemetry_2(ControllerState &state, const AP_HAL::C
     state.telem.error_bits = error_bits;
     state.telem.valid = true;
     state.last_telem_ms = _last_update_ms;
+#if HAL_WITH_ESC_TELEM
+    publish_esc_telem(state,
+        AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
+        AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE,
+        false);
+#endif
     if (_debug.get() != 0 && !state.debug_telem_reported) {
         state.debug_telem_reported = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK telem active addr 0x%02x",
@@ -385,6 +400,34 @@ void AP_EZKontrolCAN::handle_telemetry_2(ControllerState &state, const AP_HAL::C
                           static_cast<unsigned int>(state.address));
         }
     }
+}
+
+void AP_EZKontrolCAN::publish_esc_telem(const ControllerState &state, uint16_t data_mask, bool publish_rpm)
+{
+#if HAL_WITH_ESC_TELEM
+    if (!state.telem.valid && !publish_rpm) {
+        return;
+    }
+
+    AP_ESC_Telem_Backend::TelemetryData telem {};
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::VOLTAGE) {
+        telem.voltage = state.telem.bus_voltage;
+    }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::CURRENT) {
+        telem.current = state.telem.bus_current;
+    }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE) {
+        telem.temperature_cdeg = int16_t(constrain_float(state.telem.temp_mos_c * 100.0f, INT16_MIN, INT16_MAX));
+    }
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE) {
+        telem.motor_temp_cdeg = int16_t(constrain_float(state.telem.temp_motor_c * 100.0f, INT16_MIN, INT16_MAX));
+    }
+
+    if (publish_rpm) {
+        update_rpm(state.esc_index, state.telem.speed_rpm);
+    }
+    update_telem_data(state.esc_index, telem, data_mask);
+#endif
 }
 
 void AP_EZKontrolCAN::send_handshake_ack(uint8_t dest_addr)
