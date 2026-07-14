@@ -15,7 +15,7 @@
 
 #include "HampelFilter.h"
 #include <AP_Common/sorting.h>
-#include <string.h> //for memcopy
+#include <string.h> //for memcpy
 #include <type_traits>
 template <typename T>
 using accumulator_type = typename std::conditional< std::is_same<T, double>::value, double,
@@ -27,7 +27,7 @@ using accumulator_type = typename std::conditional< std::is_same<T, double>::val
       typename std::conditional< std::is_same<T, int8_t>::value,  int16_t,
       typename std::conditional< std::is_same<T, int16_t>::value,  int32_t,
       typename std::conditional< std::is_same<T, int32_t>::value,  int64_t,
-      typename std::conditional< std::is_same<T, int64_t>::value,  uint64_t,
+      typename std::conditional< std::is_same<T, int64_t>::value,  int64_t,
       void>::type>::type>::type>::type>::type>::type>::type>::type>::type>::type;
 
 
@@ -40,7 +40,7 @@ HampelFilter<T, FILTER_SIZE>::HampelFilter(uint8_t first_return_element, uint8_t
     last_output_element(last_return_element),
     initialized(false)
 {
-    static_assert(FILTER_SIZE >= 3, "Hamepel test requires at least 3 samples");
+    static_assert(FILTER_SIZE >= 3, "Hampel test requires at least 3 samples");
 
     if (first_output_element >= FILTER_SIZE) {
         first_output_element = (FILTER_SIZE - 1) / 2;
@@ -94,25 +94,29 @@ T HampelFilter<T, FILTER_SIZE>::calculate()
         }
     }
     insertion_sort(abs_devs, FILTER_SIZE);
-    T mad = get_median(abs_devs)*3; // multiply MAD by 3 to obtain ±2 sigma gate assuming samples are coming from normal distribution so 95.6% samples are accepted
+    T mad = get_median(abs_devs) * 3; // multiply MAD by 3 to obtain ±2 sigma gate assuming samples are coming from normal distribution so 95.6% samples are accepted
 
     uint8_t adjusted_elements = 0;
     T lower_limit = median - mad;
     T upper_limit = median + mad;
-    for (uint8_t i = 0; i < FILTER_SIZE / 2; i++) {
-        if (buf[i] < lower_limit) {
-            buf[i] = median;
-            adjusted_elements++;
-        } else { //buf is sorted, no need to check if further elements are below lower limit
-            break;
+    if (lower_limit < median) { //check for underflow, mad can't be 0 unless all samples are equal, but then following loop does nothing
+        for (uint8_t i = 0; i < FILTER_SIZE / 2; i++) {
+            if (buf[i] < lower_limit) {
+                buf[i] = median;
+                adjusted_elements++;
+            } else { //buf is sorted, no need to check if further elements are below lower limit
+                break;
+            }
         }
     }
-    for (uint8_t i = FILTER_SIZE-1; i > (FILTER_SIZE - 1) / 2; i--) {
-        if (buf[i] > upper_limit) {
-            buf[i] = median;
-            adjusted_elements++;
-        } else { //buf is sorted in relevant range, no need to check if further (while going backwards) elements are above upper limit
-            break;
+    if (upper_limit > median) { //check for overflow, mad can't be 0 unless all samples are equal, but then following loop does nothing
+        for (uint8_t i = FILTER_SIZE-1; i > (FILTER_SIZE - 1) / 2; i--) {
+            if (buf[i] > upper_limit) {
+                buf[i] = median;
+                adjusted_elements++;
+            } else { //buf is sorted in relevant range, no need to check if further (while going backwards) elements are above upper limit
+                break;
+            }
         }
     }
     insertion_sort(buf, FILTER_SIZE);
@@ -129,14 +133,24 @@ T HampelFilter<T, FILTER_SIZE>::calculate()
     }
 }
 
+template <class T>
+T midpoint(T v1, T v2){
+    static_assert(std::is_integral<T>::value, "template only works for integral types, write specialization");
+    return (v1|v2) - ((v1^v2)>>1); //Fast midpoint calculation - Hacker Delight Section 2.5
+}
+template <>
+float midpoint<float>(float v1, float v2){
+    return v1 / 2 + v2 / 2;
+}
 
 template <class T, uint8_t FILTER_SIZE>
 T HampelFilter<T, FILTER_SIZE>::get_median(T *buf)
 {
-    if (FILTER_SIZE% 2 == 1) { //should be cnstexpr in C++17
+    if (FILTER_SIZE% 2 == 1) { //should be constexpr in C++17
         return buf[(FILTER_SIZE - 1) / 2];
     } else {
-        return (buf[(FILTER_SIZE) / 2 - 1] + buf[FILTER_SIZE / 2]) / 2;
+        return midpoint(buf[(FILTER_SIZE) / 2 - 1], buf[FILTER_SIZE / 2]);
+
     }
 }
 
