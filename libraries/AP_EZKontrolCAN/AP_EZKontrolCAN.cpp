@@ -365,16 +365,12 @@ void AP_EZKontrolCAN::handle_telemetry_1(ControllerState &state, const AP_HAL::C
     state.telem.telem_1_valid = true;
     state.telem.valid = true;
     state.last_telem_ms = _last_update_ms;
-<<<<<<< HEAD
 #if HAL_WITH_ESC_TELEM
     publish_esc_telem(state,
         AP_ESC_Telem_Backend::TelemetryType::VOLTAGE |
         AP_ESC_Telem_Backend::TelemetryType::CURRENT,
         true);
 #endif
-=======
-    publish_esc_telem(state);
->>>>>>> 9ab49c93eacef48931047b7d735e71d8277ff0fb
     if (_debug.get() != 0 && !state.debug_telem_reported) {
         state.debug_telem_reported = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK telem active addr 0x%02x",
@@ -401,16 +397,15 @@ void AP_EZKontrolCAN::handle_telemetry_2(ControllerState &state, const AP_HAL::C
     state.telem.telem_2_valid = true;
     state.telem.valid = true;
     state.last_telem_ms = _last_update_ms;
-<<<<<<< HEAD
 #if HAL_WITH_ESC_TELEM
-    publish_esc_telem(state,
+    uint16_t data_mask =
         AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
-        AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE,
-        false);
+        AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE;
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    data_mask |= AP_ESC_Telem_Backend::TelemetryType::FLAGS;
 #endif
-=======
-    publish_esc_telem(state);
->>>>>>> 9ab49c93eacef48931047b7d735e71d8277ff0fb
+    publish_esc_telem(state, data_mask, false);
+#endif
     if (_debug.get() != 0 && !state.debug_telem_reported) {
         state.debug_telem_reported = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK telem active addr 0x%02x",
@@ -448,6 +443,11 @@ void AP_EZKontrolCAN::publish_esc_telem(const ControllerState &state, uint16_t d
     if (data_mask & AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE) {
         telem.motor_temp_cdeg = int16_t(constrain_float(state.telem.temp_motor_c * 100.0f, INT16_MIN, INT16_MAX));
     }
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    if (data_mask & AP_ESC_Telem_Backend::TelemetryType::FLAGS) {
+        telem.flags = (state.telem.error_bits << 8) | state.telem.status_bits;
+    }
+#endif
 
     if (publish_rpm) {
         update_rpm(state.esc_index, state.telem.speed_rpm);
@@ -523,47 +523,6 @@ void AP_EZKontrolCAN::send_command(ControllerState &state, float target_norm, bo
     state.life_counter++;
 
     _can_iface->send(frame, AP_HAL::micros64() + 1000U, AP_HAL::CANIface::AbortOnError);
-}
-
-void AP_EZKontrolCAN::publish_esc_telem(const ControllerState &state) const
-{
-#if HAL_WITH_ESC_TELEM
-    if (!state.telem.valid) {
-        return;
-    }
-
-    const uint8_t esc_index = (&state == &_right_state) ? 1U : 0U;
-
-    if (state.telem.telem_1_valid) {
-        AP::esc_telem().update_rpm(esc_index, state.telem.speed_rpm, 0.0f);
-    }
-
-    AP_ESC_Telem_Backend::TelemetryData esc_telem {};
-    uint16_t data_mask = 0;
-
-    if (state.telem.telem_1_valid) {
-        esc_telem.voltage = state.telem.bus_voltage;
-        esc_telem.current = state.telem.bus_current;
-        data_mask |= AP_ESC_Telem_Backend::TelemetryType::VOLTAGE |
-                     AP_ESC_Telem_Backend::TelemetryType::CURRENT;
-    }
-
-    if (state.telem.telem_2_valid) {
-        esc_telem.temperature_cdeg = int16_t(constrain_int32(lroundf(state.telem.temp_mos_c * 100.0f), INT16_MIN, INT16_MAX));
-        esc_telem.motor_temp_cdeg = int16_t(constrain_int32(lroundf(state.telem.temp_motor_c * 100.0f), INT16_MIN, INT16_MAX));
-        data_mask |= AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
-                     AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE;
-
-#if AP_EXTENDED_ESC_TELEM_ENABLED
-        esc_telem.flags = (state.telem.error_bits << 8) | state.telem.status_bits;
-        data_mask |= AP_ESC_Telem_Backend::TelemetryType::FLAGS;
-#endif
-    }
-
-    if (data_mask != 0) {
-        AP::esc_telem().update_telem_data(esc_index, esc_telem, data_mask);
-    }
-#endif
 }
 
 void AP_EZKontrolCAN::update_health()

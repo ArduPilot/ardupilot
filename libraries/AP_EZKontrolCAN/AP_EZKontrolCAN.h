@@ -107,7 +107,6 @@ private:
     void publish_esc_telem(const ControllerState &state, uint16_t data_mask, bool publish_rpm);
     void send_handshake_ack(uint8_t dest_addr);
     void send_command(ControllerState &state, float target_norm, bool armed);
-    void publish_esc_telem(const ControllerState &state) const;
     void update_health();
     ControllerState *find_state_by_address(uint8_t address);
 };
