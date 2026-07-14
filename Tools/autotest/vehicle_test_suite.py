@@ -2673,6 +2673,7 @@ class TestSuite(abc.ABC):
                 self.customise_SITL_commandline(
                     self.valgrind_restart_customisations,
                     model=self.valgrind_restart_model,
+                    env=self.valgrind_restart_env,
                 )
             else:
                 self.stop_SITL()
@@ -3503,7 +3504,8 @@ class TestSuite(abc.ABC):
                                    defaults_filepath=None,
                                    wipe=False,
                                    set_streamrate_callback=None,
-                                   binary=None):
+                                   binary=None,
+                                   env=None):
         '''customisations could be "--serial5=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.mav.close()
@@ -3512,7 +3514,8 @@ class TestSuite(abc.ABC):
                         model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
-                        wipe=wipe)
+                        wipe=wipe,
+                        env=env)
         self.mav.do_connect()
         tstart = time.time()
         while True:
@@ -3542,6 +3545,7 @@ class TestSuite(abc.ABC):
         if self.valgrind or self.callgrind:
             self.valgrind_restart_model = model
             self.valgrind_restart_customisations = customisations
+            self.valgrind_restart_env = env
 
     def restart_SITL_frame(self,
                            frame,
