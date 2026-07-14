@@ -224,7 +224,7 @@ TEST(HampelFilterTest, Int16_Size5)
     EXPECT_EQ(6, filtf_fail.get());
 }
 
-TEST(ModeFilterTest, Float_Size5)
+TEST(HampelFilterTest, Float_Size5)
 {
     {
         // 5-entry filter taking the middle element by magnitude of
