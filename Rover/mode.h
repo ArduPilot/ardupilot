@@ -28,6 +28,9 @@ public:
         SMART_RTL    = 12,
         GUIDED       = 15,
         INITIALISING = 16,
+#if MODE_VGSOLAR_ENABLED
+        VGSOLAR      = 17,
+#endif
     };
 
     // Constructor
@@ -923,3 +926,65 @@ protected:
     bool _loitering = false; // true if we are loitering after mission completion
 };
 #endif
+
+#if MODE_VGSOLAR_ENABLED
+class ModeVGSolar : public ModeGuided
+{
+public:
+    ModeVGSolar(void);
+    CLASS_NO_COPY(ModeVGSolar);
+
+    using ModeGuided::Mode;
+
+    Number mode_number() const override { return Number::VGSOLAR; }
+    const char *name4() const override { return "VGSL"; }
+
+    void update() override;
+
+    bool is_autopilot_mode() const override { return true; }
+    bool allows_arming() const override { return true; }
+
+    float get_distance_to_destination() const override;
+
+    // 10Hz 状态反馈：在 send_data() 前由 Rover 调度调用
+    void publish_status_feedback();
+    void publish_nav_status_feedback();
+
+    static const struct AP_Param::GroupInfo var_info[];
+
+protected:
+    bool _enter() override;
+    void _exit() override;
+
+private:
+    enum class VGSubMode : uint8_t {
+        STANDBY = 0,
+        YAW     = 1,
+        YAWRATE = 2,
+        ESTOP   = 5,
+    };
+
+    VGSubMode _vg_submode;
+
+    float _target_speed_ms;
+    float _target_yaw_cd;
+    float _target_yaw_rate_cds;
+
+    uint16_t _fault_flags;
+    uint32_t _last_ncu_cmd_ms;
+
+    AP_Int8  _enabled;
+    AP_Float _kp_yaw;
+    AP_Float _kp_speed;
+    AP_Float _cruise_speed_default;
+    AP_Float _turn_timeout;
+    AP_Float _turn_max_speed;
+
+    void read_companion_commands();
+    void update_standby();
+    void update_yaw();
+    void update_yawrate();
+    void update_estop();
+    void check_ncu_timeout();
+};
+#endif  // MODE_VGSOLAR_ENABLED

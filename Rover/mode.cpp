@@ -562,6 +562,11 @@ Mode *Rover::mode_from_mode_num(const enum Mode::Number num)
         ret = (Mode *)g2.mode_dock_ptr;
         break;
 #endif
+#if MODE_VGSOLAR_ENABLED
+    case Mode::Number::VGSOLAR:
+        ret = &mode_vgsolar;
+        break;
+#endif
     default:
         break;
     }

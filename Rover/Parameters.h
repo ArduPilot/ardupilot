@@ -347,6 +347,10 @@ public:
     class ModeDock *mode_dock_ptr;
 #endif
 
+#if MODE_VGSOLAR_ENABLED
+    class ModeVGSolar *mode_vgsolar_ptr;
+#endif
+
 #if AP_AVOIDANCE_ENABLED
     // avoidance library
     AC_Avoid avoid;
