@@ -4391,6 +4391,47 @@ class TestSuite(abc.ABC):
                 self.progress(f"{bytes_read=}")
         return data_downloaded
 
+    def download_log_streamed(self, log_id, size, timeout=120):
+        '''request size bytes of log log_id in a single request and
+        collect the streamed LOG_DATA; returns the data'''
+        # note: get_sim_time() drains the mav connection, and must
+        # happen before the request is sent - the autopilot may stream
+        # the entire log before we start receiving:
+        tstart = self.get_sim_time()
+        self.mav.mav.log_request_data_send(
+            self.sysid_thismav(),
+            1,  # target component
+            log_id,
+            0,
+            size
+        )
+        data = []
+        last_print = 0
+        while len(data) < size:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not download log %u in good time" % log_id)
+            m = self.assert_receive_message('LOG_DATA', timeout=2)
+            if m.id != log_id:
+                raise NotAchievedException(f"Unexpected id {log_id=} {self.dump_message_verbose(m)}")
+            if m.ofs != len(data):
+                raise NotAchievedException(f"Unexpected offset {len(data)=} {self.dump_message_verbose(m)}")
+            if m.count == 0:
+                raise NotAchievedException(f"EOF at {len(data)} bytes downloading log {log_id} ({size} wanted)")
+            data.extend(m.data[0:m.count])
+            if time.time() - last_print > 10:
+                last_print = time.time()
+                self.progress(f"downloaded {len(data)}/{size}")
+        return data
+
+    def assert_downloaded_log_matches_disk(self, entry_id, filepath):
+        '''download log list entry entry_id, check it matches the file
+        at filepath'''
+        self.progress("Downloading log entry %u, comparing to %s" % (entry_id, filepath))
+        with open(filepath, 'rb') as f:
+            want = bytearray(f.read())
+        data = self.download_log_streamed(entry_id, len(want))
+        self.assert_bytes_equal(want, data)
+
     def TestLogDownloadLogRestart(self):
         '''test logging restarts after log download'''
 #        self.delay_sim_time(30)
@@ -4460,6 +4501,7 @@ class TestSuite(abc.ABC):
                 raise NotAchievedException(
                     "Entry %u size does not match %s (want=%u got=%u)" %
                     (entry_id, filepath, size_on_disk, entry.size))
+            self.assert_downloaded_log_matches_disk(entry_id, filepath)
 
     def TestLogDownloadLogGap(self):
         '''check the log list after logs are removed from the middle of the sequence'''
@@ -4547,6 +4589,14 @@ class TestSuite(abc.ABC):
         if m.id != 2 or m.count != 0:
             raise NotAchievedException(
                 "Expected zero-length LOG_DATA for the hole, got (%s)" % str(m))
+
+        self.start_subtest("Logs download intact immediately after the hole")
+        # the failed open of the missing log must not trip the
+        # logging open-error state, which would truncate downloads of
+        # logs which do exist (and fail arming checks) for the next
+        # five seconds:
+        for entry_id in (3, 1):
+            self.assert_downloaded_log_matches_disk(entry_id, log_list[entry_id - 1])
 
         self.start_subtest("A second log removed from the middle of the sequence")
         self.progress("Removing %s" % log_list[3])
