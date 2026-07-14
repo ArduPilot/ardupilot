@@ -4606,6 +4606,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownloadWrap,
             self.TestLogDownloadAfterPrune,
             self.TestLogDownloadLogGap,
+            self.TestLogDownloadWrappedList,
+            self.TestLogDownloadEmptyList,
             self.EXTENDED_SYS_STATE,
             self.QRTLGradualAltDescentTerrain,
             self.Mission,
