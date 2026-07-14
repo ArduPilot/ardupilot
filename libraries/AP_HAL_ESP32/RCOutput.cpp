@@ -408,6 +408,12 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
     const uint32_t t1h_ticks  = (bit_ticks * 3 + 2) / 4;  // 0.75 * bit
     const uint32_t t0h_ticks  = (bit_ticks * 3 + 4) / 8;  // 0.375 * bit
 
+    // Hold _dshot_sem across the whole alloc/free loop: set_output_mode() is called
+    // more than once during boot (AP_Motors, then SRV/BLHeli setup), so the transmit
+    // task may already be running and reading these RMT handles. Freeing/reallocating
+    // a channel under it without the lock is a use-after-free (observed as a boot crash).
+    WITH_SEMAPHORE(_dshot_sem);
+
     for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
         pwm_chan &ch = pwm_chan_list[chan];
         if (ch.group != &group) {
@@ -459,10 +465,10 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         ch.rmt_encoder = enc; // stored as void*
     }
 
-    // start the periodic transmit task now that DShot output exists. Note: it
-    // reads pwm_chan RMT handles without a lock, so DShot modes should be set at
-    // boot (the normal case), not reconfigured live alongside an active task.
-    // TODO(dshot): guard the channel list if runtime mode switching is needed.
+    // start the periodic transmit task now that DShot output exists. It reads the
+    // pwm_chan RMT handles under _dshot_sem, which this function also holds while
+    // (re)allocating them, so a re-entrant set_output_mode() alongside the running
+    // task is safe. The task blocks on the semaphore until this call returns.
     start_dshot_task();
 }
 
@@ -576,19 +582,26 @@ void RCOutput::dshot_task_entry(void *arg)
 void RCOutput::dshot_task()
 {
     while (true) {
-        for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
-            pwm_chan &ch = pwm_chan_list[chan];
-            if (ch.rmt_chan == nullptr) {
-                continue; // PWM channel, not DShot
-            }
-            if (ch.dshot_command_repeat > 0) {
-                // a special command is pending: send it with the telemetry bit set
-                // (DShot commands require it) and count down. Throttle output is
-                // suspended on this channel until the repeats are exhausted.
-                dshot_send_chan(ch, ch.dshot_command, true);
-                ch.dshot_command_repeat--;
-            } else {
-                dshot_send_chan(ch, dshot_throttle_from_pwm((uint16_t)ch.value), false);
+        {
+            // Hold _dshot_sem only while touching the RMT handles, so a concurrent
+            // set_group_mode_dshot() (which frees/reallocates them) can never pull a
+            // channel out from under an in-flight transmit. Released before the delay
+            // so the ~1 ms idle window is when any reconfiguration gets its turn.
+            WITH_SEMAPHORE(_dshot_sem);
+            for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
+                pwm_chan &ch = pwm_chan_list[chan];
+                if (ch.rmt_chan == nullptr) {
+                    continue; // PWM channel, not DShot
+                }
+                if (ch.dshot_command_repeat > 0) {
+                    // a special command is pending: send it with the telemetry bit set
+                    // (DShot commands require it) and count down. Throttle output is
+                    // suspended on this channel until the repeats are exhausted.
+                    dshot_send_chan(ch, ch.dshot_command, true);
+                    ch.dshot_command_repeat--;
+                } else {
+                    dshot_send_chan(ch, dshot_throttle_from_pwm((uint16_t)ch.value), false);
+                }
             }
         }
         vTaskDelay(pdMS_TO_TICKS(1)); // ~1 kHz frame rate
