@@ -18,6 +18,7 @@ void Copter::landinggear_update()
     switch (rangefinder.status_orient(ROTATION_PITCH_270)) {
     case RangeFinder::Status::NotConnected:
     case RangeFinder::Status::NoData:
+    case RangeFinder::Status::PoweredDown:
         // use altitude above home for non-functioning rangefinder
         break;
 
