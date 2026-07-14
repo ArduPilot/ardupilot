@@ -8,6 +8,19 @@
 #define DYP_A02_FRAME_HEADER 0xFF
 #define DYP_A02_FRAME_LEN    4
 
+bool AP_RangeFinder_DYP_A02::distance_outside_safe_range_cm(uint16_t distance_cm)
+{
+    return distance_cm < DYP_A02_SAFE_MIN_CM || distance_cm > DYP_A02_SAFE_MAX_CM;
+}
+
+bool AP_RangeFinder_DYP_A02::has_safety_fault() const
+{
+    if (status() != RangeFinder::Status::Good) {
+        return true;
+    }
+    return distance_outside_safe_range_cm(distance_cm());
+}
+
 bool AP_RangeFinder_DYP_A02::find_frame_header(uint8_t start)
 {
     for (uint8_t i = start; i < buffer_used; i++) {

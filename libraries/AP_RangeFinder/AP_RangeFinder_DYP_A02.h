@@ -7,6 +7,14 @@
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_Serial.h"
 
+// DYP-A02 传感器有效量程 (cm)
+#define DYP_A02_RANGE_MIN_CM  3
+#define DYP_A02_RANGE_MAX_CM  450
+
+// 安全距离范围 (cm)：读数超出 [MIN, MAX] 时判定为车辆故障（暂定，可后续调参）
+#define DYP_A02_SAFE_MIN_CM   10
+#define DYP_A02_SAFE_MAX_CM   50
+
 /**
  * @brief Driver for DYP-A02-V2.0 UART automatic-output ultrasonic rangefinder
  *
@@ -42,6 +50,12 @@ public:
         return new AP_RangeFinder_DYP_A02(_state, _params);
     }
 
+    // 给定距离 (cm) 是否超出安全范围；true=应判为故障
+    static bool distance_outside_safe_range_cm(uint16_t distance_cm);
+
+    // 当前实例：无有效读数或超出安全距离；true=应判为故障
+    bool has_safety_fault() const;
+
 protected:
 
     MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
@@ -53,11 +67,11 @@ protected:
     }
 
     int16_t max_distance_cm() const override {
-        return MIN(params.max_distance_cm, 450);
+        return MIN(params.max_distance_cm, DYP_A02_RANGE_MAX_CM);
     }
 
     int16_t min_distance_cm() const override {
-        return MAX(params.min_distance_cm, 3);
+        return MAX(params.min_distance_cm, DYP_A02_RANGE_MIN_CM);
     }
 
 private:
