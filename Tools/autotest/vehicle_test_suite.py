@@ -4462,14 +4462,14 @@ class TestSuite(abc.ABC):
                     (entry_id, filepath, size_on_disk, entry.size))
 
     def TestLogDownloadLogGap(self):
-        '''check the log list after a log is removed from the middle of the sequence'''
+        '''check the log list after logs are removed from the middle of the sequence'''
         # The autopilot never creates a hole in the middle of the log
-        # sequence itself - this is a user deleting a single log from
-        # the SD card.  The log list maps entries linearly from the
-        # oldest log present, so the expected behaviour is that the
-        # hole appears as a single zero-size/zero-time-utc entry while
-        # the logs either side of it remain listed at their usual
-        # positions with their usual sizes.
+        # sequence itself - this is a user deleting logs from the SD
+        # card.  The log list maps entries linearly from the oldest
+        # log present, so the expected behaviour is that each hole
+        # appears as a zero-size/zero-time-utc entry while the logs
+        # around it remain listed at their usual positions with their
+        # usual sizes.
         if self.is_tracker():
             # tracker starts armed, which is annoying
             return
@@ -4478,65 +4478,161 @@ class TestSuite(abc.ABC):
         self.customise_SITL_log_directory()
 
         self.progress("Creating some logs")
-        for i in range(0, 4):
+        for i in range(0, 6):
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.delay_sim_time(1, reason="log data to accumulate")
             self.disarm_vehicle()
 
         log_list = self.log_list()
-        if len(log_list) != 4:
-            raise NotAchievedException("Expected exactly 4 logs, got (%s)" % str(log_list))
+        if len(log_list) != 6:
+            raise NotAchievedException("Expected exactly 6 logs, got (%s)" % str(log_list))
 
-        victim = log_list[1]  # log 2 - neither the oldest nor the most recent
-        self.progress("Removing %s from the middle of the log sequence" % victim)
-        os.unlink(victim)
+        def assert_log_list_with_holes(hole_ids):
+            # can't use download_full_log_list here; it (correctly)
+            # balks at the zero-size/zero-time-utc entries the holes
+            # leave behind:
+            tstart = self.get_sim_time()
+            self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                               1,  # target component
+                                               0,
+                                               0xffff)
+            logs = {}
+            while True:
+                if self.get_sim_time_cached() - tstart > 5:
+                    raise NotAchievedException("Did not download list")
+                m = self.mav.recv_match(type='LOG_ENTRY', blocking=True, timeout=1)
+                if m is None:
+                    continue
+                self.progress("Received (%s)" % str(m))
+                logs[m.id] = m
+                if m.id == m.last_log_num:
+                    break
+            self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
 
-        expected_count = 4  # the hole is counted
-        expected_gap_id = 2
+            if sorted(logs.keys()) != list(range(1, len(log_list) + 1)):
+                raise NotAchievedException(
+                    "Expected entries 1..%u got (%s)" % (len(log_list), sorted(logs.keys())))
+            for m in logs.values():
+                if m.id in hole_ids:
+                    if m.size != 0 or m.time_utc != 0:
+                        raise NotAchievedException(
+                            "Expected zero-size/zero-time entry for the hole, got (%s)" % str(m))
+                    continue
+                if m.time_utc < 1000:
+                    raise NotAchievedException("Bad timestamp on a log which exists (%s)" % str(m))
+                # in the pristine directory entry ids and log numbers
+                # coincide, so each entry must match its file on disk:
+                size_on_disk = os.path.getsize(log_list[m.id - 1])
+                if m.size != size_on_disk:
+                    raise NotAchievedException(
+                        "Entry size does not match log on disk (want=%u got %s)" %
+                        (size_on_disk, str(m)))
 
+        self.start_subtest("One log removed from the middle of the sequence")
+        self.progress("Removing %s" % log_list[1])
+        os.unlink(log_list[1])
         # reboot so the autopilot rediscovers its log state from the
         # disk contents:
         self.reboot_sitl()
+        assert_log_list_with_holes({2})
 
-        # can't use download_full_log_list here; it (correctly) balks
-        # at the zero-size/zero-time-utc entry the hole leaves behind:
-        tstart = self.get_sim_time()
-        self.mav.mav.log_request_list_send(self.sysid_thismav(),
+        self.start_subtest("Downloading the hole gives a zero-length EOF")
+        self.mav.mav.log_request_data_send(self.sysid_thismav(),
                                            1,  # target component
+                                           2,  # the hole's entry id
                                            0,
-                                           0xffff)
-        logs = {}
-        while True:
-            if self.get_sim_time_cached() - tstart > 5:
-                raise NotAchievedException("Did not download list")
-            m = self.mav.recv_match(type='LOG_ENTRY', blocking=True, timeout=1)
-            if m is None:
-                continue
-            self.progress("Received (%s)" % str(m))
-            logs[m.id] = m
-            if m.id == m.last_log_num:
-                break
-        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
-
-        if sorted(logs.keys()) != list(range(1, expected_count + 1)):
+                                           90)
+        m = self.assert_receive_message('LOG_DATA', timeout=2)
+        if m.id != 2 or m.count != 0:
             raise NotAchievedException(
-                "Expected entries 1..%u got (%s)" % (expected_count, sorted(logs.keys())))
-        for m in logs.values():
-            if m.id == expected_gap_id:
-                if m.size != 0 or m.time_utc != 0:
-                    raise NotAchievedException(
-                        "Expected zero-size/zero-time entry for the hole, got (%s)" % str(m))
-                continue
-            if m.time_utc < 1000:
-                raise NotAchievedException("Bad timestamp on a log which exists (%s)" % str(m))
-            # in the pristine directory entry ids and log numbers
-            # coincide, so each entry must match its file on disk:
-            size_on_disk = os.path.getsize(log_list[m.id - 1])
-            if m.size != size_on_disk:
+                "Expected zero-length LOG_DATA for the hole, got (%s)" % str(m))
+
+        self.start_subtest("A second log removed from the middle of the sequence")
+        self.progress("Removing %s" % log_list[3])
+        os.unlink(log_list[3])
+        self.reboot_sitl()
+        assert_log_list_with_holes({2, 4})
+
+    def TestLogDownloadWrappedList(self):
+        '''check the log list when the log numbers have wrapped'''
+        # log numbers wrap back to 1 after LOG_MAX_FILES.  After a
+        # wrap the directory contains high-numbered logs from the
+        # previous numbering cycle - the oldest logs - alongside
+        # low-numbered logs from the current cycle - the newest.  The
+        # log count must span the wrap and the list entries must map
+        # oldest-first across it.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_DISARMED", 0)
+        self.set_parameter("LOG_MAX_FILES", 250)
+        logdir = self.customise_SITL_log_directory()
+
+        # fabricate a post-wrap directory: logs 246..250 are leftovers
+        # from the previous numbering cycle, logs 1..3 are the newest:
+        lognums = [246, 247, 248, 249, 250, 1, 2, 3]  # oldest first
+
+        def content_for_log(num):
+            return (("I am log %u. " % num) * 100)[0:1000 + num]
+
+        os.makedirs(logdir)
+        for num in lognums:
+            with open(os.path.join(logdir, "%08u.BIN" % num), "w") as f:
+                f.write(content_for_log(num))
+        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+            f.write("3\n")
+
+        # reboot so the autopilot discovers the fabricated state:
+        self.reboot_sitl()
+
+        logs = self.download_full_log_list()
+        if len(logs) != len(lognums):
+            raise NotAchievedException(
+                "Expected %u logs got %u" % (len(lognums), len(logs)))
+        self.progress("Checking the entries map oldest-first across the wrap")
+        for (entry_id, num) in enumerate(lognums, start=1):
+            want = len(content_for_log(num))
+            if logs[entry_id].size != want:
                 raise NotAchievedException(
-                    "Entry size does not match log on disk (want=%u got %s)" %
-                    (size_on_disk, str(m)))
+                    "Entry %u size does not match log %u (want=%u got=%u)" %
+                    (entry_id, num, want, logs[entry_id].size))
+
+        self.progress("Downloading a log from either side of the wrap")
+        for (entry_id, num) in ((1, 246), (len(lognums), 3)):
+            data = bytes(self.download_log(entry_id))
+            if data != content_for_log(num).encode():
+                raise NotAchievedException(
+                    "Downloaded entry %u does not match log %u on disk" %
+                    (entry_id, num))
+
+    def TestLogDownloadEmptyList(self):
+        '''check the log list response when there are no logs'''
+        self.set_parameter("LOG_DISARMED", 0)
+        logdir = self.customise_SITL_log_directory()
+
+        def assert_empty_log_list():
+            self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                               1,  # target component
+                                               0,
+                                               0xffff)
+            m = self.assert_receive_message('LOG_ENTRY', timeout=5, verbose=True)
+            if m.id != 0 or m.num_logs != 0 or m.last_log_num != 0 or m.size != 0 or m.time_utc != 0:
+                raise NotAchievedException("Expected all-zero LOG_ENTRY, got (%s)" % str(m))
+            self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+
+        self.start_subtest("Log directory does not exist")
+        assert_empty_log_list()
+
+        self.start_subtest("Stale LASTLOG.TXT and no logs")
+        # a LASTLOG.TXT pointing at log 17 when no logs are present
+        # must not produce 17 phantom log list entries:
+        if not os.path.exists(logdir):
+            os.makedirs(logdir)
+        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+            f.write("17\n")
+        self.reboot_sitl()
+        assert_empty_log_list()
 
     #################################################
     # SIM UTILITIES
