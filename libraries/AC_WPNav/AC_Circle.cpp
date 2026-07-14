@@ -289,9 +289,10 @@ bool AC_Circle::update_ms(float climb_rate_ms)
 // See get_closest_point_on_circle_NED_m() for full details.
 void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, float& dist_cm) const
 {
-    // Convert input arguments from neu cm to ned meters
-    Vector3p result_ned_m = Vector3p{result_neu_cm.x, result_neu_cm.y, -result_neu_cm.z} * 0.01;
-    float dist_m = dist_cm * 0.01;
+    // result_neu_cm and dist_cm are outputs only; do not read the caller's
+    // values here, callers may pass them in uninitialised
+    Vector3p result_ned_m;
+    float dist_m;
 
     // Compute closest point in meters
     get_closest_point_on_circle_NED_m(result_ned_m, dist_m);
