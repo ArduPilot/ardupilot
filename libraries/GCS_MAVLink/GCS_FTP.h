@@ -64,7 +64,7 @@ private:
         bool  burst_complete;
         uint8_t size;
         uint8_t session;
-        uint8_t sysid;
+        uint32_t sysid;
         uint8_t compid;
         uint8_t data[239];
     };
@@ -86,7 +86,7 @@ private:
         int16_t session_id;
         FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
         mavlink_channel_t chan;
-        uint8_t sysid;
+        uint32_t sysid;
         uint8_t compid;
 
         bool check_name_len(const Transaction &request);

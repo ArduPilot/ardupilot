@@ -1470,7 +1470,7 @@ bool GCS_MAVLINK_InProgress::conclude(MAV_RESULT result)
     return true;
 }
 
-GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint8_t sysid, uint8_t compid, mavlink_channel_t chan)
+GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan)
 {
     // we can't have two outstanding tasks for the same command from
     // the same mavlink node or the result is ambiguous:
@@ -3875,7 +3875,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
             offset = hal.util->snprintf(text,
                                         max_prefix_len,
                                         "SRC=%u/%u:",
-                                        msg.sysid,
+                                        (unsigned)msg.sysid,
                                         msg.compid);
             offset = MIN(offset, max_prefix_len);
         }
@@ -3902,7 +3902,7 @@ void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
     mavlink_msg_named_value_float_decode(&msg, &p);
     char s[11] {};
     strncpy(s, p.name, sizeof(s)-1);
-    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfBB",
+    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfIB",
                   AP_HAL::micros64(),
                   p.time_boot_ms,
                   s,
@@ -5660,8 +5660,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
     }
 
     // param1: sysid of target to follow
-    if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-        follow->set_target_sysid((uint8_t)packet.param1);
+    const int64_t sysid = (int64_t)packet.param1;
+    if (sysid > 0 && sysid <= (int64_t)0xFFFFFFFF) {
+        follow->set_target_sysid((uint32_t)sysid);
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_DENIED;
@@ -6342,7 +6343,7 @@ void GCS_MAVLINK::send_gimbal_manager_status() const
 }
 #endif
 
-void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc)
+void GCS_MAVLINK::send_set_position_target_global_int(uint32_t target_system, uint8_t target_component, const Location& loc)
 {
 
     const uint16_t type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE | \
@@ -7642,7 +7643,8 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
     mavlink_manual_control_t packet;
     mavlink_msg_manual_control_decode(&msg, &packet);
 
-    if (packet.target != gcs().sysid_this_mav()) {
+    // use the getter as the target may be in the extended header
+    if (mavlink_msg_manual_control_get_target(&msg) != gcs().sysid_this_mav()) {
         return; // only accept control aimed at us
     }
 

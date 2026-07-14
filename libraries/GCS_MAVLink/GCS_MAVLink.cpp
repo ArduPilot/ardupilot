@@ -81,7 +81,7 @@ mavlink_system_t mavlink_system = {7,1};
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
 
-GCS_MAVLINK *GCS_MAVLINK::find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid) {
+GCS_MAVLINK *GCS_MAVLINK::find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint32_t &sysid) {
     mavlink_channel_t channel;
     if (!routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel)) {
         return nullptr;
