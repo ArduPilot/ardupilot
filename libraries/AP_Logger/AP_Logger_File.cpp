@@ -615,14 +615,20 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         EXPECT_DELAY_MS(3000);
         _read_fd = AP::FS().open(fname, O_RDONLY);
         if (_read_fd == -1) {
-            _open_error_ms = AP_HAL::millis();
-            int saved_errno = errno;
+            const int saved_errno = errno;
+            if (saved_errno != ENOENT) {
+                // a missing log is expected when the log list
+                // contains a hole; it must not trip the open-error
+                // state, which pauses logging, fails downloads of
+                // other logs and fails arming checks
+                _open_error_ms = AP_HAL::millis();
+            }
             ::printf("Log read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
             DEV_PRINTF("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
-            return -1;            
+            return -1;
         }
         free(fname);
         _read_offset = 0;
