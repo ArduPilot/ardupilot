@@ -4616,45 +4616,54 @@ class TestSuite(abc.ABC):
             # tracker starts armed, which is annoying
             return
         self.set_parameter("LOG_DISARMED", 0)
-        self.set_parameter("LOG_MAX_FILES", 250)
         logdir = self.customise_SITL_log_directory()
-
-        # fabricate a post-wrap directory: logs 246..250 are leftovers
-        # from the previous numbering cycle, logs 1..3 are the newest:
-        lognums = [246, 247, 248, 249, 250, 1, 2, 3]  # oldest first
 
         def content_for_log(num):
             return (("I am log %u. " % num) * 100)[0:1000 + num]
 
-        os.makedirs(logdir)
-        for num in lognums:
-            with open(os.path.join(logdir, "%08u.BIN" % num), "w") as f:
-                f.write(content_for_log(num))
-        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
-            f.write("3\n")
+        # fabricate post-wrap directories: the high-numbered logs are
+        # leftovers from the previous numbering cycle, running up to
+        # LOG_MAX_FILES, and logs 1..3 are the newest.  The order
+        # readdir returns the files - hash order on most filesystems,
+        # so influenced by the filenames - determines which side of
+        # the wrap find_oldest_log discovers first; using two
+        # different sets of numbers exercises both discovery orders on
+        # common filesystems:
+        for (max_files, lognums) in (
+                (250, [246, 247, 248, 249, 250, 1, 2, 3]),  # oldest first
+                (244, [240, 241, 242, 243, 244, 1, 2, 3])):
+            self.start_subtest("Wrapped logs %s" % str(lognums))
+            self.set_parameter("LOG_MAX_FILES", max_files)
+            shutil.rmtree(logdir, ignore_errors=True)
+            os.makedirs(logdir)
+            for num in lognums:
+                with open(os.path.join(logdir, "%08u.BIN" % num), "w") as f:
+                    f.write(content_for_log(num))
+            with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+                f.write("3\n")
 
-        # reboot so the autopilot discovers the fabricated state:
-        self.reboot_sitl()
+            # reboot so the autopilot discovers the fabricated state:
+            self.reboot_sitl()
 
-        logs = self.download_full_log_list()
-        if len(logs) != len(lognums):
-            raise NotAchievedException(
-                "Expected %u logs got %u" % (len(lognums), len(logs)))
-        self.progress("Checking the entries map oldest-first across the wrap")
-        for (entry_id, num) in enumerate(lognums, start=1):
-            want = len(content_for_log(num))
-            if logs[entry_id].size != want:
+            logs = self.download_full_log_list()
+            if len(logs) != len(lognums):
                 raise NotAchievedException(
-                    "Entry %u size does not match log %u (want=%u got=%u)" %
-                    (entry_id, num, want, logs[entry_id].size))
+                    "Expected %u logs got %u" % (len(lognums), len(logs)))
+            self.progress("Checking the entries map oldest-first across the wrap")
+            for (entry_id, num) in enumerate(lognums, start=1):
+                want = len(content_for_log(num))
+                if logs[entry_id].size != want:
+                    raise NotAchievedException(
+                        "Entry %u size does not match log %u (want=%u got=%u)" %
+                        (entry_id, num, want, logs[entry_id].size))
 
-        self.progress("Downloading a log from either side of the wrap")
-        for (entry_id, num) in ((1, 246), (len(lognums), 3)):
-            data = bytes(self.download_log(entry_id))
-            if data != content_for_log(num).encode():
-                raise NotAchievedException(
-                    "Downloaded entry %u does not match log %u on disk" %
-                    (entry_id, num))
+            self.progress("Downloading a log from either side of the wrap")
+            for (entry_id, num) in ((1, lognums[0]), (len(lognums), lognums[-1])):
+                data = bytes(self.download_log(entry_id))
+                if data != content_for_log(num).encode():
+                    raise NotAchievedException(
+                        "Downloaded entry %u does not match log %u on disk" %
+                        (entry_id, num))
 
     def TestLogDownloadEmptyList(self):
         '''check the log list response when there are no logs'''
@@ -4690,8 +4699,8 @@ class TestSuite(abc.ABC):
         # LASTLOG.TXT entry marked with a "D".  Arming makes the log
         # permanent by rewriting LASTLOG.TXT without the mark; if the
         # vehicle never arms, the next boot deletes the marked log.
-        # Note that start_new_log() re-uses the number of an
-        # empty-or-missing log, so the boot after a discard re-uses
+        # Note that start_new_log() reuses the number of an
+        # empty-or-missing log, so the boot after a discard reuses
         # the discarded log's number: a never-armed vehicle stays on
         # log 1 forever, while a failure to discard would push the
         # boot's new log to number 2.
@@ -4734,7 +4743,7 @@ class TestSuite(abc.ABC):
 
         self.start_subtest("Marked log is discarded at boot if we never armed")
         self.reboot_sitl()
-        # the new boot deletes log 1 and its replacement re-uses the
+        # the new boot deletes log 1 and its replacement reuses the
         # number; had the discard not happened the old log's data
         # would force this boot's log to number 2:
         self.delay_sim_time(5, reason="boot's log to be created")
@@ -4760,6 +4769,223 @@ class TestSuite(abc.ABC):
         wait_for_lastlog_content("2D")
         assert_log_present(1)
         assert_log_present(2)
+
+    def TestLogErase(self):
+        '''check MAVLink log erase removes all logs and logging restarts'''
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_DISARMED", 0)
+        logdir = self.customise_SITL_log_directory()
+
+        self.progress("Fabricating some logs")
+        os.makedirs(logdir)
+        for num in 1, 2, 3:
+            with open(os.path.join(logdir, "%08u.BIN" % num), "w") as f:
+                f.write("I am log %u\n" % num)
+        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+            f.write("3\n")
+        self.reboot_sitl()
+
+        logs = self.download_full_log_list()
+        if len(logs) != 3:
+            raise NotAchievedException("Expected 3 logs got %u" % len(logs))
+
+        self.progress("Starting logging so the erase has an open log to close")
+        self.set_parameter("LOG_DISARMED", 1)
+        tstart = self.get_sim_time()
+        while not os.path.exists(os.path.join(logdir, "00000004.BIN")):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("Log 4 was not created")
+            self.delay_sim_time(1, reason="logging to start")
+
+        self.progress("Erasing all logs")
+        self.mav.mav.log_erase_send(self.sysid_thismav(),
+                                    1)  # target component
+        # the erase runs incrementally in the logger's IO thread; when
+        # it completes LASTLOG.TXT is also removed and logging - which
+        # was active when the erase started - restarts into a fresh
+        # log 1:
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException(
+                    "Erase did not complete (%s)" % str(self.log_list()))
+            if self.log_list() == [os.path.join(logdir, "00000001.BIN")]:
+                break
+            self.delay_sim_time(1, reason="erase to complete")
+
+        self.progress("Checking the log list matches")
+        logs = self.download_full_log_list()
+        if len(logs) != 1:
+            raise NotAchievedException(
+                "Expected 1 log after erase, got %u" % len(logs))
+        self.set_parameter("LOG_DISARMED", 0)
+
+    def TestLogDownloadEdgeCases(self):
+        '''check log transfer requests which must be refused or ignored'''
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_DISARMED", 0)
+        logdir = self.customise_SITL_log_directory()
+
+        def content_for_log(num):
+            return bytes([(i * 7 + num) % 251 for i in range(1024*1024)])
+
+        self.progress("Fabricating a large log")
+        os.makedirs(logdir)
+        with open(os.path.join(logdir, "00000001.BIN"), "wb") as f:
+            f.write(content_for_log(1))
+        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+            f.write("1\n")
+        self.reboot_sitl()
+
+        self.start_subtest("Requests for invalid log ids are (silently) ignored")
+        for bad_id in 0, 99:
+            self.progress("Requesting log %u" % bad_id)
+            self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                               1,  # target component
+                                               bad_id,
+                                               0,
+                                               90)
+            self.assert_not_receiving_message('LOG_DATA', timeout=2)
+
+        self.start_subtest("Requests during a transfer do not disturb it")
+        # slow the simulation down so the transfer is in progress long
+        # enough to inject requests into the middle of it:
+        self.context_set_speedup(1)
+        self.context_collect('STATUSTEXT')
+        content = content_for_log(1)
+        size = len(content)
+        # note: get_sim_time() drains the mav connection, and must
+        # happen before the request is sent:
+        tstart = self.get_sim_time()
+        self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                           1,  # target component
+                                           1,
+                                           0,
+                                           size)
+        data = []
+        sent_list_request = False
+        sent_data_rerequest = False
+        while len(data) < size:
+            if self.get_sim_time_cached() - tstart > 180:
+                raise NotAchievedException("Did not download log")
+            m = self.assert_receive_message('LOG_DATA', timeout=5)
+            if m.ofs != len(data):
+                raise NotAchievedException(
+                    "Transfer disturbed - unexpected offset (want=%u got=%s)" %
+                    (len(data), str(m)))
+            if m.count == 0:
+                raise NotAchievedException("EOF at %u bytes" % len(data))
+            data.extend(m.data[0:m.count])
+            if not sent_list_request and len(data) > size // 4:
+                self.progress("Sending log list request mid-transfer")
+                self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                                   1,  # target component
+                                                   0,
+                                                   0xffff)
+                sent_list_request = True
+            if not sent_data_rerequest and len(data) > size // 2:
+                self.progress("Sending same-link data re-request mid-transfer")
+                # MAVProxy does this when filling gaps; it must be
+                # dropped, not restart the transfer:
+                self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                                   1,  # target component
+                                                   1,
+                                                   0,
+                                                   90)
+                sent_data_rerequest = True
+        self.assert_bytes_equal(bytearray(content), data)
+        self.progress("Checking the mid-transfer log list request was refused")
+        self.wait_statustext("Log download in progress", check_context=True)
+        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+
+        self.start_subtest("Log list request is refused while armed")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                           1,  # target component
+                                           0,
+                                           0xffff)
+        self.wait_statustext("Disarm for log download", check_context=True)
+        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+        self.disarm_vehicle()
+
+    def TestLogOpenErrors(self):
+        '''check genuine log access errors engage the open-error backoff'''
+        # note that the injected faults must not rely on file
+        # permissions - CI runs as root, which ignores them.  A
+        # symlink loop fails to open with ELOOP and a directory-path
+        # component which is a regular file fails with ENOTDIR, for
+        # root and mortals alike.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_DISARMED", 0)
+        logdir = self.customise_SITL_log_directory()
+
+        self.progress("Fabricating a log and an unopenable log")
+        os.makedirs(logdir)
+        with open(os.path.join(logdir, "00000001.BIN"), "wb") as f:
+            f.write(bytes([(i * 7 + 1) % 251 for i in range(2000)]))
+        # log 2 - the newest, so the log list tolerates its zero
+        # size - is a symlink loop, so opening it fails with ELOOP:
+        unopenable = os.path.join(logdir, "00000002.BIN")
+        os.symlink("00000002.BIN", unopenable)
+        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+            f.write("2\n")
+        self.reboot_sitl()
+
+        def assert_zero_length_download(entry_id):
+            self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                               1,  # target component
+                                               entry_id,
+                                               0,
+                                               90)
+            m = self.assert_receive_message('LOG_DATA', timeout=2)
+            if m.id != entry_id or m.count != 0:
+                raise NotAchievedException(
+                    "Expected zero-length LOG_DATA, got (%s)" % str(m))
+
+        self.start_subtest("An unopenable log engages the download backoff")
+        logs = self.download_full_log_list()
+        if len(logs) != 2:
+            raise NotAchievedException("Expected 2 logs got %u" % len(logs))
+        self.progress("Downloading the unopenable log gives a zero-length EOF")
+        assert_zero_length_download(2)
+        # unlike a missing log, an open error which is not ENOENT is
+        # treated as real I/O trouble - e.g. a failing card - so
+        # downloads of other logs are refused for
+        # LOGGER_FILE_REOPEN_MS:
+        self.progress("... and briefly poisons other downloads")
+        assert_zero_length_download(1)
+        self.delay_sim_time(6, reason="open-error backoff to expire")
+        self.assert_downloaded_log_matches_disk(1, os.path.join(logdir, "00000001.BIN"))
+
+        self.start_subtest("An unwritable log directory fails arming checks")
+        # replace the log directory with a regular file; opening a log
+        # within it fails with ENOTDIR:
+        shutil.rmtree(logdir)
+        with open(logdir, "w") as f:
+            f.write("I am not a directory\n")
+        try:
+            # starting logging must now fail to open a log:
+            self.set_parameter("LOG_DISARMED", 1)
+            self.assert_prearm_failure("Logging failed",
+                                       timeout=30,
+                                       other_prearm_failures_fatal=False)
+        finally:
+            os.unlink(logdir)
+        self.progress("Logging recovers when the directory can be created again")
+        tstart = self.get_sim_time()
+        while not os.path.exists(os.path.join(logdir, "00000001.BIN")):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("Logging did not recover")
+            self.delay_sim_time(1, reason="open-error backoff to expire")
+        self.set_parameter("LOG_DISARMED", 0)
 
     #################################################
     # SIM UTILITIES
