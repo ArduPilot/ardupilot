@@ -4634,6 +4634,83 @@ class TestSuite(abc.ABC):
         self.reboot_sitl()
         assert_empty_log_list()
 
+    def TestLogDisarmedDiscard(self):
+        '''check LOG_DISARMED=3 discards the log at boot if the vehicle was never armed'''
+        # with LOG_DISARMED=3 a log created while disarmed has its
+        # LASTLOG.TXT entry marked with a "D".  Arming makes the log
+        # permanent by rewriting LASTLOG.TXT without the mark; if the
+        # vehicle never arms, the next boot deletes the marked log.
+        # Note that start_new_log() re-uses the number of an
+        # empty-or-missing log, so the boot after a discard re-uses
+        # the discarded log's number: a never-armed vehicle stays on
+        # log 1 forever, while a failure to discard would push the
+        # boot's new log to number 2.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_FILE_DSRMROT", 0)
+        self.set_parameter("LOG_DISARMED", 3)
+        logdir = self.customise_SITL_log_directory()
+
+        lastlog_path = os.path.join(logdir, "LASTLOG.TXT")
+
+        def lastlog_content():
+            try:
+                with open(lastlog_path) as f:
+                    return f.read().strip()
+            except FileNotFoundError:
+                return None
+
+        def wait_for_lastlog_content(want, timeout=30):
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(
+                        "LASTLOG.TXT did not contain %s (got %s)" %
+                        (want, lastlog_content()))
+                if lastlog_content() == want:
+                    return
+                self.delay_sim_time(1, reason="logger to update LASTLOG.TXT")
+
+        def assert_log_present(lognum, want=True):
+            filepath = os.path.join(logdir, "%08u.BIN" % lognum)
+            if os.path.exists(filepath) != want:
+                raise NotAchievedException(
+                    "%s should%s exist" % (filepath, "" if want else " not"))
+
+        self.start_subtest("Log created while disarmed is marked for discard")
+        wait_for_lastlog_content("1D")
+        assert_log_present(1)
+
+        self.start_subtest("Marked log is discarded at boot if we never armed")
+        self.reboot_sitl()
+        # the new boot deletes log 1 and its replacement re-uses the
+        # number; had the discard not happened the old log's data
+        # would force this boot's log to number 2:
+        self.delay_sim_time(5, reason="boot's log to be created")
+        wait_for_lastlog_content("1D")
+        assert_log_present(1)
+        assert_log_present(2, want=False)
+        # the discarded log must not appear as a phantom list entry:
+        logs = self.download_full_log_list()
+        if len(logs) != 1:
+            raise NotAchievedException(
+                "Expected exactly 1 log list entry, got %u" % len(logs))
+
+        self.start_subtest("Arming makes the log permanent")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        wait_for_lastlog_content("1")
+        self.disarm_vehicle()
+
+        self.start_subtest("Once-armed log survives the next boot")
+        self.reboot_sitl()
+        # this boot must keep the unmarked log 1 and open log 2,
+        # itself marked for discard:
+        wait_for_lastlog_content("2D")
+        assert_log_present(1)
+        assert_log_present(2)
+
     #################################################
     # SIM UTILITIES
     #################################################
