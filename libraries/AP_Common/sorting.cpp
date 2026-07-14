@@ -41,8 +41,8 @@ void insertion_sort_uint16(uint16_t *data, uint16_t n)
 }
 
 template void insertion_sort<float>(float*, unsigned short);
-template void insertion_sort<short>(short*, unsigned short);
-template void insertion_sort<unsigned short>(unsigned short*, unsigned short);
+template void insertion_sort<int16_t>(int16_t*, unsigned short);
+template void insertion_sort<uint16_t>(uint16_t*, unsigned short);
 /*
   remove duplicates from a sorted uint16_t array, returning the new
   count
