@@ -17,6 +17,7 @@
 #include "AP_EZKontrolCAN_protocol.h"
 
 #include <AP_Common/AP_Common.h>
+#include <AP_ESC_Telem/AP_ESC_Telem.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
@@ -109,7 +110,11 @@ AP_EZKontrolCAN::AP_EZKontrolCAN() :
     _last_target_ms(0),
     _last_update_ms(0),
     _last_debug_ms(0),
-    _last_send_ms(0)
+    _last_send_ms(0),
+    _rx_count(0),
+    _last_rx_debug_count(0),
+    _last_rx_id(0),
+    _last_rx_dlc(0)
 {
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
@@ -189,12 +194,20 @@ void AP_EZKontrolCAN::update()
             _last_debug_ms = now_ms;
             const uint32_t left_telem_age_ms = _left_state.last_telem_ms == 0 ? 9999U : MIN<uint32_t>(now_ms - _left_state.last_telem_ms, 9999U);
             const uint32_t right_telem_age_ms = _right_state.last_telem_ms == 0 ? 9999U : MIN<uint32_t>(now_ms - _right_state.last_telem_ms, 9999U);
+            const uint32_t rx_delta = _rx_count - _last_rx_debug_count;
+            _last_rx_debug_count = _rx_count;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                           "EZK hs L:%u R:%u tlm L:%lu R:%lu",
                           _left_state.handshake_complete ? 1U : 0U,
                           _right_state.handshake_complete ? 1U : 0U,
                           (unsigned long)left_telem_age_ms,
                           (unsigned long)right_telem_age_ms);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                          "EZK rx:%lu init:%u id:%08lx dlc:%u",
+                          (unsigned long)rx_delta,
+                          _can_inited ? 1U : 0U,
+                          (unsigned long)_last_rx_id,
+                          unsigned(_last_rx_dlc));
         }
     }
 
@@ -211,6 +224,9 @@ void AP_EZKontrolCAN::update()
         if (read != 1) {
             break;
         }
+        _rx_count++;
+        _last_rx_id = frame.id;
+        _last_rx_dlc = frame.dlc;
         handle_rx_frame(frame);
     }
 
@@ -346,14 +362,19 @@ void AP_EZKontrolCAN::handle_telemetry_1(ControllerState &state, const AP_HAL::C
     state.telem.bus_current = bus_current_raw * 0.1f - 3200.0f;
     state.telem.phase_current = phase_current_raw * 0.1f - 3200.0f;
     state.telem.speed_rpm = float(speed_raw) - 32000.0f;
+    state.telem.telem_1_valid = true;
     state.telem.valid = true;
     state.last_telem_ms = _last_update_ms;
+<<<<<<< HEAD
 #if HAL_WITH_ESC_TELEM
     publish_esc_telem(state,
         AP_ESC_Telem_Backend::TelemetryType::VOLTAGE |
         AP_ESC_Telem_Backend::TelemetryType::CURRENT,
         true);
 #endif
+=======
+    publish_esc_telem(state);
+>>>>>>> 9ab49c93eacef48931047b7d735e71d8277ff0fb
     if (_debug.get() != 0 && !state.debug_telem_reported) {
         state.debug_telem_reported = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK telem active addr 0x%02x",
@@ -377,14 +398,19 @@ void AP_EZKontrolCAN::handle_telemetry_2(ControllerState &state, const AP_HAL::C
     state.telem.temp_motor_c = temp_motor;
     state.telem.status_bits = status_bits;
     state.telem.error_bits = error_bits;
+    state.telem.telem_2_valid = true;
     state.telem.valid = true;
     state.last_telem_ms = _last_update_ms;
+<<<<<<< HEAD
 #if HAL_WITH_ESC_TELEM
     publish_esc_telem(state,
         AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
         AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE,
         false);
 #endif
+=======
+    publish_esc_telem(state);
+>>>>>>> 9ab49c93eacef48931047b7d735e71d8277ff0fb
     if (_debug.get() != 0 && !state.debug_telem_reported) {
         state.debug_telem_reported = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EZK telem active addr 0x%02x",
@@ -497,6 +523,47 @@ void AP_EZKontrolCAN::send_command(ControllerState &state, float target_norm, bo
     state.life_counter++;
 
     _can_iface->send(frame, AP_HAL::micros64() + 1000U, AP_HAL::CANIface::AbortOnError);
+}
+
+void AP_EZKontrolCAN::publish_esc_telem(const ControllerState &state) const
+{
+#if HAL_WITH_ESC_TELEM
+    if (!state.telem.valid) {
+        return;
+    }
+
+    const uint8_t esc_index = (&state == &_right_state) ? 1U : 0U;
+
+    if (state.telem.telem_1_valid) {
+        AP::esc_telem().update_rpm(esc_index, state.telem.speed_rpm, 0.0f);
+    }
+
+    AP_ESC_Telem_Backend::TelemetryData esc_telem {};
+    uint16_t data_mask = 0;
+
+    if (state.telem.telem_1_valid) {
+        esc_telem.voltage = state.telem.bus_voltage;
+        esc_telem.current = state.telem.bus_current;
+        data_mask |= AP_ESC_Telem_Backend::TelemetryType::VOLTAGE |
+                     AP_ESC_Telem_Backend::TelemetryType::CURRENT;
+    }
+
+    if (state.telem.telem_2_valid) {
+        esc_telem.temperature_cdeg = int16_t(constrain_int32(lroundf(state.telem.temp_mos_c * 100.0f), INT16_MIN, INT16_MAX));
+        esc_telem.motor_temp_cdeg = int16_t(constrain_int32(lroundf(state.telem.temp_motor_c * 100.0f), INT16_MIN, INT16_MAX));
+        data_mask |= AP_ESC_Telem_Backend::TelemetryType::TEMPERATURE |
+                     AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE;
+
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+        esc_telem.flags = (state.telem.error_bits << 8) | state.telem.status_bits;
+        data_mask |= AP_ESC_Telem_Backend::TelemetryType::FLAGS;
+#endif
+    }
+
+    if (data_mask != 0) {
+        AP::esc_telem().update_telem_data(esc_index, esc_telem, data_mask);
+    }
+#endif
 }
 
 void AP_EZKontrolCAN::update_health()
