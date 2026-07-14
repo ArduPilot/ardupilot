@@ -451,6 +451,12 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
     group.telem_bit_ticks = (resolution_hz + telem_rate / 2) / telem_rate;
     group.frame_us = (uint16_t)((16u * 1000000u) / bitrate + 5); // 16 bits + margin
 
+    // Hold _dshot_sem across the whole alloc/free loop: set_output_mode() is called
+    // more than once during boot (AP_Motors, then SRV/BLHeli setup), so the transmit
+    // task may already be running and reading these RMT handles. Freeing/reallocating
+    // a channel under it without the lock is a use-after-free (observed as a boot crash).
+    WITH_SEMAPHORE(_dshot_sem);
+
     for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
         pwm_chan &ch = pwm_chan_list[chan];
         if (ch.group != &group) {
@@ -899,10 +905,10 @@ void RCOutput::dshot_task()
                 } else {
                     dshot_send_chan(ch, dshot_throttle_from_pwm((uint16_t)ch.value), false);
                 }
-            }
-            // bidirectional DShot: turn the line around and capture the ESC reply
-            if (ch.bidir && ch.rmt_rx_chan != nullptr) {
-                bdshot_capture_reply(ch, chan);
+                // bidirectional DShot: turn the line around and capture the ESC reply
+                if (ch.bidir && ch.rmt_rx_chan != nullptr) {
+                    bdshot_capture_reply(ch, chan);
+                }
             }
         }
         vTaskDelay(pdMS_TO_TICKS(1)); // ~1 kHz frame rate
