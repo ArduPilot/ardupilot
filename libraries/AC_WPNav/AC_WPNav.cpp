@@ -487,8 +487,7 @@ bool AC_WPNav::set_wp_destination_next_NED_m(const Vector3p& destination_ned_m, 
 // See get_wp_stopping_point_NE_m() for full details.
 void AC_WPNav::get_wp_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const
 {
-    // convert input/output to meters to match internal representation
-    Vector2p stopping_point_ne_m = stopping_point_ne_cm.topostype() * 0.01;
+    Vector2p stopping_point_ne_m;
     get_wp_stopping_point_NE_m(stopping_point_ne_m);
     stopping_point_ne_cm = stopping_point_ne_m.tofloat() * 100.0;
 }
@@ -505,8 +504,7 @@ void AC_WPNav::get_wp_stopping_point_NE_m(Vector2p& stopping_point_ne_m) const
 // See get_wp_stopping_point_NED_m() for full details.
 void AC_WPNav::get_wp_stopping_point_NEU_cm(Vector3f& stopping_point_neu_cm) const
 {
-    // convert input from cm to m for internal calculation
-    Vector3p stopping_point_ned_m = Vector3p(stopping_point_neu_cm.x, stopping_point_neu_cm.y, -stopping_point_neu_cm.z) * 0.01;
+    Vector3p stopping_point_ned_m;
     // compute stopping point using meters
     get_wp_stopping_point_NED_m(stopping_point_ned_m);
     // convert result back to centimeters
