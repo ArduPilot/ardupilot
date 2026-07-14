@@ -43,8 +43,8 @@ HampelFilter<T, FILTER_SIZE>::HampelFilter(uint8_t first_return_element, uint8_t
     static_assert(FILTER_SIZE >= 3, "Hamepel test requires at least 3 samples");
 
     if (first_output_element >= FILTER_SIZE) {
-        first_output_element = (FILTER_SIZE - 1)/2;
-        last_output_element = FILTER_SIZE/2;  //if first element argument didn't make sense the last element must be this to make any sense
+        first_output_element = (FILTER_SIZE - 1) / 2;
+        last_output_element = FILTER_SIZE / 2;  //if first element argument didn't make sense the last element must be this to make any sense
     }
     if (last_output_element >= FILTER_SIZE) {
         last_output_element = first_output_element;
@@ -97,9 +97,9 @@ T HampelFilter<T, FILTER_SIZE>::calculate()
     T mad = get_median(abs_devs)*3; // multiply MAD by 3 to obtain ±2 sigma gate assuming samples are coming from normal distribution so 95.6% samples are accepted
 
     uint8_t adjusted_elements = 0;
-    T lower_limit = median-mad;
-    T upper_limit = median+mad;
-    for (uint8_t i = 0; i < FILTER_SIZE/2; i++) {
+    T lower_limit = median - mad;
+    T upper_limit = median + mad;
+    for (uint8_t i = 0; i < FILTER_SIZE / 2; i++) {
         if (buf[i] < lower_limit) {
             buf[i] = median;
             adjusted_elements++;
@@ -107,7 +107,7 @@ T HampelFilter<T, FILTER_SIZE>::calculate()
             break;
         }
     }
-    for (uint8_t i = FILTER_SIZE-1; i>(FILTER_SIZE-1)/2; i--) {
+    for (uint8_t i = FILTER_SIZE-1; i > (FILTER_SIZE - 1) / 2; i--) {
         if (buf[i] > upper_limit) {
             buf[i] = median;
             adjusted_elements++;
@@ -122,10 +122,10 @@ T HampelFilter<T, FILTER_SIZE>::calculate()
     } else {
         accumulator_type<T> accumulator = 0;
 
-        for (uint8_t i = first_output_element; i<=last_output_element; i++) {
+        for (uint8_t i = first_output_element; i <= last_output_element; i++) {
             accumulator += buf[i];
         }
-        return output = accumulator/(last_output_element-first_output_element+1);
+        return output = accumulator / (last_output_element - first_output_element + 1);
     }
 }
 
@@ -136,7 +136,7 @@ T HampelFilter<T, FILTER_SIZE>::get_median(T *buf)
     if (FILTER_SIZE% 2 == 1) { //should be cnstexpr in C++17
         return buf[(FILTER_SIZE - 1) / 2];
     } else {
-        return (buf[(FILTER_SIZE) / 2 - 1] + buf[FILTER_SIZE / 2])/2;
+        return (buf[(FILTER_SIZE) / 2 - 1] + buf[FILTER_SIZE / 2]) / 2;
     }
 }
 
