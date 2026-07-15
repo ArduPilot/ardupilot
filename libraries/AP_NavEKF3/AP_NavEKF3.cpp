@@ -1962,6 +1962,21 @@ bool NavEKF3::getHeightControlLimit(float &height) const
     return core[primary].getHeightControlLimit(height);
 }
 
+// Returns a count of yaw reset events; incremented when the primary core
+// changes and when the primary core resets its yaw
+uint16_t NavEKF3::getYawResetCount(void)
+{
+    if (!core) {
+        return 0;
+    }
+    const uint16_t core_count = core[primary].getYawResetCount();
+    if (core_count != yaw_reset_data.last_core_count) {
+        yaw_reset_data.last_core_count = core_count;
+        yaw_reset_data.count++;
+    }
+    return yaw_reset_data.count;
+}
+
 // Returns the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
 // Returns the time of the last yaw angle reset or 0 if no reset or core switch has ever occurred
 // Where there are multiple consumers, they must access this function on the same frame as each other
@@ -2110,6 +2125,11 @@ void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_prim
     yaw_reset_data.last_primary_change = imuSampleTime_us / 1000;
     yaw_reset_data.core_changed = true;
 
+    // the new primary's historic in-core resets are not new events
+    // for consumers; re-seat the count and record a single event for
+    // the switch itself
+    yaw_reset_data.last_core_count = core[new_primary].getYawResetCount();
+    yaw_reset_data.count++;
 }
 
 // update the position reset data to capture changes due to a lane switch

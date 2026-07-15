@@ -1455,6 +1455,7 @@ void NavEKF3_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, rotationO
     // record the yaw reset event
     yawResetAngle += deltaYaw;
     lastYawReset_ms = imuSampleTime_ms;
+    yawResetCount++;
 
     // record the yaw reset event
     recordYawResetsCompleted();
