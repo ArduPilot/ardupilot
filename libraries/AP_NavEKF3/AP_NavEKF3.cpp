@@ -1094,7 +1094,7 @@ void NavEKF3::switchLane(uint8_t new_lane_index)
     }
 
     if (new_lane_index != primary) {
-        updateLaneSwitchYawResetData(new_lane_index, primary);
+        updateLaneSwitchYawResetData(new_lane_index);
         updateLaneSwitchPosResetData(new_lane_index, primary);
         updateLaneSwitchPosDownResetData(new_lane_index, primary);
         primary = new_lane_index;
@@ -1977,44 +1977,6 @@ uint16_t NavEKF3::getYawResetCount(void)
     return yaw_reset_data.count;
 }
 
-// Returns the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
-// Returns the time of the last yaw angle reset or 0 if no reset or core switch has ever occurred
-// Where there are multiple consumers, they must access this function on the same frame as each other
-uint32_t NavEKF3::getLastYawResetAngle(float &yawAngDelta)
-{
-    if (!core) {
-        return 0;
-    }
-
-    yawAngDelta = 0.0f;
-
-    // Do the conversion to msec in one place
-    uint32_t now_time_ms = imuSampleTime_us / 1000;
-
-    // The last time we switched to the current primary core is the first reset event
-    uint32_t lastYawReset_ms = yaw_reset_data.last_primary_change;
-
-    // There has been a change notification in the primary core that the controller has not consumed
-    // or this is a repeated access
-    if (yaw_reset_data.core_changed || yaw_reset_data.last_function_call == now_time_ms) {
-        yawAngDelta = yaw_reset_data.core_delta;
-        yaw_reset_data.core_changed = false;
-    }
-
-    // Record last time controller got the yaw reset
-    yaw_reset_data.last_function_call = now_time_ms;
-
-    // There has been a reset inside the core since we switched so update the time and delta
-    float temp_yawAng;
-    uint32_t lastCoreYawReset_ms = core[primary].getLastYawResetAngle(temp_yawAng);
-    if (lastCoreYawReset_ms > lastYawReset_ms) {
-        yawAngDelta = wrap_PI(yawAngDelta + temp_yawAng);
-        lastYawReset_ms = lastCoreYawReset_ms;
-    }
-
-    return lastYawReset_ms;
-}
-
 // Returns the amount of NE position change due to the last position reset or core switch in metres
 // Returns the time of the last reset or 0 if no reset or core switch has ever occurred
 // Where there are multiple consumers, they must access this function on the same frame as each other
@@ -2102,29 +2064,8 @@ uint32_t NavEKF3::getLastPosDownReset(float &posDelta)
 }
 
 // update the yaw reset data to capture changes due to a lane switch
-void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary)
+void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary)
 {
-    Vector3f eulers_old_primary, eulers_new_primary;
-    float old_yaw_delta;
-
-    // If core yaw reset data has been consumed reset delta to zero
-    if (!yaw_reset_data.core_changed) {
-        yaw_reset_data.core_delta = 0;
-    }
-
-    // If current primary has reset yaw after controller got it, add it to the delta
-    if (core[old_primary].getLastYawResetAngle(old_yaw_delta) > yaw_reset_data.last_function_call) {
-        yaw_reset_data.core_delta += old_yaw_delta;
-    }
-
-    // Record the yaw delta between current core and new primary core and the timestamp of the core change
-    // Add current delta in case it hasn't been consumed yet
-    core[old_primary].getEulerAngles(eulers_old_primary);
-    core[new_primary].getEulerAngles(eulers_new_primary);
-    yaw_reset_data.core_delta = wrap_PI(eulers_new_primary.z - eulers_old_primary.z + yaw_reset_data.core_delta);
-    yaw_reset_data.last_primary_change = imuSampleTime_us / 1000;
-    yaw_reset_data.core_changed = true;
-
     // the new primary's historic in-core resets are not new events
     // for consumers; re-seat the count and record a single event for
     // the switch itself
