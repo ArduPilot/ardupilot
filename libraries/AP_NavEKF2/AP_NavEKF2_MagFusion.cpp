@@ -1233,8 +1233,6 @@ void NavEKF2_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, bool isDe
     // Update the rotation matrix
     stateStruct.quat.inverse().rotation_matrix(prevTnb);
     
-    ftype deltaYaw = wrap_PI(yaw - eulerAngles.z);
-
     // calculate the change in the quaternion state and apply it to the output history buffer
     QuaternionF quat_delta = stateStruct.quat / quatBeforeReset;
     StoreQuatRotate(quat_delta);
@@ -1259,8 +1257,6 @@ void NavEKF2_core::resetQuatStateYawOnly(ftype yaw, ftype yawVariance, bool isDe
     P[2][2] = bf_variances.z;
 
     // record the yaw reset event
-    yawResetAngle += deltaYaw;
-    lastYawReset_ms = imuSampleTime_ms;
     yawResetCount++;
     recordYawReset();
 
