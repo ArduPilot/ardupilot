@@ -612,6 +612,10 @@ AP_HW_Accton_Godwit_GA1              7120
 AP_HW_Accton_Godwit_GFF4             7121
 AP_HW_Accton_Godwit_GFH7             7122
 
+# IDs 7130-7139 reserved for CoreWing
+AP_HW_CoreWingF405WingV2             7130
+AP_HW_CoreWingF405WMiniV2            7131
+
 # please fill gaps in the above ranges rather than adding past ID #7199
 
 
