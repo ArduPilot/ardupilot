@@ -248,8 +248,7 @@ void Copter::failsafe_ekf_recheck()
 void Copter::check_ekf_reset()
 {
     // check for yaw reset
-    float yaw_angle_change_rad;
-    const uint16_t new_yaw_reset_count = ahrs.get_yaw_reset_count(yaw_angle_change_rad);
+    const uint16_t new_yaw_reset_count = ahrs.get_yaw_reset_count();
     if (new_yaw_reset_count != ahrs_yaw_reset_count) {
         attitude_control->inertial_frame_reset();
         ahrs_yaw_reset_count = new_yaw_reset_count;
