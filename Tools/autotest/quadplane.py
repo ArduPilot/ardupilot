@@ -882,6 +882,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                                       comparator=operator.eq)
         self.set_rc(3, 1300)
 
+        # Disable speed assist and alt assist during angle assist tests
+        self.set_parameters({
+            "Q_ASSIST_SPEED": 1,
+            "Q_ASSIST_ALT": 0,
+        })
+
         self.start_subtest("Test angle assist (roll)")
         self.context_push()
         self.context_collect('STATUSTEXT')
@@ -902,7 +908,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(1, 1500)
         self.progress("Checking qassist stops")
         # we must push RC3 here or the translational drag from the
-        # motors keeps us at ~17m/s, below the airspeed assist speed!
+        # motors keeps our airspeed below AIRSPEED_MIN, and the
+        # transition back to pure fixed-wing never completes
         self.set_rc(3, 1800)
         self.wait_servo_channel_value(
             5,
@@ -934,7 +941,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.progress("Checking qassist stops")
         # we must push RC3 here or the translational drag from the
-        # motors keeps us at ~17m/s, below the airspeed assist speed!
+        # motors keeps our airspeed below AIRSPEED_MIN, and the
+        # transition back to pure fixed-wing never completes
         self.set_rc(3, 1800)
         self.wait_servo_channel_value(
             5,
@@ -974,7 +982,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.progress("Checking qassist stops")
         # we must push RC3 here or the translational drag from the
-        # motors keeps us at ~17m/s, below the airspeed assist speed!
+        # motors keeps our airspeed below AIRSPEED_MIN, and the
+        # transition back to pure fixed-wing never completes
         self.set_rc(3, 1800)
         self.wait_servo_channel_value(
             5,
