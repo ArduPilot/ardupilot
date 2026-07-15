@@ -225,10 +225,6 @@ public:
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
 
-    // return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
-    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAngDelta);
-
     // return a count of yaw reset events; incremented when the
     // primary core changes and when the primary core resets its yaw
     uint16_t getYawResetCount(void);
@@ -427,10 +423,6 @@ private:
     uint64_t lastLogWrite_us;
     
     struct {
-        uint32_t last_function_call;  // last time getLastYawResetAngle was called
-        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
-        uint32_t last_primary_change; // last time a primary has changed
-        float core_delta;             // the amount of yaw change between cores when a change happened
         uint16_t count;               // count of yaw reset events passed to consumers
         uint16_t last_core_count;     // primary core's yaw reset count when count last changed
     } yaw_reset_data;
@@ -468,7 +460,7 @@ private:
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
-    void updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary);
+    void updateLaneSwitchYawResetData(uint8_t new_primary);
 
     // update the position reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary

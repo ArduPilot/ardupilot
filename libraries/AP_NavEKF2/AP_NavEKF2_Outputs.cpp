@@ -124,14 +124,6 @@ void NavEKF2_core::getQuaternion(Quaternion& ret) const
     ret = outputDataNew.quat.tofloat();
 }
 
-// return the amount of yaw angle change due to the last yaw angle reset in radians
-// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t NavEKF2_core::getLastYawResetAngle(float &yawAng) const
-{
-    yawAng = yawResetAngle;
-    return lastYawReset_ms;
-}
-
 // return the amount of NE position change due to the last position reset in metres
 // returns the time of the last reset or 0 if no reset has ever occurred
 uint32_t NavEKF2_core::getLastPosNorthEastReset(Vector2f &pos) const
