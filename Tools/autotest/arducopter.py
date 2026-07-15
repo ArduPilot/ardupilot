@@ -14197,7 +14197,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # A frame slip (e.g. rotating the offset by the published vehicle
         # attitude instead) would bias the yaw, and the large-Z baseline
         # amplifies that bias well past the tolerance below.
-        self.context_push()
         self.load_default_params_file("copter-gps-for-yaw.parm")
         self.set_parameters({
             # Antenna baseline: small fore-aft (X) plus large vertical (Z)
@@ -14278,8 +14277,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 break
 
         self.do_RTL()
-        self.context_pop()
-        self.reboot_sitl()
 
     def GPSForYawVerticalBaseline(self):
         '''Moving baseline GPS yaw must be rejected for a vertical baseline'''
