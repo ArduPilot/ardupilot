@@ -20,6 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -104,8 +105,6 @@ void AP_TemperatureSensor_MCP9808::init()
             void));
 }
 
-
-
 void AP_TemperatureSensor_MCP9808::_timer(void)
 {
     uint16_t raw;
@@ -149,7 +148,6 @@ void AP_TemperatureSensor_MCP9808::_timer(void)
 }
 
 
-
 bool AP_TemperatureSensor_MCP9808::read_registers(
     uint8_t reg,
     uint16_t &value) const
@@ -175,7 +173,6 @@ bool AP_TemperatureSensor_MCP9808::read_registers(
 
     return true;
 }
-
 
 
 bool AP_TemperatureSensor_MCP9808::write_register(
