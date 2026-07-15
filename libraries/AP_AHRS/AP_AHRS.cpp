@@ -564,25 +564,10 @@ void AP_AHRS::try_set_common_origin(const AP_AHRS_Backend &source_backend, const
 void AP_AHRS::update_reset_counters()
 {
     if (state.active_EKF_type != last_active_ekf_type) {
-        const auto *last = estimates_for_type(last_active_ekf_type);
-
-        // deltas across the estimator change come from differencing
-        // old and new backend estimates; zero if either side invalid
-        Vector2f pos_ne_delta;
-        float pos_d_delta = 0;
-        if (last != nullptr) {
-            if (active_estimates->position_NE_valid && last->position_NE_valid) {
-                pos_ne_delta = (active_estimates->position_NE - last->position_NE).tofloat();
-            }
-            if (active_estimates->position_D_valid && last->position_D_valid) {
-                pos_d_delta = active_estimates->position_D - last->position_D;
-            }
-        }
-
         attitude_reset_tracker.fill(active_estimates->attitude_reset_count);
         yaw_reset_tracker.fill(active_estimates->yaw_reset_count);
-        position_NE_reset_tracker.fill(active_estimates->position_NE_reset_count, pos_ne_delta);
-        position_D_reset_tracker.fill(active_estimates->position_D_reset_count, pos_d_delta);
+        position_NE_reset_tracker.fill(active_estimates->position_NE_reset_count);
+        position_D_reset_tracker.fill(active_estimates->position_D_reset_count);
         LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
         return;
     }
@@ -591,10 +576,8 @@ void AP_AHRS::update_reset_counters()
     if (yaw_reset_tracker.update(active_estimates->yaw_reset_count)) {
         LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
     }
-    position_NE_reset_tracker.update(active_estimates->position_NE_reset_count,
-                                     active_estimates->position_NE_reset_delta);
-    position_D_reset_tracker.update(active_estimates->position_D_reset_count,
-                                    active_estimates->position_D_reset_delta);
+    position_NE_reset_tracker.update(active_estimates->position_NE_reset_count);
+    position_D_reset_tracker.update(active_estimates->position_D_reset_count);
 }
 
 // update run at loop rate
