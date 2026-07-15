@@ -229,6 +229,10 @@ public:
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAngDelta);
 
+    // return a count of yaw reset events; incremented when the
+    // primary core changes and when the primary core resets its yaw
+    uint16_t getYawResetCount(void);
+
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosNorthEastReset(Vector2f &posDelta);
@@ -427,6 +431,8 @@ private:
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
         uint32_t last_primary_change; // last time a primary has changed
         float core_delta;             // the amount of yaw change between cores when a change happened
+        uint16_t count;               // count of yaw reset events passed to consumers
+        uint16_t last_core_count;     // primary core's yaw reset count when count last changed
     } yaw_reset_data;
 
     struct {
