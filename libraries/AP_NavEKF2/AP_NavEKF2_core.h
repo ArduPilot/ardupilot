@@ -267,6 +267,12 @@ public:
     // return the number of yaw resets performed by this core
     uint16_t getYawResetCount(void) const { return yawResetCount; }
 
+    // return the number of NE position resets performed by this core
+    uint16_t getPosNorthEastResetCount(void) const { return posNEResetCount; }
+
+    // return the number of D position resets performed by this core
+    uint16_t getPosDownResetCount(void) const { return posDResetCount; }
+
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosNorthEastReset(Vector2f &pos) const;
@@ -922,6 +928,8 @@ private:
     uint32_t lastVelReset_ms;       // System time at which the last velocity reset occurred. Returned by getLastVelNorthEastReset
     ftype posResetD;                // Change in Down position due to last in-flight reset in metres. Returned by getLastPosDowntReset
     uint32_t lastPosResetD_ms;      // System time at which the last position reset occurred. Returned by getLastPosDownReset
+    uint16_t posNEResetCount;       // number of NE position resets performed by this core
+    uint16_t posDResetCount;        // number of D position resets performed by this core
     ftype yawTestRatio;             // square of magnetometer yaw angle innovation divided by fail threshold
     QuaternionF prevQuatMagReset;    // Quaternion from the last time the magnetic field state reset condition test was performed
     ftype hgtInnovFiltState;        // state used for fitering of the height innovations used for pre-flight checks
