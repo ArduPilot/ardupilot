@@ -2305,8 +2305,7 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             qp.thr_ctrl_land = false;
         } else if (s == QPOS_LAND_FINAL) {
             // remember last pos reset to handle GPS glitch in LAND_FINAL
-            Vector2f rpos;
-            ahrs_position_NE_reset_count = plane.ahrs.get_position_NE_reset_count(rpos);
+            ahrs_position_NE_reset_count = plane.ahrs.get_position_NE_reset_count();
             qp.landing_detect.land_start_ms = 0;
             qp.landing_detect.lower_limit_start_ms = 0;
         }
@@ -2761,8 +2760,7 @@ void QuadPlane::vtol_position_controller(void)
         } else {
             Vector2f zero;
             Vector2f vel_ne_ms = poscontrol.target_vel_ms.xy() + landing_velocity_ne_ms;
-            Vector2f rpos;
-            const uint16_t last_reset_count = plane.ahrs.get_position_NE_reset_count(rpos);
+            const uint16_t last_reset_count = plane.ahrs.get_position_NE_reset_count();
             /* we use velocity control when we may be touching the
               ground or if we've had a position reset from AHRS. This
               helps us handle a GPS glitch in the final land phase,
