@@ -387,6 +387,16 @@ public:
         return position_D_reset_tracker.count();
     }
 
+    // returns the number of times the NE position has been reset
+    uint16_t get_position_NE_reset_count(void) const {
+        return position_NE_reset_tracker.count();
+    }
+
+    // returns the number of times the D position has been reset
+    uint16_t get_position_D_reset_count(void) const {
+        return position_D_reset_tracker.count();
+    }
+
     // returns a counter which is incremented each time the estimator's output resets
     uint16_t get_last_attitude_reset_count() const {
         return attitude_reset_tracker.count();

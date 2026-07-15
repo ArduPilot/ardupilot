@@ -157,6 +157,14 @@ public:
         return ahrs.get_position_D_reset_count(posDelta);
     }
 
+    uint16_t get_position_NE_reset_count(void) WARN_IF_UNUSED {
+        return ahrs.get_position_NE_reset_count();
+    }
+
+    uint16_t get_position_D_reset_count(void) WARN_IF_UNUSED {
+        return ahrs.get_position_D_reset_count();
+    }
+
     // rotate a 2D vector from earth frame to body frame
     // in result, x is forward, y is right
     Vector2f earth_to_body2D(const Vector2f &ef_vector) const;
