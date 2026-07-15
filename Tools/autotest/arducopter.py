@@ -14178,7 +14178,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Sent %u GPS_INPUT messages" % feeder.count)
 
     def GPSForYawAttitudeCorrection(self):
-        '''Moving baseline GPS yaw must correct for vehicle roll/pitch'''
+        '''Moving baseline GPS yaw must correct for vehicle roll/pitch, incl. under a large board mounting trim'''
         # The moving-baseline GPS reports the antenna baseline heading in the
         # NED horizontal plane.  The GPS backend recovers the vehicle yaw by
         # subtracting the bearing of the body-frame antenna offset, which is
@@ -14188,6 +14188,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # lean swings the apparent horizontal bearing by tens of degrees:
         # without the attitude correction the yaw fed to the EKF is then
         # wrong by a similar amount.
+        #
+        # A large AHRS_TRIM (board-to-frame mounting offset) is also applied as
+        # a frame regression guard.  The EKF works in the autopilot (sensor)
+        # body frame and applies the trim only on output; the correction rotates
+        # the antenna offset by the EKF's own attitude and fuses the result in
+        # that same frame, so the recovered yaw must be unaffected by the trim.
+        # A frame slip (e.g. rotating the offset by the published vehicle
+        # attitude instead) would bias the yaw, and the large-Z baseline
+        # amplifies that bias well past the tolerance below.
         self.context_push()
         self.load_default_params_file("copter-gps-for-yaw.parm")
         self.set_parameters({
@@ -14205,6 +14214,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # not undo, confounding the comparison against truth.
             "SIM_GPS1_LAG_MS": 0,
             "SIM_GPS2_LAG_MS": 0,
+            # large board mounting trim, near the AHRS_TRIM limit: exercises the
+            # sensor-vs-vehicle frame handling of the correction (see docstring).
+            "AHRS_TRIM_X": 0.1745,
+            "AHRS_TRIM_Y": 0.1745,
         })
         self.reboot_sitl()
 
