@@ -304,7 +304,7 @@ bool ModeGuided::get_posvel_target_NEU_cm(Vector3f &pos) const
     if (sub.guided_mode != Guided_PosVel) {
         return false;
     }
-    pos = posvel_pos_target_cm.tofloat();
+    pos = posvel_pos_target_neu_cm.tofloat();
     return true;
 }
 
