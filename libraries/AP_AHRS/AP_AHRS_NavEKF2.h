@@ -92,7 +92,7 @@ public:
     uint16_t attitude_reset_count;
     int8_t old_primary_core;
 
-    AP_AHRS_ResetTracker<float, uint32_t> yaw_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> yaw_reset_tracker;
     AP_AHRS_ResetTracker<Vector2f, uint32_t> position_NE_reset_tracker;
     AP_AHRS_ResetTracker<float, uint32_t> position_D_reset_tracker;
 };

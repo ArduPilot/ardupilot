@@ -368,13 +368,6 @@ public:
     // true if offsets are valid
     bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
 
-    // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns the number of times the yaw angle has been reset
-    uint16_t get_yaw_reset_count(float &yawAng) const {
-        yawAng = yaw_reset_tracker.delta();
-        return yaw_reset_tracker.count();
-    }
-
     // returns the number of times the yaw angle has been reset
     uint16_t get_yaw_reset_count(void) const {
         return yaw_reset_tracker.count();
@@ -1135,7 +1128,7 @@ private:
     uint16_t attitude_reset_count;
     uint16_t active_estimates_attitude_reset_count;
 
-    AP_AHRS_ResetTracker<float, uint16_t> yaw_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> yaw_reset_tracker;
     AP_AHRS_ResetTracker<Vector2f, uint16_t> position_NE_reset_tracker;
     AP_AHRS_ResetTracker<float, uint16_t> position_D_reset_tracker;
 

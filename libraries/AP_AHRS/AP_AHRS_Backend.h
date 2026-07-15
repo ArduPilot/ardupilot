@@ -86,7 +86,6 @@ public:
         Quaternion quaternion;
         uint16_t attitude_reset_count;  // counter incremented each time a sudden shift happens in attitude
         uint16_t yaw_reset_count;  // incremented when a sudden shift happens in yaw
-        float yaw_reset_delta;  // shift amount last time yaw reset
 
         // backends must always return the result in the vehicle body
         // frame.  A backend using the autopilot sensors will need to
@@ -362,5 +361,35 @@ public:
 private:
     KeyT last_key;
     DeltaT reset_delta;
+    uint16_t reset_count;
+};
+
+// as AP_AHRS_ResetTracker, but for consumers which only care that a
+// reset happened, not by how much.  KeyT is the upstream key type.
+template <typename KeyT>
+class AP_AHRS_ResetCounter {
+public:
+    // bump count if the upstream key changed.  Returns true if a
+    // reset was recorded.
+    bool update(KeyT new_key) {
+        if (new_key == last_key) {
+            return false;
+        }
+        fill(new_key);
+        return true;
+    }
+
+    // unconditionally record a reset, re-seating the key so the next
+    // update() doesn't double-count.  Used when the active estimator
+    // changes.
+    void fill(KeyT new_key) {
+        last_key = new_key;
+        reset_count++;
+    }
+
+    uint16_t count() const { return reset_count; }
+
+private:
+    KeyT last_key;
     uint16_t reset_count;
 };

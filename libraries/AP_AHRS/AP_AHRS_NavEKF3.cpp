@@ -62,8 +62,7 @@ void AP_AHRS_NavEKF3::update()
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 primary changed:%d", (unsigned)primary_core);
     }
 
-    float yaw_delta;
-    yaw_reset_tracker.update(EKF3.getLastYawResetAngle(yaw_delta), yaw_delta);
+    yaw_reset_tracker.update(EKF3.getYawResetCount());
 
     Vector2f pos_ne_delta;
     position_NE_reset_tracker.update(EKF3.getLastPosNorthEastReset(pos_ne_delta), pos_ne_delta);
@@ -123,8 +122,7 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.attitude_reset_count = attitude_reset_count;
 
-    // copy results from the yaw reset tracker into results:
-    yaw_reset_tracker.get(results.yaw_reset_count, results.yaw_reset_delta);
+    results.yaw_reset_count = yaw_reset_tracker.count();
 
     /*
      * acceleration estimates
