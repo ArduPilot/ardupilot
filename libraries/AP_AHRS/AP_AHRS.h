@@ -373,20 +373,6 @@ public:
         return yaw_reset_tracker.count();
     }
 
-    // return the amount of NE position change in meters due to the last reset
-    // returns the number of times position NE has been reset
-    uint16_t get_position_NE_reset_count(Vector2f &pos) const {
-        pos = position_NE_reset_tracker.delta();
-        return position_NE_reset_tracker.count();
-    }
-
-    // return the amount of vertical position change due to the last reset in meters
-    // returns the number of times position-down has been reset
-    uint16_t get_position_D_reset_count(float &posDelta) const {
-        posDelta = position_D_reset_tracker.delta();
-        return position_D_reset_tracker.count();
-    }
-
     // returns the number of times the NE position has been reset
     uint16_t get_position_NE_reset_count(void) const {
         return position_NE_reset_tracker.count();
@@ -1137,8 +1123,8 @@ private:
     // the backend results change (e.g. switching core)
     AP_AHRS_ResetCounter<uint16_t> attitude_reset_tracker;
     AP_AHRS_ResetCounter<uint16_t> yaw_reset_tracker;
-    AP_AHRS_ResetTracker<Vector2f, uint16_t> position_NE_reset_tracker;
-    AP_AHRS_ResetTracker<float, uint16_t> position_D_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> position_NE_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> position_D_reset_tracker;
 
     // secondary estimates - used for reporting purposes.  If the
     // primary backend fails this is the backend/result pair likely to

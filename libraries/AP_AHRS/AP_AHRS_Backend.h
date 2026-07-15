@@ -160,12 +160,10 @@ public:
         Vector2p position_NE;
         bool position_NE_valid;  // true if position_NE is valid
         uint16_t position_NE_reset_count;  // incremented when a sudden shift happens in position
-        Vector2f position_NE_reset_delta;  // shift amount last time it reset
 
         postype_t position_D;
         bool position_D_valid;   // true if position_D is valid
         uint16_t position_D_reset_count;  // incremented when a sudden shift happens in position (down)
-        float position_D_reset_delta;  // shift amount last time it reset
 
         bool get_hagl(float &height) const WARN_IF_UNUSED {
             height = hagl;
@@ -322,50 +320,8 @@ public:
 };
 
 // Converts an upstream "something changed" key (an EKF reset
-// timestamp, or another tracker's count) into a monotonic local count
-// plus a latched delta.  KeyT is the upstream key type.
-template <typename DeltaT, typename KeyT>
-class AP_AHRS_ResetTracker {
-public:
-    // latch delta and bump count if the upstream key changed.
-    // Returns true if a reset was recorded.
-    bool update(KeyT new_key, const DeltaT &new_delta) {
-        if (new_key == last_key) {
-            return false;
-        }
-        fill(new_key, new_delta);
-        return true;
-    }
-
-    // unconditionally record a reset with an externally computed
-    // delta, re-seating the key so the next update() doesn't
-    // double-count.  Used when the active estimator changes and the
-    // delta comes from differencing old/new backend estimates.
-    void fill(KeyT new_key, const DeltaT &new_delta) {
-        last_key = new_key;
-        reset_delta = new_delta;
-        reset_count++;
-    }
-
-    // copy the current reset count and latched delta out, e.g. into a
-    // backend's published Estimates.  Deliberately not named like the
-    // mutating fill() so the two can't be confused at a call site.
-    void get(uint16_t &count, DeltaT &delta) const {
-        count = reset_count;
-        delta = reset_delta;
-    }
-
-    uint16_t count() const { return reset_count; }
-    const DeltaT &delta() const { return reset_delta; }
-
-private:
-    KeyT last_key;
-    DeltaT reset_delta;
-    uint16_t reset_count;
-};
-
-// as AP_AHRS_ResetTracker, but for consumers which only care that a
-// reset happened, not by how much.  KeyT is the upstream key type.
+// count or timestamp, or another counter's count) into a monotonic
+// local count.  KeyT is the upstream key type.
 template <typename KeyT>
 class AP_AHRS_ResetCounter {
 public:

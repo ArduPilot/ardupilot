@@ -62,11 +62,9 @@ void AP_AHRS_NavEKF3::update()
 
     yaw_reset_tracker.update(EKF3.getYawResetCount());
 
-    Vector2f pos_ne_delta;
-    position_NE_reset_tracker.update(EKF3.getLastPosNorthEastReset(pos_ne_delta), pos_ne_delta);
+    position_NE_reset_tracker.update(EKF3.getPosNorthEastResetCount());
 
-    float pos_d_delta;
-    position_D_reset_tracker.update(EKF3.getLastPosDownReset(pos_d_delta), pos_d_delta);
+    position_D_reset_tracker.update(EKF3.getPosDownResetCount());
 }
 
 void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
@@ -166,12 +164,10 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 
     // origin-relative position:
     results.position_NE_valid = EKF3.getPosNE(results.position_NE);
-    // copy results from the position_NE reset tracker into results:
-    position_NE_reset_tracker.get(results.position_NE_reset_count, results.position_NE_reset_delta);
+    results.position_NE_reset_count = position_NE_reset_tracker.count();
 
     results.position_D_valid = EKF3.getPosD(results.position_D);
-    // copy results from the position_D reset tracker into results:
-    position_D_reset_tracker.get(results.position_D_reset_count, results.position_D_reset_delta);
+    results.position_D_reset_count = position_D_reset_tracker.count();
 
     results.hagl_valid = EKF3.getHAGL(results.hagl);
 
