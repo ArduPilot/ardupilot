@@ -14316,7 +14316,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # publishing yaw, so if rejection refreshed the last-yaw timestamp
         # the fallback would never engage and the vehicle would fly with no
         # yaw aiding at all.
-        self.context_push()
         self.load_default_params_file("copter-gps-for-yaw.parm")
         self.set_parameters({
             "EK3_SRC1_YAW": 3,  # GPS with compass fallback
@@ -14359,8 +14358,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Yaw not tracking truth under compass fallback (err=%.1f deg)" % yaw_err_deg)
 
         self.do_RTL()
-        self.context_pop()
-        self.reboot_sitl()
 
     def SMART_RTL_EnterLeave(self):
         '''check SmartRTL behaviour when entering/leaving'''
