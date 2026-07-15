@@ -150,9 +150,6 @@ void NavEKF2_core::InitialiseVariables()
     lastGpsAidBadTime_ms = 0;
     timeTasReceived_ms = 0;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
-    lastPosReset_ms = 0;
-    lastVelReset_ms = 0;
-    lastPosResetD_ms = 0;
     posNEResetCount = 0;
     posDResetCount = 0;
     lastRngMeasTime_ms = 0;
@@ -233,7 +230,6 @@ void NavEKF2_core::InitialiseVariables()
     airSpdFusionDelayed = false;
     sideSlipFusionDelayed = false;
     posResetNE.zero();
-    velResetNE.zero();
     posResetD = 0.0f;
     hgtInnovFiltState = 0.0f;
 
