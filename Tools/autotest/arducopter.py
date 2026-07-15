@@ -14284,7 +14284,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # in the horizontal plane, so a baseline with no horizontal separation
         # carries no yaw information: the reported heading is receiver noise.
         # The driver must reject the solution rather than publish it as yaw.
-        self.context_push()
         self.load_default_params_file("copter-gps-for-yaw.parm")
         self.set_parameters({
             "GPS1_POS_X": 0.0, "GPS1_POS_Y": 0.0, "GPS1_POS_Z": -0.45,
@@ -14305,9 +14304,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.yaw not in [0, 65535]:
                 raise NotAchievedException(
                     "Got GPS yaw %.1f deg from a baseline with no horizontal separation" % (m.yaw * 0.01))
-
-        self.context_pop()
-        self.reboot_sitl()
 
     def GPSForYawCompassFallback(self):
         '''EKF3 must fall back to the compass when GPS yaw is present but unusable'''
