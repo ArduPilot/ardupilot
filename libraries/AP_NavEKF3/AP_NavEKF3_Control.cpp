@@ -328,6 +328,9 @@ void NavEKF3_core::setAidingMode()
             // check if drag data is being used
             bool dragUsed = (imuSampleTime_ms - lastDragPassTime_ms <= minTestTime_ms);
 
+            // Check if sideslip data is being used
+            bool sideSlipUsed = (imuSampleTime_ms - prevBetaDragStep_ms <= minTestTime_ms);
+
 #if EK3_FEATURE_BEACON_FUSION
             // Check if range beacon data is being used
             const bool rngBcnUsed = (imuSampleTime_ms - rngBcn.lastPassTime_ms <= minTestTime_ms);
@@ -340,16 +343,16 @@ void NavEKF3_core::setAidingMode()
             bool gpsVelUsed = (imuSampleTime_ms - lastVelPassTime_ms <= minTestTime_ms);
 
             // Check if attitude drift has been constrained by a measurement source
-            bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
+            bool attAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || sideSlipUsed || rngBcnUsed || bodyOdmUsed;
 
             // Check if velocity drift has been constrained by a measurement source
             // Currently these are all the same source as will stabilise attitude because we do not currently have
             // a sensor that only observes attitude
-            velAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || rngBcnUsed || bodyOdmUsed;
+            velAiding = posUsed || gpsVelUsed || optFlowUsed || airSpdUsed || dragUsed || sideSlipUsed || rngBcnUsed || bodyOdmUsed;
 
             // Store the last valid airspeed estimate
             windStateIsObservable = !inhibitWindStates && (posUsed || gpsVelUsed || optFlowUsed || rngBcnUsed || bodyOdmUsed);
-            if (windStateIsObservable) {
+            if (windStateIsObservable && (airSpdUsed || dragUsed)) {
                 lastAirspeedEstimate = (stateStruct.velocity - Vector3F(stateStruct.wind_vel.x, stateStruct.wind_vel.y, 0.0F)).length();
                 lastAspdEstIsValid = true;
             }
