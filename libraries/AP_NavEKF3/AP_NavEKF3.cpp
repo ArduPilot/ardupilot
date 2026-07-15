@@ -1095,8 +1095,8 @@ void NavEKF3::switchLane(uint8_t new_lane_index)
 
     if (new_lane_index != primary) {
         updateLaneSwitchYawResetData(new_lane_index);
-        updateLaneSwitchPosResetData(new_lane_index, primary);
-        updateLaneSwitchPosDownResetData(new_lane_index, primary);
+        updateLaneSwitchPosResetData(new_lane_index);
+        updateLaneSwitchPosDownResetData(new_lane_index);
         primary = new_lane_index;
         lastLaneSwitch_ms = dal.millis();
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 lane switch %u", primary);
@@ -2007,92 +2007,6 @@ uint16_t NavEKF3::getYawResetCount(void)
     return yaw_reset_data.count;
 }
 
-// Returns the amount of NE position change due to the last position reset or core switch in metres
-// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
-// Where there are multiple consumers, they must access this function on the same frame as each other
-uint32_t NavEKF3::getLastPosNorthEastReset(Vector2f &posDelta)
-{
-    if (!core) {
-        return 0;
-    }
-
-    posDelta.zero();
-
-    // Do the conversion to msec in one place
-    uint32_t now_time_ms = imuSampleTime_us / 1000;
-
-    // The last time we switched to the current primary core is the first reset event
-    uint32_t lastPosReset_ms = pos_reset_data.last_primary_change;
-
-    // There has been a change in the primary core that the controller has not consumed
-    // allow for multiple consumers on the same frame
-    if (pos_reset_data.core_changed || pos_reset_data.last_function_call == now_time_ms) {
-        posDelta = pos_reset_data.core_delta;
-        pos_reset_data.core_changed = false;
-    }
-
-    // Record last time controller got the position reset
-    pos_reset_data.last_function_call = now_time_ms;
-
-    // There has been a reset inside the core since we switched so update the time and delta
-    Vector2f tempPosDelta;
-    uint32_t lastCorePosReset_ms = core[primary].getLastPosNorthEastReset(tempPosDelta);
-    if (lastCorePosReset_ms > lastPosReset_ms) {
-        posDelta = posDelta + tempPosDelta;
-        lastPosReset_ms = lastCorePosReset_ms;
-    }
-
-    return lastPosReset_ms;
-}
-
-// return the amount of NE velocity change due to the last velocity reset in metres/sec
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF3::getLastVelNorthEastReset(Vector2f &vel) const
-{
-    if (!core) {
-        return 0;
-    }
-    return core[primary].getLastVelNorthEastReset(vel);
-}
-
-// Returns the amount of vertical position change due to the last reset or core switch in metres
-// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
-// Where there are multiple consumers, they must access this function on the same frame as each other
-uint32_t NavEKF3::getLastPosDownReset(float &posDelta)
-{
-    if (!core) {
-        return 0;
-    }
-
-    posDelta = 0.0f;
-
-    // Do the conversion to msec in one place
-    uint32_t now_time_ms = imuSampleTime_us / 1000;
-
-    // The last time we switched to the current primary core is the first reset event
-    uint32_t lastPosReset_ms = pos_down_reset_data.last_primary_change;
-
-    // There has been a change in the primary core that the controller has not consumed
-    // allow for multiple consumers on the same frame
-    if (pos_down_reset_data.core_changed || pos_down_reset_data.last_function_call == now_time_ms) {
-        posDelta = pos_down_reset_data.core_delta;
-        pos_down_reset_data.core_changed = false;
-    }
-
-    // Record last time controller got the position reset
-    pos_down_reset_data.last_function_call = now_time_ms;
-
-    // There has been a reset inside the core since we switched so update the time and delta
-    float tempPosDelta;
-    uint32_t lastCorePosReset_ms = core[primary].getLastPosDownReset(tempPosDelta);
-    if (lastCorePosReset_ms > lastPosReset_ms) {
-        posDelta += tempPosDelta;
-        lastPosReset_ms = lastCorePosReset_ms;
-    }
-
-    return lastPosReset_ms;
-}
-
 // update the yaw reset data to capture changes due to a lane switch
 void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary)
 {
@@ -2104,29 +2018,8 @@ void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary)
 }
 
 // update the position reset data to capture changes due to a lane switch
-void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary)
+void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary)
 {
-    Vector2p pos_old_primary, pos_new_primary;
-    Vector2f old_pos_delta;
-
-    // If core position reset data has been consumed reset delta to zero
-    if (!pos_reset_data.core_changed) {
-        pos_reset_data.core_delta.zero();
-    }
-
-    // If current primary has reset position after controller got it, add it to the delta
-    if (core[old_primary].getLastPosNorthEastReset(old_pos_delta) > pos_reset_data.last_function_call) {
-        pos_reset_data.core_delta += old_pos_delta;
-    }
-
-    // Record the position delta between current core and new primary core and the timestamp of the core change
-    // Add current delta in case it hasn't been consumed yet
-    core[old_primary].getPosNE(pos_old_primary);
-    core[new_primary].getPosNE(pos_new_primary);
-    pos_reset_data.core_delta = (pos_new_primary - pos_old_primary).tofloat() + pos_reset_data.core_delta;
-    pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
-    pos_reset_data.core_changed = true;
-
     // the new primary's historic in-core resets are not new events
     // for consumers; re-seat the count and record a single event for
     // the switch itself
@@ -2138,29 +2031,8 @@ void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_prim
 // Update the vertical position reset data to capture changes due to a core switch
 // This should be called after the decision to switch cores has been made, but before the
 // new primary EKF update has been run
-void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary)
+void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary)
 {
-    postype_t posDownOldPrimary, posDownNewPrimary;
-    float oldPosDownDelta;
-
-    // If core position reset data has been consumed reset delta to zero
-    if (!pos_down_reset_data.core_changed) {
-        pos_down_reset_data.core_delta = 0.0f;
-    }
-
-    // If current primary has reset position after controller got it, add it to the delta
-    if (core[old_primary].getLastPosDownReset(oldPosDownDelta) > pos_down_reset_data.last_function_call) {
-        pos_down_reset_data.core_delta += oldPosDownDelta;
-    }
-
-    // Record the position delta between current core and new primary core and the timestamp of the core change
-    // Add current delta in case it hasn't been consumed yet
-    core[old_primary].getPosD_local(posDownOldPrimary);
-    core[new_primary].getPosD_local(posDownNewPrimary);
-    pos_down_reset_data.core_delta = posDownNewPrimary - posDownOldPrimary + pos_down_reset_data.core_delta;
-    pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
-    pos_down_reset_data.core_changed = true;
-
     // the new primary's historic in-core resets are not new events
     // for consumers; re-seat the count and record a single event for
     // the switch itself
