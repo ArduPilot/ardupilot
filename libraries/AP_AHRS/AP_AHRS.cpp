@@ -579,8 +579,7 @@ void AP_AHRS::update_reset_counters()
             }
         }
 
-        attitude_reset_count++;
-        active_estimates_attitude_reset_count = active_estimates->attitude_reset_count;
+        attitude_reset_tracker.fill(active_estimates->attitude_reset_count);
         yaw_reset_tracker.fill(active_estimates->yaw_reset_count);
         position_NE_reset_tracker.fill(active_estimates->position_NE_reset_count, pos_ne_delta);
         position_D_reset_tracker.fill(active_estimates->position_D_reset_count, pos_d_delta);
@@ -588,10 +587,7 @@ void AP_AHRS::update_reset_counters()
         return;
     }
 
-    if (active_estimates_attitude_reset_count != active_estimates->attitude_reset_count) {
-        active_estimates_attitude_reset_count = active_estimates->attitude_reset_count;
-        attitude_reset_count++;
-    }
+    attitude_reset_tracker.update(active_estimates->attitude_reset_count);
     if (yaw_reset_tracker.update(active_estimates->yaw_reset_count)) {
         LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
     }

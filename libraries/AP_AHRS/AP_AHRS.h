@@ -389,7 +389,7 @@ public:
 
     // returns a counter which is incremented each time the estimator's output resets
     uint16_t get_last_attitude_reset_count() const {
-        return attitude_reset_count;
+        return attitude_reset_tracker.count();
     }
 
     // Resets the baro so that it reads zero at the current height
@@ -1125,9 +1125,7 @@ private:
     void update_reset_counters();
     // reset counters.  These are updated if the backend changes or if
     // the backend results change (e.g. switching core)
-    uint16_t attitude_reset_count;
-    uint16_t active_estimates_attitude_reset_count;
-
+    AP_AHRS_ResetCounter<uint16_t> attitude_reset_tracker;
     AP_AHRS_ResetCounter<uint16_t> yaw_reset_tracker;
     AP_AHRS_ResetTracker<Vector2f, uint16_t> position_NE_reset_tracker;
     AP_AHRS_ResetTracker<float, uint16_t> position_D_reset_tracker;

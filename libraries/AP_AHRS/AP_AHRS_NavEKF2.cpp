@@ -55,9 +55,7 @@ void AP_AHRS_NavEKF2::update()
     // check the current primary core; if it has changed then assume
     // our attitude is reset:
     const int8_t primary_core = EKF2.getPrimaryCoreIndex();
-    if (old_primary_core != primary_core) {
-        old_primary_core = primary_core;
-        attitude_reset_count++;
+    if (attitude_reset_tracker.update(primary_core)) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary_core));
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 primary changed:%d", (unsigned)primary_core);
     }
@@ -120,7 +118,7 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.attitude_valid = started;
 
-    results.attitude_reset_count = attitude_reset_count;
+    results.attitude_reset_count = attitude_reset_tracker.count();
 
     results.yaw_reset_count = yaw_reset_tracker.count();
 
