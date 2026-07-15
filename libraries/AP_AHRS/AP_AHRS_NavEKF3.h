@@ -88,8 +88,7 @@ public:
     uint32_t start_time_ms;  // timer used to delay starting the filter
 
     // a counter which is incremented each time the primary core changes:
-    uint16_t attitude_reset_count;
-    int8_t old_primary_core;
+    AP_AHRS_ResetCounter<int8_t> attitude_reset_tracker;
 
     AP_AHRS_ResetCounter<uint16_t> yaw_reset_tracker;
     AP_AHRS_ResetTracker<Vector2f, uint32_t> position_NE_reset_tracker;
