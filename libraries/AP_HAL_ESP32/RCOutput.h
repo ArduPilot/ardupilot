@@ -141,10 +141,13 @@ private:
         // 0..47, telemetry bit set, as commands require) instead of the throttle,
         // decrementing once per frame; 0 means "send throttle normally". Updated
         // lock-free from the main thread (same approach as `value`): the writer
-        // sets dshot_command before dshot_command_repeat so the task, which gates
-        // on the count, never pairs a fresh count with a stale command.
-        uint16_t dshot_command;
-        uint16_t dshot_command_repeat;
+        // stores dshot_command, a full barrier, then dshot_command_repeat, and the
+        // task pairs that with a barrier between loading the count and the command
+        // (see send_dshot_command/dshot_task) so it never pairs a fresh count with
+        // a stale command, even across cores. volatile stops the compiler from
+        // reordering or caching the two fields.
+        volatile uint16_t dshot_command;
+        volatile uint16_t dshot_command_repeat;
     };
 
     uint32_t fast_channel_mask;

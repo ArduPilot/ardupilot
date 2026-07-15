@@ -532,7 +532,7 @@ void RCOutput::dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request)
 /*
   scale an ArduPilot PWM value (microseconds) to a DShot throttle command.
   At or below 1000us (disarmed / safety / min / no signal) -> 0 (DShot motor-stop);
-  1001..2000us maps linearly to 50..2047 (values 1..47 are reserved for commands,
+  1001..2000us maps linearly to 49..2047 (values 1..47 are reserved for commands,
   48 is the lowest throttle step). Sending 0 (not 48) at minimum matches the
   mainline ChibiOS backend: 48 is the lowest *throttle*, not motor-stop, and a
   BLHeli_S given a constant 48 at idle behaves unpredictably across power-ups
@@ -545,7 +545,7 @@ uint16_t RCOutput::dshot_throttle_from_pwm(uint16_t period_us)
         return 0;
     }
     const uint16_t us = period_us > 2000 ? 2000 : period_us;
-    // 1001..2000us -> 50..2047; 1000us (handled above) -> 0.
+    // 1001..2000us -> 49..2047; 1000us (handled above) -> 0.
     uint16_t value = (uint16_t)(((uint32_t)(us - 1000) * (2047 - 48)) / 1000);
     return value == 0 ? 0 : value + 48;
 }
@@ -597,6 +597,9 @@ void RCOutput::dshot_task()
                     // a special command is pending: send it with the telemetry bit set
                     // (DShot commands require it) and count down. Throttle output is
                     // suspended on this channel until the repeats are exhausted.
+                    // Barrier pairs with send_dshot_command(): the count was stored
+                    // after the command, so load the command only after the count.
+                    __sync_synchronize();
                     dshot_send_chan(ch, ch.dshot_command, true);
                     ch.dshot_command_repeat--;
                 } else {
@@ -638,8 +641,10 @@ void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t comman
         }
         // command before count (see pwm_chan in the header): the rcout task gates
         // on dshot_command_repeat, so this ordering prevents it pairing a new count
-        // with a stale command value.
+        // with a stale command value. The full barrier makes the store order visible
+        // to the task on the other core; volatile alone only constrains the compiler.
         ch.dshot_command = command;
+        __sync_synchronize();
         ch.dshot_command_repeat = repeat_count;
     }
 }
