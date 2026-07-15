@@ -375,6 +375,11 @@ public:
         return yaw_reset_tracker.count();
     }
 
+    // returns the number of times the yaw angle has been reset
+    uint16_t get_yaw_reset_count(void) const {
+        return yaw_reset_tracker.count();
+    }
+
     // return the amount of NE position change in meters due to the last reset
     // returns the number of times position NE has been reset
     uint16_t get_position_NE_reset_count(Vector2f &pos) const {
