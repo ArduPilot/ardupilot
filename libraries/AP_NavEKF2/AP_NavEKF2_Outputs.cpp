@@ -124,30 +124,6 @@ void NavEKF2_core::getQuaternion(Quaternion& ret) const
     ret = outputDataNew.quat.tofloat();
 }
 
-// return the amount of NE position change due to the last position reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF2_core::getLastPosNorthEastReset(Vector2f &pos) const
-{
-    pos = posResetNE.tofloat();
-    return lastPosReset_ms;
-}
-
-// return the amount of vertical position change due to the last vertical position reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF2_core::getLastPosDownReset(float &posD) const
-{
-    posD = posResetD;
-    return lastPosResetD_ms;
-}
-
-// return the amount of NE velocity change due to the last velocity reset in metres/sec
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF2_core::getLastVelNorthEastReset(Vector2f &vel) const
-{
-    vel = velResetNE.tofloat();
-    return lastVelReset_ms;
-}
-
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
 void NavEKF2_core::getWind(Vector3f &wind) const
 {

@@ -14,10 +14,6 @@ extern const AP_HAL::HAL& hal;
 // Do not reset vertical velocity using GPS as there is baro alt available to constrain drift
 void NavEKF2_core::ResetVelocity(void)
 {
-    // Store the position before the reset so that we can record the reset delta
-    velResetNE.x = stateStruct.velocity.x;
-    velResetNE.y = stateStruct.velocity.y;
-
     // reset the corresponding covariances
     zeroRows(P,3,4);
     zeroCols(P,3,4);
@@ -59,12 +55,6 @@ void NavEKF2_core::ResetVelocity(void)
     outputDataDelayed.velocity.x = stateStruct.velocity.x;
     outputDataDelayed.velocity.y = stateStruct.velocity.y;
 
-    // Calculate the position jump due to the reset
-    velResetNE.x = stateStruct.velocity.x - velResetNE.x;
-    velResetNE.y = stateStruct.velocity.y - velResetNE.y;
-
-    // store the time of the reset
-    lastVelReset_ms = imuSampleTime_ms;
 
 
 }
@@ -135,8 +125,6 @@ void NavEKF2_core::ResetPosition(void)
     posResetNE.x = stateStruct.position.x - posResetNE.x;
     posResetNE.y = stateStruct.position.y - posResetNE.y;
 
-    // store the time of the reset
-    lastPosReset_ms = imuSampleTime_ms;
     posNEResetCount++;
 
 }
@@ -144,7 +132,7 @@ void NavEKF2_core::ResetPosition(void)
 // reset the stateStruct's NE position to the specified position
 //    posResetNE is updated to hold the change in position
 //    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position
-//    lastPosReset_ms is updated with the time of the reset
+//    posNEResetCount is incremented to record the reset
 void NavEKF2_core::ResetPositionNE(ftype posN, ftype posE)
 {
     // Store the position before the reset so that we can record the reset delta
@@ -168,8 +156,6 @@ void NavEKF2_core::ResetPositionNE(ftype posN, ftype posE)
     outputDataDelayed.position.x += posResetNE.x;
     outputDataDelayed.position.y += posResetNE.y;
 
-    // store the time of the reset
-    lastPosReset_ms = imuSampleTime_ms;
     posNEResetCount++;
 }
 
@@ -200,8 +186,6 @@ void NavEKF2_core::ResetHeight(void)
     // Calculate the position jump due to the reset
     posResetD = stateStruct.position.z - posResetD;
 
-    // store the time of the reset
-    lastPosResetD_ms = imuSampleTime_ms;
     posDResetCount++;
 
     // clear the timeout flags and counters
@@ -247,7 +231,7 @@ void NavEKF2_core::ResetHeight(void)
 // reset the stateStruct's D position
 //    posResetD is updated to hold the change in position
 //    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position
-//    lastPosResetD_ms is updated with the time of the reset
+//    posDResetCount is incremented to record the reset
 void NavEKF2_core::ResetPositionD(ftype posD)
 {
     // Store the position before the reset so that we can record the reset delta
@@ -267,8 +251,6 @@ void NavEKF2_core::ResetPositionD(ftype posD)
         storedOutput[i].position.z += posResetD;
     }
 
-    // store the time of the reset
-    lastPosResetD_ms = imuSampleTime_ms;
     posDResetCount++;
 }
 
@@ -505,8 +487,6 @@ void NavEKF2_core::SelectVelPosFusion()
         outputDataDelayed.position.x += posResetNE.x;
         outputDataDelayed.position.y += posResetNE.y;
 
-        // store the time of the reset
-        lastPosReset_ms = imuSampleTime_ms;
         posNEResetCount++;
 
         // If we are also using GPS as the height reference, reset the height
@@ -528,8 +508,6 @@ void NavEKF2_core::SelectVelPosFusion()
                 storedOutput[i].position.z += posResetD;
             }
 
-            // store the time of the reset
-            lastPosResetD_ms = imuSampleTime_ms;
             posDResetCount++;
         }
     }
