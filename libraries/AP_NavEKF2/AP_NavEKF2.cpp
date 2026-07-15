@@ -1314,6 +1314,36 @@ bool NavEKF2::getHeightControlLimit(float &height) const
     return core[primary].getHeightControlLimit(height);
 }
 
+// Returns a count of NE position reset events; incremented when the primary
+// core changes and when the primary core resets its NE position
+uint16_t NavEKF2::getPosNorthEastResetCount(void)
+{
+    if (!core) {
+        return 0;
+    }
+    const uint16_t core_count = core[primary].getPosNorthEastResetCount();
+    if (core_count != pos_reset_data.last_core_count) {
+        pos_reset_data.last_core_count = core_count;
+        pos_reset_data.count++;
+    }
+    return pos_reset_data.count;
+}
+
+// Returns a count of D position reset events; incremented when the primary
+// core changes and when the primary core resets its D position
+uint16_t NavEKF2::getPosDownResetCount(void)
+{
+    if (!core) {
+        return 0;
+    }
+    const uint16_t core_count = core[primary].getPosDownResetCount();
+    if (core_count != pos_down_reset_data.last_core_count) {
+        pos_down_reset_data.last_core_count = core_count;
+        pos_down_reset_data.count++;
+    }
+    return pos_down_reset_data.count;
+}
+
 // Returns a count of yaw reset events; incremented when the primary core
 // changes and when the primary core resets its yaw
 uint16_t NavEKF2::getYawResetCount(void)
@@ -1449,6 +1479,12 @@ void NavEKF2::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_prim
     pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_reset_data.core_changed = true;
 
+    // the new primary's historic in-core resets are not new events
+    // for consumers; re-seat the count and record a single event for
+    // the switch itself
+    pos_reset_data.last_core_count = core[new_primary].getPosNorthEastResetCount();
+    pos_reset_data.count++;
+
 }
 
 // Update the vertical position reset data to capture changes due to a core switch
@@ -1476,6 +1512,12 @@ void NavEKF2::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_
     pos_down_reset_data.core_delta = posDownNewPrimary - posDownOldPrimary + pos_down_reset_data.core_delta;
     pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
     pos_down_reset_data.core_changed = true;
+
+    // the new primary's historic in-core resets are not new events
+    // for consumers; re-seat the count and record a single event for
+    // the switch itself
+    pos_down_reset_data.last_core_count = core[new_primary].getPosDownResetCount();
+    pos_down_reset_data.count++;
 
 }
 

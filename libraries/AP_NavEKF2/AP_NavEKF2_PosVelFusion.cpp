@@ -137,6 +137,7 @@ void NavEKF2_core::ResetPosition(void)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
+    posNEResetCount++;
 
 }
 
@@ -169,6 +170,7 @@ void NavEKF2_core::ResetPositionNE(ftype posN, ftype posE)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
+    posNEResetCount++;
 }
 
 // reset the vertical position state using the last height measurement
@@ -200,6 +202,7 @@ void NavEKF2_core::ResetHeight(void)
 
     // store the time of the reset
     lastPosResetD_ms = imuSampleTime_ms;
+    posDResetCount++;
 
     // clear the timeout flags and counters
     hgtTimeout = false;
@@ -266,6 +269,7 @@ void NavEKF2_core::ResetPositionD(ftype posD)
 
     // store the time of the reset
     lastPosResetD_ms = imuSampleTime_ms;
+    posDResetCount++;
 }
 
 // Zero the EKF height datum
@@ -503,6 +507,7 @@ void NavEKF2_core::SelectVelPosFusion()
 
         // store the time of the reset
         lastPosReset_ms = imuSampleTime_ms;
+        posNEResetCount++;
 
         // If we are also using GPS as the height reference, reset the height
         if (activeHgtSource == HGT_SOURCE_GPS) {
@@ -525,6 +530,7 @@ void NavEKF2_core::SelectVelPosFusion()
 
             // store the time of the reset
             lastPosResetD_ms = imuSampleTime_ms;
+            posDResetCount++;
         }
     }
 
