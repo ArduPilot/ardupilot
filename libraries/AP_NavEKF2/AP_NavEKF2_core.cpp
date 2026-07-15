@@ -202,6 +202,7 @@ void NavEKF2_core::InitialiseVariables()
     rngOnGnd = 0.05f;
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
+    yawResetCount = 0;
     tiltErrFilt = 1.0f;
     tiltAlignComplete = false;
     stateIndexLim = 23;
@@ -1627,6 +1628,7 @@ QuaternionF NavEKF2_core::calcQuatAndFieldStates(ftype roll, ftype pitch)
         }
         yawResetAngle += wrap_PI(yaw - tempEuler.z);
         lastYawReset_ms = imuSampleTime_ms;
+        yawResetCount++;
         // calculate an initial quaternion using the new yaw value
         initQuat.from_euler(roll, pitch, yaw);
         // zero the attitude covariances because the corelations will now be invalid
