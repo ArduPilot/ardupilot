@@ -176,6 +176,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
+    posNEResetCount++;
 
     // clear the timeout flags and counters
     posTimeout = false;
@@ -251,6 +252,7 @@ void NavEKF3_core::ResetPositionNE(ftype posN, ftype posE)
 
     // store the time of the reset
     lastPosReset_ms = imuSampleTime_ms;
+    posNEResetCount++;
 }
 
 // reset the stateStruct's D position
@@ -278,6 +280,7 @@ void NavEKF3_core::ResetPositionD(ftype posD)
 
     // store the time of the reset
     lastPosResetD_ms = imuSampleTime_ms;
+    posDResetCount++;
 }
 
 // reset the vertical position state using the last height measurement
@@ -309,6 +312,7 @@ void NavEKF3_core::ResetHeight(void)
 
     // store the time of the reset
     lastPosResetD_ms = imuSampleTime_ms;
+    posDResetCount++;
 
     // clear the timeout flags and counters
     hgtTimeout = false;
