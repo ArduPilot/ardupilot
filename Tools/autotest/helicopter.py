@@ -68,7 +68,6 @@ class AutoTestHelicopter(AutoTestCopter):
         '''Test rotor runup'''
         # Takeoff and landing in Loiter
         TARGET_RUNUP_TIME = 10
-        self.zero_throttle()
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -77,10 +76,10 @@ class AutoTestHelicopter(AutoTestCopter):
         coll = coll + 50
         self.set_parameter("H_RSC_RUNUP_TIME", TARGET_RUNUP_TIME)
         self.progress("Initiate Runup by putting some throttle")
+        tstart = self.get_sim_time()
         self.set_rc(8, 2000)
         self.set_rc(3, 1700)
         self.progress("Collective threshold PWM %u" % coll)
-        tstart = self.get_sim_time()
         self.progress("Wait that collective PWM pass threshold value")
         servo = self.assert_receive_message(
             "SERVO_OUTPUT_RAW",
@@ -98,7 +97,6 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Runup time %u" % runup_time)
         self.zero_throttle()
         self.land_and_disarm()
-        self.mav.wait_heartbeat()
 
     # fly_avc_test - fly AVC mission
     def AVCMission(self):
