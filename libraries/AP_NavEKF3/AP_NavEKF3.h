@@ -308,6 +308,14 @@ public:
     // primary core changes and when the primary core resets its yaw
     uint16_t getYawResetCount(void);
 
+    // return a count of NE position reset events; incremented when the
+    // primary core changes and when the primary core resets its NE position
+    uint16_t getPosNorthEastResetCount(void);
+
+    // return a count of D position reset events; incremented when the
+    // primary core changes and when the primary core resets its D position
+    uint16_t getPosDownResetCount(void);
+
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosNorthEastReset(Vector2f &posDelta);
@@ -544,6 +552,8 @@ private:
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
         uint32_t last_primary_change; // last time a primary has changed
         Vector2f core_delta;          // the amount of NE position change between cores when a change happened
+        uint16_t count;               // count of NE position reset events passed to consumers
+        uint16_t last_core_count;     // primary core's NE position reset count when count last changed
     } pos_reset_data;
 
     struct {
@@ -551,6 +561,8 @@ private:
         bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
         uint32_t last_primary_change; // last time a primary has changed
         float core_delta;             // the amount of D position change between cores when a change happened
+        uint16_t count;               // count of D position reset events passed to consumers
+        uint16_t last_core_count;     // primary core's D position reset count when count last changed
     } pos_down_reset_data;
 
 #define CORE_ERR_LIM      1 // -LIM to LIM relative error range for a core

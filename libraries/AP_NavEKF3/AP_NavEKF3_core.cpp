@@ -222,6 +222,8 @@ void NavEKF3_core::InitialiseVariables()
     lastPosReset_ms = 0;
     lastVelReset_ms = 0;
     lastPosResetD_ms = 0;
+    posNEResetCount = 0;
+    posDResetCount = 0;
     lastRngMeasTime_ms = 0;
 
     // initialise other variables
