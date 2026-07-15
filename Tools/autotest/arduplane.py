@@ -4965,6 +4965,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def AUTOTUNE(self):
         '''Test AutoTune mode'''
+
+        # Prior to 2026-07-15, the SITL airspeed sensor was reading about 5%
+        # slower than actual during this test. We bump the scaling airspeed by
+        # that same amount to get the same tune results as before.
+        self.set_parameter("SCALING_SPEED", 15.8)
+
         self.run_autotune()
 
         # Values that are set to constants
