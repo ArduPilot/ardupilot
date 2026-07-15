@@ -211,12 +211,26 @@ local function update()
             break
         end
 
-        local param_value, _, _, param_id, _ = string.unpack("<fBBc16B", string.sub(msg, 13, 36))
+        -- newer firmware passes a structure with a 4 byte sysid (299
+        -- bytes); older firmware uses a 1 byte sysid (291 bytes)
+        local sysid32_layout = #msg >= 299
+        local payload_ofs = sysid32_layout and 16 or 13
+        local param_value, _, _, param_id, _ = string.unpack("<fBBc16B", string.sub(msg, payload_ofs, payload_ofs + 23))
         param_id = string.gsub(param_id, string.char(0), "")
 
         param_error = handle_param_set(param_id, param_value)
         if param_error ~= 0 then
-           sysid, compid = string.unpack("<BBB", msg, 8)
+           if sysid32_layout then
+              sysid = string.unpack("<I4", msg, 8)
+              if sysid > 255 then
+                 -- scripting cannot send the extended target header yet, and
+                 -- the payload target byte cannot hold a 32 bit sysid
+                 sysid = 0
+              end
+              compid = string.unpack("<B", msg, 12)
+           else
+              sysid, compid = string.unpack("<BB", msg, 8)
+           end
            send_param_error_response(chan, sysid, compid, param_id, param_error)
         end
     end
