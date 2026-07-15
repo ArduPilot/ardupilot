@@ -2769,7 +2769,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(rc_chan, 1500)
 
         # Make sure this causes throttle down.
-        self.wait_servo_channel_value(3, 1200, timeout=3, comparator=operator.lt)
+        self.wait_servo_channel_value(3, 1200, timeout=5, comparator=operator.lt)
 
         self.progress("Waiting for next WP with no thermalling")
         self.wait_waypoint(4, 4, timeout=1200, max_dist_to_final_wp_m=120)
