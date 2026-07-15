@@ -763,8 +763,7 @@ void Plane::check_ahrs_reset()
     bool should_reset = false;
 
     // Check for yaw reset
-    float yaw_angle_change_rad;
-    const uint16_t new_yaw_reset_count = ahrs.get_yaw_reset_count(yaw_angle_change_rad);
+    const uint16_t new_yaw_reset_count = ahrs.get_yaw_reset_count();
     if (ahrs_check.ahrs_yaw_reset_count != new_yaw_reset_count) {
         should_reset = true;
         ahrs_check.ahrs_yaw_reset_count = new_yaw_reset_count;
