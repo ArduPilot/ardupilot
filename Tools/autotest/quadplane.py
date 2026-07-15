@@ -961,7 +961,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode('MANUAL')
         self.context_push()
         self.context_set_speedup(1)
-        self.set_rc(2, 1550)
+        self.set_rc(2, 1600)
         self.wait_pitch(lim_pitch_up_deg+5, accuracy=5)
         self.context_pop()
         self.progress("Killing elevator servo output to force qassist to help")
