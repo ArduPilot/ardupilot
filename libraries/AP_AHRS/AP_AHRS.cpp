@@ -568,13 +568,9 @@ void AP_AHRS::update_reset_counters()
 
         // deltas across the estimator change come from differencing
         // old and new backend estimates; zero if either side invalid
-        float yaw_delta = 0;
         Vector2f pos_ne_delta;
         float pos_d_delta = 0;
         if (last != nullptr) {
-            if (active_estimates->attitude_valid && last->attitude_valid) {
-                yaw_delta = wrap_PI(active_estimates->yaw_rad - last->yaw_rad);
-            }
             if (active_estimates->position_NE_valid && last->position_NE_valid) {
                 pos_ne_delta = (active_estimates->position_NE - last->position_NE).tofloat();
             }
@@ -585,7 +581,7 @@ void AP_AHRS::update_reset_counters()
 
         attitude_reset_count++;
         active_estimates_attitude_reset_count = active_estimates->attitude_reset_count;
-        yaw_reset_tracker.fill(active_estimates->yaw_reset_count, yaw_delta);
+        yaw_reset_tracker.fill(active_estimates->yaw_reset_count);
         position_NE_reset_tracker.fill(active_estimates->position_NE_reset_count, pos_ne_delta);
         position_D_reset_tracker.fill(active_estimates->position_D_reset_count, pos_d_delta);
         LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
@@ -596,8 +592,7 @@ void AP_AHRS::update_reset_counters()
         active_estimates_attitude_reset_count = active_estimates->attitude_reset_count;
         attitude_reset_count++;
     }
-    if (yaw_reset_tracker.update(active_estimates->yaw_reset_count,
-                                 active_estimates->yaw_reset_delta)) {
+    if (yaw_reset_tracker.update(active_estimates->yaw_reset_count)) {
         LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
     }
     position_NE_reset_tracker.update(active_estimates->position_NE_reset_count,
