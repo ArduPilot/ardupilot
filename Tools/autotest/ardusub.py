@@ -961,8 +961,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             'AHRS_ORIGIN_LAT': 47.607584,
             'AHRS_ORIGIN_LON': -122.343911,
         })
-        self.reboot_sitl()
+        # the origin statustext is emitted early in the boot - with no
+        # GPS configured the EKF does not wait for anything before
+        # adopting the recorded origin - so collection must start
+        # before the reboot or the text can be missed:
         self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
 
         # Wait for the EKF to be happy in constant position mode
         self.wait_ready_to_arm_const_pos()
