@@ -298,6 +298,7 @@ void NavEKF3_core::InitialiseVariables()
 #endif
     yawResetAngle = 0.0f;
     lastYawReset_ms = 0;
+    yawResetCount = 0;
     tiltErrorVariance = sq(M_2PI);
     tiltAlignComplete = false;
     yawAlignComplete = false;

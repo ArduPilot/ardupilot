@@ -405,6 +405,9 @@ public:
     // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
     uint32_t getLastYawResetAngle(float &yawAng) const;
 
+    // return the number of yaw resets performed by this core
+    uint16_t getYawResetCount(void) const { return yawResetCount; }
+
     // return the amount of NE position change due to the last position reset in metres
     // returns the time of the last reset or 0 if no reset has ever occurred
     uint32_t getLastPosNorthEastReset(Vector2f &pos) const;
@@ -1186,6 +1189,7 @@ private:
     bool useGpsVertVel;             // true if GPS vertical velocity should be used
     ftype yawResetAngle;            // Change in yaw angle due to last in-flight yaw reset in radians. A positive value means the yaw angle has increased.
     uint32_t lastYawReset_ms;       // System time at which the last yaw reset occurred. Returned by getLastYawResetAngle
+    uint16_t yawResetCount;         // number of yaw resets performed by this core
     bool tiltAlignComplete;         // true when tilt alignment is complete
     bool yawAlignComplete;          // true when yaw alignment is complete
     uint8_t yawAlignGpsValidCount;  // number of continuous good GPS velocity samples used for in flight yaw alignment
