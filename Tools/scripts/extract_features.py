@@ -187,6 +187,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_GRIPPER_ENABLED', r'AP_Gripper::init\b',),
             ('HAL_SPRAYER_ENABLED', 'AC_Sprayer::AC_Sprayer',),
             ('AP_LANDINGGEAR_ENABLED', r'AP_LandingGear::init\b',),
+            ('AP_TIE_DOWN_CLAMPS_ENABLED', 'AP_LandingGear::tie_down_release'),
             ('AP_WINCH_ENABLED', 'AP_Winch::AP_Winch',),
             ('AP_WINCH_{type}_ENABLED', r'AP_Winch_(?P<type>.*)::update\b',),
             ('AP_RELAY_ENABLED', 'AP_Relay::init',),

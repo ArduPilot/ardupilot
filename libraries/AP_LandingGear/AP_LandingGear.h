@@ -85,6 +85,10 @@ public:
     void retract_after_takeoff();
     void deploy_for_landing();
 
+    // support for tie-down clamps:
+    void tie_down_secure();
+    void tie_down_release();
+
 private:
     // Parameters
     AP_Int8     _enable;
