@@ -360,6 +360,7 @@ void AP_Proximity_RPLidarA2::parse_response_device_info()
         model = Model::S2;
         device_type = "S2";
         break;
+    case 0x12:
     case 0x81:
         model = Model::S3;
         device_type = "S3";
@@ -393,16 +394,8 @@ void AP_Proximity_RPLidarA2::parse_response_data()
         return;
     }
 
-    // Change this line in AP_Proximity_RPLidarA2.cpp:
-    float distance_m;
-    if (model == Model::S1 || model == Model::S2 || model == Model::S3) {
-        // ToF sensors stream distance directly in integer millimeters
-        distance_m = (_payload.sensor_scan.distance_q2 / 1000.0f);
-    } else {
-        // Triangulation legacy scaling (Q2 format)
-        distance_m = (_payload.sensor_scan.distance_q2 / 4000.0f);
-    }
 
+    const float distance_m = (_payload.sensor_scan.distance_q2 / 4000.0f);
     const float angle_sign = (params.orientation == 1) ? -1.0f : 1.0f;
     const float angle_deg = wrap_360(_payload.sensor_scan.angle_q6/64.0f * angle_sign + params.yaw_correction);
 #if RP_DEBUG_LEVEL >= 2
