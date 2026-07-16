@@ -119,6 +119,8 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     EKF3.getQuaternion(results.quaternion);
     results.quaternion.rotate(-AP::ahrs().get_trim());
 
+    results.attitude_covariance_valid = EKF3.getEulerCovariance(results.attitude_covariance);
+
     results.attitude_valid = started;
 
     results.attitude_reset_count = attitude_reset_count;

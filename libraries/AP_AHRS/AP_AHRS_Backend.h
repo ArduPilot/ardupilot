@@ -97,6 +97,18 @@ public:
             return attitude_valid;
         }
 
+        // 3x3 covariance of the (roll, pitch, yaw) Euler angles in rad^2.
+        // Only EKF3 populates this; other backends leave _valid false.
+        Matrix3f attitude_covariance;
+        bool attitude_covariance_valid;
+        bool get_attitude_covariance(Matrix3f &cov) const {
+            if (!attitude_covariance_valid) {
+                return false;
+            }
+            cov = attitude_covariance;
+            return true;
+        }
+
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
 
