@@ -12907,7 +12907,7 @@ Also, ignores heartbeats not from our target system'''
             x=int(loc.lat*1e7),
             y=int(loc.lng*1e7),
             z=loc.alt,
-            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
             mission_type=mavutil.mavlink.MAV_MISSION_TYPE_RALLY
         )
 
