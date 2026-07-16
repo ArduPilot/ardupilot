@@ -862,11 +862,18 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT)
         self.wait_location(loc, timeout=120)
 
-        # Reposition, alt relative to seafloor
-        loc = self.offset_location_ne(loc, 10, 10)
-        loc.alt = -start_altitude
-        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
-        self.wait_location(loc, timeout=120)
+        # Reposition, alt relative to seafloor.  The SITL seafloor is
+        # ~50m deep here, so holding 25m above it is ~-25m AMSL.
+        # target_terrain abuses the location's alt field to carry a
+        # terrain-frame altitude, as send_do_reposition requires
+        seafloor_depth = 50
+        alt_above_seafloor = 25
+        target_terrain = self.offset_location_ne(loc, 10, 10)
+        target_terrain.alt = alt_above_seafloor
+        target_global = self.offset_location_ne(loc, 10, 10)
+        target_global.alt = alt_above_seafloor - seafloor_depth
+        self.send_do_reposition(target_terrain, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.wait_location(target_global, timeout=120, height_accuracy=5)
 
         self.disarm_vehicle()
 
