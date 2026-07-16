@@ -33,9 +33,6 @@ namespace ESP32
 {
 
 class RCOutput : public AP_HAL::RCOutput
-#if HAL_WITH_ESC_TELEM
-    , public AP_ESC_Telem_Backend   // bidir DShot RPM feeds the ESC telemetry frontend
-#endif
 {
 public:
     RCOutput() {};
@@ -262,6 +259,23 @@ private:
         uint16_t erpm_errors[12] {};      // decode failures per channel (for error rate)
         uint16_t erpm_clean_frames[12] {};// good decodes per channel
     } _bdshot;
+
+#if HAL_WITH_ESC_TELEM
+    // Bridge to the AP_ESC_Telem frontend. Deliberately NOT a base class of RCOutput:
+    // the AP_ESC_Telem_Backend constructor requires the frontend singleton, which
+    // lives in the (file-scope static) vehicle object — construction order against
+    // the static HAL rcout driver is undefined across translation units, and when
+    // the HAL constructs first the base ctor panics before main() (boot loop).
+    // ChibiOS inherits directly and survives only by link order. Instead this is
+    // heap-allocated on first bidir use, long after all static ctors have run.
+    class ESCTelem : public AP_ESC_Telem_Backend {
+    public:
+        void put_rpm(uint8_t chan, float rpm, float error_rate) {
+            update_rpm(chan, rpm, error_rate);
+        }
+    };
+    ESCTelem *_esc_telem = nullptr;
+#endif
 
     DshotEscType _dshot_esc_type = DSHOT_ESC_NONE;
 
