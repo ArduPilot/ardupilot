@@ -365,8 +365,13 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
     }
     buf[i] = '\0';
 
-    // get back to the right offset
-    if (backend.fs.lseek(fd, offset_start+i+1, SEEK_SET) != offset_start+i+1) {
+    // get back to the right offset, consuming the line terminator if
+    // we found one.  If we did not find one we have either filled the
+    // buffer or returned an unterminated final line; in both cases
+    // the seek target must not extend past the data we consumed -
+    // backends such as ROMFS refuse to seek past the end of the file.
+    const int32_t new_offset = offset_start + i + (i < n ? 1 : 0);
+    if (backend.fs.lseek(fd, new_offset, SEEK_SET) != new_offset) {
         // we need to fail if we can't seek back or the caller may loop or get corrupt data
         return false;
     }
