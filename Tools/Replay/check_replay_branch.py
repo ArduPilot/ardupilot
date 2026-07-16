@@ -98,6 +98,14 @@ class CheckReplayBranch(BuildScriptBase):
         return 'CRB'
 
     def build_replay(self):
+        # explicitly reconfigure; the checkout of the branch after
+        # autotest configured on master may have changed the configure
+        # files, and waf's auto-reconfigure fails if the branches'
+        # configure options differ:
+        waf_configure = ["./waf", "configure", "--board", "sitl"]
+        if not self.no_debug:
+            waf_configure.append("--debug")
+        subprocess.check_call(waf_configure)
         subprocess.check_call(["./waf", "replay"])
 
     def run_replay_on_log(self, logfile_path):
@@ -112,6 +120,7 @@ class CheckReplayBranch(BuildScriptBase):
 
         # check out the master branch:
         self.run_git(["checkout", self.master], show_output=False)
+        self.run_git(["submodule", "update", "--recursive"], show_output=False)
 
         # generate logs:
         args = ["Tools/autotest/autotest.py"]
@@ -130,6 +139,7 @@ class CheckReplayBranch(BuildScriptBase):
 
         # check out the original branch:
         self.run_git(["checkout", old_branch], show_output=False)
+        self.run_git(["submodule", "update", "--recursive"], show_output=False)
 
     def find_replayed_logs(self):
         '''find logs which were replayed in the autotest'''
