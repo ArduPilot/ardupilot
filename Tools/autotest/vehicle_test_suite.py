@@ -586,7 +586,7 @@ class WaitAndMaintainLocation(WaitAndMaintain):
         t = self.target
         if self.height_accuracy is not None:
             return ("Waiting for distance to Location (%.4f, %.4f, %.2f) (h_err<%f, v_err<%.2f " %
-                    (t.lat, t.lng, t.alt*0.01, self.accuracy, self.height_accuracy))
+                    (t.lat, t.lng, t.alt, self.accuracy, self.height_accuracy))
         return ("Waiting for distance to Location (%.4f, %.4f) (h_err<%f" %
                 (t.lat, t.lng, self.accuracy))
 
@@ -602,7 +602,7 @@ class WaitAndMaintainLocation(WaitAndMaintain):
         return self.test_suite.get_distance(value, self.target)
 
     def vertical_error(self, value):
-        return math.fabs(value.alt*0.01 - self.target.alt*0.01)
+        return math.fabs(value.alt - self.target.alt)
 
     def validate_value(self, value):
         if self.horizontal_error(value) > self.accuracy:
@@ -12155,10 +12155,10 @@ Also, ignores heartbeats not from our target system'''
 
     def SetpointGlobalPos(self, timeout=100):
         """Test set position message in guided mode."""
-        # Disable heading and yaw test on rover type
+        # Disable heading, yaw, and altitude tests on rover type
 
         if self.is_rover():
-            test_alt = True
+            test_alt = False
             test_heading = False
             test_yaw_rate = False
         else:

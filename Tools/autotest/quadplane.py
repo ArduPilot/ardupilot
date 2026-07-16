@@ -1054,7 +1054,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             timeout=60,
             relative=True,
             minimum_duration=10)
-        self.wait_location(loc, timeout=120, accuracy=100)
+        self.wait_location(loc, timeout=120, accuracy=100, height_accuracy=None)
         self.progress("Triggering failsafe")
         self.set_parameter('BATT_LOW_VOLT', 50)
         self.wait_mode(25)  # LoiterAltQLand
@@ -1115,7 +1115,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             relative=True,
             minimum_duration=10)
 
-        self.wait_location(loc, timeout=500, accuracy=100)
+        self.wait_location(loc, timeout=500, accuracy=100, height_accuracy=None)
 
         self.progress("Triggering failsafe")
         self.set_parameter('BATT_LOW_VOLT', 50)
@@ -2012,8 +2012,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=15)
         self.wait_altitude(14, 16, relative=True)
 
-        loc = self.mav.location()
-        self.location_offset_ne(loc, 50, 50)
+        target_alt = 30
+        loc = self.home_relative_loc_neu(50, 50, target_alt)
 
         # set position target
         self.run_cmd_int(
@@ -2024,10 +2024,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             0,
             int(loc.lat * 1e7),
             int(loc.lng * 1e7),
-            30,    # alt
+            target_alt,    # alt
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
         )
-        self.wait_location(loc, timeout=120)
+        self.wait_location(loc, timeout=120, height_accuracy=2)
 
         self.fly_home_land_and_disarm()
 
@@ -2127,6 +2127,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             accuracy=accuracy,
             minimum_duration=20,
             timeout=120,
+            height_accuracy=None,  # loiter altitude behaviour is not under test
         )
 
     def AHRSFlyForwardFlag(self):
@@ -2683,7 +2684,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             dest,
             accuracy=200,
             timeout=600,
-            height_accuracy=10,
+            height_accuracy=None,  # dest.alt is above-terrain; alt checked below
         )
         self.delay_sim_time(20, reason="terrain altitude to settle")
 
@@ -2746,7 +2747,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 loc,
                 accuracy=10,
                 timeout=600,
-                height_accuracy=10,
+                height_accuracy=None,  # loc.alt is above-terrain; alt checked below
             )
             self.delay_sim_time(10, reason="terrain altitude to settle")
             self.wait_altitude(
@@ -2843,7 +2844,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 loc,
                 accuracy=10,
                 timeout=600,
-                height_accuracy=10,
+                height_accuracy=None,  # loc.alt is above-terrain; alt checked below
             )
             self.delay_sim_time(10, reason="terrain altitude to settle")
             self.wait_altitude(

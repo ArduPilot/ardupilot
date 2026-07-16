@@ -2040,19 +2040,19 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if disable_airspeed_sensor:
                 self.set_parameter("ARSPD_USE", 0)
 
+            target_alt = 100
+            loc = self.home_relative_loc_neu(500, 500, target_alt)
             self.takeoff(50)
-            loc = self.mav.location()
-            self.location_offset_ne(loc, 500, 500)
             self.run_cmd_int(
                 mavutil.mavlink.MAV_CMD_DO_REPOSITION,
                 p1=0,
                 p2=mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
                 p5=int(loc.lat * 1e7),
                 p6=int(loc.lng * 1e7),
-                p7=100,    # alt
+                p7=target_alt,    # alt
                 frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
             )
-            self.wait_location(loc, accuracy=100)
+            self.wait_location(loc, accuracy=100, height_accuracy=10)
             self.progress("Orbit with GPS and learn wind")
             # allow longer to learn wind if there is no airspeed sensor
             if disable_airspeed_sensor:
@@ -2449,9 +2449,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1500)
         self.start_subtest("Ensure command bounced outside guided mode")
         desired_relative_alt = 33
-        loc = self.mav.location()
-        self.location_offset_ne(loc, 300, 300)
-        loc.alt += desired_relative_alt
+        loc = self.home_relative_loc_neu(300, 300, desired_relative_alt)
         self.mav.mav.mission_item_int_send(
             target_system,
             target_component,
@@ -2493,7 +2491,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         m = self.assert_receive_message('MISSION_ACK', timeout=5)
         if m.type != mavutil.mavlink.MAV_MISSION_ACCEPTED:
             raise NotAchievedException("Did not get accepted response")
-        self.wait_location(loc, accuracy=100) # based on loiter radius
+        self.wait_location(loc, accuracy=100, height_accuracy=None) # based on loiter radius
         self.wait_altitude(altitude_min=desired_relative_alt-3,
                            altitude_max=desired_relative_alt+3,
                            relative=True,
@@ -3029,9 +3027,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_waypoint(3, 3, max_dist_to_final_wp_m=3150, timeout=600)
         self.progress("Entering guided and flying somewhere constant")
         self.change_mode("GUIDED")
+        new_alt = 280
         loc = self.mav.location()
         self.location_offset_ne(loc, 350, 0)
-        new_alt = 280
+        loc.alt = self.home_position_as_mav_location().alt + new_alt
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
             p5=int(loc.lat * 1e7),
@@ -3041,7 +3040,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         )
 
         # Resume auto when we are close to the GUIDED waypoint and start tracking maximum terrain alt.
-        self.wait_location(loc, accuracy=100)  # based on loiter radius
+        self.wait_location(loc, accuracy=100, height_accuracy=10)  # based on loiter radius
         self.change_mode('AUTO')
         self.install_message_hook_context(record_maxalt)
 
@@ -6606,7 +6605,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             dest,
             accuracy=200,
             timeout=600,
-            height_accuracy=10,
+            height_accuracy=None,  # dest.alt is relative; alt checked below
         )
         self.wait_altitude(
             dest.alt-5,
@@ -6644,7 +6643,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             dest,
             accuracy=200,
             timeout=600,
-            height_accuracy=10,
+            height_accuracy=None,  # dest.alt is above-terrain; alt checked below
         )
         self.wait_altitude(
             dest.alt-10,
