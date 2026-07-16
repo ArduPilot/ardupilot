@@ -20,7 +20,6 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/I2CDevice.h>
 #include <AP_Math/AP_Math.h>
-#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -44,7 +43,6 @@ extern const AP_HAL::HAL &hal;
 // Default resolution (0.0625 C)
 
 #define MCP9808_CONFIG_VALUE        0x0000
-
 
 
 void AP_TemperatureSensor_MCP9808::init()
@@ -71,39 +69,26 @@ void AP_TemperatureSensor_MCP9808::init()
 
 
     // Confirm we are talking to a MCP9808
-
     uint16_t device_id;
 
-    if (!read_registers(
-            MCP9808_REG_DEVICE_ID,
-            device_id) ||
-        device_id != MCP9808_DEVICE_ID) {
+    if (!read_registers(MCP9808_REG_DEVICE_ID,device_id) || device_id != MCP9808_DEVICE_ID) {
         return;
     }
 
 
     // Configure sensor for continuous conversion
-
-    if (!write_register(
-            MCP9808_REG_CONFIG,
-            MCP9808_CONFIG_VALUE)) {
+    if (!write_register(MCP9808_REG_CONFIG,MCP9808_CONFIG_VALUE)) {
         return;
     }
 
-
     // Reduce retries during normal operation
-
     _dev->set_retries(3);
 
-
     // Poll temperature at 20Hz
-
-    _dev->register_periodic_callback(
-        50 * AP_USEC_PER_MSEC,
-        FUNCTOR_BIND_MEMBER(
-            &AP_TemperatureSensor_MCP9808::_timer,
-            void));
+    _dev->register_periodic_callback(50 * AP_USEC_PER_MSEC,FUNCTOR_BIND_MEMBER(&AP_TemperatureSensor_MCP9808::_timer,void));
 }
+
+
 
 void AP_TemperatureSensor_MCP9808::_timer(void)
 {
@@ -143,7 +128,6 @@ void AP_TemperatureSensor_MCP9808::_timer(void)
         temp -= 256.0f;
     }
 
-
     set_temperature(temp);
 }
 
@@ -155,44 +139,23 @@ bool AP_TemperatureSensor_MCP9808::read_registers(
     uint8_t val[2];
 
 
-    if (!_dev->transfer(
-            &reg,
-            1,
-            val,
-            sizeof(val))) {
+    if (!_dev->transfer(&reg,1,val,sizeof(val))) {
         return false;
     }
 
-
     // MCP9808 registers are 16-bit big endian
 
-    value = UINT16_VALUE(
-        val[0],
-        val[1]);
-
-
+    value = UINT16_VALUE(val[0],val[1]);
     return true;
 }
 
 
-bool AP_TemperatureSensor_MCP9808::write_register(
-    uint8_t reg,
-    uint16_t value) const
+bool AP_TemperatureSensor_MCP9808::write_register(uint8_t reg,uint16_t value) const
 {
     // Registers are 16-bit big endian
 
-    uint8_t buf[3] {
-        reg,
-        uint8_t(value >> 8),
-        uint8_t(value & 0xFF)
-    };
-
-
-    return _dev->transfer(
-        buf,
-        sizeof(buf),
-        nullptr,
-        0);
+    uint8_t buf[3] {reg,uint8_t(value >> 8),uint8_t(value & 0xFF)};
+    return _dev->transfer(buf,sizeof(buf),nullptr,0);
 }
 
 
