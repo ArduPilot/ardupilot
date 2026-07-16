@@ -803,8 +803,8 @@ void RCOutput::bdshot_store_erpm(uint32_t encodederpm, uint8_t chan)
         _bdshot.update_mask |= 1U << chan;
 #if HAL_WITH_ESC_TELEM
         // feed the ESC telemetry frontend: mechanical RPM = eRPM * 200 / poles
-        if (_bdshot.motor_poles > 0) {
-            update_rpm(chan, erpm * 200U / _bdshot.motor_poles, get_erpm_error_rate(chan));
+        if (_esc_telem != nullptr && _bdshot.motor_poles > 0) {
+            _esc_telem->put_rpm(chan, erpm * 200U / _bdshot.motor_poles, get_erpm_error_rate(chan));
         }
 #endif
     }
@@ -989,6 +989,15 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
  */
 void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 {
+#if HAL_WITH_ESC_TELEM
+    // register with the ESC telemetry frontend on first use. Runs on the main
+    // thread well after all static constructors, so the frontend singleton the
+    // AP_ESC_Telem_Backend ctor requires is guaranteed to exist (see RCOutput.h
+    // for why this must not happen at static-init time).
+    if (mask != 0 && _esc_telem == nullptr) {
+        _esc_telem = NEW_NOTHROW ESCTelem();
+    }
+#endif
     bool changed = false;
     for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
         const bool b = (mask & (1U << chan)) != 0;
