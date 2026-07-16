@@ -115,6 +115,8 @@ static_assert(NEEDED_GROUPS <= MAX_GROUPS, "not enough hardware PWM groups");
 // A bidir GCR reply is ~21 transitions; 48 leaves margin (and matches the block size).
 #define BDSHOT_RX_SYMBOLS 48
 #define BDSHOT_INVALID_ERPM 0xffffU
+static inline void bdshot_pad_oe(uint8_t gpio, bool drive); // defined below
+
 static rmt_symbol_word_t bdshot_rx_buf[MAX_CHANNELS][BDSHOT_RX_SYMBOLS];
 static volatile uint16_t bdshot_rx_nsym[MAX_CHANNELS];
 static volatile bool     bdshot_rx_done[MAX_CHANNELS];
@@ -465,7 +467,36 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
 
         // idempotent: release any RMT resources from a previous mode change
         dshot_free_chan(ch);
-        ch.rmt_rx_chan = nullptr; // bidir RX channel is created below, AFTER the TX channel
+
+        // Bidirectional DShot: create the RX channel FIRST, before the TX channel.
+        // rmt_new_rx_channel()'s gpio_config(GPIO_MODE_INPUT) resets the pad's
+        // output-signal matrix routing (gpio_ll_output_disable writes SIG_GPIO_OUT_IDX),
+        // which severs an already-created TX channel from the pad — TX frames then
+        // never reach the wire (HW-diagnosed 2026-07-16 via RX self-capture: no edges).
+        // The TX channel is created after, with io_loop_back so its OUTPUT gpio_config
+        // keeps the pad's input path alive for this RX channel.
+        if (ch.bidir) {
+            rmt_rx_channel_config_t rxcfg = {};
+            rxcfg.gpio_num = (gpio_num_t)ch.gpio_num;
+            rxcfg.clk_src = RMT_CLK_SRC_DEFAULT;
+            rxcfg.resolution_hz = resolution_hz;
+            rxcfg.mem_block_symbols = BDSHOT_RX_SYMBOLS;
+            rmt_channel_handle_t rx = nullptr;
+            esp_err_t rxerr = rmt_new_rx_channel(&rxcfg, &rx);
+            if (rxerr == ESP_OK) {
+                rmt_rx_event_callbacks_t rxcbs = {};
+                rxcbs.on_recv_done = bdshot_on_rx_done;
+                rmt_rx_register_event_callbacks(rx, &rxcbs, (void*)(uintptr_t)chan);
+                ESP_ERROR_CHECK(rmt_enable(rx));
+                ch.rmt_rx_chan = rx; // stored as void* (see RCOutput.h)
+            } else {
+                // no RX channel: fall back to plain (non-inverted) DShot on this channel,
+                // else we'd send inverted-CRC frames the ESC rejects with no turnaround.
+                ch.bidir = false;
+                printf("RCOut: bidir DShot RX alloc failed on chan %u (err 0x%x); S3 has 4 RX channels\n",
+                       (unsigned)chan, (int)rxerr);
+            }
+        }
 
         rmt_tx_channel_config_t cfg = {};
         cfg.gpio_num = (gpio_num_t)ch.gpio_num;
@@ -474,13 +505,19 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         cfg.mem_block_symbols = 48; // full per-channel block (non-DMA); frame is ~17
         cfg.trans_queue_depth = 2;
         cfg.flags.with_dma = false;
+        // bidir: OUTPUT|INPUT pad mode so creating the TX channel doesn't disable the
+        // input path the RX channel (created above, same pad) relies on.
+        cfg.flags.io_loop_back = ch.bidir ? 1 : 0;
 
         rmt_channel_handle_t rmt_chan = nullptr;
         esp_err_t err = rmt_new_tx_channel(&cfg, &rmt_chan);
         if (err != ESP_OK) {
             // most likely no free RMT channel (S3 has 4) — leave it inactive
-            // rather than aborting the whole board.
+            // rather than aborting the whole board. Also drop the RX channel created
+            // above, if any: without TX there is nothing to capture replies to.
             ch.rmt_chan = nullptr;
+            dshot_free_chan(ch);
+            ch.bidir = false;
             printf("RCOut: DShot RMT alloc failed on chan %u (err 0x%x); S3 has 4 RMT channels\n",
                    (unsigned)chan, (int)err);
             continue;
@@ -496,6 +533,16 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
             continue;
         }
         ch.rmt_chan = rmt_chan; // stored as void* (see RCOutput.h)
+
+        if (ch.bidir) {
+            // Route the pad's output-enable from the GPIO_ENABLE register instead of
+            // the RMT peripheral (connect_out_signal defaults to peripheral-controlled
+            // OEN). Without this, bdshot_pad_oe()'s GPIO.enable toggle is a no-op: the
+            // pad keeps driving through the reply window and squashes the ESC's answer
+            // (HW-diagnosed 2026-07-16: TX frame still on the pad with OE "released").
+            ::GPIO.func_out_sel_cfg[ch.gpio_num].oen_sel = 1;
+            bdshot_pad_oe(ch.gpio_num, true); // driven by default; released per frame
+        }
 
         // Bytes encoder: each frame bit -> one RMT symbol, a pulse then the rest of
         // the bit, in 12.5 ns ticks. Logical 1 pulses for t1h_ticks (0.75 bit),
@@ -521,35 +568,6 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         }
         ch.rmt_encoder = enc; // stored as void*
 
-        // Bidirectional DShot: NOW (after the TX channel) create the RX channel on the
-        // SAME pad to capture the ESC's eRPM reply after the per-frame turnaround.
-        // Creating it after TX avoids TX clobbering the RX input routing (HW-proven).
-        // The S3 has 4 RX-capable RMT channels, so a bidir quad consumes all 8 (4TX+4RX).
-        if (ch.bidir) {
-            rmt_rx_channel_config_t rxcfg = {};
-            rxcfg.gpio_num = (gpio_num_t)ch.gpio_num;
-            rxcfg.clk_src = RMT_CLK_SRC_DEFAULT;
-            rxcfg.resolution_hz = resolution_hz;
-            rxcfg.mem_block_symbols = BDSHOT_RX_SYMBOLS;
-            rmt_channel_handle_t rx = nullptr;
-            esp_err_t rxerr = rmt_new_rx_channel(&rxcfg, &rx);
-            if (rxerr == ESP_OK) {
-                rmt_rx_event_callbacks_t rxcbs = {};
-                rxcbs.on_recv_done = bdshot_on_rx_done;
-                rmt_rx_register_event_callbacks(rx, &rxcbs, (void*)(uintptr_t)chan);
-                ESP_ERROR_CHECK(rmt_enable(rx));
-                ch.rmt_rx_chan = rx; // stored as void* (see RCOutput.h)
-                // keep the pad readable: creating the TX channel leaves it output-only,
-                // so force input-enable (a pad can hold IE+OE; we gate OE in the turnaround).
-                PIN_INPUT_ENABLE(GPIO_PIN_MUX_REG[ch.gpio_num]);
-            } else {
-                // no RX channel: fall back to plain (non-inverted) DShot on this channel,
-                // else we'd send inverted-CRC frames the ESC rejects with no turnaround.
-                ch.bidir = false;
-                printf("RCOut: bidir DShot RX alloc failed on chan %u (err 0x%x); S3 has 4 RX channels\n",
-                       (unsigned)chan, (int)rxerr);
-            }
-        }
     }
 
     // start the periodic transmit task now that DShot output exists. It reads the
@@ -628,6 +646,10 @@ void RCOutput::dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request)
 
     rmt_transmit_config_t tx_cfg = {};
     tx_cfg.loop_count = 0; // one frame per call; rcout task re-sends each cycle
+    // bidirectional DShot idles HIGH (the inverted line is how the ESC detects the
+    // mode); without this the RMT parks the pad LOW after each frame and a real ESC
+    // rejects the signal entirely (no arm, no eRPM reply).
+    tx_cfg.flags.eot_level = ch.bidir ? 1 : 0;
     rmt_transmit((rmt_channel_handle_t)ch.rmt_chan, (rmt_encoder_handle_t)ch.rmt_encoder,
                  ch.dshot_buf, sizeof(ch.dshot_buf), &tx_cfg);
 }
