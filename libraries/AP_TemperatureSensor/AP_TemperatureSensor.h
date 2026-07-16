@@ -39,6 +39,7 @@ class AP_TemperatureSensor_TSYS03;
 class AP_TemperatureSensor_Analog;
 class AP_TemperatureSensor_MLX90614;
 class AP_TemperatureSensor_TMP119;
+class AP_TemperatureSensor_MCP9808;
 
 class AP_TemperatureSensor
 {
@@ -51,6 +52,7 @@ class AP_TemperatureSensor
     friend class AP_TemperatureSensor_DroneCAN;
     friend class AP_TemperatureSensor_MLX90614;
     friend class AP_TemperatureSensor_TMP119;
+    friend class AP_TemperatureSensor_MCP9808;
 
 public:
 
