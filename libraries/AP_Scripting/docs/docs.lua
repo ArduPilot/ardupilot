@@ -3429,6 +3429,11 @@ gps.GPS_OK_FIX_2D = enum_integer
 gps.NO_FIX = enum_integer
 gps.NO_GPS = enum_integer
 
+--- Returns true if the specified GPS instance is currently reporting a spoofed state.
+---@param instance integer
+---@return boolean
+function gps:is_spoofed(instance) end
+
 -- get unix time
 ---@param instance integer -- instance number
 ---@return uint64_t_ud -- unix time microseconds

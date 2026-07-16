@@ -95,6 +95,13 @@ const AP_Param::Info Sub::var_info[] = {
     // @Values: 0:Disabled,1:Warn only
     // @User: Standard
     GSCALAR(failsafe_temperature, "FS_TEMP_ENABLE", FS_TEMP_DISABLED),
+
+    // @Param: FS_GPS_SPOOF_ACT
+    // @DisplayName: GPS Spoofing Failsafe Action
+    // @Description: Controls the action taken when GPS spoofing is detected
+    // @Values: 0:Disabled/NoAction,1:Warn only,2:Disarm,3:Surface
+    // @User: Standard
+    GSCALAR(fs_gps_spoof_action, "FS_GPS_SPOOF_ACT", Failsafe_Action_Warn),
     
 #if AP_SUB_RC_ENABLED        
     // @Param: FS_THR_ENABLE

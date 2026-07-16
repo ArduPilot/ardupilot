@@ -97,6 +97,13 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(fs_action,    "FS_ACTION",     (int8_t)FailsafeAction::Hold),
 
+    // @Param: FS_GPS_SPOOF_ACT
+    // @DisplayName: GPS Spoofing Failsafe Action
+    // @Description: Controls the action taken when GPS spoofing is detected
+    // @Values: 0:Disabled/NoAction,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold,7:Warn only
+    // @User: Standard
+    GSCALAR(fs_gps_spoof_action, "FS_GPS_SPOOF_ACT", (int8_t)FailsafeAction::Hold),
+
     // @Param: FS_TIMEOUT
     // @DisplayName: Failsafe timeout
     // @Description: The time in seconds that a failsafe condition must persist before the failsafe action is triggered

@@ -1,5 +1,7 @@
 #include "Plane.h"
 
+#include <AP_GPS/AP_GPS.h>
+
 // returns true if the vehicle is in landing sequence.  Intended only
 // for use in failsafe code.
 bool Plane::failsafe_in_landing_sequence() const
@@ -238,6 +240,50 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
         break;
     }
     gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: switched to %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", control_mode->name());
+}
+
+// check for GPS spoofing failsafe
+void Plane::gpsspoof_check()
+{
+    if (g.fs_gps_spoof_action == 0) {
+        if (failsafe.gps_spoof) {
+            failsafe.gps_spoof = false;
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_WARNING, "GPS Spoofing Cleared");
+        }
+        return;
+    }
+
+    const bool gps_spoofed = AP::gps().is_spoofed();
+    if (!gps_spoofed) {
+        if (failsafe.gps_spoof) {
+            failsafe.gps_spoof = false;
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_WARNING, "GPS Spoofing Cleared");
+        }
+        return;
+    }
+
+    if (failsafe.gps_spoof) {
+        return;
+    }
+
+    failsafe.gps_spoof = true;
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
+    gcs().send_text(MAV_SEVERITY_WARNING, "GPS Spoofing Detected");
+
+    switch (g.fs_gps_spoof_action) {
+        case 1: // Warn only
+            break;
+        case 2: // Circle
+            set_mode(mode_circle, ModeReason::GPS_GLITCH);
+            break;
+        case 3: // RTL
+            set_mode(mode_rtl, ModeReason::GPS_GLITCH);
+            break;
+        default:
+            break;
+    }
 }
 
 void Plane::rc_failsafe_short_off_event()

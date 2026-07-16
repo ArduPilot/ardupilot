@@ -405,15 +405,17 @@ private:
         uint8_t terrain             : 1; // true if the missing terrain data failsafe has occurred
         uint8_t adsb                : 1; // true if an adsb related failsafe has occurred
         uint8_t deadreckon          : 1; // true if a dead reckoning failsafe has triggered
+        uint8_t gps_spoof            : 1; // true if GPS spoofing failsafe has occurred
     } failsafe;
 
     bool any_failsafe_triggered() const {
-        return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb || failsafe.deadreckon;
+        return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb || failsafe.deadreckon || failsafe.gps_spoof;
     }
 
     using FS_GCS_Action = Parameters::FS_GCS_Action;
     using FS_THR_Action = Parameters::FS_THR_Action;
     using FS_EKF_Action = Parameters::FS_EKF_Action;
+    using fs_gps_spoof_action = Parameters::FS_GPS_SPOOF_Action;
     using WPYawBehavior = Parameters::WPYawBehavior;
 
     // dead reckoning state
@@ -815,6 +817,7 @@ private:
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
     void gpsglitch_check();
+    void gpsspoof_check();
     void failsafe_deadreckon_check();
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
     void set_mode_SmartRTL_or_RTL(ModeReason reason);

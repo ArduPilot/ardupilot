@@ -50,6 +50,7 @@
 #include <AP_VisualOdom/AP_VisualOdom.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_EFI/AP_EFI.h>
+#include <AP_GPS/AP_GPS.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include <AP_Scripting/AP_Scripting.h>
 #include <SRV_Channel/SRV_Channel.h>
@@ -5893,6 +5894,21 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 
     case MAV_CMD_GET_MESSAGE_INTERVAL:
         return handle_command_get_message_interval(packet);
+
+#if AP_GPS_ENABLED
+    case MAV_CMD_USER_1: {
+        const int32_t instance = (int32_t)packet.param2;
+        if (instance < 0 || instance >= GPS_MAX_INSTANCES) {
+            return MAV_RESULT_DENIED;
+        }
+        const bool spoofed = packet.param1 >= 0.5f;
+        AP::gps().set_spoofing_flag(static_cast<uint8_t>(instance), spoofed);
+        return MAV_RESULT_ACCEPTED;
+    }
+#else
+    case MAV_CMD_USER_1:
+        return MAV_RESULT_UNSUPPORTED;
+#endif
 
     case MAV_CMD_REQUEST_MESSAGE:
         return handle_command_request_message(packet);

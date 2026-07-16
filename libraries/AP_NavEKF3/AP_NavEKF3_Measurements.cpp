@@ -567,6 +567,13 @@ void NavEKF3_core::readGpsData()
         return;
     }
 
+    if (gps.is_spoofed(selected_gps)) {
+        gpsCheckStatus.bad_fix = true;
+        gpsGoodToAlign = false;
+        dal.snprintf(prearm_fail_string, sizeof(prearm_fail_string), "GPS spoofing detected");
+        return;
+    }
+
     if (gps.status(selected_gps) < AP_GPS_FixType::FIX_3D) {
         // report GPS fix status
         gpsCheckStatus.bad_fix = true;

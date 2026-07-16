@@ -153,6 +153,7 @@ public:
 
         // failsafe control
         k_param_fs_action = 180,
+        k_param_fs_gps_spoof_action,
         k_param_fs_timeout,
         k_param_fs_throttle_enabled,
         k_param_fs_throttle_value,
@@ -255,6 +256,7 @@ public:
 
     // failsafe control
     AP_Int8     fs_action;
+    AP_Int8     fs_gps_spoof_action;
     AP_Float    fs_timeout;
     AP_Int8     fs_throttle_enabled;
     AP_Int16    fs_throttle_value;

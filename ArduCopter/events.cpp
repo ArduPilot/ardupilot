@@ -1,5 +1,7 @@
 #include "Copter.h"
 
+#include <AP_GPS/AP_GPS.h>
+
 /*
  *       This event will be called when the failsafe changes
  *       boolean failsafe reflects the current state
@@ -321,6 +323,62 @@ void Copter::gpsglitch_check()
             LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
             gcs().send_text(MAV_SEVERITY_CRITICAL,"Glitch cleared");
         }
+    }
+}
+
+// check for GPS spoofing failsafe
+void Copter::gpsspoof_check()
+{
+    const bool gps_spoofed = AP::gps().is_spoofed();
+    if (g.fs_gps_spoof_action == Parameters::FS_GPS_SPOOF_Action::DISABLED) {
+        if (failsafe.gps_spoof) {
+            failsafe.gps_spoof = false;
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS Spoofing Cleared");
+        }
+        return;
+    }
+
+    if (!gps_spoofed) {
+        if (failsafe.gps_spoof) {
+            failsafe.gps_spoof = false;
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS Spoofing Cleared");
+        }
+        return;
+    }
+
+    if (failsafe.gps_spoof) {
+        return;
+    }
+
+    failsafe.gps_spoof = true;
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS Spoofing Detected");
+
+    if (g.fs_gps_spoof_action == Parameters::FS_GPS_SPOOF_Action::WARN_ONLY) {
+        return;
+    }
+
+    if (should_disarm_on_failsafe()) {
+        return;
+    }
+
+    switch ((Parameters::FS_GPS_SPOOF_Action)g.fs_gps_spoof_action) {
+        case Parameters::FS_GPS_SPOOF_Action::LAND:
+            set_mode_land_with_pause(ModeReason::GPS_GLITCH);
+            break;
+        case Parameters::FS_GPS_SPOOF_Action::ALTHOLD:
+            if (failsafe.radio || !set_mode(Mode::Number::ALT_HOLD, ModeReason::GPS_GLITCH)) {
+                set_mode_land_with_pause(ModeReason::GPS_GLITCH);
+            }
+            break;
+        case Parameters::FS_GPS_SPOOF_Action::RTL:
+            set_mode_RTL_or_land_with_pause(ModeReason::GPS_GLITCH);
+            break;
+        case Parameters::FS_GPS_SPOOF_Action::DISABLED:
+        case Parameters::FS_GPS_SPOOF_Action::WARN_ONLY:
+            break;
     }
 }
 
