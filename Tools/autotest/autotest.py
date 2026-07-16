@@ -345,13 +345,13 @@ def find_specific_test_to_run(step):
 tester_class_map = {
     "test.Blimp": blimp.AutoTestBlimp,
     "test.Copter": arducopter.AutoTestCopter,
-    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
-    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s
-    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # 5m17s
-    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # 8m20s
-    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
-    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
-    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
+    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # ~15m
+    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # ~15m
+    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # ~15m
+    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # ~13m
+    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # ~14m
+    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # ~14m
+    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # ~14m
     "test.Plane": arduplane.AutoTestPlane,
     "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
     "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
