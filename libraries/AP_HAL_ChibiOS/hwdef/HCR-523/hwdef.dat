@@ -1,0 +1,91 @@
+# HC Robotics - HCR-523 CAN L1/L5 GPS + Magnetometer
+# STM32G491KEU6
+# GPS Module: uBlox NEO-F10T
+# Antenna: Taoglas GPVSF.25.8.A.08
+# Magnetometer: PNI RM3100 
+# CAN: 1 FDCAN 8Mbit
+# Backup Power: 11MF Super Cap
+# TimePulse signal and USB signals via JST Connector
+# 3 Status LEDs: Status (Blue), GPS Power (Green), MCU Power (Green)
+#
+# USB and CAN share the single UART on the F10T, it is muxed so that the USB will supercede the onboard MCU if connected
+###########################################################################################################################################################
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+# default to all pins low to avoid ESD issues as recommended my STM
+# wait to enable until every IO is accounted for below.
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_HCR-523
+define CAN_APP_NODE_NAME "com.hcrobo.HCR-523"
+
+# MCU class and specific type
+MCU STM32G4xx STM32G491xx
+
+# Crystal Frequency
+OSCILLATOR_HZ 8000000
+
+# MCU Flash Size
+FLASH_SIZE_KB 512
+
+FLASH_RESERVE_START_KB 36
+STORAGE_FLASH_PAGE 16
+define HAL_STORAGE_SIZE 800
+
+# Status LED
+PA15 LED OUTPUT HIGH # blue
+define HAL_LED_ON 1
+
+# SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CAN interface
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+
+# UART Order
+SERIAL_ORDER USART1
+
+# USART1, GPS
+PA9 USART1_TX USART1
+PA10 USART1_RX USART1
+
+# GPS+MAG
+define AP_PERIPH_GPS_ENABLED 1
+define AP_PERIPH_MAG_ENABLED 1
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+define HAL_COMPASS_MAX_SENSORS 1
+
+DMA_NOSHARE USART1*
+
+# GPS on 1st port
+define HAL_PERIPH_GPS_PORT_DEFAULT 0
+
+# SPI bus
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+PA4 MAG_CS CS
+
+# RM3100 interrupt signal. May not be supported.
+PA3 RM3100_DRDY INPUT PULLDOWN
+
+# SPI devices
+SPIDEV rm3100 SPI1 DEVID1 MAG_CS MODE0  1*MHZ  1*MHZ
+
+# Load Compass
+COMPASS RM3100 SPI:rm3100 false ROTATION_NONE
+
+# Other required defines
+define HAL_USE_ADC FALSE
+define DMA_RESERVE_SIZE 0
+define HAL_DEVICE_THREAD_STACK 768
+
+# keep ROMFS uncompressed as we don't have enough RAM
+# to uncompress the bootloader at runtime
+env ROMFS_UNCOMPRESSED True
