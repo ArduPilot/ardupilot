@@ -1672,7 +1672,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.do_fence_enable()
         self.assert_fence_enabled()
 
-        self.takeoff(alt=50, alt_max=300)
+        self.takeoff(alt=15, alt_max=40)
         # Trigger fence breach, fly to rally location
         self.set_parameters({
             "FENCE_RET_RALLY": 1,
