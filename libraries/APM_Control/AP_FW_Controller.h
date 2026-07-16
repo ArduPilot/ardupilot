@@ -121,4 +121,9 @@ protected:
     AP_Float angle_p;
 
     const AP_AutoTune::ATType autotune_type;
+
+private:
+
+    // Ticks tracking to check that the controller is called once per loop and no more
+    uint32_t last_run_ticks;
 };

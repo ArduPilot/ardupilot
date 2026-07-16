@@ -131,6 +131,20 @@ float AP_FW_Controller::run_angle_control(int32_t desired_angle_cd, float scaler
 */
 float AP_FW_Controller::run_rate_control(float desired_rate_degs, float scaler, bool disable_integrator, bool ground_mode)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // Check that the controller is called once per loop and no more
+    const uint32_t ticks = AP::scheduler().ticks32();
+    if (last_run_ticks != 0) {
+        if (last_run_ticks == ticks) {
+            AP_HAL::panic("FW rate control must be run only once per loop");
+        }
+        if ((last_run_ticks + 1) != ticks) {
+            AP_HAL::panic("FW rate control must be run or reset every loop");
+        }
+    }
+    last_run_ticks = ticks;
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
     const float dt = AP::scheduler().get_loop_period_s();
 
     const float eas2tas = AP::ahrs().get_EAS2TAS();
@@ -301,6 +315,11 @@ float AP_FW_Controller::get_airspeed() const
 // Reset controller
 void AP_FW_Controller::reset()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // Reset tick tracking
+    last_run_ticks = 0;
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
     // Reset PID
     rate_pid.reset_I();
     rate_pid.reset_filter();
