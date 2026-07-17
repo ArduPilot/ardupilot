@@ -487,13 +487,19 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
                 rmt_rx_event_callbacks_t rxcbs = {};
                 rxcbs.on_recv_done = bdshot_on_rx_done;
                 rmt_rx_register_event_callbacks(rx, &rxcbs, (void*)(uintptr_t)chan);
-                ESP_ERROR_CHECK(rmt_enable(rx));
+                rxerr = rmt_enable(rx);
+                if (rxerr != ESP_OK) {
+                    rmt_del_channel(rx);
+                    rx = nullptr;
+                }
+            }
+            if (rxerr == ESP_OK) {
                 ch.rmt_rx_chan = rx; // stored as void* (see RCOutput.h)
             } else {
                 // no RX channel: fall back to plain (non-inverted) DShot on this channel,
                 // else we'd send inverted-CRC frames the ESC rejects with no turnaround.
                 ch.bidir = false;
-                printf("RCOut: bidir DShot RX alloc failed on chan %u (err 0x%x); S3 has 4 RX channels\n",
+                printf("RCOut: bidir DShot RX setup failed on chan %u (err 0x%x); S3 has 4 RX channels\n",
                        (unsigned)chan, (int)rxerr);
             }
         }
@@ -525,9 +531,13 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         err = rmt_enable(rmt_chan);
         if (err != ESP_OK) {
             // treat like the alloc failure above: leave this channel inactive
-            // rather than aborting the whole board (ESP_ERROR_CHECK would).
+            // rather than aborting the whole board (ESP_ERROR_CHECK would). Also
+            // drop the RX channel created above, if any (dshot_free_chan), and
+            // fall back to non-bidir so no inverted frames go out without capture.
             rmt_del_channel(rmt_chan);
             ch.rmt_chan = nullptr;
+            dshot_free_chan(ch);
+            ch.bidir = false;
             printf("RCOut: DShot RMT enable failed on chan %u (err 0x%x)\n",
                    (unsigned)chan, (int)err);
             continue;
@@ -822,7 +832,10 @@ void RCOutput::bdshot_store_erpm(uint32_t encodederpm, uint8_t chan)
     const uint32_t erpm = (1000000U * 60U / 100U + period / 2U) / period;
     if (erpm < BDSHOT_INVALID_ERPM) {
         _bdshot.erpm[chan] = (uint16_t)erpm;
-        _bdshot.update_mask |= 1U << chan;
+        // release: the erpm[] store above must be visible before the mask bit;
+        // atomic because read_erpm() (main thread, other core) clears bits
+        // concurrently — a plain |= could resurrect a just-cleared mask.
+        __atomic_fetch_or(&_bdshot.update_mask, 1U << chan, __ATOMIC_RELEASE);
 #if HAL_WITH_ESC_TELEM
         // feed the ESC telemetry frontend: mechanical RPM = eRPM * 200 / poles
         if (_esc_telem != nullptr && _bdshot.motor_poles > 0) {
@@ -839,15 +852,18 @@ uint16_t RCOutput::get_erpm(uint8_t chan) const
 
 bool RCOutput::new_erpm()
 {
-    return _bdshot.update_mask != 0;
+    return __atomic_load_n(&_bdshot.update_mask, __ATOMIC_RELAXED) != 0;
 }
 
 uint32_t RCOutput::read_erpm(uint16_t* erpm, uint8_t len)
 {
+    // atomically take the mask (the rcout task on the other core keeps setting
+    // bits): a separate read-then-clear would drop any bit set in between.
+    // acquire pairs with the release in bdshot_store_erpm() so the erpm[] values
+    // behind the taken bits are visible before the memcpy below.
+    const uint32_t mask = __atomic_exchange_n(&_bdshot.update_mask, 0, __ATOMIC_ACQUIRE);
     const uint8_t n = len < 12 ? len : 12;
     memcpy(erpm, _bdshot.erpm, sizeof(uint16_t) * n);
-    const uint32_t mask = _bdshot.update_mask;
-    _bdshot.update_mask = 0;
     return mask;
 }
 
