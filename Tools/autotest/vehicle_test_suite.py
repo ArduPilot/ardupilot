@@ -17050,11 +17050,16 @@ SERIAL5_BAUD 128
             return
 
     def setGCSfailsafe(self, paramValue):
-        # Slow down the sim rate if GCS Failsafe is in use
+        # Slow down the sim rate if GCS Failsafe is in use; the test
+        # framework's GCS heartbeats are paced in wall-clock time, so
+        # while FS_GCS_ENABLE is set a Python-side stall of more than
+        # FS_GCS_TIMEOUT/speedup wall-seconds would spuriously trigger
+        # the failsafe.  With it disabled no such coupling exists, so
+        # restore the suite's full speedup.
         if paramValue == 0:
             self.set_parameters({
                 "FS_GCS_ENABLE": paramValue,
-                "SIM_SPEEDUP": 10,
+                "SIM_SPEEDUP": self.speedup,
             })
         else:
             self.set_parameters({
