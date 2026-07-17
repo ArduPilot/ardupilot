@@ -8646,19 +8646,6 @@ class TestSuite(abc.ABC):
             frame=frame
         )
 
-    def add_rally_point(self, loc, seq, total):
-        '''add a rally point at the given location'''
-        self.mav.mav.rally_point_send(1, # target system
-                                      0, # target component
-                                      seq, # sequence number
-                                      total, # total count
-                                      int(loc.lat * 1e7),
-                                      int(loc.lng * 1e7),
-                                      loc.alt, # relative alt
-                                      0, # "break" alt?!
-                                      0, # "land dir"
-                                      0) # flags
-
     def wait_location(self, loc, **kwargs):
         waiter = WaitAndMaintainLocation(self, loc, **kwargs)
         waiter.run()
