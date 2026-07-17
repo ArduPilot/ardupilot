@@ -3831,61 +3831,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # MANUAL> usage: wp <changealt|clear|draw|editor|list|load|loop|move|movemulti|noflyadd|param|remove|save|savecsv|savelocal|set|sethome|show|slope|split|status|undo|update>  # noqa
 
-    def wait_location_sending_target(self, loc, target_system=1, target_component=1, timeout=60, max_delta=2):
-        tstart = self.get_sim_time()
-        last_sent = 0
-
-        type_mask = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_VX_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_VY_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_VZ_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_AX_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_AY_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_AZ_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE +
-                     mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE)
-
-        self.change_mode('GUIDED')
-        tstart = self.get_sim_time()
-        while True:
-            now = self.get_sim_time_cached()
-            if now - tstart > timeout:
-                raise AutoTestTimeoutException("Did not get to location")
-            if now - last_sent > 10:
-                last_sent = now
-                self.mav.mav.set_position_target_global_int_send(
-                    0,
-                    target_system,
-                    target_component,
-                    mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
-                    type_mask,
-                    int(loc.lat * 1.0e7),
-                    int(loc.lng * 1.0e7),
-                    0, # alt
-                    0, # x-ve
-                    0, # y-vel
-                    0, # z-vel
-                    0, # afx
-                    0, # afy
-                    0, # afz
-                    0, # yaw,
-                    0, # yaw-rate
-                )
-            m = self.mav.recv_match(blocking=True,
-                                    timeout=1)
-            if m is None:
-                continue
-            t = m.get_type()
-            if t == "POSITION_TARGET_GLOBAL_INT":
-                self.progress("Target: (%s)" % str(m), send_statustext=False)
-            elif t == "GLOBAL_POSITION_INT":
-                self.progress("Position: (%s)" % str(m), send_statustext=False)
-                delta = self.get_distance(
-                    mavutil.location(m.lat * 1e-7, m.lon * 1e-7, 0, 0),
-                    loc)
-                self.progress("delta: %s" % str(delta), send_statustext=False)
-                if delta < max_delta:
-                    self.progress("Reached destination")
-
     def drive_to_location(self, loc, tolerance=1, timeout=30, target_system=1, target_component=1):
         self.assert_mode('GUIDED')
 
