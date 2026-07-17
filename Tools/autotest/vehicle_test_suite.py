@@ -14022,7 +14022,10 @@ switch value'''
                     self.reboot_sitl()
                     self.ahrstrim_attitude_correctness_test_attitude(11)
                 self.context_pop()
-                self.reboot_sitl()
+                # no reboot here: the restored parameters take effect at
+                # the next boot, which the following backend's
+                # customise_SITL_commandline (or the non-ExternalAHRS
+                # section's reboot) performs anyway
 
             self.start_subtest("Testing non-ExternalAHRS backends")
             for ahrs_type in [0, 2, 3]:
