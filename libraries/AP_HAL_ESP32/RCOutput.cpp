@@ -478,14 +478,20 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
  */
 void RCOutput::dshot_free_chan(pwm_chan &ch)
 {
+    // Disable the TX channel BEFORE deleting the encoder: rmt_tx_disable() recycles
+    // the pending transaction and calls rmt_encoder_reset() on the encoder it
+    // references, so deleting the encoder first is a use-after-free through a
+    // function pointer (HW-reproduced: InstructionFetchError with PC in data RAM
+    // on a group re-setup while the transmit task had a frame in flight).
+    if (ch.rmt_chan != nullptr) {
+        rmt_disable((rmt_channel_handle_t)ch.rmt_chan);
+    }
     if (ch.rmt_encoder != nullptr) {
         rmt_del_encoder((rmt_encoder_handle_t)ch.rmt_encoder);
         ch.rmt_encoder = nullptr;
     }
     if (ch.rmt_chan != nullptr) {
-        rmt_channel_handle_t c = (rmt_channel_handle_t)ch.rmt_chan;
-        rmt_disable(c);
-        rmt_del_channel(c);
+        rmt_del_channel((rmt_channel_handle_t)ch.rmt_chan);
         ch.rmt_chan = nullptr;
     }
 }
