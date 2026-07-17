@@ -1091,10 +1091,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # to continue in guided. Verify no failsafe action takes place
         self.start_subtest("Radio failsafe with option to continue in guided mode: FS_THR_ENABLE=1 & FS_OPTIONS=4")
         self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
-        self.setGCSfailsafe(1)
         self.set_parameter('FS_THR_ENABLE', 1)
         self.set_parameter('FS_OPTIONS', 4)
         self.takeoffAndMoveAway()
+        # enable GCS failsafe only after the climb so the climb runs at
+        # full speedup; it only needs to be armed before SIM_RC_FAIL
+        self.setGCSfailsafe(1)
         self.change_mode("GUIDED")
         self.set_parameter("SIM_RC_FAIL", 1)
         self.delay_sim_time(5, reason="radio failsafe to not trigger")
