@@ -58,7 +58,7 @@ void AP_TemperatureSensor_MCP9808::init()
         _params.bus_address);
 
 
-    if (!_dev) {
+    if (_dev == nullptr) {
         return;
     }
 
