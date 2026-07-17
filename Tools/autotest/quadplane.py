@@ -2686,13 +2686,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             timeout=600,
             height_accuracy=None,  # dest.alt is above-terrain; alt checked below
         )
-        self.delay_sim_time(20, reason="terrain altitude to settle")
-
         self.wait_altitude(
             dest.alt-10,  # NOTE: reuse of alt from abovE
             dest.alt+10,  # use a 10m buffer as the plane needs to go up and down a bit to maintain terrain distance
             minimum_duration=10,
-            timeout=30,
+            timeout=50,  # includes time for the terrain altitude to settle
             relative=False,
             altitude_source="TERRAIN_REPORT.current_height"
         )
@@ -2749,12 +2747,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 timeout=600,
                 height_accuracy=None,  # loc.alt is above-terrain; alt checked below
             )
-            self.delay_sim_time(10, reason="terrain altitude to settle")
             self.wait_altitude(
                 loc.alt-5,
                 loc.alt+5,
                 minimum_duration=10,
-                timeout=30,
+                timeout=40,  # includes time for the terrain altitude to settle
                 relative=False,
                 altitude_source="TERRAIN_REPORT.current_height"
             )
@@ -2846,12 +2843,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 timeout=600,
                 height_accuracy=None,  # loc.alt is above-terrain; alt checked below
             )
-            self.delay_sim_time(10, reason="terrain altitude to settle")
             self.wait_altitude(
                 loc.alt-5,
                 loc.alt+5,
                 minimum_duration=10,
-                timeout=30,
+                timeout=40,  # includes time for the terrain altitude to settle
                 relative=False,
                 altitude_source="TERRAIN_REPORT.current_height"
             )
