@@ -441,7 +441,16 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
                    (unsigned)chan, (int)err);
             continue;
         }
-        ESP_ERROR_CHECK(rmt_enable(rmt_chan));
+        err = rmt_enable(rmt_chan);
+        if (err != ESP_OK) {
+            // treat like the alloc failure above: leave this channel inactive
+            // rather than aborting the whole board (ESP_ERROR_CHECK would).
+            rmt_del_channel(rmt_chan);
+            ch.rmt_chan = nullptr;
+            printf("RCOut: DShot RMT enable failed on chan %u (err 0x%x)\n",
+                   (unsigned)chan, (int)err);
+            continue;
+        }
         ch.rmt_chan = rmt_chan; // stored as void* (see RCOutput.h)
 
         // Bytes encoder: each frame bit -> one RMT symbol, high then low, in
