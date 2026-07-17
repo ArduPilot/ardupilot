@@ -99,6 +99,12 @@
 #define AP_PERIPH_SAFETY_SWITCH_ENABLED AP_PERIPH_RC_OUT_ENABLED
 #endif
 
+// send CircuitStatus for each battery backend. SITL-only by default,
+// where it is used to exercise the CircuitStatus lua driver
+#ifndef AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
+#define AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED (AP_PERIPH_BATTERY_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
 #ifndef HAL_PERIPH_CAN_MIRROR
 #define HAL_PERIPH_CAN_MIRROR 0
 #endif
@@ -193,6 +199,9 @@ public:
 #endif
     void can_battery_update();
     void can_battery_send_cells(uint8_t instance);
+#if AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
+    void can_circuit_status_update();
+#endif  // AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
     void can_proximity_update();
     void can_buzzer_update(void);
     void can_safety_button_update(void);
@@ -265,6 +274,9 @@ public:
     struct {
         uint32_t last_read_ms;
         uint32_t last_can_send_ms;
+#if AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
+        uint32_t last_circuit_send_ms;
+#endif  // AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
     } battery;
 #endif
 
