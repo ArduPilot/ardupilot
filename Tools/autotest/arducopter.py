@@ -4735,16 +4735,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.drain_mav()
             self.context_collect('STATUSTEXT')
             self.reboot_sitl()
-            gps1_det_text = None
-            gps2_det_text = None
-            try:
-                gps1_det_text = self.wait_text("GPS 1: specified as DroneCAN.*", regex=True, check_context=True)
-            except AutoTestTimeoutException:
-                pass
-            try:
-                gps2_det_text = self.wait_text("GPS 2: specified as DroneCAN.*", regex=True, check_context=True)
-            except AutoTestTimeoutException:
-                pass
+            # detection statustexts for both GPSs are emitted together
+            # shortly after boot.  Wait for any GPS expected to be
+            # present first, so boot latency is absorbed by that wait;
+            # a GPS expected to be absent then only needs a short
+            # timeout, as a (wrongly) emitted detection statustext
+            # would already be in the collected context.
+            gps_det_texts = {}
+            for instance in sorted((1, 2), key=lambda i: case[1 + i] == 0):
+                timeout = 20 if case[1 + instance] != 0 else 5
+                try:
+                    gps_det_texts[instance] = self.wait_text(
+                        "GPS %u: specified as DroneCAN.*" % instance,
+                        regex=True,
+                        check_context=True,
+                        timeout=timeout,
+                    )
+                except AutoTestTimeoutException:
+                    gps_det_texts[instance] = None
+            gps1_det_text = gps_det_texts[1]
+            gps2_det_text = gps_det_texts[2]
 
             self.context_stop_collecting('STATUSTEXT')
             self.change_mode('LOITER')
