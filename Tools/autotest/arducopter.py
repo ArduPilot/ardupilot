@@ -1446,7 +1446,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Fly Battery Failsafe'''
         self.progress("Configure battery failsafe parameters")
         self.set_parameters({
-            'SIM_SPEEDUP': 4,
             'BATT_LOW_VOLT': 11.5,
             'BATT_CRT_VOLT': 10.1,
             'BATT_FS_LOW_ACT': 0,
