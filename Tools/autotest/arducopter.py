@@ -2666,10 +2666,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def FenceMargin(self, timeout=180):
         '''Test warning on crossing fence margin'''
         # enable fence, disable avoidance
+        # margin must be large enough that the circle margin ring
+        # (FENCE_RADIUS-FENCE_MARGIN from home) is reached before the
+        # polygon edge (~117m from home on this test's track) so both
+        # margins are breached simultaneously before any fence is: the
+        # combined "Circle and Polygon fences in ..." warning this test
+        # expects is only emitted while both margin breaches are active,
+        # and an actual fence breach clears that fence's margin state
         self.set_parameters({
             "FENCE_ENABLE": 1,
             "FENCE_TYPE": 6,    # polygon and circle fences
-            "FENCE_MARGIN" : 30,
+            "FENCE_MARGIN" : 45,
             "FENCE_RADIUS" : 150,
             "AVOID_ENABLE": 0,
             "FENCE_OPTIONS": 4
