@@ -8419,6 +8419,7 @@ class TestSuite(abc.ABC):
     def get_location(self,
                      location_source: str = None,
                      frame: AltFrame = AltFrame.ABSOLUTE,
+                     timeout: float = 60,
                      ) -> Location:
         '''return the current vehicle location as a (frame-aware)
         Location, with the altitude taken in the requested frame.  Use
@@ -8442,12 +8443,18 @@ class TestSuite(abc.ABC):
             return Location.latlon_only(lat, lng)
         if location_source is not None and location_source != 'GLOBAL_POSITION_INT':
             raise ValueError(f"Unknown location source {location_source}")
+        # the vehicle reports zero lat/lng until it has a position estimate;
+        # block until a real one arrives.
+        tstart = self.get_sim_time_cached()
         self.send_poll_message('GLOBAL_POSITION_INT')
-        m = self.assert_receive_message('GLOBAL_POSITION_INT')
-        lat = m.lat * 1e-7
-        lng = m.lon * 1e-7
-        if lat == 0 and lng == 0:
-            raise ValueError(f"Bad lat/lng {lat=} {lng=}")
+        while True:
+            m = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=10)
+            lat = m.lat * 1e-7
+            lng = m.lon * 1e-7
+            if lat != 0 or lng != 0:
+                break
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Only zero lat/lng from GLOBAL_POSITION_INT")
         if frame == AltFrame.ABSOLUTE:
             return Location(lat, lng, m.alt * 0.001, frame)
         if frame == AltFrame.ABOVE_HOME:
