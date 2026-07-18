@@ -17,20 +17,20 @@ jobs:
     runs-on: ubuntu-slim
 
     steps:
-      - name: Checkout PR branch
+      # the default (merge-ref) checkout is deliberate: it tests the PR as
+      # merged into the current base branch, and guarantees the latest ratchet
+      # script is present even for PRs branched from an older base
+      - name: Checkout
         uses: actions/checkout@v7
         with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
           submodules: 'false'
           fetch-depth: 0
 
       - name: Fetch base branch
         run: |
-          git remote add upstream ${{ github.event.pull_request.base.repo.clone_url }}
-          git fetch upstream ${{ github.event.pull_request.base.ref }}
+          git fetch origin ${{ github.event.pull_request.base.ref }}
 
       - name: Check mavutil.location ratchet
         shell: bash
         run: |
-          Tools/scripts/check_mavutil_location_ratchet.py --base-ref "upstream/${{ github.event.pull_request.base.ref }}"
+          Tools/scripts/check_mavutil_location_ratchet.py --base-ref "origin/${{ github.event.pull_request.base.ref }}"
