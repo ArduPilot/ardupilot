@@ -27,13 +27,15 @@
 // control default definitions
 #define CORNER_ACCELERATION_RATIO   1.0/safe_sqrt(2.0)   // acceleration reduction to enable zero overshoot corners
 
-// Speed (m/s) below which limit_accel_xy() fades out cross-track prioritisation.
-// Near zero speed the direction of travel is ill-defined, so prioritising
-// "cross-track" acceleration re-projects a saturated command onto a rapidly
-// rotating axis and injects a lateral acceleration spike (e.g. the roll wobble
-// seen at the zero-crossing of a hard Loiter stick reversal). Below this speed
-// we fade to an isotropic magnitude limit that preserves the commanded direction.
-#define LIMIT_ACCEL_XY_MIN_SPEED_MS   1.0f
+// Normalised cross-track reference magnitude below which limit_accel_xy() fades
+// out cross-track prioritisation. The reference is expected normalised by the
+// maximum speed, so this is a fraction of max speed (0.25 -> 25%). When the
+// reference is small its direction is ill-defined, so prioritising "cross-track"
+// acceleration re-projects a saturated command onto a rapidly rotating axis and
+// injects a lateral acceleration spike (e.g. the roll wobble seen at the
+// zero-crossing of a hard Loiter stick reversal). Below this magnitude we fade to
+// an isotropic magnitude limit that preserves the commanded direction.
+#define LIMIT_ACCEL_XY_MIN_REF   0.25f
 
 // Projects velocity forward in time using acceleration, constrained by directional limit.
 // - If `limit` is non-zero, it defines a direction in which acceleration is constrained.
@@ -439,12 +441,12 @@ void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float a
 }
 
 // Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.
-// - `vel` defines the current direction of motion (used to split the acceleration).
+// - `vel_norm` is the normalised velocity (velocity divided by maximum speed) that sets the reference direction used to split the acceleration: the in-track component is parallel to it and the cross-track component is perpendicular. Normalising keys the cross-track prioritisation fade to a fraction of max speed.
 // - `accel` is modified in-place to remain within `accel_max`.
-// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize lateral correction.
-// - If `vel` is zero, a simple magnitude limit is applied.
+// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize the cross-track component.
+// - If `vel_norm` is zero, a simple magnitude limit is applied.
 // Returns true if the acceleration vector was modified.
-bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
+bool limit_accel_xy(const Vector2f& vel_norm, Vector2f& accel, float accel_max)
 {
     // check accel_max is defined
     if (!is_positive(accel_max)) {
@@ -456,24 +458,25 @@ bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
     }
 
     // isotropic (direction-preserving) magnitude limit. Used directly when there
-    // is no meaningful direction of travel, and blended in at low speed below.
+    // is no meaningful reference direction, and blended in at low reference
+    // magnitude below.
     Vector2f accel_isotropic = accel;
     accel_isotropic.limit_length(accel_max);
 
-    const float speed_ms = vel.length();
-    if (!is_positive(speed_ms)) {
-        // We do not have a direction of travel so do a simple vector length limit
+    const float ref_mag = vel_norm.length();
+    if (!is_positive(ref_mag)) {
+        // We do not have a reference direction so do a simple vector length limit
         accel = accel_isotropic;
         return true;
     }
 
     // limit acceleration to accel_max while prioritizing cross track acceleration
-    // calculate acceleration in the direction of and perpendicular to the velocity input
-    const Vector2f vel_unit = vel / speed_ms;
-    // acceleration in the direction of travel
-    float accel_dir = vel_unit * accel;
+    // calculate acceleration along and perpendicular to the reference direction
+    const Vector2f ref_unit = vel_norm / ref_mag;
+    // acceleration along the reference direction (in-track)
+    float accel_dir = ref_unit * accel;
     // cross track acceleration
-    Vector2f accel_cross = accel - (vel_unit * accel_dir);
+    Vector2f accel_cross = accel - (ref_unit * accel_dir);
     if (accel_cross.limit_length(accel_max)) {
         accel_dir = 0.0;
     } else {
@@ -482,16 +485,16 @@ bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
         float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());
         accel_dir = constrain_float(accel_dir, -accel_max_dir, accel_max_dir);
     }
-    const Vector2f accel_prioritised = accel_cross + vel_unit * accel_dir;
+    const Vector2f accel_prioritised = accel_cross + ref_unit * accel_dir;
 
-    // Fade between the isotropic limit (at zero speed) and the cross-track
-    // prioritised limit (at and above LIMIT_ACCEL_XY_MIN_SPEED_MS). As the
-    // velocity vector rotates through zero (e.g. a hard stick reversal in
-    // Loiter), vel_unit spins and the prioritised split would re-project the
-    // saturated braking command into a lateral acceleration spike. Fading to the
+    // Fade between the isotropic limit (weak reference) and the cross-track
+    // prioritised limit (reference magnitude at or above LIMIT_ACCEL_XY_MIN_REF).
+    // When the reference is small its direction is ill-defined and the prioritised
+    // split would re-project the saturated braking command into a lateral
+    // acceleration spike (e.g. a hard stick reversal in Loiter). Fading to the
     // direction-preserving limit removes that spike. Both blend inputs have
     // magnitude <= accel_max, so the result does too.
-    const float prioritise_ratio = constrain_float(speed_ms / LIMIT_ACCEL_XY_MIN_SPEED_MS, 0.0f, 1.0f);
+    const float prioritise_ratio = constrain_float(ref_mag / LIMIT_ACCEL_XY_MIN_REF, 0.0f, 1.0f);
     accel = accel_isotropic * (1.0f - prioritise_ratio) + accel_prioritised * prioritise_ratio;
 
     return true;
