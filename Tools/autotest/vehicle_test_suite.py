@@ -13956,6 +13956,11 @@ switch value'''
 
         result_list = []
 
+        # a timeout raised before any test has started - during init,
+        # for example - is attributed to this placeholder, rather than
+        # dying with an UnboundLocalError in the handler below:
+        test = Test(self.run_tests)
+
         try:
             self.init()
 
