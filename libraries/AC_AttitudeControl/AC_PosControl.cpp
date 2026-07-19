@@ -704,7 +704,12 @@ void AC_PosControl::update_NE_controller()
     const float accel_max_cmss = angle_rad_to_accel_mss(angle_max_rad) * 100.0;
     // Define the limit vector before we constrain _accel_target_neu_cmss 
     _limit_vector.xy() = _accel_target_neu_cmss.xy();
-    if (!limit_accel_xy(_vel_desired_neu_cms.xy(), _accel_target_neu_cmss.xy(), accel_max_cmss)) {
+    // Normalise desired velocity by max speed for the cross-track reference (guard zero max speed).
+    Vector2f vel_norm_ne;
+    if (is_positive(_vel_max_ne_cms)) {
+        vel_norm_ne = _vel_desired_neu_cms.xy() / _vel_max_ne_cms;
+    }
+    if (!limit_accel_xy(vel_norm_ne, _accel_target_neu_cmss.xy(), accel_max_cmss)) {
         // _accel_target_neu_cmss was not limited so we can zero the xy limit vector
         _limit_vector.xy().zero();
     }
