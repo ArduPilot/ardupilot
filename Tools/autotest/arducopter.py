@@ -16172,8 +16172,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             minimum_duration=20,
         )
         self.wait_groundspeed(0, 0.5, timeout=15)
-        self.set_rc(2, 1500)
-        self.do_RTL()
+        # a forced reboot rather than an RTL: the RTL (at speedup 1)
+        # proves nothing further, and set_home requires a post-test
+        # reboot anyway
+        self.reboot_sitl(force=True)
 
     def MAV_CMD_SET_EKF_SOURCE_SET(self):
         '''test setting of source sets using mavlink command'''
