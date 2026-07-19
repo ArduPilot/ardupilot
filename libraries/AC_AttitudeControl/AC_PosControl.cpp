@@ -764,7 +764,12 @@ void AC_PosControl::NE_update_controller()
     const float accel_max_mss = angle_rad_to_accel_mss(angle_max_rad);
     // Save unbounded target for use in "limited" check (not unit-consistent with z!)
     _limit_vector_ned.xy() = _accel_target_ned_mss.xy();
-    if (!limit_accel_xy(_vel_desired_ned_ms.xy(), _accel_target_ned_mss.xy(), accel_max_mss)) {
+    // Normalise desired velocity by max speed for the cross-track reference (guard zero max speed).
+    Vector2f vel_norm_ne;
+    if (is_positive(_vel_max_ne_ms)) {
+        vel_norm_ne = _vel_desired_ned_ms.xy() / _vel_max_ne_ms;
+    }
+    if (!limit_accel_xy(vel_norm_ne, _accel_target_ned_mss.xy(), accel_max_mss)) {
         // _accel_target_ned_mss was not limited so we can zero the xy limit vector
         _limit_vector_ned.xy().zero();
     }
