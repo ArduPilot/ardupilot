@@ -5178,7 +5178,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_sup_program(instance=0, args="-M")
         self.stop_sup_program(instance=1)
         self.start_sup_program(instance=1, args="-M")
-        self.delay_sim_time(2, reason="supplemental programs to start")
         self.context_collect('STATUSTEXT')
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
@@ -5186,13 +5185,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             timeout=10,
             want_result=mavutil.mavlink.MAV_RESULT_FAILED,
         )
-        self.wait_statustext(".*Node .* unhealthy", check_context=True, regex=True)
+        # the peripherals take wall-clock time to restart, so at high
+        # speedup a large amount of simulation time may pass before
+        # their maintenance-mode NodeStatus is seen; the recurring
+        # prearm display emits the message once it is
+        self.wait_statustext(".*Node .* unhealthy", check_context=True, regex=True, timeout=600)
         self.stop_sup_program(instance=0)
         self.start_sup_program(instance=0)
         self.stop_sup_program(instance=1)
         self.start_sup_program(instance=1)
         self.context_stop_collecting('STATUSTEXT')
         self.context_pop()
+
+        # the restarted peripherals take wall-clock time to boot and
+        # their GPSs must then deliver on-time fixes for long enough
+        # for the GPS timing health filters to recover.  The prearm
+        # SYS_STATUS bit reflects the full arming checks, including
+        # health of every GPS instance; require it healthy
+        # continuously before flying
+        self.progress("Waiting for sustained prearm health after peripheral restart")
+        tstart = self.get_sim_time()
+        healthy_since = None
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 600:
+                raise NotAchievedException("Peripherals did not return to sustained health")
+            m = self.assert_receive_message('SYS_STATUS')
+            if m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK:
+                if healthy_since is None:
+                    healthy_since = now
+                if now - healthy_since > 20:
+                    break
+            else:
+                healthy_since = None
 
         self.set_parameters({
             # use DroneCAN ESCs for flight
