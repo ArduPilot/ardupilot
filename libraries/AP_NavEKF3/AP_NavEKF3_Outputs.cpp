@@ -162,6 +162,81 @@ void NavEKF3_core::getQuaternion(Quaternion& ret) const
     ret = outputDataNew.quat.tofloat();
 }
 
+bool NavEKF3_core::getEulerCovariance(Matrix3f &cov) const
+{
+    if (!statesInitialised) {
+        return false;
+    }
+
+    // (w,x,y,z); formulas below mirror QuaternionT::get_euler_*()
+    const ftype w = stateStruct.quat[0];
+    const ftype x = stateStruct.quat[1];
+    const ftype y = stateStruct.quat[2];
+    const ftype z = stateStruct.quat[3];
+
+    // roll  = atan2(a, b),  a = 2(wx + yz),  b = 1 - 2(x^2 + y^2)
+    const ftype a = 2*(w*x + y*z);
+    const ftype b = 1 - 2*(x*x + y*y);
+    const ftype denom_r = a*a + b*b;
+
+    // pitch = asin(s),  s = 2(wy - zx)
+    const ftype s = 2*(w*y - z*x);
+
+    // yaw   = atan2(e, f),  e = 2(wz + xy),  f = 1 - 2(y^2 + z^2)
+    const ftype e = 2*(w*z + x*y);
+    const ftype f = 1 - 2*(y*y + z*z);
+    const ftype denom_y = e*e + f*f;
+
+    // reject near gimbal lock (pitch -> +-90 deg) where the asin derivative diverges,
+    // and degenerate atan2 denominators
+    const ftype c = 1 - s*s;
+    if (c < 1e-6f || denom_r < 1e-9f || denom_y < 1e-9f) {
+        return false;
+    }
+    const ftype sc = 1.0f / sqrtF(c);
+
+    // J = d(roll,pitch,yaw) / d(w,x,y,z)
+    ftype J[3][4];
+    J[0][0] = 2*x*b / denom_r;
+    J[0][1] = (2*w*b + 4*a*x) / denom_r;
+    J[0][2] = (2*z*b + 4*a*y) / denom_r;
+    J[0][3] = 2*y*b / denom_r;
+
+    J[1][0] =  2*y * sc;
+    J[1][1] = -2*z * sc;
+    J[1][2] =  2*w * sc;
+    J[1][3] = -2*x * sc;
+
+    J[2][0] = 2*z*f / denom_y;
+    J[2][1] = 2*y*f / denom_y;
+    J[2][2] = (2*x*f + 4*e*y) / denom_y;
+    J[2][3] = (2*w*f + 4*e*z) / denom_y;
+
+    // C = J * Pq * J^T; Pq is the quaternion covariance block P[0..3][0..3]
+    ftype M[3][4];  // M = J * Pq
+    for (uint8_t i=0; i<3; i++) {
+        for (uint8_t k=0; k<4; k++) {
+            ftype sum = 0;
+            for (uint8_t j=0; j<4; j++) {
+                sum += J[i][j] * P[j][k];
+            }
+            M[i][k] = sum;
+        }
+    }
+    // C = M * J^T
+    for (uint8_t i=0; i<3; i++) {
+        for (uint8_t j=0; j<3; j++) {
+            ftype sum = 0;
+            for (uint8_t k=0; k<4; k++) {
+                sum += M[i][k] * J[j][k];
+            }
+            cov[i][j] = sum;
+        }
+    }
+
+    return true;
+}
+
 // return the amount of yaw angle change due to the last yaw angle reset in radians
 // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
 uint32_t NavEKF3_core::getLastYawResetAngle(float &yawAng) const

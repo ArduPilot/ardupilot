@@ -488,6 +488,7 @@ void AP_AHRS::update_state(void)
     update_trig();
 
     state.quat_ok = active_estimates->get_quaternion(state.quat);
+    state.attitude_covariance_ok = active_estimates->get_attitude_covariance(state.attitude_covariance);
     state.location_ok = _get_location(state.location);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (state.location_ok && !state.location.initialised()) {
@@ -2410,6 +2411,13 @@ bool AP_AHRS::get_quaternion(Quaternion &quat) const
 {
     quat = state.quat;
     return state.quat_ok;
+}
+
+// return the 3x3 covariance of the (roll, pitch, yaw) Euler angles in rad^2
+bool AP_AHRS::get_attitude_covariance(Matrix3f &cov) const
+{
+    cov = state.attitude_covariance;
+    return state.attitude_covariance_ok;
 }
 
 // returns the inertial navigation origin in lat/lon/alt

@@ -212,6 +212,10 @@ public:
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
 
+    // return the 3x3 covariance of the (roll, pitch, yaw) Euler angles in rad^2.
+    // Only available from the EKF3 backend; returns false otherwise.
+    bool get_attitude_covariance(Matrix3f &cov) const WARN_IF_UNUSED;
+
     // return secondary estimates; note that this may return nullptr!
     const AP_AHRS_Backend::Estimates *get_secondary_estimates() const {
         return secondary_estimates;
@@ -1013,6 +1017,8 @@ private:
         bool airspeed_TAS_vec_ok;
         Quaternion quat;
         bool quat_ok;
+        Matrix3f attitude_covariance;
+        bool attitude_covariance_ok;
         Location location;
         bool location_ok;
         Vector2f ground_speed_vec;

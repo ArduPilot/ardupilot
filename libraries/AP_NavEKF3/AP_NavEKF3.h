@@ -182,6 +182,9 @@ public:
     // return 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
     bool getPosVelUncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const;
 
+    // return the 3x3 covariance of the (roll, pitch, yaw) Euler angles in rad^2
+    bool getEulerCovariance(Matrix3f &cov) const WARN_IF_UNUSED;
+
     // get a source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
     bool getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;

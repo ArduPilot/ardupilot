@@ -1094,6 +1094,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
         { MAVLINK_MSG_ID_AHRS,                  MSG_AHRS},
         { MAVLINK_MSG_ID_ATTITUDE,              MSG_ATTITUDE},
         { MAVLINK_MSG_ID_ATTITUDE_QUATERNION,   MSG_ATTITUDE_QUATERNION},
+#if AP_AHRS_ENABLED
+        { MAVLINK_MSG_ID_ATTITUDE_QUATERNION_COV, MSG_ATTITUDE_QUATERNION_COV},
+#endif
         { MAVLINK_MSG_ID_GLOBAL_POSITION_INT,   MSG_LOCATION},
 #if AP_AHRS_ENABLED
         { MAVLINK_MSG_ID_LOCAL_POSITION_NED,    MSG_LOCAL_POSITION},
@@ -6128,6 +6131,43 @@ void GCS_MAVLINK::send_attitude_quaternion() const
 #endif
 }
 
+void GCS_MAVLINK::send_attitude_quaternion_cov() const
+{
+#if AP_AHRS_ENABLED
+    const AP_AHRS &ahrs = AP::ahrs();
+    Quaternion quat;
+    if (!ahrs.get_quaternion(quat)) {
+        return;
+    }
+    const Vector3f omega = ahrs.get_gyro();
+    const float q[4] { quat.q1, quat.q2, quat.q3, quat.q4 };
+
+    // row-major 3x3 (roll, pitch, yaw) covariance; per the MAVLink spec the
+    // first element is set to NaN when the covariance is unavailable
+    float covariance[9];
+    Matrix3f cov;
+    if (ahrs.get_attitude_covariance(cov)) {
+        for (uint8_t i=0; i<3; i++) {
+            for (uint8_t j=0; j<3; j++) {
+                covariance[i*3+j] = cov[i][j];
+            }
+        }
+    } else {
+        covariance[0] = nanf("");
+    }
+
+    mavlink_msg_attitude_quaternion_cov_send(
+        chan,
+        AP_HAL::micros64(),
+        q,
+        omega.x, // rollspeed
+        omega.y, // pitchspeed
+        omega.z, // yawspeed
+        covariance
+        );
+#endif
+}
+
 int32_t GCS_MAVLINK::global_position_int_alt() const {
     return global_position_current_loc.alt * 10UL;
 }
@@ -6622,6 +6662,11 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
     case MSG_ATTITUDE_QUATERNION:
         CHECK_PAYLOAD_SIZE(ATTITUDE_QUATERNION);
         send_attitude_quaternion();
+        break;
+
+    case MSG_ATTITUDE_QUATERNION_COV:
+        CHECK_PAYLOAD_SIZE(ATTITUDE_QUATERNION_COV);
+        send_attitude_quaternion_cov();
         break;
 #endif
 

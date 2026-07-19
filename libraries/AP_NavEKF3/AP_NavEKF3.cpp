@@ -1574,6 +1574,15 @@ bool NavEKF3::getPosVelUncertainty(float &pos_horiz_m, float &pos_vert_m, float 
     return core[primary].getPosVelUncertainty(pos_horiz_m, pos_vert_m, vel_m_s);
 }
 
+// return the 3x3 covariance of the (roll, pitch, yaw) Euler angles in rad^2
+bool NavEKF3::getEulerCovariance(Matrix3f &cov) const
+{
+    if (core == nullptr) {
+        return false;
+    }
+    return core[primary].getEulerCovariance(cov);
+}
+
 // get a source's velocity innovations
 // returns true on success and results are placed in innovations and variances arguments
 bool NavEKF3::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
