@@ -18943,7 +18943,6 @@ RTL_ALT_M 111
 
         self.progress("Starting Periph simulation")
         self.context_push()
-        self.context_set_speedup(1)
         periph_exp = None
         ex = None
         try:
@@ -18970,6 +18969,8 @@ RTL_ALT_M 111
             self.progress("Reconfiguring for multicast")
             self.customise_SITL_commandline([
                 "--serial5=mcast:",
+                # do not outrun the tunnel peripheral:
+                "--sim-periph-lockstep",
             ],
                 **self.callisto_sitl_kwargs()
             )
