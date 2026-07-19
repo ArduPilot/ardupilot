@@ -10002,6 +10002,14 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Starting SITL", send_statustext=False)
         if binary is None:
             binary = self.binary
+        if self.sup_binaries:
+            # the vehicle must not advance its simulation past state
+            # the supplementary peripherals have yet to consume, or
+            # peripheral data streams stall in simulation time whenever
+            # a peripheral process is starved of wall-clock time
+            customisations = list(start_sitl_args.get("customisations") or [])
+            customisations.append("--sim-periph-lockstep")
+            start_sitl_args["customisations"] = customisations
         self.sitl = util.start_SITL(binary, **start_sitl_args)
         self.expect_list_add(self.sitl)
         self.sup_prog = []
