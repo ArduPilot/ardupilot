@@ -65,6 +65,16 @@
 
 class HAL_SITL;
 
+/*
+  reply sent by simulated peripherals for each multicast state packet
+  consumed: servo feedback, plus a timestamp echo used for
+  simulated-peripheral lockstep
+ */
+struct sitl_mcast_ack {
+    uint64_t timestamp_us;   // echo of the consumed state timestamp
+    float servos[SITL_NUM_CHANNELS];  // nan means channel not driven
+};
+
 class HALSITL::SITL_State_Common {
     friend class HALSITL::Scheduler;
     friend class HALSITL::Util;
