@@ -165,7 +165,10 @@ void SimMCast::servo_fd_open(void)
     if (in_addr == nullptr) {
         return;
     }
-    if (!servo_sock.connect(in_addr, SITL_SERVO_PORT)) {
+    // reply to the address and port the state came from; the master
+    // sends state from its servo socket (bound to SITL_SERVO_PORT +
+    // its instance number) precisely so this works for any instance
+    if (!servo_sock.connect(in_addr, port)) {
         fprintf(stderr, "servo socket failed - %s\n", strerror(errno));
         exit(1);
     }
