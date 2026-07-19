@@ -5084,7 +5084,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # use DroneCAN battery monitoring, and enforce with a arming voltage
             "BATT_MONITOR" : 8,
             "BATT_ARM_VOLT" : 12.0,
-            "SIM_SPEEDUP": 2,
         })
 
         self.context_push()
@@ -5225,8 +5224,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # this stops us using local servo output, guaranteeing we are
             # flying on DroneCAN ESCs
             "SIM_CAN_SRV_MSK" : 0xFF,
-            # we can do the flight faster
-            "SIM_SPEEDUP" : 5,
         })
 
         self.CopterMission()
