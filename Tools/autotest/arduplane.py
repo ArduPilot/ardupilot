@@ -9149,7 +9149,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.restart_SITL_frame(
             'quadplane-PPP',
             extra_configure_args=['--debug'],
-            customisations=['--serial5=tcp:{port}'],
+            # lockstep: the periph's PPP endpoint must not fall behind
+            # simulation time when the runner is loaded
+            customisations=['--serial5=tcp:{port}', '--sim-periph-lockstep'],
         )
 
         # Plane should announce PPP backend init.
