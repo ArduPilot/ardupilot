@@ -198,6 +198,21 @@ jobs:
           ./waf build --target bin/ardurover
           ccache -s
           ccache -z
+      # Pre-build the firmware that tests build at test time, so those
+      # objects are in the saved ccache and the in-test builds become
+      # ccache hits.  Only master pushes save the cache (see
+      # save-ccache), so only they pay for this - on PR runs the chunks
+      # restore master's cache and the pre-build would be pure waste.
+      - name: pre-build test-time firmware
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          # NetworkingWebServerPPP rebuilds the rover with PPP enabled
+          ./waf configure --board sitl --debug --enable-math-check-indexes --enable-PPP
+          ./waf build --target bin/ardurover
+          ccache -s
       - uses: ./.github/actions/save-ccache
         with:
           key-suffix: ${{ matrix.toolchain }}
