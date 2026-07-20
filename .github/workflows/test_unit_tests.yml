@@ -74,7 +74,6 @@ on:
       - 'Tools/GIT_Test/**'
       - 'Tools/Hello/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/completion/**'

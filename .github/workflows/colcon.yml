@@ -85,7 +85,6 @@ on:
       - 'Tools/GIT_Test/**'
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
