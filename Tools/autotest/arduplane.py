@@ -3395,6 +3395,36 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
+    def SIMCompare(self):
+        '''compare logged EKF2 and EKF3 estimates against simulator truth'''
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 3,
+            'EK2_ENABLE': 1,
+            'EK3_ENABLE': 1,
+        })
+        self.reboot_sitl()
+
+        # a takeoff, some turning flight and a landing gives the
+        # estimators a good range of attitudes and velocities to track:
+        self.takeoff(alt=50)
+        self.change_mode('CIRCLE')
+        # both filters see large transient attitude estimation errors
+        # (over 15 degrees of pitch) during the full-throttle
+        # climb-out, so compare only from established circling flight
+        # onwards:
+        compare_from = self.get_sim_time() + 15
+        self.delay_sim_time(30, reason="turning flight for the estimators to track")
+        self.fly_home_land_and_disarm()
+
+        # EKF2 systematically over-estimates pitch by up to ~15
+        # degrees during the accelerating climb-out (gated out, above)
+        # and remains a few degrees off in manoeuvring flight; EKF3
+        # tracks truth closely throughout:
+        self.assert_ekfs_match_sim_state(
+            ignore_before_time_s=compare_from,
+            max_roll_pitch_err_deg={'XKF1': 3, 'NKF1': 8},
+        )
+
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
@@ -3444,6 +3474,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LOG_REPLAY": 1,
             "LOG_DISARMED": 1,
+            "EK2_ENABLE": 1,
 
             "SIM_WIND_SPD": 5,
             "SIM_WIND_DIR": 45,
@@ -8569,6 +8600,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TerrainMission,
             self.TerrainMissionInterrupt,
             self.UniversalAutoLandScript,
+            self.SIMCompare,
             self.Replay,
         ])
         return ret
