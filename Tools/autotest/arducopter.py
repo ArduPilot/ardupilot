@@ -12253,6 +12253,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def SIMCompare(self):
+        '''compare logged EKF2 and EKF3 estimates against simulator truth'''
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 3,
+            'EK2_ENABLE': 1,
+            'EK3_ENABLE': 1,
+        })
+        self.reboot_sitl()
+
+        # fly a mixture of translation, climb, descent and yaw to give
+        # the estimators something to track:
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=20)
+        self.guided_achieve_heading(135)
+        self.fly_guided_move_local(30, 40, 15)
+        self.guided_achieve_heading(270)
+        self.fly_guided_move_local(0, 0, 25)
+        self.do_RTL()
+
+        self.assert_ekfs_match_sim_state()
+
     def EKFYawResetLogged(self):
         '''in-filter EKF yaw resets must propagate through AHRS and be logged'''
         self.context_push()
@@ -18543,6 +18566,7 @@ return update, 1000
             self.AHRSSwitchBackendPositionNEReset,
             self.AHRSSwitchBackendYawReset,
             self.EK3SrcSwitchPosDownReset,
+            self.SIMCompare,
             self.EKFYawResetLogged,
             self.AP_Avoidance,
             self.RTL_ALT_FINAL_M,
