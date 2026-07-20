@@ -14,7 +14,7 @@
 #define ODR_208Hz       (0x5 << 4)
 #define ODR_416Hz       (0x6 << 4)
 #define ODR_833Hz       (0x7 << 4)
-#define ODR_1666Hz      (0x8 << 4)
+#define ODR_1667Hz      (0x8 << 4)
 #define ODR_3333Hz      (0x9 << 4)
 #define ODR_6667Hz      (0xA << 4)
 
