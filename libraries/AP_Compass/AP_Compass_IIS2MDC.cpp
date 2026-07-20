@@ -36,8 +36,6 @@
 #define COMP_TEMP_EN    (1 << 7)
 #define MD_CONTINUOUS   (0 << 0)
 #define ODR_100         ((1 << 3) | (1 << 2))
-// CFG_REG_B
-#define OFF_CANC        (1 << 1)
 // CFG_REG_C
 #define BDU             (1 << 4)
 
@@ -86,7 +84,7 @@ bool AP_Compass_IIS2MDC::init()
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_B, OFF_CANC, true)) {
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_B, 0x00, true)) {
         return false;
     }
 
