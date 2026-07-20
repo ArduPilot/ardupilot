@@ -217,7 +217,8 @@ jobs:
             sitltest-plane-tests1a,
             sitltest-plane-tests1b,
             sitltest-plane-tests1c,
-            sitltest-quadplane,
+            sitltest-quadplane-tests1a,
+            sitltest-quadplane-tests1b,
         ]
 
     steps:

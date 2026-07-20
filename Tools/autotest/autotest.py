@@ -283,6 +283,8 @@ __bin_names = {
     "Tracker": "antennatracker",
     "Helicopter": "arducopter-heli",
     "QuadPlane": "arduplane",
+    "QuadPlaneTests1a": "arduplane",
+    "QuadPlaneTests1b": "arduplane",
     "Sub": "ardusub",
     "Blimp": "blimp",
     "BalanceBot": "ardurover",
@@ -345,18 +347,20 @@ def find_specific_test_to_run(step):
 tester_class_map = {
     "test.Blimp": blimp.AutoTestBlimp,
     "test.Copter": arducopter.AutoTestCopter,
-    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
-    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s
-    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # 5m17s
-    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # 8m20s
-    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
-    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
-    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
+    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # ~15m
+    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # ~15m
+    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # ~15m
+    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # ~13m
+    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # ~14m
+    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # ~14m
+    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # ~14m
     "test.Plane": arduplane.AutoTestPlane,
     "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
     "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
     "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
+    "test.QuadPlaneTests1a": quadplane.AutoTestQuadPlaneTests1a, # ~12m
+    "test.QuadPlaneTests1b": quadplane.AutoTestQuadPlaneTests1b, # ~11m
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
@@ -1145,6 +1149,9 @@ if __name__ == "__main__":
         'test.PlaneTests1a',
         'test.PlaneTests1b',
         'test.PlaneTests1c',
+
+        'test.QuadPlaneTests1a',
+        'test.QuadPlaneTests1b',
 
         'clang-scan-build',
     ]

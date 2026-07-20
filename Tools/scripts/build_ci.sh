@@ -183,8 +183,12 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
         continue
     fi
-    if [ "$t" == "sitltest-quadplane" ]; then
-        run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
+    if [ "$t" == "sitltest-quadplane-tests1a" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1b" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1b"
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then

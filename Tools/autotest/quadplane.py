@@ -3387,6 +3387,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def tests(self):
         '''return list of all tests'''
+        ret = []
+        ret.extend(self.tests1a())
+        ret.extend(self.tests1b())
+        return ret
+
+    def tests1a(self):
+        '''return list of all tests'''
 
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
@@ -3420,6 +3427,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.VTOLLandSpiral,
             self.VTOLQuicktune,
             self.VTOLQuicktune_CPP,
+        ])
+        return ret
+
+    def tests1b(self):
+        '''return list of all tests'''
+        ret = ([
             self.PrecisionLanding,
             self.ShipLanding,
             Test(self.MotorTest, kwargs={  # tests motors 4 and 2
@@ -3470,3 +3483,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.HighServoFunctionDefault,
         ])
         return ret
+
+
+class AutoTestQuadPlaneTests1a(AutoTestQuadPlane):
+    def tests(self):
+        return self.tests1a()
+
+
+class AutoTestQuadPlaneTests1b(AutoTestQuadPlane):
+    def tests(self):
+        return self.tests1b()
