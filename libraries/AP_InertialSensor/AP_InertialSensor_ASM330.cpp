@@ -60,6 +60,21 @@ AP_InertialSensor_Backend *AP_InertialSensor_ASM330::probe(AP_InertialSensor &im
     return sensor;
 }
 
+uint8_t AP_InertialSensor_ASM330::expected_whoami() const
+{
+    return WHO_AM_I;
+}
+
+AP_InertialSensor_Backend::DevTypes AP_InertialSensor_ASM330::devtype() const
+{
+    return DEVTYPE_INS_ASM330;
+}
+
+const char *AP_InertialSensor_ASM330::sensor_name() const
+{
+    return "ASM330";
+}
+
 bool AP_InertialSensor_ASM330::init_sensor()
 {
     bool success = hardware_init();
@@ -78,8 +93,8 @@ bool AP_InertialSensor_ASM330::hardware_init()
     dev->set_read_flag(0x80);
 
     const uint8_t whoami = register_read(ASM330_REG_WHO_AM_I);
-    if (whoami != WHO_AM_I) {
-        DEV_PRINTF("ASM330: unexpected acc/gyro WHOAMI 0x%x\n", whoami);
+    if (whoami != expected_whoami()) {
+        DEV_PRINTF("%s: unexpected acc/gyro WHOAMI 0x%x\n", sensor_name(), whoami);
         return false;
     }
 
@@ -113,7 +128,7 @@ bool AP_InertialSensor_ASM330::hardware_init()
     dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     if (!reset_success) {
-        DEV_PRINTF("ASM330: Failed to boot ASM330\n");
+        DEV_PRINTF("%s: failed to boot\n", sensor_name());
         return false;
     }
 
@@ -125,8 +140,8 @@ bool AP_InertialSensor_ASM330::hardware_init()
  */
 void AP_InertialSensor_ASM330::start(void)
 {
-    if (!_imu.register_gyro(gyro_instance, GYRO_SAMPLE_RATE, dev->get_bus_id_devtype(DEVTYPE_INS_ASM330)) ||
-        !_imu.register_accel(accel_instance, ACCEL_SAMPLE_RATE, dev->get_bus_id_devtype(DEVTYPE_INS_ASM330))) {
+    if (!_imu.register_gyro(gyro_instance, GYRO_SAMPLE_RATE, dev->get_bus_id_devtype(devtype())) ||
+        !_imu.register_accel(accel_instance, ACCEL_SAMPLE_RATE, dev->get_bus_id_devtype(devtype()))) {
         return;
     }
 
@@ -321,38 +336,48 @@ void AP_InertialSensor_ASM330::poll_data()
         uint8_t fifo_tmp[7] = {0, 0, 0, 0, 0, 0, 0};
 
         if (!dev->transfer(&fifo_reg, 1, (uint8_t *)&fifo_tmp, sizeof(fifo_tmp))) {
-            DEV_PRINTF("ASM330: error reading fifo data\n");
+            DEV_PRINTF("%s: error reading fifo data\n", sensor_name());
             return;
         }
 
-        struct sensor_raw_data raw_data;
-
-        const uint8_t tag = (uint8_t)((fifo_tmp[0] & 0xF8) >> 3);
-        raw_data.x = (int16_t)(fifo_tmp[1] + (fifo_tmp[2] << 8));
-        raw_data.y = (int16_t)(fifo_tmp[3] + (fifo_tmp[4] << 8));
-        raw_data.z = (int16_t)(fifo_tmp[5] + (fifo_tmp[6] << 8));
-
-        switch (tag) {
-        case 0x01:
-            update_transaction_g(raw_data);
-            break;
-        case 0x02:
-            update_transaction_x(raw_data);
-            break;
-        default:
-            // unused fifo data
-            ;
-            break;
-        }
+        process_fifo_word(fifo_tmp);
     }
 
-    if (temperature_counter++ >= 10) {
+    poll_housekeeping();
+}
+
+void AP_InertialSensor_ASM330::process_fifo_word(const uint8_t *word)
+{
+    struct sensor_raw_data raw_data;
+
+    const uint8_t tag = (uint8_t)((word[0] & 0xF8) >> 3);
+    raw_data.x = (int16_t)(word[1] + (word[2] << 8));
+    raw_data.y = (int16_t)(word[3] + (word[4] << 8));
+    raw_data.z = (int16_t)(word[5] + (word[6] << 8));
+
+    switch (tag) {
+    case 0x01:
+        update_transaction_g(raw_data);
+        break;
+    case 0x02:
+        update_transaction_x(raw_data);
+        break;
+    default:
+        // unused fifo data
+        ;
+        break;
+    }
+}
+
+void AP_InertialSensor_ASM330::poll_housekeeping()
+{
+    if (temperature_counter++ >= temperature_decimation()) {
         const uint8_t temperature_reg = ASM330_REG_OUT_TEMP_L | 0x80;
         int16_t temperature_tmp;
         if (dev->transfer(&temperature_reg, 1, (uint8_t *)&temperature_tmp, sizeof(temperature_tmp))) {
             temperature_degc = temperature_filter.apply((float)temperature_tmp / 256.0f + 25.0f);
         } else {
-            DEV_PRINTF("ASM330: error reading temperature data\n");
+            DEV_PRINTF("%s: error reading temperature data\n", sensor_name());
         }
         temperature_counter = 0;
     }
