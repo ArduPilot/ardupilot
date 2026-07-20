@@ -1384,7 +1384,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # spent floating away from the dived-to depth
         self.context_set_message_rate_hz('NAV_CONTROLLER_OUTPUT', 10)
 
-        self.dive(-15)
+        self.dive(-15, mode='ALT_HOLD')
 
         # GLOBAL_POSITION_INT will be our clock
         self.context_set_message_rate_hz('GLOBAL_POSITION_INT', 10)
