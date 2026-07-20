@@ -3523,6 +3523,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''Test InertialLabs EAHRS support'''
         self.fly_external_AHRS("ILabs", 5)
 
+    def SBGEAHRS(self):
+        '''Test SBG EAHRS support'''
+        # like SensAItion, landing stops slightly beyond the default 60m
+        # threshold from the final waypoint, so relax it
+        self.fly_external_AHRS("SBG", 8, dist_to_final_wp_threshold_m=75.0)
+
     def KebniSensAItionExternalINS(self):
         '''Test Kebni SensAItion External INS mode. Or in Ardupilot terminology, ExternalAHRS mode.'''
         self.set_parameters({
@@ -8708,6 +8714,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MicroStrainEAHRS5,
             self.MicroStrainEAHRS7,
             self.InertialLabsEAHRS,
+            self.SBGEAHRS,
             self.KebniSensAItionExternalINS,
             self.KebniSensAItionExternalIMU,
             self.GpsSensorPreArmEAHRS,
