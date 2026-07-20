@@ -137,7 +137,7 @@ void AP_Compass_IIS2MDC::timer()
         uint8_t tout1;
     } buffer;
 
-    const float range_scale = 100.f / 65.535f; // +/- 50,000 milligauss, 16bit
+    const float range_scale = 1.5f; // 1.5 mgauss/LSB
 
     uint8_t status = 0;
     if (!_dev->read_registers(IIS2MDC_ADDR_STATUS_REG, &status, 1)) {
