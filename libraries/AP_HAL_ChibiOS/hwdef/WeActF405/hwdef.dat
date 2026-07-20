@@ -1,0 +1,172 @@
+# hw definition file for processing by chibios_pins.py
+#
+# WeAct STM32F405RGT6 custom flight controller
+#   IMU:   MPU6500        (SPI2)
+#   BARO:  BMP280         (I2C2, addr 0x76)
+#   COMPASS: QMC5883L     (I2C2, addr 0x0D, external)
+#   OSD:   AT7456E/MAX7456 (SPI2)
+#   SD card via SDIO for logging
+#
+# Pin mapping matches the STM32F405RGT6 INAV target this board is wired for.
+
+# MCU class and specific type
+MCU STM32F4xx STM32F405xx
+
+# board ID for firmware load (unique, non-colliding)
+APJ_BOARD_ID 1303
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# bootloader starts firmware at 64k
+FLASH_RESERVE_START_KB 64
+FLASH_SIZE_KB 1024
+
+# store parameters in flash page 1 (no FRAM/dataflash on this board)
+STORAGE_FLASH_PAGE 1
+define HAL_STORAGE_SIZE 15360
+
+define STM32_ST_USE_TIMER 5
+define CH_CFG_ST_RESOLUTION 32
+
+PB2 LED0 OUTPUT LOW GPIO(90) # blue marked as ACT
+PA5 LED1 OUTPUT LOW GPIO(91) # green marked as B/E
+define HAL_GPIO_A_LED_PIN 91
+define HAL_GPIO_B_LED_PIN 90
+
+define HAL_GPIO_LED_OFF 1
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART1 USART2 UART4 USART6
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# --------------------- ADC ---------------------------
+PC4 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PC5 BATT_CURRENT_SENS ADC1 SCALE(1)
+PB0 RSSI_ADC_PIN      ADC1 SCALE(1)
+PC0 PRESSURE_SENS     ADC1 SCALE(1)
+
+define HAL_BATT_MONITOR_DEFAULT 4
+
+# PC4 ADC12_IN14
+define HAL_BATT_VOLT_PIN 14
+define HAL_BATT_VOLT_SCALE 21.0
+
+# PC5 ADC12_IN15
+define HAL_BATT_CURR_PIN 15
+define HAL_BATT_CURR_SCALE 66.7
+
+# PB0 ADC12_IN8
+define BOARD_RSSI_ANA_PIN 8
+# PC0 ADC123_IN10
+define HAL_DEFAULT_AIRSPEED_PIN 10
+
+# --------------------- SPI2 (sensors + OSD) ----------
+PB13 SPI2_SCK SPI2
+PC2 SPI2_MISO SPI2
+PC3 SPI2_MOSI SPI2
+
+PB12 MPU_CS CS
+PC1 OSD_CS CS
+
+# --------------------- I2C ---------------------------
+# single I2C bus -> becomes ArduPilot bus 0
+I2C_ORDER I2C2
+
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+# --------------------- SDIO (SD card) ----------------
+PC8 SDIO_D0 SDIO
+PC9 SDIO_D1 SDIO
+PC10 SDIO_D2 SDIO
+PC11 SDIO_D3 SDIO
+PC12 SDIO_CK SDIO
+PD2 SDIO_CMD SDIO
+
+# ------------------- DMA assignment -------------------
+DMA_PRIORITY ADC1 SPI2* TIM1* TIM2* TIM3* TIM4* UART2*
+
+# USART1 (labelled UART2 on casing)
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_GPS
+
+# USART2, RC input
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2 ALT(1)
+PA3 TIM9_CH2 TIM9 RCININT PULLDOWN LOW
+
+# UART4, for GPS
+PA0 UART4_TX UART4 NODMA
+PA1 UART4_RX UART4 NODMA
+
+# USART6 serial6 telem1
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6 NODMA
+
+# --------------------- PWM outputs -------------------
+PB8  TIM4_CH3 TIM4 PWM(1) GPIO(50)
+PB5  TIM3_CH2 TIM3 PWM(2) GPIO(51)
+PB4  TIM3_CH1 TIM3 PWM(3) GPIO(52)
+PB3  TIM2_CH2 TIM2 PWM(4) GPIO(53)
+PA10 TIM1_CH3 TIM1 PWM(5) GPIO(54)
+PA9  TIM1_CH2 TIM1 PWM(6) GPIO(55)
+
+PB15 TIM12_CH2 TIM12 PWM(7) GPIO(56) NODMA
+PB14 TIM12_CH1 TIM12 PWM(8) GPIO(57) NODMA
+PA7  TIM14_CH1 TIM14 PWM(9) GPIO(58) NODMA
+PA6  TIM13_CH1 TIM13 PWM(10) GPIO(59) NODMA
+PB1  TIM3_CH4  TIM3  PWM(11) GPIO(60)  # LED pad
+
+define STM32_PWM_USE_ADVANCED TRUE
+
+# Beeper
+PB9 TIM11_CH1  TIM11 GPIO(32) ALARM
+
+# ------------------ OSD AT7456E ----------------------
+SPIDEV osd SPI2 DEVID2 OSD_CS MODE0 10*MHZ 10*MHZ
+
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
+
+# ------------------ IMU (MPU6500 on SPI2) ------------
+SPIDEV mpu6500 SPI2 DEVID1 MPU_CS MODE3 2*MHZ 8*MHZ
+
+# single IMU
+IMU Invensense SPI:mpu6500 ROTATION_YAW_90
+
+# ------------------ Barometer ------------------------
+BARO BMP280 I2C:0:0x76
+
+# ------------------ Compass (QMC5883L external) ------
+COMPASS QMC5883L I2C:0:0x0D false ROTATION_NONE
+
+# allow probing for other external compasses on the i2c bus too
+define ALLOW_ARM_NO_COMPASS
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# Motor order implies Betaflight/X for standard ESCs
+define HAL_FRAME_TYPE_DEFAULT 12
+
+# enable FAT filesystem (SD card logging)
+define HAL_OS_FATFS_IO 1
+
+# --------------------- save flash ----------------------
+define HAL_PARACHUTE_ENABLED 0
+define HAL_SPRAYER_ENABLED 0
+define AP_PARAM_MAX_EMBEDDED_PARAM 1024
+define AP_BATTMON_SMBUS_ENABLE 0
+
+include ../include/minimize_fpv_osd.inc
