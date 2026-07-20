@@ -36,6 +36,13 @@ extern const AP_HAL::HAL& hal;
 // CTRL9_XL bit1. ST recommend disabling I3C when it is not in use.
 #define LSM6DSO_CTRL9_XL_I3C_DISABLE    (1U << 1)
 
+// INTERNAL_FREQ_FINE (63h) reports this part's ODR deviation from nominal as a
+// signed count of 0.15% steps. The oscillator is not trimmed tightly - parts
+// have been measured 4.6% slow - and the frontend tunes the harmonic notch off
+// the rate we declare, so apply it rather than declaring the nominal.
+#define LSM6DSO_REG_INTERNAL_FREQ_FINE  0x63
+#define LSM6DSO_FREQ_FINE_STEP          0.0015f
+
 // slowest rate the sensor is run at, and the step of the ODR ladder below
 #define LSM6DSO_BASE_RATE_HZ            833
 
@@ -156,7 +163,8 @@ void AP_InertialSensor_LSM6DSO::set_backend_rate()
         odr_index++;
     }
 
-    backend_rate_hz = odr_table[odr_index].rate_hz;
+    const uint16_t nominal_hz = odr_table[odr_index].rate_hz;
+    backend_rate_hz = uint16_t(nominal_hz * (1.0f + LSM6DSO_FREQ_FINE_STEP * freq_fine) + 0.5f);
     backend_period_us = 1000000UL / backend_rate_hz;
 }
 
@@ -220,6 +228,11 @@ void AP_InertialSensor_LSM6DSO::start(void)
     if (!_imu.get_gyro_instance(gyro_instance) ||
         !_imu.get_accel_instance(accel_instance)) {
         return;
+    }
+
+    {
+        WITH_SEMAPHORE(dev->get_semaphore());
+        freq_fine = int8_t(register_read(LSM6DSO_REG_INTERNAL_FREQ_FINE));
     }
 
     set_backend_rate();

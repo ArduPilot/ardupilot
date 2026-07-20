@@ -61,5 +61,8 @@ private:
     uint32_t backend_period_us;
     bool fast_sampling;
 
+    // this part's ODR deviation from nominal, from INTERNAL_FREQ_FINE
+    int8_t freq_fine;
+
     uint8_t *fifo_buffer;
 };
