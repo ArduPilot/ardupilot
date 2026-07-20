@@ -80,15 +80,17 @@ bool AP_Compass_IIS2MDC::init()
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_A, MD_CONTINUOUS | ODR_100 | COMP_TEMP_EN)) {
+    _dev->setup_checked_registers(3);
+
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_A, MD_CONTINUOUS | ODR_100 | COMP_TEMP_EN, true)) {
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_B, OFF_CANC)) {
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_B, OFF_CANC, true)) {
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_C, BDU)) {
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_C, BDU, true)) {
         return false;
     }
 
@@ -141,17 +143,18 @@ void AP_Compass_IIS2MDC::timer()
 
     uint8_t status = 0;
     if (!_dev->read_registers(IIS2MDC_ADDR_STATUS_REG, &status, 1)) {
-        return;
+        goto check_registers;
     }
 
     if (!(status & IIS2MDC_STATUS_REG_READY)) {
-        return;
+        goto check_registers;
     }
 
     if (!_dev->read_registers(IIS2MDC_ADDR_OUTX_L_REG, (uint8_t *) &buffer, sizeof(buffer))) {
-        return;
+        goto check_registers;
     }
 
+    {
     const int16_t x = ((buffer.xout1 << 8) | buffer.xout0);
     const int16_t y = ((buffer.yout1 << 8) | buffer.yout0);
     const int16_t z = -1 * ((buffer.zout1 << 8) | buffer.zout0);
@@ -159,6 +162,10 @@ void AP_Compass_IIS2MDC::timer()
     Vector3f field{ x * range_scale, y * range_scale, z * range_scale };
 
     accumulate_sample(field);
+    }
+
+check_registers:
+    _dev->check_next_register();
 }
 
 #endif //AP_COMPASS_IIS2MDC_ENABLED
