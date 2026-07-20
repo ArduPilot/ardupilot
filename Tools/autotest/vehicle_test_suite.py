@@ -14887,6 +14887,11 @@ switch value'''
                     "device": "Aeron-PLX3",
                     "eahrs_type": 10,
                 },
+                {
+                    "name": "SBG",
+                    "device": "SBG",
+                    "eahrs_type": 8,
+                },
             ]
 
             self.start_subtest("ExternalAHRS backend attitude")
