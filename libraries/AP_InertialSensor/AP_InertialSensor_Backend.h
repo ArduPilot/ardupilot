@@ -178,6 +178,7 @@ public:
         DEVTYPE_INS_LSM6DSV32X = 0x42,
         DEVTYPE_INS_LSM6DSK320X = 0x43,
         DEVTYPE_INS_LSM6DSO = 0x44,
+        DEVTYPE_INS_LSM6DSO32 = 0x45,
     };
 
 protected:

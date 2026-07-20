@@ -27,7 +27,7 @@ public:
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,
                                             AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                             enum Rotation rotation);
-private:
+protected:
     AP_InertialSensor_LSM6DSO(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
                               enum Rotation rotation);
@@ -37,6 +37,11 @@ private:
     const char *sensor_name() const override;
     uint8_t temperature_decimation() const override;
 
+    // CTRL1_XL FS_XL field selecting +/-16g. The LSM6DSO32 shifts this
+    // ladder by one range, so it overrides.
+    virtual uint8_t accel_fs_bits() const;
+
+private:
     void fifo_init() override;
     void gyro_init() override;
     void accel_init() override;

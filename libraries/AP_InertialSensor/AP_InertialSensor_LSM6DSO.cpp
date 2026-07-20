@@ -44,8 +44,8 @@ extern const AP_HAL::HAL& hal;
 
 // Words per burst transfer. Reading more than one word at a time relies on the
 // address auto-increment wrapping from FIFO_DATA_OUT_Z_H (7Eh) back to
-// FIFO_DATA_OUT_TAG (78h), which the datasheet does not spell out. Setting this
-// to 1 falls back to a transfer per word, as the ASM330 driver does.
+// FIFO_DATA_OUT_TAG (78h). The datasheet does not spell that out, but it holds
+// on hardware. Setting this to 1 falls back to a transfer per word.
 #define LSM6DSO_FIFO_BURST_WORDS        16
 
 // most words drained in a single poll
@@ -122,6 +122,11 @@ const char *AP_InertialSensor_LSM6DSO::sensor_name() const
     return "LSM6DSO";
 }
 
+uint8_t AP_InertialSensor_LSM6DSO::accel_fs_bits() const
+{
+    return ASM330_REG_CTRL1_XL_FS_XL_16G;
+}
+
 uint8_t AP_InertialSensor_LSM6DSO::temperature_decimation() const
 {
     return uint8_t(MAX(1U, backend_rate_hz / 100U));
@@ -186,9 +191,9 @@ void AP_InertialSensor_LSM6DSO::accel_init()
                    ASM330_REG_CTRL9_XL_DEN_LH_ACTIVE_LOW |
                    LSM6DSO_CTRL9_XL_I3C_DISABLE, true);
 
-    // CTRL1_XL(10h) : ODR from the ladder, FS_XL = 01b (16g), LPF2 disabled
+    // CTRL1_XL(10h) : ODR from the ladder, +/-16g, LPF2 disabled
     register_write(ASM330_REG_CTRL1_XL, odr_table[odr_index].odr |
-                   ASM330_REG_CTRL1_XL_FS_XL_16G |
+                   accel_fs_bits() |
                    ASM330_REG_CTRL1_XL_LPF2_XL_EN_DISABLE, true);
 }
 
