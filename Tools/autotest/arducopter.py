@@ -3005,9 +3005,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # re-arming is problematic because the GPS is glitching!
         self.reboot_sitl()
 
-    def GPSGlitchLoiter2(self):
-        """test vehicle handles GPS glitch (aka EKF Reset) without twitching"""
+    def gps_glitch_loiter2_for_ekf_type(self, active_type):
+        '''run the GPSGlitchLoiter2 sequence with the given EKF active'''
         self.context_push()
+        self.set_parameters({
+            "AHRS_EKF_TYPE": active_type,
+            "EK2_ENABLE": 1,
+            "EK3_ENABLE": 1,
+        })
+        self.reboot_sitl()
         self.takeoff(10, mode="LOITER")
 
         # wait for vehicle to level
@@ -3026,10 +3032,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if abs(roll_deg) > 2 or abs(pitch_deg) > 2:
                 raise NotAchievedException("fly_gps_glitch_loiter_test2 failed, roll or pitch moved during GPS glitch")
 
-        # RTL, remove glitch and reboot sitl
+        # RTL; the context pop removes the glitch and reboots
         self.do_RTL(alt_max=2)
         self.context_pop()
-        self.reboot_sitl()
+
+    def GPSGlitchLoiter2(self):
+        """test vehicle handles GPS glitch (aka EKF Reset) without twitching"""
+        # both enabled filters see glitch-induced position resets; the
+        # vehicle response only depends on the active filter, so fly
+        # once with each:
+        for active_type in 3, 2:
+            self.start_subtest("active EKF type %u" % active_type)
+            self.gps_glitch_loiter2_for_ekf_type(active_type)
 
     def GPSGlitchAuto(self, timeout=180):
         '''fly mission and test reaction to gps glitch'''
@@ -11948,15 +11962,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Did not get %s" % want)
             still_want.remove(m.get_type())
 
-    def GSF_reset(self):
-        '''test the Gaussian Sum filter based Emergency reset'''
+    def gsf_reset_for_ekf_type(self, active_type):
+        '''run the GSF emergency-reset sequence with the given EKF active'''
         self.context_push()
         self.set_parameters({
+            "AHRS_EKF_TYPE": active_type,
+            "EK2_ENABLE": 1,
+            "EK3_ENABLE": 1,
             "COMPASS_ORIENT": 4,    # yaw 180
             "COMPASS_USE2": 0,      # disable backup compasses to avoid pre-arm failures
             "COMPASS_USE3": 0,
         })
         self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
 
@@ -11970,7 +11988,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.user_takeoff(alt_min=expected_alt)
 
         # watch for emergency yaw reset
-        self.wait_text("EKF3 IMU. emergency yaw reset", timeout=5, regex=True)
+        self.wait_statustext("EKF%u IMU. emergency yaw reset" % active_type,
+                             timeout=10, regex=True, check_context=True)
 
         # record how far vehicle flew off
         endpos = self.assert_receive_message('LOCAL_POSITION_NED')
@@ -11981,12 +12000,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
         self.context_pop()
-        self.reboot_sitl()
 
         # ensure vehicle did not fly too far
         dist_m_max = 8
         if dist_m > dist_m_max:
             raise NotAchievedException("GSF reset failed, vehicle flew too far (%f > %f)" % (dist_m, dist_m_max))
+
+    def GSF_reset(self):
+        '''test the Gaussian Sum filter based Emergency reset'''
+        # the emergency yaw reset request is routed by AHRS to the
+        # active estimator only, so fly once with each filter active;
+        # the other filter remains enabled throughout.  Each iteration
+        # gets its own context so that its statustext collection does
+        # not see the previous iteration's messages.
+        for active_type in 2, 3:
+            self.start_subtest("active EKF type %u" % active_type)
+            self.gsf_reset_for_ekf_type(active_type)
 
     def EKFBootstrapReset(self):
         '''verify EKF reset aux switch is disarmed-only and preserves origin'''
@@ -12276,28 +12305,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.assert_ekfs_match_sim_state()
 
-    def EKFYawResetLogged(self):
-        '''in-filter EKF yaw resets must propagate through AHRS and be logged'''
+    def ekf_yaw_reset_logged_for_ekf_type(self, active_type):
+        '''fly an in-filter yaw reset with the given EKF active'''
         self.context_push()
         self.set_parameters({
+            "AHRS_EKF_TYPE": active_type,
+            "EK2_ENABLE": 1,
+            "EK3_ENABLE": 1,
             "COMPASS_ORIENT": 4,    # yaw 180
             "COMPASS_USE2": 0,      # disable backup compasses to avoid pre-arm failures
             "COMPASS_USE3": 0,
         })
         self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.user_takeoff(alt_min=5)
 
-        # the mis-oriented compass causes an in-filter emergency yaw
-        # reset shortly after takeoff:
-        self.wait_text("EKF3 IMU. emergency yaw reset", timeout=5, regex=True)
+        # the mis-oriented compass causes an in-filter emergency
+        # yaw reset shortly after takeoff:
+        self.wait_statustext("EKF%u IMU. emergency yaw reset" % active_type,
+                             timeout=10, regex=True, check_context=True)
         self.delay_sim_time(5, reason="let the event reach the log")
         self.do_RTL()
 
-        # the EKF's internal yaw reset must be noticed by AHRS, which
-        # logs an EKF_YAW_RESET event:
+        # the active EKF's internal yaw reset must be noticed by
+        # AHRS, which logs an EKF_YAW_RESET event:
         dfreader = self.dfreader_for_current_onboard_log()
         armed = False
         while True:
@@ -12311,7 +12345,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Found EKF_YAW_RESET event in log")
 
         self.context_pop()
-        self.reboot_sitl()
+
+    def EKFYawResetLogged(self):
+        '''in-filter EKF yaw resets must propagate through AHRS and be logged'''
+        # the emergency yaw reset request is routed by AHRS to the
+        # active estimator only, so fly once with each filter active;
+        # the other filter remains enabled throughout.  Each iteration
+        # gets its own context so that its statustext collection does
+        # not see the previous iteration's messages.
+        for active_type in 2, 3:
+            self.start_subtest("active EKF type %u" % active_type)
+            self.ekf_yaw_reset_logged_for_ekf_type(active_type)
 
     def FlyRangeFinderMAVlink(self):
         '''fly mavlink-connected rangefinder'''
