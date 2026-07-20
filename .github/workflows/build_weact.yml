@@ -1,0 +1,42 @@
+name: Build WeActF405
+
+# Build the custom WeActF405 ArduCopter firmware.
+# Runs on every push, and can be triggered by hand from the Actions tab.
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: ardupilot/ardupilot-dev-chibios:latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Mark workspace safe for git
+        run: git config --global --add safe.directory '*'
+
+      - name: Configure
+        run: ./waf configure --board WeActF405
+
+      - name: Build bootloader
+        run: ./waf bootloader
+
+      - name: Build copter
+        run: ./waf copter
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: WeActF405-arducopter
+          path: |
+            build/WeActF405/bin/arducopter.apj
+            build/WeActF405/bin/arducopter.hex
+            build/WeActF405/bin/arducopter_with_bl.hex
+            build/WeActF405/bootloader/*.bin
+            build/WeActF405/bootloader/*.hex
+          if-no-files-found: warn
