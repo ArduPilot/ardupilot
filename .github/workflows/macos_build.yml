@@ -13,7 +13,7 @@ on:
       # remove non SITL non stm32 directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -78,7 +78,7 @@ on:
       # remove non SITL non stm32 directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'

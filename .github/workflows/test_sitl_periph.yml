@@ -15,7 +15,7 @@ on:
       - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/bootloaders/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -93,7 +93,7 @@ on:
       - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/bootloaders/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'

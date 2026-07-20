@@ -8,7 +8,7 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       - 'libraries/AP_HAL_SITL/**'
       # remove non stm directories
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/debug/**'
@@ -68,7 +68,7 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       - 'libraries/AP_HAL_SITL/**'
       # remove non stm directories
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/debug/**'

@@ -25,7 +25,7 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -75,7 +75,7 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
