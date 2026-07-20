@@ -133,7 +133,12 @@ void AP_InertialSensor_ASM330::start(void)
     set_accel_orientation(accel_instance, rot);
     set_gyro_orientation(gyro_instance, rot);
 
-    fifo_reset();
+    {
+        // bus transfers fail unless the caller owns the semaphore, and start()
+        // does not run on the bus thread
+        WITH_SEMAPHORE(dev->get_semaphore());
+        fifo_reset();
+    }
 
     // start the timer process to read samples
     dev->register_periodic_callback(1000, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_ASM330::poll_data, void));
@@ -173,8 +178,9 @@ void AP_InertialSensor_ASM330::fifo_reset()
 {
     const uint8_t fifo_ctrl4 = register_read(ASM330_REG_FIFO_CTRL4);
 
-    // FIFO_MODE is Bypass mode
-    register_write(ASM330_REG_FIFO_CTRL4, fifo_ctrl4 |
+    // FIFO_MODE is Bypass mode. FIFO_MODE_BYPASS is zero, so the mode field
+    // has to be cleared rather than ORed in for the FIFO to actually flush.
+    register_write(ASM330_REG_FIFO_CTRL4, (fifo_ctrl4 & ~ASM330_REG_FIFO_CTRL4_FIFO_MODE_MASK) |
                                            ASM330_REG_FIFO_CTRL4_FIFO_MODE_BYPASS);
 
     // Revert FIFO_MODE

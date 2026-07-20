@@ -68,6 +68,7 @@
 #   define ASM330_REG_FIFO_CTRL4_ODR_T_BATCH_12500mHz       (0x2 << 4)
 #   define ASM330_REG_FIFO_CTRL4_ODR_T_BATCH_52Hz           (0x3 << 4)
 // FIFO_MODE
+#   define ASM330_REG_FIFO_CTRL4_FIFO_MODE_MASK             (0x7)
 #   define ASM330_REG_FIFO_CTRL4_FIFO_MODE_BYPASS           (0x0)
 #   define ASM330_REG_FIFO_CTRL4_FIFO_MODE_FIFO             (0x1)
 #   define ASM330_REG_FIFO_CTRL4_FIFO_MODE_CONT_TO_FIFO     (0x3)
