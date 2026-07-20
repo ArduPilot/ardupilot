@@ -13,7 +13,7 @@ on:
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/bootloaders/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -77,7 +77,7 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CPUInfo/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/FilterTestTool/**'
