@@ -882,7 +882,7 @@ void AP_GPS::update_instance(uint8_t instance)
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
     // detection to run again
-    bool data_should_be_logged = false;
+    bool new_data_or_timeout = false;
     if (!result) {
         if (tnow - timing[instance].last_message_time_ms > GPS_TIMEOUT_MS) {
             memset((void *)&state[instance], 0, sizeof(state[instance]));
@@ -906,7 +906,7 @@ void AP_GPS::update_instance(uint8_t instance)
             }
             // log this data as a "flag" that the GPS is no longer
             // valid (see PR#8144)
-            data_should_be_logged = true;
+            new_data_or_timeout = true;
         }
     } else {
         if (state[instance].corrected_timestamp_updated) {
@@ -931,7 +931,7 @@ void AP_GPS::update_instance(uint8_t instance)
             timing[instance].last_fix_time_ms = tnow;
         }
 
-        data_should_be_logged = true;
+        new_data_or_timeout = true;
     }
 
 #if GPS_MAX_RECEIVERS > 1
@@ -953,7 +953,7 @@ void AP_GPS::update_instance(uint8_t instance)
     }
 #endif
 
-    if (data_should_be_logged) {
+    if (new_data_or_timeout) {
         // keep count of delayed frames and average frame delay for health reporting
         const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
         GPS_timing &t = timing[instance];
@@ -973,11 +973,11 @@ void AP_GPS::update_instance(uint8_t instance)
     }
 
 #if HAL_LOGGING_ENABLED
-    if (data_should_be_logged && should_log()) {
+    if (new_data_or_timeout && should_log()) {
         Write_GPS(instance);
     }
 #else
-    (void)data_should_be_logged;
+    (void)new_data_or_timeout;
 #endif
 
 #if AP_RTC_ENABLED
