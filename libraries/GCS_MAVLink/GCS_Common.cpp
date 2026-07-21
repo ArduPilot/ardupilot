@@ -7189,7 +7189,7 @@ void GCS_MAVLINK::get_intervals_from_filepath(const char *path, DefaultIntervals
     }
 
     char line[20];
-    while (AP::FS().fgets(line, sizeof(line)-1, f)) {
+    while (AP::FS().fgets(line, sizeof(line), f)) {
         char *saveptr = nullptr;
         const char *mavlink_id_str = strtok_r(line, " ", &saveptr);
         if (mavlink_id_str == nullptr || strlen(mavlink_id_str) == 0) {
