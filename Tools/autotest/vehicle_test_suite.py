@@ -15403,11 +15403,45 @@ switch value'''
                 if self.get_sim_time_cached() - tstart > timeout:
                     raise
 
+    def wait_msp_vtx_config(self, msp, want, timeout=10):
+        '''poll MSP_VTX_CONFIG until the fields in want match the FC's reply,
+        draining stale buffered frames; the reply is the config the FC hands a
+        VTX/goggle: type, band/channel one based, power index, pitmode, freq and
+        deviceIsReady (gated on the boot handshake)'''
+        MSP_VTX_CONFIG = 88
+        last = {}
+
+        def collect(cmd, data):
+            if cmd == MSP_VTX_CONFIG and len(data) >= 8:
+                (t, band, channel, power, pitmode, freq, ready) = struct.unpack("<BBBBBHB", bytes(data[:8]))
+                last['cfg'] = {
+                    "type": t, "band": band, "channel": channel, "power": power,
+                    "pitmode": pitmode, "freq": freq, "deviceIsReady": ready,
+                }
+        msp.callback = collect
+        tstart = self.get_sim_time()
+        try:
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("MSP_VTX_CONFIG never matched %s (last %s)" % (want, last.get('cfg')))
+                msp.send_command(MSP_VTX_CONFIG)
+                msp.update()
+                cfg = last.get('cfg')
+                if cfg is not None and all(cfg[k] == v for k, v in want.items()):
+                    return cfg
+        finally:
+            msp.callback = None
+
     def check_msp_set_vtx_config(self, msp):
         '''drive MSP_SET_VTX_CONFIG over the supplied client and check the
         configured VTX band/channel/frequency/power update accordingly'''
         MSP_SET_VTX_CONFIG = 89
         MSP_SET_VTXTABLE_POWERLEVEL = 228
+
+        # before the air unit uploads its own config the FC advertises not-ready,
+        # which is what makes a betaflight-style VTX run its boot handshake
+        self.progress("Checking the FC reports not-ready before the handshake")
+        self.wait_msp_vtx_config(msp, {"deviceIsReady": 0})
 
         # the leading field is overloaded: a value <= 63 encodes band/channel
         # as band_index*8 + channel_index (both zero based internally), so
@@ -15462,6 +15496,16 @@ switch value'''
         self.msp_send_until_parameters(msp, [
             (MSP_SET_VTX_CONFIG, struct.pack("<HBB", 4*8 + 3, 3, 0)),
         ], {"VTX_OPTIONS": 0})
+
+        # the FC answers MSP_VTX_CONFIG with the live config and, now that the
+        # VTX has uploaded its own config, reports ready. band/channel are one
+        # based on the wire: Raceband (index 4) channel 4 (index 3) == 5769MHz,
+        # power index 3 selects the learned 500mW level.
+        self.progress("Checking the FC reports its config back over MSP_VTX_CONFIG")
+        self.wait_msp_vtx_config(msp, {
+            "type": 5, "band": 5, "channel": 4, "power": 3,
+            "pitmode": 0, "freq": 5769, "deviceIsReady": 1,
+        })
 
     def MSPVTXConfig(self):
         '''test changing VTX band/channel/frequency via MSP_SET_VTX_CONFIG'''
