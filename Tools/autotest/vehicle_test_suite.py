@@ -14279,6 +14279,132 @@ switch value'''
 
         self.end_subsubtest("parameter download")
 
+    def ParamExtendedInt32(self):
+        '''check lossless transport of large int32 parameter values'''
+        EXTENDED = mavutil.mavlink.MAV_PARAM_TYPE_EXTENDED
+        EXT_INT32 = mavutil.mavlink.MAV_PARAM_EXTENDED_TYPE_INT32
+        target_system = self.sysid_thismav()
+        target_component = 1
+        test_param = "LOG_BITMASK"
+
+        self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_ENCODE_C_CAST)
+        self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_EXTENDED)
+
+        def param_value_for(name, timeout=10):
+            # wallclock timeout; sim time can wrap across reboots
+            tstart = time.time()
+            while time.time() - tstart < timeout:
+                m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=0.1)
+                if m is not None and m.param_id == name:
+                    return m
+            raise NotAchievedException("Did not receive PARAM_VALUE for %s" % name)
+
+        def fetch(name):
+            self.drain_mav(quiet=True)
+            self.mav.mav.param_request_read_send(target_system,
+                                                 target_component,
+                                                 name.encode('ascii'),
+                                                 -1)
+            return param_value_for(name)
+
+        def set_extended(name, value, ext_type=EXT_INT32):
+            raw = struct.pack("<i", value)
+            self.drain_mav(quiet=True)
+            self.mav.param_set_send(name, float('nan'), parm_type=EXTENDED,
+                                    extended_type=ext_type, extended_data=raw)
+            return param_value_for(name)
+
+        old_int = int(mavutil.decode_param_value(fetch(test_param)))
+        try:
+            self.param_extended_int32_body(fetch, set_extended, param_value_for, test_param)
+        finally:
+            # restore the original value even on failure
+            m = set_extended(test_param, old_int)
+            if int(mavutil.decode_param_value(m)) != old_int:
+                raise NotAchievedException("Failed to restore %s" % test_param)
+
+    def param_extended_int32_body(self, fetch, set_extended, param_value_for, test_param):
+        EXTENDED = mavutil.mavlink.MAV_PARAM_TYPE_EXTENDED
+        EXT_INT32 = mavutil.mavlink.MAV_PARAM_EXTENDED_TYPE_INT32
+        target_system = self.sysid_thismav()
+        target_component = 1
+
+        self.start_subtest("set/get of non-float-representable int32 values")
+        for value in 123456789, 2147483645, 2139095041:
+            # 2139095041 is 0x7F800001, a NaN bit pattern as a float
+            m = set_extended(test_param, value)
+            if m.param_type != EXTENDED:
+                raise NotAchievedException("Expected extended type in ack, got %u" % m.param_type)
+            if m.extended_type != EXT_INT32:
+                raise NotAchievedException("Expected extended int32 in ack, got %u" % m.extended_type)
+            got = mavutil.decode_param_value(m)
+            if got != value:
+                raise NotAchievedException("Ack value %s != %s" % (str(got), str(value)))
+            # the float field must hold NaN for extension-unaware consumers
+            if not math.isnan(m.param_value):
+                raise NotAchievedException("Ack float %f is not NaN" % m.param_value)
+            m = fetch(test_param)
+            if m.param_type != EXTENDED:
+                raise NotAchievedException("Expected extended type in read, got %u" % m.param_type)
+            got = mavutil.decode_param_value(m)
+            if got != value:
+                raise NotAchievedException("Read value %s != %s" % (str(got), str(value)))
+
+        self.start_subtest("representable values keep the old wire format")
+        m = set_extended(test_param, 4096)
+        if m.param_type != mavutil.mavlink.MAV_PARAM_TYPE_INT32:
+            raise NotAchievedException("Expected INT32 type in ack, got %u" % m.param_type)
+        if m.param_value != 4096.0:
+            raise NotAchievedException("Expected 4096.0 in ack, got %f" % m.param_value)
+
+        self.start_subtest("extended set with unknown extended type is rejected")
+        self.drain_mav()
+        self.mav.param_set_send(test_param, 1.0, parm_type=EXTENDED,
+                                extended_type=255, extended_data=b"\x01\x02\x03\x04")
+        m = self.assert_receive_message('PARAM_ERROR', timeout=10)
+        if m.error != mavutil.mavlink.MAV_PARAM_ERROR_TYPE_UNSUPPORTED:
+            raise NotAchievedException("Expected TYPE_UNSUPPORTED, got %u" % m.error)
+
+        self.start_subtest("extended set of a non-int32 parameter is rejected")
+        self.drain_mav()
+        # SCHED_LOOP_RATE is an int16 on all vehicles
+        self.mav.param_set_send("SCHED_LOOP_RATE", float('nan'), parm_type=EXTENDED,
+                                extended_type=EXT_INT32, extended_data=struct.pack("<i", 123456789))
+        m = self.assert_receive_message('PARAM_ERROR', timeout=10)
+        if m.error != mavutil.mavlink.MAV_PARAM_ERROR_TYPE_MISMATCH:
+            raise NotAchievedException("Expected TYPE_MISMATCH, got %u" % m.error)
+
+        self.start_subtest("large values persist across a reboot")
+        set_extended(test_param, 2147483645)
+        self.reboot_sitl()
+        m = fetch(test_param)
+        got = mavutil.decode_param_value(m)
+        if got != 2147483645:
+            raise NotAchievedException("Value did not survive reboot: %s" % str(got))
+
+        self.start_subtest("bulk parameter download streams the extended type")
+        self.drain_mav(quiet=True)
+        self.mav.mav.param_request_list_send(target_system, target_component)
+        m = param_value_for(test_param, timeout=120)
+        if m.param_type != EXTENDED:
+            raise NotAchievedException("Expected extended type in stream, got %u" % m.param_type)
+        if mavutil.decode_param_value(m) != 2147483645:
+            raise NotAchievedException("Bad streamed value")
+        # let the download finish rather than leaving a stream running
+        self.drain_mav(quiet=True)
+
+        self.start_subtest("MAV_OPTIONS bit disables extended encoding")
+        self.set_parameter("MAV_OPTIONS", 2)
+        self.assert_no_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_EXTENDED)
+        m = fetch(test_param)
+        if m.param_type != mavutil.mavlink.MAV_PARAM_TYPE_INT32:
+            raise NotAchievedException("Expected legacy INT32 type, got %u" % m.param_type)
+        if m.param_value != 2147483648.0:
+            # C-cast of 2147483645 to float
+            raise NotAchievedException("Expected cast float, got %f" % m.param_value)
+        self.set_parameter("MAV_OPTIONS", 0)
+        self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_PARAM_EXTENDED)
+
     def test_enable_parameter(self):
         self.start_subtest("enable parameters")
         target_system = 1
@@ -19240,6 +19366,7 @@ SERIAL5_BAUD 128
             self.ParameterDocumentation,
             self.ParametersMIS_TOTAL,
             self.ParametersDownload,
+            self.ParamExtendedInt32,
             self.LoggerDocumentation,
             self.Logging,
             self.GetCapabilities,
