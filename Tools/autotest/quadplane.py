@@ -393,6 +393,58 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''Check extended sys state works'''
         self.EXTENDED_SYS_STATE_SLT()
 
+    def QRTLGradualAltDescent(self):
+        '''check Q_OPTIONS bit for gradual descent to RTL_ALTITUDE in QRTL'''
+        self.set_parameters({
+            "Q_RTL_ALT": 20,
+            "RTL_ALTITUDE": 60,
+            "Q_OPTIONS": 1 << 23,  # RTL_ALT_GRADUAL_DESCENT
+        })
+
+        wps = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
+            # a long way out, so we trigger QRTL well short of home and
+            # stay in the gradual-descent phase for the whole test
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, 100),
+        ])
+        self.check_mission_upload_download(wps)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_current_waypoint(2)
+
+        # get well away from home, cruising at the mission altitude, so
+        # QRTL's approach-phase ramp still has a long way to run
+        self.wait_distance_to_home(900, 1000, timeout=180)
+
+        entry_alt = self.get_altitude(relative=True)
+        self.progress("Entering QRTL at altitude %.1fm" % entry_alt)
+        self.change_mode('QRTL')
+
+        # entry_alt (~100m) is well above RTL_ALTITUDE (60m).  With
+        # RTL_ALT_GRADUAL_DESCENT set the target should ease down from
+        # entry_alt towards RTL_ALTITUDE over the whole return leg,
+        # rather than immediately snapping down to RTL_ALTITUDE now while
+        # still ~900m short of home.
+        tstart = self.get_sim_time()
+        max_allowed_drop = 15
+        sample_time = 15
+        while self.get_sim_time_cached() - tstart < sample_time:
+            self.wait_heartbeat()
+            alt = self.get_altitude(relative=True)
+            drop = entry_alt - alt
+            self.progress("QRTL gradual descent: alt=%.1f drop=%.1f" % (alt, drop))
+            if drop > max_allowed_drop:
+                raise NotAchievedException(
+                    "QRTL descended too fast with RTL_ALT_GRADUAL_DESCENT set "
+                    "(dropped %.1fm in %ds, expected a gradual descent)" %
+                    (drop, self.get_sim_time_cached() - tstart))
+
+        # let it continue home, transition and land normally
+        self.wait_altitude(-5, 1, relative=True, timeout=240)
+        self.wait_disarmed(timeout=60)
+
     def QAUTOTUNE(self):
         '''test Plane QAutoTune mode'''
 
@@ -3409,6 +3461,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownload,
             self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
+            self.QRTLGradualAltDescent,
             self.Mission,
             self.Weathervane,
             self.QAssist,
