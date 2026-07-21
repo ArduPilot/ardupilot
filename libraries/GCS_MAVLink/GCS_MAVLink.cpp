@@ -131,6 +131,40 @@ MAV_PARAM_TYPE GCS_MAVLINK::mav_param_type(enum ap_var_type t)
     return MAV_PARAM_TYPE_REAL32;
 }
 
+/*
+  choose the wire encoding for sending a parameter value. value must
+  hold the C-cast float on entry. An int32 value that is not exactly
+  representable as a float is sent as MAV_PARAM_TYPE_EXTENDED with the
+  exact value in the extended_data field, unless disabled by
+  MAV_OPTIONS or the channel is not using MAVLink2 (MAVLink1 framing
+  cannot carry the extension fields)
+ */
+MAV_PARAM_TYPE GCS_MAVLINK::mav_param_send_encoding(mavlink_channel_t chan, const AP_Param *vp, enum ap_var_type t, float &value, int32_t &int_value)
+{
+    if (t == AP_PARAM_INT32 && vp != nullptr &&
+        !gcs().option_is_enabled(GCS::Option::PARAM_NO_EXTENDED)) {
+        const mavlink_status_t *status = mavlink_get_channel_status(chan);
+        if (status != nullptr && !(status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+            const int32_t v = ((const AP_Int32 *)vp)->get();
+            // compare in the integer domain; float(v) is always integral
+            // valued and at most 2^31 in magnitude so the conversion to
+            // int64_t is exact and well defined
+            if (int64_t(double(float(v))) != int64_t(v)) {
+                // NaN so extension-unaware consumers see an obviously
+                // invalid value, not a rounded one
+                value = NaNf;
+                int_value = v;
+                return MAV_PARAM_TYPE_EXTENDED;
+            }
+            // derive the float from the same read so a concurrent
+            // parameter change cannot mix two snapshots
+            value = float(v);
+            return MAV_PARAM_TYPE_INT32;
+        }
+    }
+    return mav_param_type(t);
+}
+
 
 /// Check for available transmit space on the nominated MAVLink channel
 ///

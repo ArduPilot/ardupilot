@@ -274,9 +274,12 @@ public:
     // NOTE: param_name here must point to a 16+1 byte buffer - so do
     // NOT try to pass in a static-char-* unless it does have that
     // length!
+    // vp allows the extended encoding of int32 values that don't
+    // fit exactly in a float
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
-                              float param_value);
+                              float param_value,
+                              const AP_Param *vp=nullptr);
 
     // NOTE! The streams enum below and the
     // set of AP_Int16 stream rates _must_ be
@@ -529,6 +532,11 @@ protected:
 
     // return a MAVLink parameter type given a AP_Param type
     static MAV_PARAM_TYPE mav_param_type(enum ap_var_type t);
+
+    // choose the wire encoding for sending a parameter value on
+    // chan. value must hold the C-cast float on entry; when the
+    // extended encoding is chosen int_value holds the exact int32
+    static MAV_PARAM_TYPE mav_param_send_encoding(mavlink_channel_t chan, const AP_Param *vp, enum ap_var_type t, float &value, int32_t &int_value);
 
     AP_Param *                  _queued_parameter;      ///< next parameter to
                                                         // be sent in queue
@@ -996,9 +1004,11 @@ private:
     };
 
     struct pending_param_reply {
-        mavlink_channel_t chan;        
+        mavlink_channel_t chan;
         float value;
         enum ap_var_type p_type;
+        MAV_PARAM_TYPE mav_type;
+        int32_t int_value;
         int16_t param_index;
         uint16_t count;
         char param_name[AP_MAX_NAME_SIZE+1];
@@ -1221,7 +1231,8 @@ public:
 
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
-                              float param_value);
+                              float param_value,
+                              const AP_Param *vp=nullptr);
 
     // an array of objects used to handle each of the different
     // protocol types we support.  This is indexed by the enumeration
@@ -1249,6 +1260,7 @@ public:
 
     enum class Option {
       GCS_SYSID_ENFORCE = (1U << 0),
+      PARAM_NO_EXTENDED = (1U << 1),
     };
     bool option_is_enabled(Option option) const {
         return (mav_options & (uint16_t)option) != 0;

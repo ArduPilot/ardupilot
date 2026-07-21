@@ -7681,11 +7681,16 @@ bool GCS_MAVLINK::mavlink_coordinate_frame_to_location_alt_frame(const MAV_FRAME
 uint64_t GCS_MAVLINK::capabilities() const
 {
     uint64_t ret = MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT |
+        MAV_PROTOCOL_CAPABILITY_PARAM_ENCODE_C_CAST |
         MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION;
 
     const auto mavlink_protocol = uartstate->get_protocol();
     if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 || mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
         ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
+        if (!gcs().option_is_enabled(GCS::Option::PARAM_NO_EXTENDED)) {
+            // we accept and send extended encoded parameter values
+            ret |= MAV_PROTOCOL_CAPABILITY_PARAM_EXTENDED;
+        }
     }
 
 #if AP_ADVANCEDFAILSAFE_ENABLED
