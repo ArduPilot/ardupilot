@@ -876,6 +876,13 @@ private:
         climb,
         RTL,
     } submode;
+
+    // state for Q_OPTIONS RTL_ALT_GRADUAL_DESCENT: altitude above and distance to
+    // next_WP_loc at the moment the approach-phase descent ramp starts, used to
+    // ramp the target down to RTL_ALTITUDE instead of targeting it immediately
+    bool alt_ramp_start_set;
+    float alt_ramp_start_alt_m;
+    float alt_ramp_start_dist_m;
 };
 
 class ModeQAcro : public Mode
