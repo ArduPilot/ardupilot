@@ -409,10 +409,11 @@ void AP_OSD::osd_thread()
             update_current_screen();
         }
 #if AP_SCRIPTING_ENABLED
+        // hold the semaphore so scripting cannot draw to the OSD while the
+        // OSD thread is updating it, and vice versa
+        WITH_SEMAPHORE(_sem);
         if (!scripting_override) {
-#endif
             update_osd();
-#if AP_SCRIPTING_ENABLED
         } else {
             override_count++;
             if (override_count > 20) {
@@ -421,6 +422,8 @@ void AP_OSD::osd_thread()
                 override_count = 0;
             }
         }
+#else
+        update_osd();
 #endif // AP_SCRIPTING_ENABLED
     }
 }

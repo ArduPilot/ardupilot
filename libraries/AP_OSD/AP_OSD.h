@@ -659,6 +659,9 @@ public:
     }
 #if AP_SCRIPTING_ENABLED
     AP_OSD_Backend *scripting_get_backend() {
+        // set the override under the semaphore so the OSD thread sees a
+        // consistent value; the scripting binding takes it again for the call
+        WITH_SEMAPHORE(_sem);
         scripting_override = true;
         override_count = 0;
         return _backends[0];
