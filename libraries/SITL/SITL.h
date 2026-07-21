@@ -293,6 +293,8 @@ public:
         AP_Float wcof_yn;
         AP_Float wcof_zp;
         AP_Float wcof_zn;
+
+        AP_Float ground_effect_alt_err; // rotor downwash baro altitude error in metres (0 disables)
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
