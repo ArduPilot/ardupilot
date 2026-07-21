@@ -70,9 +70,9 @@ AP_Param *AP_Param::_singleton;
 #endif
 
 #if HAL_GCS_ENABLED
-#define GCS_SEND_PARAM(name, type, v) gcs().send_parameter_value(name, type, v)
+#define GCS_SEND_PARAM(name, type, v, vp) gcs().send_parameter_value(name, type, v, vp)
 #else
-#define GCS_SEND_PARAM(name, type, v)
+#define GCS_SEND_PARAM(name, type, v, vp)
 #endif
 
 // Note about AP_Vector3f handling.
@@ -1228,7 +1228,7 @@ void AP_Param::save_sync(bool force_save, bool send_to_gcs)
         }
         if (is_equal(v1,v2) && !force_save) {
             if (send_to_gcs) {
-                GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2);
+                GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2, this);
             }
             return;
         }
@@ -1238,7 +1238,7 @@ void AP_Param::save_sync(bool force_save, bool send_to_gcs)
             // for other than 32 bit integers, we accept values within
             // 0.01 percent of the current value as being the same
             if (send_to_gcs) {
-                GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2);
+                GCS_SEND_PARAM(name, (enum ap_var_type)info->type, v2, this);
             }
             return;
         }
@@ -2709,7 +2709,7 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     }
     if (var_type != AP_PARAM_VECTOR3F) {
         // nice and simple for scalar types
-        GCS_SEND_PARAM(name, var_type, cast_to_float(var_type));
+        GCS_SEND_PARAM(name, var_type, cast_to_float(var_type), this);
         return;
     }
 
@@ -2725,11 +2725,11 @@ void AP_Param::send_parameter(const char *name, enum ap_var_type var_type, uint8
     char &name_axis = name2[strlen(name)-1];
     
     name_axis = 'X';
-    GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.x);
+    GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.x, nullptr);
     name_axis = 'Y';
-    GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.y);
+    GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.y, nullptr);
     name_axis = 'Z';
-    GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.z);
+    GCS_SEND_PARAM(name2, AP_PARAM_FLOAT, v.z, nullptr);
 #endif // HAL_GCS_ENABLED
 }
 
