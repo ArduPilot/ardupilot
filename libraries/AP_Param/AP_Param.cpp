@@ -2327,7 +2327,7 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
     /*
       work out how many parameter default structures to allocate
      */
-    while (AP::FS().fgets(line, sizeof(line)-1, file_apfs)) {
+    while (AP::FS().fgets(line, sizeof(line), file_apfs)) {
         char *pname;
         float value;
         bool read_only;
@@ -2356,7 +2356,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
 
     bool done_all = true;
     char line[100];
-    while (AP::FS().fgets(line, sizeof(line)-1, file_apfs)) {
+    while (AP::FS().fgets(line, sizeof(line), file_apfs)) {
         char *pname;
         float value;
         bool read_only;
