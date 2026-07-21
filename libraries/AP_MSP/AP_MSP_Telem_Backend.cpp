@@ -529,7 +529,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
         return msp_process_in_vtx_config(src, dst);
     case MSP_SET_VTXTABLE_POWERLEVEL:
         return msp_process_in_vtxtable_powerlevel(src, dst);
-#endif
+#endif  // AP_MSP_VIDEOTX_ENABLED
     default:
         // MSP always requires an ACK even for unsupported messages
         return MSP_RESULT_ACK;
@@ -1165,12 +1165,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 // set the configured pitmode option without disturbing the other option bits
 void AP_MSP_Telem_Backend::msp_vtx_set_pitmode(bool pitmode)
 {
-    AP_VideoTX& vtx = AP::vtx();
-    if (pitmode) {
-        vtx.set_configured_options(vtx.get_configured_options() | uint16_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
-    } else {
-        vtx.set_configured_options(vtx.get_configured_options() & ~uint16_t(AP_VideoTX::VideoOptions::VTX_PITMODE));
-    }
+    AP::vtx().set_option_enabled(AP_VideoTX::VideoOptions::VTX_PITMODE, pitmode);
 }
 
 // fallback power plan used until the connected VTX declares its own table via
