@@ -66,6 +66,16 @@ void AP_Baro_SITL::_timer()
         return;
     }
 
+    // ground effect: downwash raises static pressure so the baro under-reads altitude,
+    // decaying to zero at 2m AGL; only applied while the motors are running
+    const float geff = _sitl->baro[_instance].ground_effect_alt_err;
+    if (is_positive(geff) && is_positive(_sitl->throttle)) {
+        const float h_agl_m = MAX(_sitl->state.height_agl, 0.0f);
+        const float decay_scale_m = 2.0f;
+        const float scale = MAX(0.0f, 1.0f - h_agl_m / decay_scale_m);
+        sim_alt -= geff * scale;
+    }
+
     const auto drift_delta_t_ms = now - last_drift_delta_t_ms;
     last_drift_delta_t_ms = now;
     total_alt_drift += _sitl->baro[_instance].drift * drift_delta_t_ms * 0.001f;
