@@ -44,7 +44,7 @@ void MSP::sbuf_write_data(sbuf_t *dst, const void *data, int len)
 
 uint8_t MSP::sbuf_read_u8(sbuf_t *src)
 {
-    if (sbuf_bytes_remaining(src) < 1) {
+    if (!sbuf_check_bounds(src, 1)) {
         return 0;
     }
     return *src->ptr++;
@@ -52,7 +52,7 @@ uint8_t MSP::sbuf_read_u8(sbuf_t *src)
 
 uint16_t MSP::sbuf_read_u16(sbuf_t *src)
 {
-    if (sbuf_bytes_remaining(src) < 2) {
+    if (!sbuf_check_bounds(src, 2)) {
         return 0;
     }
     uint16_t val = le16toh_ptr(src->ptr);

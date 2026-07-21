@@ -23,13 +23,19 @@
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_OSD/AP_OSD.h>
+#if AP_MSP_VIDEOTX_ENABLED
 #include <AP_VideoTX/AP_VideoTX.h>
+#endif
 
 #include "msp.h"
 
 #include <time.h>
 
+#if AP_MSP_VIDEOTX_ENABLED
 #define MSP_TIME_SLOT_MAX 13
+#else
+#define MSP_TIME_SLOT_MAX 12
+#endif
 #define CELLFULL 4.35
 #define MSP_TXT_BUFFER_SIZE     15U // 11 + 3 utf8 chars + terminator
 #define MSP_TXT_VISIBLE_CHARS   11U
@@ -174,7 +180,7 @@ protected:
         bool pitmode;
         bool valid;
     } _vtx_pushed;
-#endif
+#endif  // AP_MSP_VIDEOTX_ENABLED
 
     // passthrough WFQ scheduler
     bool is_packet_ready(uint8_t idx, bool queue_empty) override;
@@ -250,7 +256,7 @@ protected:
     // true when a VTX config push is due this scheduler tick (push on change,
     // then repeat MSP_VTX_CONFIG_PUSH_COUNT times)
     bool vtx_should_push_config();
-#endif
+#endif  // AP_MSP_VIDEOTX_ENABLED
 
 private:
 #if AP_MSP_VIDEOTX_ENABLED
@@ -261,7 +267,7 @@ private:
     void msp_vtx_set_power_index(uint8_t index);
     uint8_t msp_vtx_get_power_index() const;
     void msp_vtx_set_pitmode(bool pitmode);
-#endif
+#endif  // AP_MSP_VIDEOTX_ENABLED
 };
 
 #endif  //HAL_MSP_ENABLED
