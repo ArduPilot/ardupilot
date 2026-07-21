@@ -166,6 +166,11 @@ public:
     uint16_t get_configured_options() const { return _options; }
     uint16_t get_options() const { return _current_options; }
     bool has_option(VideoOptions option) const { return _options.get() & uint16_t(option); }
+    // set or clear a single configured option bit, leaving the others untouched
+    void set_option_enabled(VideoOptions option, bool enabled) {
+        set_configured_options(enabled ? (get_configured_options() | uint16_t(option))
+                                       : (get_configured_options() & ~uint16_t(option)));
+    }
     bool get_configured_pitmode() const { return _options.get() & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE); }
     bool get_pitmode() const { return _current_options & uint8_t(AP_VideoTX::VideoOptions::VTX_PITMODE); }
     bool update_options() const;
