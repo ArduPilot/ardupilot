@@ -38,9 +38,10 @@ ArduPilot `AP_DDS` client library.
 
 ## Prerequisites
 
-The packages depend on:
+The packages depend on either ROS 2 Humble or ROS2 Jazzy:
 
 - [ROS 2 Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html)
+- [ROS 2 Jazzy](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debians.html)
 
 ## Install Ubuntu
 
@@ -50,17 +51,29 @@ The packages depend on:
 mkdir -p ~/ros2_ws/src && cd ~/ros2_ws/src
 ```
 
-The ROS 2 tutorials contain more details regarding [ROS 2 workspaces](https://docs.ros.org/en/humble/Tutorials/Workspace/Creating-A-Workspace.html).
+The ROS 2 tutorials contain more details regarding [ROS 2 workspaces](https://docs.ros.org/en/jazzy/Tutorials/Workspace/Creating-A-Workspace.html).
 
 ### 2. Get the `ros2.repos` file
 
+### ROS 2 Humble repos
+
 ```bash
 cd ~/ros2_ws/src
-wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.repos
-vcs import --recursive < ros2.repos
+wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.humble.repos
+vcs import --recursive < ros2.humble.repos
+```
+
+### ROS 2 Jazzy repos
+
+```bash
+cd ~/ros2_ws/src
+wget https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.jazzy.repos
+vcs import --recursive < ros2.jazzy.repos
 ```
 
 ### 3. Update dependencies
+
+### ROS 2 Humble dependencies
 
 ```bash
 cd ~/ros2_ws
@@ -70,18 +83,23 @@ rosdep update
 rosdep install --rosdistro ${ROS_DISTRO} --from-paths src
 ```
 
-### 4. Build
-
-Check that the [ROS environment](https://docs.ros.org/en/humble/Tutorials/Beginner-CLI-Tools/Configuring-ROS2-Environment.html#check-environment-variables) is configured correctly:
-
-```bash
-ROS_VERSION=2
-ROS_PYTHON_VERSION=3
-ROS_DISTRO=humble
-```
+### ROS 2 Jazzy dependencies
 
 ```bash
 cd ~/ros2_ws
+source /opt/ros/jazzy/setup.bash
+sudo apt update
+rosdep update
+rosdep install --rosdistro ${ROS_DISTRO} --from-paths src
+```
+
+### 4. Build
+
+Check that the [ROS environment](https://docs.ros.org/en/jazzy/Tutorials/Beginner-CLI-Tools/Configuring-ROS2-Environment.html#check-environment-variables) is configured correctly:
+
+```bash
+cd ~/ros2_ws
+source ./install/setup.bash
 colcon build --cmake-args -DBUILD_TESTING=ON
 ```
 
