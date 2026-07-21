@@ -570,14 +570,6 @@ private:
     int16_t hover_roll_trim_scalar_slew;
 #endif
 
-    // ground effect detector
-    struct {
-        bool takeoff_expected;
-        bool touchdown_expected;
-        uint32_t takeoff_time_ms;
-        float takeoff_alt_m;
-    } gndeffect_state;
-
     bool standby_active;
 
     static const AP_Scheduler::Task scheduler_tasks[];
@@ -765,7 +757,9 @@ private:
 #endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 
     // baro_ground_effect.cpp
+#if AP_GROUNDEFFECT_ENABLED
     void update_ground_effect_detector(void);
+#endif
     void update_ekf_terrain_height_stable();
 
     // commands.cpp

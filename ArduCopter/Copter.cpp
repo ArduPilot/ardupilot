@@ -609,7 +609,9 @@ void Copter::throttle_loop()
 #endif
 
     // compensate for ground effect (if enabled)
+#if AP_GROUNDEFFECT_ENABLED
     update_ground_effect_detector();
+#endif
     update_ekf_terrain_height_stable();
 }
 
