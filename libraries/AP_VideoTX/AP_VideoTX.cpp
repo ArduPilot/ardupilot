@@ -277,11 +277,11 @@ void AP_VideoTX::update_all_power_dbm(uint8_t nlevels, const uint8_t power[])
     }
 }
 
-// mark the level matching the given mW as supported, stashing a non-standard
+// mark the level matching the given mW as active, stashing a non-standard
 // value in the custom slot; does not change the currently selected power
 void AP_VideoTX::update_power_mw(uint16_t power_mw, PowerActive active)
 {
-    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_power_levels); i++) {
         if (power_mw == _power_levels[i].mw) {
             _power_levels[i].active = active;
             return;
@@ -291,7 +291,7 @@ void AP_VideoTX::update_power_mw(uint16_t power_mw, PowerActive active)
         return;
     }
     // non-standard value: use the custom slot
-    PowerLevel &slot = _power_levels[VTX_MAX_POWER_LEVELS - 1];
+    PowerLevel &slot = _power_levels[ARRAY_SIZE(_power_levels) - 1];
     slot.mw = power_mw;
     slot.dbm = uint8_t(roundf(10.0f * log10f(float(power_mw))));
     slot.level = 255;
@@ -299,11 +299,11 @@ void AP_VideoTX::update_power_mw(uint16_t power_mw, PowerActive active)
     slot.active = active;
 }
 
-// number of supported (active) power levels
+// number of active power levels
 uint8_t AP_VideoTX::get_num_power_levels() const
 {
     uint8_t count = 0;
-    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_power_levels); i++) {
         if (_power_levels[i].active == PowerActive::Active) {
             count++;
         }
@@ -311,11 +311,11 @@ uint8_t AP_VideoTX::get_num_power_levels() const
     return count;
 }
 
-// mW for a one based index into the supported levels (ascending), 0 if unknown
+// mW for a one based index into the active levels (ascending), 0 if unknown
 uint16_t AP_VideoTX::get_power_mw_for_index(uint8_t index) const
 {
     uint8_t count = 0;
-    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_power_levels); i++) {
         if (_power_levels[i].active == PowerActive::Active && ++count == index) {
             return _power_levels[i].mw;
         }
@@ -323,11 +323,11 @@ uint16_t AP_VideoTX::get_power_mw_for_index(uint8_t index) const
     return 0;
 }
 
-// one based index into the supported levels for a mW value, 0 if not matched
+// one based index into the active levels for a mW value, 0 if not matched
 uint8_t AP_VideoTX::get_power_index_for_mw(uint16_t power_mw) const
 {
     uint8_t count = 0;
-    for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
+    for (uint8_t i = 0; i < ARRAY_SIZE(_power_levels); i++) {
         if (_power_levels[i].active == PowerActive::Active) {
             count++;
             if (_power_levels[i].mw == power_mw) {
