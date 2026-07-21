@@ -169,8 +169,7 @@ jobs:
       - name: Pull in repos with vcs
         run: |
           cd src
-          wget --progress=dot:giga https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.repos
-          vcs import --recursive --debug --shallow --skip-existing < ros2.repos
+          vcs import --recursive --debug --shallow --skip-existing < ./ardupilot/Tools/ros2/ros2.humble.repos
       - name: Install rosdep dependencies
         shell: 'bash'
         run: |
