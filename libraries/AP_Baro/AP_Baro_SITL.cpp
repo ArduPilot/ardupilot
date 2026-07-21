@@ -66,6 +66,18 @@ void AP_Baro_SITL::_timer()
         return;
     }
 
+    // simulate ground effect: rotor downwash near the ground raises static
+    // pressure at the baro port, making it under-read altitude. The bias
+    // decays linearly to zero at 2m AGL and is gated on motor throttle, so
+    // the baro reads truth with the motors idle.
+    const float geff = _sitl->baro[_instance].ground_effect_alt_err;
+    if (is_positive(geff) && is_positive(_sitl->throttle)) {
+        const float h_agl_m = MAX(_sitl->state.height_agl, 0.0f);
+        const float decay_scale_m = 2.0f;
+        const float scale = MAX(0.0f, 1.0f - h_agl_m / decay_scale_m);
+        sim_alt -= geff * scale;
+    }
+
     const auto drift_delta_t_ms = now - last_drift_delta_t_ms;
     last_drift_delta_t_ms = now;
     total_alt_drift += _sitl->baro[_instance].drift * drift_delta_t_ms * 0.001f;
