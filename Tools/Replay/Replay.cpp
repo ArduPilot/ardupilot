@@ -387,7 +387,7 @@ void Replay::load_param_file(const char *pfilename)
     }
     char line[100];
 
-    while (fs.fgets(line, sizeof(line)-1, fd)) {
+    while (fs.fgets(line, sizeof(line), fd)) {
         char *pname;
         float value;
         if (!parse_param_line(line, &pname, value)) {
