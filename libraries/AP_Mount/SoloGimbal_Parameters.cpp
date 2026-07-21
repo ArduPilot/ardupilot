@@ -123,7 +123,7 @@ void SoloGimbal_Parameters::set_param(gmb_param_t param, float value) {
     char tmp_name[MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN+1] {};
     strncpy(tmp_name, get_param_name(param), MAVLINK_MSG_PARAM_SET_FIELD_PARAM_ID_LEN);
 
-    mavlink_msg_param_set_send(_chan, 0, MAV_COMP_ID_GIMBAL, tmp_name, _params[param].value, MAV_PARAM_TYPE_REAL32);
+    mavlink_msg_param_set_send(_chan, 0, MAV_COMP_ID_GIMBAL, tmp_name, _params[param].value, MAV_PARAM_TYPE_REAL32, MAV_PARAM_EXTENDED_TYPE_NONE, nullptr);
 
     _last_set_ms = AP_HAL::millis();
 }
@@ -152,7 +152,7 @@ void SoloGimbal_Parameters::update()
         }
         
         if ((_params[i].state == GMB_PARAMSTATE_ATTEMPTING_TO_SET) && (tnow_ms - _last_set_ms > _retry_period)) {
-            mavlink_msg_param_set_send(_chan, 0, MAV_COMP_ID_GIMBAL, get_param_name((gmb_param_t)i), _params[i].value, MAV_PARAM_TYPE_REAL32);
+            mavlink_msg_param_set_send(_chan, 0, MAV_COMP_ID_GIMBAL, get_param_name((gmb_param_t)i), _params[i].value, MAV_PARAM_TYPE_REAL32, MAV_PARAM_EXTENDED_TYPE_NONE, nullptr);
             _last_set_ms = AP_HAL::millis();
             
             if (!_params[i].seen) {
