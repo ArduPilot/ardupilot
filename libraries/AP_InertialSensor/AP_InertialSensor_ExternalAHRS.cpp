@@ -24,9 +24,7 @@ void AP_InertialSensor_ExternalAHRS::handle_external(const AP_ExternalAHRS::ins_
     _rotate_and_correct_accel(accel_instance, accel);
     _notify_new_accel_raw_sample(accel_instance, accel, AP_HAL::micros64());
 
-    // don't feed the external IMU temperature to the heater control loop:
-    // the heater is physically attached to a local IMU, not this one
-    _publish_temperature(accel_instance, pkt.temperature, false);
+    _publish_temperature(accel_instance, pkt.temperature);
 
     _notify_new_gyro_sensor_rate_sample(gyro_instance, gyro);
     _rotate_and_correct_gyro(gyro_instance, gyro);
