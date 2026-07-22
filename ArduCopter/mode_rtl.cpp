@@ -252,14 +252,14 @@ bool ModeRTL::return_start()
     return destination_set;
 }
 
-// rtl_climb_return_run - implements the initial climb, return home and descent portions of RTL which all rely on the wp controller
-//      called by rtl_run at 100hz or more
-void ModeRTL::climb_return_run()
+// run_wp_controllers - run the wp_nav horizontal, vertical and attitude controllers shared by
+//   the climb, return and loiter stages.  Returns false when disarmed/landed (caller returns).
+bool ModeRTL::run_wp_controllers()
 {
     // if not armed set throttle to zero and exit immediately
     if (is_disarmed_or_landed()) {
         make_safe_ground_handling();
-        return;
+        return false;
     }
 
     // set motors to full range
@@ -274,6 +274,17 @@ void ModeRTL::climb_return_run()
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+
+    return true;
+}
+
+// rtl_climb_return_run - runs the initial climb and return home portions of RTL, both of which rely on the wp controller
+//      called by rtl_run at 100hz or more
+void ModeRTL::climb_return_run()
+{
+    if (!run_wp_controllers()) {
+        return;
+    }
 
     // check if we've completed this stage of RTL
     _state_complete = wp_nav->reached_wp_destination();
@@ -294,24 +305,9 @@ void ModeRTL::loiterathome_start()
 //      called by rtl_run at 100hz or more
 void ModeRTL::loiterathome_run()
 {
-    // if not armed set throttle to zero and exit immediately
-    if (is_disarmed_or_landed()) {
-        make_safe_ground_handling();
+    if (!run_wp_controllers()) {
         return;
     }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-    // run waypoint controller
-    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
-
-    // WP_Nav has set the vertical position control targets
-    // run the vertical position controller and set output throttle
-    pos_control->D_update_controller();
-
-    // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if we've completed this stage of RTL
     const uint32_t loiter_elapsed_ms = millis() - _stage_start_ms;

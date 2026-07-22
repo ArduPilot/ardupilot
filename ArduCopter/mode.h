@@ -1592,6 +1592,7 @@ private:
 
     void climb_start();
     bool return_start();
+    bool run_wp_controllers();
     void climb_return_run();
     void loiterathome_start();
     void loiterathome_run();
