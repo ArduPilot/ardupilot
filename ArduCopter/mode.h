@@ -1586,8 +1586,13 @@ protected:
 
 private:
 
+    // state machine: advance_state() owns the transition graph, set_submode() is
+    // the only normal writer of _state and runs each stage's entry init
+    void advance_state();
+    void set_submode(SubMode submode);
+
     void climb_start();
-    void return_start();
+    bool return_start();
     void climb_return_run();
     void loiterathome_start();
     void loiterathome_run();
@@ -1618,8 +1623,8 @@ private:
         TERRAINDATABASE = 2
     };
 
-    // Loiter timer - Records how long we have been in loiter
-    uint32_t _loiter_start_time;
+    // time the current stage was entered (set by set_submode); used by the loiter timer
+    uint32_t _stage_start_ms;
 
     bool terrain_following_allowed;
 
