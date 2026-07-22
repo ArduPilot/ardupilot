@@ -552,6 +552,13 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
             // pad keeps driving through the reply window and squashes the ESC's answer
             // (HW-diagnosed 2026-07-16: TX frame still on the pad with OE "released").
             ::GPIO.func_out_sel_cfg[ch.gpio_num].oen_sel = 1;
+            // Enable the pad's internal pull-up so the line idles HIGH when the OE is
+            // released for the reply turnaround (bidir DShot is open-drain in that
+            // window). Many ESCs pull the line up themselves, but that is not
+            // guaranteed; the internal pull-up makes the release edge-free either way.
+            // Only touches the IO_MUX pull bits, so it doesn't disturb the RMT pad
+            // routing. An external ~2k is stiffer for a real board.
+            gpio_set_pull_mode((gpio_num_t)ch.gpio_num, GPIO_PULLUP_ONLY);
             bdshot_pad_oe(ch.gpio_num, true); // driven by default; released per frame
         }
 
