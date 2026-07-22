@@ -1,9 +1,17 @@
 #!/bin/bash
 
+# Detect the platform for platform-specific APM setup
+PLATFORM=$(/usr/bin/voxl-platform 2>/dev/null || true)
+
 # Create directory for APM use
 cd /data
 mkdir -p APM
-chown system:system APM
+
+if [ "$PLATFORM" = "M0197" ]; then
+    chown fastrpc:fastrpc APM
+else
+    chown system:system APM
+fi
 
 # Make sure the run scripts are executable
 cd /usr/bin
