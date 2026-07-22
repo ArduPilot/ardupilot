@@ -1539,10 +1539,9 @@ public:
         FINAL_DESCENT,
         LAND
     };
-    SubMode state() { return _state; }
-
-    // this should probably not be exposed
-    bool state_complete() const { return _state_complete; }
+    // true once RTL has completed its final stage (descent-hold or land) and the
+    // vehicle has spooled down to ground idle; used by ModeAuto::verify_RTL
+    bool is_landing_complete() const;
 
     virtual bool is_landing() const override;
 

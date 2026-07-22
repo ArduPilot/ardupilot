@@ -433,6 +433,15 @@ bool ModeRTL::is_landing() const
     return _state == SubMode::LAND;
 }
 
+// true once RTL has completed its final stage (descent-hold or land) and the vehicle
+// has spooled down to ground idle.  Used by ModeAuto::verify_RTL.
+bool ModeRTL::is_landing_complete() const
+{
+    return _state_complete &&
+           (_state == SubMode::FINAL_DESCENT || _state == SubMode::LAND) &&
+           (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE);
+}
+
 // land_run - run the landing controllers to put the aircraft on the ground
 // called by rtl_run at 100hz or more
 void ModeRTL::land_run(bool disarm_on_land)
