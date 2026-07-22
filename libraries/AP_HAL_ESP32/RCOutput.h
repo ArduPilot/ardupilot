@@ -142,9 +142,11 @@ private:
         // bidirectional DShot: precomputed at set_group_mode_dshot() so the rcout
         // task doesn't recompute per frame. telem_bit_ticks = RMT ticks per reply
         // bit (ESC replies at 5/4 the DShot rate); frame_us = time to let a 16-bit
-        // frame finish before the turnaround.
+        // frame finish before the turnaround; telem_window_us = how long to hold the
+        // pad released after the frame so the ESC's reply completes.
         uint32_t telem_bit_ticks;
         uint16_t frame_us;
+        uint16_t telem_window_us;
     };
 
     struct pwm_chan {
@@ -203,9 +205,13 @@ private:
     static uint16_t create_dshot_packet(uint16_t value, bool telem_request, bool bidir);
     // encode + asynchronously transmit one DShot frame on a channel
     void dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request);
-    // bidirectional DShot: after a frame, tri-state the shared pad and capture the
-    // ESC's eRPM reply on the channel's RX channel, then decode it.
-    void bdshot_capture_reply(pwm_chan &ch, uint8_t chan);
+    // bidirectional DShot: after a frame, tri-state the shared pad through the ESC's
+    // reply window, then re-drive it. The reply itself is captured by the
+    // continuously-armed RX channel and decoded by bdshot_rx_task.
+    void bdshot_turnaround(pwm_chan &ch);
+    // consumer task: drains RX-done captures, splits command/reply, decodes, re-arms
+    void bdshot_rx_task();
+    static void bdshot_rx_task_entry(void *arg);
     // decode a captured GCR reply (RMT symbols, passed as void* to keep the RMT type
     // out of the header) into the 12-bit encoded eRPM word; 0xffff = invalid.
     static uint32_t bdshot_decode_erpm(const void *symbols, uint32_t nsym, uint32_t bit_ticks);
@@ -244,12 +250,20 @@ private:
 
     bool _initialized;
     bool _dshot_task_started = false; // periodic DShot transmit task running?
+    bool _bdshot_rx_task_started = false; // bidir RX consumer task running?
 
     // Serialises RMT channel lifecycle (alloc/free in set_group_mode_dshot) against
     // the transmit task (dshot_task), which reads the per-channel RMT handles. Without
     // it, a re-entrant set_output_mode() at boot can rmt_disable()/rmt_del_channel() a
     // channel while the task is mid-transmit on it -> use-after-free crash.
     HAL_Semaphore _dshot_sem;
+
+    // Serialises the bidir RX channel lifecycle against the RX consumer task
+    // (bdshot_rx_task), which re-arms rmt_receive() on the per-channel RX handles.
+    // Deliberately separate from _dshot_sem: the transmit task holds that one across
+    // whole frames + turnarounds, and the consumer must not block on it to re-arm.
+    // Lock order: _dshot_sem may be held when taking this; never the reverse.
+    HAL_Semaphore _bdshot_rx_sem;
 
     // bidirectional DShot decoded telemetry (12 = max channels on current chips)
     struct {

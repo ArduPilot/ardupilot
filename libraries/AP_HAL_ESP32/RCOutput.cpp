@@ -37,6 +37,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"     // bidir DShot: ISR -> consumer capture handoff
 
 #include <stdio.h>
 
@@ -109,31 +110,73 @@ static_assert(MAX_CHANNELS < 32, "overrunning bitfields");
 #define NEEDED_GROUPS ((MAX_CHANNELS+SOC_MCPWM_COMPARATORS_PER_OPERATOR-1)/SOC_MCPWM_COMPARATORS_PER_OPERATOR)
 static_assert(NEEDED_GROUPS <= MAX_GROUPS, "not enough hardware PWM groups");
 
-// Bidirectional DShot: per-channel capture state for the ESC eRPM reply. The rcout
-// task processes channels sequentially, so a single RX capture is in flight at a
-// time, but each channel keeps its own buffer + count so the decode reads a stable one.
+// Bidirectional DShot: per-channel capture state for the ESC eRPM reply. The RX
+// channel on each bidir pad is armed ONCE and re-armed by the consumer task after
+// every capture (see bdshot_rx_task) so it is always waiting — exactly like the C3
+// reference sniffer. Each channel keeps its own buffer + count; the RX is unarmed
+// between a completion and the task's re-arm, so the buffer is stable to decode.
 // A bidir GCR reply is ~21 transitions; 48 leaves margin (and matches the block size).
 #define BDSHOT_RX_SYMBOLS 48
 #define BDSHOT_INVALID_ERPM 0xffffU
 #define BDSHOT_ZERO_ERPM    0x0fffU   // ESC's special "motor stopped" code -> 0 rpm (ChibiOS ZERO_ERPM)
+// With continuous RX on the shared pad each capture contains the outgoing command
+// frame (fed back via io_loop_back), the ~30 us turnaround gap, and the ESC's GCR
+// reply as ONE burst: the idle threshold (60 us) exceeds the gap, so the burst only
+// closes in the long (~900 us) idle before the next frame. That gives the consumer
+// task ~800 us to decode + re-arm instead of a per-frame arming window squeezed into
+// the turnaround — which raced the reply's first edges and fragmented ~18% of
+// captures (C3-sniffer-verified root cause, 2026-07-22).
+// The command->reply split point is the gap: DShot pulses once per bit, so HIGH runs
+// inside the command frame are < 2 bit periods (< 7 us at DShot300), while the
+// turnaround gap is ~30 us of pulled-up HIGH.
+#define BDSHOT_GAP_MIN_TICKS 800        // >= 10 us (80 MHz ticks) = the cmd->reply gap
+// A burst with NO gap and few symbols is a reply-only capture (command missed, e.g.
+// the RX was first armed mid-frame): a 21-bit GCR reply is run-length compressed to
+// ~7-10 RMT symbols, while the 16-bit pulse-per-bit command is ~16-17. No-gap bursts
+// above this count are command-only (the ESC never replied -> timeout, not decode
+// error); at or below it they are decoded as a reply candidate.
+#define BDSHOT_REPLY_MAX_SYMBOLS 13
+// burst framing: max in-burst idle 60 us (> the 30 us cmd->reply gap, << the ~900 us
+// frame spacing); 500 ns glitch filter (C3-proven; the shortest reply run is ~2.7 us)
+#define BDSHOT_RX_IDLE_MAX_NS 60000
+#define BDSHOT_RX_GLITCH_MIN_NS 500
 static inline void bdshot_pad_oe(uint8_t gpio, bool drive); // defined below
 
 static rmt_symbol_word_t bdshot_rx_buf[MAX_CHANNELS][BDSHOT_RX_SYMBOLS];
 static volatile uint16_t bdshot_rx_nsym[MAX_CHANNELS];
-static volatile bool     bdshot_rx_done[MAX_CHANNELS];
+// ISR -> consumer handoff: the RX-done ISR only queues the channel index (IRAM-safe,
+// CONFIG_RMT_ISR_IRAM_SAFE=y); the consumer task decodes + re-arms off-ISR.
+static QueueHandle_t bdshot_rx_queue;
 
-// RX-done ISR callback: user_data is the channel index. received_symbols points into
-// bdshot_rx_buf[chan] (we passed it to rmt_receive), so we only record the count + flag.
+// RX-done ISR callback (IRAM-safe: CONFIG_RMT_ISR_IRAM_SAFE=y). user is the channel index.
+// received_symbols points into bdshot_rx_buf[chan] (we passed it to rmt_receive), so the
+// driver has already filled the buffer; we only record the count and queue the channel to
+// the consumer task. We deliberately do NOT decode or re-arm here: rmt_receive() and the
+// GCR table are not guaranteed IRAM-resident, so touching them with the cache disabled
+// (as this ISR may run) would fault. The consumer (bdshot_rx_task) does both off-ISR.
 static bool IRAM_ATTR bdshot_on_rx_done(rmt_channel_handle_t ch,
                                         const rmt_rx_done_event_data_t *ed, void *user)
 {
     const uint32_t c = (uint32_t)(uintptr_t)user;
+    BaseType_t hp = pdFALSE;
     if (c < MAX_CHANNELS) {
         bdshot_rx_nsym[c] = ed->num_symbols;
-        __sync_synchronize(); // publish the count (and the driver-filled buffer) before the flag
-        bdshot_rx_done[c] = true;
+        __sync_synchronize(); // publish the count (and the driver-filled buffer) before the handoff
+        xQueueSendFromISR(bdshot_rx_queue, &c, &hp);
     }
-    return false; // no higher-priority task woken
+    return hp == pdTRUE; // yield if a higher-priority task (the consumer) was woken
+}
+
+// (re)arm a bidir RX channel into its per-channel buffer. Called at setup and by the
+// consumer task after every completed capture, so the RX is continuously armed.
+// ESP_ERR_INVALID_STATE (already armed, e.g. a stale queue entry after a group
+// re-setup re-armed it) is harmless and ignored by callers.
+static esp_err_t bdshot_arm_rx(rmt_channel_handle_t rx, uint8_t chan)
+{
+    rmt_receive_config_t rxcfg = {};
+    rxcfg.signal_range_min_ns = BDSHOT_RX_GLITCH_MIN_NS;
+    rxcfg.signal_range_max_ns = BDSHOT_RX_IDLE_MAX_NS;
+    return rmt_receive(rx, bdshot_rx_buf[chan], sizeof(bdshot_rx_buf[chan]), &rxcfg);
 }
 
 RCOutput::pwm_group RCOutput::pwm_group_list[NEEDED_GROUPS];
@@ -453,12 +496,11 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
     const uint32_t telem_rate = bitrate * 5 / 4;
     group.telem_bit_ticks = (resolution_hz + telem_rate / 2) / telem_rate;
     group.frame_us = (uint16_t)((16u * 1000000u) / bitrate + 5); // 16 bits + margin
-
-    // Hold _dshot_sem across the whole alloc/free loop: set_output_mode() is called
-    // more than once during boot (AP_Motors, then SRV/BLHeli setup), so the transmit
-    // task may already be running and reading these RMT handles. Freeing/reallocating
-    // a channel under it without the lock is a use-after-free (observed as a boot crash).
-    WITH_SEMAPHORE(_dshot_sem);
+    // how long the rcout task holds the pad released after a frame so the ESC's reply
+    // (starts ~30 us after the frame end, 21 GCR bits) completes before we re-drive.
+    // Generous tail margin: re-driving late is harmless (the line idles HIGH on both
+    // sides), re-driving early would clip the reply.
+    group.telem_window_us = (uint16_t)(30u + (21u * group.telem_bit_ticks) / (resolution_hz / 1000000u) + 50u);
 
     for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
         pwm_chan &ch = pwm_chan_list[chan];
@@ -477,13 +519,23 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
         // The TX channel is created after, with io_loop_back so its OUTPUT gpio_config
         // keeps the pad's input path alive for this RX channel.
         if (ch.bidir) {
+            // serialise the RX lifecycle against the RX consumer task, which re-arms
+            // this channel's rmt_receive from stale queue entries (see bdshot_rx_task)
+            WITH_SEMAPHORE(_bdshot_rx_sem);
+            // ISR -> consumer queue, created before the first RX channel can fire its
+            // callback. If the alloc fails, skip bidir on this channel entirely (the
+            // ISR sends to this queue unconditionally).
+            if (bdshot_rx_queue == nullptr) {
+                bdshot_rx_queue = xQueueCreate(16, sizeof(uint32_t));
+            }
             rmt_rx_channel_config_t rxcfg = {};
             rxcfg.gpio_num = (gpio_num_t)ch.gpio_num;
             rxcfg.clk_src = RMT_CLK_SRC_DEFAULT;
             rxcfg.resolution_hz = resolution_hz;
             rxcfg.mem_block_symbols = BDSHOT_RX_SYMBOLS;
             rmt_channel_handle_t rx = nullptr;
-            esp_err_t rxerr = rmt_new_rx_channel(&rxcfg, &rx);
+            esp_err_t rxerr = bdshot_rx_queue != nullptr ?
+                rmt_new_rx_channel(&rxcfg, &rx) : ESP_ERR_NO_MEM;
             if (rxerr == ESP_OK) {
                 rmt_rx_event_callbacks_t rxcbs = {};
                 rxcbs.on_recv_done = bdshot_on_rx_done;
@@ -496,6 +548,11 @@ void RCOutput::set_group_mode_dshot(pwm_group &group)
             }
             if (rxerr == ESP_OK) {
                 ch.rmt_rx_chan = rx; // stored as void* (see RCOutput.h)
+                // arm the continuous capture now; from here on the consumer task
+                // re-arms after every completed burst so the RX is always waiting
+                // (any junk captured during the rest of this setup decodes invalid
+                // and is discarded)
+                bdshot_arm_rx(rx, chan);
             } else {
                 // no RX channel: fall back to plain (non-inverted) DShot on this channel,
                 // else we'd send inverted-CRC frames the ESC rejects with no turnaround.
@@ -618,6 +675,11 @@ void RCOutput::dshot_free_chan(pwm_chan &ch)
         ch.rmt_chan = nullptr;
     }
     if (ch.rmt_rx_chan != nullptr) {
+        // serialise against the RX consumer task: it re-arms rmt_receive() on this
+        // handle (from the ISR queue) and must never race the disable/delete below.
+        // Lock order is safe: every caller of this function holds _dshot_sem, and the
+        // consumer only ever takes _bdshot_rx_sem.
+        WITH_SEMAPHORE(_bdshot_rx_sem);
         rmt_channel_handle_t r = (rmt_channel_handle_t)ch.rmt_rx_chan;
         rmt_disable(r);
         rmt_del_channel(r);
@@ -689,72 +751,120 @@ static inline void bdshot_pad_oe(uint8_t gpio, bool drive)
 
 /*
   bidirectional DShot turnaround: after the frame is transmitted, release the shared
-  pad (output-enable only) so the ESC can drive its eRPM reply, arm the RX channel to
-  capture it, then re-drive the pad for the next frame.
-  Raw symbols land in bdshot_rx_buf[chan]; bdshot_decode_erpm() turns them into eRPM.
+  pad (output-enable only) so the ESC can drive its eRPM reply, hold it released for
+  the reply window, then re-drive it for the next frame. The reply itself is captured
+  by the continuously-armed RX channel and decoded by bdshot_rx_task — this function
+  deliberately does NOT touch the RX channel, so the rcout task never busy-waits on a
+  reply while holding _dshot_sem.
   NOTE: we deliberately do NOT call rmt_tx_wait_all_done() here — it deadlocks
   ("flush timeout") once the pad is released. A timed wait for the frame duration is
   used instead (HW-proven 2026-07-03).
  */
-void RCOutput::bdshot_capture_reply(pwm_chan &ch, uint8_t chan)
+void RCOutput::bdshot_turnaround(pwm_chan &ch)
 {
-    rmt_channel_handle_t rx = (rmt_channel_handle_t)ch.rmt_rx_chan;
-
-    // let the frame finish on the wire (timed, not rmt_tx_wait_all_done — that
-    // deadlocks once the pad is released). frame_us is precomputed per mode.
+    // let the frame finish on the wire. frame_us is precomputed per mode.
     esp_rom_delay_us(ch.group->frame_us);
 
-    // RELEASE the pad (OE off); the pull-up idles it high and the ESC pulls low
+    // RELEASE the pad (OE off); the pull-up holds it HIGH (edge-free release) and
+    // the ESC pulls it LOW for its reply bits
     bdshot_pad_oe(ch.gpio_num, false);
 
-    rmt_receive_config_t rxcfg = {};
-    rxcfg.signal_range_min_ns = 50;      // glitch filter
-    rxcfg.signal_range_max_ns = 30000;   // reply is a short burst; a long idle ends it
+    // hold the pad released across the ESC's ~30 us turnaround + the 21-bit GCR
+    // reply (precomputed per mode, with tail margin)
+    esp_rom_delay_us(ch.group->telem_window_us);
 
-    bdshot_rx_done[chan] = false;
-    if (rmt_receive(rx, bdshot_rx_buf[chan], sizeof(bdshot_rx_buf[chan]), &rxcfg) == ESP_OK) {
-        // The ESC replies ~30 us after the frame. Bounded busy-poll (~200 us max):
-        // the RMT RX completion is delivered by ISR, but at this sub-tick timescale a
-        // FreeRTOS block (1 ms tick) is far too coarse, so we spin briefly instead.
-        for (int i = 0; i < 20 && !bdshot_rx_done[chan]; i++) {
-            esp_rom_delay_us(10);
+    // re-drive the pad (OE on) for the next frame's transmit. The line idles HIGH on
+    // both sides of this, so the continuously-armed RX sees no edge here.
+    bdshot_pad_oe(ch.gpio_num, true);
+}
+
+/*
+  bidirectional DShot RX consumer: drains completed captures queued by the RX-done
+  ISR, re-arms the channel's RX, splits each burst at the command->reply turnaround
+  gap and decodes the eRPM reply. Runs as its own task so (a) the RX is re-armed with
+  ~800 us of slack instead of inside the 30 us turnaround — the old per-frame arming
+  raced the reply's first edges and fragmented ~18% of captures (C3-verified root
+  cause, 2026-07-22) — and (b) the rcout task no longer busy-waits on replies while
+  holding _dshot_sem.
+ */
+void RCOutput::bdshot_rx_task()
+{
+    while (true) {
+        uint32_t chan;
+        if (xQueueReceive(bdshot_rx_queue, &chan, portMAX_DELAY) != pdTRUE ||
+            chan >= MAX_CHANNELS) {
+            continue;
         }
-        if (bdshot_rx_done[chan]) {
-            // the RMT ISR (which fills bdshot_rx_buf) may run on a different core than
-            // this pinned task; barrier so we see the completed symbol buffer + count,
-            // not a partial one, after observing the done flag.
-            __sync_synchronize();
-            const uint32_t nsym = bdshot_rx_nsym[chan];
-            const uint32_t erpm = bdshot_decode_erpm(bdshot_rx_buf[chan], nsym, ch.group->telem_bit_ticks);
-            if (chan < 12) {
-                if (erpm == BDSHOT_INVALID_ERPM) {
-                    _bdshot.erpm_errors[chan]++;
-                } else {
-                    _bdshot.erpm_clean_frames[chan]++;
-                    bdshot_store_erpm(erpm, chan);
-                }
-                // keep the error-rate window bounded (avoid uint16 overflow)
-                if (_bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan] >= 4000) {
-                    _bdshot.erpm_errors[chan] /= 2;
-                    _bdshot.erpm_clean_frames[chan] /= 2;
-                }
+        rmt_symbol_word_t burst[BDSHOT_RX_SYMBOLS];
+        uint32_t nsym, bit_ticks;
+        {
+            // only _bdshot_rx_sem (vs RX channel free/realloc), NOT _dshot_sem: the
+            // rcout task holds _dshot_sem across whole frames + turnarounds, and
+            // blocking on it here would delay the re-arm towards the next frame.
+            WITH_SEMAPHORE(_bdshot_rx_sem);
+            pwm_chan &ch = pwm_chan_list[chan];
+            rmt_channel_handle_t rx = (rmt_channel_handle_t)ch.rmt_rx_chan;
+            if (rx == nullptr || !ch.bidir || ch.group == nullptr) {
+                continue; // channel reconfigured since the ISR queued this capture
             }
-        } else {
-            // No reply in the window (disarmed ESC / none attached). The receive is
-            // still pending, and rmt_receive() can't be re-armed while pending, so
-            // reset the channel with disable/enable. This runs every frame on an idle
-            // ESC (~1 kHz) but is the only way to re-arm; it's cheap and only on the
-            // no-telemetry path.
-            rmt_disable(rx);
-            rmt_enable(rx);
-            if (chan < 12) {
+            // the RMT ISR (which published the count) may run on a different core;
+            // barrier so we see the completed symbol buffer + count, not a partial one
+            __sync_synchronize();
+            nsym = bdshot_rx_nsym[chan];
+            if (nsym > BDSHOT_RX_SYMBOLS) {
+                nsym = BDSHOT_RX_SYMBOLS;
+            }
+            // copy the capture out and re-arm immediately (into the freed buffer), so
+            // the RX is waiting again long before the next frame
+            memcpy(burst, bdshot_rx_buf[chan], nsym * sizeof(burst[0]));
+            bit_ticks = ch.group->telem_bit_ticks;
+            bdshot_arm_rx(rx, chan); // ESP_ERR_INVALID_STATE (already armed) is fine
+        }
+
+        // Split the burst at the command->reply turnaround gap. The line idles HIGH,
+        // so a capture starts on a falling edge and each symbol is a LOW run
+        // (duration0) then a HIGH run (duration1): the ~30 us gap is always a
+        // duration1. No gap found: either a reply-only capture (few symbols) or a
+        // command-only one — the ESC never replied (see BDSHOT_REPLY_MAX_SYMBOLS).
+        const rmt_symbol_word_t *reply = burst;
+        uint32_t reply_n = nsym;
+        bool gap_found = false;
+        for (uint32_t i = 0; i < nsym; i++) {
+            if (burst[i].duration1 >= BDSHOT_GAP_MIN_TICKS) {
+                reply = &burst[i + 1];
+                reply_n = nsym - i - 1;
+                gap_found = true;
+                break;
+            }
+        }
+
+        uint32_t erpm = BDSHOT_INVALID_ERPM;
+        if (gap_found || nsym <= BDSHOT_REPLY_MAX_SYMBOLS) {
+            // reply_n == 0 (gap at the very end) decodes as invalid, counted below
+            erpm = bdshot_decode_erpm(reply, reply_n, bit_ticks);
+        }
+        // else: command-only burst — the ESC never replied (disarmed / no telemetry);
+        // erpm stays invalid and is counted as an erpm error below, like any timeout
+
+        if (chan < 12) {
+            if (erpm == BDSHOT_INVALID_ERPM) {
                 _bdshot.erpm_errors[chan]++;
+            } else {
+                _bdshot.erpm_clean_frames[chan]++;
+                bdshot_store_erpm(erpm, chan);
+            }
+            // keep the error-rate window bounded (avoid uint16 overflow)
+            if (_bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan] >= 4000) {
+                _bdshot.erpm_errors[chan] /= 2;
+                _bdshot.erpm_clean_frames[chan] /= 2;
             }
         }
     }
+}
 
-    // re-drive the pad (OE on) for the next frame's transmit
-    bdshot_pad_oe(ch.gpio_num, true);
+void RCOutput::bdshot_rx_task_entry(void *arg)
+{
+    static_cast<RCOutput *>(arg)->bdshot_rx_task();
 }
 
 /*
@@ -909,15 +1019,27 @@ uint16_t RCOutput::dshot_throttle_from_pwm(uint16_t period_us)
  */
 void RCOutput::start_dshot_task()
 {
+#if defined(CONFIG_FREERTOS_NUMBER_OF_CORES) && CONFIG_FREERTOS_NUMBER_OF_CORES > 1
+    const BaseType_t core = 1; // APP_CPU
+    // bidir RX consumer on the OTHER core: the rcout task busy-waits through each
+    // turnaround at prio 12, which would starve a same-core consumer of the prompt
+    // re-arm it exists to provide.
+    const BaseType_t rx_core = 0; // PRO_CPU
+#else
+    const BaseType_t core = tskNO_AFFINITY;
+    const BaseType_t rx_core = tskNO_AFFINITY;
+#endif
+    // bidir DShot RX consumer (decode + re-arm): started once the first bidir channel
+    // exists. Checked outside the _dshot_task_started guard because a later
+    // set_bidir_dshot_mask() re-runs group setup after the transmit task is running.
+    if (bdshot_rx_queue != nullptr && !_bdshot_rx_task_started) {
+        _bdshot_rx_task_started = true;
+        xTaskCreatePinnedToCore(bdshot_rx_task_entry, "bdshot_rx", 4096, this, 12, nullptr, rx_core);
+    }
     if (_dshot_task_started) {
         return;
     }
     _dshot_task_started = true;
-#if defined(CONFIG_FREERTOS_NUMBER_OF_CORES) && CONFIG_FREERTOS_NUMBER_OF_CORES > 1
-    const BaseType_t core = 1; // APP_CPU
-#else
-    const BaseType_t core = tskNO_AFFINITY;
-#endif
     xTaskCreatePinnedToCore(dshot_task_entry, "dshot", 4096, this, 12, nullptr, core);
 }
 
@@ -957,9 +1079,11 @@ void RCOutput::dshot_task()
                 } else {
                     dshot_send_chan(ch, dshot_throttle_from_pwm((uint16_t)ch.value), false);
                 }
-                // bidirectional DShot: turn the line around and capture the ESC reply
+                // bidirectional DShot: release the pad through the ESC's reply window.
+                // The reply is captured by the continuously-armed RX channel and
+                // decoded off this task (see bdshot_rx_task).
                 if (ch.bidir && ch.rmt_rx_chan != nullptr) {
-                    bdshot_capture_reply(ch, chan);
+                    bdshot_turnaround(ch);
                 }
             }
         }
