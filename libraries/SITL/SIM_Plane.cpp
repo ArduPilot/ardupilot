@@ -38,6 +38,13 @@ Plane::Plane(const char *frame_str) :
         coefficient = default_coefficients;
     }
 
+    // Chosen to approximately match a historical (simpler) battery model
+    constexpr float default_battery_resistance_ohm = 0.0145f;
+    battery.setup(sitl->batt_capacity_ah,
+                  default_battery_resistance_ohm,
+                  sitl->batt_voltage,
+                  ambient_outside_temperature_degC());
+
     mass = 2.0f;
 
     /*
@@ -447,6 +454,10 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
 
     if (ice_engine) {
         thrust = icengine.update(input);
+    } else {
+        if (battery_is_empty()) {
+            thrust = 0.0f;
+        }
     }
 
     // calculate angle of attack
@@ -516,12 +527,7 @@ void Plane::update(const struct sitl_input &input)
     update_wind(input);
     
     calculate_forces(input, rot_accel);
-
-    float throttle = reverse_thrust ? filtered_servo_angle(input, 2) : filtered_servo_range(input, 2);
-    battery_voltage = sitl->batt_voltage - 0.7*throttle;
-    battery_current = (battery_voltage/sitl->batt_voltage)*50.0f*sq(throttle);
-    battery_temperature_degC = 0.0f;
-
+    update_battery(input);
     update_dynamics(rot_accel);
 
     /*
@@ -543,4 +549,14 @@ void Plane::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+}
+
+void Plane::update_battery(const struct sitl_input &input) {
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+
+    float throttle = reverse_thrust ? filtered_servo_angle(input, 2) : filtered_servo_range(input, 2);
+    battery_current = 50.0f * sq(throttle);
+    battery.consume_energy(battery_current, AP_HAL::micros64());
+    battery_voltage = battery.get_voltage();
+    battery_temperature_degC = battery.get_temperature_degC();
 }

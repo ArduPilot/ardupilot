@@ -572,6 +572,33 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.set_parameter("MOT_THST_HOVER", value)
             self.AltitudeHold()
 
+    def SIMCompare(self):
+        '''compare logged EKF2 and EKF3 estimates against simulator truth'''
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 3,
+            'EK2_ENABLE': 1,
+            'EK3_ENABLE': 1,
+        })
+        self.reboot_sitl()
+
+        # dive and translate to give the estimators something to track:
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(Joystick.Throttle, 1600)
+        self.set_rc(Joystick.Forward, 1600)
+        self.set_rc(Joystick.Lateral, 1550)
+        self.wait_distance(30, accuracy=7, timeout=200)
+        self.set_rc(Joystick.Yaw, 1550)
+        self.wait_heading(0)
+        self.set_rc(Joystick.Yaw, 1500)
+        self.set_rc(Joystick.Forward, 1500)
+        self.set_rc(Joystick.Lateral, 1500)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(2, reason="vehicle to settle")
+        self.disarm_vehicle()
+
+        self.assert_ekfs_match_sim_state()
+
     def DiveManual(self):
         '''Dive manual'''
         self.wait_ready_to_arm()
@@ -910,11 +937,18 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT)
         self.wait_location(loc, timeout=120)
 
-        # Reposition, alt relative to seafloor
-        loc = self.offset_location_ne(loc, 10, 10)
-        loc.alt = -start_altitude
-        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
-        self.wait_location(loc, timeout=120)
+        # Reposition, alt relative to seafloor.  The SITL seafloor is
+        # ~50m deep here, so holding 25m above it is ~-25m AMSL.
+        # target_terrain abuses the location's alt field to carry a
+        # terrain-frame altitude, as send_do_reposition requires
+        seafloor_depth = 50
+        alt_above_seafloor = 25
+        target_terrain = self.offset_location_ne(loc, 10, 10)
+        target_terrain.alt = alt_above_seafloor
+        target_global = self.offset_location_ne(loc, 10, 10)
+        target_global.alt = alt_above_seafloor - seafloor_depth
+        self.send_do_reposition(target_terrain, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.wait_location(target_global, timeout=120, height_accuracy=5)
 
         self.disarm_vehicle()
 
@@ -930,10 +964,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_waypoint(1, 4, max_dist_to_final_wp_m=5)
-        self.delay_sim_time(3, reason="final waypoint to settle")
 
         # Expect sub to hover at final altitude
-        self.assert_altitude(-36.0)
+        self.wait_altitude(altitude_min=-37, altitude_max=-35, relative=False, minimum_duration=2, timeout=30)
 
         self.disarm_vehicle()
         self.progress("Mission OK")
@@ -1003,8 +1036,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             'AHRS_ORIGIN_LAT': 47.607584,
             'AHRS_ORIGIN_LON': -122.343911,
         })
-        self.reboot_sitl()
+        # the origin statustext is emitted early in the boot - with no
+        # GPS configured the EKF does not wait for anything before
+        # adopting the recorded origin - so collection must start
+        # before the reboot or the text can be missed:
         self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
 
         # Wait for the EKF to be happy in constant position mode
         self.wait_ready_to_arm_const_pos()
@@ -1200,7 +1237,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.progress("Connecting to telemetry port")
         mav2 = mavutil.mavlink_connection(
-            "tcp:localhost:5763",
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
             robust_parsing=True,
             source_system=self.mav.source_system,
             source_component=self.mav.source_component,
@@ -1415,7 +1452,14 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.set_parameter('WP_SPD', speed)
 
-        self.dive(-15)
+        # the vehicle reports wp_nav's distance-to-destination in
+        # NAV_CONTROLLER_OUTPUT; we use it to confirm our target has been
+        # accepted.  Ask for it before diving; there is no depth hold
+        # between the dive and entering GUIDED, so sim time spent here is
+        # spent floating away from the dived-to depth
+        self.context_set_message_rate_hz('NAV_CONTROLLER_OUTPUT', 10)
+
+        self.dive(-15, mode='ALT_HOLD')
 
         # GLOBAL_POSITION_INT will be our clock
         self.context_set_message_rate_hz('GLOBAL_POSITION_INT', 10)
@@ -1450,11 +1494,29 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             current_alt = None
             max_error = 0.0
 
-            # Set the target
-            self.mav.mav.set_position_target_global_int_send(
-                0, 1, 1, run['frame'], pos_mode,
-                int(dest_loc[0] * 1e7), int(dest_loc[1] * 1e7), run['target_alt'],
-                0, 0, 0, 0, 0, 0, 0, 0)
+            # Send the target until the reported distance-to-destination
+            # shows it has become the current destination.  The vehicle
+            # can silently reject the target (e.g. a single bad
+            # rangefinder reading invalidates the terrain frame for an
+            # instant) and there is no acknowledgement to check, so a
+            # single send is not enough.
+            accept_start = self.get_sim_time()
+            accepted = False
+            while not accepted:
+                if self.get_sim_time_cached() - accept_start > 30:
+                    raise NotAchievedException(f'Frame {run["frame"]} target not accepted')
+                self.mav.mav.set_position_target_global_int_send(
+                    0, 1, 1, run['frame'], pos_mode,
+                    int(dest_loc[0] * 1e7), int(dest_loc[1] * 1e7), run['target_alt'],
+                    0, 0, 0, 0, 0, 0, 0, 0)
+                # wait a little for the new distance-to-destination to be
+                # reported before concluding the target was rejected
+                deadline = self.get_sim_time_cached() + 1
+                while self.get_sim_time_cached() < deadline:
+                    msg = self.assert_receive_message('NAV_CONTROLLER_OUTPUT')
+                    if abs(msg.wp_dist - distance) < 5:
+                        accepted = True
+                        break
 
             start_time = self.get_sim_time()
             while True:
@@ -1493,7 +1555,137 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
                 if alt_error > max_error:
                     max_error = alt_error
+        self.disarm_vehicle()
 
+    def IgnoreGPSDrift(self):
+        """ Test GPS-DVL integration. DVL (VISO) should be able to filter the GPS noise.
+        this tests switching over to VISO, running for a bit with no sensors, re-enabling viso,
+        and finally surfacing, where we expect the GPS position will be used to fix the drift
+        resulting of running with no positioning sensors."""
+
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+
+        # configure EKF to use external nav instead of GPS
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 3,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_POSZ": 1,
+            "EK3_SRC1_VELZ": 0,
+
+            "VISO_TYPE": 1,
+            "SERIAL5_PROTOCOL": 1,
+            "SIM_VICON_TMASK": 8,  # send VISION_POSITION_DELTA
+            # "SIM_VICON_TMASK": 2,  # send VISION_SPEED_ESTIMATE
+            # "SIM_VICON_TMASK": 10,  # send VISION_SPEED_ESTIMATE AND VISION_POSITION_DELTA
+            # "EK3_VELNE_M_NSE": 0.001,
+
+            "GPS1_TYPE": 1,
+            "SIM_GPS1_DRFTALT": 3,
+            "SIM_GPS1_ACC": 0.3,
+            "SIM_GPS1_ENABLE": 1,
+            "SIM_GPS1_TYPE": 1,
+
+            "GPS2_TYPE": 0,
+
+            "EK3_POSNE_M_NSE": 100,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.progress("Ensuring that VISO manages to filter the GPS noise")
+        self.change_mode('POSHOLD')
+        self.set_parameter("SIM_GPS1_HNSE", 2)
+        self.wait_location(
+            self.sim_location(),
+            location_source="SIMSTATE",
+            minimum_duration=10,
+            height_accuracy=10.0,
+            accuracy=1.0,
+            timeout=60.0,
+        )
+
+        self.progress("Diving to 10m")
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=-10, altitude_max=-9, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.progress("Disabling GPS")
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+        })
+
+        self.progress("Driving GPS-less for 10m using VISO")
+        self.set_rc(Joystick.Forward, 1900)
+        self.wait_distance(10, timeout=60, location_source="SIMSTATE")
+        self.set_rc(Joystick.Forward, 1500)
+
+        self.progress("Surfacing")
+        self.set_rc(Joystick.Throttle, 1900)
+        self.wait_altitude(altitude_min=-0.5, altitude_max=1, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.progress("Re-enabling GPS, expecting position to converge within 2m")
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+        })
+        self.wait_location(self.mav.location(), minimum_duration=5, accuracy=2, timeout=60.0)
+
+        self.progress("Driving forward 10m with GPS+VISO")
+        self.set_rc(Joystick.Forward, 1900)
+        self.wait_distance(10, timeout=60, location_source="SIMSTATE")
+        self.set_rc(Joystick.Forward, 1500)
+
+        self.progress("Disabling GPS and diving to 10m for no-GPS+no-VISO test")
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+        })
+        self.set_rc(Joystick.Throttle, 1300)
+        self.wait_altitude(altitude_min=-10, altitude_max=-9, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.progress("Driving 10m on VISO only, verifying EKF has relative position")
+        self.set_rc(Joystick.Forward, 1900)
+        self.wait_distance(10, timeout=60, location_source="SIMSTATE")
+        self.wait_ekf_flags(
+            mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL,
+            0,
+            timeout=15,
+        )
+
+        self.progress("Disabling VISO and waiting for EKF to lose position")
+        self.set_parameters({
+            "SIM_VICON_TMASK": 0,
+        })
+        self.wait_ekf_flags(
+            0,
+            mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL | mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS,
+            timeout=15,
+        )
+
+        self.progress("Stopping to build position error while EKF has no aiding")
+        self.set_rc(Joystick.Forward, 1500)
+        self.delay_sim_time(10, reason="build position error while EKF has no aiding")
+
+        self.progress("Re-enabling VISO and driving forward")
+        self.set_rc(Joystick.Forward, 1900)
+        self.delay_sim_time(5, reason="drive forward with no aiding")
+        self.set_parameters({
+            "SIM_VICON_TMASK": 10,
+        })
+        self.delay_sim_time(10, reason="drive forward with VISO aiding")
+        self.set_rc(Joystick.Forward, 1500)
+
+        self.progress("Surfacing to simulate re-acquiring GPS")
+        self.set_rc(Joystick.Throttle, 1900)
+        self.wait_altitude(altitude_min=-0.5, altitude_max=1, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.progress("Re-enabling GPS, expecting position correction")
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+        })
+        self.wait_distance(10, accuracy=5, timeout=60)
         self.disarm_vehicle()
 
     def AutoTerrainRecover(self):
@@ -1532,6 +1724,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         ret.extend([
             self.DiveManual,
+            self.SIMCompare,
             self.GCSFailsafe,
             self.ThrottleFailsafe,
             self.AltitudeHold,
@@ -1573,6 +1766,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.UpsideDown,
             self.GuidedWP,
             self.AutoTerrainRecover,
+            self.IgnoreGPSDrift,
         ])
 
         return ret

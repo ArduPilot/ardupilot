@@ -762,6 +762,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GSCALAR(servo_telem_msg_rate, "SRV_TLM_MSG_RATE", 20),
 #endif
 
+#if AP_PERIPH_BATTERY_BMS_ENABLED
+    // @Group: BMS
+    // @Path: battery_bms.cpp
+    GOBJECT(battery_bms, "BMS_",  BatteryBMS),
+#endif
+
     AP_VAREND
 };
 

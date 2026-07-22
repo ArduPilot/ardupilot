@@ -80,9 +80,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(set_servos,            400,    200,  15),
     SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),
-#if AP_BEACON_ENABLED
-    SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200,  24),
-#endif
 #if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         200,  200,  27),
 #endif
@@ -380,8 +377,8 @@ void Rover::update_logging1(void)
     if (should_log(MASK_LOG_THR)) {
         Log_Write_Throttle();
 #if AP_BEACON_ENABLED
-        g2.beacon.log();
-#endif
+        beacon.log();
+#endif  // AP_BEACON_ENABLED
     }
 
     if (should_log(MASK_LOG_NTUN)) {

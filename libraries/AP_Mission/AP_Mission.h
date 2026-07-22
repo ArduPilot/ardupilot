@@ -285,6 +285,7 @@ public:
     struct PACKED set_camera_focus_Command {
         uint8_t focus_type;
         float focus_value;
+        uint8_t camera_id;
     };
 
     // MAV_CMD_SET_CAMERA_SOURCE support

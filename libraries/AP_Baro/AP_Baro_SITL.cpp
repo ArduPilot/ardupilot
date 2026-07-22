@@ -186,7 +186,10 @@ float AP_Baro_SITL::wind_pressure_correction(uint8_t instance)
         error += bp.wcof_zn * sqz;
     }
 
-    return error * 0.5 * SSL_AIR_DENSITY * AP::baro()._get_air_density_ratio();
+    // use the air density at the simulated vehicle's true altitude;
+    // the vehicle's own estimates must play no part in simulating
+    // the physical pressure error:
+    return error * 0.5 * AP_Baro::get_air_density_for_alt_amsl(AP::sitl()->state.altitude);
 }
 
 #endif  // AP_SIM_BARO_ENABLED

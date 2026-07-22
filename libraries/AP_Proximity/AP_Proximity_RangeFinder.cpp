@@ -44,6 +44,7 @@ void AP_Proximity_RangeFinder::update(void)
             continue;
         }
         if (sensor->has_data()) {
+            const bool reading_is_good = (sensor->status() == RangeFinder::Status::Good);
             // check for horizontal range finders
             if (sensor->orientation() <= ROTATION_YAW_315) {
                 const uint8_t sector = (uint8_t)sensor->orientation();
@@ -53,7 +54,7 @@ void AP_Proximity_RangeFinder::update(void)
                 const float distance = sensor->distance();
                 _distance_min = sensor->min_distance();
                 _distance_max = sensor->max_distance();
-                if ((distance <= _distance_max) && (distance >= _distance_min) && !ignore_reading(angle, distance, false)) {
+                if (reading_is_good && (distance <= _distance_max) && (distance >= _distance_min) && !ignore_reading(angle, distance, false)) {
                     frontend.boundary.set_face_attributes(face, angle, distance, state.instance);
                     // update OA database
                     database_push(angle, distance);
@@ -67,7 +68,7 @@ void AP_Proximity_RangeFinder::update(void)
                 const float distance_upward = sensor->distance();
                 const float up_distance_min = sensor->min_distance();
                 const float up_distance_max = sensor->max_distance();
-                if ((distance_upward >= up_distance_min) && (distance_upward <= up_distance_max)) {
+                if (reading_is_good && (distance_upward >= up_distance_min) && (distance_upward <= up_distance_max)) {
                     _distance_upward = distance_upward;
                 } else {
                     _distance_upward = -1.0; // mark an valid reading

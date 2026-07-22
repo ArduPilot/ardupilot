@@ -6,6 +6,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -37,6 +38,7 @@ bool AP_AHRS_NavEKF3::start()
         return false;
     }
 
+    // try to start the filter:
     return EKF3.InitialiseFilter();
 }
 
@@ -49,6 +51,20 @@ void AP_AHRS_NavEKF3::update()
         return;
     }
     EKF3.UpdateFilter();
+
+    // check the current primary core; if it has changed then assume
+    // our attitude is reset:
+    const int8_t primary_core = EKF3.getPrimaryCoreIndex();
+    if (attitude_reset_tracker.update(primary_core)) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary_core));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 primary changed:%d", (unsigned)primary_core);
+    }
+
+    yaw_reset_tracker.update(EKF3.getYawResetCount());
+
+    position_NE_reset_tracker.update(EKF3.getPosNorthEastResetCount());
+
+    position_D_reset_tracker.update(EKF3.getPosDownResetCount());
 }
 
 void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
@@ -100,6 +116,10 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.attitude_valid = started;
 
+    results.attitude_reset_count = attitude_reset_tracker.count();
+
+    results.yaw_reset_count = yaw_reset_tracker.count();
+
     /*
      * acceleration estimates
      */
@@ -142,6 +162,13 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     // origin-relative functions
     results.provides_common_origin = true;
 
+    // origin-relative position:
+    results.position_NE_valid = EKF3.getPosNE(results.position_NE);
+    results.position_NE_reset_count = position_NE_reset_tracker.count();
+
+    results.position_D_valid = EKF3.getPosD(results.position_D);
+    results.position_D_reset_count = position_D_reset_tracker.count();
+
     results.hagl_valid = EKF3.getHAGL(results.hagl);
 
     /*
@@ -158,7 +185,7 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     // true if GPS is configured as the horizontal position source
     // for this estimator.  Used to decide whether GPS will set
     // the navigation origin:
-    results.configured_to_use_gps_for_pos_XY = EKF3.configuredToUseGPSForPos();
+    results.configured_to_use_gps_for_pos_XY = EKF3.configuredToUseGPSForPosXY();
 
     // are we consuming yaw from an external (e.g. vision-based) source?
     results.using_extnav_for_yaw = EKF3.using_extnav_for_yaw();
@@ -180,6 +207,8 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
      */
     EKF3.getFilterStatus(results.filter_status);
     results.filter_status_valid = true;
+
+    EKF3.getFilterFaults(results.filter_faults);
 
     // provides the innovations normalised between 0 and 1:
     Vector2f offset;

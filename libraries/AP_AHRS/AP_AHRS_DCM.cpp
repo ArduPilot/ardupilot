@@ -204,6 +204,20 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     // origin-relative functions
     // results.provides_common_origin = false;
 
+    // origin-relative position:
+    {
+        // DCM calculates in global co-ordinates and here converts
+        // back to relative-to-origin by subtracting the current
+        // location from the origin:
+        Location origin;
+        if (get_origin(origin) && results.location_valid) {
+            const Vector3p posNED = origin.get_distance_NED_postype(results.location);
+            results.position_NE = posNED.xy();
+            results.position_NE_valid = true;
+            results.position_D = posNED.z;
+            results.position_D_valid = true;
+        }
+    }
     // hagl is not supplied:
     // results.hagl_valid = false;
     // results.hagl = 0;
@@ -1362,40 +1376,6 @@ bool AP_AHRS_DCM::get_origin(Location &ret) const
         ret = AP::ahrs().get_home();
     }
     return !ret.is_zero();
-}
-
-bool AP_AHRS_DCM::get_relative_position_NED_origin(Vector3p &posNED) const
-{
-    Location origin;
-    if (!AP_AHRS_DCM::get_origin(origin)) {
-        return false;
-    }
-    Location loc;
-    if (!AP_AHRS_DCM::get_location(loc)) {
-        return false;
-    }
-    posNED = origin.get_distance_NED_postype(loc);
-    return true;
-}
-
-bool AP_AHRS_DCM::get_relative_position_NE_origin(Vector2p &posNE) const
-{
-    Vector3p posNED;
-    if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
-        return false;
-    }
-    posNE = posNED.xy();
-    return true;
-}
-
-bool AP_AHRS_DCM::get_relative_position_D_origin(postype_t &posD) const
-{
-    Vector3p posNED;
-    if (!AP_AHRS_DCM::get_relative_position_NED_origin(posNED)) {
-        return false;
-    }
-    posD = posNED.z;
-    return true;
 }
 
 // return true if DCM has a yaw source available

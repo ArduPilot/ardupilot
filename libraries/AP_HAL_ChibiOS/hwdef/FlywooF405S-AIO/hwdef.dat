@@ -123,11 +123,11 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
 # Barometer setup
+define AP_BARO_SPL06_ENABLED 1
 BARO BMP280 I2C:0:0x76
-        
-# Barometer setup
 BARO DPS310 I2C:0:0x76
-        
+BARO SPL06  I2C:0:0x76        
+
 # IMU setup
 SPIDEV icm42688  SPI1 DEVID1 GYRO1_CS   MODE3   2*MHZ   16*MHZ
 SPIDEV mpu6000   SPI1 DEVID1 GYRO1_CS   MODE3   1*MHZ   8*MHZ

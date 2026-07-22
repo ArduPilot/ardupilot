@@ -301,8 +301,9 @@ void AP_Follow::update_estimates()
         _estimate_pos_ned_m = _target_pos_ned_m + delta_pos_m.topostype();
         _estimate_vel_ned_ms = _target_vel_ned_ms + delta_vel_ms;
         _estimate_accel_ned_mss = _target_accel_ned_mss;
-        _estimate_heading_rad = radians(_target_heading_deg) + delta_heading_rad;  
-        _estimate_heading_rate_rads = radians(_target_heading_rate_degs);  
+        _estimate_heading_rad = radians(_target_heading_deg) + delta_heading_rad;
+        _estimate_heading_rate_rads = radians(_target_heading_rate_degs);
+        _estimate_heading_accel_radss = 0.0;
         _estimate_valid = true;
     }
 
@@ -598,6 +599,12 @@ bool AP_Follow::estimate_error_too_large() const
 // Calculates max velocity change under trapezoidal or triangular acceleration profile (jerk-limited).
 float AP_Follow::calc_max_velocity_change(float accel_max, float jerk_max, float timeout_sec) const
 {
+    // a non-positive jerk limit means "no jerk limit": acceleration can be
+    // applied instantly, so the profile is a pure trapezoid. Guarding here also
+    // avoids a divide-by-zero when the FOLL_JERK_* parameter is set to zero.
+    if (!is_positive(jerk_max)) {
+        return accel_max * timeout_sec;
+    }
     const float t_jerk = accel_max / jerk_max;
     const float t_total_jerk = 2.0f * t_jerk;
 
@@ -610,7 +617,7 @@ float AP_Follow::calc_max_velocity_change(float accel_max, float jerk_max, float
     } else {
         // timeout too short: pure triangle profile
         const float t_half = timeout_sec * 0.5f;
-        return 0.5f * jerk_max * sq(t_half);
+        return jerk_max * sq(t_half);
     }
 }
 

@@ -228,7 +228,7 @@ void Plane::calc_airspeed_errors()
 
     } else if (flight_stage == AP_FixedWing::FlightStage::LAND) {
         // Landing airspeed target
-        target_airspeed_cm = landing.get_target_airspeed_cm();
+        target_airspeed_cm = landing.get_target_airspeed_ms() * 100.0f;  // m/s -> cm/s
     } else if (control_mode == &mode_guided && new_airspeed_cm > 0) { //DO_CHANGE_SPEED overrides onboard guided speed commands, user would have re-enter guided mode to revert
                        target_airspeed_cm = new_airspeed_cm;
     } else if (control_mode == &mode_auto) {

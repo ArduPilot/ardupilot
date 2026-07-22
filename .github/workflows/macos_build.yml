@@ -13,7 +13,7 @@ on:
       # remove non SITL non stm32 directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -78,7 +78,7 @@ on:
       # remove non SITL non stm32 directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -90,7 +90,6 @@ on:
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
@@ -155,7 +154,7 @@ jobs:
         ]
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
       - name: Install Prerequisites

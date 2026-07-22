@@ -1,0 +1,36 @@
+name: test mavutil.location ratchet
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'Tools/autotest/**'
+      - 'Tools/scripts/check_mavutil_location_ratchet.py'
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  location-ratchet:
+    if: github.repository == 'ArduPilot/ardupilot'
+    runs-on: ubuntu-slim
+
+    steps:
+      # the default (merge-ref) checkout is deliberate: it tests the PR as
+      # merged into the current base branch, and guarantees the latest ratchet
+      # script is present even for PRs branched from an older base
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          submodules: 'false'
+          fetch-depth: 0
+
+      - name: Fetch base branch
+        run: |
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+
+      - name: Check mavutil.location ratchet
+        shell: bash
+        run: |
+          Tools/scripts/check_mavutil_location_ratchet.py --base-ref "origin/${{ github.event.pull_request.base.ref }}"

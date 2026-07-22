@@ -121,9 +121,6 @@ void SITL_State::init(int argc, char * const argv[]) {
     sitl_model = NEW_NOTHROW SimMCast("");
 
     _sitl = AP::sitl();
-
-    _sitl->i2c_sim.init();
-    sitl_model->set_i2c(&_sitl->i2c_sim);
 }
 
 void SITL_State::wait_clock(uint64_t wait_time_usec)

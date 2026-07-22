@@ -718,6 +718,10 @@ struct FlightAxis::state FlightAxis::interpolate_frame(struct state& new_state, 
 {
     struct state intermediate_state = old_state;
     double dt = new_state.m_currentPhysicsTime_SEC - old_state.m_currentPhysicsTime_SEC;
+    if (!is_positive(dt)) {
+        return new_state;
+    }
+
     double interval = new_time - old_state.m_currentPhysicsTime_SEC;
 
 #define INTERPOLATE(name) (intermediate_state.name = (old_state.name + interval * (new_state.name - old_state.name) / dt))

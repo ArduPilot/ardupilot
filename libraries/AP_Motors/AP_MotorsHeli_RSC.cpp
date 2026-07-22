@@ -560,7 +560,9 @@ void AP_MotorsHeli_RSC::update_rotor_ramp(float rotor_ramp_input, float dt)
     }
 }
 
-// update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_ouptut
+// update_rotor_runup - function to slew rotor runup scalar, outputs float scalar to _rotor_runup_output
+// Relies on set_using_manual_collective_mode() having been called first.  This method requires this information
+// to determine if the governor must be engaged for runup to be complete when using autothrottle RSC mode.
 void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
 {
     float runup_time = _runup_time;
@@ -602,10 +604,18 @@ void AP_MotorsHeli_RSC::update_rotor_runup(float dt)
         return;
     }
 
-    // if rotor ramp and runup are both at full speed, then run-up has been completed
-    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && (_rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE ? _governor_engage : true)) {
+    // rotor runup complete depends on the use of autothrottle RSC mode and the manual collective flight mode
+    // if autothrottle is used and a non-manual collective mode is used, then the governor must be engaged for runup to be complete. Otherwise,
+    // runup is complete when the rotor ramp and runup outputs are both at 1.0.  
+    if (!_runup_complete && (_rotor_ramp_output >= 1.0f) && (_rotor_runup_output >= 1.0f) && 
+        (_using_manual_collective_mode || _rsc_control_mode != ROTOR_CONTROL_MODE_AUTOTHROTTLE || _governor_engage)) {
+        // warn user if runup timer completed but governor not engaged when using manual collective mode and autothrottle RSC mode
+        if (_using_manual_collective_mode && _rsc_control_mode == ROTOR_CONTROL_MODE_AUTOTHROTTLE && _governor_engage == false) {
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Governor Failed to Engage when Runup Completed");
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Runup Complete");
+        }
         _runup_complete = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Runup Complete");
     }
     // if rotor speed is less than critical speed, then run-up is not complete
     // this will prevent the case where the target rotor speed is less than critical speed

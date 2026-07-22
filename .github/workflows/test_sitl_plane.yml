@@ -17,7 +17,7 @@ on:
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
       - 'Tools/bootloaders/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -49,11 +49,13 @@ on:
       - 'Tools/autotest/arducopter.py'
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
+      - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
       - 'Tools/autotest/location.txt'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
       - 'Tools/autotest/swarminit.txt'
+      - 'Tools/autotest/sim_vehicle.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
@@ -94,7 +96,7 @@ on:
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
       - 'Tools/bootloaders/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -108,7 +110,6 @@ on:
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
@@ -127,11 +128,13 @@ on:
       - 'Tools/autotest/arducopter.py'
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
+      - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
       - 'Tools/autotest/location.txt'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
       - 'Tools/autotest/swarminit.txt'
+      - 'Tools/autotest/sim_vehicle.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
@@ -171,7 +174,7 @@ jobs:
       contents: read
       actions: write  # save-ccache prunes the previous cache entry
     runs-on: ubuntu-22.04
-    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.1.3
+    container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.2.0
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -180,7 +183,7 @@ jobs:
         ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
       - uses: ./.github/actions/setup-ccache
@@ -204,7 +207,7 @@ jobs:
     needs: build  # don't try to launch the tests matrix if it doesn't build first, profit from caching for fast build
     runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-base:v0.1.3
+      image: ardupilot/ardupilot-dev-base:v0.2.0
       options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -218,7 +221,7 @@ jobs:
 
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
       - uses: ./.github/actions/setup-ccache

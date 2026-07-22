@@ -199,6 +199,9 @@ def extract_binaries_size(path):
     print("Extracting binaries size on %s" % path)
     binaries_list = []
     for file in os.listdir(args.master):
+        # remove .hex files
+        if file.endswith(".hex"):
+            continue
         fileNoExt = os.path.splitext(file)[0]
         binaries_list.append(fileNoExt)
     binaries_list = list(dict.fromkeys(binaries_list))

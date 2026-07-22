@@ -397,6 +397,17 @@ class HWDef:
             name = result.group(1)
             self.assert_good_define(name)
 
+        # a serial port's default protocol must be given as a SerialProtocol_*
+        # name, not a bare number, so the value stays readable and is checked
+        # by AP_SerialManager_default_protocol_check.cpp.  Both DEFAULT_SERIALn
+        # and HAL_OTGn feed the DEFAULT_SERIALn value that file asserts on (the
+        # deprecated HAL_SERIALn form is rejected separately in
+        # AP_SerialManager.cpp):
+        result = re.match(r'define\s+((?:DEFAULT_SERIAL|HAL_OTG)[0-9]+_PROTOCOL)\s+(-?[0-9]+)\s*$', line)
+        if result is not None:
+            self.error("%s must use a SerialProtocol_* name, not the numeric value %s" %
+                       (result.group(1), result.group(2)))
+
         # extract numerical defines for processing by other parts of the script
         result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
         if result:
@@ -632,8 +643,11 @@ class HWDef:
             args.append(str(compass.rotation))
 
             f.write(
-                '#define HAL_MAG_PROBE%u %s {add_backend(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;}\n'
-                % (n, wrapper, driver, driver, probe, ','.join(args)))
+                '''#define HAL_MAG_PROBE%u %s \\
+                    if (_driver_enabled(DRIVER_%s)) { \\
+                        {add_backend(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;} \\
+                    }\n'''
+                % (n, wrapper, driver, driver, driver, probe, ','.join(args)))
             f.write(f"#undef AP_COMPASS_{driver}_ENABLED\n#define AP_COMPASS_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))

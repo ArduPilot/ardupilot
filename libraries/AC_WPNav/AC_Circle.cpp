@@ -27,8 +27,8 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Circle options
-    // @Description: 0:Enable or disable using the pitch/roll stick control circle mode's radius and rate
-    // @Bitmask: 0:manual control, 1:face direction of travel, 2:Start at center rather than on perimeter, 3:Make Mount ROI the center of the circle
+    // @Description: Circle behaviour options
+    // @Bitmask: 0:RC pitch and roll control radius and rate, 1:Face direction of travel, 2:Start at center rather than on perimeter, 3:Make Mount ROI the center of the circle
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 2, AC_Circle, _options, 1),
 
@@ -289,9 +289,8 @@ bool AC_Circle::update_ms(float climb_rate_ms)
 // See get_closest_point_on_circle_NED_m() for full details.
 void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, float& dist_cm) const
 {
-    // Convert input arguments from neu cm to ned meters
-    Vector3p result_ned_m = Vector3p{result_neu_cm.x, result_neu_cm.y, -result_neu_cm.z} * 0.01;
-    float dist_m = dist_cm * 0.01;
+    Vector3p result_ned_m;
+    float dist_m;
 
     // Compute closest point in meters
     get_closest_point_on_circle_NED_m(result_ned_m, dist_m);

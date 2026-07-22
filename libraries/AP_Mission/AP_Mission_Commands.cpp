@@ -147,22 +147,13 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
             (CAMERA_ZOOM_TYPE)cmd.content.set_camera_zoom.zoom_type,
             cmd.content.set_camera_zoom.zoom_value
         ) == MAV_RESULT_ACCEPTED;
+
     case MAV_CMD_SET_CAMERA_FOCUS:
-        // accept any of the auto focus types
-        if ((cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO) ||
-            (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO_SINGLE) ||
-            (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO_CONTINUOUS)) {
-            return camera->set_focus(FocusType::AUTO, 0) == SetFocusResult::ACCEPTED;
-        }
-        // accept continuous manual focus
-        if (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_CONTINUOUS) {
-            return camera->set_focus(FocusType::RATE, cmd.content.set_camera_focus.focus_value) == SetFocusResult::ACCEPTED;
-        }
-        // accept range manual focus
-        if (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_RANGE) {
-            return camera->set_focus(FocusType::PCT, cmd.content.set_camera_focus.focus_value) == SetFocusResult::ACCEPTED;
-        }
-        return false;
+        return camera->handle_mav_SET_CAMERA_FOCUS(
+            cmd.content.set_camera_focus.camera_id,
+            (SET_FOCUS_TYPE)cmd.content.set_camera_focus.focus_type,
+            cmd.content.set_camera_focus.focus_value
+        ) == MAV_RESULT_ACCEPTED;
 
 #if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     case MAV_CMD_SET_CAMERA_SOURCE:

@@ -28,6 +28,13 @@ namespace SITL {
 SimRover::SimRover(const char *frame_str) :
     Aircraft(frame_str)
 {
+    constexpr float default_battery_resistance_ohm = 0.01f;
+    battery.setup(sitl->batt_capacity_ah,
+                  default_battery_resistance_ohm,
+                  sitl->batt_voltage,
+                  ambient_outside_temperature_degC());
+    battery_voltage = battery.get_voltage();
+
     skid_steering = strstr(frame_str, "skid") != nullptr;
 
     if (skid_steering) {
@@ -145,26 +152,35 @@ void SimRover::update(const struct sitl_input &input)
  */
 void SimRover::update_ackermann_or_skid(const struct sitl_input &input, float delta_time)
 {
-    float steering, throttle;
+    float steering = 0.0f;
+    float throttle = 0.0f;
 
-    // if in skid steering mode the steering and throttle values are used for motor1 and motor2
-    if (skid_steering) {
-        const float motor1 = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
-        const float motor2 = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
-        steering = motor1 - motor2;
-        throttle = 0.5*(motor1 + motor2);
-    } else {
-        // steering here should really be "old steering" as no-pulses
-        // should yield no servo movement
-        steering = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
-        throttle = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
+    if (!battery_is_empty()) {
+        // if in skid steering mode the steering and throttle values are used for motor1 and motor2
+        if (skid_steering) {
+            const float motor1 = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
+            const float motor2 = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
+            steering = motor1 - motor2;
+            throttle = 0.5*(motor1 + motor2);
+            battery_current = 10.0f * (fabsf(motor1) + fabsf(motor2));
+        } else {
+            // steering here should really be "old steering" as no-pulses
+            // should yield no servo movement
+            steering = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
+            throttle = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
+            battery_current = 20.0f * fabsf(throttle) + 1.0f * fabsf(steering);
 
-        // vectored thrust conversion
-        if (vectored_thrust) {
-            const float steering_angle_rad = radians(steering * vectored_angle_max);
-            steering = sinf(steering_angle_rad) * throttle;
-            throttle *= cosf(steering_angle_rad);
+            // vectored thrust conversion
+            if (vectored_thrust) {
+                const float thrust = throttle;
+                const float steering_angle_rad = radians(steering * vectored_angle_max);
+                steering = sinf(steering_angle_rad) * thrust;
+                throttle = cosf(steering_angle_rad) * thrust;
+                battery_current = 20.0f * fabsf(thrust);
+            }
         }
+    } else {
+        battery_current = 0.0f;
     }
 
     // speed in m/s in body frame
@@ -204,10 +220,14 @@ void SimRover::update_omni3(const struct sitl_input &input, float delta_time)
 
     // use forward kinematics to calculate body frame velocity
     Vector3f wheel_ang_vel;
-    for (uint8_t i=0; i<3; i++) {
-        wheel_ang_vel[i] = input.servos[i] ? normalise_servo_input(input.servos[i]) : 0;
-    };
-    wheel_ang_vel *= omni3_wheel_max_ang_vel;
+    battery_current = 0.0f;
+    if (!battery_is_empty()) {
+        for (uint8_t i=0; i<3; i++) {
+            wheel_ang_vel[i] = input.servos[i] ? normalise_servo_input(input.servos[i]) : 0;
+            battery_current += 10.0f * fabsf(wheel_ang_vel[i]);
+        };
+        wheel_ang_vel *= omni3_wheel_max_ang_vel;
+    }
 
     // derivation of forward kinematics for an Omni3Mecanum rover
     // A. Gfrerrer. "Geometry and kinematics of the Mecanum wheel",
@@ -259,6 +279,15 @@ void SimRover::update_omni3(const struct sitl_input &input, float delta_time)
 
     // accel in body frame due to motors (excluding gravity)
     accel_body = Vector3f(accel_x, accel_y, 0);
+}
+
+void SimRover::update_battery()
+{
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    const uint64_t now_us = AP_HAL::micros64();
+    battery.consume_energy(battery_current, now_us);
+    battery_voltage = battery.get_voltage();
+    battery_temperature_degC = battery.get_temperature_degC();
 }
 
 } // namespace SITL

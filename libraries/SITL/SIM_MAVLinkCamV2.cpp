@@ -46,6 +46,13 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
             send_camera_information(msg.sysid, msg.compid);
             send_camera_command_ack(msg.sysid, msg.compid,
                                     MAV_CMD_REQUEST_MESSAGE, MAV_RESULT_ACCEPTED);
+        } else if ((uint32_t)cmd.param1 == MAVLINK_MSG_ID_CAMERA_SETTINGS) {
+            send_camera_settings();
+            send_camera_command_ack(msg.sysid, msg.compid,
+                                    MAV_CMD_REQUEST_MESSAGE, MAV_RESULT_ACCEPTED);
+        } else {
+            send_camera_command_ack(msg.sysid, msg.compid,
+                                    MAV_CMD_REQUEST_MESSAGE, MAV_RESULT_DENIED);
         }
         break;
     case MAV_CMD_IMAGE_START_CAPTURE:
@@ -55,7 +62,35 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
         send_camera_command_ack(msg.sysid, msg.compid,
                                 MAV_CMD_IMAGE_START_CAPTURE, MAV_RESULT_ACCEPTED);
         break;
+    case MAV_CMD_SET_CAMERA_ZOOM:
+        if ((uint32_t)cmd.param1 == ZOOM_TYPE_RANGE) {
+            _camera.set_zoom_pct(cmd.param2);
+            ::printf("MAVLinkCamV2[compid=%u]: zoom set to %.1f%%\n",
+                     (unsigned)_camera_compid, (double)cmd.param2);
+            send_camera_command_ack(msg.sysid, msg.compid,
+                                    MAV_CMD_SET_CAMERA_ZOOM, MAV_RESULT_ACCEPTED);
+            send_camera_settings();
+        } else {
+            send_camera_command_ack(msg.sysid, msg.compid,
+                                    MAV_CMD_SET_CAMERA_ZOOM, MAV_RESULT_DENIED);
+        }
+        break;
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        if ((uint32_t)cmd.param1 == FOCUS_TYPE_RANGE) {
+            _camera.set_focus_pct(cmd.param2);
+            ::printf("MAVLinkCamV2[compid=%u]: focus set to %.1f%%\n",
+                     (unsigned)_camera_compid, (double)cmd.param2);
+            send_camera_command_ack(msg.sysid, msg.compid,
+                                    MAV_CMD_SET_CAMERA_FOCUS, MAV_RESULT_ACCEPTED);
+            send_camera_settings();
+        } else {
+            send_camera_command_ack(msg.sysid, msg.compid,
+                                    MAV_CMD_SET_CAMERA_FOCUS, MAV_RESULT_DENIED);
+        }
+        break;
     default:
+        send_camera_command_ack(msg.sysid, msg.compid, (MAV_CMD)cmd.command,
+                                MAV_RESULT_UNSUPPORTED);
         break;
     }
 }
@@ -91,6 +126,21 @@ void MAVLinkCamV2::send_camera_information(uint8_t target_sysid, uint8_t target_
     mavlink_msg_camera_information_encode_status(
         camera_vehicle_sysid(), _camera_compid,
         &camera_mav_status(), &msg, &info);
+    camera_send_mavlink_message(msg);
+}
+
+void MAVLinkCamV2::send_camera_settings()
+{
+    mavlink_camera_settings_t settings {};
+    settings.time_boot_ms = AP_HAL::millis();
+    settings.mode_id      = CAMERA_MODE_IMAGE;
+    settings.zoomLevel    = _camera.zoom_pct();
+    settings.focusLevel   = _camera.focus_pct();
+
+    mavlink_message_t msg;
+    mavlink_msg_camera_settings_encode_status(
+        camera_vehicle_sysid(), _camera_compid,
+        &camera_mav_status(), &msg, &settings);
     camera_send_mavlink_message(msg);
 }
 

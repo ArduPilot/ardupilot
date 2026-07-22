@@ -8,7 +8,6 @@ Check out a specified branch, compile and run Replay against replay log
 Run check_replay.py over the produced log
 '''
 
-import git # https://pypi.org/project/GitPython/
 import glob
 import os
 import subprocess
@@ -19,8 +18,12 @@ from pymavlink import DFReader
 
 import check_replay
 
-class CheckReplayBranch(object):
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'scripts'))
+from build_script_base import BuildScriptBase
+
+class CheckReplayBranch(BuildScriptBase):
     def __init__(self, master='master', no_clean=False, no_debug=False, vehicles=()):
+        super().__init__()
         self.master = master
         self.no_clean = no_clean
         self.no_debug = no_debug
@@ -40,11 +43,9 @@ class CheckReplayBranch(object):
             bits = bits[:-2]
         raise FileNotFoundError()
 
-    def find_repo(self):
-        return git.Repo(self.topdir)
-
     def assert_tree_clean(self):
-        if self.repo.is_dirty():
+        output = self.run_git(["status", "--porcelain", "--untracked-files=no"], show_output=False)
+        if output.strip():
             raise ValueError("Tree is dirty")
 
     def is_replayable_log(self, logfile_path):
@@ -93,10 +94,18 @@ class CheckReplayBranch(object):
                 return False
         return False
 
-    def progress(self, message):
-        print("CRB: %s" % message)
+    def progress_prefix(self):
+        return 'CRB'
 
     def build_replay(self):
+        # explicitly reconfigure; the checkout of the branch after
+        # autotest configured on master may have changed the configure
+        # files, and waf's auto-reconfigure fails if the branches'
+        # configure options differ:
+        waf_configure = ["./waf", "configure", "--board", "sitl"]
+        if not self.no_debug:
+            waf_configure.append("--debug")
+        subprocess.check_call(waf_configure)
         subprocess.check_call(["./waf", "replay"])
 
     def run_replay_on_log(self, logfile_path):
@@ -106,12 +115,12 @@ class CheckReplayBranch(object):
         return sorted(glob.glob("logs/*.BIN"))
 
     def run_autotest_replay_on_master(self, vehicle):
-        # remember where we were:
-        old_branch = self.repo.active_branch
+        # remember where we were; may be a sha1 if in detached-HEAD state:
+        old_branch = self.find_current_git_branch_or_sha1()
 
         # check out the master branch:
-        self.repo.head.reference = self.master
-        self.repo.head.reset(index=True, working_tree=True)
+        self.run_git(["checkout", self.master], show_output=False)
+        self.run_git(["submodule", "update", "--recursive"], show_output=False)
 
         # generate logs:
         args = ["Tools/autotest/autotest.py"]
@@ -129,8 +138,8 @@ class CheckReplayBranch(object):
         subprocess.check_call(args) # actually run the test
 
         # check out the original branch:
-        self.repo.head.reference = old_branch
-        self.repo.head.reset(index=True, working_tree=True)
+        self.run_git(["checkout", old_branch], show_output=False)
+        self.run_git(["submodule", "update", "--recursive"], show_output=False)
 
     def find_replayed_logs(self):
         '''find logs which were replayed in the autotest'''
@@ -150,7 +159,6 @@ class CheckReplayBranch(object):
 
     def run(self):
         self.topdir = self.find_topdir()
-        self.repo = self.find_repo()
         self.assert_tree_clean()
 
         os.chdir(self.topdir)
@@ -202,7 +210,6 @@ class CheckReplayBranch(object):
         return success
 
 if __name__ == '__main__':
-    import sys
     from argparse import ArgumentParser
     parser = ArgumentParser(description=__doc__)
     parser.add_argument("--master", default='master', help="branch to consider master branch")

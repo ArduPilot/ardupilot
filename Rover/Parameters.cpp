@@ -1,5 +1,6 @@
 #include "Rover.h"
 
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Gripper/AP_Gripper.h>
 
 /*
@@ -364,11 +365,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
 #endif
 
-#if AP_BEACON_ENABLED
-    // @Group: BCN
-    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
-    AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
-#endif
+    // 6 was AP_Beacon
 
     // 7 was used by AP_VisualOdometry
 
@@ -634,6 +631,42 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: mode_circle.cpp
     AP_SUBGROUPINFO(mode_circle, "CIRC", 57, ParametersG2, ModeCircle),
 
+    // @Param: CRASH_THR_MIN
+    // @DisplayName: Crash throttle minimum
+    // @Description: Throttle above this threshold accompanied by a low speed condition triggers crash detection. Zero disables velocity and turn rate checks.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_THR_MIN", 58, ParametersG2, crash_thr_min, 5),
+
+    // @Param: CRASH_VEL_MIN
+    // @DisplayName: Crash velocity minimum
+    // @Description: Velocity below this threshold with accompanying throttle demand triggers crash detection. Zero disables velocity check.
+    // @Units: m/s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_VEL_MIN", 59, ParametersG2, crash_vel_min, 0.08),
+
+    // @Param: CRASH_TRAT_MIN
+    // @DisplayName: Crash turn rate minimum
+    // @Description: Turn rate below this threshold with accompanying throttle demand triggers crash detection. Zero disables turn rate check.
+    // @Units: deg/s
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_TRAT_MIN", 60, ParametersG2, crash_turn_rate_min, 10.0),
+
+    // @Param: CRASH_TIMEOUT
+    // @DisplayName: Crash timeout
+    // @Description: Crash conditions persisting for this duration trigger crash detection.
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_TIMEOUT", 61, ParametersG2, crash_timeout, 2.0),
+
     AP_GROUPEND
 };
 
@@ -671,9 +704,6 @@ ParametersG2::ParametersG2(void)
     :
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     afs(),
-#endif
-#if AP_BEACON_ENABLED
-    beacon(),
 #endif
     wheel_rate_control(wheel_encoder),
     motors(wheel_rate_control),
@@ -844,6 +874,10 @@ void Rover::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
         { &gripper, gripper.var_info, 39 },
 #endif
+#if AP_BEACON_ENABLED
+    // PARAMETER_CONVERSION - Added: Jun-2026 for Rover-4.8
+        { &beacon, beacon.var_info, 6 },
+#endif  // AP_BEACON_ENABLED
     };
 
     AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));

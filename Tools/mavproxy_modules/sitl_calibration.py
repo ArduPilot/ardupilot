@@ -20,7 +20,6 @@
 import math
 from pymavlink import quaternion
 import random
-import time
 
 from MAVProxy.modules.lib import mp_module
 
@@ -245,11 +244,17 @@ class AccelcalController(CalController):
 
 
 class MagcalController(CalController):
+    '''All pacing in this controller is done in the simulation time
+    domain (clocked from ATTITUDE.time_boot_ms): the vehicle rotates at
+    rotation_angspeed in simulation rad/s and the calibrator consumes
+    samples in simulation time, so at SITL speedup the poses advance
+    correspondingly faster in wall-clock terms.'''
+
     yaw_increment = math.radians(45)
     yaw_noise_range = math.radians(5)
 
     rotation_angspeed = math.pi / 4
-    '''rotation angular speed in rad/s'''
+    '''rotation angular speed in simulation rad/s'''
     rotation_angspeed_noise = math.radians(2)
     rotation_axes = (
         (1, 0, 0),
@@ -258,6 +263,7 @@ class MagcalController(CalController):
     )
 
     full_turn_time = 2 * math.pi / rotation_angspeed
+    '''time for a full turn in simulation seconds'''
 
     max_full_turns = 3
     '''maximum number of full turns to be performed for each initial attitude'''
@@ -268,6 +274,7 @@ class MagcalController(CalController):
         self.rotation_start_time = 0
         self.last_progress = {}
         self.rotation_axis_idx = 0
+        self.sim_time = 0
 
     def start(self):
         super(MagcalController, self).start()
@@ -278,7 +285,7 @@ class MagcalController(CalController):
         angspeed = self.rotation_angspeed
         angspeed += random.uniform(-1, 1) * self.rotation_angspeed_noise
         self.angvel(x, y, z, angspeed)
-        self.rotation_start_time = time.time()
+        self.rotation_start_time = self.sim_time
 
     def next_rotation(self):
         self.rotation_axis_idx += 1
@@ -299,6 +306,11 @@ class MagcalController(CalController):
         if not self.active:
             return
 
+        if m.get_type() == 'ATTITUDE':
+            # our simulation clock
+            self.sim_time = m.time_boot_ms * 0.001
+            return
+
         if m.get_type() == 'MAG_CAL_REPORT':
             # NOTE: This may be not the ideal way to handle it
             if m.compass_id in self.last_progress:
@@ -315,7 +327,7 @@ class MagcalController(CalController):
         if not self.rotation_start_time:
             return
 
-        t = time.time()
+        t = self.sim_time
         m.time = t
 
         if m.compass_id not in self.last_progress:

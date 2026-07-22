@@ -404,6 +404,14 @@ public:
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
 
+        // inputs 250-254 are reserved for the custom integrations.
+        // No code which uses these auxiliary channel options will be
+        // merged into ArduPilot master, so external code can use this
+        // an not conflict when rebased on newer ArduPilot codebases.
+        // No guarantees are made in terms of conflicting with other
+        // external projects.  See the SCRIPTING_1 range instead if
+        // you are writing a Lua script.
+
 #if AP_SCRIPTING_ENABLED
         // inputs for the use of onboard lua scripting
         SCRIPTING_1 =        300,

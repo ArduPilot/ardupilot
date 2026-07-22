@@ -178,8 +178,8 @@ private:
     AP_OSD osd;
 #endif
 
-    // system time in milliseconds of last recorded yaw reset from ekf
-    uint32_t ekfYawReset_ms = 0;
+    // count number of times the AHRS yaw has been reset:
+    uint16_t ahrs_yaw_reset_count;
 
     // GCS selection
     GCS_Sub _gcs; // avoid using this; use gcs()
