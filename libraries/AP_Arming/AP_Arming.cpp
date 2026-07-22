@@ -987,6 +987,25 @@ bool AP_Arming::mission_checks(bool report)
         }
     }
 
+    // Check there are no zero altitude takeoffs
+    // Although technically valid in some very rare cases it's most likely that the user simply forgot to enter an altitude.
+    if (check_enabled(Check::MISSION)) {
+        const uint16_t num_commands = mission.num_commands();
+        for (uint16_t i = 1; i < num_commands; i++) {
+            if (!mission.is_takeoff_type_cmd(mission.get_command_id(i))) {
+                continue;
+            }
+            AP_Mission::Mission_Command cmd;
+            if (!mission.read_cmd_from_storage(i, cmd)) {
+                continue;
+            }
+            if (cmd.content.location.alt == 0) {
+                check_failed(Check::MISSION, report, "Mission: Zero takeoff altitude");
+                return false;
+            }
+        }
+    }
+
 #if AP_SDCARD_STORAGE_ENABLED
     if (check_enabled(Check::MISSION) &&
         (mission.failed_sdcard_storage() || StorageManager::storage_failed())) {
