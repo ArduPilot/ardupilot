@@ -115,6 +115,7 @@ static_assert(NEEDED_GROUPS <= MAX_GROUPS, "not enough hardware PWM groups");
 // A bidir GCR reply is ~21 transitions; 48 leaves margin (and matches the block size).
 #define BDSHOT_RX_SYMBOLS 48
 #define BDSHOT_INVALID_ERPM 0xffffU
+#define BDSHOT_ZERO_ERPM    0x0fffU   // ESC's special "motor stopped" code -> 0 rpm (ChibiOS ZERO_ERPM)
 static inline void bdshot_pad_oe(uint8_t gpio, bool drive); // defined below
 
 static rmt_symbol_word_t bdshot_rx_buf[MAX_CHANNELS][BDSHOT_RX_SYMBOLS];
@@ -823,13 +824,19 @@ void RCOutput::bdshot_store_erpm(uint32_t encodederpm, uint8_t chan)
     if (encodederpm == BDSHOT_INVALID_ERPM || chan >= 12) {
         return;
     }
-    const uint8_t expo = (encodederpm >> 9U) & 0x7U;
-    const uint16_t mant = encodederpm & 0x1ffU;
-    const uint32_t period = (uint32_t)mant << expo;
-    if (period == 0) {
-        return;
+    uint32_t erpm;
+    if (encodederpm == BDSHOT_ZERO_ERPM) {
+        // motor stopped: report 0, not the ~128 rpm the max-period would compute to
+        erpm = 0;
+    } else {
+        const uint8_t expo = (encodederpm >> 9U) & 0x7U;
+        const uint16_t mant = encodederpm & 0x1ffU;
+        const uint32_t period = (uint32_t)mant << expo;
+        if (period == 0) {
+            return;
+        }
+        erpm = (1000000U * 60U / 100U + period / 2U) / period;
     }
-    const uint32_t erpm = (1000000U * 60U / 100U + period / 2U) / period;
     if (erpm < BDSHOT_INVALID_ERPM) {
         _bdshot.erpm[chan] = (uint16_t)erpm;
         // release: the erpm[] store above must be visible before the mask bit;
