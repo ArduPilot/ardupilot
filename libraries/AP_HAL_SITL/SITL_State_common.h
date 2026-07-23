@@ -84,6 +84,13 @@ public:
     // name parameter
     SITL::SerialDevice *create_serial_sim(const char *name, const char *arg, const uint8_t portNumber);
 
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // create a simulated device which the autopilot connects to over
+    // TCP rather than over a simulated serial port; spec is of the
+    // form NAME:TCPPORT e.g. "topotek:15005"
+    void create_net_serial_sim(const char *spec);
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
     // simulated airspeed, sonar and battery monitor
     float sonar_pin_voltage;    // pin 0
     float airspeed_pin_voltage[AIRSPEED_MAX_SENSORS]; // pin 1
@@ -209,6 +216,13 @@ public:
 
     // Simulated ELRS radio
     SITL::ELRS *elrs;
+
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // simulated devices attached to the autopilot via TCP rather than
+    // via a simulated serial port:
+    SITL::SerialDevice *net_serial_sims[4];
+    uint8_t num_net_serial_sims;
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
 
     // returns a voltage between 0V to 5V which should appear as the
     // voltage from the sensor
