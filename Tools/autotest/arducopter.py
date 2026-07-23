@@ -7885,6 +7885,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("; ".join(unmet))
             self.mav.recv_match(type='CAMERA_SETTINGS', blocking=True, timeout=0.1)
 
+    def camera_capture_statuses(self, count, timeout=10):
+        '''request CAMERA_CAPTURE_STATUS and return the image_status from each
+        of the count messages which come back.  One message is sent per
+        camera and they all come from the autopilot, so which camera each
+        describes cannot be told apart by the receiver'''
+        self.context_clear_collection('CAMERA_CAPTURE_STATUS')
+        self.send_poll_message('CAMERA_CAPTURE_STATUS')
+        tstart = self.get_sim_time()
+        while True:
+            collection = self.context_collection('CAMERA_CAPTURE_STATUS')
+            if len(collection) >= count:
+                return [m.image_status for m in collection]
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(
+                    "Got %u CAMERA_CAPTURE_STATUS, wanted %u" %
+                    (len(collection), count))
+            self.mav.recv_match(type='CAMERA_CAPTURE_STATUS', blocking=True, timeout=0.1)
+
     def camera_feedback_img_idx(self, cam_idx):
         '''return most recently collected img_idx for cam_idx, or None.
         CAMERA_FEEDBACK is emitted for every camera whenever any camera
@@ -8013,6 +8031,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ])
         for instance in 1, 2:
             self.wait_camera_initialised(instance)
+        self.context_collect('CAMERA_CAPTURE_STATUS')
         self.context_collect('CAMERA_FEEDBACK')
         self.context_collect('CAMERA_SETTINGS')
 
