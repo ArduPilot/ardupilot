@@ -11,6 +11,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include "lua_bindings.h"
 
@@ -1222,6 +1223,31 @@ int lua_gps_inject_data(lua_State *L)
 }
 
 #endif  // AP_GPS_ENABLED
+
+#if AP_AHRS_ENABLED
+/*
+  compatibility binding for the Vector3f-returning
+  AP_AHRS::wind_estimate() method which has been removed from the AHRS
+  interface.  Scripting has no way of receiving both the vector and the
+  validity flag from AP_AHRS::get_wind(), so the validity is discarded
+  here and the vector returned regardless; it may be zero or stale.
+ */
+int lua_AP_AHRS_wind_estimate(lua_State *L)
+{
+    binding_argcheck(L, 1);
+    AP_AHRS *ahrs = check_AP_AHRS(L);
+
+    Vector3f wind;
+    {
+        WITH_SEMAPHORE(ahrs->get_semaphore());
+        IGNORE_RETURN(ahrs->get_wind(wind));
+    }
+
+    *new_Vector3f(L) = wind;
+
+    return 1;
+}
+#endif  // AP_AHRS_ENABLED
 
 #if AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L)
