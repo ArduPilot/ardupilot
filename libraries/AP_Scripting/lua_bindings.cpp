@@ -20,6 +20,7 @@
 
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Scripting/AP_Scripting.h>
+#include <AP_Scripting/lua_scripts.h>
 #include <string.h>
 
 #include "lua/src/lauxlib.h"
@@ -1226,16 +1227,26 @@ int lua_gps_inject_data(lua_State *L)
 
 #if AP_AHRS_ENABLED
 /*
-  compatibility binding for the Vector3f-returning
+  deprecated compatibility binding for the Vector3f-returning
   AP_AHRS::wind_estimate() method which has been removed from the AHRS
-  interface.  Scripting has no way of receiving both the vector and the
-  validity flag from AP_AHRS::get_wind(), so the validity is discarded
-  here and the vector returned regardless; it may be zero or stale.
+  interface.  The validity of the estimate is discarded here and the
+  vector returned regardless; it may be zero or stale.  Scripts should
+  use ahrs:get_wind() instead.
+
+  the generator can not attach a deprecation warning to a manual
+  binding, so it is emitted here in the same manner as the generated
+  bindings do it.
  */
 int lua_AP_AHRS_wind_estimate(lua_State *L)
 {
     binding_argcheck(L, 1);
     AP_AHRS *ahrs = check_AP_AHRS(L);
+
+    static bool warned;
+    if (!warned) {
+        lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, "ahrs:wind_estimate Use get_wind");
+        warned = true;
+    }
 
     Vector3f wind;
     {
