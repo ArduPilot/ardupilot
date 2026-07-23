@@ -2941,8 +2941,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''method for the FenceRelative test to call'''
         return 'QLOITER'
 
-    def TerrainAvoidApplet(self):
-        '''Terrain Avoidance with CMTC'''
+    def terrain_avoid_applet_setup(self, cmtc_enable):
+        '''load quadplane_terrain_avoid.lua at the Top of the World, check we
+        have terrain data there, and leave the vehicle in AUTO with the
+        mission loaded and the applet activated'''
         self.start_subtest("Terrain Avoidance Load and Start")
 
         # We do this in a real-world scenario in Alaska where we take off from the Top of the World
@@ -2983,7 +2985,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.wait_text("Terrain Avoid .* script loaded", regex=True, check_context=True)
         self.set_parameters({
-            "TA_CMTC_ENABLE": 1,
+            "TA_CMTC_ENABLE": cmtc_enable,
             "TA_CMTC_RAD": 80,
             "TA_ALT_MAX": 250,
             "WP_LOITER_RAD": 150,
@@ -3053,6 +3055,20 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.progress("TERRAIN_OFS_MAX is %f" % self.get_parameter('TERRAIN_OFS_MAX'))
         self.progress("ROLL_LIMIT_DEG is %f" % self.get_parameter('ROLL_LIMIT_DEG'))
 
+    def terrain_avoid_applet_teardown(self):
+        '''undo terrain_avoid_applet_setup'''
+        # autotest doesn't like this location, so need to move back to Dalby before finishing
+        self.customise_SITL_commandline(
+            ["--home", "-27.274439,151.290064,343.0,0"]
+        )
+        self.reboot_sitl()
+        # remove the installed module. Pretty sure Autotest will remove the script itself
+        self.remove_installed_script_module("mavlink_wrappers.lua")
+
+    def TerrainAvoidApplet(self):
+        '''Terrain Avoidance with CMTC'''
+        self.terrain_avoid_applet_setup(cmtc_enable=1)
+
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.wait_text("TerrAvoid: close to home", check_context=True)
@@ -3099,13 +3115,36 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         ]:
             self.assert_statustext_count_in_collections(text, count)
 
-        # autotest doesn't like this location, so need to move back to Dalby before finishing
-        self.customise_SITL_commandline(
-            ["--home", "-27.274439,151.290064,343.0,0"]
-        )
-        self.reboot_sitl()
-        # remove the installed module. Pretty sure Autotest will remove the script itself
-        self.remove_installed_script_module("mavlink_wrappers.lua")
+        self.terrain_avoid_applet_teardown()
+
+    def TerrainAvoidAppletPitching(self):
+        '''Terrain Avoidance pitching with CMTC disabled'''
+        # With CMTC disabled the applet can no longer climb over terrain
+        # before reaching it, so pitching (and quading) are the only tools
+        # it has left.  That makes the pitching path deterministic in a way
+        # the CMTC-enabled flight in TerrainAvoidApplet is not.
+        self.terrain_avoid_applet_setup(cmtc_enable=0)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_text("TerrAvoid: close to home", check_context=True)
+
+        self.wait_statustext('Land complete', timeout=600)
+        self.wait_disarmed(timeout=120) # give quadplane a long time to land
+
+        for (text, count) in [
+                ("TerrAvoid: Pitching started", 1),
+                ("TerrAvoid: Pitching DONE", 1),
+                ("TerrAvoid: terrain Ok", 1),
+        ]:
+            self.assert_statustext_count_in_collections(text, count)
+
+        # ... and TA_CMTC_ENABLE really did disable CMTC:
+        seen = self.statustext_count_in_collections("TerrAvoid: CMTC")
+        if seen:
+            raise NotAchievedException("CMTC ran with TA_CMTC_ENABLE=0 (%u times)" % seen)
+
+        self.terrain_avoid_applet_teardown()
 
     def TakeoffCheck(self):
         '''Test takeoff check - auto mode'''
@@ -3419,6 +3458,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RudderArmingWithARMING_CHECK_THROTTLEUnset,
             self.ScriptedArmingChecksApplet,
             self.TerrainAvoidApplet,
+            self.TerrainAvoidAppletPitching,
             self.TakeoffCheck,
             self.MAVFTPBadReadOffset,
             self.FenceRelativePreArms,
