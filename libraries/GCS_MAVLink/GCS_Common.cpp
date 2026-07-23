@@ -3297,13 +3297,10 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int
 
     switch(id) {
     case MSG_AVAILABLE_MODES:
+        available_modes.requested = true;
         available_modes.should_send = true;
         available_modes.next_index = 1;
         available_modes.requested_index = (uint8_t)packet.param2;
-
-        // After the first request sequnece is streamed in the AVAILABLE_MODES_MONITOR message
-        // This allows the GCS to re-request modes if there is a change
-        set_ap_message_interval(MSG_AVAILABLE_MODES_MONITOR, 5000);
         break;
 
 #if AP_CAMERA_ENABLED
@@ -6601,10 +6598,24 @@ bool GCS_MAVLINK::send_available_mode_monitor()
 
     mavlink_msg_available_modes_monitor_send(
         chan,
-        gcs().get_available_modes_sequence()
+        available_modes.available_modes_sequence
     );
 
     return true;
+}
+
+void GCS_MAVLINK::available_modes_changed()
+{
+    // Only increment the counter if this channel is tracking modes
+    if (!available_modes.requested) {
+        return;
+    }
+
+    available_modes.available_modes_sequence += 1;
+
+    // Stream the AVAILABLE_MODES_MONITOR message
+    // This allows the GCS to re-request modes
+    set_ap_message_interval(MSG_AVAILABLE_MODES_MONITOR, 5000);
 }
 
 bool GCS_MAVLINK::try_send_message(const enum ap_message id)
