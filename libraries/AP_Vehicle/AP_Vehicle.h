@@ -325,6 +325,9 @@ public:
     virtual bool set_home(const Location& loc, bool lock) WARN_IF_UNUSED { return false; }
 #endif
 
+    int8_t get_param_lockdown() const { return param_lockdown; }
+    bool is_param_lockdown(const AP_Param *p) const { return p == &param_lockdown; }
+
 protected:
 
     virtual void init_ardupilot() = 0;
@@ -578,6 +581,9 @@ protected:
 
     // Bitmask of modes to disable from gcs
     AP_Int32 flight_mode_GCS_block;
+
+    // level of parameter write lockdown via MAVLink
+    AP_Int8 param_lockdown;
 
 private:
 

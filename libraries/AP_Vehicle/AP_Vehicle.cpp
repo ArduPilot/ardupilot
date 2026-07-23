@@ -212,6 +212,12 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_GROUPINFO("FLTMODE_GCSBLOCK", 20, AP_Vehicle, flight_mode_GCS_block, 0),
 #endif // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
 
+    // @Param: PARAM_LOCKDOWN
+    // @DisplayName: Parameter write lockdown via MAVLink
+    // @Description: Controls protection against MAVLink parameter writes. 0:No restriction, 1:Reject all parameter writes while armed, 2:Reject all parameter writes except PARAM_LOCKDOWN itself (allows unlocking), 3:Reject all parameter writes including PARAM_LOCKDOWN (recovery requires full firmware reflash)
+    // @Values: 0:Disabled,1:Lock when armed,2:Lock all except this param,3:Lock all (reflash to recover)
+    // @User: Advanced
+    AP_GROUPINFO("PARAM_LOCKDOWN", 34, AP_Vehicle, param_lockdown, 0),
 
 #if AP_NETWORKING_ENABLED
     // @Group: NET_
