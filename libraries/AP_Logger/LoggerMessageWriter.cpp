@@ -434,11 +434,7 @@ void LoggerMessageWriter_WriteAllRallyPoints::reset()
 #endif  // HAL_LOGGER_RALLY_ENABLED
 
 void LoggerMessageWriter_WriteEntireMission::process() {
-    const AP_Mission *_mission = AP::mission();
-    if (_mission == nullptr) {
-        _finished = true;
-        return;
-    }
+    const AP_Mission &_mission = AP::mission();
 
     switch(stage) {
 
@@ -451,14 +447,14 @@ void LoggerMessageWriter_WriteEntireMission::process() {
 
     case Stage::WRITE_MISSION_ITEMS: {
         AP_Mission::Mission_Command cmd;
-        while (_mission_number_to_send < _mission->num_commands()) {
+        while (_mission_number_to_send < _mission.num_commands()) {
             if (out_of_time_for_writing_messages()) {
                 return;
             }
             // upon failure to write the mission we will re-read from
             // storage; this could be improved.
-            if (_mission->read_cmd_from_storage(_mission_number_to_send,cmd)) {
-                if (!_logger_backend->Write_Mission_Cmd(*_mission, cmd, LOG_CMD_MSG)) {
+            if (_mission.read_cmd_from_storage(_mission_number_to_send,cmd)) {
+                if (!_logger_backend->Write_Mission_Cmd(_mission, cmd, LOG_CMD_MSG)) {
                     return; // call me again
                 }
             }
