@@ -195,8 +195,14 @@ void UsageFault_Handler(void) {
     while(1) {}
 }
 
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+// the trace handler falls through to this for faults it can't recover from
+void MemManage_Handler_default(void);
+void MemManage_Handler_default(void) {
+#else
 void MemManage_Handler(void);
 void MemManage_Handler(void) {
+#endif
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
     //Get thread context. Contains main registers including PC and LR
     struct port_extctx ctx;
@@ -243,11 +249,45 @@ void UsageFault_Handler(void) {
     HardFault_Handler();
 }
 
+#if !AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
 void MemManage_Handler(void);
 void MemManage_Handler(void) {
     HardFault_Handler();
 }
 #endif
+#endif
+
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+/*
+  intercept MemManage to trap writes to the reserved first 1k. This must be
+  naked: r4-r11 are not stacked by hardware, and on the fallback path we have to
+  reach the fatal handler with MSP, PSP and LR exactly as the hardware left them
+ */
+#if AP_CRASHDUMP_ENABLED
+#define MEMPROTECT_FALLBACK "HardFault_Handler"
+#else
+#define MEMPROTECT_FALLBACK "MemManage_Handler_default"
+#endif
+
+void MemManage_Handler(void) __attribute__((naked));
+void MemManage_Handler(void)
+{
+    __asm__ volatile (
+        "   tst     lr, #4                  \n" // EXC_RETURN[2]: 0=MSP, 1=PSP
+        "   ite     eq                      \n"
+        "   mrseq   r0, msp                 \n"
+        "   mrsne   r0, psp                 \n"
+        "   mov     r1, lr                  \n"
+        "   push    {r0, lr}                \n" // r0 is filler, keeps 8 byte alignment
+        "   bl      memprotect_handle_fault \n"
+        "   pop     {r1, lr}                \n"
+        "   cmp     r0, #0                  \n"
+        "   it      ne                      \n"
+        "   bxne    lr                      \n" // recovered, retry the store
+        "   b       " MEMPROTECT_FALLBACK "  \n"
+    );
+}
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
 
 
 #if AP_WATCHDOG_SAVE_FAULT_ENABLED
