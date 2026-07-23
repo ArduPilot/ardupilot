@@ -230,6 +230,9 @@ public:
         TYPE_AUAV_5IN=18,
         TYPE_AUAV_30IN=19,
 #endif  // AP_AIRSPEED_AUAV_ENABLED
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+        TYPE_SCRIPTING=20,
+#endif  // AP_AIRSPEED_SCRIPTING_ENABLED
 #if AP_AIRSPEED_SITL_ENABLED
         TYPE_SITL=100,
 #endif  // AP_AIRSPEED_SITL_ENABLED
@@ -240,7 +243,12 @@ public:
 
     // get number of sensors
     uint8_t get_num_sensors(void) const { return num_sensors; }
-    
+
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+    // get backend for a given instance, used by scripting
+    AP_Airspeed_Backend *get_backend(uint8_t id) const;
+#endif // AP_AIRSPEED_SCRIPTING_ENABLED
+
     static AP_Airspeed *get_singleton() { return _singleton; }
 
     // return the current corrected pressure, public for AP_Periph
