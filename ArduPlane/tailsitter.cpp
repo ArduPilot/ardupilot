@@ -753,7 +753,11 @@ void Tailsitter::speed_scaling(void)
                     float reverse_airspeed = 0.0;
                     Vector3f vel;
                     if (quadplane.ahrs.get_velocity_NED(vel)) {
-                        reverse_airspeed = quadplane.ahrs.earth_to_body(vel - quadplane.ahrs.wind_estimate()).x;
+                        Vector3f wind;
+                        // use the estimate even if it is not marked
+                        // valid, to preserve existing behaviour
+                        IGNORE_RETURN(quadplane.ahrs.get_wind(wind));
+                        reverse_airspeed = quadplane.ahrs.earth_to_body(vel - wind).x;
                     }
                     // make sure actually negative
                     reverse_airspeed = MIN(reverse_airspeed, 0.0);

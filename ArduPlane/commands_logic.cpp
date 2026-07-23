@@ -1079,7 +1079,10 @@ bool Plane::verify_landing_vtol_approach(const AP_Mission::Mission_Command &cmd)
                 nav_controller->update_loiter(cmd.content.location, abs_radius, direction);
 
                 if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_achieve_target_alt)) {
-                    Vector3f wind = ahrs.wind_estimate();
+                    Vector3f wind;
+                    // use the estimate even if it is not marked valid,
+                    // to preserve existing behaviour
+                    IGNORE_RETURN(ahrs.get_wind(wind));
                     vtol_approach_s.approach_direction_deg = degrees(atan2f(-wind.y, -wind.x));
                     gcs().send_text(MAV_SEVERITY_INFO, "Selected an approach path of %.1f", (double)vtol_approach_s.approach_direction_deg);
                     vtol_approach_s.approach_stage = VTOLApproach::Stage::ENSURE_RADIUS;
