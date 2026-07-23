@@ -47,7 +47,9 @@ MAV_DATA_STREAM = { MAV_DATA_STREAM_ALL=0, MAV_DATA_STREAM_RAW_SENSORS=1, MAV_DA
 FLIGHT_MODE = {AUTO=10, RTL=11, LOITER=12, GUIDED=15, QHOVER=18, QLOITER=19, QRTL=21}
 
 local ahrs_eas2tas = ahrs:get_EAS2TAS()
-local windspeed_vector = ahrs:wind_estimate()
+-- assume zero wind if we have no estimate; this is only used to derive an
+-- airspeed vector from the ground velocity
+local windspeed_vector = ahrs:get_wind() or Vector3f()
 
 local now_ms = millis()
 local now_target_heading_ms = now_ms
@@ -719,7 +721,7 @@ end
 function Update()
    now_ms = millis()
    ahrs_eas2tas = ahrs:get_EAS2TAS()
-   windspeed_vector = ahrs:wind_estimate()
+   windspeed_vector = ahrs:get_wind() or Vector3f()
 
    simulate_failure.check()
    follow_mode.check()
