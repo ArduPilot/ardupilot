@@ -476,6 +476,8 @@ private:
         ManualLaneSwitch        = (1<<1),
         OptflowMayUseTerrainAlt = (1<<2),
         AglKfForOptflow         = (1<<3),  // Use IMU-aided 2-state AGL KF for optflow scaling
+        SetLatLngFusion         = (1<<4),
+        SetLatLngOffset         = (1<<5),
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;
