@@ -223,7 +223,9 @@ protected:
 
     bool manual_transmitter_checks(bool report);
 
+#if AP_MISSION_ENABLED
     virtual bool mission_checks(bool report);
+#endif  // AP_MISSION_ENABLED
 
     bool terrain_checks(bool report) const;
 
