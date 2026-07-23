@@ -3324,6 +3324,33 @@ function rangefinder:has_orientation(orientation) end
 ---@return integer
 function rangefinder:num_sensors() end
 
+-- Airspeed backend
+---@class (exact) AP_Airspeed_Backend_ud
+local AP_Airspeed_Backend_ud = {}
+
+-- Provide a differential pressure reading, in Pascal. Returns false if failed. If an airspeed is provided directly that will take priority and the differential pressure will not be used.
+---@param press_pa number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_differential_pressure(press_pa) end
+
+-- Provide an airspeed reading, in m/s. Returns false if failed
+---@param airspeed_ms number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_airspeed(airspeed_ms) end
+
+-- Provide a temperature reading, in degrees C. Returns false if failed
+---@param temperature_c number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_temperature(temperature_c) end
+
+-- Airspeed library methods
+airspeed = {}
+
+-- get backend based on airspeed instance provided, 0 indexed
+---@param instance integer
+---@return AP_Airspeed_Backend_ud|nil
+function airspeed:get_backend(instance) end
+
 -- Proximity backend methods
 ---@class (exact) AP_Proximity_Backend_ud
 local AP_Proximity_Backend_ud = {}
