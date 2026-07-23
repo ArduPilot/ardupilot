@@ -6715,7 +6715,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.progress('rebuilding rover with ppp enabled')
         import shutil
         shutil.copy('build/sitl/bin/ardurover', 'build/sitl/bin/ardurover.noppp')
-        util.build_SITL('bin/ardurover', clean=False, configure=True, extra_configure_args=['--enable-PPP', '--debug'])
+        # --enable-math-check-indexes matches the CI rover build
+        # configuration, so in CI this rebuild is a ccache hit against
+        # the pre-built PPP rover from the build job
+        util.build_SITL('bin/ardurover', clean=False, configure=True,
+                        extra_configure_args=['--enable-PPP', '--enable-math-check-indexes', '--debug'])
 
         self.reboot_sitl()
 
