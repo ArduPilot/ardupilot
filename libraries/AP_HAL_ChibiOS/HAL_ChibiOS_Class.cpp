@@ -38,6 +38,7 @@
 #endif
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_HAL/SIMState.h>
+#include "MemProtect.h"
 
 #include <hwdef.h>
 
@@ -332,6 +333,11 @@ static void main_loop()
 #if AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
     mem_protect_enable();
 #endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+    // the monitor thread is already running, so the region always has a re-armer
+    memprotect_init();
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
 
     while (true) {
 #if AP_USB_DEBUG_ENABLED
