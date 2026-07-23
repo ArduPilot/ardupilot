@@ -8084,6 +8084,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (cam2_compid, 70, 80),
         ])
 
+        self.progress("Test setting zoom and focus on all cameras at once")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM,
+            p1=mavutil.mavlink.ZOOM_TYPE_RANGE,
+            p2=50,  # 50%
+            p3=0,   # 0 means all cameras
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_FOCUS,
+            p1=mavutil.mavlink.FOCUS_TYPE_RANGE,
+            p2=60,  # 60%
+            p3=0,   # 0 means all cameras
+        )
+        self.wait_camera_settings([
+            (cam1_compid, 50, 60),
+            (cam2_compid, 50, 60),
+        ])
+
     def MountAVTCM62DualMission(self):
         '''test dual AVT CM62 cameras with photo capture, zoom and focus
         controlled via mission items'''
