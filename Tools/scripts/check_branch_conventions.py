@@ -28,7 +28,6 @@ import sys
 import urllib.error
 import urllib.request
 
-import allowed_subsystems
 import build_script_base
 
 DOCS_URL = "https://ardupilot.org/dev/docs/submitting-patches-back-to-master.html"
@@ -114,10 +113,19 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
             if not line.strip():
                 continue
             # strip leading hash from --oneline format
-            subject = line.split(" ", 1)[1] if " " in line else line
+            sha, separator, subject = line.partition(" ")
+            if not separator:
+                sha, subject = "", line
             if ":" not in subject:
-                print(f"{FAIL} Commit is missing subsystem prefix: {line}")
-                print(f"       Reword to e.g. 'AP_Compass: {subject}'")
+                suggestion = self.subsystem_for_commit(sha) if sha else None
+                print(f"{FAIL} Commit message subject is missing its subsystem prefix: {line}")
+                print("       (this is about the git commit message, not the pull request title)")
+                if suggestion is not None:
+                    print(f"       Reword the commit message to: '{suggestion}: {subject}'")
+                else:
+                    print(f"       Reword the commit message to e.g. 'AP_Compass: {subject}'")
+                print("       Use 'git commit --amend' for the most recent commit, "
+                      "'git rebase -i' for an older one.")
                 print(f"       See: {DOCS_URL}")
                 ok = False
                 continue
@@ -140,10 +148,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
            - the declared prefix is in the allowed-subsystem list, and
            - every file changed in the commit belongs to that subsystem.
         '''
-        repo_root = self.run_git(
-            ['rev-parse', '--show-toplevel'], show_output=False,
-        ).strip()
-        subsystems = allowed_subsystems.AllowedSubsystems(repo_root)
+        subsystems = self.get_allowed_subsystems()
         commits_raw = self.run_git(
             ['log', f'{self.base_branch}..HEAD', '--reverse',
              '--pretty=format:%H %s'],
