@@ -142,6 +142,13 @@
 #define AP_SIM_SERIALDEVICE_CORRUPTION_ENABLED 0
 #endif
 
+// allow simulated serial devices to be attached to a TCP socket rather
+// than to a simulated serial port, so devices connected to the
+// autopilot's network ports can be simulated:
+#ifndef AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+#define AP_SIM_SERIALDEVICE_NETWORK_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
 #ifndef AP_SIM_GPS_ENABLED
 #define AP_SIM_GPS_ENABLED AP_SIM_ENABLED
 #endif
