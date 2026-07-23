@@ -941,13 +941,8 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 #if AP_MISSION_ENABLED
 bool AP_Arming::mission_checks(bool report)
 {
-    AP_Mission *mission = AP::mission();
+    AP_Mission &mission = AP::mission();
     if (check_enabled(Check::MISSION) && _required_mission_items) {
-        if (mission == nullptr) {
-            check_failed(Check::MISSION, report, "No mission library present");
-            return false;
-        }
-
         const struct MisItemTable {
           MIS_ITEM_CHECK check;
           MAV_CMD mis_item_type;
@@ -962,7 +957,7 @@ bool AP_Arming::mission_checks(bool report)
         };
         for (uint8_t i = 0; i < ARRAY_SIZE(misChecks); i++) {
             if (_required_mission_items & misChecks[i].check) {
-                if (!mission->contains_item(misChecks[i].mis_item_type)) {
+                if (!mission.contains_item(misChecks[i].mis_item_type)) {
                     check_failed(Check::MISSION, report, "Missing mission item: %s", misChecks[i].type);
                     return false;
                 }
@@ -994,8 +989,7 @@ bool AP_Arming::mission_checks(bool report)
 
 #if AP_SDCARD_STORAGE_ENABLED
     if (check_enabled(Check::MISSION) &&
-        mission != nullptr &&
-        (mission->failed_sdcard_storage() || StorageManager::storage_failed())) {
+        (mission.failed_sdcard_storage() || StorageManager::storage_failed())) {
         check_failed(Check::MISSION, report, "Failed to open %s", AP_MISSION_SDCARD_FILENAME);
         return false;
     }
@@ -1005,7 +999,7 @@ bool AP_Arming::mission_checks(bool report)
     // do not allow arming if there are no mission items and we are in
     // (e.g.) AUTO mode
     if (AP::vehicle()->current_mode_requires_mission() &&
-        (mission == nullptr || !mission->present())) {
+        !mission.present()) {
         check_failed(Check::MISSION, report, "Mode requires mission");
         return false;
     }
@@ -1238,8 +1232,7 @@ bool AP_Arming::system_checks(bool report)
 bool AP_Arming::terrain_database_required() const
 {
 #if AP_MISSION_ENABLED
-    AP_Mission *mission = AP::mission();
-    if (mission != nullptr && mission->contains_terrain_alt_items()) {
+    if (AP::mission().contains_terrain_alt_items()) {
         return true;
     }
 #endif
