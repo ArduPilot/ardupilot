@@ -371,6 +371,19 @@ class BuildScriptBase(ABC):
         )
         return [line.strip() for line in output.splitlines() if line.strip()]
 
+    def get_changed_paths_for_commit(self, commit: str) -> list:
+        '''return the list of paths changed in a single commit'''
+        output = self.run_git(
+            ['diff-tree', '--no-commit-id', '-r', '--name-only', commit],
+            show_output=False,
+        )
+        paths = []
+        for line in output.splitlines():
+            line = line.strip()
+            if line:
+                paths.append(line)
+        return paths
+
     def created_library_dirs(self, commit: str) -> set:
         '''libraries/<X> subsystem names introduced by files added in commit'''
         created = set()

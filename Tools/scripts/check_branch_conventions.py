@@ -268,19 +268,6 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
                     result[name_to_path[name]] = parts[1]
         return result
 
-    def get_changed_paths_for_commit(self, commit: str) -> list:
-        '''return the list of paths changed in a single commit'''
-        output = self.run_git(
-            ['diff-tree', '--no-commit-id', '-r', '--name-only', commit],
-            show_output=False,
-        )
-        paths = []
-        for line in output.splitlines():
-            line = line.strip()
-            if line:
-                paths.append(line)
-        return paths
-
     def check_submodule_isolation(self) -> bool:
         '''check that each submodule update is isolated in its own commit'''
         submodule_paths = self.get_submodule_paths()
