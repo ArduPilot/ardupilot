@@ -3635,7 +3635,7 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
             send_text(MAV_SEVERITY_INFO, "x: %u", (unsigned)*foo);
-#pragma GCSS diagnostic pop
+#pragma GCC diagnostic pop
 
             return MAV_RESULT_ACCEPTED;
         }
