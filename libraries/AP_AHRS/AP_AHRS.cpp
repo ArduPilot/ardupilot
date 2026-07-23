@@ -758,8 +758,12 @@ float AP_AHRS::wind_alignment(const float heading_deg) const
  */
 float AP_AHRS::head_wind(void) const
 {
+    Vector3f wind;
+    // wind_alignment() has already returned zero if we have no valid
+    // estimate, so the validity of the wind vector is not checked here
+    IGNORE_RETURN(get_wind(wind));
     const float alignment = wind_alignment(get_yaw_deg());
-    return alignment * wind_estimate().xy().length();
+    return alignment * wind.xy().length();
 }
 
 /*

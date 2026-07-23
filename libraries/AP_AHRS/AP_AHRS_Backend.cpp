@@ -202,7 +202,9 @@ void AP_AHRS::update_AOA_SSA(void)
         return;
     }
 
-    aoa_wind = wind_estimate();
+    // use the wind estimate even if it is not marked valid; a zero or
+    // stale wind vector simply degrades the AOA/SSA estimate
+    IGNORE_RETURN(get_wind(aoa_wind));
 
     // Rotate vectors to the body frame and calculate velocity and wind
     const Matrix3f &rot = get_rotation_body_to_ned();
