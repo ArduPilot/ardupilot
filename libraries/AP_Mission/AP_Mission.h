@@ -999,5 +999,5 @@ private:
 
 namespace AP
 {
-AP_Mission *mission();
+AP_Mission &mission();
 };
