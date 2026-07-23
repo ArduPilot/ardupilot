@@ -1483,6 +1483,13 @@ bool AP_Param::allow_set_via_mavlink(uint16_t flags) const
                 }
                 // level 3: reject all unconditionally (reflash to recover)
                 // any other lockdown level also rejects
+                // rate limit to avoid spamming when writing lots of params
+                static uint32_t last_lockdown_msg_ms;
+                const uint32_t now_ms = AP_HAL::millis();
+                if (now_ms - last_lockdown_msg_ms > 5000) {
+                    last_lockdown_msg_ms = now_ms;
+                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Param set rejected: lockdown active (level %d)", lockdown);
+                }
                 return false;
             }
         }
