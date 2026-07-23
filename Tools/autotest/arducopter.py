@@ -8265,6 +8265,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.start_flying_simple_relhome_mission(mission_items)
 
+        self.progress("Verify CAMERA_CAPTURE_STATUS reports the interval capture")
+        # wait for camera 2 to finish the images it was asked for, leaving
+        # camera 1 as the only one with an interval set for the rest of the
+        # climb
+        self.wait_camera_img_idx([(1, 2)])
+        got = sorted(self.camera_capture_statuses(2))
+        if got != [CAMERA_IMAGE_STATUS_IDLE, CAMERA_IMAGE_STATUS_INTERVAL_IDLE]:
+            raise NotAchievedException(
+                f"Wanted exactly one camera capturing on an interval: {got}")
+
         # the return-to-launch is the last item, so home is its sequence
         # number; by the time it is current camera 1 has been stopped
         self.wait_current_waypoint(len(mission_items))
