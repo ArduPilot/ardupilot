@@ -257,6 +257,9 @@ private:
         bool tx_pending() override {
             return false;
         }
+        bool is_network_port() const override {
+            return true;
+        }
 
         void udp_client_init(void);
         void udp_server_init(void);
