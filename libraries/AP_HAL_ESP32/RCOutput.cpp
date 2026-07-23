@@ -832,10 +832,15 @@ void RCOutput::bdshot_rx_task()
         }
 
         // Split the burst at the command->reply turnaround gap. The line idles HIGH,
-        // so a capture starts on a falling edge and each symbol is a LOW run
-        // (duration0) then a HIGH run (duration1): the ~30 us gap is always a
-        // duration1. No gap found: either a reply-only capture (few symbols) or a
-        // command-only one — the ESC never replied (see BDSHOT_REPLY_MAX_SYMBOLS).
+        // so a capture normally starts on a falling edge and each symbol is a LOW run
+        // (duration0) then a HIGH run (duration1): the ~30 us gap is a duration1.
+        // But when the re-arm lands mid-command (inside a LOW run) the capture starts
+        // on a RISING edge instead — the polarity is flipped, the gap sits in a
+        // duration0, and that symbol's duration1 is already the reply's first run:
+        // re-align the half-symbol-shifted runs in place so the reply starts on a
+        // symbol boundary (the decoder only consumes run durations, not levels).
+        // No gap found: either a reply-only capture (few symbols) or a command-only
+        // one — the ESC never replied (see BDSHOT_REPLY_MAX_SYMBOLS).
         const rmt_symbol_word_t *reply = burst;
         uint32_t reply_n = nsym;
         bool gap_found = false;
@@ -843,6 +848,19 @@ void RCOutput::bdshot_rx_task()
             if (burst[i].duration1 >= BDSHOT_GAP_MIN_TICKS) {
                 reply = &burst[i + 1];
                 reply_n = nsym - i - 1;
+                gap_found = true;
+                break;
+            }
+            if (burst[i].duration0 >= BDSHOT_GAP_MIN_TICKS) {
+                // flipped-polarity capture: shift every run down one slot, dropping
+                // the gap (safe in place: each step only reads slots not yet written;
+                // the final duration1=0 reads as end-of-capture to the decoder)
+                for (uint32_t j = i; j < nsym; j++) {
+                    burst[j].duration0 = burst[j].duration1;
+                    burst[j].duration1 = (j + 1 < nsym) ? burst[j + 1].duration0 : 0;
+                }
+                reply = &burst[i];
+                reply_n = nsym - i;
                 gap_found = true;
                 break;
             }
