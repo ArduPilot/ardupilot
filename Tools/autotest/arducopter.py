@@ -38,6 +38,11 @@ from vehicle_test_suite import WaitAndMaintainAttitude
 from vehicle_test_suite import WaitAndMaintainLocation
 from vehicle_test_suite import WaitModeTimeout
 
+# CAMERA_CAPTURE_STATUS.image_status is documented in the field description
+# rather than in an enumeration, so give the values we use names here
+CAMERA_IMAGE_STATUS_IDLE = 0
+CAMERA_IMAGE_STATUS_INTERVAL_IDLE = 2
+
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = mavutil.location(
@@ -8211,6 +8216,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Verify per-camera shot counts from mission items")
         self.wait_camera_img_idx([(0, img_idx_at_stop), (1, 2)])
+
+        self.progress("Verify CAMERA_CAPTURE_STATUS reports no interval capture")
+        got = self.camera_capture_statuses(2)
+        if got != [CAMERA_IMAGE_STATUS_IDLE, CAMERA_IMAGE_STATUS_IDLE]:
+            raise NotAchievedException(f"Camera still has an interval set: {got}")
 
         self.progress("Verify per-camera zoom and focus set by mission items")
         self.wait_camera_settings([
