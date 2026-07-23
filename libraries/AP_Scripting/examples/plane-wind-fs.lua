@@ -92,7 +92,7 @@ local timer_active = true
 local function time_to_home()
   local home = ahrs:get_home()
   local position = ahrs:get_location()
-  local wind = ahrs:wind_estimate()
+  local wind = ahrs:get_wind()
 
   if home and position and wind then
     local bearing = position:get_bearing(home)
