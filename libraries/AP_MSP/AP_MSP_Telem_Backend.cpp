@@ -289,7 +289,9 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, uint8_t
         Vector3f v;
         {
             WITH_SEMAPHORE(ahrs.get_semaphore());
-            v = ahrs.wind_estimate();
+            // use the estimate even if it is not marked valid, to
+            // preserve existing behaviour
+            IGNORE_RETURN(ahrs.get_wind(v));
         }
         bool invert_wind = false;
 #if OSD_ENABLED
