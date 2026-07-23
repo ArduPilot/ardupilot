@@ -300,7 +300,12 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             }
         }
 
-        const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), height_above_target, false);
+        Vector3f wind;
+        // use the estimate even if it is not marked valid, to preserve
+        // existing behaviour
+        IGNORE_RETURN(landing.ahrs.get_wind(wind));
+
+        const float travel_distance = predict_travel_distance(wind, height_above_target, false);
 
         memcpy(&entry_point, &landing_point, sizeof(Location));
         entry_point.offset_bearing(target_heading_deg + 180.0, travel_distance);
@@ -312,7 +317,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             }
             return false;
         }
-        predict_travel_distance(landing.ahrs.wind_estimate(), height_above_target, true);
+        predict_travel_distance(wind, height_above_target, true);
         stage = DEEPSTALL_STAGE_LAND;
         stall_entry_time = AP_HAL::millis();
 
@@ -507,7 +512,10 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
 {
     float loiter_radius = landing.nav_controller->loiter_radius(landing.aparm.loiter_radius);
 
-    Vector3f wind = landing.ahrs.wind_estimate();
+    Vector3f wind;
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(landing.ahrs.get_wind(wind));
     // TODO: Support a user defined approach heading
     target_heading_deg = use_current_heading ? landing.ahrs.get_yaw_deg() : (degrees(atan2f(-wind.y, -wind.x)));
 
