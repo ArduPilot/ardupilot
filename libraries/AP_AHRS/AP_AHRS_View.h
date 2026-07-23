@@ -93,8 +93,8 @@ public:
         return ahrs.get_location(loc);
     }
 
-    bool wind_estimate(Vector3f &wind) {
-        return ahrs.wind_estimate(wind);
+    bool get_wind(Vector3f &wind) {
+        return ahrs.get_wind(wind);
     }
 
     bool airspeed_EAS(float &airspeed_ret) const WARN_IF_UNUSED {

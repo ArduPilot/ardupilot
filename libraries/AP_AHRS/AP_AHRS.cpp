@@ -746,7 +746,7 @@ float AP_AHRS::get_error_yaw(void) const
 float AP_AHRS::wind_alignment(const float heading_deg) const
 {
     Vector3f wind;
-    if (!wind_estimate(wind)) {
+    if (!get_wind(wind)) {
         return 0;
     }
     const float wind_heading_rad = atan2f(-wind.y, -wind.x);
@@ -2340,7 +2340,7 @@ bool AP_AHRS::get_location(Location &loc) const
 }
 
 // return a wind estimation vector in "wind" (m/s); returns false on failure
-bool AP_AHRS::wind_estimate(Vector3f &wind) const
+bool AP_AHRS::get_wind(Vector3f &wind) const
 {
     wind = active_estimates->wind;
     return active_estimates->wind_valid;
