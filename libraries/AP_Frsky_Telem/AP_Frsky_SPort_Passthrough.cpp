@@ -262,10 +262,7 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
         break;
 #if AP_MISSION_ENABLED
     case WAYPOINT:
-        {
-            const AP_Mission *mission = AP::mission();
-            packet_ready = mission != nullptr && mission->get_current_nav_index() > 0;
-        }
+        packet_ready = AP::mission().get_current_nav_index() > 0;
         break;
 #endif  // AP_MISSION_ENABLED
     case UDATA:
@@ -800,9 +797,8 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_wind(void)
 #if AP_MISSION_ENABLED
 uint32_t AP_Frsky_SPort_Passthrough::calc_waypoint(void)
 {
-    const AP_Mission *mission = AP::mission();
     const AP_Vehicle *vehicle = AP::vehicle();
-    if (mission == nullptr || vehicle == nullptr) {
+    if (vehicle == nullptr) {
         return 0U;
     }
     float wp_distance;
@@ -814,7 +810,7 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_waypoint(void)
         return 0U;
     }
     // waypoint current nav index
-    uint32_t value = MIN(mission->get_current_nav_index(), WP_NUMBER_LIMIT);
+    uint32_t value = MIN(AP::mission().get_current_nav_index(), WP_NUMBER_LIMIT);
     // distance to next waypoint
     value |= prep_number(wp_distance, 3, 2) << WP_DISTANCE_OFFSET;
     // bearing encoded in 3 degrees increments
