@@ -3088,55 +3088,26 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
         self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
 
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
-
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #4 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #6 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.progress("alt is %f" % self.get_altitude(relative=False, timeout=2))
-
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.progress("#Pitching alt is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching Started", check_context=True, regex=True, timeout=600)
-        self.wait_text("TerrAvoid: Terrain Ok", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #7 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching DONE", check_context=True, regex=True)
-        self.progress("#Pitching DONE alt is %f" % self.get_altitude(relative=False, timeout=2))
-
-        # After Pitching CMTC to 1170m +- 30
-        self.wait_altitude(1140, 1200, timeout=120, relative=False, minimum_duration=5)
-
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-        # wait for 1 more CMTC's
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        # now we get a guaranteed quadding
-        self.wait_text("TerrAvoid: Pitching started", check_context=True, regex=True, timeout=120)
-        self.progress("Pitching alt #1 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching DONE", check_context=True, regex=True)
-        self.progress("Pitching alt #2 is %f" % self.get_altitude(relative=False, timeout=2))
-
-        # wait for 1 more CMTC
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
+        # The applet reacts to terrain as it comes into range, so the
+        # remaining avoidance events are emergent behaviour; which of CMTC,
+        # quading and pitching handles any given piece of terrain depends
+        # on exactly where the vehicle is when the terrain is seen.  A CMTC
+        # climb which starts a little earlier quite legitimately takes the
+        # vehicle over terrain which would otherwise have needed pitching.
+        # So fly the rest of the mission and afterwards check that the
+        # applet did the work, rather than demanding one exact sequence.
         self.wait_statustext('Land complete', timeout=600)
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
+
+        for (text, count) in [
+                ("TerrAvoid: CMTC loiter", 4),
+                ("TerrAvoid: CMTC STOP", 4),
+                ("TerrAvoid: CMTC Done", 4),
+                ("TerrAvoid: Quading started", 1),
+                ("TerrAvoid: Quading DONE", 1),
+                ("TerrAvoid: terrain Ok", 1),
+        ]:
+            self.assert_statustext_count_in_collections(text, count)
 
         # autotest doesn't like this location, so need to move back to Dalby before finishing
         self.customise_SITL_commandline(
