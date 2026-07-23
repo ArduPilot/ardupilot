@@ -94,7 +94,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::RESETTOARMEDYAW:
     case AUX_FUNC::RTL:
     case AUX_FUNC::SAVE_TRIM:
+#if MODE_AUTO_ENABLED
     case AUX_FUNC::SAVE_WP:
+#endif  // MODE_AUTO_ENABLED
     case AUX_FUNC::SMART_RTL:
     case AUX_FUNC::STABILIZE:
     case AUX_FUNC::THROW:
@@ -108,7 +110,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::ZIGZAG_Auto:
     case AUX_FUNC::ZIGZAG_SaveWP:
     case AUX_FUNC::ACRO:
+#if MODE_AUTO_ENABLED
     case AUX_FUNC::AUTO_RTL:
+#endif  // MODE_AUTO_ENABLED
     case AUX_FUNC::TURTLE:
     case AUX_FUNC::SIMPLE_HEADING_RESET:
     case AUX_FUNC::ARMDISARM_AIRMODE:

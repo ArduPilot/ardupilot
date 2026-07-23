@@ -528,6 +528,7 @@ private:
 
 };
 
+#if MODE_AUTO_ENABLED
 class ModeAuto : public Mode {
 
 public:
@@ -810,6 +811,7 @@ private:
 
     float circle_last_num_complete;
 };
+#endif  // MODE_AUTO_ENABLED
 
 #if AUTOTUNE_ENABLED
 /*
