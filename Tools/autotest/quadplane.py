@@ -2979,7 +2979,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         })
 
         self.install_applet_script_context("quadplane_terrain_avoid.lua")
-        self.install_script_module(self.script_modules_source_path("mavlink_wrappers.lua"), "mavlink_wrappers.lua")
+        self.install_script_module_context(self.script_modules_source_path("mavlink_wrappers.lua"), "mavlink_wrappers.lua")
         self.reboot_sitl(check_position=False)
         self.wait_ready_to_arm()
 
@@ -3062,8 +3062,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             ["--home", "-27.274439,151.290064,343.0,0"]
         )
         self.reboot_sitl()
-        # remove the installed module. Pretty sure Autotest will remove the script itself
-        self.remove_installed_script_module("mavlink_wrappers.lua")
 
     def TerrainAvoidApplet(self):
         '''Terrain Avoidance with CMTC'''

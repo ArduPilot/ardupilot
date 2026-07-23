@@ -8584,9 +8584,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.start_subtest("Plane Follow Script Load and Start")
 
         self.install_applet_script_context("plane_follow.lua")
-        self.install_script_module(self.script_modules_source_path("pid.lua"), "pid.lua")
-        self.install_script_module(self.script_modules_source_path("mavlink_attitude.lua"), "mavlink_attitude.lua")
-        self.install_mavlink_module()
+        self.install_script_module_context(self.script_modules_source_path("pid.lua"), "pid.lua")
+        self.install_script_module_context(self.script_modules_source_path("mavlink_attitude.lua"), "mavlink_attitude.lua")
+        self.install_mavlink_module_context()
 
         self.set_parameters({
             "SCR_ENABLE": 1,
@@ -8612,9 +8612,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
 
         self.reboot_sitl()
-        # remove the installed modules.
-        self.remove_installed_script_module("pid.lua")
-        self.remove_installed_script_module("mavlink_attitude.lua")
 
     def PreflightRebootComponent(self):
         '''Ensure that PREFLIGHT_REBOOT commands sent to components don't reboot Autopilot'''

@@ -5330,6 +5330,14 @@ class TestSuite(abc.ABC):
         self.install_test_modules()
         self.context_get().installed_modules.append("test")
 
+    def install_script_module_context(self, source, modulename, install_name=None):
+        '''installs a scripting module which will be removed when the context
+        goes away'''
+        self.install_script_module(source, modulename, install_name=install_name)
+        if install_name is None:
+            install_name = modulename
+        self.context_get().installed_modules.append(os.path.basename(install_name))
+
     def install_mavlink_module_context(self):
         '''installs mavlink module which will be removed when the context goes
         away'''
@@ -9472,14 +9480,14 @@ Also, ignores heartbeats not from our target system'''
         except OSError:
             pass
 
-    def remove_installed_script_module(self, modulename):
-        path = self.installed_script_module_path(modulename)
-        os.unlink(path)
-
     def remove_installed_modules(self, modulename):
+        # a module is either a directory of lua files or a single lua file:
         dest = os.path.join("scripts", "modules", modulename)
         try:
-            shutil.rmtree(dest)
+            if os.path.isdir(dest):
+                shutil.rmtree(dest)
+            else:
+                os.unlink(dest)
         except IOError:
             pass
         except OSError:
