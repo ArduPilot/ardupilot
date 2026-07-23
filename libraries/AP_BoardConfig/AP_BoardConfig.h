@@ -69,7 +69,7 @@ public:
         FMUV6_BOARD_HOLYBRO_6X = 40,
         FMUV6_BOARD_CUAV_6X = 41,
         FMUV6_BOARD_HOLYBRO_6X_REV6 = 42,
-        FMUV6_BOARD_HOLYBRO_6X_45686 = 43,
+        FMUV6_BOARD_HOLYBRO_6X_REV8 = 43,
         PX4_BOARD_OLDDRIVERS = 100,
     };
 
@@ -282,7 +282,7 @@ private:
     void board_autodetect(void);
     void detect_fmuv6_variant(void);
     bool probe_lsm6dsv_family(const char *devname);
-    bool probe_holybro_6x_imu_slot(const char *icm_devname, const char *lsm6_devname);
+    bool probe_compatible_imu_slot(const char *icm_devname, const char *lsm6_devname);
     bool check_ms5611(const char* devname);
 
 #endif // AP_FEATURE_BOARD_DETECT
