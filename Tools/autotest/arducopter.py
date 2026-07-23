@@ -7836,6 +7836,83 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         (expected_cap_flags, m.flags))
             return
 
+    def wait_camera_initialised(self, instance, timeout=30):
+        '''wait for the camera backend for instance (1-based) to report a
+        vendor name in CAMERA_INFORMATION; it only does that once the camera
+        has completed its handshake with the backend'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(
+                    "Camera instance %u did not initialise" % instance)
+            try:
+                m = self.poll_message('CAMERA_INFORMATION', timeout=5, p2=instance)
+            except NotAchievedException:
+                continue
+            if bytes(m.vendor_name).split(b'\x00')[0]:
+                return
+
+    def camera_settings_for_compid(self, compid):
+        '''return most recently collected CAMERA_SETTINGS from compid, if any'''
+        ret = None
+        for m in self.context_collection('CAMERA_SETTINGS'):
+            if m.get_srcComponent() == compid:
+                ret = m
+        return ret
+
+    def wait_camera_settings(self, wants, timeout=30):
+        '''wait for collected CAMERA_SETTINGS to show each (compid, zoom,
+        focus) in wants; a wanted value of None is not checked.  The cameras
+        emit CAMERA_SETTINGS in response to zoom and focus commands, so this
+        returns as soon as those responses arrive'''
+        tstart = self.get_sim_time()
+        while True:
+            unmet = []
+            for (compid, want_zoom, want_focus) in wants:
+                m = self.camera_settings_for_compid(compid)
+                if m is None:
+                    unmet.append("compid %u: no CAMERA_SETTINGS" % compid)
+                    continue
+                if want_zoom is not None and abs(m.zoomLevel - want_zoom) > 0.5:
+                    unmet.append("compid %u: zoom want=%f got=%f" %
+                                 (compid, want_zoom, m.zoomLevel))
+                if want_focus is not None and abs(m.focusLevel - want_focus) > 0.5:
+                    unmet.append("compid %u: focus want=%f got=%f" %
+                                 (compid, want_focus, m.focusLevel))
+            if len(unmet) == 0:
+                return
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("; ".join(unmet))
+            self.mav.recv_match(type='CAMERA_SETTINGS', blocking=True, timeout=0.1)
+
+    def camera_feedback_img_idx(self, cam_idx):
+        '''return most recently collected img_idx for cam_idx, or None.
+        CAMERA_FEEDBACK is emitted for every camera whenever any camera
+        triggers, so the most recent message from a camera carries that
+        camera's current count of images taken since boot'''
+        ret = None
+        for m in self.context_collection('CAMERA_FEEDBACK'):
+            if m.cam_idx == cam_idx:
+                ret = m.img_idx
+        return ret
+
+    def wait_camera_img_idx(self, wants, timeout=30):
+        '''wait for collected CAMERA_FEEDBACK to show each (cam_idx, img_idx)
+        in wants'''
+        tstart = self.get_sim_time()
+        while True:
+            unmet = []
+            for (cam_idx, want_img_idx) in wants:
+                got = self.camera_feedback_img_idx(cam_idx)
+                if got != want_img_idx:
+                    unmet.append("cam_idx %u: img_idx want=%s got=%s" %
+                                 (cam_idx, want_img_idx, got))
+            if len(unmet) == 0:
+                return
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("; ".join(unmet))
+            self.mav.recv_match(type='CAMERA_FEEDBACK', blocking=True, timeout=0.1)
+
     def MountSiyiZT30(self):
         '''test Siyi ZT30 gimbal using SIM_Siyi_ZT30 simulator'''
         self.set_parameters({
@@ -7934,7 +8011,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "--serial5=sim:avt_cm62_gimbal:",
             "--serial6=sim:avt_cm62_gimbal:",
         ])
-        self.delay_sim_time(12, "wait for MAVLink camera backends to initialise")
+        for instance in 1, 2:
+            self.wait_camera_initialised(instance)
+        self.context_collect('CAMERA_FEEDBACK')
+        self.context_collect('CAMERA_SETTINGS')
 
     def MountAVTCM62Dual(self):
         '''test two simultaneous MAVLink (Gimbal Protocol v2) gimbals using
@@ -7942,16 +8022,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self._setup_avt_cm62_dual()
 
         # note that CAMERA_FEEDBACK uses instance numbers starting from 0
-        trigger_counts = {}
-
-        def trig_counter(mav, m):
-            if m.get_type() != 'CAMERA_FEEDBACK':
-                return
-            if m.cam_idx not in trigger_counts:
-                trigger_counts[m.cam_idx] = 0
-            trigger_counts[m.cam_idx] += 1
-
-        self.install_message_hook_context(trig_counter)
+        want_img_idx = [1, 1]
         self.progress("Test triggering of the two cameras")
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_SET_CAM_TRIGG_DIST,
@@ -7959,37 +8030,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             p3=1,   # trigger instantly
             p4=0,   # 0 means trigger for all cameras
         )
-        self.delay_sim_time(2, "allow CAMERA_FEEDBACK to come through")
-        for cam in 0, 1:
-            if cam not in trigger_counts:
-                raise NotAchievedException(f"Did not see trigger for cam{cam}")
-            if trigger_counts[cam] != 1:
-                raise NotAchievedException(f"Incorrect trigger count for cam{cam}")
+        self.wait_camera_img_idx(list(enumerate(want_img_idx)))
 
         for cam in 0, 1:
             self.progress(f"Test triggering of the just cam{cam}")
-            trigger_counts = {}
             self.run_cmd_int(
                 mavutil.mavlink.MAV_CMD_DO_SET_CAM_TRIGG_DIST,
                 p1=10,  # trigger distance
                 p3=1,   # trigger instantly
                 p4=cam+1,
             )
-            self.delay_sim_time(2, "allow CAMERA_FEEDBACK to come through")
-            if cam not in trigger_counts:
-                raise NotAchievedException(f"Did not see trigger for cam{cam}")
-            if trigger_counts[cam] != 1:
-                raise NotAchievedException(f"Incorrect trigger count for cam{cam}")
-
-        # Test per-camera zoom and focus levels
-        camera_settings_by_compid = {}
-
-        def camera_settings_hook(mav, m):
-            if m.get_type() != 'CAMERA_SETTINGS':
-                return
-            camera_settings_by_compid[m.get_srcComponent()] = m
-
-        self.install_message_hook_context(camera_settings_hook)
+            # the count for the other camera must not move
+            want_img_idx[cam] += 1
+            self.wait_camera_img_idx(list(enumerate(want_img_idx)))
 
         cam1_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA
         cam2_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA + 1  # MAV_COMP_ID_CAMERA2
@@ -8007,18 +8060,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             p2=70,  # 70%
             p3=2,   # camera instance 2
         )
-        self.delay_sim_time(2, "allow CAMERA_SETTINGS to come through")
-        for compid, want_zoom in [(cam1_compid, 30), (cam2_compid, 70)]:
-            if compid not in camera_settings_by_compid:
-                raise NotAchievedException(
-                    f"Did not see CAMERA_SETTINGS from compid {compid}")
-            got = camera_settings_by_compid[compid].zoomLevel
-            if abs(got - want_zoom) > 0.5:
-                raise NotAchievedException(
-                    f"compid {compid} zoom wrong: want={want_zoom} got={got}")
+        self.wait_camera_settings([
+            (cam1_compid, 30, None),
+            (cam2_compid, 70, None),
+        ])
 
         self.progress("Test setting different focus levels on each camera")
-        camera_settings_by_compid.clear()
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_SET_CAMERA_FOCUS,
             p1=mavutil.mavlink.FOCUS_TYPE_RANGE,
@@ -8031,15 +8078,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             p2=80,  # 80%
             p3=2,   # camera instance 2
         )
-        self.delay_sim_time(2, "allow CAMERA_SETTINGS to come through")
-        for compid, want_focus in [(cam1_compid, 20), (cam2_compid, 80)]:
-            if compid not in camera_settings_by_compid:
-                raise NotAchievedException(
-                    f"Did not see CAMERA_SETTINGS from compid {compid}")
-            got = camera_settings_by_compid[compid].focusLevel
-            if abs(got - want_focus) > 0.5:
-                raise NotAchievedException(
-                    f"compid {compid} focus wrong: want={want_focus} got={got}")
+        # the zoom levels set above must be unchanged by the focus commands
+        self.wait_camera_settings([
+            (cam1_compid, 30, 20),
+            (cam2_compid, 70, 80),
+        ])
 
     def MountAVTCM62DualMission(self):
         '''test dual AVT CM62 cameras with zoom and focus controlled via
@@ -8048,15 +8091,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         cam1_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA
         cam2_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA + 1  # MAV_COMP_ID_CAMERA2
-
-        camera_settings_by_compid = {}
-
-        def camera_settings_hook(mav, m):
-            if m.get_type() != 'CAMERA_SETTINGS':
-                return
-            camera_settings_by_compid[m.get_srcComponent()] = m
-
-        self.install_message_hook_context(camera_settings_hook)
 
         self.set_parameter("AUTO_OPTIONS", 3)
 
@@ -8095,27 +8129,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ]
 
         self.fly_simple_relhome_mission(mission_items)
-        self.delay_sim_time(2, "allow CAMERA_SETTINGS to come through after mission")
 
-        self.progress("Verify per-camera zoom levels set by mission items")
-        for compid, want_zoom in [(cam1_compid, 25), (cam2_compid, 75)]:
-            if compid not in camera_settings_by_compid:
-                raise NotAchievedException(
-                    f"Did not see CAMERA_SETTINGS from compid {compid}")
-            got = camera_settings_by_compid[compid].zoomLevel
-            if abs(got - want_zoom) > 0.5:
-                raise NotAchievedException(
-                    f"compid {compid} zoom wrong: want={want_zoom} got={got}")
-
-        self.progress("Verify per-camera focus levels set by mission items")
-        for compid, want_focus in [(cam1_compid, 40), (cam2_compid, 80)]:
-            if compid not in camera_settings_by_compid:
-                raise NotAchievedException(
-                    f"Did not see CAMERA_SETTINGS from compid {compid}")
-            got = camera_settings_by_compid[compid].focusLevel
-            if abs(got - want_focus) > 0.5:
-                raise NotAchievedException(
-                    f"compid {compid} focus wrong: want={want_focus} got={got}")
+        self.progress("Verify per-camera zoom and focus set by mission items")
+        self.wait_camera_settings([
+            (cam1_compid, 25, 40),
+            (cam2_compid, 75, 80),
+        ])
 
     def assert_mount_rpy(self, r, p, y, tolerance=1):
         '''assert mount atttiude in degrees'''
