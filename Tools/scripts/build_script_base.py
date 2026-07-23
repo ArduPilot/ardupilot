@@ -22,6 +22,7 @@ import time
 from abc import ABC
 from abc import abstractmethod
 
+import allowed_subsystems
 import board_list
 
 # map from vehicle names to binary names
@@ -41,6 +42,9 @@ VEHICLE_MAP = {
 
 class BuildScriptBase(ABC):
     """Base class for build scripts with common utilities for running programs"""
+
+    # populated on first use by get_allowed_subsystems()
+    _allowed_subsystems = None
 
     def __init__(self):
         self.tmpdir = None  # Can be set by subclasses that need it
@@ -371,6 +375,19 @@ class BuildScriptBase(ABC):
         )
         return [line.strip() for line in output.splitlines() if line.strip()]
 
+    def get_changed_paths_for_commit(self, commit: str) -> list:
+        '''return the list of paths changed in a single commit'''
+        output = self.run_git(
+            ['diff-tree', '--no-commit-id', '-r', '--name-only', commit],
+            show_output=False,
+        )
+        paths = []
+        for line in output.splitlines():
+            line = line.strip()
+            if line:
+                paths.append(line)
+        return paths
+
     def created_library_dirs(self, commit: str) -> set:
         '''libraries/<X> subsystem names introduced by files added in commit'''
         created = set()
@@ -379,6 +396,42 @@ class BuildScriptBase(ABC):
             if parts[0] == 'libraries' and len(parts) >= 3:
                 created.add(parts[1])
         return created
+
+    def get_allowed_subsystems(self):
+        '''return an AllowedSubsystems for this repository, created on first
+        use and cached thereafter'''
+        if self._allowed_subsystems is None:
+            repo_root = self.run_git(
+                ['rev-parse', '--show-toplevel'], show_output=False,
+            ).strip()
+            self._allowed_subsystems = allowed_subsystems.AllowedSubsystems(repo_root)
+        return self._allowed_subsystems
+
+    def subsystem_for_commit(self, commit: str) -> str | None:
+        '''return the subsystem the given commit belongs to, or None if its
+        changed files do not all resolve to one common subsystem'''
+        subsystems = self.get_allowed_subsystems()
+        common = None
+        ordering = []
+        for path in self.get_changed_paths_for_commit(commit):
+            candidates = subsystems.subsystems_for_path(path)
+            if not candidates:
+                return None
+            if common is None:
+                # the first path's ordering decides which of several shared
+                # candidates is the most conventional one to name
+                ordering = candidates
+                common = set(candidates)
+            else:
+                common &= set(candidates)
+            if not common:
+                return None
+        if not common:
+            return None
+        for name in ordering:
+            if name in common:
+                return name
+        return None
 
     def run_waf(self, args, compiler=None, show_output=True, source_dir=None):
         # try to modify the environment so we can consistent builds:
