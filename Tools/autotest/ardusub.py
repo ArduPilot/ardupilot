@@ -1188,6 +1188,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(10, reason='add delay on connecting "telemetry')
 
         self.progress("Connecting to telemetry port")
+        # SERIAL3/telemetry TCP port is offset by the SITL instance number,
+        # so compute it rather than hard-coding 5763 (which only works at
+        # instance 0 / a non-parallel run):
         mav2 = mavutil.mavlink_connection(
             "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
             robust_parsing=True,
