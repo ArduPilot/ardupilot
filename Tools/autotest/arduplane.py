@@ -6655,6 +6655,29 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
+    def AirspeedScripting(self):
+        '''test airspeed data supplied by a lua script'''
+        self.context_push()
+
+        self.set_parameters({
+            'SCR_ENABLE': 1,
+            'ARSPD2_TYPE': 20,  # Scripting
+            'ARSPD2_USE': 0,
+        })
+        self.install_test_script_context('airspeed-scripting.lua')
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+
+        # Script sets 30m/s airspeed and 25 deg temperature
+        self.wait_message_field_values('AIRSPEED', {
+            'airspeed': 30.0,
+            'temperature': 2500,
+        }, instance=1, epsilon=0.5, minimum_duration=2, timeout=30)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def RunMissionScript(self):
         '''Test run_mission.py script'''
         script = os.path.join('Tools', 'autotest', 'run_mission.py')
@@ -8818,6 +8841,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.WindMessageSpeed,
             self.AltResetBadGPS,
             self.AirspeedCal,
+            self.AirspeedScripting,
             self.MissionJumpTags,
             Test(self.GCSFailsafe, speedup=8),
             self.SDCardWPTest,
