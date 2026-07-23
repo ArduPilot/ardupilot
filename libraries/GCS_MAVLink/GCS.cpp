@@ -732,4 +732,12 @@ bool GCS::sysid_is_gcs(uint8_t _sysid) const
     return _sysid >= mav_gcs_sysid && _sysid <= mav_gcs_sysid_high;
 }
 
+// Increment the available modes sequence number for each channel
+void GCS::available_modes_changed() {
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        GCS_MAVLINK &c = *chan(i);
+        c.available_modes_changed();
+    }
+}
+
 #endif  // HAL_GCS_ENABLED
