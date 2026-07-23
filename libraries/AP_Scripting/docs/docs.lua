@@ -3846,6 +3846,10 @@ function ahrs:get_velocity_NED() end
 ---@return Vector2f_ud -- ground speed vector, North East, meters / second
 function ahrs:groundspeed_vector() end
 
+-- Returns nil, or a Vector3f containing the current wind estimate for the vehicle.
+---@return Vector3f_ud|nil -- wind estimate North, East, Down meters / second if available
+function ahrs:get_wind() end
+
 -- Returns a Vector3f containing the current wind estimate for the vehicle.
 ---@return Vector3f_ud -- wind estiamte North, East, Down meters / second
 function ahrs:wind_estimate() end
