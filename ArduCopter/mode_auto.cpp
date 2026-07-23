@@ -2234,8 +2234,8 @@ bool ModeAuto::verify_loiter_to_alt() const
 bool ModeAuto::verify_RTL()
 {
     return (copter.mode_rtl.state_complete() && 
-            (copter.mode_rtl.state() == ModeRTL::SubMode::FINAL_DESCENT || copter.mode_rtl.state() == ModeRTL::SubMode::LAND) &&
-            (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE));
+            ((copter.mode_rtl.state() == ModeRTL::SubMode::FINAL_DESCENT) ||
+             (copter.mode_rtl.state() == ModeRTL::SubMode::LAND && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE)));
 }
 
 /********************************************************************************/
