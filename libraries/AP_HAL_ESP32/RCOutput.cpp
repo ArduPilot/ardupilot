@@ -147,6 +147,15 @@ static volatile uint16_t bdshot_rx_nsym[MAX_CHANNELS];
 // ISR -> consumer handoff: the RX-done ISR only queues the channel index (IRAM-safe,
 // CONFIG_RMT_ISR_IRAM_SAFE=y); the consumer task decodes + re-arms off-ISR.
 static QueueHandle_t bdshot_rx_queue;
+// Capture-pipeline watchdog: consecutive transmitted frames with no completed capture,
+// per channel; the consumer zeroes it on every processed event. A healthy armed RX
+// yields at least the command-loopback burst every frame, so a long silence means the
+// RX channel is wedged — e.g. an ESC power-off line transient corrupted the in-flight
+// receive (HW-observed 2026-07-22: capture stalled permanently until re-setup) — and
+// since the consumer only runs on capture events, only the transmit task can notice
+// and reset + re-arm it (see dshot_task).
+#define BDSHOT_QUIET_FRAMES_MAX 100  // ~100 ms at the ~1 kHz frame rate
+static volatile uint16_t bdshot_quiet_frames[MAX_CHANNELS];
 
 // RX-done ISR callback (IRAM-safe: CONFIG_RMT_ISR_IRAM_SAFE=y). user is the channel index.
 // received_symbols points into bdshot_rx_buf[chan] (we passed it to rmt_receive), so the
@@ -819,6 +828,7 @@ void RCOutput::bdshot_rx_task()
             memcpy(burst, bdshot_rx_buf[chan], nsym * sizeof(burst[0]));
             bit_ticks = ch.group->telem_bit_ticks;
             bdshot_arm_rx(rx, chan); // ESP_ERR_INVALID_STATE (already armed) is fine
+            bdshot_quiet_frames[chan] = 0; // captures flowing: feed the watchdog
         }
 
         // Split the burst at the command->reply turnaround gap. The line idles HIGH,
@@ -1083,6 +1093,29 @@ void RCOutput::dshot_task()
                 // The reply is captured by the continuously-armed RX channel and
                 // decoded off this task (see bdshot_rx_task).
                 if (ch.bidir && ch.rmt_rx_chan != nullptr) {
+                    // capture-pipeline watchdog (see bdshot_quiet_frames): too many
+                    // frames with no completed capture -> the RX channel is wedged
+                    // and no event will ever re-arm it; reset + re-arm it here. Runs
+                    // at most once per BDSHOT_QUIET_FRAMES_MAX frames, and a healthy
+                    // pipeline never triggers it (the command loopback alone yields
+                    // a capture per frame).
+                    if (bdshot_quiet_frames[chan]++ >= BDSHOT_QUIET_FRAMES_MAX) {
+                        bdshot_quiet_frames[chan] = 0;
+                        WITH_SEMAPHORE(_bdshot_rx_sem); // vs the consumer's re-arm
+                        rmt_channel_handle_t rx = (rmt_channel_handle_t)ch.rmt_rx_chan;
+                        rmt_disable(rx);
+                        rmt_enable(rx);
+                        bdshot_arm_rx(rx, chan);
+                        // the outage frames were silent, not error-counted by the
+                        // consumer: account them so the error rate stays honest
+                        if (chan < 12) {
+                            _bdshot.erpm_errors[chan] += BDSHOT_QUIET_FRAMES_MAX;
+                            if (_bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan] >= 4000) {
+                                _bdshot.erpm_errors[chan] /= 2;
+                                _bdshot.erpm_clean_frames[chan] /= 2;
+                            }
+                        }
+                    }
                     bdshot_turnaround(ch);
                 }
             }
