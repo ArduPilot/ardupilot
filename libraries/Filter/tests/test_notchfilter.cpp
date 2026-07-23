@@ -18,7 +18,7 @@ static double ratio_to_dB(double ratio)
 TEST(NotchFilterTest, ResetTest)
 {
     NotchFilter<float> filter;
-    filter.init(1000, 60, 33, 41);
+    filter.init(1000, 60, 33, 41, 1);
     const float const_sample = -0.512;
     filter.reset();
     for (uint32_t i=0; i<100; i++) {
@@ -45,7 +45,7 @@ TEST(NotchFilterTest, SineTest)
     double integral1_out = 0;
     double integral2_in = 0;
     double integral2_out = 0;
-    filter.init(rate_hz, test_freq, test_freq*0.5, attenuation_dB);
+    filter.init(rate_hz, test_freq, test_freq*0.5, attenuation_dB, 1);
     filter.reset();
     for (uint32_t i=0; i<periods * period_samples; i++) {
         const double t = i * dt;
@@ -69,6 +69,63 @@ TEST(NotchFilterTest, SineTest)
     ::printf("ratio1=%f expected_ratio=%f\n", ratio1, expected_ratio);
     const float err_pct = 100 * fabsF(ratio1 - expected_ratio) / ratio1;
     EXPECT_LE(err_pct, 1);
+}
+
+/*
+  helper to measure output amplitude of a notch filter at a given frequency
+ */
+static float measure_attenuation(NotchFilter<float> &filter, float freq, float rate_hz, float test_amplitude=1.0)
+{
+    const double dt = 1.0 / rate_hz;
+    const uint32_t period_samples = MAX(uint32_t(rate_hz / freq), 1U);
+    const uint32_t periods = 200;
+    // Use enough warmup samples for all cascaded-notch transients to decay.
+    // A cascade whose lowest notch is at f_low with quality Q has poles at
+    // |z| = sqrt(a2) close to 1; 200 samples covers τ ≈ 5×22 for the
+    // common Q≈1.7 / 50 Hz case.
+    const uint32_t warmup = MAX(2*period_samples, 200U);
+    double v_max = 0;
+    filter.reset();
+    for (uint32_t i=0; i<periods * period_samples + warmup; i++) {
+        const double t = i * dt;
+        const double sample = sin(freq * t * 2 * M_PI) * test_amplitude;
+        const float v = filter.apply(sample);
+        if (i >= warmup) {
+            v_max = MAX(v_max, fabsF(v));
+        }
+    }
+    return ratio_to_dB(v_max / test_amplitude);
+}
+
+/*
+  test multi-harmonic notch filter
+ */
+TEST(NotchFilterTest, MultiHarmonicNotchTest)
+{
+    const float base_freq = 50;
+    const float bandwidth = base_freq / 2;
+    const float attenuation_dB = 40;
+    const float rate_hz = 2000;
+
+    NotchFilter<float> filter;
+    filter.init(rate_hz, base_freq, bandwidth, attenuation_dB, 0x03); // 1st and 2nd harmonic
+
+    // check the filter reports the correct harmonics and fundamental frequency
+    EXPECT_EQ(filter.harmonics(), 0x03U);
+    EXPECT_FLOAT_EQ(filter.center_freq_hz(), base_freq);
+
+    // we should see strong attenuation at the fundamental and 2nd harmonic
+    EXPECT_LT(measure_attenuation(filter, base_freq, rate_hz), -attenuation_dB + 5);
+    EXPECT_LT(measure_attenuation(filter, base_freq * 2, rate_hz), -attenuation_dB + 5);
+
+    // a non-harmonic frequency should not be strongly attenuated.
+    // With bandwidth = base_freq/2 the 100 Hz notch's -3 dB band spans ~71-129 Hz,
+    // so 75 Hz (= 1.5×base) sits inside it; steady-state cascade gain is ≈ -3.8 dB
+    // (in 10·ln units).  Use -6 as the threshold to allow for this overlap.
+    EXPECT_GT(measure_attenuation(filter, base_freq * 1.5, rate_hz), -6);
+
+    // a higher harmonic that is not enabled should not be strongly attenuated
+    EXPECT_GT(measure_attenuation(filter, base_freq * 3, rate_hz), -3);
 }
 
 /*
@@ -361,6 +418,169 @@ TEST(NotchFilterTest, HarmonicNotchTest5)
                 phase_lags[6]);
     }
     fclose(f);
+}
+
+// -----------------------------------------------------------------------
+// NotchFilter multi-harmonic feature tests
+// -----------------------------------------------------------------------
+
+/*
+  harmonics=0 must leave the filter uninitialised and pass every sample through unchanged.
+ */
+TEST(NotchFilterTest, MultiHarmonicZeroDisablesFilter)
+{
+    NotchFilter<float> filter;
+    filter.init(1000, 50, 25, 40, 0);
+    EXPECT_EQ(filter.harmonics(), 0U);
+    // pass-through: apply() must return the input sample when not initialised
+    for (uint32_t i = 0; i < 100; i++) {
+        const float sample = sinf(50.0f * i * 2.0f * M_PI / 1000.0f);
+        EXPECT_FLOAT_EQ(filter.apply(sample), sample);
+    }
+}
+
+/*
+  when the center frequency is below half the bandwidth, Q is zero and
+  the multi-harmonic init must disable the filter.
+ */
+TEST(NotchFilterTest, MultiHarmonicBadQDisablesFilter)
+{
+    NotchFilter<float> filter;
+    // center_freq_hz=10 < bandwidth_hz/2=15 → Q=0
+    filter.init(1000, 10, 30, 40, 0x03);
+    EXPECT_EQ(filter.harmonics(), 0U);
+    for (uint32_t i = 0; i < 50; i++) {
+        const float sample = sinf(10.0f * i * 2.0f * M_PI / 1000.0f);
+        EXPECT_FLOAT_EQ(filter.apply(sample), sample);
+    }
+}
+
+/*
+  when every selected harmonic falls above the Nyquist frequency none
+  of them can be initialised and the filter must be disabled.
+ */
+TEST(NotchFilterTest, MultiHarmonicAllAboveNyquistDisablesFilter)
+{
+    // sample_rate=2000 Hz → Nyquist=1000 Hz
+    // base_freq=600 Hz, harmonics bits 1&2 → 1200 Hz and 1800 Hz, both > Nyquist
+    NotchFilter<float> filter;
+    filter.init(2000, 600, 200, 40, 0x06);
+    EXPECT_EQ(filter.harmonics(), 0U);
+    for (uint32_t i = 0; i < 50; i++) {
+        const float sample = sinf(300.0f * i * 2.0f * M_PI / 2000.0f);
+        EXPECT_FLOAT_EQ(filter.apply(sample), sample);
+    }
+}
+
+/*
+  reset() on a multi-harmonic filter must not produce a glitch: constant
+  input after reset must yield constant output on every sample.
+ */
+TEST(NotchFilterTest, MultiHarmonicResetNoGlitch)
+{
+    NotchFilter<float> filter;
+    filter.init(1000, 60, 30, 40, 0x03); // 1st and 2nd harmonic
+    const float const_sample = -0.512f;
+    filter.reset();
+    for (uint32_t i = 0; i < 100; i++) {
+        EXPECT_FLOAT_EQ(filter.apply(const_sample), const_sample);
+    }
+}
+
+/*
+  bit 1 selects the 2nd harmonic (2×base) only.  The filter must
+  attenuate there but leave the fundamental unaffected.
+ */
+TEST(NotchFilterTest, MultiHarmonicSecondHarmonicOnly)
+{
+    const float rate_hz = 2000;
+    const float base_freq = 50;
+    const float attenuation_dB = 40;
+
+    NotchFilter<float> filter;
+    filter.init(rate_hz, base_freq, base_freq / 2, attenuation_dB, 0x02); // bit 1 = 2nd harmonic
+    EXPECT_EQ(filter.harmonics(), 0x02U);
+
+    // 2nd harmonic must be strongly attenuated
+    EXPECT_LT(measure_attenuation(filter, base_freq * 2, rate_hz), -attenuation_dB + 5);
+    // fundamental must NOT be strongly attenuated
+    EXPECT_GT(measure_attenuation(filter, base_freq, rate_hz), -3);
+}
+
+/*
+  non-consecutive harmonic selection: bits 0 and 2 → 1st and 3rd harmonics.
+  Only those two frequencies must see significant attenuation.
+ */
+TEST(NotchFilterTest, MultiHarmonicNonConsecutive)
+{
+    const float rate_hz = 2000;
+    const float base_freq = 50;
+    const float attenuation_dB = 40;
+
+    NotchFilter<float> filter;
+    // bits 0,2 → 1×50=50 Hz, 3×50=150 Hz
+    filter.init(rate_hz, base_freq, base_freq / 2, attenuation_dB, 0x05);
+    EXPECT_EQ(filter.harmonics(), 0x05U);
+
+    // 1st and 3rd harmonics must be strongly attenuated
+    EXPECT_LT(measure_attenuation(filter, base_freq * 1, rate_hz), -attenuation_dB + 5);
+    EXPECT_LT(measure_attenuation(filter, base_freq * 3, rate_hz), -attenuation_dB + 5);
+
+    // 2nd harmonic (not selected) must NOT be strongly attenuated
+    EXPECT_GT(measure_attenuation(filter, base_freq * 2, rate_hz), -3);
+}
+
+/*
+  a second call to init() with a different harmonics bitmask must cleanly
+  replace the previous filter bank without crash or leak.
+ */
+TEST(NotchFilterTest, MultiHarmonicReinit)
+{
+    const float rate_hz = 2000;
+    const float base_freq = 50;
+    const float bandwidth = base_freq / 2;
+    const float attenuation_dB = 40;
+
+    NotchFilter<float> filter;
+
+    // first init: 1st and 2nd harmonics
+    filter.init(rate_hz, base_freq, bandwidth, attenuation_dB, 0x03);
+    EXPECT_EQ(filter.harmonics(), 0x03U);
+    EXPECT_LT(measure_attenuation(filter, base_freq,     rate_hz), -attenuation_dB + 5);
+    EXPECT_LT(measure_attenuation(filter, base_freq * 2, rate_hz), -attenuation_dB + 5);
+
+    // second init: 2nd and 3rd harmonics only
+    filter.init(rate_hz, base_freq, bandwidth, attenuation_dB, 0x06);
+    EXPECT_EQ(filter.harmonics(), 0x06U);
+    EXPECT_GT(measure_attenuation(filter, base_freq,     rate_hz), -3);      // 1st: no longer filtered
+    EXPECT_LT(measure_attenuation(filter, base_freq * 2, rate_hz), -attenuation_dB + 5);
+    EXPECT_LT(measure_attenuation(filter, base_freq * 3, rate_hz), -attenuation_dB + 5);
+}
+
+/*
+  when some selected harmonics fall above Nyquist, only those below it
+  are active; the filter is still considered initialised (harmonics()
+  returns the originally requested bitmask).
+ */
+TEST(NotchFilterTest, MultiHarmonicPartialAboveNyquist)
+{
+    // sample_rate=2000 Hz → Nyquist=1000 Hz
+    // base=400 Hz, harmonics=0x07 (bits 0,1,2) → 400, 800, 1200 Hz
+    // Only 400 Hz and 800 Hz are below Nyquist
+    const float rate_hz = 2000;
+    const float base_freq = 400;
+    const float attenuation_dB = 40;
+
+    NotchFilter<float> filter;
+    filter.init(rate_hz, base_freq, 150, attenuation_dB, 0x07);
+    EXPECT_EQ(filter.harmonics(), 0x07U); // requested bitmask is preserved
+
+    // the two active harmonics must be attenuated
+    EXPECT_LT(measure_attenuation(filter, base_freq * 1, rate_hz), -attenuation_dB + 5);
+    EXPECT_LT(measure_attenuation(filter, base_freq * 2, rate_hz), -attenuation_dB + 5);
+
+    // a frequency between the two active harmonics must NOT be attenuated
+    EXPECT_GT(measure_attenuation(filter, base_freq * 1.5f, rate_hz), -3);
 }
 
 AP_GTEST_MAIN()

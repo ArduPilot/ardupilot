@@ -57,6 +57,7 @@ public:
     AP_Float _center_freq_hz;
     AP_Float _quality;
     AP_Float _attenuation_dB;
+    AP_Int32 _harmonics;
 };
 
 class AP_Filters {
