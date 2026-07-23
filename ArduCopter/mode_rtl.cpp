@@ -144,9 +144,11 @@ void ModeRTL::run(bool disarm_on_land)
     switch (_state) {
 
     case SubMode::STARTING:
-        // should not be reached:
-        _state = SubMode::INITIAL_CLIMB;
-        FALLTHROUGH;
+        // reached only after an in-cycle restart_without_terrain(); hold on the
+        // current target this loop and let advance_state() rebuild the path next loop
+        climb_return_run();
+        _state_complete = true;
+        break;
 
     case SubMode::INITIAL_CLIMB:
     case SubMode::RETURN_HOME:
