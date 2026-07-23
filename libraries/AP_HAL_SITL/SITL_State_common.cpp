@@ -349,11 +349,53 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
     AP_HAL::panic("unknown simulated device: %s", name);
 }
 
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+/*
+  create a simulated device which the autopilot connects to over TCP
+  rather than over one of its simulated serial ports.  This is used to
+  simulate devices attached to the autopilot's network ports (NET_Pn).
+  spec is of the form NAME:TCPPORT e.g. "topotek:15005"
+ */
+void SITL_State_Common::create_net_serial_sim(const char *spec)
+{
+    if (num_net_serial_sims >= ARRAY_SIZE(net_serial_sims)) {
+        AP_HAL::panic("Too many network-attached simulated devices");
+    }
+
+    char *s = strdup(spec);
+    if (s == nullptr) {
+        AP_HAL::panic("out of memory");
+    }
+    char *saveptr = nullptr;
+    const char *name = strtok_r(s, ":", &saveptr);
+    const char *port_str = strtok_r(nullptr, ":", &saveptr);
+    if (name == nullptr || port_str == nullptr) {
+        AP_HAL::panic("Bad network device (%s); expected NAME:TCPPORT", spec);
+    }
+
+    SITL::SerialDevice *device = create_serial_sim(name, nullptr, 0);
+    if (!device->listen_on_tcp_port(atoi(port_str))) {
+        AP_HAL::panic("Failed to attach %s to TCP port %s", name, port_str);
+    }
+    net_serial_sims[num_net_serial_sims++] = device;
+
+    free(s);
+}
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
 /*
   update simulators
  */
 void SITL_State_Common::sim_update(void)
 {
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // move data between the autopilot and any device attached via TCP;
+    // for serially-attached devices the SITL UART driver does this:
+    for (uint8_t i=0; i<num_net_serial_sims; i++) {
+        net_serial_sims[i]->network_update();
+    }
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
 #if AP_SIM_SOLOGIMBAL_ENABLED
     if (gimbal != nullptr) {
         gimbal->update(*sitl_model);
