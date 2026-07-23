@@ -179,6 +179,10 @@ void Topotek::handle_packet(uint8_t data_len)
         return;
     }
 
+    // byte [3] is the source address of the sender; replies (including
+    // the attitude stream) are sent to that address from now on
+    _reply_address = _buf[3];
+
     // ID is at bytes [7..9]
     const char *id = (const char*)&_buf[7];
 
@@ -236,7 +240,7 @@ void Topotek::send_packet(char addr2, const char id[3], bool write, const uint8_
     pkt[ofs++] = '#';
     pkt[ofs++] = 'T';
     pkt[ofs++] = 'P';
-    pkt[ofs++] = 'U';
+    pkt[ofs++] = _reply_address;
     pkt[ofs++] = (uint8_t)addr2;
     pkt[ofs++] = hex2char(len & 0x0f);   // data length as single ASCII hex char
     pkt[ofs++] = write ? 'w' : 'r';
@@ -252,6 +256,12 @@ void Topotek::send_packet(char addr2, const char id[3], bool write, const uint8_
     const uint8_t crc = crc_sum_of_bytes(pkt, ofs);
     pkt[ofs++] = hex2char((crc >> 4) & 0x0f);
     pkt[ofs++] = hex2char(crc & 0x0f);
+
+    if (_reply_address != connected_interface()) {
+        // the packet is sent out of an interface the autopilot is not
+        // connected to, so it is lost
+        return;
+    }
 
     write_to_autopilot((const char*)pkt, ofs);
 }
