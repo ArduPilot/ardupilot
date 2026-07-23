@@ -2205,6 +2205,11 @@ class TestSuite(abc.ABC):
 
         self.start_mavproxy_count = 0
 
+        # any directory SITL's logging has been redirected into via
+        # the SITL_LOG_DIRECTORY environment variable; None means the
+        # default ("logs"):
+        self.sitl_log_directory = None
+
         self.last_sim_time_cached = 0
         self.last_sim_time_cached_wallclock = 0
 
@@ -2476,6 +2481,7 @@ class TestSuite(abc.ABC):
                 self.customise_SITL_commandline(
                     self.valgrind_restart_customisations,
                     model=self.valgrind_restart_model,
+                    env=self.valgrind_restart_env,
                 )
             else:
                 self.stop_SITL()
@@ -3259,7 +3265,8 @@ class TestSuite(abc.ABC):
                                    defaults_filepath=None,
                                    wipe=False,
                                    set_streamrate_callback=None,
-                                   binary=None):
+                                   binary=None,
+                                   env=None):
         '''customisations could be "--serial5=sim:nmea" '''
         self.contexts[-1].sitl_commandline_customised = True
         self.mav.close()
@@ -3268,7 +3275,8 @@ class TestSuite(abc.ABC):
                         model=model,
                         defaults_filepath=defaults_filepath,
                         customisations=customisations,
-                        wipe=wipe)
+                        wipe=wipe,
+                        env=env)
         self.mav.do_connect()
         tstart = time.time()
         while True:
@@ -3298,6 +3306,31 @@ class TestSuite(abc.ABC):
         if self.valgrind or self.callgrind:
             self.valgrind_restart_model = model
             self.valgrind_restart_customisations = customisations
+            self.valgrind_restart_env = env
+
+    def customise_SITL_log_directory(self, log_directory="pristine-logs"):
+        '''restart SITL logging into an initially-empty log_directory
+        (via the SITL_LOG_DIRECTORY environment variable), so tests
+        see a deterministic set of logs rather than whatever earlier
+        tests left in the default directory.  The redirection survives
+        reboot_sitl() (SITL reboots via execv, preserving its
+        environment) and is removed when the test completes; the
+        directory itself is left for post-mortem and emptied on next
+        use.  Returns the directory path.
+
+        log_directory must be relative; SITL's sandboxed filesystem
+        maps absolute paths back under its working directory, which is
+        also this process's working directory.'''
+        if os.path.isabs(log_directory):
+            raise ValueError("log_directory must be relative")
+        shutil.rmtree(log_directory, ignore_errors=True)
+        self.progress("Redirecting SITL logging to %s" % log_directory)
+        self.customise_SITL_commandline(
+            [],
+            env={"SITL_LOG_DIRECTORY": log_directory},
+        )
+        self.sitl_log_directory = log_directory
+        return log_directory
 
     def restart_SITL_frame(self,
                            frame,
@@ -3411,6 +3444,9 @@ class TestSuite(abc.ABC):
             del self.valgrind_restart_customisations
         except AttributeError:
             pass
+        # SITL is started without any custom environment, so any log
+        # directory redirection is gone:
+        self.sitl_log_directory = None
         self.start_SITL(wipe=True)
         self.set_streamrate(self.sitl_streamrate())
         self.apply_default_parameters()
@@ -4053,8 +4089,7 @@ class TestSuite(abc.ABC):
         self.progress("Ensuring we have contents we care about")
         self.set_parameter("LOG_FILE_DSRMROT", 1)
         self.set_parameter("LOG_DISARMED", 0)
-        self.reboot_sitl()
-        logspath = Path("logs")
+        logspath = Path(self.customise_SITL_log_directory())
 
         def create_num_logs(num_logs, logsdir, clear_logsdir=True):
             if clear_logsdir:
@@ -4156,18 +4191,16 @@ class TestSuite(abc.ABC):
         self.progress("Ensuring we have contents we care about")
         self.set_parameter("LOG_FILE_DSRMROT", 1)
         self.set_parameter("LOG_DISARMED", 0)
-        self.reboot_sitl()
-        original_log_list = self.log_list()
+        self.customise_SITL_log_directory()
         for i in range(0, 10):
             self.wait_ready_to_arm()
             self.arm_vehicle()
             self.delay_sim_time(1, reason="log data to accumulate")
             self.disarm_vehicle()
         new_log_list = self.log_list()
-        new_log_count = len(new_log_list) - len(original_log_list)
-        if new_log_count != 10:
-            raise NotAchievedException("Expected exactly 10 new logs got %u (%s) to (%s)" %
-                                       (new_log_count, original_log_list, new_log_list))
+        if len(new_log_list) != 10:
+            raise NotAchievedException("Expected exactly 10 logs got %u (%s)" %
+                                       (len(new_log_list), new_log_list))
         self.progress("Directory contents: %s" % str(new_log_list))
 
         self.download_full_log_list()
@@ -4358,6 +4391,47 @@ class TestSuite(abc.ABC):
                 self.progress(f"{bytes_read=}")
         return data_downloaded
 
+    def download_log_streamed(self, log_id, size, timeout=120):
+        '''request size bytes of log log_id in a single request and
+        collect the streamed LOG_DATA; returns the data'''
+        # note: get_sim_time() drains the mav connection, and must
+        # happen before the request is sent - the autopilot may stream
+        # the entire log before we start receiving:
+        tstart = self.get_sim_time()
+        self.mav.mav.log_request_data_send(
+            self.sysid_thismav(),
+            1,  # target component
+            log_id,
+            0,
+            size
+        )
+        data = []
+        last_print = 0
+        while len(data) < size:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not download log %u in good time" % log_id)
+            m = self.assert_receive_message('LOG_DATA', timeout=2)
+            if m.id != log_id:
+                raise NotAchievedException(f"Unexpected id {log_id=} {self.dump_message_verbose(m)}")
+            if m.ofs != len(data):
+                raise NotAchievedException(f"Unexpected offset {len(data)=} {self.dump_message_verbose(m)}")
+            if m.count == 0:
+                raise NotAchievedException(f"EOF at {len(data)} bytes downloading log {log_id} ({size} wanted)")
+            data.extend(m.data[0:m.count])
+            if time.time() - last_print > 10:
+                last_print = time.time()
+                self.progress(f"downloaded {len(data)}/{size}")
+        return data
+
+    def assert_downloaded_log_matches_disk(self, entry_id, filepath):
+        '''download log list entry entry_id, check it matches the file
+        at filepath'''
+        self.progress("Downloading log entry %u, comparing to %s" % (entry_id, filepath))
+        with open(filepath, 'rb') as f:
+            want = bytearray(f.read())
+        data = self.download_log_streamed(entry_id, len(want))
+        self.assert_bytes_equal(want, data)
+
     def TestLogDownloadLogRestart(self):
         '''test logging restarts after log download'''
 #        self.delay_sim_time(30)
@@ -4376,6 +4450,542 @@ class TestSuite(abc.ABC):
         new_content = self.download_log(new_number)
         if len(new_content) == 0:
             raise NotAchievedException(f"Unexpected length {len(new_content)=}")
+
+    def TestLogDownloadAfterPrune(self):
+        '''check the log list is sane after the oldest logs are removed'''
+        # When the autopilot removes its oldest logs to free space
+        # (Prep_MinSpace), or this test framework moves logs away after
+        # a failed test, the logs on disk no longer start at log 1.
+        # AP_Logger_File::get_num_logs() must count the logs actually
+        # present rather than assuming 1..last-log-number all exist; if
+        # it over-counts then the log list contains phantom
+        # zero-size/zero-time-utc entries for logs which do not exist.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.customise_SITL_log_directory()
+
+        self.progress("Creating some logs")
+        for i in range(0, 4):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1, reason="log data to accumulate")
+            self.disarm_vehicle()
+
+        log_list = self.log_list()
+        if len(log_list) != 4:
+            raise NotAchievedException("Expected exactly 4 logs, got (%s)" % str(log_list))
+
+        self.progress("Removing the oldest two logs, as Prep_MinSpace would")
+        for log in log_list[0:2]:
+            os.unlink(log)
+
+        # reboot so the autopilot rediscovers its log state from the disk
+        # contents, as it would after the in-flight pruning of a
+        # power-cycled vehicle:
+        self.reboot_sitl()
+
+        self.progress("Checking the log list matches the logs on disk")
+        logs = self.download_full_log_list()
+        if len(logs) != 2:
+            raise NotAchievedException(
+                "Log list count does not match logs on disk (want=2 got=%u)" %
+                (len(logs),))
+        self.progress("Checking the entries correspond to the remaining logs")
+        for (entry_id, filepath) in [(1, log_list[2]), (2, log_list[3])]:
+            entry = logs[entry_id]
+            size_on_disk = os.path.getsize(filepath)
+            if entry.size != size_on_disk:
+                raise NotAchievedException(
+                    "Entry %u size does not match %s (want=%u got=%u)" %
+                    (entry_id, filepath, size_on_disk, entry.size))
+            self.assert_downloaded_log_matches_disk(entry_id, filepath)
+
+    def TestLogDownloadLogGap(self):
+        '''check the log list after logs are removed from the middle of the sequence'''
+        # The autopilot never creates a hole in the middle of the log
+        # sequence itself - this is a user deleting logs from the SD
+        # card.  The log list maps entries linearly from the oldest
+        # log present, so the expected behaviour is that each hole
+        # appears as a zero-size/zero-time-utc entry while the logs
+        # around it remain listed at their usual positions with their
+        # usual sizes.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.customise_SITL_log_directory()
+
+        self.progress("Creating some logs")
+        for i in range(0, 6):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1, reason="log data to accumulate")
+            self.disarm_vehicle()
+
+        log_list = self.log_list()
+        if len(log_list) != 6:
+            raise NotAchievedException("Expected exactly 6 logs, got (%s)" % str(log_list))
+
+        def assert_log_list_with_holes(hole_ids):
+            # can't use download_full_log_list here; it (correctly)
+            # balks at the zero-size/zero-time-utc entries the holes
+            # leave behind:
+            tstart = self.get_sim_time()
+            self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                               1,  # target component
+                                               0,
+                                               0xffff)
+            logs = {}
+            while True:
+                if self.get_sim_time_cached() - tstart > 5:
+                    raise NotAchievedException("Did not download list")
+                m = self.mav.recv_match(type='LOG_ENTRY', blocking=True, timeout=1)
+                if m is None:
+                    continue
+                self.progress("Received (%s)" % str(m))
+                logs[m.id] = m
+                if m.id == m.last_log_num:
+                    break
+            self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+
+            if sorted(logs.keys()) != list(range(1, len(log_list) + 1)):
+                raise NotAchievedException(
+                    "Expected entries 1..%u got (%s)" % (len(log_list), sorted(logs.keys())))
+            for m in logs.values():
+                if m.id in hole_ids:
+                    if m.size != 0 or m.time_utc != 0:
+                        raise NotAchievedException(
+                            "Expected zero-size/zero-time entry for the hole, got (%s)" % str(m))
+                    continue
+                if m.time_utc < 1000:
+                    raise NotAchievedException("Bad timestamp on a log which exists (%s)" % str(m))
+                # in the pristine directory entry ids and log numbers
+                # coincide, so each entry must match its file on disk:
+                size_on_disk = os.path.getsize(log_list[m.id - 1])
+                if m.size != size_on_disk:
+                    raise NotAchievedException(
+                        "Entry size does not match log on disk (want=%u got %s)" %
+                        (size_on_disk, str(m)))
+
+        self.start_subtest("One log removed from the middle of the sequence")
+        self.progress("Removing %s" % log_list[1])
+        os.unlink(log_list[1])
+        # reboot so the autopilot rediscovers its log state from the
+        # disk contents:
+        self.reboot_sitl()
+        assert_log_list_with_holes({2})
+
+        self.start_subtest("Downloading the hole gives a zero-length EOF")
+        self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                           1,  # target component
+                                           2,  # the hole's entry id
+                                           0,
+                                           90)
+        m = self.assert_receive_message('LOG_DATA', timeout=2)
+        if m.id != 2 or m.count != 0:
+            raise NotAchievedException(
+                "Expected zero-length LOG_DATA for the hole, got (%s)" % str(m))
+
+        self.start_subtest("Logs download intact immediately after the hole")
+        # the failed open of the missing log must not trip the
+        # logging open-error state, which would truncate downloads of
+        # logs which do exist (and fail arming checks) for the next
+        # five seconds:
+        for entry_id in (3, 1):
+            self.assert_downloaded_log_matches_disk(entry_id, log_list[entry_id - 1])
+
+        self.start_subtest("A second log removed from the middle of the sequence")
+        self.progress("Removing %s" % log_list[3])
+        os.unlink(log_list[3])
+        self.reboot_sitl()
+        assert_log_list_with_holes({2, 4})
+
+    def TestLogDownloadWrappedList(self):
+        '''check the log list when the log numbers have wrapped'''
+        # log numbers wrap back to 1 after LOG_MAX_FILES.  After a
+        # wrap the directory contains high-numbered logs from the
+        # previous numbering cycle - the oldest logs - alongside
+        # low-numbered logs from the current cycle - the newest.  The
+        # log count must span the wrap and the list entries must map
+        # oldest-first across it.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_DISARMED", 0)
+        logdir = self.customise_SITL_log_directory()
+
+        def content_for_log(num):
+            return (("I am log %u. " % num) * 100)[0:1000 + num]
+
+        # fabricate post-wrap directories: the high-numbered logs are
+        # leftovers from the previous numbering cycle, running up to
+        # LOG_MAX_FILES, and logs 1..3 are the newest.  The order
+        # readdir returns the files - hash order on most filesystems,
+        # so influenced by the filenames - determines which side of
+        # the wrap find_oldest_log discovers first; using two
+        # different sets of numbers exercises both discovery orders on
+        # common filesystems:
+        for (max_files, lognums) in (
+                (250, [246, 247, 248, 249, 250, 1, 2, 3]),  # oldest first
+                (244, [240, 241, 242, 243, 244, 1, 2, 3])):
+            self.start_subtest("Wrapped logs %s" % str(lognums))
+            self.set_parameter("LOG_MAX_FILES", max_files)
+            shutil.rmtree(logdir, ignore_errors=True)
+            os.makedirs(logdir)
+            for num in lognums:
+                with open(os.path.join(logdir, "%08u.BIN" % num), "w") as f:
+                    f.write(content_for_log(num))
+            with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+                f.write("3\n")
+
+            # reboot so the autopilot discovers the fabricated state:
+            self.reboot_sitl()
+
+            logs = self.download_full_log_list()
+            if len(logs) != len(lognums):
+                raise NotAchievedException(
+                    "Expected %u logs got %u" % (len(lognums), len(logs)))
+            self.progress("Checking the entries map oldest-first across the wrap")
+            for (entry_id, num) in enumerate(lognums, start=1):
+                want = len(content_for_log(num))
+                if logs[entry_id].size != want:
+                    raise NotAchievedException(
+                        "Entry %u size does not match log %u (want=%u got=%u)" %
+                        (entry_id, num, want, logs[entry_id].size))
+
+            self.progress("Downloading a log from either side of the wrap")
+            for (entry_id, num) in ((1, lognums[0]), (len(lognums), lognums[-1])):
+                data = bytes(self.download_log(entry_id))
+                if data != content_for_log(num).encode():
+                    raise NotAchievedException(
+                        "Downloaded entry %u does not match log %u on disk" %
+                        (entry_id, num))
+
+    def TestLogDownloadEmptyList(self):
+        '''check the log list response when there are no logs'''
+        self.set_parameter("LOG_DISARMED", 0)
+        logdir = self.customise_SITL_log_directory()
+
+        def assert_empty_log_list():
+            self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                               1,  # target component
+                                               0,
+                                               0xffff)
+            m = self.assert_receive_message('LOG_ENTRY', timeout=5, verbose=True)
+            if m.id != 0 or m.num_logs != 0 or m.last_log_num != 0 or m.size != 0 or m.time_utc != 0:
+                raise NotAchievedException("Expected all-zero LOG_ENTRY, got (%s)" % str(m))
+            self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+
+        self.start_subtest("Log directory does not exist")
+        assert_empty_log_list()
+
+        self.start_subtest("Stale LASTLOG.TXT and no logs")
+        # a LASTLOG.TXT pointing at log 17 when no logs are present
+        # must not produce 17 phantom log list entries:
+        if not os.path.exists(logdir):
+            os.makedirs(logdir)
+        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+            f.write("17\n")
+        self.reboot_sitl()
+        assert_empty_log_list()
+
+    def TestLogDisarmedDiscard(self):
+        '''check LOG_DISARMED=3 discards the log at boot if the vehicle was never armed'''
+        # with LOG_DISARMED=3 a log created while disarmed has its
+        # LASTLOG.TXT entry marked with a "D".  Arming makes the log
+        # permanent by rewriting LASTLOG.TXT without the mark; if the
+        # vehicle never arms, the next boot deletes the marked log.
+        # Note that start_new_log() reuses the number of an
+        # empty-or-missing log, so the boot after a discard reuses
+        # the discarded log's number: a never-armed vehicle stays on
+        # log 1 forever, while a failure to discard would push the
+        # boot's new log to number 2.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_FILE_DSRMROT", 0)
+        self.set_parameter("LOG_DISARMED", 3)
+        logdir = self.customise_SITL_log_directory()
+
+        lastlog_path = os.path.join(logdir, "LASTLOG.TXT")
+
+        def lastlog_content():
+            try:
+                with open(lastlog_path) as f:
+                    return f.read().strip()
+            except FileNotFoundError:
+                return None
+
+        def wait_for_lastlog_content(want, timeout=30):
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException(
+                        "LASTLOG.TXT did not contain %s (got %s)" %
+                        (want, lastlog_content()))
+                if lastlog_content() == want:
+                    return
+                self.delay_sim_time(1, reason="logger to update LASTLOG.TXT")
+
+        def assert_log_present(lognum, want=True):
+            filepath = os.path.join(logdir, "%08u.BIN" % lognum)
+            if os.path.exists(filepath) != want:
+                raise NotAchievedException(
+                    "%s should%s exist" % (filepath, "" if want else " not"))
+
+        self.start_subtest("Log created while disarmed is marked for discard")
+        wait_for_lastlog_content("1D")
+        assert_log_present(1)
+
+        self.start_subtest("Marked log is discarded at boot if we never armed")
+        self.reboot_sitl()
+        # the new boot deletes log 1 and its replacement reuses the
+        # number; had the discard not happened the old log's data
+        # would force this boot's log to number 2:
+        self.delay_sim_time(5, reason="boot's log to be created")
+        wait_for_lastlog_content("1D")
+        assert_log_present(1)
+        assert_log_present(2, want=False)
+        # the discarded log must not appear as a phantom list entry:
+        logs = self.download_full_log_list()
+        if len(logs) != 1:
+            raise NotAchievedException(
+                "Expected exactly 1 log list entry, got %u" % len(logs))
+
+        self.start_subtest("Arming makes the log permanent")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        wait_for_lastlog_content("1")
+        self.disarm_vehicle()
+
+        self.start_subtest("Once-armed log survives the next boot")
+        self.reboot_sitl()
+        # this boot must keep the unmarked log 1 and open log 2,
+        # itself marked for discard:
+        wait_for_lastlog_content("2D")
+        assert_log_present(1)
+        assert_log_present(2)
+
+    def TestLogErase(self):
+        '''check MAVLink log erase removes all logs and logging restarts'''
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_DISARMED", 0)
+        logdir = self.customise_SITL_log_directory()
+
+        self.progress("Fabricating some logs")
+        os.makedirs(logdir)
+        for num in 1, 2, 3:
+            with open(os.path.join(logdir, "%08u.BIN" % num), "w") as f:
+                f.write("I am log %u\n" % num)
+        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+            f.write("3\n")
+        self.reboot_sitl()
+
+        logs = self.download_full_log_list()
+        if len(logs) != 3:
+            raise NotAchievedException("Expected 3 logs got %u" % len(logs))
+
+        self.progress("Starting logging so the erase has an open log to close")
+        self.set_parameter("LOG_DISARMED", 1)
+        tstart = self.get_sim_time()
+        while not os.path.exists(os.path.join(logdir, "00000004.BIN")):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("Log 4 was not created")
+            self.delay_sim_time(1, reason="logging to start")
+
+        self.progress("Erasing all logs")
+        self.mav.mav.log_erase_send(self.sysid_thismav(),
+                                    1)  # target component
+        # the erase runs incrementally in the logger's IO thread; when
+        # it completes LASTLOG.TXT is also removed and logging - which
+        # was active when the erase started - restarts into a fresh
+        # log 1:
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException(
+                    "Erase did not complete (%s)" % str(self.log_list()))
+            if self.log_list() == [os.path.join(logdir, "00000001.BIN")]:
+                break
+            self.delay_sim_time(1, reason="erase to complete")
+
+        self.progress("Checking the log list matches")
+        logs = self.download_full_log_list()
+        if len(logs) != 1:
+            raise NotAchievedException(
+                "Expected 1 log after erase, got %u" % len(logs))
+        self.set_parameter("LOG_DISARMED", 0)
+
+    def TestLogDownloadEdgeCases(self):
+        '''check log transfer requests which must be refused or ignored'''
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_DISARMED", 0)
+        logdir = self.customise_SITL_log_directory()
+
+        def content_for_log(num):
+            return bytes([(i * 7 + num) % 251 for i in range(1024*1024)])
+
+        self.progress("Fabricating a large log")
+        os.makedirs(logdir)
+        with open(os.path.join(logdir, "00000001.BIN"), "wb") as f:
+            f.write(content_for_log(1))
+        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+            f.write("1\n")
+        self.reboot_sitl()
+
+        self.start_subtest("Requests for invalid log ids are (silently) ignored")
+        for bad_id in 0, 99:
+            self.progress("Requesting log %u" % bad_id)
+            self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                               1,  # target component
+                                               bad_id,
+                                               0,
+                                               90)
+            self.assert_not_receiving_message('LOG_DATA', timeout=2)
+
+        self.start_subtest("Requests during a transfer do not disturb it")
+        # slow the simulation down so the transfer is in progress long
+        # enough to inject requests into the middle of it:
+        self.context_set_speedup(1)
+        self.context_collect('STATUSTEXT')
+        content = content_for_log(1)
+        size = len(content)
+        # note: get_sim_time() drains the mav connection, and must
+        # happen before the request is sent:
+        tstart = self.get_sim_time()
+        self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                           1,  # target component
+                                           1,
+                                           0,
+                                           size)
+        data = []
+        sent_list_request = False
+        sent_data_rerequest = False
+        while len(data) < size:
+            if self.get_sim_time_cached() - tstart > 180:
+                raise NotAchievedException("Did not download log")
+            m = self.assert_receive_message('LOG_DATA', timeout=5)
+            if m.ofs != len(data):
+                raise NotAchievedException(
+                    "Transfer disturbed - unexpected offset (want=%u got=%s)" %
+                    (len(data), str(m)))
+            if m.count == 0:
+                raise NotAchievedException("EOF at %u bytes" % len(data))
+            data.extend(m.data[0:m.count])
+            if not sent_list_request and len(data) > size // 4:
+                self.progress("Sending log list request mid-transfer")
+                self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                                   1,  # target component
+                                                   0,
+                                                   0xffff)
+                sent_list_request = True
+            if not sent_data_rerequest and len(data) > size // 2:
+                self.progress("Sending same-link data re-request mid-transfer")
+                # MAVProxy does this when filling gaps; it must be
+                # dropped, not restart the transfer:
+                self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                                   1,  # target component
+                                                   1,
+                                                   0,
+                                                   90)
+                sent_data_rerequest = True
+        self.assert_bytes_equal(bytearray(content), data)
+        self.progress("Checking the mid-transfer log list request was refused")
+        self.wait_statustext("Log download in progress", check_context=True)
+        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+
+        self.start_subtest("Log list request is refused while armed")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                           1,  # target component
+                                           0,
+                                           0xffff)
+        self.wait_statustext("Disarm for log download", check_context=True)
+        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+        self.disarm_vehicle()
+
+    def TestLogOpenErrors(self):
+        '''check genuine log access errors engage the open-error backoff'''
+        # note that the injected faults must not rely on file
+        # permissions - CI runs as root, which ignores them.  A
+        # symlink loop fails to open with ELOOP and a directory-path
+        # component which is a regular file fails with ENOTDIR, for
+        # root and mortals alike.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_DISARMED", 0)
+        logdir = self.customise_SITL_log_directory()
+
+        self.progress("Fabricating a log and an unopenable log")
+        os.makedirs(logdir)
+        with open(os.path.join(logdir, "00000001.BIN"), "wb") as f:
+            f.write(bytes([(i * 7 + 1) % 251 for i in range(2000)]))
+        # log 2 - the newest, so the log list tolerates its zero
+        # size - is a symlink loop, so opening it fails with ELOOP:
+        unopenable = os.path.join(logdir, "00000002.BIN")
+        os.symlink("00000002.BIN", unopenable)
+        with open(os.path.join(logdir, "LASTLOG.TXT"), "w") as f:
+            f.write("2\n")
+        self.reboot_sitl()
+
+        def assert_zero_length_download(entry_id):
+            self.mav.mav.log_request_data_send(self.sysid_thismav(),
+                                               1,  # target component
+                                               entry_id,
+                                               0,
+                                               90)
+            m = self.assert_receive_message('LOG_DATA', timeout=2)
+            if m.id != entry_id or m.count != 0:
+                raise NotAchievedException(
+                    "Expected zero-length LOG_DATA, got (%s)" % str(m))
+
+        self.start_subtest("An unopenable log engages the download backoff")
+        logs = self.download_full_log_list()
+        if len(logs) != 2:
+            raise NotAchievedException("Expected 2 logs got %u" % len(logs))
+        self.progress("Downloading the unopenable log gives a zero-length EOF")
+        assert_zero_length_download(2)
+        # unlike a missing log, an open error which is not ENOENT is
+        # treated as real I/O trouble - e.g. a failing card - so
+        # downloads of other logs are refused for
+        # LOGGER_FILE_REOPEN_MS:
+        self.progress("... and briefly poisons other downloads")
+        assert_zero_length_download(1)
+        self.delay_sim_time(6, reason="open-error backoff to expire")
+        self.assert_downloaded_log_matches_disk(1, os.path.join(logdir, "00000001.BIN"))
+
+        self.start_subtest("An unwritable log directory fails arming checks")
+        # replace the log directory with a regular file; opening a log
+        # within it fails with ENOTDIR:
+        shutil.rmtree(logdir)
+        with open(logdir, "w") as f:
+            f.write("I am not a directory\n")
+        try:
+            # starting logging must now fail to open a log:
+            self.set_parameter("LOG_DISARMED", 1)
+            self.assert_prearm_failure("Logging failed",
+                                       timeout=30,
+                                       other_prearm_failures_fatal=False)
+        finally:
+            os.unlink(logdir)
+        self.progress("Logging recovers when the directory can be created again")
+        tstart = self.get_sim_time()
+        while not os.path.exists(os.path.join(logdir, "00000001.BIN")):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("Logging did not recover")
+            self.delay_sim_time(1, reason="open-error backoff to expire")
+        self.set_parameter("LOG_DISARMED", 0)
 
     #################################################
     # SIM UTILITIES
@@ -4685,9 +5295,15 @@ class TestSuite(abc.ABC):
         self.set_rc(ch, 1000)
         self.assert_mission_count(0)
 
+    def sitl_log_dir(self):
+        '''return the directory SITL is currently logging into'''
+        if self.sitl_log_directory is not None:
+            return self.sitl_log_directory
+        return "logs"
+
     def log_list(self):
         '''return a list of log files present in POSIX-style logging dir'''
-        ret = sorted(glob.glob("logs/00*.BIN"))
+        ret = sorted(glob.glob(os.path.join(self.sitl_log_dir(), "00*.BIN")))
         self.progress("log list: %s" % str(ret))
         return ret
 
@@ -5098,6 +5714,26 @@ class TestSuite(abc.ABC):
 
     def TestLogDownloadMAVProxy(self):
         """Download latest log."""
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.customise_SITL_log_directory()
+        self.progress("Creating some logs")
+        for i in range(0, 4):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1, reason="log data to accumulate")
+            self.disarm_vehicle()
+
+        # logging continues for HAL_LOGGER_ARM_PERSIST (15) seconds
+        # after disarming; wait that out so the fourth log closes.  If
+        # we don't, the log transfer below stops logging, and when the
+        # transfer finishes the still-active persistence opens a fifth
+        # log:
+        self.delay_sim_time(20, reason="log persistence to expire")
+        log_list = self.log_list()
+        if len(log_list) != 4:
+            raise NotAchievedException("Expected exactly 4 logs, got (%s)" % str(log_list))
+
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
         self.mavproxy_load_module(mavproxy, 'log')
@@ -5109,6 +5745,55 @@ class TestSuite(abc.ABC):
         mavproxy.expect("Finished downloading", timeout=120)
         self.mavproxy_unload_module(mavproxy, 'log')
         self.stop_mavproxy(mavproxy)
+
+        # again with the oldest logs removed, as AP_Logger's
+        # Prep_MinSpace would remove them: the log list must match the
+        # logs actually present rather than assuming logs
+        # 1..last-log-number all exist, and downloading the latest log
+        # must fetch the newest log on disk.  LOG_DISARMED is zero so
+        # no log is created (and left open, growing) at the reboot and
+        # the logs on disk are static for the checks below:
+        self.progress("Removing the oldest two logs")
+        for log in log_list[0:2]:
+            os.unlink(log)
+        # reboot so the autopilot rediscovers its log state from the
+        # disk contents:
+        self.reboot_sitl()
+        expected_count = 2
+
+        filename = "MAVProxy-downloaded-log-pruned.BIN"
+        mavproxy = self.start_mavproxy()
+        self.mavproxy_load_module(mavproxy, 'log')
+        mavproxy.send("log list\n")
+        mavproxy.expect(r"\bLog (\d+) .* lastLog \1 ")
+        lastlog = int(mavproxy.match.group(1))
+        if lastlog != expected_count:
+            raise NotAchievedException(
+                "Log list does not match logs on disk (want=%u got=%u)" %
+                (expected_count, lastlog))
+        mavproxy.send("set shownoise 0\n")
+        mavproxy.send("log download latest %s\n" % filename)
+        mavproxy.expect("Finished downloading", timeout=120)
+        self.mavproxy_unload_module(mavproxy, 'log')
+        self.stop_mavproxy(mavproxy)
+
+        self.progress("Comparing downloaded log to newest log on disk")
+        newest = self.log_list()[-1]
+        tstart = time.time()
+        while True:
+            if time.time() - tstart > 30:
+                raise NotAchievedException(
+                    "Downloaded log did not match newest log on disk (%s)" % newest)
+            try:
+                with open(filename, 'rb') as f:
+                    downloaded = f.read()
+                with open(newest, 'rb') as f:
+                    ondisk = f.read()
+                if downloaded == ondisk:
+                    break
+            except FileNotFoundError:
+                pass
+            time.sleep(1)
 
     def TestLogDownloadMAVProxyNetwork(self):
         """Download latest log over network port"""
@@ -9568,10 +10253,11 @@ Also, ignores heartbeats not from our target system'''
         return ret
 
     def bin_logs(self):
-        return glob.glob("logs/*.BIN")
+        return glob.glob(os.path.join(self.sitl_log_dir(), "*.BIN"))
 
     def remove_bin_logs(self):
-        util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
+        logdir = self.sitl_log_dir()
+        util.run_cmd('rm -f %s/*.BIN %s/LASTLOG.TXT' % (logdir, logdir))
 
     def remove_ardupilot_terrain_cache(self):
         '''removes the terrain files ArduPilot keeps in its onboiard storage'''
