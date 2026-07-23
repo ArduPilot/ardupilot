@@ -8085,8 +8085,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ])
 
     def MountAVTCM62DualMission(self):
-        '''test dual AVT CM62 cameras with zoom and focus controlled via
-        mission items (MAV_CMD_SET_CAMERA_ZOOM and MAV_CMD_SET_CAMERA_FOCUS)'''
+        '''test dual AVT CM62 cameras with photo capture, zoom and focus
+        controlled via mission items'''
         self._setup_avt_cm62_dual()
 
         cam1_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA
@@ -8096,6 +8096,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         mission_items = [
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+                p1=1,    # camera instance 1
+                p2=0,    # interval (0 = single shot)
+                p3=1,    # total images = 1
+                autocontinue=1,
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+                p1=2,    # camera instance 2
+                p2=1,    # interval (s)
+                p3=2,    # total images = 2
+                autocontinue=1,
+            ),
             self.create_MISSION_ITEM_INT(
                 mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM,
                 p1=mavutil.mavlink.ZOOM_TYPE_RANGE,
@@ -8129,6 +8143,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ]
 
         self.fly_simple_relhome_mission(mission_items)
+
+        self.progress("Verify per-camera shot counts from mission items")
+        self.wait_camera_img_idx([(0, 1), (1, 2)])
 
         self.progress("Verify per-camera zoom and focus set by mission items")
         self.wait_camera_settings([
