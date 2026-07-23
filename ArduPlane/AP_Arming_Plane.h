@@ -41,7 +41,9 @@ protected:
     bool terrain_database_required() const override;
 
     bool quadplane_checks(bool display_failure);
+#if AP_MISSION_ENABLED
     bool mission_checks(bool report) override;
+#endif  // AP_MISSION_ENABLED
 
     // Checks rc has been received if it is configured to be used
     bool rc_received_if_enabled_check(bool display_failure);
