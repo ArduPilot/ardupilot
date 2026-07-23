@@ -150,6 +150,14 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         ld06 = NEW_NOTHROW SITL::PS_LD06();
         return ld06;
 #endif  // AP_SIM_PS_LD06_ENABLED
+#if AP_SIM_HLK_LD2451_ENABLED
+    } else if (streq(name, "hlk-ld2451")) {
+        if (hlk_ld2451 != nullptr) {
+            AP_HAL::panic("Only one hlk-ld2451 at a time");
+        }
+        hlk_ld2451 = NEW_NOTHROW SITL::PS_HLK_LD2451();
+        return hlk_ld2451;
+#endif  // AP_SIM_HLK_LD2451_ENABLED
 #if AP_SIM_PS_RPLIDARA2_ENABLED
     } else if (streq(name, "rplidara2")) {
         if (rplidara2 != nullptr) {
@@ -397,6 +405,12 @@ void SITL_State_Common::sim_update(void)
         ld06->update(sitl_model->get_location());
     }
 #endif  // AP_SIM_PS_LD06_ENABLED
+
+#if AP_SIM_HLK_LD2451_ENABLED
+    if (hlk_ld2451 != nullptr) {
+        hlk_ld2451->update(sitl_model->get_location());
+    }
+#endif  // AP_SIM_HLK_LD2451_ENABLED
 
 #if AP_SIM_PS_RPLIDARA2_ENABLED
     if (rplidara2 != nullptr) {

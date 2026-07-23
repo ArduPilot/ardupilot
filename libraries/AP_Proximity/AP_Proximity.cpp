@@ -31,6 +31,7 @@
 #include "AP_Proximity_Scripting.h"
 #include "AP_Proximity_LD06.h"
 #include "AP_Proximity_MR72_CAN.h"
+#include "AP_Proximity_HLK_LD2451.h"
 
 
 #include <AP_Logger/AP_Logger.h>
@@ -264,6 +265,15 @@ void AP_Proximity::init()
             if (AP_Proximity_LD06::detect(serial_instance)) {
                 state[instance].instance = instance;
                 drivers[instance] = NEW_NOTHROW AP_Proximity_LD06(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+#endif
+#if AP_PROXIMITY_HLK_LD2451_ENABLED
+        case Type::HLK_LD2451:
+            if (AP_Proximity_HLK_LD2451::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = NEW_NOTHROW AP_Proximity_HLK_LD2451(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
