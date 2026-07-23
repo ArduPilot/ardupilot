@@ -122,9 +122,6 @@ public:
     // wind_estimation_enabled returns true if wind estimation is enabled
     bool get_wind_estimation_enabled() const { return wind_estimation_enabled; }
 
-    // return a wind estimation vector, in m/s; returns 0,0,0 on failure
-    const Vector3f &wind_estimate() const { return active_estimates->wind; }
-
     // return a wind estimation vector in "wind" (m/s); returns false if
     // we have no valid estimate
     bool get_wind(Vector3f &wind) const;
