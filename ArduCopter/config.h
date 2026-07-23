@@ -31,6 +31,7 @@
 #include <AP_Follow/AP_Follow_config.h>
 #include <AC_Avoidance/AC_Avoidance_config.h>
 #include <AC_CustomControl/AC_CustomControl_config.h>
+#include <AP_Mission/AP_Mission_config.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -143,8 +144,10 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // Auto mode - allows vehicle to trace waypoints and perform automated actions
+// Copter's one-and-only AP_Mission object is a member of ModeAuto, so the two
+// must be enabled and disabled together; see the checks below.
 #ifndef MODE_AUTO_ENABLED
-# define MODE_AUTO_ENABLED 1
+# define MODE_AUTO_ENABLED AP_MISSION_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -578,6 +581,17 @@
 #if MODE_FOLLOW_ENABLED && !AP_AVOIDANCE_ENABLED
   #error Follow Mode relies on AP_AVOIDANCE_ENABLED which is disabled
 #endif
+
+#if MODE_AUTO_ENABLED && !AP_MISSION_ENABLED
+  #error ModeAuto requires AP_MISSION_ENABLED which is disabled
+#endif  // MODE_AUTO_ENABLED && !AP_MISSION_ENABLED
+
+// Copter stores its AP_Mission object inside ModeAuto, so compiling ModeAuto
+// out would leave AP::mission() with nothing to return.  Disable
+// AP_MISSION_ENABLED rather than MODE_AUTO_ENABLED to remove mission support.
+#if AP_MISSION_ENABLED && !MODE_AUTO_ENABLED
+  #error AP_MISSION_ENABLED requires ModeAuto which is disabled
+#endif  // AP_MISSION_ENABLED && !MODE_AUTO_ENABLED
 
 #if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED
   #error ModeAuto requires ModeGuided which is disabled
