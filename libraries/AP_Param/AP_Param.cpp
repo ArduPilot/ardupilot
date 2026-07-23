@@ -36,6 +36,9 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <stdio.h>
 #include <AP_ROMFS/AP_ROMFS.h>
+#if AP_VEHICLE_ENABLED
+#include <AP_Vehicle/AP_Vehicle.h>
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <SITL/SITL.h>
@@ -1463,6 +1466,28 @@ bool AP_Param::allow_set_via_mavlink(uint16_t flags) const
         return false;
     }
 #endif  // HAL_GCS_ENABLED
+
+#if AP_VEHICLE_ENABLED
+    {
+        AP_Vehicle *veh = AP::vehicle();
+        if (veh != nullptr) {
+            const int8_t lockdown = veh->get_param_lockdown();
+            if (lockdown > 0) {
+                // level 1: reject only while armed
+                if (lockdown == 1 && !hal.util->get_soft_armed()) {
+                    return true;
+                }
+                // level 2: reject all except PARAM_LOCKDOWN itself
+                if (lockdown == 2 && veh->is_param_lockdown(this)) {
+                    return true;
+                }
+                // level 3: reject all unconditionally (reflash to recover)
+                // any other lockdown level also rejects
+                return false;
+            }
+        }
+    }
+#endif  // AP_VEHICLE_ENABLED
 
     return true;
 }
