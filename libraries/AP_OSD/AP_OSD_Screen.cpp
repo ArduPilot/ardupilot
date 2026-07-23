@@ -1940,7 +1940,10 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 #if !APM_BUILD_TYPE(APM_BUILD_Rover)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    Vector3f v = ahrs.wind_estimate();
+    Vector3f v;
+    // draw the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(ahrs.get_wind(v));
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
