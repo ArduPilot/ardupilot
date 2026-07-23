@@ -49,7 +49,9 @@ singleton AP_AHRS method get_home Location
 singleton AP_AHRS method get_gyro Vector3f
 singleton AP_AHRS method get_accel Vector3f
 singleton AP_AHRS method get_hagl boolean float'Null
-singleton AP_AHRS method wind_estimate Vector3f
+-- compatibility binding for the removed Vector3f-returning
+-- AP_AHRS::wind_estimate() method; see lua_AP_AHRS_wind_estimate
+singleton AP_AHRS manual wind_estimate lua_AP_AHRS_wind_estimate 0 1
 singleton AP_AHRS method wind_alignment float'skip_check float'skip_check
 singleton AP_AHRS method head_wind float'skip_check
 singleton AP_AHRS method groundspeed_vector Vector2f
