@@ -107,7 +107,7 @@ void Plane::failsafe_check(void)
         // we're manipulating surfaces
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
         GCS_MAVLINK *chan = gcs().chan(0);
-        if (HAVE_PAYLOAD_SPACE(chan->get_chan(), SERVO_OUTPUT_RAW)) {
+        if (chan != nullptr && HAVE_PAYLOAD_SPACE(chan->get_chan(), SERVO_OUTPUT_RAW)) {
             chan->send_servo_output_raw();
         }
 #endif
