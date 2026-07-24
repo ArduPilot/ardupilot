@@ -1205,8 +1205,8 @@ AP_InertialSensor::detect_backends(void)
 
 #if AP_EXTERNAL_AHRS_ENABLED
     // if enabled, make the first IMU the external AHRS
-    const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
-    if (serial_port >= 0) {
+    if (AP::externalAHRS().enabled()) {
+        const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
         ADD_BACKEND(NEW_NOTHROW AP_InertialSensor_ExternalAHRS(*this, serial_port));
     }
 #endif
