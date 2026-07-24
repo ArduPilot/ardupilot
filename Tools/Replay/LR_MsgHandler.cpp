@@ -81,6 +81,15 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
     }
 }
 
+void LR_MsgHandler_RHG2::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RHG2, msgbytes);
+    ekf2.resetHeightDatum(msg.origin_alt_tolerance_m);
+    if (replay_force_ekf3) {
+        ekf3.resetHeightDatum(msg.origin_alt_tolerance_m);
+    }
+}
+
 void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RSO2, msgbytes);
@@ -117,7 +126,10 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
         ekf3.resetGyroBias();
         break;
     case AP_DAL::Event::resetHeightDatum:
-        ekf3.resetHeightDatum();
+        // legacy log compatibility: pre-2026 logs did not record an
+        // origin-altitude tolerance.  Replay with the check disabled
+        // (always full reset) to match the original behaviour.
+        ekf3.resetHeightDatum(-1.0f);
         break;
     case AP_DAL::Event::setTerrainHgtStable:
         ekf3.setTerrainHgtStable(true);
@@ -170,6 +182,12 @@ void LR_MsgHandler_REY3::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(REY3, msgbytes);
     ekf3.writeEulerYawAngle(msg.yawangle, msg.yawangleerr, msg.timestamp_ms, msg.type);
+}
+
+void LR_MsgHandler_RHGT::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RHGT, msgbytes);
+    ekf3.resetHeightDatum(msg.origin_alt_tolerance_m);
 }
 
 void LR_MsgHandler_RISH::process_message(uint8_t *msgbytes)

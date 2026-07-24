@@ -388,10 +388,20 @@ public:
         return attitude_reset_tracker.count();
     }
 
-    // Resets the baro so that it reads zero at the current height
-    // Resets the EKF height to zero
-    // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-    void resetHeightDatum();
+    // Reset the EKF height datum and clear baro temperature drift
+    // accumulated while disarmed.
+    //
+    // origin_alt_tolerance_m caps how far EKF_origin.alt may diverge
+    // from current GPS altitude before the EKF suppresses the reset.
+    // Within the tolerance the EKF does a full reset (zero position.z,
+    // recalibrate baro, flush baro buffer).  Outside the tolerance the
+    // partial-reset branch is a true no-op: position.z, the baro
+    // calibration, the baro buffer and baroHgtOffset are all left
+    // untouched, which preserves AMSL accuracy for the user-pinned
+    // origin case (AHRS_ORIGIN_ALT, MAV_CMD_DO_SET_GLOBAL_ORIGIN).
+    // Negative (default) disables the check -- always full reset,
+    // matching pre-2026 behaviour.  See NavEKF3::resetHeightDatum.
+    void resetHeightDatum(float origin_alt_tolerance_m = -1.0f);
 
     // send a EKF_STATUS_REPORT for current EKF
     void send_ekf_status_report(class GCS_MAVLINK &link) const;

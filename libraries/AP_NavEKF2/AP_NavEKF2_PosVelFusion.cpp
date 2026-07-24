@@ -256,14 +256,29 @@ void NavEKF2_core::ResetPositionD(ftype posD)
 
 // Zero the EKF height datum
 // Return true if the height datum reset has been performed
-bool NavEKF2_core::resetHeightDatum(void)
+bool NavEKF2_core::resetHeightDatum(float origin_alt_tolerance_m)
 {
-    if (activeHgtSource == HGT_SOURCE_RNG || !onGround) {
-        // only allow resets when on the ground.
-        // If using using rangefinder for height then never perform a
-        // reset of the height datum
+    if (!onGround) {
+        // only allow resets when on the ground
         return false;
     }
+
+    // Only reset the datum when height is referenced to the baro or GPS.
+    // For rangefinder, beacon or external-nav height the estimate is
+    // referenced to that source rather than the baro.
+    if (activeHgtSource != HGT_SOURCE_BARO &&
+        activeHgtSource != HGT_SOURCE_GPS) {
+        return false;
+    }
+
+    if (origin_alt_tolerance_m >= 0 && validOrigin && gpsGoodToAlign) {
+        const float gps_origin_diff_m = fabsf(0.01f *
+            (float)(dal.gps().location().alt - EKF_origin.alt));
+        if (gps_origin_diff_m > origin_alt_tolerance_m) {
+            return true;
+        }
+    }
+
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;
     // reset the barometer so that it reads zero at the current height
@@ -1100,4 +1115,3 @@ void NavEKF2_core::selectHeightForFusion()
         hgtTimeout = false;
     }
 }
-
