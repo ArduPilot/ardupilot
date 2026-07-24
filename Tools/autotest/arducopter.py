@@ -3536,7 +3536,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.change_alt(pre_flip_altitude_m, threshold_below_m=1.0, threshold_above_m=1.0)
 
         acceptable_altitude_loss_during_flip_m = 10.0
-        self.takeoff(pre_flip_altitude_m)
+        self.takeoff(pre_flip_altitude_m, mode='GUIDED')
+        self.hover()
         self.change_mode('ALT_HOLD')
 
         get_ready_for_flip()
@@ -4153,7 +4154,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # set these parameters so they get reverted at the end of the test:
         self.set_parameters(ogains)
 
-        self.takeoff(10)
+        self.takeoff(10, mode='GUIDED')
+        self.hover()
+        self.change_mode('STABILIZE')
 
         tstart = self.get_sim_time()
 
@@ -4198,7 +4201,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # set these parameters so they get reverted at the end of the test:
         self.set_parameters(ogains)
 
-        self.takeoff(10)
+        self.takeoff(10, mode='GUIDED')
+        self.hover()
+        self.change_mode('STABILIZE')
 
         tstart = self.get_sim_time()
 
@@ -5669,7 +5674,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         start_speed_ms = self.get_parameter('WP_SPD')
 
-        self.takeoff(20)
+        self.takeoff(20, mode='GUIDED')
         self.change_mode('AUTO')
         self.wait_groundspeed(start_speed_ms-1, start_speed_ms+1, minimum_duration=10)
 
@@ -5694,7 +5699,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         minimum_duration = 5
 
-        self.takeoff(20)
+        self.takeoff(20, mode='GUIDED')
         self.change_mode('AUTO')
         self.wait_climbrate(start_speed_ms-1, start_speed_ms+1, minimum_duration=minimum_duration)
 
@@ -9883,8 +9888,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test MANUAL_CONTROL mavlink message'''
         self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
 
+        self.takeoff(10, mode='GUIDED')
+        self.hover()
         self.change_mode('STABILIZE')
-        self.takeoff(10)
 
         tstart = self.get_sim_time_cached()
         want_pitch_degrees = -12
@@ -13649,7 +13655,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             [],
             **self.callisto_sitl_kwargs()
         )
-        self.takeoff(10)
+        self.takeoff(10, mode='GUIDED')
         self.do_RTL()
 
     def FlyEachFrame(self):
@@ -14907,7 +14913,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             'RALLY_INCL_HOME': 0,
         })
-        self.takeoff(10)
+        self.takeoff(10, mode='GUIDED')
+        self.hover()
         self.change_mode('RTL')
         self.wait_location(rally_loc, height_accuracy=None)
         self.assert_altitude(rally_alt, relative=True)
@@ -15358,7 +15365,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # install get-target-location-mount-backend.lua script
         self.install_example_script_context('get-target-location-mount-backend.lua')
         self.reboot_sitl()
-        self.takeoff(50)
+        self.takeoff(50, mode='GUIDED')
 
         self.context_collect("STATUSTEXT")
 
