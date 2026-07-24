@@ -36,6 +36,33 @@ void ModeGuided::update()
     }
 #endif
 
+    // Throttle output
+    if (plane.guided_throttle_passthru) {
+        // manual passthrough of throttle in fence breach
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
+
+    }  else if (plane.aparm.throttle_cruise > 1 &&
+            plane.guided_state.last_forced_throttle_ms > 0 &&
+            millis() - plane.guided_state.last_forced_throttle_ms < plane.g2.guided_timeout*1000.0f) {
+        // Received an external msg that guides throttle within g2.guided_timeout?
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.guided_state.forced_throttle);
+
+    } else {
+        // TECS control
+        plane.calc_throttle();
+
+    }
+
+    if (plane.guided_state.last_forced_rpy_rates_ms > 0 &&
+            millis() - plane.guided_state.last_forced_rpy_rates_ms < plane.g2.guided_timeout*1000.0f) {
+        
+        plane.nav_roll_cd = plane.ahrs.roll_sensor;
+        plane.nav_pitch_cd = plane.ahrs.pitch_sensor;
+        plane.update_load_factor();
+        return;
+    }
+
+
     // Received an external msg that guides roll within g2.guided_timeout?
     if (plane.guided_state.last_forced_rpy_ms.x > 0 &&
             millis() - plane.guided_state.last_forced_rpy_ms.x < plane.g2.guided_timeout*1000.0f) {
@@ -82,22 +109,7 @@ void ModeGuided::update()
         plane.calc_nav_pitch();
     }
 
-    // Throttle output
-    if (plane.guided_throttle_passthru) {
-        // manual passthrough of throttle in fence breach
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
 
-    }  else if (plane.aparm.throttle_cruise > 1 &&
-            plane.guided_state.last_forced_throttle_ms > 0 &&
-            millis() - plane.guided_state.last_forced_throttle_ms < plane.g2.guided_timeout*1000.0f) {
-        // Received an external msg that guides throttle within g2.guided_timeout?
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.guided_state.forced_throttle);
-
-    } else {
-        // TECS control
-        plane.calc_throttle();
-
-    }
 
 }
 
@@ -198,5 +210,23 @@ void ModeGuided::update_target_altitude()
 #endif // AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         {
         Mode::update_target_altitude();
+    }
+}
+
+void ModeGuided::run() {
+    if (plane.guided_state.last_forced_rpy_rates_ms > 0 &&
+            millis() - plane.guided_state.last_forced_rpy_rates_ms < plane.g2.guided_timeout*1000.0f) {
+        
+        const float speed_scaler = plane.get_speed_scaler();
+        float roll_out = plane.rollController.get_rate_out(plane.guided_state.forced_rpy_rates_cd.x / 100.0f, speed_scaler);
+        float pitch_out = plane.pitchController.get_rate_out(plane.guided_state.forced_rpy_rates_cd.y / 100.0f, speed_scaler);
+        float yaw_out = plane.yawController.get_rate_out(plane.guided_state.forced_rpy_rates_cd.z / 100.0f, speed_scaler, true);
+
+        SRV_Channels::set_output_scaled(SRV_Channel::k_aileron, roll_out);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_elevator, pitch_out);
+        SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, yaw_out);
+
+    } else {
+        Mode::run();
     }
 }

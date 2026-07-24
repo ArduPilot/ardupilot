@@ -6843,6 +6843,102 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.delay_sim_time(5, reason="terrain altitude to stabilise before landing")
         self.fly_home_land_and_disarm()
 
+    def MAV_CMD_GUIDED_ATTITUDE_RATE(self, tolerance=0.5):
+        """Test setting of attitude rate target in guided mode."""
+        self.takeoff(1000, timeout=120)
+        self.change_mode("GUIDED")
+
+        # Test rate control with type_mask ignoring attitude angles
+        # type_mask bits: bit 0=roll_rate, bit 1=pitch_rate, bit 2=yaw_rate, bit 6=throttle, bit 7=attitude
+        # Set bit 7 to ignore attitude, clear bits 0-2 to use rates
+        steps = [
+            {"name": "barrel", "roll_r": 1, "pitch_r": 0, "yaw_r": 0, "thr": 0.5, "time": 10.0, "mask": 0b10000000},
+            {"name": "stable", "roll_r": 0, "pitch_r": 0,  "yaw_r": 0, "thr": 0.5, "time": 5.0, "mask": 0b10000000},
+            {"name": "gfactor", "roll_r": 0, "pitch_r": 0.5, "yaw_r": 0, "thr": 0.5, "time": 3.0, "mask": 0b10000000},
+            {"name": "i-loop", "roll_r": 0., "pitch_r": -1, "yaw_r": 0, "thr": 0.7, "time": 25.0, "mask": 0b10000000},
+            {"name": "b-loop", "roll_r": 1., "pitch_r": 1,  "yaw_r": 0, "thr": 0.9, "time": 15.0, "mask": 0b10000000},
+        ]
+
+        state_wait = "wait"
+        state_hold = "hold"
+        try:
+            for step in steps:
+                state = state_wait
+                state_start = self.get_sim_time_cached()
+                while True:
+                    m = self.mav.recv_match(type='ATTITUDE',
+                                            blocking=True,
+                                            timeout=0.1)
+                    now = self.get_sim_time_cached()
+
+                    time_boot_millis = 0
+                    target_system = 1
+                    target_component = 1
+                    # type_mask: ignore attitude (bit 7), use rates (bits 0-2 cleared)
+                    type_mask = step["mask"]
+
+                    # Identity quaternion since we're ignoring attitude
+                    q = quaternion.Quaternion([1, 0, 0, 0])
+
+                    self.mav.mav.set_attitude_target_send(
+                        time_boot_millis,
+                        target_system,
+                        target_component,
+                        type_mask,
+                        q,
+                        step["roll_r"],   # rad/s
+                        step["pitch_r"],  # rad/s
+                        step["yaw_r"],    # rad/s
+                        step["thr"]
+                    )
+
+                    # Calculate rate error from ATTITUDE message gyro fields
+                    roll_rate_error = abs(m.rollspeed - step["roll_r"])
+                    pitch_rate_error = abs(m.pitchspeed - step["pitch_r"])
+
+                    self.progress("%s(%s) - %f: Roll rate=%f -> %f (error %f), Pitch rate=%f -> %f (error %f)" % (
+                        step["name"],
+                        state,
+                        now - state_start,
+                        m.rollspeed,
+                        step["roll_r"],
+                        roll_rate_error,
+                        m.pitchspeed,
+                        step["pitch_r"],
+                        pitch_rate_error
+                    ))
+
+                    if state == state_wait:
+                        # Reduced tolerance for initial trigger
+                        if roll_rate_error < tolerance and pitch_rate_error < tolerance:
+                            state = state_hold
+                            state_start = now
+
+                        # Allow 5 seconds to reach target rate
+                        if (now - state_start) > 5:
+                            raise NotAchievedException(step["name"] + ": Failed to achieve target rate")
+
+                    elif state == state_hold:
+                        # Give 1 second to stabilize
+                        if (now - state_start) > 1 and ((roll_rate_error > tolerance) or (pitch_rate_error > tolerance)):
+                            raise NotAchievedException(step["name"] + ": Failed to hold target rate")
+
+                        # Hold for 3 seconds
+                        if (now - state_start) > step["time"]:
+                            self.progress("%s Done" % (step["name"]))
+                            break
+
+        except Exception as e:
+            self.change_mode('FBWA')
+            self.set_rc(3, 1700)
+            raise e
+
+        # back to FBWA
+        self.change_mode('FBWA')
+        self.set_rc(3, 1700)
+        self.wait_level_flight()
+        self.fly_home_land_and_disarm(timeout=180)
+
     def _MAV_CMD_PREFLIGHT_CALIBRATION(self, command):
         self.context_push()
         self.start_subtest("Denied when armed")
@@ -8824,6 +8920,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ExternalPositionEstimate,
             self.SagetechMXS,
             self.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
+            self.MAV_CMD_GUIDED_ATTITUDE_RATE,
             self.MAV_CMD_PREFLIGHT_CALIBRATION,
             self.MAV_CMD_DO_INVERTED_FLIGHT,
             self.MAV_CMD_DO_AUTOTUNE_ENABLE,
