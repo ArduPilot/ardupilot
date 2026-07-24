@@ -6,6 +6,13 @@
 
 #include <AP_HAL/AP_HAL.h>
 
+// UDP read() will give up after receiving this many packets
+// including ones that are discarded (e.g. our own multicasts)
+// Tune in hwdef.dat if necessary
+#ifndef HAL_LINUX_MAX_UDP_PACKETS
+    #define HAL_LINUX_MAX_UDP_PACKETS 20
+#endif
+
 UDPDevice::UDPDevice(const char *ip, uint16_t port, bool bcast, bool input):
     _ip(ip),
     _port(port),
@@ -35,14 +42,51 @@ ssize_t UDPDevice::write(const uint8_t *buf, uint16_t n)
 
 ssize_t UDPDevice::read(uint8_t *buf, uint16_t n)
 {
-    ssize_t ret = socket.recv(buf, n, 0);
-    if (!_connected && ret > 0) {
-        const char *ip;
-        uint16_t port;
-        socket.last_recv_address(ip, port);
-        _connected = socket.connect(ip, port);
+    ssize_t bytes_read = 0;
+    ssize_t packets_read = 0;
+
+    // recv() only retrieves a single datagram on UDP sockets
+    // peek & read multiple until the buffer full
+    // poll each time because FIONREAD can't distinguish between
+    // no data and empty datagrams
+    while (bytes_read < n && socket.pollin(0) && packets_read < HAL_LINUX_MAX_UDP_PACKETS) {
+        int in_size = 0;
+        if (ioctl(socket.get_read_fd(), FIONREAD, &in_size) < 0) {
+            return -1;
+        }
+
+        // read the first packet unconditionally
+        // read subsequent packets if they fit into the remaining buffer
+        // this ensures that if the incoming packet is somehow larger than
+        // the entire RX ring-buffer, we get a truncated packet rather
+        // than end up being unable to read any further
+        // NOTE: Linux HAL allocates a 8192 byte RX buffer so this should
+        // not happen unless the buffer size is redefined
+        if (bytes_read > 0 && in_size > n - bytes_read) {
+            break;
+        }
+
+        ssize_t ret = socket.recv(&buf[bytes_read], n - bytes_read, 0);
+        if (!_connected && ret > 0) {
+            const char *ip;
+            uint16_t port;
+            socket.last_recv_address(ip, port);
+            _connected = socket.connect(ip, port);
+        }
+
+        // socket.read() may return -1 if we're reading ourselves on multicast
+        if (ret > 0) {
+            bytes_read += ret;
+        }
+
+        packets_read++;
     }
-    return ret;
+
+    if (bytes_read == 0) {
+        return -1;
+    }
+
+    return bytes_read;
 }
 
 bool UDPDevice::open()
