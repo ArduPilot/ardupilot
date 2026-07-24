@@ -26,6 +26,9 @@
 #include "SIM_RichenPower.h"
 #include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
+#include "SIM_IBus2_Master.h"
+#include "SIM_IBus2_Slave.h"
+#include "SIM_IBus2_ESC.h"
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include "SIM_SlungPayload.h"
@@ -151,6 +154,14 @@ public:
         for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
             AP_Param::setup_object_defaults(&airspeed[i], airspeed[i].var_info);
         }
+#if AP_IBUS2_ENABLED
+        for (auto &slave : ibus2slave_sim) {
+            AP_Param::setup_object_defaults(&slave, IBus2SlaveDevice::var_info);
+        }
+        for (auto &esc : ibus2esc_sim) {
+            AP_Param::setup_object_defaults(&esc, IBus2ESC::var_info);
+        }
+#endif
         // set compass offset
         for (uint8_t i = 0; i < HAL_COMPASS_MAX_SENSORS; i++) {
             mag_ofs[i].set(Vector3f(5, 13, -18));
@@ -581,6 +592,9 @@ public:
 #endif
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
+    IBus2Master       ibus2master_sim;         // RC-input sim (single instance)
+    IBus2SlaveDevice  ibus2slave_sim[2] = {IBus2SlaveDevice(0), IBus2SlaveDevice(1)};
+    IBus2ESC          ibus2esc_sim[2]   = {IBus2ESC(0),         IBus2ESC(1)};
 #if AP_SIM_VOLZ_ENABLED
     Volz volz_sim;
 #endif  // AP_SIM_VOLZ_ENABLED
