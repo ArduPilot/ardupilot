@@ -821,8 +821,7 @@ void AP_FETtecOneWire::update()
     }
 #endif
 
-    // get ESC set points
-    uint16_t motor_pwm[_esc_count];
+    uint16_t motor_pwm[MAX_ESC_COUNT];
     for (uint8_t i = 0; i < _esc_count; i++) {
         const ESC &esc = _escs[i];
         const SRV_Channel* c = SRV_Channels::srv_channel(esc.servo_ofs);
