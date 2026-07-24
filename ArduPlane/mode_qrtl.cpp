@@ -64,6 +64,7 @@ bool ModeQRTL::_enter()
     // use do_RTL() to setup next_WP_loc
     plane.do_RTL(RTL_alt_abs_cm);
     quadplane.poscontrol_init_approach();
+    alt_ramp_start_set = false;
 
     int32_t from_alt;
     int32_t to_alt;
@@ -146,6 +147,7 @@ void ModeQRTL::run()
 
                 plane.do_RTL(RTL_alt_abs_cm);
                 quadplane.poscontrol_init_approach();
+                alt_ramp_start_set = false;
                 if (plane.current_loc.get_height_above(plane.next_WP_loc, alt_diff)) {
                     poscontrol.slow_descent = is_positive(alt_diff);
                 } else {
@@ -206,9 +208,34 @@ void ModeQRTL::update_target_altitude()
     const float dist = plane.auto_state.wp_distance;
     const float rad_min = 2*radius;
     const float rad_max = 20*radius;
-    float alt = linear_interpolate(0, rtl_alt_delta,
-                                   dist,
-                                   rad_min, MAX(rad_min, MIN(rad_max, rad_min+sink_dist)));
+    const float dist_rtl_alt_reached = MAX(rad_min, MIN(rad_max, rad_min+sink_dist));
+
+    float alt;
+    if (plane.quadplane.option_is_set(QuadPlane::Option::RTL_ALT_GRADUAL_DESCENT) && (dist > dist_rtl_alt_reached)) {
+        /*
+          still well short of home: instead of immediately targeting RTL_ALTITUDE,
+          gradually descend from the altitude we were at when this approach leg
+          started down to RTL_ALTITUDE, reaching it at dist_rtl_alt_reached
+         */
+        if (!alt_ramp_start_set) {
+            alt_ramp_start_dist_m = dist;
+            ftype height_above;
+            alt_ramp_start_alt_m = plane.current_loc.get_height_above(plane.next_WP_loc, height_above) ? float(height_above) : rtl_alt_delta;
+            alt_ramp_start_set = true;
+        }
+        if ((alt_ramp_start_alt_m > rtl_alt_delta) && (alt_ramp_start_dist_m > dist_rtl_alt_reached)) {
+            alt = linear_interpolate(rtl_alt_delta, alt_ramp_start_alt_m,
+                                      dist,
+                                      dist_rtl_alt_reached, alt_ramp_start_dist_m);
+        } else {
+            // already at or below RTL_ALTITUDE, nothing to ramp down from
+            alt = rtl_alt_delta;
+        }
+    } else {
+        alt = linear_interpolate(0, rtl_alt_delta,
+                                  dist,
+                                  rad_min, dist_rtl_alt_reached);
+    }
     Location loc = plane.next_WP_loc;
     loc.offset_up_m(alt);
     plane.set_target_altitude_location(loc);
