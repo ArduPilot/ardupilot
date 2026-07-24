@@ -141,12 +141,20 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("AVC mission completed: passed!")
 
     def takeoff(self,
-                alt_min=30,
+                altitude_min=30,
                 takeoff_throttle=1700,
                 require_absolute=True,
                 mode="STABILIZE",
-                timeout=120):
-        """Takeoff get to 30m altitude."""
+                timeout=120,
+                altitude_max=None):
+        """Takeoff to at least altitude_min metres above home.
+
+        Beware: in a manual-collective mode such as STABILIZE the
+        vehicle can blow way past altitude_min before the collective is
+        reduced, and unless altitude_max is supplied nothing checks the
+        overshoot.  If your test cares about the altitude the takeoff
+        finishes at, take off in GUIDED.
+        """
         self.progress("TAKEOFF")
         self.change_mode(mode)
         if not self.armed():
@@ -169,10 +177,17 @@ class AutoTestHelicopter(AutoTestCopter):
         self.delay_sim_time(20, reason="rotor runup to complete")
 
         if mode == 'GUIDED':
-            self.user_takeoff(alt_min=alt_min)
+            max_err = 5
+            if altitude_max is not None:
+                max_err = altitude_max - altitude_min
+            self.user_takeoff(alt_min=altitude_min, max_err=max_err)
         else:
             self.set_rc(3, takeoff_throttle)
-        self.wait_altitude(alt_min-1, alt_min+5, relative=True, timeout=timeout)
+        if altitude_max is None:
+            # no limit; a finite stand-in as wait_and_maintain does
+            # arithmetic on the bounds
+            altitude_max = 100000
+        self.wait_altitude(altitude_min-1, altitude_max, relative=True, timeout=timeout)
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 

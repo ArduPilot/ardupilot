@@ -136,27 +136,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("DISARM_DELAY", delay)
 
     def takeoff(self,
-                alt_min=30,
+                altitude_min=30,
                 takeoff_throttle=1700,
                 require_absolute=True,
                 mode="STABILIZE",
                 timeout=120,
-                max_err=5,
+                altitude_max=None,
                 alt_minimum_duration=0,
                 ):
-        """Takeoff get to 30m altitude."""
+        """Takeoff to at least altitude_min metres above home.
+
+        Beware: in a manual-throttle mode such as STABILIZE the vehicle
+        climbs fast and can blow way past altitude_min before the
+        throttle is reduced, and unless altitude_max is supplied
+        nothing checks the overshoot.  If your test cares about the
+        altitude the takeoff finishes at, take off in GUIDED.
+        """
         self.progress("TAKEOFF")
         self.change_mode(mode)
         if not self.armed():
             self.wait_ready_to_arm(require_absolute=require_absolute, timeout=timeout)
-            if mode != 'GUIDED':
-                self.zero_throttle()
+            self.zero_throttle()
             self.arm_vehicle()
         if mode == 'GUIDED':
-            self.user_takeoff(alt_min=alt_min, timeout=timeout, max_err=max_err)
+            max_err = 5
+            if altitude_max is not None:
+                max_err = altitude_max - altitude_min
+            self.user_takeoff(alt_min=altitude_min, timeout=timeout, max_err=max_err)
         else:
             self.set_rc(3, takeoff_throttle)
-        self.wait_altitude(alt_min-1, alt_min+max_err, relative=True, timeout=timeout, minimum_duration=alt_minimum_duration)
+        if altitude_max is None:
+            # no limit; a finite stand-in as wait_and_maintain does
+            # arithmetic on the bounds
+            altitude_max = 100000
+        self.wait_altitude(altitude_min-1, altitude_max, relative=True, timeout=timeout, minimum_duration=alt_minimum_duration)
         if mode != 'GUIDED':
             self.hover()
         self.progress("TAKEOFF COMPLETE")
@@ -199,7 +212,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             3: 1000,
             4: 1500,
         })
-        self.takeoff(alt_min=dAlt, mode='GUIDED')
+        self.takeoff(altitude_min=dAlt, mode='GUIDED')
         self.hover()
         self.change_mode("ALT_HOLD")
 
@@ -2644,7 +2657,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode("GUIDED")
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.takeoff(alt_min=15, mode="GUIDED")
+        self.takeoff(altitude_min=15, mode="GUIDED")
 
         # Check fence is enabled
         self.assert_fence_enabled()
@@ -2682,7 +2695,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.takeoff(alt_min=15, mode="GUIDED")
+        self.takeoff(altitude_min=15, mode="GUIDED")
 
         # Check fence is enabled
         self.assert_fence_enabled()
@@ -3756,7 +3769,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         # we can't takeoff in loiter as we need flow healthy
-        self.takeoff(alt_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        self.takeoff(altitude_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
         self.change_mode('LOITER')
 
         # speed should be limited to <10m/s
@@ -3819,7 +3832,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # arm and take off directly in Loiter: this is the path that matters -
         # Loiter requires_position(), and arming exercises the arm-time
         # compass-health gate while the compass is not the EKF yaw source.
-        self.takeoff(alt_min=10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+        self.takeoff(altitude_min=10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
 
         # confirm Loiter stays engaged and armed (no EKF failsafe / mode
         # revert). A lat/lon position-hold check is not used: with no GPS the
@@ -3904,7 +3917,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_ready_to_arm(require_absolute=False, timeout=120)
         # flow is not healthy stationary, so climb in ALT_HOLD to a low hover
-        self.takeoff(alt_min=2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+        self.takeoff(altitude_min=2, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
         self.change_mode('LOITER')
         self.delay_sim_time(5, "let altitude settle")
 
@@ -5310,7 +5323,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
         self.set_origin(old_pos)
 
-        self.takeoff(alt_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        self.takeoff(altitude_min=5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
         self.change_mode('LAND')
         # TODO: something more elaborate here - EKF will only aid
         # relative position
@@ -6366,7 +6379,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("RC8_OPTION", 61)
         self.set_parameter("LOIT_OPTIONS", 0)
 
-        self.takeoff(alt_min=5, mode='LOITER')
+        self.takeoff(altitude_min=5, mode='LOITER')
 
         ZIGZAG = 24
         j = 0
@@ -11738,7 +11751,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def fly_rangefinder_drivers_fly(self, rangefinders):
         '''ensure rangefinder gives height-above-ground'''
         expected_alt = 5
-        self.takeoff(expected_alt, mode='GUIDED', alt_minimum_duration=5)
+        self.takeoff(expected_alt, mode='GUIDED', altitude_max=expected_alt+5, alt_minimum_duration=5)
         ds = self.assert_receive_message("DISTANCE_SENSOR")
         gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
         delta = abs(ds.current_distance*0.01 - gpi.relative_alt/1000.0)
@@ -12640,7 +12653,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if sqalt is None:
             takeoff_alt = maxalt
         self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
-        self.takeoff(takeoff_alt, mode='GUIDED', timeout=240, max_err=0.5)
+        self.takeoff(takeoff_alt, mode='GUIDED', timeout=240, altitude_max=takeoff_alt+0.5)
         self.assert_rangefinder_distance_between(takeoff_alt-5, takeoff_alt+5)
 
         self.wait_rangefinder_distance(takeoff_alt-5, takeoff_alt+5)
@@ -14072,7 +14085,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                        (duration, want))
 
         self.start_subtest("takeoffExpected should be false very soon after we launch into the air")
-        self.takeoff(mode='ALT_HOLD', alt_min=5)
+        self.takeoff(mode='ALT_HOLD', altitude_min=5)
         self.change_mode('LAND')
         self.wait_disarmed()
         durations = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
@@ -14317,7 +14330,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def SMART_RTL_Repeat(self):
         '''Test whether Smart RTL catches the repeat'''
-        self.takeoff(alt_min=10, mode='GUIDED')
+        self.takeoff(altitude_min=10, mode='GUIDED')
         self.hover()
         self.change_mode("CIRCLE")
         self.delay_sim_time(1300, reason="SmartRTL to fill breadcrumb buffer")
@@ -15602,7 +15615,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
         self.wait_ready_to_arm()
-        self.takeoff(alt_min=20, mode='LOITER')
+        self.takeoff(altitude_min=20, mode='LOITER')
         self.do_RTL()
         self.context_pop()
         self.reboot_sitl()
@@ -18877,7 +18890,7 @@ return update, 1000
         if m.flags & expected_flags != expected_flags:
             raise NotAchievedException(
                 f"Expected flags 0x{expected_flags:x}, got 0x{m.flags:x}")
-        self.takeoff(alt_min=10, mode="LOITER")
+        self.takeoff(altitude_min=10, mode="LOITER")
         self.assert_received_message_field_values("UTM_GLOBAL_POSITION", {
             "flight_state": mavutil.mavlink.UTM_FLIGHT_STATE_AIRBORNE,
         }, poll=True)
