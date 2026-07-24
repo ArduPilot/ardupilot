@@ -465,6 +465,8 @@ AP_HW_KARSHAKH743VTOL                4002
 # IDs 4100-4109 reserved for AIUAV
 AP_HW_AIUAV_PlatFly_H7               4100
 
+# IDs 4100-4150 reserved for ZERODRAG
+
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
 AP_HW_HAKRC_F405Wing                 4201
