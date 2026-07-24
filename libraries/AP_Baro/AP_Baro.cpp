@@ -965,6 +965,10 @@ void AP_Baro::update(void)
     update_field_elevation();
 #endif
 
+    // update the cached EAS2TAS value, a function of the primary
+    // baro's altitude:
+    _EAS2TAS = _get_EAS2TAS();
+
     // logging
 #if HAL_LOGGING_ENABLED
     if (should_log()) {
