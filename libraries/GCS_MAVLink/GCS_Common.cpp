@@ -3639,6 +3639,16 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 
             return MAV_RESULT_ACCEPTED;
         }
+        if (is_equal(packet.param4, 104.0f)) {
+            // attempt to write to the external memory window. Unlike 102 this
+            // is not in the region we memory-protect on H7, so it is not
+            // trapped and recovered, and gives us a crash dump. Boards which
+            // actually have memory mapped there will just do the write and
+            // return, rather than faulting
+            send_text(MAV_SEVERITY_WARNING,"writing to unmapped memory");
+            *(volatile uint32_t *)0x60000000 = 0xdeadbeef;
+            return MAV_RESULT_FAILED;
+        }
 #endif  // AP_MAVLINK_FAILURE_CREATION_ENABLED
 
 #if HAL_ENABLE_DFU_BOOT
