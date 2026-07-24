@@ -1682,8 +1682,11 @@ if cmd_opts.gui:
         sys.exit(0)
 
     if cmd_opts.vehicle == 'Helicopter':
+        # heli is built from the ArduCopter source tree; the frame-owning
+        # vehicle is resolved separately when looking up frame options.
         cmd_opts.vehicle = 'ArduCopter'
-        cmd_opts.frame = 'heli'
+        if cmd_opts.frame is None:
+            cmd_opts.frame = 'heli'
 
 if cmd_opts.list_vehicle:
     print(' '.join(vinfo.options.keys()))
@@ -1775,8 +1778,19 @@ You could also try changing directory to e.g. the ArduCopter subdirectory
 if cmd_opts.frame is None:
     cmd_opts.frame = vinfo.options[cmd_opts.vehicle]["default_frame"]
 
+# heli frames are defined under the Helicopter vehicle in vehicleinfo but
+# are built from the ArduCopter source tree; if the requested vehicle does
+# not own the frame, search the other vehicles for the one that does so
+# "-v ArduCopter -f heli" still resolves the arducopter-heli build target.
+frame_vehicle = cmd_opts.vehicle
+if not vinfo.frame_in_vehicle(cmd_opts.frame, frame_vehicle):
+    for candidate in vinfo.options:
+        if vinfo.frame_in_vehicle(cmd_opts.frame, candidate):
+            frame_vehicle = candidate
+            break
+
 frame_infos = vinfo.options_for_frame(cmd_opts.frame,
-                                      cmd_opts.vehicle,
+                                      frame_vehicle,
                                       cmd_opts)
 
 vehicle_dir = os.path.realpath(os.path.join(root_dir, cmd_opts.vehicle))
