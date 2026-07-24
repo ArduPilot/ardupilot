@@ -2233,9 +2233,7 @@ bool ModeAuto::verify_loiter_to_alt() const
 // returns true with RTL has completed successfully
 bool ModeAuto::verify_RTL()
 {
-    return (copter.mode_rtl.state_complete() && 
-            (copter.mode_rtl.state() == ModeRTL::SubMode::FINAL_DESCENT || copter.mode_rtl.state() == ModeRTL::SubMode::LAND) &&
-            (motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE));
+    return copter.mode_rtl.is_landing_complete();
 }
 
 /********************************************************************************/
