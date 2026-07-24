@@ -11,6 +11,15 @@
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter.parm"
             },
+            "nexus": {
+                "model": "+",
+                "board": "SITL_Nexus",
+                "waf_target": "bin/arducopter",
+                "default_params_filename": [
+                    "default_params/copter.parm",
+                    "default_params/nexus.parm"
+                ]
+            },
             "X": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": [

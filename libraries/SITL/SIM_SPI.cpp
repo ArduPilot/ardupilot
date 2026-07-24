@@ -25,6 +25,10 @@
 
 #include "SIM_RAMTRON_FM25V02.h"
 #include "SIM_JEDEC_MX25L3206E.h"
+#include "SIM_ADIS16470.h"
+#include "SIM_ADIS16507.h"
+#include "SIM_ADIS16547.h"
+#include "SIM_ICM40609.h"
 
 #include <signal.h>
 
@@ -35,6 +39,14 @@ static RAMTRON_FM25V02 ramtron_FM25V02;  // 32kB 2-byte-addressing
 #endif
 #if AP_SIM_JEDEC_MX25L3206E_ENABLED
 static JEDEC_MX25L3206E jedec_MX25L3206E;
+#endif
+#if AP_SIM_ADIS_ENABLED
+static ADIS16470 adis16470;
+static ADIS16507 adis16507;
+static ADIS16547 adis16547;
+#endif
+#if AP_SIM_ICM40609_ENABLED
+static ICM40609 icm40609;   // ICM40609 driven over SPI (see also the I2C instance in SIM_I2C.cpp)
 #endif
 
 struct spi_device_at_cs_pin {
@@ -48,10 +60,23 @@ struct spi_device_at_cs_pin {
 #if AP_SIM_JEDEC_MX25L3206E_ENABLED
     { 1, 0, jedec_MX25L3206E },
 #endif
+#if AP_SIM_ADIS_ENABLED
+    { 2, 0, adis16470 },
+    { 2, 1, adis16507 },
+    { 2, 2, adis16547 },
+#endif
+#if AP_SIM_ICM40609_ENABLED
+    { 2, 3, icm40609 },
+#endif
 };
 
 void SPI::init()
 {
+    if (initialised) {
+        return;
+    }
+    initialised = true;
+
     for (auto &i : spi_devices) {
         i.device.init();
     }
@@ -72,6 +97,8 @@ void SPI::init()
 
 void SPI::update(const class Aircraft &aircraft)
 {
+    init();  // lazily set up the device table on first use
+
     for (auto daa : spi_devices) {
         daa.device.update(aircraft);
     }
@@ -94,6 +121,8 @@ int SPI::ioctl_transaction(uint8_t bus, uint8_t cs_pin, uint8_t count, spi_ioc_t
 
 int SPI::ioctl(uint8_t bus, uint8_t cs_pin, uint8_t ioctl_type, void *data)
 {
+    init();  // lazily set up the device table on first use
+
     uint8_t count;
     switch (ioctl_type) {
     case SPI_TRANSACTION_1LONG:

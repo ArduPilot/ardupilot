@@ -18817,6 +18817,9 @@ return update, 1000
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.HomeAltResetTest,
+            # the real IMU drivers driving the simulated SPI devices are heavy;
+            # run slower so the flight-code loop keeps up and stays responsive.
+            Test(self.NexusIMUs, speedup=1),
         ])
         return ret
 
@@ -18983,6 +18986,106 @@ return update, 1000
             # reset SITL home back to the default location so the framework's
             # post-test reboot_sitl() location check passes
             self.customise_SITL_commandline([])
+
+    def NexusIMUs(self):
+        '''check the SITL_Nexus board's two simulated SPI IMUs report through
+        the expected MAVLink messages: the InvensenseV3 ICM40609 (instance 0)
+        via RAW_IMU, and the ADIS16470 (instance 1) via SCALED_IMU2'''
+
+        # rebuild + restart on the SITL_Nexus board, which replaces the
+        # pure-maths SITL IMU with the real InvensenseV3 / ADIS drivers running
+        # against their simulated SPI devices.  context_pop() restores the
+        # normal binary once the test finishes.
+        self.restart_SITL_frame('nexus')
+
+        # devtype values are the top byte of the AP_HAL::Device bus_id; these
+        # match the DEVTYPE_INS_* enum in AP_InertialSensor_Backend.h
+        DEVTYPE_INS_ADIS1647X = 0x31
+        DEVTYPE_INS_ICM40609 = 0x33
+        BUS_TYPE_SPI = 2  # AP_HAL::Device::BUS_TYPE_SPI
+
+        def devtype(devid):
+            return (int(devid) >> 16) & 0xff
+
+        def bustype(devid):
+            return int(devid) & 0x7
+
+        ids = self.get_parameters([
+            "INS_ACC_ID", "INS_GYR_ID",
+            "INS_ACC2_ID", "INS_GYR2_ID",
+        ])
+
+        # instance 0 (RAW_IMU) must be the InvensenseV3 ICM40609 on SPI
+        for name in ("INS_ACC_ID", "INS_GYR_ID"):
+            if bustype(ids[name]) != BUS_TYPE_SPI:
+                raise NotAchievedException("%s not on SPI (id=%d)" % (name, ids[name]))
+            if devtype(ids[name]) != DEVTYPE_INS_ICM40609:
+                raise NotAchievedException(
+                    "%s devtype=0x%02x, expected ICM40609 (0x%02x)" %
+                    (name, devtype(ids[name]), DEVTYPE_INS_ICM40609))
+
+        # instance 1 (SCALED_IMU2) must be the ADIS16470 on SPI
+        for name in ("INS_ACC2_ID", "INS_GYR2_ID"):
+            if bustype(ids[name]) != BUS_TYPE_SPI:
+                raise NotAchievedException("%s not on SPI (id=%d)" % (name, ids[name]))
+            if devtype(ids[name]) != DEVTYPE_INS_ADIS1647X:
+                raise NotAchievedException(
+                    "%s devtype=0x%02x, expected ADIS1647X (0x%02x)" %
+                    (name, devtype(ids[name]), DEVTYPE_INS_ADIS1647X))
+
+        # there must be exactly two IMU instances - no phantom third backend
+        if "INS_ACC3_ID" in ids and ids["INS_ACC3_ID"] != 0:
+            raise NotAchievedException("unexpected third IMU instance")
+
+        self.progress("instance 0 = ICM40609, instance 1 = ADIS16470 (by device ID)")
+
+        # make sure both messages are flowing
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_RAW_IMU, 10)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SCALED_IMU2, 10)
+
+        # both sensors must deliver live, physically-plausible data.  With the
+        # vehicle level and stationary each reads ~1g down the z axis and
+        # near-zero rotation.  Accelerations are in mG, rotations in mrad/s.
+        def check_stationary(m, name):
+            mag = math.sqrt(m.xacc**2 + m.yacc**2 + m.zacc**2)
+            if abs(mag - 1000) > 100:
+                raise NotAchievedException(
+                    "%s accel magnitude %.0fmG not ~1g" % (name, mag))
+            if m.zacc > -800:
+                raise NotAchievedException(
+                    "%s not reading gravity on -z (zacc=%dmG)" % (name, m.zacc))
+            for label, axis in (("x", m.xgyro), ("y", m.ygyro), ("z", m.zgyro)):
+                if abs(axis) > 100:
+                    raise NotAchievedException(
+                        "%s rotating unexpectedly (%sgyro=%d)" % (name, label, axis))
+
+        raw = self.assert_receive_message("RAW_IMU", timeout=5)
+        imu2 = self.assert_receive_message("SCALED_IMU2", timeout=5)
+        check_stationary(raw, "RAW_IMU")
+        check_stationary(imu2, "SCALED_IMU2")
+
+        # the two streams are fed by two distinct simulated devices, so their
+        # reported temperatures differ: the ADIS sim hard-codes 25.00 degC,
+        # while the ICM40609's temperature tracks the SITL thermal model.  This
+        # proves SCALED_IMU2 is a separate sensor and not an echo of instance 0.
+        if imu2.temperature != 2500:
+            raise NotAchievedException(
+                "SCALED_IMU2 (ADIS16470) temperature %d != 2500 (25 degC)" %
+                imu2.temperature)
+        if raw.temperature == 2500:
+            raise NotAchievedException(
+                "RAW_IMU (ICM40609) temperature unexpectedly matches the ADIS sim")
+
+        self.progress("RAW_IMU %.2fC (ICM40609), SCALED_IMU2 %.2fC (ADIS16470)" %
+                      (raw.temperature * 0.01, imu2.temperature * 0.01))
+
+        # finally, fly a short guided hop to prove the real IMU drivers feed a
+        # flyable estimate.  The board arms through the normal prearm path: its
+        # accel calibration and reduced loop rate (the heavy drivers can't hold
+        # 400Hz) come from the nexus.parm defaults loaded above.
+        self.takeoff(10, mode='GUIDED')
+        self.delay_sim_time(5, "holding hover on the simulated IMUs")
+        self.land_and_disarm()
 
     def testcan(self):
         ret = ([

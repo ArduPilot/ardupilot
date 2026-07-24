@@ -3338,6 +3338,17 @@ class TestSuite(abc.ABC):
             clean=False, configure=True,
         )
 
+        # a frame may target a non-default board (e.g. SITL_Nexus), whose
+        # binary lands in build/<board>/ rather than overwriting self.binary.
+        # Restart SITL against that binary; self.binary is deliberately left
+        # pointing at the original board so context_pop() relaunches it.
+        board = frame_opts.get('board')
+        new_binary = None
+        if board is not None:
+            new_binary = os.path.join(
+                util.topdir(), 'build', board, 'bin',
+                os.path.basename(frame_opts['waf_target']))
+
         periph_port = None
         if frame_opts.get('periph_board') is not None:
             periph_port = self.spare_network_port()
@@ -3346,11 +3357,24 @@ class TestSuite(abc.ABC):
         # periph, otherwise the periph's first connection attempts race
         # against the customise_SITL_commandline restart and the link can
         # come up only to be torn down by the SITL stop/start.
-        if customisations is not None:
+        # when switching to a different board, boot it with the frame's own
+        # default parameters (its board-specific tuning/calibration) rather
+        # than the currently-running vehicle's defaults.
+        defaults_filepath = None
+        if new_binary is not None:
+            defaults_filepath = self.model_defaults_filepath(
+                frame, vehicleinfo_key)
+
+        if customisations is not None or new_binary is not None:
+            if customisations is None:
+                customisations = []
             if periph_port is not None:
                 customisations = [c.replace('{port}', str(periph_port))
                                   for c in customisations]
-            self.customise_SITL_commandline(customisations)
+            self.customise_SITL_commandline(
+                customisations,
+                binary=new_binary,
+                defaults_filepath=defaults_filepath)
 
         if periph_port is not None:
             topdir = util.topdir()

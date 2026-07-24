@@ -77,11 +77,7 @@ static UARTDriver sitlSerial9Driver(9, &sitlState);
 
 static I2CDeviceManager i2c_mgr_instance;
 
-#if defined(HAL_BUILD_AP_PERIPH)
-static Empty::SPIDeviceManager spi_mgr_instance;
-#else
 static SPIDeviceManager spi_mgr_instance;
-#endif
 static Util utilInstance(&sitlState);
 
 #if HAL_NUM_CAN_IFACES
