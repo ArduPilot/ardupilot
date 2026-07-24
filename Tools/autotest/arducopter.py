@@ -10527,6 +10527,263 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.do_RTL()
 
+    def ModeFollowTwoVehicles(self):
+        '''FOLLOW mode chasing a second, independently-flown SITL Copter'''
+        # The vehicle-under-test (system 1) is the follower.  A second SITL
+        # Copter (system 2) is launched below as the lead; the two talk over
+        # multicast, exactly as "sim_vehicle.py --count 2 --mcast" does.
+        # Framework helpers are hard-wired to system 1, so the lead is flown
+        # with low-level MAVLink on its own connection.
+        lead_sysid = 2
+        foll_ofs_n = 10   # metres: follower holds this far north of the lead
+        op_alt = 20       # metres: common operating altitude
+        guided_mode = 4   # Copter GUIDED custom-mode number
+
+        self.context_push()
+
+        lead = None
+        lead_sitl = None
+        ex = None
+        try:
+            # -- give the follower a multicast port so it can hear the lead --
+            self.customise_SITL_commandline(["--serial5=mcast:"])
+            self.set_parameter("SERIAL5_PROTOCOL", 2)  # MAVLink2
+            self.reboot_sitl()
+            self.set_parameters({
+                # the lead arrives on the multicast channel; keep it private
+                # (NO_FORWARD) so it is not re-broadcast onto the test's own
+                # link and does not pollute our GLOBAL_POSITION_INT checks:
+                "MAV4_OPTIONS": 2,   # GCS_MAVLINK::Option::NO_FORWARD
+                "FOLL_ENABLE": 1,
+                "FOLL_SYSID": lead_sysid,
+                "FOLL_OFS_TYPE": 0,  # offsets are in the lead's NED frame
+                "FOLL_OFS_X": foll_ofs_n,
+                "FOLL_OFS_Y": 0,
+                "FOLL_OFS_Z": 0,
+                "FOLL_ALT_TYPE": 1,    # altitude relative to home
+                "FOLL_YAW_BEHAVE": 2,  # 2 == point the same way as the lead
+                "SIM_SPEEDUP": 1,      # keep the two SITL clocks in step
+                # log at full rate so AP_Follow behaviour can be analysed;
+                # the autotest framework defaults rate-limit the dataflash
+                # log (LOG_DARM_RATEMAX/LOG_FILE_RATEMAX) to keep logs small
+                "LOG_DARM_RATEMAX": 0,
+                "LOG_FILE_RATEMAX": 0,
+            })
+            self.reboot_sitl()
+
+            # -- launch the lead vehicle ------------------------------------
+            lead_rundir = util.reltopdir('run-follow-lead')
+            if not os.path.exists(lead_rundir):
+                os.mkdir(lead_rundir)
+            self.progress("Starting lead-vehicle SITL")
+            lead_sitl = util.start_SITL(
+                self.binary,
+                home=self.sitl_home(),
+                cwd=lead_rundir,
+                model=self.frame,
+                stdout_prefix="follow-lead",
+                gdb=self.gdb,
+                valgrind=self.valgrind,
+                customisations=['-I', '1', '--serial0', 'mcast:'],
+                param_defaults={
+                    "MAV_SYSID": lead_sysid,
+                    "SIM_SPEEDUP": 1,
+                    "ARMING_CHECK": 0,   # lead is not the vehicle-under-test
+                    "FS_THR_ENABLE": 0,  # no RC is driven into the lead
+                    "FS_GCS_ENABLE": 0,  # no GCS heartbeats are sent to it
+                },
+                defaults_filepath=self.defaults_filepath(),
+                wipe=True,
+            )
+            self.expect_list_add(lead_sitl)
+
+            lead = mavutil.mavlink_connection(
+                'mcast:',
+                source_system=251,
+                source_component=1,
+                robust_parsing=True,
+            )
+            lead.target_system = lead_sysid
+            lead.target_component = 1
+
+            # -- helpers for flying the lead --------------------------------
+            def lead_recv(msg_type, timeout=20):
+                '''return the next msg_type message sent by the lead'''
+                tstart = time.time()
+                while time.time() - tstart < timeout:
+                    m = lead.recv_match(type=msg_type, blocking=True, timeout=1)
+                    if m is not None and m.get_srcSystem() == lead_sysid:
+                        return m
+                raise NotAchievedException("Lead sent no %s" % msg_type)
+
+            def lead_request_streams():
+                lead.mav.request_data_stream_send(
+                    lead_sysid, 1, mavutil.mavlink.MAV_DATA_STREAM_ALL, 10, 1)
+
+            def lead_send_and_ack(send_fn, command, timeout=30):
+                '''resend a command until the lead ACKs it as accepted'''
+                tstart = time.time()
+                while time.time() - tstart < timeout:
+                    send_fn()
+                    m = lead.recv_match(type='COMMAND_ACK', blocking=True,
+                                        timeout=1)
+                    if (m is None or m.get_srcSystem() != lead_sysid or
+                            m.command != command):
+                        continue
+                    if m.result == mavutil.mavlink.MAV_RESULT_ACCEPTED:
+                        return
+                    if m.result == mavutil.mavlink.MAV_RESULT_IN_PROGRESS:
+                        continue
+                    raise NotAchievedException(
+                        "Lead rejected command %u (result=%u)" %
+                        (command, m.result))
+                raise NotAchievedException(
+                    "Lead never ACKed command %u" % command)
+
+            def lead_command_long(command, p1=0, p2=0, p3=0, p4=0, p7=0):
+                def send():
+                    lead.mav.command_long_send(lead_sysid, 1, command, 0,
+                                               p1, p2, p3, p4, 0, 0, p7)
+                lead_send_and_ack(send, command)
+
+            def lead_command_int(command, frame, p1=0, p4=0, x=0, y=0, z=0):
+                def send():
+                    lead.mav.command_int_send(lead_sysid, 1, frame, command,
+                                              0, 0, p1, 0, 0, p4, x, y, z)
+                lead_send_and_ack(send, command)
+
+            def lead_location():
+                m = lead_recv('GLOBAL_POSITION_INT')
+                return mavutil.location(m.lat * 1e-7, m.lon * 1e-7,
+                                        m.alt * 1e-3, 0)
+
+            def lead_wait_altitude(alt_min, timeout=90):
+                tstart = time.time()
+                while time.time() - tstart < timeout:
+                    m = lead_recv('GLOBAL_POSITION_INT')
+                    rel_alt = m.relative_alt * 1e-3
+                    self.progress("Lead altitude %.1fm (want >%.1fm)" %
+                                  (rel_alt, alt_min))
+                    if rel_alt > alt_min:
+                        return
+                raise NotAchievedException("Lead did not reach altitude")
+
+            # -- bring the lead up to a hover -------------------------------
+            self.progress("Waiting for the lead to boot")
+            lead_recv('HEARTBEAT', timeout=60)
+            lead_request_streams()
+
+            self.progress("Waiting for the lead's EKF")
+            ekf_required = (mavutil.mavlink.EKF_ATTITUDE |
+                            mavutil.mavlink.ESTIMATOR_VELOCITY_HORIZ |
+                            mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
+                            mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL |
+                            mavutil.mavlink.ESTIMATOR_PRED_POS_HORIZ_REL)
+            tstart = time.time()
+            while True:
+                if time.time() - tstart > 120:
+                    raise NotAchievedException("Lead EKF never became ready")
+                lead_request_streams()
+                m = lead.recv_match(type='EKF_STATUS_REPORT', blocking=True,
+                                    timeout=1)
+                if m is None or m.get_srcSystem() != lead_sysid:
+                    continue
+                if (m.flags & ekf_required) == ekf_required:
+                    break
+
+            self.progress("Lead: GUIDED, arm and take off")
+            lead_command_long(
+                mavutil.mavlink.MAV_CMD_DO_SET_MODE,
+                p1=mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
+                p2=guided_mode)
+            lead_command_long(mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
+                              p1=1)
+            lead_command_long(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=op_alt)
+            lead_wait_altitude(op_alt - 2)
+
+            # -- take the follower off and engage FOLLOW --------------------
+            # each phase advances as soon as the follower reaches and holds
+            # its station/heading/altitude, rather than waiting a fixed time
+            self.progress("Follower: take off and engage FOLLOW")
+            self.takeoff(op_alt, mode='LOITER')
+            self.change_mode('FOLLOW')
+            station = self.offset_location_ne(lead_location(), foll_ofs_n, 0)
+            self.progress("Waiting for the follower to hold station on the lead")
+            self.wait_location(station, accuracy=3, height_accuracy=None,
+                               minimum_duration=5, timeout=90)
+
+            # -- send the lead 100m east; the follower chases it ------------
+            target = self.offset_location_ne(lead_location(), 0, 100)
+            self.progress("Commanding the lead 100m east")
+            lead_command_int(
+                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                p1=-1,            # use the default ground speed
+                p4=float('nan'),  # retain the current heading
+                x=int(target.lat * 1e7),
+                y=int(target.lng * 1e7),
+                z=op_alt)
+            station = self.offset_location_ne(target, foll_ofs_n, 0)
+            self.progress("Waiting for the follower to chase the lead east")
+            self.wait_location(station, accuracy=3, height_accuracy=None,
+                               minimum_duration=5, timeout=150)
+
+            # -- rotate the lead 360 degrees; the follower matches yaw ------
+            heading = self.get_heading()
+            self.progress("Commanding the lead through a 360-degree yaw")
+            lead_command_long(
+                mavutil.mavlink.MAV_CMD_CONDITION_YAW,
+                p1=360,  # rotate a full turn
+                p2=30,   # at 30 deg/s
+                p3=1,    # clockwise
+                p4=1)    # relative to the current heading
+            # confirm the follower turns with the lead: through the opposite
+            # heading, then back to where it started
+            self.wait_heading((heading + 180) % 360, accuracy=25, timeout=60)
+            self.progress("Waiting for the follower to complete the turn")
+            self.wait_heading(heading, accuracy=5, minimum_duration=3,
+                              timeout=60)
+
+            # -- climb the lead 20m; the follower climbs with it ------------
+            climb_alt = op_alt + 20
+            self.progress("Commanding the lead to climb 20m")
+            lead_command_int(
+                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                p1=-1,            # use the default ground speed
+                p4=float('nan'),  # retain the current heading
+                x=int(target.lat * 1e7),
+                y=int(target.lng * 1e7),
+                z=climb_alt)
+            self.progress("Waiting for the follower to climb with the lead")
+            self.wait_altitude(climb_alt - 2, climb_alt + 2, relative=True,
+                               minimum_duration=5, timeout=90)
+
+            # RTL the follower home and land it.  wait_disarmed() polls
+            # heartbeats rather than a tight GLOBAL_POSITION_INT timeout, so
+            # it is robust with two SITLs sharing the host at SIM_SPEEDUP=1.
+            self.progress("Landing the follower")
+            self.change_mode('RTL')
+            self.wait_disarmed()
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+        finally:
+            if lead is not None:
+                lead.close()
+            if lead_sitl is not None:
+                self.progress("Stopping the lead-vehicle SITL")
+                self.expect_list_remove(lead_sitl)
+                util.pexpect_close(lead_sitl)
+            # the follower may still be armed if the test aborted in flight;
+            # context_pop() reboots SITL, which refuses to run while armed
+            if self.armed():
+                self.disarm_vehicle(force=True)
+        self.context_pop()
+        self.reboot_sitl()
+        if ex is not None:
+            raise ex
+
     def get_global_position_int(self, timeout=30):
         tstart = self.get_sim_time()
         while True:
@@ -15248,6 +15505,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.PosHoldDesiredAttitudeMonotonic,
              self.ModeFollow,
              self.ModeFollow_with_FOLLOW_TARGET,
+             self.ModeFollowTwoVehicles,
              self.RangeFinderDrivers,
              self.FlyRangeFinderMAVlink,
              self.FlyRangeFinderSITL,

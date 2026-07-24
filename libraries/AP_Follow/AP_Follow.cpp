@@ -356,6 +356,14 @@ void AP_Follow::update_estimates()
         // target is too far away, mark the estimate invalid
         _estimate_valid = false;
     }
+
+#if HAL_LOGGING_ENABLED
+    // log the freshly computed estimate and its offset-applied form;
+    // WriteStreaming applies the streaming rate limit so calling these
+    // every loop is fine
+    Log_Write_FOLE();
+    Log_Write_FOLO();
+#endif
 }
 
 
@@ -538,7 +546,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         }
 
 #if HAL_LOGGING_ENABLED
-        // log current follow diagnostic data
+        // log the newly received target state
         Log_Write_FOLL();
 #endif
     }
@@ -902,48 +910,123 @@ void AP_Follow::update_dist_and_bearing_to_target()
 // Logging
 //==============================================================================
 
-// Writes a diagnostic onboard log message containing target and vehicle tracking data for Follow mode.
+// Writes a diagnostic onboard log message containing the most recently
+// received target state. Called from handle_msg() each time a target update
+// is accepted, so it logs at the rate target messages arrive.
 #if HAL_LOGGING_ENABLED
 void AP_Follow::Log_Write_FOLL()
 {
-    // retrieve latest estimated location and velocity
-    Location loc_estimate{};
-    Vector3f vel_estimate;
-    UNUSED_RESULT(get_target_location_and_velocity(loc_estimate, vel_estimate));
-
-    Location target_location;
-    UNUSED_RESULT(AP::ahrs().get_location_from_origin_offset_NED(target_location, _target_pos_ned_m));
-
-    // log the lead target's reported position and vehicle's estimated position
     // @LoggerMessage: FOLL
-    // @Description: Follow library diagnostic data
-    // @Field: TimeUS: Time since system startup (microseconds)
-    // @Field: Lat: Target latitude (degrees * 1E7)
-    // @Field: Lon: Target longitude (degrees * 1E7)
-    // @Field: Alt: Target absolute altitude (centimeters)
-    // @Field: VelN: Target velocity, North (m/s)
-    // @Field: VelE: Target velocity, East (m/s)
-    // @Field: VelD: Target velocity, Down (m/s)
-    // @Field: LatE: Vehicle estimated latitude (degrees * 1E7)
-    // @Field: LonE: Vehicle estimated longitude (degrees * 1E7)
-    // @Field: AltE: Vehicle estimated altitude (centimeters)
-    // @Field: FrmE: Vehicle estimated altitude Frame
+    // @Description: Follow library diagnostics: most recently received target state (NED, relative to EKF origin)
+    // @Field: TimeUS: Time since system startup
+    // @Field: PN: Target position, North
+    // @Field: PE: Target position, East
+    // @Field: PD: Target position, Down
+    // @Field: VN: Target velocity, North
+    // @Field: VE: Target velocity, East
+    // @Field: VD: Target velocity, Down
+    // @Field: AN: Target acceleration, North
+    // @Field: AE: Target acceleration, East
+    // @Field: AD: Target acceleration, Down
+    // @Field: Hdg: Target heading
+    // @Field: HdgRt: Target heading rate
     AP::logger().WriteStreaming("FOLL",
-                                "TimeUS,Lat,Lon,Alt,VelN,VelE,VelD,LatE,LonE,AltE,FrmE",  // labels
-                                "sDUmnnnDUm-",    // units
-                                "F--B000--B-",    // mults
-                                "QLLifffLLib",    // fmt
+                                "TimeUS,PN,PE,PD,VN,VE,VD,AN,AE,AD,Hdg,HdgRt",  // labels
+                                "smmmnnnooodk",    // units
+                                "F00000000000",    // mults
+                                "Qfffffffffff",    // fmt
                                 AP_HAL::micros64(),
-                                target_location.lat,
-                                target_location.lng,
-                                target_location.alt,
+                                (double)_target_pos_ned_m.x,
+                                (double)_target_pos_ned_m.y,
+                                (double)_target_pos_ned_m.z,
                                 (double)_target_vel_ned_ms.x,
                                 (double)_target_vel_ned_ms.y,
                                 (double)_target_vel_ned_ms.z,
-                                loc_estimate.lat,
-                                loc_estimate.lng,
-                                loc_estimate.alt,
-                                loc_estimate.get_alt_frame()
+                                (double)_target_accel_ned_mss.x,
+                                (double)_target_accel_ned_mss.y,
+                                (double)_target_accel_ned_mss.z,
+                                (double)_target_heading_deg,
+                                (double)_target_heading_rate_degs
+                                );
+}
+
+// Writes a diagnostic onboard log message containing the jerk-limited estimate
+// of the target state. Called from update_estimates() at loop rate; the
+// streaming rate limiter keeps the log volume in check. Must be called with
+// _follow_sem held (update_estimates() already holds it).
+void AP_Follow::Log_Write_FOLE()
+{
+    // @LoggerMessage: FOLE
+    // @Description: Follow library diagnostics: jerk-limited estimate of the target state (NED, relative to EKF origin)
+    // @Field: TimeUS: Time since system startup
+    // @Field: PN: Estimated target position, North
+    // @Field: PE: Estimated target position, East
+    // @Field: PD: Estimated target position, Down
+    // @Field: VN: Estimated target velocity, North
+    // @Field: VE: Estimated target velocity, East
+    // @Field: VD: Estimated target velocity, Down
+    // @Field: AN: Estimated target acceleration, North
+    // @Field: AE: Estimated target acceleration, East
+    // @Field: AD: Estimated target acceleration, Down
+    // @Field: Hdg: Estimated target heading
+    // @Field: HdgRt: Estimated target heading rate
+    // @Field: HdgAc: Estimated target heading acceleration
+    AP::logger().WriteStreaming("FOLE",
+                                "TimeUS,PN,PE,PD,VN,VE,VD,AN,AE,AD,Hdg,HdgRt,HdgAc",  // labels
+                                "smmmnnnooodke",    // units
+                                "F000000000000",    // mults
+                                "Qffffffffffff",    // fmt
+                                AP_HAL::micros64(),
+                                (double)_estimate_pos_ned_m.x,
+                                (double)_estimate_pos_ned_m.y,
+                                (double)_estimate_pos_ned_m.z,
+                                (double)_estimate_vel_ned_ms.x,
+                                (double)_estimate_vel_ned_ms.y,
+                                (double)_estimate_vel_ned_ms.z,
+                                (double)_estimate_accel_ned_mss.x,
+                                (double)_estimate_accel_ned_mss.y,
+                                (double)_estimate_accel_ned_mss.z,
+                                // wrap to 0-360 so it matches FOLL.Hdg;
+                                // _estimate_heading_rad itself stays wrap_PI'd
+                                (double)wrap_360(degrees(_estimate_heading_rad)),
+                                (double)degrees(_estimate_heading_rate_rads),
+                                (double)degrees(_estimate_heading_accel_radss)
+                                );
+}
+
+// Writes a diagnostic onboard log message containing the offset-applied target
+// estimate — the state the position controller is commanded to follow. Called
+// from update_estimates() alongside FOLE. Heading is not repeated here; it is
+// the same target heading logged in FOLE. Must be called with _follow_sem held.
+void AP_Follow::Log_Write_FOLO()
+{
+    // @LoggerMessage: FOLO
+    // @Description: Follow library diagnostics: offset-applied target estimate consumed by the position controller (NED, relative to EKF origin)
+    // @Field: TimeUS: Time since system startup
+    // @Field: PN: Offset target position, North
+    // @Field: PE: Offset target position, East
+    // @Field: PD: Offset target position, Down
+    // @Field: VN: Offset target velocity, North
+    // @Field: VE: Offset target velocity, East
+    // @Field: VD: Offset target velocity, Down
+    // @Field: AN: Offset target acceleration, North
+    // @Field: AE: Offset target acceleration, East
+    // @Field: AD: Offset target acceleration, Down
+    AP::logger().WriteStreaming("FOLO",
+                                "TimeUS,PN,PE,PD,VN,VE,VD,AN,AE,AD",  // labels
+                                "smmmnnnooo",    // units
+                                "F000000000",    // mults
+                                "Qfffffffff",    // fmt
+                                AP_HAL::micros64(),
+                                (double)_ofs_estimate_pos_ned_m.x,
+                                (double)_ofs_estimate_pos_ned_m.y,
+                                (double)_ofs_estimate_pos_ned_m.z,
+                                (double)_ofs_estimate_vel_ned_ms.x,
+                                (double)_ofs_estimate_vel_ned_ms.y,
+                                (double)_ofs_estimate_vel_ned_ms.z,
+                                (double)_ofs_estimate_accel_ned_mss.x,
+                                (double)_ofs_estimate_accel_ned_mss.y,
+                                (double)_ofs_estimate_accel_ned_mss.z
                                 );
 }
 #endif  // HAL_LOGGING_ENABLED
