@@ -25,6 +25,19 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "driver/rtc_io.h"
+// New RMT driver for DShot output. Included only here (not in RCOutput.h) to
+// avoid a type clash with the legacy RMT driver used by RCInput/RmtSigReader.
+#include "driver/rmt_tx.h"
+#include "driver/rmt_rx.h"      // bidirectional DShot: capture the ESC eRPM reply
+#include "driver/rmt_encoder.h"
+#include "esp_rom_sys.h"        // esp_rom_delay_us (bounded wait for the reply)
+#include "soc/gpio_struct.h"    // toggle only the pad output-enable for the bidir turnaround
+#include "soc/io_mux_reg.h"     // PIN_INPUT_ENABLE — keep the shared pad readable for RX
+#include "soc/gpio_periph.h"    // GPIO_PIN_MUX_REG[]
+
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"     // bidir DShot: ISR -> consumer capture handoff
 
 #include <stdio.h>
 
@@ -96,6 +109,84 @@ static_assert(MAX_CHANNELS < 32, "overrunning bitfields");
 
 #define NEEDED_GROUPS ((MAX_CHANNELS+SOC_MCPWM_COMPARATORS_PER_OPERATOR-1)/SOC_MCPWM_COMPARATORS_PER_OPERATOR)
 static_assert(NEEDED_GROUPS <= MAX_GROUPS, "not enough hardware PWM groups");
+
+// Bidirectional DShot: per-channel capture state for the ESC eRPM reply. The RX
+// channel on each bidir pad is armed ONCE and re-armed by the consumer task after
+// every capture (see bdshot_rx_task) so it is always waiting — exactly like the C3
+// reference sniffer. Each channel keeps its own buffer + count; the RX is unarmed
+// between a completion and the task's re-arm, so the buffer is stable to decode.
+// A bidir GCR reply is ~21 transitions; 48 leaves margin (and matches the block size).
+#define BDSHOT_RX_SYMBOLS 48
+#define BDSHOT_INVALID_ERPM 0xffffU
+#define BDSHOT_ZERO_ERPM    0x0fffU   // ESC's special "motor stopped" code -> 0 rpm (ChibiOS ZERO_ERPM)
+// With continuous RX on the shared pad each capture contains the outgoing command
+// frame (fed back via io_loop_back), the ~30 us turnaround gap, and the ESC's GCR
+// reply as ONE burst: the idle threshold (60 us) exceeds the gap, so the burst only
+// closes in the long (~900 us) idle before the next frame. That gives the consumer
+// task ~800 us to decode + re-arm instead of a per-frame arming window squeezed into
+// the turnaround — which raced the reply's first edges and fragmented ~18% of
+// captures (C3-sniffer-verified root cause, 2026-07-22).
+// The command->reply split point is the gap: DShot pulses once per bit, so HIGH runs
+// inside the command frame are < 2 bit periods (< 7 us at DShot300), while the
+// turnaround gap is ~30 us of pulled-up HIGH.
+#define BDSHOT_GAP_MIN_TICKS 800        // >= 10 us (80 MHz ticks) = the cmd->reply gap
+// A burst with NO gap and few symbols is a reply-only capture (command missed, e.g.
+// the RX was first armed mid-frame): a 21-bit GCR reply is run-length compressed to
+// ~7-10 RMT symbols, while the 16-bit pulse-per-bit command is ~16-17. No-gap bursts
+// above this count are command-only (the ESC never replied -> timeout, not decode
+// error); at or below it they are decoded as a reply candidate.
+#define BDSHOT_REPLY_MAX_SYMBOLS 13
+// burst framing: max in-burst idle 60 us (> the 30 us cmd->reply gap, << the ~900 us
+// frame spacing); 500 ns glitch filter (C3-proven; the shortest reply run is ~2.7 us)
+#define BDSHOT_RX_IDLE_MAX_NS 60000
+#define BDSHOT_RX_GLITCH_MIN_NS 500
+static inline void bdshot_pad_oe(uint8_t gpio, bool drive); // defined below
+
+static rmt_symbol_word_t bdshot_rx_buf[MAX_CHANNELS][BDSHOT_RX_SYMBOLS];
+static volatile uint16_t bdshot_rx_nsym[MAX_CHANNELS];
+// ISR -> consumer handoff: the RX-done ISR only queues the channel index (IRAM-safe,
+// CONFIG_RMT_ISR_IRAM_SAFE=y); the consumer task decodes + re-arms off-ISR.
+static QueueHandle_t bdshot_rx_queue;
+// Capture-pipeline watchdog: consecutive transmitted frames with no completed capture,
+// per channel; the consumer zeroes it on every processed event. A healthy armed RX
+// yields at least the command-loopback burst every frame, so a long silence means the
+// RX channel is wedged — e.g. an ESC power-off line transient corrupted the in-flight
+// receive (HW-observed 2026-07-22: capture stalled permanently until re-setup) — and
+// since the consumer only runs on capture events, only the transmit task can notice
+// and reset + re-arm it (see dshot_task).
+#define BDSHOT_QUIET_FRAMES_MAX 100  // ~100 ms at the ~1 kHz frame rate
+static volatile uint16_t bdshot_quiet_frames[MAX_CHANNELS];
+
+// RX-done ISR callback (IRAM-safe: CONFIG_RMT_ISR_IRAM_SAFE=y). user is the channel index.
+// received_symbols points into bdshot_rx_buf[chan] (we passed it to rmt_receive), so the
+// driver has already filled the buffer; we only record the count and queue the channel to
+// the consumer task. We deliberately do NOT decode or re-arm here: rmt_receive() and the
+// GCR table are not guaranteed IRAM-resident, so touching them with the cache disabled
+// (as this ISR may run) would fault. The consumer (bdshot_rx_task) does both off-ISR.
+static bool IRAM_ATTR bdshot_on_rx_done(rmt_channel_handle_t ch,
+                                        const rmt_rx_done_event_data_t *ed, void *user)
+{
+    const uint32_t c = (uint32_t)(uintptr_t)user;
+    BaseType_t hp = pdFALSE;
+    if (c < MAX_CHANNELS) {
+        bdshot_rx_nsym[c] = ed->num_symbols;
+        __sync_synchronize(); // publish the count (and the driver-filled buffer) before the handoff
+        xQueueSendFromISR(bdshot_rx_queue, &c, &hp);
+    }
+    return hp == pdTRUE; // yield if a higher-priority task (the consumer) was woken
+}
+
+// (re)arm a bidir RX channel into its per-channel buffer. Called at setup and by the
+// consumer task after every completed capture, so the RX is continuously armed.
+// ESP_ERR_INVALID_STATE (already armed, e.g. a stale queue entry after a group
+// re-setup re-armed it) is harmless and ignored by callers.
+static esp_err_t bdshot_arm_rx(rmt_channel_handle_t rx, uint8_t chan)
+{
+    rmt_receive_config_t rxcfg = {};
+    rxcfg.signal_range_min_ns = BDSHOT_RX_GLITCH_MIN_NS;
+    rxcfg.signal_range_max_ns = BDSHOT_RX_IDLE_MAX_NS;
+    return rmt_receive(rx, bdshot_rx_buf[chan], sizeof(bdshot_rx_buf[chan]), &rxcfg);
+}
 
 RCOutput::pwm_group RCOutput::pwm_group_list[NEEDED_GROUPS];
 RCOutput::pwm_chan RCOutput::pwm_chan_list[MAX_CHANNELS];
@@ -209,6 +300,10 @@ void RCOutput::set_freq(uint32_t chmask, uint16_t freq_hz)
 
     for (auto &group : pwm_group_list) {
         if ((group.ch_mask & chmask) != 0) { // group has channels to set?
+            // DShot output rate is driven by the RMT rcout task, not the MCPWM timer
+            if (is_dshot_protocol(group.current_mode)) {
+                continue;
+            }
             group.rc_frequency = freq_hz; // set frequency and corresponding period
             ESP_ERROR_CHECK(mcpwm_timer_set_period(group.h_timer, constrain_freq(group)));
 
@@ -242,6 +337,14 @@ void RCOutput::set_default_rate(uint16_t freq_hz)
 void RCOutput::set_group_mode(pwm_group &group)
 {
     if (!_initialized) {
+        return;
+    }
+
+    // DShot is generated by the RMT peripheral, not MCPWM. Hand the group off to
+    // the RMT backend and skip the MCPWM timer reconfiguration below (whose
+    // resolutions/periods only make sense for analog PWM).
+    if (is_dshot_protocol(group.current_mode)) {
+        set_group_mode_dshot(group);
         return;
     }
 
@@ -346,6 +449,737 @@ void RCOutput::set_group_mode(pwm_group &group)
     ESP_ERROR_CHECK(mcpwm_operator_connect_timer(group.h_oper, group.h_timer));
 }
 
+/*
+  set up a group for DShot output.
+
+  DShot (DSHOT150/300/600) is a digital protocol generated with the RMT
+  peripheral; MCPWM cannot produce the bit pattern. This allocates one RMT TX
+  channel per output in the group. We use the RMT in non-DMA mode: each of the
+  S3's 4 TX channels owns a 48-symbol memory block and a DShot frame is only ~17
+  symbols, so it fits with room to spare. (The S3's RMT-DMA is a single shared
+  connection that can't back all 4 channels at once, so DMA is reserved for a
+  future single-channel multiplexed >4-output path.) Creating the RMT channel
+  re-routes the GPIO (via the matrix) away from the inert MCPWM generator made in
+  init().
+
+  The bit-pattern encoder (step 3) and the periodic rcout task that re-transmits
+  each frame at the DShot rate (step 4) are added next; until then nothing is
+  transmitted, so the line idles low (ESC disarmed). Throttle values written via
+  write()/write_int() are stashed in pwm_chan::value, ready for the rcout task.
+
+  Note: the ESP32-S3 has only 4 RMT TX channels, so at most 4 DShot outputs (a
+  quad) can be allocated; a 5th+ fails gracefully and stays inactive.
+ */
+void RCOutput::set_group_mode_dshot(pwm_group &group)
+{
+    uint32_t bitrate;
+    switch (group.current_mode) {
+    case MODE_PWM_DSHOT150: bitrate = 150000; break;
+    case MODE_PWM_DSHOT300: bitrate = 300000; break;
+    case MODE_PWM_DSHOT600: bitrate = 600000; break;
+    default:
+        return; // not a DShot mode we support
+    }
+
+    // Run the RMT at the full 80 MHz APB clock (divider 1, 12.5 ns/tick). Deriving
+    // the resolution as bitrate*8 would request e.g. 4.8 MHz for DShot600, which
+    // 80 MHz cannot divide evenly — the driver rounds to 5 MHz ("resolution loss"),
+    // making DShot600 ~4% fast. A fine fixed resolution keeps the error <0.3%.
+    // Each DShot bit holds the line high for 0.75*bit (logical 1) or 0.375*bit
+    // (logical 0), then low for the remainder.
+    const uint32_t resolution_hz = 80 * 1000 * 1000;
+    const uint32_t bit_ticks  = (resolution_hz + bitrate / 2) / bitrate; // ticks per bit
+    const uint32_t t1h_ticks  = (bit_ticks * 3 + 2) / 4;  // 0.75 * bit
+    const uint32_t t0h_ticks  = (bit_ticks * 3 + 4) / 8;  // 0.375 * bit
+
+    // Hold _dshot_sem across the whole alloc/free loop: set_output_mode() is called
+    // more than once during boot (AP_Motors, then SRV/BLHeli setup), so the transmit
+    // task may already be running and reading these RMT handles. Freeing/reallocating
+    // a channel under it without the lock is a use-after-free (observed as a boot crash).
+    WITH_SEMAPHORE(_dshot_sem);
+
+    // Bidirectional DShot reply timing, precomputed once so the rcout task doesn't
+    // recompute per frame: the ESC replies at 5/4 the DShot bitrate, and frame_us is
+    // how long to let a 16-bit frame finish before the TX->RX turnaround. Written
+    // under _dshot_sem: the task reads these group fields during the turnaround.
+    const uint32_t telem_rate = bitrate * 5 / 4;
+    group.telem_bit_ticks = (resolution_hz + telem_rate / 2) / telem_rate;
+    group.frame_us = (uint16_t)((16u * 1000000u) / bitrate + 5); // 16 bits + margin
+    // how long the rcout task holds the pad released after a frame so the ESC's reply
+    // (starts ~30 us after the frame end, 21 GCR bits) completes before we re-drive.
+    // Generous tail margin: re-driving late is harmless (the line idles HIGH on both
+    // sides), re-driving early would clip the reply.
+    group.telem_window_us = (uint16_t)(30u + (21u * group.telem_bit_ticks) / (resolution_hz / 1000000u) + 50u);
+
+    for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
+        pwm_chan &ch = pwm_chan_list[chan];
+        if (ch.group != &group) {
+            continue;
+        }
+
+        // idempotent: release any RMT resources from a previous mode change
+        dshot_free_chan(ch);
+
+        // Bidirectional DShot: create the RX channel FIRST, before the TX channel.
+        // rmt_new_rx_channel()'s gpio_config(GPIO_MODE_INPUT) resets the pad's
+        // output-signal matrix routing (gpio_ll_output_disable writes SIG_GPIO_OUT_IDX),
+        // which severs an already-created TX channel from the pad — TX frames then
+        // never reach the wire (HW-diagnosed 2026-07-16 via RX self-capture: no edges).
+        // The TX channel is created after, with io_loop_back so its OUTPUT gpio_config
+        // keeps the pad's input path alive for this RX channel.
+        if (ch.bidir) {
+            // serialise the RX lifecycle against the RX consumer task, which re-arms
+            // this channel's rmt_receive from stale queue entries (see bdshot_rx_task)
+            WITH_SEMAPHORE(_bdshot_rx_sem);
+            // ISR -> consumer queue, created before the first RX channel can fire its
+            // callback. If the alloc fails, skip bidir on this channel entirely (the
+            // ISR sends to this queue unconditionally).
+            if (bdshot_rx_queue == nullptr) {
+                bdshot_rx_queue = xQueueCreate(16, sizeof(uint32_t));
+            }
+            rmt_rx_channel_config_t rxcfg = {};
+            rxcfg.gpio_num = (gpio_num_t)ch.gpio_num;
+            rxcfg.clk_src = RMT_CLK_SRC_DEFAULT;
+            rxcfg.resolution_hz = resolution_hz;
+            rxcfg.mem_block_symbols = BDSHOT_RX_SYMBOLS;
+            rmt_channel_handle_t rx = nullptr;
+            esp_err_t rxerr = bdshot_rx_queue != nullptr ?
+                rmt_new_rx_channel(&rxcfg, &rx) : ESP_ERR_NO_MEM;
+            if (rxerr == ESP_OK) {
+                rmt_rx_event_callbacks_t rxcbs = {};
+                rxcbs.on_recv_done = bdshot_on_rx_done;
+                rmt_rx_register_event_callbacks(rx, &rxcbs, (void*)(uintptr_t)chan);
+                rxerr = rmt_enable(rx);
+                if (rxerr != ESP_OK) {
+                    rmt_del_channel(rx);
+                    rx = nullptr;
+                }
+            }
+            if (rxerr == ESP_OK) {
+                ch.rmt_rx_chan = rx; // stored as void* (see RCOutput.h)
+                // arm the continuous capture now; from here on the consumer task
+                // re-arms after every completed burst so the RX is always waiting
+                // (any junk captured during the rest of this setup decodes invalid
+                // and is discarded)
+                bdshot_arm_rx(rx, chan);
+            } else {
+                // no RX channel: fall back to plain (non-inverted) DShot on this channel,
+                // else we'd send inverted-CRC frames the ESC rejects with no turnaround.
+                ch.bidir = false;
+                printf("RCOut: bidir DShot RX setup failed on chan %u (err 0x%x); S3 has 4 RX channels\n",
+                       (unsigned)chan, (int)rxerr);
+            }
+        }
+
+        rmt_tx_channel_config_t cfg = {};
+        cfg.gpio_num = (gpio_num_t)ch.gpio_num;
+        cfg.clk_src = RMT_CLK_SRC_DEFAULT;
+        cfg.resolution_hz = resolution_hz;
+        cfg.mem_block_symbols = 48; // full per-channel block (non-DMA); frame is ~17
+        cfg.trans_queue_depth = 2;
+        cfg.flags.with_dma = false;
+        // bidir: OUTPUT|INPUT pad mode so creating the TX channel doesn't disable the
+        // input path the RX channel (created above, same pad) relies on.
+        cfg.flags.io_loop_back = ch.bidir ? 1 : 0;
+
+        rmt_channel_handle_t rmt_chan = nullptr;
+        esp_err_t err = rmt_new_tx_channel(&cfg, &rmt_chan);
+        if (err != ESP_OK) {
+            // most likely no free RMT channel (S3 has 4) — leave it inactive
+            // rather than aborting the whole board. Also drop the RX channel created
+            // above, if any: without TX there is nothing to capture replies to.
+            ch.rmt_chan = nullptr;
+            dshot_free_chan(ch);
+            ch.bidir = false;
+            printf("RCOut: DShot RMT alloc failed on chan %u (err 0x%x); S3 has 4 RMT channels\n",
+                   (unsigned)chan, (int)err);
+            continue;
+        }
+        err = rmt_enable(rmt_chan);
+        if (err != ESP_OK) {
+            // treat like the alloc failure above: leave this channel inactive
+            // rather than aborting the whole board (ESP_ERROR_CHECK would). Also
+            // drop the RX channel created above, if any (dshot_free_chan), and
+            // fall back to non-bidir so no inverted frames go out without capture.
+            rmt_del_channel(rmt_chan);
+            ch.rmt_chan = nullptr;
+            dshot_free_chan(ch);
+            ch.bidir = false;
+            printf("RCOut: DShot RMT enable failed on chan %u (err 0x%x)\n",
+                   (unsigned)chan, (int)err);
+            continue;
+        }
+        ch.rmt_chan = rmt_chan; // stored as void* (see RCOutput.h)
+
+        if (ch.bidir) {
+            // Route the pad's output-enable from the GPIO_ENABLE register instead of
+            // the RMT peripheral (connect_out_signal defaults to peripheral-controlled
+            // OEN). Without this, bdshot_pad_oe()'s GPIO.enable toggle is a no-op: the
+            // pad keeps driving through the reply window and squashes the ESC's answer
+            // (HW-diagnosed 2026-07-16: TX frame still on the pad with OE "released").
+            ::GPIO.func_out_sel_cfg[ch.gpio_num].oen_sel = 1;
+            // Enable the pad's internal pull-up so the line idles HIGH when the OE is
+            // released for the reply turnaround (bidir DShot is open-drain in that
+            // window). Many ESCs pull the line up themselves, but that is not
+            // guaranteed; the internal pull-up makes the release edge-free either way.
+            // Only touches the IO_MUX pull bits, so it doesn't disturb the RMT pad
+            // routing. An external ~2k is stiffer for a real board.
+            gpio_set_pull_mode((gpio_num_t)ch.gpio_num, GPIO_PULLUP_ONLY);
+            bdshot_pad_oe(ch.gpio_num, true); // driven by default; released per frame
+        }
+
+        // Bytes encoder: each frame bit -> one RMT symbol, a pulse then the rest of
+        // the bit, in 12.5 ns ticks. Logical 1 pulses for t1h_ticks (0.75 bit),
+        // logical 0 for t0h_ticks (0.375 bit). MSB first (DShot wire order).
+        // Normal DShot idles LOW and pulses HIGH; BIDIRECTIONAL DShot inverts the
+        // line (idles HIGH, pulses LOW) — a real bidir ESC detects the mode by this
+        // inverted signalling — so the pulse/idle levels are flipped for bidir channels.
+        const uint8_t pulse_lvl = ch.bidir ? 0 : 1;
+        const uint8_t idle_lvl  = ch.bidir ? 1 : 0;
+        rmt_bytes_encoder_config_t enc_cfg = {};
+        enc_cfg.bit0.duration0 = t0h_ticks;             enc_cfg.bit0.level0 = pulse_lvl;
+        enc_cfg.bit0.duration1 = bit_ticks - t0h_ticks; enc_cfg.bit0.level1 = idle_lvl;
+        enc_cfg.bit1.duration0 = t1h_ticks;             enc_cfg.bit1.level0 = pulse_lvl;
+        enc_cfg.bit1.duration1 = bit_ticks - t1h_ticks; enc_cfg.bit1.level1 = idle_lvl;
+        enc_cfg.flags.msb_first = 1;
+        rmt_encoder_handle_t enc = nullptr;
+        err = rmt_new_bytes_encoder(&enc_cfg, &enc);
+        if (err != ESP_OK) {
+            printf("RCOut: DShot encoder alloc failed on chan %u (err 0x%x)\n",
+                   (unsigned)chan, (int)err);
+            dshot_free_chan(ch); // releases the RMT channel just created
+            continue;
+        }
+        ch.rmt_encoder = enc; // stored as void*
+
+    }
+
+    // start the periodic transmit task now that DShot output exists. It reads the
+    // pwm_chan RMT handles under _dshot_sem, which this function also holds while
+    // (re)allocating them, so a re-entrant set_output_mode() alongside the running
+    // task is safe. The task blocks on the semaphore until this call returns.
+    start_dshot_task();
+}
+
+/*
+  release the RMT channel/encoder held by a channel, if any. Safe to call on a
+  channel that is not RMT-backed.
+ */
+void RCOutput::dshot_free_chan(pwm_chan &ch)
+{
+    // Disable the TX channel BEFORE deleting the encoder: rmt_tx_disable() recycles
+    // the pending transaction and calls rmt_encoder_reset() on the encoder it
+    // references, so deleting the encoder first is a use-after-free through a
+    // function pointer (HW-reproduced: InstructionFetchError with PC in data RAM
+    // on a group re-setup while the transmit task had a frame in flight).
+    if (ch.rmt_chan != nullptr) {
+        rmt_disable((rmt_channel_handle_t)ch.rmt_chan);
+    }
+    if (ch.rmt_encoder != nullptr) {
+        rmt_del_encoder((rmt_encoder_handle_t)ch.rmt_encoder);
+        ch.rmt_encoder = nullptr;
+    }
+    if (ch.rmt_chan != nullptr) {
+        rmt_del_channel((rmt_channel_handle_t)ch.rmt_chan);
+        ch.rmt_chan = nullptr;
+    }
+    if (ch.rmt_rx_chan != nullptr) {
+        // serialise against the RX consumer task: it re-arms rmt_receive() on this
+        // handle (from the ISR queue) and must never race the disable/delete below.
+        // Lock order is safe: every caller of this function holds _dshot_sem, and the
+        // consumer only ever takes _bdshot_rx_sem.
+        WITH_SEMAPHORE(_bdshot_rx_sem);
+        rmt_channel_handle_t r = (rmt_channel_handle_t)ch.rmt_rx_chan;
+        rmt_disable(r);
+        rmt_del_channel(r);
+        ch.rmt_rx_chan = nullptr;
+    }
+}
+
+/*
+  build a 16-bit DShot frame: 11-bit value, 1 telemetry-request bit, then a 4-bit
+  CRC (XOR of the three nibbles). For bidirectional DShot the CRC is inverted.
+  Matches AP_HAL_ChibiOS::create_dshot_packet().
+ */
+uint16_t RCOutput::create_dshot_packet(uint16_t value, bool telem_request, bool bidir)
+{
+    uint16_t packet = (value << 1) | (telem_request ? 1U : 0U);
+    uint16_t csum = 0;
+    uint16_t csum_data = packet;
+    for (uint8_t i = 0; i < 3; i++) {
+        csum ^= csum_data;
+        csum_data >>= 4;
+    }
+    if (bidir) {
+        // bidirectional DShot inverts the checksum nibble
+        csum = ~csum;
+    }
+    csum &= 0xf;
+    return (packet << 4) | csum;
+}
+
+/*
+  encode and asynchronously transmit one DShot frame on a channel. The RMT driver
+  reads from ch.dshot_buf during the (microseconds-long) transmission, so the
+  buffer is per-channel and must not be reused until the frame completes — which
+  holds because the rcout task re-sends a channel at most once per cycle.
+ */
+void RCOutput::dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request)
+{
+    if (ch.rmt_chan == nullptr || ch.rmt_encoder == nullptr) {
+        return;
+    }
+    const uint16_t packet = create_dshot_packet(value, telem_request, ch.bidir);
+    ch.dshot_buf[0] = uint8_t(packet >> 8);
+    ch.dshot_buf[1] = uint8_t(packet & 0xff);
+
+    rmt_transmit_config_t tx_cfg = {};
+    tx_cfg.loop_count = 0; // one frame per call; rcout task re-sends each cycle
+    // bidirectional DShot idles HIGH (the inverted line is how the ESC detects the
+    // mode); without this the RMT parks the pad LOW after each frame and a real ESC
+    // rejects the signal entirely (no arm, no eRPM reply).
+    tx_cfg.flags.eot_level = ch.bidir ? 1 : 0;
+    rmt_transmit((rmt_channel_handle_t)ch.rmt_chan, (rmt_encoder_handle_t)ch.rmt_encoder,
+                 ch.dshot_buf, sizeof(ch.dshot_buf), &tx_cfg);
+}
+
+// Release / re-drive the shared pad for the bidir turnaround by toggling ONLY the
+// GPIO output-enable, leaving the RMT->pad matrix routing intact. HW-proven (2026-07-03):
+// gpio_set_direction() resets the pad's out signal to plain GPIO and breaks RMT TX,
+// and disabling the TX channel does not release the pad either.
+static inline void bdshot_pad_oe(uint8_t gpio, bool drive)
+{
+    if (gpio < 32) {
+        if (drive) { ::GPIO.enable_w1ts = (1U << gpio); }
+        else       { ::GPIO.enable_w1tc = (1U << gpio); }
+    } else {
+        if (drive) { ::GPIO.enable1_w1ts.val = (1U << (gpio - 32)); }
+        else       { ::GPIO.enable1_w1tc.val = (1U << (gpio - 32)); }
+    }
+}
+
+/*
+  bidirectional DShot turnaround: after the frame is transmitted, release the shared
+  pad (output-enable only) so the ESC can drive its eRPM reply, hold it released for
+  the reply window, then re-drive it for the next frame. The reply itself is captured
+  by the continuously-armed RX channel and decoded by bdshot_rx_task — this function
+  deliberately does NOT touch the RX channel, so the rcout task never busy-waits on a
+  reply while holding _dshot_sem.
+  NOTE: we deliberately do NOT call rmt_tx_wait_all_done() here — it deadlocks
+  ("flush timeout") once the pad is released. A timed wait for the frame duration is
+  used instead (HW-proven 2026-07-03).
+ */
+void RCOutput::bdshot_turnaround(pwm_chan &ch)
+{
+    // let the frame finish on the wire. frame_us is precomputed per mode.
+    esp_rom_delay_us(ch.group->frame_us);
+
+    // RELEASE the pad (OE off); the pull-up holds it HIGH (edge-free release) and
+    // the ESC pulls it LOW for its reply bits
+    bdshot_pad_oe(ch.gpio_num, false);
+
+    // hold the pad released across the ESC's ~30 us turnaround + the 21-bit GCR
+    // reply (precomputed per mode, with tail margin)
+    esp_rom_delay_us(ch.group->telem_window_us);
+
+    // re-drive the pad (OE on) for the next frame's transmit. The line idles HIGH on
+    // both sides of this, so the continuously-armed RX sees no edge here.
+    bdshot_pad_oe(ch.gpio_num, true);
+}
+
+/*
+  bidirectional DShot RX consumer: drains completed captures queued by the RX-done
+  ISR, re-arms the channel's RX, splits each burst at the command->reply turnaround
+  gap and decodes the eRPM reply. Runs as its own task so (a) the RX is re-armed with
+  ~800 us of slack instead of inside the 30 us turnaround — the old per-frame arming
+  raced the reply's first edges and fragmented ~18% of captures (C3-verified root
+  cause, 2026-07-22) — and (b) the rcout task no longer busy-waits on replies while
+  holding _dshot_sem.
+ */
+void RCOutput::bdshot_rx_task()
+{
+    while (true) {
+        uint32_t chan;
+        if (xQueueReceive(bdshot_rx_queue, &chan, portMAX_DELAY) != pdTRUE ||
+            chan >= MAX_CHANNELS) {
+            continue;
+        }
+        rmt_symbol_word_t burst[BDSHOT_RX_SYMBOLS];
+        uint32_t nsym, bit_ticks;
+        {
+            // only _bdshot_rx_sem (vs RX channel free/realloc), NOT _dshot_sem: the
+            // rcout task holds _dshot_sem across whole frames + turnarounds, and
+            // blocking on it here would delay the re-arm towards the next frame.
+            WITH_SEMAPHORE(_bdshot_rx_sem);
+            pwm_chan &ch = pwm_chan_list[chan];
+            rmt_channel_handle_t rx = (rmt_channel_handle_t)ch.rmt_rx_chan;
+            if (rx == nullptr || !ch.bidir || ch.group == nullptr) {
+                continue; // channel reconfigured since the ISR queued this capture
+            }
+            // the RMT ISR (which published the count) may run on a different core;
+            // barrier so we see the completed symbol buffer + count, not a partial one
+            __sync_synchronize();
+            nsym = bdshot_rx_nsym[chan];
+            if (nsym > BDSHOT_RX_SYMBOLS) {
+                nsym = BDSHOT_RX_SYMBOLS;
+            }
+            // copy the capture out and re-arm immediately (into the freed buffer), so
+            // the RX is waiting again long before the next frame
+            memcpy(burst, bdshot_rx_buf[chan], nsym * sizeof(burst[0]));
+            bit_ticks = ch.group->telem_bit_ticks;
+            bdshot_arm_rx(rx, chan); // ESP_ERR_INVALID_STATE (already armed) is fine
+            bdshot_quiet_frames[chan] = 0; // captures flowing: feed the watchdog
+        }
+
+        // Split the burst at the command->reply turnaround gap. The line idles HIGH,
+        // so a capture normally starts on a falling edge and each symbol is a LOW run
+        // (duration0) then a HIGH run (duration1): the ~30 us gap is a duration1.
+        // But when the re-arm lands mid-command (inside a LOW run) the capture starts
+        // on a RISING edge instead — the polarity is flipped, the gap sits in a
+        // duration0, and that symbol's duration1 is already the reply's first run:
+        // re-align the half-symbol-shifted runs in place so the reply starts on a
+        // symbol boundary (the decoder only consumes run durations, not levels).
+        // No gap found: either a reply-only capture (few symbols) or a command-only
+        // one — the ESC never replied (see BDSHOT_REPLY_MAX_SYMBOLS).
+        const rmt_symbol_word_t *reply = burst;
+        uint32_t reply_n = nsym;
+        bool gap_found = false;
+        for (uint32_t i = 0; i < nsym; i++) {
+            if (burst[i].duration1 >= BDSHOT_GAP_MIN_TICKS) {
+                reply = &burst[i + 1];
+                reply_n = nsym - i - 1;
+                gap_found = true;
+                break;
+            }
+            if (burst[i].duration0 >= BDSHOT_GAP_MIN_TICKS) {
+                // flipped-polarity capture: shift every run down one slot, dropping
+                // the gap (safe in place: each step only reads slots not yet written;
+                // the final duration1=0 reads as end-of-capture to the decoder)
+                for (uint32_t j = i; j < nsym; j++) {
+                    burst[j].duration0 = burst[j].duration1;
+                    burst[j].duration1 = (j + 1 < nsym) ? burst[j + 1].duration0 : 0;
+                }
+                reply = &burst[i];
+                reply_n = nsym - i;
+                gap_found = true;
+                break;
+            }
+        }
+
+        uint32_t erpm = BDSHOT_INVALID_ERPM;
+        if (gap_found || nsym <= BDSHOT_REPLY_MAX_SYMBOLS) {
+            // reply_n == 0 (gap at the very end) decodes as invalid, counted below
+            erpm = bdshot_decode_erpm(reply, reply_n, bit_ticks);
+        }
+        // else: command-only burst — the ESC never replied (disarmed / no telemetry);
+        // erpm stays invalid and is counted as an erpm error below, like any timeout
+
+        if (chan < 12) {
+            if (erpm == BDSHOT_INVALID_ERPM) {
+                _bdshot.erpm_errors[chan]++;
+            } else {
+                _bdshot.erpm_clean_frames[chan]++;
+                bdshot_store_erpm(erpm, chan);
+            }
+            // keep the error-rate window bounded (avoid uint16 overflow)
+            if (_bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan] >= 4000) {
+                _bdshot.erpm_errors[chan] /= 2;
+                _bdshot.erpm_clean_frames[chan] /= 2;
+            }
+        }
+    }
+}
+
+void RCOutput::bdshot_rx_task_entry(void *arg)
+{
+    static_cast<RCOutput *>(arg)->bdshot_rx_task();
+}
+
+/*
+  decode a captured bidirectional-DShot GCR reply into the 12-bit encoded eRPM word
+  (0xffff = invalid). Ported from AP_HAL_ChibiOS::bdshot_decode_telemetry_packet
+  (originally betaflight, https://github.com/betaflight/betaflight/pull/8554), but
+  fed from RMT symbol run-durations instead of timer input-capture timestamps:
+  each rmt_symbol_word_t is a high run (duration0) then a low run (duration1), so we
+  reconstruct the 21-bit value directly from the run lengths (no timestamp round-trip).
+ */
+uint32_t RCOutput::bdshot_decode_erpm(const void *symbols, uint32_t nsym, uint32_t bit_ticks)
+{
+    const rmt_symbol_word_t *sym = (const rmt_symbol_word_t *)symbols;
+    if (bit_ticks == 0) {
+        return BDSHOT_INVALID_ERPM;
+    }
+    if (nsym > BDSHOT_RX_SYMBOLS) {
+        nsym = BDSHOT_RX_SYMBOLS; // clamp: never index past this channel's buffer row
+    }
+
+    // reconstruct the 21-bit GCR value from run durations: a run of `len` telemetry-bit
+    // periods encodes a 1 in its MSB position (GCR "toggle" encoding).
+    uint32_t value = 0, bits = 0;
+    bool ended = false;
+    for (uint32_t i = 0; i < nsym && !ended; i++) {
+        const uint16_t dur[2] = { sym[i].duration0, sym[i].duration1 };
+        for (uint8_t k = 0; k < 2 && !ended; k++) {
+            if (dur[k] == 0) { ended = true; break; } // 0-duration marks end of capture
+            uint32_t len = ((uint32_t)dur[k] + bit_ticks / 2) / bit_ticks;
+            if (len == 0) { len = 1; }
+            if (len > 21U - bits) { len = 21U - bits; }
+            value <<= len;
+            value |= 1U << (len - 1);
+            bits += len;
+            if (bits >= 21U) { ended = true; }
+        }
+    }
+    // the trailing idle isn't a real edge, so fill any remaining bits as one final run
+    if (bits < 21U) {
+        const uint32_t len = 21U - bits;
+        value <<= len;
+        value |= 1U << (len - 1);
+        bits += len;
+    }
+    if (bits != 21U) {
+        return BDSHOT_INVALID_ERPM;
+    }
+
+    // GCR 5-bit -> 4-bit nibble decode (0 entries are invalid quintets)
+    static const uint32_t gcr[32] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 11, 0, 13, 14, 15,
+        0, 0, 2, 3, 0, 5, 6, 7, 0, 0, 8, 1, 0, 4, 12, 0 };
+    uint32_t dv = gcr[value & 0x1fU];
+    dv |= gcr[(value >> 5U)  & 0x1fU] << 4U;
+    dv |= gcr[(value >> 10U) & 0x1fU] << 8U;
+    dv |= gcr[(value >> 15U) & 0x1fU] << 12U;
+
+    // bidir DShot uses an inverted CRC: the folded xor must equal 0xf
+    uint32_t csum = dv;
+    csum ^= csum >> 8U;
+    csum ^= csum >> 4U;
+    if ((csum & 0xfU) != 0xfU) {
+        return BDSHOT_INVALID_ERPM;
+    }
+    return dv >> 4U; // 12-bit encoded eRPM (3-bit exponent + 9-bit mantissa)
+}
+
+/*
+  convert a decoded eRPM word (3-bit exponent + 9-bit mantissa period) to eRPM and
+  store it for the channel. RPM = 60 * 1e6 / (period_us * 100), i.e. eRPM below.
+ */
+void RCOutput::bdshot_store_erpm(uint32_t encodederpm, uint8_t chan)
+{
+    if (encodederpm == BDSHOT_INVALID_ERPM || chan >= 12) {
+        return;
+    }
+    uint32_t erpm;
+    if (encodederpm == BDSHOT_ZERO_ERPM) {
+        // motor stopped: report 0, not the ~128 rpm the max-period would compute to
+        erpm = 0;
+    } else {
+        const uint8_t expo = (encodederpm >> 9U) & 0x7U;
+        const uint16_t mant = encodederpm & 0x1ffU;
+        const uint32_t period = (uint32_t)mant << expo;
+        if (period == 0) {
+            return;
+        }
+        erpm = (1000000U * 60U / 100U + period / 2U) / period;
+    }
+    if (erpm < BDSHOT_INVALID_ERPM) {
+        _bdshot.erpm[chan] = (uint16_t)erpm;
+        // release: the erpm[] store above must be visible before the mask bit;
+        // atomic because read_erpm() (main thread, other core) clears bits
+        // concurrently — a plain |= could resurrect a just-cleared mask.
+        __atomic_fetch_or(&_bdshot.update_mask, 1U << chan, __ATOMIC_RELEASE);
+#if HAL_WITH_ESC_TELEM
+        // feed the ESC telemetry frontend: mechanical RPM = eRPM * 200 / poles
+        if (_esc_telem != nullptr && _bdshot.motor_poles > 0) {
+            _esc_telem->put_rpm(chan, erpm * 200U / _bdshot.motor_poles, get_erpm_error_rate(chan));
+        }
+#endif
+    }
+}
+
+uint16_t RCOutput::get_erpm(uint8_t chan) const
+{
+    return chan < 12 ? _bdshot.erpm[chan] : 0;
+}
+
+bool RCOutput::new_erpm()
+{
+    return __atomic_load_n(&_bdshot.update_mask, __ATOMIC_RELAXED) != 0;
+}
+
+uint32_t RCOutput::read_erpm(uint16_t* erpm, uint8_t len)
+{
+    // atomically take the mask (the rcout task on the other core keeps setting
+    // bits): a separate read-then-clear would drop any bit set in between.
+    // acquire pairs with the release in bdshot_store_erpm() so the erpm[] values
+    // behind the taken bits are visible before the memcpy below.
+    const uint32_t mask = __atomic_exchange_n(&_bdshot.update_mask, 0, __ATOMIC_ACQUIRE);
+    const uint8_t n = len < 12 ? len : 12;
+    memcpy(erpm, _bdshot.erpm, sizeof(uint16_t) * n);
+    return mask;
+}
+
+/*
+  scale an ArduPilot PWM value (microseconds) to a DShot throttle command.
+  At or below 1000us (disarmed / safety / min / no signal) -> 0 (DShot motor-stop);
+  1001..2000us maps linearly to 49..2047 (values 1..47 are reserved for commands,
+  48 is the lowest throttle step). Sending 0 (not 48) at minimum matches the
+  mainline ChibiOS backend: 48 is the lowest *throttle*, not motor-stop, and a
+  BLHeli_S given a constant 48 at idle behaves unpredictably across power-ups
+  (observed on hardware: either refuses to release motor output, or arms straight
+  into an uncommanded idle spin). 0 is the explicit, safe motor-stop.
+ */
+uint16_t RCOutput::dshot_throttle_from_pwm(uint16_t period_us)
+{
+    if (period_us <= 1000) {
+        return 0;
+    }
+    const uint16_t us = period_us > 2000 ? 2000 : period_us;
+    // 1001..2000us -> 49..2047; 1000us (handled above) -> 0.
+    uint16_t value = (uint16_t)(((uint32_t)(us - 1000) * (2047 - 48)) / 1000);
+    return value == 0 ? 0 : value + 48;
+}
+
+/*
+  start the periodic DShot transmit task once. Pinned to the APP CPU so motor
+  output stays off the core that runs WiFi/lwIP (a non-issue on this FC since
+  WiFi is disabled, but correct in general and helps timing determinism).
+ */
+void RCOutput::start_dshot_task()
+{
+#if defined(CONFIG_FREERTOS_NUMBER_OF_CORES) && CONFIG_FREERTOS_NUMBER_OF_CORES > 1
+    const BaseType_t core = 1; // APP_CPU
+    // bidir RX consumer on the OTHER core: the rcout task busy-waits through each
+    // turnaround at prio 12, which would starve a same-core consumer of the prompt
+    // re-arm it exists to provide.
+    const BaseType_t rx_core = 0; // PRO_CPU
+#else
+    const BaseType_t core = tskNO_AFFINITY;
+    const BaseType_t rx_core = tskNO_AFFINITY;
+#endif
+    // bidir DShot RX consumer (decode + re-arm): started once the first bidir channel
+    // exists. Checked outside the _dshot_task_started guard because a later
+    // set_bidir_dshot_mask() re-runs group setup after the transmit task is running.
+    if (bdshot_rx_queue != nullptr && !_bdshot_rx_task_started) {
+        _bdshot_rx_task_started = true;
+        xTaskCreatePinnedToCore(bdshot_rx_task_entry, "bdshot_rx", 4096, this, 12, nullptr, rx_core);
+    }
+    if (_dshot_task_started) {
+        return;
+    }
+    _dshot_task_started = true;
+    xTaskCreatePinnedToCore(dshot_task_entry, "dshot", 4096, this, 12, nullptr, core);
+}
+
+void RCOutput::dshot_task_entry(void *arg)
+{
+    static_cast<RCOutput *>(arg)->dshot_task();
+}
+
+/*
+  re-transmit the latest throttle on every DShot channel, forever. DShot ESCs
+  disarm if frames stop, so this runs continuously regardless of new writes; the
+  main loop just updates pwm_chan::value via write()/push().
+ */
+void RCOutput::dshot_task()
+{
+    while (true) {
+        {
+            // Hold _dshot_sem only while touching the RMT handles, so a concurrent
+            // set_group_mode_dshot() (which frees/reallocates them) can never pull a
+            // channel out from under an in-flight transmit. Released before the delay
+            // so the ~1 ms idle window is when any reconfiguration gets its turn.
+            WITH_SEMAPHORE(_dshot_sem);
+            for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
+                pwm_chan &ch = pwm_chan_list[chan];
+                if (ch.rmt_chan == nullptr) {
+                    continue; // PWM channel, not DShot
+                }
+                if (ch.dshot_command_repeat > 0) {
+                    // a special command is pending: send it with the telemetry bit set
+                    // (DShot commands require it) and count down. Throttle output is
+                    // suspended on this channel until the repeats are exhausted.
+                    // Barrier pairs with send_dshot_command(): the count was stored
+                    // after the command, so load the command only after the count.
+                    __sync_synchronize();
+                    dshot_send_chan(ch, ch.dshot_command, true);
+                    ch.dshot_command_repeat--;
+                } else {
+                    dshot_send_chan(ch, dshot_throttle_from_pwm((uint16_t)ch.value), false);
+                }
+                // bidirectional DShot: release the pad through the ESC's reply window.
+                // The reply is captured by the continuously-armed RX channel and
+                // decoded off this task (see bdshot_rx_task).
+                if (ch.bidir && ch.rmt_rx_chan != nullptr) {
+                    // capture-pipeline watchdog (see bdshot_quiet_frames): too many
+                    // frames with no completed capture -> the RX channel is wedged
+                    // and no event will ever re-arm it; reset + re-arm it here. Runs
+                    // at most once per BDSHOT_QUIET_FRAMES_MAX frames, and a healthy
+                    // pipeline never triggers it (the command loopback alone yields
+                    // a capture per frame).
+                    if (bdshot_quiet_frames[chan]++ >= BDSHOT_QUIET_FRAMES_MAX) {
+                        bdshot_quiet_frames[chan] = 0;
+                        WITH_SEMAPHORE(_bdshot_rx_sem); // vs the consumer's re-arm
+                        rmt_channel_handle_t rx = (rmt_channel_handle_t)ch.rmt_rx_chan;
+                        rmt_disable(rx);
+                        rmt_enable(rx);
+                        bdshot_arm_rx(rx, chan);
+                        // the outage frames were silent, not error-counted by the
+                        // consumer: account them so the error rate stays honest
+                        if (chan < 12) {
+                            _bdshot.erpm_errors[chan] += BDSHOT_QUIET_FRAMES_MAX;
+                            if (_bdshot.erpm_errors[chan] + _bdshot.erpm_clean_frames[chan] >= 4000) {
+                                _bdshot.erpm_errors[chan] /= 2;
+                                _bdshot.erpm_clean_frames[chan] /= 2;
+                            }
+                        }
+                    }
+                    bdshot_turnaround(ch);
+                }
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(1)); // ~1 kHz frame rate
+    }
+}
+
+/*
+  queue a DShot special command (arm, beep, spin direction, 3D mode, save
+  settings, ...) on a single DShot channel or, with chan == ALL_CHANNELS, on all
+  of them. DShot commands occupy the reserved value range 0..47 and must be sent
+  with the telemetry bit set and repeated to be accepted; the rcout task does the
+  repeating (see dshot_task). Throttle output on a channel is suspended while its
+  command repeats are pending. command_timeout_ms and priority are accepted for
+  API compatibility but unused here: pacing comes from the ~1 kHz rcout task, so
+  repeat_count frames span ~repeat_count ms, and there is no separate command queue
+  to prioritise. Caller (AP_Motors/AP_BLHeli) is responsible for only issuing
+  commands such as direction/save while disarmed.
+ */
+void RCOutput::send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms,
+                                  uint16_t repeat_count, bool priority)
+{
+    (void)command_timeout_ms;
+    (void)priority;
+    if (command > 47 || repeat_count == 0) {
+        return; // not a special command, or nothing to send
+    }
+    for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
+        if (chan != ALL_CHANNELS && i != chan) {
+            continue;
+        }
+        pwm_chan &ch = pwm_chan_list[i];
+        if (ch.rmt_chan == nullptr) {
+            continue; // not a DShot channel
+        }
+        // command before count (see pwm_chan in the header): the rcout task gates
+        // on dshot_command_repeat, so this ordering prevents it pairing a new count
+        // with a stale command value. The full barrier makes the store order visible
+        // to the task on the other core; volatile alone only constrains the compiler.
+        ch.dshot_command = command;
+        __sync_synchronize();
+        ch.dshot_command_repeat = repeat_count;
+    }
+}
+
 
 void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
 {
@@ -364,6 +1198,49 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
             if (pwm_chan_list[chan].group == &group) {
                 mask &= ~(1U << chan);
             }
+        }
+    }
+}
+
+/*
+  enable bidirectional DShot on the given channel mask by mirroring it into each
+  channel's `bidir` flag; the DShot frame is then inverted (CRC + waveform) for those
+  channels and the rcout task performs the TX->RX pad turnaround to read the ESC's eRPM
+  reply. Gated upstream by SERVO_BLH_BDMASK via AP_BLHeli.
+
+  The per-channel RX RMT channel and the inverted encoder are set up in
+  set_group_mode_dshot() based on ch.bidir. AP_BLHeli calls set_output_mode() (which
+  runs that) BEFORE this, so the mode was configured while ch.bidir was still false —
+  we must re-run the DShot setup for the affected groups so the RX channels and inverted
+  encoders actually get created. Called at boot, so this is not a live-reconfig hazard.
+ */
+void RCOutput::set_bidir_dshot_mask(uint32_t mask)
+{
+#if HAL_WITH_ESC_TELEM
+    // register with the ESC telemetry frontend on first use. Runs on the main
+    // thread well after all static constructors, so the frontend singleton the
+    // AP_ESC_Telem_Backend ctor requires is guaranteed to exist (see RCOutput.h
+    // for why this must not happen at static-init time).
+    if (mask != 0 && _esc_telem == nullptr) {
+        _esc_telem = NEW_NOTHROW ESCTelem();
+    }
+#endif
+    bool changed = false;
+    for (uint8_t chan = 0; chan < MAX_CHANNELS; chan++) {
+        const bool b = (mask & (1U << chan)) != 0;
+        if (pwm_chan_list[chan].bidir != b) {
+            pwm_chan_list[chan].bidir = b;
+            changed = true;
+        }
+    }
+    if (!changed || !_initialized) {
+        return;
+    }
+    // re-apply DShot setup so bidir channels get their RX channel + inverted encoder
+    for (uint8_t g = 0; g < NEEDED_GROUPS; g++) {
+        pwm_group &group = pwm_group_list[g];
+        if (is_dshot_protocol(group.current_mode)) {
+            set_group_mode_dshot(group);
         }
     }
 }
@@ -488,6 +1365,12 @@ void RCOutput::write_int(uint8_t chan, uint16_t period_us)
         period_us = max_period_us;
     }
     ch.value = period_us;
+
+    // DShot: keep the raw value for the RMT rcout task to encode and transmit;
+    // the MCPWM comparator is not used for this channel.
+    if (is_dshot_protocol(ch.group->current_mode)) {
+        return;
+    }
 
     uint16_t compare_value;
     switch(ch.group->current_mode) {
