@@ -33,16 +33,27 @@ template <class T>
 class NotchFilter {
 public:
     friend class HarmonicNotchFilter<T>;
+
+    NotchFilter();
+    ~NotchFilter();
+    CLASS_NO_COPY(NotchFilter);
+
+    // maximum number of harmonics supported; sized to the width of the harmonics bitmask
+    static constexpr uint8_t max_harmonics = sizeof(uint16_t) * 8;
+
     // set parameters
-    void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB);
+    void init(float sample_freq_hz, float center_freq_hz, float bandwidth_hz, float attenuation_dB, uint16_t harmonics);
     void init_with_A_and_Q(float sample_freq_hz, float center_freq_hz, float A, float Q);
     T apply(const T &sample);
     void reset();
     float center_freq_hz() const { return _center_freq_hz; }
     float sample_freq_hz() const { return _sample_freq_hz; }
+    // returns the requested harmonics bitmask; may include harmonics above Nyquist
+    // that were not instantiated - check that initialised is true for active state
+    uint16_t harmonics() const { return _harmonics; }
 
     // calculate attenuation and quality from provided center frequency and bandwidth
-    static void calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q); 
+    static void calculate_A_and_Q(float center_freq_hz, float bandwidth_hz, float attenuation_dB, float& A, float& Q);
 
     void disable(void) {
         initialised = false;
@@ -52,11 +63,21 @@ public:
     float logging_frequency(void) const;
 
 protected:
+    // compute coefficients for a single biquad notch
+    static void compute_coefficients(float &b0, float &b1, float &b2, float &a1, float &a2,
+                                     float sample_freq_hz, float center_freq_hz, float A, float Q);
 
     bool initialised, need_reset;
     float b0, b1, b2, a1, a2;
     float _center_freq_hz, _sample_freq_hz, _A;
     T ntchsig1, ntchsig2, signal2, signal1;
+    // requested harmonics bitmask as passed to init(); may include bits for harmonics
+    // that were skipped due to Nyquist constraints - use _num_harmonics for active count
+    uint16_t _harmonics;
+    // number of sub-filters actually initialised (≤ popcount(_harmonics))
+    uint8_t _num_harmonics;
+    // array of single-notch filters, one per active harmonic (nullptr when harmonics == 1)
+    NotchFilter<T>* _harmonic_filters;
 };
 
 /*
