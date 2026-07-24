@@ -34,6 +34,10 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_BoardConfig',
     'AP_Camera',
     'AP_Common',
+    # SD card full-disk encryption. Self-gates to empty objects when
+    # AP_DISKCRYPTO_ENABLED is 0; the unused AES code is dropped by
+    # --gc-sections, so there is no cost unless a board enables it.
+    'AP_DiskCrypto',
     'AP_Compass',
     'AP_Declination',
     'AP_GPS',
