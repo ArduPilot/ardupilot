@@ -6276,6 +6276,64 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """fly a simple mission that has a delay in it"""
         self.fly_nav_delay_abstime_x(87)
 
+    def NavDelayAbsTimeIgnored(self):
+        """fly a simple mission that has a delay in it with ignored components"""
+        # start SITL 75 seconds before the target hour (12:58:45 UTC -> 1783429125)
+        # to ensure EKF aligns and vehicle reaches the delay command during minute 59.
+        self.customise_SITL_commandline(["--start-time=1783429125"])
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm()
+
+        # target: hour = 13, min = -1 (ignored), sec = 0
+        target_secs = 0
+        target_hours = 13
+        delay_item_seq = 3
+
+        items = [
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 10, 0, 10),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_DELAY,
+                p1=0,              # relative delay (0 for absolute)
+                p2=target_hours,   # hours
+                p3=-1,             # minutes (ignored)
+                p4=target_secs,    # seconds
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0)
+        ]
+
+        self.start_flying_simple_relhome_mission(items)
+
+        reset_at = None
+        count_stop = -1
+        tstart = self.get_sim_time()
+        while self.armed():
+            now_sim = self.get_sim_time_cached()
+            if now_sim - tstart > 240:
+                raise AutoTestTimeoutException("Did not disarm as expected")
+            m = self.assert_receive_message('MISSION_CURRENT')
+            if m.seq == delay_item_seq:
+                if reset_at is None:
+                    reset_at_m = self.assert_receive_message('SYSTEM_TIME')
+                    reset_at = reset_at_m.time_unix_usec / 1000000.0
+            if m.seq > delay_item_seq:
+                if count_stop == -1:
+                    count_stop_m = self.assert_receive_message('SYSTEM_TIME')
+                    count_stop = count_stop_m.time_unix_usec / 1000000.0
+
+        if reset_at is None or count_stop == -1:
+            raise NotAchievedException("Did not measure delay start or stop time")
+
+        (h, m, secs_at_start, ms_at_start) = self.get_system_clock_utc(reset_at)
+        expected_delay = 60.0 - secs_at_start
+        calculated_delay = count_stop - reset_at
+        self.progress("Stopped for %u seconds (expected %u seconds)" % (calculated_delay, expected_delay))
+        error = abs(calculated_delay - expected_delay)
+        if error > 5:
+            raise NotAchievedException("delay outside expectations")
+
     def fly_nav_delay_abstime_x(self, delay_for, expected_delay=None):
         """fly a simple mission that has a delay in it, expect a delay"""
 
@@ -15103,6 +15161,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ret.extend([
              self.NavDelayTakeoffAbsTime,
              self.NavDelayAbsTime,
+             self.NavDelayAbsTimeIgnored,
              self.NavDelay,
              self.GuidedSubModeChange,
              self.MAV_CMD_CONDITION_YAW,
