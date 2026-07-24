@@ -11410,9 +11410,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("requested state is not RUN", timeout=200)
 
         self.set_rc(gen_ctrl_ch, 1500) # remember this is a switch position - idle
+
+        # ask for a throttle whose steady-state RPM is inside the band we
+        # check for below.  At 50% throttle the engine settles at 4080rpm,
+        # so the only time it is in-band is while it is spinning up - a
+        # race we lose when the engine hasn't wound down far enough while
+        # stopped:
+        pwm_for_thirty_percent_throttle = int(rc_min + int((rc_max-rc_min)*0.3))
+        self.progress("Using PWM of %u for 30 percent throttle" % pwm_for_thirty_percent_throttle)
+        self.set_rc(loweheiser_man_throt_ch, pwm_for_thirty_percent_throttle)
+
         self.set_rc(loweheiser_man_start_ch, 2000)
         self.wait_generator_speed_and_state(2000, 3000, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_IDLE)
         self.set_rc(loweheiser_man_start_ch, 1000)
+
+        self.set_rc(loweheiser_man_throt_ch, pwm_for_fifty_percent_throttle)
 
         self.set_rc(gen_ctrl_ch, 2000) # remember this is a switch position - run
 
