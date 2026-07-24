@@ -75,6 +75,7 @@ void MultiCopter::update(const struct sitl_input &input)
     }
 
     update_battery();
+
     update_dynamics(rot_accel);
     update_external_payload(input);
 
