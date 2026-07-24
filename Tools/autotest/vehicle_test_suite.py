@@ -990,6 +990,19 @@ class MSP_Generic(Telem):
         else:
             print("cmd=%s" % str(cmd))
 
+    def send_command(self, cmd, data=bytes()):
+        '''send an MSPv1 request frame ($M<) to the autopilot'''
+        size = len(data)
+        frame = bytearray(b'$M<')
+        frame.append(size)
+        frame.append(cmd)
+        frame.extend(data)
+        checksum = 0
+        for b in frame[3:]:  # checksum covers size, command and payload
+            checksum ^= b
+        frame.append(checksum & 0xFF)
+        self.do_write(bytes(frame))
+
     def update_read(self):
         for byte in self.do_read():
             c = chr(byte)
@@ -15375,6 +15388,168 @@ switch value'''
             print("lat=%f lon=%f dist=%f" % (f.lat(), f.lon(), dist))
             if dist < 1:
                 break
+
+    def msp_connect(self, port, timeout=30):
+        '''connect an MSP client to the autopilot's (TCP server) MSP port'''
+        msp = MSP_Generic(("127.0.0.1", port))
+        tstart = self.get_sim_time()
+        while not msp.connected:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Failed to connect to MSP port")
+            msp.connect()
+        return msp
+
+    def msp_send_until_parameters(self, msp, frames, parameters, timeout=30):
+        '''re-send the given (command, payload) MSP frames until the parameters
+        reach the wanted values; a frame sent before the link is fully up early
+        in boot can be dropped, just as a real client would resend'''
+        tstart = self.get_sim_time()
+        while True:
+            for (cmd, data) in frames:
+                msp.send_command(cmd, data)
+            try:
+                self.wait_parameter_values(parameters, timeout=3)
+                return
+            except NotAchievedException:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise
+
+    def wait_msp_vtx_config(self, msp, want, timeout=10):
+        '''poll MSP_VTX_CONFIG until the fields in want match the FC's reply,
+        draining stale buffered frames; the reply is the config the FC hands a
+        VTX/goggle: type, band/channel one based, power index, pitmode, freq and
+        deviceIsReady (gated on the boot handshake)'''
+        MSP_VTX_CONFIG = 88
+        last = {}
+
+        def collect(cmd, data):
+            if cmd == MSP_VTX_CONFIG and len(data) >= 8:
+                (t, band, channel, power, pitmode, freq, ready) = struct.unpack("<BBBBBHB", bytes(data[:8]))
+                last['cfg'] = {
+                    "type": t, "band": band, "channel": channel, "power": power,
+                    "pitmode": pitmode, "freq": freq, "deviceIsReady": ready,
+                }
+        msp.callback = collect
+        tstart = self.get_sim_time()
+        try:
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("MSP_VTX_CONFIG never matched %s (last %s)" % (want, last.get('cfg')))
+                msp.send_command(MSP_VTX_CONFIG)
+                msp.update()
+                cfg = last.get('cfg')
+                if cfg is not None and all(cfg[k] == v for k, v in want.items()):
+                    return cfg
+        finally:
+            msp.callback = None
+
+    def check_msp_set_vtx_config(self, msp):
+        '''drive MSP_SET_VTX_CONFIG over the supplied client and check the
+        configured VTX band/channel/frequency/power update accordingly'''
+        MSP_SET_VTX_CONFIG = 89
+        MSP_SET_VTXTABLE_POWERLEVEL = 228
+
+        # before the air unit uploads its own config the FC advertises not-ready,
+        # which is what makes a betaflight-style VTX run its boot handshake
+        self.progress("Checking the FC reports not-ready before the handshake")
+        self.wait_msp_vtx_config(msp, {"deviceIsReady": 0})
+
+        # the leading field is overloaded: a value <= 63 encodes band/channel
+        # as band_index*8 + channel_index (both zero based internally), so
+        # 4*8 + 3 selects Raceband (band 4) channel 4 (index 3) == 5769MHz.
+        # the power index is one based, so 2 maps to the second level (100mW).
+        self.progress("Setting band/channel via the legacy encoded field")
+        self.msp_send_until_parameters(msp, [
+            (MSP_SET_VTX_CONFIG, struct.pack("<HBB", 4*8 + 3, 2, 0)),
+        ], {
+            "VTX_BAND": 4,
+            "VTX_CHANNEL": 3,
+            "VTX_FREQ": 5769,
+            "VTX_POWER": 100,
+        })
+
+        # the API 1.42 standalone band/channel fields are one based on the wire
+        # with band 0 meaning "use raw frequency"; band 3 channel 2 selects
+        # Band E (index 2) channel 2 (index 1) == 5685MHz. power index 1 == 25mW.
+        self.progress("Setting band/channel via the 1.42 standalone fields")
+        payload = struct.pack("<H", 0)          # legacy field, superseded below
+        payload += struct.pack("<BB", 1, 0)     # power index, pitmode
+        payload += struct.pack("<B", 0)         # lowPowerDisarm
+        payload += struct.pack("<H", 0)         # pitModeFreq
+        payload += struct.pack("<BBH", 3, 2, 0)  # band, channel (one based), freq
+        self.msp_send_until_parameters(msp, [(MSP_SET_VTX_CONFIG, payload)], {
+            "VTX_BAND": 2,
+            "VTX_CHANNEL": 1,
+            "VTX_FREQ": 5685,
+            "VTX_POWER": 25,
+        })
+
+        # a VTX declares its own power table (here HDZero-like 25/200/500mW) one
+        # level at a time. The power value is dBm, as betaflight power tables are
+        # (14dBm=25mW, 23dBm=200mW, 27dBm=500mW). Once learned the power index
+        # maps to those values instead of the default plan, so index 3 selects
+        # 500mW not 800mW.
+        self.progress("Learning a VTX power table then selecting from it")
+        frames = [(MSP_SET_VTXTABLE_POWERLEVEL, struct.pack("<BHB", level, dbm, 0))
+                  for level, dbm in [(1, 14), (2, 23), (3, 27)]]  # [u8 level][u16 dBm][u8 label len]
+        frames.append((MSP_SET_VTX_CONFIG, struct.pack("<HBB", 4*8 + 3, 3, 0)))
+        self.msp_send_until_parameters(msp, frames, {
+            "VTX_FREQ": 5769,
+            "VTX_POWER": 500,
+        })
+
+        # pitmode is carried as a byte alongside power in the same message and
+        # maps to the VTX pitmode option (VTX_OPTIONS bit 0)
+        self.progress("Enabling then disabling pitmode")
+        self.msp_send_until_parameters(msp, [
+            (MSP_SET_VTX_CONFIG, struct.pack("<HBB", 4*8 + 3, 3, 1)),
+        ], {"VTX_OPTIONS": 1})
+        self.msp_send_until_parameters(msp, [
+            (MSP_SET_VTX_CONFIG, struct.pack("<HBB", 4*8 + 3, 3, 0)),
+        ], {"VTX_OPTIONS": 0})
+
+        # the FC answers MSP_VTX_CONFIG with the live config and, now that the
+        # VTX has uploaded its own config, reports ready. band/channel are one
+        # based on the wire: Raceband (index 4) channel 4 (index 3) == 5769MHz,
+        # power index 3 selects the learned 500mW level.
+        self.progress("Checking the FC reports its config back over MSP_VTX_CONFIG")
+        self.wait_msp_vtx_config(msp, {
+            "type": 5, "band": 5, "channel": 4, "power": 3,
+            "pitmode": 0, "freq": 5769, "deviceIsReady": 1,
+        })
+
+    def MSPVTXConfig(self):
+        '''test changing VTX band/channel/frequency via MSP_SET_VTX_CONFIG'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 32,  # MSP
+            "VTX_ENABLE": 1,
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port  # serial5 listens on localhost port
+        ])
+        self.wait_ready_to_arm()
+        msp = self.msp_connect(port)
+        self.check_msp_set_vtx_config(msp)
+        self.reboot_sitl()
+
+    def MSPDisplayPortVTXConfig(self):
+        '''test changing VTX band/channel/frequency via MSP_SET_VTX_CONFIG on
+        the MSP DisplayPort link, which is serviced by the OSD task rather than
+        the MSP thread'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 42,  # MSP DisplayPort
+            "OSD_TYPE": 5,           # MSP DisplayPort
+            "VTX_ENABLE": 1,
+        })
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port  # serial5 listens on localhost port
+        ])
+        self.wait_ready_to_arm()
+        msp = self.msp_connect(port)
+        self.check_msp_set_vtx_config(msp)
+        self.reboot_sitl()
 
     def CRSF(self):
         '''Test RC CRSF'''

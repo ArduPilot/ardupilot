@@ -27,6 +27,7 @@
 #include <AP_RangeFinder/AP_RangeFinder.h>
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_RTC/AP_RTC.h>
+#include <AP_VideoTX/AP_VideoTX.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "AP_MSP.h"
@@ -72,6 +73,9 @@ void AP_MSP_Telem_Backend::setup_wfq_scheduler(void)
     set_scheduler_entry(ESC_SENSOR_DATA, 500, 500);   // 2Hz  ESC telemetry
 #endif
     set_scheduler_entry(RTC_DATETIME, 1000, 1000);    // 1Hz  RTC
+#if AP_MSP_VIDEOTX_ENABLED
+    set_scheduler_entry(VTX_PARAMETERS, 1000, 1000);  // 1Hz  VTX
+#endif
 }
 
 /*
@@ -123,6 +127,10 @@ bool AP_MSP_Telem_Backend::is_packet_ready(uint8_t idx, bool queue_empty)
 #endif
     case RTC_DATETIME:      // RTC
         return true;
+#if AP_MSP_VIDEOTX_ENABLED
+    case VTX_PARAMETERS:    // VTX control
+        return AP::vtx().have_params_changed();
+#endif
     default:
         return false;
     }
@@ -137,6 +145,14 @@ void AP_MSP_Telem_Backend::process_packet(uint8_t idx)
         return;
     }
 
+#if AP_MSP_VIDEOTX_ENABLED
+    // the VTX config is pushed on change rather than every tick, and only once
+    // the air unit has completed its boot handshake
+    if (msp_packet_type_map[idx] == MSP_VTX_CONFIG && !vtx_should_push_config()) {
+        return;
+    }
+#endif
+
     uint8_t out_buf[MSP_PORT_OUTBUF_SIZE] {};
 
     msp_packet_t reply = {
@@ -147,12 +163,22 @@ void AP_MSP_Telem_Backend::process_packet(uint8_t idx)
     };
     uint8_t *out_buf_head = reply.buf.ptr;
 
-    msp_process_out_command(msp_packet_type_map[idx], &reply.buf);
+    msp_process_out_command(msp_packet_type_map[idx], nullptr, &reply.buf);
     uint32_t len = reply.buf.ptr - &out_buf[0];
     sbuf_switch_to_reader(&reply.buf, out_buf_head); // change streambuf direction
+
+    // the negotiated version is only known once the peer has sent us something;
+    // betaflight pushes the VTX config as MSP v2 native, so match that for an
+    // MSP VTX which otherwise ignores the unsolicited v1 frame
+    msp_version_e version = _msp_port.msp_version;
+#if AP_MSP_VIDEOTX_ENABLED
+    if (msp_packet_type_map[idx] == MSP_VTX_CONFIG) {
+        version = MSP_V2_NATIVE;
+    }
+#endif
     if (len > 0) {
         // don't send zero length packets
-        msp_serial_encode(&_msp_port, &reply, _msp_port.msp_version);
+        msp_serial_encode(&_msp_port, &reply, version);
     }
 
     _msp_port.c_state = MSP_IDLE;
@@ -422,6 +448,7 @@ void AP_MSP_Telem_Backend::msp_process_received_command()
 
 /*
   ported from inav/src/main/fc/fc_msp.c
+  pull-mode telemetry
  */
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, msp_packet_t *reply)
 {
@@ -435,7 +462,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, ms
     if (MSP2_IS_SENSOR_MESSAGE(cmd_msp)) {
         ret = msp_process_sensor_command(cmd_msp, src);
     } else {
-        ret = msp_process_out_command(cmd_msp, dst);
+        ret = msp_process_out_command(cmd_msp, src, dst);
     }
 
     // Process DONT_REPLY flag
@@ -447,7 +474,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, ms
     return ret;
 }
 
-MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp, sbuf_t *dst)
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp, sbuf_t *src, sbuf_t *dst)
 {
     switch (cmd_msp) {
     case MSP_API_VERSION:
@@ -464,6 +491,8 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
         return msp_process_out_name(dst);
     case MSP_OSD_CONFIG:
         return msp_process_out_osd_config(dst);
+    case MSP_OSD_CANVAS:
+        return msp_process_out_osd_canvas(dst);
     case MSP_STATUS:
     case MSP_STATUS_EX:
         return msp_process_out_status(dst);
@@ -491,6 +520,16 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_command(uint16_t cmd_msp,
         return msp_process_out_rtc(dst);
     case MSP_RC:
         return msp_process_out_rc(dst);
+#if AP_MSP_VIDEOTX_ENABLED
+    case MSP_VTX_CONFIG:
+        // reply with our config whether this is our proactive push (src == null)
+        // or a GET request from the VTX/goggle (src != null), which polls it
+        return msp_process_out_vtx_config(src, dst);
+    case MSP_SET_VTX_CONFIG:
+        return msp_process_in_vtx_config(src, dst);
+    case MSP_SET_VTXTABLE_POWERLEVEL:
+        return msp_process_in_vtxtable_powerlevel(src, dst);
+#endif  // AP_MSP_VIDEOTX_ENABLED
     default:
         // MSP always requires an ACK even for unsupported messages
         return MSP_RESULT_ACK;
@@ -606,7 +645,11 @@ uint32_t AP_MSP_Telem_Backend::get_osd_flight_mode_bitmask(void)
 {
     // Note: we only set the BOXARM bit (bit 0) which is the same for BF, INAV and DJI VTX
     // When armed we simply return 1 (1 == 1 << 0)
-    if (hal.util->get_soft_armed()) {
+    // VTXs that drop to low power when disarmed watch this bit, so the
+    // ForceVTXHighPower option keeps it set to hold the VTX at full power
+    const AP_MSP *msp = AP::msp();
+    if (hal.util->get_soft_armed()
+        || (msp != nullptr && msp->is_option_enabled(AP_MSP::Option::VTX_HIGH_POWER))) {
         return 1U;
     }
     return 0U;
@@ -810,6 +853,34 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_status(sbuf_t *dst)
     status.arming_disable_flags = !AP::notify().flags.armed;
 
     sbuf_write_data(dst, &status, sizeof(status));
+    return MSP_RESULT_ACK;
+}
+
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_canvas(sbuf_t *dst)
+{
+    // report the canvas matching the current screen's text resolution so an HD
+    // goggle sizes its OSD grid correctly (TXT_RES 0:30x16, 1:50x18, 2:60x22)
+    struct PACKED {
+        uint8_t cols;
+        uint8_t rows;
+    } canvas { 30, 16 };
+#if OSD_ENABLED
+    const AP_OSD *osd = AP::osd();
+    const AP_MSP *msp = AP::msp();
+    if (osd != nullptr && msp != nullptr) {
+        switch (osd->screen[msp->_msp_status.current_screen].get_txt_resolution()) {
+        case 1:
+            canvas = { 50, 18 };
+            break;
+        case 2:
+            canvas = { 60, 22 };
+            break;
+        default:
+            break;
+        }
+    }
+#endif
+    sbuf_write_data(dst, &canvas, sizeof(canvas));
     return MSP_RESULT_ACK;
 }
 
@@ -1089,6 +1160,268 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
     return MSP_RESULT_ACK;
 }
 #endif  // AP_RC_CHANNEL_ENABLED
+
+#if AP_MSP_VIDEOTX_ENABLED
+// set the configured pitmode option without disturbing the other option bits
+void AP_MSP_Telem_Backend::msp_vtx_set_pitmode(bool pitmode)
+{
+    AP::vtx().set_option_enabled(AP_VideoTX::VideoOptions::VTX_PITMODE, pitmode);
+}
+
+// fallback power plan used until the connected VTX declares its own table via
+// MSP_SET_VTXTABLE_POWERLEVEL; the index is one based (0 means "unset"), so
+// index 1 == 25mW. 14dBm (25mW), 20dBm (100mW), 26dBm (400mW), 29dBm (800mW)
+static const uint16_t msp_vtx_default_power_mw[] { 25, 100, 400, 800 };
+
+// apply a one-based betaflight power index, leaving power unchanged for 0
+void AP_MSP_Telem_Backend::msp_vtx_set_power_index(uint8_t index)
+{
+    AP_VideoTX& vtx = AP::vtx();
+    // prefer the table the VTX declared for itself, fall back to the default
+    uint16_t mw = vtx.get_power_mw_for_index(index);
+    if (mw == 0 && index >= 1 && index <= ARRAY_SIZE(msp_vtx_default_power_mw)) {
+        mw = msp_vtx_default_power_mw[index - 1];
+    }
+    if (mw > 0) {
+        vtx.set_configured_power_mw(mw);
+    }
+}
+
+// convert the configured power back to the one-based index, 0 if unmatched
+uint8_t AP_MSP_Telem_Backend::msp_vtx_get_power_index() const
+{
+    const AP_VideoTX& vtx = AP::vtx();
+    const uint16_t mw = vtx.get_configured_power_mw();
+    const uint8_t index = vtx.get_power_index_for_mw(mw);
+    if (index > 0) {
+        return index;
+    }
+    for (uint8_t i = 0; i < ARRAY_SIZE(msp_vtx_default_power_mw); i++) {
+        if (mw == msp_vtx_default_power_mw[i]) {
+            return i + 1;
+        }
+    }
+    return 0;
+}
+
+// store a frequency along with the matching band/channel; all setters are
+// set-and-save-if-changed so repeated identical messages cause no flash writes
+void AP_MSP_Telem_Backend::msp_vtx_set_frequency(uint16_t freq_mhz)
+{
+    AP_VideoTX& vtx = AP::vtx();
+    vtx.set_configured_frequency_mhz(freq_mhz);
+    AP_VideoTX::VideoBand band;
+    uint8_t channel;
+    if (AP_VideoTX::get_band_and_channel(freq_mhz, band, channel)) {
+        vtx.set_configured_band(uint8_t(band));
+        vtx.set_configured_channel(channel);
+    }
+}
+
+// store a (zero based) band/channel along with the matching frequency
+void AP_MSP_Telem_Backend::msp_vtx_set_band_and_channel(uint8_t band, uint8_t channel)
+{
+    AP_VideoTX& vtx = AP::vtx();
+    vtx.set_configured_band(band);
+    vtx.set_configured_channel(channel);
+    vtx.set_configured_frequency_mhz(AP_VideoTX::get_frequency_mhz(band, channel));
+}
+
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_in_vtx_config(sbuf_t *src, sbuf_t *dst)
+{
+    AP_VideoTX& vtx = AP::vtx();
+    // the user may have a VTX connected but not want AP to control it
+    // (for instance because they are using myVTX on the transmitter)
+    if (!vtx.get_enabled()) {
+        return MSP_RESULT_ERROR;
+    }
+
+    // MSP_SET_VTX_CONFIG is variable length: clients send anything from the
+    // legacy 4-byte payload up to the full 1.42 message, so every field beyond
+    // the first must be guarded by the remaining byte count (betaflight msp.c)
+    if (sbuf_bytes_remaining(src) < 2) {
+        return MSP_RESULT_ERROR;
+    }
+
+    // the leading u16 is overloaded: values <= VTX_MSP_BANDCHAN_CHKVAL encode
+    // band and channel (band = v/8, channel = v%8, both zero based internally),
+    // larger values are a direct frequency in MHz
+    const uint16_t VTX_MSP_BANDCHAN_CHKVAL = (7 << 3) + 7;
+    const uint16_t freq_or_bandchan = sbuf_read_u16(src);
+    if (freq_or_bandchan <= VTX_MSP_BANDCHAN_CHKVAL) {
+        msp_vtx_set_band_and_channel(freq_or_bandchan / VTX_MAX_CHANNELS, freq_or_bandchan % VTX_MAX_CHANNELS);
+    } else {
+        msp_vtx_set_frequency(freq_or_bandchan);
+    }
+
+    if (sbuf_bytes_remaining(src) >= 2) {
+        msp_vtx_set_power_index(sbuf_read_u8(src));
+        msp_vtx_set_pitmode(sbuf_read_u8(src) != 0);
+    }
+
+    // lowPowerDisarm - not supported, consume to stay aligned
+    if (sbuf_bytes_remaining(src) >= 1) {
+        sbuf_read_u8(src);
+    }
+
+    // API 1.42 - pitModeFreq - not supported, consume to stay aligned
+    if (sbuf_bytes_remaining(src) >= 2) {
+        sbuf_read_u16(src);
+    }
+
+    // API 1.42 - standalone (non-encoded) band/channel/frequency; betaflight
+    // sends band/channel one based with band == 0 meaning "use raw frequency".
+    // When present this supersedes the legacy encoding decoded above.
+    if (sbuf_bytes_remaining(src) >= 4) {
+        const uint8_t band = sbuf_read_u8(src);
+        const uint8_t channel = sbuf_read_u8(src);
+        const uint16_t freq = sbuf_read_u16(src);
+        if (band > 0) {
+            msp_vtx_set_band_and_channel(band - 1, channel > 0 ? channel - 1 : 0);
+        } else {
+            msp_vtx_set_frequency(freq);
+        }
+    }
+
+    vtx.set_provider_enabled(AP_VideoTX::VTXType::MSP);
+    // the VTX has pushed its own config, so the boot handshake is complete and
+    // we may now advertise readiness and push config changes back to it
+    _vtx_config_received = true;
+    // make sure the configured values now reflect reality
+    if (!vtx.set_defaults()) {
+        vtx.announce_vtx_settings();
+    }
+    // seed the push snapshot with the VTX's own values so we only push once the
+    // user actually changes something, not immediately after the handshake
+    _vtx_pushed = {
+        vtx.get_configured_band(),
+        vtx.get_configured_channel(),
+        vtx.get_configured_frequency_mhz(),
+        vtx.get_configured_power_mw(),
+        vtx.get_configured_pitmode(),
+        true
+    };
+    _vtx_config_push_remaining = 0;
+
+    return MSP_RESULT_ACK;
+}
+
+// push the VTX config on change, repeating MSP_VTX_CONFIG_PUSH_COUNT times for
+// delivery robustness. Returns true when the caller should emit a config frame
+// this tick. We only control the VTX after its boot handshake; the air unit
+// does not report its state back, so receipt cannot be confirmed (unlike Tramp)
+bool AP_MSP_Telem_Backend::vtx_should_push_config()
+{
+    AP_VideoTX& vtx = AP::vtx();
+    if (!vtx.get_enabled() || !_vtx_config_received) {
+        return false;
+    }
+
+    const uint8_t band = vtx.get_configured_band();
+    const uint8_t channel = vtx.get_configured_channel();
+    const uint16_t freq_mhz = vtx.get_configured_frequency_mhz();
+    const uint16_t power_mw = vtx.get_configured_power_mw();
+    const bool pitmode = vtx.get_configured_pitmode();
+
+    if (!_vtx_pushed.valid
+        || band != _vtx_pushed.band
+        || channel != _vtx_pushed.channel
+        || freq_mhz != _vtx_pushed.freq_mhz
+        || power_mw != _vtx_pushed.power_mw
+        || pitmode != _vtx_pushed.pitmode) {
+        // configuration changed, (re)start a push burst
+        _vtx_pushed = { band, channel, freq_mhz, power_mw, pitmode, true };
+        _vtx_config_push_remaining = MSP_VTX_CONFIG_PUSH_COUNT;
+        vtx.set_configuration_finished(false);
+    }
+
+    if (_vtx_config_push_remaining == 0) {
+        return false;
+    }
+    if (--_vtx_config_push_remaining == 0) {
+        // optimistically consider the VTX configured once the burst completes
+        vtx.set_configuration_finished(true);
+    }
+    return true;
+}
+
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_vtx_config(sbuf_t *src, sbuf_t *dst)
+{
+    AP_VideoTX& vtx = AP::vtx();
+
+    if (!vtx.get_enabled()) {
+        return MSP_RESULT_ERROR;
+    }
+
+    // band/channel are one based on the wire (band == 0 means raw frequency),
+    // zero based internally
+    const uint8_t VTXDEV_MSP = 5;   // betaflight vtxDevType_e
+    struct PACKED {
+        uint8_t type;
+        uint8_t band;
+        uint8_t channel;
+        uint8_t power;
+        uint8_t pitmode;
+        uint16_t freq;
+        uint8_t deviceIsReady;
+        uint8_t lowPowerDisarm;
+        // API version 1.42
+        uint16_t pitModeFreq;
+        uint8_t table;
+        uint8_t table_bands;
+        uint8_t table_channels;
+        uint8_t table_powerLevels;
+    } vtx_config {
+        // band/channel are one based on the wire (band == 0 means raw frequency),
+        // zero based internally. Keep the frequency consistent with band/channel:
+        // the user may change VTX_CHANNEL without VTX_FREQ, and a stale frequency
+        // would contradict the band/channel a betaflight-style VTX keys off
+        .type = VTXDEV_MSP,
+        .band = uint8_t(vtx.get_configured_band() + 1),
+        .channel = uint8_t(vtx.get_configured_channel() + 1),
+        .power = msp_vtx_get_power_index(),
+        .pitmode = vtx.get_configured_pitmode(),
+        .freq = AP_VideoTX::get_frequency_mhz(vtx.get_configured_band(), vtx.get_configured_channel()),
+        // report not-ready until the VTX has uploaded its own config: the HDZero
+        // air unit is the MSP master and only runs that handshake against a
+        // betaflight FC (FC_VARIANT) that is not yet configured. Once it has
+        // pushed its config to us we report ready so it honours our config pushes
+        .deviceIsReady = _vtx_config_received ? uint8_t(1) : uint8_t(0),
+        .table = 0,
+        .table_bands = 0,
+        .table_channels = 0,
+        .table_powerLevels = 0
+    };
+
+    sbuf_write_data(dst, &vtx_config, sizeof(vtx_config));
+    return MSP_RESULT_ACK;
+}
+
+MSPCommandResult AP_MSP_Telem_Backend::msp_process_in_vtxtable_powerlevel(sbuf_t *src, sbuf_t *dst)
+{
+    AP_VideoTX& vtx = AP::vtx();
+    if (!vtx.get_enabled()) {
+        return MSP_RESULT_ERROR;
+    }
+
+    // [u8 powerLevel (one based)][u16 power dBm][u8 label length][label...]; the
+    // index is implied by the dBm ordering and the label is display only, so
+    // both are ignored and only the supported power level is recorded. The value
+    // is dBm (betaflight stores power tables in dBm), not mW; a zero entry is an
+    // unused slot.
+    if (sbuf_bytes_remaining(src) < 3) {
+        return MSP_RESULT_ERROR;
+    }
+    sbuf_read_u8(src);   // power level index, implied by ordering, ignored
+    const uint16_t power_dbm = sbuf_read_u16(src);
+    if (power_dbm > 0) {
+        vtx.update_power_dbm(uint8_t(power_dbm));
+    }
+
+    return MSP_RESULT_ACK;
+}
+
+#endif // AP_MSP_VIDEOTX_ENABLED
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_board_info(sbuf_t *dst)
 {
