@@ -325,7 +325,7 @@ void ModeZigZag::manual_control()
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start_m(constrain_float(g2.pilot_takeoff_alt_m, 0.0, 10.0));
+            takeoff.start_m(get_constrained_takeoff_alt());
         }
 
         // get avoidance adjusted climb rate

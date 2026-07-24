@@ -1134,3 +1134,13 @@ Location Mode::get_stopping_point() const
     copter.pos_control->get_stopping_point_D_m(stopping_point_ned_m.z);
     return Location::from_ekf_offset_NED_m(stopping_point_ned_m, Location::AltFrame::ABOVE_ORIGIN);
 }
+
+/**
+ * Returns the pilot’s takeoff altitude in meters, constrained to the range [PILOT_TKO_ALT_M_MIN, PILOT_TKO_ALT_M_MAX].
+ * 
+ * @return The constrained takeoff altitude in meters.
+ */
+float Mode::get_constrained_takeoff_alt() const
+{
+    return constrain_float(g2.pilot_takeoff_alt_m, PILOT_TKO_ALT_M_MIN, PILOT_TKO_ALT_M_MAX);
+}
