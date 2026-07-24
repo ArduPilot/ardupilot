@@ -760,6 +760,13 @@ class ChibiOSHWDef(hwdef.HWDef):
                 return True
         return False
 
+    def has_dataflash_wspi(self):
+        '''check for dataflash connected to wspi (quadspi/octospi) bus'''
+        for dev in self.wspidev:
+            if dev[0] == 'dataflash':
+                return True
+        return False
+
     def has_sdcard_spi(self):
         '''check for sdcard connected to spi bus'''
         for dev in self.spidev:
@@ -904,8 +911,10 @@ class ChibiOSHWDef(hwdef.HWDef):
             f.write('#define HAL_STDOUT_SERIAL %s\n\n' % self.get_config('STDOUT_SERIAL'))
             f.write('// baudrate used for stdout (printf)\n')
             f.write('#define HAL_STDOUT_BAUDRATE %u\n\n' % self.get_config('STDOUT_BAUDRATE', type=int))
-        if len(self.dataflash_list) > 0:
-            # we only support dataflash OR sdcard, so prioritize dataflash if its been explicitly configured
+        # Check if any dataflash uses block-based logging (not littlefs)
+        has_block_dataflash = any(d[0].startswith('block') for d in self.dataflash_list)
+        if has_block_dataflash:
+            # block-based dataflash conflicts with FATFS, so disable it
             f.write('#define HAL_USE_FATFS FALSE\n\n')
             f.write('#define HAL_USE_SDC FALSE\n')
             self.build_flags.append('USE_FATFS=no')
@@ -1564,10 +1573,13 @@ INCLUDE common.ld
     def write_WSPI_config(self, f):
         '''write SPI config defines'''
         # only the bootloader must run the hal lld (and QSPI clock) otherwise it is not possible to
-        # bootstrap into external flash
-        for t in list(self.bytype.keys()) + list(self.alttype.keys()):
-            if (t.startswith('QUADSPI') or t.startswith('OCTOSPI')) and not self.is_bootloader_fw():
-                f.write('#define HAL_XIP_ENABLED TRUE\n')
+        # bootstrap into external flash. Skip if HAL_XIP_ENABLED is explicitly defined in hwdef.
+        xip_already_defined = any('HAL_XIP_ENABLED' in line for line in self.all_lines)
+        if not xip_already_defined:
+            for t in list(self.bytype.keys()) + list(self.alttype.keys()):
+                if (t.startswith('QUADSPI') or t.startswith('OCTOSPI')) and not self.is_bootloader_fw():
+                    f.write('#define HAL_XIP_ENABLED TRUE\n')
+                    break
 
         if len(self.wspidev) == 0:
             # nothing else to do
@@ -1631,10 +1643,13 @@ INCLUDE common.ld
 
     def write_DATAFLASH_config(self, f):
         '''write dataflash config defines'''
-        # DATAFLASH block|littlefs:<w25nxx|jedec_nor>
+        # DATAFLASH block|littlefs:<w25nxx|jedec_nor|mt29fxx>
+        # The chip keyword selects the flash family; the transport (SPI vs WSPI)
+        # is derived from whether 'dataflash' is declared on a SPIDEV or a
+        # QSPIDEV/OCTOSPIDEV bus, so e.g. an MT29F can sit on either.
         seen = set()
         for dev in self.dataflash_list:
-            if not self.has_dataflash_spi():
+            if not self.has_dataflash_spi() and not self.has_dataflash_wspi():
                 self.error("Missing DATAFLASH device: %s" % self.seen_str(dev))
             if self.seen_str(dev) in seen:
                 self.error("Duplicate DATAFLASH: %s" % self.seen_str(dev))
@@ -1654,6 +1669,16 @@ INCLUDE common.ld
                     f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_W25NXX\n')
                 elif len(a) > 1 and a[1].startswith('jedec_nor'):
                     f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_JEDEC_NOR\n')
+                elif len(a) > 1 and (a[1].startswith('wspi_nand') or a[1].startswith('mt29fxx')):
+                    # Micron MT29F SPI NAND family (1G/2G/4G/8G)
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_WSPI_NAND\n')
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_MT29FXX_ENABLED 1\n')
+                # transport follows how 'dataflash' is wired, not the chip family
+                if self.has_dataflash_wspi():
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_TRANSPORT AP_FILESYSTEM_FLASH_TRANSPORT_WSPI\n')
+                else:
+                    f.write('#define AP_FILESYSTEM_LITTLEFS_TRANSPORT AP_FILESYSTEM_FLASH_TRANSPORT_SPI\n')
+                # littlefs and FATFS can't coexist, so always disable FATFS
                 self.build_flags.append('USE_FATFS=no')
                 self.env_vars['WITH_LITTLEFS'] = "1"
 
