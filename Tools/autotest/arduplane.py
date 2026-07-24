@@ -5152,6 +5152,49 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    def HomeNotSetMidAir(self):
+        '''home must not be set to the current position when GPS first locks while flying'''
+        # boot with GPS disabled: with no fix the FC has no home and the GPS-fix countdown stays pending
+        self.context_push()
+        self.set_parameters({"SIM_GPS1_ENABLE": 0})     # no GPS fix at boot
+        self.reboot_sitl()
+        launch = self.sitl_start_location()             # known launch point (degrees)
+
+        # take off in FBWA without GPS (force-arm bypasses the GPS arming checks)
+        self.change_mode("FBWA")
+        self.arm_vehicle(force=True)
+        self.set_rc(4, 1700)        # rudder to counteract prop torque
+        self.set_rc(2, 1200)        # a little up elevator
+        self.set_rc(3, 1300)        # start rolling
+        self.wait_airspeed(6, 100, timeout=30)
+        self.set_rc_from_map({3: 2000, 2: 1300, 4: 1500})   # full throttle, climb out
+        self.wait_airspeed(15, 100, timeout=40)             # airspeed alone makes is_flying() true
+        self.delay_sim_time(15, reason="climb and fly away from launch with no GPS")
+
+        # GPS locks mid-air: the fix must defer the home set while is_flying()
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.delay_sim_time(5, reason="let the GPS-fix countdown elapse in the air")
+
+        # the fix defers the home set while flying, so the FC should still have no home...
+        try:
+            home = self.poll_home_position(timeout=15)
+        except NotAchievedException:
+            home = None
+        if home is None:
+            self.progress("home correctly not set while flying")
+        else:
+            # ...and any home that is reported must be the launch point, never the mid-air position
+            home_loc = mavutil.location(home.latitude * 1e-7, home.longitude * 1e-7, 0, 0)
+            dist = self.get_distance(home_loc, launch)
+            self.progress("home is %.1fm from launch" % dist)
+            if dist > 50:
+                raise NotAchievedException("home was set to the mid-air position (%.0fm from launch)" % dist)
+
+        # cleanup: disarm, restore parameters and reboot to a clean state
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        self.reboot_sitl()
+
     def AUTOTUNE(self):
         '''Test AutoTune mode'''
 
@@ -8740,6 +8783,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.DeepStall,
             self.WatchdogHome,
+            self.HomeNotSetMidAir,
             self.LargeMissions,
             self.Soaring,
             self.Terrain,
