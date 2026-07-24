@@ -468,6 +468,7 @@ AP_HW_AIUAV_PlatFly_H7               4100
 # IDs 4200-4220 reserved for HAKRC
 AP_HW_HAKRC_F405                     4200
 AP_HW_HAKRC_F405Wing                 4201
+AP_HW_HAKRC_F405V2                   4202
 AP_HW_HAKRC_H743                     4203
 
 # IDs 4300-4309 reserved for AeroCogito
