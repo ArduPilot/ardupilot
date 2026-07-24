@@ -85,7 +85,6 @@ define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 #COMPASS
 define AP_COMPASS_ENABLE_DEFAULT 0
-define ALLOW_ARM_NO_COMPASS
 
 #WIFI
 define HAL_ESP32_WIFI 1  #1-TCP, 2-UDP, comment this line = without wifi

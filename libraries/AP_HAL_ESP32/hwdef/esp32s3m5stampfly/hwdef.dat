@@ -62,7 +62,6 @@ define AP_AIRSPEED_ENABLED 0
 define HAL_ESP32_BOARD_NAME "esp32s3m5stampfly"
 
 define AP_COMPASS_ENABLE_DEFAULT 0
-define ALLOW_ARM_NO_COMPASS
 
 # no ADC
 
