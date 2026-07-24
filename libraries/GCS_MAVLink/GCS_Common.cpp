@@ -25,6 +25,7 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_AdvancedFailsafe/AP_AdvancedFailsafe.h>
+#include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Arming/AP_Arming.h>
@@ -4344,6 +4345,18 @@ void GCS_MAVLINK::handle_adsb_message(const mavlink_message_t &msg)
 }
 #endif
 
+// Forward a MAVLink TUNNEL message to the ExternalAHRS frontend, which dispatches
+// it to the active backend (the backend demuxes on payload_type).
+void GCS_MAVLINK::handle_tunnel_message(const mavlink_message_t &msg)
+{
+#if AP_EXTERNAL_AHRS_ENABLED
+    auto *eahrs = AP_ExternalAHRS::get_singleton();
+    if (eahrs != nullptr) {
+        eahrs->handle_tunnel(chan, msg);
+    }
+#endif
+}
+
 #if OSD_PARAM_ENABLED
 void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 {
@@ -4633,6 +4646,10 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         handle_adsb_message(msg);
         break;
 #endif
+
+    case MAVLINK_MSG_ID_TUNNEL:
+        handle_tunnel_message(msg);
+        break;
 
     case MAVLINK_MSG_ID_LANDING_TARGET:
         handle_landing_target(msg);
