@@ -37,6 +37,9 @@ extern const AP_HAL::HAL& hal;
 // mavlink/pymavlink project for when MAVLINK_SEPARATE_HELPERS is defined
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
+// mavlink_reset_channel_status does not check the
+// mavlink_get_channel_status return value for nullptr:
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include "include/mavlink/v2.0/mavlink_helpers.h"
 #pragma GCC diagnostic pop
 #endif
