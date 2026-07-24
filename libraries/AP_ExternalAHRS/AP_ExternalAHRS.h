@@ -27,6 +27,7 @@
 #include <AP_Common/Location.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_GPS/AP_GPS_FixType.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_ExternalAHRS_backend;
 
@@ -133,6 +134,9 @@ public:
 
     // update backend
     void update();
+
+    // Forward a MAVLink TUNNEL message to the active backend (from GCS).
+    void handle_tunnel(const mavlink_channel_t chan, const mavlink_message_t &msg);
 
     /*
       structures passed to other subsystems

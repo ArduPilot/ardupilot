@@ -428,6 +428,15 @@ const char* AP_ExternalAHRS::get_name() const
     return nullptr;
 }
 
+// Forward a MAVLink TUNNEL message to the active backend (no-op for backends
+// that don't consume it).
+void AP_ExternalAHRS::handle_tunnel(const mavlink_channel_t chan, const mavlink_message_t &msg)
+{
+    if (backend != nullptr) {
+        backend->handle_tunnel(chan, msg);
+    }
+}
+
 namespace AP {
 
 AP_ExternalAHRS &externalAHRS()

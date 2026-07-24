@@ -711,6 +711,10 @@ typedef enum _SbgEComCmd
 	SBG_ECOM_CMD_ETHERNET_CONF				= 36,		/*!< Set/get Ethernet configuration such as DHCP mode and IP address. */
 	SBG_ECOM_CMD_ETHERNET_INFO				= 37,		/*!< Return the current IP used by the device. */
 
+	/* sbgInsRestApi commands */
+	SBG_ECOM_CMD_API_POST					= 47,		/*!< REST API POST request (update a setting or execute an action). */
+	SBG_ECOM_CMD_API_GET					= 48,		/*!< REST API GET request (read a setting or status). */
+
 	/* Misc. */
 	SBG_ECOM_LOG_ECOM_NUM_CMDS							/*!< Helper definition to know the number of commands */
 } SbgEComCmd;
