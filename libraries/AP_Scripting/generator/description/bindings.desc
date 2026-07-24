@@ -288,6 +288,19 @@ singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATI
 
 singleton RangeFinder method get_backend AP_RangeFinder_Backend uint8_t'skip_check
 
+include AP_Airspeed/AP_Airspeed_config.h
+include AP_Airspeed/AP_Airspeed.h depends AP_AIRSPEED_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+include AP_Airspeed/AP_Airspeed_Backend.h depends AP_AIRSPEED_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+
+ap_object AP_Airspeed_Backend depends AP_AIRSPEED_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+ap_object AP_Airspeed_Backend method handle_script_differential_pressure boolean float'skip_check
+ap_object AP_Airspeed_Backend method handle_script_airspeed boolean float'skip_check
+ap_object AP_Airspeed_Backend method handle_script_temperature boolean float'skip_check
+
+singleton AP_Airspeed depends AP_AIRSPEED_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton AP_Airspeed rename airspeed
+singleton AP_Airspeed method get_backend AP_Airspeed_Backend uint8_t'skip_check
+
 include AP_Terrain/AP_Terrain.h
 
 singleton AP_Terrain depends defined(AP_TERRAIN_AVAILABLE) && AP_TERRAIN_AVAILABLE == 1
