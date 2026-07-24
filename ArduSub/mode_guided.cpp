@@ -4,11 +4,12 @@
  * Init and run calls for guided flight mode
  */
 
-#define GUIDED_POSVEL_TIMEOUT_MS    3000    // guided mode's position-velocity controller times out after 3seconds with no new updates
-#define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // guided mode's attitude controller times out after 1 second with no new updates
+#define GUIDED_VEL_TIMEOUT_MS       3000    // velocity controllers time out after 3 seconds with no new updates
+#define GUIDED_ATTITUDE_TIMEOUT_MS  1000    // attitude controller times out after 1 second with no new updates
 
-static Vector3p posvel_pos_target_neu_cm;
-static Vector3f posvel_vel_target_neu_cms;
+static Vector3p posvelaccel_pos_target_neu_cm;      // used by Guided_PosVelAccel mode
+static Vector3f posvelaccel_vel_target_neu_cms;     // used by Guided_PosVelAccel mode
+static Vector3f posvelaccel_accel_target_neu_cmss;  // used by Guided_PosVelAccel mode
 static uint32_t update_time_ms;
 
 struct {
@@ -117,11 +118,15 @@ void ModeGuided::guided_vel_control_start()
     set_auto_yaw_mode(AUTO_YAW_HOLD);
 }
 
-// initialise guided mode's posvel controller
-void ModeGuided::guided_posvel_control_start()
+// initialise guided mode's posvelaccel controller
+void ModeGuided::guided_posvelaccel_control_start()
 {
     // set guided_mode to velocity controller
-    sub.guided_mode = Guided_PosVel;
+    sub.guided_mode = Guided_PosVelAccel;
+
+    // initialise horizontal speed, acceleration
+    position_control->NE_set_max_speed_accel_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
+    position_control->NE_set_correction_speed_accel_cm(sub.wp_nav.get_default_speed_NE_cms(), sub.wp_nav.get_wp_acceleration_cmss());
 
     // set vertical speed and acceleration
     // All limits must be positive
@@ -188,7 +193,7 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination_neu_cm)
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, Vector3f());
+    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, Vector3f(), Vector3f());
 #endif
 
     return true;
@@ -223,7 +228,7 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt),Vector3f());
+    sub.Log_Write_GuidedTarget(sub.guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), Vector3f(), Vector3f());
 #endif
 
     return true;
@@ -259,7 +264,7 @@ bool ModeGuided::guided_set_destination(const Vector3f& destination_neu_cm, bool
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, Vector3f());
+    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, Vector3f(), Vector3f());
 #endif
 
     return true;
@@ -297,19 +302,19 @@ void ModeGuided::guided_set_velocity(const Vector3f& velocity_neu_cms, bool use_
 
 }
 
-// expose the current Guided_PosVel position target so the GCS layer can
+// expose the current Guided_PosVelAccel position target so the GCS layer can
 // report POSITION_TARGET_GLOBAL_INT in that submode.
-bool ModeGuided::get_posvel_target_NEU_cm(Vector3f &pos) const
+bool ModeGuided::get_posvelaccel_target_NEU_cm(Vector3f &pos) const
 {
-    if (sub.guided_mode != Guided_PosVel) {
+    if (sub.guided_mode != Guided_PosVelAccel) {
         return false;
     }
-    pos = posvel_pos_target_neu_cm.tofloat();
+    pos = posvelaccel_pos_target_neu_cm.tofloat();
     return true;
 }
 
-// set guided mode posvel target
-bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms)
+// set guided mode posvelaccel target
+bool ModeGuided::guided_set_posvelaccel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss)
 {
 #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -321,30 +326,31 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination_neu_c
     }
 #endif
 
-    // check we are in posvel control mode
-    if (sub.guided_mode != Guided_PosVel) {
-        guided_posvel_control_start();
+    // check we are in posvelaccel control mode
+    if (sub.guided_mode != Guided_PosVelAccel) {
+        guided_posvelaccel_control_start();
     }
 
     update_time_ms = AP_HAL::millis();
-    posvel_pos_target_neu_cm = destination_neu_cm.topostype();
-    posvel_vel_target_neu_cms = velocity_neu_cms;
+    posvelaccel_pos_target_neu_cm = destination_neu_cm.topostype();
+    posvelaccel_vel_target_neu_cms = velocity_neu_cms;
+    posvelaccel_accel_target_neu_cmss = accel_neu_cmss;
 
-    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_neu_cm.xy(), posvel_vel_target_neu_cms.xy(), Vector2f());
-    float dz = posvel_pos_target_neu_cm.z;
-    position_control->input_pos_vel_accel_U_cm(dz, posvel_vel_target_neu_cms.z, 0);
-    posvel_pos_target_neu_cm.z = dz;
+    position_control->input_pos_vel_accel_NE_cm(posvelaccel_pos_target_neu_cm.xy(), posvelaccel_vel_target_neu_cms.xy(), posvelaccel_accel_target_neu_cmss.xy());
+    float dz = posvelaccel_pos_target_neu_cm.z;
+    position_control->input_pos_vel_accel_U_cm(dz, posvelaccel_vel_target_neu_cms.z, posvelaccel_accel_target_neu_cmss.z);
+    posvelaccel_pos_target_neu_cm.z = dz;
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, velocity_neu_cms);
+    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, velocity_neu_cms, accel_neu_cmss);
 #endif
 
     return true;
 }
 
-// set guided mode posvel target
-bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
+// set guided mode posvelaccel target
+bool ModeGuided::guided_set_posvelaccel(const Vector3f& destination_neu_cm, const Vector3f& velocity_neu_cms, const Vector3f& accel_neu_cmss, bool use_yaw, float yaw_cd, bool use_yaw_rate, float yaw_rate_cds, bool relative_yaw)
 {
     #if AP_FENCE_ENABLED
     // reject destination if outside the fence
@@ -356,9 +362,9 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination_neu_c
     }
     #endif
 
-    // check we are in posvel control mode
-    if (sub.guided_mode != Guided_PosVel) {
-        guided_posvel_control_start();
+    // check we are in posvelaccel control mode
+    if (sub.guided_mode != Guided_PosVelAccel) {
+        guided_posvelaccel_control_start();
     }
 
     // set yaw state
@@ -366,17 +372,18 @@ bool ModeGuided::guided_set_destination_posvel(const Vector3f& destination_neu_c
 
     update_time_ms = AP_HAL::millis();
 
-    posvel_pos_target_neu_cm = destination_neu_cm.topostype();
-    posvel_vel_target_neu_cms = velocity_neu_cms;
+    posvelaccel_pos_target_neu_cm = destination_neu_cm.topostype();
+    posvelaccel_vel_target_neu_cms = velocity_neu_cms;
+    posvelaccel_accel_target_neu_cmss = accel_neu_cmss;
 
-    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_neu_cm.xy(), posvel_vel_target_neu_cms.xy(), Vector2f());
-    float dz = posvel_pos_target_neu_cm.z;
-    position_control->input_pos_vel_accel_U_cm(dz, posvel_vel_target_neu_cms.z, 0);
-    posvel_pos_target_neu_cm.z = dz;
+    position_control->input_pos_vel_accel_NE_cm(posvelaccel_pos_target_neu_cm.xy(), posvelaccel_vel_target_neu_cms.xy(), posvelaccel_accel_target_neu_cmss.xy());
+    float dz = posvelaccel_pos_target_neu_cm.z;
+    position_control->input_pos_vel_accel_U_cm(dz, posvelaccel_vel_target_neu_cms.z, posvelaccel_accel_target_neu_cmss.z);
+    posvelaccel_pos_target_neu_cm.z = dz;
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, velocity_neu_cms);
+    sub.Log_Write_GuidedTarget(sub.guided_mode, destination_neu_cm, velocity_neu_cms, accel_neu_cmss);
 #endif
 
     return true;
@@ -455,9 +462,9 @@ void ModeGuided::run()
         guided_vel_control_run();
         break;
 
-    case Guided_PosVel:
-        // run position-velocity controller
-        guided_posvel_control_run();
+    case Guided_PosVelAccel:
+        // run position-velocity-acceleration controller
+        guided_posvelaccel_control_run();
         break;
 
     case Guided_Angle:
@@ -569,7 +576,7 @@ void ModeGuided::guided_vel_control_run()
 
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
-    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !position_control->get_vel_desired_NEU_cms().is_zero()) {
+    if (tnow - update_time_ms > GUIDED_VEL_TIMEOUT_MS && !position_control->get_vel_desired_NEU_cms().is_zero()) {
         position_control->set_vel_desired_NEU_cms(Vector3f(0,0,0));
     }
 
@@ -605,9 +612,9 @@ void ModeGuided::guided_vel_control_run()
     }
 }
 
-// guided_posvel_control_run - runs the guided posvel controller
+// guided_posvelaccel_control_run - runs the guided posvelaccel controller
 // called from guided_run
-void ModeGuided::guided_posvel_control_run()
+void ModeGuided::guided_posvelaccel_control_run()
 {
     // if motors not enabled set throttle to zero and exit immediately
     if (!motors.armed()) {
@@ -643,18 +650,15 @@ void ModeGuided::guided_posvel_control_run()
 
     // set velocity to zero if no updates received for 3 seconds
     uint32_t tnow = AP_HAL::millis();
-    if (tnow - update_time_ms > GUIDED_POSVEL_TIMEOUT_MS && !posvel_vel_target_neu_cms.is_zero()) {
-        posvel_vel_target_neu_cms.zero();
+    if (tnow - update_time_ms > GUIDED_VEL_TIMEOUT_MS && !posvelaccel_vel_target_neu_cms.is_zero()) {
+        posvelaccel_vel_target_neu_cms.zero();
     }
 
-    // advance position target using velocity target
-    posvel_pos_target_neu_cm += (posvel_vel_target_neu_cms * position_control->get_dt_s()).topostype();
-
     // send position and velocity targets to position controller
-    position_control->input_pos_vel_accel_NE_cm(posvel_pos_target_neu_cm.xy(), posvel_vel_target_neu_cms.xy(), Vector2f());
-    float pz = posvel_pos_target_neu_cm.z;
-    position_control->input_pos_vel_accel_U_cm(pz, posvel_vel_target_neu_cms.z, 0);
-    posvel_pos_target_neu_cm.z = pz;
+    position_control->input_pos_vel_accel_NE_cm(posvelaccel_pos_target_neu_cm.xy(), posvelaccel_vel_target_neu_cms.xy(), posvelaccel_accel_target_neu_cmss.xy());
+    float pz = posvelaccel_pos_target_neu_cm.z;
+    position_control->input_pos_vel_accel_U_cm(pz, posvelaccel_vel_target_neu_cms.z, posvelaccel_accel_target_neu_cmss.z);
+    posvelaccel_pos_target_neu_cm.z = pz;
 
     // run position controller
     position_control->NE_update_controller();
