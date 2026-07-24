@@ -33,6 +33,7 @@ import threading
 from launch_pytest.tools import process as process_tools
 from std_srvs.srv import Trigger
 
+from conftest import shutdown_node
 from launch_fixtures import (
     launch_sitl_copter_dds_serial,
     launch_sitl_copter_dds_udp,
@@ -109,7 +110,7 @@ def test_dds_serial_prearm_service_call(launch_context, launch_sitl_copter_dds_s
         is_armable_flag = node.is_armable_object.wait(timeout=25.0)
         assert is_armable_flag, f"Vehicle not armable."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
 
 
@@ -134,5 +135,5 @@ def test_dds_udp_prearm_service_call(launch_context, launch_sitl_copter_dds_udp)
         is_armable_flag = node.is_armable_object.wait(timeout=25.0)
         assert is_armable_flag, f"Vehicle not armable."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield

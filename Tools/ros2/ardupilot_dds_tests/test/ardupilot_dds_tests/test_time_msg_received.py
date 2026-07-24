@@ -21,6 +21,7 @@ import rclpy
 import rclpy.node
 
 from builtin_interfaces.msg import Time
+from conftest import shutdown_node
 from launch_fixtures import launch_sitl_copter_dds_serial
 from launch_fixtures import launch_sitl_copter_dds_udp
 from launch_pytest.tools import process as process_tools
@@ -85,7 +86,7 @@ def test_dds_serial_time_msg_recv(launch_context, launch_sitl_copter_dds_serial)
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
 
 
@@ -109,5 +110,5 @@ def test_dds_udp_time_msg_recv(launch_context, launch_sitl_copter_dds_udp):
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield

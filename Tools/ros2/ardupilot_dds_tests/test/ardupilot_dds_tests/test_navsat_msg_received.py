@@ -32,6 +32,7 @@ from sensor_msgs.msg import NavSatFix
 TOPIC = "ap/navsat"
 WAIT_FOR_START_TIMEOUT = 5.0
 
+from conftest import shutdown_node
 from launch_fixtures import (
     launch_sitl_copter_dds_serial,
     launch_sitl_copter_dds_udp,
@@ -100,7 +101,7 @@ def test_dds_serial_navsat_msg_recv(launch_context, launch_sitl_copter_dds_seria
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
 
 
@@ -124,5 +125,5 @@ def test_dds_udp_navsat_msg_recv(launch_context, launch_sitl_copter_dds_udp):
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
     finally:
-        rclpy.shutdown()
+        shutdown_node(node)
     yield
