@@ -119,7 +119,7 @@ public:
     void clear_roi_target();
 
     // set_sys_target - sets system that mount should attempt to point towards
-    void set_target_sysid(uint8_t sysid);
+    void set_target_sysid(uint32_t sysid);
 
 #if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     // set_roi_target_wpnext_offset - point to next waypoint, with offsets
@@ -152,7 +152,7 @@ public:
     virtual void handle_param_value(const mavlink_message_t &msg) {}
 
     // handle a GLOBAL_POSITION_INT message
-    bool handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet);
+    bool handle_global_position_int(uint32_t msg_sysid, const mavlink_global_position_int_t &packet);
 
     // handle GIMBAL_DEVICE_INFORMATION message
     virtual void handle_gimbal_device_information(const mavlink_message_t &msg) {}
@@ -483,7 +483,7 @@ private:
     Vector3f _roi_wpnext_rpy;       // angular offsets for pointing-at-waypoint
 #endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
-    uint8_t _target_sysid;          // sysid to track
+    uint32_t _target_sysid;         // sysid to track
     Location _target_sysid_location;// sysid target location
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
@@ -499,7 +499,7 @@ private:
     // structure holding mavlink sysid and compid of controller of this gimbal
     // see MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE and GIMBAL_MANAGER_STATUS
     struct mavlink_control_id_t {
-        uint8_t sysid;
+        uint32_t sysid;
         uint8_t compid;
 
         // equality operators

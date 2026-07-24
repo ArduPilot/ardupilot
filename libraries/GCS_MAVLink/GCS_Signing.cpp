@@ -260,10 +260,22 @@ uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
     }
     
     const mavlink_status_t *status = mavlink_get_channel_status(chan);
-    if ((status != nullptr) && status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
-        return MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_SIGNATURE_BLOCK_LEN + reserved_space;
+
+    // allow for the sysid32 extended header when our sysid is over
+    // 255, and conservatively for an extended target on any message.
+    // MAVLink1 channels never have extended headers
+    uint8_t ext_header_space = 0;
+    if (status == nullptr || !(status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+        ext_header_space = MAVLINK_TARGETTED_HEADER_EXTRA;
+        if (mavlink_system.sysid > 255) {
+            ext_header_space += MAVLINK_SYSID32_HEADER_EXTRA;
+        }
     }
-    return MAVLINK_NUM_NON_PAYLOAD_BYTES + reserved_space;
+
+    if ((status != nullptr) && status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
+        return MAVLINK_NUM_NON_PAYLOAD_BYTES + ext_header_space + MAVLINK_SIGNATURE_BLOCK_LEN + reserved_space;
+    }
+    return MAVLINK_NUM_NON_PAYLOAD_BYTES + ext_header_space + reserved_space;
 }
 
 #if !AP_MAVLINK_SIGNING_ENABLED

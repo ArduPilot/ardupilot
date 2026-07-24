@@ -238,6 +238,12 @@ void AP_Follow::update_estimates()
 {
     WITH_SEMAPHORE(_follow_sem);
 
+    if (!_sysid_width_converted) {
+        _sysid_width_converted = true;
+        // PARAMETER_CONVERSION - Added: Jul-2026 for 32 bit sysids
+        _sysid.convert_parameter_width(AP_PARAM_INT16);
+    }
+
     // check for target: if no valid target, invalidate estimate
     if (!have_target()) {
         clear_dist_and_bearing_to_target();
@@ -558,7 +564,7 @@ bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
     }
 
     // skip message if not from our target
-    if (_sysid != 0 && msg.sysid != _sysid) {
+    if (_sysid != 0 && msg.sysid != uint32_t(_sysid.get())) {
         return false;
     }
 

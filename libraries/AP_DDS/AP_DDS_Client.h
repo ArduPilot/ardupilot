@@ -323,7 +323,7 @@ private:
     static constexpr const char *dds_service_reply_prefix = "rr";
     static constexpr const char *participant_name_prefix = "ap";
 
-    static void dds_format_name(char* buf, const char* dds_prefix, uint8_t sysid, const char* name, bool use_sysid_ns);
+    static void dds_format_name(char* buf, const char* dds_prefix, uint32_t sysid, const char* name, bool use_sysid_ns);
 
 
 public:

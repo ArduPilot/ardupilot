@@ -6663,6 +6663,70 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("WebServer tests OK")
 
+    def MAV_SYSID_32bit(self):
+        '''test 32 bit MAV_SYSID'''
+        if not hasattr(mavutil.mavlink, "MAVLINK_IFLAG_SYSID32"):
+            raise NotAchievedException("pymavlink is too old for 32 bit system IDs")
+
+        # sysid values must round-trip losslessly through the float32
+        # parameter transport, so stay below 2^24 for now
+        sysid = 100000
+        self.set_parameter("MAV_SYSID", sysid)
+
+        # the sysid changes across the reboot so we can't use
+        # reboot_sitl(); send the reboot at the old sysid and re-point
+        # the connection at the new one
+        self.send_reboot_command()
+        self.mav.target_system = sysid
+        self.sysid_thismav = lambda: sysid
+        try:
+            self.wait_heartbeat(timeout=60)
+            m = self.wait_heartbeat()
+            if m.get_srcSystem() != sysid:
+                raise NotAchievedException("Did not get 32 bit sysid, got %u" % m.get_srcSystem())
+            hdr = m.get_header()
+            if not (hdr.incompat_flags & mavutil.mavlink.MAVLINK_IFLAG_SYSID32):
+                raise NotAchievedException("expected MAVLINK_IFLAG_SYSID32 to be set")
+
+            # parameter fetch at the new sysid
+            if int(self.get_parameter("MAV_SYSID")) != sysid:
+                raise NotAchievedException("MAV_SYSID readback failed")
+
+            # our own GCS with a 32 bit source system, and a targeted
+            # message each way
+            mav2 = mavutil.mavlink_connection(
+                "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                robust_parsing=True,
+                source_system=70000,
+                source_component=7,
+            )
+            mav2.mav.param_request_read_send(sysid, 1, b"MAV_SYSID", -1)
+            m = mav2.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
+            if m is None:
+                raise NotAchievedException("no PARAM_VALUE for 32 bit source system")
+            if m.param_id != "MAV_SYSID" or int(m.param_value) != sysid:
+                raise NotAchievedException("bad PARAM_VALUE %s" % str(m))
+            mav2.close()
+
+            # targeted mission-protocol round trip (the mission upload
+            # helpers hard-code target system 1, so do this by hand)
+            self.mav.mav.mission_request_list_send(sysid, 1, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+            m = self.assert_receive_message('MISSION_COUNT', timeout=10)
+            if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+                raise NotAchievedException("bad MISSION_COUNT")
+
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        finally:
+            # restore the old sysid
+            self.set_parameter("MAV_SYSID", 1)
+            self.send_reboot_command()
+            del self.sysid_thismav
+            self.mav.target_system = 1
+            self.wait_heartbeat(timeout=60)
+            self.wait_heartbeat()
+
     def NetworkingWebServer(self):
         '''web server'''
         applet_script = "net_webserver.lua"
@@ -7549,6 +7613,7 @@ return update()
             self.MAV_CMD_BATTERY_RESET,
             self.GPSForYaw,
             self.NetworkingWebServer,
+            self.MAV_SYSID_32bit,
             self.NetworkingWebServerPPP,
             self.RTL_SPEED,
             self.ScriptingLocationBindings,

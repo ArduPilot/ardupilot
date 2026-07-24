@@ -19,7 +19,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: SYSID_TARGET
     // @DisplayName: Target vehicle's MAVLink system ID
     // @Description: The identifier of the vehicle being tracked. This should be zero (to auto detect) or be the same as the MAV_SYSID parameter of the vehicle being tracked.
-    // @Range: 1 255
+    // @Range: 1 16777215
     // @User: Advanced
     GSCALAR(sysid_target,           "SYSID_TARGET",    0),
 
