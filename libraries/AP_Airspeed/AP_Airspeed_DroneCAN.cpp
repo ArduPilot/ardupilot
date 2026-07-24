@@ -22,7 +22,7 @@ bool AP_Airspeed_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     ;
 }
 
-AP_Airspeed_Backend* AP_Airspeed_DroneCAN::probe(AP_Airspeed &_frontend, uint8_t _instance, uint32_t previous_devid)
+AP_Airspeed_Backend* AP_Airspeed_DroneCAN::probe(AP_Airspeed &_frontend, class AP_Airspeed::airspeed_state &_state, class AP_Airspeed_Params &_params, uint32_t previous_devid)
 {
     WITH_SEMAPHORE(_sem_registry);
 
