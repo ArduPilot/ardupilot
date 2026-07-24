@@ -129,3 +129,11 @@
 #ifndef GPS_MOVING_BASELINE
 #define GPS_MOVING_BASELINE GPS_MAX_RECEIVERS > 1
 #endif
+
+// minimum horizontal separation between the antennas of a moving baseline
+// pair for the reported heading to carry usable yaw information (metres).
+// Shared by the GPS drivers and the EKF3 moving baseline yaw attitude
+// correction so the two gates stay in agreement
+#ifndef AP_GPS_MB_MIN_ANTENNA_SEPARATION_M
+#define AP_GPS_MB_MIN_ANTENNA_SEPARATION_M 0.05f
+#endif

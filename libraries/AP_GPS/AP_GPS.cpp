@@ -1979,16 +1979,27 @@ bool AP_GPS::is_rtk_rover(uint8_t instance) const
 }
 
 /*
+  return the instance whose moving baseline rover solution provides the yaw
+  reported for this instance by gps_yaw_deg
+ */
+uint8_t AP_GPS::yaw_source_instance(uint8_t instance) const
+{
+#if GPS_MAX_RECEIVERS > 1
+    if (is_rtk_base(instance) && is_rtk_rover(instance^1)) {
+        // the yaw for a base is provided by its paired rover
+        instance ^= 1;
+    }
+#endif
+    return instance;
+}
+
+/*
   get GPS based yaw
  */
 bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const
 {
-#if GPS_MAX_RECEIVERS > 1
-    if (is_rtk_base(instance) && is_rtk_rover(instance^1)) {
-        // return the yaw from the rover
-        instance ^= 1;
-    }
-#endif
+    // the yaw for a base is reported from its paired rover
+    instance = yaw_source_instance(instance);
     if (!have_gps_yaw(instance)) {
         return false;
     }
@@ -2009,6 +2020,21 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
         accuracy_deg = 10;
     }
     return true;
+}
+
+/*
+  get the body-frame moving baseline antenna offset used to calculate the yaw
+  returned by gps_yaw_deg, zero when that yaw is not derived from a moving
+  baseline. The yaw is calculated assuming the offset is horizontal, so
+  consumers with an attitude estimate can use this offset to correct the yaw
+  for vehicle roll and pitch
+ */
+const Vector3f &AP_GPS::get_mb_yaw_offset(uint8_t instance) const
+{
+    // resolve the same instance whose yaw gps_yaw_deg reports, so the offset
+    // always describes the yaw it accompanies
+    const uint8_t yaw_instance = yaw_source_instance(instance);
+    return state[yaw_instance].mb_yaw_offset;
 }
 
 /*

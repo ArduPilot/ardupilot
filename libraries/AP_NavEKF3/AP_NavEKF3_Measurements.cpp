@@ -748,7 +748,11 @@ void NavEKF3_core::readGpsYawData()
         // normalised yaw innovations
         const ftype min_yaw_accuracy_deg = 5.0f;
         yaw_accuracy_deg = MAX(yaw_accuracy_deg, min_yaw_accuracy_deg);
+#if EK3_FEATURE_MOVING_BASELINE
+        writeEulerYawAngle(radians(yaw_deg), radians(yaw_accuracy_deg), yaw_time_ms, 2, gps.get_mb_yaw_offset(selected_gps));
+#else
         writeEulerYawAngle(radians(yaw_deg), radians(yaw_accuracy_deg), yaw_time_ms, 2);
+#endif
     }
 }
 
@@ -1040,7 +1044,7 @@ void NavEKF3_core::readRngBcnData()
 *              Independant yaw sensor measurements      *
 ********************************************************/
 
-void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type)
+void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type, const Vector3f &antOffset)
 {
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
@@ -1063,6 +1067,7 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     // fusing. The raw timestamp is still used for new-measurement detection and
     // rate limiting via yawMeasTime_ms
     yawAngDataNew.time_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
+    yawAngDataNew.antOffset = antOffset.toftype();
 
     storedYawAng.push(yawAngDataNew);
 

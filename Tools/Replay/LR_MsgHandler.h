@@ -213,6 +213,12 @@ public:
     using LR_MsgHandler::LR_MsgHandler;
     void process_message(uint8_t *msg) override;
 };
+class LR_MsgHandler_RGPK : public LR_MsgHandler
+{
+public:
+    using LR_MsgHandler::LR_MsgHandler;
+    void process_message(uint8_t *msg) override;
+};
 
 class LR_MsgHandler_RMGH : public LR_MsgHandler
 {

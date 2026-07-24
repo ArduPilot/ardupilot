@@ -8,6 +8,9 @@ AP_DAL_GPS::AP_DAL_GPS()
     for (uint8_t i=0; i<ARRAY_SIZE(_RGPI); i++) {
         _RGPI[i].instance = i;
         _RGPJ[i].instance = i;
+        // _RGPK defaults to a zero offset so replay of older logs with no
+        // RGPK messages applies no moving baseline yaw correction
+        _RGPK[i].instance = i;
     }
 }
 
@@ -47,8 +50,18 @@ void AP_DAL_GPS::start_frame()
         RGPI.speed_accuracy_returncode = gps.speed_accuracy(i, RGPJ.sacc);
         RGPI.gps_yaw_deg_returncode = gps.gps_yaw_deg(i, RGPJ.yaw_deg, RGPJ.yaw_accuracy_deg, RGPJ.yaw_deg_time_ms);
 
+        // RGPK holds the body-frame antenna offset used to calculate gps_yaw.
+        // The offset is derived from parameters but is zeroed while gps_yaw is
+        // not calculated from a moving baseline, so it tracks the active yaw
+        // source and yaw validity as well as parameter changes. All of these
+        // change rarely, so the message is only written when changed.
+        log_RGPK &RGPK = _RGPK[i];
+        const log_RGPK old_RGPK = RGPK;
+        RGPK.mb_yaw_offset = gps.get_mb_yaw_offset(i);
+
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPI, RGPI, old_RGPI);
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPJ, RGPJ, old_RGPJ);
+        WRITE_REPLAY_BLOCK_IFCHANGED(RGPK, RGPK, old_RGPK);
 
         tmp_location[i] = {
             RGPJ.lat,

@@ -14298,6 +14298,188 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Never sent any GPS_INPUT messages")
         self.progress("Sent %u GPS_INPUT messages" % feeder.count)
 
+    def GPSForYawAttitudeCorrection(self):
+        '''Moving baseline GPS yaw must correct for vehicle roll/pitch, incl. under a large board mounting trim'''
+        # The moving-baseline GPS reports the antenna baseline heading in the
+        # NED horizontal plane.  The GPS backend recovers the vehicle yaw by
+        # subtracting the bearing of the body-frame antenna offset, which is
+        # only exact when the vehicle is level.  EKF3 applies the residual
+        # attitude correction using its own roll/pitch estimate.  We give the
+        # baseline a large vertical (Z) component so that a modest vehicle
+        # lean swings the apparent horizontal bearing by tens of degrees:
+        # without the attitude correction the yaw fed to the EKF is then
+        # wrong by a similar amount.
+        #
+        # A large AHRS_TRIM (board-to-frame mounting offset) is also applied as
+        # a frame regression guard.  The EKF works in the autopilot (sensor)
+        # body frame and applies the trim only on output; the correction rotates
+        # the antenna offset by the EKF's own attitude and fuses the result in
+        # that same frame, so the recovered yaw must be unaffected by the trim.
+        # A frame slip (e.g. rotating the offset by the published vehicle
+        # attitude instead) would bias the yaw, and the large-Z baseline
+        # amplifies that bias well past the tolerance below.
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        self.set_parameters({
+            # Antenna baseline: small fore-aft (X) plus large vertical (Z)
+            # separation, no lateral (Y).  When level the baseline is on the
+            # nose so the recovered yaw equals the vehicle yaw; under roll the
+            # vertical component projects into the horizontal plane.
+            "GPS1_POS_X": -0.15, "GPS1_POS_Y": 0.0, "GPS1_POS_Z": -0.45,
+            "GPS2_POS_X": 0.15, "GPS2_POS_Y": 0.0, "GPS2_POS_Z": 0.45,
+            "SIM_GPS1_POS_X": -0.15, "SIM_GPS1_POS_Y": 0.0, "SIM_GPS1_POS_Z": -0.45,
+            "SIM_GPS2_POS_X": 0.15, "SIM_GPS2_POS_Y": 0.0, "SIM_GPS2_POS_Z": 0.45,
+            # Remove the simulator's heading lag back-projection so the reported
+            # heading reflects the instantaneous attitude.  Otherwise the steady
+            # turn rate of the circle would add a lag term the correction does
+            # not undo, confounding the comparison against truth.
+            "SIM_GPS1_LAG_MS": 0,
+            "SIM_GPS2_LAG_MS": 0,
+            # large board mounting trim, near the AHRS_TRIM limit: exercises the
+            # sensor-vs-vehicle frame handling of the correction (see docstring).
+            "AHRS_TRIM_X": 0.1745,
+            "AHRS_TRIM_Y": 0.1745,
+        })
+        self.reboot_sitl()
+
+        self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+        self.wait_ready_to_arm()
+        self.takeoff(20, mode='GUIDED')
+
+        # fly a gentle circle to hold a steady, modest lean angle.  A large
+        # radius keeps the turn rate (and hence any residual yaw lag) small.
+        self.set_parameters({
+            "CIRCLE_RADIUS_M": 50,
+            "CIRCLE_RATE": 12,
+        })
+        self.change_mode('CIRCLE')
+
+        # Sample the EKF attitude against truth while the vehicle is banked.
+        # copter-gps-for-yaw.parm sets EK3_SRC1_YAW=2 so the moving-baseline
+        # GPS yaw is the EKF's only yaw source: with the attitude correction
+        # in place the EKF yaw tracks truth; without it the fused yaw is wrong
+        # by tens of degrees.  Also require the yaw innovation test ratio to
+        # stay below 1: a wrong measurement that is merely *rejected* by the
+        # innovation gate would leave the EKF yaw temporarily accurate while
+        # it coasts on the gyro, which must not count as a pass.
+        min_roll_deg = 10
+        max_yaw_err_deg = 15
+        wanted_samples = 10
+        good_samples = 0
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 90:
+                raise NotAchievedException(
+                    "Only gathered %u/%u banked GPS-yaw samples" % (good_samples, wanted_samples))
+            att = self.assert_receive_message("ATTITUDE")
+            sim = self.assert_receive_message("SIMSTATE")
+            roll_deg = math.degrees(sim.roll)
+            if abs(roll_deg) < min_roll_deg:
+                continue
+            ekf_yaw_deg = math.degrees(att.yaw)
+            true_yaw_deg = math.degrees(sim.yaw)
+            yaw_err_deg = abs(mavextra.wrap_180(ekf_yaw_deg - true_yaw_deg))
+            ekf_status = self.assert_receive_message("EKF_STATUS_REPORT", timeout=10)
+            # compass_variance is sqrt(MAX(magTestRatio, yawTestRatio)) and no
+            # mag fusion runs with a GPS yaw source, so this recovers the EKF
+            # yaw innovation test ratio
+            yaw_test_ratio = ekf_status.compass_variance**2
+            self.progress("roll=%.1f ekf_yaw=%.1f true_yaw=%.1f err=%.1f yaw_test_ratio=%.2f" %
+                          (roll_deg, ekf_yaw_deg, true_yaw_deg, yaw_err_deg, yaw_test_ratio))
+            if yaw_err_deg > max_yaw_err_deg:
+                raise NotAchievedException(
+                    "EKF yaw not corrected for attitude (roll=%.1f deg, yaw err=%.1f deg)" %
+                    (roll_deg, yaw_err_deg))
+            if yaw_test_ratio > 1.0:
+                raise NotAchievedException(
+                    "EKF rejecting GPS yaw (roll=%.1f deg, yaw test ratio=%.2f)" %
+                    (roll_deg, yaw_test_ratio))
+            good_samples += 1
+            if good_samples >= wanted_samples:
+                break
+
+        self.do_RTL()
+
+    def GPSForYawVerticalBaseline(self):
+        '''Moving baseline GPS yaw must be rejected for a vertical baseline'''
+        # The moving-baseline GPS reports the heading of the antenna baseline
+        # in the horizontal plane, so a baseline with no horizontal separation
+        # carries no yaw information: the reported heading is receiver noise.
+        # The driver must reject the solution rather than publish it as yaw.
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        self.set_parameters({
+            "GPS1_POS_X": 0.0, "GPS1_POS_Y": 0.0, "GPS1_POS_Z": -0.45,
+            "GPS2_POS_X": 0.0, "GPS2_POS_Y": 0.0, "GPS2_POS_Z": 0.45,
+            "SIM_GPS1_POS_X": 0.0, "SIM_GPS1_POS_Y": 0.0, "SIM_GPS1_POS_Z": -0.45,
+            "SIM_GPS2_POS_X": 0.0, "SIM_GPS2_POS_Y": 0.0, "SIM_GPS2_POS_Z": 0.45,
+        })
+        self.reboot_sitl()
+
+        self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+
+        # a yaw field of 0 means the GPS does not provide yaw and 65535 means
+        # it is configured for yaw but currently unable to provide it (north
+        # is reported as 36000)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 10:
+            m = self.assert_receive_message("GPS2_RAW")
+            if m.yaw not in [0, 65535]:
+                raise NotAchievedException(
+                    "Got GPS yaw %.1f deg from a baseline with no horizontal separation" % (m.yaw * 0.01))
+
+    def GPSForYawCompassFallback(self):
+        '''EKF3 must fall back to the compass when GPS yaw is present but unusable'''
+        # With EK3_SRC1_YAW = 3 (GPS with compass fallback) the EKF falls
+        # back to the magnetometer once no usable GPS yaw has been seen for
+        # 10 seconds.  A moving-baseline yaw whose configured antenna offset
+        # is vertical carries no yaw information, so the EKF rejects the
+        # measurement geometrically instead of fusing it.  A rejected
+        # measurement must count as "no usable yaw": the GPS keeps
+        # publishing yaw, so if rejection refreshed the last-yaw timestamp
+        # the fallback would never engage and the vehicle would fly with no
+        # yaw aiding at all.
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        self.set_parameters({
+            "EK3_SRC1_YAW": 3,  # GPS with compass fallback
+        })
+        self.reboot_sitl()
+
+        self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+        self.wait_ready_to_arm()
+
+        # fly with the healthy lateral baseline from copter-gps-for-yaw.parm
+        # so the EKF fuses GPS yaw and learns that the compass agrees with
+        # it, which arms the fallback
+        self.takeoff(10, mode='GUIDED')
+        self.delay_sim_time(10, reason="learning that the compass agrees with GPS yaw")
+
+        # reconfigure the antennas to a vertical baseline in flight.  The
+        # driver keeps publishing yaw: the simulated antennas keep 0.3 m of
+        # horizontal separation, and the baseline length and vertical drop
+        # still match the configured offsets, so every driver-side check
+        # passes.  The configured offset the yaw is calculated from is
+        # purely vertical, so the EKF rejects every measurement
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "GPS1_POS_X": 0.0, "GPS1_POS_Y": 0.0, "GPS1_POS_Z": -0.45,
+            "GPS2_POS_X": 0.0, "GPS2_POS_Y": 0.0, "GPS2_POS_Z": 0.45,
+            "SIM_GPS1_POS_X": 0.0, "SIM_GPS1_POS_Y": -0.15, "SIM_GPS1_POS_Z": -0.44,
+            "SIM_GPS2_POS_X": 0.0, "SIM_GPS2_POS_Y": 0.15, "SIM_GPS2_POS_Z": 0.44,
+        })
+
+        # the fallback requires 10 seconds with no usable GPS yaw
+        self.wait_statustext("yaw fallback active", timeout=60, check_context=True)
+
+        # the compass must now be steering the EKF yaw: confirm it tracks truth
+        self.delay_sim_time(5, reason="letting compass fallback settle")
+        att = self.assert_receive_message("ATTITUDE")
+        sim = self.assert_receive_message("SIMSTATE")
+        yaw_err_deg = abs(mavextra.wrap_180(math.degrees(att.yaw) - math.degrees(sim.yaw)))
+        if yaw_err_deg > 20:
+            raise NotAchievedException(
+                "Yaw not tracking truth under compass fallback (err=%.1f deg)" % yaw_err_deg)
+
+        self.do_RTL()
+
     def SMART_RTL_EnterLeave(self):
         '''check SmartRTL behaviour when entering/leaving'''
         # we had a bug where we would consume points when re-entering smartrtl
@@ -18708,6 +18890,9 @@ return update, 1000
             self.DeadReckoningInWind,
             self.GPSForYaw,
             self.GPS_INPUT,
+            self.GPSForYawAttitudeCorrection,
+            self.GPSForYawVerticalBaseline,
+            self.GPSForYawCompassFallback,
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,

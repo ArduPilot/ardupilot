@@ -119,6 +119,10 @@ public:
     bool is_rtk_base(uint8_t instance) const;
     bool is_rtk_rover(uint8_t instance) const;
 
+    // return the instance whose moving baseline rover solution provides the
+    // yaw reported for this instance by gps_yaw_deg
+    uint8_t yaw_source_instance(uint8_t instance) const;
+
     // params for an instance:
     class Params {
     public:
@@ -239,6 +243,13 @@ public:
         float relPosD;                     ///< Reported Vertical distance in meters
         float accHeading;                  ///< Reported Heading Accuracy in degrees
         uint32_t relposheading_ts;        ///< True if new data has been received since last time it was false
+
+        // body-frame antenna offset used to calculate gps_yaw from a moving
+        // baseline, zero when gps_yaw is not derived from a moving baseline.
+        // gps_yaw is calculated assuming this offset is horizontal, so
+        // consumers with an attitude estimate can use this offset to correct
+        // gps_yaw for vehicle roll and pitch
+        Vector3f mb_yaw_offset;
     };
 
     /// Startup initialisation.
@@ -492,6 +503,11 @@ public:
 
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const;
+
+    // return the body-frame moving baseline antenna offset used to calculate
+    // the yaw returned by gps_yaw_deg for this instance, zero when that yaw
+    // is not derived from a moving baseline
+    const Vector3f &get_mb_yaw_offset(uint8_t instance) const;
 
     // lock out a GPS port, allowing another application to use the port
     void lock_port(uint8_t instance, bool locked);
