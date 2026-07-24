@@ -221,6 +221,13 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // This allows one time conversion while allowing user to flash between versions with and without converted params
     AP_GROUPINFO_FLAGS("_OPTIONSCNV",   21, GCS_MAVLINK, options_were_converted, 0, AP_PARAM_FLAG_HIDDEN),
 
+    // @Param: _DEVID
+    // @DisplayName: DeviceID
+    // @Description: ID of device using this MAVLink channel
+    // @ReadOnly: True
+    // @User: Advanced
+    AP_GROUPINFO("_DEVID",   22, GCS_MAVLINK, devid, 0),
+
     AP_GROUPEND
 };
 #undef DRATE

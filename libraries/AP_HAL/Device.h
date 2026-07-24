@@ -41,6 +41,8 @@ public:
         BUS_TYPE_MSP     = 5,
         BUS_TYPE_SERIAL  = 6,
         BUS_TYPE_WSPI    = 7,
+        BUS_TYPE_NET_PORT= 8,
+        BUS_TYPE_UART    = 9,
     };
 
     enum Speed {
