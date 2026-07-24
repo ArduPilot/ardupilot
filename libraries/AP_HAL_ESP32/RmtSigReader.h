@@ -15,26 +15,37 @@
  */
 #pragma once
 
-#include <AP_HAL/utility/RingBuffer.h>
 #include "AP_HAL_ESP32.h"
-#include "driver/rmt.h"
+#include "driver/rmt_rx.h"          // new RMT RX driver (driver_ng); coexists with DShot's rmt_tx
+#include "freertos/FreeRTOS.h"
+#include "freertos/ringbuf.h"
 
 class ESP32::RmtSigReader
 {
 public:
-    static const int frequency = 1000000;  //1MHZ
-    static const int max_pulses = 128;
-    static const int idle_threshold = 3000;  //we require at least 3ms gap between frames
+    static const int frequency = 1000000;   // 1 MHz -> 1 us per RMT tick
+    static const int max_pulses = 128;       // size of the per-receive symbol buffer
+    static const int idle_threshold = 3000;  // us; a >= 3 ms gap marks the end of a frame
     void init();
     bool read(uint32_t &width_high, uint32_t &width_low);
 private:
     bool add_item(uint32_t duration, bool level);
+    void start_receive();   // (re)arm rmt_receive into rx_symbols
+    // RX-done callback (runs in the RMT ISR): queues the received batch and re-arms.
+    static bool on_recv_done(rmt_channel_handle_t chan,
+                             const rmt_rx_done_event_data_t *edata, void *user_ctx);
 
-    RingbufHandle_t handle;
-    rmt_item32_t* item;
+    rmt_channel_handle_t rx_chan;
+    rmt_receive_config_t rx_cfg;
+    RingbufHandle_t handle;                    // ISR -> read() handoff of symbol batches
+    rmt_symbol_word_t rx_symbols[max_pulses];  // buffer the driver fills for each frame
+
+    // draining state for read()
+    rmt_symbol_word_t *item;
     size_t item_size;
     size_t current_item;
 
+    // pulse assembly state (high duration followed by low duration)
     uint32_t last_high;
     uint32_t ready_high;
     uint32_t ready_low;
