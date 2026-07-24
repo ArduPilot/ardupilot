@@ -214,15 +214,12 @@ thread_t* get_main_thread()
 static void mem_protect_enable()
 {
     /*
-      enable this on H7 to make writes to the first 1k of RAM on H7
-      produce a hard fault and crash dump
+      enable this on H7 to trap writes to the first 1k of RAM.  The
+      MemManage handler records where the write came from, disables
+      the protection and resumes; the monitor thread reports the hit
+      and re-arms the protection
      */
-    mpuConfigureRegion(MPU_REGION_7,
-                       0x0,
-                       MPU_RASR_ATTR_AP_NA_NA |
-                       MPU_RASR_SIZE_1K |
-                       MPU_RASR_ENABLE);
-    mpuEnable(MPU_CTRL_PRIVDEFENA | MPU_CTRL_ENABLE);
+    memprotect_arm();
 }
 #endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
 

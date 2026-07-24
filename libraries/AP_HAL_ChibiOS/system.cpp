@@ -85,6 +85,110 @@ extern "C"
 {
 #define bkpt() __asm volatile("BKPT #0\n")
 
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+/*
+  support for trapping accesses through very low pointers (in the
+  first 1kB of memory, so typically member accesses through a
+  nullptr).  The MPU makes the low 1kB no-access, so both reads and
+  writes arrive here as precise MemManage faults.  We record where
+  the access came from, disable the protection and return; the
+  faulting instruction re-executes and the access succeeds, so
+  behaviour is unchanged apart from the recording.  The monitor
+  thread reports the hit and re-arms the protection.
+ */
+static struct memprotect_hit memprotect_hit_state;
+static volatile bool memprotect_hit_pending;
+
+// MemManage fault status bits within CFSR (MMFSR byte)
+#define MEMFAULT_IACCVIOL  (1U<<0)
+#define MEMFAULT_DACCVIOL  (1U<<1)
+#define MEMFAULT_MUNSTKERR (1U<<3)
+#define MEMFAULT_MSTKERR   (1U<<4)
+#define MEMFAULT_MMARVALID (1U<<7)
+
+// enable (or re-enable) protection of the low 1kB page
+void memprotect_arm(void)
+{
+    mpuConfigureRegion(MPU_REGION_7,
+                       0x0,
+                       MPU_RASR_ATTR_AP_NA_NA |
+                       MPU_RASR_SIZE_1K |
+                       MPU_RASR_ENABLE);
+    // mpuEnable also sets MEMFAULTENA, so violations arrive as
+    // MemManage faults rather than escalating to HardFault
+    mpuEnable(MPU_CTRL_PRIVDEFENA | MPU_CTRL_ENABLE);
+    __DSB();
+    __ISB();
+}
+
+// returns true if there is an unreported low-memory write, filling in hit
+bool memprotect_get_hit(struct memprotect_hit *hit)
+{
+    if (!memprotect_hit_pending) {
+        return false;
+    }
+    *hit = memprotect_hit_state;
+    memprotect_hit_pending = false;
+    return true;
+}
+
+/*
+  called from the MemManage fault handler.  Returns true if this
+  fault was a data access in the protected low page which has been
+  recorded and can be resumed by returning from the handler
+ */
+static bool memprotect_fault_resume(const struct port_extctx *frame)
+{
+    const uint32_t mmfsr = (SCB->CFSR >> SCB_CFSR_MEMFAULTSR_Pos) & 0xffU;
+    // require a precise data access violation with a valid fault
+    // address; reject instruction fetches and stacking faults, whose
+    // frames can't be trusted
+    if ((mmfsr & (MEMFAULT_DACCVIOL|MEMFAULT_MMARVALID)) != (MEMFAULT_DACCVIOL|MEMFAULT_MMARVALID) ||
+        (mmfsr & (MEMFAULT_IACCVIOL|MEMFAULT_MUNSTKERR|MEMFAULT_MSTKERR)) != 0) {
+        return false;
+    }
+    const uint32_t fault_addr = SCB->MMFAR;
+    if (fault_addr >= 1024U) {
+        return false;
+    }
+    if (!memprotect_hit_pending) {
+        memprotect_hit_state.pc = frame->pc;
+        memprotect_hit_state.lr = frame->lr_thd;
+        memprotect_hit_state.fault_addr = fault_addr;
+    }
+    memprotect_hit_state.count++;
+    __DMB();
+    memprotect_hit_pending = true;
+    // clear the sticky fault status (write-1-to-clear)
+    SCB->CFSR = (MEMFAULT_DACCVIOL|MEMFAULT_MMARVALID) << SCB_CFSR_MEMFAULTSR_Pos;
+    // disable the protection region; the faulting instruction
+    // re-executes on return from the handler and the access succeeds
+    mpuConfigureRegion(MPU_REGION_7, 0x0, 0);
+    __DSB();
+    __ISB();
+    return true;
+}
+#endif // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+
+void MemManage_Handler_c(struct port_extctx *frame);
+
+/*
+  MemManage fault entry.  Passes the exception frame (on MSP or PSP
+  depending on EXC_RETURN bit 2) to the C handler.  LR is preserved
+  by the tail-branch, so a plain return from the C handler performs
+  the exception return
+ */
+void MemManage_Handler(void) __attribute__((naked));
+void MemManage_Handler(void)
+{
+    __asm volatile(
+        "tst lr, #4\n"
+        "ite eq\n"
+        "mrseq r0, msp\n"
+        "mrsne r0, psp\n"
+        "b MemManage_Handler_c\n");
+}
+
 #if !AP_CRASHDUMP_ENABLED
 // do legacy hardfault handling
 void HardFault_Handler(void);
@@ -195,12 +299,16 @@ void UsageFault_Handler(void) {
     while(1) {}
 }
 
-void MemManage_Handler(void);
-void MemManage_Handler(void) {
+void MemManage_Handler_c(struct port_extctx *frame) {
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+    if (memprotect_fault_resume(frame)) {
+        return;
+    }
+#endif
     //Copy to local variables (not pointers) to allow GDB "i loc" to directly show the info
     //Get thread context. Contains main registers including PC and LR
     struct port_extctx ctx;
-    memcpy(&ctx, (void*)__get_PSP(), sizeof(struct port_extctx));
+    memcpy(&ctx, frame, sizeof(struct port_extctx));
     (void)ctx;
     //Interrupt status register: Which interrupt have we encountered, e.g. HardFault?
     FaultType faultType = (FaultType)__get_IPSR();
@@ -243,8 +351,14 @@ void UsageFault_Handler(void) {
     HardFault_Handler();
 }
 
-void MemManage_Handler(void);
-void MemManage_Handler(void) {
+void MemManage_Handler_c(struct port_extctx *frame) {
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+    if (memprotect_fault_resume(frame)) {
+        return;
+    }
+#else
+    (void)frame;
+#endif
     HardFault_Handler();
 }
 #endif

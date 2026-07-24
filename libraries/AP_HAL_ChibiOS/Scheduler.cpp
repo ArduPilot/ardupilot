@@ -430,6 +430,33 @@ void Scheduler::_monitor_thread(void *arg)
         // if running memory guard then check all allocations
         malloc_check(nullptr);
 
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+        // report any trapped access to the protected low 1kB of
+        // memory (the MPU traps both reads and writes), then re-arm
+        // the protection (bounded, in case the fault storms)
+        {
+            struct memprotect_hit hit;
+            if (memprotect_get_hit(&hit)) {
+                INTERNAL_ERROR(AP_InternalError::error_t::mem_guard);
+                // protection is disabled after a hit, so the memory
+                // can be read back directly.  Read using assembly so
+                // we don't invoke UB dereferencing what the compiler
+                // can see is a very-nearly-null pointer
+                uint32_t value;
+                const uint32_t addr = hit.fault_addr & ~3U;
+                __asm__ volatile("ldr %0, [%1]" : "=r"(value) : "r"(addr));
+                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Low mem access 0x%03x=0x%08x pc=0x%08x lr=0x%08x n=%u",
+                              unsigned(hit.fault_addr), unsigned(value),
+                              unsigned(hit.pc), unsigned(hit.lr), unsigned(hit.count));
+                static uint8_t rearm_count;
+                if (rearm_count < 10) {
+                    rearm_count++;
+                    memprotect_arm();
+                }
+            }
+        }
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+
         uint32_t now = AP_HAL::millis();
         uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
         if (loop_delay >= 200) {
