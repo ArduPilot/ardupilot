@@ -170,6 +170,25 @@ typedef enum  {
 void save_fault_watchdog(uint16_t line, FaultType fault_type, uint32_t fault_addr, uint32_t lr);
 #endif
 
+/*
+  support for recording and resuming accesses (both reads and writes)
+  to the MPU-protected low 1kB of memory
+  (AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED).  A hit is recorded by the
+  MemManage fault handler; the protection is disabled so the faulting
+  access succeeds on return from the handler, and is re-armed after
+  the hit has been reported
+ */
+struct memprotect_hit {
+    uint32_t pc;          // address of the instruction which did the access
+    uint32_t lr;          // link register value at the time of the access
+    uint32_t fault_addr;  // address accessed; offset from nullptr
+    uint32_t count;       // total accesses trapped since boot
+};
+// returns true if there is an unreported low-memory access, filling in hit
+bool memprotect_get_hit(struct memprotect_hit *hit);
+// enable (or re-enable) protection of the low 1kB page
+void memprotect_arm(void);
+
 /**
  * Generates a block of random values, returns total values generated
  * if nonblocking, for blocking returns if successful or not
