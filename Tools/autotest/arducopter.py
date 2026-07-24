@@ -655,6 +655,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             timeout=30,
             track_angle=False,
         )
+        self.wait_groundspeed(0.5, 10.0, minimum_duration=5, timeout=30)
         self.wait_distance_to_home(80, 100)
         self.wait_disarmed()
 
@@ -15910,6 +15911,143 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.change_mode('RTL')
             self.wait_disarmed()
 
+    def wait_orbit_complete_measure_swept(self, loc, want_radius, epsilon=3, timeout=120):
+        '''watch vehicle orbit loc until it comes to a sustained stop,
+        accumulating the angle swept around loc while the vehicle is
+        on-circle.  Returns (swept_deg, max_groundspeed); swept_deg is
+        signed, positive for clockwise'''
+        swept = 0.0
+        max_groundspeed = 0.0
+        prev_bearing = None
+        stopped_since = None
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise NotAchievedException("Orbit did not complete")
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            here = mavutil.location(m.lat*1e-7, m.lon*1e-7, 0, 0)
+            groundspeed = math.hypot(m.vx, m.vy) * 0.01
+            max_groundspeed = max(max_groundspeed, groundspeed)
+            if abs(self.get_distance(loc, here) - want_radius) > epsilon:
+                continue
+            bearing = self.get_bearing(loc, here)
+            if prev_bearing is not None:
+                swept += (bearing - prev_bearing + 180) % 360 - 180
+            prev_bearing = bearing
+            if groundspeed < 0.5 and abs(swept) > 10:
+                if stopped_since is None:
+                    stopped_since = now
+                elif now - stopped_since > 5:
+                    return (swept, max_groundspeed)
+            else:
+                stopped_since = None
+
+    def DO_ORBIT(self):
+        '''test MAV_CMD_DO_ORBIT in Guided mode'''
+        self.takeoff(20, mode='GUIDED')
+
+        # offset home location 50m North and use as orbit center
+        home = self.home_position_as_mav_location()
+        orbit_center = self.offset_location_ne(home, 50, 0)
+
+        self.start_subtest("Orbit clockwise around offset point")
+        self.run_cmd_int(
+            34,  # MAV_CMD_DO_ORBIT
+            p1=10,    # radius 10m, positive = CW
+            p2=0,     # speed - use default
+            p3=0,     # yaw behaviour - face center
+            p4=0,     # orbits - forever
+            p5=int(orbit_center.lat * 1e7),
+            p6=int(orbit_center.lng * 1e7),
+            p7=20,    # altitude 20m
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_circling_point_with_radius(
+            orbit_center,
+            want_radius=10,
+            epsilon=5,
+            min_circle_time=10,
+            timeout=60,
+            track_angle=False,
+        )
+        self.progress("Clockwise orbit verified")
+        self.wait_groundspeed(1.0, 15, minimum_duration=5, timeout=30)
+        self.progress("Clockwise orbit speed verified")
+
+        self.start_subtest("Orbit counter-clockwise around offset point")
+        self.run_cmd_int(
+            34,  # MAV_CMD_DO_ORBIT
+            p1=-10,   # radius -10m, negative = CCW
+            p2=0,
+            p3=0,
+            p4=0,
+            p5=int(orbit_center.lat * 1e7),
+            p6=int(orbit_center.lng * 1e7),
+            p7=20,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_circling_point_with_radius(
+            orbit_center,
+            want_radius=10,
+            epsilon=5,
+            min_circle_time=10,
+            timeout=60,
+            track_angle=False,
+        )
+        self.progress("Counter-clockwise orbit verified")
+        self.wait_groundspeed(1.0, 15, minimum_duration=5, timeout=30)
+        self.progress("Clockwise orbit speed verified")
+        self.start_subtest("NaN turns: second orbit command updates speed but preserves turn count")
+        # Start a 1.5-turn orbit at 2 m/s; param4 is an angle in radians
+        self.run_cmd_int(
+            34,  # MAV_CMD_DO_ORBIT
+            p1=10,    # radius 10m CW
+            p2=2.0,   # speed 2 m/s
+            p3=0,
+            p4=3*math.pi,  # 1.5 turns, expressed in radians
+            p5=int(orbit_center.lat * 1e7),
+            p6=int(orbit_center.lng * 1e7),
+            p7=20,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_circling_point_with_radius(
+            orbit_center,
+            want_radius=10,
+            epsilon=5,
+            min_circle_time=2,
+            timeout=60,
+            track_angle=False,
+        )
+        self.progress("1.5-turn orbit started at 2 m/s")
+        # Send second command with NaN turns and different speed - turn
+        # count must not change (although progress towards it restarts)
+        self.run_cmd_int(
+            34,  # MAV_CMD_DO_ORBIT
+            p1=10,
+            p2=3.0,   # new speed 3 m/s
+            p3=0,
+            p4=float('nan'),  # NaN: do not change turn count
+            p5=int(orbit_center.lat * 1e7),
+            p6=int(orbit_center.lng * 1e7),
+            p7=20,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.progress("Second command with NaN turns sent - speed updated to 3 m/s")
+        # orbit must stop after a further 1.5 turns (540 degrees swept, clockwise)
+        (swept, max_groundspeed) = self.wait_orbit_complete_measure_swept(
+            orbit_center,
+            want_radius=10,
+            timeout=90,
+        )
+        self.progress("Orbit stopped after sweeping %.1f degrees (max speed %.1f m/s)" % (swept, max_groundspeed))
+        if not 450 <= swept <= 630:
+            raise NotAchievedException("Wanted ~540 degrees of orbit, got %.1f" % swept)
+        if max_groundspeed < 2.5:
+            raise NotAchievedException("Speed update to 3 m/s not honoured (max %.1f m/s)" % max_groundspeed)
+        self.progress("NaN turns test passed - turn count preserved, speed updated")
+        self.do_RTL()
+
     def DO_CHANGE_SPEED_in_guided(self):
         '''test Copter DO_CHANGE_SPEED handling in guided mode'''
         self.takeoff(20, mode='GUIDED')
@@ -18750,6 +18888,7 @@ return update, 1000
             self.GuidedYawRate,
             self.RudderDisarmMidair,
             self.NoArmWithoutMissionItems,
+            self.DO_ORBIT,
             self.DO_CHANGE_SPEED_in_guided,
             self.ArmSwitchAfterReboot,
             self.RPLidarA1,
