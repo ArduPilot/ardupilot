@@ -36,6 +36,7 @@
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_InertialLabs.h>
+#include <SITL/SIM_SBG.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -213,6 +214,11 @@ private:
 
     // simulated InertialLabs INS-U
     SITL::InertialLabs *inertiallabs;
+
+#if AP_SIM_EAHRS_SBG_ENABLED
+    // simulated SBG INS
+    SITL::SBG *sbg;
+#endif
 
 #if AP_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
