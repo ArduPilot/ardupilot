@@ -1407,6 +1407,59 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
 }
 #endif
 
+/*
+    handle circuit status message
+*/
+void AP_DroneCAN::handle_circuit_status(const CanardRxTransfer& transfer, const uavcan_equipment_power_CircuitStatus& msg)
+{
+#if AP_SERVO_TELEM_ENABLED
+    if (msg.circuit_id >= 1 && msg.circuit_id <= DRONECAN_SRV_NUMBER &&
+        (_servo_bm & (1U << (msg.circuit_id - 1)))) {
+        // circuit_id maps to a channel we are driving as a DroneCAN servo,
+        // route into AP_Servo_Telem so it is logged alongside other servo telemetry
+        const uint8_t servo_index = msg.circuit_id - 1;
+
+        AP_Servo_Telem *servo_telem = AP_Servo_Telem::get_singleton();
+        if (servo_telem != nullptr && servo_telem->is_active(servo_index)) {
+            const AP_Servo_Telem::TelemetryData telem_data {
+                .voltage = msg.voltage,
+                .current = msg.current,
+                .status_flags = msg.error_flags,
+                .present_types = AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                                 AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                                 AP_Servo_Telem::TelemetryData::Types::STATUS
+            };
+            servo_telem->update_telem_data(servo_index, telem_data);
+        }
+        return;
+    }
+#endif
+
+#if HAL_LOGGING_ENABLED
+    if (AP::logger().logging_enabled()) {
+// @LoggerMessage: CSCU
+// @Description: Generic DroneCAN circuit status 
+// @Field: TimeUS: Time since system startup
+// @Field: I: driver index
+// @Field: Id: circuit id
+// @Field: V: Voltage
+// @Field: A: Current
+// @Field: Err: error flags
+        AP::logger().WriteStreaming("CSCU",
+                                    "TimeUS,I,Id,V,A,Err",
+                                    "s#-vA-",
+                                    "F-----",
+                                    "QBHffB",
+                                    AP_HAL::micros64(),
+                                    _driver_index,
+                                    msg.circuit_id,
+                                    msg.voltage,
+                                    msg.current,
+                                    msg.error_flags);
+    }
+#endif
+}
+
 #if AP_DRONECAN_HIMARK_SERVO_SUPPORT && AP_SERVO_TELEM_ENABLED
 /*
   handle himark ServoInfo message
