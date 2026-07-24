@@ -867,6 +867,9 @@ class ChibiOSHWDef(hwdef.HWDef):
         if self.intdefines.get('HAL_WITH_RAMTRON', 0) == 1:
             # no check for RAMTRON storage
             return
+        if self.intdefines.get('HAL_WITH_PAGE_EEPROM', 0) == 1:
+            # no check for PAGE_EEPROM storage
+            return
         storage_flash_page = self.get_storage_flash_page()
         pages = self.get_flash_pages_sizes()
         page_size = pages[storage_flash_page] * 1024
@@ -952,7 +955,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             f.write('#define HAL_USE_SDC FALSE\n')
             self.build_flags.append('USE_FATFS=no')
         if 'OTG1' in self.bytype:
-            if self.get_mcu_config('STM32_OTG2_IS_OTG1', False) is not None:
+            if self.get_mcu_config('STM32_OTG2_IS_OTG1', False) is not None or self.env_vars.get('STM32_OTGHS_AS_OTG1'):
                 f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
                 f.write('#define STM32_OTG2_IS_OTG1                  TRUE\n')
             else:
