@@ -108,7 +108,7 @@ private:
     void _udp_start_multicast(const char *address, uint16_t port);
     void _check_connection(void);
     static bool _select_check(int );
-    static void _set_nonblocking(int );
+
     bool set_speed(int speed) const;
 
     SITL_State *_sitlState;
