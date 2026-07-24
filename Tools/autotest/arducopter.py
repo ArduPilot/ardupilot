@@ -14847,6 +14847,87 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.FETtecESC_btw_mask_checks()
         self.FETtecESC_flight()
 
+    def IBus2Slave(self):
+        '''Test AP as IBUS2 slave receiving RC channels from a FlySky receiver'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 52,  # SerialProtocol_IBUS2_Slave
+            "SIM_IBUS2M_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
+        # Frame 1: SIM master encodes UDP RC channels (16 from the RC thread).
+        self.wait_statustext("IBUS2:", timeout=10, check_context=True)
+        # Frame 2/3: SIM master cycles through GET_TYPE/GET_VALUE/GET_PARAM/SET_PARAM; verify
+        # AP_IBus2_Slave handles each one (GET_VALUE elicits no statustext).
+        self.wait_statustext("IBUS2: GET_TYPE cmd from master", timeout=10, check_context=True)
+        self.wait_statustext("IBUS2: GET_PARAM cmd from master", timeout=10, check_context=True)
+        self.wait_statustext("IBUS2: SET_PARAM cmd from master", timeout=10, check_context=True)
+
+    def IBus2RCInput(self):
+        '''Test that IBUS2 slave RC channels reach AP_RCProtocol'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 52,  # SerialProtocol_IBUS2_Slave
+            "SIM_IBUS2M_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
+        # Wait for the slave to first receive channels from the simulated master.
+        self.wait_statustext("IBUS2:", timeout=10, check_context=True)
+        # 1500 µs (centre) is exact through SES encode/decode.
+        self.set_rc(1, 1500)
+        self.assert_rc_channel_value(1, 1500)
+        # ch3 carries throttle-low (1000 µs); round-trips exactly via SES.
+        ch3 = self.get_rc_channel_value(3, timeout=2)
+        if abs(ch3 - 1000) > 5:
+            raise NotAchievedException("ch3 expected ~1000 got %u" % ch3)
+
+    def IBus2RCInputViaUDP(self):
+        '''Test full UDP->IBus2-encode->IBus2-decode->RC chain'''
+        self.set_parameters({
+            "SERIAL5_PROTOCOL": 52,  # SerialProtocol_IBUS2_Slave
+            "SIM_IBUS2M_ENA": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        self.customise_SITL_commandline(["--serial5=sim:ibus2master"])
+        self.wait_statustext("IBUS2:", timeout=10, check_context=True)
+
+        # Use values that round-trip exactly through SES encode/decode.
+        # abs_offset = 200 µs maps to raw_mag = 200 which decodes back exactly
+        # (offset=200 is one of the exact points; offset=50 is not).
+        self.set_rc(1, 1700)
+        self.assert_rc_channel_value(1, 1700)
+        self.set_rc(4, 1300)
+        self.assert_rc_channel_value(4, 1300)
+
+        # Return to centre.
+        self.set_rc(1, 1500)
+        self.assert_rc_channel_value(1, 1500)
+        self.set_rc(4, 1500)
+        self.assert_rc_channel_value(4, 1500)
+
+        # Negative boundary: 988 µs is the FlySky trim minimum.  With the
+        # corrected SES denominator (half_mag = 512) the encoder maps 988 µs to
+        # raw_mag = 512 which decodes back to exactly 988 µs.
+        self.set_rc(1, 988)
+        self.assert_rc_channel_value(1, 988)
+
+        # Positive boundary.
+        self.set_rc(1, 2012)
+        self.assert_rc_channel_value(1, 2012)
+
+        # A spread of mid-range values to catch any future scaling regression.
+        # SES quantisation can introduce ±1 µs even mid-range, so use the
+        # queue+poll pattern with a small tolerance rather than set_rc().
+        for pwm in (1100, 1300, 1700, 1900):
+            self.rc_queue.put({1: pwm})
+            self.delay_sim_time(0.5)
+            got = self.get_rc_channel_value(1, timeout=2)
+            if abs(got - pwm) > 2:
+                raise NotAchievedException(
+                    "ch1 round-trip failed at %u µs: got %u" % (pwm, got))
+
+        self.set_rc(1, 1500)
+
     def PerfInfo(self):
         '''Test Scheduler PerfInfo output'''
         self.set_parameter('SCHED_OPTIONS', 1)  # enable gathering
@@ -18746,6 +18827,9 @@ return update, 1000
             self.IMUConsistency,
             self.AHRSTrimLand,
             self.IBus,
+            self.IBus2Slave,
+            self.IBus2RCInput,
+            self.IBus2RCInputViaUDP,
             self.WaitAndMaintainAttitude_RCFlight,
             self.GuidedYawRate,
             self.RudderDisarmMidair,
