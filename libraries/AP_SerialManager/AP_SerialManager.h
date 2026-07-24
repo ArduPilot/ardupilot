@@ -227,9 +227,6 @@ private:
     // protocol_match - returns true if the protocols match
     bool protocol_match(enum SerialProtocol protocol1, enum SerialProtocol protocol2) const;
 
-    // setup any special options
-    void set_options(uint16_t i);
-
     bool init_console_done;
 
     void convert_parameters();
