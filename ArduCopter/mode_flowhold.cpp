@@ -338,8 +338,8 @@ void ModeFlowHold::run()
         Vector2f flow_angles;
 
         flowhold_flow_to_angle(flow_angles, (roll_in != 0) || (pitch_in != 0));
-        flow_angles.x = constrain_float(flow_angles.x, -angle_max_rad/2, angle_max_rad/2);
-        flow_angles.y = constrain_float(flow_angles.y, -angle_max_rad/2, angle_max_rad/2);
+        flow_angles.x = constrain_float(flow_angles.x, -angle_max_rad*0.5f, angle_max_rad*0.5f);
+        flow_angles.y = constrain_float(flow_angles.y, -angle_max_rad*0.5f, angle_max_rad*0.5f);
         bf_angles_rad += flow_angles;
     }
     bf_angles_rad.x = constrain_float(bf_angles_rad.x, -angle_max_rad, angle_max_rad);
