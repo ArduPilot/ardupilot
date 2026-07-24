@@ -1165,8 +1165,8 @@ userdata DroneCAN_Handle method subscribe boolean
 userdata DroneCAN_Handle manual check_message DroneCAN_Handle::check_message 0 4
 userdata DroneCAN_Handle manual_operator __gc DroneCAN_Handle::__gc
 
-include AP_OSD/AP_OSD_Backend.h depends defined(OSD_ENABLED) && OSD_ENABLED
-singleton AP_OSD_Backend depends defined(OSD_ENABLED) && OSD_ENABLED
+include AP_OSD/AP_OSD_Backend.h depends defined(OSD_ENABLED) && OSD_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+singleton AP_OSD_Backend depends defined(OSD_ENABLED) && OSD_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
 singleton AP_OSD_Backend rename osd
 singleton AP_OSD_Backend get AP_OSD::get_singleton() == nullptr ? nullptr : AP_OSD::get_singleton()->scripting_get_backend()
 singleton AP_OSD_Backend semaphore
