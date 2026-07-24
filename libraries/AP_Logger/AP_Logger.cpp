@@ -889,6 +889,11 @@ void AP_Logger::handle_mavlink_msg(GCS_MAVLINK &link, const mavlink_message_t &m
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
         handle_log_message(link, msg);
         break;
+#if AP_LOGGER_SEND_NAMED_VALUES_ENABLED
+    case MAVLINK_MSG_ID_LOG_STREAM_NAMED_VALUE:
+        handle_stream_named_value(link, msg);
+        break;
+#endif  // AP_LOGGER_SEND_NAMED_VALUES_ENABLED
     }
 }
 
@@ -896,6 +901,9 @@ void AP_Logger::periodic_tasks() {
 #ifndef HAL_BUILD_AP_PERIPH
     handle_log_send();
 #endif
+#if AP_LOGGER_SEND_NAMED_VALUES_ENABLED
+    stream_named_values_send();
+#endif  // AP_LOGGER_SEND_NAMED_VALUES_ENABLED
     FOR_EACH_BACKEND(periodic_tasks());
 }
 
@@ -1376,6 +1384,34 @@ bool AP_Logger::fill_logstructure(struct LogStructure &logstruct, const uint8_t 
     return true;
 }
 
+uint8_t AP_Logger::size_for_format_char(const char c)
+{
+    switch (c) {
+    case 'a' : return sizeof(int16_t[32]);
+    case 'b' : return sizeof(int8_t);
+    case 'c' : return sizeof(int16_t);
+    case 'd' : return sizeof(double);
+    case 'e' : return sizeof(int32_t);
+    case 'f' : return sizeof(float);
+    case 'g' : return sizeof(float16_s);
+    case 'h' : return sizeof(int16_t);
+    case 'i' : return sizeof(int32_t);
+    case 'n' : return sizeof(char[4]);
+    case 'B' : return sizeof(uint8_t);
+    case 'C' : return sizeof(uint16_t);
+    case 'E' : return sizeof(uint32_t);
+    case 'H' : return sizeof(uint16_t);
+    case 'I' : return sizeof(uint32_t);
+    case 'L' : return sizeof(int32_t);
+    case 'M' : return sizeof(uint8_t);
+    case 'N' : return sizeof(char[16]);
+    case 'Z' : return sizeof(char[64]);
+    case 'q' : return sizeof(int64_t);
+    case 'Q' : return sizeof(uint64_t);
+    }
+    return 0;
+}
+
 /* calculate the length of output of a format string.  Note that this
  * returns an int16_t; if it returns -1 then an error has occurred.
  * This was mechanically converted from init_field_types in
@@ -1384,40 +1420,276 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
 {
     size_t len = LOG_PACKET_HEADER_LEN;
     for (size_t i=0; i<strlen(fmt); i++) {
-        switch(fmt[i]) {
-        case 'a' : len += sizeof(int16_t[32]); break;
-        case 'b' : len += sizeof(int8_t); break;
-        case 'c' : len += sizeof(int16_t); break;
-        case 'd' : len += sizeof(double); break;
-        case 'e' : len += sizeof(int32_t); break;
-        case 'f' : len += sizeof(float); break;
-        case 'g' : len += sizeof(float16_s); break;
-        case 'h' : len += sizeof(int16_t); break;
-        case 'i' : len += sizeof(int32_t); break;
-        case 'n' : len += sizeof(char[4]); break;
-        case 'B' : len += sizeof(uint8_t); break;
-        case 'C' : len += sizeof(uint16_t); break;
-        case 'E' : len += sizeof(uint32_t); break;
-        case 'H' : len += sizeof(uint16_t); break;
-        case 'I' : len += sizeof(uint32_t); break;
-        case 'L' : len += sizeof(int32_t); break;
-        case 'M' : len += sizeof(uint8_t); break;
-        case 'N' : len += sizeof(char[16]); break;
-        case 'Z' : len += sizeof(char[64]); break;
-        case 'q' : len += sizeof(int64_t); break;
-        case 'Q' : len += sizeof(uint64_t); break;
-        default:
+        const uint8_t field_size = size_for_format_char(fmt[i]);
+        if (field_size == 0) {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
             AP_HAL::panic("Unknown format specifier (%c)", fmt[i]);
 #endif
             return -1;
         }
+        len += field_size;
     }
     if (len > LOG_PACKET_MAX_LEN) {
         return -1;
     }
     return (int16_t)len;
 }
+
+#if AP_LOGGER_SEND_NAMED_VALUES_ENABLED
+// minimum interval between sends of the value in any one slot:
+#define LOGGER_NAMED_VALUE_SEND_INTERVAL_MS 100
+
+bool AP_Logger::stream_named_value(const char *msg_name, const char *field_name, const uint32_t chan_mask)
+{
+    if (chan_mask == 0) {
+        // a slot which never sends is a configuration error
+        return false;
+    }
+
+    // find format information for the message name:
+    const char *fmt = nullptr;
+    const char *labels = nullptr;
+    uint8_t msg_type = 0;
+    for (uint16_t i=0; i<_num_types; i++) {
+        const struct LogStructure *s = structure(i);
+        if (strcmp(s->name, msg_name) == 0) {
+            fmt = s->format;
+            labels = s->labels;
+            msg_type = s->msg_type;
+            break;
+        }
+    }
+    if (fmt == nullptr) {
+        // maybe this is a message logged via Write(); these can only
+        // be found once they have been written at least once:
+        WITH_SEMAPHORE(log_write_fmts_sem);
+        for (const struct log_write_fmt *f = log_write_fmts; f; f=f->next) {
+            if (strcmp(f->name, msg_name) == 0) {
+                fmt = f->fmt;
+                labels = f->labels;
+                msg_type = f->msg_type;
+                break;
+            }
+        }
+    }
+    if (fmt == nullptr || labels == nullptr) {
+        return false;
+    }
+
+    // resolve the field name to an offset within the message:
+    uint8_t field_offset = LOG_PACKET_HEADER_LEN;
+    char field_type = 0;
+    const char *label = labels;
+    const size_t field_name_len = strlen(field_name);
+    for (uint8_t i=0; fmt[i] != 0 && label != nullptr; i++) {
+        const char *comma = strchr(label, ',');
+        const size_t label_len = (comma != nullptr) ? (size_t)(comma - label) : strlen(label);
+        if (label_len == field_name_len &&
+            strncmp(label, field_name, label_len) == 0) {
+            field_type = fmt[i];
+            break;
+        }
+        field_offset += size_for_format_char(fmt[i]);
+        label = (comma != nullptr) ? comma + 1 : nullptr;
+    }
+    if (field_type == 0 || field_type == 'a') {
+        // no field with this name in this message, or the field is
+        // an array, which named-value messages can not represent
+        return false;
+    }
+    const uint8_t field_size = size_for_format_char(field_type);
+    if (field_size == 0) {
+        return false;
+    }
+
+    WITH_SEMAPHORE(named_value_sem);
+    for (NamedValueStream *nvs = named_value_streams; nvs != nullptr; nvs = nvs->next) {
+        if (nvs->msg_type == msg_type && nvs->field_offset == field_offset) {
+            // already streaming this field; send on the union of the
+            // requested channels
+            nvs->chan_mask |= chan_mask;
+            return true;
+        }
+    }
+    NamedValueStream *nvs = NEW_NOTHROW NamedValueStream;
+    if (nvs == nullptr) {
+        return false;
+    }
+    nvs->type = field_type;
+    nvs->msg_type = msg_type;
+    nvs->field_offset = field_offset;
+    nvs->field_size = field_size;
+    hal.util->snprintf(nvs->name, sizeof(nvs->name), "%s.%s", msg_name, field_name);
+    nvs->chan_mask = chan_mask;
+    // the list is traversed without named_value_sem held, so the
+    // stream must be fully constructed before it is inserted:
+    nvs->next = named_value_streams;
+    named_value_streams = nvs;
+
+    return true;
+}
+
+void AP_Logger::handle_stream_named_value(GCS_MAVLINK &link, const mavlink_message_t &msg)
+{
+    mavlink_log_stream_named_value_t packet;
+    mavlink_msg_log_stream_named_value_decode(&msg, &packet);
+
+    // names in the packet are not necessarily nul-terminated:
+    char msg_name[sizeof(packet.msg_name)+1] {};
+    memcpy(msg_name, packet.msg_name, sizeof(packet.msg_name));
+    char field_name[sizeof(packet.field_name)+1] {};
+    memcpy(field_name, packet.field_name, sizeof(packet.field_name));
+
+    // stream only on the channel the request arrived on:
+    if (!stream_named_value(msg_name, field_name, 1U << link.get_chan())) {
+        link.send_text(MAV_SEVERITY_WARNING, "Unable to stream %s.%s", msg_name, field_name);
+    }
+}
+
+void AP_Logger::stream_named_value_capture(const void *msg, uint16_t size)
+{
+    if (sending_named_values) {
+        // this message is being logged as a result of us sending a
+        // named value; avoid recursion
+        return;
+    }
+    const uint8_t msg_type = ((const uint8_t *)msg)[2];
+    for (NamedValueStream *p = named_value_streams; p != nullptr; p = p->next) {
+        NamedValueStream &nvs = *p;
+        if (nvs.msg_type != msg_type) {
+            continue;
+        }
+        if (uint16_t(nvs.field_offset + nvs.field_size) > size) {
+            continue;
+        }
+        const uint8_t *data = (const uint8_t *)msg + nvs.field_offset;
+        WITH_SEMAPHORE(named_value_sem);
+        switch (nvs.type) {
+        case 'f': {
+            float v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.f = v;
+            break;
+        }
+        case 'd': {
+            double v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.f = v;
+            break;
+        }
+        case 'g': {
+            Float16_t v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.f = v.get();
+            break;
+        }
+        case 'b': {
+            int8_t v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.i = v;
+            break;
+        }
+        case 'h':
+        case 'c': {
+            int16_t v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.i = v;
+            break;
+        }
+        case 'i':
+        case 'L':
+        case 'e': {
+            int32_t v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.i = v;
+            break;
+        }
+        case 'q': {
+            int64_t v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.i = int32_t(constrain_int64(v, INT32_MIN, INT32_MAX));
+            break;
+        }
+        case 'B':
+        case 'M': {
+            uint8_t v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.i = v;
+            break;
+        }
+        case 'H':
+        case 'C': {
+            uint16_t v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.i = v;
+            break;
+        }
+        case 'I':
+        case 'E': {
+            uint32_t v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.i = int32_t(MIN(v, uint32_t(INT32_MAX)));
+            break;
+        }
+        case 'Q': {
+            uint64_t v;
+            memcpy(&v, data, sizeof(v));
+            nvs.value.i = int32_t(MIN(v, uint64_t(INT32_MAX)));
+            break;
+        }
+        case 'n':
+        case 'N':
+        case 'Z':
+            memcpy(nvs.value.s, data, nvs.field_size);
+            nvs.value.s[nvs.field_size] = 0;
+            break;
+        default:
+            // should not happen; field type is checked when the slot
+            // is configured
+            continue;
+        }
+        nvs.value_pending = true;
+    }
+}
+
+void AP_Logger::stream_named_values_send(void)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    for (NamedValueStream *p = named_value_streams; p != nullptr; p = p->next) {
+        NamedValueStream &nvs = *p;
+        if (!nvs.value_pending) {
+            continue;
+        }
+        if (now_ms - nvs.last_send_ms < LOGGER_NAMED_VALUE_SEND_INTERVAL_MS) {
+            continue;
+        }
+        union named_value_value value;
+        {
+            WITH_SEMAPHORE(named_value_sem);
+            value = nvs.value;
+            nvs.value_pending = false;
+        }
+        nvs.last_send_ms = now_ms;
+        sending_named_values = true;
+        switch (nvs.type) {
+        case 'f':
+        case 'd':
+        case 'g':
+            gcs().send_named_float(nvs.name, value.f, nvs.chan_mask);
+            break;
+        case 'n':
+        case 'N':
+        case 'Z':
+            gcs().send_named_string(nvs.name, value.s, nvs.chan_mask);
+            break;
+        default:
+            gcs().send_named_int(nvs.name, value.i, nvs.chan_mask);
+            break;
+        }
+        sending_named_values = false;
+    }
+}
+#endif  // AP_LOGGER_SEND_NAMED_VALUES_ENABLED
 
 /*
   see if we need to save a crash dump. Returns true if either no crash

@@ -4414,6 +4414,9 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_LOG_ERASE:
     case MAVLINK_MSG_ID_LOG_REQUEST_END:
     case MAVLINK_MSG_ID_REMOTE_LOG_BLOCK_STATUS:
+#if AP_LOGGER_SEND_NAMED_VALUES_ENABLED
+    case MAVLINK_MSG_ID_LOG_STREAM_NAMED_VALUE:
+#endif  // AP_LOGGER_SEND_NAMED_VALUES_ENABLED
         AP::logger().handle_mavlink_msg(*this, msg);
         break;
 #endif
