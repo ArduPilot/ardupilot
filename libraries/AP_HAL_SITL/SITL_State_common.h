@@ -214,9 +214,6 @@ public:
     // voltage from the sensor
     float _sonar_pin_voltage() const;
 
-    // multicast state
-    int mc_out_fd = -1;
-    
     // send out SITL state as UDP multicast
     void multicast_state_open(void);
     void multicast_state_send(void);
