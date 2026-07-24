@@ -53,13 +53,6 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
     return true;
 }
 
-void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // same as EKF2 for no optical flow
-    ekfGndSpdLimit = 400.0f;
-    ekfNavVelGainScaler = 1.0f;
-}
-
 bool AP_AHRS_SIM::get_origin(Location &ret) const
 {
     if (_sitl == nullptr) {
@@ -217,6 +210,15 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // terrain_alt_variance = 0;
     results.terrain_alt_variance_valid = true;
+
+    // very loose limits on velocities and no gain scaling:
+    results.control_ground_speed_limit = 400.0;
+    results.control_gain_scaler_XY = 1;
+    results.control_gain_scaler_Z = 1;
+
+    // control height is ever limited:
+    // results.control_height_limit_valid = false;
+    // results.control_height_limit = 0;
 
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {

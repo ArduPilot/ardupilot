@@ -319,9 +319,9 @@ bool AC_Loiter::loiter_option_is_set(LoiterOption option) const {
 // - Resulting velocity and acceleration are sent to the position controller.
 void AC_Loiter::calc_desired_velocity(bool avoidance_on)
 {
-    float ekfGndSpdLimit_ms, ahrsControlScaleXY;
-    // Query EKF-imposed horizontal ground speed limit (e.g. for optical flow)
-    AP::ahrs().getControlLimits(ekfGndSpdLimit_ms, ahrsControlScaleXY);
+    // the estimator might impose limits on maximum velocity (e.g. due
+    // to the sensors being used to supply its estimated velocity):
+    const float ekfGndSpdLimit_ms = AP::ahrs().get_control_ground_speed_limit();
 
     const float dt_s = _pos_control.get_dt_s();
 
