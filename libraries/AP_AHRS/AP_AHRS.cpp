@@ -2016,10 +2016,7 @@ bool AP_AHRS::set_home(const Location &loc)
 
 #if AP_MISSION_ENABLED
     // Save home to mission
-    AP_Mission *mission = AP::mission();
-    if (mission != nullptr) {
-        mission->write_home_to_storage();
-    }
+    AP::mission().write_home_to_storage();
 #endif
 
     return true;

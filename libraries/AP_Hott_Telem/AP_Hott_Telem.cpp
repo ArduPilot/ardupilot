@@ -358,14 +358,13 @@ void AP_Hott_Telem::send_Vario(void)
     }
     if (hal.util->get_soft_armed()) {
         strncpy(msg.text[1], "ARMED", sizeof(msg.text[1]));
+#if AP_MISSION_ENABLED
         if (strncmp(fltmode, "AUTO", sizeof(fltmode)) == 0) {
-            const AP_Mission *mission = AP::mission();
-            if (mission) {
-                char wp[10] {};
-                snprintf(wp, sizeof(wp), "WP %3u", mission->get_current_nav_index());
-                memcpy(msg.text[2], wp, sizeof(msg.text[2]));
-            }
+            char wp[10] {};
+            snprintf(wp, sizeof(wp), "WP %3u", AP::mission().get_current_nav_index());
+            memcpy(msg.text[2], wp, sizeof(msg.text[2]));
         }
+#endif  // AP_MISSION_ENABLED
     } else {
         strncpy(msg.text[1], "DISARM", sizeof(msg.text[1]));
         const char *ck = AP_Notify::flags.pre_arm_check ? "CK:PASS" : "CK:FAIL";

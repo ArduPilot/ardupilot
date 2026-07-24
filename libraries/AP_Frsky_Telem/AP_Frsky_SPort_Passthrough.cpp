@@ -139,7 +139,9 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(RPM, 300, 330);         // 0x500A rpm sensors 1 and 2
     set_scheduler_entry(TERRAIN, 700, 500);     // 0x500B terrain data
     set_scheduler_entry(WIND, 700, 500);        // 0x500C wind data
+#if AP_MISSION_ENABLED
     set_scheduler_entry(WAYPOINT, 750, 500);    // 0x500D waypoint data
+#endif  // AP_MISSION_ENABLED
     set_scheduler_entry(UDATA, 5000, 200);      // user data
 
     // initialize default sport sensor ID
@@ -258,12 +260,11 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
     }
 #endif
         break;
+#if AP_MISSION_ENABLED
     case WAYPOINT:
-        {
-            const AP_Mission *mission = AP::mission();
-            packet_ready = mission != nullptr && mission->get_current_nav_index() > 0;
-        }
+        packet_ready = AP::mission().get_current_nav_index() > 0;
         break;
+#endif  // AP_MISSION_ENABLED
     case UDATA:
         // when using fport user data is sent by scheduler
         // when using sport user data is sent responding to custom polling
@@ -339,9 +340,11 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
     case WIND: // 0x500C terrain data
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+0x0C, calc_wind());
         break;
+#if AP_MISSION_ENABLED
     case WAYPOINT: // 0x500D waypoint data
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+0x0D, calc_waypoint());
         break;
+#endif  // AP_MISSION_ENABLED
     case UDATA: // user data
         {
             WITH_SEMAPHORE(_sport_push_buffer.sem);
@@ -791,11 +794,11 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_wind(void)
  * prepare waypoint data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
+#if AP_MISSION_ENABLED
 uint32_t AP_Frsky_SPort_Passthrough::calc_waypoint(void)
 {
-    const AP_Mission *mission = AP::mission();
     const AP_Vehicle *vehicle = AP::vehicle();
-    if (mission == nullptr || vehicle == nullptr) {
+    if (vehicle == nullptr) {
         return 0U;
     }
     float wp_distance;
@@ -807,13 +810,14 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_waypoint(void)
         return 0U;
     }
     // waypoint current nav index
-    uint32_t value = MIN(mission->get_current_nav_index(), WP_NUMBER_LIMIT);
+    uint32_t value = MIN(AP::mission().get_current_nav_index(), WP_NUMBER_LIMIT);
     // distance to next waypoint
     value |= prep_number(wp_distance, 3, 2) << WP_DISTANCE_OFFSET;
     // bearing encoded in 3 degrees increments
     value |= ((uint8_t)roundf(wrap_360(angle) * 0.333f)) << WP_BEARING_OFFSET;
     return value;
 }
+#endif  // AP_MISSION_ENABLED
 
 /*
   fetch Sport data for an external transport, such as FPort or crossfire

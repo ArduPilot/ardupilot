@@ -3224,9 +3224,9 @@ AP_Mission *AP_Mission::_singleton;
 namespace AP
 {
 
-AP_Mission *mission()
+AP_Mission &mission()
 {
-    return AP_Mission::get_singleton();
+    return *(AP_Mission::get_singleton());
 }
 
 }

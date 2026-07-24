@@ -8,17 +8,14 @@
 // detect external changes to mission
 bool AP_Mission_ChangeDetector::check_for_mission_change()
 {
-    AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        return false;
-    }
+    AP_Mission &mission = AP::mission();
 
     // check if mission has been updated
-    const uint32_t change_time_ms = mission->last_change_time_ms();
+    const uint32_t change_time_ms = mission.last_change_time_ms();
     const bool update_time_changed = (change_time_ms != mis_change_detect.last_change_time_ms);
 
     // check if active command index has changed
-    const uint16_t curr_cmd_idx = mission->get_current_nav_index();
+    const uint16_t curr_cmd_idx = mission.get_current_nav_index();
     const bool curr_cmd_idx_changed = (curr_cmd_idx != mis_change_detect.curr_cmd_index);
 
     // no changes if neither mission update time nor active command index has changed
@@ -36,7 +33,7 @@ bool AP_Mission_ChangeDetector::check_for_mission_change()
     uint8_t num_cmds = 0;
     uint16_t cmd_idx = curr_cmd_idx;
     AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max];
-    while ((num_cmds < ARRAY_SIZE(cmd)) && mission->get_next_nav_cmd(cmd_idx, cmd[num_cmds])) {
+    while ((num_cmds < ARRAY_SIZE(cmd)) && mission.get_next_nav_cmd(cmd_idx, cmd[num_cmds])) {
         num_cmds++;
         if ((num_cmds > mis_change_detect.cmd_count) || (cmd[num_cmds-1] != mis_change_detect.cmd[num_cmds-1])) {
             cmds_changed = true;
