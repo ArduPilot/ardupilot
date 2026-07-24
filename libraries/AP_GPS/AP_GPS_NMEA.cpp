@@ -862,14 +862,17 @@ void AP_GPS_NMEA::send_config(void)
         port->printf("\r\nCONFIG HEADING FIXLENGTH\r\n" \
                      "CONFIG UNDULATION AUTO\r\n" \
                      "CONFIG\r\n" \
+                     "MODE MOVINGBASE\r\n" \
                      "UNIHEADINGA %.3f\r\n",
                      rate_s);
         state.gps_yaw_configured = true;
         FALLTHROUGH;
 
     case AP_GPS::GPS_TYPE_UNICORE_NMEA: {
+        if (get_type() == AP_GPS::GPS_TYPE_UNICORE_NMEA) {
+            port->printf("\r\nMODE ROVER\r\n");
+        }
         port->printf("\r\nAGRICA %.3f\r\n" \
-                     "MODE MOVINGBASE\r\n" \
                      "GNGGA %.3f\r\n" \
                      "GNRMC %.3f\r\n",
                      rate_s, rate_s, rate_s);
