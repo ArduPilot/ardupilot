@@ -193,6 +193,9 @@ public:
 #endif
     void can_battery_update();
     void can_battery_send_cells(uint8_t instance);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    void can_circuit_status_update();
+#endif
     void can_proximity_update();
     void can_buzzer_update(void);
     void can_safety_button_update(void);
@@ -265,6 +268,9 @@ public:
     struct {
         uint32_t last_read_ms;
         uint32_t last_can_send_ms;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        uint32_t last_circuit_send_ms;
+#endif
     } battery;
 #endif
 

@@ -19,6 +19,10 @@ extern const AP_HAL::HAL &hal;
  */
 void AP_Periph_FW::can_battery_update(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    can_circuit_status_update();
+#endif
+
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - battery.last_can_send_ms < 100) {
         return;
@@ -145,5 +149,46 @@ void AP_Periph_FW::can_battery_send_cells(uint8_t instance)
     delete pkt;
     delete [] buffer;
 }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+/*
+  send CircuitStatus messages for each battery backend in SITL for
+  testing the CircuitStatus lua driver, with circuit_id as the
+  battery instance number plus one
+ */
+void AP_Periph_FW::can_circuit_status_update(void)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - battery.last_circuit_send_ms < 100) {
+        return;
+    }
+    battery.last_circuit_send_ms = now_ms;
+
+    const uint8_t battery_instances = battery_lib.num_instances();
+    for (uint8_t i=0; i<battery_instances; i++) {
+        if (!battery_lib.healthy(i)) {
+            continue;
+        }
+        uavcan_equipment_power_CircuitStatus pkt {};
+        pkt.circuit_id = i+1;
+        pkt.voltage = battery_lib.voltage(i);
+        float current;
+        if (battery_lib.current_amps(current, i)) {
+            pkt.current = current;
+        } else {
+            pkt.current = nanf("");
+        }
+
+        uint8_t buffer[UAVCAN_EQUIPMENT_POWER_CIRCUITSTATUS_MAX_SIZE];
+        const uint16_t total_size = uavcan_equipment_power_CircuitStatus_encode(&pkt, buffer, !periph.canfdout());
+
+        canard_broadcast(UAVCAN_EQUIPMENT_POWER_CIRCUITSTATUS_SIGNATURE,
+                         UAVCAN_EQUIPMENT_POWER_CIRCUITSTATUS_ID,
+                         CANARD_TRANSFER_PRIORITY_LOW,
+                         &buffer[0],
+                         total_size);
+    }
+}
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #endif // AP_PERIPH_BATTERY_ENABLED
