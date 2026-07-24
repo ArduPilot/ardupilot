@@ -35,6 +35,7 @@
 #include "AP_TemperatureSensor_MLX90614.h"
 #include "AP_TemperatureSensor_SHT3x.h"
 #include "AP_TemperatureSensor_TMP119.h"
+#include "AP_TemperatureSensor_MCP9808.h"
 
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -343,6 +344,11 @@ void AP_TemperatureSensor::init()
 #if AP_TEMPERATURE_SENSOR_TMP119_ENABLED
             case AP_TemperatureSensor_Params::Type::TMP119:
                 drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_TMP119(*this, _state[instance], _params[instance]);
+                break;
+#endif
+#if AP_TEMPERATURE_SENSOR_MCP9808_ENABLED
+            case AP_TemperatureSensor_Params::Type::MCP9808:
+                drivers[instance] = NEW_NOTHROW AP_TemperatureSensor_MCP9808(*this, _state[instance], _params[instance]);
                 break;
 #endif
             case AP_TemperatureSensor_Params::Type::NONE:
