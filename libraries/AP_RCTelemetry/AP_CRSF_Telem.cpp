@@ -2005,13 +2005,18 @@ AP_CRSF_Telem::ScriptedMenu* AP_CRSF_Telem::ScriptedMenu::add_menu(const char* m
     }
 
     menu->id = tail->id == 0 ? SCRIPTED_MENU_START_ID : tail->id + MAX_SCRIPTED_MENU_SIZE + 1;
-    tail->next_menu = menu;
 
     // dummy parameter for a submenu
     if (parent_menu != 0) {
         ScriptedParameter* param = add_parameter(0, nullptr);
+        if (param == nullptr) {
+            delete menu;
+            return nullptr;
+        }
         param->id = menu->id;
     }
+    tail->next_menu = menu;
+
     return menu;
 }
 
