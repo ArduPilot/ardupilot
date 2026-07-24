@@ -1375,7 +1375,10 @@ void RCOutput::push(void)
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
     }
     corked = false;
-    memcpy(period, period_corked, sizeof(period));
+    // swap the live and shadow buffers instead of copying (zero copy)
+    uint16_t *period_tmp = period;
+    period = period_corked;
+    period_corked = period_tmp;
     push_local();
 #if HAL_WITH_IO_MCU
     if (iomcu_enabled) {

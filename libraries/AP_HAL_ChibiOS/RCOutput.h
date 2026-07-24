@@ -571,8 +571,10 @@ private:
 
     // these values are for the local channels. Non-local channels are handled by IOMCU
     uint32_t en_mask;
-    uint16_t period[max_channels];
-    uint16_t period_corked[max_channels];
+    // double-buffer the period array so push() is a zero-copy pointer swap
+    uint16_t period_buf[2][max_channels];
+    uint16_t *period = &period_buf[0][0];
+    uint16_t *period_corked = &period_buf[1][0];
 
     // handling of bi-directional dshot
     struct {
