@@ -356,6 +356,8 @@ AP_HW_CORVON_V6                      1230
 AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
 
+AP_HW_FLYINGRCH7DPRO                 1242
+
 AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
