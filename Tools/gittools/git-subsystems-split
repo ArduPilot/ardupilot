@@ -186,6 +186,11 @@ class GitSubsystemsSplit(object):
         valid, otherwise the most specific shared subsystem.  Only when no
         shared subsystem exists are the paths split by primary subsystem.
 
+        'hwdef' is always preferred over a HAL library name (e.g.
+        AP_HAL_ChibiOS) when both are shared candidates, even if the HAL name
+        is already the declared prefix -- the deepest directory name is the
+        canonical tag for any libraries/<HAL>/hwdef/... change.
+
         returns (groups, unmatched).
         '''
         paths = [p for p in paths if p]
@@ -205,7 +210,9 @@ class GitSubsystemsSplit(object):
         for p in paths[1:]:
             common &= set(cand[p])
         if common:
-            if declared in common:
+            if 'hwdef' in common:
+                chosen = 'hwdef'
+            elif declared in common:
                 chosen = declared
             else:
                 chosen = next(s for s in cand[paths[0]] if s in common)

@@ -200,9 +200,11 @@ class AllowedSubsystems(object):
                     return ['Tools']
                 return []
             lib = parts[1]
-            # libraries/<HAL>/hwdef/... belongs to hwdef as well as the HAL
+            # libraries/<HAL>/hwdef/... belongs to hwdef -- the deepest
+            # library directory name is the conventional tag, not the HAL
+            # itself -- but the HAL name is still accepted as a fallback.
             if len(parts) >= 4 and parts[2] == 'hwdef':
-                return [lib, 'hwdef']
+                return ['hwdef', lib]
             return [lib]
 
         # most-specific-first special directory rules
