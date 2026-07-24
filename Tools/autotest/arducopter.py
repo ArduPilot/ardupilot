@@ -17858,6 +17858,7 @@ RTL_ALT_M 111
         self.set_parameters({
             "MAV_GCS_SYSID": 250,
             "SIM_RC_FAIL": 1,  # no-pulses
+            "LOG_DISARMED": 1,  # we are timing sensitive, avoid stall on log open
         })
         self.reboot_sitl()
 
