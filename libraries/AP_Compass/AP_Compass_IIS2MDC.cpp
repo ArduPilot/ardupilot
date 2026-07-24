@@ -31,13 +31,11 @@
 
 // IIS2MDC Definitions
 #define IIS2MDC_WHO_AM_I         0b01000000
-#define IIS2MDC_STATUS_REG_READY 0b00001111
+#define IIS2MDC_STATUS_REG_READY 0b00001000  // ZYXDA, all three axes
 // CFG_REG_A
 #define COMP_TEMP_EN    (1 << 7)
 #define MD_CONTINUOUS   (0 << 0)
 #define ODR_100         ((1 << 3) | (1 << 2))
-// CFG_REG_B
-#define OFF_CANC        (1 << 1)
 // CFG_REG_C
 #define BDU             (1 << 4)
 
@@ -80,15 +78,17 @@ bool AP_Compass_IIS2MDC::init()
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_A, MD_CONTINUOUS | ODR_100 | COMP_TEMP_EN)) {
+    _dev->setup_checked_registers(3);
+
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_A, MD_CONTINUOUS | ODR_100 | COMP_TEMP_EN, true)) {
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_B, OFF_CANC)) {
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_B, 0x00, true)) {
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_C, BDU)) {
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_C, BDU, true)) {
         return false;
     }
 
@@ -137,21 +137,22 @@ void AP_Compass_IIS2MDC::timer()
         uint8_t tout1;
     } buffer;
 
-    const float range_scale = 100.f / 65.535f; // +/- 50,000 milligauss, 16bit
+    const float range_scale = 1.5f; // 1.5 mgauss/LSB
 
     uint8_t status = 0;
     if (!_dev->read_registers(IIS2MDC_ADDR_STATUS_REG, &status, 1)) {
-        return;
+        goto check_registers;
     }
 
     if (!(status & IIS2MDC_STATUS_REG_READY)) {
-        return;
+        goto check_registers;
     }
 
     if (!_dev->read_registers(IIS2MDC_ADDR_OUTX_L_REG, (uint8_t *) &buffer, sizeof(buffer))) {
-        return;
+        goto check_registers;
     }
 
+    {
     const int16_t x = ((buffer.xout1 << 8) | buffer.xout0);
     const int16_t y = ((buffer.yout1 << 8) | buffer.yout0);
     const int16_t z = -1 * ((buffer.zout1 << 8) | buffer.zout0);
@@ -159,6 +160,10 @@ void AP_Compass_IIS2MDC::timer()
     Vector3f field{ x * range_scale, y * range_scale, z * range_scale };
 
     accumulate_sample(field);
+    }
+
+check_registers:
+    _dev->check_next_register();
 }
 
 #endif //AP_COMPASS_IIS2MDC_ENABLED
