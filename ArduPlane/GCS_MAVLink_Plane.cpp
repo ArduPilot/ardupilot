@@ -1240,7 +1240,7 @@ uint8_t GCS_MAVLINK_Plane::high_latency_wind_direction() const
 
     // return units are deg/2
     // need to convert -180->180 to 0->360/2
-    return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
+    return wrap_360(degrees(atan2f(-wind.y, -wind.x))) * 0.5f;
 }
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
