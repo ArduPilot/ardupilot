@@ -30,6 +30,7 @@
 #include "Scheduler.h"
 #include "Util.h"
 #include "GPIO.h"
+#include "MemProtect.h"
 
 #include <AP_HAL_ChibiOS/UARTDriver.h>
 #include <AP_HAL_ChibiOS/AnalogIn.h>
@@ -515,6 +516,160 @@ void Scheduler::_monitor_thread(void *arg)
 }
 #endif  // HAL_MONITOR_THREAD_ENABLED
 
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+/*
+  restore the all-zero invariant on the reserved first 1k. Uses assembly so we
+  don't invoke UB writing through a nullptr
+ */
+static void zero_low_memory(void)
+{
+    for (uint32_t addr=0; addr<AP_MEMPROTECT_SIZE; addr+=4) {
+        __asm__ volatile("str %0, [%1]" :: "r"(0), "r"(addr) : "memory");
+    }
+}
+
+/*
+  check the reserved first 1k really is all zero. The region is no-access, so
+  we have to disarm to read it. This only catches DMA and other bus masters,
+  which the MPU cannot see; CPU accesses are trapped and attributed instead
+ */
+void Scheduler::memprotect_scan(void)
+{
+    /*
+      snapshot the count before we test armed, not after. A fault landing
+      between the two would otherwise be included in the snapshot, and we would
+      blame DMA for the write it just let through
+     */
+    const uint16_t hits = memprotect_state.hit_count;
+    if (!memprotect_state.armed) {
+        // latched off, or waiting to be re-armed. Low memory is expected to be
+        // dirty, and a trapped access has already reported it
+        return;
+    }
+    memprotect_disarm();
+    bool found_nonzero = false;
+    for (uint32_t addr=0; addr<AP_MEMPROTECT_SIZE; addr+=4) {
+        uint32_t val;
+        __asm__("\tldr %0, [%1]\n\t" : "=r"(val) : "r"(addr));
+        if (val != 0) {
+            found_nonzero = true;
+            break;
+        }
+    }
+    if (found_nonzero) {
+        zero_low_memory();
+    }
+    if (memprotect_state.latched_off || memprotect_state.pending) {
+        // either the last fault was the one which gave up, or a fault beat us
+        // to the disarm and its record has not been logged yet. Leave the
+        // region off, the next trace tick will deal with it
+        return;
+    }
+    memprotect_arm();
+    if (found_nonzero && memprotect_state.hit_count == hits) {
+        // re-use memory guard internal error. Report after re-arming, as this
+        // panics when disarmed
+        AP_memory_guard_error(1023);
+    }
+}
+
+/*
+  log any access to the reserved first 1k trapped by the MemManage handler,
+  then re-arm the region. After AP_MEMPROTECT_MAX_HITS we leave it disarmed.
+
+  this runs in the storage thread, which is the sole owner of the region state.
+  the monitor thread is the highest priority thread in the system, so it is the
+  wrong place for the bulk scan
+ */
+void Scheduler::memprotect_trace_tick(void)
+{
+    if (memprotect_state.pending) {
+        const uint16_t count = memprotect_state.hit_count;
+        const bool latched = memprotect_state.latched_off;
+
+#if HAL_LOGGING_ENABLED
+        if (AP_Logger::get_singleton() != nullptr) {
+            /*
+              written as critical rather than streaming: this is rare and is
+              the only record of the bug, so it must not be dropped when the
+              buffer is full. It still uses a runtime format, so costs no
+              flash on boards which can never emit it
+             */
+            // @LoggerMessage: NPTR
+            // @Description: An access to the reserved first 1k of memory was trapped. Almost always a null pointer dereference.
+            // @Field: TimeUS: Time since system startup
+            // @Field: Cnt: Count of accesses trapped since boot
+            // @Field: FA: Address which was accessed
+            // @Field: PC: Program counter of the faulting instruction
+            // @Field: LR: Link register at the time of the fault
+            // @Field: ExcR: Exception return value, tells us which stack the fault came from
+            // @Field: IPSR: Exception number active at the time of the fault, 0 for thread mode
+            // @Field: Ltch: 1 if trapping has been permanently disabled after too many hits
+            // @Field: TN: Name of the thread which was running
+            // @Field: BT0: Heuristic backtrace entry 0
+            // @Field: BT1: Heuristic backtrace entry 1
+            // @Field: BT2: Heuristic backtrace entry 2
+            // @Field: BT3: Heuristic backtrace entry 3
+            // @Field: BT4: Heuristic backtrace entry 4
+            // @Field: BT5: Heuristic backtrace entry 5
+            AP::logger().WriteCritical("NPTR",
+                                        "TimeUS,Cnt,FA,PC,LR,ExcR,IPSR,Ltch,TN,BT0,BT1,BT2,BT3,BT4,BT5",
+                                        "s--------------",
+                                        "F--------------",
+                                        "QHIIIIBBNIIIIII",
+                                        AP_HAL::micros64(),
+                                        count,
+                                        memprotect_state.fault_addr,
+                                        memprotect_state.pc,
+                                        memprotect_state.lr,
+                                        memprotect_state.exc_return,
+                                        memprotect_state.ipsr,
+                                        uint8_t(latched),
+                                        memprotect_state.thread_name,
+                                        memprotect_state.backtrace[0],
+                                        memprotect_state.backtrace[1],
+                                        memprotect_state.backtrace[2],
+                                        memprotect_state.backtrace[3],
+                                        memprotect_state.backtrace[4],
+                                        memprotect_state.backtrace[5]);
+        }
+#endif
+
+        // this is a real bug, make it visible in pre-arm and in MON
+        INTERNAL_ERROR(AP_InternalError::error_t::mem_guard);
+
+        // rate limit, but never drop the message saying we have given up
+        const uint32_t now_ms = AP_HAL::millis();
+        if (latched || now_ms - last_nptr_gcs_ms >= 1000) {
+            last_nptr_gcs_ms = now_ms;
+            // the thread name goes last, it is the only part we can afford to
+            // lose to the statustext length limit
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "NULL %u at %u PC=0x%08x%s %s",
+                          unsigned(count), unsigned(memprotect_state.fault_addr),
+                          unsigned(memprotect_state.pc),
+                          latched ? " LATCHED" : "", memprotect_state.thread_name);
+        }
+        memprotect_state.pending = false;
+    }
+
+    /*
+      re-check pending here rather than relying on the test above: a fault can
+      land after that test, and re-arming with an unread record would stop the
+      next fault publishing its own, so we would log a stale PC against a newer
+      count. The region is disabled at this point, so once we have seen
+      !pending no new fault can set it
+     */
+    if (!memprotect_state.armed &&
+        !memprotect_state.latched_off &&
+        !memprotect_state.pending) {
+        // the trapped access completed when we returned from the handler, so
+        // restore the invariant the zero scan relies on before re-arming
+        zero_low_memory();
+        memprotect_arm();
+    }
+}
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+
 void Scheduler::_rcin_thread(void *arg)
 {
     Scheduler *sched = (Scheduler *)arg;
@@ -622,6 +777,9 @@ void Scheduler::_storage_thread(void* arg)
 #if MEMCHECK_ENABLED
     uint16_t memcheck_counter=0;
 #endif  // MEMCHECK_ENABLED
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+    uint16_t memprotect_counter=0;
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
     while (true) {
         sched->delay_microseconds(1000);
 
@@ -634,6 +792,21 @@ void Scheduler::_storage_thread(void* arg)
             sched->check_low_memory_is_zero();
         }
 #endif  // MEMCHECK_ENABLED
+
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+        // we run before memprotect_init(), and must not claim the region is
+        // armed while the MPU is still globally disabled
+        if (memprotect_state.initialised) {
+            // re-arm at 10Hz, so a repeating null access gives us a series of
+            // samples rather than latching off almost immediately
+            if (memprotect_counter % 100 == 0) {
+                sched->memprotect_trace_tick();
+            }
+            if (memprotect_counter++ % 500 == 0) {
+                sched->memprotect_scan();
+            }
+        }
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
     }
 }
 
