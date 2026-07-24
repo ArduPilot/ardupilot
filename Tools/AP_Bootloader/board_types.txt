@@ -447,6 +447,10 @@ AP_HW_SULILGH7-P1-P2                 2005
 
 AP_HW_AET-H743-Basic                 2024
 
+AP_HW_JC-F405                        2345
+AP_HW_JC-H743                        2346
+AP_HW_JC-L431                        2347
+
 AP_HW_BOTWINGF405                    2501
 
 AP_HW_AET-H743-AIR                   2509
