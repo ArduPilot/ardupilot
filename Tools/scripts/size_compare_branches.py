@@ -84,8 +84,9 @@ class SizeCompareBranches(BuildScriptBase):
                  features=False,
                  symbols=False,
                  compare_object_files=False,
+                 progress_file=None,
                  ):
-        super().__init__()
+        super().__init__(progress_file=progress_file)
 
         if board is None:
             board = ["MatekF405-Wing"]
@@ -213,8 +214,7 @@ class SizeCompareBranches(BuildScriptBase):
         # progress CSV:
         pairs = self.pairs_from_task_results(task_results)
         csv_for_results = self.csv_for_results(self.compare_task_results_sizes(pairs))
-        path = pathlib.Path("/tmp/some.csv")
-        path.write_text(csv_for_results)
+        self.write_progress_file(csv_for_results)
 
     class Task():
         def __init__(self,
@@ -286,9 +286,8 @@ class SizeCompareBranches(BuildScriptBase):
                 task_results.append(self.gather_results_for_task(task))
 
                 # progress CSV:
-                with open("/tmp/some.csv", "w") as f:
-                    pairs = self.pairs_from_task_results(task_results)
-                    f.write(self.csv_for_results(self.compare_task_results_sizes(pairs)))
+                pairs = self.pairs_from_task_results(task_results)
+                self.write_progress_file(self.csv_for_results(self.compare_task_results_sizes(pairs)))
 
         return self.compare_task_results(task_results)
 
@@ -821,6 +820,11 @@ def main():
                       default=False,
                       help="Build all vehicles")
     parser.add_option("",
+                      "--progress-file",
+                      type="string",
+                      default=None,
+                      help="file to write progress CSV to as results come in")
+    parser.add_option("",
                       "--parallel-copies",
                       type=int,
                       default=None,
@@ -866,6 +870,7 @@ def main():
         features=cmd_opts.features,
         symbols=cmd_opts.symbols,
         compare_object_files=cmd_opts.compare_object_files,
+        progress_file=cmd_opts.progress_file,
     )
     x.run()
 

@@ -38,8 +38,9 @@ class BuildBoards(BuildScriptBase):
                  parallel_copies=None,
                  jobs=None,
                  configure_only=False,
+                 progress_file=None,
                  ):
-        super().__init__()
+        super().__init__(progress_file=progress_file)
 
         if board is None:
             board = []
@@ -72,6 +73,23 @@ class BuildBoards(BuildScriptBase):
 
     def progress_prefix(self):
         return 'BB'
+
+    def write_task_progress(self, all_tasks, remaining_tasks):
+        '''write task counts, remaining tasks and failures to the
+        progress file, if one was specified'''
+        if self.progress_file is None:
+            return
+        content = (f"total-tasks={len(all_tasks)} " +
+                   f"remaining-tasks={len(remaining_tasks)} " +
+                   f"failures={len(self.failure_exceptions)}\n")
+        for t in remaining_tasks:
+            content += f"remaining: {t}\n"
+        for f in self.failure_exceptions:
+            content += f"failure: {f}\n"
+        self.write_progress_file(content)
+
+    def parallel_progress_hook(self, tasks):
+        self.write_task_progress(tasks, copy.copy(self.parallel_tasks))
 
     class Task():
         def __init__(self, board: str, vehicles_to_build: list) -> None:
@@ -156,13 +174,17 @@ class BuildBoards(BuildScriptBase):
             failures = self.failure_exceptions
         else:
             # traditional build everything in sequence:
-            failures = []
+            self.failure_exceptions = []
+            remaining = copy.copy(tasks)
             for task in tasks:
                 try:
                     self.run_build_task(task)
                 except Exception as ex:  # noqa: BLE001 — record failure, continue with remaining boards
                     self.progress(f"Build failed: {task} ({ex})")
-                    failures.append(f"{task}")
+                    self.failure_exceptions.append(f"{task}")
+                remaining.pop(0)
+                self.write_task_progress(tasks, remaining)
+            failures = self.failure_exceptions
 
         return failures
 
@@ -205,6 +227,10 @@ def main():
                         action='store_true',
                         default=False,
                         help="only run waf configure for each board, do not build")
+    parser.add_argument("--progress-file",
+                        type=str,
+                        default=None,
+                        help="file to write task progress and failures to as builds complete")
     args = parser.parse_args()
 
     if args.configure_only and len(args.vehicle) == 0 and not args.all_vehicles:
@@ -233,6 +259,7 @@ def main():
         parallel_copies=args.parallel_copies,
         jobs=args.jobs,
         configure_only=args.configure_only,
+        progress_file=args.progress_file,
     )
     failures = bb.run()
     if failures:

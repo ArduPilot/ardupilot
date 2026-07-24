@@ -42,8 +42,15 @@ VEHICLE_MAP = {
 class BuildScriptBase(ABC):
     """Base class for build scripts with common utilities for running programs"""
 
-    def __init__(self):
+    def __init__(self, progress_file=None):
         self.tmpdir = None  # Can be set by subclasses that need it
+        self.progress_file = progress_file
+
+    def write_progress_file(self, content: str):
+        '''write content to the progress file, if one was specified'''
+        if self.progress_file is None:
+            return
+        pathlib.Path(self.progress_file).write_text(content)
 
     def resolve_board_and_vehicle_lists(self, all_boards=False, all_vehicles=False, exclude_board_glob=None):
         '''populate self.boards_by_name and self.vehicle_map; expand or
