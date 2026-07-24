@@ -727,7 +727,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Crash Deceleration Threshold
     // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensitive (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
     // @Units: m/s/s
-    // @Range: 0 127
+    // @Range: 10 127
     // @Increment: 1
     // @User: Advanced
     GSCALAR(crash_accel_threshold,          "CRASH_ACC_THRESH",   0),
@@ -1288,6 +1288,12 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("RNGFND_LND_DIST", 41, ParametersG2, rangefinder_land_engage_dist_m, 0),
+#endif
+
+#if AP_BIONICYAW_ENABLED
+    // @Group: BYAW_
+    // @Path: ../libraries/AP_BionicYaw/AP_BionicYaw.cpp
+    AP_SUBGROUPINFO(bionicyaw, "BYAW_", 42, ParametersG2, AP_BionicYaw),
 #endif
 
     AP_GROUPEND
