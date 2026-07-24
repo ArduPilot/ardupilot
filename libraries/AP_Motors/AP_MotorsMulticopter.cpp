@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: BAT_VOLT_MAX
     // @DisplayName: Battery voltage compensation maximum voltage
     // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.2 * cell count, 0 = Disabled
-    // @Range: 6 53
+    // @Range: 6 61
     // @Units: V
     // @Increment: 0.1
     // @User: Advanced
@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Param: BAT_VOLT_MIN
     // @DisplayName: Battery voltage compensation minimum voltage
     // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.3 * cell count, 0 = Disabled
-    // @Range: 6 42
+    // @Range: 6 47
     // @Units: V
     // @Increment: 0.1
     // @User: Advanced
