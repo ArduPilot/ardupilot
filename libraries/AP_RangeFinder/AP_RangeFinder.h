@@ -215,6 +215,7 @@ public:
         OutOfRangeLow  = 2,
         OutOfRangeHigh = 3,
         Good           = 4,
+        PoweredDown    = 5,
     };
 
     static constexpr int8_t SIGNAL_QUALITY_MIN = 0;

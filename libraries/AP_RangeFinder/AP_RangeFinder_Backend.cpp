@@ -97,6 +97,18 @@ bool AP_RangeFinder_Backend::get_temp(float &temp) const
     return _get_temp(temp);
 }
 
+// return true if rangefinder should be powered down
+bool AP_RangeFinder_Backend::should_power_down() const {
+    // Power saving range must be configured
+    if (params.powersave_range <= 0) {
+        return false;
+    }
+
+    // Must be above configured height
+    RangeFinder &frontend = *AP::rangefinder();
+    return frontend.estimated_terrain_height > params.powersave_range;
+}
+
 #if AP_SCRIPTING_ENABLED
 // get a copy of state structure
 void AP_RangeFinder_Backend::get_state(RangeFinder::RangeFinder_State &state_arg)
