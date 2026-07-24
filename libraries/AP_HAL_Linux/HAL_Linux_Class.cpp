@@ -218,7 +218,31 @@ static RCOutput_Bebop rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_BEBOP_BL
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 static RCOutput_Disco rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_DISCO_BLDC_I2C_BUS, HAL_RCOUT_DISCO_BLDC_I2C_ADDR));
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
-static RCOutput_Sysfs rcoutDriver(0, 0, 14);
+// The Navio2 RCIO co-processor exposes 14 PWM channels as a sysfs pwmchip.
+// Its index depends on the Pi model: 0 on Pi 4 (BCM), 6 on Pi 5 (the RP1
+// shifts pwmchip enumeration). Locate it at runtime by its channel count so a
+// single binary works on both, instead of hard-coding the index.
+// Uses raw stdio, not the Util file helpers, because rcoutDriver is a
+// static global constructed before hal.util is available.
+static uint8_t navio2_rcio_pwmchip()
+{
+    for (uint8_t i = 0; i < 32; i++) {
+        char path[64];
+        snprintf(path, sizeof(path), "/sys/class/pwm/pwmchip%u/npwm", (unsigned)i);
+        FILE *f = fopen(path, "r");
+        if (f == nullptr) {
+            continue;
+        }
+        unsigned npwm = 0;
+        const int got = fscanf(f, "%u", &npwm);
+        fclose(f);
+        if (got == 1 && npwm >= 14) {
+            return i;
+        }
+    }
+    return 0;  // fall back to the Pi 4 / BCM default
+}
+static RCOutput_Sysfs rcoutDriver(navio2_rcio_pwmchip(), 0, 14);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
 static ap::RCOutput_Tap rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
