@@ -323,8 +323,8 @@ void ModeFlowHold::run()
     Vector2f bf_angles_rad;
 
     // calculate alt-hold angles
-    int16_t roll_in = copter.channel_roll->get_control_in();
-    int16_t pitch_in = copter.channel_pitch->get_control_in();
+    const float roll_in = copter.channel_roll->norm_input_dz();
+    const float pitch_in = copter.channel_pitch->norm_input_dz();
     const float angle_max_rad = copter.attitude_control->lean_angle_max_rad();
 
     float target_roll_rad, target_pitch_rad;
@@ -337,7 +337,7 @@ void ModeFlowHold::run()
         // don't use for first 3s when we are just taking off
         Vector2f flow_angles;
 
-        flowhold_flow_to_angle(flow_angles, (roll_in != 0) || (pitch_in != 0));
+        flowhold_flow_to_angle(flow_angles, !is_zero(roll_in) || !is_zero(pitch_in));
         flow_angles.x = constrain_float(flow_angles.x, -angle_max_rad/2, angle_max_rad/2);
         flow_angles.y = constrain_float(flow_angles.y, -angle_max_rad/2, angle_max_rad/2);
         bf_angles_rad += flow_angles;

@@ -143,7 +143,7 @@ bool Copter::should_use_landing_swash() const
 void Copter::heli_update_landing_swash()
 {
     motors->set_collective_for_landing(should_use_landing_swash());
-    update_collective_low_flag(channel_throttle->get_control_in());
+    update_collective_low_flag(int16_t(channel_throttle->norm_input_dz() * 1000.0f));
 }
 
 // convert motor interlock switch's position to desired rotor speed expressed as a value from 0 to 1
@@ -152,8 +152,8 @@ float Copter::get_pilot_desired_rotor_speed() const
 {
     RC_Channel *rc_ptr = rc().find_channel_for_option(RC_Channel::AUX_FUNC::MOTOR_INTERLOCK);
     if (rc_ptr != nullptr) {
-        rc_ptr->set_range(1000);
-        return (float)rc_ptr->get_control_in() * 0.001f;
+        rc_ptr->set_range();
+        return rc_ptr->norm_input_dz();
     }
     return 0.0f;
 }

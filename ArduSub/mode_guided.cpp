@@ -485,7 +485,7 @@ void ModeGuided::guided_pos_control_run()
     float target_yaw_rate = 0;
     if (!sub.failsafe.pilot_input) {
         // get pilot's desired yaw rate
-        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz() * 4500.0f);
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         } else{
@@ -517,18 +517,18 @@ void ModeGuided::guided_pos_control_run()
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch & yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_yaw_rate);
     } else if (sub.auto_yaw_mode == AUTO_YAW_LOOK_AT_HEADING) {
         // roll, pitch from pilot, yaw & yaw_rate from auto_control
         target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
-        attitude_control->input_euler_angle_roll_pitch_slew_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_slew_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, get_auto_heading(), target_yaw_rate);
     } else if (sub.auto_yaw_mode == AUTO_YAW_RATE) {
         // roll, pitch from pilot, yaw_rate from auto_control
         target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_yaw_rate);
     } else {
         // roll, pitch from pilot, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, get_auto_heading(), true);
     }
 }
 
@@ -552,7 +552,7 @@ void ModeGuided::guided_vel_control_run()
     float target_yaw_rate = 0;
     if (!sub.failsafe.pilot_input) {
         // get pilot's desired yaw rate
-        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz() * 4500.0f);
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         } else{
@@ -590,18 +590,18 @@ void ModeGuided::guided_vel_control_run()
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch & yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_yaw_rate);
     } else if (sub.auto_yaw_mode == AUTO_YAW_LOOK_AT_HEADING) {
         // roll, pitch from pilot, yaw & yaw_rate from auto_control
         target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
-        attitude_control->input_euler_angle_roll_pitch_slew_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_slew_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, get_auto_heading(), target_yaw_rate);
     } else if (sub.auto_yaw_mode == AUTO_YAW_RATE) {
         // roll, pitch from pilot, yaw_rate from auto_control
         target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_yaw_rate);
     } else {
         // roll, pitch from pilot, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, get_auto_heading(), true);
     }
 }
 
@@ -626,7 +626,7 @@ void ModeGuided::guided_posvel_control_run()
 
     if (!sub.failsafe.pilot_input) {
         // get pilot's desired yaw rate
-        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz() * 4500.0f);
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         } else{
@@ -670,18 +670,18 @@ void ModeGuided::guided_posvel_control_run()
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
         // roll & pitch & yaw rate from pilot
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_yaw_rate);
     } else if (sub.auto_yaw_mode == AUTO_YAW_LOOK_AT_HEADING) {
         // roll, pitch from pilot, yaw & yaw_rate from auto_control
         target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
-        attitude_control->input_euler_angle_roll_pitch_slew_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_slew_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, get_auto_heading(), target_yaw_rate);
     } else if (sub.auto_yaw_mode == AUTO_YAW_RATE) {
         // roll, pitch from pilot, and yaw_rate from auto_control
         target_yaw_rate = sub.yaw_look_at_heading_slew * 100.0;
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_yaw_rate);
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_yaw_rate);
     } else {
         // roll, pitch from pilot, yaw heading from auto_heading()
-        attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), get_auto_heading(), true);
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, get_auto_heading(), true);
     }
 }
 
