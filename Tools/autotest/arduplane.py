@@ -5804,13 +5804,26 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "TKOFF_THR_IDLE": 20.0,
             "TKOFF_THR_MINSPD": 3.0,
         })
-        self.change_mode("TAKEOFF")
+        expected_idle_throttle = 1000+10*self.get_parameter("TKOFF_THR_IDLE")
 
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 0, 0, 30),
+        ])
+
+        self.change_mode("AUTO")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        # Ensure that the throttle rises to idle throttle.
+        self.assert_servo_channel_range(3, expected_idle_throttle-10, expected_idle_throttle+10)
+
+        self.disarm_vehicle()
+
+        self.change_mode("TAKEOFF")
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
         # Ensure that the throttle rises to idle throttle.
-        expected_idle_throttle = 1000+10*self.get_parameter("TKOFF_THR_IDLE")
         self.assert_servo_channel_range(3, expected_idle_throttle-10, expected_idle_throttle+10)
 
         # Launch the catapult

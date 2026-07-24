@@ -683,19 +683,32 @@ void Plane::update_alt()
  */
 void Plane::update_flight_stage(void)
 {
-    // Update the speed & height controller states
+    // First check if we are flying in VTOL.
+#if HAL_QUADPLANE_ENABLED
     if (control_mode->does_auto_throttle() && !throttle_suppressed) {
         if (control_mode == &mode_auto) {
-#if HAL_QUADPLANE_ENABLED
             if (quadplane.in_vtol_auto()) {
                 set_flight_stage(AP_FixedWing::FlightStage::VTOL);
                 return;
             }
-#endif
+        }
+    }
+#endif // HAL_QUADPLANE_ENABLED
+
+    // Allow going into TAKEOFF, even if throttle_supressed (waiting on the ground).
+    if (control_mode->does_auto_throttle()) {
+        if (control_mode == &mode_auto) {
             if (auto_state.takeoff_complete == false) {
                 set_flight_stage(AP_FixedWing::FlightStage::TAKEOFF);
                 return;
-            } else if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
+            }
+        }
+    }
+
+    // Examine the rest of the cases.
+    if (control_mode->does_auto_throttle() && !throttle_suppressed) {
+        if (control_mode == &mode_auto) {
+            if (mission.get_current_nav_cmd().id == MAV_CMD_NAV_LAND) {
                 if (landing.is_commanded_go_around() || flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING) {
                     // abort mode is sticky, it must complete while executing NAV_LAND
                     set_flight_stage(AP_FixedWing::FlightStage::ABORT_LANDING);
