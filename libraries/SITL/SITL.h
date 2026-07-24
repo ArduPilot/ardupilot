@@ -293,6 +293,12 @@ public:
         AP_Float wcof_yn;
         AP_Float wcof_zp;
         AP_Float wcof_zn;
+
+        // ground effect baro altitude error amplitude in metres (0 disables).
+        // Models the static pressure error caused by rotor downwash when near
+        // the ground: baro under-reads altitude while in ground effect,
+        // producing an apparent climb as the vehicle lifts out of the zone.
+        AP_Float ground_effect_alt_err;
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
