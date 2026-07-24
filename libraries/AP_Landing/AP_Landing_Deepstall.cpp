@@ -505,7 +505,8 @@ bool AP_Landing_Deepstall::terminate(void) {
 
 void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
 {
-    float loiter_radius = landing.nav_controller->loiter_radius(landing.aparm.loiter_radius);
+    float loiter_radius = landing.nav_controller->calc_corrected_loiter_radius(
+        landing.aparm.loiter_radius);
 
     Vector3f wind = landing.ahrs.wind_estimate();
     // TODO: Support a user defined approach heading
