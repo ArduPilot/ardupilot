@@ -602,6 +602,9 @@ public:
 
     static void zero_rc_outputs();
 
+    // zero all output_scaled values for all functions
+    static void zero_output_scaled_all();
+
     // initialize before any call to push
     void init(uint32_t motor_mask = 0, AP_HAL::RCOutput::output_mode mode = AP_HAL::RCOutput::MODE_PWM_NONE);
 
