@@ -432,7 +432,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_command(msp_packet_t *cmd, ms
     // initialize reply by default
     reply->cmd = cmd->cmd;
 
-    if (MSP2_IS_SENSOR_MESSAGE(cmd_msp)) {
+    if (MSP2_IS_SENSOR_MESSAGE(cmd_msp) || cmd_msp == MSP2_SET_RADAR_POS) {
         ret = msp_process_sensor_command(cmd_msp, src);
     } else {
         ret = msp_process_out_command(cmd_msp, dst);
@@ -544,6 +544,13 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_sensor_command(uint16_t cmd_m
     }
     break;
 #endif
+#if AP_MSP_RADAR_ENABLED
+    case MSP2_SET_RADAR_POS: {
+        const MSP::msp_radar_pos_message_t *pkt = (const MSP::msp_radar_pos_message_t *)src->ptr;
+        msp_handle_radar(*pkt);
+    }
+    break;
+#endif
     }
 
     return MSP_RESULT_NO_REPLY;
@@ -599,6 +606,17 @@ void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_mess
     if (airspeed) {
         airspeed->handle_msp(pkt);
     }
+}
+#endif
+
+#if AP_MSP_RADAR_ENABLED
+void AP_MSP_Telem_Backend::msp_handle_radar(const MSP::msp_radar_pos_message_t &pkt)
+{
+    AP_MSP *msp = AP::msp();
+    if (!msp) {
+        return;
+    }
+    msp->update_radar_data(pkt);
 }
 #endif
 
