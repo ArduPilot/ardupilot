@@ -209,7 +209,7 @@ public:
     // true if compass is being used
     bool use_compass();
 
-    // return the quaternion defining the rotation from NED to XYZ (body) axes
+    // return the quaternion defining the rotation from XYZ (body) to NED axes
     bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
 
     // return secondary estimates; note that this may return nullptr!
