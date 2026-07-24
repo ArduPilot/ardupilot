@@ -84,6 +84,8 @@ public:
     // this is out here so parameters can be poked into it
     static NavEKF2 EKF2;
 
+private:
+
     bool start();
     bool started;
     uint32_t start_time_ms;  // timer used to delay starting the filter
