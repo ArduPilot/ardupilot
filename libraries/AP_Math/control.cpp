@@ -745,31 +745,29 @@ float kinematic_limit(float dir_xy, float dir_z, float max_xy, float max_z_neg, 
         return max_xy;
     }
 
-    // Normalize the direction vector (only ratio matters)
-    dir_xy /= dir_length;
-    dir_z /= dir_length;
-
     // Compare the direction slope (|dir_z/dir_xy|) to the limit slope
-    // (max_z/max_xy) to determine which axis constraint is hit first.
-    const float slope = dir_z / dir_xy;
-
-    if (is_positive(slope)) {
+    // (max_z/max_xy) to determine which axis constraint is hit first, without
+    // normalizing dir_xy/dir_z first: dir_xy > 0 here, so the slope and its
+    // sign are scale-invariant and cross-multiplication tests them without a
+    // divide. dir_length is folded into the single divide that survives in
+    // the taken branch below instead of two divides spent normalizing.
+    if (dir_z >= FLT_EPSILON * dir_xy) {
         // Positive-Z: constrained by max_z_pos
-        if (slope < max_z_pos / max_xy) {
+        if (dir_z * max_xy < max_z_pos * dir_xy) {
             // Shallow direction: horizontal limit reached first
-            return max_xy / dir_xy;
+            return max_xy * dir_length / dir_xy;
         }
         // Steep direction: vertical limit reached first
-        return max_z_pos / dir_z;
+        return max_z_pos * dir_length / dir_z;
     }
 
     // Negative-Z: constrained by max_z_neg
-    if (-slope < max_z_neg / max_xy) {
+    if (-dir_z * max_xy < max_z_neg * dir_xy) {
         // Shallow direction: horizontal limit reached first
-        return max_xy / dir_xy;
+        return max_xy * dir_length / dir_xy;
     }
     // Steep direction: vertical limit reached first
-    return -max_z_neg / dir_z;
+    return -max_z_neg * dir_length / dir_z;
 }
 
 // Applies an exponential curve to a normalized input in the range [-1, 1].
