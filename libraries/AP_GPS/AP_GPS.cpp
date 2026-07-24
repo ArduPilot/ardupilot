@@ -173,13 +173,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     AP_GROUPINFO("_SBP_LOGMASK", 8, AP_GPS, _sbp_logmask, -256),
 #endif //AP_GPS_SBP2_ENABLED || AP_GPS_SBP_ENABLED
 
-    // @Param: _RAW_DATA
-    // @DisplayName: Raw data logging
-    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into logger; on Septentrio this will log on the equipment's SD card and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
-    // @Values: 0:Ignore,1:Always log,2:Stop logging when disarmed (SBF only),5:Only log every five samples (uBlox only)
-    // @RebootRequired: True
-    // @User: Advanced
-    AP_GROUPINFO("_RAW_DATA", 9, AP_GPS, _raw_data, 0),
+    // 9 was GPS_RAW_DATA, moved to GPS1_RAW_DATA / GPS2_RAW_DATA (AP_GPS::Params)
 
     // 10 was GPS_GNSS_MODE
 
@@ -388,6 +382,9 @@ void AP_GPS::convert_parameters()
         { k_param_gps_key, 30, AP_PARAM_INT32, "GPS1_CAN_OVRIDE" },
         { k_param_gps_key, 31, AP_PARAM_INT32, "GPS2_CAN_OVRIDE" },
 #endif
+        // PARAMETER_CONVERSION - Added: Mar-2026 for 4.8
+        { k_param_gps_key, 9, AP_PARAM_INT8, "GPS1_RAW_DATA" },
+        { k_param_gps_key, 9, AP_PARAM_INT8, "GPS2_RAW_DATA" },
     };
     AP_Param::convert_old_parameters(conversion_info, ARRAY_SIZE(conversion_info));
 
@@ -1849,7 +1846,23 @@ bool AP_GPS::pre_arm_checks(char failure_msg[], uint16_t failure_msg_len)
     return true;
 }
 
-bool AP_GPS::logging_failed(void) const {
+bool AP_GPS::logging_present(void) const
+{
+    for (uint8_t i = 0; i < num_sensors(); i++) {
+        if (params[i].raw_data != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AP_GPS::logging_enabled(void) const
+{
+    return logging_present();
+}
+
+bool AP_GPS::logging_failed(void) const
+{
     if (!logging_enabled()) {
         return false;
     }
