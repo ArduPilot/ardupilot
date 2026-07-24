@@ -713,6 +713,9 @@ void AnalogIn::timer_tick_adc(uint8_t index)
     }
 
     for (uint8_t i=0; i<num_grp_channels; i++) {
+        // get_analog_pin(index, i) is invariant across the inner loop below; hoist
+        // it out so it is evaluated once per channel instead of once per (channel,source).
+        const uint8_t apin = get_analog_pin(index, i);
         Debug("adc%u chan %u value=%f\n",
               (unsigned)index+1,
               (unsigned)get_pin_channel(index, i),
@@ -720,7 +723,7 @@ void AnalogIn::timer_tick_adc(uint8_t index)
         for (uint8_t j=0; j < ANALOG_MAX_CHANNELS; j++) {
             ChibiOS::AnalogSource *c = _channels[j];
             if (c != nullptr) {
-                if ((get_analog_pin(index, i) == c->_pin) && (c->_pin != ANALOG_INPUT_NONE)) {
+                if ((apin == c->_pin) && (c->_pin != ANALOG_INPUT_NONE)) {
                     // add a value
                     c->_add_value(buf_adc[i] * ADC_BOARD_SCALING, _board_voltage);
                 } else if (c->_pin == ANALOG_SERVO_VRSSI_PIN) {
