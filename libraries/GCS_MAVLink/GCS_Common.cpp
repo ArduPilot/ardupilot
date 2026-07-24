@@ -3472,7 +3472,10 @@ float GCS_MAVLINK::vfr_hud_airspeed() const
     // because most vehicles don't have airspeed sensors, we return a
     // different sort of speed estimate in the relevant field for
     // comparison's sake.
-    return AP::gps().ground_speed();
+    const AP_GPS &gps = AP::gps();
+    if (gps.status() >= AP_GPS_FixType::FIX_3D) {
+        return gps.ground_speed();
+    }
 #endif
 
     return 0.0;
