@@ -1261,8 +1261,44 @@ void NavEKF3_core::selectHeightForFusion()
     } else if ((frontend->_useRngSwHgt > 0) && ((frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::BARO) || (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::GPS)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
         const ftype rangeMaxUse = 1e-2 * (ftype)_rng->max_distance_orient(ROTATION_PITCH_270) * (ftype)frontend->_useRngSwHgt;
-        bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
-        bool belowLowerSwHgt = ((terrainState - stateStruct.position.z) < 0.7f * rangeMaxUse) && (imuSampleTime_ms - gndHgtValidTime_ms < 1000);
+
+        // Use the AGL KF height estimate when available.  The default
+        // (terrainState - position.z) depends on the main filter's
+        // vertical position which can be corrupted by baro ground
+        // effect.  The AGL KF is independent of baro — it fuses IMU
+        // and rangefinder only — so it gives a reliable height-above-
+        // ground for the switching decision.
+        ftype heightAboveGnd;
+        // Freshness gate for the switch-on decision below. It normally tracks the
+        // legacy terrain-offset estimator, but that estimator predicts range from the
+        // baro-contaminated main-filter altitude and stalls near the ground, leaving
+        // gndHgtValidTime_ms stale. When the AGL KF is the height authority it owns the
+        // rangefinder, so gate on its own last-fusion time instead - otherwise the stale
+        // legacy timestamp vetoes the switch and altitude stays on baro below the switch height.
+        uint32_t hgtValidTime_ms = gndHgtValidTime_ms;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+            heightAboveGnd = aglKfH;
+            hgtValidTime_ms = lastAglRngFuseTime_ms;
+        } else
+#endif
+        {
+            heightAboveGnd = terrainState - stateStruct.position.z;
+        }
+
+        bool aboveUpperSwHgt = heightAboveGnd > rangeMaxUse;
+        bool belowLowerSwHgt = (heightAboveGnd < 0.7f * rangeMaxUse) && (imuSampleTime_ms - hgtValidTime_ms < 1000);
+
+        // The vehicle only marks terrain stable during takeoff and landing, leaving
+        // altitude on baro through cruise/hover. When the IMU-aided AGL KF is enabled
+        // and valid it provides a reliable, de-glitched height above ground that is
+        // independent of baro, so let it act as a stable terrain reference here too.
+        bool terrainStable = terrainHgtStable;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+        if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+            terrainStable = true;
+        }
+#endif
 
         // If the terrain height is consistent and we are moving slowly, then it can be
         // used as a height reference in combination with a range finder
@@ -1271,13 +1307,13 @@ void NavEKF3_core::selectHeightForFusion()
         if (filterStatus.flags.horiz_vel) {
             // We can use the velocity estimate
             ftype horizSpeed = stateStruct.velocity.xy().length();
-            dontTrustTerrain = (horizSpeed > frontend->_useRngSwSpd) || !terrainHgtStable;
+            dontTrustTerrain = (horizSpeed > frontend->_useRngSwSpd) || !terrainStable;
             ftype trust_spd_trigger = MAX((frontend->_useRngSwSpd - 1.0f),(frontend->_useRngSwSpd * 0.5f));
-            trustTerrain = (horizSpeed < trust_spd_trigger) && terrainHgtStable;
+            trustTerrain = (horizSpeed < trust_spd_trigger) && terrainStable;
         } else {
             // We can't use the velocity estimate
-            dontTrustTerrain = !terrainHgtStable;
-            trustTerrain = terrainHgtStable;
+            dontTrustTerrain = !terrainStable;
+            trustTerrain = terrainStable;
         }
 
         /*
@@ -1371,8 +1407,22 @@ void NavEKF3_core::selectHeightForFusion()
         // using range finder data
         // correct for tilt using a flat earth model
         if (prevTnb.c.z >= 0.7) {
-            // calculate height above ground
-            hgtMea  = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+            // calculate height above ground and its observation noise
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+            if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+                // Fuse the IMU-aided AGL KF height in place of the raw rangefinder: it is the
+                // same tilt-compensated range, de-glitched, and its covariance already folds
+                // in terrain-gradient uncertainty, so it does not need the extra term below.
+                hgtMea = MAX(aglKfH, rngOnGnd);
+                posDownObsNoise = MAX(aglKfP[0][0], sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f)));
+            } else
+#endif
+            {
+                hgtMea = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+                posDownObsNoise = sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f));
+                // add uncertainty created by terrain gradient and vehicle tilt
+                posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
+            }
             // correct for terrain position relative to datum
             hgtMea -= terrainState;
             // correct sensor so that local position height adjusts to match GPS
@@ -1383,10 +1433,6 @@ void NavEKF3_core::selectHeightForFusion()
             velPosObs[5] = -hgtMea;
             // enable fusion
             fuseHgtData = true;
-            // set the observation noise
-            posDownObsNoise = sq(constrain_ftype(frontend->_rngNoise, 0.1f, 10.0f));
-            // add uncertainty created by terrain gradient and vehicle tilt
-            posDownObsNoise += sq(rangeDataDelayed.rng * frontend->_terrGradMax) * MAX(0.0f , (1.0f - sq(prevTnb.c.z)));
         } else {
             // disable fusion if tilted too far
             fuseHgtData = false;
