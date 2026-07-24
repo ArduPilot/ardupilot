@@ -357,7 +357,6 @@ AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
 
 AP_HW_PRINCIPIOT_H7PI                1248
-
 AP_HW_KT_FMU_F1                      1250
 
 AP_HW_GPILOT_P1						 1275
@@ -569,6 +568,7 @@ AP_HW_IOMCU_F103_8MHZ                5712  # some boards are clocked differently
 AP_HW_IOMCU_F100                     5713
 
 # IDs 5730-5739 reserved for NWBlue
+AP_HW_NWBLUE_PROH757                 5730
 
 #IDs 5800-5809 reserved for Droneer
 AP_HW_DroneerF405                    5800
