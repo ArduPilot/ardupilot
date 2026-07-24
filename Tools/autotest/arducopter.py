@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import math
+import glob
 import os
 import pathlib
 import re
@@ -4114,6 +4115,178 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         if ex is not None:
             raise ex
+
+    def _logger_log_list(self):
+        '''return a sorted list of full paths to logs/00*.BIN.'''
+        return sorted(glob.glob("logs/00*.BIN"))
+
+    def _logger_log_total_bytes(self, files):
+        return sum(os.path.getsize(p) for p in files)
+
+    def _logger_log_seq(self, path):
+        '''extract the integer sequence number from a logs/0000NNNN.BIN path.'''
+        m = re.search(r'(\d+)\.BIN$', path)
+        if m is None:
+            raise NotAchievedException("Unexpected log filename %s" % path)
+        return int(m.group(1))
+
+    def LoggerFreeSpaceAtStartup(self):
+        '''Boot-time Prep_MinSpace trims the oldest log when SIM_DISK_MAX
+        is set so disk_space_avail() reports the disk is short of
+        LOG_FILE_MB_FREE. This exercises the long-standing boot-time
+        free-space trim using the new SIM_DISK_MAX cap.'''
+        self.context_push()
+        try:
+            # Start clean so we know exactly which logs we generated.
+            self.customise_SITL_commandline([])
+            util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
+            self.reboot_sitl()
+
+            # Generate several log files via brief arm/disarm cycles.
+            self.set_parameters({
+                "LOG_DISARMED":     0,
+                "LOG_FILE_DSRMROT": 1,
+                "LOG_FILE_MB_FREE": 0,    # don't trim yet
+                "SIM_DISK_MAX":     0,    # uncapped while seeding
+            })
+            self.set_autodisarm_delay(0)
+            for _ in range(4):
+                self.wait_ready_to_arm()
+                self.arm_vehicle()
+                self.delay_sim_time(4)
+                self.disarm_vehicle()
+                self.delay_sim_time(2)
+
+            seed = self._logger_log_list()
+            self.progress("seeded %u logs, total %u bytes" %
+                          (len(seed), self._logger_log_total_bytes(seed)))
+            if len(seed) < 3:
+                raise NotAchievedException("expected at least 3 seed logs, got %u" % len(seed))
+
+            # Pick a cap that leaves less than LOG_FILE_MB_FREE free, so
+            # the boot-time Prep_MinSpace HAS to remove at least one log.
+            used_mb = self._logger_log_total_bytes(seed) / (1024 * 1024)
+            log_file_mb_free = 4
+            sim_disk_max_mb = max(int(used_mb) + 1, log_file_mb_free + 1)
+
+            self.set_parameters({
+                "SIM_DISK_MAX":     sim_disk_max_mb,
+                "LOG_FILE_MB_FREE": log_file_mb_free,
+            })
+
+            # Reboot so Init() runs Prep_MinSpace under the new cap.
+            self.reboot_sitl()
+            self.delay_sim_time(2)
+
+            after_reboot = self._logger_log_list()
+            self.progress("after reboot: %u logs" % len(after_reboot))
+
+            if len(after_reboot) >= len(seed):
+                raise NotAchievedException(
+                    "boot trim did not remove any logs: pre=%s post=%s" %
+                    (seed, after_reboot))
+
+            # The trim removes the oldest file first; that one must be gone.
+            if seed[0] in after_reboot:
+                raise NotAchievedException(
+                    "oldest seed log %s survived boot trim" % seed[0])
+        finally:
+            self.context_pop()
+            # Reset the cap to uncapped for subsequent tests, and reboot
+            # so AP_Filesystem accounting starts clean.
+            self.set_parameter("SIM_DISK_MAX", 0)
+            self.reboot_sitl()
+
+    def LoggerFreeSpaceInFlightRecovery(self):
+        '''AP_Logger File backend proactively trims old logs in the IO
+        thread when disk_space_avail() drops below min(50 MB,
+        0.1 * LOG_FILE_MB_FREE). The active log file keeps being
+        written to - no close-and-reopen. The recovery path is the
+        same airborne or on the ground, so we exercise it on the
+        ground with LOG_DISARMED=1 to keep the test deterministic.'''
+        self.context_push()
+        try:
+            self.customise_SITL_commandline([])
+
+            # Wipe any logs from previous tests, then stage two dummy
+            # logs of 10 MB apiece. Prep_MinSpace recognises them as
+            # log files by filename and deletes them in number order.
+            # LASTLOG.TXT must point at the newest staged log; without
+            # it find_last_log() returns 0 and start_new_log() reopens
+            # 00000001.BIN with O_TRUNC, wiping the seed.
+            util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
+            util.run_cmd('mkdir -p logs')
+            util.run_cmd('dd if=/dev/zero of=logs/00000001.BIN bs=1024 count=10240 status=none')
+            util.run_cmd('dd if=/dev/zero of=logs/00000002.BIN bs=1024 count=10240 status=none')
+            util.run_cmd('printf 2 > logs/LASTLOG.TXT')
+
+            # Boot so AP_Logger sees the staged files and opens log
+            # 00000003.BIN for its own writes.
+            self.reboot_sitl()
+            # The autotest default lowers LOG_DARM_RATEMAX and
+            # LOG_FILE_RATEMAX so disarmed logs stay small; clear
+            # those so the writer fills the SIM_DISK_MAX headroom in
+            # a few sim seconds.
+            self.set_parameters({
+                "LOG_DISARMED":      1,
+                "LOG_FILE_DSRMROT":  0,
+                "LOG_FILE_MB_FREE":  0,
+                "SIM_DISK_MAX":      0,
+                "LOG_BITMASK":       131071,
+                "LOG_DARM_RATEMAX":  0,
+                "LOG_FILE_RATEMAX":  0,
+            })
+            # let the logger open its own log file
+            self.delay_sim_time(3)
+
+            seed = ['logs/00000001.BIN', 'logs/00000002.BIN']
+            active_log = 'logs/00000003.BIN'
+
+            # Pick a cap that leaves the writer well above the
+            # pre-existing reactive 8 MB free-space threshold
+            # (_free_space_min_avail) but below the proactive
+            # threshold (min(50, 0.1 * LOG_FILE_MB_FREE) MB), so
+            # only the proactive scan triggers and the writer keeps
+            # its fd open throughout. With LOG_FILE_MB_FREE = 400
+            # the threshold is 40 MB; SIM_DISK_MAX = used + 30 MB
+            # leaves ~30 MB free at the start.
+            used_mb = self._logger_log_total_bytes(self._logger_log_list()) / (1024 * 1024)
+            sim_disk_max_mb = int(used_mb) + 30
+            self.set_parameters({
+                "SIM_DISK_MAX":     sim_disk_max_mb,
+                "LOG_FILE_MB_FREE": 400,
+            })
+
+            active_size_before = os.path.getsize(active_log)
+
+            # Proactive scan runs once per _low_space_check_interval_ms
+            # (60 s of sim time). Allow two cycles plus margin.
+            tstart = self.get_sim_time()
+            trimmed = False
+            while self.get_sim_time_cached() - tstart < 180:
+                after = self._logger_log_list()
+                if seed[0] not in after and seed[1] not in after:
+                    trimmed = True
+                    break
+                self.delay_sim_time(5)
+
+            if not trimmed:
+                final = self._logger_log_list()
+                raise NotAchievedException(
+                    "proactive Prep_MinSpace did not trim seed logs within 180s; logs=%s" % final)
+
+            after = self._logger_log_list()
+            if active_log not in after:
+                raise NotAchievedException(
+                    "active log %s was unlinked by cleanup" % active_log)
+            if os.path.getsize(active_log) <= active_size_before:
+                raise NotAchievedException(
+                    "active log did not grow after cleanup (size %u -> %u)" %
+                    (active_size_before, os.path.getsize(active_log)))
+        finally:
+            self.context_pop()
+            self.set_parameter("SIM_DISK_MAX", 0)
+            self.reboot_sitl()
 
     def AutoTune(self):
         """Test autotune mode"""
@@ -15117,6 +15290,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.SetModesViaAuxSwitch,
              self.AuxSwitchOptions,
              self.AuxFunctionsInMission,
+             self.LoggerFreeSpaceAtStartup,
+             self.LoggerFreeSpaceInFlightRecovery,
              self.AutoTune,
              self.AutoTuneYawD,
              self.NoRCOnBootPreArmFailure,
