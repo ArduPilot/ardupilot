@@ -375,6 +375,13 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Units: rad/s
     AP_GROUPINFO("FLOW_RND",   34, SIM,  flow_noise,  0.05f),
 
+    // @Param: TF_PAUSE
+    // @DisplayName: Pause Trusted Flight validation
+    // @Description: Pause Trusted Flight validation updates to allow stale-result testing in SITL
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Advanced
+    AP_GROUPINFO("TF_PAUSE", 35, SIM,  trusted_flight_validate_pause, 0),
+
     // @Param: TWIST_X
     // @DisplayName: Twist x
     // @Description: Rotational acceleration of twist x axis
