@@ -292,7 +292,10 @@ float GCS_MAVLINK_Plane::vfr_hud_climbrate() const
 
 void GCS_MAVLINK_Plane::send_wind() const
 {
-    const Vector3f wind = AP::ahrs().wind_estimate();
+    Vector3f wind;
+    // send the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
     mavlink_msg_wind_send(
         chan,
         degrees(atan2f(-wind.y, -wind.x)), // use negative, to give
@@ -1228,7 +1231,9 @@ uint8_t GCS_MAVLINK_Plane::high_latency_tgt_airspeed() const
 uint8_t GCS_MAVLINK_Plane::high_latency_wind_speed() const
 {
     Vector3f wind;
-    wind = AP::ahrs().wind_estimate();
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
 
     // return units are m/s*5
     return MIN(wind.xy().length() * 5, UINT8_MAX);
@@ -1236,7 +1241,10 @@ uint8_t GCS_MAVLINK_Plane::high_latency_wind_speed() const
 
 uint8_t GCS_MAVLINK_Plane::high_latency_wind_direction() const
 {
-    const Vector3f wind = AP::ahrs().wind_estimate();
+    Vector3f wind;
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
 
     // return units are deg/2
     // need to convert -180->180 to 0->360/2

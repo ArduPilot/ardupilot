@@ -765,7 +765,9 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_wind(void)
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
-        v = ahrs.wind_estimate();
+        // use the estimate even if it is not marked valid, to preserve
+        // existing behaviour
+        IGNORE_RETURN(ahrs.get_wind(v));
     }
     // wind angle in 3 degree increments 0,360 (unsigned)
     uint32_t value = prep_number(roundf(wrap_360(degrees(atan2f(-v.y, -v.x))) * (1.0f/3.0f)), 2, 0);
