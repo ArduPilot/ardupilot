@@ -33,10 +33,6 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
         }
     }
 
-    // Store the velocity before the reset so that we can record the reset delta
-    velResetNE.x = stateStruct.velocity.x;
-    velResetNE.y = stateStruct.velocity.y;
-
     // reset the corresponding covariances
     zeroStatesVarCov(4, 5);
 
@@ -46,7 +42,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
         P[5][5] = P[4][4] = sq(frontend->_gpsHorizVelNoise);
     } else {
         // reset horizontal velocity states to the GPS velocity if available
-        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && velResetSource == resetDataSource::DEFAULT) || velResetSource == resetDataSource::GPS) {
+        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250) && (velResetSource == resetDataSource::DEFAULT || velResetSource == resetDataSource::GPS)) {
             // correct for antenna position
             gps_elements gps_corrected = gpsDataNew;
             CorrectGPSForAntennaOffset(gps_corrected);
@@ -55,7 +51,7 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
             // set the variances using the reported GPS speed accuracy
             P[5][5] = P[4][4] = sq(MAX(frontend->_gpsHorizVelNoise,gpsSpdAccuracy));
 #if EK3_FEATURE_EXTERNAL_NAV
-        } else if ((imuSampleTime_ms - extNavVelMeasTime_ms < 250 && velResetSource == resetDataSource::DEFAULT) || velResetSource == resetDataSource::EXTNAV) {
+        } else if ((imuSampleTime_ms - extNavVelMeasTime_ms < 250) && (velResetSource == resetDataSource::DEFAULT || velResetSource == resetDataSource::EXTNAV)) {
             // use external nav data as the 2nd preference
             // already corrected for sensor position
             stateStruct.velocity.x = extNavVelDelayed.vel.x;
@@ -81,12 +77,6 @@ void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
     outputDataDelayed.velocity.x = stateStruct.velocity.x;
     outputDataDelayed.velocity.y = stateStruct.velocity.y;
 
-    // Calculate the velocity jump due to the reset
-    velResetNE.x = stateStruct.velocity.x - velResetNE.x;
-    velResetNE.y = stateStruct.velocity.y - velResetNE.y;
-
-    // store the time of the reset
-    lastVelReset_ms = imuSampleTime_ms;
 }
 
 // resets position states to last GPS measurement or to zero if in constant position mode
@@ -127,7 +117,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
         P[7][7] = P[8][8] = sq(frontend->_gpsHorizPosNoise);
     } else  {
         // Use GPS data as first preference if fresh data is available
-        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::GPS) {
+        if ((imuSampleTime_ms - lastTimeGpsReceived_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::GPS)) {
             // correct for antenna position
             gps_elements gps_corrected = gpsDataNew;
             CorrectGPSForAntennaOffset(gps_corrected);
@@ -143,7 +133,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             // set the variances using the position measurement noise parameter
             P[7][7] = P[8][8] = sq(MAX(gpsPosAccuracy,frontend->_gpsHorizPosNoise));
 #if EK3_FEATURE_BEACON_FUSION
-        } else if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::RNGBCN) {
+        } else if ((imuSampleTime_ms - rngBcn.last3DmeasTime_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::RNGBCN)) {
             // use the range beacon data as a second preference
             stateStruct.position.x = rngBcn.receiverPos.x;
             stateStruct.position.y = rngBcn.receiverPos.y;
@@ -152,7 +142,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
             P[8][8] = rngBcn.receiverPosCov[1][1];
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
-        } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250 && posResetSource == resetDataSource::DEFAULT) || posResetSource == resetDataSource::EXTNAV) {
+        } else if ((imuSampleTime_ms - extNavDataDelayed.time_ms < 250) && (posResetSource == resetDataSource::DEFAULT || posResetSource == resetDataSource::EXTNAV)) {
             // use external nav data as the third preference
             stateStruct.position.x = extNavDataDelayed.pos.x;
             stateStruct.position.y = extNavDataDelayed.pos.y;
@@ -174,8 +164,7 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
     posResetNE.x = stateStruct.position.x - posResetNE.x;
     posResetNE.y = stateStruct.position.y - posResetNE.y;
 
-    // store the time of the reset
-    lastPosReset_ms = imuSampleTime_ms;
+    posNEResetCount++;
 
     // clear the timeout flags and counters
     posTimeout = false;
@@ -225,7 +214,7 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
 // reset the stateStruct's NE position to the specified position
 //    posResetNE is updated to hold the change in position
 //    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position
-//    lastPosReset_ms is updated with the time of the reset
+//    posNEResetCount is incremented to record the reset
 void NavEKF3_core::ResetPositionNE(ftype posN, ftype posE)
 {
     // Store the position before the reset so that we can record the reset delta
@@ -249,14 +238,13 @@ void NavEKF3_core::ResetPositionNE(ftype posN, ftype posE)
     outputDataDelayed.position.x += posResetNE.x;
     outputDataDelayed.position.y += posResetNE.y;
 
-    // store the time of the reset
-    lastPosReset_ms = imuSampleTime_ms;
+    posNEResetCount++;
 }
 
 // reset the stateStruct's D position
 //    posResetD is updated to hold the change in position
 //    storedOutput, outputDataNew and outputDataDelayed are updated with the change in position
-//    lastPosResetD_ms is updated with the time of the reset
+//    posDResetCount is incremented to record the reset
 void NavEKF3_core::ResetPositionD(ftype posD)
 {
     // Store the position before the reset so that we can record the reset delta
@@ -276,8 +264,7 @@ void NavEKF3_core::ResetPositionD(ftype posD)
         storedOutput[i].position.z += posResetD;
     }
 
-    // store the time of the reset
-    lastPosResetD_ms = imuSampleTime_ms;
+    posDResetCount++;
 }
 
 // reset the vertical position state using the last height measurement
@@ -307,8 +294,7 @@ void NavEKF3_core::ResetHeight(void)
     // Calculate the position jump due to the reset
     posResetD = stateStruct.position.z - posResetD;
 
-    // store the time of the reset
-    lastPosResetD_ms = imuSampleTime_ms;
+    posDResetCount++;
 
     // clear the timeout flags and counters
     hgtTimeout = false;
@@ -1427,7 +1413,7 @@ void NavEKF3_core::selectHeightForFusion()
         // enable fusion
         fuseHgtData = true;
         // set the observation noise
-        posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.1f, 100.0f));
+        posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.01f, 100.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
         if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;

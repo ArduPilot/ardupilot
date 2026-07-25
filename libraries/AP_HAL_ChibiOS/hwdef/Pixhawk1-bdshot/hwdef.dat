@@ -1,6 +1,6 @@
 # hw definition file for processing by chibios_hwdef.py
 
-include ../fmuv3-bdshot/hwdef.dat
+include ../fmuv3-bdshot/fmuv3-bdshot.inc
 
 # define the IMU types to probe. You can list more IMUs than you
 # actually have. The syntax for IMU declarations is:

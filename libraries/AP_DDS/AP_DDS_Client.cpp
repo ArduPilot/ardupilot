@@ -1300,8 +1300,23 @@ void AP_DDS_Client::main_loop(void)
 
         // create session
         if (!init_session() || !create()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            // A transient timeout creating the participant/topics (the requests
+            // have a hard per-request timeout) must not permanently kill DDS.
+            // Drop any half-open session and retry the whole connect sequence.
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed, retrying", msg_prefix);
+            uxr_delete_session(&session);
+            hal.scheduler->delay(1000);
+            continue;
+#else
+            // FIXME: determine whether we can use the retry code
+            // above on real vehicles.  We have two different paths
+            // here because the DDS CI tests were flapping for years
+            // and this was the most viable way of getting a fix
+            // merged.
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
             return;
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
         }
         connected = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
@@ -1400,9 +1415,15 @@ bool AP_DDS_Client::init_session()
         hal.scheduler->delay(1000);
     }
 
-    // setup reliable stream buffers
-    input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
-    output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    // setup reliable stream buffers.  init_session() can be re-entered when a
+    // connection attempt fails and the main loop retries, so only allocate the
+    // buffers once and reuse them across retries to avoid leaking.
+    if (input_reliable_stream == nullptr) {
+        input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    }
+    if (output_reliable_stream == nullptr) {
+        output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    }
     if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
         return false;
@@ -1518,6 +1539,14 @@ bool AP_DDS_Client::create()
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Pub/Writer session pass for index '%u'", msg_prefix, i);
             }
         } else if (topics[i].topic_rw == Topic_rw::DataReader) {
+#if AP_DDS_CLOCK_SUB_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            // IF SITL option for use_sim_time is false, don't subscribe to /clock
+            SITL::SIM *sitl = AP::sitl();
+            if (strcmp(topics[i].topic_name, "/clock") == 0 && !sitl->use_dds_sim_time) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Skipping subscription to /clock because use_sim_time is false", msg_prefix);
+                continue;
+            }
+#endif // AP_DDS_CLOCK_SUB_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
             // Subscriber
             const uxrObjectId sub_id = {
                 .id = topics[i].sub_id,
@@ -1544,25 +1573,12 @@ bool AP_DDS_Client::create()
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Topic/Sub/Reader session request retry for index '%u'", msg_prefix, i);
             }
             if (!success) {
-                // Don't fail on /clock subscription
-#if AP_DDS_CLOCK_SUB_ENABLED
-                if (i == to_underlying(TopicIndex::CLOCK_SUB)) {
-                    // Optional subscription failed, log warning but continue
-                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Optional Topic/Sub/Reader session request failure for index '%u' - continuing without it", msg_prefix, i);
-                    for (uint8_t s = 0 ; s < nRequests; s++) {
-                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
-                    }
-                } else {
-#endif
-                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
-                    for (uint8_t s = 0 ; s < nRequests; s++) {
-                        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
-                    }
-                    // TODO add a failure log message sharing the status results
-                    return false;
-#if AP_DDS_CLOCK_SUB_ENABLED
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
+                for (uint8_t s = 0 ; s < nRequests; s++) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
                 }
-#endif
+                // TODO add a failure log message sharing the status results
+                return false;
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Sub/Reader session pass for index '%u'", msg_prefix, i);
                 uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, reliable_in, &delivery_control);

@@ -242,6 +242,14 @@
                     "default_params/copter-heli.parm"
                 ]
             },
+            "heli-quad": {
+                "model": "heli-quad:@ROMFS/models/heliquad.json",
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heliquad.parm"
+                ]
+            },
             "singlecopter": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter-single.parm"
@@ -263,7 +271,7 @@
                 "external": true
             },
             "Callisto": {
-                "model": "octa-quad:@ROMFS/models/Callisto.json",
+                "model": "octa-quad-cwx:@ROMFS/models/Callisto.json",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": [
                     "default_params/copter.parm",
@@ -348,15 +356,27 @@
                 "default_params_filename": [
                     "default_params/copter-heli.parm"
                 ]
+            },
+            "heli-quad": {
+                "model": "heli-quad:@ROMFS/models/heliquad.json",
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heliquad.parm"
+                ]
             }
         }
     },
     "Blimp": {
-        "default_frame": "Blimp",
+        "default_frame": "blimp",
         "frames": {
-            "Blimp": {
+            "blimp": {
                 "waf_target": "bin/blimp",
                 "default_params_filename": "default_params/blimp.parm"
+            },
+            "blimp-motor": {
+                "waf_target": "bin/blimp",
+                "default_params_filename": ["default_params/blimp.parm", "default_params/blimp-motor.parm"]
             }
         }
     },
@@ -457,6 +477,14 @@
                     "default_params/plane-elevons.parm"
                 ]
             },
+            "plane-elevrev": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-reverse-servo-pitch-yaw.parm",
+                    "models/plane-reverse-rc-pitch-yaw.parm"
+                ]
+            },
             "plane-vtail": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [
@@ -484,7 +512,10 @@
             },
             "plane-3d": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": []
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-3d.parm"
+                ]
             },
             "glider": {
                 "waf_target": "bin/arduplane",
@@ -512,6 +543,7 @@
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [
                     "models/plane.parm",
+                    "models/plane-reverse-rc-pitch-yaw.parm",
                     "default_params/plane-redundant.parm"
                 ]
             },
@@ -539,7 +571,11 @@
             },
             "jsbsim": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-jsbsim.parm",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-reverse-servo-pitch-yaw.parm",
+                    "models/plane-reverse-rc-pitch-yaw.parm"
+                ],
                 "external": true
             },
             "scrimmage-plane": {

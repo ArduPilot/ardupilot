@@ -1,0 +1,272 @@
+<?xml version="1.0"?>
+<!--
+  Schematic model of the heliquad variable-pitch quad helicopter
+  (Copter FRAME_CLASS 13, AP_MotorsHeli_Quad): four fixed rotors
+  with collective pitch, no wings or control surfaces.
+
+  Driven by the FGNetFDM packet ArduPilot SITL sends with the fg-view
+  option (see SITL_State::_output_to_flightgear); the standard packet
+  has no field for blade collective, so it arrives in an overloaded
+  per-engine field:
+    engines/engine[n]/rpm           - rotor speed
+    engines/engine[n]/fuel-flow-gph - blade collective, -1..1
+
+  Engine index n is motor number - 1 in the heliquad X layout:
+  0 front-right, 1 rear-left, 2 front-left, 3 rear-right.
+  Motors 1,2 turn anticlockwise viewed from above, motors 3,4
+  clockwise (x_clockwise[] in AP_MotorsHeli_Quad).
+
+  Geometry comes from ../generate_heliquad_models.py; rotor positions
+  and heights in the animation axes below must match
+  COPTER_NACELLE_PIVOTS and ROTOR_Z there.
+-->
+<PropertyList>
+  <path>heliquad.ac</path>
+
+  <!-- rotor spin: negative factor is clockwise viewed from above -->
+  <animation>
+    <type>spin</type>
+    <object-name>rotor0</object-name>
+    <property>engines/engine[0]/rpm</property>
+    <factor>1</factor>
+    <center>
+      <x-m>-0.30</x-m>
+      <y-m>0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>0</y>
+      <z>1</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>spin</type>
+    <object-name>rotor1</object-name>
+    <property>engines/engine[1]/rpm</property>
+    <factor>1</factor>
+    <center>
+      <x-m>0.30</x-m>
+      <y-m>-0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>0</y>
+      <z>1</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>spin</type>
+    <object-name>rotor2</object-name>
+    <property>engines/engine[2]/rpm</property>
+    <factor>-1</factor>
+    <center>
+      <x-m>-0.30</x-m>
+      <y-m>-0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>0</y>
+      <z>1</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>spin</type>
+    <object-name>rotor3</object-name>
+    <property>engines/engine[3]/rpm</property>
+    <factor>-1</factor>
+    <center>
+      <x-m>0.30</x-m>
+      <y-m>0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>0</y>
+      <z>1</z>
+    </axis>
+  </animation>
+
+  <!-- blade collective: feather each blade about its spanwise axis,
+       opposite axis directions so the pair pitches symmetrically -->
+  <animation>
+    <type>rotate</type>
+    <object-name>blade0a</object-name>
+    <property>engines/engine[0]/fuel-flow-gph</property>
+    <factor>12</factor>
+    <center>
+      <x-m>-0.30</x-m>
+      <y-m>0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>1</y>
+      <z>0</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>rotate</type>
+    <object-name>blade0b</object-name>
+    <property>engines/engine[0]/fuel-flow-gph</property>
+    <factor>-12</factor>
+    <center>
+      <x-m>-0.30</x-m>
+      <y-m>0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>1</y>
+      <z>0</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>rotate</type>
+    <object-name>blade1a</object-name>
+    <property>engines/engine[1]/fuel-flow-gph</property>
+    <factor>12</factor>
+    <center>
+      <x-m>0.30</x-m>
+      <y-m>-0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>1</y>
+      <z>0</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>rotate</type>
+    <object-name>blade1b</object-name>
+    <property>engines/engine[1]/fuel-flow-gph</property>
+    <factor>-12</factor>
+    <center>
+      <x-m>0.30</x-m>
+      <y-m>-0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>1</y>
+      <z>0</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>rotate</type>
+    <object-name>blade2a</object-name>
+    <property>engines/engine[2]/fuel-flow-gph</property>
+    <factor>12</factor>
+    <center>
+      <x-m>-0.30</x-m>
+      <y-m>-0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>1</y>
+      <z>0</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>rotate</type>
+    <object-name>blade2b</object-name>
+    <property>engines/engine[2]/fuel-flow-gph</property>
+    <factor>-12</factor>
+    <center>
+      <x-m>-0.30</x-m>
+      <y-m>-0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>1</y>
+      <z>0</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>rotate</type>
+    <object-name>blade3a</object-name>
+    <property>engines/engine[3]/fuel-flow-gph</property>
+    <factor>12</factor>
+    <center>
+      <x-m>0.30</x-m>
+      <y-m>0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>1</y>
+      <z>0</z>
+    </axis>
+  </animation>
+  <animation>
+    <type>rotate</type>
+    <object-name>blade3b</object-name>
+    <property>engines/engine[3]/fuel-flow-gph</property>
+    <factor>-12</factor>
+    <center>
+      <x-m>0.30</x-m>
+      <y-m>0.30</y-m>
+      <z-m>0.145</z-m>
+    </center>
+    <axis>
+      <x>0</x>
+      <y>1</y>
+      <z>0</z>
+    </axis>
+  </animation>
+
+  <!-- translucent rotor discs, shown only when the rotors are turning
+       fast enough that distinct blades would just alias -->
+  <animation>
+    <type>select</type>
+    <object-name>disc0</object-name>
+    <condition>
+      <greater-than>
+        <property>engines/engine[0]/rpm</property>
+        <value>500</value>
+      </greater-than>
+    </condition>
+  </animation>
+  <animation>
+    <type>select</type>
+    <object-name>disc1</object-name>
+    <condition>
+      <greater-than>
+        <property>engines/engine[1]/rpm</property>
+        <value>500</value>
+      </greater-than>
+    </condition>
+  </animation>
+  <animation>
+    <type>select</type>
+    <object-name>disc2</object-name>
+    <condition>
+      <greater-than>
+        <property>engines/engine[2]/rpm</property>
+        <value>500</value>
+      </greater-than>
+    </condition>
+  </animation>
+  <animation>
+    <type>select</type>
+    <object-name>disc3</object-name>
+    <condition>
+      <greater-than>
+        <property>engines/engine[3]/rpm</property>
+        <value>500</value>
+      </greater-than>
+    </condition>
+  </animation>
+  <animation>
+    <type>noshadow</type>
+    <object-name>disc0</object-name>
+    <object-name>disc1</object-name>
+    <object-name>disc2</object-name>
+    <object-name>disc3</object-name>
+  </animation>
+</PropertyList>

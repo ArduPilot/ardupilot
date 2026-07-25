@@ -76,8 +76,11 @@ public:
     // return system time of last successful read from the sensor
     uint32_t last_reading_ms() const { return state.last_reading_ms; }
 
-    // get temperature reading in C.  returns true on success and populates temp argument
-    virtual bool get_temp(float &temp) const { return false; }
+    // get temperature reading in C.  returns true on success and populates temp argument.
+    // non-virtual: checks for an externally-supplied temperature first (e.g. from
+    // AP_TemperatureSensor, TEMPx_SRC=Rangefinder), then falls back to the backend's
+    // own reading via _get_temp().
+    bool get_temp(float &temp) const;
 
     // return the actual type of the rangefinder, as opposed to the
     // parameter value which may be changed at runtime.
@@ -103,6 +106,10 @@ protected:
     RangeFinder::Type _backend_type;
 
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const = 0;
+
+    // backend-specific temperature reading.  Override in backends that have their
+    // own temperature source (e.g. NMEA depth sounders reporting MTW).
+    virtual bool _get_temp(float &temp) const { return false; }
 };
 
 #endif  // AP_RANGEFINDER_ENABLED

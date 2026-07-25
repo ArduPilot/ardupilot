@@ -35,19 +35,9 @@ public:
 
     const char *shortname() const override { return "EKF2"; }
 
-    bool healthy(void) const override {
-        if (!started) {
-            return false;
-        }
-        if (!EKF2.healthy()) {
-            return false;
-        }
-        return true;
-    }
-
     void reset_gyro_drift() override { EKF2.resetGyroBias(); }
 
-    void update() override { EKF2.UpdateFilter(); }
+    void update() override;
 
     void get_results(Estimates &results) override;
     void reset() override {
@@ -64,28 +54,10 @@ public:
         return EKF2.setOriginLLH(loc);
     }
 
-    // // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override {
-        EKF2.getWind(wind);
-        return true;
-    }
-
     bool use_compass() override {
         return EKF2.use_compass();
     }
 
-    uint32_t getLastYawResetAngle(float &yawAng) override {
-        return EKF2.getLastYawResetAngle(yawAng);
-    };
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) override WARN_IF_UNUSED {
-        return EKF2.getLastPosNorthEastReset(pos);
-    };
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const override WARN_IF_UNUSED {
-        return EKF2.getLastVelNorthEastReset(vel);
-    };
-    uint32_t getLastPosDownReset(float &posDelta) override WARN_IF_UNUSED {
-        return EKF2.getLastPosDownReset(posDelta);
-    };
     void resetHeightDatum(void) override {
         EKF2.resetHeightDatum();
     }
@@ -96,35 +68,32 @@ public:
         return EKF2.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
     }
 
-    void send_ekf_status_report(class GCS_MAVLINK &link) const override {
-        EKF2.send_status_report(link);
-    }
-
-    // // get_filter_status - returns filter status as a series of flags
-    bool get_filter_status(nav_filter_status &status) const override {
-        EKF2.getFilterStatus(status);
-        return true;
-    }
-
     // // return the innovations for the specified instance
     // // An out of range instance (eg -1) returns data for the primary instance
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override {
         return EKF2.getInnovations(velInnov, posInnov, magInnov, tasInnov, yawInnov);
     }
 
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const override {
-        Vector2f offset;
-        return EKF2.getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-    }
-
     void request_yaw_reset(void) override {
         EKF2.requestYawReset();
+    }
+    void check_lane_switch() override {
+        EKF2.checkLaneSwitch();
     }
 
     // this is out here so parameters can be poked into it
     static NavEKF2 EKF2;
 
+    bool start();
     bool started;
+    uint32_t start_time_ms;  // timer used to delay starting the filter
+
+    // a counter which is incremented each time the primary core changes:
+    AP_AHRS_ResetCounter<int8_t> attitude_reset_tracker;
+
+    AP_AHRS_ResetCounter<uint16_t> yaw_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> position_NE_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> position_D_reset_tracker;
 };
 
 #endif  // AP_AHRS_NAVEKF2_ENABLED

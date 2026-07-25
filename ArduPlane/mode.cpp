@@ -279,8 +279,8 @@ void Mode::run()
 void Mode::reset_controllers()
 {
     // reset integrators
-    plane.rollController.reset_I();
-    plane.pitchController.reset_I();
+    plane.rollController.reset();
+    plane.pitchController.reset();
     plane.yawController.reset_I();
 
     // reset steering controls

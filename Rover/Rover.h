@@ -293,6 +293,7 @@ private:
 
     // crash_check.cpp
     void crash_check();
+    bool is_crashed() const override;
 
     // cruise_learn.cpp
     void cruise_learn_start();

@@ -2,7 +2,7 @@
 
 {
     # total vehicle mass
-    "mass" : 32.5,
+    "mass" : 25.7,
 
     # vehicle diameter
     "diagonal_size" : 1.325,
@@ -31,7 +31,7 @@
     "refRotRate" : 120,
 
     # hover throttle from 0 to 1
-    "hoverThrOut" : 0.36,
+    "hoverThrOut" : 0.3084,
 
     # MOT_PWM_MIN
     "pwmMin" : 1000,
@@ -48,9 +48,9 @@
     # maximum motor slew rate, or zero to disable
     "slew_max" : 75,
 
-    # total effective disc area in sq m for 4 x 30 inch diameter rotors
-    # coaxial rotors count as a single rotor for this parameter)
-    "disc_area" : 1.82,
+    # total effective disc area in sq m for 4 x 32 inch diameter rotors
+    # (coaxial rotors count as a single rotor for this parameter)
+    "disc_area" : 2.08,
 
     # momentum drag coefficient
     # ratio of momentum drag relative to a ducted rotor of the same effective disc area

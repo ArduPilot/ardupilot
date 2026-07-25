@@ -149,12 +149,12 @@ public:
         return ahrs.get_accel_ef();
     }
 
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
-        return ahrs.getLastPosNorthEastReset(pos);
+    uint16_t get_position_NE_reset_count(void) WARN_IF_UNUSED {
+        return ahrs.get_position_NE_reset_count();
     }
 
-    uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
-        return ahrs.getLastPosDownReset(posDelta);
+    uint16_t get_position_D_reset_count(void) WARN_IF_UNUSED {
+        return ahrs.get_position_D_reset_count();
     }
 
     // rotate a 2D vector from earth frame to body frame

@@ -239,6 +239,10 @@ __INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
         state[i].range_valid_count = 0;
         // initialize signal_quality_pct for drivers that don't handle it.
         state[i].signal_quality_pct = SIGNAL_QUALITY_UNKNOWN;
+#if AP_TEMPERATURE_SENSOR_ENABLED
+        state[i].temperature_valid = false;
+        state[i].temperature_update_ms = 0;
+#endif
     }
 }
 
@@ -865,6 +869,20 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
     return backend->get_temp(temp);
 }
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
+// set an externally-measured temperature (C) for a rangefinder instance.
+// used by AP_TemperatureSensor when TEMPx_SRC is set to Rangefinder.
+void RangeFinder::set_temperature_C(uint8_t instance, float temperature_C)
+{
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
+        return;
+    }
+    state[instance].temperature_C = temperature_C;
+    state[instance].temperature_valid = true;
+    state[instance].temperature_update_ms = AP_HAL::millis();
+}
+#endif
+
 #if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
 void RangeFinder::Log_RFND() const
@@ -884,6 +902,11 @@ void RangeFinder::Log_RFND() const
             continue;
         }
 
+        float temperature = logger.quiet_nanf();
+        float temp;
+        if (s->get_temp(temp)) {
+            temperature = temp;
+        }
         const struct log_RFND pkt = {
                 LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
                 time_us      : AP_HAL::micros64(),
@@ -892,6 +915,7 @@ void RangeFinder::Log_RFND() const
                 status       : (uint8_t)s->status(),
                 orient       : s->orientation(),
                 quality      : s->signal_quality_pct(),
+                temperature  : temperature,
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
