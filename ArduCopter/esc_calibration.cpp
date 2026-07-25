@@ -62,15 +62,14 @@ void Copter::esc_calibration_startup_check()
             esc_calibration_auto();
             break;
         case ESCCalibrationModes::ESCCAL_DISABLED:
+            return;
         default:
             // do nothing
             break;
     }
 
     // clear esc flag for next time
-    if (g.esc_calibrate != ESCCalibrationModes::ESCCAL_DISABLED) {
-        g.esc_calibrate.set_and_save(ESCCalibrationModes::ESCCAL_NONE);
-    }
+    g.esc_calibrate.set_and_save(ESCCalibrationModes::ESCCAL_NONE);
 #endif  // FRAME_CONFIG != HELI_FRAME
 }
 
