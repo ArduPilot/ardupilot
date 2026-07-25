@@ -1,0 +1,215 @@
+name: release
+on:
+  workflow_run:
+    workflows: [test]
+    branches: [master]
+    types: [completed]
+
+jobs:
+  release:
+    runs-on: ubuntu-18.04
+
+    # need to manually check for a couple things
+    # - tests passed?
+    # - we are the most recent commit on master?
+    if: ${{github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_sha == github.sha}}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{github.event.workflow_run.head_sha}}
+          # need workflow access since we push branches
+          # containing workflows
+          token: ${{secrets.BOT_TOKEN}}
+          # need all tags
+          fetch-depth: 0
+
+      # try to get results from tests
+      - uses: dawidd6/action-download-artifact@v2
+        continue-on-error: true
+        with:
+          workflow: ${{github.event.workflow_run.name}}
+          run_id: ${{github.event.workflow_run.id}}
+          name: results
+          path: results
+
+      - name: find-version
+        run: |
+          # rip version from lfs.h
+          LFS_VERSION="$(grep -o '^#define LFS_VERSION .*$' lfs.h \
+            | awk '{print $3}')"
+          LFS_VERSION_MAJOR="$((0xffff & ($LFS_VERSION >> 16)))"
+          LFS_VERSION_MINOR="$((0xffff & ($LFS_VERSION >>  0)))"
+
+          # find a new patch version based on what we find in our tags
+          LFS_VERSION_PATCH="$( \
+            ( git describe --tags --abbrev=0 \
+                --match="v$LFS_VERSION_MAJOR.$LFS_VERSION_MINOR.*" \
+              || echo 'v0.0.-1' ) \
+            | awk -F '.' '{print $3+1}')"
+
+          # found new version
+          LFS_VERSION="v$LFS_VERSION_MAJOR`
+            `.$LFS_VERSION_MINOR`
+            `.$LFS_VERSION_PATCH"
+          echo "LFS_VERSION=$LFS_VERSION"
+          echo "LFS_VERSION=$LFS_VERSION" >> $GITHUB_ENV
+          echo "LFS_VERSION_MAJOR=$LFS_VERSION_MAJOR" >> $GITHUB_ENV
+          echo "LFS_VERSION_MINOR=$LFS_VERSION_MINOR" >> $GITHUB_ENV
+          echo "LFS_VERSION_PATCH=$LFS_VERSION_PATCH" >> $GITHUB_ENV
+
+      # try to find previous version?
+      - name: find-prev-version
+        continue-on-error: true
+        run: |
+          LFS_PREV_VERSION="$(git describe --tags --abbrev=0 --match 'v*')"
+          echo "LFS_PREV_VERSION=$LFS_PREV_VERSION"
+          echo "LFS_PREV_VERSION=$LFS_PREV_VERSION" >> $GITHUB_ENV
+
+      # try to find results from tests
+      - name: collect-results
+        run: |
+          # previous results to compare against?
+          [ -n "$LFS_PREV_VERSION" ] && curl -sS \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/`
+              `status/$LFS_PREV_VERSION" \
+            | jq -re 'select(.sha != env.GITHUB_SHA) | .statuses[]' \
+            >> prev-results.json \
+            || true
+
+          # unfortunately these each have their own format
+          [ -e results/code-thumb.csv ] && ( \
+            export PREV="$(jq -re '
+                  select(.context == "results / code").description
+                  | capture("Code size is (?<result>[0-9]+)").result' \
+                prev-results.json || echo 0)"
+            ./scripts/code.py -u results/code-thumb.csv -s | awk '
+              NR==2 {printf "Code size,%d B",$2}
+              NR==2 && ENVIRON["PREV"]+0 != 0 {
+                printf " (%+.1f%%)",100*($2-ENVIRON["PREV"])/ENVIRON["PREV"]}
+              NR==2 {printf "\n"}' \
+            >> results.csv)
+          [ -e results/code-thumb-readonly.csv ] && ( \
+            export PREV="$(jq -re '
+                  select(.context == "results / code (readonly)").description
+                  | capture("Code size is (?<result>[0-9]+)").result' \
+                prev-results.json || echo 0)"
+            ./scripts/code.py -u results/code-thumb-readonly.csv -s | awk '
+              NR==2 {printf "Code size<br/>(readonly),%d B",$2}
+              NR==2 && ENVIRON["PREV"]+0 != 0 {
+                printf " (%+.1f%%)",100*($2-ENVIRON["PREV"])/ENVIRON["PREV"]}
+              NR==2 {printf "\n"}' \
+            >> results.csv)
+          [ -e results/code-thumb-threadsafe.csv ] && ( \
+            export PREV="$(jq -re '
+                  select(.context == "results / code (threadsafe)").description
+                  | capture("Code size is (?<result>[0-9]+)").result' \
+                prev-results.json || echo 0)"
+            ./scripts/code.py -u results/code-thumb-threadsafe.csv -s | awk '
+              NR==2 {printf "Code size<br/>(threadsafe),%d B",$2}
+              NR==2 && ENVIRON["PREV"]+0 != 0 {
+                printf " (%+.1f%%)",100*($2-ENVIRON["PREV"])/ENVIRON["PREV"]}
+              NR==2 {printf "\n"}' \
+            >> results.csv)
+          [ -e results/code-thumb-migrate.csv ] && ( \
+            export PREV="$(jq -re '
+                  select(.context == "results / code (migrate)").description
+                  | capture("Code size is (?<result>[0-9]+)").result' \
+                prev-results.json || echo 0)"
+            ./scripts/code.py -u results/code-thumb-migrate.csv -s | awk '
+              NR==2 {printf "Code size<br/>(migrate),%d B",$2}
+              NR==2 && ENVIRON["PREV"]+0 != 0 {
+                printf " (%+.1f%%)",100*($2-ENVIRON["PREV"])/ENVIRON["PREV"]}
+              NR==2 {printf "\n"}' \
+            >> results.csv)
+          [ -e results/code-thumb-error-asserts.csv ] && ( \
+            export PREV="$(jq -re '
+                  select(.context == "results / code (error-asserts)").description
+                  | capture("Code size is (?<result>[0-9]+)").result' \
+                prev-results.json || echo 0)"
+            ./scripts/code.py -u results/code-thumb-error-asserts.csv -s | awk '
+              NR==2 {printf "Code size<br/>(error-asserts),%d B",$2}
+              NR==2 && ENVIRON["PREV"]+0 != 0 {
+                printf " (%+.1f%%)",100*($2-ENVIRON["PREV"])/ENVIRON["PREV"]}
+              NR==2 {printf "\n"}' \
+            >> results.csv)
+          [ -e results/coverage.csv ] && ( \
+            export PREV="$(jq -re '
+                  select(.context == "results / coverage").description
+                  | capture("Coverage is (?<result>[0-9\\.]+)").result' \
+                prev-results.json || echo 0)"
+            ./scripts/coverage.py -u results/coverage.csv -s | awk -F '[ /%]+' '
+              NR==2 {printf "Coverage,%.1f%% of %d lines",$4,$3}
+              NR==2 && ENVIRON["PREV"]+0 != 0 {
+                printf " (%+.1f%%)",$4-ENVIRON["PREV"]}
+              NR==2 {printf "\n"}' \
+            >> results.csv)
+
+          # transpose to GitHub table
+          [ -e results.csv ] || exit 0
+          awk -F ',' '
+            {label[NR]=$1; value[NR]=$2}
+            END {
+              for (r=1; r<=NR; r++) {printf "| %s ",label[r]}; printf "|\n";
+              for (r=1; r<=NR; r++) {printf "|:--"}; printf "|\n";
+              for (r=1; r<=NR; r++) {printf "| %s ",value[r]}; printf "|\n"}' \
+            results.csv > results.txt
+          echo "RESULTS:"
+          cat results.txt
+
+      # find changes from history
+      - name: collect-changes
+        run: |
+          [ -n "$LFS_PREV_VERSION" ] || exit 0
+          # use explicit link to github commit so that release notes can
+          # be copied elsewhere
+          git log "$LFS_PREV_VERSION.." \
+            --grep='^Merge' --invert-grep \
+            --format="format:[\`%h\`](`
+              `https://github.com/$GITHUB_REPOSITORY/commit/%h) %s" \
+            > changes.txt
+          echo "CHANGES:"
+          cat changes.txt
+
+      # create and update major branches (vN and vN-prefix)
+      - name: create-major-branches
+        run: |
+          # create major branch
+          git branch "v$LFS_VERSION_MAJOR" HEAD
+
+          # create major prefix branch
+          git config user.name ${{secrets.BOT_USER}}
+          git config user.email ${{secrets.BOT_EMAIL}}
+          git fetch "https://github.com/$GITHUB_REPOSITORY.git" \
+            "v$LFS_VERSION_MAJOR-prefix" || true
+          ./scripts/prefix.py "lfs$LFS_VERSION_MAJOR"
+          git branch "v$LFS_VERSION_MAJOR-prefix" $( \
+            git commit-tree $(git write-tree) \
+              $(git rev-parse --verify -q FETCH_HEAD | sed -e 's/^/-p /') \
+              -p HEAD \
+              -m "Generated v$LFS_VERSION_MAJOR prefixes")
+          git reset --hard
+
+          # push!
+          git push --atomic origin \
+            "v$LFS_VERSION_MAJOR" \
+            "v$LFS_VERSION_MAJOR-prefix"
+
+      # build release notes
+      - name: create-release
+        run: |
+          # create release and patch version tag (vN.N.N)
+          # only draft if not a patch release
+          [ -e results.txt ] && export RESULTS="$(cat results.txt)"
+          [ -e changes.txt ] && export CHANGES="$(cat changes.txt)"
+          curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases" \
+            -d "$(jq -n '{
+              tag_name: env.LFS_VERSION,
+              name: env.LFS_VERSION | rtrimstr(".0"),
+              target_commitish: "${{github.event.workflow_run.head_sha}}",
+              draft: env.LFS_VERSION | endswith(".0"),
+              body: [env.RESULTS, env.CHANGES | select(.)] | join("\n\n")}' \
+              | tee /dev/stderr)"
+

@@ -1,0 +1,325 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-15">
+	<TITLE>mod_gsoap - Apache HTTP Server SOAP loadable module for .net Se</TITLE>
+	<META NAME="GENERATOR" CONTENT="Microsoft FrontPage 4.0">
+	<META NAME="CREATED" CONTENT="20010518;23082600">
+	<META NAME="CHANGEDBY" CONTENT=" ">
+	<META NAME="CHANGED" CONTENT="20020920;1270700">
+	<META NAME="DESCRIPTION" CONTENT="SOAP module for Apache HTTP-Server to run SOAP and .NET(tm) Services under linux">
+	<META NAME="KEYWORDS" CONTENT="mod_gsoap, gsoap, apache, HTTP, Server, Apache HTTP Server, .NET, .NET for linux, open source">
+</HEAD>
+<BODY>
+<H1 ALIGN=CENTER><FONT FACE="Veranda">SOAP and .net services for
+Apache HTTP Server</FONT></H1>
+<P ALIGN=CENTER>This is an open source contribution for <A HREF="http://www.cs.fsu.edu/~engelen/soap.html">gsoap</A>,
+to enable <A HREF="http://www.apache.org/httpd">Apache HTTP Server</A>
+to run <A HREF="http://www.w3.org/TR/SOAP/">SOAP</A> and .net
+services on Linux and other Unices. 
+</P>
+<H1>Overview</H1>
+<P>To build and configure the mod_gsoap SOAP service you have to do
+three main parts: 
+</P>
+<OL>
+	<LI><P>Build mod_gsoap, which is a SOAP server independent generic
+	module to allow gsoap shared libraries to be plugged into Apache
+	HTTP Server. It contains the infrastructure to dynamically load the
+	required gsoap servers at runtime, and the additional required
+	shared libraries not statically linked into apache server. mod_gsoap
+	passes the SOAP requests received from the clients, and calls into
+	the SOAP server shared libraries and returns the response to the
+	clients.</P>
+	<LI><P>Build one or more gsoap shared libraries that implement the
+	SOAP services. As a sample a simple calculator was used.
+	Implementing other SOAP servers is straight forward. Please see
+	<A HREF="http://www.cs.fsu.edu/~engelen/soap.html">gsoap</A> for
+	details of how to use soapcpp2 to generate the wsdl , the C++ and
+	the other related code for your own SOAP services. 
+	</P>
+	<LI><P>The configuration instructions for the apache http server in
+	httpd.conf. This specifies which shared libraries are allowed to be
+	loaded into the apache server process and where they reside.</P>
+</OL>
+<P>The build process uses <FONT FACE="Veranda"><A HREF="http://www.gnu.org/software/autmake">Automake</A>
+</FONT>. Inside that mod_gsoap.so is built in the standard Apache way
+using apxs. <FONT FACE="Veranda">Please do not be shocked about the
+long description that follows. It is rather detailled, users
+acquainted with apache http server will skip most of it.</FONT></P>
+<H1><FONT FACE="Veranda">1. Building the Apache SOAP server</FONT></H1>
+<P><FONT FACE="Veranda">In order to reduce download times you must
+download and unpack the required standard packages like apache server
+separately from their original locations. For building I used libtool
+1.4 downloaded from <A HREF="http://www.gnu.org/software/libtool">http://www.gnu.org/software/libtool</A>,
+be sure to have it installed. Also be sure that you have apxs, which
+comes with the apache http server distribution, in your path. </FONT>
+</P>
+<H2>Build instructions</H2>
+<UL>
+	<LI><P>Make sure that apache http server is installed, otherwise <FONT FACE="Veranda">download
+      build and install apache_1.3.26.tar.gz or higher
+	(not 2.0.* or higher) from </FONT><A HREF="http://www.apache.org/httpd"><FONT FACE="Veranda">http://www.apache.org/httpd<br>
+      </FONT></A><font face="Veranda">This will also install apxs, the apache
+      build tool that is required to compile mod_gsoap as a module. Also check the first line of
+	apxs, so that it really points to your perl executable.</font>
+	</P>
+	<LI><P><FONT FACE="Veranda">download and install gsoap from <A HREF="http://www.cs.fsu.edu/~engelen/soap.html">http://www.cs.fsu.edu/~engelen/soap.html</A></FONT>
+	</P>
+	<LI><P><FONT FACE="Veranda">download the current gsoap_apache_0.0.5.tgz from
+	<A HREF="http://www.webware.at/SOAP/apache_gsoap.0.0.5.tgz">http://www.webware.at/SOAP/apache_gsoap.0.0.5.tgz</A>
+      </FONT>to <FONT FACE="Veranda">/usr/local/src and unpack it with:<br>
+      </FONT><font face="Courier New">tar -xzf apache_gsoap.0.0.5.tgz&nbsp;</font></P>
+	<LI><P>change to the directory that has been created by the step above and
+      run the following:<br>
+      <font face="Courier New">./configure&nbsp;<br>
+      make<BR></font><font face="Courier, monospace"><BR></font><FONT FACE="Veranda">This should build
+      ./mod_gsoap/mod_gsoap.so and ./example/calculator/.libs/libCalculator.so (the
+	.libs subdirectory is hidden). lib</FONT>Calculator.so is a shared
+	library that contains the gsoap server generated with soapcpp2. You
+	can use it as a template for your own servers. See later. This build step
+      also copies mod_gsoap.so to the location of your other apache
+	modules (e.g. /usr/local/apache/libexec).</P>
+</UL>
+<H2>Building a debugging version</H2>
+<P>The steps above are enough for running the release version. If you
+want to do debugging for mod_gsoap.c and/or your servers, you must
+enable debugging code. This is described in this paragraph. Skip it
+if you do not need debugging. 
+</P>
+<P>You can enable debugging for mod_gsoap.c by using
+--enable-debug<BR><FONT FACE="Courier, monospace">./configure
+--enable-debug</FONT></P>
+<P>Debugging is easier when you link mod_gsoap.c statically into
+httpd, the Apache Server.</P>
+<P>For that to the following: <BR>Copy the whole mod_gsoap
+subdirectory to <FONT FACE="Veranda">~/apache_1.3.26</FONT>/src/modules/<BR>Next
+Edit the Configuration file (it is located in ~/apache/src).<BR>Add
+the following lines:<BR><SPAN STYLE="font-weight: medium"><FONT SIZE=3><FONT FACE="Courier, monospace">#
+goap SOAP extension module. <BR>AddModule
+modules/mod_gsoap/mod_gsoap.o </FONT></FONT></SPAN>
+</P>
+<UL>
+	<LI><P><FONT FACE="Times, serif">in the same file locate in the
+	section Makefile configuration the line containing EXTRA_LIBS and
+	add change the lines to the following:
+	<BR></FONT><FONT SIZE=3><FONT FACE="Courier, monospace">EXTRA_CFLAGS=-g<BR>EXTRA_LDFLAGS=<BR>EXTRA_LIBS=-ldl
+	-lpthread<BR>EXTRA_INCLUDES=-I~/apache_gsoap.0.0.5</FONT></FONT></P>
+      <P><font size="3">See the sample Configuration file that is in the
+      downloaded sources for an example.</font></P>
+	<P><FONT FACE="Times, serif">There is also a config directory below
+	mod_gsoap, which contains sample files edited in the way described
+	here, where you can compare your changes.</FONT></P>
+</UL>
+<UL>
+	<LI><P><FONT FACE="Times, serif">Run the src/Configure script:</FONT><FONT FACE="Courier, monospace"><BR>cd
+	~/apache-1.3.26/src<BR>./Configure<BR><BR></FONT><FONT FACE="Times, serif">This
+	will build the Makefile for the server itself.<BR><FONT SIZE=2>Note:
+	do not run ~./apache-1.3.26/configure after it, this will overwrite
+	the Makefiles generated above. </FONT></FONT>
+	</P>
+</UL>
+<UL>
+	<LI><P><FONT FACE="Times, serif">Build the Apache Server, together
+	with the mod_gsoap by running in the current ~/apache_1.3.26/src
+	directory:<FONT FACE="Courier, monospace"><BR>make</FONT></FONT></P>
+</UL>
+<UL>
+	<LI><P><FONT FACE="Courier, monospace"><FONT FACE="Times, serif">The
+	previous step should have produced the file httpd<BR>Check that the
+	mod_gsoap has really been linked correctly by running:</FONT><BR>./httpd
+	-l<BR><FONT FACE="Times, serif">This should list as a module among
+	others also mod_gsoap.c and mod_so.c</FONT></FONT></P>
+</UL>
+<UL>
+	<LI><P><FONT FACE="Courier, monospace"><FONT FACE="Times, serif">In
+	the next step we install apache to a directory of its own by running
+	the standard apache install command from the ~/apache_1.3.26
+	directory. Before doing so, read the README.configure file in the
+	apache distribution. After you know what you are doing, run the
+	following command from ~/apache_1.3.26: </FONT><BR>make install<BR><FONT FACE="Times, serif">This
+	will generate the apache server in the directory you specified (or
+	usually /usr/local/apache if you did not do so). This step will also
+	generate the httpd.conf file that we need for debugging. You can of
+	course omit this step, if was only done to easily get a working
+	apache distribution on your machine, and a httpd.conf file that we
+	must change in the next steps. If you already have a working
+	installation, you can use that. </FONT></FONT>
+	</P>
+</UL>
+<H2><BR><BR>
+<FONT SIZE=6>2. Implementing your
+own Servers</FONT>
+</H2>
+<P>In my opinion it is not a good idea to start off with gsoap server
+programming by using this apache module. Before doing so (and
+especially before sending questions) please go to the <A HREF="http://www.cs.fsu.edu/~engelen/soap.html">gsoap
+home page</A> and look at the very good and detailled examples and
+documentation there. Implement your server as a standalone server and
+test it. Once that works, you can easily convert it to run with
+mod_gsoap. How to convert your server to support mod_gsoap is
+described below in this chapter.</P>
+<P>The only additional thing you must do to enable your own gsoap
+Server to be able to plug into Apache HTTP server is to add the lines
+below to your source code and build them as shared libraries. Then
+the required entry points will be exported. 
+</P>
+<P>Add the following 2 lines to your SOAP server source code:
+<BR><FONT FACE="Courier, monospace">#include
+&quot;apache_gsoap.h&quot;<BR>IMPLEMENT_GSOAP_SERVER()</FONT></P>
+<P><FONT SIZE=3><FONT FACE="Times, serif">You also must change
+Make</FONT></FONT>file.am accordingly to add your source files and
+rename and run autoconf, automake, ./configure again of course.
+apache_gsoap.h came with the <FONT FACE="Veranda">gsoap_apache_*.tgz
+that you downloaded above and will be in the include path of the
+compiler.</FONT></P>
+<P>There is also a ConsoleServer subproject, that allows you to build
+and test your own gsoap server shared libraries indepent of Apache
+server. It is recommended to test your servers with this soaptest
+program before you try to use it in Apache Server. Change the search
+path for the library and the name of the library near the top of the
+file ConsoleServer.cpp for testing. Another subdirectory foo is there
+for testing, if you still get file not found errors in the attempt to
+load a shared library. foo does not depend on other libraries and
+will load also if your path is not correct. Of course it will not
+work as a soap server, it is only there to get your directory
+settings correct.</P>
+<P ALIGN=LEFT>If you want to have a graphical development environment
+you can use <A HREF="http://www.kdevelop.org/">kdevelop</A>. See
+below how to use that. But also working with emacs and kdbg is fine.
+For implementing your own SOAP servers please download the standard
+<A HREF="http://www.cs.fsu.edu/~engelen/soap.html">gsoap</A> package
+and follow the instructions there. The servers we use are separated
+into a shared library of its own, to allow the apache server to load
+them on demand.</P>
+<P><FONT FACE="Lucida, sans-serif"><FONT SIZE=6><B>3. Configuration
+of httpd.conf</B></FONT></FONT></P>
+<P><FONT FACE="Times, serif"><FONT SIZE=3>Now after the binaries are
+built, it is necessary to tell Apache server where to find the
+libraries to answer the soap requests coming in. Locate the
+httpd.conf file that is in use on your installation (e.g.
+~/apache-1.3.26/conf/httpd.conf or /usr/local/apache/conf/httpd.conf)
+and make your changes.</FONT></FONT></P>
+<UL>
+	<LI><P><FONT FACE="Times, serif">httpd.conf file must be edited.
+	<BR>This file will also be used to explicitly start debugging of the
+	apache server process httpd and step into mod_gsoap with e.g. <A HREF="http://members.nextra.at/johsixt/kdbg.html">kdbg</A>
+	debugger. The same file is used when you run apache as a daemon.
+	This procedure is identical to what is described in the example
+	module README in the standard Apache distribution, only with
+	different names. As a first step you must tell apache to load
+	mod_gsoap. Add the line:<BR><FONT FACE="Courier, monospace">LoadModule
+	gsoap_module libexec/mod_gsoap.so</FONT><BR>below the place where
+	the comment: <BR><FONT FACE="Courier, monospace"># Dynamic Shared
+	Object (DSO) Support</FONT><BR>is located (libexec/mod_gsoap.so is
+	the place where shared modules are installed as a default, see other
+	existing commented LoadModule instructions in your httpd.conf file
+	as examples). gsoap_module is the module name hardcoded in
+	mod_gsoap.c <BR>Next add the following lines to httpd.conf, near the
+	other &lt;Location&gt; sections:<BR><FONT FACE="Courier, monospace">#
+	SOAP handler (see </FONT><A HREF="http://www.aberger.at/SOAP"><FONT FACE="Courier, monospace">http://www.aberger.at/SOAP</FONT></A><FONT FACE="Courier, monospace">)<BR>&lt;IfModule
+	mod_gsoap.c&gt;<BR>&lt;Location /soap&gt;<BR>SetHandler
+	gsoap-handler<BR>SOAPLibrary /home/myusername/gsoap</FONT></FONT><font face="Courier, monospace">.0.0.5</font><FONT FACE="Times, serif"><FONT FACE="Courier, monospace">/apache/example/calculator/.libs/libCalculator.so<BR>&lt;/Location&gt;<BR>&lt;/IfModule&gt;</FONT><BR><FONT SIZE=3>You
+	can paste the lines above from the sample file in config
+	subdirectory. Of course you must change myusername to your login
+	name, as above, so that the string /home/myusername above
+	corresponds to your home directory. Do not use ~ for your home
+	directory here. This will not be resolved by dlopen()! <BR>The
+	isoap-handler knows 2 configuration directives:<BR><B><U>SOAPLibrary</U></B>
+	is the full path to the library that contains your SOAP server
+	shared library, with the mandatory exported function as defined in
+	the include file apache_gsoap.h. It tells the extension what shared
+	object library to load to serve the SOAP requests for this location
+	at runtime. You must change the path of course to the full path of
+	your server. It is better to specifiy the full path, and not to use
+	the LD_LIBRARY_PATH due to security reasons.<BR><B><U><SPAN STYLE="font-style: normal">SupportLibrary</SPAN></U></B>
+	are all the libraries needed additionally by your Soap server shared
+	library. They are dynamically loaded into the apache server process
+	httpd when this instruction is encountered. Otherwise it would be
+	necessary to statically link these libraries and rebuild httpd and
+	mod_gsoap every time you change something. This was not the desired
+	goal.</FONT></FONT></P>
+	<LI><P><FONT FACE="Times, serif">Now test if the Apache Server
+	itself is correctly configured, run the following from your
+	~/apache-1.3.26/src directory:<BR><FONT FACE="Courier, monospace">./httpd
+	-X -f /usr/local/apache/conf/httpd.conf</FONT></FONT></P>
+	<LI><P><FONT FACE="Times, serif">This will launch the server in
+	console mode (does not return until you cancel it). Then open your
+	favourite Web Browser and browse to:<BR><A HREF="http://127.0.0.1:8080/soap?structures"><FONT FACE="Courier, monospace">http://127.0.0.1:8080<BR></FONT></A>This
+	should give astandard apache response, has nothing to do with your
+	mod_gsoap yet. The port 8080 was also set in httpd.conf, if you
+	don't get a response, check the port and see the error_log file. For
+	the production server it maybe will be port 80, which you do not
+	need to specify explicitly in the browser then. But for debugging I
+	recommend to stay with port 8080, because for port 80 you would need
+	root priviledges for debugging.<BR>This request should give a
+	response from apache.</FONT></P>
+	<LI><P><FONT FACE="Times, serif">As a next step let us test if your
+	mod_gsoap responds. The request must contain the location you gave
+	in the &lt;Location&gt; directive. <FONT FACE="Times, serif">Enter
+	as address in your browser:</FONT><BR><A HREF="http://127.0.0.1:8080/soap">http://127.0.0.1:8080/soap<BR></A>This
+	should give a response from mod_gsoap, an error message, because
+	your browser will propably not send the required SOAPAction header.
+	Something is wrong if you get an url not found or a directory
+	listing as a response. In that case check if you really added the
+	LoadModule instruction described above properly. <BR>Note: the soap
+	virtual directory was defined by yourself in the &lt;Location&gt;
+	instruction above. Do <B><U>not</U></B> create a physical soap
+	directory in your document root !</FONT></P>
+	<LI><P><FONT FACE="Times, serif">Well, now it is time to check if
+	Apache Server can answer your SOAP requests. Run the calculator
+	client demo program. It has been built by the makefile already.
+	Enter the following:<BR></FONT><FONT FACE="Courier, monospace">cd
+	~/apache-gsoap/example/calculator<BR>./client 1 + 2</FONT><BR>This
+	should answer the SOAP requests like the gsoap web service does, but
+	of course with all the quality, speed, scalability, stability etc.
+	of the world's most popular http server.</P>
+</UL>
+<H1>Programming and Debugging Tips</H1>
+<H2>Lookup the error log file of Apache Server</H2>
+<P>mod_gsoap logs apache errors in the standard way. So see the
+apache log file, typically it is located at
+/usr/local/apache/logs/apache_log.</P>
+<H3>Be sure you Debug the correct process</H3>
+<P>Sometimes when you exit the debugger it can happen that the httpd
+process is still alive. So before you continue, it might be a good
+idea to run<BR>ps -ef | grep httpd<BR>to see if there is still a
+server alive, which should be killed before the next debugging
+session. For killing all active httpd processes I use:<BR><FONT FACE="Courier, monospace">kill
+`ps -ef | grep httpd | sed -e&quot;s/\ * /:/g&quot; | cut -f2 -d:`</FONT>
+</P>
+<P>You do not debug the process /usr/local/apache/bin/httpd, but the
+httpd program that you build in your source code directory
+~/apache/src. The key to successful debugging is the -X flag. So in
+your debugger run httpd from ~/apache/src, but use the same
+configuration file as your production server will use. Use the
+following commandline to start debugging:<BR><FONT FACE="Courier, monospace">./httpd
+-X -f /usr/local/apache/conf/httpd.conf</FONT></P>
+<P><FONT FACE="Times, serif">When the process is started in the
+debugger, set your breakpoints and use your favourite browser and
+refresh the page <A HREF="http://127.0.0.1:8080/soap">http://127.0.0.1:8080/soap</A>.
+</FONT>
+</P>
+<P>&nbsp; 
+</P>
+<P><FONT FACE="Times, serif">See also the Frequently asked Questions
+at the end of&nbsp; the <A HREF="iis_index.html">IIS description</A>.</FONT>
+</P>
+<H2>How to use kdevelop for Programming and Debugging of Apache
+modules 
+</H2>
+<P>If you want to use <A HREF="http://www.kdevelop.org/"><FONT FACE="Times, serif">kdevelop</FONT></A><FONT FACE="Times, serif">
+to debug Apache then you can change to the directory ~/apache/src and
+run:<BR></FONT><FONT FACE="Courier, monospace">kimport &gt;
+apache.kdevprj</FONT></P>
+<P>After that you can open apache.kdevprj as a kdevelop project. Use
+the appropriate dialogs in your debugging environment to set the
+commandline arguments for debugging. <BR><BR><BR>
+</P>
+<P>I hope you will have fun with this. 
+</P>
+<P>Enjoy, 
+</P>
+<P><A HREF="http://www.webware.at/">Christian Aberger</A>.</P>
+</BODY>
+</HTML>

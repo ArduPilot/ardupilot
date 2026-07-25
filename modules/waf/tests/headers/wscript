@@ -1,0 +1,46 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2011 (ita)
+
+"""
+One test for headers
+Just call 'waf clean test'
+"""
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+top = '.'
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c ')
+
+def build(bld):
+	bld.program(source='main.c', includes='. uhu', target='bar')
+
+# ---------------------------------------------------------
+
+import shutil
+from waflib import Options
+
+def test(ctx):
+	Options.commands += ['test1', 'build', 'test2', 'build']
+
+def test1(ctx):
+	d = ctx.path.make_node('uhu')
+	d.mkdir()
+
+	bar = d.make_node('bar.h')
+	bar.write('int k = 32;\n')
+	main = ctx.path.make_node('main.c')
+	main.write('#include "bar.h"\nint main() { return 0; }\n')
+
+def test2(ctx):
+	d = ctx.path.find_node('uhu')
+	if d:
+		shutil.rmtree(d.abspath())
+	main = ctx.path.make_node('main.c')
+	main.write('//#include "bar.h"\nint main() { return 0; }\n')

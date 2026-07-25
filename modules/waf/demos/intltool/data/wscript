@@ -1,0 +1,35 @@
+#! /usr/bin/env python
+
+from waflib import Utils
+
+def build(bld):
+
+	def post_update(bld):
+		try:
+			bld.exec_command(["update-mime-database", Utils.subst_vars("${DATADIR}/mime", bld.env)])
+			bld.exec_command(["update-desktop-database", Utils.subst_vars("${DATADIR}/applications", bld.env)])
+		except Exception:
+			pass
+
+	if bld.cmd == 'install':
+		bld.add_post_fun(post_update)
+
+	bld(
+		features  = "intltool_in",
+		podir     = "../po",
+		style     = "desktop",
+		source    = 'kupfer.desktop.in',
+		target    = 'kupfer.desktop',
+		install_path = "${DATADIR}/applications",
+	)
+
+	bld(
+		features  = "intltool_in",
+		podir     = "../po",
+		style     = "xml",
+		source    = 'kupfer-mimetypes.xml.in',
+		target    = 'kupfer-mimetypes.xml',
+		install_path = "${DATADIR}/mime/packages/",
+	)
+
+

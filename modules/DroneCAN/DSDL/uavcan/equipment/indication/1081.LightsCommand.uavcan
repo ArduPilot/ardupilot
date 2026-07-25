@@ -1,0 +1,5 @@
+#
+# Lights control command.
+#
+
+SingleLightCommand[<=20] commands

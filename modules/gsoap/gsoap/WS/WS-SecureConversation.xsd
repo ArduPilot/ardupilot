@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+OASIS takes no position regarding the validity or scope of any intellectual property or other rights that might be claimed to pertain to the implementation or use of the technology described in this document or the extent to which any license under such rights might or might not be available; neither does it represent that it has made any effort to identify any such rights. Information on OASIS's procedures with respect to rights in OASIS specifications can be found at the OASIS website. Copies of claims of rights made available for publication and any assurances of licenses to be made available, or the result of an attempt made to obtain a general license or permission for the use of such proprietary rights by implementors or users of this specification, can be obtained from the OASIS Executive Director.
+OASIS invites any interested party to bring to its attention any copyrights, patents or patent applications, or other proprietary rights which may cover technology that may be required to implement this specification. Please address the information to the OASIS Executive Director.
+Copyright Â© OASIS Open 2002-2006. All Rights Reserved.
+This document and translations of it may be copied and furnished to others, and derivative works that comment on or otherwise explain it or assist in its implementation may be prepared, copied, published and distributed, in whole or in part, without restriction of any kind, provided that the above copyright notice and this paragraph are included on all such copies and derivative works. However, this document itself does not be modified in any way, such as by removing the copyright notice or references to OASIS, except as needed for the purpose of developing OASIS specifications, in which case the procedures for copyrights defined in the OASIS Intellectual Property Rights document must be followed, or as required to translate it into languages other than English.
+The limited permissions granted above are perpetual and will not be revoked by OASIS or its successors or assigns.
+This document and the information contained herein is provided on an AS IS basis and OASIS DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+-->
+<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'
+       xmlns:wsse='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd'
+		   xmlns:wsu='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd'
+		   xmlns:wsc='http://docs.oasis-open.org/ws-sx/ws-secureconversation/200512'
+		   targetNamespace='http://docs.oasis-open.org/ws-sx/ws-secureconversation/200512' 
+		   elementFormDefault='qualified' >
+
+  <xs:import namespace='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd' 
+			 schemaLocation='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd' />
+  <xs:import namespace='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd' 
+			 schemaLocation='http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd' />
+
+  <!-- WS-SecureConversation - Section 3 -->
+  <xs:element name='SecurityContextToken' type='wsc:SecurityContextTokenType' />
+  <xs:complexType name='SecurityContextTokenType' >
+    <xs:annotation>
+      <xs:documentation>
+        Actual content model is non-deterministic, hence wildcard. The following shows intended content model:
+        &lt;xs:element ref='wsc:Identifier' minOccurs='1' />
+        &lt;xs:element ref='wsc:Instance' minOccurs='0' />
+        &lt;xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+    </xs:sequence>
+    <xs:attribute ref='wsu:Id' use='optional' />
+    <xs:anyAttribute namespace='##other' processContents='lax' />
+  </xs:complexType>
+
+  <xs:element name='Identifier' type='xs:anyURI' />
+  <xs:element name='Instance' type='xs:string' />
+  <xs:attribute name='Instance' type='xs:string' />
+
+  <!-- WS-SecureConversation - Section 8.1  -->
+  <xs:element name='DerivedKeyToken' type='wsc:DerivedKeyTokenType' />
+  <xs:complexType name='DerivedKeyTokenType' >
+    <xs:sequence>
+      <xs:element ref='wsse:SecurityTokenReference' minOccurs='0' />
+      <xs:element name='Properties' type='wsc:PropertiesType' minOccurs='0' />
+      <xs:sequence minOccurs='0' >
+        <xs:choice>
+          <xs:element name='Generation' type='xs:unsignedLong' />
+          <xs:element name='Offset' type='xs:unsignedLong' />
+        </xs:choice>
+        <xs:element name='Length' type='xs:unsignedLong' minOccurs='0' />
+      </xs:sequence>
+      <xs:element ref='wsc:Label' minOccurs='0' />
+      <xs:element ref='wsc:Nonce' minOccurs='0' />
+    </xs:sequence>
+    <xs:attribute ref='wsu:Id' use='optional' />
+    <xs:attribute name='Algorithm' type='xs:anyURI' use='optional' />
+  </xs:complexType>
+
+  <xs:complexType name='PropertiesType' >
+    <xs:sequence>
+      <xs:any namespace='##any' processContents='lax' minOccurs='0' maxOccurs='unbounded' />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name='Name' type='xs:anyURI' />
+  <xs:element name='Label' type='xs:string' />
+  <xs:element name='Nonce' type='xs:base64Binary' />
+  <xs:attribute name='Nonce' type='xs:base64Binary' />
+  <xs:attribute name='Length' type='xs:unsignedLong' />
+
+  <!-- WS-SecureConversation - Section 10 -->
+  <xs:simpleType name='FaultCodeType' >
+    <xs:restriction base='xs:QName' >
+      <xs:enumeration value='wsc:BadContextToken' />
+      <xs:enumeration value='wsc:UnsupportedContextToken' />
+      <xs:enumeration value='wsc:UnknownDerivationSource' />
+      <xs:enumeration value='wsc:RenewNeeded' />
+      <xs:enumeration value='wsc:UnableToRenew' />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name='FaultCodeOpenEnumType' >
+    <xs:union memberTypes='wsc:FaultCodeType xs:QName' />
+  </xs:simpleType>
+
+</xs:schema>

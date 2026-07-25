@@ -1,0 +1,37 @@
+LIBZ_INCLUDES = /usr/include
+
+LIBA_DIR = liba
+LIBA_INCLUDES = $(LIBA_DIR)
+LIBA_LIBS = -lz
+LIBA_OBJS = $(LIBA_DIR)/a.o
+
+
+LIBB_DIR = libb
+LIBB_OBJS = $(LIBB_DIR)/b.o
+LIBB_INCLUDES = $(LIBB_DIR) $(LIBA_INCLUDES)
+LIBB_DEPOBJS = $(LIBA_OBJS)
+LIBB_LIBS = $(LIBA_LIBS) $(LIBA_OBJS)
+
+PROGRAM_OBJS = prog.o
+PROGRAM_INCLUDES = $(LIBB_INCLUDES)
+PROGRAM_DEPOBJS = $(LIBB_DEPOBJS) $(LIBB_OBJS)
+PROGRAM_LIBS = $(LIBA_LIBS) $(LIBB_LIBS)
+PROGRAM = program
+
+all: $(PROGRAM)
+
+$(LIBA_OBJS): $(LIBA_DIR)/a.c $(LIBA_DIR)/a.h
+	$(CC) -o $@ -c $< $(CFLAGS)
+
+$(LIBB_OBJS): $(LIBB_DIR)/b.cpp $(LIBB_DIR)/b.h $(LIBB_DEPOBJS)
+	$(CXX) -o $@ -c $< $(CFLAGS)
+
+$(PROGRAM_OBJS): program.c
+	$(CC) -o $@ -c $< $(CFLAGS) $(foreach incdir, $(LIBB_INCLUDES), -I $(incdir))
+
+$(PROGRAM): $(PROGRAM_OBJS) $(PROGRAM_DEPOBJS)
+	$(CXX) -o $@ $+ $(LDFLAGS) $(LIBB_LIBS)
+
+clean:
+	echo TODO
+

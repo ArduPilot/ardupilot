@@ -1,0 +1,11 @@
+#! /usr/bin/env python
+
+
+def build(bld):
+	bld(
+		features = 'py',
+		name = 'pbpyrec',
+		source   = ['increc/message.proto'],
+		protoc_includes = ['increc', 'othermod/deep/inc'],
+		protoc_extincludes = ['/usr/include/pblib', '/usr/share/protos']
+	)

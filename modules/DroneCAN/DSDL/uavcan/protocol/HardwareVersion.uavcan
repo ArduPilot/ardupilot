@@ -1,0 +1,23 @@
+#
+# Nested type.
+# Generic hardware version information.
+# These values should remain unchanged for the device's lifetime.
+#
+
+#
+# Hardware version code.
+#
+uint8 major
+uint8 minor
+
+#
+# Unique ID is a 128 bit long sequence that is globally unique for each node.
+# All zeros is not a valid UID.
+# If filled with zeros, assume that the value is undefined.
+#
+uint8[16] unique_id
+
+#
+# Certificate of authenticity (COA) of the hardware, 255 bytes max.
+#
+uint8[<=255] certificate_of_authenticity

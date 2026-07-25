@@ -1,0 +1,13 @@
+#
+# Xacti GNSS status request
+#
+
+# signature from original file location
+OVERRIDE_SIGNATURE 0x60F5464E1CA03449
+
+#
+# requirement
+# 0: clear buffer command
+# 1 ~ 21: request sequence
+#
+uint8 requirement

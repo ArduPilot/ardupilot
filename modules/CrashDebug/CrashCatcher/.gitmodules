@@ -1,0 +1,3 @@
+[submodule "CppUTest"]
+	path = CppUTest
+	url = ../CppUTest.git

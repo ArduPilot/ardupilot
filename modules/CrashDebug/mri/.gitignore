@@ -1,0 +1,15 @@
+.DS_Store
+*.o
+*.d
+*.a
+*_tests.txt
+*_tests
+*_tests_gcov
+gcov/
+
+# Sublime Text Project Files
+*.sublime*
+
+# vim swap files
+*.swp
+*~

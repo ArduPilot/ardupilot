@@ -1,0 +1,32 @@
+# Copyright 2016 Proyectos y Sistemas de Mantenimiento SL (eProsima).
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+set(@PROJECT_NAME@_VERSION @PROJECT_VERSION@)
+
+@PACKAGE_INIT@
+
+if((MSVC OR MSVC_IDE) AND EXISTS "@PACKAGE_BIN_INSTALL_DIR@")
+    set_and_check(@PROJECT_NAME@_BIN_DIR "@PACKAGE_BIN_INSTALL_DIR@")
+endif()
+set_and_check(@PROJECT_NAME@_INCLUDE_DIR "@PACKAGE_INCLUDE_INSTALL_DIR@")
+set_and_check(@PROJECT_NAME@_LIB_DIR "@PACKAGE_LIB_INSTALL_DIR@")
+set_and_check(@PROJECT_NAME@_DATA_DIR "@PACKAGE_DATA_INSTALL_DIR@")
+
+foreach(d @_deps@)
+    list(GET d 0 _name)
+    list(GET d 1 _version)
+    find_package(${_name} ${_version} EXACT REQUIRED)
+endforeach()
+
+include(${@PROJECT_NAME@_DATA_DIR}/@PROJECT_NAME@/cmake/@PROJECT_NAME@Targets.cmake)

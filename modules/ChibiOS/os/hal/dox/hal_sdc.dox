@@ -1,0 +1,33 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+/**
+ * @defgroup SDC SDC Driver
+ * @brief   Generic SD Card Driver.
+ * @details This module implements a generic SDC (Secure Digital Card) driver.
+ * @pre     In order to use the SDC driver the @p HAL_USE_SDC option
+ *          must be enabled in @p halconf.h.
+ *
+ * @section sdc_1 Driver State Machine
+ * This driver implements a state machine internally, see the @ref IO_BLOCK
+ * module documentation for details.
+ *
+ * @section sdc_2 Driver Operations
+ * This driver allows to read or write single or multiple 512 bytes blocks
+ * on a SD Card.
+ *
+ * @ingroup HAL_NORMAL_DRIVERS
+ */

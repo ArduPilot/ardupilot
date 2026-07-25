@@ -1,0 +1,1193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- STM32F4xx board Template -->
+<board
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/boards/stm32f4xx_board.xsd">
+  <configuration_settings>
+  	<templates_path>resources/gencfg/processors/boards/stm32f4xx/templates</templates_path>
+  	<output_path>..</output_path>
+  	<hal_version>5.0.x</hal_version>
+  </configuration_settings>
+  <board_name>STMicroelectronics STM32F429I-Discovery</board_name>
+  <board_id>ST_STM32F429I_DISCOVERY</board_id>
+  <board_functions></board_functions>
+  <subtype>STM32F429xx</subtype>
+  <clocks
+    HSEFrequency="8000000"
+    HSEBypass="false"
+    LSEFrequency="0"
+    LSEBypass="false"
+    VDD="300" />
+  <ports>
+    <GPIOA>
+      <pin0
+        ID="BUTTON"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin1
+        ID="MEMS_INT1"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin2
+        ID="MEMS_INT2"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin3
+        ID="LCD_B5"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin4
+        ID="LCD_VSYNC"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin6
+        ID="LCD_G2"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin7
+        ID="ACP_RST"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin8
+        ID="I2C3_SCL"
+        Type="OpenDrain"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="4" />
+      <pin9
+        ID="UART_TX"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Alternate"
+        Alternate="7" />
+      <pin10
+        ID="UART_RX"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Alternate"
+        Alternate="7" />
+      <pin11
+        ID="LCD_R4"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin12
+        ID="LCD_R5"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin13
+        ID="SWDIO"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Alternate"
+        Alternate="0" />
+      <pin14
+        ID="SWCLK"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Level="High"
+        Mode="Alternate"
+        Alternate="0" />
+      <pin15
+        ID="TP_INT"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+    </GPIOA>
+    <GPIOB>
+      <pin0
+        ID="LCD_R3"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin1
+        ID="LCD_R6"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin2
+        ID="BOOT1"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin3
+        ID="SWO"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="0" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin5
+        ID="FMC_SDCKE1"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin6
+        ID="FMC_SDNE1"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin8
+        ID="LCD_B6"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin9
+        ID="LCD_B7"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin10
+        ID="LCD_G4"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin11
+        ID="LCD_G5"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin12
+        ID="OTG_HS_ID"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin13
+        ID="OTG_HS_VBUS"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullDown"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin14
+        ID="OTG_HS_DM"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin15
+        ID="OTG_HS_DP"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+    </GPIOB>
+    <GPIOC>
+      <pin0
+        ID="FMC_SDNWE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin1
+        ID="SPI5_MEMS_CS"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Output"
+        Alternate="0" ></pin1>
+      <pin2
+        ID="SPI5_LCD_CS"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Output"
+        Alternate="0" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin4
+        ID="OTG_HS_PSO"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Output"
+        Alternate="0" />
+      <pin5
+        ID="OTG_HS_OC"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin6
+        ID="LCD_HSYNC"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin7
+        ID="LCD_G6"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin9
+        ID="I2C3_SDA"
+        Type="OpenDrain"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="4" />
+      <pin10
+        ID="LCD_R2"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin14
+        ID="OSC32_IN"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin15
+        ID="OSC32_OUT"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+    </GPIOC>
+    <GPIOD>
+      <pin0
+        ID="FMC_D2"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin1
+        ID="FMC_D3"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin3
+        ID="LCD_G7"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin6
+        ID="LCD_B2"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin8
+        ID="FMC_D13"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin9
+        ID="FMC_D14"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin10
+        ID="FMC_D15"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin11
+        ID="LCD_TE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin12
+        ID="LCD_RDX"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Output"
+        Alternate="0" />
+      <pin13
+        ID="LCD_WRX"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Output"
+        Alternate="0" />
+      <pin14
+        ID="FMC_D0"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin15
+        ID="FMC_D1"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+    </GPIOD>
+    <GPIOE>
+      <pin0
+        ID="FMC_NBL0"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin1
+        ID="FMC_NBL1"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin7
+        ID="FMC_D4"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin8
+        ID="FMC_D5"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin9
+        ID="FMC_D6"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin10
+        ID="FMC_D7"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin11
+        ID="FMC_D8"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin12
+        ID="FMC_D9"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin13
+        ID="FMC_D10"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin14
+        ID="FMC_D11"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin15
+        ID="FMC_D12"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+    </GPIOE>
+    <GPIOF>
+      <pin0
+        ID="FMC_A0"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin1
+        ID="FMC_A1"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin2
+        ID="FMC_A2"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin3
+        ID="FMC_A3"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin4
+        ID="FMC_A4"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin5
+        ID="FMC_A5"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin7
+        ID="LCD_DCX"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="5" />
+      <pin8
+        ID="SPI5_MISO"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="5" />
+      <pin9
+        ID="SPI5_MOSI"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="5" />
+      <pin10
+        ID="LCD_DE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin11
+        ID="FMC_SDNRAS"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin12
+        ID="FMC_A6"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin13
+        ID="FMC_A7"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin14
+        ID="FMC_A8"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin15
+        ID="FMC_A9"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+    </GPIOF>
+    <GPIOG>
+      <pin0
+        ID="FMC_A10"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin1
+        ID="FMC_A11"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin4
+        ID="FMC_BA0"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin5
+        ID="FMC_BA1"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin6
+        ID="LCD_R7"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin7
+        ID="LCD_CLK"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin8
+        ID="FMC_SDCLK"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin10
+        ID="LCD_G3"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin11
+        ID="LCD_B3"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin12
+        ID="LCD_B4"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="14" />
+      <pin13
+        ID="LED3_GREEN"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+      <pin14
+        ID="LED4_RED"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+      <pin15
+        ID="FMC_SDNCAS"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Alternate"
+        Alternate="12" />
+    </GPIOG>
+    <GPIOH>
+      <pin0
+        ID="OSC_IN"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0"></pin0>
+      <pin1
+        ID="OSC_OUT"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin10
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin14
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+    </GPIOH>
+    <GPIOI>
+      <pin0
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin1
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin10
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin14
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="High"
+        Mode="Input"
+        Alternate="0" />
+    </GPIOI>
+  </ports>
+</board>

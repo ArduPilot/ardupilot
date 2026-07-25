@@ -1,0 +1,11 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+if bld.env['PYTHON']:
+	bld(
+			features             = 'test_scripts',
+			test_scripts_source  = 'test.py',
+			test_scripts_template = '${PYTHON} ${SCRIPT}'
+	)
+
+

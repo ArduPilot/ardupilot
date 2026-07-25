@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{3c693c23-1a78-42b0-bee4-757f4a5a2d71}</UniqueIdentifier>
+      <Extensions>cpp;c;cxx;rc;def;r;odl;idl;hpj;bat</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{8f4e5df0-16cd-40aa-ad1f-7899c4cd4adc}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{59667e5f-617a-4e83-96fc-1f5b1406ecc7}</UniqueIdentifier>
+      <Extensions>ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="soapH.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="soapStub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="calcserver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="soap2stuff.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="soapC.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="soapServer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="winstuff.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="calc.h">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="stdsoap2.def">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="calc.nsmap">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="calc.mak" />
+  </ItemGroup>
+</Project>

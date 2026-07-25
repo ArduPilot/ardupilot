@@ -1,0 +1,155 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+ * SPC560D40 memory setup.
+ */
+MEMORY
+{
+    rom       : org = 0x00000000, len = 0x00040000
+    dataflash : org = 0x00800000, len = 0x00010000
+    ram       : org = 0x40000000, len = 0x00004000
+}
+
+__irq_stack_size__     = 0;
+__process_stack_size__ = 0x0400;
+
+__ram_size__  = SIZEOF(ram);
+__ram_start__ = ADDR(ram);
+__ram_end__   = ADDR(ram) + SIZEOF(ram);
+
+SECTIONS
+{
+  GROUP:
+  {
+    .boot ALIGN(16):
+    {
+      KEEP(*(.boot))
+    }
+    
+    .handlers (VLECODE) ALIGN(4): {
+      KEEP(*(.handlers))
+    }
+
+    .crt0 (VLECODE) ALIGN(4): {
+      *(.crt0)
+    }
+
+    .init: {}
+    .init_vle (VLECODE) ALIGN(4):
+    {
+       *(.init)
+       *(.init_vle)
+    }
+
+    .vectors ALIGN(0x800):
+    {
+      KEEP(*(.vectors))
+    }
+    
+    .ivors (VLECODE) ALIGN(0x1000):
+    {
+      __ivpr_base__ = .;
+      KEEP(*(.ivors))
+    }
+
+    .code (VLECODE) ALIGN(16):
+    {
+      *(.text)
+      *(.text_vle)
+    }
+
+    .const (CONST) ALIGN(16):
+    {
+      *(.rdata)
+      *(.rodata)
+    }
+
+    .sdata2 (CONST) ALIGN(16):
+    {
+      __sdata2_start__ = . + 0x8000;
+      *(.sdata2)
+      *(.sbss2)
+    }
+
+   .ctors: {}
+   .dtors: {}
+    extab: {}
+    extabindex: {}
+
+    . = ALIGN(4);
+    __romdata_start__ = .;
+  } > rom
+
+  GROUP:
+  {
+    .stacks:
+    {
+        . = ALIGN(8);
+        __irq_stack_base__ = .;
+        . = . + __irq_stack_size__;
+        . = ALIGN(8);
+        __irq_stack_end__ = .;
+        __process_stack_base__ = .;
+        __main_thread_stack_base__ = .;
+        . = . + __process_stack_size__;
+        . = ALIGN(8);
+        __process_stack_end__ = .;
+        __main_thread_stack_end__ = .;
+    }
+
+    .data (DATA) LOAD(__romdata_start__):
+    {
+        . = ALIGN(4);
+        __data_start__ = .;
+        *(.data)
+        . = ALIGN(4);
+    }
+
+    .sdata (DATA) LOAD(ROMADDR(.data) + SIZEOF(.data)):
+    {
+        __sdata_start__ = . + 0x8000;
+        *(.sdata)
+        __data_end__ = .;
+    }
+
+    .sbss (BSS):
+    {
+        __bss_start__ = .;
+        *(.sbss)
+    }
+
+    .bss (BSS):
+    {
+        *(.bss)
+        __bss_end__ = .;
+    }
+
+    /* The default heap uses the (statically) unused part of a RAM section.*/
+    .heap:
+    {
+      . = ALIGN(8);
+      __heap_base__ = .;
+      . = ADDR(ram) + SIZEOF(ram);
+      __heap_end__ = .;
+    }
+
+    .PPC.EMB.sdata0: {}
+    .PPC.EMB.sbss0: {}
+  } > ram
+}

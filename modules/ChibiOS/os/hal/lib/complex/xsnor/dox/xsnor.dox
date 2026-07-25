@@ -1,0 +1,80 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+
+/**
+ * @defgroup HAL_XSNOR Improved Serial NOR Driver
+ * @brief   Serial NOR Flash memories framework. This module provides
+ *          support for a variety of SNOR devices.
+ *          Features:
+ *          - Object-oriented, each driver is a class, all drivers
+ *            inherit from a common @p hal_xsnor_base_c base class.
+ *          - Supports SPI and/os WSPI HAL drivers as busses.
+ *          - Device auto-detection.
+ *          - Support for mixed device.
+ *
+ * @ingroup HAL_COMPLEX_DRIVERS
+ */
+
+/**
+ * @defgroup HAL_XSNOR_BASE Base Serial NOR Driver class
+ * @brief   Base Serial NOR Driver class.
+ * @details This module implements a base class for Serial NOR Flash
+ *          devices. This base class implements:
+ *          - Access API by implementing a Flash Interface.
+ *          - Driver state machine handling.
+ *          - Communication via SPI and/or WSPI drivers.
+ *
+ * @section xsnorflash_1 Driver State Machine
+ * The flash driver implements a state machine internally, not all the driver
+ * functionalities can be used in any moment, any transition not explicitly
+ * shown in the following diagram has to be considered an error and shall
+ * be captured by an assertion (if enabled).
+ * @dot
+  digraph example {
+    rankdir="LR";
+    node [shape=circle, fontname=Helvetica, fontsize=8, fixedsize="true", width="0.9", height="0.9"];
+    edge [fontname=Helvetica, fontsize=8];
+    stop  [label="FLS_STOP\nLow Power"];
+    uninit [label="FLS_UNINIT", style="bold"];
+    ready [label="FLS_READY\nClock Enabled"];
+    read [label="FLS_READ\nReading"];
+    pgm [label="FLS_PGM\nProgramming"];
+    erase [label="FLS_ERASE\nErasing"];
+    uninit -> stop [label=" snorInit()", constraint=false];
+    stop -> stop [label=" snorStop()"];
+    stop -> ready [label=" snorStart()"];
+    ready -> stop [label=" snorStop()"];
+    ready -> read [label=" flashRead()\nflashVerifyErase()"];
+    read -> ready [label=" return"];
+    ready -> pgm [label=" flashProgram()"];
+    pgm -> ready [label=" return"];
+    ready -> erase [label=" \n\nflashEraseAll()\nflashEraseSector()"];
+    erase -> ready [label=" flashQueryErase()\nFLASH_NO_ERROR\nFLASH_ERROR_*"];
+    erase -> erase [label=" flashQueryErase()\nflashProgram()\nflashRead()\nFLASH_BUSY_ERASING"];
+  }
+ * @enddot
+ *
+ * @ingroup HAL_XSNOR
+ */
+
+/**
+ * @defgroup HAL_FLASH_INTERFACE Base Flash Interface
+ * @brief   Base Flash Interface.
+ * @details This interface defines a general API for accessing Flash devices.
+ *
+ * @ingroup HAL_XSNOR
+ */

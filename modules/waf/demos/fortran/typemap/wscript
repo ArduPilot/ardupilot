@@ -1,0 +1,191 @@
+#! /usr/bin/env python
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_c')
+	opt.load('compiler_fc')
+
+def configure(conf):
+	conf.load('compiler_c')
+	conf.load('compiler_fc')
+	conf.check_fortran()
+	# configuration tests that may be totally irrelevant
+	conf.check_fortran_dummy_main()
+	if not conf.env.IFORT_WIN32:
+		conf.check_fortran_verbose_flag()
+		conf.check_fortran_clib()
+		conf.check_fortran_mangling()
+
+def build(bld):
+
+	bld(
+		features = 'fc typemap fcshlib',
+		source = 'fsrc.f90 basetypes.f90',
+		defs   = 'fsrc.def',
+		target = 'foo',
+		)
+
+import os
+from waflib import Logs, Build, Utils
+
+from waflib import TaskGen, Task
+from waflib.ConfigSet import ConfigSet
+
+@TaskGen.feature('typemap')
+@TaskGen.after('process_source')
+@TaskGen.before('apply_link')
+def process_typemaps(self):
+	"""
+	modmap: *.f90 + foo.in -> foo.h + foo.f90
+	compile foo.f90 like the others
+	"""
+	node = self.path.find_resource(getattr(self, 'typemap', 'fwrap_ktp.in'))
+	if not node:
+		raise self.bld.errors.WafError('no typemap file declared for %r' % self)
+
+	f90out = node.change_ext('.f90')
+	lst = [node]
+	for x in self.tasks:
+		if x.inputs and x.inputs[0].name.endswith('.f90'):
+			lst.append(x.inputs[0])
+	tmtsk = self.typemap_task = self.create_task('modmap', lst, [f90out, node.change_ext('.h')])
+
+	for x in self.tasks:
+		if x.inputs and x.inputs[0].name.endswith('.f90'):
+			tmtsk.set_run_after(x)
+
+	tsk = self.create_compiled_task('fc', f90out)
+	tsk.nomod = True # the fortran files won't compile unless all the .mod files are set, ick
+
+class modmap(Task.Task):
+	"""
+	create .h and .f90 files, so this must run be executed before any c task
+	"""
+	ext_out = ['.h'] # before any c task is not mandatory since #732 but i want to be sure (ita)
+	def run(self):
+		"""
+		we need another build context, because we cannot really disable the logger here
+		"""
+		obld = self.generator.bld
+		bld = Build.BuildContext(top_dir=obld.srcnode.abspath(), out_dir=obld.bldnode.abspath())
+		bld.init_dirs()
+		bld.in_msg = 1 # disable all that comes from bld.msg(..), bld.start_msg(..) and bld.end_msg(...)
+		bld.env = self.env.derive()
+		node = self.inputs[0]
+		bld.logger = Logs.make_logger(node.parent.get_bld().abspath() + os.sep + node.name + '.log', 'build')
+
+		gen_type_map_files(bld, self.inputs, self.outputs)
+
+class ctp(object):
+	def __init__(self, name, basetype, odecl, use):
+		self.name = name
+		self.basetype = basetype
+		self.odecl = odecl
+		self.use = use
+		self.fc_type = None
+
+def gen_type_map_files(bld, inputs, outputs):
+
+	# The ctp properties (name, basetype, odecl, etc.) would be listed in a
+	# configuration file and the ctp list below would be loaded from that file.
+	# But the type resolution must be determined at *compile time* (i.e. build
+	# time), and can't be determined by static analysis.  This is because each
+	# fortran compiler can have a different value for the type resolution.
+	# Moreover, the type resolution can depend on an arbitrary number of .mod
+	# files and integer expressions.
+
+	ktp_in = [ip for ip in inputs if ip.name.endswith('.in')][0]
+	env = ConfigSet()
+	env.load(ktp_in.abspath())
+	ctps = []
+	for ctp_ in env.CTPS:
+		ctps.append(ctp(**ctp_))
+
+	# the 'use' attribute of the ctp instances above uses the .mod file created
+	# after the compilation of fsrc.f90.  The type mapping depends on the .mod
+	# file generated, and thus the mapping needs to be discovered during the
+	# build stage, not the configuration stage.
+
+	find_types(bld, ctps)
+
+	# write fortran -> C mapping to file.
+	fort_file = [ff for ff in outputs if ff.name.endswith('.f90')][0]
+	c_header = [ch for ch in outputs if ch.name.endswith('.h')][0]
+	write_type_map(bld, ctps, fort_file, c_header)
+
+def find_types(bld, ctps):
+	for ctp in ctps:
+		fc_type = None
+		fc_type = find_fc_type(bld, ctp.basetype,
+					ctp.odecl, ctp.use)
+		if not fc_type:
+			raise bld.errors.WafError(
+					"unable to find C type for type %s" % ctp.odecl)
+		ctp.fc_type = fc_type
+
+type_dict = {'integer' : ['c_signed_char', 'c_short', 'c_int', 'c_long', 'c_long_long']}
+
+def find_fc_type(bld, base_type, decl, use):
+	fsrc_tmpl = '''\
+subroutine outer(a)
+  use, intrinsic :: iso_c_binding
+  implicit none
+  %(TEST_DECL)s, intent(inout) :: a
+  interface
+	subroutine inner(a)
+	  use, intrinsic :: iso_c_binding
+	  use %(USE)s
+	  implicit none
+	  %(TYPE_DECL)s, intent(inout) :: a
+	end subroutine inner
+  end interface
+  call inner(a)
+end subroutine outer
+'''
+	for ctype in type_dict[base_type]:
+		test_decl = '%s(kind=%s)' % (base_type, ctype)
+		fsrc = fsrc_tmpl % {'TYPE_DECL' : decl,
+							'TEST_DECL' : test_decl,
+							'USE' : use}
+		try:
+			bld.check_cc(
+					fragment=fsrc,
+					compile_filename='test.f90',
+					features='fc',
+					includes = bld.bldnode.abspath(),
+					)
+		except bld.errors.ConfigurationError:
+			pass
+		else:
+			res = ctype
+			break
+	else:
+		res = ''
+	return res
+
+def write_type_map(bld, ctps, fort_file, c_header):
+	buf = ['''\
+module type_maps
+use, intrinsic :: iso_c_binding
+implicit none
+''']
+	for ctp in ctps:
+		buf.append('integer, parameter :: %s = %s' % (ctp.name, ctp.fc_type))
+	buf.append('end module type_maps\n')
+	fort_file.write('\n'.join(buf))
+
+	cap_name = '%s__' % c_header.name.upper().replace('.', '_')
+	buf = ['''\
+#ifndef %s
+#define %s
+''' % (cap_name, cap_name)]
+	for ctp in ctps:
+		# This is just an example, so this would be customized. The 'long long'
+		# would correspond to the actual C type...
+		buf.append('typedef long long %s\n' % ctp.name)
+	buf.append('#endif\n')
+	c_header.write('\n'.join(buf))
+
+# vim:ft=python:noet

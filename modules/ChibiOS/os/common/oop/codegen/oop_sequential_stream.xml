@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="oop_sequential_stream" descr="Sequential Stream Interface" editcode="false">
+  <brief>Sequential data streams interface.</brief>
+  <imports>
+    <import>oop_base_interface.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_base_interface.h</include>
+    </includes>
+    <definitions_early>
+      <verbatim><![CDATA[
+/* Temporary, in order to avoid conflicts with the same definitions in old
+   HAL streams.*/
+#undef STM_OK
+#undef STM_TIMEOUT
+#undef STM_RESET
+]]></verbatim>
+      <group description="Streams return codes">
+        <define name="STM_OK" value="0" >
+          <brief>Returned code for operation successful.</brief>
+          <note>It is an alias of @p MSG_OK.</note>
+        </define>
+        <define name="STM_TIMEOUT" value="-1">
+          <brief>Returned code for operation timeout.</brief>
+          <note>It is an alias of @p MSG_TIMEOUT.</note>
+        </define>
+        <define name="STM_RESET" value="-2">
+          <brief>Returned code for stream reset or End-of-File.</brief>
+          <note>It is an alias of @p MSG_RESET.</note>
+        </define>
+      </group>
+      <condition check="defined(OOP_USE_LEGACY)">
+        <group description="Legacy interface method names">
+          <define name="streamWrite" value="stmWrite" />
+          <define name="streamRead" value="stmRead" />
+          <define name="streamPut" value="stmPut" />
+          <define name="streamGet" value="stmGet" />
+        </group>
+      </condition>
+    </definitions_early>
+    <types>
+      <interface name="sequential_stream" namespace="stm"
+        ancestorname="base_interface" descr="sequential stream">
+        <brief>Sequential data streams interface.</brief>
+        <details>
+          <![CDATA[This module define an interface for generic sequential data
+                   streams.]]>
+          <br />
+          <![CDATA[This interface is meant to be implemented in classes
+                   requiring streaming capability.]]>
+        </details>
+        <note><![CDATA[This interface is meant to be compatible with legacy HAL
+                       @p BaseSequentialStream interface.]]></note>
+        <consts>
+        </consts>
+        <methods>
+          <method name="stmWrite" shortname="write"
+            ctype="size_t">
+            <brief>Sequential Stream write.</brief>
+            <details>This function writes data from a buffer to a
+              stream.
+            </details>
+            <param name="bp" ctype="const uint8_t *" dir="in">Pointer
+              to the data buffer.
+            </param>
+            <param name="n" ctype="size_t" dir="in">The maximum amount
+              of data to be transferred.
+            </param>
+            <return><![CDATA[The number of bytes transferred. The returned
+                    value can be less than the specified number of bytes
+                    if an end-of-file condition has been met.]]></return>
+          </method>
+          <method name="stmRead" shortname="read" ctype="size_t">
+            <brief>Sequential Stream read.</brief>
+            <details>This function reads data from a stream into a
+              buffer.
+            </details>
+            <param name="bp" ctype="uint8_t *" dir="out">Pointer to the
+              data buffer.
+            </param>
+            <param name="n" ctype="size_t" dir="in">The maximum amount
+              of data to be transferred.
+            </param>
+            <return><![CDATA[The number of bytes transferred. The returned
+                    value can be less than the specified number of bytes
+                    if an end-of-file condition has been met.]]></return>
+          </method>
+          <method name="stmPut" shortname="put" ctype="int">
+            <brief>Sequential Stream blocking byte write.</brief>
+            <details><![CDATA[This function writes a byte value to a stream.
+                If the stream is not ready to accept data then the calling
+                thread is suspended.]]></details>
+            <param name="b" ctype="uint8_t" dir="in">The byte value to
+              be written to the stream.
+            </param>
+            <return>The operation status.</return>
+            <retval value="STM_OK">If the byte has been written.</retval>
+            <retval value="STM_RESET">If an end-of-file condition has been met.</retval>
+          </method>
+          <method name="stmGet" shortname="get" ctype="int">
+            <brief>Sequential Stream blocking byte read.</brief>
+            <details><![CDATA[This function reads a byte value from a stream.
+                     If the data is not available then the calling thread is
+                     suspended.]]></details>
+            <return>A byte value from the stream.</return>
+            <retval value="STM_RESET">If an end-of-file condition has been met.</retval>
+          </method>
+          <method name="stmUnget" shortname="unget" ctype="int">
+            <brief>Pushes back a byte into the stream.</brief>
+            <details><![CDATA[The specified byte is pushed back into the
+              stream.]]></details>
+            <note><![CDATA[Implementing classes may have limited push-back buffer
+              capacity or not be able to push-back at all.]]></note>
+            <param name="b" ctype="int" dir="in">The byte value to
+              be pushed back to the stream.
+            </param>
+            <return>The operation status.</return>
+            <retval value="STM_OK">If the byte has been pushed back.</retval>
+            <retval value="STM_RESET">If there is no push-back capacity left.</retval>
+          </method>
+        </methods>
+      </interface>
+      <condition check="defined(OOP_USE_LEGACY)">
+        <typedef name="BaseSequentialStream">
+          <brief>For compatibility with legacy @p BaseSequentialStream.</brief>
+          <basetype ctype="sequential_stream_i" />
+        </typedef>
+      </condition>
+    </types>
+  </public>
+  <private>
+  </private>
+</module>

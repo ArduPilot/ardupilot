@@ -1,0 +1,102 @@
+#! /usr/bin/env python
+# encoding: utf-8
+#vim syntax=python
+
+import os, sys, shutil
+from waflib import Utils
+
+bld.add_group()
+
+funigui = ctx.env.guiname+'.exe'
+csdll = ctx.env.dllname+'_cs.dll'
+funi_cs = bld.path.find_or_declare(csdll)
+
+# obtain the file names to copy
+from waflib import TaskGen
+@TaskGen.feature('copy_over')
+@TaskGen.before_method('process_subst')
+def get_filenames_to_copy_from_task_generators(self):
+    src = self.bld.get_tgen_by_name(self.from_tg).tasks[-1].outputs[0]
+    self.source = [src]
+    self.target = [src.name]
+    self.is_copy = True
+
+# just copy the files to this folder
+bld(features='copy_over subst', from_tg='funi')
+bld(features='copy_over subst', from_tg='csdll')
+
+# copy the same file to the build directory
+bld.src2bld(bld, 'Resources/Icon1.ico')
+
+bld(rule=bld.stpl,source='AssemblyInfo.cs.stpl',target='AssemblyInfo.cs')
+
+bld.add_group()
+
+src = """
+    program.cs
+    FormFuni.cs
+    AssemblyInfo.cs
+    Resources.resx
+""".strip().split()
+
+refs = """
+    System
+    System.Core
+    System.Windows.Forms
+    System.Xml
+    System.Xml.Linq
+    System.Data
+    System.Data.DataSetExtensions
+    System.Drawing
+""".strip().split()
+
+if Utils.is_win32:
+	refs = """
+    System
+    System.Core
+    System.Windows.Forms
+    System.Linq
+    System.RunTime.InteropServices
+    System.Xml
+    System.Xml.Linq
+    System.Threading.Tasks
+    System.Data
+    System.Data.DataSetExtensions
+    System.Deployment
+    System.Drawing
+""".strip().split()
+
+
+CSFLAGS = []
+def csflag(x):
+    global CSFLAGS
+    CSFLAGS+=[x]
+csflag(r'/platform:x64')
+csflag(r'/errorreport:prompt')
+if Utils.is_win32:
+    csflag(r'/errorendlocation')
+    csflag(r'/preferreduilang:en-US')
+    csflag(r'/highentropyva-')
+csflag(r'/debug:pdbonly')
+csflag(r'/filealign:512')
+csflag(r'/define:'+ctx.env.guiname[1:]) #EstimPRO or EstimRESEARCH
+csflag(r'/nologo')
+csflag(r'/noconfig')
+csflag(r'/nowarn:1701,1702')
+csflag(r'/target:winexe')
+if ctx.options.stubs:
+    csflag('/optimize-')
+    csflag('/define:DEBUG')
+    csflag('/define:TRACE')
+else:
+    csflag('/optimize+')
+
+csflag(r'/win32icon:gui/Resources/Icon1.ico')
+
+
+bld(features='cs',source=src,gen=funigui,csflags=CSFLAGS,use=[r+'.dll' for r in refs]+[funi_cs.abspath()])
+
+bld.add_group()
+
+bld(features='satellite_assembly',source='Resources/resources.fr.txt', gen=funigui)
+

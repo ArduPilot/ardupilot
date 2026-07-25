@@ -1,0 +1,44 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @mainpage Introduction
+ * @author Giovanni Di Sirio (gdisirio@users.sourceforge.net).
+ *
+ * <h2>Why Nil?</h2>
+ * Of course because it is so small that it is almost nil.
+ * I wrote Nil because I wanted to experiment with an idea I had
+ * regarding a minimal RTOS. Basically I wanted to verify how small
+ * could be an RTOS while retaining useful features.
+ *
+ * <h2>Features</h2>
+ * - Free software, GPL3 licensed. Stable releases include a exception clause
+ *   to the GPL.
+ * - Designed for realtime applications.
+ * - Easily portable.
+ * - Preemptive scheduling.
+ * - Each thread has its own priority level.
+ * - Offers tasks, time, semaphores, event flags, timeouts.
+ * - Fully static.
+ * - Minimal system requirements: about 700 bytes ROM with all options enabled.
+ * - Almost totally written in C with little ASM code required for ports.
+ * - Compatible with ChibiOS/HAL.
+ * - API compatible with ChibiOS/RT of which, ChibiOS/NIL, is functionally
+ *   a subset.
+ * .
+ */

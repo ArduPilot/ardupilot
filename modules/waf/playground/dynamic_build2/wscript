@@ -1,0 +1,36 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+"""
+"""
+
+from waflib import Utils, Build
+
+top = '.'
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+def read_files(task):
+	# the real build files must be excluded, else they will get rebuilt
+	for x in task.generator.bld.bldnode.ant_glob('**', excl='**/*.o app', remove=False):
+		pass
+
+def build(bld):
+	bld.post_mode = Build.POST_LAZY
+
+	bld(rule='tar xvf ${SRC[0].abspath()}', source='foo.tar')
+	bld.add_group('foo')
+	bld(rule=read_files, always=True, name='read_files')
+	bld.add_group('bar')
+	bld.program(source='aa/main.c', target='app')
+
+
+	print bld.get_group('bar')

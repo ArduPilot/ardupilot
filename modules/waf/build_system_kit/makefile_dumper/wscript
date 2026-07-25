@@ -1,0 +1,79 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+"""
+Calling 'waf build' executes a normal build with Waf
+Calling 'waf clean dump' will create a makefile corresponding to the build
+The dependencies will be extracted too
+"""
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+top = '.'
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+def build(bld):
+	bld.program(source='main.c', target='app', use='mylib', cflags=['-O2'])
+	bld.stlib(source='a.c', target='mylib')
+
+# ---------------------------------------------------------------------------
+
+from waflib import Build, Logs
+class Dumper(Build.BuildContext):
+	fun = 'dump'
+	cmd = 'dump'
+
+def dump(bld):
+	# call the build function as if a real build were performed
+	build(bld)
+
+	from waflib import Task
+	bld.commands = []
+	bld.targets = []
+
+	# store the command executed
+	old_exec = Task.Task.exec_command
+	def exec_command(self, *k, **kw):
+		ret = old_exec(self, *k, **kw)
+		self.command_executed = k[0]
+		self.path = kw['cwd'] or self.generator.bld.cwd
+		return ret
+	Task.Task.exec_command = exec_command
+
+	# perform a fake build, and accumulate the makefile bits
+	old_process = Task.Task.process
+	def process(self):
+		old_process(self)
+
+		lst = []
+		for x in self.outputs:
+			lst.append(x.path_from(self.generator.bld.bldnode))
+		bld.targets.extend(lst)
+		lst.append(':')
+		for x in self.inputs + self.dep_nodes + self.generator.bld.node_deps.get(self.uid(), []):
+			lst.append(x.path_from(self.generator.bld.bldnode))
+		try:
+			if isinstance(self.command_executed, list):
+				self.command_executed = ' '.join(self.command_executed)
+		except Exception as e:
+			print(e)
+		else:
+			bld.commands.append(' '.join(lst))
+			bld.commands.append('\tcd %s && %s' % (self.path, self.command_executed))
+	Task.Task.process = process
+
+	# write the makefile after the build is complete
+	def output_makefile(self):
+		self.commands.insert(0, "all: %s" % " ".join(self.targets))
+		node = self.bldnode.make_node('Makefile')
+		node.write('\n'.join(self.commands))
+		Logs.warn('Wrote %r', node)
+	bld.add_post_fun(output_makefile)
+

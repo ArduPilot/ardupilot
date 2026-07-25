@@ -1,0 +1,95 @@
+[cases.bench_file_read]
+# 0 = in-order
+# 1 = reversed-order
+# 2 = random-order
+defines.ORDER = [0, 1, 2]
+defines.SIZE = '128*1024'
+defines.CHUNK_SIZE = 64
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_size_t chunks = (SIZE+CHUNK_SIZE-1)/CHUNK_SIZE;
+
+    // first write the file
+    lfs_file_t file;
+    uint8_t buffer[CHUNK_SIZE];
+    lfs_file_open(&lfs, &file, "file",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+    for (lfs_size_t i = 0; i < chunks; i++) {
+        uint32_t chunk_prng = i;
+        for (lfs_size_t j = 0; j < CHUNK_SIZE; j++) {
+            buffer[j] = BENCH_PRNG(&chunk_prng);
+        }
+
+        lfs_file_write(&lfs, &file, buffer, CHUNK_SIZE) => CHUNK_SIZE;
+    }
+    lfs_file_write(&lfs, &file, buffer, CHUNK_SIZE) => CHUNK_SIZE;
+    lfs_file_close(&lfs, &file) => 0;
+
+    // then read the file
+    BENCH_START();
+    lfs_file_open(&lfs, &file, "file", LFS_O_RDONLY) => 0;
+
+    uint32_t prng = 42;
+    for (lfs_size_t i = 0; i < chunks; i++) {
+        lfs_off_t i_
+            = (ORDER == 0) ? i
+            : (ORDER == 1) ? (chunks-1-i)
+            : BENCH_PRNG(&prng) % chunks;
+        lfs_file_seek(&lfs, &file, i_*CHUNK_SIZE, LFS_SEEK_SET)
+                => i_*CHUNK_SIZE;
+        lfs_file_read(&lfs, &file, buffer, CHUNK_SIZE) => CHUNK_SIZE;
+
+        uint32_t chunk_prng = i_;
+        for (lfs_size_t j = 0; j < CHUNK_SIZE; j++) {
+            assert(buffer[j] == BENCH_PRNG(&chunk_prng));
+        }
+    }
+
+    lfs_file_close(&lfs, &file) => 0;
+    BENCH_STOP();
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.bench_file_write]
+# 0 = in-order
+# 1 = reversed-order
+# 2 = random-order
+defines.ORDER = [0, 1, 2]
+defines.SIZE = '128*1024'
+defines.CHUNK_SIZE = 64
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_size_t chunks = (SIZE+CHUNK_SIZE-1)/CHUNK_SIZE;
+
+    BENCH_START();
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "file",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+
+    uint8_t buffer[CHUNK_SIZE];
+    uint32_t prng = 42;
+    for (lfs_size_t i = 0; i < chunks; i++) {
+        lfs_off_t i_
+            = (ORDER == 0) ? i
+            : (ORDER == 1) ? (chunks-1-i)
+            : BENCH_PRNG(&prng) % chunks;
+        uint32_t chunk_prng = i_;
+        for (lfs_size_t j = 0; j < CHUNK_SIZE; j++) {
+            buffer[j] = BENCH_PRNG(&chunk_prng);
+        }
+
+        lfs_file_seek(&lfs, &file, i_*CHUNK_SIZE, LFS_SEEK_SET)
+                => i_*CHUNK_SIZE;
+        lfs_file_write(&lfs, &file, buffer, CHUNK_SIZE) => CHUNK_SIZE;
+    }
+
+    lfs_file_close(&lfs, &file) => 0;
+    BENCH_STOP();
+
+    lfs_unmount(&lfs) => 0;
+'''

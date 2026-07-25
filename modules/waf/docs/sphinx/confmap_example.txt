@@ -1,0 +1,22 @@
+The configuration methods `@conf` are bound to the configuration context, and to the build context::
+
+	@waflib.Configure.conf
+	def find_program(ctx):
+		pass
+
+	def configure(conf):
+		conf.find_program(...)
+
+The object `conf.env` is usually modified during the execution. If several methods have to be called, then
+a transaction should be used, for example::
+
+	def configure(conf):
+		conf.env.stash()
+		try:
+			conf.find_program('strip')
+			conf.env.append_value('CFLAGS', '-O3')
+		finally:
+			conf.env.revert()
+
+
+

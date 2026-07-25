@@ -1,0 +1,17 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# DC 2008
+# Thomas Nagy 2010 (ita)
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('fakecc', tooldir='.')
+
+def configure(conf):
+	conf.load('fakecc', tooldir='.')
+
+def build(bld):
+	bld(source='hello_main.a hello.a', target='hello')
+

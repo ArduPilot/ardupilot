@@ -1,0 +1,26 @@
+name: post-release
+on:
+  release:
+    branches: [master]
+    types: [released]
+
+jobs:
+  post-release:
+    runs-on: ubuntu-18.04
+    steps:
+      # trigger post-release in dependency repo, this indirection allows the
+      # dependency repo to be updated often without affecting this repo. At
+      # the time of this comment, the dependency repo is responsible for
+      # creating PRs for other dependent repos post-release.
+      - name: trigger-post-release
+        continue-on-error: true
+        run: |
+          curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+            "$GITHUB_API_URL/repos/${{secrets.POST_RELEASE_REPO}}/dispatches" \
+            -d "$(jq -n '{
+              event_type: "post-release",
+              client_payload: {
+                repo: env.GITHUB_REPOSITORY,
+                version: "${{github.event.release.tag_name}}"}}' \
+              | tee /dev/stderr)"
+

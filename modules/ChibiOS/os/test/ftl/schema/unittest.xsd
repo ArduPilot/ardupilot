@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:complexType name="instanceType">
+      <xs:sequence>
+        <xs:element name="description" type="descriptionType"
+          maxOccurs="1" minOccurs="1">
+        </xs:element>
+        <xs:element name="global_data_and_code"
+          type="global_data_and_codeType" maxOccurs="1" minOccurs="1">
+        </xs:element>
+        <xs:element name="sequences" type="sequencesType" maxOccurs="1" minOccurs="1"></xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="descriptionType">
+      <xs:sequence>
+        <xs:element name="brief" type="textValueType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="copyright" type="textValueType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="introduction" type="textValueType" maxOccurs="1" minOccurs="1"></xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="global_data_and_codeType">
+      <xs:sequence>
+        <xs:element name="code_prefix" maxOccurs="1" minOccurs="1"
+          type="textValueType">
+        </xs:element>
+        <xs:element name="global_definitions" maxOccurs="1"
+          minOccurs="1" type="codeWrapperType">
+        </xs:element>
+        <xs:element name="global_code" maxOccurs="1" minOccurs="1" type="codeWrapperType">
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="sequencesType">
+      <xs:sequence>
+        <xs:element name="sequence" type="sequenceType" maxOccurs="unbounded" minOccurs="1"></xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="sequenceType">
+      <xs:sequence>
+        <xs:element name="type" type="typeType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="brief" type="textValueType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="details" maxOccurs="1" minOccurs="1"
+          type="textValueType">
+        </xs:element>
+        <xs:element name="condition" type="conditionType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="shared_code" type="codeWrapperType"
+          maxOccurs="1" minOccurs="1">
+        </xs:element>
+        <xs:element name="cases" type="casesType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="typeType">
+      <xs:sequence>
+        <xs:element name="value" maxOccurs="1" minOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:enumeration value="Internal Tests"></xs:enumeration>
+              <xs:enumeration value="External Tests"></xs:enumeration>
+              <xs:enumeration value="Benchmarks"></xs:enumeration>
+              <xs:whiteSpace value="collapse"></xs:whiteSpace>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="conditionType">
+      <xs:sequence>
+        <xs:element name="value" maxOccurs="1" minOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:whiteSpace value="collapse"></xs:whiteSpace>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="shared_codeType">
+      <xs:sequence>
+        <xs:element name="value" maxOccurs="1" minOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:whiteSpace value="collapse"></xs:whiteSpace>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="casesType">
+      <xs:sequence>
+        <xs:element name="case" type="caseType" maxOccurs="unbounded"
+          minOccurs="1">
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="caseType">
+      <xs:sequence>
+        <xs:element name="brief" type="textValueType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="details" type="textValueType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="condition" type="textValueType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="wrappers" type="wrappersType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="steps" type="stepsType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="wrappersType">
+      <xs:sequence>
+        <xs:element name="setup_code" type="codeWrapperType"
+          maxOccurs="1" minOccurs="1">
+        </xs:element>
+        <xs:element name="teardown_code" type="codeWrapperType"
+          maxOccurs="1" minOccurs="1">
+        </xs:element>
+        <xs:element name="local_variables" type="codeWrapperType" maxOccurs="1" minOccurs="1"></xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="codeWrapperType">
+      <xs:sequence>
+        <xs:element name="value" maxOccurs="1" minOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:whiteSpace value="collapse"></xs:whiteSpace>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="stepsType">
+      <xs:sequence>
+        <xs:element name="step" type="stepType" maxOccurs="1" minOccurs="1"></xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="stepType">
+      <xs:sequence>
+        <xs:element name="details" type="textValueType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="tags" type="textValueType" maxOccurs="1"
+          minOccurs="1">
+        </xs:element>
+        <xs:element name="code" type="codeWrapperType" maxOccurs="1" minOccurs="1"></xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="textValueType">
+      <xs:sequence>
+        <xs:element name="value" maxOccurs="1" minOccurs="1">
+          <xs:simpleType>
+            <xs:restriction base="xs:string">
+              <xs:whiteSpace value="collapse"></xs:whiteSpace>
+            </xs:restriction>
+          </xs:simpleType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+
+    <xs:element name="instance" type="instanceType"></xs:element>
+</xs:schema>

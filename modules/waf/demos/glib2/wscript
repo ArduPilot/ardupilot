@@ -1,0 +1,57 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2005, 2010 (ita)
+
+VERSION='0.0.1'
+APPNAME='glib2_test'
+
+top = '.'
+out = 'build'
+
+import os
+
+def options(opt):
+	opt.load ('compiler_c glib2')
+
+def configure(conf):
+	conf.load ('compiler_c glib2')
+
+	conf.check_cfg (package='glib-2.0', uselib_store='GLIB', atleast_version='2.25.0',
+	                args='--cflags --libs')
+	conf.check_cfg (package='gio-2.0', uselib_store='GIO', atleast_version='2.25.0',
+	                args='--cflags --libs')
+	conf.check_cfg (package='gobject-2.0', uselib_store='GOBJECT', atleast_version='2.25.0',
+	                args='--cflags --libs')
+
+
+def build(bld):
+	app = bld (
+		features = 'c cprogram glib2',
+		use      = 'GLIB GIO GOBJECT',
+		source   = 'main.c org.glib2.test.gresource.xml',
+		target   = 'gsettings-test'
+
+		## An alternate way of doing this (no need to call add_ functions):
+		# settings_enum_namespace = 'org.gsettings.test'
+		# settings_enum_files = ['enums.h']
+		# settings_schema_files = ['org.gsettings.test.gschema.xml']
+	)
+
+	app.add_settings_enums ('org.gsettings.test', 'enums.h')
+	app.add_settings_schemas (['org.gsettings.test.gschema.xml',
+	                           'org.gsettings.test-2.gschema.xml'])
+
+	app.add_marshal_file('marshal.list', 'test_marshal')
+
+	bld(
+		features = 'gresource',
+		source   = 'org.glib2.test.gresource.xml',
+		install_path = 'lib/glib2_test'
+	)
+
+	# Install a schema to a different location.
+	# It will be compiled to a cache file besides it.
+	bld(
+		features = 'glib2',
+		settings_schema_files = ['org.gsettings.simple.gschema.xml']
+	).env.GSETTINGSSCHEMADIR = os.path.join('etc', 'glib-2.0', 'schemas')

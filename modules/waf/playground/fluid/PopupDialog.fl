@@ -1,0 +1,10 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0300 
+header_name {.hpp} 
+code_name {.cpp}
+widget_class PopupDialog {
+  callback {o->hide();
+Fl::delete_widget(o);} open selected
+  xywh {51 115 165 55} type Double align 5
+  class Fl_Window modal visible
+} {} 

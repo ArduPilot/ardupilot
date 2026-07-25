@@ -1,0 +1,2 @@
+def build(bld):
+	bld.recurse('a b')

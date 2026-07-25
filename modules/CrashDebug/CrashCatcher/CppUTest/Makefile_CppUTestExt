@@ -1,0 +1,25 @@
+
+#Set this to @ to keep the makefile quiet
+ifndef SILENCE
+	SILENCE = @
+endif
+
+#---- Outputs ----#
+COMPONENT_NAME = CppUTestExt
+
+#--- Inputs ----#
+CPPUTEST_HOME = .
+CPP_PLATFORM = Gcc
+
+WARNINGFLAGS = -pedantic-errors -Wall -Wextra -Werror -Wshadow -Wswitch-default -Wswitch-enum -Wconversion
+
+SRC_DIRS = src/CppUTestExt
+	
+TEST_SRC_DIRS = tests/CppUTestExt
+
+INCLUDE_DIRS = $(CPPUTEST_HOME)/include
+
+LD_LIBRARIES += -lstdc++ -L$(CPPUTEST_HOME)/lib -lCppUTest
+
+include $(CPPUTEST_HOME)/build/MakefileWorker.mk
+

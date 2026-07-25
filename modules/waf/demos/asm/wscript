@@ -1,0 +1,28 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+import sys
+
+def configure(conf):
+	conf.load('gcc gas')
+	try:
+		size = sys.maxint
+	except AttributeError:
+		size = sys.maxsize # python 3.2
+	if size < 4**21:
+		conf.fatal('this example is for 64-bit systems only')
+
+def build(bld):
+	# https://waf.io/apidocs/tools/asm.html
+	bld.program(
+		source   = 'main.c test.S',
+		target   = 'asmtest',
+		defines  = 'foo=12',
+		asflags  = '-Os',
+		includes = '.',
+                linkflags = '-no-pie')
+
+	def disp(ctx):
+		node = ctx.bldnode.ant_glob('asmtest*', remove=False)[0]
+		ctx.exec_command('%s' % node.abspath(), shell=False)
+	bld.add_post_fun(disp)

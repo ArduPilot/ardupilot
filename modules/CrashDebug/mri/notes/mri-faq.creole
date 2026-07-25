@@ -1,0 +1,60 @@
+==Frequently Asked Questions
+
+===GDB Fails to Connect
+There are a few things that could cause GDB to fail connecting to your device running MRI.
+* Did you press the reset button on the mbed device for it to start your debuggable binary?
+
+* Make sure that you have actually built your binaries to include the MRI functionality.  In GCC4MBED, this typically means setting MRI_ENABLE=1 when building.  When building your binary, you can make sure that you see the -DMRI_ENABLE=1 used on the compiler command line and mri.ar should be on the command line during the link stage.  For example:
+{{{
+arm-none-eabi-g++ -O0 -g -mcpu=cortex-m3 -mthumb -mthumb-interwork  -ffunction-sections -fdata-sections  -fno-exceptions  -Wall -Wextra -Wno-unused-parameter -Wcast-align -Wpointer-arith -Wredundant-decls -Wcast-qual -Wcast-align -I./ -I./LPC176x/ -I../../mri -I../../external/mbed -I../../external/mbed/LPC1768/GCC_ARM -DTARGET_LPC1768 -DMRI_ENABLE=1 -DMRI_INIT_PARAMETERS='"MRI_UART_MBED_USB"'  -DMRI_BREAK_ON_INIT=1 -DMRI_SEMIHOST_STDIO=1 -MMD -MP -c ../../src/gcc4mbed.c -o LPC176x/gcc4mbed.o
+arm-none-eabi-g++ -mcpu=cortex-m3 -mthumb -O0 -specs=../../build/startfile.spec -Wl,-Map=LPC176x/FileTest.map,--cref,--gc-sections,--wrap=_isatty,--wrap=_read,--wrap=_write,--wrap=semihost_connected -T../../build/mbed.ld  -L ../../external/gcc/LPC1768   LPC176x/./main.o LPC176x/gcc4mbed.o   ../../mri/mri.ar ../../external/mbed/LPC1768/GCC_ARM/startup_LPC17xx.o ../../external/mbed/LPC1768/GCC_ARM/cmsis_nvic.o ../../external/mbed/LPC1768/GCC_ARM/core_cm3.o ../../external/mbed/LPC1768/GCC_ARM/system_LPC17xx.o ../../external/mbed/LPC1768/GCC_ARM/libmbed.a ../../external/mbed/LPC1768/GCC_ARM/libcapi.a -lstdc++ -lsupc++ -lm -lgcc -lc -lgcc -lc -lnosys  -o FileTest.elf
+}}}
+
+* Are you connecting to the correct serial port?  You can try connecting a terminal application such as HyperTerminal or screen to the same serial port and then send it this text: {{{$#00}}}.  If you are connected to the serial port on which MRI is listening, it will respond with the same empty packet text.  You can also refer to these quick start notes on verifying the serial connection:\\{{{https://github.com/adamgreen/mri/blob/master/notes/mri-getting-started.creole#verify-serial-connection}}}\\//Make sure to disconnect the terminal application from the serial port before trying to connect GDB again.//
+
+* If using an mbed device, did you upgrade its firmware to version 21164 or newer?  You can open the MBED.HTM file on your mbed's mass storage drive from the PC and verify the firmware revision it is running.  Towards the end of the meta tag, on line 4, you should see text like {{{&firmware=21164}}} indicating the version of firmware currently running.  Notes on how to upgrade the firmware can be found here: {{{https://github.com/adamgreen/mri/blob/master/notes/mri-getting-started.creole#installation}}}
+
+* If you are running GDB on macOS, then you need to make sure that you are using the custom build of arm-none-eabi-gdb which is installed by GCC4MBED's mac_install script.  I have made modifications to this build of GDB to make it work better with the USB virtual serial ports on macOS.  You can use the **which** command from your build shell to make sure that it is picking up this version.  For example on my Macintosh, I see this:
+{{{
+bash-3.2$ which arm-none-eabi-gdb
+/depots/gcc4mbed/gcc-arm-none-eabi/bin/arm-none-eabi-gdb
+}}}
+
+* On some Linux systems, I have seen connection problems which appear to be caused by a service actually opening up the serial port and communicating with it before the developer starts GDB.  This causes problems because MRI defaults to no hardcoded baud rate but instead just waits for the initial GDB command to be sent on connect and determines the baud rate being used by GDB.  If another service comes in earlier with a different baud rate then MRI will be mismatched with GDB.  You can add a line like the following to your GCC4MBED based project's makefile to hardcode the baud rate:
+{{{
+MRI_INIT_PARAMETERS="MRI_UART_MBED_USB MRI_UART_BAUD=460800"
+}}}
+
+
+=== Can application force debug stop?
+It is possible to write code which will stop and wait for commands from GDB.  In mri.h, there is a __debugbreak() macro which can be used to place a hardcoded breakpoint into your code.  For example:
+{{{
+#include <mri.h>
+
+int main(void)
+{
+    if (someInterestingCodition)
+        __debugbreak();
+}
+}}}
+
+
+=== I press CTRL+C to break into a running program but it doesn't stop.
+There are a few causes that I have seen for this:
+* The first is that gdb is busy talking to the MRI debug monitor and just doesn't send the CTRL+C stop byte as expected.  This can happen for example during a **next** or **step** command that results in a lot chatter on the serial line.  Usually this problem can be solved by just continuing to press the CTRL+C keys and at some point GDB will oblige and send the break request.
+* Another reason this can happen is if you have manually changed the priority of one of your interrupt service routines to be level 0.  If such an ISR enters an infinite loop, then MRI can't interrupt it because it too runs at priority 0 and only a hard fault or NMI trap would be of high enough priority to break into it.  You should use interrupt levels 1 and higher for your ISRs and reserve level 0 for the debugger so that it can have the highest possible priority.
+* If you are integrating MRI into your project manually, without GCC4MBED, then the MRI version of the UART interrupt handlers which immediately branch to __mriExceptionHandler might not be getting placed into your interrupt vector table. Check the disassembly of your binary and verify that the UART interrupt vectors contain addresses pointing to assembly language routines which contain one instruction {{{b __mriExceptionHandler}}}. You may need to update the hardcoded interrupt vector in your project to use such a routine for the UART that you are using for MRI based debugging.
+
+
+=== Initial halt in _start() works but then MRI stops working
+There are a few causes that I have seen for this:
+* The application contains code to reconfigure the UART in use by MRI. When using MRI, your application shouldn't do anything directly with the same UART.
+* Your application has gone rogue and overwritten globals used by MRI. This could be caused by writing to an invalid pointer or a stack overflow. If you know an address at which your stack so should never exceed, you can place a **watch** on that address in GDB from the initial halt to try and catch your stack as it gets close to overflowing. Sometimes you have to try different addresses because the code might allocate space for a large buffer on the stack but not actually write to all of its bytes.
+
+
+=== I have a bug in Release builds of my program but it doesn't reproduce in Debug builds.
+This can happen due to the fact that Debug builds are built with all compiler optimizations turned off but Release builds have them turned on. You can enable MRI in your Release build and debug that version instead. GCC4MBED always builds with symbol creation enabled.
+
+
+=== When I debug a Release build, I see weird things in the debugger.  Why?
+Release builds have compiler optimizations turned on and this can sometimes confuse the debugger.  For example it can have difficulty dumping a function's local variables or single stepping jumps around the code in a weird order.  The best thing you can do here is be aware that such problems can happen in optimized builds and try to get as much useful information out of the debugger as possible.  More advanced developers can fall back to looking at the code's disassembly, register, and memory contents to determine what exactly is occurring in the ARM processor.

@@ -1,0 +1,21 @@
+# A makefile path is checked against each key represented as a regex until
+# a matching one is found from top to bottom. If found, its targets are used
+# to build a corresponding makefile in the same order they are defined in
+# the rule. It's recommended to keep regexes as much specific as possible.
+
+demos/various/RT-ARMCM4-MAKELIB/Makefile:
+  - lib
+  - clean
+
+# This makefile is intended to be run manually to test all STM32WLxx related
+# testhal projects. So, there is no need to test its targets in CI.
+testhal/STM32/STM32WLxx/Makefile: []
+
+# Build different RT configuration variants and generate gcov files.
+test/rt/variant/make: []
+# TODO: Not working well in CI, disabled until it is clear how to run 
+# them properly.
+#  - all
+#  - test
+#  - gcov
+#  - clean

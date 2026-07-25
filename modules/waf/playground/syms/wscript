@@ -1,0 +1,18 @@
+#! /usr/bin/env python
+
+def options(ctx):
+	ctx.load('compiler_c')
+
+def configure(ctx):
+	ctx.load('compiler_c syms')
+
+def build(ctx):
+	ctx(features='c cshlib syms', source='a.c b.c', export_symbols_regex='mylib_.*', target='testlib')
+	ctx(features='c cprogram', source='main.c', target='app', use='testlib')
+
+	# multiple shared libraries sharing the same file
+	ctx(features='c syms', source='a.c b.c', export_symbols_regex='mylib_.*', use='cshlib',
+		target='obj_example', sym_file='obj_example.def')
+	ctx(features='c cshlib syms', source=[], export_symbols_regex='mylib_.*', target='lib1', sym_file='obj_example.def')
+	ctx(features='c cshlib syms', source=[], export_symbols_regex='mylib_.*', target='lib2', sym_file='obj_example.def')
+

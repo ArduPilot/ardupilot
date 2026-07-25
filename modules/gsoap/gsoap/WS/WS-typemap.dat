@@ -1,0 +1,540 @@
+#	WS-typemap.dat
+#
+#-------------------------------------------------------------------------------
+#gSOAP XML Web services tools
+#Copyright (C) 2004-2008, Robert van Engelen, Genivia Inc. All Rights Reserved.
+#This software is released under one of the following two licenses:
+#GPL or Genivia's license for commercial use.
+#-------------------------------------------------------------------------------
+#A commercial use license is available from Genivia, Inc., contact@genivia.com
+#-------------------------------------------------------------------------------
+
+xsd__dateTime = #import "custom/struct_timeval.h" | xsd__dateTime
+
+#	Bindings for WS-* protocols:
+
+wsrp	= "http://schemas.xmlsoap.org/rp/"
+wsen	= "http://schemas.xmlsoap.org/ws/2004/09/enumeration"
+
+#	wsp bindings
+
+wsp	= "http://schemas.xmlsoap.org/ws/2004/09/policy"
+
+#	recommended wsp redeclarations, used in wst.h:
+
+#_wsp__Policy		= | _XML | _XML
+#_wsp__PolicyReference	= | _XML | _XML
+#_wsp__AppliesTo		= typedef struct _wsp__AppliesTo { wsa5__EndpointReferenceType *wsa5__EndpointReference; } _wsp__AppliesTo; | struct _wsp__AppliesTo
+
+#	wsa bindings
+
+wsa	= <http://schemas.xmlsoap.org/ws/2004/08/addressing>
+wsa3	= <http://schemas.xmlsoap.org/ws/2003/03/addressing>
+wsa4	= <http://schemas.xmlsoap.org/ws/2004/03/addressing>
+wsa5	= <http://www.w3.org/2005/08/addressing>
+
+#	wsa:AttributedQName is a QName element extensible with attributes.
+#	We redeclare it as a QName string, assuming we don't need attributes:
+
+wsa__AttributedQName		= | _QName
+wsa3__AttributedQName		= | _QName
+wsa4__AttributedQName		= | _QName
+wsa5__AttributedQNameType	= | _QName
+
+#	wsa:AttributedURI is an anyURI element extensible with attributes.
+#	We redeclare it as a regular string, assuming we don't need attributes:
+
+wsa__AttributedURI	= | char* /*URI*/
+wsa3__AttributedURI	= | char* /*URI*/
+wsa4__AttributedURI	= | char* /*URI*/
+wsa5__AttributedURIType	= | char* /*URI*/
+
+#	wsa:ReplyAfterType is an nonnegativeInteger extensible with attributes.
+#	We redeclare it here, assuming we don't need attributes:
+
+wsa__ReplyAfterType			= | unsigned int
+_wsa__ReplyAfter			= | unsigned int
+wsa4__ReplyAfterType			= | unsigned int
+_wsa4__ReplyAfter			= | unsigned int
+wsa5__AttributedUnsignedLongType	= | ULONG64
+
+#	wsa:IsReferenceParameter is a boolean, redefined here to avoid clashes:
+
+_wsa5__IsReferenceParameter	= typedef enum _wsa5__IsReferenceParameter { _wsa5__IsReferenceParameter__false, _wsa5__IsReferenceParameter__true } _wsa5__IsReferenceParameter; | _wsa5__IsReferenceParameter;
+
+#	wsa5 imports chan WCF ChannelInstance
+
+wsa5__ReferenceParametersType = $\
+    int                                 *chan__ChannelInstance;
+
+#	wsse, wsu, ds, and xenc bindings
+
+wsse	= <http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd>
+wsu	= <http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd>
+ds	= <http://www.w3.org/2000/09/xmldsig#>
+xenc	= <http://www.w3.org/2001/04/xmlenc#>
+
+wsse2	= <http://schemas.xmlsoap.org/ws/2002/12/secext>
+
+#	wsrm bindings
+
+wsrm	= <http://docs.oasis-open.org/ws-rx/wsrm/200702>
+wsrm5	= <http://schemas.xmlsoap.org/ws/2005/02/rm>
+wsrm4	= <http://docs.oasis-open.org/wsrm/2004/06/ws-reliability-1.1.xsd>
+ref     = <http://docs.oasis-open.org/wsrm/2004/06/reference-1.1.xsd>
+
+wsrm__MessageNumberType		= | ULONG64
+wsrm__DetailType		= | struct SOAP_ENV__Detail
+_wsrm__UnsupportedElement	= | _QName | _QName
+_wsrm__Identifier		= typedef char *_wsrm__Identifier; | char*
+_wsrm__Address			= | char*
+_wsrm__Expires			= #import "custom/duration.h" | xsd__duration
+
+#	wsdd bindings 1.1 and 1.0
+
+wsdd	= <http://docs.oasis-open.org/ws-dd/ns/discovery/2009/01>
+wsdd10  = <http://schemas.xmlsoap.org/ws/2005/04/discovery>
+
+#	wsc bindings
+
+wsc	= <http://docs.oasis-open.org/ws-sx/ws-secureconversation/200512>
+wsc2	= <http://schemas.xmlsoap.org/ws/2005/02/sc>
+
+#	wst bindings
+
+wst	= <http://docs.oasis-open.org/ws-sx/ws-trust/200512/>
+wst12	= <http://schemas.xmlsoap.org/ws/2005/02/trust>
+
+#	SAML bindings
+
+saml1	= <urn:oasis:names:tc:SAML:1.0:assertion>
+saml2	= <urn:oasis:names:tc:SAML:2.0:assertion>
+
+################################################################################
+#
+#	wsc redefinitions
+#
+################################################################################
+
+_wsc__Identifier	= | char*
+_wsc__Instance		= | char*
+_wsc__Name		= | char*
+_wsc__Label		= | char*
+_wsc__Nonce		= | char*
+
+wsc__SecurityContextTokenType = $\
+    char*                                Identifier;
+wsc__SecurityContextTokenType = $\
+    char*                                Instance;
+
+################################################################################
+#
+#	wst redefinitions
+#
+################################################################################
+
+wst__RequestTypeEnum		= | char*
+wst__RequestTypeOpenEnum	= | char*
+wst__BinarySecretTypeEnum	= | char*
+wst__BinarySecretTypeOpenEnum	= | char*
+wst__ComputedKeyEnum		= | char*
+wst__ComputedKeyOpenEnum	= | char*
+wst__StatusCodeEnum		= | char*
+wst__StatusCodeOpenEnum		= | char*
+wst__KeyTypeEnum		= | char*
+wst__KeyTypeOpenEnum		= | char*
+
+wst__RequestSecurityTokenType = $\
+    _wsp__AppliesTo_*                    wsp__AppliesTo;
+wst__RequestSecurityTokenType = $\
+    char*                                KeyType;
+wst__RequestSecurityTokenType = $\
+    char*                                RequestType;
+wst__RequestSecurityTokenType = $\
+    char*                                TokenType;
+wst__RequestSecurityTokenType = $\
+    wst__EntropyType*                    Entropy;
+wst__RequestSecurityTokenType = $\
+    char*                                ComputedKeyAlgorithm;
+wst__RequestSecurityTokenType = $\
+    unsigned int*                        KeySize;
+wst__RequestSecurityTokenType = $\
+    struct wst__CancelTargetType*        CancelTarget;
+wst__RequestSecurityTokenType = $\
+    struct wst__BinaryExchangeType*      BinaryExchange;
+wst__RequestSecurityTokenType = $\
+    struct wst__AuthenticatorType*       Authenticator;
+
+wst__RequestSecurityTokenResponseType = $\
+    struct wst__RequestedSecurityTokenType* RequestedSecurityToken;
+wst__RequestSecurityTokenResponseType = $\
+    struct wst__RequestedReferenceType*  RequestedAttachedReference;
+wst__RequestSecurityTokenResponseType = $\
+    struct wst__RequestedReferenceType*  RequestedUnattachedReference;
+wst__RequestSecurityTokenResponseType = $\
+    struct wst__RequestedProofTokenType* RequestedProofToken;
+wst__RequestSecurityTokenResponseType = $\
+    struct wst__RequestedTokenCancelledType* RequestedTokenCancelled;
+wst__RequestSecurityTokenResponseType = $\
+    char*                                KeyType;
+wst__RequestSecurityTokenResponseType = $\
+    char*                                RequestType;
+wst__RequestSecurityTokenResponseType = $\
+    char*                                TokenType;
+wst__RequestSecurityTokenResponseType = $\
+    wst__EntropyType*                    Entropy;
+wst__RequestSecurityTokenResponseType = $\
+    struct wst__LifetimeType*            Lifetime;
+wst__RequestSecurityTokenResponseType = $\
+    unsigned int*                        KeySize;
+wst__RequestSecurityTokenResponseType = $\
+    struct wst__BinaryExchangeType*      BinaryExchange;
+wst__RequestSecurityTokenResponseType = $\
+    struct wst__AuthenticatorType*       Authenticator;
+
+wst__RequestedProofTokenType = $\
+    struct xenc__EncryptedKeyType*       xenc__EncryptedKey;
+
+wst__CancelTargetType = $\
+    _wsse__SecurityTokenReference        wsse__SecurityTokenReference;
+
+# WS-Trust with SAML 1.0 and 2.0:
+wst__RequestedSecurityTokenType =\
+#import "saml1.h"\n\
+#import "saml2.h"\n\
+typedef struct wst__RequestedSecurityTokenType\n\
+{	saml1__AssertionType *saml1__Assertion;\n\
+	saml2__AssertionType *saml2__Assertion;\n\
+        _wsse__SecurityTokenReference *wsse__SecurityTokenReference;\n\
+        struct wsc__SecurityContextTokenType *wsc__SecurityContextToken;\n\
+} wst__RequestedSecurityTokenType;
+
+wst__EntropyType =\
+typedef struct wst__EntropyType\n\
+{	struct wst__BinarySecretType *BinarySecret;\n\
+} wst__EntropyType;
+
+wst__DelegatToeType =\
+typedef struct wst__DelegateToType\n\
+{	_wsse__SecurityTokenReference *wsse__SecurityTokenReference;\n\
+} wst__DelegateToType;
+
+wst__AuthenticatorType =\
+typedef struct wst__AuthenticatorType\n\
+{	char *CombinedHash;\n\
+} wst__AuthenticatorType;
+
+################################################################################
+#
+#	wsu redefinitions
+#
+################################################################################
+
+_wsu__Id		= | char*
+_wsu__Created		= | char*
+_wsu__Expires		= | char*
+
+wsu__AttributedDateTime	= | time_t
+wsu__AttributedURI	= | char*
+
+wsu__TimestampType	=
+
+_wsu__Timestamp =\
+typedef struct _wsu__Timestamp\n\
+{	@char*	wsu__Id;	// use qualified form to enable signature\n\
+	char*	Created;\n\
+	char*	Expires;\n\
+} _wsu__Timestamp;
+
+################################################################################
+#
+#	wsse redefinitions
+#
+################################################################################
+
+# wsse:AttributedString has a wsu:Id we don't need
+wsse__AttributedString = | char*
+
+# wsse:Nonce is just a wsse:EncodedString
+_wsse__Nonce = | struct wsse__EncodedString
+
+# Don't use wsse:tUsage and global wsse:Usage
+wsse__tUsage =
+_wsse__Usage =
+
+# Don't use wsse:PasswordString
+wsse__PasswordString =
+
+# But use wsse:Password element with similar content
+_wsse__Password =\
+typedef struct _wsse__Password\n\
+{	char*					__item;\n\
+	@char*					Type;\n\
+} _wsse__Password;
+
+# Don't use wsse:UsernameTokenType
+wsse__UsernameTokenType =
+
+# But use wsse:UsernameToken element with similar content
+_wsse__UsernameToken =\
+typedef struct _wsse__UsernameToken\n\
+{	char*					Username;\n\
+	struct _wsse__Password*			Password;\n\
+	struct wsse__EncodedString*		Nonce;\n\
+	char*					wsu__Created;\n\
+	@char*					wsu__Id;\n\
+} _wsse__UsernameToken;
+
+# Don't use wsse:BinarySecurityTokenType
+wsse__BinarySecurityTokenType =
+
+# But use wsse:BinarySecurityToken element with similar content
+_wsse__BinarySecurityToken =\
+typedef struct _wsse__BinarySecurityToken\n\
+{	char*					__item;\n\
+	@char*					wsu__Id;\n\
+	@char*					ValueType;\n\
+	@char*					EncodingType;\n\
+} _wsse__BinarySecurityToken;
+
+# Don't use wsse:SecurityTokenReferenceType
+wsse__SecurityTokenReferenceType =
+
+# But use wsse:SecurityTokenReference element
+_wsse__SecurityTokenReference =\
+typedef struct _wsse__SecurityTokenReference\n\
+{	struct _wsse__Reference*		Reference;\n\
+	struct _wsse__KeyIdentifier*		KeyIdentifier;\n\
+	struct _wsse__Embedded*			Embedded;\n\
+	struct ds__X509DataType*		ds__X509Data;\n\
+	@char*					wsu__Id;\n\
+	@char*					wsc__Instance;\n\
+	@char*					Usage;\n\
+} _wsse__SecurityTokenReference;
+
+# Don't use wsse:ReferenceType
+wsse__ReferenceType =
+
+# But use wsse:Reference element
+_wsse__Reference =\
+typedef struct _wsse__Reference\n\
+{	@char*					URI;\n\
+	@char*					ValueType;\n\
+} _wsse__Reference;
+
+# Don't use wsse:KeyIdentifierType
+wsse__KeyIdentifierType =
+
+# But use wsse:KeyIdentifier
+_wsse__KeyIdentifier =\
+typedef struct _wsse__KeyIdentifier\n\
+{	char*					__item;\n\
+	@char*					wsu__Id;\n\
+	@char*					ValueType;\n\
+	@char*					EncodingType;\n\
+} _wsse__KeyIdentifier;
+
+# Don't use wsse:EmbeddedType
+wsse__EmbeddedType =
+
+# But use wsse:KeyIdentifier
+_wsse__Embedded =\
+typedef struct _wsse__Embedded\n\
+{	/* Extensible with embedded tokens and assertions */\n\
+	@char*					wsu__Id;\n\
+	@char*					ValueType;\n\
+} _wsse__Embedded;
+
+# Don't use wsse:TransformationParametersType
+wsse__TransformationParametersType =
+
+# Don't use wsse:TransformationParameters
+_wsse__TransformationParameters =
+
+# Don't use wsse:SecurityHeaderType
+wsse__SecurityHeaderType =
+
+# Use wsse:Security element with additional content such as SAML assertion
+_wsse__Security =\
+#import "xenc.h"\n\
+#import "wsc.h"\n\
+#import "saml1.h"\n\
+#import "saml2.h"\n\
+typedef struct _wsse__Security\n\
+{	struct _wsu__Timestamp*			wsu__Timestamp;\n\
+	struct _wsse__UsernameToken*		UsernameToken;\n\
+	struct _wsse__BinarySecurityToken*	BinarySecurityToken;\n\
+	struct xenc__EncryptedKeyType*		xenc__EncryptedKey;\n\
+	struct _xenc__ReferenceList*		xenc__ReferenceList;\n\
+	struct ds__SignatureType*		ds__Signature;\n\
+	struct saml1__AssertionType*		saml1__Assertion;\n\
+	struct saml2__AssertionType*		saml2__Assertion;\n\
+	@char*					SOAP_ENV__actor;\n\
+	@char*					SOAP_ENV__role;\n\
+} _wsse__Security;
+
+################################################################################
+#
+#	ds redefinitions
+#
+################################################################################
+
+ds__CryptoBinary = | char* /*base64*/
+
+ds__DigestValueType = | char* /*base64*/
+
+ds__HMACOutputLengthType = | int
+
+ds__TransformType = #import "c14n.h"\n\
+typedef struct ds__TransformType\n\
+{	_c14n__InclusiveNamespaces*		c14n__InclusiveNamespaces;\n\
+        _XML					__any;\n\
+	@char*					Algorithm;\n\
+} ds__TransformType, _ds__Transform;
+
+ds__KeyInfoType =\
+mutable struct ds__KeyInfoType\n\
+{	char*					KeyName;\n\
+	struct ds__KeyValueType*		KeyValue;\n\
+	struct ds__RetrievalMethodType*		RetrievalMethod;\n\
+	struct ds__X509DataType*		X509Data;\n\
+	struct _wsse__SecurityTokenReference*	wsse__SecurityTokenReference;\n\
+	@char*					Id;\n\
+};\n\
+typedef struct ds__KeyInfoType ds__KeyInfoType, _ds__KeyInfo;
+
+ds__SignatureType =\
+typedef char *_ds__SignatureValue;\n\
+typedef struct ds__SignatureType\n\
+{	struct ds__SignedInfoType*		SignedInfo;\n\
+	_ds__SignatureValue    			SignatureValue;\n\
+	struct ds__KeyInfoType*			KeyInfo;\n\
+	@char*					Id;\n\
+} ds__SignatureType, _ds__Signature;
+
+# Add c14n:InclusiveNamespaces element to ds:CanonicalizationMethodType
+ds__CanonicalizationMethodType = $\
+    _c14n__InclusiveNamespaces*		c14n__InclusiveNamespaces;
+
+# ds:SignatureValueType already declared above (and has an Id we don't need)
+ds__SignatureValueType =
+
+ds__ObjectType =
+
+ds__ManifestType =
+
+ds__SignaturePropertyType =
+
+ds__SignaturePropertiesType =
+
+ds__PGPDataType =
+
+ds__SPKIDataType =
+
+################################################################################
+#
+#	xenc redefinitions
+#
+################################################################################
+
+xenc__EncryptionPropertyType =\
+typedef struct xenc__EncryptionPropertyType\n\
+{	@char*					Target;\n\
+	@char*					Id;\n\
+} xenc__EncryptionPropertyType;
+
+xenc__KeySizeType = | int
+
+xenc__EncryptionMethodType = $\
+    struct ds__DigestMethodType*         ds__DigestMethod;
+
+_xenc__EncryptedData = | xenc__EncryptedDataType
+
+_xenc__EncryptedKey = | xenc__EncryptedKeyType
+
+################################################################################
+#
+#	SAML redefinitions
+#
+################################################################################
+
+saml1__AssertionType = $\
+@char*                                wsu__Id                        0;	///< Optional attribute.
+
+saml2__AssertionType = $\
+@char*                                wsu__Id                        0;	///< Optional attribute.
+
+################################################################################
+#
+#	Common definitions
+#
+################################################################################
+
+#	Use regular char* strings for ID
+
+xsd__ID			= | char* /*ID*/
+
+#	Use regular char* strings for NCName
+
+xsd__NCName		= | char* /*NCName*/
+
+#	Use regular char* strings for anyURI
+
+xsd__anyURI		= | char* /*URI*/
+
+#	Use regular char* strings for xsd:duration
+
+xsd__duration		= | char* /*duration*/
+
+#	Use built-in gSOAP _QName
+
+xsd__QName		= | _QName | _QName
+
+#	Map xsd:integer to int
+
+xsd__integer		= | char*
+
+#	Map xsd:nonNegativeInteger to unsigned int
+
+xsd__nonNegativeInteger	= | char*
+
+#	Map xsd:base64Binary to char* and manipulate base64 data internally
+
+xsd__base64Binary	= | char* /*base64*/
+
+#	Map xsd:boolean to xsd__boolean_ to avoid redefs
+
+xsd__boolean		= | char*
+
+#	Map xsd:IDREFS to char*
+
+xsd__IDREFS		= | char* /*IDREFS*/
+
+#	Redeclare wsrp:action_t
+
+wsrp__action_USCOREt	= | char*
+
+#	Redeclare wsrp:to_t
+
+wsrp__to_USCOREt	= | char*
+
+#	Redeclare wsrp:from_t
+
+wsrp__from_USCOREt	= | char*
+
+#	Redeclare wsrp:id_t
+
+wsrp__id_USCOREt	= | char*
+
+#	Redeclare wsrp:relatesTo_t
+
+wsrp__relatesTo_USCOREt	= | char*
+
+#	Redeclare wsrp:faultcode_t
+
+wsrp__faultcode_USCOREt	= | char*
+
+#	Redeclare wsrp:faultreason_t
+
+wsrp__faultreason_USCOREt = | char*
+

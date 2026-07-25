@@ -1,0 +1,39 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2012 (ita)
+
+VERSION='0.0.1'
+APPNAME='preproc_test'
+top = '.'
+out = 'build'
+
+from waflib import Utils
+from waflib.Logs import pprint
+
+def configure(conf):
+	pass
+
+def build(bld):
+
+	bld.failure = 0
+	def disp(color, result):
+		pprint(color, result)
+		if color == 'RED':
+			bld.failure=1
+	def stop_status(bld):
+		if bld.failure:
+			bld.fatal('One or several test failed, check the outputs above')
+	bld.add_post_fun(stop_status)
+
+	def test_shell(inp, expected):
+		ret = Utils.shell_escape(inp)
+		if ret == expected:
+			color = "GREEN"
+		else:
+			color = "RED"
+		disp(color, "%r -> %r\t\texpected: %r" % (inp, ret, expected))
+
+	test_shell("ls -l", "ls -l")
+	test_shell(['ls', '-l', 'a space'], "ls -l 'a space'")
+
+

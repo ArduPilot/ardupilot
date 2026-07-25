@@ -1,0 +1,21 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+VERSION = '1.0'
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c dbus')
+	conf.find_program('glib-genmarshal') # required on a few systems
+
+def build(bld):
+	tg = bld.program(
+		includes = '.',
+		source = bld.path.ant_glob('*.c'),
+		target = 'gnome-hello')
+
+	tg.add_dbus_file('test.xml', 'test_prefix', 'glib-server')
+

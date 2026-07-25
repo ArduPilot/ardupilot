@@ -1,0 +1,7 @@
+{
+    "name": "microcdr",
+    "type": "cmake",
+    "cmake-args":[
+        "-DUCDR_ISOLATED_INSTALL=OFF"
+    ]
+}

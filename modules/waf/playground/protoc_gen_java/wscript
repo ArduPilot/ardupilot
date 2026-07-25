@@ -1,0 +1,51 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Federico Pellegrin, 2019 (fedepell)
+
+import os
+from waflib import Logs
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx java')
+
+def configure(conf):
+	conf.load('compiler_cxx java protoc')
+	# Here you have to point to your protobuf-java JAR
+	conf.env.CLASSPATH_PROTOBUF = ['/usr/share/maven-repo/com/google/protobuf/protobuf-java/3.0.0/protobuf-java-3.0.0.jar']
+
+def build(bld):
+
+	# this simulates a .proto generator. the gen.proto is generated in build
+	genp = bld(
+		rule = "cp ${SRC} ${TGT}",
+		source = "proto.source",
+		target = "inc/gen.proto"
+	)
+
+	# cxx doesn't have a problem with this, just knows gen.proto will pop up later
+        bld(
+		features = 'cxx cxxshlib',
+		source = [ bld.path.find_or_declare(genp.target) ],
+                name     = 'somelib',
+                target   = 'somelib'
+	)
+
+	# but for java:
+
+	# we either put grouping because of protoc java generations needs .proto to generate out fname (#2218)
+	# or accept that java dep is not strict on the .java file name (but relies just on explicit task ordering)
+	# bld.add_group()
+
+	# inc/gen.proto is an implicit dependency, but the file is generated at
+	# build time while protoc extra uses it before to determine the .java file
+	# name that will get generated
+	bld(
+		features = 'javac protoc',
+		name = 'pbjava',
+		srcdir = bld.path.find_or_declare(genp.target).parent,
+		source   = [ bld.path.find_or_declare(genp.target) ],
+		use = 'PROTOBUF',
+	)

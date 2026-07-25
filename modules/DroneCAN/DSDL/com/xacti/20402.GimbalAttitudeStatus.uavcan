@@ -1,0 +1,14 @@
+#
+# Xacti camera gimbal attitude status
+#
+
+# signature from original file location
+OVERRIDE_SIGNATURE 0xEB428B6C25832692
+
+# gimbal attitude in euler centi-degrees from -18000 to +18000
+int16 gimbal_roll
+int16 gimbal_pitch
+int16 gimbal_yaw
+int16 magneticencoder_roll
+int16 magneticencoder_pitch
+int16 magneticencoder_yaw

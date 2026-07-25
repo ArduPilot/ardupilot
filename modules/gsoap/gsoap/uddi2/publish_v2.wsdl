@@ -1,0 +1,378 @@
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:uddi-org:publication_v2" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:uddi="urn:uddi-org:api_v2" targetNamespace="urn:uddi-org:publication_v2" name="UDDI_Publication_API_V2">
+	<documentation>
+		Copyright (c) 2000 - 2002 by Accenture, Ariba, Inc., Commerce One, Inc. 
+		Fujitsu Limited, Hewlett-Packard Company, i2 Technologies, Inc., 
+		Intel Corporation, International Business Machines Corporation,  
+		Microsoft Corporation, Oracle Corporation, SAP AG, Sun Microsystems, Inc., 
+		and VeriSign, Inc.  All Rights Reserved.
+		
+		WSDL Service Interface for UDDI Publication API V2.0
+		
+		This WSDL document defines the publication API calls for interacting with 
+		the UDDI registry.  The complete UDDI API specification is available
+		at http://www.uddi.org/specification.html.
+	</documentation> 
+	<types>
+		<xsd:schema targetNamespace="urn:uddi-org:publication_v2" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+			<xsd:import namespace="urn:uddi-org:api_v2" schemaLocation="uddi_v2.xsd"/>
+		</xsd:schema>
+	</types>
+	<message name="add_publisherAssertions">
+		<part name="body" element="uddi:add_publisherAssertions"/>
+	</message>
+	<message name="assertionStatusReport">
+		<part name="body" element="uddi:assertionStatusReport"/>
+	</message>
+	<message name="authToken">
+		<part name="body" element="uddi:authToken"/>
+	</message>
+	<message name="bindingDetail">
+		<part name="body" element="uddi:bindingDetail"/>
+	</message>
+	<message name="businessDetail">
+		<part name="body" element="uddi:businessDetail"/>
+	</message>
+	<message name="delete_binding">
+		<part name="body" element="uddi:delete_binding"/>
+	</message>
+	<message name="delete_business">
+		<part name="body" element="uddi:delete_business"/>
+	</message>
+	<message name="delete_publisherAssertions">
+		<part name="body" element="uddi:delete_publisherAssertions"/>
+	</message>
+	<message name="delete_service">
+		<part name="body" element="uddi:delete_service"/>
+	</message>
+	<message name="delete_tModel">
+		<part name="body" element="uddi:delete_tModel"/>
+	</message>
+	<message name="discard_authToken">
+		<part name="body" element="uddi:discard_authToken"/>
+	</message>
+	<message name="dispositionReport">
+		<part name="body" element="uddi:dispositionReport"/>
+	</message>
+	<message name="get_assertionStatusReport">
+		<part name="body" element="uddi:get_assertionStatusReport"/>
+	</message>
+	<message name="get_authToken">
+		<part name="body" element="uddi:get_authToken"/>
+	</message>
+	<message name="get_publisherAssertions">
+		<part name="body" element="uddi:get_publisherAssertions"/>
+	</message>
+	<message name="get_registeredInfo">
+		<part name="body" element="uddi:get_registeredInfo"/>
+	</message>
+	<message name="publisherAssertions">
+		<part name="body" element="uddi:publisherAssertions"/>
+	</message>
+	<message name="registeredInfo">
+		<part name="body" element="uddi:registeredInfo"/>
+	</message>
+	<message name="save_binding">
+		<part name="body" element="uddi:save_binding"/>
+	</message>
+	<message name="save_business">
+		<part name="body" element="uddi:save_business"/>
+	</message>
+	<message name="save_service">
+		<part name="body" element="uddi:save_service"/>
+	</message>
+	<message name="save_tModel">
+		<part name="body" element="uddi:save_tModel"/>
+	</message>
+	<message name="serviceDetail">
+		<part name="body" element="uddi:serviceDetail"/>
+	</message>
+	<message name="set_publisherAssertions">
+		<part name="body" element="uddi:set_publisherAssertions"/>
+	</message>
+	<message name="tModelDetail">
+		<part name="body" element="uddi:tModelDetail"/>
+	</message>
+	<portType name="Publish">
+		<documentation>
+			This portType defines all of the UDDI publish operations.
+	  </documentation>
+		<operation name="add_publisherAssertions">
+			<input message="tns:add_publisherAssertions"/>
+			<output message="tns:dispositionReport"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="delete_binding">
+			<input message="tns:delete_binding"/>
+			<output message="tns:dispositionReport"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="delete_business">
+			<input message="tns:delete_business"/>
+			<output message="tns:dispositionReport"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="delete_publisherAssertions">
+			<input message="tns:delete_publisherAssertions"/>
+			<output message="tns:dispositionReport"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="delete_service">
+			<input message="tns:delete_service"/>
+			<output message="tns:dispositionReport"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="delete_tModel">
+			<input message="tns:delete_tModel"/>
+			<output message="tns:dispositionReport"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="discard_authToken">
+			<input message="tns:discard_authToken"/>
+			<output message="tns:dispositionReport"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="get_assertionStatusReport">
+			<input message="tns:get_assertionStatusReport"/>
+			<output message="tns:assertionStatusReport"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="get_authToken">
+			<input message="tns:get_authToken"/>
+			<output message="tns:authToken"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="get_publisherAssertions">
+			<input message="tns:get_publisherAssertions"/>
+			<output message="tns:publisherAssertions"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="get_registeredInfo">
+			<input message="tns:get_registeredInfo"/>
+			<output message="tns:registeredInfo"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="save_binding">
+			<input message="tns:save_binding"/>
+			<output message="tns:bindingDetail"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="save_business">
+			<input message="tns:save_business"/>
+			<output message="tns:businessDetail"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="save_service">
+			<input message="tns:save_service"/>
+			<output message="tns:serviceDetail"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="save_tModel">
+			<input message="tns:save_tModel"/>
+			<output message="tns:tModelDetail"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="set_publisherAssertions">
+			<input message="tns:set_publisherAssertions"/>
+			<output message="tns:publisherAssertions"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+	</portType>
+	<binding name="PublishSoap" type="tns:Publish">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<documentation>
+		  This is the SOAP binding for the UDDI publish operations.
+		</documentation>
+		<operation name="add_publisherAssertions">
+			<soap:operation soapAction="add_publisherAssertions" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="delete_binding">
+			<soap:operation soapAction="delete_binding" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="delete_business">
+			<soap:operation soapAction="delete_business" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="delete_publisherAssertions">
+			<soap:operation soapAction="delete_publisherAssertions" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="delete_service">
+			<soap:operation soapAction="delete_service" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="delete_tModel">
+			<soap:operation soapAction="delete_tModel" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="discard_authToken">
+			<soap:operation soapAction="discard_authToken" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="get_assertionStatusReport">
+			<soap:operation soapAction="get_assertionStatusReport" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="get_authToken">
+			<soap:operation soapAction="get_authToken" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="get_publisherAssertions">
+			<soap:operation soapAction="get_publisherAssertions" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="get_registeredInfo">
+			<soap:operation soapAction="get_registeredInfo" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="save_binding">
+			<soap:operation soapAction="save_binding" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="save_business">
+			<soap:operation soapAction="save_business" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="save_service">
+			<soap:operation soapAction="save_service" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="save_tModel">
+			<soap:operation soapAction="save_tModel" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="set_publisherAssertions">
+			<soap:operation soapAction="set_publisherAssertions" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+	</binding>
+</definitions>

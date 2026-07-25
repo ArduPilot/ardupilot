@@ -1,0 +1,17 @@
+#
+# Request info about a remote file system entry (file, directory, etc).
+#
+
+Path path
+
+---
+
+#
+# File size in bytes.
+# Should be set to zero for directories.
+#
+uint40 size
+
+Error error
+
+EntryType entry_type

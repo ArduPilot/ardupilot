@@ -1,0 +1,14 @@
+def configure(ctx):
+    ctx.load('clang')
+    ctx.check(
+        compiler='c',
+        lib='hl',
+        use='HL',
+        uselib_store='HL')
+
+def build(ctx):
+    ctx.program(
+        source = [ctx.bldnode.make_node('src/main/main.c')],
+        includes = [ctx.env.ROOT_INCLUDE_DIR],
+        target = 'app',
+        use = ['HL'])

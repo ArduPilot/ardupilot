@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ex2="http://www.w3.org/2002/ws/databinding/examples/6/09/strict/"
+    targetNamespace="http://www.w3.org/2002/ws/databinding/examples/6/09/strict/"
+    elementFormDefault="qualified"
+    attributeFormDefault="unqualified">
+    
+    <xs:element name="strictElement" type="xs:string"/>
+    <xs:attribute name="strictAttribute">
+        <xs:simpleType>
+            <xs:restriction base="xs:string">
+                <xs:enumeration value="value1"/>
+                <xs:enumeration value="value2"/>
+            </xs:restriction>
+        </xs:simpleType>
+    </xs:attribute>
+</xs:schema>

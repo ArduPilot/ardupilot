@@ -1,0 +1,41 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[toc,nonumberlist,numberedsection=autolabel]{glossaries}
+
+\title{A Test Document Using Glossaries For Waf Construction}
+\author{Joe Steeve}
+
+\makeglossaries
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+% next line is broken after using a newer texlive version
+%\glossarystyle{altlist}
+
+%% The glossary entries
+\newglossaryentry{african}
+{
+  name={african},
+  description={The West African Swallow, Hirundo domicella}
+}
+
+\newglossaryentry{european}
+{
+  name={european},
+  description={The Barn or European Swallow, Hirundo rustica}
+}
+
+\section{The story}
+
+\begin{description}
+\item[Bridgekeeper:] What... is the air-speed velocity of an unladen
+  swallow?
+\item[King Arthur:] What do you mean? An \gls{african} or \gls{european} swallow?
+\end{description}
+
+%% This is the Glossary section
+\glsaddall
+\printglossaries
+
+\end{document}

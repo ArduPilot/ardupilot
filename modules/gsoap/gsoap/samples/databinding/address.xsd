@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <schema targetNamespace="urn:address-book-example"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:a="urn:address-book-example"
+  xmlns="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="unqualified"
+  attributeFormDefault="unqualified">
+  <annotation>
+   <documentation>An example address book schema</documentation>
+  </annotation>
+  <simpleType name="ISO-country">
+   <annotation>
+    <documentation>ISO country codes (limited to just a few for this example)</documentation>
+   </annotation>
+   <restriction base="xsd:string">
+    <enumeration value="be"/>
+    <enumeration value="ca"/>
+    <enumeration value="de"/>
+    <enumeration value="en"/>
+    <enumeration value="gb"/>
+    <enumeration value="it"/>
+    <enumeration value="nl"/>
+    <enumeration value="no"/>
+    <enumeration value="ru"/>
+    <enumeration value="se"/>
+    <enumeration value="us"/>
+   </restriction>
+  </simpleType>
+  <complexType name="address">
+   <annotation>
+    <documentation>An address information item</documentation>
+   </annotation>
+   <sequence>
+    <element name="name" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    <element name="street" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    <element name="city" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    <element name="zip" type="xsd:string" minOccurs="1" maxOccurs="1"/>
+    <element name="country" type="tns:ISO-country" minOccurs="1" maxOccurs="1" default = "us"/>
+    <element name="phone" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
+    <element name="mobile" type="xsd:string" minOccurs="0" maxOccurs="1" nillable="true"/>
+    <element name="dob" type="xsd:dateTime" minOccurs="0" maxOccurs="1" nillable="true"/>
+   </sequence>
+   <attribute name="ID" type="xsd:int" use="required"/>
+  </complexType>
+  <element name="address-book">
+   <annotation>
+    <documentation>The root element of the address book schema</documentation>
+   </annotation>
+   <complexType>
+    <sequence>
+     <element name="address" type="a:address" minOccurs="0" maxOccurs="unbounded"/>
+    </sequence>
+   </complexType>
+  </element>
+ </schema>
+

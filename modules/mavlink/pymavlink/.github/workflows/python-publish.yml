@@ -1,0 +1,158 @@
+# This workflow will upload a Python Package using Twine when a release is created
+# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
+
+name: Build and Optionally Publish
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      # This allows us to save the more expensive full build for the main branch
+      # and releases, while using a lighter build for PRs
+      - name: Set build matrix
+        id: set-matrix
+        shell: python
+        run: |
+          import json
+          import os
+
+          ref = os.environ.get("GITHUB_REF", "")
+          event = os.environ.get("GITHUB_EVENT_NAME", "")
+
+          if ref in ("refs/heads/main", "refs/heads/master") or event in ("release", "workflow_dispatch"):
+              machines = [
+                  ("linux", "ubuntu-latest", "auto64 auto32"),
+                  ("linux-arm", "ubuntu-24.04-arm", "auto"),
+                  ("linux-riscv64", "ubuntu-latest", "riscv64"),
+                  ("macos", "macos-latest", "arm64 x86_64 universal2"),
+                  ("windows", "windows-latest", "auto64 auto32"),
+                  ("windows-arm", "windows-11-arm", "auto"),
+              ]
+              py_versions = ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+          else:
+              machines = [
+                  ("linux", "ubuntu-latest", "native"),
+                  ("windows", "windows-latest", "native"),
+              ]
+              py_versions = ["3.8", "3.13"] # Chosing the two most likely to break in PRs
+
+          matrix = {"include": []}
+          for (name, runner, cibw_archs) in machines:
+              for py in py_versions:
+                  if name == "windows-arm" and py == "3.8": # The windows arm runner does not support Python 3.8
+                      continue
+                  matrix["include"].append({
+                      "name": f"python{py}-{name}",
+                      "os": runner,
+                      "python_version": py,
+                      "cibw_build": f"cp{py.replace('.', '')}-*",
+                      "cibw_archs": cibw_archs,
+                      "is_riscv": name == "linux-riscv64"
+                  })
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"matrix={json.dumps(matrix)}\n")
+
+  build-wheels:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    env:
+      PYTHON_VERSION: ${{ matrix.python_version }}
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up QEMU
+      if: matrix.is_riscv
+      uses: docker/setup-qemu-action@v3
+      with:
+        platforms: riscv64
+    - name: Install mavlink definitions
+      shell: bash
+      run: |
+        git clone https://github.com/ArduPilot/mavlink.git
+        ln -s $PWD/mavlink/message_definitions
+    - name: Set CIBW_BUILD
+      shell: bash
+      run: echo "CIBW_BUILD=cp${PYTHON_VERSION/./}-*" >> $GITHUB_ENV
+    - name: Build wheels
+      uses: pypa/cibuildwheel@v3.3.0
+      env:
+        PYMAVLINK_FAST_INDEX: "1"
+        CIBW_BUILD: ${{ matrix.cibw_build }}
+        CIBW_ARCHS: ${{ matrix.cibw_archs }}
+    - name: Upload wheels
+      uses: actions/upload-artifact@v6
+      with:
+        name: ${{ matrix.name }}
+        path: wheelhouse/*.whl
+        if-no-files-found: error
+
+  build-sdist:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: "3.9"
+    - name: Install mavlink messages
+      run: |
+        git clone https://github.com/ArduPilot/mavlink.git
+        ln -s $PWD/mavlink/message_definitions
+    - name: Install dependencies
+      run: |
+        python3 -m pip install -U pip
+        python3 -m pip install -U wheel
+        python3 -m pip install build
+        python3 -m pip install -U .
+    - name: Build sdist
+      run: pipx run build --sdist
+    - name: Upload sdist
+      uses: actions/upload-artifact@v6
+      with:
+        name: sdist
+        path: dist/*.tar.gz
+        if-no-files-found: error
+
+  publish:
+    needs: [build-wheels, build-sdist]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v7
+      with:
+        path: dist
+        merge-multiple: true
+
+    - name: Verify dist contents
+      run: ls -lh dist/
+
+    - name: Upload final dist artifact
+      uses: actions/upload-artifact@v6
+      with:
+        name: dist
+        path: dist/*
+        if-no-files-found: error
+
+    - name: Publish package
+      if: github.event_name == 'release' && github.event.action == 'published'
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        user: __token__
+        password: ${{ secrets.PYPI_API_TOKEN }}

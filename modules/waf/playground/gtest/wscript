@@ -1,0 +1,68 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Sylvain Rouquette, 2014
+# based on Richard Quirk's demo (unit_test), 2008
+
+"""
+Execute tests during the build - requires cppunit
+
+To force all tests, run with "waf build --alltests"
+"""
+
+from waflib import Logs
+
+top = '.'
+out = 'build'
+
+def options(opt):
+    opt.load('compiler_cxx')
+    opt.load('waf_unit_test')
+    opt.add_option('--onlytests', action='store_true', default=True, help='Exec unit tests only', dest='only_tests')
+
+def configure(conf):
+    conf.load('compiler_cxx')
+    conf.load('waf_unit_test')
+    conf.check(lib='gtest', uselib_store='GTEST')
+
+
+def gtest_results(bld):
+    lst = getattr(bld, 'utest_results', [])
+    if not lst:
+        return
+    for (f, code, out, err) in lst:
+        # if not code:
+        #     continue
+
+        # uncomment if you want to see what's happening
+        # print(str(out, 'utf-8'))
+        output = str(out, 'utf-8').splitlines()
+        for i, line in enumerate(output):
+            if '[ RUN      ]' in line and code:
+                i += 1
+                if '    OK ]' in output[i]:
+                    continue
+                while not '[ ' in output[i]:
+                    Logs.warn(output[i])
+                    i += 1
+            elif ' FAILED  ]' in line and code:
+                Logs.error(line)
+            elif ' PASSED  ]' in line:
+                Logs.info(line)
+
+def build(bld):
+    bld.recurse('src tests')
+
+    # waf_unit_test.summary is a pretty ugly function for displaying a report (feel free to improve!)
+    # results -> bld.utest_results [(filename, returncode, stdout, stderr), (..., ), ...]
+    #bld.add_post_fun(waf_unit_test.summary)
+    bld.add_post_fun(gtest_results)
+
+    # to execute all tests:
+    # $ waf --alltests
+    # to set this behaviour permanently:
+    bld.options.all_tests = True
+
+    # debugging zone:
+    # $ waf --zones=ut
+    # setting the cwd for a unit test execution: see tests/test1/wscript_build (ut_cwd)
+

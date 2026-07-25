@@ -1,0 +1,80 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<link rel="up" title="FatFs" href="../00index_e.html">
+<link rel="alternate" hreflang="ja" title="Japanese" href="../ja/fattime.html">
+<link rel="stylesheet" href="../css_e.css" type="text/css" media="screen" title="ELM Default">
+<title>FatFs - get_fattime</title>
+</head>
+
+<body>
+
+<div class="para func">
+<h2>get_fattime</h2>
+<p>The get_fattime function is called to get the current time.</p>
+<pre>
+DWORD get_fattime (void);
+</pre>
+</div>
+
+
+<div class="para ret">
+<h4>Return Value</h4>
+<p>Currnet local time shall be returned as bit-fields packed into a <tt>DWORD</tt> value. The bit fields are as follows:</p>
+<dl class="ret">
+<dt>bit31:25</dt>
+<dd>Year origin from the 1980 (0..127, e.g. 37 for 2017)</dd>
+<dt>bit24:21</dt>
+<dd>Month (1..12)</dd>
+<dt>bit20:16</dt>
+<dd>Day of the month (1..31)</dd>
+<dt>bit15:11</dt>
+<dd>Hour (0..23)</dd>
+<dt>bit10:5</dt>
+<dd>Minute (0..59)</dd>
+<dt>bit4:0</dt>
+<dd>Second / 2 (0..29, e.g. 25 for 50)</dd>
+</dl>
+</div>
+
+
+<div class="para desc">
+<h4>Description</h4>
+<p>The <tt>get_fattime</tt> function shall return any valid time even if the system does not support a real time clock. If a zero is returned, the file will not have a valid timestamp.</p>
+</div>
+
+
+<div class="para comp">
+<h4>QuickInfo</h4>
+<p>This function is not needed when <tt><a href="config.html#fs_readonly">FF_FS_READONLY</a> == 1</tt> or <tt><a href="config.html#fs_nortc">FF_FS_NORTC</a> == 1</tt>.</p>
+</div>
+
+
+<div class="para use">
+<h4>Example</h4>
+<pre>
+DWORD get_fattime (void)
+{
+    time_t t;
+    struct tm *stm;
+
+
+    t = time(0);
+    stm = localtime(&t);
+
+    return (DWORD)(stm->tm_year - 80) &lt;&lt; 25 |
+           (DWORD)(stm->tm_mon + 1) &lt;&lt; 21 |
+           (DWORD)stm->tm_mday &lt;&lt; 16 |
+           (DWORD)stm->tm_hour &lt;&lt; 11 |
+           (DWORD)stm->tm_min &lt;&lt; 5 |
+           (DWORD)stm->tm_sec &gt;&gt; 1;
+}
+</pre>
+</div>
+
+
+<p class="foot"><a href="../00index_e.html">Return</a></p>
+</body>
+</html>

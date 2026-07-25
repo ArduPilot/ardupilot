@@ -1,0 +1,392 @@
+% © Jérôme Carretero 2010 (Zougloub)
+% See license at end of file
+
+\documentclass[xetex]{beamer}
+\RequirePackage{fontspec}
+\RequirePackage{xunicode} %Unicode extras!
+\RequirePackage{xltxtra}  %Fixes
+\RequirePackage{verbatim}
+\RequirePackage{listings}
+\RequirePackage{multicol}
+\RequirePackage{moreverb}
+
+\usetheme[hideothersubsections, width=.15\textwidth]{waf}
+\usecolortheme{orchid}
+\setbeamertemplate{navigation symbols}{} % hides navigation symbols
+
+\usepackage{fancybox}
+\usepackage{multimedia}
+
+\usepackage{eso-pic}
+
+\title[Build Tools]{
+	Build Automation Tools
+}
+
+\subtitle{
+	Comparison of make and waf for non-technical users
+}
+ 
+\author[]{Jérôme Carretero}
+ 
+\institute[] {}
+
+\date{2010-11-05}
+
+\lstdefinelanguage{waf}
+  {morekeywords={def, ctx, bld, opt, configure, options, build, features, source, target, load, use},
+	  sensitive=true,
+	  morecomment=[l]{\#},
+	  %morecomment=[s]{/*}{*/},
+	  morestring=[b]",
+}
+\begin{document}
+
+\lstset{
+ language=make,
+ basicstyle=\tiny,%\footnotesize,
+ %numbers=left,% -> where to put the line-numbers
+ %numberstyle=\footnotesize,% -> size of the fonts used for the line-numbers
+ %stepnumber=5,% -> the step between two line-numbers.
+ %numbersep=5pt,% -> how far the line-numbers are from the code
+ %backgroundcolor=\color{white},% -> sets background color (needs package)
+ showspaces=false,% -> show spaces adding particular underscores
+ showstringspaces=false,% -> underline spaces within strings
+ showtabs=false,% -> show tabs within strings through particular underscores
+ frame=single,% -> adds a frame around the code
+ tabsize=4,% -> sets default tab-size to 2 spaces
+ captionpos=b,% -> sets the caption-position to bottom
+ breaklines=true,% -> sets automatic line breaking
+ breakatwhitespace=false,% -> automatic breaks happen at whitespace
+ %morecomment=[l]{//},
+}
+
+\setbeamertemplate{background}{
+    	\begin{picture}(320, 270)
+		\put(300, 250){\includegraphics[width=.05\textwidth]{gfx/waflogo.png}}
+	\end{picture}
+}
+
+
+\frame{
+    	\begin{picture}(0,0)
+		%\put(0,-5){\includegraphics[width=.2\textwidth]{RT09_Logo.jpg}}
+	\end{picture}
+	\vspace{1cm}
+	\titlepage
+}
+
+
+\frame{
+\frametitle{Outline}
+	\tableofcontents[subsectionstyle=hide/show/hide]
+}
+
+\section{Introduction}
+
+\begin{frame}{Definition and Context}
+	\begin{itemize}
+		\item Build automation is the act of scripting or automating a wide variety of tasks that software developers do in their day-to-day activities \cite{wp_build_automation}.
+		\item I have seen a lot of code and used many build automation tools
+		\item For technical reasons, I consider waf to be the best tool out there
+	\end{itemize}
+\end{frame}
+
+\section{Make}
+
+
+\frame{
+\frametitle{Make: outline}
+	\tableofcontents[sectionstyle=hide/hide,subsectionstyle=hide/show/hide]
+}
+
+\begin{frame}[fragile]
+	\scriptsize
+	\frametitle{Simplest Makefile}
+	\lstinputlisting{snippets/make-1/Makefile}
+	\lstinputlisting{snippets/make-1/output}
+\end{frame}
+
+\subsection{Structure of a Makefile}
+
+\begin{frame}[fragile]{Makefile properties}
+	Makefiles are like basic kitchen recipes:
+	\begin{itemize}
+		\item basic syntax:\\
+		\begin{lstlisting}
+			variable = value
+		
+			target: dependencies
+			    commands to run
+		\end{lstlisting}
+		\item plus include ability and a few commands
+	\end{itemize}
+
+	Features:
+	\begin{itemize}
+		\item the return codes of the commands are checked for errors
+		\item the variables are expanded into commands, dependencies, or command strings
+		\item pretty simple, but relatively efficient
+		\item nothing beats make for tiny jobs
+	\end{itemize}
+\end{frame}
+
+
+
+\subsection{Limitations}
+
+\begin{frame}{It can become complicated}
+	The following is a little caricature of what becomes necessary with big projects.\\
+	It only works with gcc-style compilers on UNIX:
+	\lstinputlisting{snippets/make-2/Makefile}
+	\lstinputlisting{snippets/make-2/output}
+\end{frame}
+
+\subsection{Conclusion}
+
+\begin{frame}{So what}
+	\begin{itemize}
+		\item make was born in 1973\\
+		It's mature, but not very high-tech
+		\item very efficient for small 80's projects
+		\item since then, other tools have appeared
+		\item domain-specific language
+		\item string-based, command-line based (based on the usage of shell scripts)
+	\end{itemize}
+\end{frame}
+
+\section{Waf Intro}
+
+\frame{
+\frametitle{Waf: outline}
+	\tableofcontents[sectionstyle=hide/hide,subsectionstyle=hide/show/hide]
+}
+
+\subsection{Waf is to Make as C++ is to assembly}
+
+
+\begin{frame}{Intro}
+	\begin{itemize}
+		\item waf is a newest-generation build tool\\
+		History: sh $\to$ make $\to$ scons $\to$ waf
+		\item built on the Python language, not a custom, restricted special-purpose one\\
+		$\neq$ CMake, ant, maven\\
+		a waf script can do \textbf{anything}
+		\item task-based, not file-based\\
+		can build abstract stuff
+		\item includes build configuration
+		\item custom commands can be added
+		\item tool abstraction, more portability, cross-compilation friendly
+	\end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile]{Simplest waf script}
+	\scriptsize
+	\lstinputlisting[language=waf]{snippets/waf-1/wscript}
+	\lstinputlisting{snippets/waf-1/output}
+\end{frame}
+
+\subsection{New Concepts}
+
+\begin{frame}{New Concepts}
+	\begin{itemize}
+		\item \texttt{configure()} configures the build machine to enable proper compilation (library detection, config.h writing, etc.).\\
+		Similar to autoconf.\\
+		Useful to provide better portability of code.
+		
+		\item \texttt{build()} is where you define your build tasks
+
+		\item \texttt{options()} allows to provide compilation options to the build\\
+		Mostly unused in simple cases
+	\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Dependencies Graph}
+	If you wanted to export modules A and/or B:
+	\lstinputlisting[language=waf]{snippets/waf-2/wscript}
+\end{frame}
+
+
+\begin{frame}{Dependencies Specifications}
+	\begin{center}
+		\includegraphics[height=.3\textheight]{gfx/slides-executable_deps.png}
+	\end{center}
+	\begin{itemize}
+		\item You don't need to specify the whole dependency tree of your target\\
+		just the closest nodes ! $\neq$ make
+		\item every \textit{task generator} defines what it does and what it uses
+		\item[+] less redundancy
+		\item[+] build scripts quickly become much smaller and powerful than equivalent makefiles
+	\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Tools}
+	\begin{itemize}
+		\item You can use waf just like make (specify everything) but there are \textit{tools}
+		\item ex: compiler\_c, compiler\_cxx, java, cs, winres, d, bison, qt4, ...
+		\item[+] The tools avoid you to type and build scripts are more readable
+		\item[+] compiler\_c automatically detects MSVC, GCC, ICC, SUNCC, ...
+		\item[+] Less lines of code, less maintenance
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Waf “Recursivity”}
+	\begin{itemize}
+		\item Variables do not get shared with recursive make
+		\item They do with recursive waf scripts
+	\end{itemize}
+
+	You define a component in a module, and use it in another module “as is”.
+	\\
+	Ex: NGPF build scripts, the targets are shared between folders
+
+\end{frame}
+
+
+\begin{frame}{Dependencies Scanning}
+	\begin{itemize}
+		\item waf tools automatically scan include dependencies (C, C++, LaTeX, Java, C\#), ...
+		\item waf keeps a cache of the task yields checksums
+		\item[$\to$] waf will only rebuild modified files
+		\item[$\to$] faster online compilation (a lot less \texttt{make clean} performed)
+	\end{itemize}
+\end{frame}
+
+
+\begin{frame}{More}
+	\begin{itemize}
+		\item built-in support for build folders\\
+		\textbf{very important}
+		\item built-in support for unit testing
+		\item built-in support for build machines (auto-build)
+		\item built-in support for build variants and cross-compilation
+	\end{itemize}
+\end{frame}
+
+\subsection{Myth Busting}
+
+\begin{frame}{“waf is a big pile of dark crap”}
+	Wrong:
+	\begin{itemize}
+		\item waf is very small!\\
+		core files are <6500 lines of Python code including comments (25\%)\\
+		GNU make: 32000 (C)
+		\item logical and extensible architecture
+		\begin{itemize}
+			\scriptsize
+			\item Core: Context, Build, Node, Configure, Task, TaskGen, Runner, misc %(Errors, Utils, ConfigSet)
+			\item Plugins: Tools/
+		\end{itemize}
+		\item lots and lots of documentation and examples, great support
+		\item used by lots of high-tech people:
+		\begin{itemize}
+			\scriptsize
+			\item big enterprise projects (Cisco® IOS, ...)
+			\item big OpenSource projects (Samba \cite{samba_waf}, XMMS2, Ardour \cite{ardour_waf}, Jack, ...)
+			\item big research projects (NS-3, ...)
+		\end{itemize}
+	\end{itemize}
+\end{frame}
+
+
+\begin{frame}{“waf is too complex for me”}
+	waf scripts are easy to read and write.
+	A wscript is typically composed of:
+	\begin{itemize}
+		\item \texttt{configure()}
+		\begin{itemize}
+			\scriptsize
+			\item external libraries definitions for multiple build platforms (eg. Linux 32+64, QNX, Win32 cross, Win32 native)
+			\item targets configuration
+			\item environment checks
+			\item config.h writing
+		\end{itemize}
+		\item \texttt{build()}: build rules (the most touched and simplest part)
+		\item misc (optional): multi-variant build functions, command-line options parsing, etc.
+	\end{itemize}
+	
+	It's easy to create a simple wscript (lots of examples, very simple syntax).
+	\\
+	~\\
+	Contributing to a big wscript is easier than contributing to a big Makefile.
+	\\
+	The only important part when contributing is the definition of the build task generators.
+\end{frame}
+
+
+\begin{frame}{Summary}
+	\begin{itemize}
+		\item a recent tool (2005)\\
+		still, a lot of examples, and support for complex usages are available
+		\item a little more complex than make for tiny projects\\
+		but it's worth it for everyday development
+		\item more performant
+		\item a lot more powerful and flexible
+		\item me likes it
+	\end{itemize}
+\end{frame}
+
+\section{Conclusion}
+
+\begin{frame}{Conclusion}
+	\begin{itemize}
+		\item I am convinced that waf brings long-term advantages\\
+		I definitely recommend it for complex builds
+		\item very appropriate for modular project integration
+		\item I would not maintain huge unreadable makefiles
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Links}
+
+\begin{thebibliography}{9}
+
+\bibitem{samba_waf} Samba team waf page\\
+\url{http://wiki.samba.org/index.php/Waf}
+
+\bibitem{wp_build_automation} Wikipedia article on Build Automation\\
+\url{http://en.wikipedia.org/wiki/Build_automation}
+
+\bibitem{ardour_waf} Ardour build page\\
+\url{http://www.ardour.org/building_ardour3}
+
+\bibitem{xmms2_waf} XMMS2 installation instructions\\
+\url{http://xmms2.org/wiki/Install_instructions}
+
+\end{thebibliography}
+
+\end{frame}
+
+\end{document}
+
+License:
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions
+are met:
+
+1. Redistributions of source code must retain the above copyright
+   notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright
+   notice, this list of conditions and the following disclaimer in the
+   documentation and/or other materials provided with the distribution.
+
+3. The name of the author may not be used to endorse or promote products
+   derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR
+IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
+IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+
+

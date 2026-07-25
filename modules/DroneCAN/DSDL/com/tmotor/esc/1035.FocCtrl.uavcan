@@ -1,0 +1,15 @@
+#
+# Generic ESC status.
+#
+
+OVERRIDE_SIGNATURE 0x598143612FBC000B
+
+uint8 esc_index
+
+uint8 esc_mode
+
+uint8 esc_fdb_rate
+
+uint8 esc_cmd
+
+int32 esc_cmd_val

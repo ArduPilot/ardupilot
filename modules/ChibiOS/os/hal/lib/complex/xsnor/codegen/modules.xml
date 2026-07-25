@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE doc [
+  <!ENTITY hal_flash_interface          SYSTEM "hal_flash_interface.xml">
+  <!ENTITY hal_xsnor_base               SYSTEM "hal_xsnor_base.xml">
+  <!ENTITY hal_xsnor_device_template    SYSTEM "hal_xsnor_device_template.xml">
+  <!ENTITY hal_xsnor_micron_n25q        SYSTEM "hal_xsnor_micron_n25q.xml">
+  <!ENTITY hal_xsnor_macronix_mx25      SYSTEM "hal_xsnor_macronix_mx25.xml">
+]>
+<instance xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd">
+  <paths>
+    <path>../../../../../common/oop/codegen</path>
+  </paths>
+  <modules>
+    &hal_flash_interface;
+    &hal_xsnor_base;
+    &hal_xsnor_device_template;
+    &hal_xsnor_micron_n25q;
+    &hal_xsnor_macronix_mx25;
+  </modules>
+</instance>

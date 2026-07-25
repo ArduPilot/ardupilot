@@ -1,0 +1,746 @@
+% stylesheet for doxygen 1.14.0
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{doxygen}
+
+% Packages used by this style file
+\RequirePackage{alltt}
+%%\RequirePackage{array} %% moved to refman.tex due to workaround for LaTex 2019 version and unmaintained tabu package
+\RequirePackage{calc}
+\RequirePackage{float}
+%%\RequirePackage{ifthen} %% moved to refman.tex due to workaround for LaTex 2019 version and unmaintained tabu package
+\RequirePackage{verbatim}
+\RequirePackage[table]{xcolor}
+\RequirePackage{longtable_doxygen}
+\RequirePackage{tabu_doxygen}
+\RequirePackage{fancyvrb}
+\RequirePackage{tabularx}
+\RequirePackage{multicol}
+\RequirePackage{multirow}
+\RequirePackage{hanging}
+\RequirePackage{ifpdf}
+\RequirePackage{adjustbox}
+\RequirePackage{amssymb}
+\RequirePackage{stackengine}
+\RequirePackage{enumitem}
+\RequirePackage{alphalph}
+\RequirePackage[normalem]{ulem} % for strikeout, but don't modify emphasis
+
+%---------- Internal commands used in this style file ----------------
+
+\newcommand{\ensurespace}[1]{%
+  \begingroup%
+    \setlength{\dimen@}{#1}%
+    \vskip\z@\@plus\dimen@%
+    \penalty -100\vskip\z@\@plus -\dimen@%
+    \vskip\dimen@%
+    \penalty 9999%
+    \vskip -\dimen@%
+    \vskip\z@skip% hide the previous |\vskip| from |\addvspace|
+  \endgroup%
+}
+
+\newcommand{\DoxyHorRuler}[1]{%
+  \setlength{\parskip}{0ex plus 0ex minus 0ex}%
+  \ifthenelse{#1=0}%
+  {%
+    \hrule%
+  }%
+  {%
+    \hrulefilll%
+  }%
+}
+\newcommand{\DoxyLabelFont}{}
+\newcommand{\entrylabel}[1]{%
+  {%
+    \parbox[b]{\labelwidth-4pt}{%
+      \makebox[0pt][l]{\DoxyLabelFont#1}%
+      \vspace{1.5\baselineskip}%
+    }%
+  }%
+}
+
+\newenvironment{DoxyDesc}[1]{%
+  \ensurespace{4\baselineskip}%
+  \begin{list}{}{%
+    \settowidth{\labelwidth}{20pt}%
+    %\setlength{\parsep}{0pt}%
+    \setlength{\itemsep}{0pt}%
+    \setlength{\leftmargin}{\labelwidth+\labelsep}%
+    \renewcommand{\makelabel}{\entrylabel}%
+  }%
+  \item[#1]%
+}{%
+  \end{list}%
+}
+
+\newsavebox{\xrefbox}
+\newlength{\xreflength}
+\newcommand{\xreflabel}[1]{%
+  \sbox{\xrefbox}{#1}%
+  \setlength{\xreflength}{\wd\xrefbox}%
+  \ifthenelse{\xreflength>\labelwidth}{%
+    \begin{minipage}{\textwidth}%
+      \setlength{\parindent}{0pt}%
+      \hangindent=15pt\bfseries #1\vspace{1.2\itemsep}%
+    \end{minipage}%
+  }{%
+   \parbox[b]{\labelwidth}{\makebox[0pt][l]{\textbf{#1}}}%
+  }%
+}
+
+%---------- Commands used by doxygen LaTeX output generator ----------
+
+% Used by <pre> ... </pre>
+\newenvironment{DoxyPre}{%
+  \small%
+  \begin{alltt}%
+}{%
+  \end{alltt}%
+  \normalsize%
+}
+% Necessary for redefining not defined characters, i.e. "Replacement Character" in tex output.
+\newlength{\CodeWidthChar}
+\newlength{\CodeHeightChar}
+\settowidth{\CodeWidthChar}{?}
+\settoheight{\CodeHeightChar}{?}
+% Necessary for hanging indent
+\newlength{\DoxyCodeWidth}
+
+\newcommand\DoxyCodeLine[1]{
+  \ifthenelse{\equal{\detokenize{#1}}{}}
+  {
+    \vspace*{\baselineskip}
+  }
+  {
+    \hangpara{\DoxyCodeWidth}{1}{#1}\par
+  }
+}
+
+\newcommand\NiceSpace{%
+     \discretionary{}{\kern\fontdimen2\font}{\kern\fontdimen2\font}%
+}
+
+% Used by @code ... @endcode
+\newenvironment{DoxyCode}[1]{%
+  \par%
+  \vspace{2pt}%
+  \scriptsize%
+  \normalfont\ttfamily%
+  \rightskip0pt plus 1fil%
+  \settowidth{\DoxyCodeWidth}{000000}%
+  \settowidth{\CodeWidthChar}{?}%
+  \settoheight{\CodeHeightChar}{?}%
+  \setlength{\parskip}{0ex plus 0ex minus 0ex}%
+  \ifthenelse{\equal{#1}{0}}%
+  {%
+    {\lccode`~32 \lowercase{\global\let~}\NiceSpace}\obeyspaces%
+  }%
+  {%
+    {\lccode`~32 \lowercase{\global\let~}}\obeyspaces%
+  }%
+  \vspace{2pt}%
+}{%
+  \normalfont%
+  \normalsize%
+  \settowidth{\CodeWidthChar}{?}%
+  \settoheight{\CodeHeightChar}{?}%
+}
+
+% Redefining not defined characters, i.e. "Replacement Character" in tex output.
+\def\ucr{\adjustbox{width=\CodeWidthChar,height=\CodeHeightChar}{\stackinset{c}{}{c}{-.2pt}{%
+   \textcolor{white}{\sffamily\bfseries\small ?}}{%
+   \rotatebox{45}{$\blacksquare$}}}}
+
+% Used by @example, @include, @includelineno and @dontinclude
+\newenvironment{DoxyCodeInclude}[1]{%
+	\DoxyCode{#1}%
+}{%
+  \endDoxyCode%
+}
+
+% Used by @verbatim ... @endverbatim
+\newenvironment{DoxyVerb}{%
+  \par%
+  \footnotesize%
+  \verbatim%
+}{%
+  \endverbatim%
+  \normalsize%
+}
+
+% Used by @verbinclude
+\newenvironment{DoxyVerbInclude}{%
+  \DoxyVerb%
+}{%
+  \endDoxyVerb%
+}
+
+% Used by numbered lists (using '-#' or <ol> ... </ol>)
+\setlistdepth{12}
+\newlist{DoxyEnumerate}{enumerate}{12}
+\setlist[DoxyEnumerate,1]{label=\arabic*.}
+\setlist[DoxyEnumerate,2]{label=(\enumalphalphcnt*)}
+\setlist[DoxyEnumerate,3]{label=\roman*.}
+\setlist[DoxyEnumerate,4]{label=\enumAlphAlphcnt*.}
+\setlist[DoxyEnumerate,5]{label=\arabic*.}
+\setlist[DoxyEnumerate,6]{label=(\enumalphalphcnt*)}
+\setlist[DoxyEnumerate,7]{label=\roman*.}
+\setlist[DoxyEnumerate,8]{label=\enumAlphAlphcnt*.}
+\setlist[DoxyEnumerate,9]{label=\arabic*.}
+\setlist[DoxyEnumerate,10]{label=(\enumalphalphcnt*)}
+\setlist[DoxyEnumerate,11]{label=\roman*.}
+\setlist[DoxyEnumerate,12]{label=\enumAlphAlphcnt*.}
+
+% Used by bullet lists (using '-', @li, @arg, or <ul> ... </ul>)
+\setlistdepth{12}
+\newlist{DoxyItemize}{itemize}{12}
+\setlist[DoxyItemize]{label=\textperiodcentered}
+
+\setlist[DoxyItemize,1]{label=\textbullet}
+\setlist[DoxyItemize,2]{label=\normalfont\bfseries \textendash}
+\setlist[DoxyItemize,3]{label=\textasteriskcentered}
+\setlist[DoxyItemize,4]{label=\textperiodcentered}
+
+% Used for check boxes
+\newcommand{\DoxyUnchecked}{$\square$}
+\newcommand{\DoxyChecked}{\rlap{\raisebox{0.3ex}{\hspace{0.4ex}\tiny \checkmark}}$\square$}
+
+% Used by description lists (using <dl> ... </dl>)
+\newenvironment{DoxyDescription}{%
+  \description%
+}{%
+  \enddescription%
+}
+
+% Used by @image, @dotfile, @dot ... @enddot, and @msc ... @endmsc
+% (only if caption is specified)
+\newenvironment{DoxyImage}{%
+  \begin{figure}[H]%
+    \centering%
+}{%
+  \end{figure}%
+}
+
+% Used by @image, @dotfile, @dot ... @enddot, and @msc ... @endmsc
+% (only if no caption is specified)
+\newenvironment{DoxyImageNoCaption}{%
+  \begin{center}%
+}{%
+  \end{center}%
+}
+
+% Used by @image
+% (only if inline is specified)
+\newenvironment{DoxyInlineImage}{%
+}{%
+}
+
+% Used by @attention
+\newenvironment{DoxyAttention}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @important
+\newenvironment{DoxyImportant}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @author and @authors
+\newenvironment{DoxyAuthor}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @date
+\newenvironment{DoxyDate}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @invariant
+\newenvironment{DoxyInvariant}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @note
+\newenvironment{DoxyNote}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @post
+\newenvironment{DoxyPostcond}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @pre
+\newenvironment{DoxyPrecond}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @copyright
+\newenvironment{DoxyCopyright}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @remark
+\newenvironment{DoxyRemark}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @return and @returns
+\newenvironment{DoxyReturn}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @since
+\newenvironment{DoxySince}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @see
+\newenvironment{DoxySeeAlso}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @version
+\newenvironment{DoxyVersion}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @warning
+\newenvironment{DoxyWarning}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by @par and @paragraph
+\newenvironment{DoxyParagraph}[1]{%
+  \begin{DoxyDesc}{#1}%
+}{%
+  \end{DoxyDesc}%
+}
+
+% Used by parameter lists
+\newenvironment{DoxyParams}[2][]{%
+    \tabulinesep=1mm%
+    \par%
+    \ifthenelse{\equal{#1}{}}%
+      {\begin{longtabu*}spread 0pt [l]{|X[-1,l]|X[-1,l]|}}% name + description
+    {\ifthenelse{\equal{#1}{1}}%
+      {\begin{longtabu*}spread 0pt [l]{|X[-1,l]|X[-1,l]|X[-1,l]|}}% in/out + name + desc
+      {\begin{longtabu*}spread 0pt [l]{|X[-1,l]|X[-1,l]|X[-1,l]|X[-1,l]|}}% in/out + type + name + desc
+    }
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #2}\\[1ex]%
+    \hline%
+    \endfirsthead%
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #2}\\[1ex]%
+    \hline%
+    \endhead%
+}{%
+    \end{longtabu*}%
+    \vspace{6pt}%
+}
+
+% Used for fields of simple structs
+\newenvironment{DoxyFields}[1]{%
+    \tabulinesep=1mm%
+    \par%
+    \begin{longtabu*}spread 0pt [l]{|X[-1,r]|X[-1,l]|X[-1,l]|}%
+    \multicolumn{3}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #1}\\[1ex]%
+    \hline%
+    \endfirsthead%
+    \multicolumn{3}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #1}\\[1ex]%
+    \hline%
+    \endhead%
+}{%
+    \end{longtabu*}%
+    \vspace{6pt}%
+}
+
+% Used for fields simple class style enums
+\newenvironment{DoxyEnumFields}[2][]{%
+    \tabulinesep=1mm%
+    \par%
+    \ifthenelse{\equal{#1}{2}}%
+      {\begin{longtabu*}spread 0pt [l]{|X[-1,r]|X[-1,l]|}}%
+      {\begin{longtabu*}spread 0pt [l]{|X[-1,l]|X[-1,r]|X[-1,l]|}}% with init value
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #2}\\[1ex]%
+    \hline%
+    \endfirsthead%
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #2}\\[1ex]%
+    \hline%
+    \endhead%
+}{%
+    \end{longtabu*}%
+    \vspace{6pt}%
+}
+
+% Used for parameters within a detailed function description
+\newenvironment{DoxyParamCaption}{%
+  \renewcommand{\item}[3][]{\\ \hspace*{2.0cm} ##1 {\em ##2}##3}% 
+}{%
+}
+
+% Used by return value lists
+\newenvironment{DoxyRetVals}[1]{%
+    \tabulinesep=1mm%
+    \par%
+    \begin{longtabu*}spread 0pt [l]{|X[-1,r]|X[-1,l]|}%
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #1}\\[1ex]%
+    \hline%
+    \endfirsthead%
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #1}\\[1ex]%
+    \hline%
+    \endhead%
+}{%
+    \end{longtabu*}%
+    \vspace{6pt}%
+}
+
+% Used by exception lists
+\newenvironment{DoxyExceptions}[1]{%
+    \tabulinesep=1mm%
+    \par%
+    \begin{longtabu*}spread 0pt [l]{|X[-1,r]|X[-1,l]|}%
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #1}\\[1ex]%
+    \hline%
+    \endfirsthead%
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #1}\\[1ex]%
+    \hline%
+    \endhead%
+}{%
+    \end{longtabu*}%
+    \vspace{6pt}%
+}
+
+% Used by template parameter lists
+\newenvironment{DoxyTemplParams}[1]{%
+    \tabulinesep=1mm%
+    \par%
+    \begin{longtabu*}spread 0pt [l]{|X[-1,r]|X[-1,l]|}%
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #1}\\[1ex]%
+    \hline%
+    \endfirsthead%
+    \multicolumn{2}{l}{\hspace{-6pt}\bfseries\fontseries{bc}\selectfont\color{darkgray} #1}\\[1ex]%
+    \hline%
+    \endhead%
+}{%
+    \end{longtabu*}%
+    \vspace{6pt}%
+}
+
+% Used for member lists
+\newenvironment{DoxyCompactItemize}{%
+  \begin{itemize}%
+    \setlength{\itemsep}{-3pt}%
+    \setlength{\parsep}{0pt}%
+    \setlength{\topsep}{0pt}%
+    \setlength{\partopsep}{0pt}%
+}{%
+  \end{itemize}%
+}
+
+% Used for member descriptions
+\newenvironment{DoxyCompactList}{%
+  \begin{list}{}{%
+    \setlength{\leftmargin}{0.5cm}%
+    \setlength{\itemsep}{0pt}%
+    \setlength{\parsep}{0pt}%
+    \setlength{\topsep}{0pt}%
+    \renewcommand{\makelabel}{\hfill}%
+  }%
+}{%
+  \end{list}%
+}
+
+% Used for reference lists (@bug, @deprecated, @todo, etc.)
+\newenvironment{DoxyRefList}{%
+  \begin{list}{}{%
+    \setlength{\labelwidth}{10pt}%
+    \setlength{\leftmargin}{\labelwidth}%
+    \addtolength{\leftmargin}{\labelsep}%
+    \renewcommand{\makelabel}{\xreflabel}%
+  }%
+}{%
+  \end{list}%
+}
+
+% Used by @bug, @deprecated, @todo, etc.
+\newenvironment{DoxyRefDesc}[1]{%
+  \begin{list}{}{%
+    \renewcommand\makelabel[1]{\textbf{##1}}%
+    \settowidth\labelwidth{\makelabel{#1}}%
+    \setlength\leftmargin{\labelwidth+\labelsep}%
+  }%
+}{%
+  \end{list}%
+}
+
+% Used by parameter lists and simple sections
+\newenvironment{Desc}
+{\begin{list}{}{%
+    \settowidth{\labelwidth}{20pt}%
+    \setlength{\parsep}{0pt}%
+    \setlength{\itemsep}{0pt}%
+    \setlength{\leftmargin}{\labelwidth+\labelsep}%
+    \renewcommand{\makelabel}{\entrylabel}%
+  }
+}{%
+  \end{list}%
+}
+
+% Used by tables
+\newcommand{\PBS}[1]{\let\temp=\\#1\let\\=\temp}%
+\newenvironment{TabularC}[1]%
+{\tabulinesep=1mm
+\begin{longtabu*}spread 0pt [c]{*#1{|X[-1]}|}}%
+{\end{longtabu*}\par}%
+
+\newenvironment{TabularNC}[1]%
+{\begin{tabu}spread 0pt [l]{*#1{|X[-1]}|}}%
+{\end{tabu}\par}%
+
+% Used for member group headers
+\newenvironment{Indent}{%
+  \begin{list}{}{%
+    \setlength{\leftmargin}{0.5cm}%
+  }%
+  \item[]\ignorespaces%
+}{%
+  \unskip%
+  \end{list}%
+}
+
+% Used when hyperlinks are turned on
+\newcommand{\doxylink}[2]{%
+  \mbox{\hyperlink{#1}{#2}}%
+}
+
+% Used for the cite command
+\newcommand{\DoxyCite}[3]{%
+  \ifthenelse{#3=1}% 1 with square parenthesis
+  {
+    \ifthenelse{\equal{#2}{number}}%
+    { \cite{#1} }%
+    {%
+      \ifthenelse{\equal{#2}{shortauthor}}%
+      { \citetext{\citeauthor{#1}} }%
+      {%
+        \ifthenelse{\equal{#2}{year}}%
+        { \citeyearpar{#1} }%
+        {}%
+      }%
+    }%
+  }%
+  {%
+    \ifthenelse{\equal{#2}{number}}%
+    { \citealp{#1} }%
+    {%
+      \ifthenelse{\equal{#2}{shortauthor}}%
+      { \citeauthor{#1} }%
+      {%
+        \ifthenelse{\equal{#2}{year}}%
+        { \citeyear{#1} }%
+        {}%
+      }%
+    }%
+  }%
+}
+
+% Used when hyperlinks are turned on
+% Third argument is the SectionType, see the doxygen internal
+% documentation for the values (relevant: Page ... Subsubsection).
+\newcommand{\doxysectlink}[3]{%
+  \mbox{\hyperlink{#1}{#2}}%
+}
+% Used when hyperlinks are turned off
+\newcommand{\doxyref}[3]{%
+  \textbf{#1} (\textnormal{#2}\,\pageref{#3})%
+}
+
+% Used when hyperlinks are turned off
+% Fourth argument is the SectionType, see the doxygen internal
+% documentation for the values (relevant: Page ... Subsubsection).
+\newcommand{\doxysectref}[4]{%
+  \textbf{#1} (\textnormal{#2}\,\pageref{#3})%
+}
+
+% Used to link to a table when hyperlinks are turned on
+\newcommand{\doxytablelink}[2]{%
+  \ref{#1}%
+}
+
+% Used to link to a table when hyperlinks are turned off
+\newcommand{\doxytableref}[3]{%
+  \ref{#3}%
+}
+
+% Used by @addindex
+\newcommand{\lcurly}{\{}
+\newcommand{\rcurly}{\}}
+
+% Colors used for syntax highlighting
+\definecolor{comment}{rgb}{0.5,0.0,0.0}
+\definecolor{keyword}{rgb}{0.0,0.5,0.0}
+\definecolor{keywordtype}{rgb}{0.38,0.25,0.125}
+\definecolor{keywordflow}{rgb}{0.88,0.5,0.0}
+\definecolor{preprocessor}{rgb}{0.5,0.38,0.125}
+\definecolor{stringliteral}{rgb}{0.0,0.125,0.25}
+\definecolor{charliteral}{rgb}{0.0,0.5,0.5}
+\definecolor{xmlcdata}{rgb}{0.0,0.0,0.0}
+\definecolor{vhdldigit}{rgb}{1.0,0.0,1.0}
+\definecolor{vhdlkeyword}{rgb}{0.43,0.0,0.43}
+\definecolor{vhdllogic}{rgb}{1.0,0.0,0.0}
+\definecolor{vhdlchar}{rgb}{0.0,0.0,0.0}
+
+% Color used for table heading
+\newcommand{\tableheadbgcolor}{lightgray}%
+
+% Version of hypertarget with correct landing location
+\newcommand{\Hypertarget}[1]{\Hy@raisedlink{\hypertarget{#1}{}}}
+
+% possibility to have sections etc. be within the margins
+% unfortunately had to copy part of book.cls and add \raggedright
+\makeatletter
+\newcounter{subsubsubsection}[subsubsection]
+\newcounter{subsubsubsubsection}[subsubsubsection]
+\newcounter{subsubsubsubsubsection}[subsubsubsubsection]
+\newcounter{subsubsubsubsubsubsection}[subsubsubsubsubsection]
+\renewcommand{\thesubsubsubsection}{\thesubsubsection.\arabic{subsubsubsection}}
+\renewcommand{\thesubsubsubsubsection}{\thesubsubsubsection.\arabic{subsubsubsubsection}}
+\renewcommand{\thesubsubsubsubsubsection}{\thesubsubsubsubsection.\arabic{subsubsubsubsubsection}}
+\renewcommand{\thesubsubsubsubsubsubsection}{\thesubsubsubsubsubsection.\arabic{subsubsubsubsubsubsection}}
+\newcommand{\subsubsubsectionmark}[1]{}
+\newcommand{\subsubsubsubsectionmark}[1]{}
+\newcommand{\subsubsubsubsubsectionmark}[1]{}
+\newcommand{\subsubsubsubsubsubsectionmark}[1]{}
+\def\toclevel@subsubsubsection{4}
+\def\toclevel@subsubsubsubsection{5}
+\def\toclevel@subsubsubsubsubsection{6}
+\def\toclevel@subsubsubsubsubsubsection{7}
+\def\toclevel@paragraph{8}
+\def\toclevel@subparagraph{9}
+
+\newcommand\doxysection{\@startsection {section}{1}{\z@}%
+                                     {-3.5ex \@plus -1ex \@minus -.2ex}%
+                                     {2.3ex \@plus.2ex}%
+                                     {\raggedright\normalfont\Large\bfseries}}
+\newcommand\doxysubsection{\@startsection{subsection}{2}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\raggedright\normalfont\large\bfseries}}
+\newcommand\doxysubsubsection{\@startsection{subsubsection}{3}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\raggedright\normalfont\normalsize\bfseries}}
+\newcommand\doxysubsubsubsection{\@startsection{subsubsubsection}{4}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\raggedright\normalfont\normalsize\bfseries}}
+\newcommand\doxysubsubsubsubsection{\@startsection{subsubsubsubsection}{5}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\raggedright\normalfont\normalsize\bfseries}}
+\newcommand\doxysubsubsubsubsubsection{\@startsection{subsubsubsubsubsection}{6}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\raggedright\normalfont\normalsize\bfseries}}
+\newcommand\doxysubsubsubsubsubsubsection{\@startsection{subsubsubsubsubsubsection}{7}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\raggedright\normalfont\normalsize\bfseries}}
+\newcommand\doxyparagraph{\@startsection{paragraph}{8}{\z@}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\raggedright\normalfont\normalsize\bfseries}}
+\newcommand\doxysubparagraph{\@startsection{subparagraph}{9}{\parindent}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
+                                     {\raggedright\normalfont\normalsize\bfseries}}    
+                                  
+\newcommand\l@subsubsubsection{\@dottedtocline{4}{10.0em}{7.8em}}
+\newcommand\l@subsubsubsubsection{\@dottedtocline{5}{13.0em}{9.4em}}
+\newcommand\l@subsubsubsubsubsection{\@dottedtocline{6}{15.0em}{11em}}
+\newcommand\l@subsubsubsubsubsubsection{\@dottedtocline{7}{18.0em}{12.6em}}
+\renewcommand\l@paragraph{\@dottedtocline{8}{21.0em}{14.2em}}
+\renewcommand\l@subparagraph{\@dottedtocline{9}{24.0em}{15.8em}}
+\makeatother
+% the sectsty doesn't look to be maintained but gives, in our case, some warning like:
+% LaTeX Warning: Command \underline  has changed.
+%               Check if current package is valid.
+% unfortunately had to copy the relevant part
+\newcommand*{\doxypartfont}          [1]
+   {\gdef\SS@partnumberfont{\SS@sectid{0}\SS@nopart\SS@makeulinepartchap#1}
+    \gdef\SS@parttitlefont{\SS@sectid{0}\SS@titlepart\SS@makeulinepartchap#1}}
+\newcommand*{\doxychapterfont}       [1]
+   {\gdef\SS@chapnumfont{\SS@sectid{1}\SS@nopart\SS@makeulinepartchap#1}
+    \gdef\SS@chaptitlefont{\SS@sectid{1}\SS@titlepart\SS@makeulinepartchap#1}}
+\newcommand*{\doxysectionfont}       [1]
+   {\gdef\SS@sectfont{\SS@sectid{2}\SS@rr\SS@makeulinesect#1}}
+\newcommand*{\doxysubsectionfont}    [1]
+   {\gdef\SS@subsectfont{\SS@sectid{3}\SS@rr\SS@makeulinesect#1}}
+\newcommand*{\doxysubsubsectionfont} [1]
+   {\gdef\SS@subsubsectfont{\SS@sectid{4}\SS@rr\SS@makeulinesect#1}}
+\newcommand*{\doxyparagraphfont}     [1]
+   {\gdef\SS@parafont{\SS@sectid{5}\SS@rr\SS@makeulinesect#1}}
+\newcommand*{\doxysubparagraphfont}  [1]
+   {\gdef\SS@subparafont{\SS@sectid{6}\SS@rr\SS@makeulinesect#1}}
+\newcommand*{\doxyminisecfont}  [1]
+   {\gdef\SS@minisecfont{\SS@sectid{7}\SS@rr\SS@makeulinepartchap#1}}
+\newcommand*{\doxyallsectionsfont}   [1] {\doxypartfont{#1}%
+                                          \doxychapterfont{#1}%
+                                          \doxysectionfont{#1}%
+                                          \doxysubsectionfont{#1}%
+                                          \doxysubsubsectionfont{#1}%
+                                          \doxyparagraphfont{#1}%
+                                          \doxysubparagraphfont{#1}%
+                                          \doxyminisecfont{#1}}%
+% Define caption that is also suitable in a table
+% for usage with hyperlinks
+\makeatletter
+\def\doxyfigcaption{%
+\H@refstepcounter{figure}%
+\@dblarg{\@caption{figure}}}
+
+% for usage without hyperlinks
+\def\doxyfigcaptionnolink{%
+\refstepcounter{figure}%
+\@dblarg{\@caption{figure}}}
+\makeatother
+
+% Define alpha enumarative names for counters > 26
+\makeatletter
+\def\enumalphalphcnt#1{\expandafter\@enumalphalphcnt\csname c@#1\endcsname}
+\def\@enumalphalphcnt#1{\alphalph{#1}}
+\def\enumAlphAlphcnt#1{\expandafter\@enumAlphAlphcnt\csname c@#1\endcsname}
+\def\@enumAlphAlphcnt#1{\AlphAlph{#1}}
+\makeatother
+\AddEnumerateCounter{\enumalphalphcnt}{\@enumalphalphcnt}{aa}
+\AddEnumerateCounter{\enumAlphAlphcnt}{\@enumAlphAlphcnt}{AA}

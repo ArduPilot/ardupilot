@@ -1,0 +1,12 @@
+Waf 2.1
+-------
+
+- Remove Winphone/WinCE detection in msvc.py
+- Fix the circular imports ccroot<->c_config.py
+- Remove superfluous *k in ctx.load() and other unused parameters
+  Ensure conf.load() has the same interface as ctx.load()
+- Remove waflib.Runner.PriorityTasks.appendleft
+- Remove waflib.Task.TaskBase
+- Remove the upper class of waflib.Task.Task (metaclasses)
+- Ordered_iter_dict in python 3.7
+- Change _add_task to add_task in Runner.py

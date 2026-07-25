@@ -1,0 +1,34 @@
+# Himark servo feedback information
+# it is not recommended that anyone implement this message. It is here as a placeholder
+# for existing Himark servos
+
+# signature from original file location
+OVERRIDE_SIGNATURE 0xCA8F4B8F97D23B57
+
+# servo ID from 0 to 17
+uint5 servo_id
+
+# current commanded input, range 700 to 2300, 1 LSB/us
+uint12 pwm_input
+
+# commanded position from -18000 to 18000, 1 LSB == 0.01 degrees
+int16 pos_cmd
+
+# sensed position from -18000 to 18000, 1 LSB == 0.01 degrees
+int16 pos_sensor
+
+# voltage, range 0 to 4095, 1 LSB == 0.01V
+uint12 voltage
+
+# current, range 0 to 1023, 1 LSB == 0.01A
+uint10 current
+
+# PCB temperature, range 0 to 1023, 1 LSB == 0.2 degrees Celsius, temp = pcb_tem*0.2-40
+uint10 pcb_temp
+
+# motor temperature, range 0 to 1023, 1 LSB == 0.2 degrees Celsius, temp = motor_tem*0.2-40
+uint10 motor_temp
+
+uint5 ERROR_STATUS_NO_ERROR = 0
+uint5 ERROR_STATUS_DATA_ERROR = 1
+uint5 error_status

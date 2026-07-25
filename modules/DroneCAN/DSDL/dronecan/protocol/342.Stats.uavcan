@@ -1,0 +1,17 @@
+
+#
+# monitor the status of the DroneCAN Protocol decoder on the node
+#
+
+uint32 tx_frames                    # Number of transmitted frames
+uint16 tx_errors                    # Number of errors during transmission
+uint32 rx_frames                    # Number of received frames
+uint16 rx_error_oom                 # Number of out-of-memory errors
+uint16 rx_error_internal            # Number of internal errors
+uint16 rx_error_missed_start        # Number of missed start bits
+uint16 rx_error_wrong_toggle        # Number of wrong toggle bits
+uint16 rx_error_short_frame         # Number of frames that were too short
+uint16 rx_error_bad_crc             # Number of frames with bad CRC
+uint16 rx_ignored_wrong_address     # Number of frames with wrong address
+uint16 rx_ignored_not_wanted        # Number of frames that were not wanted
+uint16 rx_ignored_unexpected_tid    # Number of frames with unexpected TID

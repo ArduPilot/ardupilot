@@ -1,0 +1,199 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F468F539-27BD-468E-BE64-DDE641400B51}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\Debug\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.\Release\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>.\include;.\include\Platforms\VisualCpp;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_LIB;WIN32;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeaderOutputFile>.\Debug/CppUTest.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\Debug/</AssemblerListingLocation>
+      <ObjectFileName>.\Debug/</ObjectFileName>
+      <ProgramDataBaseFileName>.\Debug/</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <ForcedIncludeFiles>..\include\Platforms\VisualCpp\Platform.h;..\include\CppUTest\MemoryLeakDetectorMallocMacros.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)CppUTest.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Lib>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\Debug/CppUTest.bsc</OutputFile>
+    </Bscmake>
+    <PreBuildEvent>
+      <Command>
+      </Command>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>copy $(OutDir)CppUTest.lib lib\vs2010
+copy $(OutDir)CppUTest.lib lib\CppUTest.lib
+copy $(OutDir)vc100.pdb lib\vs2010
+</Command>
+    </PostBuildEvent>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeaderOutputFile>.\Release/CppUTest.pch</PrecompiledHeaderOutputFile>
+      <AssemblerListingLocation>.\Release/</AssemblerListingLocation>
+      <ObjectFileName>.\Release/</ObjectFileName>
+      <ProgramDataBaseFileName>.\Release/</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0409</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)CppUTest.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+    <Bscmake>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <OutputFile>.\Release/CppUTest.bsc</OutputFile>
+    </Bscmake>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\CppUTestExt\CodeMemoryReportFormatter.cpp" />
+    <ClCompile Include="src\CppUTestExt\GTestConvertor.cpp" />
+    <ClCompile Include="src\CppUTestExt\MemoryReportAllocator.cpp" />
+    <ClCompile Include="src\CppUTestExt\MemoryReporterPlugin.cpp" />
+    <ClCompile Include="src\CppUTestExt\MemoryReportFormatter.cpp" />
+    <ClCompile Include="src\CppUTestExt\MockActualFunctionCall.cpp" />
+    <ClCompile Include="src\CppUTestExt\MockExpectedFunctionCall.cpp" />
+    <ClCompile Include="src\CppUTestExt\MockExpectedFunctionsList.cpp" />
+    <ClCompile Include="src\CppUTestExt\MockFailure.cpp" />
+    <ClCompile Include="src\CppUTestExt\MockFunctionCall.cpp" />
+    <ClCompile Include="src\CppUTestExt\MockNamedValue.cpp" />
+    <ClCompile Include="src\CppUTestExt\MockSupport.cpp" />
+    <ClCompile Include="src\CppUTestExt\MockSupportPlugin.cpp" />
+    <ClCompile Include="src\CppUTestExt\MockSupport_c.cpp" />
+    <ClCompile Include="src\CppUTestExt\OrderedTest.cpp" />
+    <ClCompile Include="src\CppUTest\CommandLineArguments.cpp" />
+    <ClCompile Include="src\CppUTest\CommandLineTestRunner.cpp" />
+    <ClCompile Include="src\CppUTest\JUnitTestOutput.cpp" />
+    <ClCompile Include="src\CppUTest\MemoryLeakDetector.cpp" />
+    <ClCompile Include="src\CppUTest\MemoryLeakWarningPlugin.cpp" />
+    <ClCompile Include="src\CppUTest\SimpleString.cpp" />
+    <ClCompile Include="src\CppUTest\TestFailure.cpp" />
+    <ClCompile Include="src\CppUTest\TestFilter.cpp" />
+    <ClCompile Include="src\CppUTest\TestHarness_c.cpp" />
+    <ClCompile Include="src\CppUTest\TestMemoryAllocator.cpp" />
+    <ClCompile Include="src\CppUTest\TestOutput.cpp" />
+    <ClCompile Include="src\CppUTest\TestPlugin.cpp" />
+    <ClCompile Include="src\CppUTest\TestRegistry.cpp" />
+    <ClCompile Include="src\CppUTest\TestResult.cpp" />
+    <ClCompile Include="src\CppUTest\Utest.cpp" />
+    <ClCompile Include="src\Platforms\VisualCpp\UtestPlatform.cpp">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\CppUTestExt\CodeMemoryReportFormatter.h" />
+    <ClInclude Include="include\CppUTestExt\GMock.h" />
+    <ClInclude Include="include\CppUTestExt\GTestConvertor.h" />
+    <ClInclude Include="include\CppUTestExt\GTestInterface.h" />
+    <ClInclude Include="include\CppUTestExt\MemoryReportAllocator.h" />
+    <ClInclude Include="include\CppUTestExt\MemoryReporterPlugin.h" />
+    <ClInclude Include="include\CppUTestExt\MemoryReportFormatter.h" />
+    <ClInclude Include="include\CppUTestExt\MockActualFunctionCall.h" />
+    <ClInclude Include="include\CppUTestExt\MockExpectedFunctionCall.h" />
+    <ClInclude Include="include\CppUTestExt\MockExpectedFunctionsList.h" />
+    <ClInclude Include="include\CppUTestExt\MockFailure.h" />
+    <ClInclude Include="include\CppUTestExt\MockFunctionCall.h" />
+    <ClInclude Include="include\CppUTestExt\MockNamedValue.h" />
+    <ClInclude Include="include\CppUTestExt\MockSupport.h" />
+    <ClInclude Include="include\CppUTestExt\MockSupportPlugin.h" />
+    <ClInclude Include="include\CppUTestExt\MockSupport_c.h" />
+    <ClInclude Include="include\CppUTestExt\OrderedTest.h" />
+    <ClInclude Include="include\CppUTest\CommandLineArguments.h" />
+    <ClInclude Include="include\CppUTest\CommandLineTestRunner.h" />
+    <ClInclude Include="include\CppUTest\JUnitTestOutput.h" />
+    <ClInclude Include="include\CppUTest\MemoryLeakDetector.h" />
+    <ClInclude Include="include\CppUTest\MemoryLeakDetectorMallocMacros.h" />
+    <ClInclude Include="include\CppUTest\MemoryLeakDetectorNewMacros.h" />
+    <ClInclude Include="include\CppUTest\MemoryLeakWarningPlugin.h" />
+    <ClInclude Include="include\CppUTest\PlatformSpecificFunctions.h" />
+    <ClInclude Include="include\CppUTest\SimpleString.h" />
+    <ClInclude Include="include\CppUTest\StandardCLibrary.h" />
+    <ClInclude Include="include\CppUTest\TestFailure.h" />
+    <ClInclude Include="include\CppUTest\TestFilter.h" />
+    <ClInclude Include="include\CppUTest\TestHarness.h" />
+    <ClInclude Include="include\CppUTest\TestHarness_c.h" />
+    <ClInclude Include="include\CppUTest\TestMemoryAllocator.h" />
+    <ClInclude Include="include\CppUTest\TestOutput.h" />
+    <ClInclude Include="include\CppUTest\TestPlugin.h" />
+    <ClInclude Include="include\CppUTest\TestRegistry.h" />
+    <ClInclude Include="include\CppUTest\TestResult.h" />
+    <ClInclude Include="include\CppUTest\TestTestingFixture.h" />
+    <ClInclude Include="include\CppUTest\Utest.h" />
+    <ClInclude Include="include\CppUTest\UtestMacros.h" />
+    <ClInclude Include="include\CppUTest\VirtualCall.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

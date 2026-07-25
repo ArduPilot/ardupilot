@@ -1,0 +1,17 @@
+{
+   <Ignore LD leak>
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:*alloc
+   ...
+   obj:*ld-*
+   ...
+}
+{
+    <Ignore temporally (Fedora 27) OpenSSL malloc>
+    Memcheck:Leak
+    fun:malloc
+    fun:CRYPTO_zalloc
+    ...
+    obj:*libcrypto*
+}

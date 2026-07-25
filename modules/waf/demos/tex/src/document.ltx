@@ -1,0 +1,42 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage{mathptmx}
+\usepackage{natbib}
+\usepackage{xspace}
+\usepackage{makeidx}
+
+\newcommand \Waf{\textbf{\emph{Waf}}\xspace}
+\newcommand \BibTeX{Bib\TeX\xspace}
+\newcommand \acronym[1]{{\small #1}}
+
+\newcommand \bringin[1]{\clearpage\input{#1.ltx}}
+
+\title{A Test Document For Waf Construction}
+\author{Russel Winder}
+
+\makeindex
+
+\begin{document}
+
+\bibliographystyle{apalike}
+
+\maketitle
+
+\vfil
+
+\tableofcontents
+
+\bringin{introduction}
+\bringin{indexing}
+\bringin{bibtex}
+\bringin{crossreferencing}
+\bringin{conclusions}
+%\bringin{conclusions2} % make it fail on purpose to test the batch mode
+
+\clearpage
+
+\bibliography{bib}
+
+\printindex
+
+\end{document}

@@ -1,0 +1,14 @@
+#! /usr/bin/env python
+
+# execute several instances of the build in "compute" (look in the wscript over there)
+
+def configure(conf):
+	pass
+
+def build(bld):
+	p = bld.srcnode.find_node('compute').abspath()
+
+	bld.jobs = JOBS = 3
+	for i in range(JOBS):
+		bld(rule='waf configure build -o test%d'%i, cwd=p, always=True)
+

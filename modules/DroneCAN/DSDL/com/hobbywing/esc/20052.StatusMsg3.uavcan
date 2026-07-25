@@ -1,0 +1,5 @@
+OVERRIDE_SIGNATURE 0x24919cd1eb34ece9
+
+uint8 MOS_T
+uint8 CAP_T
+uint8 Motor_T

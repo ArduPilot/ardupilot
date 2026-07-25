@@ -1,0 +1,5 @@
+#
+# provide global timestamp, time since 1/1/1970 in microseconds
+# should only be broadcast once a reliable time base (GPS or equivalent) is known
+#
+uavcan.Timestamp timestamp

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="oop_synchronized_object" descr="Synchronized Object" editcode="false">
+  <brief>Common ancestor class of all reference-counted, synchronized objects.</brief>
+  <imports>
+    <import>oop_referenced_object.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_referenced_object.h</include>
+    </includes>
+    <types>
+      <class type="abstract" name="synchronized_object" namespace="so"
+        ancestorname="referenced_object" descr="synchronized object">
+        <brief>Common ancestor class of all reference-counted, synchronized objects.</brief>
+        <details><![CDATA[Base class for objects that require a synchronization mechanism.
+          This class extends @p referenced_object_c class.]]></details>
+        <fields>
+          <condition check="!defined(OOP_USE_NOTHING)">
+            <field name="mutex" ctype="mutex_t">
+              <brief>Embedded synchronization mutex.</brief>
+            </field>
+          </condition>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <implementation><![CDATA[
+#if defined(OOP_USE_NOTHING)
+/* Synchronization not implemented in this case.*/
+#elif defined(OOP_USE_CHIBIOS)
+chMtxObjectInit(&self->mutex);
+#else
+osalMutexObjectInit(&self->mutex);
+#endif]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[ ]]></implementation>
+          </dispose>
+          <regular>
+            <method name="soLock" ctype="void">
+              <brief>Object lock.</brief>
+              <implementation><![CDATA[
+
+#if defined(OOP_USE_NOTHING)
+/* Synchronization not implemented in this case.*/
+#elif defined(OOP_USE_CHIBIOS)
+chMtxLock(&self->mutex);
+#else
+osalMutexLock(&self->mutex);
+#endif]]></implementation>
+            </method>
+            <method name="soUnlock" ctype="void">
+              <brief>Object unlock.</brief>
+              <implementation><![CDATA[
+
+#if defined(OOP_USE_NOTHING)
+/* Synchronization not implemented in this case.*/
+#elif defined(OOP_USE_CHIBIOS)
+chMtxUnlock(&self->mutex);
+#else
+osalMutexUnlock(&self->mutex);
+#endif]]></implementation>
+            </method>
+          </regular>
+        </methods>
+      </class>
+    </types>
+  </public>
+  <private>
+  </private>
+</module>

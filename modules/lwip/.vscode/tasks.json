@@ -1,0 +1,54 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build example_app",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "problemMatcher": "$gcc",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "command": "cmake --build ."
+        },
+        {
+            "label": "Build unit tests",
+            "type": "shell",
+            "problemMatcher": "$gcc",
+            "group": "build",
+            "linux": {
+                "options": {
+                    "cwd": "${workspaceFolder}/contrib/ports/unix/check/build"
+                },
+            },
+            "windows": {
+                "options": {
+                    "cwd": "${workspaceFolder}/contrib/ports/win32/check/build"
+                },
+            },
+            "command": "cmake --build ."
+        },
+        {
+            "label": "Configure example_app",
+            "type": "shell",
+            "problemMatcher": "$gcc",
+            "group": "build",
+            "command": "cd ${workspaceFolder}; mkdir build; cd build; cmake .."
+        },
+        {
+            "label": "Generate documentation",
+            "type": "shell",
+            "problemMatcher": [],
+            "group": "none",
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "command": "cmake --build . --target lwipdocs"
+        }
+    ]
+}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?><!--
+
+                Copyright (C) 2006 W3C (R) (MIT ERCIM Keio), All Rights Reserved.
+                W3C liability, trademark and document use rules apply.
+            
+                http://www.w3.org/Consortium/Legal/ipr-notice
+                http://www.w3.org/Consortium/Legal/copyright-documents
+            
+                $Id: Included.xsd,v 1.3 2007/04/19 12:19:50 pdowney Exp $
+
+            -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" 
+    xmlns:ex="http://www.w3.org/2002/ws/databinding/examples/6/09/" 
+    targetNamespace="http://www.w3.org/2002/ws/databinding/examples/6/09/" 
+    elementFormDefault="qualified" attributeFormDefault="unqualified">
+
+   <xs:element name="include" type="xs:string"/>
+
+</xs:schema>

@@ -1,0 +1,15 @@
+#
+# Single parameter value.
+#
+# This is a union, which means that this structure can contain either one of the fields below.
+# The structure is prefixed with tag - a selector value that indicates which particular field is encoded.
+#
+
+@union                          # Tag is 3 bit long, so outer structure has 5-bit prefix to ensure proper alignment
+
+Empty empty                     # Empty field, used to represent an undefined value.
+
+int64        integer_value
+float32      real_value         # 32-bit type is used to simplify implementation on low-end systems
+uint8        boolean_value      # 8-bit value is used for alignment reasons
+uint8[<=128] string_value       # Length prefix is exactly one byte long, which ensures proper alignment of payload

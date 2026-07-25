@@ -1,0 +1,263 @@
+name: release
+on:
+  workflow_run:
+    workflows: [test]
+    branches: [master]
+    types: [completed]
+
+defaults:
+  run:
+    shell: bash -euv -o pipefail {0}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    # need to manually check for a couple things
+    # - tests passed?
+    # - we are the most recent commit on master?
+    if: ${{github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_sha == github.sha}}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{github.event.workflow_run.head_sha}}
+          # need workflow access since we push branches
+          # containing workflows
+          token: ${{secrets.BOT_TOKEN}}
+          # need all tags
+          fetch-depth: 0
+
+      # try to get results from tests
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          run-id: ${{github.event.workflow_run.id}}
+          pattern: '{sizes,sizes-*}'
+          merge-multiple: true
+          path: sizes
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          run-id: ${{github.event.workflow_run.id}}
+          pattern: '{cov,cov-*}'
+          merge-multiple: true
+          path: cov
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          run-id: ${{github.event.workflow_run.id}}
+          pattern: '{bench,bench-*}'
+          merge-multiple: true
+          path: bench
+
+      - name: find-version
+        run: |
+          # rip version from lfs.h
+          LFS_VERSION="$(grep -o '^#define LFS_VERSION .*$' lfs.h \
+            | awk '{print $3}')"
+          LFS_VERSION_MAJOR="$((0xffff & ($LFS_VERSION >> 16)))"
+          LFS_VERSION_MINOR="$((0xffff & ($LFS_VERSION >>  0)))"
+
+          # find a new patch version based on what we find in our tags
+          LFS_VERSION_PATCH="$( \
+            ( git describe --tags --abbrev=0 \
+                --match="v$LFS_VERSION_MAJOR.$LFS_VERSION_MINOR.*" \
+              || echo 'v0.0.-1' ) \
+            | awk -F '.' '{print $3+1}')"
+
+          # found new version
+          LFS_VERSION="v$LFS_VERSION_MAJOR`
+            `.$LFS_VERSION_MINOR`
+            `.$LFS_VERSION_PATCH"
+          echo "LFS_VERSION=$LFS_VERSION"
+          echo "LFS_VERSION=$LFS_VERSION" >> $GITHUB_ENV
+          echo "LFS_VERSION_MAJOR=$LFS_VERSION_MAJOR" >> $GITHUB_ENV
+          echo "LFS_VERSION_MINOR=$LFS_VERSION_MINOR" >> $GITHUB_ENV
+          echo "LFS_VERSION_PATCH=$LFS_VERSION_PATCH" >> $GITHUB_ENV
+
+      # try to find previous version?
+      - name: find-prev-version
+        continue-on-error: true
+        run: |
+          LFS_PREV_VERSION="$( \
+            git describe --tags --abbrev=0 --match 'v*' \
+            || true)"
+          echo "LFS_PREV_VERSION=$LFS_PREV_VERSION"
+          echo "LFS_PREV_VERSION=$LFS_PREV_VERSION" >> $GITHUB_ENV
+
+      # try to find results from tests
+      - name: create-table
+        run: |
+          # previous results to compare against?
+          [ -n "$LFS_PREV_VERSION" ] && curl -sS \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/status/$LFS_PREV_VERSION`
+              `?per_page=100" \
+            | jq -re 'select(.sha != env.GITHUB_SHA) | .statuses[]' \
+            >> prev-status.json \
+            || true
+
+          # build table for GitHub
+          declare -A table
+
+          # sizes table
+          i=0
+          j=0
+          for c in "" readonly threadsafe multiversion migrate error-asserts
+          do
+            # per-config results
+            c_or_default=${c:-default}
+            c_camel=${c_or_default^}
+            table[$i,$j]=$c_camel
+            ((j+=1))
+
+            for s in code stack structs
+            do
+              f=sizes/thumb${c:+-$c}.$s.csv
+              [ -e $f ] && table[$i,$j]=$( \
+                export PREV="$(jq -re '
+                    select(.context == "'"sizes (thumb${c:+, $c}) / $s"'").description
+                    | capture("(?<prev>[0-9∞]+)").prev' \
+                  prev-status.json || echo 0)"
+                ./scripts/summary.py $f --max=stack_limit -Y \
+                  | awk '
+                    NR==2 {$1=0; printf "%s B",$NF}
+                    NR==2 && ENVIRON["PREV"]+0 != 0 {
+                      printf " (%+.1f%%)",100*($NF-ENVIRON["PREV"])/ENVIRON["PREV"]
+                    }' \
+                  | sed -e 's/ /\&nbsp;/g')
+              ((j+=1))
+            done
+            ((j=0, i+=1))
+          done
+
+          # coverage table
+          i=0
+          j=4
+          for s in lines branches
+          do
+            table[$i,$j]=${s^}
+            ((j+=1))
+
+            f=cov/cov.csv
+            [ -e $f ] && table[$i,$j]=$( \
+              export PREV="$(jq -re '
+                  select(.context == "'"cov / $s"'").description
+                  | capture("(?<prev_a>[0-9]+)/(?<prev_b>[0-9]+)")
+                  | 100*((.prev_a|tonumber) / (.prev_b|tonumber))' \
+                prev-status.json || echo 0)"
+              ./scripts/cov.py -u $f -f$s -Y \
+                | awk -F '[ /%]+' -v s=$s '
+                  NR==2 {$1=0; printf "%d/%d %s",$2,$3,s}
+                  NR==2 && ENVIRON["PREV"]+0 != 0 {
+                    printf " (%+.1f%%)",$4-ENVIRON["PREV"]
+                  }' \
+                | sed -e 's/ /\&nbsp;/g')
+            ((j=4, i+=1))
+          done
+
+          # benchmark table
+          i=3
+          j=4
+          for s in readed proged erased
+          do
+            table[$i,$j]=${s^}
+            ((j+=1))
+
+            f=bench/bench.csv
+            [ -e $f ] && table[$i,$j]=$( \
+              export PREV="$(jq -re '
+                  select(.context == "'"bench / $s"'").description
+                  | capture("(?<prev>[0-9]+)").prev' \
+                prev-status.json || echo 0)"
+              ./scripts/summary.py $f -f$s=bench_$s -Y \
+                | awk '
+                  NR==2 {$1=0; printf "%s B",$NF}
+                  NR==2 && ENVIRON["PREV"]+0 != 0 {
+                    printf " (%+.1f%%)",100*($NF-ENVIRON["PREV"])/ENVIRON["PREV"]
+                  }' \
+                | sed -e 's/ /\&nbsp;/g')
+            ((j=4, i+=1))
+          done
+
+          # build the actual table
+          echo "|   | Code | Stack | Structs |   | Coverage |" >> table.txt
+          echo "|:--|-----:|------:|--------:|:--|---------:|" >> table.txt
+          for ((i=0; i<6; i++))
+          do
+            echo -n "|" >> table.txt
+            for ((j=0; j<6; j++))
+            do
+              echo -n " " >> table.txt
+              [[ i -eq 2 && j -eq 5 ]] && echo -n "**Benchmarks**" >> table.txt
+              echo -n "${table[$i,$j]:-}" >> table.txt
+              echo -n " |" >> table.txt
+            done
+            echo >> table.txt
+          done
+
+          cat table.txt
+
+      # find changes from history
+      - name: create-changes
+        run: |
+          [ -n "$LFS_PREV_VERSION" ] || exit 0
+          # use explicit link to github commit so that release notes can
+          # be copied elsewhere
+          git log "$LFS_PREV_VERSION.." \
+            --grep='^Merge' --invert-grep \
+            --format="format:[\`%h\`](`
+              `https://github.com/$GITHUB_REPOSITORY/commit/%h) %s" \
+            > changes.txt
+          echo "CHANGES:"
+          cat changes.txt
+
+      # create and update major branches (vN and vN-prefix)
+      - name: create-major-branches
+        run: |
+          # create major branch
+          git branch "v$LFS_VERSION_MAJOR" HEAD
+
+          # create major prefix branch
+          git config user.name ${{secrets.BOT_USER}}
+          git config user.email ${{secrets.BOT_EMAIL}}
+          git fetch "https://github.com/$GITHUB_REPOSITORY.git" \
+            "v$LFS_VERSION_MAJOR-prefix" || true
+          ./scripts/changeprefix.py --git "lfs" "lfs$LFS_VERSION_MAJOR"
+          git branch "v$LFS_VERSION_MAJOR-prefix" $( \
+            git commit-tree $(git write-tree) \
+              $(git rev-parse --verify -q FETCH_HEAD | sed -e 's/^/-p /') \
+              -p HEAD \
+              -m "Generated v$LFS_VERSION_MAJOR prefixes")
+          git reset --hard
+
+          # push!
+          git push --atomic origin \
+            "v$LFS_VERSION_MAJOR" \
+            "v$LFS_VERSION_MAJOR-prefix"
+
+      # build release notes
+      - name: create-release
+        run: |
+          # create release and patch version tag (vN.N.N)
+          # only draft if not a patch release
+          touch release.txt
+          [ -e table.txt ] && cat table.txt >> release.txt
+          echo >> release.txt
+          [ -e changes.txt ] && cat changes.txt >> release.txt
+          cat release.txt
+
+          curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases" \
+            -d "$(jq -n --rawfile release release.txt '{
+              tag_name: env.LFS_VERSION,
+              name: env.LFS_VERSION | rtrimstr(".0"),
+              target_commitish: "${{github.event.workflow_run.head_sha}}",
+              draft: env.LFS_VERSION | endswith(".0"),
+              body: $release,
+            }' | tee /dev/stderr)"
+

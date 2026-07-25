@@ -1,0 +1,9 @@
+OVERRIDE_SIGNATURE 0xb81dbd4ec9a5977d
+
+uint8 OPTION_CLEAR = 1
+uint8 option
+
+---
+
+uint32 total_rotation_time_min
+uint24 time_since_maintainence_min

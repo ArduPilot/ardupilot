@@ -1,0 +1,294 @@
+% Latex header for doxygen 1.14.0
+  % Handle batch mode
+  $latex_batchmode
+
+  % to overcome problems with too many open files
+  \let\mypdfximage\pdfximage\def\pdfximage{\immediate\mypdfximage}
+
+  \RequirePackage{iftex}
+  \ifLuaTeX
+    \directlua{pdf.setminorversion(7)}
+  \fi
+  \ifXeTeX
+    \special{pdf:minorversion 7}
+  \fi
+  \ifPDFTeX
+    \pdfminorversion=7
+  \fi
+
+  % Set document class depending on configuration
+%%BEGIN COMPACT_LATEX
+  \documentclass[twoside]{article}
+%%END COMPACT_LATEX
+%%BEGIN !COMPACT_LATEX
+  \documentclass[twoside]{book}
+%%END !COMPACT_LATEX
+
+  %% moved from doxygen.sty due to workaround for LaTex 2019 version and unmaintained tabu package
+  \usepackage{ifthen}
+  \ifx\requestedLaTeXdate\undefined
+    \usepackage{array}
+  \else
+    \usepackage{array}[=2016-10-06]
+  \fi
+  %%
+
+  % Packages required by doxygen
+  \makeatletter
+  \providecommand\IfFormatAtLeastTF{\@ifl@t@r\fmtversion}
+  % suppress package identification of infwarerr as it contains the word "warning"
+  \let\@@protected@wlog\protected@wlog
+  \def\protected@wlog#1{\wlog{package info suppressed}}
+  \RequirePackage{infwarerr}
+  \let\protected@wlog\@@protected@wlog
+  \makeatother
+  \IfFormatAtLeastTF{2016/01/01}{}{\usepackage{fixltx2e}} % for \textsubscript
+  \ifPDFTeX
+    \IfFormatAtLeastTF{2015/01/01}{\pdfsuppresswarningpagegroup=1}{}
+  \fi
+
+  \usepackage{doxygen}
+
+  $extralatexstylesheet
+
+  \usepackage{graphicx}
+  \iftutex
+    \usepackage{fontspec}
+    \defaultfontfeatures{Ligatures={TeX}}
+    \usepackage{unicode-math}
+  \else
+    \usepackage[utf8]{inputenc}
+  \fi
+  \usepackage{makeidx}
+  \PassOptionsToPackage{warn}{textcomp}
+  \usepackage{textcomp}
+  \usepackage[nointegrals]{wasysym}
+  \usepackage{ifxetex}
+
+  % NLS support packages
+  $languagesupport
+
+  % Define default fonts
+  % Font selection
+%%BEGIN LATEX_FONTENC
+  \iftutex
+  \else
+    \usepackage[$latexfontenc]{fontenc}
+  \fi
+%%END LATEX_FONTENC
+
+  % set main and monospaced font
+  $latexfont
+
+  \doxyallsectionsfont{%
+    \fontseries{bc}\selectfont%
+    \color{darkgray}%
+  }
+  \renewcommand{\DoxyLabelFont}{%
+    \fontseries{bc}\selectfont%
+    \color{darkgray}%
+  }
+  \newcommand{\+}{\discretionary{\mbox{\scriptsize$\hookleftarrow$}}{}{}}
+
+   % Arguments of doxygenemoji:
+   % 1) ':<text>:' form of the emoji, already LaTeX-escaped
+   % 2) file with the name of the emoji without the .png extension
+   % in case image exist use this otherwise use the ':<text>:' form
+   \newcommand{\doxygenemoji}[2]{%
+     \IfFileExists{$latexemojidirectory/#2.png}{\raisebox{-0.1em}{\includegraphics[height=0.9em]{$latexemojidirectory/#2.png}}}{#1}%
+   }
+
+  % Page & text layout
+  \usepackage{geometry}
+  \geometry{%
+    $papertype,%
+    top=2.5cm,%
+    bottom=2.5cm,%
+    left=2.5cm,%
+    right=2.5cm%
+  }
+  \usepackage{changepage}
+
+  % Allow a bit of overflow to go unnoticed by other means
+  \tolerance=750
+  \hfuzz=15pt
+  \hbadness=750
+  \setlength{\emergencystretch}{15pt}
+  \setlength{\parindent}{0cm}
+  \newcommand{\doxynormalparskip}{\setlength{\parskip}{3ex plus 2ex minus 2ex}}
+  \newcommand{\doxytocparskip}{\setlength{\parskip}{1ex plus 0ex minus 0ex}}
+  \doxynormalparskip
+  % Redefine paragraph/subparagraph environments, using sectsty fonts
+  \makeatletter
+  \renewcommand{\paragraph}{%
+    \@startsection{paragraph}{4}{0ex}{-1.0ex}{1.0ex}{%
+      \normalfont\normalsize\bfseries\SS@parafont%
+    }%
+  }
+  \renewcommand{\subparagraph}{%
+    \@startsection{subparagraph}{5}{0ex}{-1.0ex}{1.0ex}{%
+      \normalfont\normalsize\bfseries\SS@subparafont%
+    }%
+  }
+  \makeatother
+
+  \makeatletter
+  \newcommand\hrulefilll{\leavevmode\leaders\hrule\hskip 0pt plus 1filll\kern\z@}
+  \makeatother
+
+  % Headers & footers
+  \usepackage{fancyhdr}
+  \pagestyle{fancyplain}
+  \renewcommand{\footrulewidth}{0.4pt}
+
+  \fancypagestyle{fancyplain}{
+    \fancyhf{}
+    \fancyhead[LE, RO]{\bfseries\thepage}
+    \fancyhead[LO]{\bfseries\rightmark}
+    \fancyhead[RE]{\bfseries\leftmark}
+    \fancyfoot[LO, RE]{\bfseries\scriptsize $generatedby Doxygen }
+  }
+
+  \fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyfoot[LO, RE]{\bfseries\scriptsize $generatedby Doxygen }
+    \renewcommand{\headrulewidth}{0pt}
+  }
+
+  \pagestyle{fancyplain}
+
+
+%%BEGIN !COMPACT_LATEX
+  \renewcommand{\chaptermark}[1]{%
+    \markboth{#1}{}%
+  }
+%%END !COMPACT_LATEX
+  \renewcommand{\sectionmark}[1]{%
+    \markright{\thesection\ #1}%
+  }
+
+  % ToC, LoF, LoT, bibliography, and index
+  % Indices & bibliography
+  \usepackage[numbers]{natbib}
+  \usepackage[titles]{tocloft}
+  \setcounter{tocdepth}{3}
+  \setcounter{secnumdepth}{5}
+
+  % creating indexes
+  $makeindex
+
+  $extralatexpackages
+
+  $latexspecialformulachars
+
+%%BEGIN FORMULA_MACROFILE
+  \input{$formulamacrofile}
+%%END FORMULA_MACROFILE
+
+  % Hyperlinks
+%%BEGIN PDF_HYPERLINKS
+    % Hyperlinks (required, but should be loaded last)
+    \ifPDFTeX
+      \usepackage[pdftex,pagebackref=true]{hyperref}
+    \else
+      \ifXeTeX
+        \usepackage[xetex,pagebackref=true]{hyperref}
+      \else
+        \ifLuaTeX
+          \usepackage[luatex,pagebackref=true]{hyperref}
+        \else
+          \usepackage[ps2pdf,pagebackref=true]{hyperref}
+        \fi
+      \fi
+    \fi
+    \hypersetup{%
+      colorlinks=true,%
+      linkcolor=blue,%
+      citecolor=blue,%
+      unicode,%
+      pdftitle={$projectname},%
+      pdfsubject={$projectbrief}%
+    }
+
+%%END PDF_HYPERLINKS
+
+  % Custom commands used by the header
+  % Custom commands
+  \newcommand{\clearemptydoublepage}{%
+    \newpage{\pagestyle{empty}\cleardoublepage}%
+  }
+
+  % caption style definition
+  \usepackage{caption}
+  \captionsetup{labelsep=space,justification=centering,font={bf},singlelinecheck=off,skip=4pt,position=top}
+
+
+  % in page table of contents
+  \IfFormatAtLeastTF{2023/05/01}{\usepackage[deeplevels]{etoc}}{\usepackage[deeplevels]{etoc_doxygen}}
+  \etocsettocstyle{\doxytocparskip}{\doxynormalparskip}
+  \etocsetlevel{subsubsubsection}{4}
+  \etocsetlevel{subsubsubsubsection}{5}
+  \etocsetlevel{subsubsubsubsubsection}{6}
+  \etocsetlevel{subsubsubsubsubsubsection}{7}
+  \etocsetlevel{paragraph}{8}
+  \etocsetlevel{subparagraph}{9}
+
+  % prevent numbers overlap the titles in toc
+  \renewcommand{\numberline}[1]{#1~}
+
+% End of preamble, now comes the document contents
+%===== C O N T E N T S =====
+
+\begin{document}
+  \raggedbottom
+
+  $latexdocumentpre
+
+  % Titlepage & ToC
+%%BEGIN PDF_HYPERLINKS
+%%BEGIN USE_PDFLATEX
+    % To avoid duplicate page anchors due to reuse of same numbers for
+    % the index (be it as roman numbers)
+    \hypersetup{pageanchor=false,
+                bookmarksnumbered=true,
+                pdfencoding=unicode
+               }
+%%END USE_PDFLATEX
+%%END PDF_HYPERLINKS
+  \pagenumbering{alph}
+  \begin{titlepage}
+  \vspace*{7cm}
+  \begin{center}%
+  {\Huge $title}\\
+%%BEGIN PROJECT_NUMBER
+  [1ex]\large $projectnumber \\
+%%END PROJECT_NUMBER
+  \vspace*{1cm}
+  {\Huge Reference Manual}\\
+%%BEGIN TIMESTAMP
+    \vspace*{0.5cm}
+    {\small $datetime}
+%%END TIMESTAMP
+  \end{center}
+  \end{titlepage}
+
+%%BEGIN !COMPACT_LATEX
+  \clearemptydoublepage
+%%END !COMPACT_LATEX
+  \pagenumbering{roman}
+
+  \tableofcontents
+%%BEGIN !COMPACT_LATEX
+  \clearemptydoublepage
+%%END !COMPACT_LATEX
+  \pagenumbering{arabic}
+
+%%BEGIN PDF_HYPERLINKS
+%%BEGIN USE_PDFLATEX
+  % re-enable anchors again
+  \hypersetup{pageanchor=true}
+%%END USE_PDFLATEX
+%%END PDF_HYPERLINKS
+
+%--- Begin generated contents ---
+

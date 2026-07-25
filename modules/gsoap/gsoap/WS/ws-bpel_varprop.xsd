@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	Copyright (c) OASIS Open 2003-2006. All Rights Reserved.
+-->
+<xsd:schema targetNamespace="http://docs.oasis-open.org/wsbpel/2.0/varprop"
+			xmlns:vprop="http://docs.oasis-open.org/wsbpel/2.0/varprop"
+			xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+			elementFormDefault="qualified"
+			blockDefault="#all">
+	
+	<xsd:annotation>
+		<xsd:documentation>
+			Variable Properties Schema for WS-BPEL 2.0
+			Last modified date: 22th August, 2006
+			
+			2004-03-24: YIU-OSS: Alex Yiu: Extracted from wsbpel-specification-draft.doc (Rev 1.22 - Modified on 24 March, 2004)
+			2004-03-24: YIU-OSS: Alex Yiu: Updated targetNamespace with "2004/03"
+			2004-03-24: YIU-OSS: Alex Yiu: Adding minOccurs="0" to query element; fix the syntax typo in "propertyAlias" definition (e.g remove complexContent)
+			2004-04-07: YIU-OSS: Alex Yiu: removed unnecessary wsbp xmlns
+			2005-07-25: YIU-OSS: Alex Yiu: Apply Issue 196 by adding anyAttribute to query
+			2005-08-30: YIU-OSS: Alex Yiu: This XSD becomes merged into wsbpel_main.xsd, as a result of Issue 192. This XSD becomes obsolete.
+			2006-07-28: Rev 1.7: YIU-OSS: Alex Yiu:
+				Apply Issue a portion of Issue 294.1:
+				Create a schema of a separate namespace for "property" and "propertyAlias"
+			2006-08-02: Rev 1.8: Thomas Schulze:
+				Applied Issue 305, some formatting changes.
+			2006-08-03: Rev 1.9: Alex Yiu:
+				Update one comment.
+				Additional note: 
+				  -- Thomas Schulze has made a normative change 
+				     in Rev 1.8 by adding blockDefault="#all".
+				  -- We may need to evaluate this blockDefault change comprehensively
+			2006-08-07: Rev 1.10: Thomas Schulze
+				Removed the default namespace.
+				Moved minOccurs="0" maxOccurs="unbounded" in element documentation from sequence to any.
+				Changed prefix "prop:" to "vprop:".
+				
+			*****************************************
+				
+			2006-08-08: Rev 1.1: Alex Yiu
+				Rename the file from wsbpel_msgprop.xsd (rev 1.10) to ws-bpel_varprop.xsd
+				Change the targetNamespace URI to:
+				http://docs.oasis-open.org/ws-bpel/2.0/varprop
+			2006-08-16: Rev 1.2: Thomas Schulze
+				Minor formatting changes.
+				Apply AI 152: change the targetNamespace from "http://docs.oasis-open.org/ws-bpel/2.0/varprop"
+				to "http://docs.oasis-open.org/wsbpel/2.0/varprop".
+				Add a copyright statement.
+			2006-08-17: Rev 1.3: Alex Yiu
+				Adding last modified date and small reformatting for copyright statement
+				Apply AI 151: change the defaults of queryLanguage and expressionLanguage from "urn:oasis:names:tc:ws2.0:sublang:xpath1.0"
+				to "urn:oasis:names:tc:wsbpel:2.0:sublang:xpath1.0".
+			2006-08-22: Rev 1.4: Thomas Schulze
+				Added missing ":" in "urn:oasis:names:tc:wsbpel:2.0:sublang:xpath1.0".
+			2006-08-22: Rev 1.5: Thomas Schulze
+				Adapt Last modified date.
+				
+		</xsd:documentation>
+	</xsd:annotation>
+	
+	<xsd:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
+	
+	<xsd:element name="property">
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="vprop:tExtensibleElements">
+					<xsd:attribute name="name" type="xsd:NCName" use="required"/>
+					<xsd:attribute name="type" type="xsd:QName"/>
+					<xsd:attribute name="element" type="xsd:QName"/>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:complexType name="tExtensibleElements">
+		<xsd:annotation>
+			<xsd:documentation>
+				This type is extended by other component types to allow elements and attributes from
+				other namespaces to be added at the modeled places.
+			</xsd:documentation>
+		</xsd:annotation>
+		<xsd:sequence>
+			<xsd:element ref="vprop:documentation" minOccurs="0" maxOccurs="unbounded"/>
+			<xsd:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	
+	<xsd:element name="documentation">
+		<xsd:complexType mixed="true">
+			<xsd:sequence>
+				<xsd:any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+			</xsd:sequence>
+			<xsd:attribute name="source" type="xsd:anyURI"/>
+			<xsd:attribute ref="xml:lang"/>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="propertyAlias">
+		<xsd:complexType>
+			<xsd:complexContent>
+				<xsd:extension base="vprop:tExtensibleElements">
+					<xsd:sequence>
+						<xsd:element ref="vprop:query" minOccurs="0"/>
+					</xsd:sequence>
+					<xsd:attribute name="propertyName" type="xsd:QName" use="required"/>
+					<xsd:attribute name="messageType" type="xsd:QName"/>
+					<xsd:attribute name="part" type="xsd:NCName"/>
+					<xsd:attribute name="type" type="xsd:QName"/>
+					<xsd:attribute name="element" type="xsd:QName"/>
+				</xsd:extension>
+			</xsd:complexContent>
+		</xsd:complexType>
+	</xsd:element>
+	
+	<xsd:element name="query" type="vprop:tQuery"/>
+	<xsd:complexType name="tQuery" mixed="true">
+		<xsd:sequence>
+			<xsd:any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xsd:sequence>
+		<xsd:attribute name="queryLanguage" type="xsd:anyURI" default="urn:oasis:names:tc:wsbpel:2.0:sublang:xpath1.0"/>
+		<xsd:anyAttribute namespace="##other" processContents="lax"/>
+	</xsd:complexType>
+	
+</xsd:schema>

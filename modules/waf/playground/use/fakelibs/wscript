@@ -1,0 +1,3 @@
+def build(bld):
+	bld.read_shlib('m', paths=['/usr/lib64'])
+	bld.program(source='main.c', target='app', use='m')

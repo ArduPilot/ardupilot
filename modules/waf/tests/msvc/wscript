@@ -1,0 +1,25 @@
+#! /usr/bin/env python3.1
+
+from waflib.Tools import msvc
+from waflib import Logs
+
+def configure(ctx):
+	pass
+
+def test(ctx):
+	errors = []
+	msvc_versions = ['wsdk 6.1', 'winphone 8.0', 'msvc 9.0', 'msvc 16.6', 'msvc 16.0', 'msvc 15.9', 'msvc 15.0', 'msvc 14.0', 'msvc 12.0', 'msvc 11.0']
+	sorted_versions = ['msvc 16.6', 'msvc 16.0', 'msvc 15.9', 'msvc 15.0', 'msvc 14.0', 'msvc 12.0', 'msvc 11.0', 'msvc 9.0', 'winphone 8.0', 'wsdk 6.1']
+
+	def tt(msg, result, expected):
+		color = 'RED'
+		if result == expected:
+			color = 'GREEN'
+		else:
+			errors.append(result)
+		Logs.pprint(color, msg.ljust(20) + " %r" % result)
+
+	tt('msvc version detection sort', sorted(msvc_versions, key=msvc.MSVCVersion, reverse=True), sorted_versions)
+
+	if errors:
+		ctx.fatal('There are test failures')

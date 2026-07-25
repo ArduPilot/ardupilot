@@ -1,0 +1,95 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @startuml {xsnor_arch.png} "SNOR Support"
+ * package "HW" {
+ *   entity SPI {
+ *   }
+ *   entity QSPI {
+ *   }
+ *   entity OSPI {
+ *   }
+ * }
+ * package "HAL" {
+ *   class WSPIDriver {
+ *   }
+ *   struct WSPIConfig {
+ *   }
+ *   enum flash_state_t {
+ *   }
+ *   class FlashBase {
+ *   }
+ * }
+ *
+ * WSPIDriver -- SPI : uses
+ * WSPIDriver -- QSPI : uses
+ * WSPIDriver -- OSPI : uses
+ *
+ * package "SNOR Base Driver" {
+ *   interface snor_flash_interface_i {
+ *     + get_descriptor()
+ *     + read()
+ *     + program()
+ *     + start_erase_all()
+ *     + start_erase_sector()
+ *     + query_erase()
+ *     + verify_erase()
+ *     + acquire_exclusive()
+ *     + release_exclusive()
+ *   }
+ *   struct snor_config_t {
+ *     + wspi: WSPIDriver *
+ *     + wspiconfig: WSPIConfig
+ *   }
+ *   struct snor_nocache_t {
+ *     + buf[SNOR_BUFFER_SIZE]: uint8_t
+ *     + cmdbuf: wspi_command_t
+ *   }
+ *   class snor_base_c {
+ *     # state: flash_state_t
+ *     # config: snor_config_t
+ *     # nocache: snor_nocache_t
+ *     - mutex: mutex_t
+ *     + snorObjectInit()
+ *     + snorStart()
+ *     + snorStop()
+ *     + snorMemoryMap()
+ *     + snorMemoryUnmap()
+ *   }
+ *
+ *   snor_config_t::wspi o-- WSPIDriver : aggregates
+ *   snor_config_t::wspiconfig o-- WSPIConfig : aggregates
+ *   snor_base_c::state *-- flash_state_t : includes
+ *   snor_base_c::config o-- snor_config_t : aggregates
+ *   snor_base_c::nocache o-- snor_nocache_t : aggregates
+ *   snor_base_c ..|> snor_flash_interface_i : implements
+ *   snor_flash_interface_i .. FlashBase : emulates
+ * }
+ * package "Micron Base" {
+ *   class micron_base_t {
+ *   }
+ *   class n25q_driver_t {
+ *   }
+ * }
+ *
+ * micron_base_t --|> snor_base_c : extends
+ * n25q_driver_t --|> micron_base_t : extends
+ *
+ * @enduml
+ */

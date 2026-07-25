@@ -1,0 +1,17 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+"""
+help welcome to improve this demo folder
+"""
+
+APPNAME = 'app'
+
+def configure(conf):
+	conf.load('gnu_dirs intltool')
+
+def build(bld):
+	bld.recurse('data')
+	bld(features='intltool_po', appname=APPNAME, podir='po', install_path="${LOCALEDIR}")
+

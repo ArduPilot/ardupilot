@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+	xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+	<xs:include schemaLocation="../common/doc.xsd" />
+	<xs:include schemaLocation="../common/stm32/stm32_gpiov2_port.xsd" />
+	<xs:include schemaLocation="abstract_board.xsd" />
+
+	<xs:complexType name="STM32F4xxBoardType">
+		<xs:complexContent>
+			<xs:extension base="AbstractBoardType">
+				<xs:sequence>
+					<xs:element name="subtype">
+						<xs:simpleType>
+							<xs:restriction base="xs:string">
+								<xs:whiteSpace value="collapse"></xs:whiteSpace>
+                                <xs:enumeration value="STM32F401xC"></xs:enumeration>
+                                <xs:enumeration value="STM32F401xE"></xs:enumeration>
+								<xs:enumeration value="STM32F405xx"></xs:enumeration>
+								<xs:enumeration value="STM32F407xx"></xs:enumeration>
+                                <xs:enumeration value="STM32F410Cx"></xs:enumeration>
+                                <xs:enumeration value="STM32F410Rx"></xs:enumeration>
+                                <xs:enumeration value="STM32F410Tx"></xs:enumeration>
+                                <xs:enumeration value="STM32F411xE"></xs:enumeration>
+                                <xs:enumeration value="STM32F412Cx"></xs:enumeration>
+                                <xs:enumeration value="STM32F412Rx"></xs:enumeration>
+                                <xs:enumeration value="STM32F412Vx"></xs:enumeration>
+                                <xs:enumeration value="STM32F412Zx"></xs:enumeration>
+                                <xs:enumeration value="STM32F413xx"></xs:enumeration>
+                                <xs:enumeration value="STM32F415xx"></xs:enumeration>
+								<xs:enumeration value="STM32F417xx"></xs:enumeration>
+								<xs:enumeration value="STM32F427xx"></xs:enumeration>
+                                <xs:enumeration value="STM32F429xx"></xs:enumeration>
+								<xs:enumeration value="STM32F437xx"></xs:enumeration>
+								<xs:enumeration value="STM32F439xx"></xs:enumeration>
+								<xs:enumeration value="STM32F446xx"></xs:enumeration>
+								<xs:enumeration value="STM32F469xx"></xs:enumeration>
+								<xs:enumeration value="STM32F479xx"></xs:enumeration>
+								<xs:enumeration value="STM32F205xx"></xs:enumeration>
+								<xs:enumeration value="STM32F215xx"></xs:enumeration>
+								<xs:enumeration value="STM32F207xx"></xs:enumeration>
+								<xs:enumeration value="STM32F217xx"></xs:enumeration>
+							</xs:restriction>
+						</xs:simpleType>
+					</xs:element>
+					<xs:element name="clocks" maxOccurs="1" minOccurs="1">
+						<xs:complexType>
+							<xs:attribute name="HSEBypass" use="required">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:whiteSpace value="collapse">
+										</xs:whiteSpace>
+										<xs:enumeration value="false"></xs:enumeration>
+										<xs:enumeration value="true"></xs:enumeration>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="HSEFrequency" use="required">
+								<xs:simpleType>
+									<xs:restriction base="xs:int">
+										<xs:whiteSpace value="collapse">
+										</xs:whiteSpace>
+										<xs:minInclusive value="0"></xs:minInclusive>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="LSEBypass" use="required">
+								<xs:simpleType>
+									<xs:restriction base="xs:string">
+										<xs:whiteSpace value="collapse">
+										</xs:whiteSpace>
+										<xs:enumeration value="false"></xs:enumeration>
+										<xs:enumeration value="true"></xs:enumeration>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="LSEFrequency" use="required">
+								<xs:simpleType>
+									<xs:restriction base="xs:int">
+										<xs:whiteSpace value="collapse">
+										</xs:whiteSpace>
+
+										<xs:minInclusive value="0"></xs:minInclusive>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+							<xs:attribute name="VDD" use="required">
+								<xs:simpleType>
+									<xs:restriction base="xs:int">
+										<xs:whiteSpace value="collapse">
+										</xs:whiteSpace>
+										<xs:minInclusive value="180"></xs:minInclusive>
+										<xs:maxInclusive value="360"></xs:maxInclusive>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:attribute>
+						</xs:complexType>
+					</xs:element>
+					<xs:element name="ports" type="portsType" maxOccurs="1"
+						minOccurs="1">
+					</xs:element>
+				</xs:sequence>
+
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+
+	<xs:complexType name="portsType">
+		<xs:sequence>
+			<xs:element name="GPIOA" type="STM32GPIOv2PortType"
+				minOccurs="1" maxOccurs="1"></xs:element>
+			<xs:element name="GPIOB" type="STM32GPIOv2PortType"
+				minOccurs="1" maxOccurs="1"></xs:element>
+			<xs:element name="GPIOC" type="STM32GPIOv2PortType"
+				minOccurs="1" maxOccurs="1"></xs:element>
+			<xs:element name="GPIOD" type="STM32GPIOv2PortType"
+				maxOccurs="1" minOccurs="1"></xs:element>
+			<xs:element name="GPIOE" type="STM32GPIOv2PortType"
+				maxOccurs="1" minOccurs="1"></xs:element>
+			<xs:element name="GPIOF" type="STM32GPIOv2PortType"
+				maxOccurs="1" minOccurs="1"></xs:element>
+			<xs:element name="GPIOG" type="STM32GPIOv2PortType"
+				maxOccurs="1" minOccurs="1"></xs:element>
+			<xs:element name="GPIOH" type="STM32GPIOv2PortType"
+				maxOccurs="1" minOccurs="1"></xs:element>
+            <xs:element name="GPIOI" type="STM32GPIOv2PortType"
+                maxOccurs="1" minOccurs="1"></xs:element>
+            <xs:element name="GPIOJ" type="STM32GPIOv2PortType"
+                maxOccurs="1" minOccurs="1"></xs:element>
+            <xs:element name="GPIOK" type="STM32GPIOv2PortType"
+                maxOccurs="1" minOccurs="1"></xs:element>
+		</xs:sequence>
+	</xs:complexType>
+
+	<xs:element name="board" type="STM32F4xxBoardType"></xs:element>
+
+</xs:schema>

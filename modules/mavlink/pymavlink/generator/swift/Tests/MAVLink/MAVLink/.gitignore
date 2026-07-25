@@ -1,0 +1,4 @@
+# Ignore MAVLink generated files
+*
+# Except this file
+!.gitignore

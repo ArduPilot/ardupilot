@@ -1,0 +1,19 @@
+
+project Mavlink_v2 is
+
+   for Source_Dirs use (".");
+   for Object_Dir use "./obj/";
+
+   package Compiler is
+      for Switches ("ada") use ("-gnat2022", "-gnata", "-g");
+   end Compiler;
+
+   package Builder is
+      for Switches ("ada") use ("-g");
+   end Builder;
+
+   package Linker is
+      for Switches ("ada") use ("-g");
+   end Linker;
+
+end Mavlink_v2;

@@ -1,0 +1,438 @@
+wsdl2h.o wsdl2h.o: wsdl2h.cpp includes.h ../../soapcpp2/stdsoap2.h \
+  ../../config.h /usr/include/stdlib.h /usr/include/sys/cdefs.h \
+  /usr/include/_types.h /usr/include/sys/_types.h \
+  /usr/include/machine/_types.h /usr/include/i386/_types.h \
+  /usr/include/sys/wait.h /usr/include/sys/signal.h \
+  /usr/include/sys/appleapiopts.h /usr/include/machine/signal.h \
+  /usr/include/i386/signal.h /usr/include/sys/resource.h \
+  /usr/include/machine/endian.h /usr/include/i386/endian.h \
+  /usr/include/sys/_endian.h \
+  /usr/lib/gcc/i686-apple-darwin8/4.0.1/include/stdint.h \
+  /usr/include/libkern/OSByteOrder.h \
+  /usr/include/libkern/i386/OSByteOrder.h /usr/include/alloca.h \
+  /usr/include/machine/types.h /usr/include/i386/types.h \
+  /usr/include/stdio.h /usr/include/string.h /usr/include/ctype.h \
+  /usr/include/runetype.h \
+  /usr/lib/gcc/i686-apple-darwin8/4.0.1/include/limits.h \
+  /usr/lib/gcc/i686-apple-darwin8/4.0.1/include/syslimits.h \
+  /usr/include/limits.h /usr/include/machine/limits.h \
+  /usr/include/i386/limits.h /usr/include/i386/_limits.h \
+  /usr/include/sys/syslimits.h /usr/include/c++/4.0.0/string \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/c++config.h \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/os_defines.h \
+  /usr/include/c++/4.0.0/bits/stringfwd.h \
+  /usr/include/c++/4.0.0/bits/char_traits.h \
+  /usr/include/c++/4.0.0/cstring /usr/include/c++/4.0.0/cstddef \
+  /usr/lib/gcc/i686-apple-darwin8/4.0.1/include/stddef.h \
+  /usr/include/c++/4.0.0/bits/stl_algobase.h \
+  /usr/include/c++/4.0.0/climits /usr/include/c++/4.0.0/cstdlib \
+  /usr/include/c++/4.0.0/iosfwd \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/c++locale.h \
+  /usr/include/c++/4.0.0/clocale /usr/include/locale.h \
+  /usr/include/_locale.h /usr/include/c++/4.0.0/cstdio \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/c++io.h \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/gthr.h \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/gthr-default.h \
+  /usr/include/pthread.h /usr/include/pthread_impl.h /usr/include/sched.h \
+  /usr/include/time.h /usr/include/machine/_limits.h \
+  /usr/include/unistd.h /usr/include/sys/unistd.h \
+  /usr/include/sys/select.h /usr/include/sys/types.h \
+  /usr/include/signal.h /usr/include/sys/time.h \
+  /usr/include/c++/4.0.0/cctype /usr/include/c++/4.0.0/bits/postypes.h \
+  /usr/include/c++/4.0.0/cwchar /usr/include/c++/4.0.0/ctime \
+  /usr/include/wchar.h \
+  /usr/lib/gcc/i686-apple-darwin8/4.0.1/include/stdarg.h \
+  /usr/include/_wctype.h /usr/include/c++/4.0.0/bits/functexcept.h \
+  /usr/include/c++/4.0.0/exception_defines.h \
+  /usr/include/c++/4.0.0/bits/stl_pair.h \
+  /usr/include/c++/4.0.0/bits/cpp_type_traits.h \
+  /usr/include/c++/4.0.0/bits/stl_iterator_base_types.h \
+  /usr/include/c++/4.0.0/bits/stl_iterator_base_funcs.h \
+  /usr/include/c++/4.0.0/bits/concept_check.h \
+  /usr/include/c++/4.0.0/bits/stl_iterator.h \
+  /usr/include/c++/4.0.0/debug/debug.h /usr/include/c++/4.0.0/cassert \
+  /usr/include/assert.h /usr/include/c++/4.0.0/memory \
+  /usr/include/c++/4.0.0/bits/allocator.h \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/c++allocator.h \
+  /usr/include/c++/4.0.0/ext/new_allocator.h /usr/include/c++/4.0.0/new \
+  /usr/include/c++/4.0.0/exception \
+  /usr/include/c++/4.0.0/bits/stl_construct.h \
+  /usr/include/c++/4.0.0/bits/stl_uninitialized.h \
+  /usr/include/c++/4.0.0/bits/stl_raw_storage_iter.h \
+  /usr/include/c++/4.0.0/limits \
+  /usr/include/c++/4.0.0/bits/stl_function.h \
+  /usr/include/c++/4.0.0/bits/basic_string.h \
+  /usr/include/c++/4.0.0/bits/atomicity.h \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/atomic_word.h \
+  /usr/include/c++/4.0.0/algorithm /usr/include/c++/4.0.0/bits/stl_algo.h \
+  /usr/include/c++/4.0.0/bits/stl_heap.h \
+  /usr/include/c++/4.0.0/bits/stl_tempbuf.h \
+  /usr/include/c++/4.0.0/bits/basic_string.tcc \
+  /usr/include/c++/4.0.0/iostream /usr/include/c++/4.0.0/ostream \
+  /usr/include/c++/4.0.0/ios /usr/include/c++/4.0.0/bits/localefwd.h \
+  /usr/include/c++/4.0.0/bits/ios_base.h \
+  /usr/include/c++/4.0.0/bits/locale_classes.h \
+  /usr/include/c++/4.0.0/streambuf \
+  /usr/include/c++/4.0.0/bits/streambuf.tcc \
+  /usr/include/c++/4.0.0/bits/basic_ios.h \
+  /usr/include/c++/4.0.0/bits/streambuf_iterator.h \
+  /usr/include/c++/4.0.0/bits/locale_facets.h \
+  /usr/include/c++/4.0.0/cwctype /usr/include/wctype.h \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/ctype_base.h \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/ctype_inline.h \
+  /usr/include/c++/4.0.0/bits/codecvt.h \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/time_members.h \
+  /usr/include/c++/4.0.0/i686-apple-darwin8/bits/messages_members.h \
+  /usr/include/c++/4.0.0/bits/basic_ios.tcc \
+  /usr/include/c++/4.0.0/bits/ostream.tcc /usr/include/c++/4.0.0/locale \
+  /usr/include/c++/4.0.0/bits/locale_facets.tcc \
+  /usr/include/c++/4.0.0/typeinfo /usr/include/c++/4.0.0/istream \
+  /usr/include/c++/4.0.0/bits/istream.tcc /usr/include/errno.h \
+  /usr/include/sys/errno.h /usr/include/sys/timeb.h \
+  /usr/include/sys/socket.h /usr/include/machine/param.h \
+  /usr/include/i386/param.h /usr/include/strings.h \
+  /usr/include/netinet/in.h /usr/include/netinet6/in6.h \
+  /usr/include/netinet/tcp.h /usr/include/arpa/inet.h \
+  /usr/include/sys/param.h /usr/include/netdb.h /usr/include/fcntl.h \
+  /usr/include/sys/fcntl.h /usr/include/math.h \
+  /usr/include/architecture/i386/math.h /usr/include/c++/4.0.0/utility \
+  /usr/include/c++/4.0.0/bits/stl_relops.h \
+  /usr/include/c++/4.0.0/iterator \
+  /usr/include/c++/4.0.0/bits/stream_iterator.h \
+  /usr/include/c++/4.0.0/vector /usr/include/c++/4.0.0/bits/stl_vector.h \
+  /usr/include/c++/4.0.0/bits/stl_bvector.h \
+  /usr/include/c++/4.0.0/bits/vector.tcc /usr/include/c++/4.0.0/set \
+  /usr/include/c++/4.0.0/bits/stl_tree.h \
+  /usr/include/c++/4.0.0/bits/stl_set.h \
+  /usr/include/c++/4.0.0/bits/stl_multiset.h /usr/include/c++/4.0.0/map \
+  /usr/include/c++/4.0.0/bits/stl_map.h \
+  /usr/include/c++/4.0.0/bits/stl_multimap.h types.h wsdlH.h wsdlStub.h \
+  service.h
+
+includes.h:
+
+../../soapcpp2/stdsoap2.h:
+
+../../config.h:
+
+/usr/include/stdlib.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/_types.h:
+
+/usr/include/sys/_types.h:
+
+/usr/include/machine/_types.h:
+
+/usr/include/i386/_types.h:
+
+/usr/include/sys/wait.h:
+
+/usr/include/sys/signal.h:
+
+/usr/include/sys/appleapiopts.h:
+
+/usr/include/machine/signal.h:
+
+/usr/include/i386/signal.h:
+
+/usr/include/sys/resource.h:
+
+/usr/include/machine/endian.h:
+
+/usr/include/i386/endian.h:
+
+/usr/include/sys/_endian.h:
+
+/usr/lib/gcc/i686-apple-darwin8/4.0.1/include/stdint.h:
+
+/usr/include/libkern/OSByteOrder.h:
+
+/usr/include/libkern/i386/OSByteOrder.h:
+
+/usr/include/alloca.h:
+
+/usr/include/machine/types.h:
+
+/usr/include/i386/types.h:
+
+/usr/include/stdio.h:
+
+/usr/include/string.h:
+
+/usr/include/ctype.h:
+
+/usr/include/runetype.h:
+
+/usr/lib/gcc/i686-apple-darwin8/4.0.1/include/limits.h:
+
+/usr/lib/gcc/i686-apple-darwin8/4.0.1/include/syslimits.h:
+
+/usr/include/limits.h:
+
+/usr/include/machine/limits.h:
+
+/usr/include/i386/limits.h:
+
+/usr/include/i386/_limits.h:
+
+/usr/include/sys/syslimits.h:
+
+/usr/include/c++/4.0.0/string:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/c++config.h:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/os_defines.h:
+
+/usr/include/c++/4.0.0/bits/stringfwd.h:
+
+/usr/include/c++/4.0.0/bits/char_traits.h:
+
+/usr/include/c++/4.0.0/cstring:
+
+/usr/include/c++/4.0.0/cstddef:
+
+/usr/lib/gcc/i686-apple-darwin8/4.0.1/include/stddef.h:
+
+/usr/include/c++/4.0.0/bits/stl_algobase.h:
+
+/usr/include/c++/4.0.0/climits:
+
+/usr/include/c++/4.0.0/cstdlib:
+
+/usr/include/c++/4.0.0/iosfwd:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/c++locale.h:
+
+/usr/include/c++/4.0.0/clocale:
+
+/usr/include/locale.h:
+
+/usr/include/_locale.h:
+
+/usr/include/c++/4.0.0/cstdio:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/c++io.h:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/gthr.h:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/gthr-default.h:
+
+/usr/include/pthread.h:
+
+/usr/include/pthread_impl.h:
+
+/usr/include/sched.h:
+
+/usr/include/time.h:
+
+/usr/include/machine/_limits.h:
+
+/usr/include/unistd.h:
+
+/usr/include/sys/unistd.h:
+
+/usr/include/sys/select.h:
+
+/usr/include/sys/types.h:
+
+/usr/include/signal.h:
+
+/usr/include/sys/time.h:
+
+/usr/include/c++/4.0.0/cctype:
+
+/usr/include/c++/4.0.0/bits/postypes.h:
+
+/usr/include/c++/4.0.0/cwchar:
+
+/usr/include/c++/4.0.0/ctime:
+
+/usr/include/wchar.h:
+
+/usr/lib/gcc/i686-apple-darwin8/4.0.1/include/stdarg.h:
+
+/usr/include/_wctype.h:
+
+/usr/include/c++/4.0.0/bits/functexcept.h:
+
+/usr/include/c++/4.0.0/exception_defines.h:
+
+/usr/include/c++/4.0.0/bits/stl_pair.h:
+
+/usr/include/c++/4.0.0/bits/cpp_type_traits.h:
+
+/usr/include/c++/4.0.0/bits/stl_iterator_base_types.h:
+
+/usr/include/c++/4.0.0/bits/stl_iterator_base_funcs.h:
+
+/usr/include/c++/4.0.0/bits/concept_check.h:
+
+/usr/include/c++/4.0.0/bits/stl_iterator.h:
+
+/usr/include/c++/4.0.0/debug/debug.h:
+
+/usr/include/c++/4.0.0/cassert:
+
+/usr/include/assert.h:
+
+/usr/include/c++/4.0.0/memory:
+
+/usr/include/c++/4.0.0/bits/allocator.h:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/c++allocator.h:
+
+/usr/include/c++/4.0.0/ext/new_allocator.h:
+
+/usr/include/c++/4.0.0/new:
+
+/usr/include/c++/4.0.0/exception:
+
+/usr/include/c++/4.0.0/bits/stl_construct.h:
+
+/usr/include/c++/4.0.0/bits/stl_uninitialized.h:
+
+/usr/include/c++/4.0.0/bits/stl_raw_storage_iter.h:
+
+/usr/include/c++/4.0.0/limits:
+
+/usr/include/c++/4.0.0/bits/stl_function.h:
+
+/usr/include/c++/4.0.0/bits/basic_string.h:
+
+/usr/include/c++/4.0.0/bits/atomicity.h:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/atomic_word.h:
+
+/usr/include/c++/4.0.0/algorithm:
+
+/usr/include/c++/4.0.0/bits/stl_algo.h:
+
+/usr/include/c++/4.0.0/bits/stl_heap.h:
+
+/usr/include/c++/4.0.0/bits/stl_tempbuf.h:
+
+/usr/include/c++/4.0.0/bits/basic_string.tcc:
+
+/usr/include/c++/4.0.0/iostream:
+
+/usr/include/c++/4.0.0/ostream:
+
+/usr/include/c++/4.0.0/ios:
+
+/usr/include/c++/4.0.0/bits/localefwd.h:
+
+/usr/include/c++/4.0.0/bits/ios_base.h:
+
+/usr/include/c++/4.0.0/bits/locale_classes.h:
+
+/usr/include/c++/4.0.0/streambuf:
+
+/usr/include/c++/4.0.0/bits/streambuf.tcc:
+
+/usr/include/c++/4.0.0/bits/basic_ios.h:
+
+/usr/include/c++/4.0.0/bits/streambuf_iterator.h:
+
+/usr/include/c++/4.0.0/bits/locale_facets.h:
+
+/usr/include/c++/4.0.0/cwctype:
+
+/usr/include/wctype.h:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/ctype_base.h:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/ctype_inline.h:
+
+/usr/include/c++/4.0.0/bits/codecvt.h:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/time_members.h:
+
+/usr/include/c++/4.0.0/i686-apple-darwin8/bits/messages_members.h:
+
+/usr/include/c++/4.0.0/bits/basic_ios.tcc:
+
+/usr/include/c++/4.0.0/bits/ostream.tcc:
+
+/usr/include/c++/4.0.0/locale:
+
+/usr/include/c++/4.0.0/bits/locale_facets.tcc:
+
+/usr/include/c++/4.0.0/typeinfo:
+
+/usr/include/c++/4.0.0/istream:
+
+/usr/include/c++/4.0.0/bits/istream.tcc:
+
+/usr/include/errno.h:
+
+/usr/include/sys/errno.h:
+
+/usr/include/sys/timeb.h:
+
+/usr/include/sys/socket.h:
+
+/usr/include/machine/param.h:
+
+/usr/include/i386/param.h:
+
+/usr/include/strings.h:
+
+/usr/include/netinet/in.h:
+
+/usr/include/netinet6/in6.h:
+
+/usr/include/netinet/tcp.h:
+
+/usr/include/arpa/inet.h:
+
+/usr/include/sys/param.h:
+
+/usr/include/netdb.h:
+
+/usr/include/fcntl.h:
+
+/usr/include/sys/fcntl.h:
+
+/usr/include/math.h:
+
+/usr/include/architecture/i386/math.h:
+
+/usr/include/c++/4.0.0/utility:
+
+/usr/include/c++/4.0.0/bits/stl_relops.h:
+
+/usr/include/c++/4.0.0/iterator:
+
+/usr/include/c++/4.0.0/bits/stream_iterator.h:
+
+/usr/include/c++/4.0.0/vector:
+
+/usr/include/c++/4.0.0/bits/stl_vector.h:
+
+/usr/include/c++/4.0.0/bits/stl_bvector.h:
+
+/usr/include/c++/4.0.0/bits/vector.tcc:
+
+/usr/include/c++/4.0.0/set:
+
+/usr/include/c++/4.0.0/bits/stl_tree.h:
+
+/usr/include/c++/4.0.0/bits/stl_set.h:
+
+/usr/include/c++/4.0.0/bits/stl_multiset.h:
+
+/usr/include/c++/4.0.0/map:
+
+/usr/include/c++/4.0.0/bits/stl_map.h:
+
+/usr/include/c++/4.0.0/bits/stl_multimap.h:
+
+types.h:
+
+wsdlH.h:
+
+wsdlStub.h:
+
+service.h:

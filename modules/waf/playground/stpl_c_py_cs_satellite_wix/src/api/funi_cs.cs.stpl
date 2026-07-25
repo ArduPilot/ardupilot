@@ -1,0 +1,15 @@
+// vi:syntax=cs
+using System;
+using System.Runtime.InteropServices;
+
+namespace Funi
+{
+    public class Func
+    {
+    %for i in range(maxfuni):
+        [DllImport("{{dllname}}", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int func{{i}}(int a);
+    %end
+    }
+}
+

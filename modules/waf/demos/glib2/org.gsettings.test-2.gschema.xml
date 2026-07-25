@@ -1,0 +1,9 @@
+<schemalist>
+  <schema id="org.gsettings.test-2" gettext-domain="test">
+    <key name="bad-news" enum="org.gsettings.test.BuildSystemType">
+      <!-- Uncomment to test schema error handling -->
+      <!-- <default>'moose'</default> -->
+      <default>'autotools'</default>
+    </key>
+  </schema>
+</schemalist>

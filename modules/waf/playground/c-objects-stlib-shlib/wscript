@@ -1,0 +1,60 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Jérôme Carretero, 2013 (zougloub)
+
+"""
+Demonstration for building of static+shared libraries.
+"""
+
+
+def options(opt):
+	opt.load('compiler_c gnu_dirs')
+
+def configure(conf):
+	conf.load('compiler_c gnu_dirs')
+
+def build(bld):
+
+	bld(
+	 features='c',
+	 source='test_shlib.c',
+	 # it is -uselib' in this case to avoid propagation of '-shared'
+	 # to the program below. A more explicit alternative is to set
+	 # cflags=bld.env.CFLAGS_cshlib
+	 uselib='cshlib',
+	 target='objects-for-shlib',
+	)
+
+	bld(
+	 features='c',
+	 source='test_shlib.c',
+	 target='objects-for-stlib',
+	)
+
+	bld(
+	 features='c cshlib',
+	 target='something-shared',
+	 vnum='1.2.3',
+	 use='objects-for-shlib',
+	)
+
+	bld(
+	 features='c cstlib',
+	 target = 'something-static',
+	 use='objects-for-stlib',
+	)
+
+	bld(
+	 features='c cprogram',
+	 target='exe-shared',
+	 source='main.c',
+	 use='something-shared',
+	)
+
+	bld(
+	 features='c cprogram',
+	 target='exe-static',
+	 source='main.c',
+	 use='something-static',
+	)
+

@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+#Demo on embedding resources in executables
+
+"""
+We embed the main.c source code in a section of the program.
+See http://gareus.org/wiki/embedding_resources_in_executables
+
+TODO: support for more toolchains
+"""
+
+from waflib import Task
+from waflib.TaskGen import feature, before_method
+
+def options(opt):
+	opt.load('compiler_c')
+	opt.load('file_to_object')
+
+def configure(cfg):
+	cfg.load('compiler_c')
+	cfg.load('file_to_object')
+
+def build(bld):
+	bld(
+	 name='example',
+	 source='main.c',
+	 features='file_to_object',
+	 includes_nodes=[],
+	)
+	bld(
+	 target = 'app',
+	 features = 'c cprogram',
+	 source = 'main.c',
+	 use='example',
+	)
+

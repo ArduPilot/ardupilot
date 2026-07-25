@@ -1,0 +1,91 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2016
+#
+
+import os
+from waflib import Build, Options, TaskGen, Utils
+
+def build(bld):
+	pass
+
+@TaskGen.feature('ruler')
+@TaskGen.before('process_rule')
+def test_helper(self):
+	if not self.bld.is_install or self.bld.is_install == Build.UNINSTALL:
+		while self.meths: # do not generate tasks: the target file may not be there
+			self.meths.pop()
+		return
+
+	tg = self.bld.get_tgen_by_name(self.bring_in)
+	tg.post() # let it create its installation task
+	assert tg.install_task.outputs
+	self.source = tg.install_task.outputs
+
+def configure(conf):
+
+	tmpdir_top = conf.bldnode.make_node('tmpdir')
+	tmpdir_top.delete(evict=False)
+	tmpdir = tmpdir_top.make_node('foo')
+
+	def build(bld):
+		bld.is_install = env.INSTALL
+		bld.path.make_node('tmpfile').write('test')
+
+		bld.install_as('${PREFIX}/bin/foo', 'tmpfile', chmod=Utils.O755)
+		bld.symlink_as('${PREFIX}/bin/bar', '../tmpfile')
+		tsk = bld.install_files('${PREFIX}/bin', 'tmpfile', chmod=Utils.O755, name='cheese')
+		bld(rule='ls -l ${SRC}', always=True, bring_in='cheese', features='ruler')
+
+		# preserve the folder structure or not (relative_trick)
+		bld.path.make_node('blah/blah').mkdir()
+		bld(features='subst', source='tmpfile', target='blah/blah/rel1', is_copy=True, install_path='${PREFIX}')
+
+		bld(features='subst', source='tmpfile', target='blah/blah/rel2', is_copy=True)
+		bld.install_files('${PREFIX}', 'blah/blah/rel2', relative_base=bld.path.get_bld(), relative_trick=True)
+
+		bld(features='subst', source='tmpfile', target='blah/blah/rel3', is_copy=True)
+		bld.install_files('${PREFIX}', 'blah/blah/rel3', relative_base=bld.path.search_node('blah').get_bld(), relative_trick=True)
+
+		bld(features='subst', source='tmpfile', target='blah/blah/rel4', is_copy=True)
+		bld.install_files('lib', 'blah/blah/rel4')
+
+	def check(env):
+		tmpdir_top.delete(evict=False)
+
+		env.INSTALL = Build.INSTALL
+		conf.run_build(build_fun=build, msg='building', okmsg='ok', errmsg='eh', env=env)
+
+		assert tmpdir.exists()
+		assert tmpdir.make_node('bin/foo').exists()
+		assert tmpdir.make_node('bin/tmpfile').exists()
+		assert tmpdir.make_node('bin/foo').read() == tmpdir.make_node('bin/tmpfile').read()
+		assert os.path.lexists(tmpdir.make_node('bin/bar').abspath())
+		assert os.readlink(tmpdir.make_node('bin/bar').abspath()) == '../tmpfile'
+		assert tmpdir.make_node('rel1').exists()
+		assert tmpdir.make_node('blah/blah/rel2').exists()
+		assert tmpdir.make_node('blah/rel3').exists()
+		assert tmpdir.make_node('lib/rel4').exists()
+
+		env.INSTALL = Build.UNINSTALL
+		conf.run_build(build_fun=build, msg='building', okmsg='ok', errmsg='eh', env=env)
+		assert not tmpdir.exists()
+		assert not tmpdir.make_node('bin/foo').exists()
+		assert not tmpdir.make_node('bin/tmpfile').exists()
+		assert not os.path.lexists(tmpdir.make_node('bin/bar').abspath())
+		assert not tmpdir.exists()
+		assert not tmpdir.make_node('rel1').exists()
+		assert not tmpdir.make_node('blah/blah/rel2').exists()
+		assert not tmpdir.make_node('blah/rel3').exists()
+
+	env = conf.env.derive()
+	env.PREFIX = tmpdir.abspath()
+	Options.options.destdir = None
+	check(env)
+
+	env = conf.env.derive()
+	env.PREFIX = '/foo'
+	Options.options.destdir = tmpdir_top.abspath()
+	check(env)
+
+

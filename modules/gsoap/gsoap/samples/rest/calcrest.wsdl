@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="calcPOST"
+ targetNamespace="http://websrv.cs.fsu.edu/~engelen/calc.wsdl"
+ xmlns:tns="http://websrv.cs.fsu.edu/~engelen/calc.wsdl"
+ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+ xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:ns="urn:calc"
+ xmlns:SOAP="http://schemas.xmlsoap.org/wsdl/soap/"
+ xmlns:HTTP="http://schemas.xmlsoap.org/wsdl/http/"
+ xmlns:MIME="http://schemas.xmlsoap.org/wsdl/mime/"
+ xmlns:DIME="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+ xmlns:WSDL="http://schemas.xmlsoap.org/wsdl/"
+ xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<types>
+
+ <schema targetNamespace="urn:calc"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:ns="urn:calc"
+  xmlns="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="unqualified"
+  attributeFormDefault="unqualified">
+  <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+  <complexType name="pair">
+   <sequence>
+     <element name="a" type="xsd:double"/>
+     <element name="b" type="xsd:double"/>
+   </sequence>
+  </complexType>
+  <element name="add" type="ns:pair"/>
+  <element name="sub" type="ns:pair"/>
+  <element name="mul" type="ns:pair"/>
+  <element name="div" type="ns:pair"/>
+  <element name="pow" type="ns:pair"/>
+  <element name="addResponse" type="xsd:double"/>
+  <element name="subResponse" type="xsd:double"/>
+  <element name="mulResponse" type="xsd:double"/>
+  <element name="divResponse" type="xsd:double"/>
+  <element name="powResponse" type="xsd:double"/>
+ </schema>
+</types>
+
+<message name="add">
+ <part name="Body" element="ns:add"/>
+</message>
+
+<message name="addResponse">
+ <part name="Body" element="ns:addResponse"/>
+</message>
+
+<message name="sub">
+ <part name="Body" element="ns:sub"/>
+</message>
+
+<message name="subResponse">
+ <part name="Body" element="ns:subResponse"/>
+</message>
+
+<message name="mul">
+ <part name="Body" element="ns:mul"/>
+</message>
+
+<message name="mulResponse">
+ <part name="Body" element="ns:mulResponse"/>
+</message>
+
+<message name="div">
+ <part name="Body" element="ns:div"/>
+</message>
+
+<message name="divResponse">
+ <part name="Body" element="ns:divResponse"/>
+</message>
+
+<message name="pow">
+ <part name="Body" element="ns:pow"/>
+</message>
+
+<message name="powResponse">
+ <part name="Body" element="ns:powResponse"/>
+</message>
+
+<portType name="calcPortType">
+ <operation name="add">
+  <input message="tns:add"/>
+  <output message="tns:addResponse"/>
+ </operation>
+ <operation name="sub">
+  <input message="tns:sub"/>
+  <output message="tns:subResponse"/>
+ </operation>
+ <operation name="mul">
+  <input message="tns:mul"/>
+  <output message="tns:mulResponse"/>
+ </operation>
+ <operation name="div">
+  <input message="tns:div"/>
+  <output message="tns:divResponse"/>
+ </operation>
+ <operation name="pow">
+  <input message="tns:pow"/>
+  <output message="tns:powResponse"/>
+ </operation>
+</portType>
+
+<binding name="calcPOST" type="tns:calcPortType">
+ <HTTP:binding verb="POST"/>
+ <operation name="add">
+  <HTTP:operation location=""/>
+  <input>
+     <MIME:mimeXml part="Body"/>
+  </input>
+  <output>
+     <MIME:mimeXml part="Body"/>
+  </output>
+ </operation>
+ <operation name="sub">
+  <HTTP:operation location=""/>
+  <input>
+     <MIME:mimeXml part="Body"/>
+  </input>
+  <output>
+     <MIME:mimeXml part="Body"/>
+  </output>
+ </operation>
+ <operation name="mul">
+  <HTTP:operation location=""/>
+  <input>
+     <MIME:mimeXml part="Body"/>
+  </input>
+  <output>
+     <MIME:mimeXml part="Body"/>
+  </output>
+ </operation>
+ <operation name="div">
+  <HTTP:operation location=""/>
+  <input>
+     <MIME:mimeXml part="Body"/>
+  </input>
+  <output>
+     <MIME:mimeXml part="Body"/>
+  </output>
+ </operation>
+ <operation name="pow">
+  <HTTP:operation location=""/>
+  <input>
+     <MIME:mimeXml part="Body"/>
+  </input>
+  <output>
+     <MIME:mimeXml part="Body"/>
+  </output>
+ </operation>
+</binding>
+
+<service name="calc">
+ <port name="calc" binding="tns:calcPOST">
+  <HTTP:address location="http://websrv.cs.fsu.edu/~engelen/calcserver.cgi"/>
+ </port>
+</service>
+
+</definitions>

@@ -1,0 +1,5 @@
+<map id="uddi2__find_USCOREservice" name="uddi2__find_USCOREservice">
+<area shape="rect" id="node2" href="$classuddi2____find_qualifiers.html" title="Schema urn:uddi&#45;org:api_v2:&quot;findQualifiers&quot;. " alt="" coords="4,6,149,34"/>
+<area shape="rect" id="node4" href="$classuddi2____category_bag.html" title="Schema urn:uddi&#45;org:api_v2:&quot;categoryBag&quot;. " alt="" coords="175,6,317,34"/>
+<area shape="rect" id="node6" href="$classuddi2____t_model_bag.html" title="Schema urn:uddi&#45;org:api_v2:&quot;tModelBag&quot;. " alt="" coords="343,6,475,34"/>
+</map>

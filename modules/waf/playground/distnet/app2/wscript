@@ -1,0 +1,38 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+VERSION='0.0.1'
+APPNAME='app2'
+
+top = '.'
+out = 'build'
+
+from waflib.extras import remote # optional
+from waflib.extras import distnet
+
+variants = [
+	'linux_64_debug',
+	'linux_64_release',
+	'linux_32_debug',
+	'linux_32_release',
+]
+
+def options(opt):
+	opt.load('distnet')
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('distnet')
+	conf.load('compiler_c')
+
+def build(bld):
+	bld.load('distnet')
+	bld.program(source='main.c', target='app2', includes='.', use='pouet')
+
+def package(ctx):
+	for v in variants:
+		tar = 'build/%s.tarfile' % v
+		inputs = ['build/%s/app2.so' % v]
+		ctx.make_tarfile(tar, inputs)
+	ctx.make_tarfile('build/noarch.tarfile', ['head.h'])
+

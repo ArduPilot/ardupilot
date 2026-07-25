@@ -1,0 +1,13 @@
+#! /usr/bin/env python
+
+bld(
+	features     = 'c cstlib',
+	source       = 'test_staticlib.c',
+	target       = 'my_static_lib')
+
+bld(
+	features     = 'c cprogram',
+	source       = 'main.c',
+	target       = 'test_static_link',
+	use          = 'my_static_lib')
+

@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+"""
+the objects should carry uselib variables (includes, libraries to link against)
+to other objects and to the final link
+"""
+
+bld.env.LIB_Z = ['z']
+bld.env.INCLUDES_Z = ['subdir']
+
+bld.objects(
+		source   = 'a.c',
+		target   = 'AA',
+		use      = 'Z',
+	)
+
+bld.objects(
+		source   = 'b.c',
+		target   = 'BB',
+		use      = 'AA',
+	)
+
+bld.program(
+		source = 'c.c',
+		target = 'CC',
+		use    = 'BB',
+	)
+

@@ -1,0 +1,339 @@
+
+INSTALLATION
+============
+
+See the following sections below:
+
+- Installing gSOAP on Windows
+- Installing gSOAP on Windows with Cygwin or MinGW
+- Installing gSOAP on Mac OS X
+- Installing gSOAP on Unix/Linux
+- Installing gSOAP on Mac OS X/Unix/Linux without automake, Bison, and Flex
+- Installing gSOAP on other systems
+
+Installing gSOAP on Windows
+---------------------------
+
+Windows (all versions) and WinCE are supported.
+
+Executables and source code are both included in the download package. This
+means that Windows developers can start right away.
+
+If you get an error "The application was unable to start correctly
+(0xc000007b). Click OK to close the application." when running wsdl2h.exe or
+soapcpp2.exe then upgrade to gSOAP 2.8.58 or later or download Microsoft Visual
+C++ Redistributable for Visual Studio 2015 from
+https://www.microsoft.com/en-us/download/details.aspx?id=48145
+
+For VC++ examples, see the gsoap/VisualStudio2005 directory in the download
+package for examples that work with VisualStudio 2005 and later.
+
+The executables of the two gSOAP tools are located in the download package:
+
+- gsoap/bin/win32/wsdl2h.exe translator of WSDL/XSD to services and XML data
+  bindings (interface tool)
+
+- gsoap/bin/win32/soapcpp2.exe code generator for services and XML data
+  bindings (implementation tool)
+
+The wsdl2h.exe and soapcpp2.exe tools are invoked from the Windows command
+prompt or from within your IDE as a custom-build step in Visual Studio.
+
+Make sure that wsdl2h.exe and soapcpp2.exe can be launched/executed from the
+Windows command prompt.  To do so, select My Computer / Properties / Advanced
+System Settings / Environment Variables.  In the bottom pane select Path and
+click Edit.  Add the full path ending with gsoap/bin/win32/ after the last ';'.
+You should now be able to execute wsdl2h.exe and soapcpp2.exe from the command
+line, or from Start / Run.
+
+To invoke wsdl2h.exe as a custom build step in Visual Studio C++ on a given
+input WSDL file, first select the project name in Solution Explorer then
+Property Pages from the View menu, see custom-build steps in Visual Studio
+http://msdn.microsoft.com/en-us/library/hefydhhy.aspx. Enter wsdl2h.exe -o
+service.h "FullPathToWSDLfile" as the Command Line property in Custom Build
+Step with the full path to the WSDL or the WSDL URL. Enter the generated gSOAP
+header file service.h as the Outputs property. Follow the same procedure to
+configure soapcpp2.exe to be invoked on this gSOAP header file (assuming you
+generated this file first), enter soapcpp2.exe
+"C:\Users/YourUserName\Documents\VisualStudio 20XX\Projects\YY\service.h" as a
+Command Line with YourUserName and XX and YY set as needed. Enter soapStub.h
+soapH.h soapC.cpp soapClient.cpp soapServer.cpp as Outputs. If you prefer
+generating client proxy and/or server web service classes using soapcpp2.exe -j
+then add the soapXYZProxy.h soapXYZProxy.cpp soapXYZService.h
+soapXYZService.cpp as Outputs as well. Run soapcpp2 by selecting the gSOAP
+header file and Compile. Add the generated files to your project's
+dependencies.
+
+To invoke wsdl2h.exe from the Windows command prompt, execute wsdl2h.exe on one
+or more WSDL and/or XSD files to generate code.  Say you have a WSDL file
+service.wsdl. The steps to generate the service interface service.h and the
+client and server implementation source code files are:
+
+    $ wsdl2h.exe -o service.h service.wsdl
+    $ soapcpp2.exe -j service.h
+
+You can use wsdl2h.exe with URLs to WSDL and XSD files as well.  But please
+note that wsdl2h.exe is not https-capable by default.  To use https URLs it is
+perhaps easiest to download the WSDL and XSD files to a local directory with a
+browser and then apply wsdl2h.exe to the WSDL files and/or XSD files.  Enabling
+https for wsdl2h.exe requires OpenSSL which takes much more effort to install
+and build with wsdl2h.exe.
+
+Your project should take the following dependences into account:
+
+- winsock2.h
+- ws2tcpip.h
+- ws2spi.h
+- Ws2_32.lib
+
+The ws2_32.lib dependence may require some steps. To do this in Visual Studio
+C++ for example, go to "Project", "settings", select the "Link" tab (the
+project file needs to be selected in the file view) and add ws2_32.lib to the
+"Object/library modules" entry
+
+Finally, note that the gSOAP distribution package contains a number of .c
+files. Mixing .c with .cpp files is not recommended with Visual Studio and will
+lead to runtime errors when building DLLs.  Therefore, always rename .c files
+to .cpp files to use them in your C++ projects with Visual Studio.
+
+You are now ready to use gSOAP from the Windows shell command line or invoke
+the tools in Visual Studio as custom-build steps.
+
+Installing gSOAP on Windows with Cygwin or MinGW
+------------------------------------------------
+
+Read Installing gSOAP on Windows first and you can ignore the discussion of
+Visual Studio.  You must link your code against -lws2_32 and use
+-DWITH_NO_C_LOCALE to compile.  For example:
+
+    $ soapcpp2.exe -j -CL calc.h
+    $ c++ -DWITH_NO_C_LOCALE -o calcclient calcclient.cpp soapC.cpp soapcalcProxy.cpp stdsoap2.cpp -lws2_32
+
+Later gSOAP releases may work without removing locale support with the
+-DWITH_NO_C_LOCALE option, so try compiling without this option first to see if
+this completes without reporting errors with locale_t or that xlocale.h could
+not be found.
+
+Install OpenSSL and Zlib libraries to enable HTTPS and HTTP compression.
+Cygwin users should select openssl-devel source and zlib-devel source to
+install.  Otherwise, the OpenSSL and Zlib header files cannot be found.
+
+Tip: when autoconf, automake, flex, bison, openssl-devel, and zlib-devel are
+installed you can run configure to build the gSOAP tools and libraries as
+follows:
+
+    $ ./configure
+    $ make
+    $ make install
+
+Installing gSOAP on Mac OS X
+----------------------------
+
+It is recommended to install gSOAP per installation instructions for Unix/Linux
+as described below.  We strongly recommend to download the latest version of
+OpenSSL to build the tools.  Use an installation tool such as Macports
+https://www.macports.org or Homebrew http://brew.sh to install OpenSSL:
+
+First install the Xcode command line tools, then Flex, Bison, and OpenSSL:
+
+    $ xcode-select -install
+    $ sudo port install flex bison openssl
+
+Then execute:
+
+    $ cd gsoap-2.8
+    $ ./configure --with-openssl=/usr/local/opt/openssl
+    $ make
+    $ sudo make install
+
+For convenience we also included Mac OS X binaries of the tools in the download
+package, but built without OpenSSL:
+
+- gsoap/bin/macosx/wsdl2h translator of WSDL/XSD to services and XML data
+  bindings (interface tool)
+
+- gsoap/bin/macosx/soapcpp2 code generator for services and XML data bindings
+  (implementation tool)
+
+Use -I/usr/local/opt/openssl/include and -L/usr/local/opt/openssl/lib to compile your code.
+
+Instead of the gsoap/libgsoapXX.a libraries, you can compile and link the
+source code gsoap/stdsoap2.c and gsoap/stdsoap2.cpp directly in your project
+builds. When compiling these source files you can enable SSL, GZIP, HTTP
+cookies, IPv6 support using the following compiler flags:
+
+-DWITH_OPENSSL     to enable SSL, link with OpenSSL
+-DWITH_GNUTLS      to enable SSL, link with GNUTLS
+-DWITH_GZIP        to enable compression, link with Zlib
+-DWITH_COOKIES     to enable HTTP cookies
+-DWITH_IPV6        to enable IPv6
+-DWITH_C_LOCALE    to force C locale, for proper use of decimal point in floats
+-DWITH_NO_C_LOCALE no C locale, if there are errors for locale_t or xlocale.h
+-DWITH_DOM         to enable DOM for WS-Security, link with dom.c (or dom.cpp)
+
+These flags should be used to compile *ALL* of your source code files to ensure
+consistency.
+
+There is also a MacPorts https://macports.org port of gSOAP available.  To
+install, execute:
+
+    $ port list gsoap
+    $ port install gsoap
+
+Before installing, check the release version of gSOAP on MacPorts against the
+changelog https://www.genivia.com/changelog.html to determine if the MacPorts
+version is up to date.
+
+Installing gSOAP on Unix/Linux
+------------------------------
+
+After unpacking the .zip file, install the gSOAP software on Unix/Linux systems
+as follows:
+
+    $ ./configure
+    $ make
+    $ sudo make install
+
+For the last step use admin (root) permissions (e.g. using sudo).  To install
+the executables in a local folder, say in $HOME/bin without requiring root
+access, use:
+
+    $ ./configure                                         
+    $ make                                                
+    $ sudo make install exec_prefix=$HOME
+
+The ./configure command takes the following configuration options:
+
+--enable-samples also builds the examples
+--enable-ipv6 builds the library with IPv6 support (-DWITH_IPV6)
+--enable-ipv6-v6only builds the library with IPv6 support (-DWITH_IPV6_V6ONLY)
+--disable-ssl removes all dependences on OpenSSL from the tools and libraries
+--enable-gnutls replaces the dependence on OpenSSL by GNU TLS (-DWITH_GNUTLS)
+--enable-debug builds the software (-DDEBUG) to produce audit logs (slow!)
+--disable-namespaces removes global namespaces table linkage requirement
+--disable-c-locale removes the C locale and locale_t (-DWITH_NO_C_LOCALE)
+--with-openssl=DIR specifies the OpenSSL installation directory
+--with-zlib=DIR specifies the Zlib installation directory
+
+After successful configuration and completion of the build steps, the following
+two tools are produced:
+
+- gsoap/bin/wsdl2h translator of WSDL/XSD to services and XML data bindings
+- gsoap/bin/soapcpp2 code generator for services and XML data bindings
+
+The following libraries are produced depending on the configuration options:
+
+- gsoap/libgsoap++.a    the C++ runtime engine (plain, no HTTPS)
+- gsoap/libgsoapssl++.a the C++ runtime engine, DOM, cookies, zlib, and SSL
+- gsoap/libgsoap.a      the C runtime engine (plain, no HTTPS)
+- gsoap/libgsoapssl.a   the C runtime engine, DOM, cookies, zlib, and SSL
+
+If you got these files, you are now ready to use gSOAP.
+
+If the above fails, then please verify that you have:
+
+- Automake tools installed (make and GNU m4)
+- Bison installed from www.gnu.org/software/bison or Yacc
+- Flex installed from flex.sourceforge.net
+- OpenSSL from www.openssl.org or GNUTLS from www.gnu.org/software/gnutls
+- Optionally Zlib to support compression from www.zlib.net.
+
+To build the tools and libraries without SSL/TLS (i.e. removing HTTPS support
+and WS-Security support from wsdl2h and the libraries), rerun:
+
+    $ ./configure --disable-ssl
+    $ make
+    $ sudo make install
+
+For the last step use admin (root) permissions (e.g. using sudo) or use
+exec_prefix to install locally (see above).
+
+If you are having trouble with automake, Bison, or Flex then see the additional
+instructions below.
+
+Installing gSOAP on Mac OS X/Unix/Linux without automake, Bison, and Flex
+-------------------------------------------------------------------------
+
+If automake, Bison, and Flex are not installed on your system and you cannot
+get these to install, then build the wsdl2h and soapcpp2 tools as follows:
+
+    $ cd gsoap/src
+    $ make -f MakefileManual soapcpp2
+    $ cd gsoap/wsdl
+    $ make -f MakefileManual secure
+
+If this fails to build soapcpp2 because the files gsoap/src/lex.yy.c,
+gsoap/src/soapcpp2_yacc.tab.h (or gsoap/src/soapcpp2_yacc.h), and
+gsoap/src/soapcpp2_yacc.tab.c (or gsoap/src/soapcpp2_yacc.c) were removed in a
+prior build attempt, then please unarchive the gSOAP package content again to
+retrieve these original files and redo the steps above.
+
+If you do not have OpenSSL installed, then building a https-capable wsdl2h
+fails. To build wsdl2h without OpenSSL for https:
+
+    $ cd gsoap/wsdl
+    $ make -f MakefileManual
+
+This produces:
+
+- gsoap/bin/wsdl2h translator of WSDL/XSD to services and XML data bindings
+- gsoap/bin/soapcpp2 code generator for services and XML data bindings
+
+Instead of the gsoap/libgsoapXX.a libraries (which were not produced), you can
+compile and link the source code gsoap/stdsoap2.c (for C) and
+gsoap/stdsoap2.cpp (for C++) directly in your project builds. When compiling
+these source files you can enable SSL, GZIP, HTTP cookies, IPv6 support using
+the following compiler flags:
+
+-DWITH_OPENSSL     to enable SSL, link with OpenSSL
+-DWITH_GNUTLS      to enable SSL, link with GNUTLS
+-DWITH_GZIP        to enable compression, link with Zlib
+-DWITH_COOKIES     to enable HTTP cookies
+-DWITH_IPV6        to enable IPv6
+-DWITH_C_LOCALE    to force C locale
+-DWITH_NO_C_LOCALE no locale, in case of compiler errors with locale_t
+-DWITH_DOM         to enable DOM for WS-Security, link with dom.c (or dom.cpp)
+
+These flags should be used to compile ALL of your source code files to ensure
+consistency.
+
+Note 1: to use clang instead of GCC:
+
+    $ cd gsoap/src
+    $ make CC=clang -f MakefileManual soapcpp2
+    $ cd gsoap/wsdl
+    $ make CC=clang CPP=clang++ -f MakefileManual secure
+
+Note 2: some systems may require additional libraries, for example Sun OS:
+
+    $ cd gsoap/wsdl
+    $ make CC=CC CPP=CC SOCKLIB='-lsocket -lnsl -lxnet' -f MakefileManual secure
+
+Note 3: to use Yacc instead of Bison:
+
+    $ cd gsoap/src
+    $ make YACC='yacc -d -v -s soapcpp2_yacc' CMFLAGS='-DWITH_YACC -DWITH_FLEX' -f MakefileManual
+
+You are now ready to use gSOAP.
+
+Installing gSOAP on other systems
+---------------------------------
+
+Having trouble installing gSOAP on other systems? If you are unable to build
+the wsdl2h and soapcpp2 tools on your system, then install the tools on a
+supported system to generate source code and copy the code cross platforms. The
+generated source code is portable and platform independent. The gSOAP engine,
+library, and plugins can be compiled on a wide range of platforms to complete
+your project builds.
+
+For TandemNonStop installation and usage, see the gsoap/TandemNonStop directory
+in the gSOAP package for instructions.
+
+iOS is supported, see the gsoap/ios_plugin directory in the download package.
+
+Symbian support is no longer included in the most recent releases. Please
+inquire for assistance.
+
+Palm OS support is no longer included in the most recent releases. The latest
+stable release with Palm OS support is gSOAP 2.7.8c.                 
+

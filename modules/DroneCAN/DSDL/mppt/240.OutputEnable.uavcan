@@ -1,0 +1,27 @@
+#
+# Service to enable or disable the mppt output.
+#
+
+void6
+
+#Examples:
+# Enable MPPT output:
+# enable = true, disable = false
+
+# Disable MPPT output:
+# enable = false, disable = true
+
+# If both enable and disable are the same value then no change is applied and is used to request without changing the output.
+# No Enable/Disable change, only fetching enabled:
+# enable = true, disable = true
+# enable = false, disable = false
+
+bool enable
+bool disable
+
+---
+
+void7
+
+# The new enable state after applying the request
+bool enabled

@@ -1,0 +1,5 @@
+<map id="soap_wsrm_sequence" name="soap_wsrm_sequence">
+<area shape="rect" id="node3" href="$structsoap__wsrm__message.html" title="Linked list of unacknowledged messages stored for retransmission. " alt="" coords="4,115,155,143"/>
+<area shape="rect" id="node5" href="$structsoap__wsrm__content.html" title="Linked list of message content blocks. " alt="" coords="10,6,149,34"/>
+<area shape="rect" id="node9" href="$structsoap__wsrm__range.html" title="soap_wsrm_range" alt="" coords="232,115,363,143"/>
+</map>

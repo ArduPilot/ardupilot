@@ -1,0 +1,29 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+VERSION = '1.0.0'
+APPNAME = 'testR'
+
+top = '.'
+out = 'build'
+
+def configure(ctx):
+	ctx.find_program('texi2dvi')
+	ctx.load('R')
+
+def build(ctx):
+	ctx(
+		rule   = '${R} CMD BATCH ${tsk.generator.ropts} ${tsk.generator.fopt % tsk.inputs[1].abspath()} -- ${SRC[0].abspath()} foo.log',
+		source = 'src/test.R src/testSweave.Rnw',
+		target = 'src/testSweave.pdf',
+		cwd    = ctx.path.find_node('src').get_bld().abspath(),
+		install_path = '${PREFIX}/share',
+		shell = False,
+		ropts = '--no-restore --no-save --no-readline --numTrees=1000',
+		fopt = '--ffff=%s'
+	)
+
+def dist(ctx):
+	ctx.algo = 'zip'
+	ctx.excl = ' **/waf-* **/.waf-* **/*~ **/*.orig **/*.pyc **/*.pyo **/*.bak **/.lock-w* **/*.log **/*.lot **/*.lof **/*.lst **/*.aux **/*.bbl **/*.blg **/*.out **/*.toc'
+

@@ -1,0 +1,27 @@
+name: examples
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Dependencies
+      run: |
+        uname -a
+        sudo pip install empy pydronecan pexpect
+    - name: build SimpleNode
+      working-directory: ${{github.workspace}}/examples/SimpleNode
+      run: make
+    - name: build ESCNode
+      working-directory: ${{github.workspace}}/examples/ESCNode
+      run: make
+    - name: build ServoNode
+      working-directory: ${{github.workspace}}/examples/ServoNode
+      run: make
+    - name: build ESCNode C++
+      working-directory: ${{github.workspace}}/examples/ESCNode_C++
+      run: make

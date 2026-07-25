@@ -1,0 +1,1320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- STM32L4xx board Template -->
+<board
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/boards/stm32l4xx_board.xsd">
+  <configuration_settings>
+    <templates_path>resources/gencfg/processors/boards/stm32l4xx/templates</templates_path>
+    <output_path>..</output_path>
+    <hal_version>5.0.x</hal_version>
+  </configuration_settings>
+  <board_name>STMicroelectronics STM32L476-Discovery</board_name>
+  <board_id>ST_STM32L476_DISCOVERY</board_id>
+  <board_functions></board_functions>
+  <subtype>STM32L476xx</subtype>
+  <clocks
+    HSEFrequency="0"
+    HSEBypass="false"
+    LSEFrequency="32768"
+    LSEBypass="false"
+    LSEDrive="3 High Drive (default)"
+    VDD="300" />
+  <ports>
+    <GPIOA>
+      <pin0
+        ID="JOY_CENTER"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin1
+        ID="JOY_LEFT"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin2
+        ID="JOY_RIGHT"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin3
+        ID="JOY_UP"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin4
+        ID="MFX_WAKEUP"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Output"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin5
+        ID="JOY_DOWN"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin6
+        ID="LCD_SEG23"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin7
+        ID="LCD_SEG0"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin8
+        ID="LCD_COM0"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin9
+        ID="LCD_COM1"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin10
+        ID="LCD_COM2"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin11
+        ID="OTG_FS_DM"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="10"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin12
+        ID="OTG_FS_DP"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="10"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin13
+        ID="SWDIO"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin14
+        ID="SWCLK"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Alternate"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+    </GPIOA>
+    <GPIOB>
+      <pin0
+        ID="LCD_SEG21"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin1
+        ID="LCD_SEG2"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin2
+        ID="LED_RED"
+        Type="PushPull"
+        Level="Low"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Output"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin3
+        ID="SWO REG_ON_3V3"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Enabled"
+        PinLock="Disabled" />
+      <pin4
+        ID="LCD_SEG11"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin5
+        ID="LCD_SEG12"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin6
+        ID="I2C1_SCL"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="4"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin7
+        ID="I2C1_SDA"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="4"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin8
+        ID="GYRO_INT2"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin9
+        ID="LCD_COM3"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin10
+        ID="MFX_I2C_SCL I2C2_SCL"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="4"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin11
+        ID="MFX_I2C_SDA I2C2_SDA"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="4"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin12
+        ID="LCD_SEG20"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin13
+        ID="LCD_SEG3"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin14
+        ID="LCD_SEG19"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin15
+        ID="LCD_SEG4"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+    </GPIOB>
+    <GPIOC>
+      <pin0
+        ID="MAG_CS"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Output"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin1
+        ID="MAG_INT"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin2
+        ID="MAG_DRDY"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin3
+        ID="LCD_VLCD"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin4
+        ID="LCD_SEG22"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin5
+        ID="LCD_SEG1"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin6
+        ID="LCD_SEG14"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin7
+        ID="LCD_SEG9"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin8
+        ID="LCD_SEG13"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin9
+        ID="OTG_FS_PSON"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Output"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin10
+        ID="OTG_FS_OVCURR"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin11
+        ID="OTG_FS_VBUS"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin12
+        ID="OTG_FS_ID"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="10"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin13
+        ID="MFX_IRQ_OUT"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin14
+        ID="OSC32_IN"
+        Type="PushPull"
+        Level="High"
+        Speed="Minimum"
+        Resistor="Floating"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin15
+        ID="OSC32_OUT"
+        Type="PushPull"
+        Level="High"
+        Speed="Minimum"
+        Resistor="Floating"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+    </GPIOC>
+    <GPIOD>
+      <pin0
+        ID="EXT_RST"
+        Type="PushPull"
+        Level="Low"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Output"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin1
+        ID="MEMS_SCK"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="5"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin2
+        ID="GYRO_INT1"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin3
+        ID="MEMS_MISO"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="5"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin4
+        ID="MEMS_MOSI"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="5"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin5
+        ID="USART_TX"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="7"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin6
+        ID="USART_RX"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="7"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin7
+        ID="GYRO_CS"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Output"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin8
+        ID="LCD_SEG18"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin9
+        ID="LCD_SEG5"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin10
+        ID="LCD_SEG17"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin11
+        ID="LCD_SEG6"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin12
+        ID="LCD_SEG16"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin13
+        ID="LCD_SEG7"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin14
+        ID="LCD_SEG15"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin15
+        ID="LCD_SEG8"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="11"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+    </GPIOD>
+    <GPIOE>
+      <pin0
+        ID="XL_CS"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Output"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin1
+        ID="XL_INT"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin2
+        ID="SAI1_MCK"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="13"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin3
+        ID="AUDIO_RST"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Output"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin4
+        ID="SAI1_FS"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="13"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin5
+        ID="SAI1_SCK"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="13"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin6
+        ID="SAI1_SD"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="13"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin7
+        ID="AUDIO_DIN"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="6"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin8
+        ID="LED_GREEN"
+        Type="PushPull"
+        Level="Low"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Output"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin9
+        ID="AUDIO_CLK"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Alternate"
+        Alternate="6"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin10
+        ID="QSPI_CLK"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="10"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin11
+        ID="QSPI_CS"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="10"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin12
+        ID="QSPI_D0"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="10"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin13
+        ID="QSPI_D1"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="10"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin14
+        ID="QSPI_D2"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="10"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin15
+        ID="QSPI_D3"
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Mode="Alternate"
+        Alternate="10"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+    </GPIOE>
+    <GPIOF>
+      <pin0
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin1
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin10
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin14
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Level="High"
+        Speed="Maximum"
+        Resistor="Floating"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+    </GPIOF>
+    <GPIOG>
+      <pin0
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin1
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin10
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin14
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+    </GPIOG>
+    <GPIOH>
+      <pin0
+        ID="OSC_IN"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin1
+        ID="OSC_OUT"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Input"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin10
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin14
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="High"
+        Mode="Analog"
+        Alternate="0"
+        AnalogSwitch="Disabled"
+        PinLock="Disabled" />
+    </GPIOH>
+  </ports>
+</board>

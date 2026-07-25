@@ -1,0 +1,23 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2008 (ita)
+
+VERSION='0.0.2'
+APPNAME='gcj_test'
+
+top = '.'
+out = 'out'
+
+def configure(conf):
+	conf.load('gcj', tooldir='.')
+	conf.env.FIX_DUMMY = True
+
+def build(bld):
+	bld(
+		features     = 'gcj gcj_program',
+		srcdir       = 'src more',
+		target       = 'test',
+		gcjlinkflags = '--main=es.Hello',
+		classpath    = [bld.path.find_dir(x) for x in ('src', 'more')],
+		)
+

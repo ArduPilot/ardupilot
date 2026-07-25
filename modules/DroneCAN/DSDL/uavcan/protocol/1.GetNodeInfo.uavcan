@@ -1,0 +1,26 @@
+#
+# Full node info request.
+# Note that all fields of the response section are byte-aligned.
+#
+
+---
+
+#
+# Current node status
+#
+NodeStatus status
+
+#
+# Version information shall not be changed while the node is running.
+#
+SoftwareVersion software_version
+HardwareVersion hardware_version
+
+#
+# Human readable non-empty ASCII node name.
+# Node name shall not be changed while the node is running.
+# Empty string is not a valid node name.
+# Allowed characters are: a-z (lowercase ASCII letters) 0-9 (decimal digits) . (dot) - (dash) _ (underscore).
+# Node name is a reversed internet domain name (like Java packages), e.g. "com.manufacturer.project.product".
+#
+uint8[<=80] name

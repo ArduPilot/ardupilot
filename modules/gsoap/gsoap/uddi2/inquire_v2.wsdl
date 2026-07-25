@@ -1,0 +1,261 @@
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:tns="urn:uddi-org:inquiry_v2" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:uddi="urn:uddi-org:api_v2" targetNamespace="urn:uddi-org:inquiry_v2" name="UDDI_Inquiry_API_V2">
+	<documentation>
+		Copyright (c) 2000 - 2002 by Accenture, Ariba, Inc., Commerce One, Inc. 
+		Fujitsu Limited, Hewlett-Packard Company, i2 Technologies, Inc., 
+		Intel Corporation, International Business Machines Corporation,  
+		Microsoft Corporation, Oracle Corporation, SAP AG, Sun Microsystems, Inc., 
+		and VeriSign, Inc.  All Rights Reserved.
+		
+		WSDL Service Interface for UDDI Inquiry API V2.0    
+		
+		This WSDL document defines the inquiry API calls for interacting with 
+		the UDDI registry.  The complete UDDI API specification is available
+		at http://www.uddi.org/specification.html.
+	</documentation>
+	<types>
+		<xsd:schema targetNamespace="urn:uddi-org:inquiry_v2" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+			<xsd:import namespace="urn:uddi-org:api_v2" schemaLocation="uddi_v2.xsd"/>
+		</xsd:schema>
+	</types>
+	<message name="bindingDetail">
+		<part name="body" element="uddi:bindingDetail"/>
+	</message>
+	<message name="businessDetail">
+		<part name="body" element="uddi:businessDetail"/>
+	</message>
+	<message name="businessDetailExt">
+		<part name="body" element="uddi:businessDetailExt"/>
+	</message>
+	<message name="businessList">
+		<part name="body" element="uddi:businessList"/>
+	</message>
+	<message name="dispositionReport">
+		<part name="body" element="uddi:dispositionReport"/>
+	</message>
+	<message name="find_binding">
+		<part name="body" element="uddi:find_binding"/>
+	</message>
+	<message name="find_business">
+		<part name="body" element="uddi:find_business"/>
+	</message>
+	<message name="find_relatedBusinesses">
+		<part name="body" element="uddi:find_relatedBusinesses"/>
+	</message>
+	<message name="find_service">
+		<part name="body" element="uddi:find_service"/>
+	</message>
+	<message name="find_tModel">
+		<part name="body" element="uddi:find_tModel"/>
+	</message>
+	<message name="get_bindingDetail">
+		<part name="body" element="uddi:get_bindingDetail"/>
+	</message>
+	<message name="get_businessDetail">
+		<part name="body" element="uddi:get_businessDetail"/>
+	</message>
+	<message name="get_businessDetailExt">
+		<part name="body" element="uddi:get_businessDetailExt"/>
+	</message>
+	<message name="get_serviceDetail">
+		<part name="body" element="uddi:get_serviceDetail"/>
+	</message>
+	<message name="get_tModelDetail">
+		<part name="body" element="uddi:get_tModelDetail"/>
+	</message>
+	<message name="relatedBusinessesList">
+		<part name="body" element="uddi:relatedBusinessesList"/>
+	</message>
+	<message name="serviceDetail">
+		<part name="body" element="uddi:serviceDetail"/>
+	</message>
+	<message name="serviceList">
+		<part name="body" element="uddi:serviceList"/>
+	</message>
+	<message name="tModelDetail">
+		<part name="body" element="uddi:tModelDetail"/>
+	</message>
+	<message name="tModelList">
+		<part name="body" element="uddi:tModelList"/>
+	</message>
+	<portType name="Inquire">
+		<documentation>
+			This portType defines all of the UDDI inquiry operations.
+	  </documentation>
+		<operation name="find_binding">
+			<input message="tns:find_binding"/>
+			<output message="tns:bindingDetail"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="find_business">
+			<input message="tns:find_business"/>
+			<output message="tns:businessList"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="find_relatedBusinesses">
+			<input message="tns:find_relatedBusinesses"/>
+			<output message="tns:relatedBusinessesList"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="find_service">
+			<input message="tns:find_service"/>
+			<output message="tns:serviceList"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="find_tModel">
+			<input message="tns:find_tModel"/>
+			<output message="tns:tModelList"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="get_bindingDetail">
+			<input message="tns:get_bindingDetail"/>
+			<output message="tns:bindingDetail"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="get_businessDetail">
+			<input message="tns:get_businessDetail"/>
+			<output message="tns:businessDetail"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="get_businessDetailExt">
+			<input message="tns:get_businessDetailExt"/>
+			<output message="tns:businessDetailExt"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="get_serviceDetail">
+			<input message="tns:get_serviceDetail"/>
+			<output message="tns:serviceDetail"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+		<operation name="get_tModelDetail">
+			<input message="tns:get_tModelDetail"/>
+			<output message="tns:tModelDetail"/>
+			<fault name="error" message="tns:dispositionReport"/>
+		</operation>
+	</portType>
+	<binding name="InquireSoap" type="tns:Inquire">
+		<soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+		<documentation>
+		  This is the SOAP binding for the UDDI inquiry operations.
+		</documentation>
+		<operation name="find_binding">
+			<soap:operation soapAction="find_binding" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="find_business">
+			<soap:operation soapAction="find_business" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="find_relatedBusinesses">
+			<soap:operation soapAction="find_relatedBusinesses" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="find_service">
+			<soap:operation soapAction="find_service" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="find_tModel">
+			<soap:operation soapAction="find_tModel" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="get_bindingDetail">
+			<soap:operation soapAction="get_bindingDetail" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="get_businessDetail">
+			<soap:operation soapAction="get_businessDetail" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="get_businessDetailExt">
+			<soap:operation soapAction="get_businessDetailExt" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="get_serviceDetail">
+			<soap:operation soapAction="get_serviceDetail" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+		<operation name="get_tModelDetail">
+			<soap:operation soapAction="get_tModelDetail" style="document"/>
+			<input>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</input>
+			<output>
+				<soap:body parts="body" use="literal" namespace="urn:uddi-org:api_v2"/>
+			</output>
+			<fault name="error">
+				<soap:fault name="error" use="literal"/>
+			</fault>
+		</operation>
+	</binding>
+</definitions>

@@ -1,0 +1,34 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Justin Israel, 2017 
+
+"""
+Allow the "waf list" command to display descriptions for each target
+"""
+
+top = '.'
+out = 'build'
+
+def configure(ctx):
+	pass
+
+def build(bld):
+	bld(
+		rule="touch ${TGT}",
+		target='file.in',
+		description='Create the input file',
+	)
+
+	bld(
+		rule='cp ${SRC} ${TGT}',
+		source='file.in',
+		target='file.out',
+		description='Generate output file',
+	)
+
+	bld.install_files(
+		'dist',
+		['file.out'],
+		name='install',
+		description='Deploy files',
+	)

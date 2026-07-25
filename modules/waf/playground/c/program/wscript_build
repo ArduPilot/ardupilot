@@ -1,0 +1,19 @@
+#! /usr/bin/env python
+
+bld.program(source='main.c', target=bld.path.get_bld().make_node('foo.exe'), includes=". ..")
+
+"""
+bld.env.CFLAGS_TEST = ['-O3']
+bld.env.CFLAGS_BAR = ['-O2']
+
+bld.shlib(source='a.c', target='meh')
+
+bld(
+	features   = 'c cprogram',
+	source     = 'main.c',
+	includes   = '. ..',
+	#ccflags    = '-O3',
+	use='TEST meh',
+	uselib='BAR',
+	target     = 'myprogram')
+"""

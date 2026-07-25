@@ -1,0 +1,29 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2005-2015 (ita)
+
+VERSION='1.0.0'
+APPNAME='tex_test'
+
+top = '.'
+out = 'build'
+
+def configure(conf):
+	conf.load('tex')
+	if not conf.env.PDFLATEX:
+		conf.fatal('could not find the program pdflatex')
+	if not conf.env.MAKEGLOSSARIES:
+		conf.fatal('could not find the program makeglossaries which is absolutely required for this example')
+
+
+	# and example of a complex configuration test
+	def build_latex_test(bld):
+		def write_tex(tsk):
+			tsk.outputs[0].write(r'''\documentclass[a4paper,12pt]{article}  \usepackage{ucs}  \begin{document} test \end{document} ''')
+		bld(rule=write_tex, target='main.tex')
+		bld(features='tex', type='pdflatex', source='main.tex', prompt=0)
+	conf.test(build_fun=build_latex_test, msg='Checking for UCS', okmsg='ok', errmsg='ucs.sty is missing install latex-extras')
+
+def build(bld):
+	bld.recurse('src')
+

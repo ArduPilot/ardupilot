@@ -1,0 +1,34 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2016 (ita)
+
+VERSION='0.0.1'
+APPNAME='qt5_test'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx qt5')
+
+def configure(conf):
+	conf.load('compiler_cxx qt5')
+	#conf.env.append_value('CXXFLAGS', ['-g']) # test
+
+def build(bld):
+	# According to the Qt5 documentation:
+	#   Qt classes in foo.h   -> declare foo.h as a header to be processed by moc
+	#			    add the resulting moc_foo.cpp to the source files
+	#   Qt classes in foo.cpp -> include foo.moc at the end of foo.cpp
+	#
+	bld(
+		features = 'qt5 cxx cxxprogram',
+		use      = 'QT5CORE QT5GUI QT5SVG QT5WIDGETS',
+		source   = 'main.cpp res.qrc but.ui foo.cpp',
+		moc      = 'foo.h',
+		target   = 'window',
+		includes = '.',
+		lang     = bld.path.ant_glob('linguist/*.ts'),
+		langname = 'somefile', # include the .qm files from somefile.qrc
+	)
+

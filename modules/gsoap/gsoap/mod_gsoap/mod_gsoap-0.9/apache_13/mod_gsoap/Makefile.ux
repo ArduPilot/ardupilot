@@ -1,0 +1,15 @@
+#input for automake to generate mod_gsoap Makefile
+
+all: mod_gsoap.so
+
+mod_gsoap.so : mod_gsoap.c ../../stdsoap2.h
+	apxs -Wc,-g -I.. -I../.. -c mod_gsoap.c 
+
+.PHONY: clean
+
+clean:
+	rm -f *~ *.o *.so
+
+distclean:
+	$(MAKE) clean
+

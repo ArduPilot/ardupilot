@@ -1,0 +1,9 @@
+<map id="ds__SignedInfoType" name="ds__SignedInfoType">
+<area shape="rect" id="node2" href="$structds_____reference_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:ReferenceType is a complexType. " alt="" coords="192,299,332,327"/>
+<area shape="rect" id="node4" href="$structds_____digest_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:DigestMethodType is a complexType. " alt="" coords="5,206,165,234"/>
+<area shape="rect" id="node6" href="$structds_____transforms_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformsType is a complexType. " alt="" coords="190,206,335,234"/>
+<area shape="rect" id="node8" href="$structds_____transform_type.html" title="Imported complexType &quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformType from typemap WS/WS&#45;typemap..." alt="" coords="157,99,296,127"/>
+<area shape="rect" id="node10" href="$struct__c14n_____inclusive_namespaces.html" title="_c14n__InclusiveNamespaces" alt="" coords="227,6,428,34"/>
+<area shape="rect" id="node12" href="$structds_____canonicalization_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:CanonicalizationMethodType is a complexType. ..." alt="" coords="315,153,536,181"/>
+<area shape="rect" id="node15" href="$structds_____signature_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:SignatureMethodType is a complexType. " alt="" coords="459,299,639,327"/>
+</map>

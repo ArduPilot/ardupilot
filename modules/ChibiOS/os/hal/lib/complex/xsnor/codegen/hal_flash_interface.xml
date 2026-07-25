@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="hal_flash_interface" descr="Flash Interface" editcode="false">
+  <brief>Flash Interface.</brief>
+  <details><![CDATA[Base interface for flash devices.]]></details>
+  <imports>
+    <import>oop_base_object.xml</import>
+  </imports>
+  <public>
+    <types>
+      <interface name="flash_interface" namespace="fls" descr="flash interface">
+        <brief>Generic flash interface.</brief>
+        <consts>consts</consts>
+        <methods>
+          <method shortname="get_descriptor" name="flsGetDescriptor" ctype="const flash_descriptor_t *">
+            <brief>Gets the flash descriptor structure.</brief>
+            <return>A flash device descriptor.</return>
+          </method>
+          <method shortname="read" name="flsRead" ctype="flash_error_t">
+            <brief>Read operation.</brief>
+            <param name="offset" ctype="flash_offset_t" dir="in">flash offset</param>
+            <param name="n" ctype="size_t" dir="in">number of bytes to be read</param>
+            <param name="rp" ctype="uint8_t *" dir="out">pointer to the data buffer</param>
+            <return>An error code.</return>
+            <retval value="FLASH_NO_ERROR">If there is no erase operation in progress.</retval>
+            <retval value="FLASH_BUSY_ERASING">If there is an erase operation in progress.</retval>
+            <retval value="FLASH_ERROR_READ">If the read operation failed.</retval>
+            <retval value="FLASH_ERROR_HW_FAILURE">If access to the memory failed.</retval>
+          </method>
+          <method shortname="program" name="flsProgram" ctype="flash_error_t">
+            <brief>Program operation.</brief>
+            <param name="offset" ctype="flash_offset_t" dir="in">flash offset</param>
+            <param name="n" ctype="size_t" dir="in">number of bytes to be programmed</param>
+            <param name="pp" ctype="const uint8_t *" dir="in">pointer to the data buffer</param>
+            <return>An error code.</return>
+            <retval value="FLASH_NO_ERROR">If there is no erase operation in progress.</retval>
+            <retval value="FLASH_BUSY_ERASING">If there is an erase operation in progress.</retval>
+            <retval value="FLASH_ERROR_PROGRAM">If the program operation failed.</retval>
+            <retval value="FLASH_ERROR_HW_FAILURE">If access to the memory failed.</retval>
+          </method>
+          <method shortname="start_erase_all" name="flsStartEraseAll" ctype="flash_error_t">
+            <brief>Starts a whole-device erase operation.</brief>
+            <return>An error code.</return>
+            <retval value="FLASH_NO_ERROR">If there is no erase operation in progress.</retval>
+            <retval value="FLASH_BUSY_ERASING">If there is an erase operation in progress.</retval>
+            <retval value="FLASH_ERROR_HW_FAILURE">If access to the memory failed.</retval>
+          </method>
+          <method shortname="start_erase_sector" name="flsStartEraseSector" ctype="flash_error_t">
+            <brief>Starts a sector erase operation.</brief>
+            <param name="sector" ctype="flash_sector_t" dir="in">sector to be erased</param>
+            <return>An error code.</return>
+            <retval value="FLASH_NO_ERROR">If there is no erase operation in progress.</retval>
+            <retval value="FLASH_BUSY_ERASING">If there is an erase operation in progress.</retval>
+            <retval value="FLASH_ERROR_HW_FAILURE">If access to the memory failed.</retval>
+          </method>
+          <method shortname="query_erase" name="flsQueryErase" ctype="flash_error_t">
+            <brief>Queries the driver for erase operation progress.</brief>
+            <param name="msec" ctype="unsigned *" dir="out">recommended time, in milliseconds,
+             that should be spent before calling this function again, can be @p NULL</param>
+            <return>An error code.</return>
+            <retval value="FLASH_NO_ERROR">If there is no erase operation in progress.</retval>
+            <retval value="FLASH_BUSY_ERASING">If there is an erase operation in progress.</retval>
+            <retval value="FLASH_ERROR_HW_FAILURE">If access to the memory failed.</retval>
+          </method>
+          <method shortname="verify_erase" name="flsVerifyErase" ctype="flash_error_t">
+            <brief>Returns the erase state of a sector.</brief>
+            <param name="sector" ctype="flash_sector_t" dir="in">sector to be verified</param>
+            <return>An error code.</return>
+            <retval value="FLASH_NO_ERROR">If there is no erase operation in progress.</retval>
+            <retval value="FLASH_BUSY_ERASING">If there is an erase operation in progress.</retval>
+            <retval value="FLASH_ERROR_VERIFY">If the verify operation failed.</retval>
+            <retval value="FLASH_ERROR_HW_FAILURE">If access to the memory failed.</retval>
+          </method>
+          <method shortname="acquire_exclusive" name="flsAcquireExclusive" ctype="flash_error_t">
+            <brief>Acquires exclusive access to flash.</brief>
+            <return>An error code.</return>
+            <retval value="FLASH_NO_ERROR">If there is no erase operation in progress.</retval>
+            <retval value="FLASH_ERROR_UNIMPLEMENTED">UNIMPLEMENTED  if exclusive access not enabled</retval>
+          </method>
+          <method shortname="release_exclusive" name="flsReleaseExclusive" ctype="flash_error_t">
+            <brief>Releases exclusive access to flash.</brief>
+            <return>An error code.</return>
+            <retval value="FLASH_NO_ERROR">If there is no erase operation in progress.</retval>
+            <retval value="FLASH_ERROR_UNIMPLEMENTED">UNIMPLEMENTED  if exclusive access not enabled</retval>
+          </method>
+        </methods>
+      </interface>
+    </types>
+  </public>
+  <private>
+  </private>
+</module>

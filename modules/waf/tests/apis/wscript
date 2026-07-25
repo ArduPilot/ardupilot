@@ -1,0 +1,185 @@
+#! /usr/bin/env python3.1
+
+import os, shutil
+from waflib import Node, Build, Utils, Logs
+
+def exists(path):
+	try:
+		os.stat(path)
+	except:
+		return 'no'
+	else:
+		return 'yes'
+
+def remove(path):
+	try:
+		try:
+			os.listdir(path)
+		except OSError:
+			os.remove(path)
+		else:
+			shutil.rmtree(path)
+	except:
+		pass
+
+def create(path):
+	try:
+		os.makedirs(path)
+	except:
+		os.listdir(path)
+
+def configure(ctx):
+	pass
+
+def test(ctx):
+	bld = Build.BuildContext()
+
+	errors = []
+	def tt(msg, result, expected):
+		color = 'RED'
+		if result == expected:
+			color = 'GREEN'
+		else:
+			errors.append(result)
+		Logs.pprint(color, msg.ljust(20) + " %r" % result)
+
+
+	# 1. absdir is wrong, keep the drive letter
+	# 2. split should use os.sep
+	# 3. replace / in d1 from d2
+	# 4. use os.sep in find_node
+	absdir = os.getcwd().split(os.sep)
+
+	dd = bld.root.make_node(absdir)
+	pp = dd.parent
+
+
+	tt('dir printed', repr(dd), os.getcwd())
+	tt('parent', repr(pp), os.path.split(os.getcwd())[0])
+	tt('path_from', dd.path_from(pp), os.path.split(os.getcwd())[1])
+	tt('path_from (reverse)', pp.path_from(dd), '..')
+	tt('same path', pp.path_from(pp), '.')
+	tt('path from root is abspath()', pp.path_from(bld.root), pp.abspath())
+	tt('root from root', bld.root.path_from(bld.root), bld.root.abspath())
+
+	tt('root height', bld.root.height(), 0)
+	tt('self height', dd.height(), len(absdir))
+
+	d1 = dd.make_node(['a', 'b'])
+	d2 = dd.make_node(['c', 'd'])
+	tt('compare height', d1.height() - pp.height(), 3)
+
+	tt('d1 from d2', d1.path_from(d2), '../../a/b'.replace('/', os.sep))
+	tt('d2 from d1', d2.path_from(d1), '../../c/d'.replace('/', os.sep))
+
+
+	d1.parent.delete()
+
+	tt('d1.parent exists', exists(d1.parent.abspath()), 'no')
+	tt('d1 exists', exists(d1.abspath()), 'no')
+
+	d1.parent.mkdir()
+	d1.parent.mkdir()
+
+	tt('d1.parent exists', exists(d1.parent.abspath()), 'yes')
+	tt('d1 exists', exists(d1.abspath()), 'no')
+
+
+	d1.mkdir()
+	kp = d1.make_node(['ah-ha'])
+	ini = "this is a test"
+	kp.write(ini)
+	kp.chmod(493)
+	fin = kp.read()
+
+	tt('read and write text', fin, ini)
+
+	rama = ['1234', '5', '6', '7']
+	remove('1234')
+	create('/'.join(rama))
+	rr = dd.find_node(rama)
+	tt('find a node', repr(rr), os.sep.join([os.getcwd()]+rama))
+
+	remove('src/build')
+	create('src/build')
+
+	ss = dd.find_node(['src'])
+	bb = dd.find_node(['src', 'build'])
+	bld.top_dir = ss.abspath()
+	bld.out_dir = bb.abspath()
+	bld.init_dirs()
+
+	#remove(dd.abspath() + '/' +"xyz")
+	tt('find ["xyz"]', dd.find_node(['xyz']), None)
+
+	tt('bld.srcnode is src', bld.srcnode.is_src(), True)
+	tt('bld.srcnode is bld', bld.srcnode.is_bld(), False)
+	tt('bld.bldnode is src', bld.bldnode.is_src(), False)
+	tt('bld.bldnode is bld', bld.bldnode.is_bld(), True)
+	tt('bld.root is bld', bld.root.is_bld(), False)
+	tt('bld.root is src', bld.root.is_src(), False)
+	nf = bld.srcnode.make_node('abc')
+	nf.write("aha")
+	nf.get_bld_sig()
+	tt('find_resource src/abc', bld.srcnode.find_resource(['abc']), nf)
+	tt('find_or_declare src/abc', bld.srcnode.find_or_declare(['abc']), bld.bldnode.make_node(['abc']))
+	tt('src.get_bld()', bld.srcnode.get_bld(), bld.bldnode)
+	tt('bld.get_src()', bld.bldnode.get_src(), bld.srcnode)
+
+	stupid_build = bld.bldnode.make_node(['abc'])
+	stupid_build.write("heheh")
+	tt('find_or_declare src/abc', bld.srcnode.find_or_declare(['abc']), stupid_build)
+	tt('find_resource src/abc', bld.srcnode.find_resource(['abc']), stupid_build)
+
+	bld = Build.BuildContext()
+	bld.top_dir = ss.abspath()
+	bld.out_dir = bb.abspath()
+	bld.init_dirs()
+
+	create('src/a.txt')
+	create('src/b.txt')
+	nd = bld.srcnode.make_node('c.txt')
+	nd.write("test")
+	create('d.TXT')
+	nd2 = bld.srcnode.make_node('d.TXT')
+	nd2.write("test")
+	nd3 = bld.srcnode.make_node('e.e+(e).txt')
+	nd3.write("test")
+
+	tt("ant_glob ->", len(bld.srcnode.ant_glob('*.txt', flat=False)), 2)
+	tt("ant_glob (icase) ->", len(bld.srcnode.ant_glob('*.txt', flat=False, ignorecase=True)), 3)
+	tt("ant_glob (parentheses) ->", len(bld.srcnode.ant_glob('e.e+[(]e[)].txt', flat=False)), 1)
+	#print("ant_glob src ->", bld.srcnode.ant_glob('*.txt'))
+
+	def abspath(self):
+		try:
+			return self.cache_abspath
+		except AttributeError:
+			pass
+		if not self.parent:
+			val = ''
+		elif not self.parent.name:
+			val = self.name + '\\'
+		else:
+			val = self.parent.abspath().rstrip('\\') + '\\' + self.name
+		self.cache_abspath = val
+		return val
+
+	# the local class will be unused soon enough
+	old_abspath = bld.node_class.abspath
+	bld.node_class.abspath = abspath
+
+	unc1 = '\\\\computer\\share\\file'
+	lst = Utils.split_path_win32(unc1)
+	node = bld.root.make_node(lst)
+	tt('UNC head node', lst[0], '\\\\computer')
+	tt('UNC share path', node.abspath(), unc1)
+
+	unc2 = '\\\\?\\C:\\foo'
+	lst = Utils.split_path_win32(unc2)
+	node = bld.root.make_node(lst)
+	tt('UNC long path', node.abspath(), 'C:\\foo')
+
+	if errors:
+		bld.fatal('There are test failures ^^')
+

@@ -1,0 +1,108 @@
+name: test pymavlink
+
+on: [push, pull_request]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false  # don't cancel if a job from the matrix fails
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.x']
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Python ${{ matrix.python-version }}
+
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install flake8 mypy numpy pytest pytest-mock
+          pip install -r requirements.txt
+          sudo apt update
+          sudo apt install -y libgtest-dev g++ tshark
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '16'
+
+      - name: Lint with flake8
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      # NOTE: we must do all testing on the installed python package, not
+      # on the build tree. Otherwise the testing is invalid and may not
+      # indicate the code actually works
+      - name: Install mavlink message
+        run: |
+          git clone https://github.com/ArduPilot/mavlink.git
+          ln -s $PWD/mavlink/message_definitions ../
+
+      - name: Install pymavlink
+        run: |
+          python3 -m pip install .
+
+      - name: Lint generated python code
+        run: |
+            flake8 --config=.github/workflows/flake8-generated.cfg --statistics dialects/
+
+      - name: Type check generated python code
+        if: matrix.python-version != '3.7'
+        run: |
+            # Latest version of mypy that supports Python 3.7 is too old
+            mypy --config-file ./.github/workflows/mypy-generated.ini dialects/v10/*.py dialects/v20/*.py
+
+      - name: Generate messages
+        run: |
+          ./test_generate_all.sh
+      - name : Test generators
+        run: |
+          ./test_generator.sh
+
+      - name : Test JavaScript Bindings - generated tests and Mocha tests
+        run: |
+          ./test_gen_js.sh && cd generator/javascript && npm test && cd -
+
+      - name: Test with pytest
+        run: |
+          python3 -m pytest
+
+
+  node-tests:
+    name: Node ${{ matrix.node-version }} test
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['12', '14', '16', '18', '20', 'lts/*']
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          pip install lxml
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install mavlink message
+        run: |
+          git clone https://github.com/ArduPilot/mavlink.git
+          ln -s $PWD/mavlink/message_definitions ../
+      - run: cd "generator/javascript" && npm install
+      - name : Test mavlink
+        run: |
+          ./test_gen_js.sh
+          cd "generator/javascript" && npm test

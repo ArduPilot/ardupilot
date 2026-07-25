@@ -1,0 +1,12 @@
+import funi
+
+%for i in range(maxfuni):
+
+def test_func{{i}}():
+    assert funi.Func.func{{i}}({{i}}) == {{i}}
+    assert funi.Func.func{{i}}({{i}}-1) == {{i}}-1
+    assert funi.Func.func{{i}}({{i}}+{{maxfuni}}) == {{i}}
+
+%end
+
+

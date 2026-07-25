@@ -1,0 +1,124 @@
+#! /usr/bin/env python3
+
+import platform, sys
+
+top = '.'
+out = 'bin'
+
+plist_string = '''
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+	"http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>{app_name}</string>
+
+	<key>CFBundleIdentifier</key>
+	<string>{bundle_domain}</string>
+
+	<key>CFBundleVersion</key>
+	<string>{bundle_version}</string>
+
+	<key>MiscKey</key>
+	<string>{env[PLATFORM_NAME]}</string>
+
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>{bundle_name}</string>
+
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+
+	<key>CFBundleSignature</key>
+	<string>????</string>
+</dict>
+</plist>
+'''
+
+plist_context = {
+	'bundle_domain': 'com.foo.bar.baz',
+	'app_name': 'macplist_test',
+	'bundle_version': '1.6.7'
+}
+expected_dict = {
+	'env': {
+		'PLATFORM_NAME': 'darwin'
+	}
+}
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+def build(bld):
+	# Only testing feature on Darwin
+	if (platform.system() != 'Darwin'):
+		return
+	bld.env.PLATFORM_NAME = 'darwin'
+	plist = {'bundle_name': 'InterpolatedPlistFileTest'}
+	plist.update(plist_context)
+	bld.path.make_node('Info.plist').write(plist_string)
+	bld.program(
+		features="c cprogram",
+		target="InterpolatedPlistFileTest",
+		source="src/main.c",
+		mac_app=True,
+		mac_plist="Info.plist",
+		plist_context=plist)
+	bld.add_post_fun(test1)
+
+	plist = {'bundle_name': 'InterpolatedPlistStringTest'}
+	plist.update(plist_context)
+	bld.program(
+		features="c cprogram",
+		target="InterpolatedPlistStringTest",
+		source="src/main.c",
+		mac_app=True,
+		mac_plist=plist_string,
+		plist_context=plist)
+	bld.add_post_fun(test2)
+
+	bld.program(
+		features="c cprogram",
+		target="DefaultPlistTest",
+		source="src/main.c",
+		mac_app=True)
+	bld.add_post_fun(test3)
+
+def assert_eq(expected, actual):
+	exception_string = '''
+Expected `{expected}`
+but instead got `{actual}`
+'''
+	if (expected != actual):
+		raise Exception(exception_string.format(expected=expected,actual=actual))
+
+def test1(ctx):
+	expected_plist = {'bundle_name': 'InterpolatedPlistFileTest'}
+	expected_plist.update(plist_context)
+	expected_plist.update(expected_dict)
+	expected_plist = plist_string.format(**expected_plist)
+	plist = ctx.path.make_node('bin/InterpolatedPlistFileTest.app/Contents/Info.plist').read()
+	assert_eq(expected_plist, plist)
+	
+
+def test2(ctx):
+	expected_plist = {'bundle_name': 'InterpolatedPlistStringTest'}
+	expected_plist.update(plist_context)
+	expected_plist.update(expected_dict)
+	expected_plist = plist_string.format(**expected_plist)
+	plist = ctx.path.make_node('bin/InterpolatedPlistStringTest.app/Contents/Info.plist').read()
+	assert_eq(expected_plist, plist)
+
+def test3(ctx):
+	from waflib.Tools import c_osx
+	expected_plist = {'app_name': 'DefaultPlistTest'}
+	expected_plist = c_osx.app_info.format(**expected_plist)
+	plist = ctx.path.make_node('bin/DefaultPlistTest.app/Contents/Info.plist').read()
+	assert_eq(expected_plist, plist)

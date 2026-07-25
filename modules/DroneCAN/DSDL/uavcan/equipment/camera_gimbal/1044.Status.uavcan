@@ -1,0 +1,14 @@
+#
+# Generic gimbal status.
+#
+
+uint8 gimbal_id
+
+Mode mode
+
+#
+# Camera axis orientation in body frame (not in fixed frame).
+# Please refer to the UAVCAN coordinate frame conventions.
+#
+float16[4] camera_orientation_in_body_frame_xyzw
+float16[<=9] camera_orientation_in_body_frame_covariance   # +inf for non-existent axes

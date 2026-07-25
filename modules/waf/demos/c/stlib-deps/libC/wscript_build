@@ -1,0 +1,10 @@
+# This script uses the logic that prevents static libraries from depending on
+# eachother. This means that the only way libC is re-archived is if the source
+# code file diff.c or any of its depenencies change.
+bld.stlib(
+	target='C',
+	source='diff.c',
+	features='skip_stlib_link_deps',
+	use='A',
+	includes='.',
+	export_includes='.')

@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<mavlink>
+  <!-- extends child.xml by mixing in mixin.xml.  A Mixiner is one who mixes in... -->
+  <include>child.xml</include>
+  <include>mixin.xml</include>
+  <messages>
+    <message id="6666" name="MIXINER">
+      <description>This is a MIXINER message field</description>
+      <field type="uint32_t" name="MIXINERFIELD">Mixiner Field</field>
+    </message>
+  </messages>
+</mavlink>

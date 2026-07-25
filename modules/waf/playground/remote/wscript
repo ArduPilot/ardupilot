@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+# encoding: utf-8
+# Example using the `remote` tool.
+
+from waflib import Utils
+
+top = '.'
+out = 'build'
+
+variants = [
+'linux_64_debug',
+'linux_64_release',
+'linux_32_debug',
+'linux_32_release',
+#'darwin_64_release', # works if a host is provided
+]
+
+from waflib.extras import remote
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	if not conf.variant:
+		return
+	conf.load('compiler_c')
+
+def build(bld):
+	if not bld.variant:
+		return
+	bld(features='c cprogram', target='app', source='main.c')
+

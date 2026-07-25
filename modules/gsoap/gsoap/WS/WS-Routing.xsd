@@ -1,0 +1,138 @@
+<?xml version='1.0'?>
+<!-- XML Schema for SOAP-RP -->
+<!-- Copyright 2001 Microsoft Corporation. All rights reserved.
+
+The presentation, distribution or other dissemination of the
+information contained herein by Microsoft is not a license, either
+expressly or impliedly, to any intellectual property owned or
+controlled by Microsoft.
+
+This document and the information contained herein is provided on an
+"AS IS" basis and to the maximum extent permitted by applicable law,
+Microsoft provides the document AS IS AND WITH ALL FAULTS, and hereby
+disclaims all other warranties and conditions, either express, implied
+or statutory, including, but not limited to, any (if any) implied
+warranties, duties or conditions of merchantability, of fitness for a
+particular purpose, of accuracy or completeness of responses, of
+results, of workmanlike effort, of lack of viruses, and of lack of
+negligence, all with regard to the document. ALSO, THERE IS NO
+WARRANTY OR CONDITION OF TITLE, QUIET ENJOYMENT, QUIET POSSESSION,
+CORRESPONDENCE TO DESCRIPTION OR NON-INFRINGEMENT WITH REGARD TO THE
+DOCUMENT.
+
+IN NO EVENT WILL MICROSOFT BE LIABLE TO ANY OTHER PARTY FOR THE COST
+OF PROCURING SUBSTITUTE GOODS OR SERVICES, LOST PROFITS, LOSS OF USE,
+LOSS OF DATA, OR ANY INCIDENTAL, CONSEQUENTIAL, DIRECT, INDIRECT, OR
+SPECIAL DAMAGES WHETHER UNDER CONTRACT, TORT, WARRANTY, OR OTHERWISE,
+ARISING IN ANY WAY OUT OF THIS OR ANY OTHER AGREEMENT RELATING TO THIS
+DOCUMENT, WHETHER OR NOT SUCH PARTY HAD ADVANCE NOTICE OF THE
+POSSIBILITY OF SUCH DAMAGES.  -->
+<!DOCTYPE schema PUBLIC "-//W3C//DTD XMLSCHEMA 200102//EN" "http://www.w3.org/2001/XMLSchema.dtd" >
+<schema xmlns='http://www.w3.org/2001/XMLSchema' xmlns:tns='http://schemas.xmlsoap.org/rp/' targetNamespace='http://schemas.xmlsoap.org/rp/' finalDefault='#all'>
+     
+<!-- SOAP-RP path construct -->
+  
+<element name='path' type='tns:path_t'/>
+<complexType name='path_t'>
+ <sequence>
+  <element ref='tns:action'/>
+  <element ref='tns:to' minOccurs='0'/>
+  <element ref='tns:fwd' minOccurs='0'/>
+  <element ref='tns:rev' minOccurs='0'/>
+  <element ref='tns:from' minOccurs='0'/>
+  <element ref='tns:id' minOccurs='0'/>
+  <element ref='tns:relatesTo' minOccurs='0'/>
+  <element ref='tns:fault' minOccurs='0'/>
+ </sequence>
+ <anyAttribute/>
+</complexType>
+          
+<element name='action' type='tns:action_t'/>
+<simpleType name='action_t'>
+ <restriction base='anyURI'/>
+</simpleType>
+
+<element name='to' type='tns:to_t'/>
+<simpleType name='to_t'>
+ <restriction base='anyURI'/>
+</simpleType>
+
+<element name='via' type='tns:via_t'/>
+<complexType name='via_t'>
+ <simpleContent>
+  <extension base='anyURI'>
+   <attribute name='vid' type='anyURI' use='optional'/>
+  </extension>
+ </simpleContent>
+</complexType>
+
+<element name='fwd' type='tns:fwd_t'/>
+<complexType name='fwd_t'>
+ <sequence>
+  <element ref='tns:via' minOccurs='0' maxOccurs='unbounded'/>
+ </sequence>
+ <anyAttribute/>
+</complexType>
+
+<element name='rev' type='tns:rev_t'/>
+<complexType name='rev_t'>
+ <sequence>
+  <element ref='tns:via' minOccurs='0' maxOccurs='unbounded'/>
+ </sequence>
+ <anyAttribute/>
+</complexType>
+
+<element name='from' type='tns:from_t'/>
+<simpleType name='from_t'>
+ <restriction base='anyURI'/>
+</simpleType>
+
+<element name='id' type='tns:id_t'/>
+<simpleType name='id_t'>
+ <restriction base='anyURI'/>
+</simpleType>
+
+<element name='relatesTo' type='tns:relatesTo_t'/>
+<simpleType name='relatesTo_t'>
+ <restriction base='anyURI'/>
+</simpleType>
+
+<!-- SOAP-RP fault -->
+
+<element name='faultcode' type='tns:faultcode_t'/>
+<simpleType name='faultcode_t'>
+  <restriction base='integer'/>
+</simpleType>
+
+<element name='faultreason' type='tns:faultreason_t'/>
+<simpleType name='faultreason_t'>
+ <restriction base='string'>
+ </restriction>
+</simpleType>
+
+<!-- Only certain combinations of the following are
+     valid and they tie into the fault code -->
+
+<element name='found' type='tns:found_t'/>
+<complexType name='found_t'>
+ <sequence>
+  <element name='at' type='anyURI' maxOccurs='unbounded'/>
+ </sequence>
+ <anyAttribute/>
+</complexType>
+
+<element name='fault' type='tns:fault_t'/>
+<complexType name='fault_t'>
+ <sequence>
+  <element ref='tns:faultcode'/>
+  <element ref='tns:faultreason'/>
+  <element name='endpoint' type='anyURI' minOccurs='0'/>
+  <element name='found' type='tns:found_t' minOccurs='0'/>
+  <element name='maxsize' type='integer' minOccurs='0'/>
+  <element name='maxtime' type='integer' minOccurs='0'/>
+  <element name='retryAfter' type='integer' minOccurs='0'/>  
+ </sequence>
+ <anyAttribute/>
+</complexType>
+
+</schema>

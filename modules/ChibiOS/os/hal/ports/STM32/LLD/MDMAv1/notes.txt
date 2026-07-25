@@ -1,0 +1,11 @@
+STM32 MDMAv1 driver.
+
+Driver capability:
+
+- The driver supports the STM32 complex MDMA controller found on H7
+  sub-family.
+
+The file registry must export:
+
+STM32_MDMA_CHn_HANDLER      - Vector name for channel "n" (0..15).
+STM32_MDMA_CHn_NUMBER       - Vector number for channel "n" (0..15).

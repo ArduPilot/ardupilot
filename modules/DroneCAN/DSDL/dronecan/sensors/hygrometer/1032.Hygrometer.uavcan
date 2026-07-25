@@ -1,0 +1,12 @@
+#
+# support for hygrometer sensors
+#
+
+# temperature in degrees C, use NaN if not available
+float16 temperature
+
+# humidity as percentage
+float16 humidity
+
+# id of humidity sensor within this CAN node. Use 0 for first sensor
+uint8 id

@@ -1,0 +1,5 @@
+OVERRIDE_SIGNATURE 0x0813b3e2c4ad670e
+
+uint16 rpm
+uint16 pwm
+uint16 status

@@ -1,0 +1,16 @@
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx boost')
+
+def configure(conf):
+	conf.load('compiler_cxx boost')
+
+	if conf.options.boost_mt:
+		conf.check_boost('system thread log log_setup')
+	else:
+		conf.check_boost('log log_setup')
+
+def build(bld):
+	bld.program(source='main.cpp', target='app', use='BOOST')

@@ -1,0 +1,4 @@
+message DeepTest {
+  required string deep = 1;
+}
+

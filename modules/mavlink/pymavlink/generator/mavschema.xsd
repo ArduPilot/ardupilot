@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+<!-- definition of simple elements -->
+<xs:element name="include" type="xs:anyURI"/>
+<xs:element name="version" type="xs:unsignedByte"/>
+<xs:element name="dialect" type="xs:unsignedByte"/>
+<xs:element name="description" type="xs:string"/>
+
+
+<!-- definition of attributes -->
+<xs:attribute name="name"> <!-- used in enum,entry,message,field elements -->
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+        <xs:pattern value="[\w_]+"/> <!-- Force only word characters in names (a-zA-Z0-9_ and many unicode). No whitespace -->
+    </xs:restriction>
+  </xs:simpleType>
+
+</xs:attribute>
+<xs:attribute name="id" type="mavlinkMsgId"/> <!-- used in message elements -->
+<xs:attribute name="print_format" type="xs:string"/> <!-- used in field elements -->
+<xs:attribute name="enum" type="xs:string"/> <!-- used in field,param elements -->
+<xs:attribute name="display" type="xs:string"/> <!-- used in field elements -->
+<xs:attribute name="units" type="SI_Unit"/> <!-- this will get changed on the fly to xs:string if no strict-units command line option is used -->
+<xs:attribute name="multiplier" type="factor"/>
+<xs:attribute name="instance" type="xs:boolean"/>
+<xs:attribute name="invalid" type="xs:string"/> <!-- used in message field elements -->
+<xs:attribute name="value"> <!-- used in entry elements -->
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+        <xs:pattern value="\d{1,20}"/> <!-- base 10 int -->
+        <xs:pattern value="0[xX][0-9a-fA-F]{1,16}"/> <!-- base 16 -->
+        <xs:pattern value="0[bB][0-1]{1,64}"/> <!-- base 2 -->
+        <xs:pattern value="2\*\*\d{1,2}"/> <!-- power of 2 -->
+    </xs:restriction>
+  </xs:simpleType>
+</xs:attribute>
+<xs:attribute name="default"> <!-- used in enum field elements -->
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+        <xs:pattern value="\d{1,20}"/> <!-- base 10 int -->
+        <xs:pattern value="0[xX][0-9a-fA-F]{1,16}"/> <!-- base 16 -->
+        <xs:pattern value="0[bB][0-1]{1,64}"/> <!-- base 2 -->
+        <xs:pattern value="2\*\*\d{1,2}"/> <!-- power of 2 -->
+        <xs:pattern value="NaN"/> <!-- Allow not-a-number as a default (for params) -->
+    </xs:restriction>
+  </xs:simpleType>
+</xs:attribute>
+<xs:attribute name="type"> <!-- used in field elements -->
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+        <xs:pattern value="float(\[([0-9])+\])?"/>
+        <xs:pattern value="double(\[([0-9])+\])?"/>
+        <xs:pattern value="char(\[([0-9])+\])?"/>
+        <xs:pattern value="int8_t(\[([0-9])+\])?"/>
+        <xs:pattern value="uint8_t(\[([0-9])+\])?"/>
+        <xs:pattern value="uint8_t_mavlink_version"/>
+        <xs:pattern value="int16_t(\[([0-9])+\])?"/>
+        <xs:pattern value="uint16_t(\[([0-9])+\])?"/>
+        <xs:pattern value="int32_t(\[([0-9])+\])?"/>
+        <xs:pattern value="uint32_t(\[([0-9])+\])?"/>
+        <xs:pattern value="int64_t(\[([0-9])+\])?"/>
+        <xs:pattern value="uint64_t(\[([0-9])+\])?"/>
+        <xs:pattern value="array\[[0-9]+\]"/> <!-- 0.9 compatibility -->
+    </xs:restriction>
+  </xs:simpleType>
+</xs:attribute>
+<xs:attribute name="since"> <!-- used in elements: wip, superseded, deprecated -->
+  <xs:simpleType>
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(20)\d{2}-(0[1-9]|1[012])"/> <!-- restrict dates to 20YY-MM format -->
+    </xs:restriction>
+  </xs:simpleType>
+</xs:attribute>
+<xs:attribute name="replaced_by" type="xs:string"/> <!-- used in elements: superseded, deprecated -->
+<xs:attribute name="remove_on_date" type="xs:string"/> <!-- optional in elements: deprecated -->
+
+<!-- mavlink message IDs are unsigned 24-bit values. -->
+<xs:simpleType name="mavlinkMsgId" id="mavlinkMsgId">
+  <xs:restriction base="xs:unsignedInt">
+    <xs:maxInclusive value="16777215" id="mavlinkMsgId.maxInclusive"/>
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="SI_Unit">
+  <xs:restriction base="xs:string">
+    <!-- time -->
+    <xs:enumeration value="s"/>        <!-- seconds -->
+    <xs:enumeration value="ds"/>       <!-- deciseconds -->
+    <xs:enumeration value="cs"/>       <!-- centiseconds -->
+    <xs:enumeration value="ms"/>       <!-- milliseconds -->
+    <xs:enumeration value="us"/>       <!-- microseconds -->
+    <xs:enumeration value="ns"/>       <!-- nanoseconds -->
+    <xs:enumeration value="Hz"/>       <!-- Herz -->
+    <xs:enumeration value="MHz"/>      <!-- Mega-Herz -->
+    <!-- distance -->
+    <xs:enumeration value="km"/>       <!-- kilometres -->
+    <xs:enumeration value="dam"/>      <!-- decametres -->
+    <xs:enumeration value="m"/>        <!-- metres -->
+    <xs:enumeration value="m/s"/>      <!-- metres per second -->
+    <xs:enumeration value="m/s/s"/>    <!-- metres per second per second -->
+    <xs:enumeration value="m/s*5"/>    <!-- metres per second * 5 required from dagar for HIGH_LATENCY2 message -->
+    <xs:enumeration value="dm"/>       <!-- decimetres -->
+    <xs:enumeration value="dm/s"/>     <!-- decimetres per second -->
+    <xs:enumeration value="cm"/>       <!-- centimetres -->
+    <xs:enumeration value="cm^2"/>     <!-- centimetres squared (typically used in variance) -->
+    <xs:enumeration value="cm/s"/>     <!-- centimetres per second -->
+    <xs:enumeration value="mm"/>       <!-- millimetres -->
+    <xs:enumeration value="mm/s"/>     <!-- millimetres per second -->
+    <xs:enumeration value="mm/h"/>     <!-- millimetres per hour -->
+    <!-- temperature -->
+    <xs:enumeration value="K"/>        <!-- Kelvin -->
+    <xs:enumeration value="degC"/>     <!-- degrees Celsius -->
+    <xs:enumeration value="cdegC"/>    <!-- centi degrees Celsius -->
+    <!-- angle -->
+    <xs:enumeration value="rad"/>      <!-- radians -->
+    <xs:enumeration value="rad/s"/>    <!-- radians per second -->
+    <xs:enumeration value="mrad/s"/>   <!-- milli-radians per second -->
+    <xs:enumeration value="deg"/>      <!-- degrees -->
+    <xs:enumeration value="deg/2"/>    <!-- degrees/2 required from dagar for HIGH_LATENCY2 message-->
+    <xs:enumeration value="ddeg/s"/>   <!-- decidegrees per second, used to correct a mistake in the AIS_VESSEL message, not recommended elsewhere-->
+    <xs:enumeration value="deg/s"/>    <!-- degrees per second -->
+    <xs:enumeration value="cdeg"/>     <!-- centidegrees -->
+    <xs:enumeration value="cdeg/s"/>   <!-- centidegrees per second -->
+    <xs:enumeration value="degE5"/>    <!-- degrees * 1E5 -->
+    <xs:enumeration value="degE7"/>    <!-- degrees * 1E7 -->
+    <xs:enumeration value="rpm"/>      <!-- rotations per minute -->
+    <!-- electricity -->
+    <xs:enumeration value="V"/>        <!-- Volt -->
+    <xs:enumeration value="cV"/>       <!-- centi-Volt -->
+    <xs:enumeration value="mV"/>       <!-- milli-Volt -->
+    <xs:enumeration value="A"/>        <!-- Ampere -->
+    <xs:enumeration value="cA"/>       <!-- centi-Ampere -->
+    <xs:enumeration value="mA"/>       <!-- milli-Ampere -->
+    <xs:enumeration value="mAh"/>      <!-- milli-Ampere hour -->
+    <xs:enumeration value="Ah"/>       <!-- Ampere hour -->
+    <!-- magnetism -->
+    <xs:enumeration value="mT"/>       <!-- milli-Tesla -->
+    <xs:enumeration value="gauss"/>    <!-- Gauss -->
+    <xs:enumeration value="mgauss"/>   <!-- milli-Gauss -->
+    <!-- energy -->
+    <xs:enumeration value="hJ"/>       <!-- hecto-Joule -->
+    <!-- power -->
+    <xs:enumeration value="W"/>        <!-- Watt -->
+    <!-- force -->
+    <xs:enumeration value="mG"/>       <!-- milli-G -->
+    <!-- mass -->
+    <xs:enumeration value="g"/>        <!-- grams -->
+    <xs:enumeration value="kg"/>       <!-- kilograms -->
+    <!-- pressure -->
+    <xs:enumeration value="Pa"/>       <!-- Pascal -->
+    <xs:enumeration value="hPa"/>      <!-- hecto-Pascal -->
+    <xs:enumeration value="kPa"/>      <!-- kilo-Pascal -->
+    <xs:enumeration value="mbar"/>     <!-- millibar -->
+    <!-- ratio -->
+    <xs:enumeration value="%"/>        <!-- percent -->
+    <xs:enumeration value="d%"/>       <!-- decipercent -->
+    <xs:enumeration value="c%"/>       <!-- centipercent -->
+    <xs:enumeration value="dB"/>       <!-- Deci-Bell -->
+    <xs:enumeration value="dBm"/>      <!-- Deci-Bell-milliwatts-->
+    <!-- digital -->
+    <xs:enumeration value="KiB"/>      <!-- Kibibyte (1024 bytes) -->
+    <xs:enumeration value="KiB/s"/>    <!-- Kibibyte (1024 bytes) per second -->
+    <xs:enumeration value="MiB"/>      <!-- Mebibyte (1024*1024 bytes) -->
+    <xs:enumeration value="MiB/s"/>    <!-- Mebibyte (1024*1024 bytes) per second -->
+    <xs:enumeration value="bytes"/>    <!-- bytes -->
+    <xs:enumeration value="bytes/s"/>  <!-- bytes per second-->
+    <xs:enumeration value="bits/s"/>   <!-- bits per second -->
+    <xs:enumeration value="pix"/>      <!-- pixels -->
+    <xs:enumeration value="dpix"/>     <!-- decipixels -->
+    <!-- flow -->
+    <xs:enumeration value="g/min"/>    <!-- grams/minute -->
+    <xs:enumeration value="cm^3/min"/> <!-- cubic centimetres/minute -->
+    <xs:enumeration value="L/h"/>      <!-- Litres/hour -->
+    <!-- volume -->
+    <xs:enumeration value="cm^3"/>     <!-- cubic centimetres -->
+    <xs:enumeration value="l"/>        <!-- litres -->
+    <xs:enumeration value="L"/>        <!-- Litres -->
+  </xs:restriction>
+</xs:simpleType>
+
+<xs:simpleType name="factor">
+  <xs:restriction base="xs:string">
+    <xs:enumeration value="1E-2"/>        <!-- actual value = stated value / 100 -->
+    <xs:enumeration value="360/255"/>     <!-- actual value = stated value * 360/255, as used for GPS_STATUS.satellite_azimuth -->
+  </xs:restriction>
+</xs:simpleType>
+
+<!-- definition param elements attributes (like the ones used on MAV_CMD for example) -->
+<xs:attribute name="index" type="xs:unsignedByte"/>                    <!-- parameter index -->
+<xs:attribute name="label" type="xs:string"/>                          <!-- parameter label (name) -->
+<xs:attribute name="decimalPlaces" type="xs:unsignedByte"/>            <!-- parameter number of decimal places to be displayed in the GUI -->
+<xs:attribute name="increment" type="xs:float"/>                       <!-- parameter increment -->
+<xs:attribute name="minValue" type="xs:float"/>                        <!-- parameter minimum value -->
+<xs:attribute name="maxValue" type="xs:float"/>                        <!-- parameter maximum value -->
+<xs:attribute name="reserved" type="xs:boolean" default="false"/>      <!-- parameter is reserved -->
+
+<!-- definition entry elements attributes (like the ones used on MAV_CMD for example) -->
+<xs:attribute name="hasLocation" type="xs:boolean" default="true"/>    <!-- entry has lat/lon/alt location -->
+<xs:attribute name="isDestination" type="xs:boolean" default="true"/>  <!-- entry is a destination -->
+<xs:attribute name="missionOnly" type="xs:boolean" default="true"/>  <!-- entry only makes sense in missions, not commands -->
+
+<!-- definition of complex elements -->
+<xs:element name="param">
+    <xs:complexType mixed="true">
+        <xs:attribute ref="index" use="required"/>
+        <xs:attribute ref="label"/>
+        <xs:attribute ref="units"/>
+        <xs:attribute ref="multiplier"/>
+        <xs:attribute ref="instance"/>
+        <xs:attribute ref="enum" />
+        <xs:attribute ref="decimalPlaces"/>
+        <xs:attribute ref="increment"/>
+        <xs:attribute ref="minValue"/>
+        <xs:attribute ref="maxValue"/>
+        <xs:attribute ref="reserved"/>
+        <xs:attribute ref="default"/>
+    </xs:complexType>
+</xs:element>
+
+<xs:element name="wip">
+    <xs:complexType mixed="true">
+        <xs:sequence>
+            <xs:element ref="description" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute ref="since" />
+    </xs:complexType>
+</xs:element>
+
+<xs:element name="superseded">
+    <xs:complexType mixed="true">
+        <xs:sequence>
+            <xs:element ref="description" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute ref="since" use="required"/>
+        <xs:attribute ref="replaced_by" use="required"/>
+    </xs:complexType>
+</xs:element>
+
+<xs:element name="deprecated">
+    <xs:complexType mixed="true">
+        <xs:sequence>
+            <xs:element ref="description" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute ref="since" use="required"/>
+        <xs:attribute ref="remove_on_date"/>
+        <xs:attribute ref="replaced_by" use="required"/>
+
+    </xs:complexType>
+</xs:element>
+
+<xs:element name="field">
+    <xs:complexType mixed="true">
+        <xs:sequence>
+            <xs:element ref="description" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute ref="type" use="required"/>
+        <xs:attribute ref="name" use="required"/>
+        <xs:attribute ref="print_format" />
+        <xs:attribute ref="enum" />
+        <xs:attribute ref="display" />
+        <xs:attribute ref="units" />
+        <xs:attribute ref="increment"/>
+        <xs:attribute ref="minValue"/>
+        <xs:attribute ref="maxValue"/>
+        <xs:attribute ref="multiplier"/>
+        <xs:attribute ref="default" />
+        <xs:attribute ref="instance" />
+        <xs:attribute ref="invalid" />
+    </xs:complexType>
+</xs:element>
+
+<xs:element name="extensions">
+</xs:element>
+
+<xs:element name="entry">
+    <xs:complexType>
+        <xs:sequence>
+            <xs:choice minOccurs="0" maxOccurs="1">
+                <xs:element ref="wip"/>
+                <xs:element ref="superseded"/>
+                <xs:element ref="deprecated"/>
+            </xs:choice>
+            <xs:element ref="description" minOccurs="0"/>
+            <xs:element ref="param" minOccurs="0" maxOccurs="unbounded" />
+        </xs:sequence>
+        <xs:attribute ref="value" />
+        <xs:attribute ref="name" use="required"/>
+        <xs:attribute ref="hasLocation"/>
+        <xs:attribute ref="isDestination"/>
+        <xs:attribute ref="missionOnly"/>
+    </xs:complexType>
+</xs:element>
+
+<!-- definition entry elements attributes (like the ones used on MAV_CMD for example) -->
+<xs:attribute name="bitmask" type="xs:boolean" default="false"/>
+
+<xs:element name="enum">
+    <xs:complexType>
+        <xs:sequence>
+            <xs:choice minOccurs="0" maxOccurs="1">
+                <xs:element ref="wip"/>
+                <xs:element ref="superseded"/>
+                <xs:element ref="deprecated"/>
+            </xs:choice>
+            <xs:element ref="description" minOccurs="0"/>
+            <xs:element ref="entry" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute ref="name" use="required"/>
+        <xs:attribute ref="bitmask"/>
+    </xs:complexType>
+</xs:element>
+
+<xs:element name="message">
+    <xs:complexType>
+        <xs:sequence>
+            <xs:sequence minOccurs="1" maxOccurs="1">
+                <xs:choice minOccurs="0" maxOccurs="1">
+                <xs:element ref="wip"/>
+                <xs:element ref="superseded"/>
+                <xs:element ref="deprecated"/>
+                </xs:choice>
+                <xs:element ref="description" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="field" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+            <!-- MavLink 2.0 extensions are optional hence minOccurs="0" -->
+            <xs:sequence minOccurs="0" maxOccurs="1">
+                <xs:element ref="extensions" minOccurs="1" maxOccurs="1"/>
+                <xs:element ref="field" minOccurs="1" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:sequence>
+        <xs:attribute ref="id" use="required"/>
+        <xs:attribute ref="name" use="required"/>
+    </xs:complexType>
+</xs:element>
+
+<xs:element name="enums">
+    <xs:complexType>
+        <xs:sequence>
+            <xs:element ref="enum" maxOccurs="unbounded" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:element>
+
+<xs:element name="messages">
+    <xs:complexType>
+        <xs:sequence>
+            <xs:element ref="message" maxOccurs="unbounded" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:element>
+
+<xs:element name="mavlink">
+    <xs:complexType>
+        <xs:sequence>
+            <xs:element ref="include" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element ref="version" minOccurs="0"/>
+            <xs:element ref="dialect" minOccurs="0"/>
+            <xs:element ref="enums" minOccurs="0"/>
+            <xs:element ref="messages"/>
+        </xs:sequence>
+        <xs:attribute name="file" type="xs:anyURI"/>
+    </xs:complexType>
+</xs:element>
+
+</xs:schema>

@@ -1,0 +1,5 @@
+<map id="ds__RetrievalMethodType" name="ds__RetrievalMethodType">
+<area shape="rect" id="node2" href="$structds_____transforms_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformsType is a complexType. " alt="" coords="32,193,177,221"/>
+<area shape="rect" id="node4" href="$structds_____transform_type.html" title="Imported complexType &quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformType from typemap WS/WS&#45;typemap..." alt="" coords="36,99,175,127"/>
+<area shape="rect" id="node6" href="$struct__c14n_____inclusive_namespaces.html" title="_c14n__InclusiveNamespaces" alt="" coords="4,6,205,34"/>
+</map>

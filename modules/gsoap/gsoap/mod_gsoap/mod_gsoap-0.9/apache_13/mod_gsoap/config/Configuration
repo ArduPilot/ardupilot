@@ -1,0 +1,454 @@
+# Config file for the Apache httpd.
+
+# Configuration.tmpl is the template for Configuration. Configuration should
+# be edited to select the modules to be included as well as various flags
+# for Makefile.
+
+# The template should only be changed when a new system or module is added,
+# or an existing one modified. This will also most likely require some minor
+# changes to Configure to recognize those changes.
+
+# There are 5 types of lines here:
+
+# '#' comments, distinguished by having a '#' as the first non-blank character
+#
+# Makefile options, such as CC=gcc, etc...
+#
+# Rules, distinguished by having "Rule" at the front. These are used to
+# control Configure's behavior as far as how to create Makefile.
+#
+# Module selection lines, distinguished by having 'AddModule' at the front.
+# These list the configured modules, in priority order (highest priority
+# last).  They're down at the bottom.
+#
+# Optional module selection lines, distinguished by having `%Module'
+# at the front.  These specify a module that is to be compiled in (but
+# not enabled).  The AddModule directive can be used to enable such a
+# module.  By default no such modules are defined.
+
+
+################################################################
+# Makefile configuration
+#
+# These are added to the general flags determined by Configure.
+# Edit these to work around Configure if needed. The EXTRA_* family
+# will be added to the regular Makefile flags. For example, if you
+# want to compile with -Wall, then add that to EXTRA_CFLAGS. These
+# will be added to whatever flags Configure determines as appropriate
+# and needed for your platform.
+#
+# You can also set the compiler (CC) and optimization (OPTIM) used here as
+# well.  Settings here have priority; If not set, Configure will attempt to
+# guess the C compiler, looking for gcc first, then cc.
+#
+# Optimization note: 
+# Be careful when adding optimization flags (like -O3 or -O6) on the OPTIM
+# entry, especially when using some GCC variants. Experience showed that using
+# these for compiling Apache is risky. If you don't want to see Apache dumping
+# core regularly then at most use -O or -O2.
+#
+# The EXTRA_DEPS can be used to add extra Makefile dependencies to external
+# files (for instance third-party libraries) for the httpd target. The effect
+# is that httpd is relinked when those files are changed.
+#
+EXTRA_CFLAGS=-g
+EXTRA_LDFLAGS=
+EXTRA_LIBS=-lpthread -lg++ -ldl
+EXTRA_INCLUDES=-I/home/aberger/apache_gsoap.0.0.5
+EXTRA_DEPS=
+
+#CC=
+#CPP=
+#OPTIM=
+#RANLIB=
+
+################################################################
+# Name of the installed Apache HTTP webserver.
+#
+#TARGET=
+
+################################################################
+# Dynamic Shared Object (DSO) support
+#
+# There is experimental support for compiling the Apache core and
+# the Apache modules into dynamic shared object (DSO) files for
+# maximum runtime flexibility.
+#
+# The Configure script currently has only limited built-in
+# knowledge on how to compile these DSO files because this is
+# heavily platform-dependent. The current state of supported and
+# explicitly unsupported platforms can be found in the file 
+# "htdocs/manual/dso.html", under "Supported Platforms".
+#
+# For other platforms where you want to use the DSO mechanism you
+# first have to make sure it supports the pragmatic dlopen()
+# system call and then you have to provide the appropriate
+# compiler and linker flags below to create the DSO files on your
+# particular platform.
+#
+# The placement of the Apache core into a DSO file is triggered
+# by the SHARED_CORE rule below while support for building
+# individual Apache Modules as DSO files and loading them under
+# runtime without recompilation is triggered by `SharedModule'
+# commands. To be able to use the latter one first enable the
+# module mod_so (see corresponding `AddModule' command below).
+# Then enable the DSO feature for particular modules individually
+# by replacing their `AddModule' command with `SharedModule' and
+# change the filename extension from `.o' to `.so'. 
+#
+# Sometimes the DSO files need to be linked against other shared
+# libraries to explicitly resolve symbols from them when the
+# httpd program not already contains references to them. For
+# instance when buidling mod_auth_db as a DSO you need to link
+# the DSO against the libdb explicity because the Apache kernel
+# has no references for this library. But the problem is that
+# this "chaining" is not supported on all platforms. Although one
+# usually can link a DSO against another DSO without linker
+# complains the linkage is not really done on these platforms.
+# So, when you receive "unresolved symbol" errors under runtime
+# when using the LoadModule directive for a particular module try
+# to enable the SHARED_CHAIN rule below.
+
+#CFLAGS_SHLIB=
+#LD_SHLIB=
+#LDFLAGS_SHLIB=
+#LDFLAGS_SHLIB_EXPORT=
+
+Rule SHARED_CORE=default
+Rule SHARED_CHAIN=default
+
+################################################################
+# Rules configuration
+#
+# These are used to let Configure know that we want certain
+# functions. The format is: Rule RULE=value
+#
+# At present, only the following RULES are known: WANTHSREGEX, SOCKS4,
+# SOCKS5, IRIXNIS, IRIXN32, PARANOID, and DEV_RANDOM.
+#
+# For all Rules except DEV_RANDOM, if set to "yes", then Configure knows
+# we want that capability and does what is required to add it in. If set
+# to "default" then Configure makes a "best guess"; if set to anything
+# else, or not present, then nothing is done.
+#
+# SOCKS4:
+#  If SOCKS4 is set to 'yes', be sure that you add the socks library
+#  location to EXTRA_LIBS, otherwise Configure will assume
+#  "-L/usr/local/lib -lsocks"
+#
+# SOCKS5:
+#  If SOCKS5 is set to 'yes', be sure that you add the socks5 library
+#  location to EXTRA_LIBS, otherwise Configure will assume
+#  "-L/usr/local/lib -lsocks5"
+#
+# IRIXNIS:
+#  Only takes effect if Configure determines that you are running
+#  SGI IRIX.  If you are using a (ancient) 4.x version of IRIX, you
+#  need this if you are using NIS and Apache needs access to it for
+#  things like mod_userdir.  This is not required on 5.x and later
+#  and you should not enable it on such systems.
+#
+# IRIXN32:
+#  If you are running a version of IRIX and Configure detects
+#  n32 libraries, it will use those instead of the o32 ones.
+#
+# PARANOID:
+#  New with version 1.3, during Configure modules can run
+#  pre-programmed shell commands in the same environment that
+#  Configure runs in. This allows modules to control how Configure
+#  works. Normally, Configure will simply note that a module
+#  is performing this function. If PARANOID is set to yes, it will
+#  actually print-out the code that the modules execute
+#
+# EXPAT:
+#  Include an Expat implementation into Apache for use by the
+#  modules. James Clark's Expat package (expat-lite) is bundled
+#  with Apache for the convenience of our users. The EXPAT rule
+#  determines which Expat implementation, if any, to use as follows:
+#
+#  Rule EXPAT=yes       : Use system Expat if available; otherwise
+#                         use bundled Expat (lib/expat-lite). If
+#                         neither exists the build will fail
+#  Rule EXPAT=no        : Don't include Expat at all
+#  Rule EXPAT=default   : If Expat can be found at the system or
+#                         in lib/expat-lite, use it; otherwise
+#                         skip it
+# 
+# CYGWIN_WINSOCK: 
+#  Use Win32 API system calls for socket communication instead 
+#  of Cygwin's POSIX.1 wrappers. This avoids the Cygwin specific
+#  implementation and uses the Win32 native calls. Should be faster
+#  and more reliable for high-load systems.  
+# 
+
+Rule SOCKS4=no
+Rule SOCKS5=no
+Rule IRIXNIS=no
+Rule IRIXN32=yes
+Rule PARANOID=no
+Rule EXPAT=default
+Rule CYGWIN_WINSOCK=no 
+
+# DEV_RANDOM:
+#  Note: this rule is only used when compiling mod_auth_digest.
+#  mod_auth_digest requires a cryptographically strong random seed for its
+#  random number generator. It knows two ways of getting this: 1) from
+#  a file or device (such as "/dev/random"), or 2) from the truerand
+#  library. If this rule is set to 'default' then Configure will choose
+#  to use /dev/random if it exists, else /dev/urandom if it exists,
+#  else the truerand library. To override this behaviour set DEV_RANDOM
+#  either to 'truerand' (to use the library) or to a device or file
+#  (e.g. '/dev/urandom'). If the truerand library is selected, Configure
+#  will assume "-L/usr/local/lib -lrand".
+Rule DEV_RANDOM=default
+
+# The following rules should be set automatically by Configure. However, if
+# they are not set by Configure (because we don't know the correct value for
+# your platform), or are set incorrectly, you may override them here.
+# If you have to do this, please let us know what you set and what your
+# platform is, by filling out a problem report form at the Apache web site:
+# <http://bugs.apache.org/>.  If your browser is forms-incapable, you
+# can get the information to us by sending mail to apache-bugs@apache.org.
+#
+# WANTHSREGEX:
+#  Apache requires a POSIX regex implementation. Henry Spencer's
+#  excellent regex package is included with Apache and can be used
+#  if desired. If your OS has a decent regex, you can elect to
+#  not use this one by setting WANTHSREGEX to 'no' or commenting
+#  out the Rule. The "default" action is "yes" unless overruled
+#  by OS specifics
+
+Rule WANTHSREGEX=default
+
+################################################################
+# Module configuration
+#
+# Modules are listed in reverse priority order --- the ones that come
+# later can override the behavior of those that come earlier.  This
+# can have visible effects; for instance, if UserDir followed Alias,
+# you couldn't alias out a particular user's home directory.
+
+# The configuration below is what we consider a decent default 
+# configuration.  If you want the functionality provided by a particular
+# module, remove the "#" sign at the beginning of the line. But remember, 
+# the more modules you compile into the server, the larger the executable
+# is and the more memory it will take, so if you are unlikely to use the
+# functionality of a particular module you might wish to leave it out.
+
+## mod_mmap_static is an experimental module, you almost certainly
+## don't need it.  It can make some webservers faster.  No further
+## documentation is provided here because you'd be foolish
+## to use mod_mmap_static without reading the full documentation.
+
+# AddModule modules/experimental/mod_mmap_static.o
+
+## mod_vhost_alias provides support for mass virtual hosting
+## by dynamically changing the document root and CGI directory
+## based on the host header or local IP address of the request.
+## See "../htdocs/manual/vhosts/mass.html".
+
+# AddModule modules/standard/mod_vhost_alias.o
+
+##
+## Config manipulation modules
+##
+## mod_env sets up additional or restricted environment variables to be
+## passed to CGI/SSI scripts.  It is listed first (lowest priority) since
+## it does not do per-request stuff.
+
+AddModule modules/standard/mod_env.o
+
+##
+## Request logging modules
+##
+
+AddModule modules/standard/mod_log_config.o
+
+## Optional modules for NCSA user-agent/referer logging compatibility
+## We recommend, however, that you just use the configurable access_log.
+
+# AddModule modules/standard/mod_log_agent.o
+# AddModule modules/standard/mod_log_referer.o
+
+##
+## Type checking modules
+##
+## mod_mime_magic determines the type of a file by examining a few bytes
+## of it and testing against a database of filetype signatures.  It is
+## based on the unix file(1) command.
+## mod_mime maps filename extensions to content types, encodings, and
+## "magic" type handlers (the latter is obsoleted by mod_actions, and
+## don't confuse it with the previous module).
+## mod_negotiation allows content selection based on the Accept* headers.
+
+# AddModule modules/standard/mod_mime_magic.o
+AddModule modules/standard/mod_mime.o
+AddModule modules/standard/mod_negotiation.o
+
+##
+## Content delivery modules
+##
+## The status module allows the server to display current details about 
+## how well it is performing and what it is doing.  Consider also enabling 
+## the 'ExtendedStatus On' directive to allow full status information.
+## Please note that doing so can result in a palpable performance hit.
+
+AddModule modules/standard/mod_status.o
+
+## The Info module displays configuration information for the server and 
+## all included modules. It's very useful for debugging.
+
+# AddModule modules/standard/mod_info.o
+
+## mod_include translates server-side include (SSI) statements in text files.
+## mod_autoindex handles requests for directories which have no index file
+## mod_dir handles requests on directories and directory index files.
+## mod_cgi handles CGI scripts.
+
+AddModule modules/standard/mod_include.o
+AddModule modules/standard/mod_autoindex.o
+AddModule modules/standard/mod_dir.o
+AddModule modules/standard/mod_cgi.o
+
+## The asis module implements ".asis" file types, which allow the embedding
+## of HTTP headers at the beginning of the document.  mod_imap handles internal 
+## imagemaps (no more cgi-bin/imagemap/!).  mod_actions is used to specify 
+## CGI scripts which act as "handlers" for particular files, for example to
+## automatically convert every GIF to another file type.
+
+AddModule modules/standard/mod_asis.o
+AddModule modules/standard/mod_imap.o
+AddModule modules/standard/mod_actions.o
+
+##
+## URL translation modules.
+##
+
+## The Speling module attempts to correct misspellings of URLs that
+## users might have entered, namely by checking capitalizations
+## or by allowing up to one misspelling (character insertion / omission /
+## transposition/typo). This catches the majority of misspelled requests.
+## If it finds a match, a "spelling corrected" redirection is returned.
+
+# AddModule modules/standard/mod_speling.o
+
+## The UserDir module for selecting resource directories by user name
+## and a common prefix, e.g., /~<user> , /usr/web/<user> , etc.
+
+AddModule modules/standard/mod_userdir.o
+
+## The Alias module provides simple URL translation and redirection.
+
+AddModule modules/standard/mod_alias.o
+
+## The URL rewriting module allows for powerful URI-to-URI and 
+## URI-to-filename mapping using a regular expression based 
+## rule-controlled rewriting engine.
+
+# AddModule modules/standard/mod_rewrite.o
+
+##
+## Access control and authentication modules. 
+##
+AddModule modules/standard/mod_access.o
+AddModule modules/standard/mod_auth.o
+
+## The anon_auth module allows for anonymous-FTP-style username/ 
+## password authentication.
+
+# AddModule modules/standard/mod_auth_anon.o
+
+## db_auth and dbm_auth work with Berkeley DB files - make sure there
+## is support for DBM files on your system.  You may need to grab the GNU
+## "gdbm" package if not and possibly adjust EXTRA_LIBS. (This may be
+## done by Configure at a later date)
+
+# AddModule modules/standard/mod_auth_dbm.o
+# AddModule modules/standard/mod_auth_db.o
+
+## "digest" implements HTTP Digest Authentication rather than the less 
+## secure Basic Auth used by the other modules.  This is the old version.
+
+# AddModule modules/standard/mod_digest.o
+
+## "auth_digest" implements HTTP/1.1 Digest Authentication (RFC 2617)
+## rather than the less secure Basic Auth used by the other modules.
+## This is an updated version of mod_digest, but it is not as well tested
+## and is therefore marked experimental.  Use either the one above, or
+## this one below, but not both digest modules.
+## Note: if you add this module in then you might also need the
+## truerand library (available for example from
+## ftp://research.att.com/dist/mab/librand.shar) - see the Rule
+## DEV_RANDOM above for more info.
+##
+## Must be added above (run later than) the proxy module because the
+## WWW-Authenticate and Proxy-Authenticate headers are parsed in the
+## post-read-request phase and it needs to know if this is a proxy request.
+# AddModule modules/experimental/mod_auth_digest.o
+
+## Optional Proxy
+##
+## The proxy module enables the server to act as a proxy for outside
+## http and ftp services. It's not as complete as it could be yet.
+## NOTE: You do not want this module UNLESS you are running a proxy;
+##       it is not needed for normal (origin server) operation.
+
+# AddModule modules/proxy/libproxy.a
+
+## Optional response header manipulation modules. 
+##
+## cern_meta mimics the behavior of the CERN web server with regards to 
+## metainformation files.  
+
+# AddModule modules/standard/mod_cern_meta.o
+
+## The expires module can apply Expires: headers to resources,
+## as a function of access time or modification time.
+
+# AddModule modules/standard/mod_expires.o
+
+## The headers module can set arbitrary HTTP response headers,
+## as configured in server, vhost, access.conf or .htaccess configs
+
+# AddModule modules/standard/mod_headers.o
+
+## Miscellaneous modules
+##
+## mod_usertrack is the new name for mod_cookies.  This module
+## uses Netscape cookies to automatically construct and log
+## click-trails from Netscape cookies, or compatible clients who
+## aren't coming in via proxy.   
+##
+## You do not need this, or any other module to allow your site
+## to use Cookies.  This module is for user tracking only
+
+# AddModule modules/standard/mod_usertrack.o
+
+## The example module, which demonstrates the use of the API.  See
+## the file modules/example/README for details.  This module should
+## only be used for testing -- DO NOT ENABLE IT on a production server.
+
+# AddModule modules/example/mod_example.o
+
+## mod_unique_id generates unique identifiers for each hit, which are
+## available in the environment variable UNIQUE_ID.  It may not work on all
+## systems, hence it is not included by default.
+
+# AddModule modules/standard/mod_unique_id.o
+
+## mod_so lets you add modules to Apache without recompiling.
+## This is an experimental feature at this stage and only supported 
+## on a subset of the platforms we generally support. 
+## Don't change this entry to a 'SharedModule' variant (Bootstrapping!)
+
+# AddModule modules/standard/mod_so.o
+
+## mod_setenvif lets you set environment variables based on the HTTP header
+## fields in the request; this is useful for conditional HTML, for example.
+## Since it is also used to detect buggy browsers for workarounds, it
+## should be the last (highest priority) module.
+
+AddModule modules/mod_gsoap/mod_gsoap.o
+
+AddModule modules/standard/mod_setenvif.o
+

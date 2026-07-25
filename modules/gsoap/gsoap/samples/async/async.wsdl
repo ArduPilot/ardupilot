@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="async"
+  targetNamespace="http://websrv.cs.fsu.edu/~engelen/calc.wsdl"
+  xmlns:tns="http://websrv.cs.fsu.edu/~engelen/calc.wsdl"
+  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:ns="urn:calc"
+  xmlns:SOAP="http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:HTTP="http://schemas.xmlsoap.org/wsdl/http/"
+  xmlns:MIME="http://schemas.xmlsoap.org/wsdl/mime/"
+  xmlns:DIME="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+  xmlns:WSDL="http://schemas.xmlsoap.org/wsdl/"
+  xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<types>
+
+  <schema targetNamespace="urn:calc"
+    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:ns="urn:calc"
+    xmlns="http://www.w3.org/2001/XMLSchema"
+    elementFormDefault="unqualified"
+    attributeFormDefault="unqualified">
+    <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+    <complexType name="record"><!-- ns__record -->
+          <sequence>
+            <element name="SKU" type="xsd:int" minOccurs="1" maxOccurs="1"/><!-- ns__record::SKU -->
+            <element name="product-name" type="xsd:string" minOccurs="0" maxOccurs="1"/><!-- ns__record::product_name -->
+            <element name="in-store" type="xsd:int" minOccurs="1" maxOccurs="1"/><!-- ns__record::in_store -->
+          </sequence>
+    </complexType>
+  </schema>
+
+</types>
+
+<message name="addRequest">
+  <part name="a" type="xsd:double"/><!-- ns__add::a -->
+  <part name="b" type="xsd:double"/><!-- ns__add::b -->
+</message>
+
+<message name="addResponse">
+  <part name="result" type="xsd:double"/><!-- ns__add::result -->
+</message>
+
+<message name="subRequest">
+  <part name="a" type="xsd:double"/><!-- ns__sub::a -->
+  <part name="b" type="xsd:double"/><!-- ns__sub::b -->
+</message>
+
+<message name="subResponse">
+  <part name="result" type="xsd:double"/><!-- ns__sub::result -->
+</message>
+
+<message name="mulRequest">
+  <part name="a" type="xsd:double"/><!-- ns__mul::a -->
+  <part name="b" type="xsd:double"/><!-- ns__mul::b -->
+</message>
+
+<message name="mulResponse">
+  <part name="result" type="xsd:double"/><!-- ns__mul::result -->
+</message>
+
+<message name="divRequest">
+  <part name="a" type="xsd:double"/><!-- ns__div::a -->
+  <part name="b" type="xsd:double"/><!-- ns__div::b -->
+</message>
+
+<message name="divResponse">
+  <part name="result" type="xsd:double"/><!-- ns__div::result -->
+</message>
+
+<portType name="asyncPortType">
+  <operation name="add">
+    <documentation>Service definition of function ns__add</documentation>
+    <input message="tns:addRequest"/>
+    <output message="tns:addResponse"/>
+  </operation>
+  <operation name="sub">
+    <documentation>Service definition of function ns__sub</documentation>
+    <input message="tns:subRequest"/>
+    <output message="tns:subResponse"/>
+  </operation>
+  <operation name="mul">
+    <documentation>Service definition of function ns__mul</documentation>
+    <input message="tns:mulRequest"/>
+    <output message="tns:mulResponse"/>
+  </operation>
+  <operation name="div">
+    <documentation>Service definition of function ns__div</documentation>
+    <input message="tns:divRequest"/>
+    <output message="tns:divResponse"/>
+  </operation>
+</portType>
+
+<binding name="async" type="tns:asyncPortType">
+  <SOAP:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+  <operation name="add">
+    <SOAP:operation style="rpc" soapAction=""/>
+    <input>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:calc"/>
+    </input>
+    <output>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:calc"/>
+    </output>
+  </operation>
+  <operation name="sub">
+    <SOAP:operation style="rpc" soapAction=""/>
+    <input>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:calc"/>
+    </input>
+    <output>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:calc"/>
+    </output>
+  </operation>
+  <operation name="mul">
+    <SOAP:operation style="rpc" soapAction=""/>
+    <input>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:calc"/>
+    </input>
+    <output>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:calc"/>
+    </output>
+  </operation>
+  <operation name="div">
+    <SOAP:operation style="rpc" soapAction=""/>
+    <input>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:calc"/>
+    </input>
+    <output>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:calc"/>
+    </output>
+  </operation>
+</binding>
+
+<service name="async">
+  <documentation>gSOAP 2.8.114 generated service definition</documentation>
+  <port name="async" binding="tns:async">
+    <SOAP:address location="http://localhost:8080"/>
+  </port>
+</service>
+
+</definitions>

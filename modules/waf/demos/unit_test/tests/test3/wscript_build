@@ -1,0 +1,29 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+if bld.env['PYTHON']:
+	bld(
+			features    = 'subst',
+			source      = 'test.py.in',
+			target      = 'test.1.py',
+			NAME        = 'first test3',
+			EXIT_STATUS = '0',
+	)
+	bld(
+			features    = 'subst',
+			source      = 'test.py.in',
+			target      = 'test.2.py',
+			NAME        = 'second test3',
+			EXIT_STATUS = '0',
+	)
+	paths = {
+			'PYTHONPATH': bld.path.abspath()
+	}
+	bld(
+			features              = 'test_scripts',
+			test_scripts_source   = 'test.1.py test.2.py',
+			test_scripts_template = '${PYTHON} ${SCRIPT}',
+			test_scripts_paths    = paths
+	)
+
+

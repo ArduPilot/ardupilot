@@ -1,0 +1,33 @@
+[build-system]
+requires = [
+    "setuptools",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dronecan"
+dynamic = ["version", "scripts"]
+description = "Python implementation of the DroneCAN protocol stack"
+authors = [{name='Pavel Kirienko', email='uavcan@googlegroups.com'},
+           {name='Ben Dyer', email='ben_dyer@mac.com'}]
+maintainers = [{name='Andrew Tridgell', email='andrew@tridgell.net'},
+               {name='Siddharth Purohit', email='sidbpurohit@gmail.com'}]
+readme = {file = "README.txt", content-type = "text/markdown"}
+requires-python = ">=3.7"
+classifiers = [
+    'Development Status :: 6 - Mature',
+    'Intended Audience :: Developers',
+    'Topic :: Software Development :: Libraries',
+    'License :: OSI Approved :: MIT License',
+    'Programming Language :: Python',
+]
+
+[project.urls]
+Homepage = "https://github.com/DroneCAN/pydronecan"
+Issues = "https://github.com/DroneCAN/pydronecan/issues"
+
+[tool.setuptools]
+packages=['dronecan',
+          'dronecan.dsdl',
+          'dronecan.driver',
+          'dronecan.app']

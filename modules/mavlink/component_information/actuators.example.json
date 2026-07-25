@@ -1,0 +1,584 @@
+{
+  "version": 1,
+  "show-ui-if": "SYS_CTRL_ALLOC==1",
+  "outputs_v1": [
+	  {
+		  "label": "MAIN",
+		  "subgroups": [
+			  {
+				  "label": "MAIN 1-4",
+				  "parameters": [
+					  {
+						  "name": "PWM_MAIN_TIM0",
+						  "function": "primary"
+					  },
+					  {
+						  "name": "FMU_TIM0_EXTRA",
+						  "label": "Extra group config"
+					  }
+				  ],
+				  "per-channel-parameters": [
+					  {
+						  "label": "Function",
+						  "name": "PWM_MAIN_FUNC${i}",
+						  "function": "function"
+					  },
+					  {
+						  "label": "Disarmed",
+						  "name": "PWM_MAIN_DIS${i}",
+						  "show-if": "PWM_MAIN_TIM0>=-1",
+						  "function": "disarmed",
+						  "advanced": true
+					  },
+					  {
+						  "label": "Min",
+						  "name": "PWM_MAIN_MIN${i}",
+						  "show-if": "PWM_MAIN_TIM0>=-1"
+					  },
+					  {
+						  "label": "Max",
+						  "name": "PWM_MAIN_MAX${i}",
+						  "show-if": "PWM_MAIN_TIM0>=-1"
+					  },
+					  {
+						  "label": "Failsafe",
+						  "name": "PWM_MAIN_FAIL${i}",
+						  "show-if": "PWM_MAIN_TIM0>=-1"
+					  }
+				  ],
+				  "channels": [
+					  {
+						  "label": "MAIN 1",
+						  "param-index": 1
+					  },
+					  {
+						  "label": "MAIN 2",
+						  "param-index": 2
+					  },
+					  {
+						  "label": "MAIN 3",
+						  "param-index": 3
+					  },
+					  {
+						  "label": "MAIN 4",
+						  "param-index": 4
+					  }
+				  ]
+			  }
+		  ]
+	  },
+	  {
+		  "label": "AUX",
+		  "parameters": [
+			  {
+				  "label": "DShot Telemetry",
+				  "name": "DSHOT_TEL_CFG"
+			  },
+			  {
+				  "label": "DShot Min",
+				  "name": "DSHOT_MIN"
+			  }
+		  ],
+		  "subgroups": [
+			  {
+				  "label": "AUX 1-4",
+				  "supported-actions": {
+					  "set-spin-direction1": {
+						  "supported-if": "PWM_AUX_TIM0<-1",
+						  "actuator-types": ["motor"]
+					  },
+					  "set-spin-direction2": {
+						  "supported-if": "PWM_AUX_TIM0<-1",
+						  "actuator-types": ["motor"]
+					  }
+				  },
+				  "parameters": [
+					  {
+						  "name": "PWM_AUX_TIM0",
+						  "function": "primary"
+					  }
+				  ],
+				  "per-channel-parameters": [
+					  {
+						  "label": "Function",
+						  "name": "PWM_AUX_FUNC${i}",
+						  "function": "function"
+					  },
+					  {
+						  "label": "Disarmed",
+						  "name": "PWM_AUX_DIS${i}",
+						  "show-if": "PWM_AUX_TIM0>=-1",
+						  "function": "disarmed",
+						  "advanced": true
+					  },
+					  {
+						  "label": "Min",
+						  "name": "PWM_AUX_MIN${i}",
+						  "show-if": "PWM_AUX_TIM0>=-1"
+					  },
+					  {
+						  "label": "Max",
+						  "name": "PWM_AUX_MAX${i}",
+						  "show-if": "PWM_AUX_TIM0>=-1"
+					  },
+					  {
+						  "label": "Failsafe",
+						  "name": "PWM_AUX_FAIL${i}",
+						  "show-if": "PWM_AUX_TIM0>=-1"
+					  }
+				  ],
+				  "channels": [
+					  {
+						  "label": "AUX 1",
+						  "param-index": 1
+					  },
+					  {
+						  "label": "AUX 2",
+						  "param-index": 2
+					  },
+					  {
+						  "label": "AUX 3",
+						  "param-index": 3
+					  },
+					  {
+						  "label": "AUX 4",
+						  "param-index": 4
+					  }
+				  ]
+			  },
+			  {
+				  "label": "AUX 5-6",
+				  "parameters": [
+					  {
+						  "name": "PWM_AUX_TIM1",
+						  "function": "primary"
+					  }
+				  ],
+				  "per-channel-parameters": [
+					  {
+						  "label": "Function",
+						  "name": "PWM_AUX_FUNC${i}",
+						  "function": "function"
+					  },
+					  {
+						  "label": "Disarmed",
+						  "name": "PWM_AUX_DIS${i}",
+						  "show-if": "PWM_AUX_TIM1>=-1",
+						  "function": "disarmed",
+						  "advanced": true
+					  },
+					  {
+						  "label": "Min",
+						  "name": "PWM_AUX_MIN${i}",
+						  "show-if": "PWM_AUX_TIM1>=-1"
+					  },
+					  {
+						  "label": "Max",
+						  "name": "PWM_AUX_MAX${i}",
+						  "show-if": "PWM_AUX_TIM1>=-1"
+					  },
+					  {
+						  "label": "Failsafe",
+						  "name": "PWM_AUX_FAIL${i}",
+						  "show-if": "PWM_AUX_TIM1>=-1"
+					  },
+					  {
+						  "label": "Min",
+						  "name": "DSHOT_FMU_MIN${i}",
+						  "show-if": "PWM_AUX_TIM1<-1"
+					  }
+				  ],
+				  "channels": [
+					  {
+						  "label": "AUX 5",
+						  "param-index": 5
+					  },
+					  {
+						  "label": "AUX 6",
+						  "param-index": 6
+					  }
+				  ]
+			  },
+			  {
+				  "label": "AUX 7-8",
+				  "parameters": [
+					  {
+						  "name": "PWM_AUX_TIM2",
+						  "function": "primary"
+					  }
+				  ],
+				  "per-channel-parameters": [
+					  {
+						  "label": "Function",
+						  "name": "PWM_AUX_FUNC${i}",
+						  "function": "function"
+					  },
+					  {
+						  "label": "Disarmed",
+						  "name": "PWM_AUX_DIS${i}",
+						  "show-if": "PWM_AUX_TIM2>=-1",
+						  "function": "disarmed",
+						  "advanced": true
+					  },
+					  {
+						  "label": "Min",
+						  "name": "PWM_AUX_MIN${i}",
+						  "show-if": "PWM_AUX_TIM2>=-1"
+					  },
+					  {
+						  "label": "Max",
+						  "name": "PWM_AUX_MAX${i}",
+						  "show-if": "PWM_AUX_TIM2>=-1"
+					  },
+					  {
+						  "label": "Failsafe",
+						  "name": "PWM_AUX_FAIL${i}",
+						  "show-if": "PWM_AUX_TIM2>=-1"
+					  },
+					  {
+						  "label": "Min",
+						  "name": "DSHOT_FMU_MIN${i}",
+						  "show-if": "PWM_AUX_TIM2<-1"
+					  }
+				  ],
+				  "channels": [
+					  {
+						  "label": "AUX 7",
+						  "param-index": 7
+					  },
+					  {
+						  "label": "AUX 8",
+						  "param-index": 8
+					  }
+				  ]
+			  },
+			  {
+				  "label": "CAP 1-3",
+				  "parameters": [
+					  {
+						  "name": "PWM_AUX_TIM3",
+						  "function": "primary"
+					  }
+				  ],
+				  "per-channel-parameters": [
+					  {
+						  "label": "Function",
+						  "name": "PWM_AUX_FUNC${i}",
+						  "function": "function"
+					  },
+					  {
+						  "label": "Disarmed",
+						  "name": "PWM_AUX_DIS${i}",
+						  "show-if": "PWM_AUX_TIM2>=-1",
+						  "function": "disarmed",
+						  "advanced": true
+					  },
+					  {
+						  "label": "Min",
+						  "name": "PWM_AUX_MIN${i}",
+						  "show-if": "PWM_AUX_TIM2>=-1"
+					  },
+					  {
+						  "label": "Max",
+						  "name": "PWM_AUX_MAX${i}",
+						  "show-if": "PWM_AUX_TIM2>=-1"
+					  },
+					  {
+						  "label": "Failsafe",
+						  "name": "PWM_AUX_FAIL${i}",
+						  "show-if": "PWM_AUX_TIM2>=-1"
+					  }
+				  ],
+				  "channels": [
+					  {
+						  "label": "CAP 1",
+						  "param-index": 9
+					  },
+					  {
+						  "label": "CAP 2",
+						  "param-index": 10
+					  },
+					  {
+						  "label": "CAP 3",
+						  "param-index": 11
+					  }
+				  ]
+			  }
+		  ]
+	  },
+	  {
+		  "label": "UAVCAN",
+		  "parameters": [
+			  {
+				  "name": "UAVCAN_ENABLE",
+				  "label": "Configure",
+				  "function": "enable"
+			  },
+			  {
+				  "label": "Bitrate",
+				  "name": "UAVCAN_BITRATE"
+			  }
+		  ],
+		  "show-subgroups-if": "UAVCAN_ENABLE>=2",
+		  "subgroups": [
+			  {
+				  "label": "ESCs",
+				  "per-channel-parameters": [
+					  {
+						  "label": "Function",
+						  "name": "UAVCAN_EC_FUNC${i}",
+						  "function": "function"
+					  },
+					  {
+						  "label": "Idle throttle spin",
+						  "name": "UAVCAN_ESC_IDLT",
+						  "show-as": "bitset",
+						  "index-offset": -1
+					  }
+				  ],
+				  "channels": [
+					  {
+						  "label": "ESC 1",
+						  "param-index": 1
+					  },
+					  {
+						  "label": "ESC 2",
+						  "param-index": 2
+					  }
+				  ]
+			  },
+			  {
+				  "label": "Servos",
+				  "per-channel-parameters": [
+					  {
+						  "label": "Function",
+						  "name": "UAVCAN_SV_FUNC${i}"
+					  }
+				  ],
+				  "channels": [
+					  {
+						  "label": "Servo 1",
+						  "param-index": 1
+					  },
+					  {
+						  "label": "Servo 2",
+						  "param-index": 2
+					  }
+				  ]
+			  }
+		  ]
+	  },
+	  {
+		  "label": "HITL",
+		  "parameters": [
+			  {
+				  "name": "SYS_HITL",
+				  "label": "Configure",
+				  "function": "enable"
+			  }
+		  ],
+		  "subgroups": [
+			  {
+				  "per-channel-parameters": [
+					  {
+						  "label": "Function",
+						  "function": "function",
+						  "name": "PWM_SIM_FUN${i}"
+					  }
+				  ],
+				  "channels": [
+					  {
+						  "label": "Output 1",
+						  "param-index": 1
+					  },
+					  {
+						  "label": "Output 2",
+						  "param-index": 2
+					  }
+				  ]
+			  }
+		  ]
+	  }
+  ],
+
+  "functions_v1":
+  {
+	  "0": { "label": "Disabled" },
+	  "101": { "label": "Motor 1" },
+	  "102": { "label": "Motor 2" },
+	  "103": { "label": "Motor 3" },
+	  "104": { "label": "Motor 4" },
+	  "105": { "label": "Motor 5" },
+	  "106": { "label": "Motor 6" },
+	  "107": { "label": "Motor 7" },
+	  "108": { "label": "Motor 8" },
+	  "201": { "label": "Servo 1" },
+	  "202": { "label": "Servo 2" },
+	  "203": { "label": "Servo 3" },
+	  "204": { "label": "Servo 4" },
+	  "400": { "label": "Landing Gear" },
+	  "401": { "label": "Parachute" },
+	  "407": { "label": "RC AUX 1" },
+	  "2032": {
+		  "label": "Camera Capture",
+		  "exclude-from-actuator-testing": true,
+		  "note": {
+			  "condition": "TRIG_MODE==0",
+			  "text": "Camera triggering needs to be enabled and configured via TRIG_* parameters."
+		  }
+	  }
+  },
+
+  "mixer_v1":
+  {
+	  "actuator-types":
+	  {
+		  "motor": {
+			  "function-min": 101,
+			  "function-max": 108,
+			  "label-index-offset": 1,
+			  "values": {
+				  "min": 0,
+				  "max": 1,
+				  "default-is-nan": true,
+				  "reversible": true
+			  },
+			  "per-item-parameters": [
+				  {
+					  "label": "Reversible",
+					  "name": "CA_MOT_REV",
+					  "show-as": "bitset",
+					  "index-offset": -1,
+					  "advanced": true
+				  }
+			  ]
+		  },
+		  "servo": {
+			  "function-min": 201,
+			  "function-max": 208,
+			  "values": {
+				  "min": -1,
+				  "max": 1,
+				  "default": 0
+			  },
+			  "per-item-parameters": [
+				  {
+					  "label": "Trim",
+					  "name": "CA_SVO_TRIM${i}",
+					  "index-offset": 1
+				  }
+			  ]
+		  },
+		  "DEFAULT": {
+			  "values": {
+				  "min": -1,
+				  "max": 1,
+				  "default": -1
+			  }
+		  }
+	  },
+	  "config":
+	  [
+		  {
+			  "option": "CA_AIRFRAME==1",
+			  "type": "multirotor",
+			  "actuators":
+			  [
+				  {
+					  "group-label": "Motors",
+					  "count": "CA_MC_R_COUNT",
+					  "actuator-type": "motor",
+					  "required": true,
+					  "parameters": [
+						  {
+							  "label": "slew rate limit",
+							  "name": "MOT_SLEW_MAX",
+							  "advanced": true
+						  }
+					  ],
+					  "per-item-parameters":
+					  [
+						  {
+							  "label": "Position X",
+							  "function": "posx",
+							  "name": "CA_MC_R${i}_PX",
+							  "index-offset": 0
+						  },
+						  {
+							  "label": "Position Y",
+							  "function": "posy",
+							  "name": "CA_MC_R${i}_PY",
+							  "index-offset": 0
+						  },
+						  {
+							  "label": "Position Z",
+							  "function": "posz",
+							  "name": "CA_MC_R${i}_PZ",
+							  "index-offset": 0,
+							  "advanced": true
+						  },
+						  {
+							  "label": "Direction CCW",
+							  "function": "spin-dir",
+							  "name": "CA_MC_R${i}_KM",
+							  "show-as": "true-if-positive"
+						  },
+						  {
+							  "label": "Axis X",
+							  "function": "axisx",
+							  "name": "CA_MC_R${i}_AX",
+							  "advanced": true
+						  }
+					  ]
+				  }
+			  ]
+		  },
+		  {
+			  "option": "CA_AIRFRAME==5",
+			  "actuators":
+			  [
+				  {
+					  "group-label": "Motors",
+					  "count": 3,
+					  "item-label-prefix":
+					  	["Front Left Motor", "Front Right Motor", "Rear Motor"],
+					  "actuator-type": "motor",
+					  "per-item-parameters":
+					  [
+						  {
+							  "label": "Position X",
+							  "function": "posx",
+							  "value": [0.3, 0.3, -0.75]
+						  },
+						  {
+							  "label": "Position Y",
+							  "function": "posy",
+							  "value": [-0.3, 0.3, 0]
+						  }
+					  ]
+				  },
+				  {
+					  "group-label": "Servos",
+					  "count": 4,
+					  "item-label-prefix":
+					  	["Front Left Tilt","Front Right Tilt","Left Elevon", "Right Elevon"],
+					  "actuator-type": "servo",
+					  "per-item-parameters":
+					  [
+						  {
+							  "label": "Position X",
+							  "function": "posx",
+							  "value": [0.3, 0.3, 0, 0]
+						  },
+						  {
+							  "label": "Position Y",
+							  "function": "posy",
+							  "value": [-0.3, 0.3, -0.3, 0.3]
+						  }
+					  ]
+				  }
+			  ]
+		  }
+	  ]
+  }
+}

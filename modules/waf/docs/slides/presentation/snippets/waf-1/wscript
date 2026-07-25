@@ -1,0 +1,11 @@
+def configure(ctx):
+	ctx.load("compiler_c compiler_cxx")
+
+def build(bld):
+	bld.program(
+	 source="b.cpp a.c main.c",
+	 target="program",
+	)
+
+def options(opt):
+	opt.load("compiler_c compiler_cxx")

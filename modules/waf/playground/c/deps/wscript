@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+import shutil
+import time
+
+top='.'
+APPNAME='test'
+VERSION='0.0.1'
+
+def copy(task):
+	time.sleep(2)
+	shutil.copyfile(task.inputs[0].abspath(), task.outputs[0].abspath())
+	return 0
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(cfg):
+	cfg.load('compiler_c')
+
+def build(bld):
+	dnode = bld.path.find_or_declare('depen.c')
+	print ('dnode = %r' % dnode)
+	assert dnode != None
+	bld(rule=copy, target='foo.h', source='foo.h.tmpl')
+	bld(rule=copy, target='depen.c', source='foo.c')
+	bld.program(target='test_foo', source=['main.c', 'foo.c'], includes='.')
+	bld.add_manual_dependency(bld.path.find_node('main.c'), dnode)

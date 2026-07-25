@@ -1,0 +1,48 @@
+#
+# Nested type.
+# Controls single light source, color or monochrome.
+#
+
+#
+# Common aircraft lights IDs
+#
+
+# inform the crew working on the apron around noisy airplanes, wearing hearing protection,
+# that the engines are turned on. Also called beacon light
+uint8 LIGHT_ID_ANTI_COLLISION = 246
+
+# a red light is mounted on the left, or port, side of the craft and a green on the right,
+# or starboard, side both 110 degree, and tail white light of 140 degree. Also called navigation lights
+uint8 LIGHT_ID_RIGHT_OF_WAY   = 247
+
+# high-intensity burst of white light, to help other pilots recognize the
+# aircraft's position in low-visibility conditions
+uint8 LIGHT_ID_STROBE         = 248
+
+# positioned on the outer side just in front of the engine cowlings on the fuselage
+uint8 LIGHT_ID_WING           = 249
+
+# lights that highlite on the logo painted on the tail or other visible surface.
+# Also called vertical tail flood lights
+uint8 LIGHT_ID_LOGO           = 250
+
+# help the pilots see the area in front of them and also shows other traffic that they're on the move
+uint8 LIGHT_ID_TAXI           = 251
+
+# light up the area in front of the airplane a bit more towards the side, easier for turns
+uint8 LIGHT_ID_TURN_OFF       = 252
+
+# very bright, lights up the area in front but a lot more than the taxi light
+uint8 LIGHT_ID_TAKE_OFF       = 253
+
+# very bright lights on the wings to help the pilots during landing by
+# lighting up the area where they're going to touch down
+uint8 LIGHT_ID_LANDING        = 254
+
+# usually yellow electroluminescent lightstrips designed to use
+# during formation flying at night or under low visibility conditions
+uint8 LIGHT_ID_FORMATION      = 255
+
+uint8 light_id
+
+RGB565 color      # Monocolor lights should interpret this as brightness

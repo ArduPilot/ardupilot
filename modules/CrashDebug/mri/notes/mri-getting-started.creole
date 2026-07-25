@@ -1,0 +1,374 @@
+==Installation
+There are a few things that you need to download and install before using MRI:
+* Follow the instructions at [[https://github.com/adamgreen/gcc4mbed#quick-start]] to install the latest version of the GCC4MBED project which includes the MRI debug monitor.
+* MRI doesn't work if the JTAG debug interface is actively being used on the device.  Any such JTAG usage will need to be disabled before you can use MRI.  What needs to be done will differ depending on your device:
+** **mbed 1768:**  Download [[http://mbed.org/media/uploads/simon/mbedmicrocontroller_21164.if]].  Copy this file to your mbed device and then reset it.  This will update the firmware on the interface chip so that its JTAG usage can be disabled when MRI is used.
+** **LPCXpresso 1769:**  Cut away the debugger portion of the device along the white line which separates the main LPC1769 device from the JTAG hardware.  You will now need to provide 3.3V of regulated power and a serial connection to UART0 on the LPC1769 portion of the board.
+** **Other:**  Remove JTAG debugger connection when using MRI and connect your PC to a UART on the device.  Typically this will be done with something like a [[https://www.sparkfun.com/products/9717|FTDI to USB to serial cable]].
+
+
+==Getting Started
+This section provides steps to setup MRI the first time and use it to debug one of the samples included with the GCC4MBED project.
+
+===Verify serial connection
+You will first want to make sure that you can connect to your mbed device using the USB virtual serial port provided by the mbed interface chip.  Follow the steps [[http://mbed.org/handbook/SerialPC|documented here in the mbed handbook]] to get your PC talking to the mbed device.  Once you have this working, take note of the serial port identifier that worked for you (ie: COM3, /dev/ttyACM0, /dev/tty.usbmodem412, etc.)  You will soon need to provide this identifier to the GNU debugger, GDB.
+
+===Build debugger enabled binaries
+By default the GCC4MBED project builds binaries of a **Release** type which produces optimized code and doesn't include any debugging support. This should be changed to a **Debug** build type to disable optimizations (makes for easier debugging) and then enable the MRI debugger in the produced binaries.  This can be done by following these steps:
+* Run the BuildShellDebug script found in the root of the GCC4MBED project directory.  This script will start a shell which is configured to create unoptimized binaries for your mbed.
+* Run "cd samples" from the debug shell.
+* Run "make clean all MRI_ENABLE=1" from the debug shell.
+
+//Using the BuildShell script will revert back to Release.//
+
+===Deploy FileTest sample to your mbed
+From within the debug shell, run "cd FileTest" to switch into the directory which contains the sample's sources and binaries.  Make sure that your mbed device is connected to your PC and that you can access its file system from your PC.  On macOS and Linux, you can probably now just run "make deploy" from the debug shell to have the FileTest.bin copied to your mbed device.  On Windows, you will need to issue something like "copy FileTest.bin e:\" to copy the binary to your mbed device but you will need to switch the "e:\" drive designation to match whatever is appropriate for your particular machine.
+
+//You can read [[https://github.com/adamgreen/gcc4mbed/blob/master/notes/install.creole#deploy]] to learn more about how to configure the LPC_DEPLOY environment variable from your BuildShell* scripts to make deployment during build easier.//
+
+===Disconnect any terminal applications
+If you have a terminal application such as **HyperTerminal** or **screen** connected to your mbed's virtual serial port, then disconnect it now.  This allows GDB to use the same serial port for remote debugging of the mbed device.
+
+===Reset the mbed device
+Press the reset button on the mbed device.  The application will be restarted but not actually start execution as the MRI enabled builds halt at startup and wait for GDB to be connected.  This allows you, the developer, to set breakpoints at locations of interest in your code (including global constructors) before starting your main() routine.
+
+===Connect GDB to mbed
+We are now going to connect GDB to your mbed device over the USB virtual serial port.  The command you use to start GDB is similar across different operating systems and machines but the serial port identification portion at the end of the command line will depend on your particular machine.  Just replace that portion of the command line examples shown next with what you found in the first step of this Getting Started guide:
+* **Windows:** {{{arm-none-eabi-gdb FileTest.elf --baud 460800 -ex "set target-charset ASCII" -ex "set print pretty on" -ex "set remotelogfile mri.log" -ex "target remote com3"}}}
+* **macOS:** {{{arm-none-eabi-gdb FileTest.elf --baud 230400 -ex "set target-charset ASCII" -ex "set print pretty on" -ex "set remotelogfile mri.log" -ex "target remote /dev/tty.usbmodem412"}}}
+* **Linux:** {{{arm-none-eabi-gdb FileTest.elf --baud 460800 -ex "set target-charset ASCII" -ex "set print pretty on" -ex "set remotelogfile mri.log" -ex "target remote /dev/ttyACM0"}}}
+
+A successful connection should result in text similar to this:
+{{{
+GNU gdb (GNU Tools for ARM Embedded Processors) 7.3.1.20120316-cvs
+Copyright (C) 2011 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "--host=x86_64-apple-darwin11.4.0 --target=arm-none-eabi".
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>...
+Reading symbols from /depots/gcc4mbed/samples/FileTest/FileTest.elf...done.
+Remote debugging using /dev/tty.usbmodem412
+_start () at ../../src/gcc4mbed.c:37
+37	            __debugbreak();
+(gdb) 
+}}}
+
+The last few lines of the GDB output indicate that our FileTest sample is currently halted at line 37 in gcc4mbed.c  This is the halt that I mentioned earlier which lets us get in and set some breakpoints before we let things actually startup.
+
+===Let's do some debugging
+GDB is now waiting for us to give it some debugging commands so let's start out by looking at the code around the line we are currently halted at to get a feel for where we are in the sample code.  We can do this by issuing the **list** command:
+{{{
+(gdb) list
+32	    
+33	    if (MRI_ENABLE)
+34	    {
+35	        __mriInit(MRI_INIT_PARAMETERS);
+36	        if (MRI_BREAK_ON_INIT)
+37	            __debugbreak();
+38	    }
+39	    
+40	    __libc_init_array();
+41	    mainReturnValue = main();
+}}}
+So line 37 is actually a {{{__debugbreak()}}} instruction that was issued because the MRI_BREAK_ON_INIT variable was set in our debug build.  We can also see that {{{__libc_init_array()}}} and main() will actually be called after we start up the application again.  
+
+So we haven't even gotten to main() yet.  What function are we in then?  We can issue the **backtrace** command to GDB and have it list the current call stack.
+{{{
+(gdb) backtrace
+#0  _start () at ../../src/gcc4mbed.c:37
+#1  0x00002b90 in Reset_Handler ()
+}}}
+This shows us that we are currently in a function called _start() which itself was called from an assembly language routine called Reset_Handler().
+
+We don't really care that much about this code so let's get into main where things make a bit more sense.  We can use the **break** command to set breakpoints and then issue the **continue** to start the code executing at full speed until we hit this breakpoint:
+{{{
+(gdb) break main
+Breakpoint 1 at 0x248: file main.cpp, line 28.
+(gdb) continue
+Continuing.
+Note: automatically using hardware breakpoints for read-only addresses.
+
+Breakpoint 1, main () at main.cpp:28
+28	    for (i = 0 ; i < sizeof(TestBuffer) ; i++)
+}}}
+
+Ahh, now we are actually in the sample's main() C++ code itself.  Let's list out some of the code in this main() function.
+{{{
+(gdb) list
+23	    unsigned char     TestBuffer[256];
+24	    unsigned char     ReadBuffer[256];
+25	    size_t            i;
+26	    
+27	    // Fill in test buffer with every byte value possible.
+28	    for (i = 0 ; i < sizeof(TestBuffer) ; i++)
+29	    {
+30	        TestBuffer[i] = i;
+31	    }
+32	    memset(ReadBuffer, 0, sizeof(ReadBuffer));
+(gdb) list
+33	    
+34	    // Create a file in the LocalFileSystem with this data.
+35	    FILE* fp = fopen(Filename, "w");
+36	    if (!fp)
+37	    {
+38	        error("Failed to open %s for writing\n", Filename);
+39	    }
+40	    
+41	    int BytesWritten = fwrite(TestBuffer, 1, sizeof(TestBuffer), fp);
+42	    if (BytesWritten != sizeof(TestBuffer))
+}}}
+Note that we can issue the **list** command multiple times and it just continues listing source from where the previous list stopped.
+
+We see that the first bit of code initializes some buffers and then it starts using the LocalFileSystem to create files and write data to them.  Let's start stepping through the code and see how it progresses.  We can do this through the use of the **next** command.
+{{{
+(gdb) next
+30	        TestBuffer[i] = i;
+(gdb) next
+28	    for (i = 0 ; i < sizeof(TestBuffer) ; i++)
+(gdb) next
+30	        TestBuffer[i] = i;
+(gdb) next
+28	    for (i = 0 ; i < sizeof(TestBuffer) ; i++)
+(gdb) next
+30	        TestBuffer[i] = i;
+}}}
+We are just jumping between lines 28 and 30 of the for loop.  Th code is going to go through 256 iterations of this loop so we should just let it run until we get to line 32.  We can issue the **until** command to accomplish this:
+{{{
+(gdb) until main.cpp:32
+main () at main.cpp:32
+32	    memset(ReadBuffer, 0, sizeof(ReadBuffer));
+}}}
+
+Let's step over this memset() call and get to the next line:
+{{{
+(gdb) next
+35	    FILE* fp = fopen(Filename, "w");
+(gdb) 
+}}}
+
+Lines 28 - 32 should have initialized 256 entries in the TestBuffer and ReadBuffer arrays.  Let's dump the contents of these 256 bytes of memory and see if they contain the expected data of all zeroes in ReadBuffer and ascending values in TestBuffer.  We use the **x** command (short for eXamine) for this:
+{{{
+(gdb) x/256bx TestBuffer
+0x10007dd8: 0x00    0x01    0x02    0x03    0x04    0x05    0x06    0x07
+0x10007de0: 0x08    0x09    0x0a    0x0b    0x0c    0x0d    0x0e    0x0f
+0x10007de8: 0x10    0x11    0x12    0x13    0x14    0x15    0x16    0x17
+0x10007df0: 0x18    0x19    0x1a    0x1b    0x1c    0x1d    0x1e    0x1f
+0x10007df8: 0x20    0x21    0x22    0x23    0x24    0x25    0x26    0x27
+0x10007e00: 0x28    0x29    0x2a    0x2b    0x2c    0x2d    0x2e    0x2f
+0x10007e08: 0x30    0x31    0x32    0x33    0x34    0x35    0x36    0x37
+0x10007e10: 0x38    0x39    0x3a    0x3b    0x3c    0x3d    0x3e    0x3f
+0x10007e18: 0x40    0x41    0x42    0x43    0x44    0x45    0x46    0x47
+0x10007e20: 0x48    0x49    0x4a    0x4b    0x4c    0x4d    0x4e    0x4f
+0x10007e28: 0x50    0x51    0x52    0x53    0x54    0x55    0x56    0x57
+0x10007e30: 0x58    0x59    0x5a    0x5b    0x5c    0x5d    0x5e    0x5f
+0x10007e38: 0x60    0x61    0x62    0x63    0x64    0x65    0x66    0x67
+0x10007e40: 0x68    0x69    0x6a    0x6b    0x6c    0x6d    0x6e    0x6f
+0x10007e48: 0x70    0x71    0x72    0x73    0x74    0x75    0x76    0x77
+0x10007e50: 0x78    0x79    0x7a    0x7b    0x7c    0x7d    0x7e    0x7f
+0x10007e58: 0x80    0x81    0x82    0x83    0x84    0x85    0x86    0x87
+0x10007e60: 0x88    0x89    0x8a    0x8b    0x8c    0x8d    0x8e    0x8f
+0x10007e68: 0x90    0x91    0x92    0x93    0x94    0x95    0x96    0x97
+0x10007e70: 0x98    0x99    0x9a    0x9b    0x9c    0x9d    0x9e    0x9f
+0x10007e78: 0xa0    0xa1    0xa2    0xa3    0xa4    0xa5    0xa6    0xa7
+0x10007e80: 0xa8    0xa9    0xaa    0xab    0xac    0xad    0xae    0xaf
+0x10007e88: 0xb0    0xb1    0xb2    0xb3    0xb4    0xb5    0xb6    0xb7
+0x10007e90: 0xb8    0xb9    0xba    0xbb    0xbc    0xbd    0xbe    0xbf
+0x10007e98: 0xc0    0xc1    0xc2    0xc3    0xc4    0xc5    0xc6    0xc7
+0x10007ea0: 0xc8    0xc9    0xca    0xcb    0xcc    0xcd    0xce    0xcf
+0x10007ea8: 0xd0    0xd1    0xd2    0xd3    0xd4    0xd5    0xd6    0xd7
+0x10007eb0: 0xd8    0xd9    0xda    0xdb    0xdc    0xdd    0xde    0xdf
+0x10007eb8: 0xe0    0xe1    0xe2    0xe3    0xe4    0xe5    0xe6    0xe7
+0x10007ec0: 0xe8    0xe9    0xea    0xeb    0xec    0xed    0xee    0xef
+0x10007ec8: 0xf0    0xf1    0xf2    0xf3    0xf4    0xf5    0xf6    0xf7
+0x10007ed0: 0xf8    0xf9    0xfa    0xfb    0xfc    0xfd    0xfe    0xff
+(gdb) x/256bx ReadBuffer
+0x10007ed8: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007ee0: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007ee8: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007ef0: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007ef8: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f00: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f08: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f10: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f18: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f20: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f28: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f30: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f38: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f40: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f48: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f50: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f58: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f60: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f68: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f70: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f78: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f80: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f88: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f90: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007f98: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007fa0: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007fa8: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007fb0: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007fb8: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007fc0: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007fc8: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+0x10007fd0: 0x00    0x00    0x00    0x00    0x00    0x00    0x00    0x00
+}}}
+What is that /256bx text all about?  Time to check out the **help** command in GDB:
+{{{
+(gdb) help x
+Examine memory: x/FMT ADDRESS.
+ADDRESS is an expression for the memory address to examine.
+FMT is a repeat count followed by a format letter and a size letter.
+Format letters are o(octal), x(hex), d(decimal), u(unsigned decimal),
+  t(binary), f(float), a(address), i(instruction), c(char) and s(string).
+Size letters are b(byte), h(halfword), w(word), g(giant, 8 bytes).
+The specified number of objects of the specified size are printed
+according to the format.
+
+Defaults for format and size letters are those previously used.
+Default count is 1.  Default address is following last thing printed
+with this command or "print".
+}}}
+The 256 is the count of items to dump.  The b indicates that a byte at a time should be dumped and the x indicates that the values should be dumped in hexadecimal format.
+
+Where are we again?  Let's issue another list command:
+{{{
+(gdb) list
+30	        TestBuffer[i] = i;
+31	    }
+32	    memset(ReadBuffer, 0, sizeof(ReadBuffer));
+33	    
+34	    // Create a file in the LocalFileSystem with this data.
+35	    FILE* fp = fopen(Filename, "w");
+36	    if (!fp)
+37	    {
+38	        error("Failed to open %s for writing\n", Filename);
+39	    }
+}}}
+
+So we are going to open a file whose name is located in the Filename variable.  Let's use the **print** command to take a look and see what is in that string variable:
+{{{
+(gdb) print Filename
+$1 = "/local/foo.bar"
+}}}
+Ahh, we are going to create and write out data to a file called "/local/foo.bar".
+
+We can continue stepping through this code for a bit more:
+{{{
+(gdb) next
+36	    if (!fp)
+(gdb) next
+41	    int BytesWritten = fwrite(TestBuffer, 1, sizeof(TestBuffer), fp);
+(gdb) next
+42	    if (BytesWritten != sizeof(TestBuffer))
+(gdb) next
+47	    fclose(fp);
+(gdb) next
+48	    fp = NULL;
+(gdb) next
+51	    fp = fopen(Filename, "r");
+}}}
+
+Normally this foo.bar file would be created on the 2MB FLASH device built into the mbed device.  There is a problem with that though.  MRI needs to disable the mbed interface JTAG connection so that it can act as the debugger instead.  Unfortunately the LocalFileSystem uses this JTAG interface to talk to this embedded FLASH.  So where did the foo.bar file end up?  If we actually look at the FileTest sample directory where we are currently running GDB, we will see the following (**Note:** Use {{{shell dir}}} on Windows instead of {{{shell ls -l}}}:
+{{{
+(gdb) shell ls -l
+total 1192
+-rwxr-xr-x  1 adamgr  admin   64632 Aug  9 22:49 FileTest.bin
+-rwxr-xr-x  1 adamgr  admin  309396 Aug  9 22:49 FileTest.elf
+-rw-r--r--  1 adamgr  admin  181818 Aug  9 22:49 FileTest.hex
+drwxr-xr-x  8 adamgr  admin     272 Aug  9 22:49 LPC176x
+-rwxr-xr-x  1 adamgr  admin     225 May 17 14:44 debug
+-rw-r--r--  1 adamgr  admin     256 Aug  9 23:34 foo.bar
+-rw-r--r--  1 adamgr  admin    2334 Aug  8 13:49 main.cpp
+-rw-r--r--  1 adamgr  admin     723 Aug  8 13:49 makefile
+-rw-r--r--  1 adamgr  admin   30751 Aug  9 23:34 mri.log
+}}}
+We see that foo.bar is sitting in this location and it is the expected 256 bytes in length.  What happened here?  MRI actually intercepts these LocalFileSystem calls and instead sends them to GDB where the file I/O actually ends up taking place on your PC.  This means that you can store files here and even read configuration files from this source directory while debugging.
+
+Towards the end of main, we will call remove(Filename) which should delete the file from our PC.  Let's see if that happens by setting a breakpoint on the remove() function and then continuing execution until we hit this breakpoint:
+{{{
+(gdb) break remove
+Breakpoint 2 at 0x2f90
+(gdb) c
+Continuing.
+
+Breakpoint 2, 0x00002f90 in remove ()
+}}}
+There are a few things to note with this GDB interaction:
+* First is that when I issued the **continue** command, I just typed **c** instead.  GDB allows such abbreviations for many of its commands.  Usually the first couple of characters from a command name is enough.  It should also be noted that just pressing **Enter** in many instances will simply repeat the last command you typed.  That means that you don't need to keep typing **next** to step through your code.  You can use next once and then just keep pressing the Enter key to issue subsequent steps.
+* When breakpoint 2 was hit, it tells us that we are in remove() but it doesn't give a source filename and line number.  That is because this function is part of the mbed SDK library which doesn't ship with symbols.
+
+Abbreviations for some commands that we have already used:
+| b | break|
+| c | continue |
+| n | next |
+| p | print |
+
+Let's take a look at the call stack now:
+{{{
+(gdb) bt
+#0  0x00002f90 in remove ()
+#1  0x00000430 in main () at main.cpp:71
+}}}
+
+Let's just finish running the remove function and return back to our main() function.  We can do this by issuing the **finish** command which allows the sample to run until is leaves the current function and returns to the caller:
+{{{
+(gdb) finish
+Run till exit from #0  0x00002f90 in remove ()
+main () at main.cpp:73
+73	    printf("\r\nTest completed\r\n");
+}}}
+
+We are back in main after having called the remove() function.  Let's take a look at the sample source directory again to see if foo.bar was deleted as expected:
+{{{
+(gdb) shell ls -l
+total 1192
+-rwxr-xr-x  1 adamgr  admin   64632 Aug  9 22:49 FileTest.bin
+-rwxr-xr-x  1 adamgr  admin  309396 Aug  9 22:49 FileTest.elf
+-rw-r--r--  1 adamgr  admin  181818 Aug  9 22:49 FileTest.hex
+drwxr-xr-x  8 adamgr  admin     272 Aug  9 22:49 LPC176x
+-rwxr-xr-x  1 adamgr  admin     225 May 17 14:44 debug
+-rw-r--r--  1 adamgr  admin    2334 Aug  8 13:49 main.cpp
+-rw-r--r--  1 adamgr  admin     723 Aug  8 13:49 makefile
+-rw-r--r--  1 adamgr  admin   32929 Aug  9 23:45 mri.log
+}}}
+Gone as expected.  Excellent!
+
+Our debugging session is almost complete.  Let's take a look at a few other interesting GDB commands:
+{{{
+(gdb) info breakpoints
+Num     Type           Disp Enb Address    What
+1       breakpoint     keep y   0x00000248 in main() at main.cpp:28
+	breakpoint already hit 1 time
+2       breakpoint     keep y   0x00002f90 <remove+4>
+	breakpoint already hit 1 time
+}}}
+**info breakpoints** shows us the currently set breakpoints.  Issuing the **help breakpoints** command will give you an overview of other breakpoint related commands.
+
+While I have shown you the **next** command here for stepping through your code, there is another stepping command in GDB called **step**.  The difference is that next runs and advances to the next instruction in the current function while step will actually step into functions that are called (as long as symbols exist for those functions.)
+
+Let's just let the program continue until it leaves main and ends up calling the exit() routine and then issue the **quit** command to leave this debugging session:
+{{{
+(gdb) c
+Continuing.
+
+Test completed
+
+Program received signal SIGTRAP, Trace/breakpoint trap.
+0x00003870 in semihost_exit ()
+(gdb) q
+A debugging session is active.
+
+	Inferior 1 [Remote target] will be killed.
+
+Quit anyway? (y or n) y
+}}}
+One thing to note is that after the continue command is sent, there is some text, "Test completed", displayed in GDB before the program traps into the exit() call at the end of the program.  This text actually comes from a printf() call at the end of the main() routine.  MRI intercepts these printf() calls and sends them over to GDB.  This means that you can combine printf() debugging with the more full featured GDB debugging.
+
+Want more information about how to use GDB?  If so checkout its documentation which will have been installed in your gcc4mbed project at gcc-arm-none-eabi/share/doc/gcc-arm-none-eabi/pdf/gdb.pdf
+

@@ -1,0 +1,63 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006-2010 (ita)
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+top = '.'
+
+import waflib.Configure
+waflib.Configure.autoconfig = True
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+def build(bld):
+
+	bld(rule='echo "int ko = $$RANDOM;" > ${TGT}', target='faa.h', always=True, shell=True, name='z2')
+	bld.program(source='a.c main.c', target='foo', includes='.')
+
+# sort the tasks in reverse order to force the 'faa.h' creation in last position
+from waflib import Task, Errors, Logs
+old = Task.set_file_constraints
+def meth(lst):
+	try:
+		lst.sort(cmp=lambda x, y: cmp(x.__class__.__name__, y.__class__.__name__))
+	except:
+		lst.sort(key=lambda x: x.__class__.__name__) # python3
+	old(lst)
+Task.set_file_constraints = meth
+
+def are_implicit_nodes_ready(self):
+	"""remove this method if/when the main one is enabled"""
+	bld = self.generator.bld
+	try:
+		cache = bld.dct_implicit_nodes
+	except:
+		bld.dct_implicit_nodes = cache = {}
+
+	try:
+		dct = cache[bld.current_group]
+	except KeyError:
+		dct = cache[bld.current_group] = {}
+		for tsk in bld.cur_tasks:
+			for x in tsk.outputs:
+				dct[x] = tsk
+
+	modified = False
+	for x in bld.node_deps.get(self.uid(), []):
+		if x in dct:
+			self.run_after.add(dct[x])
+			modified = True
+
+	if modified:
+		for tsk in self.run_after:
+			if not tsk.hasrun:
+				Logs.warn('task %r is not ready...', self)
+				raise Errors.TaskNotReady('not ready')
+Task.Task.are_implicit_nodes_ready = are_implicit_nodes_ready
+

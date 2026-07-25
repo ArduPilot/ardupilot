@@ -1,0 +1,22 @@
+#
+# Xacti specific vehicle attitude provided to camera gimbal
+# send periodically 5~10Hz.
+#
+# quaternion_wxyz_e4[0] = q.w	(or q.q0) * 1e4f
+# quaternion_wxyz_e4[1] = q.x	(or q.q1) * 1e4f
+# quaternion_wxyz_e4[2] = q.y	(or q.q2) * 1e4f
+# quaternion_wxyz_e4[3] = q.z	(or q.q3) * 1e4f
+#
+
+# signature from original file location
+OVERRIDE_SIGNATURE 0x6C1F30F1893763B1
+
+#
+# vehicle attitude quaternion * 1e4
+#
+int16[4] quaternion_wxyz_e4
+
+#
+# reserved
+#
+float16[<=2] reserved

@@ -1,0 +1,653 @@
+# allocator tests
+# note for these to work there are a number constraints on the device geometry
+if = 'LFS_BLOCK_CYCLES == -1'
+
+[[case]] # parallel allocation test
+define.FILES = 3
+define.SIZE = '(((LFS_BLOCK_SIZE-8)*(LFS_BLOCK_COUNT-6)) / FILES)'
+code = '''
+    const char *names[FILES] = {"bacon", "eggs", "pancakes"};
+    lfs_file_t files[FILES];
+
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "breakfast") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    for (int n = 0; n < FILES; n++) {
+        sprintf(path, "breakfast/%s", names[n]);
+        lfs_file_open(&lfs, &files[n], path,
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+    }
+    for (int n = 0; n < FILES; n++) {
+        size = strlen(names[n]);
+        for (lfs_size_t i = 0; i < SIZE; i += size) {
+            lfs_file_write(&lfs, &files[n], names[n], size) => size;
+        }
+    }
+    for (int n = 0; n < FILES; n++) {
+        lfs_file_close(&lfs, &files[n]) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    for (int n = 0; n < FILES; n++) {
+        sprintf(path, "breakfast/%s", names[n]);
+        lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+        size = strlen(names[n]);
+        for (lfs_size_t i = 0; i < SIZE; i += size) {
+            lfs_file_read(&lfs, &file, buffer, size) => size;
+            assert(memcmp(buffer, names[n], size) == 0);
+        }
+        lfs_file_close(&lfs, &file) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # serial allocation test
+define.FILES = 3
+define.SIZE = '(((LFS_BLOCK_SIZE-8)*(LFS_BLOCK_COUNT-6)) / FILES)'
+code = '''
+    const char *names[FILES] = {"bacon", "eggs", "pancakes"};
+
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "breakfast") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    for (int n = 0; n < FILES; n++) {
+        lfs_mount(&lfs, &cfg) => 0;
+        sprintf(path, "breakfast/%s", names[n]);
+        lfs_file_open(&lfs, &file, path,
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+        size = strlen(names[n]);
+        memcpy(buffer, names[n], size);
+        for (int i = 0; i < SIZE; i += size) {
+            lfs_file_write(&lfs, &file, buffer, size) => size;
+        }
+        lfs_file_close(&lfs, &file) => 0;
+        lfs_unmount(&lfs) => 0;
+    }
+
+    lfs_mount(&lfs, &cfg) => 0;
+    for (int n = 0; n < FILES; n++) {
+        sprintf(path, "breakfast/%s", names[n]);
+        lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+        size = strlen(names[n]);
+        for (int i = 0; i < SIZE; i += size) {
+            lfs_file_read(&lfs, &file, buffer, size) => size;
+            assert(memcmp(buffer, names[n], size) == 0);
+        }
+        lfs_file_close(&lfs, &file) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # parallel allocation reuse test
+define.FILES = 3
+define.SIZE = '(((LFS_BLOCK_SIZE-8)*(LFS_BLOCK_COUNT-6)) / FILES)'
+define.CYCLES = [1, 10]
+code = '''
+    const char *names[FILES] = {"bacon", "eggs", "pancakes"};
+    lfs_file_t files[FILES];
+
+    lfs_format(&lfs, &cfg) => 0;
+
+    for (int c = 0; c < CYCLES; c++) {
+        lfs_mount(&lfs, &cfg) => 0;
+        lfs_mkdir(&lfs, "breakfast") => 0;
+        lfs_unmount(&lfs) => 0;
+
+        lfs_mount(&lfs, &cfg) => 0;
+        for (int n = 0; n < FILES; n++) {
+            sprintf(path, "breakfast/%s", names[n]);
+            lfs_file_open(&lfs, &files[n], path,
+                    LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+        }
+        for (int n = 0; n < FILES; n++) {
+            size = strlen(names[n]);
+            for (int i = 0; i < SIZE; i += size) {
+                lfs_file_write(&lfs, &files[n], names[n], size) => size;
+            }
+        }
+        for (int n = 0; n < FILES; n++) {
+            lfs_file_close(&lfs, &files[n]) => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+
+        lfs_mount(&lfs, &cfg) => 0;
+        for (int n = 0; n < FILES; n++) {
+            sprintf(path, "breakfast/%s", names[n]);
+            lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+            size = strlen(names[n]);
+            for (int i = 0; i < SIZE; i += size) {
+                lfs_file_read(&lfs, &file, buffer, size) => size;
+                assert(memcmp(buffer, names[n], size) == 0);
+            }
+            lfs_file_close(&lfs, &file) => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+
+        lfs_mount(&lfs, &cfg) => 0;
+        for (int n = 0; n < FILES; n++) {
+            sprintf(path, "breakfast/%s", names[n]);
+            lfs_remove(&lfs, path) => 0;
+        }
+        lfs_remove(&lfs, "breakfast") => 0;
+        lfs_unmount(&lfs) => 0;
+    }
+'''
+
+[[case]] # serial allocation reuse test
+define.FILES = 3
+define.SIZE = '(((LFS_BLOCK_SIZE-8)*(LFS_BLOCK_COUNT-6)) / FILES)'
+define.CYCLES = [1, 10]
+code = '''
+    const char *names[FILES] = {"bacon", "eggs", "pancakes"};
+
+    lfs_format(&lfs, &cfg) => 0;
+
+    for (int c = 0; c < CYCLES; c++) {
+        lfs_mount(&lfs, &cfg) => 0;
+        lfs_mkdir(&lfs, "breakfast") => 0;
+        lfs_unmount(&lfs) => 0;
+
+        for (int n = 0; n < FILES; n++) {
+            lfs_mount(&lfs, &cfg) => 0;
+            sprintf(path, "breakfast/%s", names[n]);
+            lfs_file_open(&lfs, &file, path,
+                    LFS_O_WRONLY | LFS_O_CREAT | LFS_O_APPEND) => 0;
+            size = strlen(names[n]);
+            memcpy(buffer, names[n], size);
+            for (int i = 0; i < SIZE; i += size) {
+                lfs_file_write(&lfs, &file, buffer, size) => size;
+            }
+            lfs_file_close(&lfs, &file) => 0;
+            lfs_unmount(&lfs) => 0;
+        }
+
+        lfs_mount(&lfs, &cfg) => 0;
+        for (int n = 0; n < FILES; n++) {
+            sprintf(path, "breakfast/%s", names[n]);
+            lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+            size = strlen(names[n]);
+            for (int i = 0; i < SIZE; i += size) {
+                lfs_file_read(&lfs, &file, buffer, size) => size;
+                assert(memcmp(buffer, names[n], size) == 0);
+            }
+            lfs_file_close(&lfs, &file) => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+
+        lfs_mount(&lfs, &cfg) => 0;
+        for (int n = 0; n < FILES; n++) {
+            sprintf(path, "breakfast/%s", names[n]);
+            lfs_remove(&lfs, path) => 0;
+        }
+        lfs_remove(&lfs, "breakfast") => 0;
+        lfs_unmount(&lfs) => 0;
+    }
+'''
+
+[[case]] # exhaustion test
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_WRONLY | LFS_O_CREAT);
+    size = strlen("exhaustion");
+    memcpy(buffer, "exhaustion", size);
+    lfs_file_write(&lfs, &file, buffer, size) => size;
+    lfs_file_sync(&lfs, &file) => 0;
+
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    lfs_ssize_t res;
+    while (true) {
+        res = lfs_file_write(&lfs, &file, buffer, size);
+        if (res < 0) {
+            break;
+        }
+
+        res => size;
+    }
+    res => LFS_ERR_NOSPC;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_RDONLY);
+    size = strlen("exhaustion");
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "exhaustion", size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # exhaustion wraparound test
+define.SIZE = '(((LFS_BLOCK_SIZE-8)*(LFS_BLOCK_COUNT-4)) / 3)'
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    lfs_file_open(&lfs, &file, "padding", LFS_O_WRONLY | LFS_O_CREAT);
+    size = strlen("buffering");
+    memcpy(buffer, "buffering", size);
+    for (int i = 0; i < SIZE; i += size) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_remove(&lfs, "padding") => 0;
+
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_WRONLY | LFS_O_CREAT);
+    size = strlen("exhaustion");
+    memcpy(buffer, "exhaustion", size);
+    lfs_file_write(&lfs, &file, buffer, size) => size;
+    lfs_file_sync(&lfs, &file) => 0;
+
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    lfs_ssize_t res;
+    while (true) {
+        res = lfs_file_write(&lfs, &file, buffer, size);
+        if (res < 0) {
+            break;
+        }
+
+        res => size;
+    }
+    res => LFS_ERR_NOSPC;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_RDONLY);
+    size = strlen("exhaustion");
+    lfs_file_size(&lfs, &file) => size;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    memcmp(buffer, "exhaustion", size) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_remove(&lfs, "exhaustion") => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # dir exhaustion test
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // find out max file size
+    lfs_mkdir(&lfs, "exhaustiondir") => 0;
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_WRONLY | LFS_O_CREAT);
+    int count = 0;
+    while (true) {
+        err = lfs_file_write(&lfs, &file, buffer, size);
+        if (err < 0) {
+            break;
+        }
+
+        count += 1;
+    }
+    err => LFS_ERR_NOSPC;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_remove(&lfs, "exhaustion") => 0;
+    lfs_remove(&lfs, "exhaustiondir") => 0;
+
+    // see if dir fits with max file size
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_WRONLY | LFS_O_CREAT);
+    for (int i = 0; i < count; i++) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_mkdir(&lfs, "exhaustiondir") => 0;
+    lfs_remove(&lfs, "exhaustiondir") => 0;
+    lfs_remove(&lfs, "exhaustion") => 0;
+
+    // see if dir fits with > max file size
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_WRONLY | LFS_O_CREAT);
+    for (int i = 0; i < count+1; i++) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_mkdir(&lfs, "exhaustiondir") => LFS_ERR_NOSPC;
+
+    lfs_remove(&lfs, "exhaustion") => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # what if we have a bad block during an allocation scan?
+in = "lfs.c"
+define.LFS_ERASE_CYCLES = 0xffffffff
+define.LFS_BADBLOCK_BEHAVIOR = 'LFS_TESTBD_BADBLOCK_READERROR'
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    // first fill to exhaustion to find available space
+    lfs_file_open(&lfs, &file, "pacman", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    strcpy((char*)buffer, "waka");
+    size = strlen("waka");
+    lfs_size_t filesize = 0;
+    while (true) {
+        lfs_ssize_t res = lfs_file_write(&lfs, &file, buffer, size);
+        assert(res == (lfs_ssize_t)size || res == LFS_ERR_NOSPC);
+        if (res == LFS_ERR_NOSPC) {
+            break;
+        }
+        filesize += size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    // now fill all but a couple of blocks of the filesystem with data
+    filesize -= 3*LFS_BLOCK_SIZE;
+    lfs_file_open(&lfs, &file, "pacman", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    strcpy((char*)buffer, "waka");
+    size = strlen("waka");
+    for (lfs_size_t i = 0; i < filesize/size; i++) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    // also save head of file so we can error during lookahead scan
+    lfs_block_t fileblock = file.ctz.head;
+    lfs_unmount(&lfs) => 0;
+
+    // remount to force an alloc scan
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // but mark the head of our file as a "bad block", this is force our
+    // scan to bail early
+    lfs_testbd_setwear(&cfg, fileblock, 0xffffffff) => 0;
+    lfs_file_open(&lfs, &file, "ghost", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    strcpy((char*)buffer, "chomp");
+    size = strlen("chomp");
+    while (true) {
+        lfs_ssize_t res = lfs_file_write(&lfs, &file, buffer, size);
+        assert(res == (lfs_ssize_t)size || res == LFS_ERR_CORRUPT);
+        if (res == LFS_ERR_CORRUPT) {
+            break;
+        }
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    // now reverse the "bad block" and try to write the file again until we
+    // run out of space
+    lfs_testbd_setwear(&cfg, fileblock, 0) => 0;
+    lfs_file_open(&lfs, &file, "ghost", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    strcpy((char*)buffer, "chomp");
+    size = strlen("chomp");
+    while (true) {
+        lfs_ssize_t res = lfs_file_write(&lfs, &file, buffer, size);
+        assert(res == (lfs_ssize_t)size || res == LFS_ERR_NOSPC);
+        if (res == LFS_ERR_NOSPC) {
+            break;
+        }
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_unmount(&lfs) => 0;
+
+    // check that the disk isn't hurt
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "pacman", LFS_O_RDONLY) => 0;
+    strcpy((char*)buffer, "waka");
+    size = strlen("waka");
+    for (lfs_size_t i = 0; i < filesize/size; i++) {
+        uint8_t rbuffer[4];
+        lfs_file_read(&lfs, &file, rbuffer, size) => size;
+        assert(memcmp(rbuffer, buffer, size) == 0);
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+
+# Below, I don't like these tests. They're fragile and depend _heavily_
+# on the geometry of the block device. But they are valuable. Eventually they
+# should be removed and replaced with generalized tests.
+
+[[case]] # chained dir exhaustion test
+define.LFS_BLOCK_SIZE = 512
+define.LFS_BLOCK_COUNT = 1024
+if = 'LFS_BLOCK_SIZE == 512 && LFS_BLOCK_COUNT == 1024'
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // find out max file size
+    lfs_mkdir(&lfs, "exhaustiondir") => 0;
+    for (int i = 0; i < 10; i++) {
+        sprintf(path, "dirwithanexhaustivelylongnameforpadding%d", i);
+        lfs_mkdir(&lfs, path) => 0;
+    }
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_WRONLY | LFS_O_CREAT);
+    int count = 0;
+    while (true) {
+        err = lfs_file_write(&lfs, &file, buffer, size);
+        if (err < 0) {
+            break;
+        }
+
+        count += 1;
+    }
+    err => LFS_ERR_NOSPC;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_remove(&lfs, "exhaustion") => 0;
+    lfs_remove(&lfs, "exhaustiondir") => 0;
+    for (int i = 0; i < 10; i++) {
+        sprintf(path, "dirwithanexhaustivelylongnameforpadding%d", i);
+        lfs_remove(&lfs, path) => 0;
+    }
+
+    // see that chained dir fails
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_WRONLY | LFS_O_CREAT);
+    for (int i = 0; i < count+1; i++) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_sync(&lfs, &file) => 0;
+
+    for (int i = 0; i < 10; i++) {
+        sprintf(path, "dirwithanexhaustivelylongnameforpadding%d", i);
+        lfs_mkdir(&lfs, path) => 0;
+    }
+
+    lfs_mkdir(&lfs, "exhaustiondir") => LFS_ERR_NOSPC;
+
+    // shorten file to try a second chained dir
+    while (true) {
+        err = lfs_mkdir(&lfs, "exhaustiondir");
+        if (err != LFS_ERR_NOSPC) {
+            break;
+        }
+
+        lfs_ssize_t filesize = lfs_file_size(&lfs, &file);
+        filesize > 0 => true;
+
+        lfs_file_truncate(&lfs, &file, filesize - size) => 0;
+        lfs_file_sync(&lfs, &file) => 0;
+    }
+    err => 0;
+
+    lfs_mkdir(&lfs, "exhaustiondir2") => LFS_ERR_NOSPC;
+
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # split dir test
+define.LFS_BLOCK_SIZE = 512
+define.LFS_BLOCK_COUNT = 1024
+if = 'LFS_BLOCK_SIZE == 512 && LFS_BLOCK_COUNT == 1024'
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // create one block hole for half a directory
+    lfs_file_open(&lfs, &file, "bump", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    for (lfs_size_t i = 0; i < cfg.block_size; i += 2) {
+        memcpy(&buffer[i], "hi", 2);
+    }
+    lfs_file_write(&lfs, &file, buffer, cfg.block_size) => cfg.block_size;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "exhaustion", LFS_O_WRONLY | LFS_O_CREAT);
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    for (lfs_size_t i = 0;
+            i < (cfg.block_count-4)*(cfg.block_size-8);
+            i += size) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    // remount to force reset of lookahead
+    lfs_unmount(&lfs) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // open hole
+    lfs_remove(&lfs, "bump") => 0;
+
+    lfs_mkdir(&lfs, "splitdir") => 0;
+    lfs_file_open(&lfs, &file, "splitdir/bump",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    for (lfs_size_t i = 0; i < cfg.block_size; i += 2) {
+        memcpy(&buffer[i], "hi", 2);
+    }
+    lfs_file_write(&lfs, &file, buffer, 2*cfg.block_size) => LFS_ERR_NOSPC;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # outdated lookahead test
+define.LFS_BLOCK_SIZE = 512
+define.LFS_BLOCK_COUNT = 1024
+if = 'LFS_BLOCK_SIZE == 512 && LFS_BLOCK_COUNT == 1024'
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // fill completely with two files
+    lfs_file_open(&lfs, &file, "exhaustion1",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    for (lfs_size_t i = 0;
+            i < ((cfg.block_count-2)/2)*(cfg.block_size-8);
+            i += size) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "exhaustion2",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    for (lfs_size_t i = 0;
+            i < ((cfg.block_count-2+1)/2)*(cfg.block_size-8);
+            i += size) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    // remount to force reset of lookahead
+    lfs_unmount(&lfs) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // rewrite one file
+    lfs_file_open(&lfs, &file, "exhaustion1",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_sync(&lfs, &file) => 0;
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    for (lfs_size_t i = 0;
+            i < ((cfg.block_count-2)/2)*(cfg.block_size-8);
+            i += size) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    // rewrite second file, this requires lookahead does not
+    // use old population
+    lfs_file_open(&lfs, &file, "exhaustion2",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_sync(&lfs, &file) => 0;
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    for (lfs_size_t i = 0;
+            i < ((cfg.block_count-2+1)/2)*(cfg.block_size-8);
+            i += size) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # outdated lookahead and split dir test
+define.LFS_BLOCK_SIZE = 512
+define.LFS_BLOCK_COUNT = 1024
+if = 'LFS_BLOCK_SIZE == 512 && LFS_BLOCK_COUNT == 1024'
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // fill completely with two files
+    lfs_file_open(&lfs, &file, "exhaustion1",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    for (lfs_size_t i = 0;
+            i < ((cfg.block_count-2)/2)*(cfg.block_size-8);
+            i += size) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "exhaustion2",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    for (lfs_size_t i = 0;
+            i < ((cfg.block_count-2+1)/2)*(cfg.block_size-8);
+            i += size) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    // remount to force reset of lookahead
+    lfs_unmount(&lfs) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // rewrite one file with a hole of one block
+    lfs_file_open(&lfs, &file, "exhaustion1",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_sync(&lfs, &file) => 0;
+    size = strlen("blahblahblahblah");
+    memcpy(buffer, "blahblahblahblah", size);
+    for (lfs_size_t i = 0;
+            i < ((cfg.block_count-2)/2 - 1)*(cfg.block_size-8);
+            i += size) {
+        lfs_file_write(&lfs, &file, buffer, size) => size;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    // try to allocate a directory, should fail!
+    lfs_mkdir(&lfs, "split") => LFS_ERR_NOSPC;
+
+    // file should not fail
+    lfs_file_open(&lfs, &file, "notasplit",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "hi", 2) => 2;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_unmount(&lfs) => 0;
+'''

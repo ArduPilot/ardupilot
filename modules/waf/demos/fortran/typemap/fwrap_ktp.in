@@ -1,0 +1,1 @@
+CTPS = [{'odecl': 'integer(kind=arg_kind)', 'basetype': 'integer', 'use': 'example_mod', 'name': 'int_arg_kind'}]

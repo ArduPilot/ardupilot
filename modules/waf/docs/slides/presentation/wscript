@@ -1,0 +1,53 @@
+#!/usr/bin/env python
+# encoding: utf-8
+# Jérôme Carretero, 2010 (zougloub)
+
+import sys, os
+from Utils import subprocess
+
+def configure(cfg):
+	cfg.load("tex")
+
+def build(bld):
+	def waf_cmd(task):
+		outfile = os.path.join(task.generator.cwd, "output")
+		with open(outfile, "w") as f:
+			cmd = [
+			 sys.executable,
+			 sys.argv[0],
+			 "configure",
+			 "build",
+			]
+			proc = subprocess.Popen(cmd, cwd=task.generator.cwd, stdout=f, stderr=f)
+			ret = proc.wait()
+			if ret != 0:
+				raise Exception("command failed in %s: %s" % (task.generator.cwd, cmd))
+
+	waf_dirs = [ os.path.join(bld.path.abspath(), "snippets", d) for d in ("waf-1", "waf-2") ]
+	for d in waf_dirs:
+		bld(
+		 rule=waf_cmd,
+		 cwd=d,
+		 always=True,
+		 name=d,
+		)
+
+	make_dirs = [ os.path.join(bld.path.abspath(), "snippets", d) for d in ("make-1", "make-2") ]
+	for d in make_dirs:
+		bld(
+		 rule="make -B > output",
+		 cmd="",
+		 cwd=d,
+		 always=True,
+		 name=d,
+		)
+
+	bld.add_group()
+
+	bld(
+	 features="tex",
+	 type="xelatex",
+	 source="slides.tex",
+	 prompt=0,
+	)
+

@@ -1,0 +1,4 @@
+# GitHub really wants to mark littlefs as a python project, telling it to
+# reclassify our test .toml files as C code (which they are 95% of anyways)
+# remedies this
+*.toml linguist-language=c

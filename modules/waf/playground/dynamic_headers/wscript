@@ -1,0 +1,109 @@
+#! /usr/bin/env python
+
+from waflib import Task, Errors
+from waflib.Tools import c
+
+def options(opt):
+	opt.load('compiler_c')
+
+
+def configure(conf):
+	conf.load('compiler_c')
+
+
+def build(bld):
+	bld(features = 'c cprogram',
+		target   = 'test',
+		source   = 'src/main.c src/test.c',
+		includes = 'src')
+
+class mock(Task.Task):
+	run_str = 'cp ${SRC} ${TGT}'
+	color   = 'BLUE'
+
+
+# it would be better to replace the scan() method, but this is doable too
+
+def runnable_status(self):
+
+	ret = self.runnable_status_dynamic_headers2()
+
+	if ret != Task.ASK_LATER and not getattr(self, 'all_mock_done', False):
+		self.all_mock_done = True # run once
+
+
+		bld = self.generator.bld
+		add = False
+
+		try:
+			mock_tasks = bld.mock_tasks
+		except AttributeError:
+			mock_tasks = bld.mock_tasks = {}
+
+		for x in bld.raw_deps[self.uid()]:
+			if x.startswith('mock_'):
+				h_file = x[5:]
+				for k in [self.inputs[0].parent] + self.generator.includes_nodes:
+					h_node = k.find_node(h_file)
+					if h_node:
+						break
+
+				if not h_node:
+					raise Errors.WafError('no header for %s' % x)
+
+				m_node = h_node.parent.find_or_declare(x)
+				try:
+					tsk = mock_tasks[m_node]
+				except KeyError:
+					tsk = mock_tasks[m_node] = self.generator.create_task('mock', [h_node], [m_node])
+					bld.producer.outstanding.append(tsk)
+					bld.producer.total += 1
+
+					# preprocessor cache :-/
+					try:
+						for key in list(bld.cache_nd.keys()):
+							if key[1] == x:
+								del bld.cache_nd[key]
+					except (KeyError, AttributeError):
+						pass
+
+				add = True
+				self.set_run_after(tsk)
+
+		if add:
+			# recompute the task signature
+			delattr(self, 'cache_sig')
+			del bld.imp_sigs[self.uid()]
+			return self.runnable_status()
+
+		for x in bld.node_deps[self.uid()]:
+			if x.name.startswith('mock_'):
+				h_node = x.parent.get_src().find_node(x.name[5:])
+				if not h_node:
+					raise Errors.WafError('no header for %s' % x.name)
+
+				try:
+					tsk = mock_tasks[x]
+				except KeyError:
+					tsk = mock_tasks[x] = self.generator.create_task('mock', [h_node], [x])
+					bld.producer.outstanding.append(tsk)
+					bld.producer.total += 1
+
+				add = True
+				self.set_run_after(tsk)
+
+				# node get_bld_sig cache :-/
+				try:
+					delattr(x, 'cache_sig')
+				except AttributeError:
+					pass
+		if add:
+			# recompute the task signature
+			delattr(self, 'cache_sig')
+			return self.runnable_status()
+
+	return ret
+
+c.c.runnable_status_dynamic_headers2 = c.c.runnable_status
+c.c.runnable_status = runnable_status
+

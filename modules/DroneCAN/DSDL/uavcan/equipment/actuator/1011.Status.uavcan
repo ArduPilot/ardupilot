@@ -1,0 +1,17 @@
+#
+# Generic actuator feedback, if available.
+# Unknown fields should be set to NAN.
+#
+
+uint8 actuator_id
+
+#
+# Whether the units are linear or angular depends on the actuator type (refer to the Command data type).
+#
+float16 position        # meter or radian
+float16 force           # Newton or Newton metre
+float16 speed           # meter per second or radian per second
+
+void1
+uint7 POWER_RATING_PCT_UNKNOWN = 127
+uint7 power_rating_pct                # 0 - unloaded, 100 - full load

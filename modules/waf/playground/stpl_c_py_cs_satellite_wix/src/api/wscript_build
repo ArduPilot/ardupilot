@@ -1,0 +1,32 @@
+#! /usr/bin/env python
+# encoding: utf-8
+#vim syntax=python
+
+funi = bld.env.dllname
+gui = bld.env.guiname+'.exe'
+csdll = bld.env.dllname+'_cs.dll'
+
+bld(rule=bld.stpl,source='funi.c.stpl',target='funi.c')
+bld(rule=bld.stpl,source='funi.h.stpl',target='funi.h')
+bld(rule=bld.stpl,source='funi_cs.cs.stpl',target='funi_cs.cs')
+bld(rule=bld.stpl,source='funi.py.stpl',target='funi.py')
+bld(rule=bld.stpl,source='test_funi.py.stpl',target='test_funi.py')
+bld(rule=bld.stpl,source='test_funi.cpp.stpl',target='test_funi.cpp')
+
+bld.add_group()
+
+bld.shlib(
+    source    = ['funi.c'],
+    target    = funi,
+    defines   = ['BUILDING_DLL'])
+
+bld.program(
+    source   = 'test_funi.cpp',
+    includes = ['.'],
+    target   = 'test_funi',
+    use      = funi)
+
+bld.add_group()
+
+bld(features='cs',source='funi_cs.cs',gen=csdll,includes='.', name='csdll')
+

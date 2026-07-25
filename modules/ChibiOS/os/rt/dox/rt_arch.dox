@@ -1,0 +1,354 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @startuml {rt_arch.png} "RT Core"
+ * package "Lists and Queues" {
+ *   class ch_list_t {
+ *     - next: ch_list_t *
+ *     + ch_list_init()
+ *     + ch_list_isempty()
+ *     + ch_list_notempty()
+ *     + ch_list_push()
+ *     + ch_list_pop()
+ *   }
+ *   class ch_queue_t {
+ *     - next: ch_queue_t *
+ *     - prev: ch_queue_t *
+ *     + ch_queue_init()
+ *     + ch_queue_isempty()
+ *     + ch_queue_notempty()
+ *     + ch_queue_insert()
+ *     + ch_queue_fifo_remove()
+ *     + ch_queue_lifo_remove()
+ *     + ch_queue_dequeue()
+ *   }
+ *   class ch_pqueue_t {
+ *     # next: ch_pqueue_t *
+ *     # prev: ch_pqueue_t *
+ *     # prio: tprio_t
+ *     + ch_pqueue_init()
+ *     + ch_pqueue_fifo_remove_highest()
+ *     + ch_pqueue_insert_ahead()
+ *     + ch_pqueue_insert_behind()
+ *   }
+ * }
+ * 
+ * package OS {
+ *   class "Port Timer" <<(S,#FF7700) Singleton>> {
+ *     + {static} port_timer_get_time()
+ *   }
+ * 
+ *   class "Port Layer" <<(S,#FF7700) Singleton>> {
+ *     + {static} port_init()
+ *     + {static} port_lock()
+ *     + {static} port_unlock()
+ *     + {static} port_suspend()
+ *     + {static} port_enable()
+ *     + {static} port_disable()
+ *     + {static} port_switch()
+ *     + {static} port_wait_for_interrupt()
+ *     + {static} port_rt_get_counter_value()
+ *     + {static} port_get_core_id()
+ *   }
+ *   "Port Layer" .r.> "Port Timer" : use\ntick-less mode\nonly
+ * 
+ *   class System <<(S,#FF7700) Singleton>> {
+ *     - {static} ch_system : ch_system_t
+ *     - {static} ch0 : os_instance_t
+ *     - {static} ch1 : os_instance_t
+ *     ~ currcore: os_instance_t *
+ *   }
+ * 
+ *   class tm_calibration_t {
+ *     ~ offset : sysinterval_t
+ *     ~ __tm_calibration_object_init()
+ *   }
+ * 
+ *   class system_debug_t {
+ *     # panic_msg : volatile char *
+ *     # isr_cnt : cnt_t
+ *     # lock_cnt : cnt_t
+ *     ~ __dbg_object_init()
+ *     + chDbgCheck()
+ *     + chDbgAssert()
+ *     + chDbgCheckClassI()
+ *     + chDbgCheckClassS()
+ *   }
+ * 
+ *   class trace_event_t {
+ *   }
+ * 
+ *   class trace_buffer_t {
+ *     - prt : trace_event_t *
+ *     ~ __trace_object_init()
+ *     + chTraceWrite()
+ *     + chTraceSuspend()
+ *     + chTraceResume()
+ *   }
+ *   trace_buffer_t "1" *-- "1..*" trace_event_t : trace events\nbuffer
+ *   trace_buffer_t "1" o-- "1" trace_event_t : next\nwritten
+ * 
+ *   class kernel_stats_t {
+ *     # n_irq : ucnt_t
+ *     # n_ctxswc : ucnt_t
+ *     # m_crit_thd : time_measurement_t
+ *     # m_crit_isr : time_measurement_t
+ *     ~ __stats_object_init()
+ *   }
+ * 
+ *   class registry_t {
+ *     - queue : ch_queue_t
+ *     ~ __reg_object_init()
+ *     + {static} chRegFirstThread()
+ *     + {static} chRegNextThread()
+ *     + {static} chRegFindThreadByName()
+ *     + {static} chRegFindThreadByPointer()
+ *     + {static} chRegFindThreadByWorkingArea()
+ *   }
+ *   registry_t "1" o-- "1--*" thread_t : alive\nthreads
+ * 
+ *   class ch_system_t {
+ *     + state : ch_system_state_t
+ *     - reglist : registry_t
+ *     - tmc : tm_calibration_t
+ *     - instances[] : os_instance_t *
+ *     + {static} chSysInit()
+ *     + {static} chSysLock()
+ *     + {static} chSysUnlock()
+ *     + {static} chSysLockFromISR()
+ *     + {static} chSysUnlockFromISR()
+ *     + {static} chSysSwitch()
+ *   }
+ *   ch_system_t .u.> "Port Layer" : use
+ *   ch_system_t *-- "1" registry_t : SMP\nonly
+ *   ch_system_t *-r- "1" tm_calibration_t
+ *   ch_system_t "1" o-- "1..*" os_instance_t : registered\ninstances\none for\neach core
+ * 
+ *   class os_instance_t {
+ *     ~ core_id : core_id_t
+ *     ~ rlist : ready_list_t
+ *     ~ vtlist : virtual_timers_list_t
+ *     ~ reglist : registry_t
+ *     ~ mainthread : thread_t
+ *     ~ dbg : system_debug_t
+ *     ~ trace_buffer : trace_buffer_t
+ *     ~ kernel_stats : kernel_stats_t
+ *     + chInstanceObjectInit()
+ *     ~ __instance_get_currthread()
+ *     ~ __instance_set_currthread()
+ *   }
+ *   os_instance_t *-- "1" thread_t : Main\nThread
+ *   os_instance_t *-- "1" registry_t : Non-SMP\nonly
+ *   os_instance_t *-- "1" system_debug_t
+ *   os_instance_t *-- "1" trace_buffer_t
+ *   os_instance_t *-- "1" kernel_stats_t
+ * 
+ *   class thread_t {
+ *     .. union ..
+ *     - list : ch_list_t
+ *     - queue : ch_queue_t
+ *     - pqueue : ch_pqueue_t
+ *     .. end union ..
+ *     - state : tstate_t
+ *     - owner : os_instance_t
+ *     - rqueue : ch_queue_t
+ *     - ctx : port_context
+ *     - waiting: ch_list_t
+ *     + {static} chThdCreate()
+ *     + {static} chThdSleep()
+ *     + {static} chThdSleepUntil()
+ *     + {static} chThdExit()
+ *     + chThdWait()
+ *     + chThdAddRef()
+ *     + chThdRelease()
+ *   }
+ *   thread_t o-- "0..*" thread_t : threads waiting\nfor termination
+ *   thread_t o-- "1" os_instance_t : owner\ninstance
+ * 
+ *   class ready_list_t {
+ *     - pqueue : ch_pqueue_t
+ *     - current : thread_t *
+ *     + {static} chSchReadyI()
+ *     + {static} chSchWakeupS()
+ *     + {static} chSchGoSleepS()
+ *     + {static} chSchGoSleepTimeoutS()
+ *   }
+ *   ready_list_t "1" o-- "1..*" thread_t : ready\nthreads
+ *   ready_list_t "0..1" o-- "1" thread_t : current\nthread
+ *   ready_list_t "1" --* os_instance_t : instance\nready list
+ * }
+ * 
+ * OS ..> "Lists and Queues" : use
+ * System *-- "1" ch_system_t : system\nroot object
+ * System *-- "1..2" os_instance_t : predefined\ninstances
+ * System o.. "1" os_instance_t : current core/instance\nmediated by\nport layer
+ * 
+ * package "Virtual Timers" {
+ *   class delta_list_t {
+ *     - next : delta_list_t *
+ *     - prev : delta_list_t *
+ *     - delta : sysinterval_t
+ *   }
+ * 
+ *   class virtual_timer_t {
+ *     - dlist : delta_list_t
+ *     - func : vtfunc_t
+ *     - par : void *
+ *     + {static} chVTDoTickI()
+ *     + chVTObjectInit()
+ *     + chVTSet()
+ *     + chVTReset()
+ *   }
+ *   virtual_timer_t <.. ready_list_t : use
+ *   virtual_timer_t *-- "1" delta_list_t
+ * 
+ *   class virtual_timers_list_t {
+ *     - dlist : delta_list_t
+ *     - systime : systime_t
+ *     - lasttime : systime_t
+ *     - laststamp : uint64_t
+ *     # __vt_object_init()
+ *   }
+ *   virtual_timers_list_t o-- "0..*" virtual_timer_t : active timers
+ *   virtual_timers_list_t *-- "1" delta_list_t
+ *   virtual_timers_list_t "1" --* os_instance_t
+ *   virtual_timers_list_t ..> "Port Timer" : use\ntick-less mode\nonly
+ * }
+ * 
+ * @enduml
+ *
+ * @startuml {rt_arch.png} "RT Synchronization"
+ * package OS {
+ *   class thread_t {
+ *     - queue: ch_queue_t
+ *     - wtmtxp: mutex_t *
+ *   }
+ * }
+ * package "Lists and Queues" {
+ *   class ch_list_t
+ *   class ch_queue_t
+ * }
+ * package "Low Level Synchronization" {
+ * 
+ *   class thread_reference_t {
+ *     - ref : thread_t *
+ *     + chThdSuspendS()
+ *     + chThdSuspendTimeoutS()
+ *     + chThdResumeI()
+ *     + chThdResumeS()
+ *   }
+ *   class threads_queue_t {
+ *     - queue: ch_queue_t
+ *     + chThdQueueObjectInit()
+ *     + chThdEnqueueTimeoutS()
+ *     + chThdDequeueNextI()
+ *     + chThdDequeueAllI()
+ *   }
+ * }
+ * package Messages {
+ *   class messages <<(S,#FF7700) Singleton>> {
+ *     + {static} chMsgWait()
+ *     + {static} chMsgGet()
+ *     + {static} chMsgRelease()
+ *     + {static} chMsgSend()
+ *   }
+ * }
+ * package Semaphores {
+ *   class semaphore_t {
+ *     - queue: ch_queue_t
+ *     - cnt : cnt_t
+ *     + chSemObjectInit()
+ *     + chSemWait()
+ *     + chSemWaitTimeout()
+ *     + chSemSignal()
+ *     + chSemReset()
+ *   }
+ * }
+ * package Monitors {
+ *   class mutex_t {
+ *     - queue: ch_queue_t
+ *     - owner : thread_t *
+ *     - next : mutex_t *
+ *     - cnt : cnt_t
+ *     + chMtxObjectInit()
+ *     + chMtxLock()
+ *     + chMtxTryLock()
+ *     + chMtxUnlock()
+ *     + chMtxUnlockAll()
+ *   }
+ *   class condition_variable_t {
+ *     - queue: ch_queue_t
+ *     + chCondObjectInit()
+ *     + chCondSignal()
+ *     + chCondBroadcast()
+ *     + chCondWait()
+ *     + chCondWaitTimeout()
+ *   }
+ *   mutex_t "1" .l. "0..*" condition_variable_t : indirect\ncollaboration
+ *   mutex_t o-- "0..*" thread_t : waiting\nthreads
+ *   mutex_t o-- "0..1" thread_t : owner\nthread
+ *   mutex_t o-- "0..1" mutex_t : next\nowned mutex
+ *   condition_variable_t o-- "0..*" thread_t : waiting\nthreads
+ * }
+ * 
+ * messages -u- thread_t : collaboration
+ * 
+ * package Events {
+ *   class events <<(S,#FF7700) Singleton>> {
+ *     + {static} chEvtSignal()
+ *     + {static} chEvtWaitOne()
+ *     + {static} chEvtWaitAny()
+ *     + {static} chEvtWaitAll()
+ *     + {static} chEvtDispatch()
+ *   }
+ *   class event_source_t {
+ *     - next : event_listener_t *
+ *     + chEvtObjectInit()
+ *     + chEvtRegister()
+ *     + chEvtBroadcastFlags()
+ *   }
+ *   class event_listener_t {
+ *     - next : event_listener_t *
+ *     - listener : thread_t *
+ *     - events : eventmask_t
+ *     - flags : eventflags_t
+ *     - wflags : eventflags_t
+ *   }
+ *   event_source_t "1" o-- "0..*" event_listener_t : registered\nlisteners
+ *   event_listener_t o-- "1" event_listener_t : next\nregistered\nlistener
+ *   event_listener_t "0..*" o-- "1" thread_t : listening\nthread
+ * }
+ * 
+ * events -u- thread_t : collaboration
+ * 
+ * thread_reference_t o-- "0..1" thread_t : referred\nthread
+ * 
+ * threads_queue_t o-- "0..*" thread_t : queued\nthreads
+ * 
+ * ch_queue_t "1" --* threads_queue_t
+ * ch_queue_t "1" --* semaphore_t
+ * ch_queue_t "1" --* mutex_t
+ * ch_queue_t "1" --* condition_variable_t
+ * 
+ * thread_t o-- "0..*" mutex_t: owned\nmutexes
+ * 
+ * semaphore_t o-- "0..*" thread_t : waiting\nthreads
+ * 
+ * @enduml
+ */

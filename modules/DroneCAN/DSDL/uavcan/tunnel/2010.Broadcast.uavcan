@@ -1,0 +1,10 @@
+#
+# This message struct carries arbitrary data in the format of the specified high-level protocol.
+# The data will be delivered to all nodes that are interested in tunneled protocols.
+# Finer addressing schemes may be implemented using the means provided by the encapsulated protocol.
+# The channelID allows for additional routing between the source and target nodes.
+
+Protocol protocol
+uint8 channel_id
+
+uint8[<=60] buffer    # TAO rules apply

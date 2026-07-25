@@ -1,0 +1,8 @@
+certifi==2022.12.7
+charset-normalizer==2.0.4
+idna==3.2
+junit-xml==1.9
+PyYAML==5.4.1
+requests==2.31.0
+six==1.16.0
+urllib3==1.26.6

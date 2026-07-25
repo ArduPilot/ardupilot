@@ -1,0 +1,49 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2005, 2011 (ita)
+
+"""
+Including the moc files *is* the best practice (KDE), not doing it is easy,
+but makes the compilations about 30-40% slower on average.
+
+If you still want the slow version (we warned you!), see the example located
+in the folder playground/slow_qt/
+"""
+
+VERSION='0.0.1'
+APPNAME='qt4_test'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx qt4')
+
+def configure(conf):
+	conf.load('compiler_cxx qt4')
+	conf.env.append_value('CXXFLAGS', ['-g']) # test
+
+def build(bld):
+	bld(
+		features = 'qt4 cxx cxxprogram',
+		uselib   = 'QTCORE QTGUI QTOPENGL QTSVG',
+		source   = 'main.cpp textures.qrc but.ui foo.cpp',
+		target   = 'window',
+		includes = '.',
+		defines  = 'WAF=1', # test
+		lang     = bld.path.ant_glob('linguist/*.ts'),
+		langname = 'somefile', # include the .qm files from somefile.qrc
+	)
+
+# use the following if you want to add the include paths automatically
+"""
+from waflib.TaskGen import feature, before, after
+@feature('cxx')
+@after('process_source')
+@before('apply_incpaths')
+def add_includes_paths(self):
+    incs = set(self.to_list(getattr(self, 'includes', '')))
+    for x in self.compiled_tasks:
+        incs.add(x.inputs[0].parent.path_from(self.path))
+    self.includes = list(incs)
+"""

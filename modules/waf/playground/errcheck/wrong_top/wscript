@@ -1,0 +1,15 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+"""
+Setting the source directory below the current folder is a
+bad idea in general
+"""
+
+top = 'src'
+out = 'build'
+
+def configure(conf):
+	pass
+

@@ -1,0 +1,54 @@
+#! /usr/bin/env waf
+
+top = '.'
+out = 'tmp_out'
+
+import os, random, time
+from waflib import ConfigSet, Context, Build, Configure, Utils
+
+Configure.autoconfig='clobber'
+
+def options(opt):
+	opt.add_option('--based', action='store', default='foo', help='base directory', dest='based')
+	opt.add_option('--dumpf', action='store', default='foo', help='dump config to this file', dest='dumpf')
+	opt.add_option('--force-autoconfig', action='store', default=False, dest='force_autoconfig')
+
+def configure(ctx):
+	# force autoconfig to depend on an always-changing file - once
+	if ctx.options.force_autoconfig:
+		fname = ctx.options.dumpf + '_autoconfig'
+		s = "%f%d" % (time.time(), random.randint(0, 10**9))
+		Utils.writef(fname, s)
+		ctx.files.append(fname)
+		Configure.autoconfig = False
+
+def build(ctx):
+	pass
+
+def write_conf(ctx):
+	if not ctx.options.dumpf:
+		raise ValueError('Missing --dumpf option')
+	if not ctx.options.based:
+		raise ValueError('Missing --based option')
+
+	def g(x):
+		# path from conf.options.based
+		based = ctx.root.find_node(ctx.options.based)
+		node = ctx.root.find_node(x)
+		return node.path_from(based)
+
+	env = ConfigSet.ConfigSet()
+	env.cwd_dir = g(os.getcwd())
+	env.top_dir = g(Context.top_dir)
+	env.out_dir = g(Context.out_dir)
+	env.run_dir = g(Context.run_dir)
+	env.launch_dir = g(Context.launch_dir)
+
+	env.store(ctx.options.dumpf)
+
+for y in (Build.BuildContext, Configure.ConfigurationContext):
+	class tmp(y):
+		def execute(self, *k, **kw):
+			super(self.__class__, self).execute(*k, **kw)
+			write_conf(self)
+

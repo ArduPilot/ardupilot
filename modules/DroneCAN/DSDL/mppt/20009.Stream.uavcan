@@ -1,0 +1,19 @@
+#
+# MPPT streaming data, transmitted at 1Hz
+#
+
+uint8 OV_FAULT = 1 # over-voltage
+uint8 UV_FAULT = 2 # under-voltage
+uint8 OC_FAULT = 4 # over-current
+uint8 OT_FAULT = 8 # over-temperature
+uint8 fault_flags
+
+int8 temperature # [Celsius]
+
+float16 input_voltage # [Volt]
+float16 input_current # [Amp]
+float16 input_power # [Watt]
+
+float16 output_voltage # [Volt]
+float16 output_current # [Amp]
+float16 output_power # [Watt]

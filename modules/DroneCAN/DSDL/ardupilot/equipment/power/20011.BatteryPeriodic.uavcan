@@ -1,0 +1,19 @@
+#
+# Battery data to be sent statically upon request or periodically at a low rate
+#  Recommend that this message is sent at a maximum of 1Hz and nominally 0.2 Hz (IE: once every 5 seconds.)
+
+uint8[<=50] name                        #      : Formatted as manufacturer_product, 0 terminated
+uint8[<=32] serial_number               #      : Serial number in ASCII characters, 0 terminated
+uint8[<=9] manufacture_date             #      : Manufacture date (DDMMYYYY) in ASCII characters, 0 terminated
+float32 design_capacity                 # [Ah] : Fully charged design capacity. 0: field not provided.
+uint8 cells_in_series                   #      : Number of battery cells in series. 0: field not provided.
+float16 nominal_voltage                 # [V]  : Battery nominal voltage. Used for conversion between Wh and Ah. 0: field not provided.
+float16 discharge_minimum_voltage       # [V]  : Minimum per-cell voltage when discharging. 0: field not provided.
+float16 charging_minimum_voltage        # [V]  : Minimum per-cell voltage when charging. 0: field not provided.
+float16 charging_maximum_voltage        # [V]  : Maximum per-cell voltage when charged. 0: field not provided.
+float32 charging_maximum_current        # [A]  : Maximum pack continuous charge current. 0: field not provided.
+float32 discharge_maximum_current       # [A]  : Maximum pack continuous discharge current. 0: field not provided.
+float32 discharge_maximum_burst_current # [A]  : Maximum pack discharge burst current for 30 seconds. 0: field not provided
+float32 full_charge_capacity            # [Ah] : Predicted battery capacity when fully charged (accounting for battery degradation), NAN: field not provided
+uint16 cycle_count                      #      : Lifetime count of the number of charge/discharge cycles (https://en.wikipedia.org/wiki/Charge_cycle). UINT16_MAX: field not provided.
+uint8 state_of_health                   # [%]  : State of Health (SOH) estimate, in percent (0 - 100). UINT8_MAX: field not provided.

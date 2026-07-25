@@ -1,0 +1,8 @@
+#
+# Magnetic field readings, in Gauss, in body frame.
+# SI units are avoided because of float16 range limitations.
+# This message is deprecated. Use the newer 1002.MagneticFieldStrength2.uavcan message.
+#
+
+float16[3] magnetic_field_ga
+float16[<=9] magnetic_field_covariance

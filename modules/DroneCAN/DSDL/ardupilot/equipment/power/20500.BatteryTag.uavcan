@@ -1,0 +1,24 @@
+#
+# Battery tag information. This is broadcast by a battery tag device
+# permanently attached to a battery to record the lifecycle of the battery
+#
+
+# vendor supplied serial number
+uint32 serial_number
+
+# number of cycles this battery has been through. Criteria for
+# defining a cycle is vendor specific
+uint32 num_cycles
+
+# number of hours that this battery has been running when
+# vehicle is in an armed state
+float32 armed_hours
+
+# battery capacity in milliAmpHours
+uint32 battery_capacity_mAh
+
+# time of first use of battery with vehicle armed, in minutes since 1/1/1970
+uint32 first_use_mins
+
+# time of most recent change to armed state, in minutes since 1/1/1970
+uint32 last_arm_time_mins

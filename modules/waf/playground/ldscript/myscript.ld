@@ -1,0 +1,2 @@
+ENTRY(init)
+

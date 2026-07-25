@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Code Templates -->
+<code 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/common/code_snippets.xsd">
+  <snippets>
+    <snippet>
+      <type>thread_body</type>
+      <name>Empty</name>
+<text><![CDATA[[#ftl]
+[#macro do_code function]
+
+  return 0;
+[/#macro]]]>
+</text>
+    </snippet>
+    <snippet>
+      <type>thread_body</type>
+      <name>Checks for Termination</name>
+<text><![CDATA[[#ftl]
+[#ftl]
+[#macro do_code function]
+
+  while (!chThdShouldTerminate()) {
+    /* Thread activity here. */
+  }
+  return 0;
+[/#macro]]]>
+</text>
+    </snippet>
+    <snippet>
+      <type>thread_body</type>
+      <name>Message Server</name>
+<text><![CDATA[[#ftl]
+[#ftl]
+[#macro do_code function]
+
+  while(TRUE) {
+    msg_t msg, response;
+
+    msg = chMsgWait();
+    /* Process the message here then prepare a response. */
+    chMsgRelease(response);
+  }
+  return 0;
+[/#macro]]]>
+</text>
+    </snippet>
+  </snippets>
+</code>

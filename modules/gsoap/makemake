@@ -1,0 +1,32 @@
+#! /bin/sh
+
+aclocal
+autoheader
+rm -f missing
+automake --add-missing
+autoconf
+automake
+./configure --enable-samples --enable-ipv6-v6only --with-openssl=/usr/local/opt/openssl
+rm -f gsoap/*.o
+rm -f gsoap/wsdl/wsdlC.cpp
+rm -f gsoap/wsdl/*.o
+rm -f gsoap/src/*.o
+rm -f gsoap/samples/*/*.o
+rm -f gsoap/samples/*/soapStub.h
+rm -f gsoap/samples/*/soapH.h
+rm -f gsoap/samples/*/soapC.c
+rm -f gsoap/samples/*/soapC.cpp
+rm -f gsoap/samples/databinding/addressC.cpp
+rm -f gsoap/samples/chaining/envC.c
+rm -f gsoap/samples/chaining/qServerLib.c
+rm -f gsoap/samples/chaining/cServerLib.c
+rm -f gsoap/samples/chaining++/envC.cpp
+rm -f gsoap/samples/chaining++/QuotequoteService.cpp
+rm -f gsoap/samples/chaining++/CalccalcService.cpp
+cd gsoap/samples/calc_xcode; soapcpp2 -i -wx -C calc.h; cd -
+cd gsoap/samples/calc_vs2005/calc_vs2005; soapcpp2 -i -wx -C calc.h; cd -
+
+echo "Please run the following command now:"
+echo "make"
+
+

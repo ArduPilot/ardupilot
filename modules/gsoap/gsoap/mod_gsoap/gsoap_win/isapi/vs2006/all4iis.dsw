@@ -1,0 +1,104 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNUNG: DIESE ARBEITSBEREICHSDATEI DARF NICHT BEARBEITET ODER GELÖSCHT WERDEN!
+
+###############################################################################
+
+Project: "all4iis"=.\all4iis.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name calc
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name isapi
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name calcclnt
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name dime
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name dimeclnt
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "calc"=.\samples\calc\calc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "calcclnt"=.\SAMPLES\CALC\calcclnt.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "dime"=.\SAMPLES\dime\dime.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "dimeclnt"=.\SAMPLES\DIME\dimeclnt.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "isapi"=.\gsoap\isapi.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

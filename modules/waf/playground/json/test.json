@@ -1,0 +1,9 @@
+{
+  "array": [1, 2, "abc", 4.8, null],
+  "dict": {
+    "integer": 1,
+    "float": 4.8,
+    "string": "Hello, world!"
+  },
+  "boolean": true
+}

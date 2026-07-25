@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<mavlink>
+  <include>root.xml</include>
+  <messages>
+    <message id="2222" name="CHILDMSG">
+      <description>This is a child message field</description>
+      <field type="uint32_t" name="CHILDFIELD">child Field</field>
+    </message>
+  </messages>
+</mavlink>

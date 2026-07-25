@@ -1,0 +1,160 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006-2010 (ita)
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+top = '.'
+
+import waflib.Configure
+waflib.Configure.autoconfig = True
+
+def options(opt):
+	opt.load('compiler_c')
+	opt.load('gnu_dirs')
+
+def build(bld):
+	bld.recurse('program stlib shlib stlib2')
+
+
+lst = 'debug release foo bar one two'.split()
+
+def configure(conf):
+	conf.load('compiler_c')
+	conf.check_features()
+	conf.check_cc(fragment="""#include<stdio.h>\nint main(){fprintf(stderr, "mu"); printf("%d", 22);return 0;}\n""", execute=True, define_name='HAVE_MU')
+	conf.write_config_header('config.h')
+
+	# gotcha - the config.h must be written for each variant
+	for x in lst:
+		conf.write_config_header(x + '/config.h')
+
+from waflib import Utils, Build
+class buildall_ctx(Build.BuildContext):
+	cmd = fun = 'buildall'
+	def compile(self):
+		pass
+
+def buildall(ctx):
+	"""call 'waf buildall' to build all the variants in parallel"""
+
+	timer = Utils.Timer()
+	threads = []
+	count = [0]
+	line_lock = Utils.threading.Lock()
+	class sub_build(Utils.threading.Thread):
+		def run(self):
+			bld = self.bld = self.cls(top_dir=ctx.top_dir, out_dir=ctx.out_dir)
+			bld.restore()
+			bld.siblings = threads
+			bld.count = count
+			bld.line_lock = line_lock
+			bld.timer = timer
+			bld.logger = ctx.logger
+			bld.load_envs()
+			bld.targets = ctx.targets
+			bld.recurse([bld.run_dir])
+			bld.compile()
+
+	for x in lst:
+		cls = type(Build.BuildContext)(x, (Build.BuildContext,), {'cmd': x, 'variant': x})
+		cls.progress_line = locked_progress_line
+		f = sub_build()
+		f.cls = cls
+		threads.append(f)
+		f.start()
+
+	for x in threads:
+		x.join()
+
+def locked_progress_line(self, state, total, col1, col2):
+	try:
+		self.line_lock.acquire()
+		self.count[0] += 1
+		total = 0
+		for x in self.siblings:
+			try:
+				p = x.bld.producer
+			except AttributeError:
+				pass
+			else:
+				total += p.total
+
+		return Build.BuildContext.progress_line(self, self.count[0], total, col1, col2)
+	finally:
+		self.line_lock.release()
+
+class cleanall_ctx(Build.CleanContext):
+	cmd = fun = 'cleanall'
+
+def cleanall(ctx):
+	for x in lst:
+		cls = type(Build.CleanContext)(x, (Build.CleanContext,), {'cmd': x, 'variant': x})
+		bld = cls(top_dir=ctx.top_dir, out_dir=ctx.out_dir)
+		bld.restore()
+		bld.load_envs()
+		bld.recurse([bld.run_dir])
+		try:
+			bld.clean()
+		finally:
+			bld.store()
+
+
+# produces dict/json compatible output
+features_str = r'''
+#include <stdio.h>
+int is_big_endian()
+{
+	long one = 1;
+	return !(*((char *)(&one)));
+}
+int main()
+{
+	printf("{");
+	if (is_big_endian()) printf("\"bigendian\":1,");
+	else printf("\"bigendian\":0,");
+	printf("\"int_size\":%lu,", sizeof(int));
+	printf("\"long_int_size\":%lu,", sizeof(long int));
+	printf("\"long_long_int_size\":%lu,", sizeof(long long int));
+	printf("\"double_size\":%lu", sizeof(double));
+	printf("}");
+	return 0;
+}
+'''
+
+def check_features(self):
+
+	mp = self.check(fragment=features_str, define_ret=True, execute=True)
+	try:
+		mp = mp.decode('utf-8')
+	except:
+		pass
+
+
+	t = eval(mp)
+	try:
+		is_big = int(t['bigendian'])
+	except KeyError:
+		raise Configure.ConfigurationError('endian test failed %s (see the config.log)' % features_str)
+
+	if is_big: strbig = 'big endian'
+	else: strbig = 'little endian'
+	self.msg('endianness', strbig)
+
+	self.msg('int size', t['int_size'])
+	self.msg('long int size', t['long_int_size'])
+	self.msg('long long int size', t['long_long_int_size'])
+	self.msg('double size', t['double_size'])
+
+	self.define_cond('IS_BIGENDIAN', is_big)
+	self.define_cond('INT_SIZE', int(t['int_size']))
+	self.define_cond('LONG_INT_SIZE', int(t['long_int_size']))
+	self.define_cond('LONG_LONG_INT_SIZE', int(t['long_long_int_size']))
+	self.define_cond('DOUBLE_SIZE', int(t['double_size']))
+
+	return is_big
+
+from waflib import Configure
+Configure.conf(check_features) # bind the method
+

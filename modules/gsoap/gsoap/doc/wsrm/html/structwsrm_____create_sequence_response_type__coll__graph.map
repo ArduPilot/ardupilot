@@ -1,0 +1,6 @@
+<map id="wsrm__CreateSequenceResponseType" name="wsrm__CreateSequenceResponseType">
+<area shape="rect" id="node2" href="$structwsrm_____accept_type.html" title="&quot;http://docs.oasis&#45;open.org/ws&#45;rx/wsrm/200702&quot;:AcceptType is a complexType. " alt="" coords="155,193,292,221"/>
+<area shape="rect" id="node4" href="$structwsa5_____endpoint_reference_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:EndpointReferenceType is a complexType. " alt="" coords="119,99,328,127"/>
+<area shape="rect" id="node6" href="$structwsa5_____reference_parameters_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:ReferenceParametersType is a complexType. " alt="" coords="4,6,229,34"/>
+<area shape="rect" id="node8" href="$structwsa5_____metadata_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:MetadataType is a complexType. " alt="" coords="255,6,405,34"/>
+</map>

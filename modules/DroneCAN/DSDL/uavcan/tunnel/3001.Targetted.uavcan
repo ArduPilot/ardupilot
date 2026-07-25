@@ -1,0 +1,23 @@
+# This message struct carries arbitrary data in the format of the specified high-level protocol.
+# The message is sent as a broadcast but it is expected that the target_node to select which node
+# will process the data. This is used instead of a service request to avoid the round trip which
+# impacts high rate messages
+# a send with a buffer length of 0 can be used as a keepalive or to trigger initial
+# setup of the link on the target node
+
+Protocol protocol
+
+# target CAN node ID
+uint7 target_node
+
+# ID of serial device, -1 means the default device
+int5 serial_id
+
+# option flags
+uint4 OPTION_LOCK_PORT = 1
+
+uint4 options
+
+uint24 baudrate
+
+uint8[<=120] buffer

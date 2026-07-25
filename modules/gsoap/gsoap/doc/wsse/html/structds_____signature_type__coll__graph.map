@@ -1,0 +1,31 @@
+<map id="ds__SignatureType" name="ds__SignatureType">
+<area shape="rect" id="node2" href="$structds_____signed_info_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:SignedInfoType is a complexType. " alt="" coords="2032,73,2176,100"/>
+<area shape="rect" id="node3" href="$structds_____reference_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:ReferenceType is a complexType. " alt="" coords="1587,107,1730,133"/>
+<area shape="rect" id="node4" href="$structds_____digest_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:DigestMethodType is a complexType. " alt="" coords="1174,435,1337,461"/>
+<area shape="rect" id="node12" href="$structxenc_____encryption_method_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:EncryptionMethodType is a complexType. " alt="" coords="1557,512,1760,539"/>
+<area shape="rect" id="node5" href="$structds_____transforms_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformsType is a complexType. " alt="" coords="1181,367,1329,393"/>
+<area shape="rect" id="node24" href="$structds_____retrieval_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:RetrievalMethodType is a complexType. " alt="" coords="1792,444,1969,471"/>
+<area shape="rect" id="node6" href="$structds_____transform_type.html" title="Imported complexType &quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformType from typemap WS/WS&#45;typemap..." alt="" coords="433,367,575,393"/>
+<area shape="rect" id="node20" href="$structxenc_____transforms_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:TransformsType is a complexType. " alt="" coords="845,489,1008,516"/>
+<area shape="rect" id="node7" href="$struct__c14n_____inclusive_namespaces.html" title="_c14n__InclusiveNamespaces" alt="" coords="5,307,208,333"/>
+<area shape="rect" id="node8" href="$structds_____canonicalization_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:CanonicalizationMethodType is a complexType. ..." alt="" coords="599,113,821,140"/>
+<area shape="rect" id="node9" href="$structds_____signature_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:SignatureMethodType is a complexType. " alt="" coords="1567,5,1750,32"/>
+<area shape="rect" id="node10" href="$structds_____key_info_type.html" title="Imported complexType &quot;http://www.w3.org/2000/09/xmldsig#&quot;:KeyInfoType from typemap WS/WS&#45;typemap..." alt="" coords="2459,415,2584,441"/>
+<area shape="rect" id="node11" href="$structxenc_____encrypted_key_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:EncryptedKeyType is a complexType with complexContent extension o..." alt="" coords="2015,557,2193,584"/>
+<area shape="rect" id="node13" href="$structxenc_____encryption_properties_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:EncryptionPropertiesType is a complexType. " alt="" coords="1549,671,1768,697"/>
+<area shape="rect" id="node14" href="$structxenc_____encryption_property_type.html" title="Imported complexType &quot;http://www.w3.org/2001/04/xmlenc#&quot;:EncryptionPropertyType from typemap WS/WS&#45;ty..." alt="" coords="1151,677,1359,704"/>
+<area shape="rect" id="node15" href="$struct__xenc_____reference_list.html" title="Top&#45;level root element &quot;http://www.w3.org/2001/04/xmlenc#&quot;:ReferenceList. " alt="" coords="1581,615,1736,641"/>
+<area shape="rect" id="node16" href="$struct__xenc_____reference_list_1_1____xenc____union___reference_list.html" title="_xenc__ReferenceList\l::__xenc__union_ReferenceList" alt="" coords="1151,611,1360,653"/>
+<area shape="rect" id="node17" href="$structxenc_____reference_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:ReferenceType is a complexType. " alt="" coords="849,619,1005,645"/>
+<area shape="rect" id="node18" href="$structxenc_____cipher_data_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:CipherDataType is a complexType. " alt="" coords="1577,563,1740,589"/>
+<area shape="rect" id="node19" href="$structxenc_____cipher_reference_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:CipherReferenceType is a complexType. " alt="" coords="1157,560,1353,587"/>
+<area shape="rect" id="node21" href="$structds_____key_value_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:KeyValueType is a complexType. " alt="" coords="2035,208,2173,235"/>
+<area shape="rect" id="node22" href="$structds_____r_s_a_key_value_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:RSAKeyValueType is a complexType. " alt="" coords="1576,157,1741,184"/>
+<area shape="rect" id="node23" href="$structds_____d_s_a_key_value_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:DSAKeyValueType is a complexType. " alt="" coords="1576,208,1741,235"/>
+<area shape="rect" id="node25" href="$struct__wsse_____security_token_reference.html" title="This element defines the wsse:SecurityTokenReference per Section 4.3. Imported element _wsse__Securit..." alt="" coords="1993,355,2215,381"/>
+<area shape="rect" id="node26" href="$struct__wsse_____embedded.html" title="This element defines a security token embedded reference Imported element _wsse__Embedded from typema..." alt="" coords="1589,309,1728,336"/>
+<area shape="rect" id="node27" href="$struct__wsse_____key_identifier.html" title="This element defines a key identifier reference Imported element _wsse__KeyIdentifier from typemap WS..." alt="" coords="1584,360,1733,387"/>
+<area shape="rect" id="node28" href="$structds_____x509_data_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:X509DataType is a complexType. " alt="" coords="1589,461,1729,488"/>
+<area shape="rect" id="node29" href="$structds_____x509_issuer_serial_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:X509IssuerSerialType is a complexType. " alt="" coords="1164,509,1347,536"/>
+<area shape="rect" id="node30" href="$struct__wsse_____reference.html" title="This element defines a security token reference Imported element _wsse__Reference from typemap WS/WS&#45;..." alt="" coords="1591,259,1727,285"/>
+</map>

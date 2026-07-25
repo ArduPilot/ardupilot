@@ -1,0 +1,46 @@
+#! /usr/bin/env python
+
+def configure(conf):
+	pass
+
+def build(bld):
+	bld.process(name='foo', version='1.0')
+	bld.process(name='bar', use='foo')
+
+########################################################################
+
+# user api
+from waflib.Build import BuildContext
+def process(ctx, *k, **kw):
+	kw['features'] = 'proc'
+	return ctx(*k, **kw)
+BuildContext.process = process
+
+# create the tasks
+from waflib.TaskGen import feature
+@feature('proc')
+def create_a_few_tasks(self):
+	fetch = self.create_task('process')
+	fetch.outputs = [self.path.find_or_declare(self.name + '.fetch')]
+	fetch.env.A = getattr(self, 'version', '') # rebuild if changes
+	configure = self.create_task('process', fetch.outputs)
+	configure.outputs = [self.path.find_or_declare(self.name + '.configure')]
+	build = self.create_task('process', configure.outputs)
+	build.outputs = [self.path.find_or_declare(self.name + '.build')]
+	self.install = install = self.create_task('process', build.outputs)
+	install.outputs = [self.path.find_or_declare(self.name + '.install')]
+
+	if getattr(self, 'use', None):
+		lst = self.to_list(self.use)
+		for x in lst:
+			tg = self.bld.get_tgen_by_name(x)
+			fetch.inputs.extend(tg.install.outputs)
+
+# task classes
+from waflib.Task import Task
+class process(Task):
+	vars = ['A', 'B'] # change env.A to trigger a rebuild...
+	def run(self):
+		# add your operations here
+		self.outputs[0].write('all ok')
+

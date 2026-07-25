@@ -1,0 +1,92 @@
+<processors>
+  <processor class="board" target="STM32C0xx">
+    <name>STM32C0xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32c0xx/templates</path>
+    <default>resources/gencfg/xml/stm32c0board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32F0xx">
+    <name>STM32F0xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32f0xx/templates</path>
+    <default>resources/gencfg/xml/stm32f0board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32F3xx">
+    <name>STM32F3xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32f3xx/templates</path>
+    <default>resources/gencfg/xml/stm32f3board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32F4xx">
+    <name>STM32F4xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32f4xx/templates</path>
+    <default>resources/gencfg/xml/stm32f4board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32F7xx">
+    <name>STM32F7xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32f7xx/templates</path>
+    <default>resources/gencfg/xml/stm32f7board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32G0xx">
+    <name>STM32G0xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32g0xx/templates</path>
+    <default>resources/gencfg/xml/stm32g0board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32G4xx">
+    <name>STM32G4xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32g4xx/templates</path>
+    <default>resources/gencfg/xml/stm32g4board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32H5xx">
+    <name>STM32H5xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32h5xx/templates</path>
+    <default>resources/gencfg/xml/stm32h5board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32H7xx">
+    <name>STM32H7xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32h7xx/templates</path>
+    <default>resources/gencfg/xml/stm32h7board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32L0xx">
+    <name>STM32L0xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32l0xx/templates</path>
+    <default>resources/gencfg/xml/stm32l0board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32L1xx">
+    <name>STM32L1xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32l1xx/templates</path>
+    <default>resources/gencfg/xml/stm32l1board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32L4xx">
+    <name>STM32L4xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32l4xx/templates</path>
+    <default>resources/gencfg/xml/stm32l4board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32L5xx">
+    <name>STM32L5xx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32l5xx/templates</path>
+    <default>resources/gencfg/xml/stm32l5board.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32WBxx">
+    <name>STM32WBxx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32wbxx/templates</path>
+    <default>resources/gencfg/xml/stm32wbboard.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+  <processor class="board" target="STM32WLxx">
+    <name>STM32WLxx Board Configuration</name>
+    <path>resources/gencfg/processors/boards/stm32wlxx/templates</path>
+    <default>resources/gencfg/xml/stm32wlboard.xml</default>
+    <basefilename>board</basefilename>
+  </processor>
+</processors>

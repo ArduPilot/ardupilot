@@ -1,0 +1,6 @@
+<map id="saml2__ConditionsType::__saml2__union_ConditionsType" name="saml2__ConditionsType::__saml2__union_ConditionsType">
+<area shape="rect" id="node2" href="$structsaml2_____proxy_restriction_type.html" title="&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;:ProxyRestrictionType is a complexType with complexContent ext..." alt="" coords="16,5,215,32"/>
+<area shape="rect" id="node3" href="$structsaml2_____audience_restriction_type.html" title="&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;:AudienceRestrictionType is a complexType with complexContent ..." alt="" coords="5,56,225,83"/>
+<area shape="rect" id="node4" href="$structsaml2_____one_time_use_type.html" title="&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;:OneTimeUseType is a complexType with complexContent extension..." alt="" coords="25,107,205,133"/>
+<area shape="rect" id="node5" href="$structsaml2_____condition_abstract_type.html" title="&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;:ConditionAbstractType is an abstract complexType. " alt="" coords="12,157,219,184"/>
+</map>

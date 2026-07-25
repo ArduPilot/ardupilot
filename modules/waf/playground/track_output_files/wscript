@@ -1,0 +1,43 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2015 (ita)
+
+VERSION = '0.0.1'
+APPNAME = 'track_output_files'
+
+top = '.'
+
+import os
+from waflib import Logs, Options
+
+def options(opt):
+	opt.load('compiler_c')
+	opt.load('build_file_tracker')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+test_lib = False
+def play_test(ctx):
+	if ctx.cmd != 'build':
+		return
+
+	global test_lib
+	if not test_lib:
+		# schedule one more build
+		test_lib = True
+		Options.commands.append('change_the_lib')
+		Options.commands.append(ctx.cmd)
+
+def change_the_lib(ctx):
+	lst = ctx.path.ant_glob('build/*stlib1.*')
+	if lst:
+		os.utime(lst[0].abspath(), None)
+		Logs.pprint('YELLOW', '-> Touch %r' % lst[0].abspath())
+		Logs.pprint('YELLOW', '-> Expect a rebuild of dependent files')
+
+def build(bld):
+	bld.stlib(source='foo.c', target='stlib1')
+	bld.program(source='main.c', target='app', use='stlib1')
+	play_test(bld)
+

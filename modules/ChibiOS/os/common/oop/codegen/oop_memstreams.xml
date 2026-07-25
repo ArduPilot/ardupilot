@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="oop_memstreams" descr="Memory Streams" editcode="false">
+  <brief>Memory streams class.</brief>
+  <imports>
+    <import>oop_base_object.xml</import>
+    <import>oop_sequential_stream.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="angular">string.h</include>
+      <include style="regular">oop_base_object.h</include>
+      <include style="regular">oop_sequential_stream.h</include>
+    </includes>
+    <types>
+      <class type="regular" name="memory_stream"
+        namespace="memstm" ancestorname="base_object"
+        descr="memory stream">
+        <brief>Memory streams class.</brief>
+        <details><![CDATA[This class allows to manage a memory buffer using
+          a stream interface.]]></details>
+        <implements>
+          <if name="sequential_stream">
+            <method shortname="write">
+              <implementation><![CDATA[
+
+if (self->size - self->eos < n) {
+  n = self->size - self->eos;
+}
+
+memcpy(self->buffer + self->eos, bp, n);
+self->eos += n;
+
+return n;]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+
+if (self->eos - self->offset < n) {
+  n = self->eos - self->offset;
+}
+
+memcpy(bp, self->buffer + self->offset, n);
+self->offset += n;
+
+return n;]]></implementation>
+            </method>
+            <method shortname="put">
+              <implementation><![CDATA[
+
+if (self->size - self->eos <= 0U) {
+  return STM_RESET;
+}
+
+*(self->buffer + self->eos) = b;
+self->eos++;
+
+return STM_OK;]]></implementation>
+            </method>
+            <method shortname="get">
+              <implementation><![CDATA[
+uint8_t b;
+
+if (self->eos - self->offset <= 0U) {
+  return STM_RESET;
+}
+
+b = *(self->buffer + self->offset);
+self->offset++;
+
+return b;]]></implementation>
+            </method>
+            <method shortname="unget">
+              <implementation><![CDATA[
+
+if ((b == STM_RESET) || (self->offset <= 0U)) {
+  return STM_RESET;
+}
+
+self->offset--;
+*(self->buffer + self->offset) = (uint8_t)b;
+
+return STM_OK;]]></implementation>
+            </method>
+          </if>
+        </implements>
+        <fields>
+          <field name="buffer" ctype="uint8_t$I*">
+            <brief>Pointer to the memory buffer.</brief>
+          </field>
+          <field name="size" ctype="size_t">
+            <brief>Size of the memory buffer.</brief>
+          </field>
+          <field name="eos" ctype="size_t">
+            <brief>Current end of the stream.</brief>
+          </field>
+          <field name="offset" ctype="size_t">
+            <brief>Current read offset.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <param name="buffer" ctype="uint8_t *">Pointer to the memory
+              buffer for the memory stream.
+            </param>
+            <param name="size" ctype="size_t">Size of the memory stream
+              buffer.</param>
+            <param name="eos" ctype="size_t"><![CDATA[Initial End Of Stream
+              offset. Normally you need to put this to zero for RAM buffers
+              or equal to @p size for ROM streams.]]></param>
+            <implementation><![CDATA[
+
+self->buffer = buffer;
+self->size   = size;
+self->eos    = eos;
+self->offset = 0U;]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[ ]]></implementation>
+          </dispose>
+        </methods>
+      </class>
+    </types>
+  </public>
+  <private>
+  </private>
+</module>

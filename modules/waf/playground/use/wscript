@@ -1,0 +1,17 @@
+#! /usr/bin/env python
+
+def options(ctx):
+	ctx.load('compiler_c')
+
+def configure(ctx):
+	ctx.load('compiler_c')
+
+def build(ctx):
+	sub = ctx.recurse
+	sub('fakelibs')
+	sub('objects')
+	sub('order')
+	sub('transitivity')
+	sub('headers')
+	#sub('cycle') # this must raise an error during the build
+

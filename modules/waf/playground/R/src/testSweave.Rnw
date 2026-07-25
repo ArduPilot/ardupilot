@@ -1,0 +1,13 @@
+\documentclass{article}
+\SweaveOpts{eps=FALSE}
+
+<<setup, echo=FALSE, results=hide>>=
+options(width=80)
+@ 
+
+\begin{document}
+Estimate a random Forest model composed of
+\Sexpr{format(nTrees, big.mark = ',')}
+trees.
+
+\end{document}

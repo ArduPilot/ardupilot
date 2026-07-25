@@ -1,0 +1,81 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+"""
+waf configure_all build_all
+"""
+
+VERSION='1.0.0'
+APPNAME='app'
+
+top = '.'
+out = 'build'
+
+from waflib.extras import remote # optional
+from waflib.extras import distnet
+
+variants = [
+'linux_64_debug',
+'linux_64_release',
+'linux_32_debug',
+'linux_32_release',
+]
+
+def options(opt):
+	opt.load('distnet')
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('distnet')
+	conf.load('compiler_c')
+
+	if conf.variant == 'linux_64_release':
+		conf.env.LIB_m = ['m']
+
+def build(bld):
+	bld.shlib(source='prep.c', target='prepouet', includes='.', use='m')
+	bld.shlib(source='main.c', target='pouet', includes='.', use='prepouet')
+
+def package(ctx):
+	for v in variants:
+		tar = 'build/%s.tarfile' % v
+		inputs = ['build/%s/libpouet.so' % v, 'build/%s/libprepouet.so' % v]
+		ctx.make_tarfile(tar, inputs)
+	ctx.make_tarfile('build/noarch.tarfile', ['head.h', 'waf_pouet.py'])
+
+# testing..........................................................................................
+#
+
+from waflib import Utils
+class problem(object):
+	def __init__(self):
+		self.reader = distnet.package_reader()
+		#self.reader.debug = 1
+		self.vtable = {self.reader.myproject : [self.reader.myversion]}
+
+	def add_constraint(self, pkgname, pkgver, text):
+		self.reader.cache_constraints[(pkgname, pkgver)] = distnet.parse_constraints(text)
+
+	def set_versions(self, pkgname, versions):
+		self.vtable[pkgname] = Utils.to_list(versions)
+
+def test(ctx):
+	p = problem()
+	p.add_constraint(APPNAME, VERSION, 'app1,1.0.*\napp2,1.0.*')
+	p.add_constraint('app1', '1.0.0', 'app3,1.0.*,')
+	p.add_constraint('app2', '1.0.0', 'app3,2.0.*,')
+	p.add_constraint('app3', '1.0.0', '')
+	p.add_constraint('app3', '2.0.0', '')
+
+	p.set_versions('app1', '1.0.0')
+	p.set_versions('app2', '1.0.0')
+	p.set_versions('app3', '1.0.0 2.0.0')
+
+	versions, constraints = p.reader.solve(p.vtable, {}, p.reader.myproject, p.reader.myversion)
+	#print versions
+	#print constraints
+	#for a, b in constraints.items():
+	#	print a, b
+	p.reader.constraints = p.reader.solution_to_constraints(versions, constraints)
+	p.reader.check_errors()
+

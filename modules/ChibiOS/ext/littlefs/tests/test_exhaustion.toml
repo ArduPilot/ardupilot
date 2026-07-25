@@ -1,0 +1,465 @@
+[[case]] # test running a filesystem to exhaustion
+define.LFS_ERASE_CYCLES = 10
+define.LFS_BLOCK_COUNT = 256 # small bd so test runs faster
+define.LFS_BLOCK_CYCLES = 'LFS_ERASE_CYCLES / 2'
+define.LFS_BADBLOCK_BEHAVIOR = [
+    'LFS_TESTBD_BADBLOCK_PROGERROR',
+    'LFS_TESTBD_BADBLOCK_ERASEERROR',
+    'LFS_TESTBD_BADBLOCK_READERROR',
+    'LFS_TESTBD_BADBLOCK_PROGNOOP',
+    'LFS_TESTBD_BADBLOCK_ERASENOOP',
+]
+define.FILES = 10
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "roadrunner") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    uint32_t cycle = 0;
+    while (true) {
+        lfs_mount(&lfs, &cfg) => 0;
+        for (uint32_t i = 0; i < FILES; i++) {
+            // chose name, roughly random seed, and random 2^n size
+            sprintf(path, "roadrunner/test%d", i);
+            srand(cycle * i);
+            size = 1 << ((rand() % 10)+2);
+
+            lfs_file_open(&lfs, &file, path,
+                    LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+
+            for (lfs_size_t j = 0; j < size; j++) {
+                char c = 'a' + (rand() % 26);
+                lfs_ssize_t res = lfs_file_write(&lfs, &file, &c, 1);
+                assert(res == 1 || res == LFS_ERR_NOSPC);
+                if (res == LFS_ERR_NOSPC) {
+                    err = lfs_file_close(&lfs, &file);
+                    assert(err == 0 || err == LFS_ERR_NOSPC);
+                    lfs_unmount(&lfs) => 0;
+                    goto exhausted;
+                }
+            }
+
+            err = lfs_file_close(&lfs, &file);
+            assert(err == 0 || err == LFS_ERR_NOSPC);
+            if (err == LFS_ERR_NOSPC) {
+                lfs_unmount(&lfs) => 0;
+                goto exhausted;
+            }
+        }
+
+        for (uint32_t i = 0; i < FILES; i++) {
+            // check for errors
+            sprintf(path, "roadrunner/test%d", i);
+            srand(cycle * i);
+            size = 1 << ((rand() % 10)+2);
+
+            lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+            for (lfs_size_t j = 0; j < size; j++) {
+                char c = 'a' + (rand() % 26);
+                char r;
+                lfs_file_read(&lfs, &file, &r, 1) => 1;
+                assert(r == c);
+            }
+
+            lfs_file_close(&lfs, &file) => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+
+        cycle += 1;
+    }
+
+exhausted:
+    // should still be readable
+    lfs_mount(&lfs, &cfg) => 0;
+    for (uint32_t i = 0; i < FILES; i++) {
+        // check for errors
+        sprintf(path, "roadrunner/test%d", i);
+        lfs_stat(&lfs, path, &info) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+
+    LFS_WARN("completed %d cycles", cycle);
+'''
+
+[[case]] # test running a filesystem to exhaustion
+         # which also requires expanding superblocks
+define.LFS_ERASE_CYCLES = 10
+define.LFS_BLOCK_COUNT = 256 # small bd so test runs faster
+define.LFS_BLOCK_CYCLES = 'LFS_ERASE_CYCLES / 2'
+define.LFS_BADBLOCK_BEHAVIOR = [
+    'LFS_TESTBD_BADBLOCK_PROGERROR',
+    'LFS_TESTBD_BADBLOCK_ERASEERROR',
+    'LFS_TESTBD_BADBLOCK_READERROR',
+    'LFS_TESTBD_BADBLOCK_PROGNOOP',
+    'LFS_TESTBD_BADBLOCK_ERASENOOP',
+]
+define.FILES = 10
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+
+    uint32_t cycle = 0;
+    while (true) {
+        lfs_mount(&lfs, &cfg) => 0;
+        for (uint32_t i = 0; i < FILES; i++) {
+            // chose name, roughly random seed, and random 2^n size
+            sprintf(path, "test%d", i);
+            srand(cycle * i);
+            size = 1 << ((rand() % 10)+2);
+
+            lfs_file_open(&lfs, &file, path,
+                    LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+
+            for (lfs_size_t j = 0; j < size; j++) {
+                char c = 'a' + (rand() % 26);
+                lfs_ssize_t res = lfs_file_write(&lfs, &file, &c, 1);
+                assert(res == 1 || res == LFS_ERR_NOSPC);
+                if (res == LFS_ERR_NOSPC) {
+                    err = lfs_file_close(&lfs, &file);
+                    assert(err == 0 || err == LFS_ERR_NOSPC);
+                    lfs_unmount(&lfs) => 0;
+                    goto exhausted;
+                }
+            }
+
+            err = lfs_file_close(&lfs, &file);
+            assert(err == 0 || err == LFS_ERR_NOSPC);
+            if (err == LFS_ERR_NOSPC) {
+                lfs_unmount(&lfs) => 0;
+                goto exhausted;
+            }
+        }
+
+        for (uint32_t i = 0; i < FILES; i++) {
+            // check for errors
+            sprintf(path, "test%d", i);
+            srand(cycle * i);
+            size = 1 << ((rand() % 10)+2);
+
+            lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+            for (lfs_size_t j = 0; j < size; j++) {
+                char c = 'a' + (rand() % 26);
+                char r;
+                lfs_file_read(&lfs, &file, &r, 1) => 1;
+                assert(r == c);
+            }
+
+            lfs_file_close(&lfs, &file) => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+
+        cycle += 1;
+    }
+
+exhausted:
+    // should still be readable
+    lfs_mount(&lfs, &cfg) => 0;
+    for (uint32_t i = 0; i < FILES; i++) {
+        // check for errors
+        sprintf(path, "test%d", i);
+        lfs_stat(&lfs, path, &info) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+
+    LFS_WARN("completed %d cycles", cycle);
+'''
+
+# These are a sort of high-level litmus test for wear-leveling. One definition
+# of wear-leveling is that increasing a block device's space translates directly
+# into increasing the block devices lifetime. This is something we can actually
+# check for.
+
+[[case]] # wear-level test running a filesystem to exhaustion
+define.LFS_ERASE_CYCLES = 20
+define.LFS_BLOCK_COUNT = 256 # small bd so test runs faster
+define.LFS_BLOCK_CYCLES = 'LFS_ERASE_CYCLES / 2'
+define.FILES = 10
+code = '''
+    uint32_t run_cycles[2];
+    const uint32_t run_block_count[2] = {LFS_BLOCK_COUNT/2, LFS_BLOCK_COUNT};
+
+    for (int run = 0; run < 2; run++) {
+        for (lfs_block_t b = 0; b < LFS_BLOCK_COUNT; b++) {
+            lfs_testbd_setwear(&cfg, b,
+                    (b < run_block_count[run]) ? 0 : LFS_ERASE_CYCLES) => 0;
+        }
+
+        lfs_format(&lfs, &cfg) => 0;
+        lfs_mount(&lfs, &cfg) => 0;
+        lfs_mkdir(&lfs, "roadrunner") => 0;
+        lfs_unmount(&lfs) => 0;
+
+        uint32_t cycle = 0;
+        while (true) {
+            lfs_mount(&lfs, &cfg) => 0;
+            for (uint32_t i = 0; i < FILES; i++) {
+                // chose name, roughly random seed, and random 2^n size
+                sprintf(path, "roadrunner/test%d", i);
+                srand(cycle * i);
+                size = 1 << ((rand() % 10)+2);
+
+                lfs_file_open(&lfs, &file, path,
+                        LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+
+                for (lfs_size_t j = 0; j < size; j++) {
+                    char c = 'a' + (rand() % 26);
+                    lfs_ssize_t res = lfs_file_write(&lfs, &file, &c, 1);
+                    assert(res == 1 || res == LFS_ERR_NOSPC);
+                    if (res == LFS_ERR_NOSPC) {
+                        err = lfs_file_close(&lfs, &file);
+                        assert(err == 0 || err == LFS_ERR_NOSPC);
+                        lfs_unmount(&lfs) => 0;
+                        goto exhausted;
+                    }
+                }
+
+                err = lfs_file_close(&lfs, &file);
+                assert(err == 0 || err == LFS_ERR_NOSPC);
+                if (err == LFS_ERR_NOSPC) {
+                    lfs_unmount(&lfs) => 0;
+                    goto exhausted;
+                }
+            }
+
+            for (uint32_t i = 0; i < FILES; i++) {
+                // check for errors
+                sprintf(path, "roadrunner/test%d", i);
+                srand(cycle * i);
+                size = 1 << ((rand() % 10)+2);
+
+                lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+                for (lfs_size_t j = 0; j < size; j++) {
+                    char c = 'a' + (rand() % 26);
+                    char r;
+                    lfs_file_read(&lfs, &file, &r, 1) => 1;
+                    assert(r == c);
+                }
+
+                lfs_file_close(&lfs, &file) => 0;
+            }
+            lfs_unmount(&lfs) => 0;
+
+            cycle += 1;
+        }
+
+exhausted:
+        // should still be readable
+        lfs_mount(&lfs, &cfg) => 0;
+        for (uint32_t i = 0; i < FILES; i++) {
+            // check for errors
+            sprintf(path, "roadrunner/test%d", i);
+            lfs_stat(&lfs, path, &info) => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+
+        run_cycles[run] = cycle;
+        LFS_WARN("completed %d blocks %d cycles",
+                run_block_count[run], run_cycles[run]);
+    }
+
+    // check we increased the lifetime by 2x with ~10% error
+    LFS_ASSERT(run_cycles[1]*110/100 > 2*run_cycles[0]);
+'''
+
+[[case]] # wear-level test + expanding superblock
+define.LFS_ERASE_CYCLES = 20
+define.LFS_BLOCK_COUNT = 256 # small bd so test runs faster
+define.LFS_BLOCK_CYCLES = 'LFS_ERASE_CYCLES / 2'
+define.FILES = 10
+code = '''
+    uint32_t run_cycles[2];
+    const uint32_t run_block_count[2] = {LFS_BLOCK_COUNT/2, LFS_BLOCK_COUNT};
+
+    for (int run = 0; run < 2; run++) {
+        for (lfs_block_t b = 0; b < LFS_BLOCK_COUNT; b++) {
+            lfs_testbd_setwear(&cfg, b,
+                    (b < run_block_count[run]) ? 0 : LFS_ERASE_CYCLES) => 0;
+        }
+
+        lfs_format(&lfs, &cfg) => 0;
+
+        uint32_t cycle = 0;
+        while (true) {
+            lfs_mount(&lfs, &cfg) => 0;
+            for (uint32_t i = 0; i < FILES; i++) {
+                // chose name, roughly random seed, and random 2^n size
+                sprintf(path, "test%d", i);
+                srand(cycle * i);
+                size = 1 << ((rand() % 10)+2);
+
+                lfs_file_open(&lfs, &file, path,
+                        LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+
+                for (lfs_size_t j = 0; j < size; j++) {
+                    char c = 'a' + (rand() % 26);
+                    lfs_ssize_t res = lfs_file_write(&lfs, &file, &c, 1);
+                    assert(res == 1 || res == LFS_ERR_NOSPC);
+                    if (res == LFS_ERR_NOSPC) {
+                        err = lfs_file_close(&lfs, &file);
+                        assert(err == 0 || err == LFS_ERR_NOSPC);
+                        lfs_unmount(&lfs) => 0;
+                        goto exhausted;
+                    }
+                }
+
+                err = lfs_file_close(&lfs, &file);
+                assert(err == 0 || err == LFS_ERR_NOSPC);
+                if (err == LFS_ERR_NOSPC) {
+                    lfs_unmount(&lfs) => 0;
+                    goto exhausted;
+                }
+            }
+
+            for (uint32_t i = 0; i < FILES; i++) {
+                // check for errors
+                sprintf(path, "test%d", i);
+                srand(cycle * i);
+                size = 1 << ((rand() % 10)+2);
+
+                lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+                for (lfs_size_t j = 0; j < size; j++) {
+                    char c = 'a' + (rand() % 26);
+                    char r;
+                    lfs_file_read(&lfs, &file, &r, 1) => 1;
+                    assert(r == c);
+                }
+
+                lfs_file_close(&lfs, &file) => 0;
+            }
+            lfs_unmount(&lfs) => 0;
+
+            cycle += 1;
+        }
+
+exhausted:
+        // should still be readable
+        lfs_mount(&lfs, &cfg) => 0;
+        for (uint32_t i = 0; i < FILES; i++) {
+            // check for errors
+            sprintf(path, "test%d", i);
+            lfs_stat(&lfs, path, &info) => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+
+        run_cycles[run] = cycle;
+        LFS_WARN("completed %d blocks %d cycles",
+                run_block_count[run], run_cycles[run]);
+    }
+
+    // check we increased the lifetime by 2x with ~10% error
+    LFS_ASSERT(run_cycles[1]*110/100 > 2*run_cycles[0]);
+'''
+
+[[case]] # test that we wear blocks roughly evenly
+define.LFS_ERASE_CYCLES = 0xffffffff
+define.LFS_BLOCK_COUNT = 256 # small bd so test runs faster
+define.LFS_BLOCK_CYCLES = [5, 4, 3, 2, 1]
+define.CYCLES = 100
+define.FILES = 10
+if = 'LFS_BLOCK_CYCLES < CYCLES/10'
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "roadrunner") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    uint32_t cycle = 0;
+    while (cycle < CYCLES) {
+        lfs_mount(&lfs, &cfg) => 0;
+        for (uint32_t i = 0; i < FILES; i++) {
+            // chose name, roughly random seed, and random 2^n size
+            sprintf(path, "roadrunner/test%d", i);
+            srand(cycle * i);
+            size = 1 << 4; //((rand() % 10)+2);
+
+            lfs_file_open(&lfs, &file, path,
+                    LFS_O_WRONLY | LFS_O_CREAT | LFS_O_TRUNC) => 0;
+
+            for (lfs_size_t j = 0; j < size; j++) {
+                char c = 'a' + (rand() % 26);
+                lfs_ssize_t res = lfs_file_write(&lfs, &file, &c, 1);
+                assert(res == 1 || res == LFS_ERR_NOSPC);
+                if (res == LFS_ERR_NOSPC) {
+                    err = lfs_file_close(&lfs, &file);
+                    assert(err == 0 || err == LFS_ERR_NOSPC);
+                    lfs_unmount(&lfs) => 0;
+                    goto exhausted;
+                }
+            }
+
+            err = lfs_file_close(&lfs, &file);
+            assert(err == 0 || err == LFS_ERR_NOSPC);
+            if (err == LFS_ERR_NOSPC) {
+                lfs_unmount(&lfs) => 0;
+                goto exhausted;
+            }
+        }
+
+        for (uint32_t i = 0; i < FILES; i++) {
+            // check for errors
+            sprintf(path, "roadrunner/test%d", i);
+            srand(cycle * i);
+            size = 1 << 4; //((rand() % 10)+2);
+
+            lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+            for (lfs_size_t j = 0; j < size; j++) {
+                char c = 'a' + (rand() % 26);
+                char r;
+                lfs_file_read(&lfs, &file, &r, 1) => 1;
+                assert(r == c);
+            }
+
+            lfs_file_close(&lfs, &file) => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+
+        cycle += 1;
+    }
+
+exhausted:
+    // should still be readable
+    lfs_mount(&lfs, &cfg) => 0;
+    for (uint32_t i = 0; i < FILES; i++) {
+        // check for errors
+        sprintf(path, "roadrunner/test%d", i);
+        lfs_stat(&lfs, path, &info) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+
+    LFS_WARN("completed %d cycles", cycle);
+
+    // check the wear on our block device
+    lfs_testbd_wear_t minwear = -1;
+    lfs_testbd_wear_t totalwear = 0;
+    lfs_testbd_wear_t maxwear = 0;
+    // skip 0 and 1 as superblock movement is intentionally avoided
+    for (lfs_block_t b = 2; b < LFS_BLOCK_COUNT; b++) {
+        lfs_testbd_wear_t wear = lfs_testbd_getwear(&cfg, b);
+        printf("%08x: wear %d\n", b, wear);
+        assert(wear >= 0);
+        if (wear < minwear) {
+            minwear = wear;
+        }
+        if (wear > maxwear) {
+            maxwear = wear;
+        }
+        totalwear += wear;
+    }
+    lfs_testbd_wear_t avgwear = totalwear / LFS_BLOCK_COUNT;
+    LFS_WARN("max wear: %d cycles", maxwear);
+    LFS_WARN("avg wear: %d cycles", totalwear / LFS_BLOCK_COUNT);
+    LFS_WARN("min wear: %d cycles", minwear);
+
+    // find standard deviation^2
+    lfs_testbd_wear_t dev2 = 0;
+    for (lfs_block_t b = 2; b < LFS_BLOCK_COUNT; b++) {
+        lfs_testbd_wear_t wear = lfs_testbd_getwear(&cfg, b);
+        assert(wear >= 0);
+        lfs_testbd_swear_t diff = wear - avgwear;
+        dev2 += diff*diff;
+    }
+    dev2 /= totalwear;
+    LFS_WARN("std dev^2: %d", dev2);
+    assert(dev2 < 8);
+'''
+

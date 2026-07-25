@@ -1,0 +1,57 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006 (ita)
+
+VERSION='0.0.1'
+APPNAME='d_test'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_d')
+
+def configure(conf):
+	# why does dmd require -fPIC on everything?
+	conf.env.DFLAGS='-fPIC'
+	conf.load('compiler_d')
+	conf.env.LIB_PTHREAD = ['pthread']
+	conf.check_dlibrary()
+	try:
+		conf.check(features='d dprogram', fragment='int main() {return 0;}', compile_filename='test.d', dflags=['-version=Posix'])
+	except:
+		pass
+	else:
+		conf.env.append_value('DFLAGS', ['-version=Posix'])
+
+def build(bld):
+
+	if bld.env.DLIBRARY != 'tango':
+		bld.recurse('src')
+
+		# here is how to use the object-oriented notation
+		bld.stlib(
+			source   = 'testlib/code.d',
+			includes = '.',
+			name     = 'testlib',
+			target   = 'testlib')
+
+		bld.program(
+			source   = 'example.d',
+			target   = 'd_test',
+			use      = 'testlib PTHREAD',
+			includes = '.')
+
+	else:
+		# bad pun hidden
+		bld.program(source='foo.d', target='bar', use='hmm', includes=[bld.path])
+		bld.stlib(source='hmm.d', target='hmm')
+
+		#bld(features='d dshlib', source='shared.d', target='sha')
+		# shared libs do not work here:
+		# ldc -relocation-model=pic -L-shared shared.d -offoo
+		# /usr/lib64/gcc/x86_64-suse-linux/4.5/../../../../x86_64-suse-linux/bin/ld:
+		# /disk/comp/ldc/bin/../lib/libtango.a(tango-core-rt-compiler-ldc-object_-O2.o):
+		# relocation R_X86_64_32 against `.rodata.str1.1' can not be used when making a shared object; recompile with -fPIC
+
+

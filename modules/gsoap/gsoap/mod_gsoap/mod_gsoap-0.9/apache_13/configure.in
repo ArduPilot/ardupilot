@@ -1,0 +1,114 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(mod_gsoap/mod_gsoap.c)
+
+AC_CONFIG_SRCDIR(mod_gsoap/mod_gsoap.c)
+AC_COPYRIGHT([Dipl.-Ing. Christian Aberger (http://www.aberger.at)])
+AC_CANONICAL_HOST
+AC_CANONICAL_SYSTEM
+AM_INIT_AUTOMAKE(mod_gsoap, 0.0.5)
+AM_CONFIG_HEADER(config.h)
+AC_CONFIG_MACRO_DIR([m4])
+dnl AC_CONFIG_HEADERS(config.h)
+
+dnl Ask user for path to gsoap library:
+#AC_ARG_WITH(gsoap,
+#    [  --with-gsoap=<path>   prefix of gsoap port installation. e.g. /usr/local/soapcpp or /home/myusername/gsoap],
+#    [GSOAP_PREFIX=$with_gsoap],
+#    AC_MSG_ERROR([You must call configure with the --with-gsoap=<path> option. <path> is the path where you unpacked the gsoap distribution to.
+#    The headers and source downloaded from http://www.cs.fsu.edu/~engelen/soap.html must be available.
+#    e.g. --with-gsoap=/usr/local/gsoap])
+#)
+
+#AC_CHECK_FILE([[$with_gsoap/stdsoap2.h]], [echo stdsoap2.h found in $with_gsoap], AC_MSG_ERROR([$with_gsoap does not contain stdsoap2.h]))
+
+
+
+#AC_SUBST(GSOAP_PREFIX)
+#GSOAP_CPP_SRC="${GSOAP_PREFIX}/stdsoap2.cpp"
+#GSOAP_C_SRC="${GSOAP_PREFIX}/stdsoap2.c"
+#GSOAP_INCLUDE="-I${GSOAP_PREFIX}"
+#AC_SUBST(GSOAP_CPP_SRC)
+#AC_SUBST(GSOAP_C_SRC)
+#AC_SUBST(GSOAP_INCLUDE)
+
+AC_CHECK_PROG(EXISTS_GSOAP, soapcpp2, yes, )
+if test -z "$EXISTS_GSOAP"; then
+   AC_MSG_ERROR([please install gsoap - http://www.cs.fsu.edu/~engelen/soap.html])
+fi
+
+dnl the debug build options adds symbols to compiler output (-g for g++) 
+AC_ARG_ENABLE(debug,
+[  --enable-debug	add debug symbols to compiler and linker output for source code debugging],
+[case "${enableval}" in
+  yes) debug=true ;;
+  no)  debug=false ;;
+  *) AC_MSG_ERROR(bad value ${enableval} for --enable-debug) ;;
+esac],[debug=false])
+AM_CONDITIONAL(DEBUG, test x$debug = xtrue)
+
+CXXFLAGS=""
+if test x$debug = xtrue; then
+   CXXDEBUGDEFINES="-D_DEBUG"
+   APXS_CXX_OPTIONS="-Wc,-g"
+else 
+   CXXDEBUGDEFINES="-D_NDEBUG"
+   APXS_CXX_OPTIONS=""
+fi					  
+AC_SUBST(CXXDEBUGDEFINES)
+AC_SUBST(APXS_CXX_OPTIONS)
+dnl AC_CHECK_COMPILERS
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_CXX
+
+AC_CHECK_PROG(EXISTS_APXS, apxs, yes, )
+if test -z "$EXISTS_APXS"; then
+   AC_MSG_ERROR([please install the apache apxs tool. Download apache http server from http://www.apache.org, compile and install it and make sure that apxs is in your path])
+fi
+
+dnl Extra params for gcc
+if test "$GCC"; then
+   if test x$debug = xtrue; then
+	  CXXFLAGS="$CXXFLAGS -g"
+   else 
+	  CXXFLAGS="$CXXFLAGS -O2"
+   fi					  
+fi
+AC_SUBST(CXXFLAGS)
+
+AC_LIBTOOL_DLOPEN
+AC_LIBTOOL_WIN32_DLL
+AM_PROG_LIBTOOL
+AC_SUBST(LIBTOOL_DEPS)
+AC_ENABLE_SHARED(yes)
+AC_ENABLE_STATIC(yes)
+
+dnl check for functions.
+AC_CHECK_FUNCS([getcwd])
+AC_CHECK_FUNCS([memset])
+
+dnl Checks for programs.
+AC_PROG_AWK
+AC_PROG_INSTALL
+AC_PROG_RANLIB
+dnl Checks for libraries.
+
+dnl Checks for header files.
+AC_HEADER_STDC
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_CHECK_HEADERS(sys/types.h sys/socket.h unistd.h netinet/in.h)
+AC_CHECK_HEADERS(arpa/inet.h netdb.h sys/ioctl.h errno.h)
+AC_CHECK_HEADERS(sys/time.h)
+AC_CHECK_HEADERS(ltdl.h)
+AC_CHECK_HEADERS(stdsoap2.h)
+
+dnl AC_CHECK_LIB(socket, socket, [LIBSOCKET="-lsocket -lnsl"]) dnl for Solaris' X11
+dnl AC_SUBST(LIBSOCKET)
+
+dnl Checks for library functions.
+dnl AC_ARG_PROGRAM
+
+AC_OUTPUT(Makefile ConsoleServer/Makefile ConsoleServer/foo/Makefile example/Makefile example/calculator/Makefile mod_gsoap/Makefile)

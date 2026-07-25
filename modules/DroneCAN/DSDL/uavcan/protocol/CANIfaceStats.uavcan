@@ -1,0 +1,7 @@
+#
+# Single CAN iface statistics.
+#
+
+uint48 frames_tx        # Number of transmitted CAN frames.
+uint48 frames_rx        # Number of received CAN frames.
+uint48 errors           # Number of errors in the CAN layer.

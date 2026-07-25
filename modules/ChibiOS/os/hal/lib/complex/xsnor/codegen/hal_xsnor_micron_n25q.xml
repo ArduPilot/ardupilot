@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="hal_xsnor_micron_n25q" descr="SNOR Micron N25Q" editcode="true"
+  sourcepath="devices/micron_n25q" headerpath="devices/micron_n25q">
+  <brief>SNOR Micron N25Q driver.</brief>
+  <details><![CDATA[Module for SNOR Micron N25Q flash devices.]]></details>
+  <imports>
+    <import>oop_base_object.xml</import>
+    <import>hal_xsnor_base.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_base_object.h</include>
+      <include style="regular">hal_xsnor_base.h</include>
+    </includes>
+    <configs>
+    </configs>
+    <definitions_late>
+      <group description="Device options">
+        <define name="N25Q_OPT_DUMMY_CYCLES_MASK" value="(15U &lt;&lt; 0)" >
+          <brief>Mask of the dummy cycles field.</brief>
+        </define>
+        <define name="N25Q_OPT_DUMMY_CYCLES" value="((n) &lt;&lt; 0)" >
+          <brief>Number of dummy cycles.</brief>
+          <param name="n">number of dummy cycles (2..15)</param>
+        </define>
+        <define name="N25Q_OPT_NO_WIDTH_SWITCH" value="(1U &lt;&lt; 4)" >
+          <brief>Switch bus width on initialization.</brief>
+          <details><![CDATA[If @p N25Q_OPT_NO_WIDTH_SWITCH is specified then this
+is the bus mode that the device is expected to be using else this is the bus
+mode that the device will be switched in.]]>
+          </details>
+          <note>This option is only valid in WSPI bus mode.</note>
+        </define>
+        <define name="N25Q_OPT_USE_SUBSECTORS" value="(1U &lt;&lt; 5)" >
+          <brief>Use 4kB sub-sectors rather than 64kB sectors.</brief>
+        </define>
+        <define name="N25Q_OPT_NICE_WAITING" value="(1U &lt;&lt; 6)">
+          <brief>Delays insertion.</brief>
+          <details><![CDATA[If enabled this option inserts delays into the
+flash waiting routines releasing some extra CPU time for threads with lower
+priority, this may slow down the driver a bit however.]]></details>
+        </define>
+      </group>
+    </definitions_late>
+    <macros></macros>
+    <types>
+      <class name="hal_xsnor_micron_n25q" type="regular" namespace="n25q"
+             descr="SNOR Micron N25Q driver" ancestorname="hal_xsnor_base">
+        <fields>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <implementation><![CDATA[
+/* Implementation.*/]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[
+/* Implementation.*/]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="init">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)offset;
+(void)n;
+(void)rp;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="program">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)offset;
+(void)n;
+(void)pp;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="start_erase_all">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="start_erase_sector">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)sector;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="query_erase">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)msec;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="verify_erase">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)sector;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="mmap_on">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)addrp;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="mmap_off">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+    </types>
+    <variables></variables>
+    <functions></functions>
+  </public>
+  <private>
+    <includes>
+      <include style="regular">hal.h</include>
+      <include style="regular">hal_xsnor_micron_n25q.h</include>
+    </includes>
+    <functions></functions>
+  </private>
+</module>

@@ -1,0 +1,100 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @startuml {vfs_arch.png} "VFS Core"
+ * package "Abstract Classes" {
+ *   class vfs_driver_t {
+ *     - rootname: const char *
+ *     + open_dir()
+ *     + open_file()
+ *   }
+ *   class vfs_node_t {
+ *     - refs: unsigned
+ *     - driver: vfs_driver_t *
+ *     + release()
+ *   }
+ *   class vfs_directory_node_t {
+ *     + dir_first()
+ *     + dir_next()
+ *   }
+ *   class vfs_file_node_t {
+ *     + get_stream()
+ *     + file_read()
+ *     + file_write()
+ *     + file_setpos()
+ *     + file_getpos()
+ *     + file_getsize()
+ *   }
+ * 
+ *   vfs_node_t "1" o-- vfs_driver_t : owner\ndriver
+ *   vfs_node_t <|-- vfs_directory_node_t : extends
+ *   vfs_node_t <|-- vfs_file_node_t: extends
+ * }
+ * 
+ * package "Root Driver" {
+ *   class vfs_root_driver_t {
+ *     - dir_nodes_pool: memory_pool_t
+ *     - next_driver
+ *     - drivers[]: vfs_driver_t *
+ *   }
+ *   class vfs_root_dir_node_t {
+ *     - index: unsigned
+ *   }
+ * 
+ *   vfs_driver_t <|-- vfs_root_driver_t : extends
+ *   vfs_directory_node_t <|-- vfs_root_dir_node_t : extends
+ * }
+ * 
+ * package "Streams Driver" {
+ *   class vfs_streams_driver_t {
+ *     - file_nodes_pool: memory_pool_t
+ *     - dir_nodes_pool: memory_pool_t
+ *     - streams[]: drv_stream_element_t *
+ *   }
+ *   class vfs_stream_dir_node_t {
+ *     - index: unsigned
+ *   }
+ *   class vfs_stream_file_node_t {
+ *     - stream: sequential_stream_i *
+ *   }
+ * 
+ *   vfs_driver_t <|-- vfs_streams_driver_t : extends
+ *   vfs_directory_node_t <|-- vfs_stream_dir_node_t : extends
+ *   vfs_file_node_t <|-- vfs_stream_file_node_t : extends
+ * }
+ * 
+ * package "FatFS Driver" {
+ *   class vfs_fatfs_driver_t {
+ *     - file_nodes_pool: memory_pool_t
+ *     - dir_nodes_pool: memory_pool_t
+ *   }
+ *   class vfs_fatfs_dir_node_t {
+ *     - dir: DIR
+ *   }
+ *   class vfs_fatfs_file_node_t {
+ *     - file: FIL
+ *   }
+ * 
+ *   vfs_driver_t <|-- vfs_fatfs_driver_t : extends
+ *   vfs_directory_node_t <|-- vfs_fatfs_dir_node_t : extends
+ *   vfs_file_node_t <|-- vfs_fatfs_file_node_t : extends
+ * }
+ * 
+ * @enduml
+ */

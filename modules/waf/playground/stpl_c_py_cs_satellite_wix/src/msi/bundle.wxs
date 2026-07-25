@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:bal="http://schemas.microsoft.com/wix/BalExtension"
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+
+    <Bundle Name='$(var.funivisiblename)' Version='$(var.funiversion)' Manufacturer='$(var.funicompany)' UpgradeCode="8CE598AC-1950-4052-A8F8-C4AA28279872">
+
+    <BootstrapperApplicationRef Id="WixStandardBootstrapperApplication.RtfLicense">
+    <bal:WixStandardBootstrapperApplication
+            LicenseFile="../../src/msi/readme.rtf"
+            />
+    </BootstrapperApplicationRef>
+
+    <!--
+    <util:RegistrySearch Root="HKLM" Key="SOFTWARE\Microsoft\Net Framework Setup\NDP\v4\Client" Value="Version" Variable="Net4x64ClientVersion" Win64="yes" />
+    -->
+
+    <Chain>
+
+        <PackageGroupRef Id="NetFx46Web" />
+
+        <!--
+        embed, but becomes large setup.exe
+
+        <ExePackage Id="Net4Client" Name="Microsoft .NET Framework 4.0 Setup" Cache="no" Compressed="yes" PerMachine="yes" Permanent="yes" Vital="yes" InstallCommand="/q"
+        SourceFile="..\..\Setup\Input\dotNetFx40_Client_x86_x64.exe" DetectCondition="Net4ClientVersion AND (NOT VersionNT64 OR Net4x64ClientVersion)"
+        InstallCondition="(VersionNT &lt; v6.0 OR VersionNT64 &lt; v6.0) AND (NOT (Net4ClientVersion OR Net4x64ClientVersion))"/>
+        -->
+
+        <MsiPackage Id="MainPackage" SourceFile="$(var.funimsi)" Vital="yes" />
+
+    </Chain>
+  </Bundle>
+</Wix>

@@ -1,0 +1,94 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Calle Rosenquist, 2016 (xbreak)
+
+"""
+Execute Python tests during build
+
+To force all tests, run with "waf build --alltests"
+"""
+
+top = '.'
+out = 'build'
+
+def test_results(bld):
+	"""
+	Custom post- function that prints out test results.
+	"""
+	lst = getattr(bld, 'utest_results', [])
+	if not lst:
+		return
+	for (f, code, out, err) in lst:
+		print(out.decode('utf-8'))
+		print(err.decode('utf-8'))
+
+
+def options(opt):
+	opt.load('python compiler_c')
+	opt.load('waf_unit_test pytest')
+
+def configure(cnf):
+	cnf.load('python compiler_c waf_unit_test pytest buildcopy')
+	# The foo_ext module is using Python 3:
+	cnf.check_python_version(minver=(3, 0, 0))
+	cnf.check_python_headers()
+
+def build(bld):
+	# foo_ext and baz_ext are Python C extensions that demonstrates unit test 
+	# environment population of PYTHONPATH and LD_LIBRARY_PATH/PATH/DYLD_LIBRARY_PATH.
+
+	# foo_ext is installed as part of the foo Python package and thus does not need
+	# to specify a PYTHONPATH via pytest_path.
+	bld(name         = 'foo_ext',
+		features     = 'c cshlib pyext',
+		source       = 'src/foo_ext.c',
+		target       = 'src/foo/foo_ext',
+		install_path = '${PYTHONDIR}/foo')
+
+	# baz_ext is a stand-alone Python module so we need to specify pytest_path to where baz is built:
+	bld(name         = 'baz_ext',
+		features     = 'c cshlib pyext',
+		source       = 'src/baz/baz_ext.c',
+		target       = 'src/baz/baz_ext',
+		install_path = '${PYTHONDIR}',
+		pytest_path  = [bld.path.find_dir('src/baz').get_bld()])
+
+	# Foo is a Python package that together with foo_ext is complete.
+	# Since the package is incomplete in the source directory and cannot be tested there
+	# we use the `buildcopy' feature to copy sources to build.
+	#
+	# If buildcopy_source is not specified, source will be used as input.
+	bld(name         = 'foo',
+		features     = 'py buildcopy',
+		use          = 'foo_ext',
+		source       = bld.path.ant_glob('src/foo/*.py'),
+		install_from = 'src')
+
+	# The bar module has a non-Python dependency to resource.txt which we want to copy,
+	# but in this case we cannot add resource.txt to the sources because there's no feature
+	# for it. Therefore, we use the attribute buildcopy_source instead.
+	bld(name             = 'bar',
+		features         = 'py buildcopy',
+		source           = bld.path.ant_glob('src/bar/*.py'),
+		buildcopy_source = bld.path.ant_glob('src/bar/*.py') + ['src/bar/resource.txt'],
+		install_from     = 'src')
+
+	# Unit test example using the built in module unittest and let that discover
+	# any test cases.
+	# By using ``foo bar baz_ext`` the relevant variables for those taskgens
+	   # will be added to sys.path via ``PYTHONPATH`` as well as any library paths from
+	# dependent libraries to the system library path e.g. ``LD_LIBRARY_PATH``.
+	#
+	# The dependency chain looks like the following:
+	#
+	#    foo_test -> foo     -> foo_ext -> libpython (external)
+	#             -> bar     -> (resource.txt)
+	#             -> baz_ext -> libpython (external)
+	#
+	bld(name          = 'py_test',
+		features      = 'pytest',
+		use           = 'foo bar baz_ext',
+		pytest_source = bld.path.ant_glob('test/*.py'),
+		ut_str        = '${PYTHON} -B -m unittest discover')
+
+	bld.add_post_fun(test_results)

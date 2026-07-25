@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<mavlink>
+  <messages>
+    <message id="1111" name="ROOTMSG">
+      <description>This is a root message field</description>
+      <field type="uint32_t" name="ROOTFIELD">Root Field</field>
+    </message>
+  </messages>
+</mavlink>

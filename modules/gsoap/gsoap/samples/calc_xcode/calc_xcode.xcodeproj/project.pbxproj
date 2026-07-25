@@ -1,0 +1,272 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		44A340260D29680E003D1AA9 /* calc.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 44A340250D29680E003D1AA9 /* calc.h */; };
+		44A340280D296817003D1AA9 /* calcclient.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 44A340270D296817003D1AA9 /* calcclient.cpp */; };
+		44A3402A0D296857003D1AA9 /* stdsoap2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 44A340290D296857003D1AA9 /* stdsoap2.cpp */; };
+		44A3402C0D296861003D1AA9 /* stdsoap2.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 44A3402B0D296861003D1AA9 /* stdsoap2.h */; };
+		44A340400D296B17003D1AA9 /* soapcalcProxy.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 44A3403F0D296B17003D1AA9 /* soapcalcProxy.h */; };
+		44A340420D296B1B003D1AA9 /* soapcalcProxy.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 44A340410D296B1B003D1AA9 /* soapcalcProxy.cpp */; };
+		44A340440D296B27003D1AA9 /* soapH.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 44A340430D296B26003D1AA9 /* soapH.h */; };
+		44A340460D296B2B003D1AA9 /* soapStub.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 44A340450D296B2B003D1AA9 /* soapStub.h */; };
+		44A340480D296B2F003D1AA9 /* soapC.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 44A340470D296B2F003D1AA9 /* soapC.cpp */; };
+		8DD76F6A0486A84900D96B5E /* calc_xcode.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = C6859E8B029090EE04C91782 /* calc_xcode.1 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8DD76F690486A84900D96B5E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 8;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				8DD76F6A0486A84900D96B5E /* calc_xcode.1 in CopyFiles */,
+				44A340260D29680E003D1AA9 /* calc.h in CopyFiles */,
+				44A3402C0D296861003D1AA9 /* stdsoap2.h in CopyFiles */,
+				44A340400D296B17003D1AA9 /* soapcalcProxy.h in CopyFiles */,
+				44A340440D296B27003D1AA9 /* soapH.h in CopyFiles */,
+				44A340460D296B2B003D1AA9 /* soapStub.h in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		44A340250D29680E003D1AA9 /* calc.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = calc.h; sourceTree = "<group>"; };
+		44A340270D296817003D1AA9 /* calcclient.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = calcclient.cpp; sourceTree = "<group>"; };
+		44A340290D296857003D1AA9 /* stdsoap2.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; name = stdsoap2.cpp; path = ../../stdsoap2.cpp; sourceTree = SOURCE_ROOT; };
+		44A3402B0D296861003D1AA9 /* stdsoap2.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; name = stdsoap2.h; path = ../../stdsoap2.h; sourceTree = SOURCE_ROOT; };
+		44A3403F0D296B17003D1AA9 /* soapcalcProxy.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = soapcalcProxy.h; sourceTree = "<group>"; };
+		44A340410D296B1B003D1AA9 /* soapcalcProxy.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = soapcalcProxy.cpp; sourceTree = "<group>"; };
+		44A340430D296B26003D1AA9 /* soapH.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = soapH.h; sourceTree = "<group>"; };
+		44A340450D296B2B003D1AA9 /* soapStub.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = soapStub.h; sourceTree = "<group>"; };
+		44A340470D296B2F003D1AA9 /* soapC.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = soapC.cpp; sourceTree = "<group>"; };
+		8DD76F6C0486A84900D96B5E /* calc_xcode */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = calc_xcode; sourceTree = BUILT_PRODUCTS_DIR; };
+		C6859E8B029090EE04C91782 /* calc_xcode.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = calc_xcode.1; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		8DD76F660486A84900D96B5E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		08FB7794FE84155DC02AAC07 /* calc_xcode */ = {
+			isa = PBXGroup;
+			children = (
+				08FB7795FE84155DC02AAC07 /* Source */,
+				C6859E8C029090F304C91782 /* Documentation */,
+				1AB674ADFE9D54B511CA2CBB /* Products */,
+			);
+			name = calc_xcode;
+			sourceTree = "<group>";
+		};
+		08FB7795FE84155DC02AAC07 /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				44A340250D29680E003D1AA9 /* calc.h */,
+				44A340270D296817003D1AA9 /* calcclient.cpp */,
+				44A3402B0D296861003D1AA9 /* stdsoap2.h */,
+				44A340290D296857003D1AA9 /* stdsoap2.cpp */,
+				44A3403F0D296B17003D1AA9 /* soapcalcProxy.h */,
+				44A340410D296B1B003D1AA9 /* soapcalcProxy.cpp */,
+				44A340450D296B2B003D1AA9 /* soapStub.h */,
+				44A340430D296B26003D1AA9 /* soapH.h */,
+				44A340470D296B2F003D1AA9 /* soapC.cpp */,
+			);
+			name = Source;
+			sourceTree = "<group>";
+		};
+		1AB674ADFE9D54B511CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8DD76F6C0486A84900D96B5E /* calc_xcode */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C6859E8C029090F304C91782 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+				C6859E8B029090EE04C91782 /* calc_xcode.1 */,
+			);
+			name = Documentation;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		8DD76F620486A84900D96B5E /* calc_xcode */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "calc_xcode" */;
+			buildPhases = (
+				44A3405D0D296D65003D1AA9 /* ShellScript */,
+				8DD76F640486A84900D96B5E /* Sources */,
+				8DD76F660486A84900D96B5E /* Frameworks */,
+				8DD76F690486A84900D96B5E /* CopyFiles */,
+				44A340330D29697B003D1AA9 /* ShellScript */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = calc_xcode;
+			productInstallPath = "$(HOME)/bin";
+			productName = calc_xcode;
+			productReference = 8DD76F6C0486A84900D96B5E /* calc_xcode */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		08FB7793FE84155DC02AAC07 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0460;
+			};
+			buildConfigurationList = 1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "calc_xcode" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 08FB7794FE84155DC02AAC07 /* calc_xcode */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8DD76F620486A84900D96B5E /* calc_xcode */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		44A340330D29697B003D1AA9 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "";
+		};
+		44A3405D0D296D65003D1AA9 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/calc.h",
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/soapcalcProxy.h",
+				"$(DERIVED_FILE_DIR)/soapcalcProxy.cpp",
+				"$(DERIVED_FILE_DIR)/soapStub.h",
+				"$(DERIVED_FILE_DIR)/soapH.h",
+				"$(DERIVED_FILE_DIR)/soapC.cpp",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "../../src/soapcpp2 -i -wx -C calc.h";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8DD76F640486A84900D96B5E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				44A340280D296817003D1AA9 /* calcclient.cpp in Sources */,
+				44A3402A0D296857003D1AA9 /* stdsoap2.cpp in Sources */,
+				44A340420D296B1B003D1AA9 /* soapcalcProxy.cpp in Sources */,
+				44A340480D296B2F003D1AA9 /* soapC.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1DEB923208733DC60010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_MODEL_TUNING = G5;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				INSTALL_PATH = "$(HOME)/bin";
+				PRODUCT_NAME = calc_xcode;
+				SDKROOT = "";
+				ZERO_LINK = YES;
+			};
+			name = Debug;
+		};
+		1DEB923308733DC60010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_32_64_BIT)";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_MODEL_TUNING = G5;
+				INSTALL_PATH = "$(HOME)/bin";
+				PRODUCT_NAME = calc_xcode;
+				SDKROOT = "";
+			};
+			name = Release;
+		};
+		1DEB923608733DC60010E9CD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				SDKROOT = "";
+			};
+			name = Debug;
+		};
+		1DEB923708733DC60010E9CD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				SDKROOT = "";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DEB923108733DC60010E9CD /* Build configuration list for PBXNativeTarget "calc_xcode" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB923208733DC60010E9CD /* Debug */,
+				1DEB923308733DC60010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1DEB923508733DC60010E9CD /* Build configuration list for PBXProject "calc_xcode" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1DEB923608733DC60010E9CD /* Debug */,
+				1DEB923708733DC60010E9CD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 08FB7793FE84155DC02AAC07 /* Project object */;
+}

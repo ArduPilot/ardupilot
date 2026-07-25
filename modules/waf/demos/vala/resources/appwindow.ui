@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface domain="test">
+    <template class="TestWindow" parent="GtkApplicationWindow">
+        <property name="title" translatable="yes">Test</property>
+        <property name="default-height">680</property>
+        <property name="default-width">949</property>
+    </template>
+</interface>

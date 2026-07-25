@@ -1,0 +1,66 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006-2010 (ita)
+
+"""
+java example
+
+The gcj compiler has a very different command-line - see playground/gcj
+"""
+
+VERSION = '0.0.4'
+APPNAME = 'java_test'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	try:
+		opt.load('junit', tooldir='.')
+	except:
+		pass
+
+def configure(conf):
+	conf.load('java protoc')
+
+	try:
+		ret = conf.load('junit', tooldir='.')
+		conf.env.DO_JUNIT = True
+	except:
+		pass
+
+	conf.check_java_class('java.io.FileOutputStream')
+	conf.check_java_class('FakeClass')
+
+	conf.env.CLASSPATH_NNN = ['aaaa.jar', 'bbbb.jar']
+	conf.env.CLASSPATH_PROTOBUF = ['/tmp/cp/protobuf-java-2.5.0.jar']
+
+def build(bld):
+
+	bld(features   = 'javac jar javadoc',
+		srcdir     = 'src/', # folder containing the sources to compile
+		outdir     = 'src', # folder where to output the classes (in the build directory)
+		compat     = '1.6', # java compatibility version number
+		sourcepath = ['src', 'sup'],
+		classpath  = ['.', '..'],
+		#jaropts = '-C default/src/ .', # can be used to give files
+		basedir    = 'src', # folder containing the classes and other files to package (must match outdir)
+		destfile   = 'foo.jar', # do not put the destfile in the folder of the java classes!
+		use        = 'NNN',
+
+		# javadoc
+		javadoc_package	= ['com.meow' , 'com.meow.truc.bar', 'com.meow.truc.foo'],
+		javadoc_output	= 'javadoc',
+	)
+
+	bld.recurse('animals cats')
+
+
+	bld(
+		features = 'javac protoc',
+		name = 'pbjava',
+		srcdir = 'protoc/',
+		source   = ['protoc/message.proto'],
+		use = 'PROTOBUF',
+		protoc_includes = ['protoc'])
+

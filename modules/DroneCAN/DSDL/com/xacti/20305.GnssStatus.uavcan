@@ -1,0 +1,44 @@
+#
+# Xacti GNSS status
+#
+
+# signature from original file location
+OVERRIDE_SIGNATURE 0x3413AC5D3E1DCBE3
+
+#
+# GPS status
+# 0: Invalid.  all fields except order and remain_buffer should be zero
+# 1: No CAM_SYNC requests. all other fields should be zero
+# 2: Valid
+#
+uint8 gps_status
+
+#
+# order
+# request sequence number in range from 0 to 21.  incremented each time
+# will be 0 in response to a GnssStatusReq with 'requirement' field of 0 (clear buffer)
+#
+uint8 order
+
+#
+# remain_buffer
+# number of buffers remaining in range from 0 to 21.  0 is empty
+#
+uint8 remain_buffer
+
+#
+# UTCD year, month, day, hour minute and second
+#
+uint16 utc_year     # 2023 ~
+uint8 utc_month     # 1 ~ 12
+uint8 utc_day       # 1 ~ 31
+uint8 utc_hour      # 0 ~ 23
+uint8 utc_minute    # 0 ~ 59
+float32 utc_seconds # 0 ~ below 60
+
+#
+# latitude, longitude, altitude (in meters, AMSL)
+#
+float64 latitude    # degrees -90 ~ +90
+float64 longitude   # degrees -180 ~ +180
+float32 altitude    # meters above sea level, AMSL

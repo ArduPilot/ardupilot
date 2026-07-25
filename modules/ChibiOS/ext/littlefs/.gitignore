@@ -1,0 +1,12 @@
+# Compilation output
+*.o
+*.d
+*.a
+
+# Testing things
+blocks/
+lfs
+test.c
+tests/*.toml.*
+scripts/__pycache__
+.gdb_history

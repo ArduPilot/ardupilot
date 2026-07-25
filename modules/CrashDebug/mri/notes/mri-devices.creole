@@ -1,0 +1,17 @@
+=Supported Devices
+==NXP LPC1768
+The MRI experience was initially optimized for the [[http://mbed.org/handbook/mbed-NXP-LPC1768|mbed 1768 device]] as the
+primary goal was to provide a production quality debug solution for this specific device. This was before mbed had added
+the CMSIS-DAP debugging functionality to the device.  The project has however been architected so that it already works
+on other boards featuring a LPC176x processor and is easy to port to other Cortex-M3/M4 based devices.  As long as you
+are using a LPX17xx device which doesn't have a JTAG debugger attached and you can connect the PC to one of the UARTs on
+the device, MRI should have a good chance of working with it.
+
+**Note:** When a JTAG debugger is attached to the device, as you have with the LPCXpresso 1769 device, then MRI will
+hang during startup and debugging will not be possible.  This happens because MRI will assume the JTAG debugger is the
+mbed interface chip and attempt to disable it with special semi-host calls.  In these scenarios the user should take
+advantage of the existing JTAG debugger and skip MRI.
+
+== Other Devices
+Support for other devices has been added over time.  The current list of supported devices can be seen in the
+[[https://github.com/adamgreen/mri#devices-supported | following table]].

@@ -1,0 +1,16 @@
+
+- to make a fully static app, replace env.SHLIB_MARKER and env.STLIB_MARKER
+- string expansion on other attributes
+- compile targets at the end
+- set CC and LINK to a particular variable (the wine example)
+- show a complete example of c compilation with rules vs task generator code (procedural vs object-oriented)
+
+- get the path of a config test executable created
+	from waflib.TaskGen import feature, after_method
+	@feature('getpath')
+	@after_method('apply_link')
+	def getpath(self):
+		self.bld.retval = self.link_task.outputs[0].abspath()
+	ret = conf.check_cc(fragment="""#include<stdio.h>\nint main(){fprintf(stderr, "mu"); printf("%d", 22);return 0;}\n""", features='c cprogram getpath')
+	print ret
+

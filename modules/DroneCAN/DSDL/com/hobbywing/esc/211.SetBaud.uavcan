@@ -1,0 +1,11 @@
+OVERRIDE_SIGNATURE 0xada98653b52de435
+
+uint8 BAUD_1MBPS = 0
+uint8 BAUD_500KBPS = 1
+uint8 BAUD_250KBPS = 2
+uint8 BAUD_200KBPS = 3
+uint8 BAUD_100KBPS = 4
+uint8 BAUD_50KBPS = 5
+uint8 baud
+
+---

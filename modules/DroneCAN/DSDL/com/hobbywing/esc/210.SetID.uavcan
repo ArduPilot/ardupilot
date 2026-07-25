@@ -1,0 +1,9 @@
+OVERRIDE_SIGNATURE 0xc323cb5e9ec2b6f7
+
+uint8 node_id
+uint8 throttle_channel
+
+---
+
+uint8 node_id
+uint8 throttle_channel

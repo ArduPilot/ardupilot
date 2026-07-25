@@ -1,0 +1,7 @@
+To quickly turn a configuration file into a template search/replace the file
+with the following regular expressions in notepad++:
+
+Search:       ^#define\s([\w()]+)( +)([\S].*)$
+Replace with: #define \1\2${doc.\1!"\3"}
+
+Minor further edits are often required.

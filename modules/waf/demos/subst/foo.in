@@ -1,0 +1,2 @@
+prefix: %PREFIX%
+bindir: @BINDIR@

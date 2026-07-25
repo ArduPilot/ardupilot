@@ -1,0 +1,28 @@
+\ProvidesPackageRCS $Header: /cvsroot/latex-beamer/latex-beamer/themes/theme/beamerthemewaf.sty,v 1.0 2010/11/05 20:48:30 zougloub Exp $
+
+
+\DeclareOptionBeamer{hideothersubsections}{\PassOptionsToPackage{hideothersubsections}{beamerouterthemesidebar}}
+\DeclareOptionBeamer{hideallsubsections}{\PassOptionsToPackage{hideallsubsections}{beamerouterthemesidebar}}
+
+\PassOptionsToPackage{right}{beamerouterthemesidebar}
+\PassOptionsToPackage{width=2cm}{beamerouterthemesidebar}
+
+\DeclareOptionBeamer{width}{\PassOptionsToPackage{width=#1}{beamerouterthemesidebar}}
+\DeclareOptionBeamer{left}{\PassOptionsToPackage{left}{beamerouterthemesidebar}}
+\DeclareOptionBeamer{right}{\PassOptionsToPackage{right}{beamerouterthemesidebar}}
+
+\ProcessOptionsBeamer
+
+\mode<presentation>
+
+\useoutertheme[height=0pt]{sidebar}
+
+\definecolor{wafblue}{rgb}{0,0.6,1}
+{\usebeamercolor{structure}}
+%\setbeamercolor{normal text}{fg=black,bg=mylightgrey}
+%\setbeamertemplate{sidebar canvas \beamer@sidebarside}[vertical shading][top=structure.fg!45,bottom=structure.fg!30]
+\setbeamertemplate{sidebar canvas \beamer@sidebarside}[vertical shading][top=wafblue!25,bottom=wafblue!15]
+
+\mode
+<all>
+

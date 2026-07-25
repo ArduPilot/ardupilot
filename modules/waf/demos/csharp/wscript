@@ -1,0 +1,39 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+FRAG = '''
+namespace Moo {
+	public class Test {
+		public static int Main(string[] args) {
+			return 0;
+		}
+	}
+}
+'''
+
+def options(opt):
+	opt.load('cs')
+
+def configure(conf):
+	conf.load('cs')
+	try:
+		conf.check(features='cs', fragment=FRAG, compile_filename='test.cs', gen='test.exe',
+			csflags=['-pkg:gtk-sharp-2.0'], msg='Checking for Gtksharp support')
+		conf.env.HAS_GTKSHARP = True
+	except conf.errors.ConfigurationError:
+		conf.env.HAS_GTKSHARP = False
+
+def build(bld):
+
+	# for system libraries, use:
+	#bld.read_csshlib('ManagedLibrary.dll', paths=[bld.env.mylibrarypath])
+
+	bld(features='cs', source='My.cs Dye.cs', gen='my.dll', name='mylib', csdebug='full')
+	bld(features='cs', source='Hi.cs', includes='.', gen='hi.exe', use='mylib', name='hi')
+	bld(features='cs', source='Hi.cs', includes='.', gen='hi-x86.exe', use='mylib', name='hi', platform='x86')
+	if bld.env.HAS_GTKSHARP:
+		bld(features='cs', source='Simple.cs', includes='.', gen='mono-hello.exe', csflags=['-pkg:gtk-sharp-2.0'])
+
+	# note:
+	# bld(features='cs', ..., type='module' # or exe, library, winexe, ...

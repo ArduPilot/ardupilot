@@ -1,0 +1,2 @@
+PLATFORMSRC += $(CHIBIOS)/os/hal/ports/STM32/LLD/BDMAv1/stm32_bdma.c
+PLATFORMINC += $(CHIBIOS)/os/hal/ports/STM32/LLD/BDMAv1

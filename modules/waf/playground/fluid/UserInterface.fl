@@ -1,0 +1,31 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0300 
+i18n_type 1 
+i18n_include <libintl.h> 
+i18n_function gettext 
+header_name {.hpp} 
+code_name {.cpp}
+decl {\#include "PopupDialog.hpp"} {public global
+} 
+
+class UserInterface {open
+} {
+  Function {UserInterface()} {open
+  } {
+    Fl_Window main_win {
+      callback {Fl::delete_widget(o);} open
+      private xywh {12 31 125 80} type Double selection_color 48 align 80 when 1 visible
+    } {
+      Fl_Button {} {
+        label {click me}
+        callback {PopupDialog* p = new PopupDialog(165, 55, "PopupDialog");
+p->show();} selected
+        xywh {25 25 70 20}
+      }
+    }
+  }
+  Function {show()} {open
+  } {
+    code {main_win->show();} {}
+  }
+} 

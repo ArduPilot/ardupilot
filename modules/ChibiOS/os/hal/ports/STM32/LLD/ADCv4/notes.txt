@@ -1,0 +1,13 @@
+STM32 ADCv4 driver.
+
+Driver capability:
+
+- Supports the STM32 "fast" ADC found on H7 sub-family.
+
+The file registry must export:
+
+STM32_HAS_ADCx                  - ADCx presence flag (1..4).
+STM32_ADC12_HANDLER              - IRQ vector name for ADC1 and ADC2.
+STM32_ADC12_NUMBER               - IRQ vector number for ADC1 and ADC2.
+STM32_ADC34_HANDLER              - IRQ vector name for ADC3 and ADC4.
+STM32_ADC34_NUMBER               - IRQ vector number for ADC3 and ADC4.

@@ -1,0 +1,11 @@
+[DESIGN]
+max-positional-arguments=9
+
+[FORMAT]
+max-line-length=127
+
+[MESSAGES CONTROL]
+disable=missing-function-docstring
+
+enable=useless-suppression
+fail-on=useless-suppression

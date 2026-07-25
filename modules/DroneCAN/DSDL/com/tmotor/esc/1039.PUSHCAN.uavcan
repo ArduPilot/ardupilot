@@ -1,0 +1,9 @@
+#
+# Generic ESC status.
+#
+
+OVERRIDE_SIGNATURE 0xAACF9B4B2577BC6E
+
+uint32 data_sequence  #data sequence
+
+uint8[<=255] data

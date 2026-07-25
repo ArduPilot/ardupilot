@@ -1,0 +1,102 @@
+name: status
+on:
+  workflow_run:
+    workflows: [test]
+    types: [completed]
+
+defaults:
+  run:
+    shell: bash -euv -o pipefail {0}
+
+jobs:
+  # forward custom statuses
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          run-id: ${{github.event.workflow_run.id}}
+          pattern: '{status,status-*}'
+          merge-multiple: true
+          path: status
+      - name: update-status
+        continue-on-error: true
+        run: |
+          ls status
+          for s in $(shopt -s nullglob ; echo status/*.json)
+          do
+            # parse requested status
+            export STATE="$(jq -er '.state' $s)"
+            export CONTEXT="$(jq -er '.context' $s)"
+            export DESCRIPTION="$(jq -er '.description' $s)"
+            # help lookup URL for job/steps because GitHub makes
+            # it VERY HARD to link to specific jobs
+            export TARGET_URL="$(
+              jq -er '.target_url // empty' $s || (
+                export TARGET_JOB="$(jq -er '.target_job' $s)"
+                export TARGET_STEP="$(jq -er '.target_step // ""' $s)"
+                curl -sS -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+                  "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/`
+                    `${{github.event.workflow_run.id}}/jobs" \
+                  | jq -er '.jobs[]
+                    | select(.name == env.TARGET_JOB)
+                    | .html_url
+                      + "?check_suite_focus=true"
+                      + ((.steps[]
+                        | select(.name == env.TARGET_STEP)
+                        | "#step:\(.number):0") // "")'))"
+            # update status
+            curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/statuses/`
+                `${{github.event.workflow_run.head_sha}}" \
+              -d "$(jq -n '{
+                state: env.STATE,
+                context: env.CONTEXT,
+                description: env.DESCRIPTION,
+                target_url: env.TARGET_URL,
+              }' | tee /dev/stderr)"
+          done
+
+  # forward custom pr-comments
+  comment:
+    runs-on: ubuntu-latest
+
+    # only run on success (we don't want garbage comments!)
+    if: ${{github.event.workflow_run.conclusion == 'success'}}
+
+    steps:
+      # generated comment?
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          run-id: ${{github.event.workflow_run.id}}
+          pattern: '{comment,comment-*}'
+          merge-multiple: true
+          path: comment
+      - name: update-comment
+        continue-on-error: true
+        run: |
+          ls comment
+          for s in $(shopt -s nullglob ; echo comment/*.json)
+          do
+            export NUMBER="$(jq -er '.number' $s)"
+            export BODY="$(jq -er '.body' $s)"
+
+            # check that the comment was from the most recent commit on the
+            # pull request
+            [ "$(curl -sS -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+                "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pulls/$NUMBER" \
+                | jq -er '.head.sha')" \
+              == ${{github.event.workflow_run.head_sha}} ] || continue
+
+            # update comment
+            curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/issues/`
+                `$NUMBER/comments" \
+              -d "$(jq -n '{
+                body: env.BODY,
+              }' | tee /dev/stderr)"
+          done

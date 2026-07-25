@@ -1,0 +1,35 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006-2010 (ita)
+
+# the following two variables are used by the target "waf dist"
+VERSION='0.0.1'
+APPNAME='cxx_test'
+
+# these variables are mandatory ('/' are converted automatically)
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx')
+
+def configure(conf):
+	conf.load('compiler_cxx')
+	conf.check(header_name='stdio.h', features='cxx cxxprogram', mandatory=False)
+
+def build(bld):
+	bld.shlib(source='a.cpp', target='mylib', vnum='9.8.7')
+	bld.shlib(source='a.cpp', target='mylib2', vnum='9.8.7', cnum='9.8')
+	bld.shlib(source='a.cpp', target='mylib3')
+	bld.program(source='main.cpp', target='app', use='mylib')
+	bld.stlib(target='foo', source='b.cpp')
+
+	# just a test to check if the .c is compiled as c++ when no c compiler is found
+	bld.program(features='cxx cxxprogram', source='main.c', target='app2')
+
+	if bld.cmd != 'clean':
+		from waflib import Logs
+		bld.logger = Logs.make_logger('test.log', 'build') # just to get a clean output
+		bld.check(header_name='sadlib.h', features='cxx cxxprogram', mandatory=False)
+		bld.logger = None
+

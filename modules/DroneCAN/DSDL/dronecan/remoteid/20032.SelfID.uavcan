@@ -1,0 +1,10 @@
+#
+# DroneCAN version of MAVLink OPEN_DRONE_ID_SELF_ID
+# see MAVLink XML for detailed description
+#
+uint8[<=20] id_or_mac
+
+uint8 ODID_DESC_TYPE_TEXT = 0 # Free-form text description of the purpose of the flight
+uint8 description_type
+uint8[<=23] description
+

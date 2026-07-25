@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:complexType name="ConfigurationSettingsType">
+    	<xs:sequence>
+    		<xs:element name="templates_path" minOccurs="1"
+    			maxOccurs="1">
+    			<xs:annotation>
+    				<xs:documentation>
+    					Templates resources associated to the
+    					configuration.
+    				</xs:documentation>
+    			</xs:annotation>
+    			<xs:simpleType>
+                    <xs:annotation>
+                    	<xs:documentation>Path of template files inside the plugin.</xs:documentation>
+                    </xs:annotation>
+                    <xs:restriction base="xs:string">
+    					<xs:minLength value="1"></xs:minLength>
+    					<xs:whiteSpace value="collapse"></xs:whiteSpace>
+    					<xs:pattern value="[\w\d_/.]+"></xs:pattern>
+    				</xs:restriction>
+    			</xs:simpleType>
+    		</xs:element>
+    		<xs:element name="output_path" maxOccurs="1"
+    			minOccurs="1">
+    			<xs:annotation>
+    				<xs:documentation>
+    					Output directory relative to the configuration
+    					file.
+    				</xs:documentation>
+    			</xs:annotation>
+    			<xs:simpleType>
+                    <xs:annotation>
+                    	<xs:documentation>Output files path relative to the .chcfg file.</xs:documentation>
+                    </xs:annotation>
+                    <xs:restriction base="xs:string">
+    					<xs:minLength value="1"></xs:minLength>
+    					<xs:whiteSpace value="collapse"></xs:whiteSpace>
+    					<xs:pattern value="[\w\d_/.]+"></xs:pattern>
+    				</xs:restriction>
+    			</xs:simpleType>
+    		</xs:element>
+            <xs:element name="board_files_path" minOccurs="0" maxOccurs="1">
+                <xs:annotation>
+                	<xs:documentation>Final path for board files, it is used for paths inside board.mk, if not present then the default path is used by templates.</xs:documentation>
+                </xs:annotation>
+                <xs:simpleType>
+                	<xs:restriction base="xs:string">
+                		<xs:pattern value="[\w\d_/.]+"></xs:pattern>
+                		<xs:whiteSpace value="collapse"></xs:whiteSpace>
+                		<xs:minLength value="1"></xs:minLength>
+                	</xs:restriction>
+                </xs:simpleType>
+            </xs:element>
+            <xs:element name="hal_version" minOccurs="0"
+    			maxOccurs="1">
+    			<xs:simpleType>
+    				<xs:annotation>
+    					<xs:documentation>
+    						HAL version, generated files may change
+    						depending on version.
+    					</xs:documentation>
+    				</xs:annotation>
+    				<xs:restriction base="xs:string">
+                        <xs:enumeration value="newer"></xs:enumeration>
+                        <xs:enumeration value="5.0.x"></xs:enumeration>
+                        <xs:enumeration value="4.0.x"></xs:enumeration>
+    				</xs:restriction>
+    			</xs:simpleType>
+            </xs:element>
+    	</xs:sequence>
+    </xs:complexType>
+
+</xs:schema>

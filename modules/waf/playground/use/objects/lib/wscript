@@ -1,0 +1,15 @@
+#! /usr/bin/env python
+
+INCLUDES = [
+    '.'
+]
+
+def build(bld):
+
+    bld.shlib(
+        target='lib',
+        source='lib.c',
+        includes=INCLUDES,
+        export_includes=INCLUDES,
+        install_path=bld.env.LIBDIR,
+    )

@@ -1,0 +1,94 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2013 (ita)
+
+VERSION='0.0.1'
+APPNAME='dynamic_build3'
+
+"""
+An advanced dynamic build simulating a call to an external system.
+
+That external build system produces a library which is then used in the current build.
+"""
+
+import os, shutil, sys
+from waflib import Build, Errors, Logs
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+def build(bld):
+	bld.post_mode = Build.POST_LAZY
+
+	# declare the temporary build directory for the external library
+	# it is best to keep it under the project build directory
+	tmp_dir = bld.bldnode.make_node('external_lib')
+
+	# build the external library through an external process
+	bld(rule=some_fun, target=tmp_dir.make_node('flag.lock'))
+
+	# once it is done create a second build group
+	bld.add_group()
+
+	# read the library
+	bld.read_shlib('foo', paths=[tmp_dir], export_includes=[tmp_dir], export_defines=['A=1'])
+
+	# use this library for a target
+	# no additional build group needed since "app" will wait on "foo" through the use= system
+	bld.program(source='main.c', target='app', use='foo')
+
+# -----------------------------------------------------------------------------------------
+# the following is a pointless exercise simulating the execution of an external buildsystem
+# do not spend too much time on it :-)
+
+SNIP = """
+top = '.'
+out = '.'
+def options(opt):
+	opt.load('compiler_c')
+def configure(conf):
+	conf.load('compiler_c')
+def build(bld):
+	bld.shlib(source='external.c', target='foo', includes='.')
+"""
+
+def some_fun(task):
+	# first, clean everything
+	output_dir = task.outputs[0].parent
+	shutil.rmtree(output_dir.abspath())
+	os.makedirs(output_dir.abspath())
+
+	# we have a clean directory, create a fake project in it
+	h_node = output_dir.make_node('external.h')
+	h_node.write('int zero();\n', flags='w')
+
+	c_node = output_dir.make_node('external.c')
+	c_node.write('int zero() { return 0; }\n', flags='w')
+
+	w_node = output_dir.make_node('wscript')
+	w_node.write(SNIP)
+
+	cmd = [sys.executable, sys.argv[0], 'configure', 'build']
+	cwd = output_dir.abspath()
+
+	try:
+		task.generator.bld.cmd_and_log(cmd, cwd=cwd, quiet=0, output=0)
+	except Errors.WafError as e:
+		try:
+			print(e.stderr)
+		except AttributeError:
+			pass
+		Logs.error("Build of the external library failed")
+		return -1
+
+	Logs.info('  (the external library has been compiled)')
+
+	# write a lock file so that a rebuild occurs if files are removed manually
+	task.outputs[0].write('ok')
+

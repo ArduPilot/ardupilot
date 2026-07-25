@@ -1,0 +1,62 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Launch example_app",
+            "type": "cppdbg",
+            "request": "launch",
+            "args": [],
+            "stopAtEntry": true,
+            "environment": [],
+            "externalConsole": true,
+            "MIMode": "gdb",
+            "preLaunchTask": "Build example_app",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "linux": {
+                "cwd": "${workspaceFolder}/build/contrib/ports/unix/example_app",
+                "program": "${workspaceFolder}/build/contrib/ports/unix/example_app/example_app",
+            },
+            "windows": {
+                "cwd": "${workspaceFolder}/build/contrib/ports/win32/example_app",
+                "program": "${workspaceFolder}/build/contrib/ports/win32/example_app/example_app",
+                "miDebuggerPath": "gdb.exe",
+            }
+        },
+        {
+            "name": "(gdb) Launch unit tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "args": [],
+            "stopAtEntry": true,
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "preLaunchTask": "Build unit tests",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "linux": {
+                "cwd": "${workspaceFolder}/contrib/ports/unix/check/build",
+                "program": "${workspaceFolder}/contrib/ports/unix/check/build/lwip_unittests",
+            },
+            "windows": {
+                "cwd": "${workspaceFolder}/contrib/ports/win32/check/build",
+                "program": "${workspaceFolder}/contrib/ports/win32/check/build/lwip_unittests",
+                "miDebuggerPath": "gdb.exe",
+            }
+        }
+    ]
+}

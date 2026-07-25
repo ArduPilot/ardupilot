@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ <schema targetNamespace="http://schemas.microsoft.com/ws/2006/05/rm"
+  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:chan="http://schemas.microsoft.com/ws/2005/02/duplex"
+  xmlns:wsa5="http://www.w3.org/2005/08/addressing"
+  xmlns:netrm="http://schemas.microsoft.com/ws/2006/05/rm"
+  xmlns:wsrm="http://schemas.xmlsoap.org/ws/2005/02/rm"
+  xmlns="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="unqualified"
+  attributeFormDefault="unqualified">
+  <import namespace="http://schemas.microsoft.com/ws/2005/02/duplex" schemaLocation="http://schemas.microsoft.com/ws/2005/02/duplex"/>
+  <import namespace="http://www.w3.org/2005/08/addressing" schemaLocation="http://www.w3.org/2005/08/addressing"/>
+  <import namespace="http://schemas.xmlsoap.org/ws/2005/02/rm" schemaLocation="http://schemas.xmlsoap.org/ws/2005/02/rm"/>
+  <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+  <element name="BufferRemaining" type="xsd:int"/>
+ </schema>
+

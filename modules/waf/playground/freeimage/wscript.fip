@@ -1,0 +1,20 @@
+# wscript to build FreeImagePlus on Windows with MinGW
+# put it in FreeImage directory and run:
+# python waf configure build install
+
+top = '.'
+out = 'build'
+
+def options(opt):
+    opt.load('compiler_cxx')
+
+def configure(conf):
+    conf.load('compiler_cxx')
+
+def build(bld):
+    bld.stlib(source=bld.path.ant_glob('Wrapper/FreeImagePlus/src/*'),
+              includes='Wrapper/FreeImagePlus Source', target='FreeImagePlus',
+              defines='NDEBUG WIN32 _WINDOWS _USRDLL FIP_EXPORTS _CRT_SECURE_NO_DEPRECATE',
+              use='Dist/FreeImage odbc32 odbccp32')
+    bld.install_as('Dist/FreeImagePlus.a', 'libFreeImagePlus.a')
+    bld.install_files('Dist', 'Wrapper/FreeImagePlus/FreeImagePlus.h')

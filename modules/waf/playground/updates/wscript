@@ -1,0 +1,15 @@
+#! /usr/bin/env python
+
+"""
+An example to show how multiple tasks can modify the same file
+"""
+
+def configure(conf):
+	pass
+
+def build(bld):
+	bld.env.A = "test (change me) "
+	bld(rule="echo '${A}' > ${TGT}", target='foo.txt', name='foo')
+	bld(rule='echo `cat ${SRC}     ${SRC}`  > ${SRC}', source='foo.txt', name='one')
+	bld(rule='echo `cat ${SRC} ${SRC}`  > ${SRC}', source='foo.txt', after=['one'], name='two')
+

@@ -1,0 +1,22 @@
+#
+# Generic camera gimbal control.
+#
+# This message can only be used in the following modes:
+#  - COMMAND_MODE_ANGULAR_VELOCITY
+#  - COMMAND_MODE_ORIENTATION_FIXED_FRAME
+#  - COMMAND_MODE_ORIENTATION_BODY_FRAME
+#
+
+uint8 gimbal_id
+
+#
+# Target operation mode - how to handle this message.
+# See the list of acceptable modes above.
+#
+Mode mode
+
+#
+# In the angular velocity mode, this field contains a rate quaternion.
+# In the orientation mode, this field contains orientation either in fixed frame or in body frame.
+#
+float16[4] quaternion_xyzw

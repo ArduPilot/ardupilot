@@ -1,0 +1,47 @@
+# This file contains a list of rules used to skip failed builds. If a build
+# fails and its signature, i.e. a path to its makefile and an stderr output,
+# matches at least one of these rules, then the build is marked as skipped.
+#
+# Each rule is described by three required string parameters: path, stderr and
+# reason. In order for the build to match a rule, its makefile path has to
+# start from the rule's path and the build's stderr has to match the rule's
+# stderr regex. The rules are tried starting from top to bottom.
+#
+# For example, if it's known that all projects under "demos/SPC5" fail to build
+# because there is no the ccppc compiler and these failures are expected, then
+# the following rule can be written:
+#
+#     - path: "demos/SPC5/"
+#       stderr: "ccppc: (Command not found|No such file or directory)"
+#       reason: "ccppc compiler required"
+#
+# Thus, if `demos/SPC5/NIL-SPC560D-EVB/Makefile` fails with the following
+# stderr output:
+#
+#     make[1]: ppc-freevle-eabi-gcc: Command not found
+#     make[1]: *** [os/common/startup/e200/compilers/GCC/rules.mk:180: build/obj/boot.o] Error 127
+#
+# This build will be marked as skipped with a message containing the rule's
+# reason.
+#
+# Recommendations:
+#
+# * Specify paths and stderr regexes as much specific as possible.
+# * Provide meaningful messages as reasons and even specify bug numbers if
+#   build failures are caused by or tracked in them.
+
+- path: "testhal/AVR/MEGA/EXT"
+  stderr: "error: unknown type name 'EXTDriver'"
+  reason: "not fixed for a while, silencing"
+
+- path: "demos/SPC5/"
+  stderr: "ppc-freevle-eabi-gcc: (Command not found|No such file or directory)"
+  reason: "ppc-freevle-eabi-gcc compiler required"
+
+- path: "demos/SPC5/"
+  stderr: "ccppc: (Command not found|No such file or directory)"
+  reason: "ccppc compiler required"
+
+- path: "demos/various/RT-Win32-Simulator"
+  stderr: "fatal error: windows.h: No such file or directory"
+  reason: "Windows required"

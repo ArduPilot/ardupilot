@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="vfsdrivers" descr="VFS Drivers" editcode="false">
+  <brief>Common ancestor class of all reference-counted objects.</brief>
+  <imports>
+    <import>oop_base_object.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="angular">fcntl.h</include>
+    </includes>
+    <definitions_early>
+      <group description="File open flags compatible with Posix">
+        <define name="VO_SUPPORTED_FLAGS_MASK"
+          value="(O_ACCMODE | O_APPEND | O_CREAT | O_TRUNC | O_EXCL)" />
+        <define name="VO_ACCMODE" value="O_ACCMODE" />
+        <define name="VO_RDONLY" value="O_RDONLY" />
+        <define name="VO_WRONLY" value="O_WRONLY" />
+        <define name="VO_RDWR" value="O_RDWR" />
+        <define name="VO_APPEND" value="O_APPEND" />
+        <define name="VO_CREAT" value="O_CREAT" />
+        <define name="VO_TRUNC" value="O_TRUNC" />
+        <define name="VO_EXCL" value="O_EXCL" />
+      </group>
+    </definitions_early>
+    <types>
+      <class type="abstract" name="vfs_driver" namespace="vfsdrv"
+        ancestorname="base_object" descr="VFS driver">
+        <brief>Common ancestor class of all VFS driver classes.</brief>
+        <details><![CDATA[Base class for objects that implement a Posix-like
+          file system interface.]]></details>
+        <fields></fields>
+        <methods>
+          <objinit callsuper="true">
+            <implementation><![CDATA[ ]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[ ]]></implementation>
+          </dispose>
+          <virtual>
+            <method name="vfsDrvChangeCurrentDirectory"
+              shortname="setcwd" ctype="msg_t">
+              <brief>Changes the current VFS directory.</brief>
+              <param name="path" ctype="const char *" dir="in">Path of the new
+                current directory.</param>
+              <return>The operation result.</return>
+              <api />
+              <implementation>
+
+(void)self;
+(void)path;
+
+return CH_RET_ENOSYS;<![CDATA[]]></implementation>
+            </method>
+            <method name="vfsDrvGetCurrentDirectory" shortname="getcwd"
+              ctype="msg_t">
+              <brief>Returns the current VFS directory.</brief>
+              <param name="buf" ctype="char *" dir="out">Buffer for the path
+                string.</param>
+              <param name="size" ctype="size_t" dir="in">Size of the buffer
+              </param>
+              <return>The operation result.</return>
+              <api />
+              <implementation>
+
+(void)self;
+(void)buf;
+(void)size;
+
+return CH_RET_ENOSYS;<![CDATA[]]></implementation>
+            </method>
+            <method name="vfsDrvStat" shortname="stat" ctype="msg_t">
+              <brief>Returns file or directory information.</brief>
+              <param name="path" ctype="const char *" dir="in">Absolute path of
+                the node to be examined.</param>
+              <param name="sp" ctype="vfs_stat_t *" dir="out">Pointer to a @p
+                vfs_stat_t structure.</param>
+              <return>The operation result.</return>
+              <api />
+              <implementation>
+
+(void)self;
+(void)path;
+(void)sp;
+
+return CH_RET_ENOSYS;<![CDATA[]]></implementation>
+            </method>
+            <method name="vfsDrvOpenDirectory" shortname="opendir"
+              ctype="msg_t">
+              <brief>Opens a VFS directory.</brief>
+              <param name="path" ctype="const char *" dir="in">Absolute path of
+                the directory to be opened.
+              </param>
+              <param name="vdnpp" ctype="vfs_directory_node_c **"
+                dir="out">Pointer to the pointer to the instantiated @p
+                vfs_directory_node_c object.
+              </param>
+              <return>The operation result.</return>
+              <api />
+              <implementation>
+
+(void)self;
+(void)path;
+(void)vdnpp;
+
+return CH_RET_ENOSYS;<![CDATA[]]></implementation>
+            </method>
+            <method name="vfsDrvOpenFile" shortname="openfile"
+              ctype="msg_t">
+              <brief>Opens a VFS file.</brief>
+              <param name="path" ctype="const char *" dir="in">Absolute path of
+                the directory to be opened.
+              </param>
+              <param name="flags" ctype="int" dir="in">File open flags.</param>
+              <param name="vfnpp" ctype="vfs_file_node_c **" dir="out">Pointer
+                to the pointer to the instantiated @p vfs_file_node_c object.
+              </param>
+              <return>The operation result.</return>
+              <api />
+              <implementation>
+
+(void)self;
+(void)path;
+(void)flags;
+(void)vfnpp;
+
+return CH_RET_ENOSYS;<![CDATA[]]></implementation>
+            </method>
+            <method name="vfsDrvUnlink" shortname="unlink" ctype="msg_t">
+              <brief>Unlinks and possibly deletes a file.</brief>
+              <param name="path" ctype="const char *" dir="in">Path of the file
+                to be unlinked.</param>
+              <return>The operation result.</return>
+              <api />
+              <implementation>
+
+(void)self;
+(void)path;
+
+return CH_RET_ENOSYS;<![CDATA[]]></implementation>
+            </method>
+            <method name="vfsDrvRename" shortname="rename" ctype="msg_t">
+              <brief>Renames a file or directory.</brief>
+              <param name="oldpath" ctype="const char *" dir="in">Path of the
+                node to be renamed.</param>
+              <param name="newpath" ctype="const char *" dir="in">New path of
+                the renamed node.</param>
+              <return>The operation result.</return>
+              <api />
+              <implementation>
+
+(void)self;
+(void)oldpath;
+(void)newpath;
+
+return CH_RET_ENOSYS;<![CDATA[]]></implementation>
+            </method>
+            <method name="vfsDrvMkdir" shortname="mkdir" ctype="msg_t">
+              <brief>Creates a directory.</brief>
+              <param name="path" ctype="const char *" dir="in">Path of the
+                directory to be created.</param>
+              <param name="mode" ctype="vfs_mode_t" dir="in">Mode flags for the
+                directory.</param>
+              <return>The operation result.</return>
+              <api />
+              <implementation>
+
+(void)self;
+(void)path;
+(void)mode;
+
+return CH_RET_ENOSYS;<![CDATA[]]></implementation>
+            </method>
+            <method name="vfsDrvRmdir" shortname="rmdir" ctype="msg_t">
+              <brief>Removes a directory.</brief>
+              <param name="path" ctype="const char *" dir="in">Path of the
+                directory to be removed.</param>
+              <return>The operation result.</return>
+              <api />
+              <implementation>
+
+(void)self;
+(void)path;
+
+return CH_RET_ENOSYS;<![CDATA[]]></implementation>
+            </method>
+          </virtual>
+        </methods>
+      </class>
+    </types>
+    <functions>
+      <function name="vfsDrvOpen" ctype="msg_t">
+        <brief>Opens a VFS file or directory.</brief>
+        <param name="drvp" ctype="vfs_driver_c *" dir="both"> Pointer to the @p
+          vfs_driver_c object.
+        </param>
+        <param name="path" ctype="const char *" dir="in"> Absolute path of the
+          node to be opened.
+        </param>
+        <param name="flags" ctype="int" dir="in">Open flags.</param>
+        <param name="vnpp" ctype="vfs_node_c **" dir="out"> Pointer to the
+          pointer to the instantiated @p vfs_node_c object.
+        </param>
+        <return>The operation result.</return>
+        <api />
+        <implementation><![CDATA[
+msg_t ret;
+
+/* Attempting to open as file.*/
+ret = vfsDrvOpenFile(drvp, path, flags, (vfs_file_node_c **)vnpp);
+if (ret == CH_RET_EISDIR) {
+  if ((flags & VO_ACCMODE) != VO_RDONLY) {
+    ret = CH_RET_EISDIR;
+  }
+  else {
+    ret = vfsDrvOpenDirectory(drvp, path, (vfs_directory_node_c **)vnpp);
+  }
+}
+
+return ret;
+]]></implementation>
+      </function>
+    </functions>
+  </public>
+  <private>
+    <includes_always>
+      <include style="regular">vfs.h</include>
+    </includes_always>
+  </private>
+</module>

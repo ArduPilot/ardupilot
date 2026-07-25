@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<mavlink>
+  <include>child.xml</include>
+  <messages>
+    <message id="4444" name="GRANDCHILD2MSG">
+      <description>This is a grandchild2 message field</description>
+      <field type="uint32_t" name="GRANDCHILD2MSG">grandchild2 Field</field>
+    </message>
+  </messages>
+</mavlink>

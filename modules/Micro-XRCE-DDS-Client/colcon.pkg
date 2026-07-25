@@ -1,0 +1,11 @@
+{
+    "name": "microxrcedds_client",
+    "type": "cmake",
+    "dependencies":[
+        "microcdr"
+    ],
+    "cmake-args":[
+        "-DUCLIENT_ISOLATED_INSTALL=OFF",
+        "-DUCLIENT_SUPERBUILD=OFF"
+    ]
+}

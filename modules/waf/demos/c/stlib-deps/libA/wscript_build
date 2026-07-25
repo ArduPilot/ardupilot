@@ -1,0 +1,7 @@
+# This is a static library that provides a header to include reference to
+# internal variables.
+bld.stlib(
+	target='A',
+	source='external_vars.c',
+	includes='.',
+	export_includes='.')

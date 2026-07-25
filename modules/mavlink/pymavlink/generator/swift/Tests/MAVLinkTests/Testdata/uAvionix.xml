@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<mavlink>
+  <!-- uAvionix contact info:                                     -->
+  <!-- company URL: http://www.uAvionix.com                       -->
+  <!-- email contact: matt@uAvionix.com or jeff@uAvionix.com      -->
+  <!-- mavlink ID range: 10000 - 10099                            -->
+  <enums>
+    <enum name="UAVIONIX_ADSB_OUT_DYNAMIC_STATE">
+      <description>State flags for ADS-B transponder dynamic report</description>
+      <entry value="1" name="UAVIONIX_ADSB_OUT_DYNAMIC_STATE_INTENT_CHANGE"/>
+      <entry value="2" name="UAVIONIX_ADSB_OUT_DYNAMIC_STATE_AUTOPILOT_ENABLED"/>
+      <entry value="4" name="UAVIONIX_ADSB_OUT_DYNAMIC_STATE_NICBARO_CROSSCHECKED"/>
+      <entry value="8" name="UAVIONIX_ADSB_OUT_DYNAMIC_STATE_ON_GROUND"/>
+      <entry value="16" name="UAVIONIX_ADSB_OUT_DYNAMIC_STATE_IDENT"/>
+    </enum>
+    <enum name="UAVIONIX_ADSB_OUT_RF_SELECT">
+      <description>Transceiver RF control flags for ADS-B transponder dynamic reports</description>
+      <entry value="0" name="UAVIONIX_ADSB_OUT_RF_SELECT_STANDBY"/>
+      <entry value="1" name="UAVIONIX_ADSB_OUT_RF_SELECT_RX_ENABLED"/>
+      <entry value="2" name="UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED"/>
+    </enum>
+    <enum name="UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX">
+      <description>Status for ADS-B transponder dynamic input</description>
+      <entry value="0" name="UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX_NONE_0"/>
+      <entry value="1" name="UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX_NONE_1"/>
+      <entry value="2" name="UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX_2D"/>
+      <entry value="3" name="UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX_3D"/>
+      <entry value="4" name="UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX_DGPS"/>
+      <entry value="5" name="UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX_RTK"/>
+    </enum>
+    <enum name="UAVIONIX_ADSB_RF_HEALTH">
+      <description>Status flags for ADS-B transponder dynamic output</description>
+      <entry value="0" name="UAVIONIX_ADSB_RF_HEALTH_INITIALIZING"/>
+      <entry value="1" name="UAVIONIX_ADSB_RF_HEALTH_OK"/>
+      <entry value="2" name="UAVIONIX_ADSB_RF_HEALTH_FAIL_TX"/>
+      <entry value="16" name="UAVIONIX_ADSB_RF_HEALTH_FAIL_RX"/>
+    </enum>
+    <enum name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE">
+      <description>Definitions for aircraft size</description>
+      <entry value="0" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_NO_DATA"/>
+      <entry value="1" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L15M_W23M"/>
+      <entry value="2" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L25M_W28P5M"/>
+      <entry value="3" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L25_34M"/>
+      <entry value="4" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L35_33M"/>
+      <entry value="5" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L35_38M"/>
+      <entry value="6" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L45_39P5M"/>
+      <entry value="7" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L45_45M"/>
+      <entry value="8" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L55_45M"/>
+      <entry value="9" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L55_52M"/>
+      <entry value="10" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L65_59P5M"/>
+      <entry value="11" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L65_67M"/>
+      <entry value="12" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L75_W72P5M"/>
+      <entry value="13" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L75_W80M"/>
+      <entry value="14" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L85_W80M"/>
+      <entry value="15" name="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L85_W90M"/>
+    </enum>
+    <enum name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT">
+      <description>GPS lataral offset encoding</description>
+      <entry value="0" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_NO_DATA"/>
+      <entry value="1" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_LEFT_2M"/>
+      <entry value="2" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_LEFT_4M"/>
+      <entry value="3" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_LEFT_6M"/>
+      <entry value="4" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_RIGHT_0M"/>
+      <entry value="5" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_RIGHT_2M"/>
+      <entry value="6" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_RIGHT_4M"/>
+      <entry value="7" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_RIGHT_6M"/>
+    </enum>
+    <enum name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LON">
+      <description>GPS longitudinal offset encoding</description>
+      <entry value="0" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LON_NO_DATA"/>
+      <entry value="1" name="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LON_APPLIED_BY_SENSOR"/>
+    </enum>
+    <enum name="UAVIONIX_ADSB_EMERGENCY_STATUS">
+      <description>Emergency status encoding</description>
+      <entry value="0" name="UAVIONIX_ADSB_OUT_NO_EMERGENCY"/>
+      <entry value="1" name="UAVIONIX_ADSB_OUT_GENERAL_EMERGENCY"/>
+      <entry value="2" name="UAVIONIX_ADSB_OUT_LIFEGUARD_EMERGENCY"/>
+      <entry value="3" name="UAVIONIX_ADSB_OUT_MINIMUM_FUEL_EMERGENCY"/>
+      <entry value="4" name="UAVIONIX_ADSB_OUT_NO_COMM_EMERGENCY"/>
+      <entry value="5" name="UAVIONIX_ADSB_OUT_UNLAWFUL_INTERFERANCE_EMERGENCY"/>
+      <entry value="6" name="UAVIONIX_ADSB_OUT_DOWNED_AIRCRAFT_EMERGENCY"/>
+      <entry value="7" name="UAVIONIX_ADSB_OUT_RESERVED"/>
+    </enum>
+  </enums>
+  <messages>
+    <message id="10001" name="UAVIONIX_ADSB_OUT_CFG">
+      <description>Static data to configure the ADS-B transponder (send within 10 sec of a POR and every 10 sec thereafter)</description>
+      <field type="uint32_t" name="ICAO">Vehicle address (24 bit)</field>
+      <field type="char[9]" name="callsign">Vehicle identifier (8 characters, null terminated, valid characters are A-Z, 0-9, " " only)</field>
+      <field type="uint8_t" name="emitterType" enum="ADSB_EMITTER_TYPE">Transmitting vehicle type. See ADSB_EMITTER_TYPE enum</field>
+      <field type="uint8_t" name="aircraftSize" enum="UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE">Aircraft length and width encoding (table 2-35 of DO-282B)</field>
+      <field type="uint8_t" name="gpsOffsetLat" enum="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT">GPS antenna lateral offset (table 2-36 of DO-282B)</field>
+      <field type="uint8_t" name="gpsOffsetLon" enum="UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LON">GPS antenna longitudinal offset from nose [if non-zero, take position (in meters) divide by 2 and add one] (table 2-37 DO-282B)</field>
+      <field type="uint16_t" name="stallSpeed">Aircraft stall speed in cm/s</field>
+      <field type="uint8_t" name="rfSelect" enum="UAVIONIX_ADSB_OUT_RF_SELECT">ADS-B transponder receiver and transmit enable flags</field>
+    </message>
+    <message id="10002" name="UAVIONIX_ADSB_OUT_DYNAMIC">
+      <description>Dynamic data used to generate ADS-B out transponder data (send at 5Hz)</description>
+      <field type="uint32_t" name="utcTime">UTC time in seconds since GPS epoch (Jan 6, 1980). If unknown set to UINT32_MAX</field>
+      <field type="int32_t" name="gpsLat">Latitude WGS84 (deg * 1E7). If unknown set to INT32_MAX</field>
+      <field type="int32_t" name="gpsLon">Longitude WGS84 (deg * 1E7). If unknown set to INT32_MAX</field>
+      <field type="int32_t" name="gpsAlt">Altitude in mm (m * 1E-3) UP +ve. WGS84 altitude. If unknown set to INT32_MAX</field>
+      <field type="uint8_t" name="gpsFix" enum="UAVIONIX_ADSB_OUT_DYNAMIC_GPS_FIX">0-1: no fix, 2: 2D fix, 3: 3D fix, 4: DGPS, 5: RTK</field>
+      <field type="uint8_t" name="numSats">Number of satellites visible. If unknown set to UINT8_MAX</field>
+      <field type="int32_t" name="baroAltMSL">Barometric pressure altitude relative to a standard atmosphere of 1013.2 mBar and NOT bar corrected altitude (m * 1E-3). (up +ve). If unknown set to INT32_MAX</field>
+      <field type="uint32_t" name="accuracyHor">Horizontal accuracy in mm (m * 1E-3). If unknown set to UINT32_MAX</field>
+      <field type="uint16_t" name="accuracyVert">Vertical accuracy in cm. If unknown set to UINT16_MAX</field>
+      <field type="uint16_t" name="accuracyVel">Velocity accuracy in mm/s (m * 1E-3). If unknown set to UINT16_MAX</field>
+      <field type="int16_t" name="velVert">GPS vertical speed in cm/s. If unknown set to INT16_MAX</field>
+      <field type="int16_t" name="velNS">North-South velocity over ground in cm/s North +ve. If unknown set to INT16_MAX</field>
+      <field type="int16_t" name="VelEW">East-West velocity over ground in cm/s East +ve. If unknown set to INT16_MAX</field>
+      <field type="uint8_t" name="emergencyStatus" enum="UAVIONIX_ADSB_EMERGENCY_STATUS">Emergency status</field>
+      <field type="uint16_t" name="state" enum="UAVIONIX_ADSB_OUT_DYNAMIC_STATE">ADS-B transponder dynamic input state flags</field>
+      <field type="uint16_t" name="squawk">Mode A code (typically 1200 [0x04B0] for VFR)</field>
+    </message>
+    <message id="10003" name="UAVIONIX_ADSB_TRANSCEIVER_HEALTH_REPORT">
+      <description>Transceiver heartbeat with health report (updated every 10s)</description>
+      <field type="uint8_t" name="rfHealth" enum="UAVIONIX_ADSB_RF_HEALTH">ADS-B transponder messages</field>
+    </message>
+  </messages>
+</mavlink>

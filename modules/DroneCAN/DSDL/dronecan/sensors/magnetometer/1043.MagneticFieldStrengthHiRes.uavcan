@@ -1,0 +1,5 @@
+#
+# Magnetic field readings, in Gauss, in body frame, high resolution version
+
+uint8 sensor_id
+float32[3] magnetic_field_ga

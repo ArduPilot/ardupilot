@@ -1,0 +1,62 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+top = '.'
+out = 'bin'
+
+import os, re
+from waflib import Utils
+
+def configure(conf):
+	pass
+
+def build(bld):
+
+	# the test.pc.in is a special case which is always handled
+	bld(source='test.pc.in', VERSION='1.1', LIBS='moo', XPM_LIBS='-lxpm', LIBICONV='-liconv', XPM_CFLAGS='-O3', INTVAR=12)
+
+	tg = bld(
+		features     = 'subst', # the feature 'subst' overrides the source/target processing
+		source       = 'foo.in', # list of string or nodes
+		target       = 'foo.txt', # list of strings or nodes
+		encoding     = 'ascii', # file encoding for python3, default is latin-1
+		install_path = '/tmp/uff/', # installation path, optional
+		chmod        = Utils.O755, # installation mode, optional
+		PREFIX       = bld.env.PREFIX, # variables to use in the substitution
+		re_m4        = re.compile('%%(\w+)%%', re.M), # custom substitution
+		BINDIR       = bld.env.BINDIR)
+
+	# if you are using an external dict, here is to merge the key/values:
+	dct =  {'BINDIR': '/opt'}
+	tg.__dict__.update(dct)
+
+	# if you want a file copy, pass "is_copy=True"
+	bld(features='subst', source='wscript', target='wscript', is_copy=True)
+
+	# same thing with a simple function
+	def fun(task, text):
+		return text
+	bld(features='subst', subst_fun=fun, source='wscript', target='wscript2')
+
+	def hlink(task):
+		try:
+			link = os.link
+		except AttributeError:
+			task.outputs[0].write(task.inputs[0].read('rb'), 'wb')
+		else:
+			for x, y in zip(task.inputs, task.outputs):
+				try:
+					os.remove(y.abspath())
+				except OSError:
+					pass
+				os.link(x.abspath(), y.abspath())
+	bld(features='subst', fun=hlink, source='wscript', target='wscript3')
+
+	# this one is just a reminder that simple files can be created (and a test too)
+	bld(rule='echo "การไฟ่" > ${TGT}', target='uni.txt')
+
+	# and this is an alternate syntax
+	#@bld.rule(source='wscript', target='wscript2')
+	#def _(tsk):
+	#	tsk.outputs[0].write(tsk.inputs[0].read())
+

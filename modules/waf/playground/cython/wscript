@@ -1,0 +1,86 @@
+#!/usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010
+
+from waflib import Logs
+
+APPNAME = 'wafcython'
+VERSION = '1.0'
+
+top = '.'
+out = 'build'
+
+def options(ctx):
+	ctx.load('compiler_c')
+	ctx.load('compiler_cxx')
+	ctx.load('python')
+	ctx.load('cython')
+	ctx.load('cython_cache', tooldir='.')
+
+def configure(ctx):
+	ctx.load('compiler_c')
+	ctx.load('compiler_cxx')
+	ctx.load('python')
+	ctx.check_python_headers()
+	try:
+		ctx.load('cython')
+	except ctx.errors.ConfigurationError:
+		Logs.warn('Cython was not found, using the cache')
+
+def build(ctx):
+	# a C library
+	ctx(features = 'c cshlib',
+		source   = 'c_lib/lib.c',
+		target   = 'c_lib',
+		includes = 'c_lib')
+
+	# a C++ library
+	ctx(features = 'cxx cxxshlib',
+		source   = 'cxx_lib/lib.cxx',
+		target   = 'cxx_lib',
+		includes = 'cxx_lib')
+
+	# build a C-based cython extension
+	ctx(
+		features = 'c cshlib pyext',
+		source   = 'src/cy_ctest.pyx',
+		target   = 'cy_ctest',
+		includes = 'c_lib',
+		use	 = 'c_lib')
+
+	# then a C++-based one
+	ctx(
+		features = 'cxx cxxshlib pyext',
+		source   = 'src/cy_cxxtest.pyx',
+		target   = 'cy_cxxtest',
+		includes = 'cxx_lib',
+		use	 = 'cxx_lib')
+
+	# a C++ application which uses a C function from a cython module
+	ctx(
+		features = 'cxx cxxprogram pyembed',
+		source   = 'cxx_lib/app.cxx',
+		target   = 'cy-app',
+		includes = 'cxx_lib src',
+		use	 = 'cxx_lib')
+
+	# ---------------------------------------------------------------
+	# Testcase for #2244 below
+
+	ctx.get_tgen_by_name('cy_ctest').features += ' subst_header_order'
+
+	# a generated header for cy_ctest
+	ctx(
+		features = 'subst',
+		source   = 'c_lib/extra_dep.h.in',
+		target   = 'c_lib/extra_dep.h',
+	)
+
+	from waflib import TaskGen
+	@TaskGen.feature('subst_header_order')
+	@TaskGen.after('process_source')
+	def set_subst_before_cython_tasks(self):
+		tg = self.bld.get_tgen_by_name('c_lib/extra_dep.h')
+		tg.post()
+		for tsk in self.tasks:
+			tsk.run_after.add(tg.tasks[-1])

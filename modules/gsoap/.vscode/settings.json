@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "wscript": "python",
+        "__config": "cpp",
+        "cstdio": "cpp",
+        "fstream": "cpp"
+    }
+}

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="udp"
+  targetNamespace="urn:gsoap-udp-demo"
+  xmlns:tns="urn:gsoap-udp-demo"
+  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+  xmlns:ns="urn:gsoap-udp-demo"
+  xmlns:SOAP="http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:HTTP="http://schemas.xmlsoap.org/wsdl/http/"
+  xmlns:MIME="http://schemas.xmlsoap.org/wsdl/mime/"
+  xmlns:DIME="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+  xmlns:WSDL="http://schemas.xmlsoap.org/wsdl/"
+  xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<types>
+
+  <schema targetNamespace="urn:gsoap-udp-demo"
+    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:wsa="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+    xmlns:ns="urn:gsoap-udp-demo"
+    xmlns="http://www.w3.org/2001/XMLSchema"
+    elementFormDefault="unqualified"
+    attributeFormDefault="unqualified">
+    <import namespace="http://schemas.xmlsoap.org/ws/2004/08/addressing" schemaLocation="http://schemas.xmlsoap.org/ws/2004/08/addressing"/>
+    <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+    <!-- operation request element -->
+    <element name="echoString">
+      <complexType>
+          <sequence>
+            <element name="str" type="xsd:string" minOccurs="0" maxOccurs="1"/><!-- ns__echoString::str -->
+          </sequence>
+      </complexType>
+    </element>
+    <!-- operation response element -->
+    <element name="echoStringResponse">
+      <complexType>
+          <sequence>
+            <element name="res" type="xsd:string" minOccurs="0" maxOccurs="1"/><!-- ns__echoString::res -->
+          </sequence>
+      </complexType>
+    </element>
+    <!-- operation request element -->
+    <element name="sendString">
+      <complexType>
+          <sequence>
+            <element name="str" type="xsd:string" minOccurs="0" maxOccurs="1"/><!-- ns__sendString::str -->
+          </sequence>
+      </complexType>
+    </element>
+  </schema>
+
+</types>
+
+<message name="echoStringRequest">
+  <part name="Body" element="ns:echoString"/><!-- ns__echoString::ns__echoString -->
+</message>
+
+<message name="echoStringResponse">
+  <part name="Body" element="ns:echoStringResponse"/>
+</message>
+
+<message name="sendString">
+  <part name="Body" element="ns:sendString"/><!-- ns__sendString::ns__sendString -->
+</message>
+
+<message name="udpHeader">
+  <part name="MessageID" element="wsa:MessageID"/>
+  <part name="RelatesTo" element="wsa:RelatesTo"/>
+  <part name="From" element="wsa:From"/>
+  <part name="ReplyTo" element="wsa:ReplyTo"/>
+  <part name="FaultTo" element="wsa:FaultTo"/>
+  <part name="To" element="wsa:To"/>
+  <part name="Action" element="wsa:Action"/>
+</message>
+
+<portType name="udpPortType">
+  <operation name="echoString">
+    <documentation>
+      Demo (anonymous) request-response MEP over UDP
+    </documentation>
+    <input message="tns:echoStringRequest"/>
+    <output message="tns:echoStringResponse"/>
+  </operation>
+  <operation name="sendString">
+    <documentation>
+      Demo one-way MEP over UDP
+    </documentation>
+    <input message="tns:sendString"/>
+  </operation>
+</portType>
+
+<binding name="udp" type="tns:udpPortType">
+  <SOAP:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+  <operation name="echoString">
+    <SOAP:operation soapAction=""/>
+    <input>
+          <SOAP:body use="literal" parts="Body"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="MessageID"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="To"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="Action"/>
+    </input>
+    <output>
+          <SOAP:body use="literal" parts="Body"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="MessageID"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="To"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="Action"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="RelatesTo"/>
+    </output>
+  </operation>
+  <operation name="sendString">
+    <SOAP:operation soapAction=""/>
+    <input>
+          <SOAP:body use="literal" parts="Body"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="ReplyTo"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="MessageID"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="To"/>
+          <SOAP:header use="literal" message="tns:udpHeader" part="Action"/>
+    </input>
+  </operation>
+</binding>
+
+<service name="udp">
+  <documentation>gSOAP 2.8.114 generated service definition</documentation>
+  <port name="udp" binding="tns:udp">
+    <SOAP:address location="soap.udp://localhost:10000"/>
+  </port>
+</service>
+
+</definitions>

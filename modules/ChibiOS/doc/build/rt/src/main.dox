@@ -1,0 +1,59 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @mainpage Introduction
+ * @author Giovanni Di Sirio (gdisirio@users.sourceforge.net).
+ *
+ * <h2>Chibi ?</h2>
+ * I didn't want a serious name for this project. It is the Japanese word for
+ * small as in small child. So ChibiOS/RT
+ * @htmlonly (<span class="t_nihongo_kanji" xml:lang="ja" lang="ja">&#12385;&#12403;</span>OS/RT) @endhtmlonly
+ * means small Real Time Operating System.
+ * Source <a href="http://en.wikipedia.org/wiki/Chibi" target="_blank">Wikipedia</a>.
+ *
+ * <h2>Features</h2>
+ * - Free software, GPL3 licensed. Stable releases include a exception clause
+ *   to the GPL.
+ * - Designed for realtime applications.
+ * - Easily portable.
+ * - Preemptive scheduling.
+ * - 128 priority levels. Multiple threads at the same priority level allowed.
+ * - Round robin scheduling for threads at the same priority level.
+ * - Offers threads, virtual timers, binary and counter semaphores, mutexes,
+ *   condvars, event sources, event flags, messages, mailboxes.
+ * - No static setup at compile time, there is no need to configure a maximum
+ *   number of all the above objects.
+ * - PC simulator target included, the development can be done on a PC
+ *   under Linux or Windows.<br>
+ *   Timers, I/O channels and other HW resources are simulated in a guest OS
+ *   process and the application code does not need to be aware of it.
+ * - No *need* for a memory allocator, all the kernel structures are static
+ *   and declaratively allocated.
+ * - Optional, thread safe, Heap Allocator subsystem.
+ * - Optional, thread safe, Memory Pools Allocator subsystem.
+ * - Minimal system requirements: about 6KiB ROM with all options enabled and
+ *   speed optimizations on. The size can shrink under 2KiB by disabling the
+ *   the unused subsystems and optimizing for size.
+ * - Almost totally written in C with little ASM code required for ports.
+ * - Compatible with ChibiOS/HAL.
+ * .
+ * <h2>Related pages</h2>
+ * - @subpage concepts
+ * .
+ */

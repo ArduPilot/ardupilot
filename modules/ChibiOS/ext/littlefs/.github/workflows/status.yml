@@ -1,0 +1,55 @@
+name: status
+on:
+  workflow_run:
+    workflows: [test]
+    types: [completed]
+
+jobs:
+  status:
+    runs-on: ubuntu-18.04
+    steps:
+      # custom statuses?
+      - uses: dawidd6/action-download-artifact@v2
+        continue-on-error: true
+        with:
+          workflow: ${{github.event.workflow_run.name}}
+          run_id: ${{github.event.workflow_run.id}}
+          name: status
+          path: status
+      - name: update-status
+        continue-on-error: true
+        run: |
+          ls status
+          for s in $(shopt -s nullglob ; echo status/*.json)
+          do
+            # parse requested status
+            export STATE="$(jq -er '.state' $s)"
+            export CONTEXT="$(jq -er '.context' $s)"
+            export DESCRIPTION="$(jq -er '.description' $s)"
+            # help lookup URL for job/steps because GitHub makes
+            # it VERY HARD to link to specific jobs
+            export TARGET_URL="$(
+              jq -er '.target_url // empty' $s || (
+                export TARGET_JOB="$(jq -er '.target_job' $s)"
+                export TARGET_STEP="$(jq -er '.target_step // ""' $s)"
+                curl -sS -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+                  "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/`
+                    `${{github.event.workflow_run.id}}/jobs" \
+                  | jq -er '.jobs[]
+                    | select(.name == env.TARGET_JOB)
+                    | .html_url
+                      + "?check_suite_focus=true"
+                      + ((.steps[]
+                        | select(.name == env.TARGET_STEP)
+                        | "#step:\(.number):0") // "")'))"
+            # update status
+            curl -sS -X POST -H "authorization: token ${{secrets.BOT_TOKEN}}" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/statuses/`
+                `${{github.event.workflow_run.head_sha}}" \
+              -d "$(jq -n '{
+                state: env.STATE,
+                context: env.CONTEXT,
+                description: env.DESCRIPTION,
+                target_url: env.TARGET_URL}' \
+                | tee /dev/stderr)"
+          done

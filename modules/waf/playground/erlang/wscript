@@ -1,0 +1,11 @@
+#! /usr/bin/env python
+
+def configure(conf):
+	conf.load('erlang')
+
+def build(bld):
+	bld(source='hello.erl', includes=['inc'])
+
+	# This requires EUnit. The Erlangs EUnit header files are available erlang-dev package.
+	bld(source=['hello_eunit.erl', 'hello.beam'], includes=['inc'], features="eunit")
+	bld(source=['hello.erl'], includes=['inc'], features="edoc")

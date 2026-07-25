@@ -1,0 +1,8 @@
+<map id="SOAP_ENV__Header" name="SOAP_ENV__Header">
+<area shape="rect" id="node2" href="$structwsa5_____relates_to_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:RelatesToType is a complexType with simpleContent. " alt="" coords="444,5,599,33"/>
+<area shape="rect" id="node4" href="$structchan_____channel_instance_type.html" title="&quot;http://schemas.microsoft.com/ws/2005/02/duplex&quot;:ChannelInstanceType is a complexType. " alt="" coords="424,57,618,85"/>
+<area shape="rect" id="node6" href="$structwsa5_____endpoint_reference_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:EndpointReferenceType is a complexType. " alt="" coords="416,133,627,161"/>
+<area shape="rect" id="node8" href="$structwsa5_____reference_parameters_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:ReferenceParametersType is a complexType. " alt="" coords="5,107,232,135"/>
+<area shape="rect" id="node10" href="$structwsa5_____metadata_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:MetadataType is a complexType. " alt="" coords="43,159,195,187"/>
+<area shape="rect" id="node12" href="$structwsdd_____app_sequence_type.html" title="&quot;http://docs.oasis&#45;open.org/ws&#45;dd/ns/discovery/2009/01&quot;:AppSequenceType is a complexType with complex..." alt="" coords="431,185,611,213"/>
+</map>

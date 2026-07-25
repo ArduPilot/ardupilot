@@ -1,0 +1,41 @@
+Waf 2.0 is on https://gitlab.com/ita1024/waf
+------------------------------------------------
+
+waflib            the core library
+waflib/Tools      essential waf tools
+waflib/extras     contributed tools which are not included in the waf file by default
+build_system_kit  examples of build systems that can be created from Waf
+tests             various unit tests, most are unused anymore
+playground        experimental examples and test, most tools lie in the folder waflib/extras
+demos             integration tests - the folder can be configured as a standalone project
+demos/*           integration tests and examples used as documentation
+docs              documentation
+docs/sphinx       project extracting the docstrings from the source code to create the API documentation
+
+Documentation
+-------------------------------------------------
+
+API documentation        https://waf.io/apidocs/
+The Waf Book             https://waf.io/book/
+
+General coding guidelines
+-------------------------
+
+* The code must run in both Python 2.6 to Python 3
+* Use tabs for Python file indentation
+* Use x.splitlines() instead of x.split('\n')
+* Avoid "except:" and "except Exception:"
+* Use Node.readf/Node.writef/Utils.readf/Utils.writef
+
+Pull requests
+-------------
+
+See https://gitlab.com/ita1024/waf
+
+When implementing complex features, please add examples in the showcase folder demos/
+for modules under waflib/Tools, under tests/ for platform-independent unit tests,
+or in playground/ for modules under waflib/extras.
+
+The files under waflib/Tools/ are kept API-compatible for the duration
+of a middle version (currently 2.0).
+

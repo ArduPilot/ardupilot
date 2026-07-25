@@ -1,0 +1,10 @@
+STM32 RNGv1 driver.
+
+Driver capability:
+
+- Supports the STM32 TRNGv1 found on STM32L4 and STM32L4+ families.
+
+The file registry must export:
+
+STM32_HAS_RNG1                  - RNG presence flag.
+

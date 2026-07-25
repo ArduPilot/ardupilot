@@ -1,0 +1,62 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+"""
+Example providing a clean context for when top==out.
+
+When top==out, waf will not do anything by default
+in the clean or distclean operations, because it is dangerous.
+The example below illustrates project-specific cleaning operations.
+
+Notes:
+
+- The clean operation below can only remove the generated file that
+  are created during the current build (intermediate .o files)
+  will not be removed
+
+- File outputs of dynamic builds cannot be removed
+  (output files are to be known in advance)
+
+- The distclean operation, which normally removes the build folder
+  completely plus some files, is also modified to remove
+  the rest of waf-generated files.
+"""
+
+VERSION='0.0.1'
+APPNAME='clean_test'
+
+top = '.'
+out = '.'
+
+def options(opt):
+	opt.load('compiler_cxx')
+
+def configure(conf):
+	conf.load('compiler_cxx')
+	conf.check(header_name='stdio.h', features='cxx cxxprogram', mandatory=False)
+
+def build(bld):
+	bld(features='cxx', source='a.cpp', target='pouet')
+
+	if bld.cmd == 'clean':
+		for tgen in bld.get_all_task_gen():
+			tgen.post()
+			for t in tgen.tasks:
+				for n in t.outputs:
+					if n.is_child_of(bld.bldnode):
+						n.delete()
+
+
+def distclean(ctx):
+	import os, shutil
+	from waflib import Context
+
+	for fn in os.listdir('.'):
+		if fn.startswith(('.conf_check_', ".lock-w")) \
+		 or fn in (Context.DBFILE, 'config.log') \
+		 or fn == 'c4che':
+			if os.path.isdir(fn):
+				shutil.rmtree(fn)
+			else:
+				os.remove(fn)
+

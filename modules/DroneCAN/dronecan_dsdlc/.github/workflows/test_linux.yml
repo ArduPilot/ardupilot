@@ -1,0 +1,21 @@
+name: test linux
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v3
+      - name: test DSDL generation
+        shell: bash
+        run: |
+          tests/test_linux.sh
+
+      - name: Archive generated headers
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsdl_generated
+          path: dsdl_generated
+          retention-days: 7

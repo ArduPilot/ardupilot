@@ -1,0 +1,15 @@
+top = '.'
+out = 'bin/waf'
+
+def configure(ctx):
+    ctx.env.ROOT_INCLUDE_DIR = ctx.path.get_bld().make_node('src').make_node('main').abspath()
+    ctx.env.ROOT_RES_DIR = ctx.path.make_node('res').abspath()
+    ctx.env.LIBPATH_HAXE = ctx.path.make_node('haxe_libraries').abspath()
+    ctx.env.LIBPATH_HL = ctx.path.make_node('lib').abspath()
+    ctx.env.INCLUDES_HL = ctx.path.make_node('include').abspath()
+    ctx.recurse('src')
+    ctx.recurse('bin')
+
+def build(ctx):
+    ctx.recurse('src')
+    ctx.recurse('bin')

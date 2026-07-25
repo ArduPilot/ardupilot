@@ -1,0 +1,130 @@
+{
+    "$id":          "https://mavlink.io/comp_version.schema.json",
+    "$schema":      "http://json-schema.org/draft-07/schema",
+    "description":  "Schema for COMP_METADATA_TYPE_PARAMETER",
+    "type":         "object",
+
+    "properties": {
+        "version": {
+            "description":  "Version number for the format of this file.",
+            "type":         "integer",
+            "minimum":      1
+        },
+        "parameters": {
+            "type": "array",
+
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "description":  "Parameter Name.",
+                        "type":         "string",
+                        "pattern":      "^[\\.\\-a-zA-Z0-9_\\{\\}]{1,16}$",
+                        "comment":      "FOO{n}_BAR for name will match actual name of FOO1_BAR, FOO3_BAR and so forth." 
+                    },
+                    "type": {
+                        "description":  "Parameter type.",
+                        "type":         "string",
+                        "enum":         [ "Uint8", "Int8", "Uint16", "Int16", "Uint32", "Int32", "Float" ]
+                    },
+                    "shortDesc": {
+                        "description":  "Short user facing description/name for parameter. Used in UI instead of internal parameter name.",
+                        "type":         "string",
+                        "default":      "",
+                        "comment":      "{n} index tagging will be replaced by name index. Example: 'FOO3_BAR': 'Description for foo element {n}' will turn into 'Description for foo element 1'." 
+                    },
+                    "longDesc": {
+                        "description":  "Long user facing documentation of how the parameters works.",
+                        "type":         "string",
+                        "default":      "",
+                        "comment":      "{n} index tagging will be replaced by name index. Example: 'FOO3_BAR': 'Description for foo element {n}' will turn into 'Description for foo element 1'." 
+                    },
+                    "units": {
+                        "description":  "Units for parameter value.",
+                        "type":         "string",
+                        "default":      "",
+                        "comment":      "A 'Known Unit' allows a GCS to convert between units like meters to feet as needed. Known Units are: 'm/meter/meter', 'vertical m' - vertical distance, 'cm/px', 'm/s', 'C' - celsius, 'm^2', 'g' - grams, 'centi-degrees', 'radians', 'norm'."
+                    },
+                    "default": {
+                        "description":  "Default value for parameter.",
+                        "type":         "number",
+                        "comment":      "If a defaultValue is not specified, there is no default for the parameter available at all. A GCS should not provide an option to reset this parameter to default."
+                    },
+                    "decimalPlaces": {
+                        "description":  "Number of decimal places to show for user facing display.",
+                        "type":         "integer",
+                        "minimum":      0,
+                        "default":      7
+                    },
+                    "min": {
+                        "description":  "Minimum valid value",
+                        "type":         "number",
+                        "comment":      "If 'min' is not specified the minimum value is the minimum numeric value which can be represented by the type."
+                    },
+                    "max": {
+                        "description":  "Maximum valid value",
+                        "type":         "number",
+                        "comment":      "If 'max' is not specified the minimum value is the maximum numeric value which can be represented by the type."
+                    },
+                    "increment": {
+                        "description":  "Increment to use for user facing UI which increments a value",
+                        "type":         "number"
+                    },
+                    "rebootRequired": {
+                        "description":  "true: Vehicle must be rebooted if this value is changed",
+                        "type":         "boolean",
+                        "default":      false
+                    },
+                    "group": {
+                        "description":  "User readable name for a group of parameters which are commonly modified together. For example a GCS can shows params in a hierarchical display based on group ",
+                        "type":         "string",
+                        "default":      ""
+                    },
+                    "category": {
+                        "description":  "User readable name for a 'type' of parameter. For example 'Developer', 'System', or 'Advanced'.",
+                        "type":         "string",
+                        "default":      ""
+                    },
+                    "volatile": {
+                        "description":  "true: value is volatile. Should not be included in creation of a CRC over param values for example.",
+                        "type":         "boolean",
+                        "default":      false
+                    },
+                    "values": {
+                        "description":  "Array of values and textual descriptions for use by GCS ui.",
+                        "type":         "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "number"
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "bitmask": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "index": {
+                                    "type": "integer"
+                                },
+                                "description": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "required":             [ "name", "type" ],
+                "additionalProperties": false
+            }
+        }
+    },
+    "required":             [ "version", "parameters" ],
+    "additionalProperties": false
+}

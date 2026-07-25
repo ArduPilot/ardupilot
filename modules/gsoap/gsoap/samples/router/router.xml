@@ -1,0 +1,12 @@
+<router>
+ <item>
+  <key>magicserver</key>
+  <endpoint>http://www.cs.fsu.edu/~engelen/magicserver.cgi</endpoint>
+  <userid>guest</userid>
+  <passwd>guest</passwd>
+ </item>
+ <item>
+  <key>*?ldsrv</key>
+  <endpoint>http://localhost:18000</endpoint>
+ </item>
+</router>

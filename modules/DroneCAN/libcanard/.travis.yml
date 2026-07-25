@@ -1,0 +1,62 @@
+# THIS FILE IS NOT USED
+# CI is now run in Gitlab, see .gitlab/workflows/
+
+sudo: required
+dist: trusty
+
+matrix:
+  include:
+    #
+    # Main GCC 7 test
+    #
+    - language: cpp
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            # We need i386 packages because we compile libcanard in 32-bit mode, it doesn't support 64-bit platforms.
+            - g++-7
+            - g++-7-multilib
+            - gcc-7-multilib
+            - linux-libc-dev:i386
+      script:
+        - CC=gcc-7 && CXX=g++-7 && cd tests/ && cmake . && make
+        - ./run_tests --rng-seed time
+
+    #
+    # Main Clang 5 test
+    #
+    - language: cpp
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-5.0
+          packages:
+            # We need i386 packages because we compile libcanard in 32-bit mode, it doesn't support 64-bit platforms.
+            - clang-5.0
+            - libstdc++-7-dev:i386   # This package contains the C++ standard library used by Clang-5.0
+            - linux-libc-dev:i386
+            - libc6-dev-i386
+      script:
+        - clang++-5.0 -E -x c++ - -v < /dev/null    # Print the Clang configuration for troubleshooting purposes
+        - cd tests/
+        - cmake -DCMAKE_C_COMPILER=clang-5.0 -DCMAKE_CXX_COMPILER=clang++-5.0 .
+        - make
+        - ./run_tests --rng-seed time
+
+    #
+    # AVR driver test
+    #
+    - language: cpp
+      addons:
+        apt:
+          packages:
+            - gcc-avr
+            - avr-libc
+      script:
+        - mkdir build-avr
+        - cd build-avr
+        - cmake ../drivers/avr
+        - make

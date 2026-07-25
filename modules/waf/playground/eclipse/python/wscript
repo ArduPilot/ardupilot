@@ -1,0 +1,21 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+
+def options(opt):
+	opt.load('python pyqt5')
+
+def configure(conf):
+	conf.load('python pyqt5')
+	conf.check_python_version(minver=(2, 7, 0))
+
+
+def build(bld):
+	bld(name='mod1', features='py', source=bld.path.ant_glob('mod1/src/**/*.py'), install_from='mod1/src')
+	bld(name='mod2', features='py', source=bld.path.ant_glob('mod2/src/**/*.py'), install_from='mod2/src')
+	bld(name='mod3', features='py', source=bld.path.ant_glob('mod3/src/**/*.py'), install_from='mod3/src')
+
+	bld(name='withqt5', features='py pyqt5', source=bld.path.ant_glob('withqt5/src/**/*'), install_from='withqt5/src')
+
+	# Example program with module dependencies
+	bld(name='prg', features='py', source=bld.path.ant_glob('prg/src/**/*.py'), install_from='prg/src', use='mod1 mod2 mod3')	

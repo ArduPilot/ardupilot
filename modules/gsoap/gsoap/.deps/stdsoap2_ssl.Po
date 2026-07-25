@@ -1,0 +1,112 @@
+stdsoap2_ssl.o: stdsoap2_ssl.c stdsoap2.h ../config.h \
+  /usr/include/stdlib.h /usr/include/machine/ansi.h \
+  /usr/include/ppc/ansi.h /usr/include/machine/types.h \
+  /usr/include/ppc/types.h /usr/include/sys/cdefs.h /usr/include/alloca.h \
+  /usr/include/stdio.h /usr/include/sys/types.h \
+  /usr/include/sys/appleapiopts.h /usr/include/machine/endian.h \
+  /usr/include/ppc/endian.h /usr/include/string.h /usr/include/ctype.h \
+  /usr/include/runetype.h /usr/include/limits.h \
+  /usr/include/gcc/darwin/3.3/machine/limits.h /usr/include/ppc/limits.h \
+  /usr/include/sys/syslimits.h /usr/include/errno.h \
+  /usr/include/sys/errno.h /usr/include/sys/timeb.h /usr/include/time.h \
+  /usr/include/sys/socket.h /usr/include/machine/param.h \
+  /usr/include/ppc/param.h /usr/include/strings.h /usr/include/sys/time.h \
+  /usr/include/netinet/in.h /usr/include/netinet6/in6.h \
+  /usr/include/netinet/tcp.h /usr/include/arpa/inet.h \
+  /usr/include/sys/param.h /usr/include/sys/signal.h \
+  /usr/include/machine/signal.h /usr/include/ppc/signal.h \
+  /usr/include/math.h /usr/include/architecture/ppc/math.h \
+  /usr/include/netdb.h /usr/include/unistd.h /usr/include/sys/unistd.h \
+  /usr/include/signal.h /usr/include/fcntl.h /usr/include/sys/fcntl.h
+
+stdsoap2.h:
+
+../config.h:
+
+/usr/include/stdlib.h:
+
+/usr/include/machine/ansi.h:
+
+/usr/include/ppc/ansi.h:
+
+/usr/include/machine/types.h:
+
+/usr/include/ppc/types.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/alloca.h:
+
+/usr/include/stdio.h:
+
+/usr/include/sys/types.h:
+
+/usr/include/sys/appleapiopts.h:
+
+/usr/include/machine/endian.h:
+
+/usr/include/ppc/endian.h:
+
+/usr/include/string.h:
+
+/usr/include/ctype.h:
+
+/usr/include/runetype.h:
+
+/usr/include/limits.h:
+
+/usr/include/gcc/darwin/3.3/machine/limits.h:
+
+/usr/include/ppc/limits.h:
+
+/usr/include/sys/syslimits.h:
+
+/usr/include/errno.h:
+
+/usr/include/sys/errno.h:
+
+/usr/include/sys/timeb.h:
+
+/usr/include/time.h:
+
+/usr/include/sys/socket.h:
+
+/usr/include/machine/param.h:
+
+/usr/include/ppc/param.h:
+
+/usr/include/strings.h:
+
+/usr/include/sys/time.h:
+
+/usr/include/netinet/in.h:
+
+/usr/include/netinet6/in6.h:
+
+/usr/include/netinet/tcp.h:
+
+/usr/include/arpa/inet.h:
+
+/usr/include/sys/param.h:
+
+/usr/include/sys/signal.h:
+
+/usr/include/machine/signal.h:
+
+/usr/include/ppc/signal.h:
+
+/usr/include/math.h:
+
+/usr/include/architecture/ppc/math.h:
+
+/usr/include/netdb.h:
+
+/usr/include/unistd.h:
+
+/usr/include/sys/unistd.h:
+
+/usr/include/signal.h:
+
+/usr/include/fcntl.h:
+
+/usr/include/sys/fcntl.h:

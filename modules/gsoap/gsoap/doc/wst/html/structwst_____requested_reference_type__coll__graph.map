@@ -1,0 +1,8 @@
+<map id="wst__RequestedReferenceType" name="wst__RequestedReferenceType">
+<area shape="rect" id="node2" href="$struct__wsse_____security_token_reference.html" title="This element defines the wsse:SecurityTokenReference per Section 4.3. Imported element _wsse__Securit..." alt="" coords="198,193,417,221"/>
+<area shape="rect" id="node4" href="$struct__wsse_____embedded.html" title="This element defines a security token embedded reference Imported element _wsse__Embedded from typema..." alt="" coords="4,99,141,127"/>
+<area shape="rect" id="node6" href="$struct__wsse_____key_identifier.html" title="This element defines a key identifier reference Imported element _wsse__KeyIdentifier from typemap WS..." alt="" coords="166,99,313,127"/>
+<area shape="rect" id="node8" href="$structds_____x509_data_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:X509DataType is a complexType. " alt="" coords="337,99,475,127"/>
+<area shape="rect" id="node10" href="$structds_____x509_issuer_serial_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:X509IssuerSerialType is a complexType. " alt="" coords="316,6,496,34"/>
+<area shape="rect" id="node12" href="$struct__wsse_____reference.html" title="This element defines a security token reference Imported element _wsse__Reference from typemap WS/WS&#45;..." alt="" coords="500,99,635,127"/>
+</map>

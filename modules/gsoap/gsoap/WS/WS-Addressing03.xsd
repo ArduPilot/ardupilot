@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<!-- 
+ 
+Legal Disclaimer
+
+The presentation, distribution or other dissemination of the information 
+contained in this document is not a license, either expressly or impliedly, 
+to any intellectual property owned or controlled by BEA or IBM or Microsoft
+and\or any other third party.  BEA and IBM and Microsoft and\or any other
+third party may have patents, patent applications, trademarks, copyrights, 
+or other intellectual property rights covering subject matter in this 
+document.  The furnishing of this document does not give you any license 
+to BEA's and IBM's and Microsoft's or any other third party's patents, 
+trademarks, copyrights, or other intellectual property.
+
+This document and the information contained herein is provided on an "AS IS"
+basis and to the maximum extent permitted by applicable law, BEA and IBM 
+and Microsoft provide the document AS IS AND WITH ALL FAULTS, and hereby 
+disclaims all other warranties and conditions, either express, implied or 
+statutory, including, but not limited to, any (if any) implied warranties, 
+duties or conditions of merchantability, of fitness for a particular 
+purpose, of accuracy or completeness of responses, of results, of 
+workmanlike effort, of lack of viruses, and of lack of negligence, all with
+regard to the document. ALSO, THERE IS NO WARRANTY OR CONDITION OF 
+TITLE, QUIET ENJOYMENT, QUIET POSSESSION, CORRESPONDENCE TO DESCRIPTION OR 
+NON-INFRINGEMENT OF ANY INTELLECTUAL PROPERTY RIGHTS WITH REGARD TO THE 
+DOCUMENT.
+
+IN NO EVENT WILL BEA or IBM or MICROSOFT BE LIABLE TO ANY OTHER PARTY FOR THE
+COST OF PROCURING SUBSTITUTE GOODS OR SERVICES, LOST PROFITS, LOSS OF USE, 
+LOSS OF DATA, OR ANY INCIDENTAL, CONSEQUENTIAL, DIRECT, INDIRECT, OR SPECIAL 
+DAMAGES WHETHER UNDER CONTRACT, TORT, WARRANTY, OR OTHERWISE, ARISING IN ANY 
+WAY OUT OF THIS OR ANY OTHER AGREEMENT RELATING TO THIS DOCUMENT, WHETHER OR 
+NOT SUCH PARTY HAD ADVANCE NOTICE OF THE POSSIBILITY OF SUCH DAMAGES.
+
+Copyright Notice
+
+Copyright 2003 BEA Systems Inc. and IBM Corporation and Microsoft Corporation. All rights reserved.
+
+-->
+<xs:schema targetNamespace="http://schemas.xmlsoap.org/ws/2003/03/addressing" xmlns:wsa="http://schemas.xmlsoap.org/ws/2003/03/addressing" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" blockDefault="#all">
+
+   <!-- //////////////////// WS-Addressing //////////////////// -->
+	<!-- Endpoint reference -->
+	<xs:element name="EndpointReference" type="wsa:EndpointReferenceType"/>
+	<xs:complexType name="EndpointReferenceType">
+		<xs:sequence>
+			<xs:element name="Address" type="wsa:AttributedURI"/>
+			<xs:element name="ReferenceProperties" type="wsa:ReferencePropertiesType" minOccurs="0"/>
+			<xs:element name="PortType" type="wsa:AttributedQName" minOccurs="0"/>
+			<xs:element name="ServiceName" type="wsa:ServiceNameType" minOccurs="0"/>
+			<xs:any namespace="##other" processContents="lax" minOccurs="0" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>
+					 If "Policy" elements from namespace "http://schemas.xmlsoap.org/ws/2002/12/policy#policy" are used, they must appear first (before any extensibility elements).
+					</xs:documentation>
+				</xs:annotation>
+                        </xs:any>			
+		</xs:sequence>
+		<xs:anyAttribute namespace="##other" processContents="lax"/>
+	</xs:complexType>
+	<xs:complexType name="ReferencePropertiesType">
+		<xs:sequence>
+			<xs:any processContents="lax" minOccurs="0" maxOccurs="unbounded"/>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="ServiceNameType">
+		<xs:simpleContent>
+			<xs:extension base="xs:QName">
+				<xs:attribute name="PortName" type="xs:NCName"/>
+				<xs:anyAttribute namespace="##other" processContents="lax"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<!-- Message information header blocks -->
+	<xs:element name="MessageID" type="wsa:AttributedURI"/>
+	<xs:element name="RelatesTo" type="wsa:Relationship"/>
+	<xs:element name="To" type="wsa:AttributedURI"/>
+	<xs:element name="Action" type="wsa:AttributedURI"/>
+	<xs:element name="From" type="wsa:EndpointReferenceType"/>
+	<xs:element name="ReplyTo" type="wsa:EndpointReferenceType"/>
+	<xs:element name="FaultTo" type="wsa:EndpointReferenceType"/>
+	<xs:element name="Recipient" type="wsa:EndpointReferenceType"/>
+	<xs:complexType name="Relationship">
+		<xs:simpleContent>
+			<xs:extension base="xs:anyURI">
+				<xs:attribute name="RelationshipType" type="xs:QName" use="optional"/>
+				<xs:anyAttribute namespace="##other" processContents="lax"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:simpleType name="RelationshipTypeValues">
+		<xs:restriction base="xs:QName">
+			<xs:enumeration value="wsa:Response"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- Common declarations and definitions -->
+	<xs:complexType name="AttributedQName">
+		<xs:simpleContent>
+			<xs:extension base="xs:QName">
+				<xs:anyAttribute namespace="##other" processContents="lax"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="AttributedURI">
+		<xs:simpleContent>
+			<xs:extension base="xs:anyURI">
+				<xs:anyAttribute namespace="##other" processContents="lax"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+</xs:schema>

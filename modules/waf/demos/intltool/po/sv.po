@@ -1,0 +1,30 @@
+# public domain, no copyright
+msgid ""
+msgstr ""
+"Project-Id-Version: test\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-11-06 17:19+0100\n"
+"PO-Revision-Date: 2009-06-23 20:19+0200\n"
+"Last-Translator: Ulrik Sverdrup <ulrik.sverdrup@gmail.com>\n"
+"Language-Team: Swedish\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: ../data/kupfer.desktop.in.h:1
+msgid "Application Launcher"
+msgstr "Programstartare"
+
+#: ../data/kupfer.desktop.in.h:2
+msgid "Convenient command and access tool for applications and documents"
+msgstr "Flexibelt kommandoprogram för program och dokument"
+
+#: ../data/kupfer.desktop.in.h:3
+msgid "Kupfer"
+msgstr "Kupfer"
+
+#: ../data/kupfer-mimetypes.xml.in.h:1
+msgid "Saved Kupfer Command"
+msgstr "Sparat Kupfer-kommando"

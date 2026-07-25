@@ -1,0 +1,243 @@
+#Set this to @ to keep the makefile quiet
+SILENCE = @
+CPPUTEST_HOME = .
+
+######### Configurable variables ##########################
+# Debug on by default
+ifndef CPPUTEST_ENABLE_DEBUG
+	CPPUTEST_ENABLE_DEBUG = Y
+endif
+
+# new and delete for memory leak detection on by default
+ifndef CPPUTEST_USE_MEM_LEAK_DETECTION
+	CPPUTEST_USE_MEM_LEAK_DETECTION = Y
+endif
+
+# Use the standard C++ library
+ifndef CPPUTEST_USE_STD_CPP_LIB
+	CPPUTEST_USE_STD_CPP_LIB = Y
+endif
+
+# Default warnings
+ifndef CPPUTEST_WARNINGFLAGS
+	CPPUTEST_WARNINGFLAGS = -pedantic-errors -Wall -Wextra -Werror -Wshadow -Wswitch-default -Wswitch-enum -Wconversion
+endif
+
+# Default dir for temporary files (d, o)
+ifndef CPPUTEST_OBJS_DIR
+    CPPUTEST_OBJS_DIR = objs
+endif
+
+# Default dir for the out library
+ifndef CPPUTEST_LIB_DIR
+    CPPUTEST_LIB_DIR = lib
+endif
+
+# Use the real gtest or use the fake simulation
+ifdef CPPUTEST_USE_REAL_GTEST
+	CPPUTEST_USE_REAL_GTEST = Y
+else
+	CPPUTEST_USE_REAL_GTEST = N
+endif
+
+# Use gmock
+ifdef CPPUTEST_USE_REAL_GMOCK
+	CPPUTEST_USE_REAL_GMOCK = Y
+else
+	CPPUTEST_USE_REAL_GMOCK = N
+endif
+
+# --------------------------------------
+# derived flags in the following area
+# --------------------------------------
+ifeq ($(CPPUTEST_USE_MEM_LEAK_DETECTION), N)
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_MEM_LEAK_DETECTION_DISABLED
+else
+    ifndef CPPUTEST_MEMLEAK_DETECTOR_NEW_MACRO_FILE
+	    	CPPUTEST_MEMLEAK_DETECTOR_NEW_MACRO_FILE = -include $(CPPUTEST_HOME)/include/CppUTest/MemoryLeakDetectorNewMacros.h
+    endif
+    ifndef CPPUTEST_MEMLEAK_DETECTOR_MALLOC_MACRO_FILE
+	    CPPUTEST_MEMLEAK_DETECTOR_MALLOC_MACRO_FILE = -include $(CPPUTEST_HOME)/include/CppUTest/MemoryLeakDetectorMallocMacros.h
+	endif	
+endif
+
+ifeq ($(CPPUTEST_ENABLE_DEBUG), Y)
+	CPPUTEST_CPPFLAGS += -g
+endif
+
+ifeq ($(CPPUTEST_USE_REAL_GMOCK), Y)
+	ifndef GMOCK_HOME
+$(error CPPUTEST_USE_REAL_GMOCK defined, but GMOCK_HOME not, so can't use real gmock! Please define GMOCK_HOME to the gmock location)
+	endif
+	GTEST_HOME = $(GMOCK_HOME)/gtest
+	CPPUTEST_USE_REAL_GTEST = Y
+	CPPUTEST_CPPFLAGS += -I$(GMOCK_HOME)/include
+	GMOCK_LIBRARY = $(GMOCK_HOME)/lib/.libs/libgmock.a
+	LD_LIBRARIES += $(GMOCK_LIBRARY)
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_USE_REAL_GMOCK
+else
+	CPPUTEST_CPPFLAGS += -Iinclude/CppUTestExt/CppUTestGMock
+endif
+
+ifeq ($(CPPUTEST_USE_REAL_GTEST), Y)
+	ifndef GTEST_HOME
+$(error CPPUTEST_USE_REAL_GTEST defined, but GTEST_HOME not, so can't use real gtest! Please define GTEST_HOME to the gtest location)
+	endif
+	CPPUTEST_CPPFLAGS += -I$(GTEST_HOME)/include
+	LD_LIBRARIES += $(GTEST_HOME)/lib/.libs/libgtest.a
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_USE_REAL_GTEST
+else
+	CPPUTEST_CPPFLAGS += -Iinclude/CppUTestExt/CppUTestGTest
+endif
+
+ifeq ($(CPPUTEST_USE_STD_CPP_LIB), N)
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_STD_CPP_LIB_DISABLED
+	CPPUTEST_CXXFLAGS += -nostdinc++
+endif
+
+ifeq ($(CPPUTEST_USE_GCOV), Y)
+	CPPUTEST_CPPFLAGS += -fprofile-arcs -ftest-coverage
+endif
+
+INCLUDES += $(foreach dir,$(INCLUDE_DIRS), -I $(dir))
+CPPUTEST_CPPFLAGS +=  $(INCLUDES) 
+
+CPPUTEST_CPPFLAGS += $(CPPUTEST_WARNINGFLAGS)
+CPPUTEST_CXXFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_NEW_MACRO_FILE)
+CPPUTEST_CXXFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_MALLOC_MACRO_FILE)
+CPPUTEST_CFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_MALLOC_MACRO_FILE)
+
+CPPUTEST_LIB = $(CPPUTEST_HOME)/lib/libCppUTest.a 
+CPPUTEST_EXT_LIB += $(CPPUTEST_HOME)/lib/libCppUTestExt.a
+
+LD_LIBRARIES += -lstdc++ -lgcov
+
+CPPUTEST_SRC_DIRS = src/CppUTest src/Platforms/Gcc
+CPPUTEST_EXT_SRC_DIRS = src/CppUTestExt 
+CPPUTEST_EXAMPLES_SRC_DIRS = examples/ApplicationLib
+CPPUTEST_TEST_SRC_DIRS = tests
+CPPUTEST_EXT_TEST_SRC_DIRS = tests/CppUTestExt
+INCLUDE_DIRS = include
+
+CPPUTEST_TEST_TARGET = CppUTest_tests
+CPPUTEST_EXT_TEST_TARGET = CppUTestExt_tests
+
+CPPUTEST_C_SRC = $(foreach dir,$(CPPUTEST_SRC_DIRS),$(wildcard $(dir)/*.c))
+CPPUTEST_TEST_C_SRC = $(foreach dir,$(CPPUTEST_TEST_SRC_DIRS),$(wildcard $(dir)/*.c))
+CPPUTEST_CPP_SRC = $(foreach dir,$(CPPUTEST_SRC_DIRS),$(wildcard $(dir)/*.cpp))
+CPPUTEST_TEST_CPP_SRC = $(foreach dir,$(CPPUTEST_TEST_SRC_DIRS),$(wildcard $(dir)/*.cpp))
+CPPUTEST_C_OBJS = $(CPPUTEST_C_SRC:.c=.o) 
+CPPUTEST_TEST_C_OBJS = $(CPPUTEST_TEST_C_SRC:.c=.o) 
+CPPUTEST_CPP_OBJS = $(CPPUTEST_CPP_SRC:.cpp=.o) 
+CPPUTEST_TEST_CPP_OBJS = $(CPPUTEST_TEST_CPP_SRC:.cpp=.o) 
+CPPUTEST_OBJS = $(CPPUTEST_C_OBJS) $(CPPUTEST_CPP_OBJS)
+CPPUTEST_TEST_OBJS = $(CPPUTEST_TEST_C_OBJS) $(CPPUTEST_TEST_CPP_OBJS)
+
+CPPUTEST_EXT_C_SRC = $(foreach dir,$(CPPUTEST_EXT_SRC_DIRS),$(wildcard $(dir)/*.c))
+CPPUTEST_EXT_TEST_C_SRC = $(foreach dir,$(CPPUTEST_EXT_TEST_SRC_DIRS),$(wildcard $(dir)/*.c))
+CPPUTEST_EXT_CPP_SRC = $(foreach dir,$(CPPUTEST_EXT_SRC_DIRS),$(wildcard $(dir)/*.cpp))
+CPPUTEST_EXT_TEST_CPP_SRC = $(foreach dir,$(CPPUTEST_EXT_TEST_SRC_DIRS),$(wildcard $(dir)/*.cpp))
+CPPUTEST_EXT_C_OBJS = $(CPPUTEST_EXT_C_SRC:.c=.o) 
+CPPUTEST_EXT_TEST_C_OBJS = $(CPPUTEST_EXT_TEST_C_SRC:.c=.o) 
+CPPUTEST_EXT_CPP_OBJS = $(CPPUTEST_EXT_CPP_SRC:.cpp=.o) 
+CPPUTEST_EXT_TEST_CPP_OBJS = $(CPPUTEST_EXT_TEST_CPP_SRC:.cpp=.o) 
+CPPUTEST_EXT_OBJS = $(CPPUTEST_EXT_C_OBJS) $(CPPUTEST_EXT_CPP_OBJS)
+CPPUTEST_EXT_TEST_OBJS = $(CPPUTEST_EXT_TEST_C_OBJS) $(CPPUTEST_EXT_TEST_CPP_OBJS)
+
+# We'll use the CPPUTEST_CFLAGS etc so that you can override AND add to the CppUTest flags
+CFLAGS = $(CPPUTEST_CFLAGS) $(CPPUTEST_ADDITIONAL_CFLAGS)
+CPPFLAGS = $(CPPUTEST_CPPFLAGS) $(CPPUTEST_ADDITIONAL_CPPFLAGS)
+CXXFLAGS = $(CPPUTEST_CXXFLAGS) $(CPPUTEST_ADDITIONAL_CXXFLAGS)
+LDFLAGS = $(CPPUTEST_LDFLAGS) $(CPPUTEST_ADDITIONAL_LDFLAGS)
+
+ALL_OBJS = $(CPPUTEST_OBJS) $(CPPUTEST_TEST_OBJS) $(CPPUTEST_EXT_OBJS) $(CPPUTEST_EXT_TEST_OBJS)
+DEP_FILES = $(ALL_OBJS:.o=.d)
+############ Targets #################
+
+.PHONY: all
+all: $(CPPUTEST_TEST_TARGET)  
+	$(SILENCE)echo "Running $(CPPUTEST_TEST_TARGET)"; ./$(CPPUTEST_TEST_TARGET) 
+
+$(CPPUTEST_TEST_TARGET): $(CPPUTEST_TEST_OBJS) $(CPPUTEST_LIB) 
+	$(SILENCE)echo Linking $@
+	$(SILENCE)$(LINK.o) -o $@ $^ $(LD_LIBRARIES)
+
+$(CPPUTEST_LIB): $(CPPUTEST_OBJS)
+	$(SILENCE)echo Building archive $@
+	$(SILENCE)mkdir -p lib
+	$(SILENCE)$(AR) $(ARFLAGS) $@ $^
+	$(SILENCE)ranlib $@
+
+$(CPPUTEST_CPP_OBJS): %.o: %.cpp
+	@echo compiling $(notdir $<)
+	$(SILENCE)mkdir -p $(dir $@)
+	$(SILENCE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(OUTPUT_OPTION) $<
+
+$(CPPUTEST_C_OBJS): %.o: %.c
+	@echo compiling $(notdir $<)
+	$(SILENCE)mkdir -p $(dir $@)
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $(OUTPUT_OPTION) $<
+
+$(CPPUTEST_TEST_CPP_OBJS): %.o: %.cpp
+	@echo compiling $(notdir $<)
+	$(SILENCE)mkdir -p $(dir $@)
+	$(SILENCE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(OUTPUT_OPTION) $<
+
+$(CPPUTEST_TEST_C_OBJS): %.o: %.c
+	@echo compiling $(notdir $<)
+	$(SILENCE)mkdir -p $(dir $@)
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $(OUTPUT_OPTION) $<
+
+extensions: $(CPPUTEST_EXT_TEST_TARGET)
+	$(SILENCE)echo "Running $(CPPUTEST_EXT_TEST_TARGET)"; ./$(CPPUTEST_EXT_TEST_TARGET) 
+
+$(CPPUTEST_EXT_TEST_TARGET): $(CPPUTEST_EXT_TEST_OBJS) $(CPPUTEST_EXT_LIB) $(CPPUTEST_LIB)
+	$(SILENCE)echo Linking $@
+	$(SILENCE)$(LINK.o) -o $@ $^ $(LD_LIBRARIES)
+
+$(CPPUTEST_EXT_LIB): $(CPPUTEST_EXT_OBJS)
+	$(SILENCE)echo Building archive $@
+	$(SILENCE)mkdir -p lib
+	$(SILENCE)$(AR) $(ARFLAGS) $@ $^
+
+$(CPPUTEST_EXT_CPP_OBJS): %.o: %.cpp
+	@echo compiling $(notdir $<)
+	$(SILENCE)mkdir -p $(dir $@)
+	$(SILENCE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(OUTPUT_OPTION) $<
+
+$(CPPUTEST_EXT_C_OBJS): %.o: %.c
+	@echo compiling $(notdir $<)
+	$(SILENCE)mkdir -p $(dir $@)
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $(OUTPUT_OPTION) $<
+
+$(CPPUTEST_EXT_TEST_CPP_OBJS): %.o: %.cpp
+	@echo compiling $(notdir $<)
+	$(SILENCE)mkdir -p $(dir $@)
+	$(SILENCE)$(CXX) $(CPPFLAGS) $(CXXFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(OUTPUT_OPTION) $<
+
+$(CPPUTEST_EXT_TEST_C_OBJS): %.o: %.c
+	@echo compiling $(notdir $<)
+	$(SILENCE)mkdir -p $(dir $@)
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -M -MF $(subst .o,.d,$@) -MT "$@ $(subst .o,.d,$@)" $<
+	$(SILENCE)$(CC) $(CPPFLAGS) $(CFLAGS) -c $(OUTPUT_OPTION) $<
+
+############ Clean targets ##################
+
+STUFF_TO_CLEAN += $(DEP_FILES) $(ALL_OBJS)
+
+ifneq "$(MAKECMDGOALS)" "clean"
+-include $(DEP_FILES)
+endif
+
+.PHONY: clean
+clean:
+	$(SILENCE)echo Making clean
+	$(SILENCE)$(RM) $(STUFF_TO_CLEAN) $(CPPUTEST_LIB) $(CPPUTEST_EXT_LIB) $(CPPUTEST_TEST_TARGET) $(CPPUTEST_EXT_TEST_TARGET)
+	

@@ -1,0 +1,103 @@
+<?xml version='1.0' encoding='windows-1252'?>
+<Wix xmlns='http://schemas.microsoft.com/wix/2006/wi'
+     xmlns:netfx="http://schemas.microsoft.com/wix/NetFxExtension"
+    >
+  <Product Name='$(var.funivisiblename)' Id='69E6F862-BCEE-423C-8CC7-041E91FBE445' UpgradeCode='65C97E8E-6815-4A20-8E49-E288C724FCE0'
+    Language='1033' Codepage='1252' Version='$(var.funiversion)' Manufacturer='$(var.funicompany)'>
+
+    <Package Id='*' Keywords='Installer'
+        Description="$(var.funicompany)'s $(var.funivisiblename) Installer"
+        Comments='$(var.funivisiblename) is a registered trademark of $(var.funicompany)'
+        Manufacturer='$(var.funicompany)'
+        InstallerVersion='200'
+        InstallScope="perUser"
+        Languages='1033'
+        Compressed='yes'
+        Platform="x64"
+        SummaryCodepage='1252'
+        />
+
+    <Media Id='1' Cabinet='funi.cab' EmbedCab='yes' CompressionLevel="none" DiskPrompt="CD-ROM #1" />
+    <Property Id='DiskPrompt' Value="$(var.funicompany)'s $(var.funivisiblename) Installation [1]" />
+
+    <Directory Id='TARGETDIR' Name='SourceDir'>
+      <Directory Id='ProgramFiles64Folder' Name='PFiles'>
+        <Directory Id='$(var.funicompany)' Name='$(var.funicompany)'>
+          <Directory Id='INSTALLDIR' Name='$(var.funivisiblename)'>
+
+            <Component Id='MainExecutable' Guid='B1DC944B-5882-43A7-AEBA-578720E008D0'  Win64='yes'>
+                <File Id='funi' Name='$(var.funigui).exe' DiskId='1' Source='..\..\build\gui\$(var.funigui).exe' ProcessorArchitecture='x64' KeyPath='yes'>
+                  <Shortcut Id="startmenufuni" Directory="ProgramMenuDir" Name="$(var.funivisiblename)"
+                      WorkingDirectory='INSTALLDIR' Icon="$(var.funigui).exe" IconIndex="0" Advertise="yes" />
+                  <Shortcut Id="desktopfuni" Directory="DesktopFolder" Name="$(var.funivisiblename)"
+                      WorkingDirectory='INSTALLDIR' Icon="$(var.funigui).exe" IconIndex="0" Advertise="yes" />
+                </File>
+            </Component>
+
+            <Directory Id='DIR_LANG_fr' Name='fr'>
+                <Component Id='RES_fr' Guid='04DFEF94-9D94-4B81-8432-4706C52AD41D'  Win64='yes'>
+                    <File Id='LANG_fr' Name='$(var.funigui).resources.dll' DiskId='1' Source='..\..\build\gui\fr\$(var.funigui).resources.dll' />
+                </Component>
+            </Directory>
+
+            <Component Id='APILibrary' Guid='9D7A397D-A060-4B5B-A4C3-2A2375300FA6'  Win64='yes'>
+                <File Id='APIDLL' Name='$(var.funi).dll' DiskId='1' Source='..\..\build\gui\$(var.funi).dll' ProcessorArchitecture='x64' KeyPath='yes' />
+            </Component>
+
+            <Component Id='CSHARPAPIDLL' Guid='476EB983-444D-464E-B7D1-776097630C61'  Win64='yes'>
+                <File Id='CSHARPAPIDLL' Name='$(var.funi)_cs.dll' DiskId='1' Source='..\..\build\gui\$(var.funi)_cs.dll'  KeyPath='yes' />
+            </Component>
+
+            <Component Id='PYTHONAPI' Guid='1D5492AC-2014-4878-991B-D3F652F96773'  Win64='yes'>
+                <File Id='PYAPI' Name='$(var.funi).py' DiskId='1' Source='..\..\build\api\$(var.funi).py' KeyPath='yes' />
+                <File Id='APIHEADER' Name='$(var.funi).h' DiskId='1' Source='..\..\build\api\$(var.funi).h'/>
+            </Component>
+
+          </Directory>
+        </Directory>
+      </Directory>
+
+      <Directory Id="ProgramMenuFolder" Name="Programs">
+        <Directory Id="CompanyMenuDir" Name="$(var.funicompany)">
+            <Directory Id="ProgramMenuDir" Name="$(var.funivisiblename)">
+              <Component Id="ProgramMenuDir" Guid='50B89FED-013F-4A83-83B4-6DDDF22B2B44'  Win64='yes'>
+                <RemoveFolder Id='ProgramMenuDir' On='uninstall' />
+                <RemoveFolder Id='CompanyMenuDir' Directory='CompanyMenuDir' On='uninstall' />
+                <RegistryValue Root='HKCU' Key='Software\[Manufacturer]\[ProductName]' Type='string' Value='' KeyPath='yes' />
+              </Component>
+        </Directory>
+        </Directory>
+      </Directory>
+
+      <Directory Id="DesktopFolder" Name="Desktop" />
+    </Directory>
+
+    <Feature Id='Complete' Level='1'>
+      <ComponentRef Id='MainExecutable' />
+      <ComponentRef Id='RES_fr' />
+      <ComponentRef Id='APILibrary' />
+      <ComponentRef Id='CSHARPAPIDLL' />
+      <ComponentRef Id='PYTHONAPI' />
+      <ComponentRef Id='ProgramMenuDir' />
+    </Feature>
+
+    <Icon Id="$(var.funigui).exe" SourceFile="..\..\build\gui\$(var.funigui).exe" />
+
+    <WixVariable Id="WixUILicense" Value="../../src/msi/readme.rtf" />
+
+    <!--
+    <WixVariable Id="WixUIDialogBmp" Value="$(var.DialogBmp)" />
+    <WixVariable Id="WixUIBannerBmp" Value="$(var.BannerBmp)" />
+    -->
+
+    <UIRef Id="WixUI_Minimal" />
+
+    <!--
+      WixUI_Advanced
+      WixUI_FeatureTree
+      WixUI_InstallDir
+      WixUI_Mondo
+    -->
+
+  </Product>
+</Wix>

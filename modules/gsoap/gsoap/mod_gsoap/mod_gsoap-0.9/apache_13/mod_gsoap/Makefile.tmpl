@@ -1,0 +1,16 @@
+
+#Dependencies
+
+$(OBJS) $(OBJS_PIC): Makefile
+
+# DO NOT REMOVE
+mod_gsoap.o: mod_gsoap.c \
+ $(INCDIR)/httpd.h \
+ $(INCDIR)/ap_config.h $(INCDIR)/ap_mmn.h \
+ $(INCDIR)/ap_config_auto.h $(OSDIR)/os.h \
+ $(INCDIR)/ap_ctype.h $(INCDIR)/hsregex.h \
+ $(INCDIR)/ap_alloc.h $(INCDIR)/buff.h $(INCDIR)/ap.h \
+ $(INCDIR)/util_uri.h $(INCDIR)/http_config.h \
+ $(INCDIR)/http_core.h $(INCDIR)/http_log.h \
+ $(INCDIR)/http_main.h $(INCDIR)/http_protocol.h \
+ $(INCDIR)/util_script.h

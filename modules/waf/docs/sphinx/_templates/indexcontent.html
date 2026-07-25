@@ -1,0 +1,63 @@
+{% extends "layout.html" %}
+{%- block htmltitle -%}
+<title>{{ shorttitle }}</title>
+{%- endblock -%}
+{% block body %}
+  <h1>{{ docstitle|e }}</h1>
+  <p><strong>{% trans %}Parts of the documentation:{% endtrans %}</strong></p>
+
+  <table class="contentstable" align="center"><tr>
+    <td width="50%" style="vertical-align:top;">
+      <p class="biglink"><a class="biglink" href="{{ pathto("tutorial") }}">Tutorial</a><br/>
+         <span class="linkdescr">A 10-minutes introduction to Waf</span></p>
+
+      <p class="biglink"><a class="biglink" href="{{ pathto("tools") }}">Waf tools</a><br/>
+         <span class="linkdescr">Support for programming languages</span></p>
+
+      <p class="biglink"><a class="biglink" href="{{ pathto("confmap") }}">Configuration methods</a><br/>
+         <span class="linkdescr">List of methods bound to the configuration context</span></p>
+
+    </td>
+    <td width="50%" style='vertical-align:top;'>
+      <p class="biglink"><a class="biglink" href="{{ pathto("coremodules") }}">Core modules</a><br/>
+         <span class="linkdescr">Main components of the Waf framework</span></p>
+
+      <p class="biglink"><a class="biglink" href="{{ pathto("featuremap") }}">Feature reference</a><br/>
+         <span class="linkdescr">Associations between feature names and task generator methods</span></p>
+
+    </td></tr>
+  </table>
+
+  <p><strong>Indices and tables:</strong></p>
+  <table class="contentstable" align="center"><tr>
+    <td width="50%">
+		<p class="biglink"><a class="biglink" href="{{ pathto("py-modindex") }}">Global Module Index</a><br/>
+         <span class="linkdescr">quick access to all modules</span></p>
+      <p class="biglink"><a class="biglink" href="{{ pathto("genindex") }}">General Index</a><br/>
+         <span class="linkdescr">all functions, classes, terms</span></p>
+    </td><td width="50%" style="vertical-align:top;">
+      <!-- <p class="biglink"><a class="biglink" href="{{ pathto("glossary") }}">Glossary</a><br/>
+         <span class="linkdescr">the most important terms explained</span></p> -->
+      <p class="biglink"><a class="biglink" href="{{ pathto("search") }}">Search page</a><br/>
+         <span class="linkdescr">search this documentation</span></p>
+    </td></tr>
+  </table>
+
+  <p><strong>Meta information:</strong></p>
+  <table class="contentstable" align="center"><tr>
+    <td width="50%">
+      <p class="biglink"><a class="biglink" href="{{ pathto("copyright") }}">Copyright</a><br/>
+         <span class="linkdescr">Copyright notice</span></p>
+
+      <p class="biglink"><a class="biglink" href="https://gitlab.com/ita1024/waf/issues">Reporting bugs</a><br/>
+         <span class="linkdescr">Where to report bugs or request new features</span></p>
+
+    </td>
+	<td width="50%" style="vertical-align:top;">
+      <p class="biglink"><a class="biglink" href="{{ pathto("about") }}">About</a><br/>
+         <span class="linkdescr">Documenting Waf</span></p>
+
+    </td></tr>
+  </table>
+
+{% endblock %}

@@ -1,0 +1,49 @@
+#! /usr/bin/env python
+
+##
+# This wscript shows the power of the CLI!
+# You have an hello.exe using a world.dll,
+# the world.dll can be generating using
+# world.cs (in C#) or world.boo.
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('cs')
+	opt.add_option("--use-cs", dest="use_cs", action="store_true",
+		help="use world.cs to generate world.dll")
+
+def configure(conf):
+	conf.env.USE_CS = conf.options.use_cs
+	if conf.env.USE_CS:
+		conf.load('cs')
+	conf.load('boo')
+
+def build(bld):
+	if bld.env.USE_CS:
+		# C# world library
+		bld(features = "cs",
+			source   = "world.cs",
+			type     = "library",
+			gen      = "world.dll",
+			name     = "world"
+		)
+
+	else:
+		# boo world library
+		bld(features = "boo",
+			source   = "world.boo",
+			type     = "library",
+			gen      = "world.dll",
+			name     = "world"
+		)
+
+	# executable that uses the world library
+	bld(features = "boo",
+		source   = "hello.boo",
+		type     = "exe",
+		gen      = "hello.exe",
+		use      = "world"
+	)
+

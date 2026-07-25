@@ -1,0 +1,54 @@
+a = b
+a == b
+a != b
+a += b
+a -= b
+a *= b
+a /= b
+a %= b
+a &= b
+a |= b
+a ^= b
+a <= b
+a >= b
+a >> b
+a << b
+a <<= b
+a >>= b
+a && b
+a || b
+a ^^ b
+
+foo(); /* Function call.*/
+
+foo(); /* Multiple lines
+          right comment.*/
+
+/** @} */
+
+/*lint .*/
+
+/* Good comment.*/
+
+/** @Good comment.*/
+
+/**< @Good comment.*/
+
+/*
+  This is a good comment.
+*/
+
+/*
+ * Good comment.
+ */
+
+/* Multiple lines
+   comment 1.*/
+
+/*
+ * Multiple lines
+ * comment 2.
+ */
+
+/*===========================================================================*/
+

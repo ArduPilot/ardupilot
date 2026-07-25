@@ -1,0 +1,64 @@
+{
+  "_from": "jspack@0.0.4",
+  "_id": "jspack@0.0.4",
+  "_inBundle": false,
+  "_integrity": "sha1-Mt01x/3LPjRWwY+7fvntC8YjgXc=",
+  "_location": "/jspack",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": false,
+    "raw": "jspack@0.0.4",
+    "name": "jspack",
+    "escapedName": "jspack",
+    "rawSpec": "0.0.4",
+    "saveSpec": null,
+    "fetchSpec": "0.0.4"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "local_modules/jspack",
+  "_shasum": "32dd35c7fdcb3e3456c18fbb7ef9ed0bc6238177",
+  "_spec": "jspack@0.0.4",
+  "_where": "/home/buzz/GCS/mavlink/pymavlink/generator/javascript",
+  "author": {
+    "name": "https://github.com/pgriess"
+  },
+  "bugs": {
+    "url": "https://github.com/birchroad/node-jspack/issues"
+  },
+  "bundleDependencies": false,
+  "deprecated": false,
+  "description": "JavaScript library to pack primitives to octet arrays, including int64 support, packaged for NodeJS.",
+  "devDependencies": {
+    "long": "",
+    "mocha": "",
+    "should": "",
+    "sinon": ""
+  },
+  "homepage": "https://github.com/birchroad/node-jspack",
+  "main": "./jspack.js",
+  "maintainers": [
+    {
+      "name": "Peter Magnusson",
+      "email": "peter@birchroad.net",
+      "url": "http://github.com/birchroad/node-jspack"
+    },
+    {
+      "name": "Andreas Antener",
+      "url": "https://github.com/AndreasAntener/node-jspack"
+    }
+  ],
+  "name": "jspack",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/birchroad/node-jspack.git"
+  },
+  "scripts": {
+    "pretest": "npm install",
+    "test": "mocha test"
+  },
+  "version": "0.0.4"
+}

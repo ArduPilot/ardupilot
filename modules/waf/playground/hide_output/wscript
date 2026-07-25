@@ -1,0 +1,22 @@
+#! /usr/bin/env python
+
+"""
+the feature 'hidden' is used to display the task output for make-like rules
+"""
+
+def configure(conf):
+	pass
+
+def build(bld):
+	bld.env.FOO =['m', 'ncurses']
+	bld.env.ST = '-L%s'
+	t = bld(rule='echo ${ST:FOO}', always=True, shell=1, features='hidden')
+
+
+from waflib import Utils
+from waflib.TaskGen import feature, after
+@feature('hidden')
+@after('apply_rule')
+def hide_it(self):
+	self.tasks[0].__class__.log_display = Utils.nada
+

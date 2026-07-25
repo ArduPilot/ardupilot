@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx')
+
+def configure(conf):
+	conf.load('compiler_cxx') # cuda does not compile in c mode
+
+	# the tests will fail if the libraries cannot be found
+	# try pre_setting some variables, like this
+	# conf.env.LIBPATH_CUDA = ['c:\\foo\\bar\\lib']
+	# conf.env.INCLUDES_CUDA = ['c:\\foo\\bar\\includes']
+
+	conf.load('cuda', tooldir='.')
+
+	# Add a few flags to test proper passing to nvcc
+	conf.env.CXXFLAGS=['-fPIC', '--std=c++11']
+
+def build(bld):
+
+	# cuda application
+	t = bld.program(
+		source = 'test.cu main.cpp',
+		target = 'app',
+		use    = 'CUDA CUDART')
+
+	#t.env.CUDAFLAGS = ['-deviceemu']
+	# --ptxas-options="-v"
+	# --ptxas-options="-v -maxrregcount=10"
+
+	# -----------------------
+
+	# native application
+	bld.program(
+		source = 'test.cpp',
+		target = 'testapp-native')
+
+	# cuda application
+	bld.program(
+		source = 'test.cpp',
+		target = 'testapp',
+		cuda   = True,
+		use    = 'CUDA CUDART')
+
+

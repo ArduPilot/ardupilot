@@ -1,0 +1,39 @@
+#
+# Service to control the node configuration.
+#
+
+#
+# SAVE operation instructs the remote node to save the current configuration parameters into a non-volatile
+# storage. The node may require a restart in order for some changes to take effect.
+#
+# ERASE operation instructs the remote node to clear its configuration storage and reinitialize the parameters
+# with their default values. The node may require a restart in order for some changes to take effect.
+#
+# Other opcodes may be added in the future (for example, an opcode for switching between multiple configurations).
+
+# note that implementors may choose to make parameter set operations
+# be immediately persistent, or can choose to make them temporary,
+# requiring a ExecuteOpcode with OPCODE_SAVE to put into persistent
+# storage
+#
+uint8 OPCODE_SAVE  = 0  # Save all parameters to non-volatile storage.
+uint8 OPCODE_ERASE = 1  # Clear the non-volatile storage; some changes may take effect only after reboot.
+uint8 opcode
+
+#
+# Reserved, keep zero.
+#
+int48 argument
+
+---
+
+#
+# If 'ok' (the field below) is true, this value is not used and must be kept zero.
+# If 'ok' is false, this value may contain error code. Error code constants may be defined in the future.
+#
+int48 argument
+
+#
+# True if the operation has been performed successfully, false otherwise.
+#
+bool ok

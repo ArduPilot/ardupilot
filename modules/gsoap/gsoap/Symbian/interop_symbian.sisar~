@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE sisar-project [
+
+<!ELEMENT sisar-project (sisar-configuration?, sis-makefile)>
+<!ATTLIST sisar-project
+  version CDATA #FIXED "1.0">
+
+<!ELEMENT sisar-configuration (default-directory,
+path-conversion-rule, default-public-key-certificate?,
+default-private-key?, increment-build-number?, sis-file?)>
+<!ATTLIST sisar-configuration
+  version CDATA #FIXED "1.0">
+
+<!ELEMENT default-directory EMPTY>
+<!ATTLIST default-directory
+  path CDATA #REQUIRED>
+
+<!ELEMENT path-conversion-rule (replace)>
+<!ELEMENT replace (replacement)>
+<!ATTLIST replace
+  match-at (start) "start"
+  pattern CDATA #REQUIRED>
+<!ELEMENT replacement (target)>
+
+<!ELEMENT default-public-key-certificate (public-key-certificate)>
+
+<!ELEMENT default-private-key (private-key)>
+
+<!ELEMENT increment-build-number EMPTY>
+
+<!ELEMENT sis-file EMPTY>
+<!ATTLIST sis-file
+  file CDATA #REQUIRED>
+
+<!ELEMENT sis-makefile (locales, description?, name, uid,
+major-version, minor-version, build-number, close-applications?,
+non-compressed?, sis-type, sign?, requisites?, capabilities?,
+entries?)>
+<!ATTLIST sis-makefile
+  version CDATA #FIXED "1.0">
+
+<!ELEMENT locales (locale)*>
+<!ELEMENT locale EMPTY>
+<!ATTLIST locale
+  language CDATA #REQUIRED
+  country CDATA #IMPLIED
+  variant CDATA #IMPLIED>
+
+<!ELEMENT description (#PCDATA)>
+
+<!ELEMENT name (for-locale)*>
+
+<!ELEMENT for-locale (#PCDATA)>
+<!ATTLIST for-locale
+  language CDATA #REQUIRED
+  country CDATA #IMPLIED
+  variant CDATA #IMPLIED>
+
+<!ELEMENT uid (#PCDATA)>
+
+<!ELEMENT major-version (#PCDATA)>
+<!ELEMENT minor-version (#PCDATA)>
+<!ELEMENT build-number (#PCDATA)>
+
+<!ELEMENT close-applications EMPTY>
+
+<!ELEMENT non-compressed EMPTY>
+
+<!ELEMENT sis-type EMPTY>
+<!ATTLIST sis-type
+  type (application|shared-component|optional-component|
+        configuration|patch|upgrade) "application">
+
+<!ELEMENT sign (public-key-certificate, private-key)>
+<!ELEMENT public-key-certificate EMPTY>
+<!ATTLIST public-key-certificate
+  file CDATA #REQUIRED>
+<!ELEMENT private-key EMPTY>
+<!ATTLIST private-key
+  file CDATA #REQUIRED
+  passphrase CDATA #IMPLIED>
+
+<!ELEMENT requisites (requisite*)>
+<!ELEMENT requisite (uid, major-version, minor-version, build-number,
+name)>
+
+<!ELEMENT capabilities (capability*)>
+<!ELEMENT capability EMPTY>
+<!ATTLIST capability
+  key CDATA #REQUIRED
+  value CDATA #REQUIRED>
+
+<!ELEMENT entries
+     (comment|group|embedded-sis|options|conditional|copy|
+      show|application-created|open|execute)*>
+
+<!ELEMENT comment (#PCDATA)>
+
+<!ELEMENT group (comment|group|embedded-sis|options|conditional|copy|
+                 show|application-created|open|execute)*>
+<!ATTLIST group
+  label CDATA #IMPLIED>
+
+<!ELEMENT embedded-sis EMPTY>
+<!ATTLIST embedded-sis
+  file CDATA #REQUIRED
+  uid CDATA #IMPLIED>
+
+<!ELEMENT options (option)*>
+<!ELEMENT option (for-locale)*>
+<!ATTLIST option
+  nickname CDATA #IMPLIED>
+
+<!ELEMENT conditional (if, elseif*, else?)>
+<!ELEMENT if (comment|group|embedded-sis|options|conditional|copy|
+              show|application-created|open|execute)*>
+<!ATTLIST if
+  condition CDATA #REQUIRED>
+<!ELEMENT elseif (comment|group|embedded-sis|options|conditional|copy|
+                  show|application-created|open|execute)*>
+<!ATTLIST elseif
+  condition CDATA #REQUIRED>
+<!ELEMENT else (comment|group|embedded-sis|options|conditional|copy|
+                show|application-created|open|execute)*>
+
+<!ELEMENT copy ((source|sources), target)>
+<!ELEMENT source EMPTY>
+<!ATTLIST source
+  file CDATA #REQUIRED>
+<!ELEMENT sources (for-locale)*>
+<!ELEMENT target EMPTY>
+<!ATTLIST target
+  drive CDATA "any"
+  file CDATA #REQUIRED>
+
+<!ELEMENT show ((source|sources), yes-no-buttons?)>
+<!ELEMENT yes-no-buttons EMPTY>
+<!ATTLIST yes-no-buttons
+  no-action (skip|undo|abort) "skip">
+
+<!ELEMENT application-created (target)>
+
+<!ELEMENT open ((source|sources), target)>
+<!ATTLIST open
+  mime-type CDATA #REQUIRED
+  closed (wait-until|upon-completion) "wait-until">
+
+<!ELEMENT execute ((source|sources), target)>
+<!ATTLIST execute
+  when (installation|uninstallation|both) "installation"
+  closed (wait-until|upon-completion) "wait-until">
+
+                        ]>
+
+<sisar-project version="1.0">
+  <sisar-configuration version="1.0">
+    <default-directory path="" />
+    <path-conversion-rule>
+      <replace pattern="c:\">
+        <replacement>
+          <target drive="Any" file="\System\Apps\appname\" />
+        </replacement>
+      </replace>
+    </path-conversion-rule>
+    <default-public-key-certificate>
+      <public-key-certificate file="public.cer" />
+    </default-public-key-certificate>
+    <default-private-key>
+      <private-key file="private.key" />
+    </default-private-key>
+    <increment-build-number />
+    <sis-file file="F:\gdrive\gsoap2.6\win\interop_symbian\interop.sis" />
+  </sisar-configuration>
+  <sis-makefile version="1.0">
+    <locales>
+      <locale language="en" country="US" />
+    </locales>
+    <description>
+    interop
+    </description>
+    <name>
+      <for-locale language="en" country="US"></for-locale>
+    </name>
+    <uid>0x00996d08</uid>
+    <major-version>0</major-version>
+    <minor-version>1</minor-version>
+    <build-number>2</build-number>
+    <sis-type type="application" />
+    <entries>
+      <execute closed="wait-until" when="installation">
+        <source file="F:\gdrive\Symbian\6.1\Series60\Epoc32\Release\armi\urel\INTEROP.EXE" />
+        <target drive="Any" file="" />
+      </execute>
+    </entries>
+  </sis-makefile>
+</sisar-project>

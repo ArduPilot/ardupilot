@@ -1,0 +1,11 @@
+## common Makefile rules for building the C - soap samples
+##
+
+SOAP_C_SRC = $(SOAP_C_CLIENT) soapServer.c $(SOAP_H_FILES) $(SOAP_NS)
+
+$(SOAP_C_SRC) : $(SOAPHEADER)
+	$(SOAP) -cL -I$(top_srcdir)/gsoap/import:$(top_srcdir)/gsoap  $(SOAP_FLAGS) $(SOAPHEADER)
+
+LDADD = $(SOAP_C_LIB) $(SAMPLE_EXTRA_LIBS)
+BUILT_SOURCES = $(SOAP_C_SRC) 
+CLEANFILES = $(SOAP_C_SRC) *.req.xml *.res.xml *.nsmap *.xsd soapStub.h soapH.h soapC.c soapClient.c soapClientLib.c soapServer.c soapServerLib.c *~

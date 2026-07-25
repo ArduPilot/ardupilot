@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<mavlink>
+  <include>ardupilotmega.xml</include>
+  <!-- ASLUAV.xml range of IDs:
+    messages: 8000 - 8999
+    commands: 40001 - 41999
+  -->
+  <include>ASLUAV.xml</include>
+  <include>common.xml</include>
+  <include>development.xml</include>
+  <include>icarous.xml</include>
+  <!-- matrixpilot.xml: ERROR: Duplicate message id 150 for FLEXIFUNCTION_SET (matrixpilot.xml:50) also used by SENSOR_OFFSETS (ardupilotmega.xml:1101) -->
+  <!-- <include>matrixpilot.xml</include> -->
+  <include>minimal.xml</include>
+  <!-- paparazzi.xml: : ERROR: Duplicate message id 180 for SCRIPT_ITEM (paparazzi.xml:9) also used by CAMERA_FEEDBACK (ardupilotmega.xml:1370) -->
+  <!-- <include>paparazzi.xml</include> -->
+  <include>python_array_test.xml</include>
+  <include>standard.xml</include>
+  <include>test.xml</include>
+  <include>ualberta.xml</include>
+  <include>uAvionix.xml</include>
+  <!-- loweheiser.xml range of IDs:
+       messages: 10150 - 10199
+       commands: 10150 - 10199
+  -->
+  <include>loweheiser.xml</include>
+  <!-- storm32.xml range of IDs:
+    messages: 60000 - 60049
+    commands: 60000 - 60049
+  -->
+  <include>storm32.xml</include>
+  <!-- AVSSUAS.xml range of IDs:
+    messages: 60050 - 60099 
+    commands: 60050 - 60099
+  -->
+  <include>AVSSUAS.xml</include>
+  <!-- Herelink.xml range of IDs:
+    messages: 50000 - 50099
+    commands: 50000 - 50099
+  -->
+  <include>cubepilot.xml</include>
+  <include>csAirLink.xml</include>
+  <!-- csAirLink.xml range of IDs:
+    messages: 52000 - 52099
+    commands: 52000 - 52099
+  -->
+  <!--Next range to allocate range of IDs:
+    messages: 52100 - ? < 60000
+    commands: 52100 - ? < 60000
+  -->
+  <messages/>
+</mavlink>

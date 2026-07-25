@@ -1,0 +1,8 @@
+Examples use Mavlink library.
+For build and run:
+
+$ cd path/examples
+$ bash make.sh
+$ ./attitude
+$ ./param_request_list
+$ ./param_set_sr0_params

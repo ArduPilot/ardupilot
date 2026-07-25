@@ -1,0 +1,46 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @mainpage Introduction
+ * @author Giovanni Di Sirio (gdisirio@users.sourceforge.net).
+ * @author Rocco Marco Guglielmi (guglielmir@playembedded.org).
+ * @author Theodore Ateba (tf.ateba@gmail.com).
+ *
+ * <h2>Features</h2>
+ * - EXternal devices (EX) supporting numerous devices external to the MCU
+ *   abstracting common devices which are part of modern embedded systems.
+ * - EX resides on top of HAL which offers, among others, a set of abstract 
+ *   interfaces like Generic Sensor, Gyroscope, Magnetometer, Accelerometer,
+ *   Barometer, Thermometer: EX offers a phisical implementation of them.
+ * - Currently Analog Devices supported devices are:
+ *    - @b ADXL355: Low Noise, Low Drift, Low Power, 3-Axis Accelerometers;
+ * - Currently Bosch supported devices are:
+ *    - @b BMP085: Digital pressure sensor;
+ * - Currently Micron Technology supported devices are:
+ *    - @b M25Q: Serial NOR Flash;
+ * - Currently STMicroelectronics supported devices are:
+ *    - @b HTS221: Capacitive digital humidity sensor;
+ *    - @b L3GD20: 3-axis digital gyroscope; 
+ *    - @b LIS3DSH: 3-axis digital motion sensor;
+ *    - @b LIS3MDL: Ultra low power, high performances 3-axis magnetometer;
+ *    - @b LIS302DL: 3-axis motion sensor;
+ *    - @b LPS25H: Piezoresistive 260-1260 hPa pressure sensor; 
+ *    - @b LSM6DS0: 6-axis iNEMO inertial module; 
+ *    - @b LSM303DLHC: Ultra compact high performance e-compass;
+ */

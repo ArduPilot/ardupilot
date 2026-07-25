@@ -1,0 +1,68 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Alibek Omarov, 2019 (a1batross)
+
+import os
+from waflib import ConfigSet, Logs
+
+VERSION='0.0.1'
+APPNAME='clang_compilation_database_test'
+
+top = '.'
+out = 'build'
+
+INCLUDES_TO_TEST = ['common'] # check if include flag appeared in result json
+DEFINES_TO_TEST = ['TEST'] # check if definition flag will appear in result json
+SOURCE_FILES_TO_TEST = ['a.c', 'b.cpp'] # check if source files are persist in database
+
+def actual_test(bld):
+	db = bld.bldnode.find_node('compile_commands.json').read_json()
+
+	for entry in db:
+		env = ConfigSet.ConfigSet()
+		line = ' '.join(entry['arguments'][1:]) # ignore compiler exe, unneeded
+		directory = entry['directory']
+		srcname = entry['file'].split(os.sep)[-1] # file name only
+
+		bld.parse_flags(line, 'test', env) # ignore unhandled flag, it's harmless for test
+
+		if bld.bldnode.abspath() in directory:
+			Logs.info('Directory test passed')
+		else:
+			Logs.error('Directory test failed')
+
+		if srcname in SOURCE_FILES_TO_TEST:
+			Logs.info('Source file test passed')
+		else:
+			Logs.error('Source file test failed')
+
+		passed = True
+		for inc in INCLUDES_TO_TEST:
+			if inc not in env.INCLUDES_test:
+				passed = False
+
+		if passed: Logs.info('Includes test passed')
+		else: Logs.error('Includes test failed')
+
+		passed = True
+		for define in DEFINES_TO_TEST:
+			if define not in env.DEFINES_test:
+				passed = False
+		if passed: Logs.info('Defines test passed')
+		else: Logs.error('Defines test failed')
+
+def options(opt):
+	# check by ./waf clangdb
+	opt.load('compiler_c compiler_cxx clang_compilation_database')
+
+def configure(conf):
+	# check if database always generated before build
+	conf.load('compiler_c compiler_cxx clang_compilation_database')
+
+def build(bld):
+	bld.shlib(features = 'c cxx', source = SOURCE_FILES_TO_TEST,
+		defines = DEFINES_TO_TEST,
+		includes = INCLUDES_TO_TEST,
+		target = 'test')
+
+	bld.add_post_fun(actual_test)

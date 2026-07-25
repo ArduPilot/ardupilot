@@ -1,0 +1,20 @@
+#! /usr/bin/env python
+
+"""
+compare the execution time of
+waf configure
+and
+waf configure --confcache
+"""
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_c')
+	opt.add_option('--confcache', dest='confcache', default=0, action='count', help='Use a configuration cache')
+
+def configure(conf):
+	conf.load('compiler_c')
+	conf.check(fragment='int main() { return 0; }')
+

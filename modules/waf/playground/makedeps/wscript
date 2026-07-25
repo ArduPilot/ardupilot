@@ -1,0 +1,38 @@
+#! /usr/bin/env python
+
+"""
+A build iterator similar to "waf step" but following the dependencies of input/output files
+
+waf make --files=aa
+waf clean make --files=cc
+"""
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('make')
+
+def configure(conf):
+	conf.load('make')
+
+def build(bld):
+
+	x = bld.path.make_node('wscript')
+
+	def xxx(**kw):
+		# this is just an alias, but aliases are convenient, use them!
+		if not 'rule' in kw:
+			kw['rule'] = 'cp ${SRC} ${TGT}'
+		return bld(**kw)
+
+	xxx(source=x, target=x.change_ext('.a'), name='a')
+	xxx(source=x.change_ext('.a'), target=x.change_ext('.aa'), name='aa')
+
+	xxx(source=x, target=x.change_ext('.b'), name='b')
+	xxx(source=x.change_ext('.b'), target=x.change_ext('.bb'), name='bb')
+
+	xxx(source=x, target=x.change_ext('.c'), name='c')
+
+	xxx(rule='cat ${SRC} > ${TGT}', source=[x.change_ext('.bb'), x.change_ext('.aa')], target=[x.change_ext('.cc')], name='cc')
+

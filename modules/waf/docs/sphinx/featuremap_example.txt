@@ -1,0 +1,55 @@
+The Waf `feature` system weaves additional behaviors onto existing targets (task generators) with no changes to the build scripts. The main benefits are flexibility and reduced maintenance efforts. This approach is comparable to the CSS class declarations in the web design context.
+
+The `features` themselves are declared by annotating functions
+through a specific Python decorator function :py:func:`waflib.TaskGen.feature` and passing a name.
+Such functions then become methods bound to the Task generator class :py:class:`waflib.TaskGen.task_gen`.
+
+The association between feature names and methods is *many-to-many*; in other words
+a method may be used by in several features, and that a feature may reference
+to several methods. Here is for example how to bind the function *print_hello*
+to the feature named **foo**::
+
+	from waflib.TaskGen import feature
+	@feature('foo')
+	def print_hello(self):
+		print("Hello, World!")
+
+Since the function *print_hello* is now associated with the :py:class:`waflib.TaskGen.task_gen` class,
+it becomes usable as method::
+
+	def build(bld):
+		tg = bld()
+		tg.print_hello()
+
+Calling such methods directly is problematic as it interferes with partial
+build declarations and with target dependencies.
+The *feature* attribute enables the methods to be called *exactly once*
+before the build starts and in a purely declarative matter::
+
+	def build(bld):
+		bld(features='foo')
+
+When several methods are involved, the order of execution must be specified,
+else the methods are sorted by alphabetical order::
+
+	from waflib.TaskGen import feature, after_method
+
+	@feature('foo')
+	@after_method('print_bar')
+	def print_hello(self):
+		print("Hello, Foo!")
+
+	@feature('bar')
+	def print_bar(self):
+		print("Hello, Bar!")
+
+	def build(bld):
+		bld(features='foo bar')
+
+The order of method execution is unrelated to the order of the features given though.
+For instance, this example will print "Hello, Bar!" then "Hello, Foo!".
+
+The following maps represent the associations between feature methods (represented
+in yellow) and methods associated to other feature names. The arrows represent
+constraints over the order of execution.
+

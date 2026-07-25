@@ -1,0 +1,36 @@
+#! /usr/bin/env python
+
+def configure(conf):
+	conf.env.thecmd = 'all'
+	conf.load('gcc')
+
+def build(bld):
+	bld(rule='touch ${TGT}', target='bar.txt')
+	bld.recurse('just_make')
+
+from waflib.Build import BuildContext, InstallContext, UninstallContext, CleanContext
+
+class _build(BuildContext):
+	def compile(self):
+		ret = self.exec_command('make %s' % self.env.thecmd, cwd=self.path.abspath())
+		if ret:
+			self.fatal('make returned %r' % ret)
+		super(_build, self).compile()
+
+class _clean(CleanContext):
+	def clean(self):
+		self.exec_command('make clean', cwd=self.path.abspath())
+		super(_clean, self).clean()
+
+class _install(InstallContext):
+	def compile(self):
+		ret = self.exec_command('make install', cwd=self.path.abspath())
+		if ret:
+			self.fatal('make install returned %r' % ret)
+		super(_install, self).compile()
+
+class _uninstall(UninstallContext):
+	def compile(self):
+		self.exec_command('make uninstall', cwd=self.path.abspath())
+		super(_uninstall, self).compile()
+

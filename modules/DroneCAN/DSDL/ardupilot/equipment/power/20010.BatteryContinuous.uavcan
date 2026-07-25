@@ -1,0 +1,33 @@
+#
+# Battery data to be sent continuously
+#
+
+float16 temperature_cells       # [C]  : Pack mounted thermistor (preferably installed between cells), NAN: field not provided
+float16 temperature_pcb         # [C]  : Battery PCB temperature (likely output FET(s) or current sense resistor), NAN: field not provided
+float16 temperature_other       # [C]  : Application dependent, NAN: field not provided
+float32 current                 # [A]  : Positive: defined as a discharge current. Negative: defined as a charging current, NAN: field not provided
+float32 voltage                 # [V]  : Battery voltage
+float16 state_of_charge         # [%]  : The estimated state of charge, in percent remaining (0 - 100).
+uint8 slot_id                   #      : The physical location of the battery on the aircraft. 0: field not provided
+float32 capacity_consumed       # [Ah] : This is either the consumption since power-on or since the battery was full, depending on the value of STATUS_FLAG_CAPACITY_RELATIVE_TO_FULL, NAN: field not provided
+uint32 status_flags             #      : Fault, health, readiness, and other status indications
+
+uint32 STATUS_FLAG_READY_TO_USE                             = 1
+uint32 STATUS_FLAG_CHARGING                                 = 2
+uint32 STATUS_FLAG_CELL_BALANCING                           = 4
+uint32 STATUS_FLAG_FAULT_CELL_IMBALANCE                     = 8
+uint32 STATUS_FLAG_AUTO_DISCHARGING                         = 16
+uint32 STATUS_FLAG_REQUIRES_SERVICE                         = 32
+uint32 STATUS_FLAG_BAD_BATTERY                              = 64
+uint32 STATUS_FLAG_PROTECTIONS_ENABLED                      = 128
+uint32 STATUS_FLAG_FAULT_PROTECTION_SYSTEM                  = 256
+uint32 STATUS_FLAG_FAULT_OVER_VOLT                          = 512
+uint32 STATUS_FLAG_FAULT_UNDER_VOLT                         = 1024
+uint32 STATUS_FLAG_FAULT_OVER_TEMP                          = 2048
+uint32 STATUS_FLAG_FAULT_UNDER_TEMP                         = 4096
+uint32 STATUS_FLAG_FAULT_OVER_CURRENT                       = 8192
+uint32 STATUS_FLAG_FAULT_SHORT_CIRCUIT                      = 16384
+uint32 STATUS_FLAG_FAULT_INCOMPATIBLE_VOLTAGE               = 32768
+uint32 STATUS_FLAG_FAULT_INCOMPATIBLE_FIRMWARE              = 65536
+uint32 STATUS_FLAG_FAULT_INCOMPATIBLE_CELLS_CONFIGURATION   = 131072
+uint32 STATUS_FLAG_CAPACITY_RELATIVE_TO_FULL                = 262144

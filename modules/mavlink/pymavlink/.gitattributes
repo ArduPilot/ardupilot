@@ -1,0 +1,15 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+text eol=lf
+
+# Declare files that will always have LF line endings on checkout.
+*.py text eol=lf
+*.sh text eol=lf
+*.bash text eol=lf
+
+*.bin -diff
+*.elf -diff
+*.hex -diff
+
+*.bin binary linguist-generated
+*.elf binary linguist-generated
+*.hex binary linguist-generated

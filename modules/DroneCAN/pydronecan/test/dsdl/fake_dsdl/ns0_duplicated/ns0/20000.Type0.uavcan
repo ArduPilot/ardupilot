@@ -1,0 +1,5 @@
+#
+# Same definition as the base type to check that duplicates are
+# handled gracefully.
+#
+uint8 field0

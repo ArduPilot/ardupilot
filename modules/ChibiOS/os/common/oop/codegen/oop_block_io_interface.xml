@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="oop_block_io_interface" descr="Block I/O Device Interface" editcode="false">
+  <brief>Block I/O device interface.</brief>
+  <imports>
+    <import>oop_base_interface.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_base_interface.h</include>
+    </includes>
+    <definitions_early>
+      <condition check="defined(OOP_USE_LEGACY)">
+        <group description="Legacy interface method names">
+          <define name="blkIsInserted" value="bioIsInserted" />
+          <define name="blkIsWriteProtected" value="bioIsWriteProtected" />
+          <define name="blkConnect" value="bioConnect" />
+          <define name="blkDisconnect" value="bioDisconnect" />
+          <define name="blkRead" value="bioRead" />
+          <define name="blkWrite" value="bioWrite" />
+          <define name="blkSync" value="bioSync" />
+          <define name="blkGetInfo" value="bioGetInfo" />
+        </group>
+      </condition>
+    </definitions_early>
+    <types>
+      <typedef name="block_io_info_t">
+        <brief><![CDATA[Type of a block I/O device information]]></brief>
+        <basetype ctype="struct block_io_info" />
+      </typedef>
+      <struct name="block_io_info">
+        <brief><![CDATA[Structure representing a block I/O device information.]]></brief>
+        <fields>
+          <field name="blk_size" ctype="uint32_t">
+            <brief><![CDATA[Block size in bytes.]]></brief>
+          </field>
+          <field name="blk_num" ctype="uint32_t">
+            <brief><![CDATA[Total number of blocks.]]></brief>
+          </field>
+        </fields>
+      </struct>
+      <interface name="block_io" namespace="bio"
+        ancestorname="base_interface" descr="block I/O">
+        <brief>Block I/O interface.</brief>
+        <details>
+          <![CDATA[This module define an interface for generic devices
+                   performing block I/O.]]>
+          <br />
+          <![CDATA[This interface is meant to be implemented in classes
+                   requiring block I/O capability.]]>
+        </details>
+        <note><![CDATA[This interface is meant to be compatible with legacy HAL
+                       @p BaseBlockDevice interface.]]></note>
+        <consts>
+        </consts>
+        <methods>
+          <method name="bioIsInserted" shortname="is_inserted"
+            ctype="bool">
+            <brief><![CDATA[Returns the media insertion status.]]></brief>
+            <note><![CDATA[On some implementations this function can only be
+                           called if the device is not transferring data.]]></note>
+            <return><![CDATA[]]>The driver state.</return>
+            <retval value="false">if media is not inserted</retval>
+            <retval value="true">if media is inserted</retval>
+          </method>
+          <method name="bioIsWriteProtected" shortname="is_protected"
+            ctype="bool">
+            <brief><![CDATA[Returns the media write protection status.]]></brief>
+            <return><![CDATA[The media state.]]></return>
+            <retval value="false">if media is writable</retval>
+            <retval value="true">if media is not writable</retval>
+          </method>
+          <method name="bioConnect" shortname="connect"
+            ctype="bool">
+            <brief><![CDATA[Performs the initialization procedure on the
+                            block device.]]></brief>
+            <details><![CDATA[This operation must be performed before I/O
+                              operations can be attempted on the block device
+                              and after insertion has been confirmed using
+                              @p bioIsInserted().]]></details>
+            <return><![CDATA[The operation status.]]></return>
+            <retval value="false">if the operation succeeded</retval>
+            <retval value="true">if the operation failed</retval>
+          </method>
+          <method name="bioDisconnect" shortname="disconnect"
+            ctype="bool">
+            <brief><![CDATA[Terminates operations on the block device.]]></brief>
+            <details><![CDATA[This operation safely terminates operations on
+                              the block device. Should be performed before
+                              the media is extracted or powered down.]]></details>
+            <return><![CDATA[The operation status.]]></return>
+            <retval value="false">if the operation succeeded</retval>
+            <retval value="true">if the operation failed</retval>
+          </method>
+          <method name="bioRead" shortname="read"
+            ctype="bool">
+            <brief><![CDATA[Reads one or more blocks.]]></brief>
+            <param name="startblk" ctype="uint32_t" dir="in"><![CDATA[]]></param>
+            <param name="buf" ctype="uint8_t " dir="in"><![CDATA[]]></param>
+            <param name="n" ctype="uint32_t" dir="in"><![CDATA[]]></param>
+            <return><![CDATA[The operation status.]]></return>
+            <retval value="false">if the operation succeeded</retval>
+            <retval value="true">if the operation failed</retval>
+          </method>
+          <method name="bioWrite" shortname="write"
+            ctype="bool">
+            <brief><![CDATA[Writes one or more blocks.]]></brief>
+            <param name="startblk" ctype="uint32_t" dir="in"><![CDATA[]]></param>
+            <param name="buf" ctype="const uint8_t " dir="in"><![CDATA[]]></param>
+            <param name="n" ctype="uint32_t" dir="in"><![CDATA[]]></param>
+            <return><![CDATA[The operation status.]]></return>
+            <retval value="false">if the operation succeeded</retval>
+            <retval value="true">if the operation failed</retval>
+          </method>
+          <method name="BioSync" shortname="sync"
+            ctype="bool">
+            <brief><![CDATA[Ensures write synchronization.]]></brief>
+            <return><![CDATA[The operation status.]]></return>
+            <retval value="false">if the operation succeeded</retval>
+            <retval value="true">if the operation failed</retval>
+          </method>
+          <method name="bioGetInfo" shortname="get_info"
+            ctype="bool">
+            <brief><![CDATA[Returns a media information structure.]]></brief>
+            <param name="bdip" ctype="block_io_info_t *" dir="in"><![CDATA[]]></param>
+            <return><![CDATA[The operation status.]]></return>
+            <retval value="false">if the operation succeeded</retval>
+            <retval value="true">if the operation failed</retval>
+          </method>
+        </methods>
+      </interface>
+      <condition check="defined(OOP_USE_LEGACY)">
+        <typedef name="BlockDeviceInfo">
+          <brief>For compatibility with legacy @p BlockDeviceInfo.</brief>
+          <basetype ctype="block_io_info_i" />
+        </typedef>
+        <typedef name="BaseBlockDevice">
+          <brief>For compatibility with legacy @p BaseSequentialStream.</brief>
+          <basetype ctype="block_io_i" />
+        </typedef>
+      </condition>
+      
+    </types>
+  </public>
+  <private>
+  </private>
+</module>

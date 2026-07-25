@@ -1,0 +1,14 @@
+"""Sphinx documentation wscript example
+"""
+
+
+def configure(cnf):
+    cnf.load('sphinx')
+
+
+def build(bld):
+    # When multiple output format are given, the install_path_FMT can specify where to place a specific format, fallback is always on install_path
+    bld(features='sphinx', sphinx_source='src', sphinx_output_format=['html', 'info', 'man'], install_path_man='${DOCDIR}/man', install_path='${DOCDIR}')
+
+    # Old style syntax, with single format
+    # bld(features='sphinx', sphinx_source='src', sphinx_output_format='man')

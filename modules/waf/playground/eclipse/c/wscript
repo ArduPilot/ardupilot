@@ -1,0 +1,19 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def options(opt):
+	# We are using C and C++
+	opt.load('compiler_c compiler_cxx')
+
+def configure(conf):
+	# We are using C and C++
+	conf.load('compiler_c compiler_cxx')
+	# Force some standards to see that IDE will follow them
+	conf.env.CXXFLAGS=['-std=c++17']
+	conf.env.CFLAGS=['-std=c17']
+
+def build(bld):
+	bld.shlib(source='exLibC/src/exLibC.cpp', includes='exLibC/src/include', target='exampleLibC', export_includes='exLibC/src/include/')
+	bld.program(source=bld.path.ant_glob('exProgLinkedC/src/*.cpp'), target='exampleProgLinkedC', use='exampleLibC')
+
+

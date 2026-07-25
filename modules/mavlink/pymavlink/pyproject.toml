@@ -1,0 +1,11 @@
+# modern build tools use this file: https://packaging.python.org/en/latest/tutorials/packaging-projects/
+# you need to drop setup_requires from setup.py as well.
+# https://peps.python.org/pep-0518/#rationale
+
+[build-system]
+build-backend = "setuptools.build_meta"
+
+requires = [ "cython", "setuptools>=42" ]
+
+[tool.ruff]
+lint.extend-ignore = [ "E4", "E7", "F40", "F523", "F601", "F811", "F841" ]

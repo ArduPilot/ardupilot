@@ -1,0 +1,82 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# DC 2008
+# Thomas Nagy 2010 (ita)
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_fc')
+	opt.load('compiler_c')
+	opt.recurse('typemap')
+
+def configure(conf):
+	conf.load('compiler_c')
+	conf.load('compiler_fc')
+
+	if conf.env.FC_NAME == 'IFORT':
+		conf.env.append_unique('FCFLAGS', '-warn')
+	elif conf.env.FC_NAME == 'GFORTRAN':
+		conf.env.append_unique('FCFLAGS', ['-Wall', '-W'])
+
+	conf.check_fortran()
+	conf.recurse('typemap')
+
+def build(bld):
+
+	bld(
+		features = 'fc',
+		source   = 'hello.f')
+
+	bld(
+		features = 'fc fcprogram',
+		source   = 'hello.f',
+		target   = 'hello',
+		use      = 'DEBUG')
+
+	bld(
+		features = 'fc fcshlib',
+		source   = 'foo.f',
+		target   = 'shlib1',
+		defs     = 'foo.def',
+		vnum     = '2.3.9')
+
+	bld(
+		features = 'fc fcstlib',
+		source   = 'foo.f',
+		target   = 'foo')
+
+	bld(
+		features = 'fc fcprogram',
+		source   = 'foo_pp.F',
+		target   = 'foo',
+		defines  = ['USEFOO', 'blah=1'],
+		use      = 'shlib1')
+
+	bld.add_group()
+
+	bld(
+		features = 'fc fcprogram',
+		includes = 'src/include',
+		source   = 'src/hello_inc.f',
+		target   = 'hello_inc')
+
+	bld(
+		features = 'fc',
+		source   = 'src/calculator_main.f src/calculator.f',
+		target   = 'calc_objs')
+
+	bld(
+		features = 'fc fcprogram',
+		use      = 'calc_objs',
+		target   = 'calculator')
+
+	bld(
+		features = 'fc fcstlib',
+		source = 'mod/two_mods.f90 mod/uses_two_mods.f90',
+		target = 'mod/two_mods')
+
+	bld.recurse('typemap')
+	if bld.env.FC_NAME == 'GFORTRAN' and int(bld.env.FC_VERSION[0]) >= 6:
+		bld.recurse('submodules')

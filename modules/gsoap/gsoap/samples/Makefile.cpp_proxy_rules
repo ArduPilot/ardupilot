@@ -1,0 +1,12 @@
+## common Makefile rules for building the C++ - soap samples
+##
+
+SOAP_CPP_SRC = $(SOAP_H_FILES) $(SOAP_NS)
+
+$(SOAP_CPP_SRC) : $(SOAPHEADER)
+	$(SOAP) -i -I$(top_srcdir)/gsoap/import:$(top_srcdir)/gsoap $(SOAP_FLAGS) $< 
+
+LDADD = $(SOAP_CPP_LIB) $(SAMPLE_EXTRA_LIBS)
+BUILT_SOURCES = $(SOAP_CPP_SRC) 
+CLEANFILES = $(SOAP_CPP_SRC) *.req.xml *.res.xml *.nsmap *.xsd soapStub.h soapH.h soapC.cpp soap*Proxy.h soap*Proxy.cpp soap*Object.h soap*Service.h soap*Service.cpp soapClient.cpp soapServer.cpp soapClientLib.cpp soapServerLib.cpp *~
+

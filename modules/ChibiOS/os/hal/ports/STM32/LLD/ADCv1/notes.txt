@@ -1,0 +1,16 @@
+STM32 ADCv1 driver.
+
+Driver capability:
+
+- Supports the STM32 "simple" ADC, the one found on small devices (F0, L0).
+
+The file registry must export:
+
+STM32_HAS_ADC1                  - ADC1 presence flag.
+STM32_ADC_SUPPORTS_PRESCALER    - Support of CCR PRESC field.
+STM32_ADC_SUPPORTS_OVERSAMPLING - Support of oversampling-related fields.
+STM32_ADC1_IRQ_SHARED_WITH_EXTI - TRUE if the IRQ is shared with EXTI.
+STM32_ADC1_HANDLER              - IRQ vector name.
+STM32_ADC1_NUMBER               - IRQ vector number.
+STM32_ADC1_DMA_MSK              - Mask of the compatible DMA channels.
+STM32_ADC1_DMA_CHN              - Mask of the channels mapping.

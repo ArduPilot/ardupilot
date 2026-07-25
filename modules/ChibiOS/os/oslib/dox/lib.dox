@@ -1,0 +1,99 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/**
+ * @defgroup oslib OS Library
+ * @details The OS Library is a set of RTOS extensions compatible with both
+ *          the RT and NIL RTOSes.
+ */
+
+/**
+ * @defgroup oslib_info Version Numbers and Identification
+ * @ingroup oslib
+ */
+
+/**
+ * @defgroup oslib_synchronization Synchronization
+ * @details Synchronization services.
+ * @ingroup oslib
+ */
+
+/**
+ * @defgroup oslib_binary_semaphores Binary Semaphores
+ * @ingroup oslib_synchronization
+ */
+
+/**
+ * @defgroup oslib_mailboxes Mailboxes
+ * @ingroup oslib_synchronization
+ */
+
+/**
+ * @defgroup oslib_pipes Pipes
+ * @ingroup oslib_synchronization
+ */
+
+/**
+ * @defgroup oslib_delegates Delegate Threads
+ * @ingroup oslib_synchronization
+ */
+
+/**
+ * @defgroup oslib_jobs_queues Jobs Queues
+ * @ingroup oslib_synchronization
+ */
+
+/**
+ * @defgroup oslib_memory Memory Management
+ * @details Memory Management services.
+ * @ingroup oslib
+ */
+
+/**
+ * @defgroup oslib_memcore Core Memory Manager
+ * @ingroup oslib_memory
+ */
+
+/**
+ * @defgroup oslib_memheaps Memory Heaps
+ * @ingroup oslib_memory
+ */
+
+/**
+ * @defgroup oslib_mempools Memory Pools
+ * @ingroup oslib_memory
+ */
+
+/**
+ * @defgroup oslib_complex Complex Services
+ * @ingroup oslib
+ */
+
+/**
+ * @defgroup oslib_objects_fifos Objects FIFOs
+ * @ingroup oslib_complex
+ */
+
+/**
+ * @defgroup oslib_objcaches Objects Caches
+ * @ingroup oslib_complex
+ */
+
+/**
+ * @defgroup oslib_objects_factory Dynamic Objects Factory
+ * @ingroup oslib_complex
+ */

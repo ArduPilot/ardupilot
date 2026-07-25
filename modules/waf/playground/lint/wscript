@@ -1,0 +1,34 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006-2012 (ita)
+
+# the following two variables are used by the target "waf dist"
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+top = '.'
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+	conf.find_program('splint', var='LINT')
+
+def build(bld):
+	bld.env.DEFINES=['WAF=1']
+	bld.recurse('program stlib')
+
+
+from waflib.TaskGen import feature, after_method
+@feature('c')
+@after_method('process_source')
+def add_files_to_lint(self):
+	for x in self.compiled_tasks:
+		self.create_task('lint', x.inputs[0])
+
+from waflib import Task
+class lint(Task.Task):
+	run_str = '${LINT} ${CPPPATH_ST:INCPATHS} ${SRC}'
+	ext_in = ['.h'] # guess why this line..
+	before = ['c']

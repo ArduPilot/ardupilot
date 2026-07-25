@@ -1,0 +1,10 @@
+#! /bin/bash
+
+rm -f RECV.log
+./client 1 + 2
+
+if [ -f RECV.log ] ; then \
+	cat RECV.log; \
+else \
+	echo "When you recompile both gsoap and this project with configure --enable-debug, then a protocol log file will be generated. Use that in case of problems before you write mail to aberger."
+fi

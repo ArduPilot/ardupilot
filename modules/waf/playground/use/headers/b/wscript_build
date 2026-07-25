@@ -1,0 +1,1 @@
+bld.program(source='main.c', target='afb', use='afa')

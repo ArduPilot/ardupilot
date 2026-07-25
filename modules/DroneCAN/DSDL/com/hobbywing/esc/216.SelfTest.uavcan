@@ -1,0 +1,7 @@
+OVERRIDE_SIGNATURE 0xc48d4de61c5295df
+
+---
+
+uint8 STATUS_PASS = 0
+uint8 STATUS_FAIL = 1
+uint8 status

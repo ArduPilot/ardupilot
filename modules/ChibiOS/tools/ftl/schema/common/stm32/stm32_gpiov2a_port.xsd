@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+  elementFormDefault="qualified"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:complexType name="STM32GPIOv2aPortType">
+
+    <xs:sequence>
+      <xs:element
+        name="pin0"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin1"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin2"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin3"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin4"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin5"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin6"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin7"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin8"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin9"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin10"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin11"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin12"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin13"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin14"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element
+        name="pin15"
+        type="STM32GPIOv2aPinType"
+        maxOccurs="1"
+        minOccurs="1"></xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="STM32GPIOv2aPinType">
+  	<xs:annotation>
+  		<xs:documentation>
+  			Object representing an STM32 pin for the GPIOv2a
+  			peripheral.
+  		</xs:documentation>
+  	</xs:annotation>
+  	<xs:attribute name="ID" use="required">
+  		<xs:annotation>
+  			<xs:documentation>
+  				Pin identifier, used to generate a #define with the
+  				pin name.
+  			</xs:documentation>
+  		</xs:annotation>
+  		<xs:simpleType>
+  			<xs:annotation>
+  				<xs:documentation></xs:documentation>
+  			</xs:annotation>
+  			<xs:restriction base="xs:string">
+  				<xs:pattern value="([a-zA-Z_][\w_]*\s*)*"></xs:pattern>
+  			</xs:restriction>
+  		</xs:simpleType>
+  	</xs:attribute>
+  	<xs:attribute name="Mode" use="required">
+  		<xs:annotation>
+  			<xs:documentation>
+  				Pin mode, as defined for MODER register.
+  			</xs:documentation>
+  		</xs:annotation>
+  		<xs:simpleType>
+  			<xs:restriction base="xs:string">
+  				<xs:enumeration value="Analog"></xs:enumeration>
+  				<xs:enumeration value="Input"></xs:enumeration>
+  				<xs:enumeration value="Output"></xs:enumeration>
+  				<xs:enumeration value="Alternate"></xs:enumeration>
+  			</xs:restriction>
+  		</xs:simpleType>
+  	</xs:attribute>
+  	<xs:attribute name="Level" use="required">
+  		<xs:annotation>
+  			<xs:documentation>
+  				Logic level for the ODR register.
+  			</xs:documentation>
+  		</xs:annotation>
+  		<xs:simpleType>
+  			<xs:restriction base="xs:string">
+  				<xs:enumeration value="High"></xs:enumeration>
+  				<xs:enumeration value="Low"></xs:enumeration>
+  			</xs:restriction>
+  		</xs:simpleType>
+  	</xs:attribute>
+  	<xs:attribute name="Speed" use="required">
+  		<xs:annotation>
+  			<xs:documentation>
+  				Pin speed as defined in SPEEDR register.
+  			</xs:documentation>
+  		</xs:annotation>
+  		<xs:simpleType>
+  			<xs:restriction base="xs:string">
+  				<xs:enumeration value="Minimum"></xs:enumeration>
+  				<xs:enumeration value="Low"></xs:enumeration>
+  				<xs:enumeration value="High"></xs:enumeration>
+  				<xs:enumeration value="Maximum"></xs:enumeration>
+  			</xs:restriction>
+  		</xs:simpleType>
+  	</xs:attribute>
+  	<xs:attribute name="Type" use="required">
+  		<xs:annotation>
+  			<xs:documentation>
+  				Pin type as defined in TYPER register.
+  			</xs:documentation>
+  		</xs:annotation>
+  		<xs:simpleType>
+  			<xs:restriction base="xs:string">
+  				<xs:enumeration value="PushPull"></xs:enumeration>
+  				<xs:enumeration value="OpenDrain"></xs:enumeration>
+  			</xs:restriction>
+  		</xs:simpleType>
+  	</xs:attribute>
+  	<xs:attribute name="Resistor" use="required">
+  		<xs:annotation>
+  			<xs:documentation>
+  				Pin pull-up/down resistor as defined in PUDR register.
+  			</xs:documentation>
+  		</xs:annotation>
+  		<xs:simpleType>
+  			<xs:restriction base="xs:string">
+  				<xs:enumeration value="Floating"></xs:enumeration>
+  				<xs:enumeration value="PullUp"></xs:enumeration>
+  				<xs:enumeration value="PullDown"></xs:enumeration>
+  			</xs:restriction>
+  		</xs:simpleType>
+  	</xs:attribute>
+  	<xs:attribute name="Alternate" use="required">
+  		<xs:annotation>
+  			<xs:documentation>
+  				Pin alternate function number, only valid if
+  				"Alternate" is selected in the Mode attribute.
+  			</xs:documentation>
+  		</xs:annotation>
+  		<xs:simpleType>
+  			<xs:restriction base="xs:int">
+  				<xs:minInclusive value="0"></xs:minInclusive>
+  				<xs:maxInclusive value="15"></xs:maxInclusive>
+  				<xs:whiteSpace value="collapse"></xs:whiteSpace>
+  			</xs:restriction>
+  		</xs:simpleType>
+  	</xs:attribute>
+  	<xs:attribute name="PinLock" use="required">
+  		<xs:simpleType>
+  			<xs:restriction base="xs:string">
+  				<xs:enumeration value="Disabled"></xs:enumeration>
+  				<xs:enumeration value="Enabled"></xs:enumeration>
+  			</xs:restriction>
+  		</xs:simpleType>
+  	</xs:attribute>
+  </xs:complexType>
+</xs:schema>

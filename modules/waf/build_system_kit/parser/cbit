@@ -1,0 +1,5 @@
+# a non-python file format (why not?)
+# just call "./cbd build"
+foo.txt: cbit
+ cp ../cbit foo.txt
+

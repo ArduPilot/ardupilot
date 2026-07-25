@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
+def configure(ctx):
+	ctx.load("compiler_c compiler_cxx")
+
+def build(bld):
+	bld(
+	 features="cxx",
+	 source="liba/a.c",
+	 export_includes="liba",
+	 target="a",
+	)
+
+	bld(
+	 features="cxx",
+	 source="libb/b.cpp",
+	 export_includes="libb",
+	 target="b",
+	 use="a"
+	)
+
+	bld.program(
+	 features="cxx",
+	 source="main.c",
+	 target="program",
+	 use="b",
+	)
+
+def options(opt):
+	opt.load("compiler_c compiler_cxx")
+
+def hello(ctx):
+	print("Hello World!")

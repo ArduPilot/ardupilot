@@ -1,0 +1,150 @@
+#! /usr/bin/env python
+# encoding: UTF-8
+# Peter Forai
+# Thomas Nagy, 2008
+
+"""
+Demonstrates how to create a c++ app that runs python scripts
+
+Useful for apps providing script extensions
+"""
+
+VERSION='0.0.1'
+APPNAME='swig_test'
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('g++ python')
+
+def configure(conf):
+	conf.load('g++ python')
+	conf.check_python_version((2,4,2))
+	conf.check_python_headers()
+
+	conf.load('swig')
+	if conf.check_swig_version() < (1, 2, 27):
+		conf.fatal('this swig version is too old')
+
+	try:
+		conf.load('java')
+		# on mandriva, at least, libjvm.so is difficult to find
+		#conf.env.LIBPATH_JAVA = "/usr/lib/jvm/java-1.6.0-sun-1.6.0.13/jre/lib/amd64/server/"
+		conf.check_jni_headers()
+		conf.env.HAVE_JAVA = True
+	except conf.errors.ConfigurationError:
+		conf.env.HAVE_JAVA = False
+
+def build(bld):
+
+	# embedding
+	#
+	# use swig_flags = '-c++ -python -debug-classes' for debugging
+
+	obj = bld(
+		features = 'cxx cxxprogram pyembed',
+		source = 'embed/src1.cpp embed/bind.swig',
+		target = 'embed/embed_demo',
+		swig_flags = '-c++ -python -Wall',
+		includes = '. embed')
+
+
+	# extending
+	#
+	# be careful that the .py produced by swig is mandatory for using the library
+	#
+	# it is possible to disable 'mylib', and to add extend/a.cpp
+	# to the source of extend/python/_test_swig_waf and remove use
+
+	bld(
+		features = 'cxx cxxshlib',
+		source = 'extend/a.cpp',
+		target = 'extend/mylib',
+		includes = 'extend',
+		export_includes = 'extend',
+		vnum = '1.2.3',
+		name = 'mylib')
+
+	bld(
+		features = 'cxx cxxshlib pyext',
+		source = 'extend/python/test_swig_waf.i',
+		target = 'extend/python/_test_swig_waf',
+		swig_flags = '-c++ -python -Wall',
+		includes = 'extend',
+		vnum = '1.2.3',
+		use  = 'mylib')
+
+	bld.add_group()
+
+	python_site_package = '${PREFIX}/lib/python%s/site-packages' % bld.env.PYTHON_VERSION
+	generated_py = bld.path.find_or_declare('extend/python/test_swig_waf.py')
+	bld(features='py', source=generated_py, install_path=python_site_package, install_from=bld.path.get_bld())
+
+
+	bld.add_post_fun(exec_test_python)
+
+	# some java stuff
+	if not bld.env.HAVE_JAVA:
+		return
+
+	swigsrcdir = bld.path.get_bld().make_node('extend/java') # destination for generated java source from swig
+	swigoutdir = bld.path.get_bld().make_node('extend/jar') # destination for generated class files
+
+	# Will generate code via swig and also the JNI library in C++
+	jniswig = bld(
+		features   = 'cxx cxxshlib',
+		source     = 'extend/java/test_swig_waf.i',
+		target     = 'extend/java/_test_swig_waf',
+		swig_flags = '-c++ -java -package foo.bar.pouet -outdir extend/java/foo/bar/pouet',
+		includes   = 'extend',
+		vnum       = '1.2.3',
+		uselib     = 'JAVA',
+		use        = 'mylib')
+
+	# Java will contain the generated code from swigsrcdir plus the local sources
+	jswig = bld(features   = 'javac jar',
+		srcdir     = [ swigsrcdir , 'extend/java'] ,
+		sourcepath = [],
+		outdir     = swigoutdir,
+		basedir    = swigoutdir,
+		destfile   = 'maha.jar',
+		)
+
+	# Post JNI library and Java generators so we have tasks created
+	jniswig.post()
+	jswig.post()
+	# Now make sure javac task is executed after swig generation
+	for x in jniswig.tasks:
+		if x.__class__.__name__ == 'swig':
+			jswig.javac_task.set_run_after(x)
+
+	# Launch the test after build
+	bld.add_post_fun(exec_test_java)
+
+
+def exec_test_java(bld):
+	try:
+		bld.cmd_and_log('LD_LIBRARY_PATH=$LD_LIBRARY_PATH:build/extend/java:build/extend java -classpath "build/maha.jar:." foo.bar.pouet.Foo')
+	except:
+		pass
+
+def exec_test_python(bld):
+	import os, stat
+	try:
+		import subprocess
+		proc = subprocess.Popen('''
+PYTHONPATH=$PYTHONPATH:build/extend/python
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:build/extend/python:build/extend
+python -c "import test_swig_waf; a=test_swig_waf.A(); print('Testing: a.add(2, 3) -> %r' % a.add(2, 3))"
+'''.replace('\n', ' '), shell=True)
+		proc.wait()
+	except:
+		pass
+
+	# why does this fail now on mandriva???
+	try:
+		os.stat('build/embed/embed_demo')
+		bld.cmd_and_log('PYTHONPATH=$PYTHONPATH:build/embed/ build/embed/embed_demo')
+	except:
+		pass
+

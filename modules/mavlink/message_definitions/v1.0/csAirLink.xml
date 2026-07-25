@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<mavlink>
+  <!-- ClearSky Air-Link contact info:          -->
+  <!-- company URL: https://air-link.space/     -->
+  <!-- email contact: drone@air-link.space      -->
+  <!-- mavlink ID range: 52000 - 52099          -->
+  <version>3</version>
+  <enums>
+    <enum name="AIRLINK_AUTH_RESPONSE_TYPE">
+      <entry value="0" name="AIRLINK_ERROR_LOGIN_OR_PASS">
+        <description>Login or password error</description>
+      </entry>
+      <entry value="1" name="AIRLINK_AUTH_OK">
+        <description>Auth successful</description>
+      </entry>
+    </enum>
+  </enums>
+  <messages>
+    <message id="52000" name="AIRLINK_AUTH">
+      <description>Authorization package</description>
+      <field type="char[50]" name="login">Login</field>
+      <field type="char[50]" name="password">Password</field>
+    </message>
+    <message id="52001" name="AIRLINK_AUTH_RESPONSE">
+      <description>Response to the authorization request</description>
+      <field type="uint8_t" name="resp_type" enum="AIRLINK_AUTH_RESPONSE_TYPE">Response type</field>
+    </message>
+  </messages>
+</mavlink>

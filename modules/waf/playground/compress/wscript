@@ -1,0 +1,144 @@
+#! /usr/bin/env python
+
+"""
+You will need either bzip2 or gzip, and a local waf copy
+(unset the variable WAFDIR if set)
+
+Using more than 100000 tasks may eat your memory
+"""
+
+top = '.'
+out = 'build'
+
+TEMPLATE = """
+#! /usr/bin/gnuplot -persist
+# output file, compression type, input file
+set terminal png
+set output "%s"
+set ylabel "Amount of files created"
+set xlabel "File size in kB"
+set title "Compressed tar file distribution (%s)"
+plot '%s' using 1:2 with lines lt 3 title ""
+"""
+
+import random, bz2, os, threading
+lock = threading.Lock()
+
+def options(opt):
+	opt.add_option('--num', action='store', type='int', default=200, help='amount of compressed files to create')
+
+# values for storing the min and max
+gzip  = [10000000, 0]
+bzip2 = [10000000, 0]
+xz    = [10000000, 0]
+
+def try_compress(self):
+	global mi, ma
+
+	frompath = self.generator.frompath
+
+	uid = id(threading.current_thread())
+	filename = frompath.abspath() + os.sep + 'test%d.bin' % uid
+
+	self.files = self.generator.files[:]
+	random.shuffle(self.files)
+
+	if self.generator.kind == 'bzip2':
+		store = bzip2
+		cmd = 'cjf'
+		ext = 'bz2'
+	elif self.generator.kind == 'xz':
+		store = xz
+		cmd = 'cJf'
+		ext = 'xz'
+	else:
+		store = gzip
+		cmd = 'czf'
+		ext = 'gz'
+
+	self.generator.bld.exec_command('tar %s  %s  %s' % (cmd, filename, ' '.join(self.files)), cwd=frompath.abspath())
+
+	siz = os.stat(filename).st_size
+	if siz == 0:
+		return -1
+
+	try:
+		lock.acquire()
+		self.outputs[0].write('%d\n' % siz, 'a')
+
+		if siz < store[0]:
+			store[0] = siz
+			os.rename(filename, self.generator.bld.bldnode.abspath() + os.sep + 'min%d.tar.%s' % (siz, ext))
+		elif siz > store[1]:
+			store[1] = siz
+			os.rename(filename, self.generator.bld.bldnode.abspath() + os.sep + 'max%d.tar.%s' % (siz, ext))
+		else:
+			os.remove(filename)
+	finally:
+		lock.release()
+
+def count_result(self):
+	txt = self.inputs[0].read().strip()
+	lst = txt.split()
+	lst = [int(x) for x in lst if x]
+	mi = min(lst)
+	ma = max(lst)
+
+	dc = {}
+	for x in lst:
+		try:
+			dc[x] += 1
+		except KeyError:
+			dc[x] = 1
+
+	nlst = ['%d %d' % (x, dc.get(x, 0)) for x in range(mi, ma+1)]
+	self.outputs[0].write('\n'.join(nlst))
+
+def write_template(self):
+	t = self.generator.triplet
+	self.outputs[0].write(TEMPLATE % (t[0].abspath(), t[1], t[2].abspath()))
+
+def configure(conf):
+	conf.find_program('gzip', mandatory=False)
+	conf.find_program('bzip2', mandatory=False)
+	if not conf.env.GZIP and not conf.env.BZIP2:
+		conf.fatal('Either gzip or bzip2 is necessary for this')
+
+	# xz is a gzip-like, lzma-based compression tool
+	conf.find_program('xz', mandatory=False)
+
+	conf.find_program('gnuplot', var='GNUPLOT')
+
+def build(bld):
+	wafdir_lst = bld.srcnode.ant_glob('.waf*', dir=True)
+	if not wafdir_lst:
+		bld.fatal('Missing local Waf directory')
+	node = wafdir_lst[0]
+	rels = [x.path_from(node) for x in node.ant_glob('**/*.py')]
+
+	KINDS = []
+	if bld.env.BZIP2:
+		KINDS.append('bzip2')
+	if bld.env.GZIP:
+		KINDS.append('gzip')
+	if bld.env.XZ:
+		KINDS.append('xz')
+
+	for kind in KINDS:
+		p = bld.bldnode
+
+		ini  = p.make_node('size_%s_1.txt' % kind)  # list of file sizes
+		dist = p.make_node('size_%s_2.txt' % kind)  # distribution file (count the results)
+		plot = p.make_node('size_%s_3.plot' % kind) # script file created for gnuplot
+		png  = p.make_node('size_%s_4.png' % kind)  # picture created
+
+		for x in range(bld.options.num):
+			# the same target cannot have the signature of all the tasks that update it
+			# so the tasks will be executed each time
+			bld(rule=try_compress, target=ini, always=True, kind=kind, frompath=node, files=rels)
+
+		# for the same reason, count_result will be executed each time
+		bld(rule=count_result, target=dist, source=[ini], always=True)
+		bld(rule=write_template, target=plot, triplet=[png, kind, dist], always=True)
+		bld(rule='${GNUPLOT} < ${SRC[1].abspath()}', target=png, source=[dist, plot])
+

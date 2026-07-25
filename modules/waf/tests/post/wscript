@@ -1,0 +1,66 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2016-2018 (ita)
+
+top = '.'
+out = 'build'
+
+import inspect
+from waflib import Utils, Logs, TaskGen
+
+@TaskGen.taskgen_method
+def log(self):
+	fname = inspect.stack()[1][3]
+	try:
+		self.called.append(fname)
+	except AttributeError:
+		self.called = [fname]
+
+@TaskGen.taskgen_method
+def check(self):
+	self.post()
+	result = ''.join(self.called)
+	if result == self.expected:
+		color = 'GREEN'
+	else:
+		color = 'RED'
+		result = 'got %r but expected %r' % (result, self.expected)
+		self.bld.failure = 1
+	Logs.pprint(color, result)
+
+@TaskGen.feature('test1')
+@TaskGen.after('d')
+def a(self):
+	self.log()
+@TaskGen.feature('test1')
+@TaskGen.after('c')
+def b(self):
+	self.log()
+@TaskGen.feature('test1')
+def c(self):
+	self.log()
+@TaskGen.feature('test1')
+def d(self):
+	self.log()
+@TaskGen.feature('test1')
+@TaskGen.after('f')
+def e(self):
+	self.log()
+@TaskGen.feature('test1')
+def f(self):
+	self.log()
+
+
+def configure(conf):
+	pass
+
+def build(bld):
+
+	bld.failure = 0
+	def stop_status(bld):
+		if bld.failure:
+			bld.fatal('One or several test failed, check the outputs above')
+	bld.add_post_fun(stop_status)
+
+	bld(features='test1', expected='cbdafe').check()
+

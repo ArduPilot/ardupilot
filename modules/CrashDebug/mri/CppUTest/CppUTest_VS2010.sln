@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AllTests", "tests\AllTests.vcxproj", "{913088F6-37C0-4195-80E9-548C7C5303CB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CppUTest", "CppUTest.vcxproj", "{F468F539-27BD-468E-BE64-DDE641400B51}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{913088F6-37C0-4195-80E9-548C7C5303CB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{913088F6-37C0-4195-80E9-548C7C5303CB}.Debug|Win32.Build.0 = Debug|Win32
+		{913088F6-37C0-4195-80E9-548C7C5303CB}.Release|Win32.ActiveCfg = Release|Win32
+		{913088F6-37C0-4195-80E9-548C7C5303CB}.Release|Win32.Build.0 = Release|Win32
+		{F468F539-27BD-468E-BE64-DDE641400B51}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F468F539-27BD-468E-BE64-DDE641400B51}.Debug|Win32.Build.0 = Debug|Win32
+		{F468F539-27BD-468E-BE64-DDE641400B51}.Release|Win32.ActiveCfg = Release|Win32
+		{F468F539-27BD-468E-BE64-DDE641400B51}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

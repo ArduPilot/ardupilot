@@ -1,0 +1,39 @@
+#! /usr/bin/env python
+
+def write_header(tsk):
+	tsk.outputs[0].write('int abc = 423;\n')
+bld(features='use', rule=write_header, target='b.h', ext_out=['.h'], name='XYZ')
+
+tg = bld.program(
+	features = 'aaa',
+	source   = 'main.c',
+	includes = '. ..',
+	#cflags   = ['-O3'], # for example
+	defines  = ['foo=bar'],
+	target   = 'myprogram',
+	use      = 'M XYZ')
+
+# just for fun, make main.c depend on wscript_build
+bld.add_manual_dependency('main.c', bld.path.find_resource('wscript_build'))
+
+# ----------------------------------------
+
+from waflib import TaskGen
+@TaskGen.feature('aaa')
+@TaskGen.before('apply_link')
+def add_one_task(self):
+	"""this is a task generator method, it is bound to the feature 'aaa' """
+	tsk = self.create_task('foo')
+	tsk.outputs = [self.bld.path.find_or_declare('abc.h')]
+
+import waflib.Task
+class foo(waflib.Task.Task):
+	"""this is a task class"""
+	before = ['c']
+	color  = 'BLUE'
+	def run(self):
+		self.outputs[0].write('int kik = 343;\n')
+
+
+if bld.env.CC_NAME == 'msvc':
+	tg.source += ' msvc_resource.rc'

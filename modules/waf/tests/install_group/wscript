@@ -1,0 +1,72 @@
+#! /usr/bin/env python
+
+from waflib import Utils, Build, Logs
+import os
+
+GRP = os.environ.get('WAF_TEST_GROUP', 'adm')
+
+def test_chown(bld):
+	def create_and_chown(tsk):
+		tsk.outputs[0].write('test')
+		Utils.lchown(tsk.outputs[0].abspath(), -1, GRP)
+		bld.conf.env.CAN_CHOWN = True
+	bld(rule=create_and_chown, target='foo.txt', always=True)
+
+def test_grp(bld):
+	def check_path(tsk):
+		import grp
+		entry = grp.getgrnam(GRP)
+		assert entry[0] == GRP
+		bld.conf.env.CAN_GRP = True
+	bld(rule=check_path, always=True)
+
+def test_chown_install(bld):
+	bld.is_install = Build.INSTALL
+
+	dest_file = bld.bldnode.make_node('test/foo')
+	dest_link = bld.bldnode.make_node('test/foo_link')
+
+	tmpfile = bld.bldnode.make_node('foo.txt')
+	tmpfile.write('this is a test')
+
+	bld.install_as(dest_file,
+		tmpfile,
+		install_group=GRP)
+	bld.symlink_as(dest_link,
+		'foo',
+		install_group=GRP)
+
+	bld.add_group()
+
+	def check_path(tsk):
+		import grp
+		gid = grp.getgrnam(GRP)[2]
+		assert os.stat(dest_file.abspath()).st_gid == gid
+		assert os.stat(dest_link.abspath()).st_gid == gid
+	bld(rule=check_path, always=True)
+
+def configure(conf):
+	conf.test(build_fun=test_grp,
+		msg='Checking for the python module grp',
+		okmsg='ok',
+		errmsg='grp is missing',
+		mandatory=False)
+	if not conf.env.CAN_GRP:
+		return
+
+	conf.test(build_fun=test_chown,
+		msg='Checking for Utils.lchown',
+		okmsg='ok',
+		errmsg='chown does not seem to work',
+		mandatory=False)
+	if not conf.env.CAN_CHOWN:
+		return
+
+	conf.test(build_fun=test_chown_install,
+		msg='Testing install_group="adm"',
+		okmsg='ok',
+		errmsg='there is a regression')
+
+def build(bld):
+	pass
+

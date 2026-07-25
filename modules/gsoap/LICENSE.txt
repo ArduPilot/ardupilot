@@ -1,0 +1,150 @@
+
+LICENSE
+
+The gSOAP 2.8 releases, including all 2.8.x updates, are distributed under:
+
+1) The gSOAP Public License 1.3 (which is based on the Mozilla public license
+   1.1).
+   
+   Components NOT covered by the gSOAP Public License are:
+   - wsdl2h tool AND its source code output, 
+   - soapcpp2 tool AND its source code output,
+   - UDDI code,
+   - the webserver example code in gsoap/samples/webserver,
+   - several example applications in the gsoap/samples directory.
+
+   For details, see the note down below. The gSOAP public license is included
+   in the package as license.pdf
+
+2) GPL v2 (GNU Public License, a common open-source software license) covers
+   all of the gSOAP software, see GPLv2_license.txt
+
+   If you use gSOAP under the GPL v2 to integrate parts of it or code generated
+   by it with your own code, then you are allowed to sell copies of the
+   modified program commercially, but only under the terms of the GNU GPL v2.
+   Thus, for instance, you must make the source code of your programs available
+   to the users of your programs as described in the GPL, and they must be
+   allowed to redistribute and modify it as described in the GPL. These
+   requirements are the condition for including the GPL-covered code you
+   received in a program of your own.
+ 
+   If you do not wish for your program to be released under a GPL-compatible
+   open source license, then an alternate proprietary software license for
+   gSOAP which will remove the aforementioned requirement is available from
+   Genivia Inc, see 3) below.
+
+   For more information on the GNU Public License 2.0, please visit:
+   http://www.gnu.org/licenses/old-licenses/gpl-2.0-faq.html
+
+   We do not accept third-party GPL contributions to avoid having to fork the
+   code base in GPL and non-GPL.
+
+3) Proprietary commercial software development licenses for the standard
+   commercial edition and for enterprise-level licensing. The standard edition
+   is functionally identical to the open source version of gSOAP and includes
+   all software components, but without the open source GPL licensing
+   requirements for your project.
+
+IMPORTANT NOTE
+
+Please check the suitability of GPL v2 for your project. Requirements imposed
+by the GPL v2 may affect the release of your software.
+
+If you use gSOAP under the GPL v2 to integrate parts of it or code generated
+by it with your own code, then you are allowed to sell copies of the modified
+program commercially, but only under the terms of the GNU GPL v2. Thus, for
+instance, you must make the source code available to the users of the program
+as described in the GPL, and they must be allowed to redistribute and modify
+it as described in the GPL. These requirements are the condition for including
+the GPL-covered code you received in a program of your own. These
+restrictions may hamper certain proprietary software development scenarios.
+If you do not wish for your program to be released under a GPL-compatible open
+source license, then an alternate proprietary software license for gSOAP which
+will remove the aforementioned requirement is available from Genivia Inc.
+
+The gSOAP software does not include any third-party GPL code. All software was
+written from the ground up since 2003 and is owned and copyrighted by Genivia
+Inc. This allows Genivia to dual license the gSOAP software under GPLv2 and
+under the Genivia commercial-use licenses.
+
+The Ohloh site by Black Duck includes an analysis of the gSOAP GPLv2 open
+source repository:
+
+	https://www.ohloh.net/p/gsoap
+
+Please note that "Black Duck Scans" will detect the use of GPL gSOAP software
+in your project builds when you are using the gSOAP source code. The
+commercial-use licenses by Genivia explicitly grant the use of the gSOAP
+software for non-GPL use and inclusion.
+
+Note that the GNU Bison and Flex tools are used to generate source code for the
+gSOAP soapcpp2 compiler. The Bison/Flex-generated source code is not restricted
+by the GPL or LGPL terms for this particular use.
+
+Non-GPL third-party contributions are included in the 'extras' directory in the
+package and you are free to use these contributions. Suggested changes and
+improvements by vendors were accepted under the public gSOAP license (not
+GPL), which includes support for VxWorks and Apache and IIS modules for gSOAP.
+
+For commercial-use licensing please visit:
+
+	http://www.genivia.com/Products/gsoap/contract.html
+
+or contact us at Genivia Inc:
+
+	contact@genivia.com
+
+GPL and OpenSSL
+
+This program is released under the GPL with the additional exemption that
+compiling, linking, and/or using OpenSSL is allowed.
+
+GPL and the gSOAP public license
+
+This program is released under the GPL with the additional exemption that
+compiling, linking, and/or using software released under the gSOAP public
+license is allowed.
+
+COPYRIGHT
+
+gSOAP is copyrighted by Robert A. van Engelen, Genivia, Inc.
+Copyright (C) 2000-2015 Robert A. van Engelen, Genivia, Inc.
+All Rights Reserved.
+
+USE RESTRICTIONS
+
+You may not: (i) transfer rights to gSOAP or claim authorship; or (ii) remove
+any product identification, copyright, proprietary notices or labels from gSOAP.
+
+WARRANTY 
+
+GENIVIA INC. EXPRESSLY DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS, IMPLIED OR
+STATUTORY, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
+MERCHANTABILITY, OF FITNESS FOR A PARTICULAR PURPOSE, NONINFRINGEMENT OF THIRD
+PARTY INTELLECTUAL PROPERTY RIGHTS, AND ANY WARRANTY THAT MAY ARISE BY REASON
+OF TRADE USAGE, CUSTOM, OR COURSE OF DEALING.  WITHOUT LIMITING THE
+FOREGOING, YOU ACKNOWLEDGE THAT THE SOFTWARE IS PROVIDED "AS IS" AND THAT
+GENIVIA INC. DO NOT WARRANT THE SOFTWARE WILL RUN UNINTERRUPTED OR ERROR FREE.
+LIMITED LIABILITY: THE ENTIRE RISK AS TO RESULTS AND PERFORMANCE OF THE
+SOFTWARE IS ASSUMED BY YOU.  UNDER NO CIRCUMSTANCES WILL GENIVIA INC. BE LIABLE
+FOR ANY SPECIAL, INDIRECT, INCIDENTAL, EXEMPLARY OR CONSEQUENTIAL DAMAGES OF
+ANY KIND OR NATURE WHATSOEVER, WHETHER BASED ON CONTRACT, WARRANTY, TORT
+(INCLUDING NEGLIGENCE), STRICT LIABILITY OR OTHERWISE, ARISING OUT OF OR IN
+ANY WAY RELATED TO THE SOFTWARE, EVEN IF GENIVIA INC. HAS BEEN ADVISED ON THE
+POSSIBILITY OF SUCH DAMAGE OR IF SUCH DAMAGE COULD HAVE BEEN REASONABLY
+FORESEEN, AND NOTWITHSTANDING ANY FAILURE OF ESSENTIAL PURPOSE OF ANY
+EXCLUSIVE REMEDY PROVIDED.  SUCH LIMITATION ON DAMAGES INCLUDES, BUT IS NOT
+LIMITED TO, DAMAGES FOR LOSS OF GOODWILL, LOST PROFITS, LOSS OF DATA OR
+SOFTWARE, WORK STOPPAGE, COMPUTER FAILURE OR MALFUNCTION OR IMPAIRMENT OF
+OTHER GOODS.  IN NO EVENT WILL GENIVIA INC. BE LIABLE FOR THE COSTS OF
+PROCUREMENT OF SUBSTITUTE SOFTWARE OR SERVICES.  YOU ACKNOWLEDGE THAT THIS
+SOFTWARE IS NOT DESIGNED FOR USE IN ON-LINE EQUIPMENT IN HAZARDOUS
+ENVIRONMENTS SUCH AS OPERATION OF NUCLEAR FACILITIES, AIRCRAFT NAVIGATION OR
+CONTROL, OR LIFE-CRITICAL APPLICATIONS.  GENIVIA INC. EXPRESSLY DISCLAIM ANY
+LIABILITY RESULTING FROM USE OF THE SOFTWARE IN ANY SUCH ON-LINE EQUIPMENT IN
+HAZARDOUS ENVIRONMENTS AND ACCEPTS NO LIABILITY IN RESPECT OF ANY ACTIONS OR
+CLAIMS BASED ON THE USE OF THE SOFTWARE IN ANY SUCH ON-LINE EQUIPMENT IN
+HAZARDOUS ENVIRONMENTS BY YOU.  FOR PURPOSES OF THIS PARAGRAPH, THE TERM
+"LIFE-CRITICAL APPLICATION" MEANS AN APPLICATION IN WHICH THE FUNCTIONING OR
+MALFUNCTIONING OF THE SOFTWARE MAY RESULT DIRECTLY OR INDIRECTLY IN PHYSICAL
+INJURY OR LOSS OF HUMAN LIFE.

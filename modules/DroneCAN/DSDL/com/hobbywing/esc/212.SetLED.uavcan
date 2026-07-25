@@ -1,0 +1,21 @@
+OVERRIDE_SIGNATURE 0xb493bd48c0853ee5
+
+uint8 OPTION_SAVE = 1
+uint8 option
+
+uint8 COLOR_R = 4
+uint8 COLOR_G = 2
+uint8 COLOR_B = 1
+uint8 color
+
+uint8 BLINK_OFF = 0
+uint8 BLINK_1HZ = 1
+uint8 BLINK_2HZ = 2
+uint8 BLINK_5HZ = 5
+uint8 blink
+
+---
+
+uint8 option
+uint8 color
+uint8 blink

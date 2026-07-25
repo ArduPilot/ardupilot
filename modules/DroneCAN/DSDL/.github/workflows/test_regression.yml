@@ -1,0 +1,27 @@
+name: test regression
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v3
+
+      - name: Install gcc
+        run: sudo apt-get install -y gcc libc6-dev
+
+      - name: test DSDL generation and encode/decode
+        shell: bash
+        run: |
+          tests/test_regression.sh
+
+      - name: Archive generated headers
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsdl_generated
+          path: |
+           dsdl_generated/include
+           dsdl_generated/src
+          retention-days: 90

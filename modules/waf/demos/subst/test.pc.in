@@ -1,0 +1,6 @@
+Name: test
+Description: ПРИЛОЖЕНИЕ
+Version: @VERSION@
+Libs: -L${libdir} -lgnaa @LIBS@ @XPM_LIBS@ @LIBICONV@
+Cflags: -I${includedir} @XPM_CFLAGS@
+extra: @INTVAR@

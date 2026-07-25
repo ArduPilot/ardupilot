@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+    env:
+      CC: ${{ matrix.compiler }}
+      LSAN_OPTIONS: verbosity=1:log_threads=1
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install deps
+      run: sudo apt-get install check ninja-build doxygen
+
+    - name: Copy lwipcfg.h for example app
+      run: cp contrib/examples/example_app/lwipcfg.h.ci contrib/examples/example_app/lwipcfg.h
+
+    - name: Build unit tests with make
+      run: make -C contrib/ports/unix/check
+    - name: Run unit tests
+      run: make -C contrib/ports/unix/check check
+
+    - name: Run cmake
+      run: mkdir build && cd build && cmake .. -G Ninja
+    - name: Build with cmake
+      run: cd build && cmake --build .
+    - name: Build docs with cmake
+      run: cd build && cmake --build . --target lwipdocs
+
+    - name: Validate combinations of options
+      run: cd contrib/ports/unix/example_app && ./iteropts.sh
+
+    - name: Build the default example app
+      run: |
+        cp contrib/examples/example_app/lwipcfg.h.example contrib/examples/example_app/lwipcfg.h
+        make -C contrib/ports/unix/example_app TESTFLAGS="-Wno-documentation" -j 4

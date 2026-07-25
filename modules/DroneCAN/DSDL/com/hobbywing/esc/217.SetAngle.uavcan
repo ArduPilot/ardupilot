@@ -1,0 +1,9 @@
+OVERRIDE_SIGNATURE 0x81d9b10761c28e0a
+
+uint8 option
+uint16 angle
+
+---
+
+uint8 option
+uint16[<=2] angle

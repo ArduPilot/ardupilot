@@ -1,0 +1,57 @@
+#
+# Get or set a parameter by name or by index.
+# Note that access by index should only be used to retrieve the list of parameters; it is highly
+# discouraged to use it for anything else, because persistent ordering is not guaranteed.
+#
+
+# implementors may choose to make parameter set operations be immediately persistent, or can choose
+# to make them temporary, requiring a ExecuteOpcode with OPCODE_SAVE to put into persistent storage
+
+#
+# Index of the parameter starting from 0; ignored if name is nonempty.
+# Use index only to retrieve the list of parameters.
+# Parameter ordering must be well defined (e.g. alphabetical, or any other stable ordering),
+# in order for the index access to work.
+#
+uint13 index
+
+#
+# If set - parameter will be assigned this value, then the new value will be returned.
+# If not set - current parameter value will be returned.
+# Refer to the definition of Value for details.
+#
+Value value
+
+#
+# Name of the parameter; always preferred over index if nonempty.
+#
+uint8[<=92] name
+
+---
+
+void5
+
+#
+# Actual parameter value.
+#
+# For set requests, it should contain the actual parameter value after the set request was
+# executed. The objective is to let the client know if the value could not be updated, e.g.
+# due to its range violation, etc.
+#
+# Empty value (and/or empty name) indicates that there is no such parameter.
+#
+Value value
+
+void5
+Value default_value    # Optional
+
+void6
+NumericValue max_value # Optional, not applicable for bool/string
+
+void6
+NumericValue min_value # Optional, not applicable for bool/string
+
+#
+# Empty name (and/or empty value) in response indicates that there is no such parameter.
+#
+uint8[<=92] name

@@ -1,0 +1,146 @@
+<?xml version="1.0"?>
+<mavlink>
+  <!-- MAVLink standard messages -->
+  <include>minimal.xml</include>
+  <dialect>0</dialect>
+  <enums>
+    <enum name="MAV_BOOL" bitmask="true">
+      <description>Enum used to indicate true or false (also: success or failure, enabled or disabled, active or inactive).</description>
+      <entry value="0" name="MAV_BOOL_FALSE">
+        <description>False.</description>
+      </entry>
+      <entry value="1" name="MAV_BOOL_TRUE">
+        <description>True.</description>
+      </entry>
+    </enum>
+    <enum name="MAV_PROTOCOL_CAPABILITY" bitmask="true">
+      <description>Bitmask of (optional) autopilot capabilities (64 bit). If a bit is set, the autopilot supports this capability.</description>
+      <entry value="1" name="MAV_PROTOCOL_CAPABILITY_MISSION_FLOAT">
+        <description>Autopilot supports the MISSION_ITEM float message type.
+          Note that MISSION_ITEM is deprecated, and autopilots should use MISSION_INT instead.
+        </description>
+      </entry>
+      <entry value="2" name="MAV_PROTOCOL_CAPABILITY_PARAM_FLOAT">
+        <deprecated since="2022-03" replaced_by="MAV_PROTOCOL_CAPABILITY_PARAM_ENCODE_C_CAST"/>
+        <description>Autopilot supports the new param float message type.</description>
+      </entry>
+      <entry value="4" name="MAV_PROTOCOL_CAPABILITY_MISSION_INT">
+        <description>Autopilot supports MISSION_ITEM_INT scaled integer message type.
+          Note that this flag must always be set if missions are supported, because missions must always use MISSION_ITEM_INT (rather than MISSION_ITEM, which is deprecated).
+        </description>
+      </entry>
+      <entry value="8" name="MAV_PROTOCOL_CAPABILITY_COMMAND_INT">
+        <description>Autopilot supports COMMAND_INT scaled integer message type.</description>
+      </entry>
+      <entry value="16" name="MAV_PROTOCOL_CAPABILITY_PARAM_ENCODE_BYTEWISE">
+        <description>Parameter protocol uses byte-wise encoding of parameter values into param_value (float) fields: https://mavlink.io/en/services/parameter.html#parameter-encoding.
+          Note that either this flag or MAV_PROTOCOL_CAPABILITY_PARAM_ENCODE_C_CAST should be set if the parameter protocol is supported.
+        </description>
+      </entry>
+      <entry value="32" name="MAV_PROTOCOL_CAPABILITY_FTP">
+        <description>Autopilot supports the File Transfer Protocol v1: https://mavlink.io/en/services/ftp.html.</description>
+      </entry>
+      <entry value="64" name="MAV_PROTOCOL_CAPABILITY_SET_ATTITUDE_TARGET">
+        <description>Autopilot supports commanding attitude offboard.</description>
+      </entry>
+      <entry value="128" name="MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_LOCAL_NED">
+        <description>Autopilot supports commanding position and velocity targets in local NED frame.</description>
+      </entry>
+      <entry value="256" name="MAV_PROTOCOL_CAPABILITY_SET_POSITION_TARGET_GLOBAL_INT">
+        <description>Autopilot supports commanding position and velocity targets in global scaled integers.</description>
+      </entry>
+      <entry value="512" name="MAV_PROTOCOL_CAPABILITY_TERRAIN">
+        <description>Autopilot supports terrain protocol / data handling.</description>
+      </entry>
+      <entry value="1024" name="MAV_PROTOCOL_CAPABILITY_RESERVED3">
+        <description>Reserved for future use.</description>
+      </entry>
+      <entry value="2048" name="MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION">
+        <description>Autopilot supports the MAV_CMD_DO_FLIGHTTERMINATION command (flight termination).</description>
+      </entry>
+      <entry value="4096" name="MAV_PROTOCOL_CAPABILITY_COMPASS_CALIBRATION">
+        <description>Autopilot supports onboard compass calibration.</description>
+      </entry>
+      <entry value="8192" name="MAV_PROTOCOL_CAPABILITY_MAVLINK2">
+        <description>Autopilot supports MAVLink version 2.</description>
+      </entry>
+      <entry value="16384" name="MAV_PROTOCOL_CAPABILITY_MISSION_FENCE">
+        <description>Autopilot supports mission fence protocol.</description>
+      </entry>
+      <entry value="32768" name="MAV_PROTOCOL_CAPABILITY_MISSION_RALLY">
+        <description>Autopilot supports mission rally point protocol.</description>
+      </entry>
+      <entry value="65536" name="MAV_PROTOCOL_CAPABILITY_RESERVED2">
+        <description>Reserved for future use.</description>
+      </entry>
+      <entry value="131072" name="MAV_PROTOCOL_CAPABILITY_PARAM_ENCODE_C_CAST">
+        <description>Parameter protocol uses C-cast of parameter values to set the param_value (float) fields: https://mavlink.io/en/services/parameter.html#parameter-encoding.
+          Note that either this flag or MAV_PROTOCOL_CAPABILITY_PARAM_ENCODE_BYTEWISE should be set if the parameter protocol is supported.
+        </description>
+      </entry>
+      <entry value="262144" name="MAV_PROTOCOL_CAPABILITY_COMPONENT_IMPLEMENTS_GIMBAL_MANAGER">
+        <description>This component implements/is a gimbal manager. This means the GIMBAL_MANAGER_INFORMATION, and other messages can be requested.
+        </description>
+      </entry>
+      <entry value="524288" name="MAV_PROTOCOL_CAPABILITY_COMPONENT_ACCEPTS_GCS_CONTROL">
+        <wip/>
+        <description>Component supports locking control to a particular GCS independent of its system (via MAV_CMD_REQUEST_OPERATOR_CONTROL).</description>
+      </entry>
+      <entry value="1048576" name="MAV_PROTOCOL_CAPABILITY_GRIPPER">
+        <wip/>
+        <description>Autopilot has a connected gripper. MAVLink Grippers would set MAV_TYPE_GRIPPER instead.</description>
+      </entry>
+    </enum>
+    <enum name="FIRMWARE_VERSION_TYPE">
+      <description>These values define the type of firmware release.  These values indicate the first version or release of this type.  For example the first alpha release would be 64, the second would be 65.</description>
+      <entry value="0" name="FIRMWARE_VERSION_TYPE_DEV">
+        <description>development release</description>
+      </entry>
+      <entry value="64" name="FIRMWARE_VERSION_TYPE_ALPHA">
+        <description>alpha release</description>
+      </entry>
+      <entry value="128" name="FIRMWARE_VERSION_TYPE_BETA">
+        <description>beta release</description>
+      </entry>
+      <entry value="192" name="FIRMWARE_VERSION_TYPE_RC">
+        <description>release candidate</description>
+      </entry>
+      <entry value="255" name="FIRMWARE_VERSION_TYPE_OFFICIAL">
+        <description>official stable release</description>
+      </entry>
+    </enum>
+  </enums>
+  <messages>
+    <!-- also includes minimal.xml messages -->
+    <message id="33" name="GLOBAL_POSITION_INT">
+      <description>The filtered global position (e.g. fused GPS and accelerometers). The position is in GPS-frame (right-handed, Z-up). It is designed as scaled integer message since the resolution of float is not sufficient.</description>
+      <field type="uint32_t" name="time_boot_ms" units="ms">Timestamp (time since system boot).</field>
+      <field type="int32_t" name="lat" units="degE7">Latitude, expressed</field>
+      <field type="int32_t" name="lon" units="degE7">Longitude, expressed</field>
+      <field type="int32_t" name="alt" units="mm">Altitude (MSL). Note that virtually all GPS modules provide both WGS84 and MSL.</field>
+      <field type="int32_t" name="relative_alt" units="mm">Altitude above home</field>
+      <field type="int16_t" name="vx" units="cm/s">Ground X Speed (Latitude, positive north)</field>
+      <field type="int16_t" name="vy" units="cm/s">Ground Y Speed (Longitude, positive east)</field>
+      <field type="int16_t" name="vz" units="cm/s">Ground Z Speed (Altitude, positive down)</field>
+      <field type="uint16_t" name="hdg" units="cdeg" invalid="UINT16_MAX">Vehicle heading (yaw angle), 0.0..359.99 degrees. If unknown, set to: UINT16_MAX</field>
+    </message>
+    <message id="148" name="AUTOPILOT_VERSION">
+      <description>Version and capability of autopilot software. This should be emitted in response to a request with MAV_CMD_REQUEST_MESSAGE.</description>
+      <field type="uint64_t" name="capabilities" enum="MAV_PROTOCOL_CAPABILITY">Bitmap of capabilities</field>
+      <field type="uint32_t" name="flight_sw_version">Firmware version number.
+        The field must be encoded as 4 bytes, where each byte (shown from MSB to LSB) is part of a semantic version: (major) (minor) (patch) (FIRMWARE_VERSION_TYPE).
+      </field>
+      <field type="uint32_t" name="middleware_sw_version">Middleware version number</field>
+      <field type="uint32_t" name="os_sw_version">Operating system version number</field>
+      <field type="uint32_t" name="board_version">HW / board version (last 8 bits should be silicon ID, if any). The first 16 bits of this field specify a board type from an enumeration stored at https://github.com/PX4/PX4-Bootloader/blob/master/board_types.txt and with extensive additions at https://github.com/ArduPilot/ardupilot/blob/master/Tools/AP_Bootloader/board_types.txt</field>
+      <field type="uint8_t[8]" name="flight_custom_version">Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.</field>
+      <field type="uint8_t[8]" name="middleware_custom_version">Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.</field>
+      <field type="uint8_t[8]" name="os_custom_version">Custom version field, commonly the first 8 bytes of the git hash. This is not an unique identifier, but should allow to identify the commit using the main version number even for very large code bases.</field>
+      <field type="uint16_t" name="vendor_id">ID of the board vendor</field>
+      <field type="uint16_t" name="product_id">ID of the product</field>
+      <field type="uint64_t" name="uid">UID if provided by hardware (see uid2)</field>
+      <extensions/>
+      <field type="uint8_t[18]" name="uid2">UID if provided by hardware (supersedes the uid field. If this is non-zero, use this field, otherwise use uid)</field>
+    </message>
+  </messages>
+</mavlink>

@@ -1,0 +1,17 @@
+#
+# Extended Generic ESC status.
+# Additional fields on top of the generic ESC status message.
+# Transmitted at a lower rate.
+#
+
+uint7 input_pct               # Absolute input command to ESC, in percent, which is commanded using the setpoint messages. Range 0% to 100%.
+uint7 output_pct              # Absolute output command from ESC to motor, in percent. Range 0% to 100%.
+
+int9 motor_temperature_degC   # Temperature of connected motor, in Celsius. Range is -256 to +255 C.
+uint9 motor_angle             # Measured angle of connected angle sensor, in degrees. Range is 0 to 360. The angle increases as the
+                              # motor rotates forward, using the same "forward" definition as RPMCommand. ESCs are expected to report
+                              # decreasing values if currently spinning in reverse.
+
+uint19 status_flags           # Manufacturer-specific status flags currently active.
+
+uint5 esc_index               # Index of currently reporting ESC. 

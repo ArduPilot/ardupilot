@@ -1,0 +1,1815 @@
+[[case]] # move file
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "a") => 0;
+    lfs_mkdir(&lfs, "b") => 0;
+    lfs_mkdir(&lfs, "c") => 0;
+    lfs_mkdir(&lfs, "d") => 0;
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_CREAT | LFS_O_WRONLY) => 0;
+    lfs_file_write(&lfs, &file, "hola\n", 5) => 5;
+    lfs_file_write(&lfs, &file, "bonjour\n", 8) => 8;
+    lfs_file_write(&lfs, &file, "ohayo\n", 6) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hello", "c/hello") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hello") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 5+8+6);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "b/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "c/hello", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 5) => 5;
+    memcmp(buffer, "hola\n", 5) => 0;
+    lfs_file_read(&lfs, &file, buffer, 8) => 8;
+    memcmp(buffer, "bonjour\n", 8) => 0;
+    lfs_file_read(&lfs, &file, buffer, 6) => 6;
+    memcmp(buffer, "ohayo\n", 6) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "d/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # noop move, yes this is legal
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "hi") => 0;
+    lfs_rename(&lfs, "hi", "hi") => 0;
+    lfs_mkdir(&lfs, "hi/hi") => 0;
+    lfs_rename(&lfs, "hi/hi", "hi/hi") => 0;
+    lfs_mkdir(&lfs, "hi/hi/hi") => 0;
+    lfs_rename(&lfs, "hi/hi/hi", "hi/hi/hi") => 0;
+    lfs_stat(&lfs, "hi/hi/hi", &info) => 0;
+    assert(strcmp(info.name, "hi") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move file corrupt source
+in = "lfs.c"
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "a") => 0;
+    lfs_mkdir(&lfs, "b") => 0;
+    lfs_mkdir(&lfs, "c") => 0;
+    lfs_mkdir(&lfs, "d") => 0;
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_CREAT | LFS_O_WRONLY) => 0;
+    lfs_file_write(&lfs, &file, "hola\n", 5) => 5;
+    lfs_file_write(&lfs, &file, "bonjour\n", 8) => 8;
+    lfs_file_write(&lfs, &file, "ohayo\n", 6) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hello", "c/hello") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // corrupt the source
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_block_t block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    uint8_t bbuffer[LFS_BLOCK_SIZE];
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    int off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hello") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 5+8+6);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "b/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "c/hello", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 5) => 5;
+    memcmp(buffer, "hola\n", 5) => 0;
+    lfs_file_read(&lfs, &file, buffer, 8) => 8;
+    memcmp(buffer, "bonjour\n", 8) => 0;
+    lfs_file_read(&lfs, &file, buffer, 6) => 6;
+    memcmp(buffer, "ohayo\n", 6) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "d/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move file corrupt source and dest
+in = "lfs.c"
+if = 'LFS_PROG_SIZE <= 0x3fe' # only works with one crc per commit
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "a") => 0;
+    lfs_mkdir(&lfs, "b") => 0;
+    lfs_mkdir(&lfs, "c") => 0;
+    lfs_mkdir(&lfs, "d") => 0;
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_CREAT | LFS_O_WRONLY) => 0;
+    lfs_file_write(&lfs, &file, "hola\n", 5) => 5;
+    lfs_file_write(&lfs, &file, "bonjour\n", 8) => 8;
+    lfs_file_write(&lfs, &file, "ohayo\n", 6) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hello", "c/hello") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // corrupt the source
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_block_t block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    uint8_t bbuffer[LFS_BLOCK_SIZE];
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    int off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    // corrupt the destination
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hello") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 5+8+6);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 5) => 5;
+    memcmp(buffer, "hola\n", 5) => 0;
+    lfs_file_read(&lfs, &file, buffer, 8) => 8;
+    memcmp(buffer, "bonjour\n", 8) => 0;
+    lfs_file_read(&lfs, &file, buffer, 6) => 6;
+    memcmp(buffer, "ohayo\n", 6) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "b/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "c/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "d/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move file after corrupt
+in = "lfs.c"
+if = 'LFS_PROG_SIZE <= 0x3fe' # only works with one crc per commit
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "a") => 0;
+    lfs_mkdir(&lfs, "b") => 0;
+    lfs_mkdir(&lfs, "c") => 0;
+    lfs_mkdir(&lfs, "d") => 0;
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_CREAT | LFS_O_WRONLY) => 0;
+    lfs_file_write(&lfs, &file, "hola\n", 5) => 5;
+    lfs_file_write(&lfs, &file, "bonjour\n", 8) => 8;
+    lfs_file_write(&lfs, &file, "ohayo\n", 6) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hello", "c/hello") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // corrupt the source
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_block_t block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    uint8_t bbuffer[LFS_BLOCK_SIZE];
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    int off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    // corrupt the destination
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    // continue move
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hello", "c/hello") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hello") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 5+8+6);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "b/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "c/hello", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 5) => 5;
+    memcmp(buffer, "hola\n", 5) => 0;
+    lfs_file_read(&lfs, &file, buffer, 8) => 8;
+    memcmp(buffer, "bonjour\n", 8) => 0;
+    lfs_file_read(&lfs, &file, buffer, 6) => 6;
+    memcmp(buffer, "ohayo\n", 6) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "d/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # simple reentrant move file
+reentrant = true
+code = '''
+    err = lfs_mount(&lfs, &cfg);
+    if (err) {
+        lfs_format(&lfs, &cfg) => 0;
+        lfs_mount(&lfs, &cfg) => 0;
+    }
+    err = lfs_mkdir(&lfs, "a");
+    assert(!err || err == LFS_ERR_EXIST);
+    err = lfs_mkdir(&lfs, "b");
+    assert(!err || err == LFS_ERR_EXIST);
+    err = lfs_mkdir(&lfs, "c");
+    assert(!err || err == LFS_ERR_EXIST);
+    err = lfs_mkdir(&lfs, "d");
+    assert(!err || err == LFS_ERR_EXIST);
+    lfs_unmount(&lfs) => 0;
+
+    while (true) {
+        lfs_mount(&lfs, &cfg) => 0;
+        // there should never exist _2_ hello files
+        int count = 0;
+        if (lfs_stat(&lfs, "a/hello", &info) == 0) {
+            assert(strcmp(info.name, "hello") == 0);
+            assert(info.type == LFS_TYPE_REG);
+            assert(info.size == 5+8+6 || info.size == 0);
+            count += 1;
+        }
+        if (lfs_stat(&lfs, "b/hello", &info) == 0) {
+            assert(strcmp(info.name, "hello") == 0);
+            assert(info.type == LFS_TYPE_REG);
+            assert(info.size == 5+8+6);
+            count += 1;
+        }
+        if (lfs_stat(&lfs, "c/hello", &info) == 0) {
+            assert(strcmp(info.name, "hello") == 0);
+            assert(info.type == LFS_TYPE_REG);
+            assert(info.size == 5+8+6);
+            count += 1;
+        }
+        if (lfs_stat(&lfs, "d/hello", &info) == 0) {
+            assert(strcmp(info.name, "hello") == 0);
+            assert(info.type == LFS_TYPE_REG);
+            assert(info.size == 5+8+6);
+            count += 1;
+        }
+        assert(count <= 1);
+        lfs_unmount(&lfs) => 0;
+
+        lfs_mount(&lfs, &cfg) => 0;
+        if (lfs_stat(&lfs, "a/hello", &info) == 0 && info.size > 0) {
+            lfs_rename(&lfs, "a/hello", "b/hello") => 0;
+        } else if (lfs_stat(&lfs, "b/hello", &info) == 0) {
+            lfs_rename(&lfs, "b/hello", "c/hello") => 0;
+        } else if (lfs_stat(&lfs, "c/hello", &info) == 0) {
+            lfs_rename(&lfs, "c/hello", "d/hello") => 0;
+        } else if (lfs_stat(&lfs, "d/hello", &info) == 0) {
+            // success
+            lfs_unmount(&lfs) => 0;
+            break;
+        } else {
+            // create file
+            lfs_file_open(&lfs, &file, "a/hello",
+                    LFS_O_WRONLY | LFS_O_CREAT) => 0;
+            lfs_file_write(&lfs, &file, "hola\n", 5) => 5;
+            lfs_file_write(&lfs, &file, "bonjour\n", 8) => 8;
+            lfs_file_write(&lfs, &file, "ohayo\n", 6) => 6;
+            lfs_file_close(&lfs, &file) => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+    }
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "d") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hello") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 5+8+6);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "b/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "c/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "d/hello", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 5) => 5;
+    memcmp(buffer, "hola\n", 5) => 0;
+    lfs_file_read(&lfs, &file, buffer, 8) => 8;
+    memcmp(buffer, "bonjour\n", 8) => 0;
+    lfs_file_read(&lfs, &file, buffer, 6) => 6;
+    memcmp(buffer, "ohayo\n", 6) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move dir
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "a") => 0;
+    lfs_mkdir(&lfs, "b") => 0;
+    lfs_mkdir(&lfs, "c") => 0;
+    lfs_mkdir(&lfs, "d") => 0;
+    lfs_mkdir(&lfs, "a/hi") => 0;
+    lfs_mkdir(&lfs, "a/hi/hola") => 0;
+    lfs_mkdir(&lfs, "a/hi/bonjour") => 0;
+    lfs_mkdir(&lfs, "a/hi/ohayo") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hi", "c/hi") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hi") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "a/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "b/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "c/hi") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "bonjour") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hola") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "ohayo") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "d/hi") => LFS_ERR_NOENT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move dir corrupt source
+in = "lfs.c"
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "a") => 0;
+    lfs_mkdir(&lfs, "b") => 0;
+    lfs_mkdir(&lfs, "c") => 0;
+    lfs_mkdir(&lfs, "d") => 0;
+    lfs_mkdir(&lfs, "a/hi") => 0;
+    lfs_mkdir(&lfs, "a/hi/hola") => 0;
+    lfs_mkdir(&lfs, "a/hi/bonjour") => 0;
+    lfs_mkdir(&lfs, "a/hi/ohayo") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hi", "c/hi") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // corrupt the source
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_block_t block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    uint8_t bbuffer[LFS_BLOCK_SIZE];
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    int off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hi") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "a/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "b/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "c/hi") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "bonjour") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hola") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "ohayo") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "d/hi") => LFS_ERR_NOENT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move dir corrupt source and dest
+in = "lfs.c"
+if = 'LFS_PROG_SIZE <= 0x3fe' # only works with one crc per commit
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "a") => 0;
+    lfs_mkdir(&lfs, "b") => 0;
+    lfs_mkdir(&lfs, "c") => 0;
+    lfs_mkdir(&lfs, "d") => 0;
+    lfs_mkdir(&lfs, "a/hi") => 0;
+    lfs_mkdir(&lfs, "a/hi/hola") => 0;
+    lfs_mkdir(&lfs, "a/hi/bonjour") => 0;
+    lfs_mkdir(&lfs, "a/hi/ohayo") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hi", "c/hi") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // corrupt the source
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_block_t block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    uint8_t bbuffer[LFS_BLOCK_SIZE];
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    int off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    // corrupt the destination
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hi") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "a/hi") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "bonjour") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hola") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "ohayo") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "b/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "c/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "d/hi") => LFS_ERR_NOENT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move dir after corrupt
+in = "lfs.c"
+if = 'LFS_PROG_SIZE <= 0x3fe' # only works with one crc per commit
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "a") => 0;
+    lfs_mkdir(&lfs, "b") => 0;
+    lfs_mkdir(&lfs, "c") => 0;
+    lfs_mkdir(&lfs, "d") => 0;
+    lfs_mkdir(&lfs, "a/hi") => 0;
+    lfs_mkdir(&lfs, "a/hi/hola") => 0;
+    lfs_mkdir(&lfs, "a/hi/bonjour") => 0;
+    lfs_mkdir(&lfs, "a/hi/ohayo") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hi", "c/hi") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // corrupt the source
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_block_t block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    uint8_t bbuffer[LFS_BLOCK_SIZE];
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    int off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    // corrupt the destination
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    // continue move
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hi", "c/hi") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "c") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hi") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "a/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "b/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "c/hi") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "bonjour") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hola") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "ohayo") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "d/hi") => LFS_ERR_NOENT;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # simple reentrant move dir
+reentrant = true
+code = '''
+    err = lfs_mount(&lfs, &cfg);
+    if (err) {
+        lfs_format(&lfs, &cfg) => 0;
+        lfs_mount(&lfs, &cfg) => 0;
+    }
+    err = lfs_mkdir(&lfs, "a");
+    assert(!err || err == LFS_ERR_EXIST);
+    err = lfs_mkdir(&lfs, "b");
+    assert(!err || err == LFS_ERR_EXIST);
+    err = lfs_mkdir(&lfs, "c");
+    assert(!err || err == LFS_ERR_EXIST);
+    err = lfs_mkdir(&lfs, "d");
+    assert(!err || err == LFS_ERR_EXIST);
+    lfs_unmount(&lfs) => 0;
+
+    while (true) {
+        lfs_mount(&lfs, &cfg) => 0;
+        // there should never exist _2_ hi directories
+        int count = 0;
+        if (lfs_stat(&lfs, "a/hi", &info) == 0) {
+            assert(strcmp(info.name, "hi") == 0);
+            assert(info.type == LFS_TYPE_DIR);
+            count += 1;
+        }
+        if (lfs_stat(&lfs, "b/hi", &info) == 0) {
+            assert(strcmp(info.name, "hi") == 0);
+            assert(info.type == LFS_TYPE_DIR);
+            count += 1;
+        }
+        if (lfs_stat(&lfs, "c/hi", &info) == 0) {
+            assert(strcmp(info.name, "hi") == 0);
+            assert(info.type == LFS_TYPE_DIR);
+            count += 1;
+        }
+        if (lfs_stat(&lfs, "d/hi", &info) == 0) {
+            assert(strcmp(info.name, "hi") == 0);
+            assert(info.type == LFS_TYPE_DIR);
+            count += 1;
+        }
+        assert(count <= 1);
+        lfs_unmount(&lfs) => 0;
+
+        lfs_mount(&lfs, &cfg) => 0;
+        if (lfs_stat(&lfs, "a/hi", &info) == 0) {
+            lfs_rename(&lfs, "a/hi", "b/hi") => 0;
+        } else if (lfs_stat(&lfs, "b/hi", &info) == 0) {
+            lfs_rename(&lfs, "b/hi", "c/hi") => 0;
+        } else if (lfs_stat(&lfs, "c/hi", &info) == 0) {
+            lfs_rename(&lfs, "c/hi", "d/hi") => 0;
+        } else if (lfs_stat(&lfs, "d/hi", &info) == 0) {
+            lfs_unmount(&lfs) => 0;
+            break; // success
+        } else {
+            // create dir and rename for atomicity
+            err = lfs_mkdir(&lfs, "temp");
+            assert(!err || err == LFS_ERR_EXIST);
+            err = lfs_mkdir(&lfs, "temp/hola");
+            assert(!err || err == LFS_ERR_EXIST);
+            err = lfs_mkdir(&lfs, "temp/bonjour");
+            assert(!err || err == LFS_ERR_EXIST);
+            err = lfs_mkdir(&lfs, "temp/ohayo");
+            assert(!err || err == LFS_ERR_EXIST);
+            lfs_rename(&lfs, "temp", "a/hi") => 0;
+        }
+        lfs_unmount(&lfs) => 0;
+    }
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "a") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_dir_open(&lfs, &dir, "d") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hi") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "a/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "b/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "c/hi") => LFS_ERR_NOENT;
+    lfs_dir_open(&lfs, &dir, "d/hi") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "bonjour") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "hola") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "ohayo") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move state stealing
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "a") => 0;
+    lfs_mkdir(&lfs, "b") => 0;
+    lfs_mkdir(&lfs, "c") => 0;
+    lfs_mkdir(&lfs, "d") => 0;
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_CREAT | LFS_O_WRONLY) => 0;
+    lfs_file_write(&lfs, &file, "hola\n", 5) => 5;
+    lfs_file_write(&lfs, &file, "bonjour\n", 8) => 8;
+    lfs_file_write(&lfs, &file, "ohayo\n", 6) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "a/hello", "b/hello") => 0;
+    lfs_unmount(&lfs) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "b/hello", "c/hello") => 0;
+    lfs_unmount(&lfs) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_rename(&lfs, "c/hello", "d/hello") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "b/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "c/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "d/hello", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 5) => 5;
+    memcmp(buffer, "hola\n", 5) => 0;
+    lfs_file_read(&lfs, &file, buffer, 8) => 8;
+    memcmp(buffer, "bonjour\n", 8) => 0;
+    lfs_file_read(&lfs, &file, buffer, 6) => 6;
+    memcmp(buffer, "ohayo\n", 6) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_remove(&lfs, "b") => 0;
+    lfs_remove(&lfs, "c") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_stat(&lfs, "a", &info) => 0;
+    lfs_stat(&lfs, "b", &info) => LFS_ERR_NOENT;
+    lfs_stat(&lfs, "c", &info) => LFS_ERR_NOENT;
+    lfs_stat(&lfs, "d", &info) => 0;
+    lfs_file_open(&lfs, &file, "a/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "b/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "c/hello", LFS_O_RDONLY) => LFS_ERR_NOENT;
+    lfs_file_open(&lfs, &file, "d/hello", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 5) => 5;
+    memcmp(buffer, "hola\n", 5) => 0;
+    lfs_file_read(&lfs, &file, buffer, 8) => 8;
+    memcmp(buffer, "bonjour\n", 8) => 0;
+    lfs_file_read(&lfs, &file, buffer, 6) => 6;
+    memcmp(buffer, "ohayo\n", 6) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# Other specific corner cases
+[[case]] # create + delete in same commit with neighbors
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // littlefs keeps files sorted, so we know the order these will be in
+    lfs_file_open(&lfs, &file, "/1.move_me",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/0.before",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.1", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/2.in_between",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.2", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/4.after",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.3", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_t files[3];
+    lfs_file_open(&lfs, &files[0], "0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[1], "2.in_between",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[2], "4.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_write(&lfs, &files[0], "test.4", 7) => 7;
+    lfs_file_write(&lfs, &files[1], "test.5", 7) => 7;
+    lfs_file_write(&lfs, &files[2], "test.6", 7) => 7;
+
+    // rename file while everything is open, this triggers both
+    // a create and delete simultaneously
+    lfs_rename(&lfs, "/1.move_me", "/3.move_me") => 0;
+
+    lfs_file_close(&lfs, &files[0]) => 0;
+    lfs_file_close(&lfs, &files[1]) => 0;
+    lfs_file_close(&lfs, &files[2]) => 0;
+
+    // check that nothing was corrupted
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.in_between") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "3.move_me") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 0);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "4.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.4") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/2.in_between", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.5") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/4.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.6") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+
+    // now move back
+    lfs_file_open(&lfs, &files[0], "0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[1], "2.in_between",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[2], "4.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_write(&lfs, &files[0], "test.7", 7) => 7;
+    lfs_file_write(&lfs, &files[1], "test.8", 7) => 7;
+    lfs_file_write(&lfs, &files[2], "test.9", 7) => 7;
+
+    // rename file while everything is open, this triggers both
+    // a create and delete simultaneously
+    lfs_rename(&lfs, "/3.move_me", "/1.move_me") => 0;
+
+    lfs_file_close(&lfs, &files[0]) => 0;
+    lfs_file_close(&lfs, &files[1]) => 0;
+    lfs_file_close(&lfs, &files[2]) => 0;
+
+    // and check that nothing was corrupted again
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "1.move_me") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 0);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.in_between") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "4.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.7") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/2.in_between", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.8") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/4.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.9") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# Other specific corner cases
+[[case]] # create + delete + delete in same commit with neighbors
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // littlefs keeps files sorted, so we know the order these will be in
+    lfs_file_open(&lfs, &file, "/1.move_me",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/3.move_me",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "remove me",
+            sizeof("remove me")) => sizeof("remove me");
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/0.before",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.1", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/2.in_between",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.2", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/4.after",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.3", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_t files[3];
+    lfs_file_open(&lfs, &files[0], "0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[1], "2.in_between",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[2], "4.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_write(&lfs, &files[0], "test.4", 7) => 7;
+    lfs_file_write(&lfs, &files[1], "test.5", 7) => 7;
+    lfs_file_write(&lfs, &files[2], "test.6", 7) => 7;
+
+    // rename file while everything is open, this triggers both
+    // a create and delete simultaneously
+    lfs_rename(&lfs, "/1.move_me", "/3.move_me") => 0;
+
+    lfs_file_close(&lfs, &files[0]) => 0;
+    lfs_file_close(&lfs, &files[1]) => 0;
+    lfs_file_close(&lfs, &files[2]) => 0;
+
+    // check that nothing was corrupted
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.in_between") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "3.move_me") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 0);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "4.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.4") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/2.in_between", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.5") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/4.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.6") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+
+    // now move back
+    lfs_file_open(&lfs, &file, "/1.move_me",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "remove me",
+            sizeof("remove me")) => sizeof("remove me");
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &files[0], "0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[1], "2.in_between",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[2], "4.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_write(&lfs, &files[0], "test.7", 7) => 7;
+    lfs_file_write(&lfs, &files[1], "test.8", 7) => 7;
+    lfs_file_write(&lfs, &files[2], "test.9", 7) => 7;
+
+    // rename file while everything is open, this triggers both
+    // a create and delete simultaneously
+    lfs_rename(&lfs, "/3.move_me", "/1.move_me") => 0;
+
+    lfs_file_close(&lfs, &files[0]) => 0;
+    lfs_file_close(&lfs, &files[1]) => 0;
+    lfs_file_close(&lfs, &files[2]) => 0;
+
+    // and check that nothing was corrupted again
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "1.move_me") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 0);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.in_between") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "4.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.7") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/2.in_between", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.8") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/4.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.9") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # create + delete in different dirs with neighbors
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    // littlefs keeps files sorted, so we know the order these will be in
+    lfs_mkdir(&lfs, "/dir.1") => 0;
+    lfs_mkdir(&lfs, "/dir.2") => 0;
+    lfs_file_open(&lfs, &file, "/dir.1/1.move_me",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/dir.2/1.move_me",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "remove me",
+            sizeof("remove me")) => sizeof("remove me");
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/dir.1/0.before",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.1", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/dir.1/2.after",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.2", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/dir.2/0.before",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.3", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/dir.2/2.after",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.4", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_t files[4];
+    lfs_file_open(&lfs, &files[0], "/dir.1/0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[1], "/dir.1/2.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[2], "/dir.2/0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[3], "/dir.2/2.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_write(&lfs, &files[0], "test.5", 7) => 7;
+    lfs_file_write(&lfs, &files[1], "test.6", 7) => 7;
+    lfs_file_write(&lfs, &files[2], "test.7", 7) => 7;
+    lfs_file_write(&lfs, &files[3], "test.8", 7) => 7;
+
+    // rename file while everything is open, this triggers both
+    // a create and delete as it overwrites the destination file
+    lfs_rename(&lfs, "/dir.1/1.move_me", "/dir.2/1.move_me") => 0;
+
+    lfs_file_close(&lfs, &files[0]) => 0;
+    lfs_file_close(&lfs, &files[1]) => 0;
+    lfs_file_close(&lfs, &files[2]) => 0;
+    lfs_file_close(&lfs, &files[3]) => 0;
+
+    // check that nothing was corrupted
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "dir.1") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "dir.2") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "/dir.1") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "/dir.2") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "1.move_me") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 0);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "/dir.1/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.5") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/dir.1/2.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.6") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/dir.2/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.7") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/dir.2/2.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.8") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+
+    // now move back
+    lfs_file_open(&lfs, &file, "/dir.1/1.move_me",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "remove me",
+            sizeof("remove me")) => sizeof("remove me");
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &files[0], "/dir.1/0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[1], "/dir.1/2.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[2], "/dir.2/0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[3], "/dir.2/2.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_write(&lfs, &files[0], "test.9", 7) => 7;
+    lfs_file_write(&lfs, &files[1], "test.a", 7) => 7;
+    lfs_file_write(&lfs, &files[2], "test.b", 7) => 7;
+    lfs_file_write(&lfs, &files[3], "test.c", 7) => 7;
+
+    // rename file while everything is open, this triggers both
+    // a create and delete simultaneously
+    lfs_rename(&lfs, "/dir.2/1.move_me", "/dir.1/1.move_me") => 0;
+
+    lfs_file_close(&lfs, &files[0]) => 0;
+    lfs_file_close(&lfs, &files[1]) => 0;
+    lfs_file_close(&lfs, &files[2]) => 0;
+    lfs_file_close(&lfs, &files[3]) => 0;
+
+    // and check that nothing was corrupted again
+    lfs_dir_open(&lfs, &dir, "/") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "dir.1") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "dir.2") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "/dir.1") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "1.move_me") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 0);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "/dir.2") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "/dir.1/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.9") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/dir.1/2.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.a") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/dir.2/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.b") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/dir.2/2.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.c") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move fix in relocation
+in = "lfs.c"
+define.RELOCATIONS = 'range(0x3+1)'
+define.LFS_ERASE_CYCLES = 0xffffffff
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    lfs_mkdir(&lfs, "/parent") => 0;
+    lfs_mkdir(&lfs, "/parent/child") => 0;
+
+    lfs_file_open(&lfs, &file, "/parent/1.move_me",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "move me",
+            sizeof("move me")) => sizeof("move me");
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/parent/0.before",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.1", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/2.after",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.2", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/child/0.before",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.3", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/child/2.after",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.4", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_t files[4];
+    lfs_file_open(&lfs, &files[0], "/parent/0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[1], "/parent/2.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[2], "/parent/child/0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[3], "/parent/child/2.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_write(&lfs, &files[0], "test.5", 7) => 7;
+    lfs_file_write(&lfs, &files[1], "test.6", 7) => 7;
+    lfs_file_write(&lfs, &files[2], "test.7", 7) => 7;
+    lfs_file_write(&lfs, &files[3], "test.8", 7) => 7;
+
+    // force specific directories to relocate
+    if (RELOCATIONS & 0x1) {
+        lfs_dir_open(&lfs, &dir, "/parent");
+        lfs_testbd_setwear(&cfg, dir.m.pair[0], 0xffffffff) => 0;
+        lfs_testbd_setwear(&cfg, dir.m.pair[1], 0xffffffff) => 0;
+        lfs_dir_close(&lfs, &dir) => 0;
+    }
+    if (RELOCATIONS & 0x2) {
+        lfs_dir_open(&lfs, &dir, "/parent/child");
+        lfs_testbd_setwear(&cfg, dir.m.pair[0], 0xffffffff) => 0;
+        lfs_testbd_setwear(&cfg, dir.m.pair[1], 0xffffffff) => 0;
+        lfs_dir_close(&lfs, &dir) => 0;
+    }
+
+    // ok, now we move the file, this creates a move that needs to be
+    // fixed, possibly in a metadata-pair that needs to be relocated
+    //
+    // the worst case is if we need to relocate and we need to implicit
+    // fix the move in our parent before it falls out of date
+    lfs_rename(&lfs, "/parent/1.move_me", "/parent/child/1.move_me") => 0;
+
+    lfs_file_close(&lfs, &files[0]) => 0;
+    lfs_file_close(&lfs, &files[1]) => 0;
+    lfs_file_close(&lfs, &files[2]) => 0;
+    lfs_file_close(&lfs, &files[3]) => 0;
+
+    // check that nothing was corrupted
+    lfs_dir_open(&lfs, &dir, "/parent") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "child") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "/parent/child") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "1.move_me") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == sizeof("move me"));
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "/parent/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.5") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/2.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.6") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/child/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.7") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/child/2.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.8") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # move fix in relocation with predecessor
+in = "lfs.c"
+define.RELOCATIONS = 'range(0x7+1)'
+define.LFS_ERASE_CYCLES = 0xffffffff
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+
+    lfs_mkdir(&lfs, "/parent") => 0;
+    lfs_mkdir(&lfs, "/parent/child") => 0;
+    lfs_mkdir(&lfs, "/parent/sibling") => 0;
+
+    lfs_file_open(&lfs, &file, "/parent/sibling/1.move_me",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "move me",
+            sizeof("move me")) => sizeof("move me");
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_open(&lfs, &file, "/parent/sibling/0.before",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.1", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/sibling/2.after",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.2", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/child/0.before",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.3", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/child/2.after",
+            LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    lfs_file_write(&lfs, &file, "test.4", 7) => 7;
+    lfs_file_close(&lfs, &file) => 0;
+
+    lfs_file_t files[4];
+    lfs_file_open(&lfs, &files[0], "/parent/sibling/0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[1], "/parent/sibling/2.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[2], "/parent/child/0.before",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_open(&lfs, &files[3], "/parent/child/2.after",
+            LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    lfs_file_write(&lfs, &files[0], "test.5", 7) => 7;
+    lfs_file_write(&lfs, &files[1], "test.6", 7) => 7;
+    lfs_file_write(&lfs, &files[2], "test.7", 7) => 7;
+    lfs_file_write(&lfs, &files[3], "test.8", 7) => 7;
+
+    // force specific directories to relocate
+    if (RELOCATIONS & 0x1) {
+        lfs_dir_open(&lfs, &dir, "/parent");
+        lfs_testbd_setwear(&cfg, dir.m.pair[0], 0xffffffff) => 0;
+        lfs_testbd_setwear(&cfg, dir.m.pair[1], 0xffffffff) => 0;
+        lfs_dir_close(&lfs, &dir) => 0;
+    }
+    if (RELOCATIONS & 0x2) {
+        lfs_dir_open(&lfs, &dir, "/parent/sibling");
+        lfs_testbd_setwear(&cfg, dir.m.pair[0], 0xffffffff) => 0;
+        lfs_testbd_setwear(&cfg, dir.m.pair[1], 0xffffffff) => 0;
+        lfs_dir_close(&lfs, &dir) => 0;
+    }
+    if (RELOCATIONS & 0x4) {
+        lfs_dir_open(&lfs, &dir, "/parent/child");
+        lfs_testbd_setwear(&cfg, dir.m.pair[0], 0xffffffff) => 0;
+        lfs_testbd_setwear(&cfg, dir.m.pair[1], 0xffffffff) => 0;
+        lfs_dir_close(&lfs, &dir) => 0;
+    }
+
+    // ok, now we move the file, this creates a move that needs to be
+    // fixed, possibly in a metadata-pair that needs to be relocated
+    //
+    // and now relocations can force us to need to fix our move in either
+    // the parent or child before things break
+    lfs_rename(&lfs,
+            "/parent/sibling/1.move_me",
+            "/parent/child/1.move_me") => 0;
+
+    lfs_file_close(&lfs, &files[0]) => 0;
+    lfs_file_close(&lfs, &files[1]) => 0;
+    lfs_file_close(&lfs, &files[2]) => 0;
+    lfs_file_close(&lfs, &files[3]) => 0;
+
+    // check that nothing was corrupted
+    lfs_dir_open(&lfs, &dir, "/parent") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "child") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "sibling") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "/parent/sibling") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_dir_open(&lfs, &dir, "/parent/child") => 0;
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, ".") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "..") == 0);
+    assert(info.type == LFS_TYPE_DIR);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "0.before") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "1.move_me") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == sizeof("move me"));
+    lfs_dir_read(&lfs, &dir, &info) => 1;
+    assert(strcmp(info.name, "2.after") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    assert(info.size == 7);
+    lfs_dir_read(&lfs, &dir, &info) => 0;
+    lfs_dir_close(&lfs, &dir) => 0;
+
+    lfs_file_open(&lfs, &file, "/parent/sibling/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.5") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/sibling/2.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.6") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/child/0.before", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.7") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_file_open(&lfs, &file, "/parent/child/2.after", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, 7) => 7;
+    assert(strcmp((char*)buffer, "test.8") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''

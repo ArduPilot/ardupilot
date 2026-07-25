@@ -1,0 +1,109 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+/**
+ * @defgroup UART UART Driver
+ * @brief   Generic UART Driver.
+ * @details This driver abstracts a generic UART (Universal Asynchronous
+ *          Receiver Transmitter) peripheral, the API is designed to be:
+ *          - Unbuffered and copy-less, transfers are always directly performed
+ *            from/to the application-level buffers without extra copy
+ *            operations.
+ *          - Asynchronous, the API is always non blocking.
+ *          - Callbacks capable, operations completion and other events are
+ *            notified using callbacks.
+ *          .
+ *          Special hardware features like deep hardware buffers, DMA transfers
+ *          are hidden to the user but fully supportable by the low level
+ *          implementations.<br>
+ *          This driver model is best used where communication events are
+ *          meant to drive an higher level state machine, as example:
+ *          - RS485 drivers.
+ *          - Multipoint network drivers.
+ *          - Serial protocol decoders.
+ *          .
+ *          If your application requires a synchronous buffered driver then
+ *          the @ref SERIAL should be used instead.
+ * @pre     In order to use the UART driver the @p HAL_USE_UART option
+ *          must be enabled in @p halconf.h.
+ *
+ * @section uart_1 Driver State Machine
+ * The driver implements a state machine internally, not all the driver
+ * functionalities can be used in any moment, any transition not explicitly
+ * shown in the following diagram has to be considered an error and shall
+ * be captured by an assertion (if enabled).
+ * @dot
+  digraph example {
+    rankdir="LR";
+    node [shape=circle, fontname=Helvetica, fontsize=8, fixedsize="true", width="0.9", height="0.9"];
+    edge [fontname=Helvetica, fontsize=8];
+
+    uninit [label="UART_UNINIT", style="bold"];
+    stop  [label="UART_STOP\nLow Power"];
+    ready [label="UART_READY\nClock Enabled"];
+
+    uninit -> stop [label="\nuartInit()"];
+    stop -> ready [label="\nuartStart()"];
+    ready -> ready [label="\nuartStart()"];
+    ready -> stop [label="\nuartStop()"];
+    stop -> stop [label="\nuartStop()"];
+  }
+ * @enddot
+ *
+ * @subsection uart_1_1 Transmitter sub State Machine
+ * The follow diagram describes the transmitter state machine, this diagram
+ * is valid while the driver is in the @p UART_READY state. This state
+ * machine is automatically reset to the @p TX_IDLE state each time the
+ * driver enters the @p UART_READY state.
+ * @dot
+  digraph example {
+    rankdir="LR";
+    node [shape=circle, fontname=Helvetica, fontsize=8, fixedsize="true", width="0.9", height="0.9"];
+    edge [fontname=Helvetica, fontsize=8];
+
+    tx_idle [label="TX_IDLE", style="bold"];
+    tx_active [label="TX_ACTIVE"];
+    tx_idle -> tx_active [label="\nuartStartSend()"];
+    tx_idle -> tx_idle [label="\nuartStopSend()\n>txend2_cb<"];
+    tx_active -> tx_idle [label="\nbuffer transmitted\n>txend1_cb<"];
+    tx_active -> tx_idle [label="\nuartStopSend()"];
+  }
+ * @enddot
+ *
+ * @subsection uart_1_2 Receiver sub State Machine
+ * The follow diagram describes the receiver state machine, this diagram
+ * is valid while the driver is in the @p UART_READY state. This state
+ * machine is automatically reset to the @p RX_IDLE state each time the
+ * driver enters the @p UART_READY state.
+ * @dot
+  digraph example {
+    rankdir="LR";
+    node [shape=circle, fontname=Helvetica, fontsize=8, fixedsize="true", width="0.9", height="0.9"];
+    edge [fontname=Helvetica, fontsize=8];
+
+    rx_idle [label="RX_IDLE", style="bold"];
+    rx_active [label="RX_ACTIVE"];
+    rx_idle -> rx_idle [label="\nuartStopReceive()\n>rxchar_cb<\n>rxerr_cb<"];
+    rx_idle -> rx_active [label="\nuartStartReceive()"];
+
+    rx_active -> rx_idle [label="\nbuffer filled\n>rxend_cb<"];
+    rx_active -> rx_idle [label="\nuartStopReceive()"];
+    rx_active -> rx_active [label="\nreceive error\n>rxerr_cb<"];
+  }
+ * @enddot
+ *
+ * @ingroup HAL_NORMAL_DRIVERS
+ */

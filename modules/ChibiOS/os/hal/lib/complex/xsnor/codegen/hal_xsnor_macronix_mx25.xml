@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="hal_xsnor_macronix_mx25" descr="SNOR Macronix MX25" editcode="true"
+  sourcepath="devices/macronix_mx25" headerpath="devices/macronix_mx25">
+  <brief>SNOR Macronix MX25 driver.</brief>
+  <details><![CDATA[Module for SNOR Macronix MX25 flash devices.]]></details>
+  <imports>
+    <import>oop_base_object.xml</import>
+    <import>hal_xsnor_base.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_base_object.h</include>
+      <include style="regular">hal_xsnor_base.h</include>
+    </includes>
+    <configs>
+    </configs>
+    <definitions_late>
+      <group description="Device options">
+        <define name="MX25_OPT_DUMMY_CYCLES_MASK" value="(15U &lt;&lt; 0)" >
+          <brief>Mask of the dummy cycles field.</brief>
+        </define>
+        <define name="MX25_OPT_DUMMY_CYCLES" value="((n) &lt;&lt; 0)" >
+          <brief>Number of dummy cycles.</brief>
+          <param name="n">number of dummy cycles (2..15)</param>
+        </define>
+        <define name="MX25_OPT_NO_WIDTH_SWITCH" value="(1U &lt;&lt; 4)" >
+          <brief>Switch bus width on initialization.</brief>
+          <details><![CDATA[If @p MX25_OPT_NO_WIDTH_SWITCH is specified then this
+is the bus mode that the device is expected to be using else this is the bus
+mode that the device will be switched in.]]>
+          </details>
+          <note>This option is only valid in WSPI bus mode.</note>
+        </define>
+        <define name="MX25_OPT_USE_SUBSECTORS" value="(1U &lt;&lt; 5)" >
+          <brief>Use 4kB sub-sectors rather than 64kB sectors.</brief>
+        </define>
+        <define name="MX25_OPT_NICE_WAITING" value="(1U &lt;&lt; 6)">
+          <brief>Delays insertion.</brief>
+          <details><![CDATA[If enabled this option inserts delays into the
+flash waiting routines releasing some extra CPU time for threads with lower
+priority, this may slow down the driver a bit however.]]></details>
+        </define>
+        <define name="MX25_OPT_USE_DTR" value="(1U &lt;&lt; 7)" >
+          <brief>Enables DTR in 8 lines mode.</brief>
+        </define>
+      </group>
+    </definitions_late>
+    <macros></macros>
+    <types>
+      <class name="hal_xsnor_macronix_mx25" type="regular" namespace="mx25"
+             descr="SNOR Macronix MX25 driver" ancestorname="hal_xsnor_base">
+        <fields>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <implementation><![CDATA[
+/* Initialization code.*/
+self->descriptor.attributes    = FLASH_ATTR_ERASED_IS_ONE |
+                                 FLASH_ATTR_REWRITABLE |
+                                 FLASH_ATTR_SUSPEND_ERASE_CAPABLE;
+self->descriptor.page_size     = 256U;
+self->descriptor.sectors_count = 0U; /* Overwritten.*/
+self->descriptor.sectors       = NULL;
+self->descriptor.sectors_size  = 0U;
+self->descriptor.address       = 0U;
+self->descriptor.size          = 0U; /* Overwritten.*/]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[
+/* Implementation.*/]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="init">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)offset;
+(void)n;
+(void)rp;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="program">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)offset;
+(void)n;
+(void)pp;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="start_erase_all">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="start_erase_sector">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)sector;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="query_erase">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)msec;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="verify_erase">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)sector;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="mmap_on">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)addrp;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="mmap_off">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+    </types>
+    <variables></variables>
+    <functions></functions>
+  </public>
+  <private>
+    <includes>
+      <include style="regular">hal.h</include>
+      <include style="regular">hal_xsnor_macronix_mx25.h</include>
+    </includes>
+    <functions></functions>
+  </private>
+</module>

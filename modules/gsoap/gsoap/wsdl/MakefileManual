@@ -1,0 +1,87 @@
+#       gSOAP wsdl2h Makefile by Robert van Engelen, Genivia Inc.
+#       Use this to build the soapcpp2 tool when autoconf/automake are not
+#       available.
+#
+#	Dependences:
+#       Build soapcpp2 first (should be in ../bin/soapcpp2)
+#
+#	Use 'make secure' to build SSL-capable wsdlh2 tool (requires OpenSSL)
+#
+#	Mac OS X universal binary:
+#	CPP=g++ -arch i386 -arch ppc
+CC=gcc
+CPP=g++
+#
+SOAPCPP=../src/soapcpp2
+STDSOAPH=../stdsoap2.h
+STDSOAPC=../stdsoap2.cpp
+PLUGIN=../plugin
+#
+SOCKLIB=
+#	SOCKLIB=-lsocket -lnsl
+#
+SSLFLAGS=
+#	SSLFLAGS=-I/opt/local/include
+SSLLIB=-lcrypto -lssl
+#	SSLLIB=-L/opt/local/lib -lcrypto -lssl
+#
+LIBS=-lm $(SOCKLIB)
+#
+COFLAGS=-O1
+#	For static linking use:
+#	COFLAGS=-O1 -static
+#	For debugging use:
+#	COFLAGS=-DDEBUG -g
+#	COFLAGS=-g
+CWFLAGS=-Wall -Wextra
+#
+CIFLAGS=-I.. -I$(PLUGIN) $(SSLFLAGS)
+#
+CMFLAGS=
+#
+CFLAGS=$(CWFLAGS) $(COFLAGS) $(CIFLAGS) $(CMFLAGS)
+#
+release:
+		$(MAKE) -f MakefileManual distclean
+		$(MAKE) -f MakefileManual wsdl2h
+secure:
+		$(MAKE) -f MakefileManual distclean
+		$(MAKE) -f MakefileManual CMFLAGS='-Wno-deprecated-declarations -DWITH_OPENSSL -DWITH_GZIP' LIBS="httpda.o smdevp.o -lz -lm -lpthread $(SOCKLIB) $(SSLLIB)" httpda.o smdevp.o wsdl2h
+wsdl2h:		wsdlC.o wsdl2h.o wsdl.o wadl.o schema.o soap.o mime.o wsp.o bpel.o types.o service.o stdsoap2.o
+		$(CPP) -o wsdl2h wsdlC.o wsdl2h.o wsdl.o wadl.o schema.o soap.o mime.o wsp.o bpel.o types.o service.o stdsoap2.o $(LIBS)
+		-cp -f wsdl2h ../bin
+stdsoap2.o:	$(STDSOAPH) $(STDSOAPC)
+		$(CPP) -c $(CFLAGS) $(STDSOAPC)
+wsdl2h.o:	wsdl2h.cpp types.h service.h includes.h
+		$(CPP) -c $(CFLAGS) wsdl2h.cpp
+wsdlC.o:	wsdlC.cpp
+		$(CPP) -c $(CFLAGS) wsdlC.cpp
+wsdlC.cpp:	schema.h soap.h mime.h dime.h http.h wsdl.h includes.h imports.h wsp.h sp.h wsam.h wsrmp.h wsu.h wst.h
+		$(SOAPCPP) -I../import -SC -pwsdl wsdl.h
+types.o:	types.h types.cpp includes.h wsdlC.cpp
+		$(CPP) -c $(CFLAGS) types.cpp
+service.o:	service.h service.cpp includes.h wsdlC.cpp
+		$(CPP) -c $(CFLAGS) service.cpp
+wsdl.o:		wsdl.h wsdl.cpp includes.h imports.h
+		$(CPP) -c $(CFLAGS) wsdl.cpp
+wadl.o:		wadl.h wadl.cpp includes.h imports.h
+		$(CPP) -c $(CFLAGS) wadl.cpp
+schema.o:	schema.h schema.cpp includes.h imports.h
+		$(CPP) -c $(CFLAGS) schema.cpp
+soap.o:		soap.h soap.cpp includes.h imports.h
+		$(CPP) -c $(CFLAGS) soap.cpp
+mime.o:		mime.h mime.cpp includes.h imports.h
+		$(CPP) -c $(CFLAGS) mime.cpp
+wsp.o:		wsp.h wsp.cpp includes.h imports.h
+		$(CPP) -c $(CFLAGS) wsp.cpp
+bpel.o:		bpel.h bpel.cpp includes.h imports.h
+		$(CPP) -c $(CFLAGS) bpel.cpp
+httpda.o:	$(PLUGIN)/httpda.c
+		$(CPP) -c $(CFLAGS) $(PLUGIN)/httpda.c
+smdevp.o:	$(PLUGIN)/smdevp.c
+		$(CPP) -c $(CFLAGS) $(PLUGIN)/smdevp.c
+.PHONY:		clean distclean
+clean:		
+		-rm -f *.o wsdlH.h wsdlStub.h wsdlC.cpp wsdlClient.cpp wsdlServer.cpp wsdlClientLib.cpp wsdlServerLib.cpp
+distclean:		
+		-rm -f *.o *.wsdl *.xsd *.xml *.nsmap wsdl2h wsdlH.h wsdlStub.h wsdlC.cpp wsdlClient.cpp wsdlServer.cpp wsdlClientLib.cpp wsdlServerLib.cpp

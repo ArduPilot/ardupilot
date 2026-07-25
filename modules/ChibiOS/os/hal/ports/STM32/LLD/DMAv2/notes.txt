@@ -1,0 +1,18 @@
+STM32 DMAv2 driver.
+
+Driver capability:
+
+- The driver supports the STM32 enhanced DMA controller found on F2, F4 and
+  F7 sub-families.
+- Support for automatic the channel selection.
+- Support for cache flushing and invalidation.
+
+The file registry must export:
+
+STM32_ADVANCED_DMA          - TRUE not used by the DMA drivers but other
+                              drivers use it to enable checks on DMA
+                              channels. Probably will be removed in the
+                              future.
+STM32_HAS_DMAx              - Support for DMA unit "x" (1..2).
+STM32_DMAx_CHn_HANDLER      - Vector name for channel "n" (0..7).
+STM32_DMAn_CHx_NUMBER       - Vector number for channel "n" (0..7).

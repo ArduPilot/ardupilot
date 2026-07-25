@@ -1,0 +1,34 @@
+#	typemap.dat for W3C basic and advanced XML schema pattern databindings
+
+xsd__duration = #import "duration.h"
+
+xsd__dateTime = #import "struct_tm.h"
+
+xsd__date = #import "struct_tm_date.h"
+
+xsd__time = #import "long_time.h"
+
+#	xsd:integer and xsd:decimal have no value range restrictions, so we
+#	CANNOT map them to C/C++ numerical types:
+
+# xsd__integer = typedef LONG64 xsd__integer;
+
+# xsd__decimal = typedef double xsd__decimal;
+
+# xsd__positiveInteger = typedef LONG64 xsd__positiveInteger 1 :  ;
+
+# xsd__negativeInteger = typedef LONG64 xsd__negativeInteger : -1 ;
+
+# xsd__nonNegativeInteger = typedef LONG64 xsd__nonNegativeInteger 0 : ;
+
+# xsd__nonPositiveInteger = typedef LONG64 xsd__nonPositiveInteger : 0 ;
+
+#	test/wsdl/typemap.dat
+
+ex = "http://www.w3.org/2002/ws/databinding/examples/6/09/"
+st = "http://www.w3.org/2002/ws/databinding/examples/6/09/strict/"
+
+#	prevents importing from an non-existing site by making it a "built-in"
+#	namespace using angle brackets:
+
+x = <http://example.com/a/namespace>

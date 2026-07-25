@@ -1,0 +1,35 @@
+name: bazel
+
+on:
+  push: {}
+  pull_request: {}
+
+jobs:
+  job:
+    name: bazel.${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-2022]
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: mount bazel cache
+      uses: actions/cache@v2.0.0
+      env:
+        cache-name: bazel-cache
+      with:
+        path: "~/.cache/bazel"
+        key: ${{ env.cache-name }}-${{ matrix.os }}-${{ github.ref }}
+        restore-keys: |
+          ${{ env.cache-name }}-${{ matrix.os }}-main
+
+    - name: build
+      run: |
+        bazel build //:benchmark //:benchmark_main //test/...
+
+    - name: test
+      run: |
+        bazel test --test_output=all //test/...

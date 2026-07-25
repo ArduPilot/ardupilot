@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+import os, re, subprocess
+from waflib import Options, TaskGen, Utils
+
+def options(opt):
+	opt.load('rst')
+	opt.load('tex')
+
+def configure(conf):
+	conf.load('rst')
+	conf.load('tex')
+
+def build(bld):
+	bld(
+	 features='rst',
+	 target='test0.html',
+	 source='test0.rst',
+	)
+
+	bld(
+	 target='generated.rst',
+	 rule=lambda tsk: Utils.writef( tsk.outputs[0].abspath(), "Generated contents in %s" % tsk.outputs[0].name),
+	)
+	
+	bld(
+	 target='generated.csv',
+	 rule=lambda tsk: Utils.writef( tsk.outputs[0].abspath(), "a,b,c\n1,2,%s" % tsk.outputs[0].name),
+	)
+	
+	bld(
+	 target='generated.html',
+	 rule=lambda tsk: Utils.writef( tsk.outputs[0].abspath(), "<p>Generated HTML data</p>"),
+	)
+
+	bld(
+	 features='rst',
+	 target='test1.html',
+	 source='test1.rst',
+	)
+	
+	bld(
+	 features='rst',
+	 target='test1.pdf',
+	 source='test1.rst',
+	)
+
+	for x in bld.path.ant_glob("**/*.svg"):
+		bld(
+		 rule='inkscape --export-area-drawing --export-png=${TGT[0].bldpath()} ${SRC[0].bldpath()}',
+		 source=x,
+		 target=x.change_ext('.png'),
+		)
+		bld(
+		 rule='inkscape --export-area-drawing --export-pdf=${TGT[0].bldpath()} ${SRC[0].bldpath()}',
+		 source=x,
+		 target=x.change_ext('.pdf'),
+		)
+
+	bld(
+	 target='generated.tex',
+	 rule=lambda tsk: Utils.writef( tsk.outputs[0].abspath(), "Generated contents in %s" % tsk.outputs[0].name),
+	)
+
+	bld(
+	 features='rst',
+	 type='rst2latex',
+	 target='test2.tex',
+	 source='test2.rst',
+	)
+
+	bld(
+	 features='tex',
+	 source='test2.tex',
+	)
+

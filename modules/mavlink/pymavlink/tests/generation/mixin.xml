@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<mavlink>
+  <messages>
+    <message id="7777" name="MIXIN">
+      <description>This is a MIXIN message field</description>
+      <field type="uint32_t" name="MIXINFIELD">Mixin Field</field>
+    </message>
+  </messages>
+</mavlink>

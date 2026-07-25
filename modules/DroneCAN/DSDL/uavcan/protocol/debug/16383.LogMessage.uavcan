@@ -1,0 +1,8 @@
+#
+# Generic log message.
+# All items are byte aligned.
+#
+
+LogLevel level
+uint8[<=31] source
+uint8[<=90] text

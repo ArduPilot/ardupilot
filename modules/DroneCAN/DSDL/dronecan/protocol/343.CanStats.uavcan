@@ -1,0 +1,15 @@
+#
+# Monitor the stats of physical layer on the node
+#
+
+uint8 interface         # interface number
+uint32 tx_requests      # number of tx requests
+uint16 tx_rejected      # number of tx requests rejected
+uint16 tx_overflow      # number of tx requests overflow
+uint16 tx_success       # number of tx requests success
+uint16 tx_timedout      # number of tx requests timedout
+uint16 tx_abort         # number of tx requests aborted
+uint32 rx_received      # number of rx received
+uint16 rx_overflow      # number of rx overflow
+uint16 rx_errors        # number of rx errors
+uint16 busoff_errors    # number of busoff errors

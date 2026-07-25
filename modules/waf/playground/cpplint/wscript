@@ -1,0 +1,12 @@
+top = '.'
+out = 'build'
+
+def options(opt):
+    opt.load('compiler_cxx cpplint')
+
+def configure(conf):
+    conf.load('compiler_cxx cpplint')
+
+def build(bld):
+    bld(features='cpplint', source='my_include.hpp')
+    bld.program(features='cpplint', source='main.cpp', target='app')

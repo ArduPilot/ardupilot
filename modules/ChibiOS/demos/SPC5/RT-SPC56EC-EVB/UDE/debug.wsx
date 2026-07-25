@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<stg format="2.0">
+	<OriginalWsp type="string">debug.wsx</OriginalWsp><BackupWspFlag type="flag">0</BackupWspFlag><UseWspCnt type="int">0</UseWspCnt><WspCloseCnt type="int">0</WspCloseCnt><ProdInfo type="bin" size="52">vQTv/gAAAQAXAAIA8QkPAAAABAAAAAAAPwAAAAAAAAAEAAAAAgAAAAAAAAAAAAAAAAAAAA==</ProdInfo><ProdInfoString type="string">4.0</ProdInfoString><CreationDate type="string">28.08.2013 14:58:49:999</CreationDate><MainFrame type="key"><VisibilityGroupsMgr type="key"><Core0 type="key"><UsePrimaryGroup type="flag">0</UsePrimaryGroup><UseLastUsedGroup type="flag">0</UseLastUsedGroup></Core0><Core1 type="key"><UsePrimaryGroup type="flag">0</UsePrimaryGroup><UseLastUsedGroup type="flag">0</UseLastUsedGroup></Core1><EnableVisibilityGroups type="flag">0</EnableVisibilityGroups><VisibilityGroup_1 type="key"><NoOfDebugger type="int">0</NoOfDebugger><DefaultGroupName type="string">WorkspaceManager</DefaultGroupName><GroupName type="string">WorkspaceManager</GroupName><PrimaryGroup type="flag">0</PrimaryGroup><CommonGroup type="flag">1</CommonGroup></VisibilityGroup_1><VisibilityGroup_2 type="key"><Debugger_1 type="string">Core0</Debugger_1><NoOfDebugger type="int">1</NoOfDebugger><DefaultGroupName type="string">Target0.Controller0.Core0</DefaultGroupName><GroupName type="string">Target0.Controller0.Core0</GroupName><PrimaryGroup type="flag">1</PrimaryGroup><CommonGroup type="flag">0</CommonGroup></VisibilityGroup_2><VisibilityGroup_3 type="key"><Debugger_1 type="string">Core1</Debugger_1><NoOfDebugger type="int">1</NoOfDebugger><DefaultGroupName type="string">Target0.Controller0.Core1</DefaultGroupName><GroupName type="string">Target0.Controller0.Core1</GroupName><PrimaryGroup type="flag">1</PrimaryGroup><CommonGroup type="flag">0</CommonGroup></VisibilityGroup_3><NoOfDefaultVisibilityGroups type="int">3</NoOfDefaultVisibilityGroups><NoOfVisibilityGroups type="int">3</NoOfVisibilityGroups><EnableUserSwitchOfVisibilityGroups type="flag">0</EnableUserSwitchOfVisibilityGroups><EnableDebuggerSwitchOfVisibilityGroups type="flag">0</EnableDebuggerSwitchOfVisibilityGroups><VisibilityGroupsCtrlTBCat type="int">7</VisibilityGroupsCtrlTBCat></VisibilityGroupsMgr><NETPlacementRoot type="key"><FormsData type="innerxml"><FormsData><Bounds><X>63</X><Y>21</Y><Width>1296</Width><Height>818</Height></Bounds><ClientSize><Width>1280</Width><Height>780</Height></ClientSize><State>Normal</State></FormsData></FormsData><DockingManagerControlData type="innerxml"><DockingManagerControlData><MDIActive>false</MDIActive><DocumentDockStyle>Top</DocumentDockStyle><DockingControls><DockingControlData><DockedDimension>1272</DockedDimension><Cancelled>false</Cancelled><DockingType>Bottom</DockingType><FloatingBounds><X>0</X><Y>0</Y><Width>0</Width><Height>0</Height></FloatingBounds><AutoHide>false</AutoHide><AutoHideByContextSwitch>false</AutoHideByContextSwitch><DockingIndex>0</DockingIndex><PanelIndex>0</PanelIndex><ContainerType>DockPanel</ContainerType><Selected>true</Selected></DockingControlData><DockingControlData><DockedDimension>457</DockedDimension><Cancelled>false</Cancelled><DockingType>Left</DockingType><FloatingBounds><X>0</X><Y>0</Y><Width>0</Width><Height>0</Height></FloatingBounds><AutoHide>false</AutoHide><AutoHideByContextSwitch>false</AutoHideByContextSwitch><DockingIndex>0</DockingIndex><PanelIndex>0</PanelIndex><ContainerType>DockPanel</ContainerType><Selected>false</Selected></DockingControlData><DockingControlData><DockedDimension>457</DockedDimension><Cancelled>false</Cancelled><DockingType>Left</DockingType><FloatingBounds><X>0</X><Y>0</Y><Width>0</Width><Height>0</Height></FloatingBounds><AutoHide>false</AutoHide><AutoHideByContextSwitch>false</AutoHideByContextSwitch><DockingIndex>1</DockingIndex><PanelIndex>0</PanelIndex><ContainerType>DockPanel</ContainerType><Selected>false</Selected></DockingControlData><DockingControlData><DockedDimension>0</DockedDimension><Cancelled>false</Cancelled><DockingType>Top</DockingType><FloatingBounds><X>0</X><Y>0</Y><Width>0</Width><Height>0</Height></FloatingBounds><AutoHide>false</AutoHide><AutoHideByContextSwitch>false</AutoHideByContextSwitch><DockingIndex>2</DockingIndex><PanelIndex>-1</PanelIndex><ContainerType>TabbedDocument</ContainerType><Selected>false</Selected></DockingControlData><DockingControlData><DockedDimension>457</DockedDimension><Cancelled>false</Cancelled><DockingType>Left</DockingType><FloatingBounds><X>0</X><Y>0</Y><Width>0</Width><Height>0</Height></FloatingBounds><AutoHide>false</AutoHide><AutoHideByContextSwitch>false</AutoHideByContextSwitch><DockingIndex>3</DockingIndex><PanelIndex>0</PanelIndex><ContainerType>DockPanel</ContainerType><Selected>true</Selected></DockingControlData><DockingControlData><DockedDimension>457</DockedDimension><Cancelled>false</Cancelled><DockingType>Left</DockingType><FloatingBounds><X>0</X><Y>0</Y><Width>0</Width><Height>0</Height></FloatingBounds><AutoHide>false</AutoHide><AutoHideByContextSwitch>false</AutoHideByContextSwitch><DockingIndex>2</DockingIndex><PanelIndex>0</PanelIndex><ContainerType>DockPanel</ContainerType><Selected>false</Selected></DockingControlData><DockingControlData><DockedDimension>457</DockedDimension><Cancelled>false</Cancelled><DockingType>Left</DockingType><FloatingBounds><X>0</X><Y>0</Y><Width>0</Width><Height>0</Height></FloatingBounds><AutoHide>false</AutoHide><AutoHideByContextSwitch>false</AutoHideByContextSwitch><DockingIndex>4</DockingIndex><PanelIndex>0</PanelIndex><ContainerType>DockPanel</ContainerType><Selected>false</Selected></DockingControlData><DockingControlData><DockedDimension>0</DockedDimension><Cancelled>false</Cancelled><DockingType>Top</DockingType><FloatingBounds><X>0</X><Y>0</Y><Width>0</Width><Height>0</Height></FloatingBounds><AutoHide>false</AutoHide><AutoHideByContextSwitch>false</AutoHideByContextSwitch><DockingIndex>1</DockingIndex><PanelIndex>-1</PanelIndex><ContainerType>TabbedDocument</ContainerType><Selected>false</Selected></DockingControlData><DockingControlData><DockedDimension>0</DockedDimension><Cancelled>false</Cancelled><DockingType>Top</DockingType><FloatingBounds><X>0</X><Y>0</Y><Width>0</Width><Height>0</Height></FloatingBounds><AutoHide>false</AutoHide><AutoHideByContextSwitch>false</AutoHideByContextSwitch><DockingIndex>0</DockingIndex><PanelIndex>-1</PanelIndex><ContainerType>TabbedDocument</ContainerType><Selected>true</Selected></DockingControlData></DockingControls><LeftDockingContainerControlData><DockingContainerControlData><Tabbed>true</Tabbed><Dimension>632</Dimension></DockingContainerControlData></LeftDockingContainerControlData><RightDockingContainerControlData><DockingContainerControlData><Tabbed>false</Tabbed><Dimension>200</Dimension></DockingContainerControlData></RightDockingContainerControlData><TopDockingContainerControlData><DockingContainerControlData><Tabbed>false</Tabbed><Dimension>200</Dimension></DockingContainerControlData></TopDockingContainerControlData><BottomDockingContainerControlData><DockingContainerControlData><Tabbed>true</Tabbed><Dimension>200</Dimension></DockingContainerControlData></BottomDockingContainerControlData><TabbedDocumentContainerControlData><TabbedDocumentContainerControlData><Selected>true</Selected><SplitterSize>100</SplitterSize></TabbedDocumentContainerControlData></TabbedDocumentContainerControlData></DockingManagerControlData></DockingManagerControlData><ToolbarControlData type="innerxml"><ToolbarControlData><ShowPanelShortcuts>true</ShowPanelShortcuts><ShowToolItemMessages>true</ShowToolItemMessages><TopContainer><PanelBounds><X>0</X><Y>0</Y><Width>1280</Width><Height>74</Height></PanelBounds><ToolBars><ToolbarPersistData><Bounds><X>0</X><Y>0</Y><Width>1280</Width><Height>24</Height></Bounds><Name>Platform Main Menu</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>true</Visible><ToolItemData/></ToolbarPersistData><ToolbarPersistData><Bounds><X>3</X><Y>24</Y><Width>276</Width><Height>25</Height></Bounds><Name>Macro Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>true</Visible><ToolItemData><ToolItemPersistData><Name>UDE_0x3B_{F5FC9736-9EE3-460B-BB80-67C14C9581BF}</Name><Visible>true</Visible><Text>Run Macro</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x40_{F5FC9736-9EE3-460B-BB80-67C14C9581BF}</Name><Visible>true</Visible><Text>Debug Macro</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x3_{F5FC9736-9EE3-460B-BB80-67C14C9581BF}</Name><Visible>true</Visible><Text>Break Macro</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x3C_{F5FC9736-9EE3-460B-BB80-67C14C9581BF}</Name><Visible>true</Visible><Text>Reload Macro</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Ctrl_{4D5190CD-077D-4F92-B890-4545242BF32A}_UDEWorkspace</Name><Visible>true</Visible><Text/><DisplayStyle>ImageAndText</DisplayStyle><AppendAccelerator>false</AppendAccelerator></ToolItemPersistData></ToolItemData></ToolbarPersistData><ToolbarPersistData><Bounds><X>279</X><Y>24</Y><Width>141</Width><Height>25</Height></Bounds><Name>Config Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>true</Visible><ToolItemData><ToolItemPersistData><Name>UDE_0x3_{D8F96613-6E55-48F7-AF2A-5FCE31D103FA}</Name><Visible>true</Visible><Text>Target Configuration</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0xFE_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>Connect Target</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x100_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>Disconnect Target</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x6_{1C85B31A-5D25-4197-9635-9C5DC28EAFD7}</Name><Visible>true</Visible><Text>Setup Target Interface</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x12_{D8F96613-6E55-48F7-AF2A-5FCE31D103FA}</Name><Visible>true</Visible><Text>MCU Run Control</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData></ToolItemData></ToolbarPersistData><ToolbarPersistData><Bounds><X>420</X><Y>24</Y><Width>259</Width><Height>25</Height></Bounds><Name>Tools Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>true</Visible><ToolItemData><ToolItemPersistData><Name>UDE_Ctrl_{377CE046-823C-4A05-8828-13C25D345D77}_Core0</Name><Visible>true</Visible><Text/><DisplayStyle>ImageAndText</DisplayStyle><AppendAccelerator>false</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0xE1_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>Execution Time Setup</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Ctrl_{377CE046-823C-4A05-8828-13C25D345D77}_Core1</Name><Visible>true</Visible><Text/><DisplayStyle>ImageAndText</DisplayStyle><AppendAccelerator>false</AppendAccelerator></ToolItemPersistData></ToolItemData></ToolbarPersistData><ToolbarPersistData><Bounds><X>679</X><Y>24</Y><Width>95</Width><Height>25</Height></Bounds><Name>Edit Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>true</Visible><ToolItemData><ToolItemPersistData><Name>UDE_Workspace_0x1779</Name><Visible>true</Visible><Text>Cut</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Workspace_0x177A</Name><Visible>true</Visible><Text>Copy</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Workspace_0x177B</Name><Visible>true</Visible><Text>Paste</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData></ToolItemData></ToolbarPersistData><ToolbarPersistData><Bounds><X>774</X><Y>24</Y><Width>49</Width><Height>25</Height></Bounds><Name>File Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>true</Visible><ToolItemData><ToolItemPersistData><Name>UDE_Workspace_0x1770</Name><Visible>true</Visible><Text>New Workspace</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Workspace_0x1771</Name><Visible>false</Visible><Text>Open workspace</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Workspace_0x1772</Name><Visible>false</Visible><Text>Save workspace as</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Workspace_0x1773</Name><Visible>false</Visible><Text>Save workspace</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Workspace_0x1774</Name><Visible>false</Visible><Text>Close workspace</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Workspace_0x177F</Name><Visible>false</Visible><Text>Export view content</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Workspace_0x1778</Name><Visible>false</Visible><Text>Print</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x1_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>false</Visible><Text>Load Program</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData></ToolItemData></ToolbarPersistData><ToolbarPersistData><Bounds><X>823</X><Y>24</Y><Width>440</Width><Height>25</Height></Bounds><Name>Views Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>true</Visible><ToolItemData><ToolItemPersistData><Name>UDE_0x4_{D8F96613-6E55-48F7-AF2A-5FCE31D103FA}</Name><Visible>true</Visible><Text>Target Browser</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x15_{D8F96613-6E55-48F7-AF2A-5FCE31D103FA}</Name><Visible>true</Visible><Text>Diagnostic Message Viewer</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0xF_{D8F96613-6E55-48F7-AF2A-5FCE31D103FA}</Name><Visible>true</Visible><Text>Console</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x0_{DED51A60-E0B7-11D4-9112-0001034962B6}</Name><Visible>true</Visible><Text>CPU Window</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x1E_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>true</Visible><Text>Explore Symbols</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0xA_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>true</Visible><Text>Program</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x5C_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>true</Visible><Text>Single Program Window</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x5A_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>true</Visible><Text>Disassembly Window</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x2D_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>true</Visible><Text>Show Special Function Register</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x3C_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>true</Visible><Text>Locals</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x46_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>true</Visible><Text>Watch</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0xA_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>Simulated I/O</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x14_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>UDE HTML</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x19_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>Array Chart</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x1B_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>Time Traced Signal Chart</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x50_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>IP Trace Profiling</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x28_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>Memory</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x46_{BE30DC4A-FD5D-47C1-994D-8CCEC8720E6E}</Name><Visible>true</Visible><Text>Call Stack</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData></ToolItemData></ToolbarPersistData><ToolbarPersistData><Bounds><X>3</X><Y>49</Y><Width>492</Width><Height>25</Height></Bounds><Name>Debug Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>true</Visible><ToolItemData><ToolItemPersistData><Name>UDE_0x18_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>true</Visible><Text>Show IP</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x5E_{27B09B6B-1CF9-4B8E-8F03-63D41538E5D2}</Name><Visible>true</Visible><Text>Show program code</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x7_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Start Program</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x9_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Step Over</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0xA_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Step Into</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0xB_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Step Out</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x8_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Run Cursor</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x321_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Break Program</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0xD_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Reset</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0xC_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Restart Program</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x3_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Breakpoints</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x6_{692DBD81-4A3F-11D2-B2CD-00A02457BF0F}</Name><Visible>true</Visible><Text>Toggle Break</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Ctrl_{FB7BC773-88A4-4ECE-B9B6-7189610B0735}_Core0</Name><Visible>true</Visible><Text/><DisplayStyle>ImageAndText</DisplayStyle><AppendAccelerator>false</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_0x3_{1C85B31A-5D25-4197-9635-9C5DC28EAFD7}</Name><Visible>false</Visible><Text>Trigger setup</Text><DisplayStyle>Image</DisplayStyle><AppendAccelerator>true</AppendAccelerator></ToolItemPersistData><ToolItemPersistData><Name>UDE_Ctrl_{FB7BC773-88A4-4ECE-B9B6-7189610B0735}_Core1</Name><Visible>false</Visible><Text/><DisplayStyle>ImageAndText</DisplayStyle><AppendAccelerator>false</AppendAccelerator></ToolItemPersistData></ToolItemData></ToolbarPersistData><ToolbarPersistData><Bounds><X>0</X><Y>100</Y><Width>26</Width><Height>25</Height></Bounds><Name>Show Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>false</Visible><ToolItemData/></ToolbarPersistData><ToolbarPersistData><Bounds><X>0</X><Y>200</Y><Width>26</Width><Height>25</Height></Bounds><Name>Window Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>false</Visible><ToolItemData/></ToolbarPersistData><ToolbarPersistData><Bounds><X>0</X><Y>225</Y><Width>26</Width><Height>25</Height></Bounds><Name>Workspace Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>false</Visible><ToolItemData/></ToolbarPersistData><ToolbarPersistData><Bounds><X>0</X><Y>275</Y><Width>26</Width><Height>25</Height></Bounds><Name>Help Toolbar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>false</Visible><ToolItemData/></ToolbarPersistData></ToolBars></TopContainer><BottomContainer><PanelBounds><X>0</X><Y>757</Y><Width>1280</Width><Height>23</Height></PanelBounds><ToolBars><ToolbarPersistData><Bounds><X>0</X><Y>0</Y><Width>1280</Width><Height>23</Height></Bounds><Name>Platform Status Bar</Name><AlwaysUnvisible>false</AlwaysUnvisible><Visible>true</Visible><ToolItemData/></ToolbarPersistData></ToolBars></BottomContainer><LeftContainer><PanelBounds><X>0</X><Y>74</Y><Width>0</Width><Height>683</Height></PanelBounds><ToolBars/></LeftContainer><RightContainer><PanelBounds><X>1280</X><Y>74</Y><Width>0</Width><Height>683</Height></PanelBounds><ToolBars/></RightContainer></ToolbarControlData></ToolbarControlData></NETPlacementRoot><StdTargetManagerWin type="key"><OPEN_VIEW type="key"><FrameCreated type="string">28.08.2013 15:00:07:145</FrameCreated><ViewSrv type="key"><TargetBrowserView type="key"><SplitterRatio type="int">100</SplitterRatio></TargetBrowserView></ViewSrv><NETFrameMode type="int">77824</NETFrameMode><NETFrameSaveIndex type="int">1</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">1</CommonVisibilityGroup><VisibilityGroup_1 type="string">WorkspaceManager</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW><SAVED_VIEW_OBJS type="int">1</SAVED_VIEW_OBJS><SAVED_VIEW type="int">0</SAVED_VIEW></StdTargetManagerWin><StdUDEMessageWin type="key"><OPEN_VIEW type="key"><FrameCreated type="string">28.08.2013 15:00:07:129</FrameCreated><ViewSrv type="key"><LogWin type="key"><Index type="key"><Width type="bin" size="8">MgAAAA==</Width><Visible type="bin" size="8">AQAAAA==</Visible></Index><Type type="key"><Width type="bin" size="8">ZAAAAA==</Width><Visible type="bin" size="8">AQAAAA==</Visible></Type><Time type="key"><Width type="bin" size="8">ZAAAAA==</Width><Visible type="bin" size="8">AQAAAA==</Visible></Time><Src type="key"><Width type="bin" size="8">lgAAAA==</Width><Visible type="bin" size="8">AQAAAA==</Visible></Src><Msg type="key"><Width type="bin" size="8">6AMAAA==</Width><Visible type="bin" size="8">AQAAAA==</Visible></Msg></LogWin><CmdWin type="key"><History type="key"/></CmdWin></ViewSrv><NETFrameMode type="int">90112</NETFrameMode><NETFrameSaveIndex type="int">0</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">1</CommonVisibilityGroup><VisibilityGroup_1 type="string">WorkspaceManager</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW><SAVED_VIEW_OBJS type="int">1</SAVED_VIEW_OBJS><SAVED_VIEW type="int">0</SAVED_VIEW></StdUDEMessageWin><StdUDECmdWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDECmdWin><UDETraceWin2 type="key"/><StdUDEWspHTMLView type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDEWspHTMLView><SelectedPrinter type="string">\\napnt002.nap.st.com\NAPPRT0001</SelectedPrinter><TraceFramework type="key"/></MainFrame><INI_SECTION type="key"><Macro type="key"><MacroLib type="string">..\..\..\..\..\..\Program Files (x86)\pls\UDE 4.0\StdLibrary.mso</MacroLib></Macro><PLACEMENT type="key"><MULTICORELOADERDLG type="string">416,1097,367,613</MULTICORELOADERDLG><SFRSelectDlg type="string">620,965,340,662</SFRSelectDlg></PLACEMENT><EXTRAVALUE type="key"><MULTICORELOADERDLG type="int">0</MULTICORELOADERDLG><SFRSelectDlg type="int">0</SFRSelectDlg></EXTRAVALUE><Loader type="key"><LOADER_REGKEY_WSP type="string">{866f82d3-fac5-43cd-8a82-0af01e46e2c5}</LOADER_REGKEY_WSP></Loader></INI_SECTION><AddOns type="key"><UDE.Script type="key"><MacroGuiEntries type="key"><LastScriptFilePath type="string">..\..\..\..\..\..\Users\disiriog\Documents\pls\UDE 4.0</LastScriptFilePath><Macro_24_09_13_12_19_33_0 type="key"><ScriptDescription type="string">The script contains a collection of macros to save memory content into different file formats 
+and fill target memory ranges</ScriptDescription><ScriptPath type="string">V:\UDE\AddOns\Macro\MacroLibrary\StdMacros1.dsm</ScriptPath><ScriptSource type="string">'	
+'	$Header: /Ude/AddOns/Macro/MacroLibrary/StdMacros.dsm 3     30.04.04 9:34 Weisses $
+'_______________________________________________________
+'
+'	universal debug engine
+'	 
+'	Standard command line macros - part 1 
+'
+'	pls Development Tools 1999-2004
+'
+'   28.04.04    SW     correction for UDE 1.10
+'   03.06.03    SW     initial version
+'_______________________________________________________
+
+'_______________________________________________________
+'
+'	UnAss command line function
+' 
+'	generates disassembly file 
+'
+'	command line UnAss output-file range1 [range2] [range3] .....
+'	range description:
+'		C:&lt;startaddress&gt;,&lt;length&gt; or	- code
+'		DB:&lt;startaddress&gt;,&lt;length&gt; or	- data byte
+'		DW:&lt;startaddress&gt;,&lt;length&gt; or	- data word
+'		DD:&lt;startaddress&gt;,&lt;length&gt; or	- data dword
+'_______________________________________________________
+
+Sub UnAss(File,ParameterObj)
+
+	set debugger = workspace.Coredebugger(0)
+	set DisASMObj = debugger.DisASMObj
+	If Not IsObject(ParameterObj) Then
+	  	MsgBox "Number of parameters wrong"
+		Exit Sub 		
+	End If
+	If IsNumeric(File) Then
+	  	MsgBox "File parameter wrong - " &amp; File
+		Exit Sub 		
+	End If
+	DisASMObj.OutputPath = CStr(File)
+	bRetVal = DisASMObj.CreateStream(True,"UDE Disassembler output of current Program",False)
+	If bRetVal = True Then
+		ParmeterCnt = ParameterObj.ParameterCount
+		If ParmeterCnt = 0 Then
+	  		MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+			Exit Sub 		
+		End If
+		If ( ParmeterCnt Mod 3 ) &lt;&gt; 0 Then
+	  		MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+			Exit Sub 		
+		End If
+		RangeCnt = ParmeterCnt/3
+		ParamIndex = 0
+		For Range = 0 To RangeCnt -1 
+			KindOfRange = CStr(ParameterObj.Parameter(ParamIndex)) 
+			KindOfRange = UCase(KindOfRange)
+			Address = CLng(ParameterObj.Parameter(ParamIndex +1))		
+			Length = CLng(ParameterObj.Parameter(ParamIndex +2))
+			ParamIndex = ParamIndex +3
+			If IsNumeric(KindOfRange) Then
+				If KindOfRange = 12 Then
+ 					DisASMObj.AddRange Address,Length,1
+				ElseIf KindOfRange = 219 Then
+ 					DisASMObj.AddRange Address,Length,2
+				ElseIf KindOfRange = 221 Then
+ 					DisASMObj.AddRange Address,Length,4
+				Else
+	  				MsgBox "Invalid range type " &amp; KindOfRange &amp;  "of range " &amp; Range +1
+					Exit Sub 		
+			 	End If
+			Else
+				If KindOfRange = "C" Then
+ 					DisASMObj.AddRange Address,Length,1
+				ElseIf KindOfRange = "DB" Then
+ 					DisASMObj.AddRange Address,Length,2
+				ElseIf KindOfRange = "DW" Then
+ 					DisASMObj.AddRange Address,Length,3
+				ElseIf KindOfRange = "DD" Then
+ 					DisASMObj.AddRange Address,Length,4
+				Else
+	  				MsgBox "Invalid range type " &amp; KindOfRange &amp;  "of range " &amp; Range +1
+					Exit Sub 		
+				End If
+			End If
+		Next
+		DisASMObj.HexFileModeFlag = False
+		DisASMObj.ListModeFlag = False
+		DisASMObj.WriteAllRanges(False)
+	End If
+
+End Sub
+
+'_______________________________________________________
+'
+'	SaveHEX command line function
+' 
+'	generates intel-HEX file 
+'
+'	command line SaveHex output-file range1 [range2] [range3] .....
+'	range description:
+'		&lt;startaddress&gt;,&lt;length&gt; 
+'_______________________________________________________
+
+Sub SaveHEX(File,ParameterObj)
+
+	set debugger = workspace.Coredebugger(0)
+	set DisASMObj = debugger.DisASMObj
+	If Not IsObject(ParameterObj) Then
+	  	MsgBox "Number of parameters wrong"
+		Exit Sub 		
+	End If
+	If IsNumeric(File) Then
+	  	MsgBox "File parameter wrong - " &amp; File
+		Exit Sub 		
+	End If
+	DisASMObj.OutputPath = CStr(File)
+	bRetVal = DisASMObj.CreateStream(True,"UDE generated intel-Hex file of current Program",False)
+	If bRetVal = True Then
+		ParmeterCnt = ParameterObj.ParameterCount
+		If ParmeterCnt = 0 Then
+	  		MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+			Exit Sub 		
+		End If
+		If ( ParmeterCnt Mod 2 ) &lt;&gt; 0 Then
+	  		MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+			Exit Sub 		
+		End If
+		RangeCnt = ParmeterCnt/2
+		ParamIndex = 0
+		For Range = 0 To RangeCnt -1 
+			Address = CLng(ParameterObj.Parameter(ParamIndex))		
+			Length = CLng(ParameterObj.Parameter(ParamIndex +1))
+			ParamIndex = ParamIndex +2
+ 			DisASMObj.AddRange Address,Length,0
+		Next
+		DisASMObj.HexFileModeFlag = True
+		DisASMObj.WriteAllRanges(False)
+	End If
+
+End Sub
+
+'_______________________________________________________
+'
+'	FillByte command line function
+' 
+'	fills memory range with byte pattern 
+'
+'	command line FillByte range1,pattern1 [range2,pattern2] [range3,pattern3] .....
+'	range description:
+'		&lt;startaddress&gt;,&lt;length&gt; 
+'_______________________________________________________
+
+Sub FillByte(ParameterObj)
+
+	set debugger = workspace.Coredebugger(0)
+	set DisASMObj = debugger.DisASMObj
+	If Not IsObject(ParameterObj) Then
+	  	MsgBox "Number of parameters wrong"
+		Exit Sub 		
+	End If
+	ParmeterCnt = ParameterObj.ParameterCount
+	If ParmeterCnt = 0 Then
+	  	MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+		Exit Sub 		
+	End If
+	If ( ParmeterCnt Mod 3 ) &lt;&gt; 0 Then
+	  	MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+		Exit Sub 		
+	End If
+	RangeCnt = ParmeterCnt/3
+	ParamIndex = 0
+	set udearrayobj = debugger.ByteArrayObj(1)
+	For Range = 0 To RangeCnt -1 
+		Address = CLng(ParameterObj.Parameter(ParamIndex))		
+		Length = CLng(ParameterObj.Parameter(ParamIndex +1))
+		Pattern = CLng(ParameterObj.Parameter(ParamIndex +2))
+		ParamIndex = ParamIndex +3
+		udearrayobj.Resize(Length)
+		udearrayobj.Fill(Pattern)
+		debugger.Write Address,udearrayobj
+	Next
+
+End Sub
+
+'_______________________________________________________
+'
+'	FillWord command line function
+' 
+'	fills memory range with word pattern 
+'
+'	command line FillWord range1,pattern1 [range2,pattern2] [range3,pattern3] .....
+'	range description:
+'		&lt;startaddress&gt;,&lt;length&gt; 
+'_______________________________________________________
+
+Sub FillWord(ParameterObj)
+
+	set debugger = workspace.Coredebugger(0)
+	set DisASMObj = debugger.DisASMObj
+	If Not IsObject(ParameterObj) Then
+	  	MsgBox "Number of parameters wrong"
+		Exit Sub 		
+	End If
+	ParmeterCnt = ParameterObj.ParameterCount
+	If ParmeterCnt = 0 Then
+	  	MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+		Exit Sub 		
+	End If
+	If ( ParmeterCnt Mod 3 ) &lt;&gt; 0 Then
+	  	MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+		Exit Sub 		
+	End If
+	RangeCnt = ParmeterCnt/3
+	ParamIndex = 0
+	set udearrayobj = debugger.WordArrayObj(1)
+	For Range = 0 To RangeCnt -1 
+		Address = CLng(ParameterObj.Parameter(ParamIndex))		
+		Length = CLng(ParameterObj.Parameter(ParamIndex +1)/2)
+		Pattern = CLng(ParameterObj.Parameter(ParamIndex +2))
+		ParamIndex = ParamIndex +3
+		udearrayobj.Resize(Length)
+		udearrayobj.Fill(Pattern)
+		debugger.Write Address,udearrayobj
+	Next
+
+End Sub
+
+'_______________________________________________________
+'
+'	FillDWord command line function
+' 
+'	fills memory range with dword pattern 
+'
+'	command line FillDWord range1,pattern1 [range2,pattern2] [range3,pattern3] .....
+'	range description:
+'		&lt;startaddress&gt;,&lt;length&gt; 
+'_______________________________________________________
+
+Sub FillDWord(ParameterObj)
+
+	set debugger = workspace.Coredebugger(0)
+	set DisASMObj = debugger.DisASMObj
+	If Not IsObject(ParameterObj) Then
+	  	MsgBox "Number of parameters wrong"
+		Exit Sub 		
+	End If
+	ParmeterCnt = ParameterObj.ParameterCount
+	If ParmeterCnt = 0 Then
+	  	MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+		Exit Sub 		
+	End If
+	If ( ParmeterCnt Mod 3 ) &lt;&gt; 0 Then
+	  	MsgBox "Number of parameters wrong " &amp; ParmeterCnt
+		Exit Sub 		
+	End If
+	RangeCnt = ParmeterCnt/3
+	ParamIndex = 0
+	set udearrayobj = debugger.DWordArrayObj(1)
+	For Range = 0 To RangeCnt -1 
+		Address = CLng(ParameterObj.Parameter(ParamIndex))		
+		Length = CLng(ParameterObj.Parameter(ParamIndex +1)/4)
+		Pattern = CLng(ParameterObj.Parameter(ParamIndex +2))
+		ParamIndex = ParamIndex +3
+		udearrayobj.Resize(Length)
+		udearrayobj.Fill(Pattern)
+		debugger.Write Address,udearrayobj
+	Next
+
+End Sub</ScriptSource><ScriptArchitecture type="int">63</ScriptArchitecture><ScriptEngine type="string">VBScript</ScriptEngine><MacroFileTime type="string">24.11.2006 14:43:20:000</MacroFileTime><ScriptFromStg type="flag">1</ScriptFromStg><LocalComputerName type="string">WS_CORE_DUO</LocalComputerName><ExternalScriptPath type="string"></ExternalScriptPath><NextNodeName type="string">Macro_24_02_14_14_13_33_0</NextNodeName><UnAss type="key"><GUIEntry type="key"><MenuID type="int">10</MenuID><MenuString type="string">Execute UnAss ..</MenuString><ToolTipString type="string">Macro UnAss</ToolTipString><MessageString type="string">Execute macro UnAss</MessageString><DebugFlag type="flag">0</DebugFlag></GUIEntry><FuncParameterCnt type="int">2</FuncParameterCnt><GUIEntryDescription type="string"></GUIEntryDescription></UnAss><SaveHEX type="key"><GUIEntry type="key"><MenuID type="int">10</MenuID><MenuString type="string">Execute SaveHEX ..</MenuString><ToolTipString type="string">Macro SaveHEX</ToolTipString><MessageString type="string">Execute macro SaveHEX</MessageString><DebugFlag type="flag">0</DebugFlag></GUIEntry><FuncParameterCnt type="int">2</FuncParameterCnt><GUIEntryDescription type="string"></GUIEntryDescription></SaveHEX><FillByte type="key"><GUIEntry type="key"><MenuID type="int">10</MenuID><MenuString type="string">Execute FillByte ..</MenuString><ToolTipString type="string">Macro FillByte</ToolTipString><MessageString type="string">Execute macro FillByte</MessageString><DebugFlag type="flag">0</DebugFlag></GUIEntry><FuncParameterCnt type="int">1</FuncParameterCnt><GUIEntryDescription type="string"></GUIEntryDescription></FillByte><FillWord type="key"><GUIEntry type="key"><MenuID type="int">10</MenuID><MenuString type="string">Execute FillWord ..</MenuString><ToolTipString type="string">Macro FillWord</ToolTipString><MessageString type="string">Execute macro FillWord</MessageString><DebugFlag type="flag">0</DebugFlag></GUIEntry><FuncParameterCnt type="int">1</FuncParameterCnt><GUIEntryDescription type="string"></GUIEntryDescription></FillWord><FillDWord type="key"><GUIEntry type="key"><MenuID type="int">10</MenuID><MenuString type="string">Execute FillDWord ..</MenuString><ToolTipString type="string">Macro FillDWord</ToolTipString><MessageString type="string">Execute macro FillDWord</MessageString><DebugFlag type="flag">0</DebugFlag></GUIEntry><FuncParameterCnt type="int">1</FuncParameterCnt><GUIEntryDescription type="string"></GUIEntryDescription></FillDWord><NoOfFunctions type="int">5</NoOfFunctions></Macro_24_09_13_12_19_33_0></MacroGuiEntries><LastSelectedMacro type="string"></LastSelectedMacro></UDE.Script></AddOns><MultiCoreRunControl type="key"><NoOfRunCtrlGroups type="int">0</NoOfRunCtrlGroups></MultiCoreRunControl><Core0 type="key"><ViewSrv type="key"><PowerPcCpuWin type="key"><SAVED_VIEW_OBJS type="int">1</SAVED_VIEW_OBJS><OPEN_VIEW type="key"><FrameCreated type="string">28.08.2013 15:32:24:478</FrameCreated><ViewSrv type="key"/><NETFrameMode type="int">77826</NETFrameMode><NETFrameSaveIndex type="int">5</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">0</CommonVisibilityGroup><VisibilityGroup_1 type="string">Target0.Controller0.Core0</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW><SAVED_VIEW type="int">0</SAVED_VIEW></PowerPcCpuWin><StdUDESymbolExplWin type="key"><OPEN_VIEW type="key"><FrameCreated type="string">28.08.2013 15:00:07:176</FrameCreated><ViewSrv type="key"/><NETFrameMode type="int">77827</NETFrameMode><NETFrameSaveIndex type="int">4</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">0</CommonVisibilityGroup><VisibilityGroup_1 type="string">Target0.Controller0.Core0</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW><SAVED_VIEW_OBJS type="int">1</SAVED_VIEW_OBJS><SAVED_VIEW type="int">0</SAVED_VIEW></StdUDESymbolExplWin><StdUDEProgWin type="key"><SAVED_VIEW_OBJS type="int">2</SAVED_VIEW_OBJS><OPEN_VIEW00 type="key"><FrameCreated type="string">28.08.2013 15:30:43:451</FrameCreated><ViewSrv type="key"/><SourceFile type="string">..\main.c</SourceFile><SourceFileInstFlag type="int">1</SourceFileInstFlag><NETFrameMode type="int">73728</NETFrameMode><NETFrameSaveIndex type="int">3</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">0</CommonVisibilityGroup><VisibilityGroup_1 type="string">Target0.Controller0.Core0</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW00><SAVED_VIEW00 type="int">0</SAVED_VIEW00><OPEN_VIEW01 type="key"><FrameCreated type="string">24.02.2014 14:12:15:832</FrameCreated><ViewSrv type="key"/><SourceFile type="string">..\..\..\..\os\hal\ports\SPC5\SPC56ECxx\hal_lld.c</SourceFile><SourceFileInstFlag type="int">2</SourceFileInstFlag><NETFrameMode type="int">73728</NETFrameMode><NETFrameSaveIndex type="int">8</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">0</CommonVisibilityGroup><VisibilityGroup_1 type="string">Target0.Controller0.Core0</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW01><SAVED_VIEW01 type="int">1</SAVED_VIEW01></StdUDEProgWin><StdUDESFRView type="key"><SAVED_VIEW_OBJS type="int">1</SAVED_VIEW_OBJS><OPEN_VIEW00 type="key"><FrameCreated type="string">28.08.2013 15:31:19:129</FrameCreated><ViewSrv type="key"><SFRView type="key"><NumberOfBitFieldsPerRow type="bin" size="8">AwAAAA==</NumberOfBitFieldsPerRow><BitfieldValueMode type="bin" size="8">AQAAAA==</BitfieldValueMode><NameWidth type="bin" size="8">fQAAAA==</NameWidth><ValueWidth type="bin" size="8">UwAAAA==</ValueWidth><Bitfield1Width type="bin" size="8">QwAAAA==</Bitfield1Width><Value1Width type="bin" size="8">QwAAAA==</Value1Width><Bitfield2Width type="bin" size="8">QwAAAA==</Bitfield2Width><Value2Width type="bin" size="8">QwAAAA==</Value2Width><Bitfield3Width type="bin" size="8">QwAAAA==</Bitfield3Width><Value3Width type="bin" size="8">SAAAAA==</Value3Width><Bitfield4Width type="bin" size="8">AAAAAA==</Bitfield4Width><Value4Width type="bin" size="8">AAAAAA==</Value4Width><TopIndex type="bin" size="8">AAAAAA==</TopIndex><CaretIndex type="bin" size="8">AAAAAA==</CaretIndex></SFRView></ViewSrv><NETFrameMode type="int">77825</NETFrameMode><NETFrameSaveIndex type="int">2</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">0</CommonVisibilityGroup><VisibilityGroup_1 type="string">Target0.Controller0.Core0</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW00><SAVED_VIEW00 type="int">0</SAVED_VIEW00></StdUDESFRView><StdUDELocalsWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS><OPEN_VIEW type="key"><FrameCreated type="string">28.08.2013 15:32:08:193</FrameCreated><ViewSrv type="key"><NameWidth type="int">144</NameWidth><AddressWidth type="int">0</AddressWidth><ValueWidth type="int">96</ValueWidth><Value2Width type="int">0</Value2Width><MinMaxWidth type="int">0</MinMaxWidth></ViewSrv><NETFrameMode type="int">86016</NETFrameMode><NETFrameSaveIndex type="int">4294967295</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">0</CommonVisibilityGroup><VisibilityGroup_1 type="string">Target0.Controller0.Core0</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW></StdUDELocalsWin><StdUDEWatchWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDEWatchWin><StdUDESimIOWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDESimIOWin><StdUDEHtmlDocWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDEHtmlDocWin><StdUDEGraphWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDEGraphWin><StdUDETimeSampleGraphWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDETimeSampleGraphWin><UDEProfilingWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></UDEProfilingWin><StdUDEMemWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDEMemWin><UDEStackWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></UDEStackWin></ViewSrv><UDE.StdDbgSrv type="key"><INI_SECTION type="key"/><UDE.PowerPcArchSrv type="key"><UDE.PpcJtagTargIntf type="key"><NewWorkspace type="flag">0</NewWorkspace></UDE.PpcJtagTargIntf></UDE.PowerPcArchSrv><UDE.UDESymbol type="key"><BinaryFiles type="key"><Number type="int">1</Number><BinaryFile1 type="key"><FullPath type="string">..\build\ch.elf</FullPath><Breakpoints type="key"><Breakpoint1 type="string">Software;enabled;0;disabled;'main {C:\ChibiStudio\workspace\SPC5\demos\SPC56ECxx OS-Less Test Application\main.c} .25';main.c;1;0;;$disabled; ;disabled; ;</Breakpoint1><Number type="int">1</Number></Breakpoints></BinaryFile1></BinaryFiles><MultiCoreLoader type="key"><TargetFile1 type="string">..\build\ch.elf</TargetFile1><TargetFileMapping1 type="string">3,0</TargetFileMapping1><TargetFileOptions1 type="string">00000000</TargetFileOptions1><TargetFileCodeRelocation1 type="string">0x14</TargetFileCodeRelocation1><TargetFileDataRelocation1 type="string">0x14</TargetFileDataRelocation1><Number type="int">1</Number></MultiCoreLoader><ExpressionClipboard type="key"><Number type="int">0</Number></ExpressionClipboard></UDE.UDESymbol><STG_ADDON_PROF type="key"><UDE_Graphwin_Trace_AddOn type="key" name="UDE Graphwin Trace AddOn"><LOAD_STATE type="flag">1</LOAD_STATE></UDE_Graphwin_Trace_AddOn><UDELicense_Server type="key" name="UDELicense Server"><LOAD_STATE type="flag">1</LOAD_STATE></UDELicense_Server><UDEMemtool type="key"><LOAD_STATE type="flag">1</LOAD_STATE><FlashMod_PFLASH type="key"/><FlashMod_PFLASH1 type="key"/><FlashMod_DFLASH type="key"/><FlashMod_SHADOWFLASH type="key"/><Frontend type="key"><AutoStartProgAfterDownload type="flag">0</AutoStartProgAfterDownload><AutoCloseExecCmdDialog type="flag">0</AutoCloseExecCmdDialog><AllowOverwrite type="flag">0</AllowOverwrite><LastModule type="int">0</LastModule><VerifyProt type="flag">0</VerifyProt><VerifyProtFile type="string">verify.txt</VerifyProtFile><VerifyOnExit type="flag">0</VerifyOnExit><StoreLoadedSections type="flag">0</StoreLoadedSections></Frontend></UDEMemtool><ADD_ON_DEL_FLAG type="flag">0</ADD_ON_DEL_FLAG></STG_ADDON_PROF><CommQueueHndlStg type="key"><Beep type="flag">0</Beep><Retry type="flag">0</Retry><RetryPeriod type="int">0</RetryPeriod></CommQueueHndlStg><TargetStateHndlStg type="key"/></UDE.StdDbgSrv><MRUSourceFileList type="key"><NoOfMRUSrcFileEntries type="int">2</NoOfMRUSrcFileEntries><MRUSrcFile0 type="string">..\main.c</MRUSrcFile0><MRUSrcFile1 type="string">..\..\..\..\os\hal\ports\SPC5\SPC56ECxx\hal_lld.c</MRUSrcFile1></MRUSourceFileList></Core0><Core1 type="key"><ViewSrv type="key"><PowerPcCpuWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></PowerPcCpuWin><StdUDESymbolExplWin type="key"><OPEN_VIEW type="key"><FrameCreated type="string">28.08.2013 15:00:07:379</FrameCreated><ViewSrv type="key"/><NETFrameMode type="int">77828</NETFrameMode><NETFrameSaveIndex type="int">6</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">0</CommonVisibilityGroup><VisibilityGroup_1 type="string">Target0.Controller0.Core1</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW><SAVED_VIEW_OBJS type="int">1</SAVED_VIEW_OBJS><SAVED_VIEW type="int">0</SAVED_VIEW></StdUDESymbolExplWin><StdUDEProgWin type="key"><OPEN_VIEW00 type="key"><FrameCreated type="string">24.02.2014 14:11:46:971</FrameCreated><ViewSrv type="key"/><SourceFile type="string">code &lt;0xFFFFFC00-0xFFFFFFFF&gt;</SourceFile><SourceFileInstFlag type="int">8</SourceFileInstFlag><NETFrameMode type="int">73728</NETFrameMode><NETFrameSaveIndex type="int">7</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">0</CommonVisibilityGroup><VisibilityGroup_1 type="string">Target0.Controller0.Core1</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW00><SAVED_VIEW_OBJS type="int">1</SAVED_VIEW_OBJS><SAVED_VIEW00 type="int">0</SAVED_VIEW00><OPEN_VIEW01 type="key"><FrameCreated type="string">28.08.2013 15:30:43:499</FrameCreated><ViewSrv type="key"/><NETFrameMode type="int">73728</NETFrameMode><NETFrameSaveIndex type="int">4294967295</NETFrameSaveIndex><FrameUserTitle type="string"></FrameUserTitle><CommonVisibilityGroup type="flag">0</CommonVisibilityGroup><VisibilityGroup_1 type="string">Target0.Controller0.Core1</VisibilityGroup_1><VisibilityGroupsCnt type="int">1</VisibilityGroupsCnt></OPEN_VIEW01></StdUDEProgWin><StdUDESFRView type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDESFRView><StdUDELocalsWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDELocalsWin><StdUDEWatchWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDEWatchWin><StdUDESimIOWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDESimIOWin><StdUDEHtmlDocWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDEHtmlDocWin><StdUDEGraphWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDEGraphWin><StdUDETimeSampleGraphWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDETimeSampleGraphWin><UDEProfilingWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></UDEProfilingWin><StdUDEMemWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></StdUDEMemWin><UDEStackWin type="key"><SAVED_VIEW_OBJS type="int">0</SAVED_VIEW_OBJS></UDEStackWin></ViewSrv><UDE.StdDbgSrv type="key"><INI_SECTION type="key"><System type="key"><PROGRAM1_SERVICE_MODE type="int">2</PROGRAM1_SERVICE_MODE></System><Monitor type="key"><PROGRAM1_CRC_CHECK type="int">1</PROGRAM1_CRC_CHECK></Monitor></INI_SECTION><UDE.PowerPcArchSrv type="key"><UDE.PpcJtagTargIntf type="key"><NewWorkspace type="flag">0</NewWorkspace></UDE.PpcJtagTargIntf></UDE.PowerPcArchSrv><UDE.UDESymbol type="key"><BinaryFiles type="key"><Number type="int">1</Number><BinaryFile1 type="key"><FullPath type="string">..\build\out.elf</FullPath></BinaryFile1></BinaryFiles><ExpressionClipboard type="key"><Number type="int">0</Number></ExpressionClipboard></UDE.UDESymbol><STG_ADDON_PROF type="key"><UDE_Graphwin_Trace_AddOn type="key" name="UDE Graphwin Trace AddOn"><LOAD_STATE type="flag">1</LOAD_STATE></UDE_Graphwin_Trace_AddOn><UDELicense_Server type="key" name="UDELicense Server"><LOAD_STATE type="flag">1</LOAD_STATE></UDELicense_Server><ADD_ON_DEL_FLAG type="flag">0</ADD_ON_DEL_FLAG></STG_ADDON_PROF><CommQueueHndlStg type="key"><Beep type="flag">0</Beep><Retry type="flag">0</Retry><RetryPeriod type="int">0</RetryPeriod></CommQueueHndlStg><TargetStateHndlStg type="key"/></UDE.StdDbgSrv><MRUSourceFileList type="key"><NoOfMRUSrcFileEntries type="int">1</NoOfMRUSrcFileEntries><MRUSrcFile0 type="string">code &lt;0xFFFFFC00-0xFFFFFFFF&gt;</MRUSrcFile0></MRUSourceFileList></Core1><TargetInfoFile type="string">stm_spc56ec74a256s_spc56ec74_minimodule_debug_jtag.cfg</TargetInfoFile><LastWriteDate type="string">24.02.2014 14:13:32:999</LastWriteDate></stg>

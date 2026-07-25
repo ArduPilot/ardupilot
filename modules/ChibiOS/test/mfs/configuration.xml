@@ -1,0 +1,1720 @@
+
+<instance locked="false"
+  id="org.chibios.spc5.components.portable.chibios_unitary_tests_engine">
+  <description>
+    <brief>
+      <value>ChibiOS/HAL MFS Test Suite.</value>
+    </brief>
+    <copyright>
+      <value><![CDATA[/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/]]></value>
+    </copyright>
+    <introduction>
+      <value>Test suite for ChibiOS/HAL MFS. The purpose of this suite
+        is to perform unit tests on the MFS module and to converge to
+        100% code coverage through successive improvements.</value>
+    </introduction>
+  </description>
+  <global_data_and_code>
+    <code_prefix>
+      <value>mfs_</value>
+    </code_prefix>
+    <global_definitions>
+      <value><![CDATA[#include "hal_mfs.h"
+
+#define TEST_SUITE_NAME "ChibiOS/HAL MFS Test Suite"
+
+#define TEST_REPORT_HOOK_HEADER test_print_mfs_info();
+
+extern mfs_nocache_buffer_t __nocache_mfsbuf1;
+extern const MFSConfig mfscfg1;
+extern MFSDriver mfs1;
+extern uint8_t __nocache_mfs_buffer[512];
+extern const uint8_t mfs_pattern16[16];
+extern const uint8_t mfs_pattern32[32];
+extern const uint8_t mfs_pattern10[10];
+extern const uint8_t mfs_pattern512[512];
+
+flash_error_t bank_erase(mfs_bank_t bank);
+flash_error_t bank_verify_erased(mfs_bank_t bank);
+void test_print_mfs_info(void);]]></value>
+    </global_definitions>
+    <global_code>
+      <value><![CDATA[#include "hal_mfs.h"
+
+mfs_nocache_buffer_t __nocache_mfsbuf1;
+MFSDriver mfs1;
+uint8_t __nocache_mfs_buffer[512];
+
+const uint8_t mfs_pattern16[16] = {
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+};
+
+const uint8_t mfs_pattern32[32] = {
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47
+};
+
+const uint8_t mfs_pattern10[10] = {
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57
+};
+
+const uint8_t mfs_pattern512[512] = {
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+  32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+  48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63
+};
+
+void test_print_mfs_info(void) {
+
+}
+
+flash_error_t bank_erase(mfs_bank_t bank) {
+  flash_sector_t sector, n;
+
+  if (bank == MFS_BANK_0) {
+    sector = mfscfg1.bank0_start;
+    n      = mfscfg1.bank0_sectors;
+  }
+  else {
+    sector = mfscfg1.bank1_start;
+    n      = mfscfg1.bank1_sectors;
+  }
+
+  while (n--) {
+    flash_error_t ferr;
+
+    ferr = flashStartEraseSector(mfscfg1.flashp, sector);
+    if (ferr != FLASH_NO_ERROR)
+      return ferr;
+    ferr = flashWaitErase(mfscfg1.flashp);
+    if (ferr != FLASH_NO_ERROR)
+      return ferr;
+    sector++;
+  }
+  return FLASH_NO_ERROR;
+}
+
+flash_error_t bank_verify_erased(mfs_bank_t bank) {
+  flash_sector_t sector, n;
+
+  if (bank == MFS_BANK_0) {
+    sector = mfscfg1.bank0_start;
+    n      = mfscfg1.bank0_sectors;
+  }
+  else {
+    sector = mfscfg1.bank1_start;
+    n      = mfscfg1.bank1_sectors;
+  }
+
+  while (n--) {
+    flash_error_t ferr;
+
+    ferr = flashVerifyErase(mfscfg1.flashp, sector);
+    if (ferr != FLASH_NO_ERROR)
+      return ferr;
+    sector++;
+  }
+  return FLASH_NO_ERROR;
+}]]></value>
+    </global_code>
+  </global_data_and_code>
+  <sequences>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Functional tests.</value>
+      </brief>
+      <description>
+        <value>The APIs are tested for functionality, correct cases and
+          expected error cases are tested.</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include <string.h>
+#include "hal_mfs.h"]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Testing mfsStart() behavior.</value>
+          </brief>
+          <description>
+            <value>The initialization function is tested. This function
+              can fail only in case of Flash Array failures or in case
+              of unexpected internal errors.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[mfsObjectInit(&mfs1, &__nocache_mfsbuf1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Erasing the flash array using a low level
+                  function.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[flash_error_t ferr;
+
+ferr = bank_erase(MFS_BANK_0);
+test_assert(ferr == FLASH_NO_ERROR, "Bank 0 erase failure");
+ferr = bank_erase(MFS_BANK_1);
+test_assert(ferr == FLASH_NO_ERROR, "Bank 1 erase failure");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Calling mfsStart() on an uninitialized flash
+                  array, MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsStart(&mfs1, &mfscfg1);
+test_assert(err == MFS_NO_ERROR, "initialization error with erased flash");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Calling mfsStart() on a newly initialized flash
+                  array, MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsStart(&mfs1, &mfscfg1);
+test_assert(err == MFS_NO_ERROR, "initialization error with initialized flash");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Checking for non existing record.</value>
+          </brief>
+          <description>
+            <value>The records space is explored with an initialized but
+              empty managed storage, no record should exist.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[mfsStart(&mfs1, &mfscfg1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Exploring the records space, MFS_ERR_NOT_FOUND is
+                  expected for each index.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+mfs_id_t id;
+size_t size;
+
+for (id = 1; id <= MFS_CFG_MAX_RECORDS; id++) {
+  size = sizeof __nocache_mfs_buffer;
+  err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+  test_assert(err == MFS_ERR_NOT_FOUND,
+              "found a record that should not exists");
+}]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Creating, updating and erasing a record.</value>
+          </brief>
+          <description>
+            <value>A record is created, updated several times with
+              different payloads and finally erased.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[mfsStart(&mfs1, &mfscfg1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[size_t size;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>The record must not already exists,
+                  MFS_ERR_NOT_FOUND is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[size = sizeof __nocache_mfs_buffer;
+mfs_error_t err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND , "record was already present");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating the record then retrieving it again,
+                  MFS_NO_ERROR is expected, record content and size are
+                  compared with the original.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsWriteRecord(&mfs1, 1, sizeof mfs_pattern16, mfs_pattern16);
+test_assert(err == MFS_NO_ERROR, "error creating the record");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern16, "unexpected record length");
+test_assert(memcmp(mfs_pattern16, __nocache_mfs_buffer, size) == 0, "wrong record content");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Updating the record then retrieving it again,
+                  MFS_NO_ERROR is expected, record content and size are
+                  compared with the original.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsWriteRecord(&mfs1, 1, sizeof mfs_pattern32, mfs_pattern32);
+test_assert(err == MFS_NO_ERROR, "error updating the record");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern32, "unexpected record length");
+test_assert(memcmp(mfs_pattern32, __nocache_mfs_buffer, size) == 0, "wrong record content");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Erasing the record then trying to retrieve it
+                  again, MFS_NO_ERROR is expected on erase,
+                  MFS_ERR_NOT_FOUND is expected on retrieve.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsEraseRecord(&mfs1, 1);
+test_assert(err == MFS_NO_ERROR, "error erasing the record");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record not erased");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Erasing the whole storage and re-initialization.
+            </value>
+          </brief>
+          <description>
+            <value>The managed storage is erased, initialized and
+              re-mounted.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[bank_erase(MFS_BANK_0);
+bank_erase(MFS_BANK_1);
+mfsStart(&mfs1, &mfscfg1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Creating records 1, 2 and 3, MFS_NO_ERROR is
+                  expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsWriteRecord(&mfs1, 1, sizeof mfs_pattern16, mfs_pattern16);
+test_assert(err == MFS_NO_ERROR, "error creating record 1");
+err = mfsWriteRecord(&mfs1, 2, sizeof mfs_pattern32, mfs_pattern32);
+test_assert(err == MFS_NO_ERROR, "error creating record 2");
+err = mfsWriteRecord(&mfs1, 3, sizeof mfs_pattern10, mfs_pattern10);
+test_assert(err == MFS_NO_ERROR, "error creating record 3");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Records must exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record 0 not present");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 2, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record 1 not present");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record 2 not present");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Re-mounting, records must still exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+err = mfsStart(&mfs1, &mfscfg1);
+test_assert(err == MFS_NO_ERROR, "re-mount failed");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record 0 not present");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 2, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record 1 not present");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record 2 not present");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Erasing storage and verify that the records have
+                  been removed, MFS_NO_ERROR is expected on erase,
+                  MFS_ERR_NOT_FOUND is expected on retrieve.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+err = mfsErase(&mfs1);
+test_assert(err == MFS_NO_ERROR, "storage erase error");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record 0 still present");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 2, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record 1 still present");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record 2 still present");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Testing storage size limit.</value>
+          </brief>
+          <description>
+            <value>The storage is entirely filled with different records
+              and the final error is tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[mfsStart(&mfs1, &mfscfg1);
+mfsErase(&mfs1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Filling up the storage by writing records with
+                  increasing IDs, MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_id_t id;
+mfs_id_t id_max = (mfscfg1.bank_size - (sizeof (mfs_bank_header_t) +
+                                        sizeof (mfs_data_header_t))) /
+                  (sizeof (mfs_data_header_t) + sizeof mfs_pattern512);
+
+for (id = 1; id <= id_max; id++) {
+  mfs_error_t err;
+  size_t size;
+
+  err = mfsWriteRecord(&mfs1, id, sizeof mfs_pattern512, mfs_pattern512);
+  test_assert(err == MFS_NO_ERROR, "error creating the record");
+  size = sizeof __nocache_mfs_buffer;
+  err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+  test_assert(err == MFS_NO_ERROR,
+              "record not found");
+  test_assert(size == sizeof mfs_pattern512,
+              "unexpected record length");
+  test_assert(memcmp(mfs_pattern512, __nocache_mfs_buffer, size) == 0,
+              "wrong record content");
+}]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating one more record, should fail,
+                  MFS_ERR_OUT_OF_MEM is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+mfs_id_t id_max = (mfscfg1.bank_size - (sizeof (mfs_bank_header_t) +
+                                        sizeof (mfs_data_header_t))) /
+                  (sizeof (mfs_data_header_t) + sizeof mfs_pattern512);
+
+err = mfsWriteRecord(&mfs1, id_max, sizeof mfs_pattern512 , mfs_pattern512);
+test_assert(err == MFS_ERR_OUT_OF_MEM, "creation didn't fail");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Adding a smaller record to fill the final gap. A
+                  reinitialization is performed and MFS_NO_ERROR is
+                  expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t remaining;
+
+remaining = (size_t)flashGetSectorOffset(mfscfg1.flashp, mfscfg1.bank0_start) +
+            (size_t)mfscfg1.bank_size - (size_t)mfs1.next_offset;
+test_assert(remaining >= sizeof (mfs_data_header_t), "not enough space");
+
+if (remaining > sizeof (mfs_data_header_t) * 2) {
+  err = mfsWriteRecord(&mfs1, MFS_CFG_MAX_RECORDS,
+                       remaining - (sizeof (mfs_data_header_t) * 2),
+                       mfs_pattern512);
+  test_assert(err == MFS_NO_ERROR, "error filling remaining space");
+  err = mfsEraseRecord(&mfs1, MFS_CFG_MAX_RECORDS);
+  test_assert(err == MFS_NO_ERROR, "error filling remaining space");
+}
+else {
+  if (remaining == sizeof (mfs_data_header_t) * 2) {
+    err = mfsEraseRecord(&mfs1, 2);
+    test_assert(err == MFS_NO_ERROR, "error filling remaining space");
+  }
+  err = mfsEraseRecord(&mfs1, 1);
+  test_assert(err == MFS_NO_ERROR, "error filling remaining space");
+}
+
+remaining = (size_t)flashGetSectorOffset(mfscfg1.flashp, mfscfg1.bank0_start) +
+            (size_t)mfscfg1.bank_size - (size_t)mfs1.next_offset;
+test_assert(remaining == 0U, "remaining space not zero");
+
+mfsStop(&mfs1);
+err = mfsStart(&mfs1, &mfscfg1);
+test_assert(err == MFS_NO_ERROR, "initialization error");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Testing garbage collection by writing.</value>
+          </brief>
+          <description>
+            <value>The garbage collection procedure is triggeredby a
+              write operation and the state of both banks is checked.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[mfsStart(&mfs1, &mfscfg1);
+mfsErase(&mfs1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Filling up the storage by writing records with
+                  increasing IDs, MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_id_t id;
+mfs_id_t id_max = (mfscfg1.bank_size - (sizeof (mfs_bank_header_t) +
+                                        sizeof (mfs_data_header_t))) /
+                  (sizeof (mfs_data_header_t) + sizeof mfs_pattern512);
+
+for (id = 1; id <= id_max; id++) {
+  mfs_error_t err;
+  size_t size;
+
+  err = mfsWriteRecord(&mfs1, id, sizeof mfs_pattern512, mfs_pattern512);
+  test_assert(err == MFS_NO_ERROR, "error creating the record");
+  size = sizeof __nocache_mfs_buffer;
+  err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+  test_assert(err == MFS_NO_ERROR,
+              "record not found");
+  test_assert(size == sizeof mfs_pattern512,
+              "unexpected record length");
+  test_assert(memcmp(mfs_pattern512, __nocache_mfs_buffer, size) == 0,
+              "wrong record content");
+}]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Erasing one record, MFS_NO_ERROR is expected.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+err = mfsEraseRecord(&mfs1, 1);
+test_assert(err == MFS_NO_ERROR, "error erasing the record");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record not erased");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Writing one more record triggers garbage
+                  collection, MFS_WARN_GC is expected, KS state is
+                  checked for correctness after the operation.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+test_assert(mfs1.current_counter == 1, "not first instance");
+err = mfsWriteRecord(&mfs1, 1, sizeof mfs_pattern512, mfs_pattern512);
+test_assert(err == MFS_WARN_GC, "error creating the record");
+test_assert(mfs1.current_counter == 2, "not second instance");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern512, "unexpected record length");
+test_assert(memcmp(mfs_pattern512, __nocache_mfs_buffer, size) == 0,
+            "wrong record content");
+test_assert(mfs1.current_bank == MFS_BANK_1, "unexpected bank");
+test_assert(bank_verify_erased(MFS_BANK_0) == FLASH_NO_ERROR, "bank 0 not erased");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Checking for all records in the new bank,
+                  MFS_NOERROR is expected for each record.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_id_t id;
+mfs_id_t id_max = (mfscfg1.bank_size - (sizeof (mfs_bank_header_t) +
+                                        sizeof (mfs_data_header_t))) /
+                  (sizeof (mfs_data_header_t) + sizeof mfs_pattern512);
+
+for (id = 1; id <= MFS_CFG_MAX_RECORDS; id++) {
+  mfs_error_t err;
+  size_t size;
+
+  if (id <= id_max) {
+    size = sizeof __nocache_mfs_buffer;
+    err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+    test_assert(err == MFS_NO_ERROR, "record not found");
+    test_assert(size == sizeof mfs_pattern512, "unexpected record length");
+    test_assert(memcmp(mfs_pattern512, __nocache_mfs_buffer, size) == 0,
+                "wrong record content");
+  }
+  else {
+    size = sizeof __nocache_mfs_buffer;
+    err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+    test_assert(err == MFS_ERR_NOT_FOUND, "found unexpected record");
+  }
+}]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Erasing one record, MFS_NO_ERROR is expected.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+err = mfsEraseRecord(&mfs1, 1);
+test_assert(err == MFS_NO_ERROR, "error erasing the record");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record not erased");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Writing one more record triggers garbage
+                  collection, MFS_WARN_GC is expected, MFS object state
+                  is checked for correctness after the operation.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+test_assert(mfs1.current_counter == 2, "not second instance");
+err = mfsWriteRecord(&mfs1, 1, sizeof mfs_pattern512, mfs_pattern512);
+test_assert(err == MFS_WARN_GC, "error creating the record");
+test_assert(mfs1.current_counter == 3, "not third instance");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern512, "unexpected record length");
+test_assert(memcmp(mfs_pattern512, __nocache_mfs_buffer, size) == 0,
+            "wrong record content");
+test_assert(mfs1.current_bank == MFS_BANK_0, "unexpected bank");
+test_assert(bank_verify_erased(MFS_BANK_1) == FLASH_NO_ERROR, "bank 1 not erased");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Checking for all records in the new bank,
+                  MFS_NO_ERROR is expected for each record.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_id_t id;
+mfs_id_t id_max = (mfscfg1.bank_size - (sizeof (mfs_bank_header_t) +
+                                        sizeof (mfs_data_header_t))) /
+                  (sizeof (mfs_data_header_t) + sizeof mfs_pattern512);
+
+for (id = 1; id <= MFS_CFG_MAX_RECORDS; id++) {
+  mfs_error_t err;
+  size_t size;
+
+  if (id <= id_max) {
+    size = sizeof __nocache_mfs_buffer;
+    err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+    test_assert(err == MFS_NO_ERROR, "record not found");
+    test_assert(size == sizeof mfs_pattern512, "unexpected record length");
+    test_assert(memcmp(mfs_pattern512, __nocache_mfs_buffer, size) == 0,
+                "wrong record content");
+  }
+  else {
+    size = sizeof __nocache_mfs_buffer;
+    err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+    test_assert(err == MFS_ERR_NOT_FOUND, "found unexpected record");
+  }
+}]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Testing garbage collection by erasing</value>
+          </brief>
+          <description>
+            <value>The garbage collection procedure is triggered by an
+              erase operation and the state of both banks is checked.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[mfsStart(&mfs1, &mfscfg1);
+mfsErase(&mfs1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Filling up the storage by writing records with
+                  increasing IDs, MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_id_t id;
+mfs_id_t id_max = (mfscfg1.bank_size - (sizeof (mfs_bank_header_t) +
+                                        sizeof (mfs_data_header_t))) /
+                  (sizeof (mfs_data_header_t) + (sizeof mfs_pattern512 / 4));
+
+for (id = 1; id <= id_max; id++) {
+  mfs_error_t err;
+  size_t size;
+
+  err = mfsWriteRecord(&mfs1, id, (sizeof mfs_pattern512 / 4), mfs_pattern512);
+  test_assert(err == MFS_NO_ERROR, "error creating the record");
+  size = sizeof __nocache_mfs_buffer;
+  err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+  test_assert(err == MFS_NO_ERROR, "record not found");
+  test_assert(size == (sizeof mfs_pattern512 / 4), "unexpected record length");
+  test_assert(memcmp(mfs_pattern512, __nocache_mfs_buffer, size) == 0,
+              "wrong record content");
+}]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Erase records until the flash bank is filled
+                  entirely.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+mfs_id_t id;
+mfs_id_t id_max = (mfscfg1.bank_size - (sizeof (mfs_bank_header_t) +
+                                        sizeof (mfs_data_header_t))) /
+                  (sizeof (mfs_data_header_t) + (sizeof mfs_pattern512 / 4));
+mfs_id_t n = ((mfscfg1.bank_size - sizeof (mfs_bank_header_t)) -
+              (id_max * (sizeof (mfs_data_header_t) + (sizeof mfs_pattern512 / 4)))) /
+             sizeof (mfs_data_header_t);
+
+for (id = 1; id <= n; id++) {
+  err = mfsEraseRecord(&mfs1, id);
+  test_assert(err == MFS_NO_ERROR, "error erasing the record");
+  size = sizeof __nocache_mfs_buffer;
+  err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+  test_assert(err == MFS_ERR_NOT_FOUND, "record not erased");
+}]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Erasing one more record triggers garbage
+                  collection, MFS_WARN_GC is expected, KS state is
+                  checked for correctness after the operation.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+mfs_id_t id_max = (mfscfg1.bank_size - (sizeof (mfs_bank_header_t) +
+                                        sizeof (mfs_data_header_t))) /
+                  (sizeof (mfs_data_header_t) + (sizeof mfs_pattern512 / 4));
+
+test_assert(mfs1.current_counter == 1, "not first instance");
+err = mfsEraseRecord(&mfs1, id_max);
+test_assert(err == MFS_WARN_GC, "error erasing the record");
+test_assert(mfs1.current_counter == 2, "not second instance");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, id_max, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record not erased");
+test_assert(mfs1.current_bank == MFS_BANK_1, "unexpected bank");
+test_assert(bank_verify_erased(MFS_BANK_0) == FLASH_NO_ERROR, "bank 0 not erased");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Transaction Mode tests.</value>
+      </brief>
+      <description>
+        <value>This sequence tests the MFS behavior when used in
+          transaction mode, correct cases and expected error cases are
+          tested.</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include <string.h>
+#include "hal_mfs.h"]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Committing a transaction</value>
+          </brief>
+          <description>
+            <value>A set of new/existing records are written/erased
+              within a transaction then the transaction is committed,
+              the state is checked afterward.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[bank_erase(MFS_BANK_0);
+bank_erase(MFS_BANK_1);
+mfsStart(&mfs1, &mfscfg1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[uint32_t current_counter;
+uint32_t used_space;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Records 1, 2 and 3 are created, MFS_NO_ERROR is
+                  expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsWriteRecord(&mfs1, 1, sizeof mfs_pattern16, mfs_pattern16);
+test_assert(err == MFS_NO_ERROR, "error creating record 1");
+err = mfsWriteRecord(&mfs1, 2, sizeof mfs_pattern16, mfs_pattern16);
+test_assert(err == MFS_NO_ERROR, "error creating record 2");
+err = mfsWriteRecord(&mfs1, 3, sizeof mfs_pattern16, mfs_pattern16);
+test_assert(err == MFS_NO_ERROR, "error creating record 3");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Presence of records 1, 2 and 3 is verified,
+                  MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 2, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Starting a transaction with sufficient
+                  pre-allocated space, MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsStartTransaction(&mfs1, 1024U);
+test_assert(err == MFS_NO_ERROR, "error starting transaction");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Atomically erasing record 1, updating record 2,
+                  reading record 3.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+err = mfsEraseRecord(&mfs1, 1);
+test_assert(err == MFS_NO_ERROR, "error erasing record 1");
+err = mfsWriteRecord(&mfs1, 2, sizeof mfs_pattern32, mfs_pattern32);
+test_assert(err == MFS_NO_ERROR, "error writing record 2");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern16, "unexpected record length");
+test_assert(memcmp(mfs_pattern16, __nocache_mfs_buffer, size) == 0, "wrong record content");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Committing the transaction, MFS_NO_ERROR is
+                  expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsCommitTransaction(&mfs1);
+test_assert(err == MFS_NO_ERROR, "error committing transaction");
+
+/* Saving some internal state for successive checks.*/
+current_counter = mfs1.current_counter;
+used_space      = mfs1.used_space;]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing outcome, records 1 must not be present,
+                  record 2 must contain the new value and record 3 must
+                  be unchanged.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+/* Record 1 must not be present.*/
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record found");
+
+/* Record 2 must contain the new value.*/
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 2, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern32, "unexpected record length");
+test_assert(memcmp(mfs_pattern32, __nocache_mfs_buffer, size) == 0, "wrong record content");
+
+/* Record 3 must be unchanged.*/
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern16, "unexpected record length");
+test_assert(memcmp(mfs_pattern16, __nocache_mfs_buffer, size) == 0, "wrong record content");
+
+/* Checking internal data.*/
+test_assert(MFS_BANK_0 == mfs1.current_bank, "internal data mismatch");
+test_assert(current_counter == mfs1.current_counter, "internal data mismatch");
+test_assert(used_space == mfs1.used_space, "internal data mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Re-mounting the manage storage, MFS_NO_ERROR is
+                  expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsStart(&mfs1, &mfscfg1);
+test_assert(err == MFS_NO_ERROR, "re-start failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing outcome again after re-start.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+/* Record 1 must not be present.*/
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record found");
+
+/* Record 2 must contain the new value.*/
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 2, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern32, "unexpected record length");
+test_assert(memcmp(mfs_pattern32, __nocache_mfs_buffer, size) == 0, "wrong record content");
+
+/* Record 3 must be unchanged.*/
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern16, "unexpected record length");
+test_assert(memcmp(mfs_pattern16, __nocache_mfs_buffer, size) == 0, "wrong record content");
+
+/* Checking internal data.*/
+test_assert(MFS_BANK_0 == mfs1.current_bank, "internal data mismatch");
+test_assert(current_counter == mfs1.current_counter, "internal data mismatch");
+test_assert(used_space == mfs1.used_space, "internal data mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Performing a garbage collection, the result must
+                  not change.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsPerformGarbageCollection(&mfs1);
+test_assert(err == MFS_NO_ERROR, "garbage collection failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing outcome again after garbage collection.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+/* Record 1 must not be present.*/
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record found");
+
+/* Record 2 must contain the new value.*/
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 2, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern32, "unexpected record length");
+test_assert(memcmp(mfs_pattern32, __nocache_mfs_buffer, size) == 0, "wrong record content");
+
+/* Record 3 must be unchanged.*/
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern16, "unexpected record length");
+test_assert(memcmp(mfs_pattern16, __nocache_mfs_buffer, size) == 0, "wrong record content");
+
+/* Checking internal data.*/
+test_assert(MFS_BANK_1 == mfs1.current_bank, "internal data mismatch");
+test_assert(current_counter == mfs1.current_counter - 1, "internal data mismatch");
+test_assert(used_space == mfs1.used_space, "internal data mismatch");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Rolling back a transaction.</value>
+          </brief>
+          <description>
+            <value>A set of new/existing records are written/erased
+              within a transaction then the transaction is rolled back,
+              the state is checked afterward.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[bank_erase(MFS_BANK_0);
+bank_erase(MFS_BANK_1);
+mfsStart(&mfs1, &mfscfg1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[uint32_t current_counter;
+uint32_t used_space;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Records 1, 2 and 3 are created, MFS_NO_ERROR is
+                  expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsWriteRecord(&mfs1, 1, sizeof mfs_pattern16, mfs_pattern16);
+test_assert(err == MFS_NO_ERROR, "error creating record 1");
+err = mfsWriteRecord(&mfs1, 2, sizeof mfs_pattern16, mfs_pattern16);
+test_assert(err == MFS_NO_ERROR, "error creating record 2");
+err = mfsWriteRecord(&mfs1, 3, sizeof mfs_pattern16, mfs_pattern16);
+test_assert(err == MFS_NO_ERROR, "error creating record 3");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Presence of records 1, 2 and 3 is verified,
+                  MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 2, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Starting a transaction with sufficient
+                  pre-allocated space, MFS_NO_ERROR is expected..
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsStartTransaction(&mfs1, 1024U);
+test_assert(err == MFS_NO_ERROR, "error starting transaction");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Atomically erasing record 1, updating record 2,
+                  reading record 3.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+err = mfsEraseRecord(&mfs1, 1);
+test_assert(err == MFS_NO_ERROR, "error erasing record 1");
+err = mfsWriteRecord(&mfs1, 2, sizeof mfs_pattern32, mfs_pattern32);
+test_assert(err == MFS_NO_ERROR, "error writing record 2");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern16, "unexpected record length");
+test_assert(memcmp(mfs_pattern16, __nocache_mfs_buffer, size) == 0, "wrong record content");
+
+/* Saving some internal state for successive checks.*/
+current_counter = mfs1.current_counter;
+used_space      = mfs1.used_space;]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Rolling back the transaction, MFS_NO_ERROR is
+                  expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsRollbackTransaction(&mfs1);
+test_assert(err == MFS_NO_ERROR, "error rolling back transaction");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>State must not have changed, records 1, 2 and 3
+                  must still be there unchanged.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern16, "size changed");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 2, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern16, "size changed");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 3, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_NO_ERROR, "record not found");
+test_assert(size == sizeof mfs_pattern16, "size changed");
+
+/* Checking internal data.*/
+test_assert(MFS_BANK_1 == mfs1.current_bank, "internal data mismatch");
+test_assert(current_counter == mfs1.current_counter - 1, "internal data mismatch");
+test_assert(used_space == mfs1.used_space, "internal data mismatch");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Transaction triggering an early garbage collect.
+            </value>
+          </brief>
+          <description>
+            <value>A transaction is started with sufficient space but
+              not contiguous, a garbage collection is triggered.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[bank_erase(MFS_BANK_0);
+bank_erase(MFS_BANK_1);
+mfsStart(&mfs1, &mfscfg1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Filling up the storage by writing records with
+                  increasing IDs, MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_id_t id;
+mfs_id_t id_max = (mfscfg1.bank_size - (sizeof (mfs_bank_header_t) +
+                                        sizeof (mfs_data_header_t))) /
+                  (sizeof (mfs_data_header_t) + sizeof mfs_pattern512);
+
+for (id = 1; id <= id_max; id++) {
+  mfs_error_t err;
+  size_t size;
+
+  err = mfsWriteRecord(&mfs1, id, sizeof mfs_pattern512, mfs_pattern512);
+  test_assert(err == MFS_NO_ERROR, "error creating the record");
+  size = sizeof __nocache_mfs_buffer;
+  err = mfsReadRecord(&mfs1, id, &size, __nocache_mfs_buffer);
+  test_assert(err == MFS_NO_ERROR,
+              "record not found");
+  test_assert(size == sizeof mfs_pattern512,
+              "unexpected record length");
+  test_assert(memcmp(mfs_pattern512, __nocache_mfs_buffer, size) == 0,
+              "wrong record content");
+}]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Erasing one record, MFS_NO_ERROR is expected.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size;
+
+err = mfsEraseRecord(&mfs1, 1);
+test_assert(err == MFS_NO_ERROR, "error erasing the record");
+size = sizeof __nocache_mfs_buffer;
+err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_NOT_FOUND, "record not erased");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Starting a transaction with the whole remaining
+                  space, MFS_ERR_OUT_OF_MEM is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size = mfs1.config->bank_size - mfs1.used_space;
+
+err = mfsStartTransaction(&mfs1, size);
+test_assert(err == MFS_ERR_OUT_OF_MEM, "invalid error code");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Starting a transaction with insufficient space
+                  for one more header, MFS_ERR_OUT_OF_MEM is expected.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size = ((mfs1.config->bank_size - mfs1.used_space) - sizeof (mfs_data_header_t)) + 1;
+
+err = mfsStartTransaction(&mfs1, size);
+test_assert(err == MFS_ERR_OUT_OF_MEM, "invalid error code");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Starting a transaction with just enough space for
+                  one more header, MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+size_t size = (mfs1.config->bank_size - mfs1.used_space) - sizeof (mfs_data_header_t);
+
+err = mfsStartTransaction(&mfs1, size);
+test_assert(err == MFS_NO_ERROR, "error starting transaction");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Rolling back, MFS_NO_ERROR is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsRollbackTransaction(&mfs1);
+test_assert(err == MFS_NO_ERROR, "error rolling back transaction");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>API Invalid Cases tests.</value>
+      </brief>
+      <description>
+        <value>This test sequence tests the error coded returned by the
+          various APIs when called when the system is not initialized.
+        </value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include "hal_mfs.h"]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Initialization error from APIs.</value>
+          </brief>
+          <description>
+            <value>The API functions are invoked without prior
+              initialization.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>The function mfsErase() is called,
+                  MFS_ERR_INV_STATE is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err = mfsErase(&mfs1);
+test_assert(err == MFS_ERR_INV_STATE, "mfsErase() returned wrong status");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>The function mfsWriteRecord() is called,
+                  MFS_ERR_INV_STATE is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err = mfsWriteRecord(&mfs1, 1, 16, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_INV_STATE, "mfsWriteRecord() returned wrong status");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>The function mfsEraseRecord() is called,
+                  MFS_ERR_INV_STATE is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err = mfsEraseRecord(&mfs1, 1);
+test_assert(err == MFS_ERR_INV_STATE, "mfsEraseRecord() returned wrong status");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>The function mfsReadRecord() is called,
+                  MFS_ERR_INV_STATE is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[size_t size = sizeof __nocache_mfs_buffer;
+mfs_error_t err = mfsReadRecord(&mfs1, 1, &size, __nocache_mfs_buffer);
+test_assert(err == MFS_ERR_INV_STATE, "mfsReadRecord() returned wrong status");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>The function mfsPerformGarbageCollection() is
+                  called, MFS_ERR_INV_STATE is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err = mfsPerformGarbageCollection(&mfs1);
+test_assert(err == MFS_ERR_INV_STATE, "mfsPerformGarbageCollection() returned wrong status");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Erasing non existing record.</value>
+          </brief>
+          <description>
+            <value>An erase operation is attempted on an non-existing
+              record.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[mfsStart(&mfs1, &mfscfg1);
+mfsErase(&mfs1);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[mfsStop(&mfs1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Record one is erased, the error MFS_ERR_NOT_FOUND
+                  is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[mfs_error_t err;
+
+err = mfsEraseRecord(&mfs1, 1);
+test_assert(err != MFS_NO_ERROR, "record was present");
+test_assert(err == MFS_ERR_NOT_FOUND, "invalid error code");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+  </sequences>
+</instance>

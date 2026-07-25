@@ -1,0 +1,10 @@
+
+$(CPPUTEST_TARGET) : $(OBJS)
+	ar -rc $@ $(OBJS)
+	$(RANLIB) $@
+	if [ "$(LIBDIR)" != "." ]; then\
+	  mv $@ $(LIBDIR) ; \
+	fi
+
+all: $(CPPUTEST_TARGET)
+

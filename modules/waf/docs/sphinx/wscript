@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+# encoding: utf-8
+# Jérôme Carretero, 2010 (zougloub)
+
+import sys, os
+from waflib.Utils import subprocess
+
+"""
+"""
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('daemon', tooldir=['../../playground/daemon/'])
+
+def configure(cfg):
+	cfg.find_program('dot', var='DOT')
+	cfg.find_program('convert', var='CONVERT')
+	cfg.load('daemon', tooldir=['../../playground/daemon/'])
+	cfg.find_program("sphinx-build", var="SPHINX_BUILD")
+	cfg.env.SPHINX_ARGS = ['-W']
+
+def build(bld):
+	bld.path.make_node('_static').mkdir()
+	bld(
+		rule   = "${SPHINX_BUILD} ${SPHINX_ARGS} -b html -d %s . %s" % (os.path.join(out, "doctrees"), os.path.join(out, "html")),
+		cwd    = bld.path,
+		source = bld.path.parent.parent.find_dir('waflib').ant_glob('**/*.py')
+			+ bld.path.ant_glob('**/*.rst')
+			+ bld.path.ant_glob('_templates/indexcontent.html')
+			+ bld.path.ant_glob('conf.py'),
+		target = bld.path.find_or_declare('html/index.html')
+	)
+

@@ -1,0 +1,18 @@
+#! /usr/bin/env python
+
+bld.stlib (
+  target = 'static_lib1',
+  source = ['src/static_lib.vala'],
+)
+
+bld.stlib (
+  target = 'static_lib2',
+  source = ['src/static_lib.vala'],
+  vala_dir = 'meh',
+)
+
+bld.program (
+  target = 'program',
+  use = 'static_lib1',
+  source = 'program.vala'
+)

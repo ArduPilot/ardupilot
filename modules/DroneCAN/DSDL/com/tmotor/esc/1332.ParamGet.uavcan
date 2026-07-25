@@ -1,0 +1,45 @@
+#
+# 1033.ParamGet.uavcan param get pack
+#
+
+OVERRIDE_SIGNATURE 0x462875A0ED874302
+
+uint8 esc_index
+
+uint32 esc_uuid
+
+uint16 esc_id_req
+
+uint16 esc_ov_threshold
+
+uint16 esc_oc_threshold
+
+uint16 esc_ot_threshold
+
+uint16 esc_acc_threshold
+
+uint16 esc_dacc_threshold
+
+int16 esc_rotate_dir
+
+uint8 esc_timing
+
+uint16 esc_startup_times
+
+uint32 esc_startup_duration
+
+uint32 esc_product_date
+
+uint32 esc_error_count
+
+uint8 esc_signal_priority
+
+uint16 esc_led_mode
+
+uint8  esc_can_rate
+
+uint16 esc_fdb_rate
+
+uint8  esc_save_option
+
+uint8[<=32] rsvd

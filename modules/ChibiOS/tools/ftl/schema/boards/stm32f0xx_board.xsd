@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:include schemaLocation="../common/doc.xsd" />
+  <xs:include schemaLocation="../common/stm32/stm32_gpiov2_port.xsd" />
+  <xs:include schemaLocation="abstract_board.xsd" />
+
+  <xs:complexType name="STM32F0xxBoardType">
+    <xs:complexContent>
+      <xs:extension base="AbstractBoardType">
+        <xs:sequence>
+                    <xs:element name="subtype">
+                       <xs:simpleType>
+                       	<xs:restriction base="xs:string">
+                       		<xs:whiteSpace value="collapse"></xs:whiteSpace>
+                            <xs:enumeration value="STM32F030x4"></xs:enumeration>
+                            <xs:enumeration value="STM32F030x6"></xs:enumeration>
+                            <xs:enumeration value="STM32F030x8"></xs:enumeration>
+                            <xs:enumeration value="STM32F030xC"></xs:enumeration>
+                       		<xs:enumeration value="STM32F031x6"></xs:enumeration>
+                       		<xs:enumeration value="STM32F038xx"></xs:enumeration>
+                       		<xs:enumeration value="STM32F042x6"></xs:enumeration>
+                       		<xs:enumeration value="STM32F048xx"></xs:enumeration>
+                       		<xs:enumeration value="STM32F051x8"></xs:enumeration>
+                            <xs:enumeration value="STM32F058xx"></xs:enumeration>
+                            <xs:enumeration value="STM32F070x6"></xs:enumeration>
+                            <xs:enumeration value="STM32F070xB"></xs:enumeration>
+                       		<xs:enumeration value="STM32F071xB"></xs:enumeration>
+                       		<xs:enumeration value="STM32F072xB"></xs:enumeration>
+                       		<xs:enumeration value="STM32F078xx"></xs:enumeration>
+                       		<xs:enumeration value="STM32F091xC"></xs:enumeration>
+                       		<xs:enumeration value="STM32F098xx"></xs:enumeration>
+                       	</xs:restriction>
+                       </xs:simpleType>
+                    </xs:element>
+                    <xs:element
+              name="clocks"
+              maxOccurs="1"
+              minOccurs="1"
+           >
+              <xs:complexType>
+                 <xs:attribute
+                    name="HSEBypass"
+                    use="required"
+                 >
+                    <xs:simpleType>
+                       <xs:restriction base="xs:string">
+                          <xs:whiteSpace value="collapse"></xs:whiteSpace>
+                          <xs:enumeration value="false"></xs:enumeration>
+                          <xs:enumeration value="true"></xs:enumeration>
+                       </xs:restriction>
+                    </xs:simpleType>
+                 </xs:attribute>
+                 <xs:attribute
+                    name="HSEFrequency"
+                    use="required"
+                 >
+                    <xs:simpleType>
+                       <xs:restriction base="xs:int">
+                          <xs:whiteSpace value="collapse"></xs:whiteSpace>
+                          <xs:minInclusive value="0"></xs:minInclusive>
+                       </xs:restriction>
+                    </xs:simpleType>
+                 </xs:attribute>
+                 <xs:attribute
+                    name="LSEBypass"
+                    use="required"
+                 >
+                    <xs:simpleType>
+                       <xs:restriction base="xs:string">
+                          <xs:whiteSpace value="collapse">
+                          </xs:whiteSpace>
+                          <xs:enumeration value="false"></xs:enumeration>
+                          <xs:enumeration value="true"></xs:enumeration>
+                       </xs:restriction>
+                    </xs:simpleType>
+                 </xs:attribute>
+                 <xs:attribute
+                    name="LSEDrive"
+                    use="required"
+                 >
+                    <xs:simpleType>
+                       <xs:restriction base="xs:string">
+                          <xs:whiteSpace value="collapse">
+                          </xs:whiteSpace>
+                          <xs:enumeration
+                             value="3 High Drive (default)"
+                          >
+                          </xs:enumeration>
+                          <xs:enumeration value="2 Medium-High Drive"></xs:enumeration>
+                          <xs:enumeration value="1 Medium-Low Drive"></xs:enumeration>
+                          <xs:enumeration
+                             value="0 Low Drive (lowest consumption)"
+                          >
+                          </xs:enumeration>
+                       </xs:restriction>
+                    </xs:simpleType>
+                 </xs:attribute>
+                 <xs:attribute
+                    name="LSEFrequency"
+                    use="required"
+                 >
+                    <xs:simpleType>
+                       <xs:restriction base="xs:int">
+                          <xs:whiteSpace value="collapse"></xs:whiteSpace>
+
+                          <xs:minInclusive value="0"></xs:minInclusive>
+                       </xs:restriction>
+                    </xs:simpleType>
+                 </xs:attribute>
+
+              </xs:complexType>
+           </xs:element>
+           <xs:element
+              name="ports"
+              type="portsType"
+              maxOccurs="1"
+              minOccurs="1"
+           >
+           </xs:element>
+
+        </xs:sequence>
+
+
+
+
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="portsType">
+    <xs:sequence>
+    	<xs:element name="GPIOA" type="STM32GPIOv2PortType"
+    		minOccurs="1" maxOccurs="1">
+    	</xs:element>
+    	<xs:element name="GPIOB" type="STM32GPIOv2PortType"
+    		minOccurs="1" maxOccurs="1">
+    	</xs:element>
+    	<xs:element name="GPIOC" type="STM32GPIOv2PortType"
+    		minOccurs="1" maxOccurs="1">
+    	</xs:element>
+    	<xs:element name="GPIOD" type="STM32GPIOv2PortType"
+    		maxOccurs="1" minOccurs="1">
+    	</xs:element>
+    	<xs:element name="GPIOE" type="STM32GPIOv2PortType"
+    		maxOccurs="1" minOccurs="1">
+    	</xs:element>
+	   	<xs:element name="GPIOF" type="STM32GPIOv2PortType"
+    		maxOccurs="1" minOccurs="1">
+    	</xs:element>
+
+
+
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:element name="board" type="STM32F0xxBoardType"></xs:element>
+
+</xs:schema>

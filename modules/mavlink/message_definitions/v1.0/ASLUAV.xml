@@ -1,0 +1,294 @@
+<?xml version="1.0"?>
+<!-- ASLUAV Mavlink Message Definition File -->
+<!-- Used for the ASLUAV fixed-wing autopilot (www.asl.ethz.ch), which implements extensions to the Pixhawk (https://docs.px4.io/en/flight_controller/pixhawk.html) autopilot -->
+<mavlink>
+  <include>common.xml</include>
+  <enums>
+    <enum name="MAV_CMD">
+      <!-- ASLUAV specific MAV_CMD_* commands -->
+      <entry name="MAV_CMD_RESET_MPPT" value="40001">
+        <description>Mission command to reset Maximum Power Point Tracker (MPPT)</description>
+        <param index="1">MPPT number</param>
+        <param index="2">Empty</param>
+        <param index="3">Empty</param>
+        <param index="4">Empty</param>
+        <param index="5">Empty</param>
+        <param index="6">Empty</param>
+        <param index="7">Empty</param>
+      </entry>
+      <entry name="MAV_CMD_PAYLOAD_CONTROL" value="40002">
+        <description>Mission command to perform a power cycle on payload</description>
+        <param index="1">Complete power cycle</param>
+        <param index="2">VISensor power cycle</param>
+        <param index="3">Empty</param>
+        <param index="4">Empty</param>
+        <param index="5">Empty</param>
+        <param index="6">Empty</param>
+        <param index="7">Empty</param>
+      </entry>
+    </enum>
+    <enum name="GSM_LINK_TYPE">
+      <entry value="0" name="GSM_LINK_TYPE_NONE">
+        <description>no service</description>
+      </entry>
+      <entry value="1" name="GSM_LINK_TYPE_UNKNOWN">
+        <description>link type unknown</description>
+      </entry>
+      <entry value="2" name="GSM_LINK_TYPE_2G">
+        <description>2G (GSM/GRPS/EDGE) link</description>
+      </entry>
+      <entry value="3" name="GSM_LINK_TYPE_3G">
+        <description>3G link (WCDMA/HSDPA/HSPA) </description>
+      </entry>
+      <entry value="4" name="GSM_LINK_TYPE_4G">
+        <description>4G link (LTE)</description>
+      </entry>
+    </enum>
+    <enum name="GSM_MODEM_TYPE">
+      <entry value="0" name="GSM_MODEM_TYPE_UNKNOWN">
+        <description>not specified</description>
+      </entry>
+      <entry value="1" name="GSM_MODEM_TYPE_HUAWEI_E3372">
+        <description>HUAWEI LTE USB Stick E3372</description>
+      </entry>
+    </enum>
+  </enums>
+  <messages>
+    <message id="223" name="COMMAND_INT_STAMPED">
+      <description>Message encoding a command with parameters as scaled integers and additional metadata. Scaling depends on the actual command value.</description>
+      <field type="uint32_t" name="utc_time">UTC time, seconds elapsed since 01.01.1970</field>
+      <field type="uint64_t" name="vehicle_timestamp">Microseconds elapsed since vehicle boot</field>
+      <field type="uint8_t" name="target_system">System ID</field>
+      <field type="uint8_t" name="target_component">Component ID</field>
+      <field type="uint8_t" name="frame" enum="MAV_FRAME">The coordinate system of the COMMAND, as defined by MAV_FRAME enum</field>
+      <field type="uint16_t" name="command" enum="MAV_CMD">The scheduled action for the mission item, as defined by MAV_CMD enum</field>
+      <field type="uint8_t" name="current">false:0, true:1</field>
+      <field type="uint8_t" name="autocontinue">autocontinue to next wp</field>
+      <field type="float" name="param1">PARAM1, see MAV_CMD enum</field>
+      <field type="float" name="param2">PARAM2, see MAV_CMD enum</field>
+      <field type="float" name="param3">PARAM3, see MAV_CMD enum</field>
+      <field type="float" name="param4">PARAM4, see MAV_CMD enum</field>
+      <field type="int32_t" name="x">PARAM5 / local: x position in meters * 1e4, global: latitude in degrees * 10^7</field>
+      <field type="int32_t" name="y">PARAM6 / local: y position in meters * 1e4, global: longitude in degrees * 10^7</field>
+      <field type="float" name="z">PARAM7 / z position: global: altitude in meters (MSL, WGS84, AGL or relative to home - depending on frame).</field>
+    </message>
+    <message id="224" name="COMMAND_LONG_STAMPED">
+      <description>Send a command with up to seven parameters to the MAV and additional metadata</description>
+      <field type="uint32_t" name="utc_time">UTC time, seconds elapsed since 01.01.1970</field>
+      <field type="uint64_t" name="vehicle_timestamp">Microseconds elapsed since vehicle boot</field>
+      <field type="uint8_t" name="target_system">System which should execute the command</field>
+      <field type="uint8_t" name="target_component">Component which should execute the command, 0 for all components</field>
+      <field type="uint16_t" name="command" enum="MAV_CMD">Command ID, as defined by MAV_CMD enum.</field>
+      <field type="uint8_t" name="confirmation">0: First transmission of this command. 1-255: Confirmation transmissions (e.g. for kill command)</field>
+      <field type="float" name="param1">Parameter 1, as defined by MAV_CMD enum.</field>
+      <field type="float" name="param2">Parameter 2, as defined by MAV_CMD enum.</field>
+      <field type="float" name="param3">Parameter 3, as defined by MAV_CMD enum.</field>
+      <field type="float" name="param4">Parameter 4, as defined by MAV_CMD enum.</field>
+      <field type="float" name="param5">Parameter 5, as defined by MAV_CMD enum.</field>
+      <field type="float" name="param6">Parameter 6, as defined by MAV_CMD enum.</field>
+      <field type="float" name="param7">Parameter 7, as defined by MAV_CMD enum.</field>
+    </message>
+    <message id="8002" name="SENS_POWER">
+      <description>Voltage and current sensor data</description>
+      <field type="float" name="adc121_vspb_volt" units="V"> Power board voltage sensor reading</field>
+      <field type="float" name="adc121_cspb_amp" units="A"> Power board current sensor reading</field>
+      <field type="float" name="adc121_cs1_amp" units="A"> Board current sensor 1 reading</field>
+      <field type="float" name="adc121_cs2_amp" units="A"> Board current sensor 2 reading</field>
+    </message>
+    <message id="8003" name="SENS_MPPT">
+      <description>Maximum Power Point Tracker (MPPT) sensor data for solar module power performance tracking</description>
+      <field type="uint64_t" name="mppt_timestamp" units="us"> MPPT last timestamp </field>
+      <field type="float" name="mppt1_volt" units="V"> MPPT1 voltage </field>
+      <field type="float" name="mppt1_amp" units="A"> MPPT1 current </field>
+      <field type="uint16_t" name="mppt1_pwm" units="us"> MPPT1 pwm </field>
+      <field type="uint8_t" name="mppt1_status"> MPPT1 status </field>
+      <field type="float" name="mppt2_volt" units="V"> MPPT2 voltage </field>
+      <field type="float" name="mppt2_amp" units="A"> MPPT2 current </field>
+      <field type="uint16_t" name="mppt2_pwm" units="us"> MPPT2 pwm </field>
+      <field type="uint8_t" name="mppt2_status"> MPPT2 status </field>
+      <field type="float" name="mppt3_volt" units="V">MPPT3 voltage </field>
+      <field type="float" name="mppt3_amp" units="A"> MPPT3 current </field>
+      <field type="uint16_t" name="mppt3_pwm" units="us"> MPPT3 pwm </field>
+      <field type="uint8_t" name="mppt3_status"> MPPT3 status </field>
+    </message>
+    <message id="8004" name="ASLCTRL_DATA">
+      <description>ASL-fixed-wing controller data</description>
+      <field type="uint64_t" name="timestamp" units="us"> Timestamp</field>
+      <field type="uint8_t" name="aslctrl_mode"> ASLCTRL control-mode (manual, stabilized, auto, etc...)</field>
+      <field type="float" name="h"> See sourcecode for a description of these values... </field>
+      <field type="float" name="hRef"> </field>
+      <field type="float" name="hRef_t"> </field>
+      <field type="float" name="PitchAngle" units="deg">Pitch angle</field>
+      <field type="float" name="PitchAngleRef" units="deg">Pitch angle reference</field>
+      <field type="float" name="q"> </field>
+      <field type="float" name="qRef"> </field>
+      <field type="float" name="uElev"> </field>
+      <field type="float" name="uThrot"> </field>
+      <field type="float" name="uThrot2"> </field>
+      <field type="float" name="nZ"> </field>
+      <field type="float" name="AirspeedRef" units="m/s">Airspeed reference</field>
+      <field type="uint8_t" name="SpoilersEngaged"> </field>
+      <field type="float" name="YawAngle" units="deg">Yaw angle</field>
+      <field type="float" name="YawAngleRef" units="deg">Yaw angle reference</field>
+      <field type="float" name="RollAngle" units="deg">Roll angle</field>
+      <field type="float" name="RollAngleRef" units="deg">Roll angle reference</field>
+      <field type="float" name="p"> </field>
+      <field type="float" name="pRef"> </field>
+      <field type="float" name="r"> </field>
+      <field type="float" name="rRef"> </field>
+      <field type="float" name="uAil"> </field>
+      <field type="float" name="uRud"> </field>
+    </message>
+    <message id="8005" name="ASLCTRL_DEBUG">
+      <description>ASL-fixed-wing controller debug data</description>
+      <field type="uint32_t" name="i32_1"> Debug data</field>
+      <field type="uint8_t" name="i8_1"> Debug data</field>
+      <field type="uint8_t" name="i8_2"> Debug data</field>
+      <field type="float" name="f_1"> Debug data </field>
+      <field type="float" name="f_2"> Debug data</field>
+      <field type="float" name="f_3"> Debug data</field>
+      <field type="float" name="f_4"> Debug data</field>
+      <field type="float" name="f_5"> Debug data</field>
+      <field type="float" name="f_6"> Debug data</field>
+      <field type="float" name="f_7"> Debug data</field>
+      <field type="float" name="f_8"> Debug data</field>
+    </message>
+    <message id="8006" name="ASLUAV_STATUS">
+      <description>Extended state information for ASLUAVs</description>
+      <field type="uint8_t" name="LED_status"> Status of the position-indicator LEDs</field>
+      <field type="uint8_t" name="SATCOM_status"> Status of the IRIDIUM satellite communication system</field>
+      <field type="uint8_t[8]" name="Servo_status"> Status vector for up to 8 servos</field>
+      <field type="float" name="Motor_rpm"> Motor RPM </field>
+      <!-- to be extended-->
+    </message>
+    <message id="8007" name="EKF_EXT">
+      <description>Extended EKF state estimates for ASLUAVs</description>
+      <field type="uint64_t" name="timestamp" units="us"> Time since system start</field>
+      <field type="float" name="Windspeed" units="m/s"> Magnitude of wind velocity (in lateral inertial plane)</field>
+      <field type="float" name="WindDir" units="rad"> Wind heading angle from North</field>
+      <field type="float" name="WindZ" units="m/s"> Z (Down) component of inertial wind velocity</field>
+      <field type="float" name="Airspeed" units="m/s"> Magnitude of air velocity</field>
+      <field type="float" name="beta" units="rad"> Sideslip angle</field>
+      <field type="float" name="alpha" units="rad"> Angle of attack</field>
+    </message>
+    <message id="8008" name="ASL_OBCTRL">
+      <description>Off-board controls/commands for ASLUAVs</description>
+      <field type="uint64_t" name="timestamp" units="us"> Time since system start</field>
+      <field type="float" name="uElev"> Elevator command [~]</field>
+      <field type="float" name="uThrot"> Throttle command [~]</field>
+      <field type="float" name="uThrot2"> Throttle 2 command [~]</field>
+      <field type="float" name="uAilL"> Left aileron command [~]</field>
+      <field type="float" name="uAilR"> Right aileron command [~]</field>
+      <field type="float" name="uRud"> Rudder command [~]</field>
+      <field type="uint8_t" name="obctrl_status"> Off-board computer status</field>
+    </message>
+    <message id="8009" name="SENS_ATMOS">
+      <description>Atmospheric sensors (temperature, humidity, ...) </description>
+      <field type="uint64_t" name="timestamp" units="us">Time since system boot</field>
+      <field type="float" name="TempAmbient" units="degC"> Ambient temperature</field>
+      <field type="float" name="Humidity" units="%"> Relative humidity</field>
+    </message>
+    <message id="8010" name="SENS_BATMON">
+      <description>Battery pack monitoring data for Li-Ion batteries</description>
+      <field type="uint64_t" name="batmon_timestamp" units="us">Time since system start</field>
+      <field type="float" name="temperature" units="degC">Battery pack temperature</field>
+      <field type="uint16_t" name="voltage" units="mV">Battery pack voltage</field>
+      <field type="int16_t" name="current" units="mA">Battery pack current</field>
+      <field type="uint8_t" name="SoC">Battery pack state-of-charge</field>
+      <field type="uint16_t" name="batterystatus">Battery monitor status report bits in Hex</field>
+      <field type="uint16_t" name="serialnumber">Battery monitor serial number in Hex</field>
+      <field type="uint32_t" name="safetystatus">Battery monitor safetystatus report bits in Hex</field>
+      <field type="uint32_t" name="operationstatus">Battery monitor operation status report bits in Hex</field>
+      <field type="uint16_t" name="cellvoltage1" units="mV">Battery pack cell 1 voltage</field>
+      <field type="uint16_t" name="cellvoltage2" units="mV">Battery pack cell 2 voltage</field>
+      <field type="uint16_t" name="cellvoltage3" units="mV">Battery pack cell 3 voltage</field>
+      <field type="uint16_t" name="cellvoltage4" units="mV">Battery pack cell 4 voltage</field>
+      <field type="uint16_t" name="cellvoltage5" units="mV">Battery pack cell 5 voltage</field>
+      <field type="uint16_t" name="cellvoltage6" units="mV">Battery pack cell 6 voltage</field>
+    </message>
+    <message id="8011" name="FW_SOARING_DATA">
+      <description>Fixed-wing soaring (i.e. thermal seeking) data</description>
+      <field type="uint64_t" name="timestamp" units="ms">Timestamp</field>
+      <field type="uint64_t" name="timestampModeChanged" units="ms">Timestamp since last mode change</field>
+      <field type="float" name="xW" units="m/s">Thermal core updraft strength</field>
+      <field type="float" name="xR" units="m">Thermal radius</field>
+      <field type="float" name="xLat" units="deg">Thermal center latitude</field>
+      <field type="float" name="xLon" units="deg">Thermal center longitude</field>
+      <field type="float" name="VarW">Variance W</field>
+      <field type="float" name="VarR">Variance R</field>
+      <field type="float" name="VarLat">Variance Lat</field>
+      <field type="float" name="VarLon">Variance Lon </field>
+      <field type="float" name="LoiterRadius" units="m">Suggested loiter radius</field>
+      <field type="float" name="LoiterDirection">Suggested loiter direction</field>
+      <field type="float" name="DistToSoarPoint" units="m">Distance to soar point</field>
+      <field type="float" name="vSinkExp" units="m/s">Expected sink rate at current airspeed, roll and throttle</field>
+      <field type="float" name="z1_LocalUpdraftSpeed" units="m/s">Measurement / updraft speed at current/local airplane position</field>
+      <field type="float" name="z2_DeltaRoll" units="deg">Measurement / roll angle tracking error</field>
+      <field type="float" name="z1_exp">Expected measurement 1</field>
+      <field type="float" name="z2_exp">Expected measurement 2</field>
+      <field type="float" name="ThermalGSNorth" units="m/s">Thermal drift (from estimator prediction step only)</field>
+      <field type="float" name="ThermalGSEast" units="m/s">Thermal drift (from estimator prediction step only)</field>
+      <field type="float" name="TSE_dot" units="m/s"> Total specific energy change (filtered)</field>
+      <field type="float" name="DebugVar1"> Debug variable 1</field>
+      <field type="float" name="DebugVar2"> Debug variable 2</field>
+      <field type="uint8_t" name="ControlMode">Control Mode [-]</field>
+      <field type="uint8_t" name="valid">Data valid [-]</field>
+    </message>
+    <message id="8012" name="SENSORPOD_STATUS">
+      <description>Monitoring of sensorpod status</description>
+      <field type="uint64_t" name="timestamp" units="ms">Timestamp in linuxtime (since 1.1.1970)</field>
+      <field type="uint8_t" name="visensor_rate_1">Rate of ROS topic 1</field>
+      <field type="uint8_t" name="visensor_rate_2">Rate of ROS topic 2</field>
+      <field type="uint8_t" name="visensor_rate_3">Rate of ROS topic 3</field>
+      <field type="uint8_t" name="visensor_rate_4">Rate of ROS topic 4</field>
+      <field type="uint8_t" name="recording_nodes_count">Number of recording nodes</field>
+      <field type="uint8_t" name="cpu_temp" units="degC">Temperature of sensorpod CPU in</field>
+      <field type="uint16_t" name="free_space">Free space available in recordings directory in [Gb] * 1e2</field>
+    </message>
+    <message id="8013" name="SENS_POWER_BOARD">
+      <description>Monitoring of power board status</description>
+      <field type="uint64_t" name="timestamp" units="us">Timestamp</field>
+      <field type="uint8_t" name="pwr_brd_status">Power board status register</field>
+      <field type="uint8_t" name="pwr_brd_led_status">Power board leds status</field>
+      <field type="float" name="pwr_brd_system_volt" units="V">Power board system voltage</field>
+      <field type="float" name="pwr_brd_servo_volt" units="V">Power board servo voltage</field>
+      <field type="float" name="pwr_brd_digital_volt" units="V">Power board digital voltage</field>
+      <field type="float" name="pwr_brd_mot_l_amp" units="A">Power board left motor current sensor</field>
+      <field type="float" name="pwr_brd_mot_r_amp" units="A">Power board right motor current sensor</field>
+      <field type="float" name="pwr_brd_analog_amp" units="A">Power board analog current sensor</field>
+      <field type="float" name="pwr_brd_digital_amp" units="A">Power board digital current sensor</field>
+      <field type="float" name="pwr_brd_ext_amp" units="A">Power board extension current sensor</field>
+      <field type="float" name="pwr_brd_aux_amp" units="A">Power board aux current sensor</field>
+    </message>
+    <message id="8014" name="GSM_LINK_STATUS">
+      <description>Status of GSM modem (connected to onboard computer)</description>
+      <field type="uint64_t" name="timestamp" units="us">Timestamp (of OBC)</field>
+      <field type="uint8_t" name="gsm_modem_type" enum="GSM_MODEM_TYPE">GSM modem used</field>
+      <field type="uint8_t" name="gsm_link_type" enum="GSM_LINK_TYPE">GSM link type</field>
+      <field type="uint8_t" name="rssi">RSSI as reported by modem (unconverted)</field>
+      <field type="uint8_t" name="rsrp_rscp">RSRP (LTE) or RSCP (WCDMA) as reported by modem (unconverted)</field>
+      <field type="uint8_t" name="sinr_ecio">SINR (LTE) or ECIO (WCDMA) as reported by modem (unconverted)</field>
+      <field type="uint8_t" name="rsrq">RSRQ (LTE only) as reported by modem (unconverted)</field>
+    </message>
+    <!-- Using mavlink 1 msg ID from the arudpilot reserved space, in order to save header size -->
+    <message id="8015" name="SATCOM_LINK_STATUS">
+      <description>Status of the SatCom link</description>
+      <field type="uint64_t" name="timestamp" units="us">Timestamp</field>
+      <field type="uint64_t" name="last_heartbeat" units="us">Timestamp of the last successful sbd session</field>
+      <field type="uint16_t" name="failed_sessions">Number of failed sessions</field>
+      <field type="uint16_t" name="successful_sessions">Number of successful sessions</field>
+      <field type="uint8_t" name="signal_quality">Signal quality</field>
+      <field type="uint8_t" name="ring_pending">Ring call pending</field>
+      <field type="uint8_t" name="tx_session_pending">Transmission session pending</field>
+      <field type="uint8_t" name="rx_session_pending">Receiving session pending</field>
+    </message>
+    <message id="8016" name="SENSOR_AIRFLOW_ANGLES">
+      <description>Calibrated airflow angle measurements</description>
+      <field type="uint64_t" name="timestamp" units="us">Timestamp</field>
+      <field type="float" name="angleofattack" units="deg">Angle of attack</field>
+      <field type="uint8_t" name="angleofattack_valid">Angle of attack measurement valid</field>
+      <field type="float" name="sideslip" units="deg">Sideslip angle</field>
+      <field type="uint8_t" name="sideslip_valid">Sideslip angle measurement valid</field>
+    </message>
+  </messages>
+</mavlink>

@@ -1,0 +1,64 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @defgroup NIL NIL Kernel
+ * @details The kernel is the portable part of ChibiOS/NIL, this section
+ *          documents the various kernel subsystems.
+ */
+
+/**
+ * @defgroup NIL_CONFIG Configuration
+ * @ingroup NIL
+ */
+
+/*-*
+ * @defgroup NIL_TYPES Kernel Types
+ * @ingroup NIL
+ */
+
+/**
+ * @defgroup NIL_KERNEL Base API
+ * @ingroup NIL
+ */
+
+/**
+ * @defgroup NIL_SEMAPHORES Semaphores
+ * @ingroup NIL
+ */
+
+/**
+ * @defgroup NIL_EVENTS Events
+ * @ingroup NIL
+ */
+
+/**
+ * @defgroup NIL_MESSAGES Synchronous Messages
+ * @ingroup NIL
+ */
+
+/*-*
+ * @defgroup NIL_CORE Port Layer
+ * @ingroup NIL
+ */
+
+/*-*
+ * @defgroup NIL_TIMER Timer Interface
+ * @ingroup NIL
+ */
+ 

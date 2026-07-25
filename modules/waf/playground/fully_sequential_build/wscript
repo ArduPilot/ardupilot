@@ -1,0 +1,25 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2011 (ita)
+
+"""
+perform builds in a step-by-step fashion
+"""
+
+VERSION='0.0.1'
+APPNAME='fsb'
+
+top = '.'
+
+def options(opt):
+	opt.load('fsb')
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+def build(bld):
+	bld.program(source='main.c', target='app')
+	bld.program(source='main.c', target='app2')
+	bld(rule='echo hello', source='wscript')
+

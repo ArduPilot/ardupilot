@@ -1,0 +1,12 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+"""
+See README.txt
+"""
+
+def build(bld):
+	bld.program(source='main.c', target='app', use='mylib', cflags=['-O2'])
+	bld.stlib(source='a.c', target='mylib')
+

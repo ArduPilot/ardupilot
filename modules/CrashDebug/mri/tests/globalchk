@@ -1,0 +1,7 @@
+#! /usr/bin/env bash
+echo Checking ../lib/armv7-m/libmri_mbed1768.a
+arm-none-eabi-nm -g --defined-only ../lib/armv7-m/libmri_mbed1768.a | grep "........ . .*" | grep -v "........ . __mri.*" | grep -v "........ . .*_.*Handler$"
+echo Checking ../lib/armv7-m/libmri_bambino210.a
+arm-none-eabi-nm -g --defined-only ../lib/armv7-m/libmri_bambino210.a | grep "........ . .*" | grep -v "........ . __mri.*" | grep -v "........ . .*_.*Handler$"
+echo Checking ../lib/armv7-m/libmri_stm32f429-disco.a
+arm-none-eabi-nm -g --defined-only ../lib/armv7-m/libmri_stm32f429-disco.a | grep "........ . .*" | grep -v "........ . __mri.*" | grep -v "........ . .*_.*Handler$"

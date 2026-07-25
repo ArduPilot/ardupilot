@@ -1,0 +1,69 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2014-2015 (ita)
+
+"""
+Climb dependencies without using build groups and without annotating them.
+
+In practice, one may want to avoid this:
+* This adds some overhead as the task generators have to be searched and processed
+* This is also unlikely to work in the real-world (complex targets, not all dependencies are file-based, etc)
+* This also makes the dependencies more complicated to understand when reading a wscript file (what requires what?)
+
+This example will create "d.txt" and all the required files but no "aa*.txt".
+The target "john" is hard-coded below, just call "waf", or comment the line to call "waf --targets=john"
+"""
+
+VERSION='0.0.1'
+APPNAME='file_climbing'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	return
+
+def configure(conf):
+	return
+
+def build(bld):
+	for i in range(10):
+		bld(rule='cp ${SRC} ${TGT}', source='a.txt', target='aa%d.txt' % i)
+	bld(rule='cp ${SRC} ${TGT}', source='a.txt', target='b.txt')
+	bld(rule='cp ${SRC} ${TGT}', source='b.txt', target='c.txt')
+	bld(rule='cp ${SRC} ${TGT}', source='c.txt', target='d.txt', name='john')
+
+	# HERE
+	bld.targets = 'john'
+
+import os
+from waflib import Utils
+from waflib.TaskGen import before_method, feature
+
+@feature('*')
+@before_method('process_source', 'process_rule')
+def post_other_task_generators_if_necessary(self):
+
+	if not self.bld.targets:
+		return
+
+	if not getattr(self, 'source', None):
+		return
+
+	group = self.bld.get_group(self.bld.get_group_idx(self))
+	for x in Utils.to_list(self.source):
+		y = os.path.split(x)[1]
+
+		for tg in group:
+			if id(tg) == id(self):
+				continue
+
+			if getattr(tg, 'target', None):
+				pass
+
+			for target in Utils.to_list(tg.target):
+				y2 = os.path.split(target)[1]
+
+				if y == y2:
+					tg.post()
+

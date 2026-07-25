@@ -1,0 +1,30 @@
+#! /usr/bin/env python
+
+"""static libraries using other static libraries"""
+
+top = '.'
+out = 'build'
+
+parts = [ 'a', 'b' ]
+
+def build(bld):
+    bld.stlib(
+        target          = 'a',
+        source          = 'a/a.c',
+        includes        = 'a',
+        export_includes = 'a',
+        )
+
+    bld.stlib(
+        target          = 'b',
+        source          = 'b/b.c',
+        includes        = 'b',
+        export_includes = 'b',
+        use             = 'a',
+        )
+
+    bld.program(
+        target = 'test',
+        source = 'b/test.c',
+        use    = 'b')
+

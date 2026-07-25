@@ -1,0 +1,5 @@
+<map id="xenc__CipherReferenceType" name="xenc__CipherReferenceType">
+<area shape="rect" id="node2" href="$structxenc_____transforms_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:TransformsType is a complexType. " alt="" coords="25,193,185,221"/>
+<area shape="rect" id="node4" href="$structds_____transform_type.html" title="Imported complexType &quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformType from typemap WS/WS&#45;typemap..." alt="" coords="36,99,175,127"/>
+<area shape="rect" id="node6" href="$struct__c14n_____inclusive_namespaces.html" title="_c14n__InclusiveNamespaces" alt="" coords="4,6,205,34"/>
+</map>

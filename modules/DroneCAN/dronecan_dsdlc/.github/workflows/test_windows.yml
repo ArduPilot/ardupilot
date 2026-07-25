@@ -1,0 +1,20 @@
+name: test windows
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      # git checkout the PR
+      - uses: actions/checkout@v3
+      - name: test DSDL generation
+        run: |
+          tests/test_windows.cmd
+
+      - name: Archive generated headers
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsdl_generated
+          path: dsdl_generated
+          retention-days: 7

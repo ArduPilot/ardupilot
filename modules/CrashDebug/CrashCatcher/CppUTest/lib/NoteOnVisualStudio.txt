@@ -1,0 +1,4 @@
+This directory will contain the last lib created by any of the visual studion builds.  
+
+In case you simultaneously use more than one VS version, there are subdirectories
+for each supported VS version where CppUTest.lib and the associated pdb file are copied.

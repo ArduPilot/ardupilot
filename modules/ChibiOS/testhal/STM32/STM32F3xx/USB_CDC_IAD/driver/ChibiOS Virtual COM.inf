@@ -1,0 +1,57 @@
+[Version]
+Signature="$Windows NT$"
+Class=Ports
+ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+Provider=%PRVDR%
+CatalogFile=stmcdc.cat
+DriverVer=02/06/2015,1.0.1
+
+[SourceDisksNames]
+
+[SourceDisksFiles]
+
+[Manufacturer]
+%MFGNAME%=DeviceList,NT,NTamd64
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[DeviceList.NT]
+%DESCRIPTION1%=DriverInstall,USB\VID_F055&PID_E063&MI_00
+%DESCRIPTION2%=DriverInstall,USB\VID_F055&PID_E063&MI_02
+%DESCRIPTION3%=DriverInstall,USB\VID_F055&PID_E063&MI_04
+
+[DeviceList.NTamd64]
+%DESCRIPTION1%=DriverInstall,USB\VID_F055&PID_E063&MI_00
+%DESCRIPTION2%=DriverInstall,USB\VID_F055&PID_E063&MI_02
+%DESCRIPTION3%=DriverInstall,USB\VID_F055&PID_E063&MI_04
+
+[DriverInstall.NT]
+Include=mdmcpq.inf
+CopyFiles=FakeModemCopyFileSection
+AddReg=DriverInstall.NT.AddReg
+
+[DriverInstall.NT.AddReg]
+HKR,,DevLoader,,*ntkern
+HKR,,NTMPDriver,,usbser.sys
+HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+
+[DriverInstall.NT.Services]
+AddService=usbser, 0x00000002, DriverServiceInst
+
+[DriverServiceInst]
+DisplayName=%SERVICE%
+ServiceType = 1 ; SERVICE_KERNEL_DRIVER
+StartType = 3 ; SERVICE_DEMAND_START
+ErrorControl = 1 ; SERVICE_ERROR_NORMAL
+ServiceBinary= %12%\usbser.sys
+LoadOrderGroup = Base
+
+[Strings]
+PRVDR = "www.chibios.org"
+MFGNAME = "ChibiOS."
+DESCRIPTION1 = "ChibiOS Virtual COM Port 1"
+DESCRIPTION2 = "ChibiOS Virtual COM Port 2"
+DESCRIPTION3 = "ChibiOS Virtual COM Port 3"
+SERVICE = "ChibiOS Virtual COM Port"
+DriversDisk = "ChibiOS Drivers Disk" 

@@ -1,0 +1,14 @@
+/*!
+ * @mainpage Micro XRCE-DDS Client.
+ * <div id="mainpage" style="width:95%;text-align:justify;text-justify:inter-word">
+ * *eProsima Micro XRCE-DDS* is a library implementing the [DDS-XRCE protocol](https://www.omg.org/spec/DDS-XRCE/About-DDS-XRCE/) 
+ * as defined and maintained by the OMG, whose aim is to allow resource constrained devices such as microcontrollers to communicate 
+ * with the [DDS](https://www.omg.org/spec/DDS/About-DDS/>) world as any other DDS actor would do.
+ * It follows a client/server paradigm and is composed by two libraries, the *Micro XRCE-DDS Client* and the *Micro XRCE-DDS Agent*. 
+ * The *Micro XRCE-DDS Clients* are lightweight entities meant to be compiled on eXtremely Resource Constrained Environments, 
+ * while the *Micro XRCE-DDS Agent* is a broker which bridges the *Clients* with the DDS world.
+</div>
+*
+ */
+
+

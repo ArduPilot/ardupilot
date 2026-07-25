@@ -1,0 +1,10 @@
+#include "funi.h"
+
+%for i in range(maxfuni):
+int func{{i}}(int a)
+{
+    if (a < {{i}})
+        return a;
+    return {{i}};
+}
+%end

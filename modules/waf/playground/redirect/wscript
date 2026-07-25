@@ -1,0 +1,41 @@
+#! /usr/bin/env python
+
+"""
+Run: "waf configure clean build"
+
+The program "app" writes to both stdout and stderr, it is executed
+directly or through another python process
+"""
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+def build(bld):
+
+	def write(task):
+		task.outputs[0].write('''
+          #include <stdio.h>
+          #include <stdlib.h>
+          int main() {
+              printf("hi\\n");
+              perror("hello\\n");
+              return 0;
+          }''')
+
+	bld(rule=write, target='main.c')
+	bld.program(source='main.c', target='app')
+	bld(rule='${SRC[0].abspath()}', source='app')
+
+	import sys
+	bld(
+		rule     = '${tsk.generator.template % (tsk.generator.python, tsk.inputs[0].abspath())}',
+		template = """%s -c "import subprocess;subprocess.Popen(%r).wait()" """,
+		python   = sys.executable,
+		source   = 'app')
+

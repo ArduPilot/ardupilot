@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="oop_base_object" descr="Base Object" editcode="false">
+  <brief>Common ancestor abstract class.</brief>
+  <public>
+    <includes>
+      <condition check="defined(OOP_USE_CHIBIOS)">
+        <include style="regular">ch.h</include>
+        <elseif check="defined(OOP_USE_NOTHING)" />
+        <include style="angular">stddef.h</include>
+        <include style="angular">stdint.h</include>
+        <include style="angular">stdbool.h</include>
+        <elseif />
+        <include style="regular">ccportab.h</include>
+        <include style="regular">osal.h</include>
+      </condition>
+    </includes>
+    <macros>
+      <macro name="oopGetOwner">
+        <brief>Returns an object pointer starting from a pointer to a class
+          member.</brief>
+        <param name="c">Class type name.</param>
+        <param name="m">Class member field name.</param>
+        <param name="p" dir="in">Class member field pointer.</param>
+        <return>A pointer to an object of type @p c containing the field @p
+          m.</return>
+        <api />
+        <implementation><![CDATA[(c *)(((size_t)(p)) - (size_t)offsetof(c, m))]]></implementation>
+      </macro>
+      <macro name="oopGetIf">
+        <brief>Returns a pointer to one of the implemented interfaces.</brief>
+        <note><![CDATA[The interface pointer is returned as a <tt>void *</tt>
+          in order to be directly usable as any of the interface's ancestors
+          pointers.]]></note>
+        <param name="ip" dir="in">Pointer to the class instance.</param>
+        <param name="ifns">Implemented interface namespace.</param>
+        <return>A void pointer to the interface within the class instance.
+        </return>
+        <api />
+        <implementation><![CDATA[(void *)(&(ip)->ifns)]]></implementation>
+      </macro>
+      <condition check="defined(OOP_USE_CHIBIOS)">
+        <macro name="oopAssert">
+          <brief>Condition assertion.</brief>
+          <param name="c">Condition to be proven true.</param>
+          <param name="r">Remark associated to the assertion.</param>
+          <implementation><![CDATA[
+chDbgAssert(c, r)]]></implementation>
+        </macro>
+        <macro name="oopLock">
+          <brief>Critical section enter.</brief>
+          <note><![CDATA[The critical section nature is not specified,
+                implementation depends on the chosen underlying OS.]]></note>
+          <implementation><![CDATA[chSysLock()]]></implementation>
+        </macro>
+        <macro name="oopUnlock">
+          <brief>Critical section leave.</brief>
+          <note><![CDATA[The critical section nature is not specified,
+                implementation depends on the chosen underlying OS.]]></note>
+          <implementation><![CDATA[chSysUnlock()]]></implementation>
+        </macro>
+        <elseif check="defined(OOP_USE_NOTHING)" />
+        <macro name="oopAssert">
+          <param name="c" />
+          <param name="r" />
+          <implementation><![CDATA[]]>
+do {
+  (void)c;
+  (void)r;
+} while (false)</implementation>
+        </macro>
+        <macro name="oopLock">
+          <implementation><![CDATA[]]></implementation>
+        </macro>
+        <macro name="oopUnlock">
+          <implementation><![CDATA[]]></implementation>
+        </macro>
+        <elseif />
+        <macro name="oopAssert">
+          <param name="c" />
+          <param name="r" />
+          <implementation><![CDATA[
+osalDbgAssert(c, r)]]></implementation>
+        </macro>
+        <macro name="oopLock">
+          <implementation><![CDATA[osalSysLock()]]></implementation>
+        </macro>
+        <macro name="oopUnlock">
+          <implementation><![CDATA[osalSysUnlock()]]></implementation>
+        </macro>
+      </condition>
+    </macros>
+    <types>
+      <class name="base_object" namespace="bo" descr="base object"
+        type="abstract">
+        <brief>Common ancestor abstract class.</brief>
+        <details><![CDATA[This abstract class is the common ancestor of all
+          classes used in ChibiOS. This class just defines the position of
+          the VMT pointer inside the structure.]]></details>
+        <fields>
+        </fields>
+        <methods>
+          <objinit callsuper="false">
+            <implementation><![CDATA[ ]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[ ]]></implementation>
+          </dispose>
+          <virtual>
+            <method name="boDispose" shortname="dispose" ctype="void">
+              <brief>Object finalization.</brief>
+              <dispose />
+            </method>
+          </virtual>
+          <inline>
+            <method name="boFree" ctype="void">
+              <brief>Conditional object finalization.</brief>
+              <details><![CDATA[The object is disposed if the passed reference
+                is different from @p NULL.]]></details>
+              <implementation><![CDATA[
+
+if (self != NULL) {
+  boDispose(self);
+}]]></implementation>
+            </method>
+          </inline>
+        </methods>
+      </class>
+    </types>
+  </public>
+  <private>
+  </private>
+</module>

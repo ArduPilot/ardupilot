@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- C module definition -->
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="drvoverlay" descr="VFS Template Driver"
+  check="VFS_CFG_ENABLE_DRV_OVERLAY == TRUE" sourcepath="drivers/overlay"
+  headerpath="drivers/overlay" editcode="true">
+  <imports>
+    <import>vfs_nodes.xml</import>
+    <import>vfs_drivers.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_sequential_stream.h</include>
+    </includes>
+    <configs>
+      <config name="DRV_CFG_OVERLAY_DRV_MAX" default="1">
+        <brief>Maximum number of overlay directories.</brief>
+        <assert invalid="$N &lt; 1" />
+      </config>
+      <config name="DRV_CFG_OVERLAY_DIR_NODES_NUM" default="1">
+        <brief>Number of directory nodes pre-allocated in the pool.</brief>
+        <assert invalid="$N &lt; 1" />
+      </config>
+    </configs>
+    <types>
+      <class type="regular" name="vfs_overlay_dir_node" namespace="ovldir"
+        ancestorname="vfs_directory_node" descr="VFS overlay directory node">
+        <fields>
+          <field name="index" ctype="unsigned">
+            <brief>Next directory entry to be read.</brief>
+          </field>
+          <field name="overlaid_root" ctype="vfs_directory_node_c$I*">
+            <brief>File system to be overlaid.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="false">
+            <param name="driver" ctype="vfs_overlay_driver_c *" dir="in">
+              Pointer to the controlling driver.
+            </param>
+            <param name="mode" ctype="vfs_mode_t" dir="in"> Node mode flags.
+            </param>
+            <implementation><![CDATA[
+self = __vfsdir_objinit_impl(ip, vmt, (vfs_driver_c *)driver, mode);
+
+self->index         = 0U;
+self->overlaid_root = NULL;]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="stat">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="first">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="next">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+      <class type="regular" name="vfs_overlay_driver" namespace="ovldrv"
+        ancestorname="vfs_driver" descr="VFS overlay driver">
+        <fields>
+          <field name="overlaid_drv" ctype="vfs_driver_c$I*"></field>
+          <field name="path_prefix" ctype="const char$I*"></field>
+          <field name="path_cwd" ctype="char$I*"></field>
+          <field name="next_driver" ctype="unsigned"></field>
+          <field name="names"
+            ctype="const char$I*$N[DRV_CFG_OVERLAY_DRV_MAX]"></field>
+          <field name="drivers"
+            ctype="vfs_driver_c$I*$N[DRV_CFG_OVERLAY_DRV_MAX]"></field>
+          <field name="buf" ctype="char$I$N[VFS_CFG_PATHLEN_MAX + 1]"></field>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <param name="overlaid_drv" ctype="vfs_driver_c *" dir="in"><![CDATA[Pointer to
+              a driver to be overlaid or @p NULL.]]></param>
+            <param name="path_prefix" ctype="const char *" dir="in"><![CDATA[Prefix to be
+              added to the paths or @p NULL, it must be a normalized absolute path.]]></param>
+            <implementation><![CDATA[
+self->overlaid_drv = overlaid_drv;
+self->path_prefix  = path_prefix;
+self->path_cwd     = NULL;
+self->next_driver  = 0U;]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[
+unsigned i;
+
+/* Releasing all registered drivers.*/
+i = 0U;
+while (i < self->next_driver) {
+  roRelease(self->drivers[i]);
+  i++;
+}]]></implementation>
+          </dispose>
+          <regular>
+            <method name="ovldrvRegisterDriver" ctype="msg_t">
+              <brief>Registers a VFS driver as an overlay.</brief>
+              <note><![CDATA[The overlay becomes the owner of the registered driver,
+                the reference is released when dre driver is unregistered or when
+                the whole overlay object is disposed.]]></note>
+              <param name="vdp" ctype="vfs_driver_c *" dir="in"><![CDATA[Driver object reference to be registered.]]></param>
+              <param name="name" ctype="const char *" dir="in"><![CDATA[Name for the
+                new overlay directory, must be alphanumeric.]]></param>
+              <return>The operation result.</return>
+              <api />
+              <implementation><![CDATA[
+msg_t ret;
+
+chSysLock();
+
+if (self->next_driver >= DRV_CFG_OVERLAY_DRV_MAX) {
+  ret = CH_RET_ENOMEM;
+}
+else {
+  self->names[self->next_driver]   = name;
+  self->drivers[self->next_driver] = vdp;
+  self->next_driver++;
+  ret = CH_RET_SUCCESS;
+}
+
+chSysUnlock();
+
+return ret;]]></implementation>
+            </method>
+            <method name="ovldrvUnregisterDriver" ctype="msg_t">
+              <brief>Unregisters a VFS driver.</brief>
+              <note>The reference to the registered driver is released.</note>
+              <param name="name" ctype="const char *" dir="in"><![CDATA[Name of the
+                overlay directory to be unregistered.]]></param>
+              <return>The operation result.</return>
+              <api />
+              <implementation><![CDATA[
+unsigned i;
+
+chSysLock();
+
+i = 0U;
+while (i < self->next_driver) {
+
+  /* Is name matching?*/
+  if (strcmp(self->names[i], name) == 0) {
+    vfs_driver_c *vdp = self->drivers[i];
+
+    /* Found match, move following entries down, if any.*/
+    while (i < self->next_driver - 1) {
+      self->drivers[i] = self->drivers[i + 1];
+      self->names[i] = self->names[i + 1];
+      i++;
+    }
+    self->next_driver--;
+
+    chSysUnlock();
+
+    /* Releasing the unregistered object.*/
+    roRelease(vdp);
+
+    return CH_RET_SUCCESS;
+  }
+
+  i++;
+}
+
+chSysUnlock();
+
+return CH_RET_ENOENT;]]></implementation>
+            </method>
+          </regular>
+          <override>
+            <method shortname="setcwd">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="getcwd">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="stat">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="opendir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="openfile">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="unlink">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="rename">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="mkdir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="rmdir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+      <struct name="vfs_overlay_driver_static_struct">
+        <brief>Structure representing the global state of @p
+          vfs_overlay_driver_c.</brief>
+        <fields>
+          <field name="dir_nodes_pool" ctype="memory_pool_t">
+            <brief>Pool of directory nodes.</brief>
+          </field>
+          <field name="dir_nodes"
+            ctype="vfs_overlay_dir_node_c$I$N[DRV_CFG_OVERLAY_DIR_NODES_NUM]">
+            <brief>Static storage of directory nodes.</brief>
+          </field>
+        </fields>
+      </struct>
+    </types>
+    <functions>
+      <function name="__drv_overlay_init" ctype="void">
+        <brief>Module initialization.</brief>
+        <init />
+        <implementation><![CDATA[
+
+/* Initializing pools.*/
+chPoolObjectInit(&vfs_overlay_driver_static.dir_nodes_pool,
+                 sizeof (vfs_overlay_dir_node_c),
+                 chCoreAllocAlignedI);
+
+/* Preloading pools.*/
+chPoolLoadArray(&vfs_overlay_driver_static.dir_nodes_pool,
+                &vfs_overlay_driver_static.dir_nodes[0],
+                DRV_CFG_OVERLAY_DIR_NODES_NUM);]]></implementation>
+      </function>
+    </functions>
+  </public>
+  <private>
+    <includes_always>
+      <include style="regular">vfs.h</include>
+    </includes_always>
+    <variables>
+      <variable name="vfs_overlay_driver_static"
+        ctype="struct vfs_overlay_driver_static_struct">
+        <brief>Global state of @p vfs_overlay_driver_c</brief>
+      </variable>
+    </variables>
+  </private>
+</module>

@@ -1,0 +1,13 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2011 (ita)
+
+def options(opt):
+	opt.load('fsc')
+
+def configure(conf):
+	conf.load('fsc')
+
+def build(bld):
+	bld(features='fs', source='printer.fs main.fs', type='exe', gen='test.exe')
+

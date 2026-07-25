@@ -1,0 +1,14 @@
+<map id="SOAP_ENV__Header" name="SOAP_ENV__Header">
+<area shape="rect" id="node2" href="$struct__wsrm_____sequence_acknowledgement.html" title="Top&#45;level root element &quot;http://docs.oasis&#45;open.org/ws&#45;rx/wsrm/200702&quot;:SequenceAcknowledgement. " alt="" coords="496,97,741,125"/>
+<area shape="rect" id="node4" href="$struct__wsrm_____sequence_acknowledgement_1_1__wsrm_____sequence_acknowledgement___acknowledgement_range.html" title="_wsrm__SequenceAcknowledgement\l::_wsrm__SequenceAcknowledgement\l_AcknowledgementRange" alt="" coords="25,5,277,65"/>
+<area shape="rect" id="node6" href="$struct__wsrm_____sequence_acknowledgement_1_1__wsrm_____sequence_acknowledgement___final.html" title="SEQUENCE OF ELEMENTS &lt;xs:sequence&gt; " alt="" coords="7,89,295,133"/>
+<area shape="rect" id="node8" href="$struct__wsrm_____sequence_acknowledgement_1_1__wsrm_____sequence_acknowledgement___none.html" title="_wsrm__SequenceAcknowledgement\l::_wsrm__SequenceAcknowledgement_None" alt="" coords="5,157,296,201"/>
+<area shape="rect" id="node10" href="$structwsrm_____ack_requested_type.html" title="&quot;http://docs.oasis&#45;open.org/ws&#45;rx/wsrm/200702&quot;:AckRequestedType is a complexType. ..." alt="" coords="527,149,710,177"/>
+<area shape="rect" id="node12" href="$structwsa5_____relates_to_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:RelatesToType is a complexType with simpleContent. " alt="" coords="541,201,696,229"/>
+<area shape="rect" id="node14" href="$structchan_____channel_instance_type.html" title="&quot;http://schemas.microsoft.com/ws/2005/02/duplex&quot;:ChannelInstanceType is a complexType. " alt="" coords="522,253,716,281"/>
+<area shape="rect" id="node16" href="$structwsa5_____endpoint_reference_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:EndpointReferenceType is a complexType. " alt="" coords="513,321,724,349"/>
+<area shape="rect" id="node18" href="$structwsa5_____reference_parameters_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:ReferenceParametersType is a complexType. " alt="" coords="37,294,264,322"/>
+<area shape="rect" id="node20" href="$structwsa5_____metadata_type.html" title="&quot;http://www.w3.org/2005/08/addressing&quot;:MetadataType is a complexType. " alt="" coords="75,346,227,374"/>
+<area shape="rect" id="node22" href="$structwsrm_____sequence_fault_type.html" title="&quot;http://docs.oasis&#45;open.org/ws&#45;rx/wsrm/200702&quot;:SequenceFaultType is a complexType. " alt="" coords="525,373,712,401"/>
+<area shape="rect" id="node24" href="$structwsrm_____sequence_type.html" title="&quot;http://docs.oasis&#45;open.org/ws&#45;rx/wsrm/200702&quot;:UnsupportedElement is a simpleType restriction of xs:Q..." alt="" coords="540,425,697,453"/>
+</map>

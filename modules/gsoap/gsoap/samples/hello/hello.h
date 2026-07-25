@@ -1,0 +1,1 @@
+h__hello(char*&);

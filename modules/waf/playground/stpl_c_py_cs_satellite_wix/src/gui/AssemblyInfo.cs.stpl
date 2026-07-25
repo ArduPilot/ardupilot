@@ -1,0 +1,22 @@
+﻿// vim:syntax=cs
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Resources;
+
+[assembly: AssemblyTitle("{{guiname}}")]
+[assembly: AssemblyDescription("GUI project to test of WAF")]
+[assembly: AssemblyConfiguration("Development Release")]
+[assembly: AssemblyCompany("{{company}}")]
+[assembly: AssemblyProduct("{{guiname}}")]
+[assembly: AssemblyCopyright("Copyright © {{company}} 2015")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
+[assembly: NeutralResourcesLanguageAttribute("en", UltimateResourceFallbackLocation.MainAssembly)]
+
+[assembly: ComVisible(false)]
+
+[assembly: Guid("267d6386-3c5e-4334-a323-c5274f881cdc")]
+
+[assembly: AssemblyVersion("{{version}}")]
+[assembly: AssemblyFileVersion("{{version}}")]

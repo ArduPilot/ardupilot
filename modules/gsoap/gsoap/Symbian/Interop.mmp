@@ -1,0 +1,31 @@
+// Stockquote.mmp
+//
+// Copyright (c) 2002 IBM.  All rights reserved.
+
+// using relative paths for sourcepath and user includes
+
+TARGET        interop.exe
+TARGETTYPE    exe
+UID           0x1000008d 0x10004238
+
+SOURCEPATH    .
+SOURCE        interopMain.c
+SOURCE        soapC.cpp
+SOURCE        soapClient.cpp
+SOURCE        interop2test.cpp
+SOURCE        interop2Btest.cpp
+SOURCE        interop2Ctest.cpp
+SOURCEPATH    ..
+SOURCE        stdsoap2.cpp      
+
+
+
+USERINCLUDE   .
+USERINCLUDE   ..
+SYSTEMINCLUDE \Epoc32\include
+SYSTEMINCLUDE \Epoc32\include\libc
+SYSTEMINCLUDE \Epoc32\include\networking
+
+LIBRARY       esock.lib euser.lib eexe.lib estlib.lib ecrt0.lib
+STATICLIBRARY   ecrt0.lib
+nostrictdef

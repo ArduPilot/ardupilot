@@ -1,0 +1,4 @@
+<map id="saml2__AuthnStatementType" name="saml2__AuthnStatementType">
+<area shape="rect" id="node2" href="$structsaml2_____subject_locality_type.html" title="&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;:SubjectLocalityType is a complexType. " alt="" coords="5,6,195,34"/>
+<area shape="rect" id="node4" href="$structsaml2_____authn_context_type.html" title="&quot;urn:oasis:names:tc:SAML:2.0:assertion&quot;:AuthnContextType is a complexType. " alt="" coords="219,6,400,34"/>
+</map>

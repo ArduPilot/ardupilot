@@ -1,0 +1,10 @@
+#include <iostream>
+#include "funi.h"
+using namespace std;
+int main()
+{
+    %for i in range(maxfuni):
+        cout << func{{i}}(2) << endl;
+    %end
+    return 0;
+}

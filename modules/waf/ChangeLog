@@ -1,0 +1,267 @@
+NEW IN WAF 2.0.27
+-----------------
+* Improve Qt6 detection on msvc #2423
+* Fix a regression in the detection of QtX3D libraries #2367
+* Avoid coloring all MSVC logs #2366
+* Switch to nonstopmode for latex prompts #2421
+* Restrict executable detection to files having the executable bits #2349
+
+NEW IN WAF 2.0.26
+-----------------
+* Improve "waf dist" - Support SOURCE_DATE_EPOCH
+* Detect Qt6 #2355
+* Haxe toolkit support #2352
+* Updated the project's gpg key
+
+NEW IN WAF 2.0.25
+-----------------
+* Fix invalid characters returned by find_program #2397
+* Prepare for distutils removal (Python 3.12 regression) #2402
+* Improve cp65001 compat in cpython < 3.3 #2346
+* Add Fujitsu Fortran compiler detection on ARM64FX #2348
+* Support multiple Sphinx output formats #2344
+* Improve PyQt5 detection #2343
+* Add asynchronous wafcache uploads
+
+NEW IN WAF 2.0.24
+-----------------
+* Use EXT_SUFFIX config var over the deprecated/removed SO (Python 3.11 regression) #2386
+* When detecting Visual Studio compilers, prefer the oldest version regardless of compiler type #2352
+* Update the MacOS-specific examples #2337
+* Fix Configure.find_program() invalid character handling in default variable names #2397
+
+NEW IN WAF 2.0.23
+-----------------
+* Fix the Qt3D* libraries detection #2368
+* Fix swig processing when \r is preset in the module name #2350
+* Add RISC-V generic detection #2322
+* Detect gcc first on GNU/kFreeBSD #2336
+* Improve waflib/extras/msvcdeps performance #2323
+
+NEW IN WAF 2.0.22
+-----------------
+* Fix stdin propagation with faulty vcvarsall scripts #2315
+* Enable mixing Unix-style paths with destdir on Windows platforms #2337
+* Fix shell escaping unit test parameters #2314
+* Improve extras/clang_compilation_database and extras/swig compatibility #2336
+* Propagate C++ flags to the Cuda compiler in extras/cuda #2311
+* Fix detection of Qt 5.0.0 (preparation for Qt6) #2331
+* Enable Haxe processing #2308
+* Fix regression in MACOSX_DEPLOYMENT_TARGET caused by distutils #2330
+* Fix extras/wafcache concurrent trimming issues #2312
+* Fix extras/wafcache symlink handling #2327
+
+NEW IN WAF 2.0.21
+-----------------
+* Set the default --msvc_version from VSCMD_VER if present #2299
+* Force unit-test reruns on ut_str, ut_cmd or ut_path changes #2302
+* Describe Qt5's library detection #2288
+* Introduce conf.env.ASMDEFINES_ST to enable assembly-specific define flags
+* Update extras/xcode6 to Python3 #2290
+* Enable parameter "always" in extras/doxygen #2292
+* Fix extras/c_dumbpreproc as it was previously broken
+* Fix extras/gccdeps and extras/msvcdeps on header renaming #2293
+* Improve extras/msvcdeps debug outputs and flags #2287 #2291
+* Add add MCST Elbrus CPU detection in c config #2297
+* Add minio object copies to extras/wafcache #2304
+
+NEW IN WAF 2.0.20
+-----------------
+* Detect -flto and -fno-lto in parse_config #2281
+* Improve custom option processing #2280
+* Enable Clang on cygwin #2279
+* Make distclean target 'no_lock_in_top/run' modifiers compatible with env vars #2271
+* Update irix compiler detection
+* Exclude ConfigSet from altering ConfigurationContext.run_build caches #2273
+* Add gas support in extras/gccdeps.py #2278
+* Improve compatibility with custom commands in extras/clang_compilation_database #2274
+
+NEW IN WAF 2.0.19
+-----------------
+* Enable race-free pdb file generation waflib/extras/msvc_pdb.py #1731
+* Fix negative values for -j #2256
+* Fix Swig example compatibility with Python3 #2259
+* Fix lto settings for endianness configuration tests #2250
+* Tune the application name on --help #2254
+* Improve Qt5's fPIC/fPIE detection
+* Propagate LDFLAGS to Fortran tasks (in addition to LINKFLAGS)
+* Enable local and remote build object caches waflib/extras/wafcache.py
+
+NEW IN WAF 2.0.18
+-----------------
+* Fix a deadlock with cython and subst tasks #2244
+* Fix rpath processing so that it no longer breaks dependency chains
+* Fix fast_partial.py failures on configuration tests
+* Fix duplicate -fno-strict-aliasing flags in Python compilation flags detection
+* Fix annoying PIE errors in demos/asm/
+* Improve configuration tests cache accuracy #2251
+* Improve extras/fast_partial.py compatibility
+* Improve extras/doxygen.py outdir parameter settings #2255
+* Add a dependency scanner for assembly files (Gas/Yasm)
+* Add executable arguments for configuration tests / execute=True
+* Add a QtTest example to demos/qt5/ #2241
+* Add a cross-compilation option to extras/objcopy.py #2247
+
+NEW IN WAF 2.0.17
+-----------------
+* Improve build performance on FreeBSD and Python3 #2241
+* Add Python 3.8 flag detection for building embedded interpreters #2239
+* Prevent Qt5 uninstallation errors when c++ files are generated
+* Improve installation/uninstallation colors
+
+NEW IN WAF 2.0.16
+-----------------
+* Fix task semaphore errors on stateful tasks #2232
+* Fix encoding errors with UTF-8 paths on Python 2 #2230
+* Fix encoding errors in waf_unit_test #2220
+* Improve dependency between javac task and use-d generated jars nodes
+* Install pdb files with /debug:* flags #2224
+* Make javadoc detection optional #2225
+* Improve md5_tstamp documentation #2221
+* Add extras/color_msvc to colorizes MSVC outputs #2221
+* Fix symbol regex on mac-o binaries in extras/syms #2222
+* Maintain order of lines in doxyfile in extras/doxygen #2223
+* Improve extras/msvcdeps path handling
+* Add extras/clang_cross for cross-compilation using clang
+
+NEW IN WAF 2.0.15
+-----------------
+* Fix Python path detection under Git-Bash #2217
+* Provide an option to disable args files #2216
+* Improve command line length calculation for args files #2214
+* Add libs/stubs to Cuda library path #2213
+* Suppress ant_glob java warnings #2212
+* Support multiple 'default_cmd' #2211
+* Warn when buildcopy is used without any files to copy #2210
+* Protobuf examples enhancements #2208 #2209
+* Fix all DeprecationWarning: invalid escape sequence #2207
+
+NEW IN WAF 2.0.14
+-----------------
+* Support Fortran 2008 submodules #2205
+* Possible solution for Msys/Python 3.6 path issues #2217
+* Support NEC SX-Aurora TSUBASA system's Fortran compiler extras/fc_nfort.py #2206
+* Fix ignored configuration flags in gccdeps extras/gccdeps.py #2203
+* Fix included protoc search on nested wscripts extras/protoc.py #2202
+* Support extra taskgen and out of project include directories extras/protoc.py #2204
+
+NEW IN WAF 2.0.13
+-----------------
+* Fix "broken revdeps" extra error message on certain build failures
+* Avoid duplicate flags in Python configuration tests
+* Find more Swig dependencies #2206
+* Avoid spawning threads with -j1 on AIX systems
+
+NEW IN WAF 2.0.12
+-----------------
+* Fix broken inheritance task trees #2194
+
+NEW IN WAF 2.0.11
+-----------------
+* Do not raise an exception on check_cfg/mandatory=False/-vv #2193
+* Post past task generators in lazy sub-folder builds #2191
+* Disable warnings on versioned library installation
+* Fix cpplint concurrent execution problems
+
+NEW IN WAF 2.0.10
+-----------------
+* Add a task semaphore system
+* Fix --help when no wscript is supplied #2184
+* Fix Fortran processing with generated Fortran files
+
+NEW IN WAF 2.0.9
+----------------
+* Add dependencies on scriptlet outputs
+* Made options optional for cython waftool
+* Improve doxygen error handling
+
+NEW IN WAF 2.0.8
+----------------
+* Improve Windows console encoding outputs on Python 3.6 and Japanese code page #2163
+* Improve msvc detection on Python 3.6 and Japanese code page #2155
+* Improve moc/rcc flag parsing with msvc #2169
+* Improve Eclipse project generation #2166 #2165 #2164 #2149 #2145
+* Improve Boost project detection on dpkg-based systems #2146
+
+NEW IN WAF 2.0.7
+----------------
+* Apply priorities to dynamically-generated tasks #2137
+* Fix upcoming Python 3.7 incompatibilities #2126
+* Fix Python3 support in extras/xcode6.py #2121
+* Improve priority support in extras/swig.py #2137
+* Improve support extras/protoc.py #2135
+* Improve argument handling in extras/clang_compilation_database.py #2127
+* Add glib DBus bindings in extras/gdbus.py #2134
+* Avoid name collisions for precompiled headers and libraries with similar names in extras/pch.py #2122
+
+NEW IN WAF 2.0.6
+----------------
+* Add Task.deep_inputs to enable further dependencies on input file tasks
+* Set unit tests to depend on input file tasks instead of timestamps
+
+NEW IN WAF 2.0.5
+----------------
+* Force unit tests to depend on the executable creation time besides file contents
+* Enhance the Eclipse project generator
+* Update the cuda examples
+
+NEW IN WAF 2.0.4
+----------------
+* Enable more advanced warnings of ant_glob on build folders in verbose mode
+* Defer node.ant_glob(..., generator=True) evaluation
+* Enable 'waf clean' to get the list of files to remove from bld.clean_files
+* Define the environment variable WAF_NO_PREFORK to skip pre-forking
+* Fix Can't pickle local object '_createenviron.<locals>.encode' exceptions (Python 3.6)
+* Improve the Erlang module #2095
+* Add task target to parallel_debug outputs #2091
+
+NEW IN WAF 2.0.3
+----------------
+* Enable install_path=None for Python targets #2087
+* Skip empty or duplicates in java user classpath #2084
+* Change the unit test summary color scheme to use green and red colors
+* Improve the deadlock error message
+* Report sys.path values from Context.load_tool to improve error messages
+* Cache qrc uic->h conversions to enable qrc re-use across targets
+* Output long-running tasks outputs immediately using bld(rule=..., stdout=None)
+
+NEW IN WAF 2.0.2
+----------------
+* Improve Intel Fortran compiler detection on Windows #2063
+* Ensure that the task count starts at 1 in the build outputs
+* Add a --pdb option to start pdb on unexpected exceptions #2052
+* Fix conflicting qm/qrc re-used output files for multiple targets #2065
+* Add java support in protobuf (extras) #2049
+* Add a java test example (extras) #2062
+* Enable symbol processing for empty targets (extras) #2053
+
+NEW IN WAF 2.0.1
+----------------
+* Improve the default preprocessor behaviour for gcc/msvc
+* Accept task objects in Build.add_to_group for compatibility reasons
+* Prevent xcode generator from overwriting existing features #2038
+* Fix self.includes data scope #2035
+* Fix Node.ant_glob case sensitivity regression #2034
+* Fix Logs.verbose options regression #2033
+
+NEW IN WAF 2.0.0
+----------------
+* Provide a new priority system to improve scalability on complex builds
+* Provide TaskGroup objects to improve scalability on complex builds
+* Force new files into the build directory by default (use Node objects to bypass)
+* Provide built-in support for building over UNC paths
+* Simplify the Task class hierarchy; TaskBase is removed
+* Display commands as string with "WAF_CMD_FORMAT=string waf build -v"
+* Have ant_glob(..., generator=True) return a Python generator
+* Accept nested lists and generators in bld(source=...)
+* Sort TaskGen methods in alphabetical order by reversing TaskGen.prec order
+
+* Remove 'ut_fun' from waf_unit_test.py
+* Remove Node.sig and Node.cache_sig
+* Remove the BuildContext.rule decorator
+* Remove Task.update_outputs, Task.always_run
+* Remove atleast-version, exact-version and max-version from conf.check_cfg
+* Remove c_preproc.trimquotes
+* Remove field_name, type_name, function_name from conf.check() tests
+* Remove extras/mem_reducer.py as a better solution has been merged
+* Remove Utils.ex_stack (use traceback.format_exc())

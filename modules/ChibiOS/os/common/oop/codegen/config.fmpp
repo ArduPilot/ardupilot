@@ -1,0 +1,15 @@
+sourceRoot: ../../../../tools/ftl/processors/ccode
+outputRoot: ..
+dataRoot: .
+
+freemarkerLinks: {
+    ftllibs: ../../../../tools/ftl/libs
+}
+
+data : {
+  xml:xml (
+    modules.xml
+    {
+    }
+  )
+}

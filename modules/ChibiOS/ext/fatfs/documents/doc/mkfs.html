@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<link rel="up" title="FatFs" href="../00index_e.html">
+<link rel="alternate" hreflang="ja" title="Japanese" href="../ja/mkfs.html">
+<link rel="stylesheet" href="../css_e.css" type="text/css" media="screen" title="ELM Default">
+<title>FatFs - f_mkfs</title>
+</head>
+
+<body>
+
+<div class="para func">
+<h2>f_mkfs</h2>
+<p>The f_mkfs function creates an FAT/exFAT volume on the logical drive.</p>
+<pre>
+FRESULT f_mkfs (
+  const TCHAR* <span class="arg">path</span>,   <span class="c">/* [IN] Logical drive number */</span>
+  const MKFS_PARM* <span class="arg">opt</span>,<span class="c">/* [IN] Format options */</span>
+  void* <span class="arg">work</span>,          <span class="c">/* [-]  Working buffer */</span>
+  UINT <span class="arg">len</span>             <span class="c">/* [IN] Size of working buffer */</span>
+);
+</pre>
+</div>
+
+<div class="para arg">
+<h4>Parameters</h4>
+<dl class="par">
+<dt>path</dt>
+<dd>Pointer to the null-terminated string specifies the <a href="filename.html">logical drive</a> to be formatted. If it does not have a drive number in it, it means to specify the default drive. The logical drive may or may not have been mounted for the format process.</dd>
+<dt>opt</dt>
+<dd>Specifies the format option structure <tt>MKFS_PARM</tt> holding format options. If a null pointer is given, it gives the function all options in default value. The structure has five members described below:<br>
+<dl class="par">
+<dt>BYTE fmt</dt>
+<dd>Specifies combination of FAT type flags, <tt>FM_FAT</tt>, <tt>FM_FAT32</tt>, <tt>FM_EXFAT</tt> and bitwise-or of these three, <tt>FM_ANY</tt>. <tt>FM_EXFAT</tt> is ignored when exFAT is not enabled. These flags specify which FAT type to be created on the volume. If two or more types are specified, one out of them will be selected depends on the volume size and <tt class="arg">au_size</tt>. The flag <tt>FM_SFD</tt> specifies to create the volume on the drive in SFD format. The default value is <tt>FM_ANY</tt>.</dd>
+<dt>DWORD au_size</dt>
+<dd>Specifies size of the allocation unit (cluter) in unit of byte. The valid value is power of 2 between sector size and 128 * sector size inclusive for FAT/FAT32 volume, or up to 16 MB for exFAT volume. If a zero (default value) or any invalid value is given, the function uses default allocation unit size depends on the volume size.</dd>
+<dt>UINT n_align</dt>
+<dd>Specifies alignment of the volume data area (file allocation pool, usually erase block boundary of flash memory media) in unit of sector. The valid value for this member is between 1 and 32768 inclusive in power of 2. If a zero (the default value) or any invalid value is given, the function obtains the block size from lower layer with <tt>disk_ioctl</tt> function.</dd>
+<dt>BYTE n_fat</dt>
+<dd>Specifies number of FAT copies on the FAT/FAT32 volume. Valid value for this member is 1 or 2. The default value (0) and any invaid value gives 1. If the FAT type is exFAT, this member has no effect.</dd>
+<dt>UINT n_root</dt>
+<dd>Specifies number of root directory entries on the FAT volume. Valid value for this member is up to 32768 and aligned to sector size / 32. The default value (0) and any invaid value gives 512. If the FAT type is FAT32 or exFAT, this member has no effect.</dd>
+</dl>
+<dt>work</dt>
+<dd>Pointer to the working buffer used for the format process. If a null pointer is given with <tt><a href="config.html#use_lfn">FF_USE_LFN</a> == 3</tt>, the function obtains a memory block for the working buffer in this function.</dd>
+<dt>len</dt>
+<dd>Size of the working buffer in unit of byte. It needs to be <tt>FF_MAX_SS</tt> at least. Plenty of working buffer reduces number of write transactions to the drive and the format process will finish quickly.</dd>
+</dl>
+</div>
+
+<div class="para ret">
+<h4>Return Values</h4>
+<p>
+<a href="rc.html#ok">FR_OK</a>,
+<a href="rc.html#de">FR_DISK_ERR</a>,
+<a href="rc.html#nr">FR_NOT_READY</a>,
+<a href="rc.html#wp">FR_WRITE_PROTECTED</a>,
+<a href="rc.html#id">FR_INVALID_DRIVE</a>,
+<a href="rc.html#ma">FR_MKFS_ABORTED</a>,
+<a href="rc.html#ip">FR_INVALID_PARAMETER</a>,
+<a href="rc.html#nc">FR_NOT_ENOUGH_CORE</a>
+</p>
+</div>
+
+<div class="para desc">
+<h4>Description</h4>
+<p>The FAT sub-type, FAT12/FAT16/FAT32, of FAT volume except exFAT is determined by only number of clusters on the volume and nothing else, according to the FAT specification issued by Microsoft. Thus the FAT sub-type of created volume depends on the volume size and the cluster size. In case of the combination of FAT type and cluter size specified by argument is not valid for the volume size, the function will fail with <tt>FR_MKFS_ABORTED</tt>.</p>
+<p>The allocation unit, also known as <em>cluster</em>, is a unit of disk space allocation for files. When the size of allocation unit is 32768 bytes, a file with 100 bytes in size occupies 32768 bytes of disk space. The space efficiency of disk usage gets worse as increasing size of allocation unit, but, on the other hand, the read/write performance increases. Therefore the size of allocation unit is a trade-off between space efficiency and performance. For the large volumes in GB order, 32768 bytes or larger, automatically selected by default, is recommended for most case unless extremely many small files are created in the volume.</p>
+<p>When the logical drive to be formatted is associated with a physical drive (<tt><a href="config.html#multi_partition">FF_MULTI_PARTITION</a> == 0</tt> or <tt>VolToPart[].pt == 0</tt>) and <tt>FM_SFD</tt> flag is not specified, a partition occupies entire drive space is created and then the FAT volume is created in the partition. When <tt>FM_SFD</tt> flag is specified, the FAT volume is created without any disk partitioning.</p>
+<p>When the logical drive to be formatted is associated with a specific partition by multiple partition feature (<tt>FF_MULTI_PARTITION == 1</tt> and <tt>VolToPart[].pt &gt; 0</tt>), the FAT volume is created in the partition of the physical drive specified by <a href="filename.html#vol">volume mapping table</a> and <tt>FM_SFD</tt> flag is ignored. The hosting physical drive needs to be partitioned with <tt>f_fdisk</tt> function or any partitioning tool prior to create the FAT volume with this function. If the partition is not exist, the function aborts with <tt>FR_MKFS_ABORTED</tt>.</p>
+<p>There are three standard disk partitioning formats, MBR, GPT and SFD. The MBR format, also known as FDISK format, is usually used for harddisk, memory card and U disk. It can divide a physical drive into one or more partitions with a partition table. The GPT, GUID Partition Table, is a newly defined patitioning format for large storage devices. FatFs suppors the GPT only when 64-bit LBA is enabled. The SFD, Super-Floppy Disk, is non-partitioned disk format. The FAT volume is located at LBA 0 and occupies the entire physical drive without any disk partitioning. It is usually used for floppy disk, optical disk and most super-floppy media. Some combination of systems and media support only either partitioned format or non-partitioned format and the other is not supported.</p>
+<p>Some systems manage the partitions in the on-board storage in non-standard format. The partitions are mapped as physical drives identified by <tt class="arg">pdrv</tt> in <tt>disk_*</tt> functions. For such systems, SFD format is suitable to create the FAT volume in the partition.</p>
+</div>
+
+<div class="para comp">
+<h4>QuickInfo</h4>
+<p>Available when <tt><a href="config.html#fs_readonly">FF_FS_READOLNY</a> == 0</tt> and <tt><a href="config.html#use_mkfs">FF_USE_MKFS</a> == 1</tt>.</p>
+</div>
+
+<div class="para use">
+<h4>Example</h4>
+<pre>
+<span class="c">/* Format default drive and create a file */</span>
+int main (void)
+{
+    FATFS fs;           <span class="c">/* Filesystem object */</span>
+    FIL fil;            <span class="c">/* File object */</span>
+    FRESULT res;        <span class="c">/* API result code */</span>
+    UINT bw;            <span class="c">/* Bytes written */</span>
+    BYTE work[FF_MAX_SS]; <span class="c">/* Work area (larger is better for processing time) */</span>
+
+
+    <span class="c">/* Format the default drive with default parameters */</span>
+    res = <em>f_mkfs</em>("", 0, work, sizeof work);
+    if (res) ...
+
+    <span class="c">/* Give a work area to the default drive */</span>
+    f_mount(&amp;fs, "", 0);
+
+    <span class="c">/* Create a file as new */</span>
+    res = f_open(&amp;fil, "hello.txt", FA_CREATE_NEW | FA_WRITE);
+    if (res) ...
+
+    <span class="c">/* Write a message */</span>
+    f_write(&amp;fil, "Hello, World!\r\n", 15, &amp;bw);
+    if (bw != 15) ...
+
+    <span class="c">/* Close the file */</span>
+    f_close(&amp;fil);
+
+    <span class="c">/* Unregister work area */</span>
+    f_mount(0, "", 0);
+
+    ...
+</pre>
+</div>
+
+<div class="para ref">
+<h4>See Also</h4>
+<p><a href="../res/mkfs.xlsx">Example of volume size and format parameters</a>, <a href="filename.html#vol">Volume management</a>, <tt><a href="fdisk.html">f_fdisk</a></tt></p>
+</div>
+
+<p class="foot"><a href="../00index_e.html">Return</a></p>
+</body>
+</html>

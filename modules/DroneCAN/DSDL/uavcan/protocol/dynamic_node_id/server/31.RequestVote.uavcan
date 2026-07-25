@@ -1,0 +1,21 @@
+#
+# THIS DEFINITION IS SUBJECT TO CHANGE.
+#
+# This type is a part of the Raft consensus algorithm.
+# Please refer to the specification for details.
+#
+
+#
+# Refer to the Raft paper for explanation.
+#
+uint32 term
+uint32 last_log_term
+uint8 last_log_index
+
+---
+
+#
+# Refer to the Raft paper for explanation.
+#
+uint32 term
+bool vote_granted

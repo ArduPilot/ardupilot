@@ -1,0 +1,80 @@
+body {
+    font-family:'Helvetica',Arial;
+    font-size:90%;
+    margin: 80px;
+}
+
+h1 {
+    margin-top: 2em;
+}
+
+h2 {
+    margin-top: 1em;
+}
+
+h3 {
+    margin-top: 0.8em;
+    font-size:150%;
+}
+
+p.description {
+    font-style:italic;
+}
+
+table {
+    margin-bottom: 5em;
+}
+
+table.sortable {
+    border: 1px solid #656575;
+    width: 100%;
+}
+
+table.sortable th {
+    margin: 5px;
+}
+
+#tr:nth-child(odd)   { background-color:#eee; }
+#tr:nth-child(even)  { background-color:#fff; }
+
+table.sortable thead {
+    background-color:#eee;
+    color:#666666;
+    font-weight: bold;
+    cursor: default;
+}
+
+table.sortable td {
+    margin: 5px 5px 20px 5px;
+    vertical-align: top;
+}
+
+table.sortable td.mavlink_name {
+    color:#226633;
+    font-weight: bold;
+    width: 25%;
+    vertical-align: top;
+}
+
+table.sortable td.mavlink_mission_param {
+    color:#334455;
+    font-weight: bold;
+    width: 25%;
+}
+
+table.sortable td.mavlink_type {
+    color:#323232;
+    font-weight: normal;
+    width: 12%;
+}
+
+table.sortable td.mavlink_comment {
+    color:#555555;
+    font-weight: normal;
+    width: 60%;
+}
+
+p.description {
+    color:#808080;
+    font-weight: normal;
+}

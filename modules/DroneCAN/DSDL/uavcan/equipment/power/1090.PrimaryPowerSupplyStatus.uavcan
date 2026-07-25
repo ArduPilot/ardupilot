@@ -1,0 +1,21 @@
+#
+# Primary power supply status.
+# Typical publishing rate should be around 1~2 Hz.
+#
+
+#
+# How many hours left to full discharge at average load over the last 10 seconds.
+#
+float16 hours_to_empty_at_10sec_avg_power               # [Hours]
+float16 hours_to_empty_at_10sec_avg_power_variance      # [Hours^2]
+
+#
+# True if the publishing node senses that an external power source can be used, e.g. to charge batteries.
+#
+bool external_power_available
+
+#
+# Remaining energy estimate in percent.
+#
+uint7 remaining_energy_pct              # [Percent]     Required
+uint7 remaining_energy_pct_stdev        # [Percent]     Error standard deviation. Use best guess if unknown.

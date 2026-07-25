@@ -1,0 +1,45 @@
+#! /usr/bin/env python
+
+bld.shlib(
+	source = 'test_shlib.c',
+	target = 'my_shared_lib',
+	name   = 'xyz',
+	vnum   = '1.2.3',
+	defs   = 'foo.def')
+
+
+t = bld.program(
+	#features = 'my_precious',
+	source = 'main.c',
+	target = 'test_shared_link',
+	use    = 'xyz',
+	# 1. settings flags directly
+	#linkflags = ['-L/disk/comp/waf/demos/c/build/shlib', '-lmy_shared_lib']
+	)
+# 2. another way of setting flags
+#t.env.linkflags = ['-L/disk/comp/waf/demos/c/build/shlib', '-lmy_shared_lib']
+
+# 3. advanced flag control through 'feature' methods (standard practice when 1. or 2. is not enough)
+#import sys
+#from waflib import TaskGen
+#@TaskGen.feature('my_precious')
+#@TaskGen.after_method('apply_link', 'propagate_uselib_vars')
+#def set_flags(self):
+#	if sys.platform == 'linux2':
+#		self.link_task.env.LINKFLAGS = ['-Lshlib', '--whole-archive', '-lmy_shared_lib']
+#		self.link_task.env.LIB   = []
+#		self.link_task.env.STLIB = []
+#		self.link_task.env.STLIB_MARKER = []
+
+# 4. changing the class - setting flags such as LINKFLAGS_cshlib is usually a much better idea
+#from waflib.Utils import run_once
+#from waflib.Tools.c import cprogram
+#class cprogram(cprogram):
+#	def runnable_status(self):
+#		self.set_flags()
+#		self.set_flags() # just to see
+#		return super(cprogram, self).runnable_status()
+#	@run_once
+#	def set_flags(self):
+#		self.env.append_value('LINKFLAGS', ['-g'])
+

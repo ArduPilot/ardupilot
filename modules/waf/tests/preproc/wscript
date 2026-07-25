@@ -1,0 +1,198 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2012 (ita)
+
+VERSION='0.0.1'
+APPNAME='preproc_test'
+top = '.'
+out = 'build'
+
+from waflib import Utils
+from waflib.Tools import c_preproc
+from waflib.Tools.c_preproc import NUM, OP, IDENT
+
+from waflib.Logs import pprint
+
+def configure(conf):
+	pass
+
+def build(bld):
+
+	bld.failure = 0
+	def disp(color, result):
+		pprint(color, result)
+		if color == 'RED':
+			bld.failure=1
+	def stop_status(bld):
+		if bld.failure:
+			bld.fatal('One or several test failed, check the outputs above')
+	bld.add_post_fun(stop_status)
+
+	defs = {
+		'm1'   : "m1 9 + 9",
+		'fun0' : "fun0(x, y) x y",
+		'fun1' : "fun1(x, y) x ## y",
+		'fun2' : "fun2(x) #x",
+		'fun3' : "fun3(x, y) x * y",
+		'fun4' : "fun4(x) fun2(x)",
+		'fun5' : "fun5(x, y, z) x ## y ## z",
+		'fun6' : "fun6(x, y) <x.y>",
+		'fun7' : "fun() 7",
+	}
+
+	def test(x, result, fun=c_preproc.reduce_tokens):
+		toks = c_preproc.tokenize(x)
+		c_preproc.reduce_tokens(toks, defs, [])
+		ret = c_preproc.stringize(toks)
+
+		if ret == result:
+			color = "GREEN"
+		else:
+			color = "RED"
+		disp(color, "%s\t\t%r" % (ret, toks))
+
+	test("1 + m1 + 1", "1+9+9+1")
+	test("1 + fun0(1, +) 1", "1+1+1")
+	test("fun2(mmm)", "mmm")
+	test("m1", "9+9")
+	test("fun2(m1)", "m1")
+	test("fun4(m1)", "9+9")
+	test("fun1(m, m)", "mm")
+	test("fun5(a, b, c)", "abc")
+	test("fun1(>, =)", ">=")
+	test("fun1(a, 12)", "a12")
+	test("fun5(a, _, 12)", "a_12")
+	test("fun6(math, h)", "<math.h>")
+
+	def test(x, result):
+		ret = c_preproc.extract_include(x, defs)
+		if ret == result:
+			color = "GREEN"
+		else:
+			color = "RED"
+		disp(color, "%s" % str(ret))
+
+	test("fun6(math, h)", ("<", "math.h"))
+
+	def test(x, result):
+		toks = c_preproc.tokenize(x)
+		c_preproc.reduce_tokens(toks, defs, [])
+		(_, ret) = c_preproc.reduce_eval(toks)
+		if int(ret) == result:
+			color = "GREEN"
+		else:
+			color = "RED"
+		disp(color, "%s\t\t%r" % (ret, toks))
+
+	test("1+1", 2)
+	test("1-1", 0)
+	test("1?77:0", 77)
+	test("0?0:88", 88)
+	test("1+2*3", 7)
+	test("1*2+3", 5)
+
+	test("7*m1*3", 90)
+	test("m1*3", 36)
+	test("defined m1", 1)
+	test("defined(m1)", 1)
+	test("defined inex", 0)
+	test("defined(inex)", 0)
+	test("fun7()", 7)
+
+	test("0&&2<3", 0)
+	test("(5>1)*6", 6)
+	test("1,2,3*9,9", 9)
+
+	test("0x52 > 02", 1)
+
+	# lazy evaluation
+	test("defined(foo) && foo > 2", 0)
+	test("defined(m1) && m1 > 20", 0)
+	test("defined(m1) || m1 > 20", 1)
+
+	# undefined macros -> 0
+	test("not_possibly_defined || another", 0)
+
+	test("1+2+((3+4)+5)+6==(6*7)/2==1*-1*-1", 1)
+
+
+	def add_defs(a, b, c, expected):
+		main = bld.path.find_resource('src/main.c')
+		bld.env.DEFINES = ['A=%s' % str(a), 'B=%s' % str(b), 'C=%s' % str(c)]
+		gruik = c_preproc.c_parser([main.parent])
+		gruik.start(main, bld.env)
+
+		if len(gruik.nodes) == 1 and gruik.nodes[0].name == expected:
+			color = "GREEN"
+		else:
+			color = "RED"
+		disp(color, "%r %r %r -> header %s (got %r)" % (a, b, c, expected, gruik.nodes))
+
+	add_defs(1, 1, 1, 'a.h')
+	add_defs(1, 1, 0, 'b.h')
+	add_defs(1, 0, 1, 'c.h')
+	add_defs(1, 0, 0, 'd.h')
+	add_defs(0, 1, 1, 'e.h')
+	add_defs(0, 1, 0, 'f.h')
+	add_defs(0, 0, 1, 'g.h')
+	add_defs(0, 0, 0, 'h.h')
+
+
+	defs = {
+		'a' : 'a 0',
+		'b' : 'b 1',
+		'c' : 'c 1',
+		'd' : 'd 0',
+		'e' : 'e a || b || c || d'
+	}
+
+
+	def test_pasting():
+		main = bld.path.find_resource('src/pasting.c')
+		bld.env.DEFINES = ['PREFIX_VAL=', 'SUFFIX_VAL=']
+		gruik = c_preproc.c_parser([main.parent])
+		gruik.start(main, bld.env)
+		if len(gruik.nodes) == 1 and gruik.nodes[0].name == 'a.h':
+			color = "GREEN"
+		else:
+			color = "RED"
+		disp(color, "token pasting -> %r (expected a.h)" % gruik.nodes)
+
+	test_pasting()
+
+	def test(x, result):
+		toks = c_preproc.tokenize(x)
+		c_preproc.reduce_tokens(toks, defs, [])
+		(_, ret) = c_preproc.reduce_eval(toks)
+		if int(ret) == result:
+			color = "GREEN"
+		else:
+			color = "RED"
+		disp(color, "%s\t\t%r" % (ret, toks))
+
+	test('a||b||c||d', 1)
+	test('a&&b&&c&&d', 0)
+	test('e', 1)
+
+	def test_rec(defines, expected):
+		main = bld.path.find_resource('recursion/a.c')
+		bld.env.DEFINES = defines.split()
+		gruik = c_preproc.c_parser([main.parent])
+		gruik.start(main, bld.env)
+		result = "".join([x.name[0] for x in gruik.nodes])
+		if result == expected:
+			color = "GREEN"
+		else:
+			color = "RED"
+		disp(color, "%s\t\t%r" % (expected, gruik.nodes))
+
+	test_rec("", "a")
+	test_rec("FOO=1", "ac")
+	test_rec("BAR=1", "abc")
+	test_rec("FOO=1 BAR=1", "ac")
+
+	return
+	test("1?1,(0?5:9):3,4", 0) # <- invalid expression
+
+
+

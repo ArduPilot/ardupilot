@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="hal_xsnor_device_template" descr="SNOR Device Template" editcode="false"
+  sourcepath="devices/template" headerpath="devices/template">
+  <brief>SNOR device template driver.</brief>
+  <details><![CDATA[Template module for SNOR flash devices. Can be used by duplicating
+the XML file or working directly on cloned source files.]]></details>
+  <imports>
+    <import>oop_base_object.xml</import>
+    <import>hal_xsnor_base.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_base_object.h</include>
+      <include style="regular">hal_xsnor_base.h</include>
+    </includes>
+    <definitions_early>
+    </definitions_early>
+    <configs>
+    </configs>
+    <macros></macros>
+    <types>
+      <class name="hal_device_template" type="regular" namespace="tmpl"
+             descr="SNOR device template driver" ancestorname="hal_xsnor_base">
+        <fields></fields>
+        <methods>
+          <objinit callsuper="true">
+            <implementation><![CDATA[
+/* Implementation.*/]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[
+/* Implementation.*/]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="init">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)offset;
+(void)n;
+(void)rp;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="program">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)offset;
+(void)n;
+(void)pp;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="start_erase_all">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="start_erase_sector">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)sector;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="query_erase">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)msec;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="verify_erase">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)sector;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="mmap_on">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;
+(void)addrp;
+
+return FLASH_NO_ERROR;]]></implementation>
+            </method>
+            <method shortname="mmap_off">
+              <implementation><![CDATA[
+
+/* Implementation.*/
+(void)self;]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+    </types>
+    <variables></variables>
+    <functions></functions>
+  </public>
+  <private>
+    <includes>
+      <include style="regular">hal.h</include>
+      <include style="regular">hal_xsnor_device_template.h</include>
+    </includes>
+    <functions></functions>
+  </private>
+</module>

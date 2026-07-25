@@ -1,0 +1,100 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+/**
+ * @defgroup IO_BLOCK Abstract I/O Block Device
+ * @ingroup HAL_BLOCKS
+ *
+ * @section io_block_1 Driver State Machine
+ * The drivers implementing this interface shall implement the following
+ * state machine internally. Not all the driver functionalities can be used
+ * in any moment, any transition not explicitly shown in the following
+ * diagram has to be considered an error and shall be captured by an
+ * assertion (if enabled).
+ * @if LATEX_PDF
+ * @dot
+  digraph example {
+    size="5, 7";
+    rankdir="LR";
+
+    node [shape=circle, fontname=Sans, fontsize=8, fixedsize="true", width="0.9", height="0.9"];
+    edge [fontname=Sans, fontsize=8];
+
+    stop  [label="BLK_STOP\nLow Power"];
+    uninit [label="BLK_UNINIT", style="bold"];
+    active [label="BLK_ACTIVE\nClock Enabled"];
+    connecting [label="BLK_CONN.ING\nConnecting"];
+    disconnecting [label="BLK_DISC.ING\nDisconnecting"];
+    ready [label="BLK_READY\nCard Ready"];
+    reading [label="BLK_READING\nReading"];
+    writing [label="BLK_WRITING\nWriting"];
+
+    uninit -> stop [label=" blkInit()", constraint=false];
+    stop -> stop [label="\nblkStop()"];
+    stop -> active [label="\nblkStart()"];
+    active -> stop [label="\nblkStop()"];
+    active -> active [label="\nblkStart()\nblkDisconnect()"];
+    active -> connecting [label="\nblkConnect()"];
+    connecting -> ready [label="\nconnection\nsuccessful"];
+    connecting -> ready [label="\nblkConnect()", dir="back"];
+    connecting -> active [label="\nconnection\nfailed"];
+    disconnecting -> ready [label="\nblkDisconnect()", dir="back"];
+    active -> disconnecting [label="\ndisconnection\nfinished", dir="back"];
+    ready -> reading [label="\nblkRead()"];
+    reading -> ready [label="\nread finished\nread error"];
+    ready -> writing [label="\nblkWrite()"];
+    writing -> ready [label="\nwrite finished\nwrite error"];
+  }
+ * @enddot
+ * @else
+ * @dot
+  digraph example {
+    rankdir="LR";
+
+    node [shape=circle, fontname=Sans, fontsize=8, fixedsize="true", width="0.9", height="0.9"];
+    edge [fontname=Sans, fontsize=8];
+
+    stop  [label="BLK_STOP\nLow Power"];
+    uninit [label="BLK_UNINIT", style="bold"];
+    active [label="BLK_ACTIVE\nClock Enabled"];
+    connecting [label="BLK_CONN.ING\nConnecting"];
+    disconnecting [label="BLK_DISC.ING\nDisconnecting"];
+    ready [label="BLK_READY\nCard Ready"];
+    reading [label="BLK_READING\nReading"];
+    writing [label="BLK_WRITING\nWriting"];
+    syncing [label="BLK_SYNCING\nSynchronizing"];
+
+    uninit -> stop [label=" blkInit()", constraint=false];
+    stop -> stop [label="\nblkStop()"];
+    stop -> active [label="\nblkStart()"];
+    active -> stop [label="\nblkStop()"];
+    active -> active [label="\nblkStart()\nblkDisconnect()"];
+    active -> connecting [label="\nblkConnect()"];
+    connecting -> ready [label="\nconnection\nsuccessful"];
+    connecting -> ready [label="\nblkConnect()", dir="back"];
+    connecting -> active [label="\nconnection\nfailed"];
+    disconnecting -> ready [label="\nblkDisconnect()", dir="back"];
+    active -> disconnecting [label="\ndisconnection\nfinished", dir="back"];
+    ready -> reading [label="\nblkRead()"];
+    reading -> ready [label="\nread finished\nread error"];
+    ready -> writing [label="\nblkWrite()"];
+    writing -> ready [label="\nwrite finished\nwrite error"];
+    ready -> syncing [label="\nblkSync()"];
+    syncing -> ready [label="\nsynchronization finished"];
+  }
+ * @enddot
+ * @endif
+ */

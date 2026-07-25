@@ -1,0 +1,4 @@
+#
+# Base type for testing duplicate handling.
+#
+uint8 field0

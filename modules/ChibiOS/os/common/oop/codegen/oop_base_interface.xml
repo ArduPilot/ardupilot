@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="oop_base_interface" descr="Base Interface" editcode="false">
+  <brief>Common interfaces ancestor.</brief>
+  <public>
+    <includes>
+      <include style="angular">stdint.h</include>
+      <include style="angular">stdbool.h</include>
+      <include style="angular">stddef.h</include>
+      <include style="regular">ccportab.h</include>
+    </includes>
+    <macros>
+      <macro name="oopIfGetOwner">
+        <brief>
+          Returns an object pointer starting by an interface pointer.
+        </brief>
+        <details><![CDATA[A pointer to an object of class type @p c is returned
+                 starting from a pointer to any of the interfaces implemented
+                 by the class.]]></details>
+        <param name="c">Class type name.</param>
+        <param name="ip" dir="in">
+          Pointer to the interface field within the class structure.
+        </param>
+        <return>A pointer to an object of type @p c.</return>
+        <api />
+        <implementation><![CDATA[(c *)(((size_t)(ip)) - ((base_interface_i *)(ip))->vmt->instance_offset)]]></implementation>
+      </macro>
+      <macro name="oopIfObjectInit">
+        <brief>Initialization of an interface structure.</brief>
+        <details>
+          An interface structure contains only a VMT pointer and no data, the
+          purpose of this macro is VMT initialization.
+        </details>
+        <param name="ip" dir="out">
+          Pointer to the interface structure to be initialized.
+        </param>
+        <param name="vmtp" dir="in">
+          VMT pointer to be assigned to the interface structure.
+        </param>
+        <api />
+        <implementation><![CDATA[
+do {
+  (ip)->vmt = (vmtp);
+} while (false)]]></implementation>
+      </macro>
+    </macros>
+    <types>
+      <interface name="base_interface" namespace="bi" descr="base interface">
+        <brief>Common interfaces ancestor.</brief>
+        <details><![CDATA[There are no methods in this interface. This
+           interface is just meant to be the common ancestor of all interfaces
+           used in ChibiOS.]]>
+        </details>
+        <consts></consts>
+        <methods></methods>
+      </interface>
+    </types>
+  </public>
+  <private></private>
+</module>

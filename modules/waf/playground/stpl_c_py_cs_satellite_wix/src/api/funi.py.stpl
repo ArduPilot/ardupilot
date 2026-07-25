@@ -1,0 +1,35 @@
+#! /usr/bin/env python
+from cffi import FFI
+import os.path
+import re
+
+_ffi = FFI()
+
+pat = '%s.dll'
+if os.sep == '/':
+	pat = 'lib%s.so'
+
+_apifile = os.path.join(os.path.dirname(__file__),'funi.h')
+_dllname = os.path.join(os.path.split(__file__)[0], pat % 'funi')
+def _api():
+    with open(_apifile) as f:
+        api = f.readlines()
+    rng = [i for i in range(len(api)) if re.search('extern', api[i])]
+    apicffi = []
+    for i in range(rng[0]+2,rng[1]-1):
+        a = api[i]
+        if not re.search('^#',a):
+            a = a.replace('DLL_PUBLIC','')
+            apicffi += [a]
+    return apicffi
+
+_ffi.cdef('\n'.join(_api()),override=True)
+
+_dll = _ffi.dlopen(_dllname)
+
+class Func:
+%for i in range(maxfuni):
+    @staticmethod
+    def func{{i}}(a):
+        return _dll.func{{i}}(a);
+%end

@@ -1,0 +1,7 @@
+build
+.lock*
+*~
+*.o
+*.a
+*.so
+

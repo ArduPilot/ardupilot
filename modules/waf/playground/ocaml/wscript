@@ -1,0 +1,24 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2005-2010 (ita)
+
+# the following two variables are used by the target "waf dist"
+VERSION = '0.0.1'
+APPNAME = 'ocaml_test'
+
+# these variables are mandatory,
+top = '.'
+out = 'build'
+
+def configure(conf):
+	conf.load('ocaml')
+
+def build(bld):
+
+	bld(
+		features = 'ocaml',
+		kind     = 'all',
+		includes = '.',
+		target   = 'camlprog',
+		source   = bld.path.ant_glob('*.ml'))
+

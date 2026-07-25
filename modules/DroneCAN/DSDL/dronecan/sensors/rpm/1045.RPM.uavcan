@@ -1,0 +1,11 @@
+#
+# RPM reading in revolutions per minute
+#
+
+uint8 sensor_id
+
+uint16 FLAGS_UNHEALTHY = 1 # Sensor is not healthy
+
+uint16 flags
+
+float32 rpm

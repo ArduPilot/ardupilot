@@ -1,0 +1,23 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Grygoriy Fuchedzhy 2009
+
+top = '.'
+out = 'out'
+
+def options(opt):
+	opt.load('compiler_cxx')
+
+def configure(conf):
+	#conf.recurse('gni')
+	conf.load('compiler_cxx')
+	conf.load('fluid')
+
+def build(bld):
+	bld.program(
+		target   = 'sample',
+		source   = 'main.cpp PopupDialog.fl UserInterface.fl',
+		includes = '.',
+		install_path = '${PREFIX}/bin/',
+		use      = 'FLTK')
+

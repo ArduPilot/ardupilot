@@ -1,0 +1,120 @@
+<doxygenlayout version="1.0">
+  <!-- Navigation index tabs for HTML output -->
+  <navindex>
+    <tab type="mainpage" visible="yes" title=""/>
+    <tab type="pages" visible="yes" title="" intro=""/>
+    <tab type="modules" visible="yes" title="API reference" intro=""/>
+    <tab type="namespaces" visible="yes" title="">
+      <tab type="namespacelist" visible="yes" title="" intro=""/>
+      <tab type="namespacemembers" visible="yes" title="" intro=""/>
+    </tab>
+    <tab type="classes" visible="no" title="">
+      <tab type="classlist" visible="no" title="" intro=""/>
+      <tab type="classindex" visible="no" title=""/> 
+      <tab type="hierarchy" visible="no" title="" intro=""/>
+      <tab type="classmembers" visible="no" title="" intro=""/>
+    </tab>
+    <tab type="files" visible="no" title="API reference">
+      <tab type="filelist" visible="no" title="" intro=""/>
+      <tab type="globals" visible="no" title="Functions" intro=""/>
+    </tab>
+    <tab type="examples" visible="no" title="" intro=""/>
+  </navindex>
+
+   <!-- Layout definition for a group page -->
+  <group>
+    <briefdescription visible="yes"/>
+    <groupgraph visible="$GROUP_GRAPHS"/>
+    <memberdecl>
+      <classes visible="yes" title="Data Structures"/>
+      <namespaces visible="yes" title=""/>
+      <dirs visible="yes" title=""/>
+      <nestedgroups visible="yes" title=""/>
+      <files visible="no" title=""/>
+      <defines title=""/>
+      <typedefs title="Typedef List"/>
+      <enums title="Enumeration List"/>
+      <enumvalues title=""/>
+      <functions title="Function List"/>
+      <!-- <variables title=""/> -->
+      <signals title=""/>
+      <publicslots title=""/>
+      <protectedslots title=""/>
+      <privateslots title=""/>
+      <events title=""/>
+      <properties title=""/>
+      <friends title=""/>
+    </memberdecl>
+    <memberdef>
+      <defines title=""/>
+      <typedefs title="Typedef Details"/>
+      <enums title="Enumeration Details"/>
+      <enumvalues title=""/>
+      <functions title="Function Details"/>
+      <!-- <variables title=""/> -->
+      <signals title=""/>
+      <publicslots title=""/>
+      <protectedslots title=""/>
+      <privateslots title=""/>
+      <events title=""/>
+      <properties title=""/>
+      <friends title=""/>
+    </memberdef>
+    <authorsection visible="yes"/>
+  </group>
+  
+  <!-- Layout definition for a class page -->
+  <!-- Also used for structs -->
+  <class>
+    <briefdescription visible="yes"/>
+    <includes visible="$SHOW_INCLUDE_FILES"/>
+    <inheritancegraph visible="$CLASS_GRAPH"/>
+    <allmemberslink visible="yes"/>
+    <collaborationgraph visible="$COLLABORATION_GRAPH"/>
+    <memberdecl>
+      <membergroups visible="yes"/>
+      <nestedclasses visible="yes" title=""/>
+      <publictypes title=""/>
+      <publicslots title=""/>
+      <signals title=""/>
+      <publicmethods title=""/>
+      <publicstaticmethods title=""/>
+      <publicattributes title="Data Fields List"/>
+      <publicstaticattributes title=""/>
+      <protectedtypes title=""/>
+      <protectedslots title=""/>
+      <protectedmethods title=""/>
+      <protectedstaticmethods title=""/>
+      <protectedattributes title=""/>
+      <protectedstaticattributes title=""/>
+      <packagetypes title=""/>
+      <packagemethods title=""/>
+      <packagestaticmethods title=""/>
+      <packageattributes title=""/>
+      <packagestaticattributes title=""/>
+      <properties title=""/>
+      <events title=""/>
+      <privatetypes title=""/>
+      <privateslots title=""/>
+      <privatemethods title=""/>
+      <privatestaticmethods title=""/>
+      <privateattributes title=""/>
+      <privatestaticattributes title=""/>
+      <friends title=""/>
+      <related title="" subtitle=""/>
+    </memberdecl>
+    <memberdef>
+      <typedefs title=""/>
+      <enums title=""/>
+      <constructors title=""/>
+      <functions title=""/>
+      <related title=""/>
+      <variables title="Data Fields Details"/>
+      <properties title=""/>
+      <events title=""/>
+    </memberdef>
+    <usedfiles visible="$SHOW_USED_FILES"/>
+    <authorsection visible="yes"/>
+  </class>
+
+</doxygenlayout>

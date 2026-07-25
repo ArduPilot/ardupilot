@@ -1,0 +1,15 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2015 (ita)
+
+VERSION='0.0.1'
+APPNAME='strace_test'
+
+from waflib import Logs
+def configure(conf):
+	Logs.warn("run with 'waf --zones=deps'")
+	conf.load('stracedeps')
+
+def build(bld):
+	bld(rule='${SRC[0].abspath()}', source='foo.sh', always=True, shell=1)
+

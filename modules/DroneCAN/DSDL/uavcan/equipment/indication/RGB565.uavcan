@@ -1,0 +1,9 @@
+#
+# Nested type.
+# RGB color in the standard 5-6-5 16-bit palette.
+# Monocolor lights should interpret this as brightness setpoint: from zero (0, 0, 0) to full brightness (31, 63, 31).
+#
+
+uint5 red
+uint6 green
+uint5 blue

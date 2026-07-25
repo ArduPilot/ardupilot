@@ -1,0 +1,23 @@
+#
+# Global time synchronization.
+# Any node that publishes timestamped data must use this time reference.
+#
+# Please refer to the specification to learn about the synchronization algorithm.
+#
+
+#
+# Broadcasting period must be within this range.
+#
+uint16 MAX_BROADCASTING_PERIOD_MS = 1100            # Milliseconds
+uint16 MIN_BROADCASTING_PERIOD_MS = 40              # Milliseconds
+
+#
+# Synchronization slaves may switch to a new source if the current master was silent for this amount of time.
+#
+uint16 RECOMMENDED_BROADCASTER_TIMEOUT_MS = 2200    # Milliseconds
+
+#
+# Time in microseconds when the PREVIOUS GlobalTimeSync message was transmitted.
+# If this message is the first one, this field must be zero.
+#
+truncated uint56 previous_transmission_timestamp_usec # Microseconds

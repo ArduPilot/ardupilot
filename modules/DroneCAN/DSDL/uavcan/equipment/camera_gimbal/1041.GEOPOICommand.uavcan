@@ -1,0 +1,25 @@
+#
+# Generic camera gimbal control.
+#
+# This message can only be used in the following modes:
+#  - COMMAND_MODE_GEO_POI
+#
+
+uint8 gimbal_id
+
+#
+# Target operation mode - how to handle this message.
+# See the list of acceptable modes above.
+#
+Mode mode
+
+#
+# Coordinates of the POI (point of interest).
+#
+int32 longitude_deg_1e7    # 1 LSB = 1e-7 deg
+int32 latitude_deg_1e7
+int22 height_cm            # 1 LSB = 10 mm
+
+uint2 HEIGHT_REFERENCE_ELLIPSOID = 0
+uint2 HEIGHT_REFERENCE_MEAN_SEA_LEVEL = 1
+uint2 height_reference

@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<mavlink>
+  <messages>
+    <message id="0" name="TEST">
+      <description>A message with 64 fields should not raise an exception.</description>
+      <field type="int8_t" name="M1"/>
+      <field type="int8_t" name="M2"/>
+      <field type="int8_t" name="M3"/>
+      <field type="int8_t" name="M4"/>
+      <field type="int8_t" name="M5"/>
+      <field type="int8_t" name="M6"/>
+      <field type="int8_t" name="M7"/>
+      <field type="int8_t" name="M8"/>
+      <field type="int8_t" name="M9"/>
+      <field type="int8_t" name="M10"/>
+      <field type="int8_t" name="M11"/>
+      <field type="int8_t" name="M12"/>
+      <field type="int8_t" name="M13"/>
+      <field type="int8_t" name="M14"/>
+      <field type="int8_t" name="M15"/>
+      <field type="int8_t" name="M16"/>
+      <field type="int8_t" name="M17"/>
+      <field type="int8_t" name="M18"/>
+      <field type="int8_t" name="M19"/>
+      <field type="int8_t" name="M20"/>
+      <field type="int8_t" name="M21"/>
+      <field type="int8_t" name="M22"/>
+      <field type="int8_t" name="M23"/>
+      <field type="int8_t" name="M24"/>
+      <field type="int8_t" name="M25"/>
+      <field type="int8_t" name="M26"/>
+      <field type="int8_t" name="M27"/>
+      <field type="int8_t" name="M28"/>
+      <field type="int8_t" name="M29"/>
+      <field type="int8_t" name="M30"/>
+      <field type="int8_t" name="M31"/>
+      <field type="int8_t" name="M32"/>
+      <field type="int8_t" name="M33"/>
+      <field type="int8_t" name="M34"/>
+      <field type="int8_t" name="M35"/>
+      <field type="int8_t" name="M36"/>
+      <field type="int8_t" name="M37"/>
+      <field type="int8_t" name="M38"/>
+      <field type="int8_t" name="M39"/>
+      <field type="int8_t" name="M40"/>
+      <field type="int8_t" name="M41"/>
+      <field type="int8_t" name="M42"/>
+      <field type="int8_t" name="M43"/>
+      <field type="int8_t" name="M44"/>
+      <field type="int8_t" name="M45"/>
+      <field type="int8_t" name="M46"/>
+      <field type="int8_t" name="M47"/>
+      <field type="int8_t" name="M48"/>
+      <field type="int8_t" name="M49"/>
+      <field type="int8_t" name="M50"/>
+      <field type="int8_t" name="M51"/>
+      <field type="int8_t" name="M52"/>
+      <field type="int8_t" name="M53"/>
+      <field type="int8_t" name="M54"/>
+      <field type="int8_t" name="M55"/>
+      <field type="int8_t" name="M56"/>
+      <field type="int8_t" name="M57"/>
+      <field type="int8_t" name="M58"/>
+      <field type="int8_t" name="M59"/>
+      <field type="int8_t" name="M60"/>
+      <field type="int8_t" name="M61"/>
+      <field type="int8_t" name="M62"/>
+      <field type="int8_t" name="M63"/>
+      <field type="int8_t" name="M64"/>
+    </message>
+  </messages>
+</mavlink>

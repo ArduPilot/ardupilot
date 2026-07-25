@@ -1,0 +1,25 @@
+{
+  "name": "mavlink",
+  "version": "0.0.1",
+  "description": "Implementation of the MAVLink protocol for various platforms and both 1.0 and 2.0 revisions of MAVLink",
+  "repository": "private",
+  "dependencies": {
+    "babel-eslint": "^10.0.3",
+    "jspack": "0.0.4",
+    "underscore": "1.12.1",
+    "winston": "3.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.1.0",
+    "mocha": "",
+    "should": "",
+    "sinon": ""
+  },
+  "scripts": {
+    "preinstall": "rm -rf implementations",
+    "install": "cd .. && ./gen_js.stable.sh",
+    "pretest": "npm install",
+    "test": "mocha test",
+    "lint": "./node_modules/.bin/eslint ./implementations/mavlink_common_v1.0/mavlink.js ./implementations/mavlink_common_v2.0/mavlink.js"
+  }
+}

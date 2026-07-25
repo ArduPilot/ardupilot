@@ -1,0 +1,91 @@
+# vim: syntax=python
+#
+# needs waf created with
+# python waf-light --tools=resx,satellite_assembly,wix
+#
+# Assumed situation:
+# - Logic in C, which depends on an external device; some code is generated
+# - Wrapper for C#
+# - GUI in C# using C# Wrapper
+# - GUI localization via satellite assemblies
+# - Wrapper for Python
+#
+# Python libs required: bottle, cffi, pytest
+#
+# This project requires plenty of applications and libraries such as:
+# gcc, mono-devel, pytest, cffi
+# LD_LIBRARY_PATH=$PWD/../build/api/: PATH=$PATH:$LD_LIBRARY_PATH waf configure build test --stubs
+#
+
+
+from waflib import Utils
+import sys, os, shutil
+
+APPNAME = "funigui"
+DLLNAME = "funi"
+VERSION = "1.0"
+
+COMPANY = "FuniCo"
+MAXFUNI = 4
+
+top = "."
+out = "../build"
+
+def options(ctx):
+    ctx.add_option("--stubs", action="store_true", default=False, help="Compile with stubs instead of using external device")
+    ctx.load('compiler_c compiler_cxx cs')
+
+PYTEST = ''
+def configure (ctx):
+    global PYTEST
+    try:
+        PYTEST = ctx.find_program('py.test')[0]
+    except:
+        PYTEST = ctx.find_program('py.test',path_list=[r'C:\Python35\Scripts']) [0]
+
+    if ctx.options.stubs:
+        print('!USING STUBS!')
+        ctx.env.append_value('DEFINES',['STUBS','DEBUG'])
+    else:
+        ctx.env.append_value('DEFINES',['NDEBUG'])
+
+    ctx.load('compiler_c compiler_cxx cs resx satellite_assembly')
+    if Utils.is_win32:
+        ctx.load('wix')
+
+    if ctx.env['CC_NAME'] == 'msvc':
+        if ctx.options.stubs:
+            ctx.env.append_value('CFLAGS',['/Z7','/EHsc','/W3'])
+            ctx.env.append_value('CXXFLAGS',['/Z7','/EHsc','/W3'])
+        else:
+            ctx.env.append_value('CFLAGS',['/Ox','/EHsc','/DNDEBUG','/W3'])
+            ctx.env.append_value('CXXFLAGS',['/Ox','/EHsc','/DNDEBUG','/W3'])
+            print(ctx.env['CC_NAME'])
+    else:
+        if ctx.options.stubs:
+            ctx.env.append_value('CFLAGS',['-g','-w'])
+            ctx.env.append_value('CXXFLAGS',['-g','-w'])
+        else:
+            ctx.env.append_value('CFLAGS',['-O2','-w'])
+            ctx.env.append_value('CXXFLAGS',['-O2','-w'])
+    ctx.env.guiname = APPNAME
+    ctx.env.version = VERSION
+    ctx.env.dllname = DLLNAME
+    ctx.env.maxfuni = MAXFUNI
+    ctx.env.company = COMPANY
+    ctx.load('print_commands')
+
+def build(ctx):
+    ctx.load('build', tooldir='.') # additional stuff
+    ctx.recurse('api')
+    ctx.recurse('gui')
+    if Utils.is_win32:
+        ctx.recurse('msi')
+
+def test(ctx):
+    if ctx.options.stubs:
+        cwd = ctx.path.find_node('../build/api').abspath()
+        print('running test in ',cwd)
+        ctx.cmd_and_log(os.path.join(cwd,'test_funi'),cwd=cwd)
+        ctx.cmd_and_log(PYTEST+' test_funi.py',cwd=cwd)
+

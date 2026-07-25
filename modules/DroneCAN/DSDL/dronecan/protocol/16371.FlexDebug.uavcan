@@ -1,0 +1,10 @@
+#
+# flexible debug message for development purposes
+#
+# vendors can reserve a range of IDs for their products, reservation are in blocks of 10
+uint16 RESERVATION_SIZE = 10
+uint16 AM32_RESERVE_START = 100
+uint16 MLRS_RESERVE_START = 110
+
+uint16 id
+uint8[<=255] u8

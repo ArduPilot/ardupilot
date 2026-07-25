@@ -1,0 +1,290 @@
+<?xml version="1.0"?>
+<mavlink>
+  <!-- XML file for prototyping definitions for common.xml -->
+  <include>common.xml</include>
+  <version>0</version>
+  <dialect>0</dialect>
+  <enums>
+    <enum name="RADIO_RC_CHANNELS_FLAGS" bitmask="true">
+      <description>RADIO_RC_CHANNELS flags (bitmask).</description>
+      <entry value="1" name="RADIO_RC_CHANNELS_FLAGS_FAILSAFE">
+        <description>Failsafe is active. The content of the RC channels data in the RADIO_RC_CHANNELS message is implementation dependent.</description>
+      </entry>
+      <entry value="2" name="RADIO_RC_CHANNELS_FLAGS_OUTDATED">
+        <description>Channel data may be out of date. This is set when the receiver is unable to validate incoming data from the transmitter and has therefore resent the last valid data it received.</description>
+      </entry>
+    </enum>
+    <enum name="MAV_MODE_PROPERTY" bitmask="true">
+      <description>Mode properties.
+      </description>
+      <entry value="1" name="MAV_MODE_PROPERTY_ADVANCED">
+        <description>If set, this mode is an advanced mode.
+          For example a rate-controlled manual mode might be advanced, whereas a position-controlled manual mode is not.
+          A GCS can optionally use this flag to configure the UI for its intended users.
+        </description>
+      </entry>
+      <entry value="2" name="MAV_MODE_PROPERTY_NOT_USER_SELECTABLE">
+        <description>If set, this mode should not be added to the list of selectable modes.
+          The mode might still be selected by the FC directly (for example as part of a failsafe).
+        </description>
+      </entry>
+    </enum>
+    <!-- The MAV_CMD enum entries describe either: -->
+    <!--  * the data payload of mission items (as used in the MISSION_ITEM_INT message) -->
+    <!--  * the data payload of mavlink commands (as used in the COMMAND_INT and COMMAND_LONG messages) -->
+    <!-- ALL the entries in the MAV_CMD enum have a maximum of 7 parameters -->
+    <enum name="MAV_CMD">
+      <entry value="610" name="MAV_CMD_DO_SET_SYS_CMP_ID" hasLocation="false" isDestination="false">
+        <description>
+          Set system and component id.
+          This allows moving of a system and all its components to a new system id, or moving a particular component to a new system/component id.
+          Recipients must reject command addressed to broadcast system ID.
+        </description>
+        <param index="1" label="System ID" minValue="1" maxValue="255" increment="1">New system ID for target component(s). 0: ignore and reject command (broadcast system ID not allowed).</param>
+        <param index="2" label="Component ID" minValue="0" maxValue="255" increment="1">New component ID for target component(s). 0: ignore (component IDs don't change).</param>
+        <param index="3" label="Reboot">Reboot components after ID change. Any non-zero value triggers the reboot.</param>
+        <param index="4" reserved="true" default="NaN"/>
+      </entry>
+      <entry value="611" name="MAV_CMD_DO_SET_GLOBAL_ORIGIN" hasLocation="true" isDestination="false">
+        <description>Sets the GNSS coordinates of the vehicle local origin (0,0,0) position.
+          Vehicle should emit GPS_GLOBAL_ORIGIN irrespective of whether the origin is changed.
+          This enables transform between the local coordinate frame and the global (GNSS) coordinate frame, which may be necessary when (for example) indoor and outdoor settings are connected and the MAV should move from in- to outdoor.
+          This command supersedes SET_GPS_GLOBAL_ORIGIN.
+          Should be sent in a COMMAND_INT (Expected frame is MAV_FRAME_GLOBAL, and this should be assumed when sent in COMMAND_LONG).
+        </description>
+        <param index="1">Empty</param>
+        <param index="2">Empty</param>
+        <param index="3">Empty</param>
+        <param index="4">Empty</param>
+        <param index="5" label="Latitude">Latitude</param>
+        <param index="6" label="Longitude">Longitude</param>
+        <param index="7" label="Altitude" units="m">Altitude</param>
+      </entry>
+      <entry value="5005" name="MAV_CMD_NAV_FENCE_HOME_CIRCLE_INCLUSION" hasLocation="false" isDestination="false">
+        <wip/>
+        <!-- This message is work-in-progress and it can therefore change. It should NOT be used in stable production environments. -->
+        <description>Circular fence area centered on home. The vehicle must stay inside this area. If home is moved, the fence moves.</description>
+        <param index="1" label="Radius" units="m">Radius.</param>
+        <param index="2" label="Inclusion Group" minValue="0" increment="1">Vehicle must be inside ALL inclusion zones in a single group, vehicle must be inside at least one group. Ignored when sent as a command.</param>
+      </entry>
+      <entry value="43004" name="MAV_CMD_EXTERNAL_WIND_ESTIMATE" hasLocation="false" isDestination="false">
+        <description>Set an external estimate of wind direction and speed.
+          This might be used to provide an initial wind estimate to the estimator (EKF) in the case where the vehicle is wind dead-reckoning, extending the time when operating without GPS before before position drift builds to an unsafe level. For this use case the command might reasonably be sent every few minutes when operating at altitude, and the value is cleared if the estimator resets itself.
+        </description>
+        <param index="1" label="Wind speed" units="m/s" minValue="0">Horizontal wind speed.</param>
+        <param index="2" label="Wind speed accuracy" units="m/s">Estimated 1 sigma accuracy of wind speed. Set to NaN if unknown.</param>
+        <param index="3" label="Direction" units="deg" minValue="0" maxValue="360">Azimuth (relative to true north) from where the wind is blowing.</param>
+        <param index="4" label="Direction accuracy" units="deg">Estimated 1 sigma accuracy of wind direction. Set to NaN if unknown.</param>
+      </entry>
+    </enum>
+    <enum name="GPS_SYSTEM_ERROR_FLAGS" bitmask="true">
+      <description>Flags indicating errors in a GPS receiver.</description>
+      <entry value="1" name="GPS_SYSTEM_ERROR_INCOMING_CORRECTIONS">
+        <description>There are problems with incoming correction streams.</description>
+      </entry>
+      <entry value="2" name="GPS_SYSTEM_ERROR_CONFIGURATION">
+        <description>There are problems with the configuration.</description>
+      </entry>
+      <entry value="4" name="GPS_SYSTEM_ERROR_SOFTWARE">
+        <description>There are problems with the software on the GPS receiver.</description>
+      </entry>
+      <entry value="8" name="GPS_SYSTEM_ERROR_ANTENNA">
+        <description>There are problems with an antenna connected to the GPS receiver.</description>
+      </entry>
+      <entry value="16" name="GPS_SYSTEM_ERROR_EVENT_CONGESTION">
+        <description>There are problems handling all incoming events.</description>
+      </entry>
+      <entry value="32" name="GPS_SYSTEM_ERROR_CPU_OVERLOAD">
+        <description>The GPS receiver CPU is overloaded.</description>
+      </entry>
+      <entry value="64" name="GPS_SYSTEM_ERROR_OUTPUT_CONGESTION">
+        <description>The GPS receiver is experiencing output congestion.</description>
+      </entry>
+    </enum>
+    <enum name="GPS_AUTHENTICATION_STATE">
+      <description>Signal authentication state in a GPS receiver.</description>
+      <entry value="0" name="GPS_AUTHENTICATION_STATE_UNKNOWN">
+        <description>The GPS receiver does not provide GPS signal authentication info.</description>
+      </entry>
+      <entry value="1" name="GPS_AUTHENTICATION_STATE_INITIALIZING">
+        <description>The GPS receiver is initializing signal authentication.</description>
+      </entry>
+      <entry value="2" name="GPS_AUTHENTICATION_STATE_ERROR">
+        <description>The GPS receiver encountered an error while initializing signal authentication.</description>
+      </entry>
+      <entry value="3" name="GPS_AUTHENTICATION_STATE_OK">
+        <description>The GPS receiver has correctly authenticated all signals.</description>
+      </entry>
+      <entry value="4" name="GPS_AUTHENTICATION_STATE_DISABLED">
+        <description>GPS signal authentication is disabled on the receiver.</description>
+      </entry>
+    </enum>
+    <enum name="GPS_JAMMING_STATE">
+      <description>Signal jamming state in a GPS receiver.</description>
+      <entry value="0" name="GPS_JAMMING_STATE_UNKNOWN">
+        <description>The GPS receiver does not provide GPS signal jamming info.</description>
+      </entry>
+      <entry value="1" name="GPS_JAMMING_STATE_NOT_JAMMED">
+        <description>The GPS receiver detected no signal jamming.</description>
+      </entry>
+      <entry value="2" name="GPS_JAMMING_STATE_MITIGATED">
+        <description>The GPS receiver detected and mitigated signal jamming.</description>
+      </entry>
+      <entry value="3" name="GPS_JAMMING_STATE_DETECTED">
+        <description>The GPS receiver detected signal jamming.</description>
+      </entry>
+    </enum>
+    <enum name="GPS_SPOOFING_STATE">
+      <description>Signal spoofing state in a GPS receiver.</description>
+      <entry value="0" name="GPS_SPOOFING_STATE_UNKNOWN">
+        <description>The GPS receiver does not provide GPS signal spoofing info.</description>
+      </entry>
+      <entry value="1" name="GPS_SPOOFING_STATE_NOT_SPOOFED">
+        <description>The GPS receiver detected no signal spoofing.</description>
+      </entry>
+      <entry value="2" name="GPS_SPOOFING_STATE_MITIGATED">
+        <description>The GPS receiver detected and mitigated signal spoofing.</description>
+      </entry>
+      <entry value="3" name="GPS_SPOOFING_STATE_DETECTED">
+        <description>The GPS receiver detected signal spoofing but still has a fix.</description>
+      </entry>
+    </enum>
+    <enum name="GPS_RAIM_STATE">
+      <description>State of RAIM processing.</description>
+      <entry value="0" name="GPS_RAIM_STATE_UNKNOWN">
+        <description>RAIM capability is unknown.</description>
+      </entry>
+      <entry value="1" name="GPS_RAIM_STATE_DISABLED">
+        <description>RAIM is disabled.</description>
+      </entry>
+      <entry value="2" name="GPS_RAIM_STATE_OK">
+        <description>RAIM integrity check was successful.</description>
+      </entry>
+      <entry value="3" name="GPS_RAIM_STATE_FAILED">
+        <description>RAIM integrity check failed.</description>
+      </entry>
+    </enum>
+    <enum name="RANGING_BEACON_ALT_TYPE">
+      <description>Altitude reference for RANGING_BEACON alt field.</description>
+      <entry value="0" name="RANGING_BEACON_ALT_TYPE_WGS84">
+        <description>Altitude above WGS84 ellipsoid.</description>
+      </entry>
+      <entry value="1" name="RANGING_BEACON_ALT_TYPE_MSL">
+        <description>Altitude above Mean Sea Level (AMSL).</description>
+      </entry>
+    </enum>
+    <enum name="RANGING_BEACON_STATUS_FLAG" bitmask="true">
+      <description>Status flags for a RANGING_BEACON.</description>
+      <entry value="1" name="RANGING_BEACON_STATUS_FLAG_STATION_SIGNAL_POOR">
+        <description>Station signal is poor. This might indicate channel fading, interference, or other signal quality issues.</description>
+      </entry>
+    </enum>
+  </enums>
+  <messages>
+    <message id="53" name="MISSION_CHECKSUM">
+      <description>Checksum for the current mission, rally point or geofence plan, or for the "combined" plan (a GCS can use these checksums to determine if it has matching plans).
+        This message must be broadcast with the appropriate checksum following any change to a mission, geofence or rally point definition
+        (immediately after the MISSION_ACK that completes the upload sequence).
+        It may also be requested using MAV_CMD_REQUEST_MESSAGE, where param 2 indicates the plan type for which the checksum is required.
+        The checksum must be calculated on the autopilot, but may also be calculated by the GCS.
+        The checksum uses the same CRC32 algorithm as MAVLink FTP (https://mavlink.io/en/services/ftp.html#crc32-implementation).
+        The checksum for a mission, geofence or rally point definition is run over each item in the plan in seq order (excluding the home location if present in the plan), and covers the following fields (in order):
+        frame, command, autocontinue, param1, param2, param3, param4, param5, param6, param7.
+        The checksum for the whole plan (MAV_MISSION_TYPE_ALL) is calculated using the same approach, running over each sub-plan in the following order: mission, geofence then rally point.
+      </description>
+      <field type="uint8_t" name="mission_type" enum="MAV_MISSION_TYPE">Mission type.</field>
+      <field type="uint32_t" name="checksum">CRC32 checksum of current plan for specified type.</field>
+    </message>
+    <message id="420" name="RADIO_RC_CHANNELS">
+      <description>RC channel outputs from a MAVLink RC receiver for input to a flight controller or other components (allows an RC receiver to connect via MAVLink instead of some other protocol such as PPM-Sum or S.BUS).
+        Note that this is not intended to be an over-the-air format, and does not replace RC_CHANNELS and similar messages reported by the flight controller.
+        The target_system field should normally be set to the system id of the system to control, typically the flight controller.
+        The target_component field can normally be set to 0, so that all components of the system can receive the message.
+        The channels array field can publish up to 32 channels; the number of channel items used in the array is specified in the count field.
+        The time_last_update_ms field contains the timestamp of the last received valid channels data in the receiver's time domain.
+        The count field indicates the first index of the channel array that is not used for channel data (this and later indexes are zero-filled).
+        The RADIO_RC_CHANNELS_FLAGS_OUTDATED flag is set by the receiver if the channels data is not up-to-date (for example, if new data from the transmitter could not be validated so the last valid data is resent).
+        The RADIO_RC_CHANNELS_FLAGS_FAILSAFE failsafe flag is set by the receiver if the receiver's failsafe condition is met (implementation dependent, e.g., connection to the RC radio is lost).
+        In this case time_last_update_ms still contains the timestamp of the last valid channels data, but the content of the channels data is not defined by the protocol (it is up to the implementation of the receiver).
+        For instance, the channels data could contain failsafe values configured in the receiver; the default is to carry the last valid data.
+        Note: The RC channels fields are extensions to ensure that they are located at the end of the serialized payload and subject to MAVLink's trailing-zero trimming.
+      </description>
+      <field type="uint8_t" name="target_system">System ID (ID of target system, normally flight controller).</field>
+      <field type="uint8_t" name="target_component">Component ID (normally 0 for broadcast).</field>
+      <field type="uint32_t" name="time_last_update_ms" units="ms">Time when the data in the channels field were last updated (time since boot in the receiver's time domain).</field>
+      <field type="uint16_t" name="flags" enum="RADIO_RC_CHANNELS_FLAGS">Radio RC channels status flags.</field>
+      <field type="uint8_t" name="count">Total number of RC channels being received. This can be larger than 32, indicating that more channels are available but not given in this message.</field>
+      <extensions/>
+      <field type="int16_t[32]" name="channels" minValue="-4096" maxValue="4096">RC channels.
+        Channel values are in centered 13 bit format. Range is -4096 to 4096, center is 0. Conversion to PWM is x * 5/32 + 1500.
+        Channels with indexes equal or above count should be set to 0, to benefit from MAVLink's trailing-zero trimming.</field>
+    </message>
+    <message id="435" name="AVAILABLE_MODES">
+      <description>Get information about a particular flight modes.
+        The message can be enumerated or requested for a particular mode using MAV_CMD_REQUEST_MESSAGE.
+        Specify 0 in param2 to request that the message is emitted for all available modes or the specific index for just one mode.
+        The modes must be available/settable for the current vehicle/frame type.
+        Each modes should only be emitted once (even if it is both standard and custom).
+      </description>
+      <field type="uint8_t" name="number_modes">The total number of available modes for the current vehicle type.</field>
+      <field type="uint8_t" name="mode_index">The current mode index within number_modes, indexed from 1.</field>
+      <field type="uint8_t" name="standard_mode" enum="MAV_STANDARD_MODE">Standard mode.</field>
+      <field type="uint32_t" name="custom_mode">A bitfield for use for autopilot-specific flags</field>
+      <field type="uint32_t" name="properties" enum="MAV_MODE_PROPERTY">Mode properties.</field>
+      <field type="char[35]" name="mode_name">Name of custom mode, with null termination character. Should be omitted for standard modes.</field>
+    </message>
+    <message id="436" name="CURRENT_MODE">
+      <description>Get the current mode.
+        This should be emitted on any mode change, and broadcast at low rate (nominally 0.5 Hz).
+        It may be requested using MAV_CMD_REQUEST_MESSAGE.
+      </description>
+      <field type="uint8_t" name="standard_mode" enum="MAV_STANDARD_MODE">Standard mode.</field>
+      <field type="uint32_t" name="custom_mode">A bitfield for use for autopilot-specific flags</field>
+      <field type="uint32_t" name="intended_custom_mode" invalid="0">The custom_mode of the mode that was last commanded by the user (for example, with MAV_CMD_DO_SET_STANDARD_MODE, MAV_CMD_DO_SET_MODE or via RC). This should usually be the same as custom_mode. It will be different if the vehicle is unable to enter the intended mode, or has left that mode due to a failsafe condition. 0 indicates the intended custom mode is unknown/not supplied</field>
+    </message>
+    <message id="437" name="AVAILABLE_MODES_MONITOR">
+      <description>A change to the sequence number indicates that the set of AVAILABLE_MODES has changed.
+        A receiver must re-request all available modes whenever the sequence number changes.
+        This is only emitted after the first change and should then be broadcast at low rate (nominally 0.3 Hz) and on change.
+      </description>
+      <field type="uint8_t" name="seq">Sequence number. The value iterates sequentially whenever AVAILABLE_MODES changes (e.g. support for a new mode is added/removed dynamically).</field>
+    </message>
+    <message id="441" name="GNSS_INTEGRITY">
+      <description>Information about key components of GNSS receivers, like signal authentication, interference and system errors.</description>
+      <field type="uint8_t" name="id" instance="true">GNSS receiver id. Must match instance ids of other messages from same receiver.</field>
+      <field type="uint32_t" name="system_errors" enum="GPS_SYSTEM_ERROR_FLAGS">Errors in the GPS system.</field>
+      <field type="uint8_t" name="authentication_state" enum="GPS_AUTHENTICATION_STATE">Signal authentication state of the GPS system.</field>
+      <field type="uint8_t" name="jamming_state" enum="GPS_JAMMING_STATE">Signal jamming state of the GPS system.</field>
+      <field type="uint8_t" name="spoofing_state" enum="GPS_SPOOFING_STATE">Signal spoofing state of the GPS system.</field>
+      <field type="uint8_t" name="raim_state" enum="GPS_RAIM_STATE">The state of the RAIM processing.</field>
+      <field type="uint16_t" name="raim_hfom" units="cm" invalid="UINT16_MAX">Horizontal expected accuracy using satellites successfully validated using RAIM.</field>
+      <field type="uint16_t" name="raim_vfom" units="cm" invalid="UINT16_MAX">Vertical expected accuracy using satellites successfully validated using RAIM.</field>
+      <field type="uint8_t" name="corrections_quality" minValue="0" maxValue="10" invalid="UINT8_MAX">An abstract value representing the estimated quality of incoming corrections, or 255 if not available.</field>
+      <field type="uint8_t" name="system_status_summary" minValue="0" maxValue="10" invalid="UINT8_MAX">An abstract value representing the overall status of the receiver, or 255 if not available.</field>
+      <field type="uint8_t" name="gnss_signal_quality" minValue="0" maxValue="10" invalid="UINT8_MAX">An abstract value representing the quality of incoming GNSS signals, or 255 if not available.</field>
+      <field type="uint8_t" name="post_processing_quality" minValue="0" maxValue="10" invalid="UINT8_MAX">An abstract value representing the estimated PPK quality, or 255 if not available.</field>
+    </message>
+    <message id="513" name="RANGING_BEACON">
+      <wip/>
+      <!-- This message is work-in-progress and it can therefore change. It should NOT be used in stable production environments. -->
+      <description>Range information from a radio beacon for trilateration-based positioning.
+        This message is telemetry intended for consumption by an autopilot (MAVLink does not define the mechanism used to determine the range).
+      </description>
+      <field type="uint64_t" name="time_usec" units="us">Timestamp (UNIX Epoch time or time since system boot). The receiving end can infer timestamp format (since 1.1.1970 or since system boot) by checking for the magnitude of the number.</field>
+      <field type="uint8_t" name="target_system">System ID.</field>
+      <field type="uint8_t" name="target_component">Component ID.</field>
+      <field type="uint16_t" name="beacon_id" instance="true">ID of the ranging beacon/station.</field>
+      <field type="uint32_t" name="range" units="mm" invalid="UINT32_MAX">Range measurement between a beacon and a vehicle.</field>
+      <field type="int32_t" name="lat" units="degE7" invalid="INT32_MAX">Beacon latitude (WGS84).</field>
+      <field type="int32_t" name="lon" units="degE7" invalid="INT32_MAX">Beacon longitude (WGS84).</field>
+      <field type="float" name="alt" units="m" invalid="NaN">Beacon altitude (frame defined in alt_type).</field>
+      <field type="uint8_t" name="alt_type" enum="RANGING_BEACON_ALT_TYPE">Altitude frame for alt field. RANGING_BEACON_ALT_TYPE_WGS84 (0) preferred.</field>
+      <field type="uint32_t" name="hacc_est" units="mm" invalid="UINT32_MAX">Beacon 1-sigma horizontal accuracy estimate.</field>
+      <field type="uint32_t" name="vacc_est" units="mm" invalid="UINT32_MAX">Beacon 1-sigma vertical accuracy estimate.</field>
+      <field type="uint16_t" name="carrier_freq" units="MHz" invalid="UINT16_MIN">Ranging carrier frequency.</field>
+      <field type="uint32_t" name="range_accuracy" units="mm" invalid="UINT32_MAX">Estimated 1-sigma range measurement accuracy.</field>
+      <field type="uint8_t" name="sequence">Measurement sequence number.</field>
+      <field type="uint8_t" name="status" enum="RANGING_BEACON_STATUS_FLAG">Ranging beacon status.</field>
+    </message>
+  </messages>
+</mavlink>

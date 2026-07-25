@@ -1,0 +1,10 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Joshua Simmons 2010
+
+bld.program(
+	target   = 'foobar',
+	uselib   = 'GLIB',
+	source   = ['foo/foo.vala', 'bar/bar.vala', 'main.vala']
+	)
+

@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+top = '.'
+out = '.'
+
+def configure(conf):
+	conf.find_program('convert', var='CONVERT')
+	conf.find_program('dia', var='DIA')
+
+def build(bld):
+
+	for x in bld.path.ant_glob('*.svg'):
+		bld(
+		 rule='${CONVERT} -density 600 ${SRC} ${TGT}',
+		 source=[x],
+		 target=x.change_ext('.png'),
+		)
+	
+	for x in bld.path.ant_glob('*.dia'):
+		bld(
+		 rule='${DIA} -t png ${SRC} -e ${TGT}',
+		 source=[x],
+		 target=x.change_ext('.png'),
+		)
+
+def options(opt):
+	pass

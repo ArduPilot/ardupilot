@@ -1,0 +1,513 @@
+{
+    "$id":          "https://mavlink.io/comp_version.schema.json",
+    "$schema":      "http://json-schema.org/draft-07/schema",
+    "description":  "Schema for COMP_METADATA_TYPE_ACTUATORS",
+    "type":         "object",
+
+    "$defs": {
+        "condition": {
+            "type": "string",
+            "pattern": "^(true|false|[\\.\\-a-zA-Z0-9_]{1,16}(>|>=|==|!=|<|<=)\\-?\\d+)$",
+            "description": "A condition, in the form true|false|<param_name><operation><signed integer> (where <operation>: [>,>=,==,!=,<,<=]), comparing a vehicle parameter value (must be int or bool) with an integer value. 'true' and 'false' always evaluate to true or false respectively."
+        },
+
+        "actuator-output-testing-values": {
+            "type":         "object",
+            "description": "Defines the limits and defaults for actuator testing (used for MAV_CMD_ACTUATOR_TEST).",
+            "properties": {
+                "min": {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1
+                },
+                "max": {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1
+                },
+                "default": {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1
+                },
+                "default-is-nan": {
+                    "type": "boolean",
+                    "description": "Default is NaN, instead of a value in [-1, 1]"
+                },
+                "reversible": {
+                    "type": "boolean",
+                    "description": "For reversible motors: if true, the [min, max] range can be reversed to [-max, -min] to test motor reversal."
+                }
+            },
+            "required":             [ "min", "max" ],
+            "additionalProperties": false
+        },
+
+        "per-item-parameters": {
+            "properties": {
+                "label": {
+                    "type": "string",
+                    "description": "Displayed label"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "parameter name (may contain ${i} which is replaced with the param index}"
+                },
+                "value": {
+                    "type": "array",
+                    "description": "Fixed values (Either 'name' or 'value' needs to be specified)",
+                    "items": {
+                        "type":         "number"
+                    }
+                },
+                "function": {
+                    "type": "string",
+                    "description": "Optional semantics of the parameters. Valid values for geometry parameters: ['pos{x,y,z}': position parameters (expected in [m]). 'axis{x,y,z}': where the actuator points to. 'spin-dir': spinning direction (CCW=true or 1). 'type': enum param to select the specific actuator type (e.g. left aileron). 'reversible': configure motor to be reversible (bool/int32)]. Values for output configuration parameters: ['disarmed', 'min', 'max', 'failsafe'. 'function': defines the actuator output function]. For a given list, the same value can be assigned at most once.",
+                    "pattern": "^(posx|posy|posz|axisx|axisy|axisz|spin-dir|type|reversible|disarmed|min|max|failsafe|function)$"
+                },
+                "index-offset": {
+                    "type": "integer",
+                    "description": "Offset to be added to the parameter index or bitset"
+                },
+                "show-as": {
+                    "type": "string",
+                    "description": "Display option: 'bitset': shows an integer parameter as checkboxes (1 bit per actuator, and the index defines the bit shift). true-if-positive: displays a float variable as checkbox (>0 == checked)"
+                },
+                "advanced": {
+                    "type": "boolean",
+                    "description": "If true, only show this when some 'show advanced settings' config is checked"
+                },
+                "show-if": {
+                    "$ref": "#/$defs/condition",
+                    "description": "Condition to show/hide the config parameter for all items (only supported for outputs, not mixers)."
+                },
+                "identifier": {
+                    "type": "string",
+                    "description": "Optional identifier for rules (see 'rules' section)), only for mixers"
+                }
+            },
+            "additionalProperties": false
+        }
+    },
+
+    "properties": {
+        "version": {
+            "description":  "Version number for the format of this file.",
+            "type":         "integer",
+            "minimum":      1
+        },
+        "show-ui-if": {
+            "$ref": "#/$defs/condition",
+            "description": "Condition to show/hide the whole configuration UI depending on a parameter value. If not present, the UI is always shown."
+        },
+        "outputs_v1": {
+            "type":         "array",
+            "description":  "List of actuator output groups, typically corresponding to a physical output group. A group is a collection of subgroups and a subgroup contains a number of channels. E.g. a CAN driver (=group), with a servo message (= 1. subgroup) with M channels and ESC message with N channels (= 2. subgroup). A group might only contain a single subgroup.",
+            "items": {
+                "type":         "object",
+                "properties": {
+                    "label": {
+                        "type": "string",
+                        "description": "Displayed label for the actuator output (e.g. MAIN)"
+                    },
+                    "subgroups": {
+                        "type":         "array",
+                        "description":  "Actuator subgroups",
+                        "items": {
+                            "type":         "object",
+                            "properties": {
+                                "label": {
+                                    "type": "string",
+                                    "description": "Displayed label (required if multiple subgroups, optional for a single subgroup)"
+                                },
+                                "parameters": {
+                                    "type":         "array",
+                                    "description":  "List of configuration parameters to configure the actuator output subgroup",
+                                    "items": {
+                                        "type":         "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string",
+                                                "pattern": "^[\\.\\-a-zA-Z0-9_\\{\\}]{1,16}$",
+                                                "description": "Parameter name"
+                                            },
+                                            "label": {
+                                                "type": "string",
+                                                "description": "Displayed label"
+                                            },
+                                            "function": {
+                                                "type": "string",
+                                                "pattern": "^(primary)$",
+                                                "description": "Semantics of the parameters. 'primary': primary configuration parameter (can be used to place the param next to the label of the subgroup in the UI. In this case the label is not used, otherwise the label needs to be added)"
+                                            }
+                                        },
+                                        "required":             [ "name" ],
+                                        "additionalProperties": false
+                                    }
+                                },
+                                "per-channel-parameters": {
+                                    "type":         "array",
+                                    "description": "Config parameters shown for each individual channel.",
+                                    "items": {
+                                        "type":         "object",
+                                        "$ref": "#/$defs/per-item-parameters",
+                                        "required":             [ "label", "name" ],
+                                        "additionalProperties": false
+                                    }
+                                },
+                                "channels": {
+                                    "type":         "array",
+                                    "description": "Defines the channels.",
+                                    "items": {
+                                        "type":         "object",
+                                        "properties": {
+                                            "label": {
+                                                "type": "string",
+                                                "description": "Display channel label (e.g. MAIN 1)"
+                                            },
+                                            "param-index": {
+                                                "type": "integer",
+                                                "description": "Parameter index to the per-channel-parameters"
+                                            }
+                                        },
+
+                                        "required":             [ "label", "param-index" ],
+                                        "additionalProperties": false
+                                    }
+                                },
+                                "supported-actions": {
+                                    "description": "Set of (configuring) actions supported by the output group. Support might be limited by a condition and to a set of actuator types (an action is shown if the channel is configured, the condition true and the configured function in the set of actuator-types (or the set is empty)). MAV_CMD_CONFIGURE_ACTUATOR is used by the GCS to trigger the action.",
+                                    "patternProperties": {
+                                        "^(beep|3d-mode-on|3d-mode-off|set-spin-direction1|set-spin-direction2)$": {
+                                            "type":         "object",
+                                            "properties": {
+                                                "supported-if": {
+                                                    "$ref": "#/$defs/condition"
+                                                },
+                                                "actuator-types": {
+                                                    "type":         "array",
+                                                    "description":  "optional list of actuator types that support the action",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            },
+                            "required":             [ "per-channel-parameters", "channels" ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "parameters": {
+                        "type":         "array",
+                        "description":  "List of configuration parameters to configure the actuator output group (e.g. bitrate of the bus)",
+                        "items": {
+                            "type":         "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "pattern": "^[\\.\\-a-zA-Z0-9_\\{\\}]{1,16}$",
+                                    "description": "Parameter name"
+                                },
+                                "label": {
+                                    "type": "string",
+                                    "description": "Displayed label"
+                                },
+                                "function": {
+                                    "type": "string",
+                                    "pattern": "^(enable)$",
+                                    "description": "Semantics of the parameters. 'enable': Parameter is used to enable/disable the output group"
+                                }
+                            },
+                            "required":             [ "label", "name" ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "show-subgroups-if": {
+                        "$ref": "#/$defs/condition",
+                        "description": "Condition show/hide all subgroups (e.g. for a parameter to enable/disable the output)."
+                    }
+                },
+                "required":             [ "label", "subgroups" ],
+                "additionalProperties": false
+            }
+
+        },
+
+
+        "functions_v1": {
+            "type":         "object",
+            "description":  "Lists all actuator output functions. Each dict index defines an output function. '0' is special and always means 'Disabled'. The indexes and labels are expected to match with the parameter metadata for the function parameters (some parameters may not support all functions though). When sending a MAVLink command, e.g. MAV_CMD_ACTUATOR_TEST, 1000+<output function> is used.",
+
+            "patternProperties": {
+                "^\\d+$": {
+                    "type":         "object",
+                    "properties": {
+                        "label": {
+                            "type": "string",
+                            "description": "Displayed label"
+                        },
+                        "exclude-from-actuator-testing": {
+                            "type": "boolean",
+                            "description": "If true, do not add this to the list of actuator output testing functions (default: false)"
+                        },
+                        "note": {
+                            "type":         "object",
+                            "description": "Note to be displayed if the function is configured on some output, and the condition is true. Can e.g. be used to show a note that the function requires additional setup.",
+                            "properties": {
+                                "condition": {
+                                    "$ref": "#/$defs/condition"
+                                },
+                                "text": {
+                                    "type": "string",
+                                    "description": "Displayed note"
+                                }
+                            },
+                            "required":             [ "condition", "text" ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required":             [ "label" ],
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
+        },
+
+
+        "mixer_v1": {
+            "type":         "object",
+            "description":  "Mixer/Geometry configuration options",
+            "properties": {
+                "actuator-types": {
+                    "type":         "object",
+                    "description": "Actuator types. Each actuator type contains a list of actuator output functions. All output functions not belonging to an actuator type use the values from DEFAULT. Arbitrary actuator types can be defined, however these are well-known: 'motor', 'servo': a UI may use these to e.g. display a multirotor geometry.",
+                    "properties": {
+                        "DEFAULT": {
+                            "type":         "object",
+                            "properties": {
+                                "values": {
+                                    "$ref": "#/$defs/actuator-output-testing-values"
+                                }
+                            },
+                            "required":             [ "values" ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "patternProperties": {
+                        "^((?!DEFAULT).)*$": {
+                            "type":         "object",
+                            "properties": {
+                                "values": {
+                                    "$ref": "#/$defs/actuator-output-testing-values"
+                                },
+                                "function-min": {
+                                    "type": "integer",
+                                    "description": "First actuator function index"
+                                },
+                                "function-max": {
+                                    "type": "integer",
+                                    "description": "Last actuator function index"
+                                },
+                                "label-index-offset": {
+                                    "type": "integer",
+                                    "description": "Display offset for the 0-based actuator index. E.g. if the label of the output function 'function-min' is 'Motor 1', 'label-index-offset' is 1."
+                                },
+                                "per-item-parameters": {
+                                    "type":         "array",
+                                    "description": "List of actuator-type specific parameters, e.g. trim values for servos",
+                                    "items": {
+                                        "type":         "object",
+                                        "$ref": "#/$defs/per-item-parameters",
+                                        "required":             [ "label", "name" ],
+                                        "additionalProperties": false
+                                    }
+                                }
+                            },
+                            "required":             [ "values", "function-min", "function-max" ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required":             [ "DEFAULT" ],
+                    "additionalProperties": false
+                },
+                "config": {
+                    "type":         "array",
+                    "description":  "List of mixer/geometries configurations. Each geometry contains a condition, and the expectation is that exactly one evaluates to true, which is the one displayed in the UI (i.e. a parameter to select the geometry). It's also possible to unconditionally specify only a single geometry, or to set an empty list, to disable the mixer/geometry UI altogether.",
+                    "items": {
+                        "type":         "object",
+                        "properties": {
+                            "option": {
+                                "$ref": "#/$defs/condition",
+                                "description": "Condition to select the geometry"
+                            },
+                            "type": {
+                                "type": "string",
+                                "pattern": "^(multirotor)$",
+                                "description": "Optional geometry type indicator. A UI may use these to render type-dependent geometry images"
+                            },
+                            "title": {
+                                "type": "string",
+                                "description": "Optional geometry title (e.g. Multirotor)"
+                            },
+                            "help-url": {
+                                "type": "string",
+                                "description": "Optional url with documentation"
+                            },
+                            "actuators": {
+                                "type": "array",
+                                "description": "List of actuators belonging to the geometry. Each actuator group is of the same actuator-type and shares the set of configuration variables (which may be none). E.g. a multirotor might only contain a single item for the motors. Each item can have a fixed or configurable amount of actuators (see 'count' below).",
+                                "items": {
+                                    "type":         "object",
+                                    "properties": {
+                                        "group-label": {
+                                            "type": "string",
+                                            "description": "Displayed label for the group"
+                                        },
+                                        "actuator-type": {
+                                            "type": "string",
+                                            "description": "Needs to correspond to one of the 'actuator-types' definitions."
+                                        },
+                                        "item-label-prefix": {
+                                            "oneof": [
+                                                {
+                                                    "type": "string",
+                                                    "description": "This can be used to display a more specialized actuator type in front of the generic one. In the case of a fixed 'count', it's a list of strings (e.g. ['Left Aileron', 'Right Aileron'] -> resulting in display 'Left Aileron (Servo 1)'), otherwise a string that may contain '${i}' which is replaced with the index."
+                                                },
+                                                {
+                                                    "type":         "array",
+                                                    "items": {
+                                                        "type":         "string"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        "required": {
+                                            "type": "boolean",
+                                            "description": "If true, these actuators are required to be assigned to some output in order for the vehicle to be seen as 'setup completed'."
+                                        },
+                                        "count": {
+                                            "oneof": [
+                                                {
+                                                    "type": "string",
+                                                    "description": "Parameter name for the amount of actuators"
+                                                },
+                                                {
+                                                    "type": "integer",
+                                                    "description": "Fixed number of actuators"
+                                                }
+                                            ]
+                                        },
+                                        "parameters": {
+                                            "type":         "array",
+                                            "description": "Actuator group specific configuration parameters.",
+                                            "items": {
+                                                "type":         "object",
+                                                "properties": {
+                                                    "label": {
+                                                        "type": "string",
+                                                        "description": "Displayed label"
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "description": "parameter name"
+                                                    },
+                                                    "advanced": {
+                                                        "type": "boolean",
+                                                        "description": "If true, only show this when some 'show advanced settings' config is checked"
+                                                    }
+                                                },
+                                                "required":             [ "label", "name" ],
+                                                "additionalProperties": false
+                                            }
+                                        },
+                                        "per-item-parameters": {
+                                            "type":         "array",
+                                            "description": "Values/config parameters shown for each individual actuator in the group.",
+                                            "items": {
+                                                "type":         "object",
+                                                "$ref": "#/$defs/per-item-parameters",
+                                                "required":             [ "label" ],
+                                                "additionalProperties": false
+                                            }
+                                        }
+                                    }
+                                },
+                                "required":             [ "group-label", "count", "actuator-type", "per-item-parameters" ],
+                                "additionalProperties": false
+                            }
+                        },
+                        "required":             [ "actuators" ],
+                        "additionalProperties": false
+                    }
+                },
+
+                "rules": {
+                    "description": "Optional list of rules. Rules are used to constrain or hide/disable parameters depending on the value of a selection parameter. The selection parameter must be an integer (typically enum) parameter, whereas the constrained parameters must be floats. Rules are generic and can be used in one or more mixer definitions. However an actuator group can have at most one rule. Rules are applied on a per-channel/per-item basis. They are defined and used via identifiers: these can be arbitrary (unique) strings, defined for the selection parameter (select-identifier) and the list of constrained parameters (apply-identifiers). These identifiers are then used in the 'per-item-parameters' list of a mixer (there's no requirement on ordering, however all identifiers of a rule should be set).",
+                    "type":         "array",
+                    "items": {
+                        "type":         "object",
+                        "properties": {
+                            "select-identifier": {
+                                "type":         "string"
+                            },
+                            "apply-identifiers": {
+                                "type":         "array",
+                                "items": {
+                                    "type":         "string"
+                                }
+                            },
+                            "items": {
+                                "description": "Dict of items, the value of the selection parameter defines the selected item. It's allowed for some values not to have any constraint.",
+                                "type": "object",
+                                "patternProperties": {
+                                    "^[0-9]+$": {
+                                        "type":         "array",
+                                        "description": "Array of constraints/defaults. Each array item corresponds to the item at the same index in 'apply-identifiers' (and thus the array length must be the same)",
+                                        "items": {
+                                            "type":         "object",
+                                            "properties": {
+                                                "min": {
+                                                    "description": "Minimum parameter value (optional)",
+                                                    "type": "number"
+                                                },
+                                                "max": {
+                                                    "description": "Maximum parameter value (optional)",
+                                                    "type": "number"
+                                                },
+                                                "default": {
+                                                    "description": "Default parameter value (optional), set when the selection parameter changes to this value.",
+                                                    "type": "number"
+                                                },
+                                                "hidden": {
+                                                    "description": "If true, the parameter is hidden, i.e. the user cannot edit it.",
+                                                    "type": "boolean"
+                                                },
+                                                "disabled": {
+                                                    "description": "If true, the parameter is disabled (but still shown), i.e. the user cannot edit it.",
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "additionalProperties": false
+                                        }
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        },
+                        "required":             [ "select-identifier", "apply-identifiers", "items" ],
+                        "additionalProperties": false
+                    }
+                }
+            },
+            "required":             [ "actuator-types", "config" ],
+            "additionalProperties": false
+        }
+    },
+    "required":             [ "version", "outputs_v1", "functions_v1", "mixer_v1" ],
+    "additionalProperties": false
+}
+

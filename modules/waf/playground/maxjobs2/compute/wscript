@@ -1,0 +1,103 @@
+#! /usr/bin/env python
+
+# The following example shows how several build processes can collaborate
+# to stop spawning new processes when a special task of type K is executed
+# this may be useful for link tasks for example
+
+def options(opt):
+	opt.add_option('--loops', action='store', type='int', default=5, help='amount of cpu-intensive loops to perform')
+
+def configure(conf):
+	busy = conf.path.find_node('look_busy.py').abspath()
+	conf.env.NOT_BUSY = ('%s 0' % busy).split()
+	conf.env.VERY_BUSY = ('%s %d' % (busy, conf.options.loops)).split()
+
+def build(bld):
+	bld.link_limit = 1
+	bld.lockfile = bld.path.parent.make_node('busy_lock.txt').abspath()
+	for i in range(2):
+		for k in range(5):
+			bld(rule='${NOT_BUSY}', always=True)
+
+		bld(rule='${VERY_BUSY}', always=True, exclusive=True)
+
+		for k in range(10):
+			bld(rule='${NOT_BUSY}', always=True)
+
+import os, fcntl, threading, errno, time
+from waflib import Task
+
+lock = threading.Lock()
+
+def lock_maxjob(self):
+	# lock the file, telling other build processes to avoid spawining tasks during that time
+	while True:
+		try:
+			self.lockfd = os.open(self.generator.bld.lockfile, os.O_TRUNC | os.O_CREAT | os.O_RDWR)
+			fcntl.flock(self.lockfd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+		except EnvironmentError as e:
+			if e.errno in (errno.EACCES, errno.EAGAIN):
+				time.sleep(0.3)
+				continue
+			raise
+		os.write(self.lockfd, "%d" % os.getpid())
+		self.start_time = time.time()
+		break
+
+def release_maxjob(self):
+	# release the lock file
+	print("> long task %d" % (time.time() - self.start_time))
+	try:
+		os.remove(self.generator.bld.lockfile)
+		os.close(self.lockfd)
+	except OSError, e:
+		# of someone else has removed the lock... bad luck! but do not fail here
+		print "unexpected failure", e
+		pass
+
+def wait_maxjob(self):
+	# wait on the lock file.. up to a certain limit
+	while True:
+		try:
+			ini = os.stat(self.generator.bld.lockfile).st_mtime
+		except OSError, e:
+			return
+		diff = time.time() - ini
+		if diff > 300: # stale lock file? wait 5 minutes
+			return
+		time.sleep(0.5)
+
+# the method process is called by threads...
+def process2(self):
+
+	if getattr(self.generator, 'exclusive', False):
+		lock.acquire()
+		try:
+			self.lock_maxjob()
+		finally:
+			lock.release()
+	else:
+		self.wait_maxjob()
+
+	ret = self.process_bound_maxjobs()
+
+	if getattr(self.generator, 'exclusive', False):
+		lock.acquire()
+		try:
+			self.release_maxjob()
+		finally:
+			lock.release()
+	return ret
+
+def process(self):
+	try:
+		process2(self)
+	except Exception, e:
+		print type(e), e
+
+Task.Task.process_bound_maxjobs = Task.Task.process
+Task.Task.process = process
+Task.Task.lock_maxjob = lock_maxjob
+Task.Task.release_maxjob = release_maxjob
+Task.Task.wait_maxjob = wait_maxjob
+

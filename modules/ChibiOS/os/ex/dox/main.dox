@@ -1,0 +1,103 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+/**
+ * @defgroup EX EX
+ * @brief   EXternal peripherals.
+ * @details Under ChibiOS the set of the complex device driver interfaces 
+ * dedicated to external peripherals is called the EX subsystem. The EX resides 
+ * on top of EX and is actually a set of libraries for external devices like
+ * MEMS, Displays, Flash memories and so on. These libraries are the 
+ * implementation of one or more Abstract Interfaces brought by EX subsystem.
+ * EX also relies on EX normal drivers to interface the peripherals.
+ *
+ * @section ex_complex_drivers_architecture EX Complex Drivers Architecture
+ * Each EX driver can be considered as a standalone Complex Device Driver. For 
+ * ease of use these drivers are grouped by vendor:
+ * - Bosch Devices
+ * - STMicroelectronics Devices
+ * .
+ *
+ * @section adi_devices Analog Devices Devices
+ * This section contains all the drivers of devices produced by ADI. 
+ * Devices currently supported are MEMS and are:
+ *   - @b ADXL355: Low Noise, Low Drift, Low Power, 3-Axis Accelerometers;
+ *
+ * @section bosch_devices Bosch Devices
+ * This section contains all the drivers of devices produced by Bosch. 
+ * Devices currently supported are MEMS and are:
+ *   - @b BMP085: Digital pressure sensor;
+ * .
+ *
+ * @section stmicroelectronics_devices STMicroelectronics Devices
+ * This section contains all the drivers of devices produced by
+ * STMicroelectronics. Devices currently supported are MEMS and are:
+ *   - @b HTS221: Capacitive digital humidity sensor;
+ *   - @b L3GD20: 3-axis digital gyroscope; 
+ *   - @b LIS3DSH: 3-axis digital motion sensor;
+ *   - @b LIS3MDL: Ultra low power, high performances 3-axis magnetometer;
+ *   - @b LIS302DL: 3-axis motion sensor;
+ *   - @b LPS25H: Piezoresistive 260-1260 hPa pressure sensor; 
+ *   - @b LSM6DS0: 6-axis iNEMO inertial module; 
+ *   - @b LSM303DLHC: Ultra compact high performance e-compass;
+ * .
+ */
+ *
+ * @section hal_peripheral interfaces EX Peripheral Interfaces
+ * These are a particular case of EX Interfaces since they are an abstraction
+ * of a hardware.
+ */
+
+/**
+ * @defgroup EX_INFO Info
+ * @brief   EX information.
+ *
+ * @ingroup EX
+ */
+
+/**
+ * @defgroup EX_ABSTRACT_PERIPHERALS Peripheral Interfaces
+ * @brief   EX Abstract Peripheral Interfaces.
+ *
+ * @ingroup EX
+ */
+
+/**
+ * @defgroup EX_DEVICES Devices
+ * @brief   EX devices organized per vendor.
+ *
+ * @ingroup EX
+ */
+/**
+ * @defgroup EX_ADI Analog Devices Devices
+ * @brief   Analog Devices Devices.
+ *
+ * @ingroup EX_DEVICES
+ */
+ 
+/**
+ * @defgroup EX_BOSCH Bosch Devices
+ * @brief   Bosch Devices.
+ *
+ * @ingroup EX_DEVICES
+ */
+
+/**
+ * @defgroup EX_ST STMicroelectronics Devices
+ * @brief   STMicroelectronics Devices.
+ *
+ * @ingroup EX_DEVICES
+ */

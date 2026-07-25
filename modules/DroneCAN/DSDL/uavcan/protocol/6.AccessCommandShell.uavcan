@@ -1,0 +1,69 @@
+#
+# THIS DEFINITION IS SUBJECT TO CHANGE.
+#
+# This service allows to execute arbitrary commands on the remote node's internal system shell.
+#
+# Essentially, this service mimics a typical terminal emulator, with one text input (stdin) and two text
+# outputs (stdout and stderr). When there's no process running, the input is directed into the terminal
+# handler itself, which interprets it. If there's a process running, the input will be directed into
+# stdin of the running process. It is possible to forcefully return the terminal into a known state by
+# means of setting the reset flag (see below), in which case the terminal will kill all of the child
+# processes, if any, and return into the initial idle state.
+#
+# The server is assumed to allocate one independent terminal instance per client, so that different clients
+# can execute commands without interfering with each other.
+#
+
+#
+# Input and output should use this newline character.
+#
+uint8 NEWLINE = '\n'
+
+#
+# The server is required to keep the result of the last executed command for at least this time.
+# When this time expires, the server may remove the results in order to reclaim the memory, but it
+# is not guaranteed. Hence, the clients must retrieve the results in this amount of time.
+#
+uint8 MIN_OUTPUT_LIFETIME_SEC = 10
+
+#
+# These flags control the shell and command execution.
+#
+uint8 FLAG_RESET_SHELL          = 1     # Restarts the shell instance anew; may or may not imply CLEAR_OUTPUT_BUFFERS
+uint8 FLAG_CLEAR_OUTPUT_BUFFERS = 2     # Makes stdout and stderr buffers empty
+uint8 FLAG_READ_STDOUT          = 64    # Output will contain stdout
+uint8 FLAG_READ_STDERR          = 128   # Output will be extended with stderr
+uint8 flags
+
+#
+# If the shell is idle, it will interpret this string.
+# If there's a process running, this string will be piped into its stdin.
+#
+# If RESET_SHELL is set, new input will be interpreted by the shell immediately.
+#
+uint8[<=128] input
+
+---
+
+#
+# Exit status of the last executed process, or error code of the shell itself.
+# Default value is zero.
+#
+int32 last_exit_status
+
+#
+# These flags indicate the status of the shell.
+#
+uint8 FLAG_RUNNING              = 1     # The shell is currently running a process; stdin/out/err are piped to it
+uint8 FLAG_SHELL_ERROR          = 2     # Exit status contains error code, output contains text (e.g. no such command)
+uint8 FLAG_HAS_PENDING_STDOUT   = 64    # There is more stdout to read
+uint8 FLAG_HAS_PENDING_STDERR   = 128   # There is more stderr to read
+uint8 flags
+
+#
+# In case of a shell error, this string may contain ASCII string explaining the nature of the error.
+# Otherwise, if stdout read is requested, this string will contain stdout data. If stderr read is requested,
+# this string will contain stderr data. If both stdout and stderr read is requested, this string will start
+# with stdout and end with stderr, with no separator in between.
+#
+uint8[<=256] output

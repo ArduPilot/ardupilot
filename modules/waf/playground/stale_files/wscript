@@ -1,0 +1,27 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006-2015 (ita)
+
+"""
+See waflib/extras/stale.py for more information.
+Do not forget to reconfigure the project after changing "configure" below
+"""
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+top = '.'
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c stale')
+
+def build(bld):
+	import random
+	if random.randint(0, 1):
+		bld(rule='touch ${TGT}', target='foo.h')
+	else:
+		bld(rule='touch ${TGT}', target='bar.h')
+

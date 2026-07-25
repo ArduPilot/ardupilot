@@ -1,0 +1,14 @@
+#
+# Restart the node.
+#
+# Some nodes may require restart before the new configuration will be applied.
+#
+# The request should be rejected if magic_number does not equal MAGIC_NUMBER.
+#
+
+uint40 MAGIC_NUMBER = 0xACCE551B1E
+uint40 magic_number
+
+---
+
+bool ok

@@ -1,0 +1,9 @@
+#
+# Generic ESC SCI DATA.
+#
+
+OVERRIDE_SIGNATURE 0xCE2B6D6B6BDC0AE8
+
+uint32 data_sequence  #data sequence
+
+uint8[<=255] data

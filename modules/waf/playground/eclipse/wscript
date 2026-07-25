@@ -1,0 +1,65 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Federico Pellegrin 2017 (fedepell)
+
+"""
+Example source tree to be used with eclipse extra. 
+
+First of all load the extra:
+
+...
+def options(opt):
+	opt.load('eclipse')
+
+def configure(conf):
+	conf.load('eclipse')
+...
+
+Then after configuring the project you can anytime run:
+
+waf eclipse
+
+This will generate the needed configuration files for Eclipse:
+-) .project is generic Eclipse project file
+-) .cproject for C/C++ CDT
+-) .classpath for Java JDT
+-) .pydevproject for Pydev
+
+If CDT is in the project (so at least one C/C++ build) then CDT builder
+will be used to call waf as it is more versatile. If just JDT/PYydev are
+used then an Eclipse external builder is defined that calls waf. This is
+created in the file .externalToolBuilders/Waf_Builder.launch.
+
+The example contains three directories with different supported languages
+to demonstrate the features working for each of them, most importantly the
+automatic addition of search paths for each language so referencing objects
+or files in the IDE is done correctly. This is equivalent to configure 
+Eclipse by hand using Project->Properties and then each language menu.
+
+Also the generic invocation for building and cleaning are redefined so
+waf is called correctly when the respective actions are requested.
+
+To test just the external builder definition just remove "c" from the
+module_list below.
+"""
+
+
+module_list = 'c java python'
+out = 'build'
+
+def options(opt):
+	opt.load('eclipse')
+	# We recurse options in our submodules
+	opt.recurse(module_list)
+
+
+def configure(conf):
+	conf.env.ECLIPSE_EXTRA_TARGETS = ['test', 'lint', 'foo --bar']
+	conf.load('eclipse')
+	# We recurse configurations in our submodules
+	conf.recurse(module_list)
+
+
+def build(bld):
+	bld.recurse(module_list)
+

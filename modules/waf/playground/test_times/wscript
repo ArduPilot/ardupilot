@@ -1,0 +1,55 @@
+#! /usr/bin/env python
+
+"""
+Create a few c programs, measure the execution times on "waf times"
+"""
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+def build(bld):
+
+	# add a task to create a .c file
+	from waflib.TaskGen import feature, before_method
+	@feature('foo')
+	@before_method('process_source')
+	def add_one_c_file(self):
+		node = self.path.find_or_declare('main%d.c' % self.num)
+		self.create_task('write_file', [], node)
+		self.source = [node] # add the .c file to the list of source
+
+	# write a slow main.c file
+	from waflib.Task import Task
+	class write_file(Task):
+		def run(self):
+			self.outputs[0].write('''
+#include <stdio.h>
+int main() {
+	int i;
+	char buf[50];
+	for (i=0; i < %d; ++i) {
+		sprintf(buf, "%%l\\n", i);
+	}
+	return 0;
+}''' % 2 ** (13 + self.generator.num))
+
+	for i in range(10):
+		# create a few programs
+		bld(features='foo c cprogram', num=i, target='app%d' % i)
+
+	if bld.cmd == 'times':
+		# measure the execution times when calling "waf times"
+		def measure(ctx):
+			for x in range(10):
+				tg = ctx.get_tgen_by_name('app%d' % x)
+				name = tg.link_task.outputs[0].abspath()
+				ctx.exec_command('time %s' % name, shell=True)
+		bld.add_post_fun(measure)
+
+from waflib.Build import BuildContext
+class times(BuildContext):
+	cmd = 'times'
+

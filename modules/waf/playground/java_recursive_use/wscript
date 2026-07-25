@@ -1,0 +1,25 @@
+#! /usr/bin/env python
+# encoding: utf-8#
+# Federico Pellegrin, 2018 (fedepell)
+
+# Simple example testing usage of the recursive use processing for Java
+# In the example b uses a, c uses b and d uses c. Therefore transitively
+# for example c uses also a, but this by default is not enabled as it
+# really depends on the code if the dependency is build or run time and
+# so enabling by default may lead to unneeded work. On the other side for
+# a project with many java artifacts and complex dependencies a manual
+# management may be expensive.
+#
+# By setting recurse_use to True (or build wise by setting RECURSE_JAVA env
+# variable to True) the recursive behaviour is enabled.
+#
+# Directory d tests the case when recursion stops earlier since
+# a dependency is already explicitly defined
+
+def configure(conf):
+	conf.load('java')
+	# For build wide enabling:
+	# conf.env.RECURSE_JAVA = True
+
+def build(bld):
+	bld.recurse('a b c d')

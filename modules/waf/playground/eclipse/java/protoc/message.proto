@@ -1,0 +1,12 @@
+package udp.tc.tests;
+
+option java_package ="com.udp.tc.tests";
+option java_outer_classname= "MessageProtos";
+option cc_generic_services = false;
+option java_generic_services = false;
+option py_generic_services = false;
+
+message Message {
+    required int32 test = 1;
+    optional uint32 blah = 2;
+}

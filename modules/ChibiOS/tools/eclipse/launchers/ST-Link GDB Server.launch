@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.ui.externaltools.ProgramLaunchConfigurationType">
+    <listAttribute key="org.eclipse.debug.ui.favoriteGroups">
+        <listEntry value="org.eclipse.ui.externaltools.launchGroup"/>
+    </listAttribute>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_LAUNCH_CONFIGURATION_BUILD_SCOPE" value="${none}"/>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_LOCATION" value="${env_var:CHIBISTUDIO}/tools/ST/stlinkgdbserver/bin/ST-LINK_gdbserver"/>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_TOOL_ARGUMENTS" value="-cp ${env_var:HOME}/Programs/STMicroelectronics/STM32Cube/STM32CubeProgrammer/bin -d -e"/>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_WORKING_DIRECTORY" value="${env_var:CHIBISTUDIO}/tools/ST/stlinkgdbserver/bin"/>
+</launchConfiguration>

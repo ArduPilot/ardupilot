@@ -1,0 +1,11 @@
+#
+# This enumeration specifies the encapsulated protocol.
+# New protocols are likely to be added in the future.
+#
+
+uint8 MAVLINK                   = 0     # MAVLink
+uint8 MAVLINK2                  = 1     # MAVLink2
+uint8 GPS_GENERIC               = 2     # GPS in any protocol (e.g. UBX, NMEA, etc.)
+uint8 UNDEFINED                 = 255   # Undefined
+
+uint8 protocol

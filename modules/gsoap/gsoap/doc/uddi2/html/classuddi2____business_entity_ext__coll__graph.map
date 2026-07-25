@@ -1,0 +1,8 @@
+<map id="uddi2__businessEntityExt" name="uddi2__businessEntityExt">
+<area shape="rect" id="node2" href="$classuddi2____business_entity.html" title="Schema urn:uddi&#45;org:api_v2:&quot;businessEntity&quot;. " alt="" coords="336,109,491,137"/>
+<area shape="rect" id="node4" href="$classuddi2____contacts.html" title="Schema urn:uddi&#45;org:api_v2:&quot;contacts&quot;. " alt="" coords="33,5,151,33"/>
+<area shape="rect" id="node6" href="$classuddi2____discovery_u_r_ls.html" title="Schema urn:uddi&#45;org:api_v2:&quot;discoveryURLs&quot;. " alt="" coords="13,57,171,85"/>
+<area shape="rect" id="node8" href="$classuddi2____identifier_bag.html" title="Schema urn:uddi&#45;org:api_v2:&quot;identifierBag&quot;. " alt="" coords="21,109,163,137"/>
+<area shape="rect" id="node10" href="$classuddi2____business_services.html" title="Schema urn:uddi&#45;org:api_v2:&quot;businessServices&quot;. " alt="" coords="6,161,178,189"/>
+<area shape="rect" id="node12" href="$classuddi2____category_bag.html" title="Schema urn:uddi&#45;org:api_v2:&quot;categoryBag&quot;. " alt="" coords="20,213,164,241"/>
+</map>

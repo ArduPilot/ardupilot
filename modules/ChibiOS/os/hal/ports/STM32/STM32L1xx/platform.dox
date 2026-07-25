@@ -1,0 +1,315 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+/**
+ * @defgroup STM32L1xx_DRIVERS STM32L1xx Drivers
+ * @details This section describes all the supported drivers on the STM32L1xx
+ *          platform and the implementation details of the single drivers.
+ *
+ * @ingroup platforms
+ */
+
+/**
+ * @defgroup STM32L1xx_HAL STM32L1xx Initialization Support
+ * @details The STM32L1xx HAL support is responsible for system initialization.
+ *
+ * @section stm32l1xx_hal_1 Supported HW resources
+ * - PLL1.
+ * - RCC.
+ * - Flash.
+ * .
+ * @section stm32l1xx_hal_2 STM32L1xx HAL driver implementation features
+ * - PLL startup and stabilization.
+ * - Clock tree initialization.
+ * - Clock source selection.
+ * - Flash wait states initialization based on the selected clock options.
+ * - SYSTICK initialization based on current clock and kernel required rate.
+ * - DMA support initialization.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_ADC STM32L1xx ADC Support
+ * @details The STM32L1xx ADC driver supports the ADC peripherals using DMA
+ *          channels for maximum performance.
+ *
+ * @section stm32l1xx_adc_1 Supported HW resources
+ * - ADC1.
+ * - DMA1.
+ * .
+ * @section stm32l1xx_adc_2 STM32L1xx ADC driver implementation features
+ * - Clock stop for reduced power usage when the driver is in stop state.
+ * - Streaming conversion using DMA for maximum performance.
+ * - Programmable ADC interrupt priority level.
+ * - Programmable DMA bus priority for each DMA channel.
+ * - Programmable DMA interrupt priority for each DMA channel.
+ * - DMA and ADC errors detection.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_EXT STM32L1xx EXT Support
+ * @details The STM32L1xx EXT driver uses the EXTI peripheral.
+ *
+ * @section stm32l1xx_ext_1 Supported HW resources
+ * - EXTI.
+ * .
+ * @section stm32l1xx_ext_2 STM32L1xx EXT driver implementation features
+ * - Each EXTI channel can be independently enabled and programmed.
+ * - Programmable EXTI interrupts priority level.
+ * - Capability to work as event sources (WFE) rather than interrupt sources.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_GPT STM32L1xx GPT Support
+ * @details The STM32L1xx GPT driver uses the TIMx peripherals.
+ *
+ * @section stm32l1xx_gpt_1 Supported HW resources
+ * - TIM2.
+ * - TIM3.
+ * - TIM4.
+ * .
+ * @section stm32l1xx_gpt_2 STM32L1xx GPT driver implementation features
+ * - Each timer can be independently enabled and programmed. Unused
+ *   peripherals are left in low power mode.
+ * - Programmable TIMx interrupts priority level.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_ICU STM32L1xx ICU Support
+ * @details The STM32L1xx ICU driver uses the TIMx peripherals.
+ *
+ * @section stm32l1xx_icu_1 Supported HW resources
+ * - TIM2.
+ * - TIM3.
+ * - TIM4.
+ * .
+ * @section stm32l1xx_icu_2 STM32L1xx ICU driver implementation features
+ * - Each timer can be independently enabled and programmed. Unused
+ *   peripherals are left in low power mode.
+ * - Programmable TIMx interrupts priority level.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_PAL STM32L1xx PAL Support
+ * @details The STM32L1xx PAL driver uses the GPIO peripherals.
+ *
+ * @section stm32l1xx_pal_1 Supported HW resources
+ * - GPIOA.
+ * - GPIOB.
+ * - GPIOC.
+ * - GPIOD.
+ * - GPIOE.
+ * - GPIOH.
+ * .
+ * @section stm32l1xx_pal_2 STM32L1xx PAL driver implementation features
+ * The PAL driver implementation fully supports the following hardware
+ * capabilities:
+ * - 16 bits wide ports.
+ * - Atomic set/reset functions.
+ * - Atomic set+reset function (atomic bus operations).
+ * - Output latched regardless of the pad setting.
+ * - Direct read of input pads regardless of the pad setting.
+ * .
+ * @section stm32l1xx_pal_3 Supported PAL setup modes
+ * The STM32L1xx PAL driver supports the following I/O modes:
+ * - @p PAL_MODE_RESET.
+ * - @p PAL_MODE_UNCONNECTED.
+ * - @p PAL_MODE_INPUT.
+ * - @p PAL_MODE_INPUT_PULLUP.
+ * - @p PAL_MODE_INPUT_PULLDOWN.
+ * - @p PAL_MODE_INPUT_ANALOG.
+ * - @p PAL_MODE_OUTPUT_PUSHPULL.
+ * - @p PAL_MODE_OUTPUT_OPENDRAIN.
+ * - @p PAL_MODE_ALTERNATE (non standard).
+ * .
+ * Any attempt to setup an invalid mode is ignored.
+ *
+ * @section stm32l1xx_pal_4 Suboptimal behavior
+ * The STM32L1xx GPIO is less than optimal in several areas, the limitations
+ * should be taken in account while using the PAL driver:
+ * - Pad/port toggling operations are not atomic.
+ * - Pad/group mode setup is not atomic.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_PWM STM32L1xx PWM Support
+ * @details The STM32L1xx PWM driver uses the TIMx peripherals.
+ *
+ * @section stm32l1xx_pwm_1 Supported HW resources
+ * - TIM1.
+ * - TIM2.
+ * - TIM3.
+ * - TIM4.
+ * .
+ * @section stm32l1xx_pwm_2 STM32L1xx PWM driver implementation features
+ * - Each timer can be independently enabled and programmed. Unused
+ *   peripherals are left in low power mode.
+ * - Four independent PWM channels per timer.
+ * - Programmable TIMx interrupts priority level.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_SERIAL STM32L1xx Serial Support
+ * @details The STM32L1xx Serial driver uses the USART/UART peripherals in a
+ *          buffered, interrupt driven, implementation.
+ *
+ * @section stm32l1xx_serial_1 Supported HW resources
+ * The serial driver can support any of the following hardware resources:
+ * - USART1.
+ * - USART2.
+ * - USART3 (where present).
+ * - UART4 (where present).
+ * - UART5 (where present).
+ * .
+ * @section stm32l1xx_serial_2 STM32L1xx Serial driver implementation features
+ * - Clock stop for reduced power usage when the driver is in stop state.
+ * - Each UART/USART can be independently enabled and programmed. Unused
+ *   peripherals are left in low power mode.
+ * - Fully interrupt driven.
+ * - Programmable priority levels for each UART/USART.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_SPI STM32L1xx SPI Support
+ * @details The SPI driver supports the STM32L1xx SPI peripherals using DMA
+ *          channels for maximum performance.
+ *
+ * @section stm32l1xx_spi_1 Supported HW resources
+ * - SPI1.
+ * - SPI2.
+ * - SPI3 (where present).
+ * - DMA1.
+ * - DMA2 (where present).
+ * .
+ * @section stm32l1xx_spi_2 STM32L1xx SPI driver implementation features
+ * - Clock stop for reduced power usage when the driver is in stop state.
+ * - Each SPI can be independently enabled and programmed. Unused
+ *   peripherals are left in low power mode.
+ * - Programmable interrupt priority levels for each SPI.
+ * - DMA is used for receiving and transmitting.
+ * - Programmable DMA bus priority for each DMA channel.
+ * - Programmable DMA interrupt priority for each DMA channel.
+ * - Programmable DMA error hook.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_UART STM32L1xx UART Support
+ * @details The UART driver supports the STM32L1xx USART peripherals using DMA
+ *          channels for maximum performance.
+ *
+ * @section stm32l1xx_uart_1 Supported HW resources
+ * The UART driver can support any of the following hardware resources:
+ * - USART1.
+ * - USART2.
+ * - USART3 (where present).
+ * - DMA1.
+ * .
+ * @section stm32l1xx_uart_2 STM32L1xx UART driver implementation features
+ * - Clock stop for reduced power usage when the driver is in stop state.
+ * - Each UART/USART can be independently enabled and programmed. Unused
+ *   peripherals are left in low power mode.
+ * - Programmable interrupt priority levels for each UART/USART.
+ * - DMA is used for receiving and transmitting.
+ * - Programmable DMA bus priority for each DMA channel.
+ * - Programmable DMA interrupt priority for each DMA channel.
+ * - Programmable DMA error hook.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_USB STM32L1xx USB Support
+ * @details The USB driver supports the STM32L1xx USB peripheral.
+ *
+ * @section stm32l1xx_usb_1 Supported HW resources
+ * The USB driver can support any of the following hardware resources:
+ * - USB.
+ * .
+ * @section stm32l1xx_usb_2 STM32L1xx USB driver implementation features
+ * - Clock stop for reduced power usage when the driver is in stop state.
+ * - Programmable interrupt priority levels.
+ * - Each endpoint programmable in Control, Bulk and Interrupt modes.
+ * .
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_PLATFORM_DRIVERS STM32L1xx Platform Drivers
+ * @details Platform support drivers. Platform drivers do not implement HAL
+ *          standard driver templates, their role is to support platform
+ *          specific functionalities.
+ *
+ * @ingroup STM32L1xx_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_DMA STM32L1xx DMA Support
+ * @details This DMA helper driver is used by the other drivers in order to
+ *          access the shared DMA resources in a consistent way.
+ *
+ * @section stm32l1xx_dma_1 Supported HW resources
+ * The DMA driver can support any of the following hardware resources:
+ * - DMA1.
+ * .
+ * @section stm32l1xx_dma_2 STM32L1xx DMA driver implementation features
+ * - Exports helper functions/macros to the other drivers that share the
+ *   DMA resource.
+ * - Automatic DMA clock stop when not in use by any driver.
+ * - DMA streams and interrupt vectors sharing among multiple drivers.
+ * .
+ * @ingroup STM32L1xx_PLATFORM_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_ISR STM32L1xx ISR Support
+ * @details This ISR helper driver is used by the other drivers in order to
+ *          map ISR names to physical vector names.
+ *
+ * @ingroup STM32L1xx_PLATFORM_DRIVERS
+ */
+
+/**
+ * @defgroup STM32L1xx_RCC STM32L1xx RCC Support
+ * @details This RCC helper driver is used by the other drivers in order to
+ *          access the shared RCC resources in a consistent way.
+ *
+ * @section stm32f1xx_rcc_1 Supported HW resources
+ * - RCC.
+ * .
+ * @section stm32l1xx_rcc_2 STM32L1xx RCC driver implementation features
+ * - Peripherals reset.
+ * - Peripherals clock enable.
+ * - Peripherals clock disable.
+ * .
+ * @ingroup STM32L1xx_PLATFORM_DRIVERS
+ */

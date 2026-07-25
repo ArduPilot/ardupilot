@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema elementFormDefault="qualified" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+
+
+    <xsd:element name="code">
+    	<xsd:complexType>
+    		<xsd:sequence>
+    			<xsd:element name="snippets" maxOccurs="1"
+    				minOccurs="1">
+                    <xsd:complexType>
+                    	<xsd:sequence>
+                    		<xsd:element name="snippet"
+                    			maxOccurs="unbounded" minOccurs="1">
+                                <xsd:complexType>
+                                	<xsd:sequence>
+                                		<xsd:element name="type"
+                                			maxOccurs="1" minOccurs="1">
+                                			<xsd:simpleType>
+                                				<xsd:restriction
+                                					base="xsd:string">
+                                					<xsd:enumeration
+                                						value="thread_body">
+                                					</xsd:enumeration>
+                                					<xsd:enumeration
+                                						value="function_body">
+                                					</xsd:enumeration>
+                                					<xsd:whiteSpace
+                                						value="collapse">
+                                					</xsd:whiteSpace>
+                                				</xsd:restriction>
+                                			</xsd:simpleType>
+                                		</xsd:element>
+                                		<xsd:element name="name"
+                                			maxOccurs="1" minOccurs="1">
+                                			<xsd:simpleType>
+                                				<xsd:restriction
+                                					base="xsd:string">
+                                					<xsd:pattern
+                                						value="[\w\d\s_]+">
+                                					</xsd:pattern>
+                                					<xsd:whiteSpace
+                                						value="collapse">
+                                					</xsd:whiteSpace>
+                                				</xsd:restriction>
+                                			</xsd:simpleType>
+                                		</xsd:element>
+                                		<xsd:element name="text"
+                                			type="xsd:string" maxOccurs="1" minOccurs="1">
+                                		</xsd:element>
+                                	</xsd:sequence>
+                                </xsd:complexType>
+                    		</xsd:element>
+                    	</xsd:sequence>
+                    </xsd:complexType>
+    			</xsd:element>
+    		</xsd:sequence>
+    	</xsd:complexType>
+    </xsd:element>
+</xsd:schema>

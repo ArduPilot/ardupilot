@@ -1,0 +1,15 @@
+#
+# GNSS low priority auxiliary info.
+# Unknown DOP parameters should be set to NAN.
+#
+
+float16 gdop
+float16 pdop
+float16 hdop
+float16 vdop
+float16 tdop
+float16 ndop
+float16 edop
+
+uint7 sats_visible                    # All visible sats of all available GNSS (e.g. GPS, GLONASS, etc)
+uint6 sats_used                       # All used sats of all available GNSS

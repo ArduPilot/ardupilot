@@ -1,0 +1,12 @@
+; soapcpp2.def : Declares the module parameters for a gsoap server DLL.
+
+EXPORTS
+    ; we must export what the gsoap isapi extension needs for loading us and working with us.
+	soap_initialize	PRIVATE
+	soap_serve  PRIVATE
+	soap_delete PRIVATE
+	soap_done	PRIVATE
+	soap_free	PRIVATE
+	soap_end	PRIVATE
+	soap_register_plugin_arg PRIVATE
+	soap_lookup_plugin PRIVATE

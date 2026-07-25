@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+
+
+def options(opt):
+    opt.load('python')
+    opt.load('compiler_cxx')
+    opt.load('genpybind')
+
+
+def configure(cfg):
+    cfg.load('python')
+    cfg.load('compiler_cxx')
+    cfg.check_python_version((2, 7))
+    cfg.check_python_headers()
+    cfg.load('genpybind')
+
+    cfg.check(compiler='cxx',
+              features='cxx pyext',
+              uselib_store='PYBIND11GENPYBIND_EXAMPLE',
+              mandatory=True,
+              header_name='pybind11/pybind11.h')
+
+
+def build(bld):
+    bld(target='example_inc',
+        export_includes='.')
+
+    bld.shlib(target='example',
+              source='example.cpp',
+              features='use',
+              use='example_inc')
+
+    bld(target='pyexample',
+        source='example.h',
+        genpybind_tags='genpybind_example',
+        features='use genpybind cxx cxxshlib pyext',
+        use=['PYBIND11GENPYBIND_EXAMPLE', 'example'])

@@ -1,0 +1,17 @@
+# This file provide reference settings for the Pymavlink code conventions
+# There are plug-ins available for nearly every text editor to automatically
+# respect the conventions contained within this file.
+#
+# Please see editorconfig.org for complete information.
+#
+# If you find errors in this file, please send a pull-request with a fix.
+#
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = false # These are the correct rules for Pymavlink coding standards, but fixing up old files causes git spam
+insert_final_newline = true

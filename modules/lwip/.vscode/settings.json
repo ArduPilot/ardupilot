@@ -1,0 +1,10 @@
+{
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "files.trimTrailingWhitespace": true,
+    "files.associations": {
+        "*.h": "c"
+    }
+}

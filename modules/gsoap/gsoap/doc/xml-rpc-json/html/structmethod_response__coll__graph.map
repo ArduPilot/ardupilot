@@ -1,0 +1,6 @@
+<map id="methodResponse" name="methodResponse">
+<area shape="rect" id="node2" href="$structparams.html" title="Represents the &lt;params&gt; of a &lt;methodCall&gt; request and response. " alt="" coords="4,206,69,234"/>
+<area shape="rect" id="node4" href="$structparam.html" title="Represents a &lt;param&gt; of the &lt;params&gt; of a &lt;methodCall&gt;. " alt="" coords="16,99,75,127"/>
+<area shape="rect" id="node6" href="$structvalue.html" title="value" alt="" coords="53,6,105,34"/>
+<area shape="rect" id="node8" href="$structfault.html" title="Represents the &lt;fault&gt; container element with a value. " alt="" coords="93,153,139,181"/>
+</map>

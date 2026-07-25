@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:simpleType name="identifierType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="[_\w][\w\d_]*"></xs:pattern>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:complexType name="NamedItem">
+    <xs:annotation>
+      <xs:documentation>
+        >Generic item with optional name and brief
+        description
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="name" type="identifierType" use="required">
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="DocumentedItem">
+    <xs:annotation>
+      <xs:documentation>>Something that can have a detailed description
+        attached
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="NamedItem">
+        <xs:sequence>
+          <xs:element name="brief" maxOccurs="1"
+            minOccurs="0">
+            <xs:annotation>
+              <xs:documentation>
+                Brief description of the object.
+              </xs:documentation>
+            </xs:annotation>
+            <xs:simpleType>
+              <xs:restriction base="xs:string">
+                <xs:minLength value="0"></xs:minLength>
+                <xs:maxLength value="72"></xs:maxLength>
+                <xs:whiteSpace value="collapse"></xs:whiteSpace>
+              </xs:restriction>
+            </xs:simpleType>
+          </xs:element>
+          <xs:element name="details" maxOccurs="1"
+            minOccurs="0" type="richTextType">
+            <xs:annotation>
+              <xs:documentation>
+                Object documentation as text, does not
+                preserve formatting.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="pre" maxOccurs="unbounded"
+            minOccurs="0" type="richTextType">
+            <xs:annotation>
+              <xs:documentation>
+                Object pre-requisites as text, does not
+                preserve formatting.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="post" maxOccurs="unbounded"
+            minOccurs="0" type="richTextType">
+            <xs:annotation>
+              <xs:documentation>
+                Object post-requisites as text, does not
+                preserve formatting.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+          <xs:element name="note" maxOccurs="unbounded"
+            minOccurs="0" type="richTextType">
+            <xs:annotation>
+              <xs:documentation>
+                Object note as text, does not preserve
+                formatting.
+              </xs:documentation>
+            </xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="richTextType" mixed="true">
+    <xs:choice maxOccurs="unbounded" minOccurs="0">
+      <xs:element name="br" type="xs:string" maxOccurs="1"
+        minOccurs="1"></xs:element>
+      <xs:element name="verbatim" type="xs:string"
+        maxOccurs="1" minOccurs="1"></xs:element>
+    </xs:choice>
+  </xs:complexType>
+</xs:schema>

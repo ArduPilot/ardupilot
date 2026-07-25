@@ -1,0 +1,32 @@
+#! /usr/bin/env python
+
+def configure(conf):
+	try:
+		conf.check_cfg(package='gtk+-3.0', uselib_store='GTK3', args='--cflags --libs')
+		conf.load('glib2')
+	except conf.errors.ConfigurationError:
+		pass
+	else:
+		conf.env.build_gtk3 = True
+
+def build(bld):
+	if not bld.env.build_gtk3:
+		return
+
+	bld (
+		features = 'c glib2',
+		use      = 'GLIB GIO GOBJECT',
+		source   = 'test.gresource.xml',
+		target   = 'foo'
+	)
+
+	bld (
+		features         = 'c cprogram glib2',
+		use              = 'GTK3 foo',
+		packages         = 'gtk+-3.0',
+		source           = 'test.vala',
+		vala_resources   = 'test.gresource.xml', # adds --gresources /path/to/test.gresources.xml
+		target           = 'compositewidget',
+		vala_target_glib = '2.38'
+	)
+

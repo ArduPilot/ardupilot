@@ -1,0 +1,35 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+
+	<head>
+		<meta http-equiv="content-type" content="text/html;charset=ISO-8859-1">
+		<meta name="generator" content="Adobe GoLive 6">
+		<title>Simple Calculator Web Service Using HTTP POST multipart/form-data</title>
+	</head>
+
+	<body bgcolor="#ffffff">
+		<form action="form" method="post" name="Calc" enctype="multipart/form-data">
+		<!-- The first <input> form element must be a hidden type with
+		     the SOAP/XML request message as a value attribute that
+		     triggers the server's operation (f:form1 in this example).
+		     The other form values are passed as MIME attachments to
+		     the operation. The operation returns a SOAP/XML response
+		     message, unless its defined as a asynchronous one-way
+		     message. In that case, code can be added to return a
+		     custom (e.g. HTML) response.
+		-->
+			<input type="hidden" name="SOAP" value="<s:Envelope xmlns:s='http://schemas.xmlsoap.org/soap/envelope/'><s:Body><f:form1 xmlns:f='urn:form'/></s:Body></s:Envelope>">
+			<input type="text" name="a" value="1" size="8" tabindex="1">
+			<select name="o" size="1" tabindex="4">
+				<option value="a">+</option>
+				<option value="s">-</option>
+				<option value="m">*</option>
+				<option value="d">/</option>
+			</select>
+			<input type="text" name="b" value="2" size="8" tabindex="3">=
+			<input type="submit" name="submit" tabindex="4">
+		</form>
+	</body>
+
+</html>

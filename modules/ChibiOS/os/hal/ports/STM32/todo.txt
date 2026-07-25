@@ -1,0 +1,9 @@
+- The varios oscillator .inc files in RCC always report the base frequency
+  regardless if the oscillator is enabled or not, the macros need to
+  be aligned to the following standard:
+    STM32_OSCXXCLK_BASE	    - Frequency of the base oscillator before any
+                              programmable divider. It reports the oscillator
+                              frequency regardless of the enable state.
+    STM32_OSCXXCLK          - Frequency of the oscillator after dividers,
+                              zero if the oscillator is disabled. Only
+                              meaningful in static clocks mode.

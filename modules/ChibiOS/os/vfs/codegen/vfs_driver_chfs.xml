@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- C module definition -->
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="drvchfs" descr="VFS ChibiFS Driver"
+  check="VFS_CFG_ENABLE_DRV_CHFS == TRUE" sourcepath="drivers/chfs"
+  headerpath="drivers/chfs" editcode="true">
+  <imports>
+    <import>vfs_nodes.xml</import>
+    <import>vfs_drivers.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_sequential_stream.h</include>
+    </includes>
+    <configs>
+      <config name="DRV_CFG_CHFS_DIR_NODES_NUM" default="2">
+        <brief>Number of directory nodes pre-allocated in the pool.</brief>
+        <assert invalid="$N &lt; 1" />
+      </config>
+      <config name="DRV_CFG_CHFS_FILE_NODES_NUM" default="2">
+        <brief>Number of file nodes pre-allocated in the pool.</brief>
+        <assert invalid="$N &lt; 1" />
+      </config>
+      <config name="DRV_CFG_CHFS_CACHE_BUFFERS_NUM" default="2">
+        <brief>Number of file nodes pre-allocated in the pool.</brief>
+        <assert invalid="$N &lt; 2" />
+      </config>
+      <verbatim><![CDATA[
+#if CH_CFG_USE_OBJ_CACHES != TRUE
+#error "VFS CHFS driver requires CH_CFG_USE_OBJ_CACHES"
+#endif]]></verbatim>
+    </configs>
+    <types>
+      <typedef name="chfs_config_t">
+        <brief>Type of a ChibiFS configuration structure.</brief>
+        <basetype ctype="struct chfs_config" />
+      </typedef>
+      <struct name="chfs_config">
+      	<brief>Structure representing a ChibiFS configuration.</brief>
+      	<fields>
+          <field name="blkdev" ctype="const void$I*">
+            <brief>Block device associated to this ChibiFS instance.</brief>
+          </field>
+      </fields>
+      </struct>
+      <class type="regular" name="vfs_chfs_driver" namespace="chfsdrv"
+        ancestorname="vfs_driver" descr="VFS ChibiFS driver">
+        <fields>
+          <field name="mounted" ctype="bool">
+            <brief>ChibiFS driver mounted flag.</brief>
+          </field>
+          <field name="cfgp" ctype="const struct chfs_config$I*">
+            <brief>Associated ChibiFS configuration.</brief>
+          </field>
+          <field name="cwd" ctype="struct vfs_chfs_dir_node$I*">
+            <brief>Current working directory node.</brief>
+          </field>
+          <field name="path_cwd" ctype="char$I$N[VFS_CFG_PATHLEN_MAX + 1]">
+            <brief>Current working directory path.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <param name="cfgp" ctype="const chfs_config_t *" dir="in"><![CDATA[Pointer
+              to @p chfs_config_t configuration.]]></param>
+            <implementation><![CDATA[
+self->cfgp = cfgp;
+self->cwd  = NULL;
+self->path_cwd[0] = '\0';]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <regular>
+            <method name="chfsdrvMount" ctype="msg_t">
+              <brief>Mounts a ChibiFS volume.</brief>
+              <return>The operation result.</return>
+              <api />
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method name="chfsdrvUnmount" ctype="msg_t">
+              <brief>Unmounts a ChibiFS volume.</brief>
+              <return>The operation result.</return>
+              <api />
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method name="chfsdrvFormat" ctype="msg_t">
+              <brief>Formats a ChibiFS volume.</brief>
+              <return>The operation result.</return>
+              <api />
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+          </regular>
+          <override>
+            <method shortname="setcwd">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="getcwd">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="stat">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="opendir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="openfile">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="unlink">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="rename">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="mkdir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="rmdir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+      
+    </types>
+    <variables>
+      <variable name="vfs_chfs_driver_static"
+        ctype="struct vfs_chfs_driver_static_struct">
+        <brief>Global state of @p vfs_chfs_driver_c</brief>
+      </variable>
+    </variables>
+    <functions>
+      <function name="__drv_chfs_init" ctype="void">
+        <brief>Module initialization.</brief>
+        <init />
+        <implementation><![CDATA[
+
+/* Initializing pools.*/
+chPoolObjectInit(&vfs_chfs_driver_static.dir_nodes_pool,
+                 sizeof (vfs_chfs_dir_node_c),
+                 chCoreAllocAlignedI);
+chPoolObjectInit(&vfs_chfs_driver_static.file_nodes_pool,
+                 sizeof (vfs_chfs_file_node_c),
+                 chCoreAllocAlignedI);
+
+/* Preloading pools.*/
+chPoolLoadArray(&vfs_chfs_driver_static.dir_nodes_pool,
+                &vfs_chfs_driver_static.dir_nodes[0],
+                DRV_CFG_CHFS_DIR_NODES_NUM);
+chPoolLoadArray(&vfs_chfs_driver_static.file_nodes_pool,
+                &vfs_chfs_driver_static.file_nodes[0],
+                DRV_CFG_CHFS_FILE_NODES_NUM);
+
+/* Initializing cache.*/
+chCacheObjectInit(&vfs_chfs_driver_static.cache,
+                  sizeof (vfs_chfs_driver_static.cache_headers) / sizeof (vfs_chfs_driver_static.cache_headers[0]),
+                  &vfs_chfs_driver_static.cache_headers[0],
+                  sizeof (vfs_chfs_driver_static.cache_objects) / sizeof (vfs_chfs_driver_static.cache_objects[0]),
+                  sizeof (oc_object_t),
+                  &vfs_chfs_driver_static.cache_objects[0],
+                  buf_read,
+                  buf_write);]]></implementation>
+      </function>
+    </functions>
+  </public>
+  <private>
+    <includes_always>
+      <include style="regular">vfs.h</include>
+    </includes_always>
+    <definitions>
+      <verbatim><![CDATA[
+#define b2(x)       (   (x) | (   (x) >> 1))
+#define b4(x)       ( b2(x) | ( b2(x) >> 2))
+#define b8(x)       ( b4(x) | ( b4(x) >> 4))
+#define b16(x)      ( b8(x) | ( b8(x) >> 8))
+#define b32(x)      (b16(x) | (b16(x) >>16))
+#define np2(x)      (b32(x-1) + 1)]]></verbatim>
+    </definitions>
+    <types>
+      <class type="regular" name="vfs_chfs_dir_node" namespace="chfsdir"
+        ancestorname="vfs_directory_node" descr="VFS ChibiFS directory node">
+        <fields>
+        </fields>
+        <methods>
+          <objinit callsuper="false">
+            <param name="driver" ctype="vfs_driver_c *" dir="in">Pointer to
+ the controlling driver.</param>
+            <param name="mode" ctype="vfs_mode_t" dir="in">Node mode flags.</param>
+            <implementation><![CDATA[
+self = __vfsdir_objinit_impl(ip, vmt, (vfs_driver_c *)driver, mode);]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="stat">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="next">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="first">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+      <class type="regular" name="vfs_chfs_file_node" namespace="chfsfile"
+        ancestorname="vfs_file_node" descr="VFS ChibiFS file node">
+        <implements>
+          <if name="sequential_stream">
+            <method shortname="write">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="put">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="get">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+          </if>
+        </implements>
+        <fields>
+        </fields>
+        <methods>
+          <objinit callsuper="false">
+            <param name="driver" ctype="vfs_driver_c *" dir="in">Pointer to
+ the controlling driver.</param>
+            <param name="mode" ctype="vfs_mode_t" dir="in">Node mode flags.
+            </param>
+            <implementation><![CDATA[
+self = __vfsfile_objinit_impl(ip, vmt, (vfs_driver_c *)driver, mode);]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="stat">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="write">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="setpos">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="getpos">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="getstream">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+      <struct name="vfs_chfs_driver_static_struct">
+        <brief>Global state of @p vfs_chfs_driver_c.</brief>
+        <fields>
+          <field name="info_nodes_pool" ctype="memory_pool_t">
+            <brief>Pool of file info objects.</brief>
+          </field>
+          <field name="dir_nodes_pool" ctype="memory_pool_t">
+            <brief>Pool of directory nodes.</brief>
+          </field>
+          <field name="file_nodes_pool" ctype="memory_pool_t">
+            <brief>Pool of file nodes.</brief>
+          </field>
+          <field name="dir_nodes"
+            ctype="vfs_chfs_dir_node_c$I$N[DRV_CFG_CHFS_DIR_NODES_NUM]">
+            <brief>Static storage of directory nodes.</brief>
+          </field>
+          <field name="file_nodes"
+            ctype="vfs_chfs_file_node_c$I$N[DRV_CFG_CHFS_FILE_NODES_NUM]">
+            <brief>Static storage of file nodes.</brief>
+          </field>
+          <field name="cache"
+            ctype="objects_cache_t$I$N">
+            <brief>Unified buffers cache.</brief>
+          </field>
+          <field name="cache_headers"
+            ctype="oc_hash_element_t$I$N[np2(DRV_CFG_CHFS_CACHE_BUFFERS_NUM * 2)]">
+            <brief>Array of hash table headers.</brief>
+          </field>
+          <field name="cache_objects"
+            ctype="oc_object_t$I$N[DRV_CFG_CHFS_CACHE_BUFFERS_NUM]">
+            <brief>Array of cached objects.</brief>
+          </field>
+        </fields>
+      </struct>
+    </types>
+    <functions>
+      <function name="buf_read" ctype="bool">
+        <param name="ocp" ctype="objects_cache_t *"></param>
+        <param name="objp" ctype="oc_object_t *"></param>
+        <param name="async" ctype="bool"></param>
+        <implementation><![CDATA[
+
+objp->obj_flags &= ~OC_FLAG_NOTSYNC;
+
+if (async) {
+  chCacheReleaseObject(ocp, objp);
+}
+
+return false;]]></implementation>
+      </function>
+      <function name="buf_write" ctype="bool">
+        <param name="ocp" ctype="objects_cache_t *"></param>
+        <param name="objp" ctype="oc_object_t *"></param>
+        <param name="async" ctype="bool"></param>
+        <implementation><![CDATA[
+
+if (async) {
+  chCacheReleaseObject(ocp, objp);
+}
+
+return false;]]></implementation>
+      </function>
+    </functions>
+  </private>
+</module>

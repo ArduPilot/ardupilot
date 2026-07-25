@@ -1,0 +1,929 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- STM32G4xx board Template -->
+<board
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/boards/stm32g4xx_board.xsd">
+  <configuration_settings>
+  	<templates_path>resources/gencfg/processors/boards/stm32g4xx/templates</templates_path>
+  	<output_path>..</output_path>
+    <hal_version>5.0.x</hal_version>
+  </configuration_settings>
+  <board_name>STMicroelectronics STM32G747RE-Discovery-DPOW1</board_name>
+  <board_id>ST_STM32G474RE_DISCOVERY_DPOW1</board_id>
+  <board_functions></board_functions>
+  <subtype>STM32G474xx</subtype>
+  <clocks HSEFrequency="0" HSEBypass="false" LSEFrequency="0"
+  	LSEBypass="false" VDD="300" LSEDrive="3 High Drive (default)" ></clocks>
+  <ports>
+    <GPIOA>
+      <pin0
+        ID="BUCK_GREEN_SENSE"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin1
+        ID="BUCKBOOST_VIN"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin2
+        ID="BUBKBOOST_I_IN_AVG"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin3
+        ID="BUCKBOOST_VOUT"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" ></pin6>
+      <pin7
+        ID="BUCK_RED_SENSE"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin8
+        ID="BUCK_BLUE_DRIVE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="13" />
+      <pin9
+        ID="USBPD_DBCC1"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="Low"
+        Mode="Input"
+        Alternate="0" />
+      <pin10
+        ID="USBPD_DBCC2"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="Low"
+        Mode="Input"
+        Alternate="0" />
+      <pin11
+        ID="USBPD_FS_DM"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin12
+        ID="USBPD_FS_DP"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin13
+        ID="SWDIO"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="PullUp"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="0" />
+      <pin14
+        ID="SWCLK"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="PullDown"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="0" />
+      <pin15
+        ID="LED_DOWN_BLUE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+    </GPIOA>
+    <GPIOB>
+      <pin0
+        ID="BUCK_BLUE_SENSE"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin1
+        ID="LED_LEFT_ORANGE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+      <pin2
+        ID="JOY_DOWN"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="Low"
+        Mode="Input"
+        Alternate="0" />
+      <pin3
+        ID="TRACESWO"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="0" />
+      <pin4
+        ID="USBPD_CC2"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin5
+        ID="LED_UP_RED"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+      <pin6
+        ID="USBPD_CC1"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="12" />
+      <pin7
+        ID="LED_RIGHT_GREEN"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+      <pin8
+        ID="BOOT0"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin10
+        ID="JOY_UP"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="Low"
+        Mode="Input"
+        Alternate="0" />
+      <pin11
+        ID="BUBKBOOST_I_IN_SENSE"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin12
+        ID="BUCKBOOST_P1_DRIVE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="13" />
+      <pin13
+        ID="BUCKBOOST_N1_DRIVE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="13" />
+      <pin14
+        ID="BUCKBOOST_N2_DRIVE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="13" />
+      <pin15
+        ID="BUCKBOOST_P2_DRIVE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="13" />
+    </GPIOB>
+    <GPIOC>
+      <pin0
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin1
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin2
+        ID="USBPD_VIN"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin3
+        ID="BUCKBOOST_USBPD_EN"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+      <pin4
+        ID="JOY_LEFT"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="Low"
+        Mode="Input"
+        Alternate="0" ></pin4>
+      <pin5
+        ID="JOY_RIGHT"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="Low"
+        Mode="Input"
+        Alternate="0" />
+      <pin6
+        ID="BUCK_RED_DRIVE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="13" />
+      <pin7
+        ID="RC_SINUS"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="13" ></pin7>
+      <pin8
+        ID="BUCK_GREEN_DRIVE"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="3" ></pin8>
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin10
+        ID="USART3_TX"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="7" />
+      <pin11
+        ID="USART3_RX"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Alternate"
+        Alternate="7" />
+      <pin12
+        ID="P5V_USBPD_1A_PROTECT"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+      <pin13
+        ID="JOY_SELECT"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="PullUp"
+        Level="Low"
+        Mode="Input"
+        Alternate="0" />
+      <pin14
+        ID="BUCKBOOST_LOAD_50"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+      <pin15
+        ID="BUCKBOOST_LOAD_100"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+    </GPIOC>
+    <GPIOD>
+      <pin0
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin1
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin2
+        ID="USBPD_550mA_PROTECT"
+        Type="PushPull"
+        Speed="Maximum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Output"
+        Alternate="0" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin10
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin14
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+    </GPIOD>
+    <GPIOE>
+      <pin0
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin1
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin10
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin14
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+    </GPIOE>
+    <GPIOF>
+      <pin0
+        ID="OSC_IN"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin1
+        ID="OSC_OUT"
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin10
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin14
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+    </GPIOF>
+    <GPIOG>
+      <pin0
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin1
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin2
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin3
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin4
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin5
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin6
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin7
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin8
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin9
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin10
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin11
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin12
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin13
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin14
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+      <pin15
+        ID=""
+        Type="PushPull"
+        Speed="Minimum"
+        Resistor="Floating"
+        Level="Low"
+        Mode="Analog"
+        Alternate="0" />
+    </GPIOG>
+  </ports>
+</board>

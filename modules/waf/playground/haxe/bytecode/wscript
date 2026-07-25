@@ -1,0 +1,8 @@
+top = '.'
+out = 'build'
+
+def configure(ctx):
+    ctx.recurse('src')
+
+def build(ctx):
+    ctx.recurse('src')

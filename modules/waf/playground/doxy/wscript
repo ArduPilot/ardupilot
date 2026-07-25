@@ -1,0 +1,47 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2008-2012 (ita)
+
+from waflib import Build, TaskGen
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx')
+
+def configure(conf):
+	conf.load('compiler_cxx doxygen')
+	if not conf.env.DOXYGEN:
+		conf.fatal('doxygen is required, install it')
+
+# NOTES:
+#
+# 1. The test.conf file has "OUTPUT_DIRECTORY" commented
+#
+# 2. Doxygen parameters may be passed using pars attribute
+#       e.g. pars={'EXCLUDE_PATTERNS': '*.foo'}
+#
+# 3. if you want to build the docs in another command, use something like:
+#    if bld.cmd == 'doxy': in the build
+#
+
+def build(bld):
+	# if the documentation is to packed, simply set doxy_tar to the filename
+	bld(
+		features='doxygen',
+		doxyfile='test.conf',
+		install_path='${PREFIX}/doc')
+
+	# and additional targets
+	bld(features='cxx cxxshlib', source='subdir/c.cpp', target='somelib')
+
+# example for the NOTES point #3
+from waflib import Build
+class doxy(Build.BuildContext):
+	fun = 'build'
+	cmd = 'doxy'
+

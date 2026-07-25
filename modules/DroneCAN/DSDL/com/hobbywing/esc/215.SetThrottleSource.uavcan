@@ -1,0 +1,9 @@
+OVERRIDE_SIGNATURE 0x0c248faaefe5e29a
+
+uint8 SOURCE_CAN_DIGITAL = 0
+uint8 SOURCE_PWM = 1
+uint8 source
+
+---
+
+uint8 source

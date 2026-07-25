@@ -1,0 +1,224 @@
+stdsoap2_cpp.o stdsoap2_cpp.o: stdsoap2_cpp.cpp stdsoap2.h ../config.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/string \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/c++config.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/os_defines.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stringfwd.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/char_traits.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/cstring \
+  /usr/include/gcc/darwin/3.1/g++-v3/cstddef \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/fpos.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/c++io.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/cstdio \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/gthr.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/gthr-default.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/cwchar \
+  /usr/include/gcc/darwin/3.1/g++-v3/ctime \
+  /usr/include/gcc/darwin/3.1/g++-v3/memory \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_algobase.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/climits \
+  /usr/include/gcc/darwin/3.1/g++-v3/cstdlib \
+  /usr/include/gcc/darwin/3.1/g++-v3/new \
+  /usr/include/gcc/darwin/3.1/g++-v3/exception \
+  /usr/include/gcc/darwin/3.1/g++-v3/iosfwd \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/functexcept.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/exception_defines.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_pair.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/type_traits.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_iterator_base_types.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_iterator_base_funcs.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/concept_check.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_iterator.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_alloc.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/cassert \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_threads.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_construct.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_uninitialized.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_raw_storage_iter.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_function.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/basic_string.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/atomicity.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/algorithm \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_algo.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_heap.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/stl_tempbuf.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/basic_string.tcc \
+  /usr/include/gcc/darwin/3.1/g++-v3/iostream \
+  /usr/include/gcc/darwin/3.1/g++-v3/ostream \
+  /usr/include/gcc/darwin/3.1/g++-v3/ios \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/localefwd.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/c++locale.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/clocale \
+  /usr/include/gcc/darwin/3.1/g++-v3/cctype \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/ios_base.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/streambuf \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/streambuf.tcc \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/basic_ios.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/streambuf_iterator.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/locale_facets.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/cwctype \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/ctype_base.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/ctype_inline.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/codecvt.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/messages_members.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/basic_ios.tcc \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/ostream.tcc \
+  /usr/include/gcc/darwin/3.1/g++-v3/locale \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/locale_facets.tcc \
+  /usr/include/gcc/darwin/3.1/g++-v3/cerrno \
+  /usr/include/gcc/darwin/3.1/g++-v3/cmath \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/cmath.tcc \
+  /usr/include/gcc/darwin/3.1/g++-v3/limits \
+  /usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/cpu_limits.h \
+  /usr/include/gcc/darwin/3.1/g++-v3/typeinfo \
+  /usr/include/gcc/darwin/3.1/g++-v3/istream \
+  /usr/include/gcc/darwin/3.1/g++-v3/bits/istream.tcc
+
+stdsoap2.h:
+
+../config.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/string:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/c++config.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/os_defines.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stringfwd.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/char_traits.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cstring:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cstddef:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/fpos.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/c++io.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cstdio:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/gthr.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/gthr-default.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cwchar:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ctime:
+
+/usr/include/gcc/darwin/3.1/g++-v3/memory:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_algobase.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/climits:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cstdlib:
+
+/usr/include/gcc/darwin/3.1/g++-v3/new:
+
+/usr/include/gcc/darwin/3.1/g++-v3/exception:
+
+/usr/include/gcc/darwin/3.1/g++-v3/iosfwd:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/functexcept.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/exception_defines.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_pair.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/type_traits.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_iterator_base_types.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_iterator_base_funcs.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/concept_check.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_iterator.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_alloc.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cassert:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_threads.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_construct.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_uninitialized.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_raw_storage_iter.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_function.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/basic_string.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/atomicity.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/algorithm:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_algo.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_heap.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/stl_tempbuf.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/basic_string.tcc:
+
+/usr/include/gcc/darwin/3.1/g++-v3/iostream:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ostream:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ios:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/localefwd.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/c++locale.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/clocale:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cctype:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/ios_base.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/streambuf:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/streambuf.tcc:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/basic_ios.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/streambuf_iterator.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/locale_facets.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cwctype:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/ctype_base.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/ctype_inline.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/codecvt.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/messages_members.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/basic_ios.tcc:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/ostream.tcc:
+
+/usr/include/gcc/darwin/3.1/g++-v3/locale:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/locale_facets.tcc:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cerrno:
+
+/usr/include/gcc/darwin/3.1/g++-v3/cmath:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/cmath.tcc:
+
+/usr/include/gcc/darwin/3.1/g++-v3/limits:
+
+/usr/include/gcc/darwin/3.1/g++-v3/ppc-darwin/bits/cpu_limits.h:
+
+/usr/include/gcc/darwin/3.1/g++-v3/typeinfo:
+
+/usr/include/gcc/darwin/3.1/g++-v3/istream:
+
+/usr/include/gcc/darwin/3.1/g++-v3/bits/istream.tcc:

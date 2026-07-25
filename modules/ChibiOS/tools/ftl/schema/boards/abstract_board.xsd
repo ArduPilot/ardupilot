@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:include schemaLocation="../common/doc.xsd" />
+  <xs:include schemaLocation="../common/config_settings.xsd" />
+
+  <xs:complexType name="AbstractBoardType" abstract="true">
+    <xs:sequence>
+    	<xs:element name="configuration_settings"
+    		type="ConfigurationSettingsType" maxOccurs="1" minOccurs="1">
+    	</xs:element>
+    	<xs:element name="board_name" maxOccurs="1" minOccurs="1">
+    		<xs:simpleType>
+    			<xs:restriction base="xs:string">
+    				<xs:whiteSpace value="collapse"></xs:whiteSpace>
+    			</xs:restriction>
+    		</xs:simpleType>
+    	</xs:element>
+    	<xs:element name="board_id" maxOccurs="1" minOccurs="1">
+    		<xs:simpleType>
+    			<xs:restriction base="xs:string">
+    				<xs:pattern value="\w[\w\d_]*"></xs:pattern>
+    				<xs:whiteSpace value="collapse"></xs:whiteSpace>
+    			</xs:restriction>
+    		</xs:simpleType>
+    	</xs:element>
+    	<xs:element name="board_functions" maxOccurs="1"
+    		minOccurs="1">
+    		<xs:complexType>
+    			<xs:sequence>
+    				<xs:element name="__early_init" type="xs:string"
+    					maxOccurs="1" minOccurs="0">
+    				</xs:element>
+    				<xs:element name="boardInit" type="xs:string"
+    					maxOccurs="1" minOccurs="0">
+    				</xs:element>
+
+    				<xs:element name="sdc_lld_is_card_inserted"
+    					type="xs:string" maxOccurs="1" minOccurs="0">
+    				</xs:element>
+    				<xs:element name="sdc_lld_is_write_protected"
+    					type="xs:string" maxOccurs="1" minOccurs="0">
+    				</xs:element>
+    				<xs:element name="mmc_lld_is_card_inserted"
+    					type="xs:string" maxOccurs="1" minOccurs="0">
+    				</xs:element>
+    				<xs:element name="mmc_lld_is_write_protected"
+    					type="xs:string" maxOccurs="1" minOccurs="0">
+    				</xs:element>
+    			</xs:sequence>
+    		</xs:complexType>
+    	</xs:element>
+    	<xs:element name="headers" type="headersType" maxOccurs="1"
+    		minOccurs="0">
+    	</xs:element>
+    	<xs:element name="ethernet_phy" type="EthernetPHYType"
+    		maxOccurs="1" minOccurs="0">
+    	</xs:element>
+
+    	<xs:element name="usb_phy" type="USBPHYType" maxOccurs="1"
+    		minOccurs="0">
+    	</xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="EthernetPHYType">
+    <xs:sequence>
+      <xs:element name="identifier" maxOccurs="1" minOccurs="1">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:whiteSpace value="collapse"></xs:whiteSpace>
+            <xs:pattern value="MII_[\w\d_]+"></xs:pattern>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element name="bus_type" maxOccurs="1" minOccurs="1">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:whiteSpace value="collapse"></xs:whiteSpace>
+            <xs:enumeration value="RMII"></xs:enumeration>
+            <xs:enumeration value="MII"></xs:enumeration>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+
+  <xs:complexType name="headersType">
+     <xs:sequence>
+        <xs:element name="header" maxOccurs="unbounded" minOccurs="0">
+           <xs:simpleType>
+              <xs:restriction base="xs:string">
+                 <xs:whiteSpace value="collapse"></xs:whiteSpace>
+                 <xs:minLength value="3"></xs:minLength>
+              </xs:restriction>
+           </xs:simpleType>
+        </xs:element>
+     </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="USBPHYType">
+  	<xs:annotation>
+  		<xs:documentation>
+  			Kind of PHY for USB interfaces.
+  		</xs:documentation>
+  	</xs:annotation>
+  	<xs:sequence>
+  		<xs:element name="bus_type" maxOccurs="1" minOccurs="1">
+  			<xs:simpleType>
+  				<xs:restriction base="xs:string">
+  					<xs:enumeration value="Integrated"></xs:enumeration>
+  					<xs:enumeration value="ULPI"></xs:enumeration>
+  					<xs:whiteSpace value="collapse"></xs:whiteSpace>
+  				</xs:restriction>
+  			</xs:simpleType>
+  		</xs:element>
+  	</xs:sequence>
+  </xs:complexType>
+</xs:schema>

@@ -1,0 +1,17 @@
+<schemalist>
+  <schema id="org.gsettings.test" path="/tests/" gettext-domain="test">
+    <key name="greeting" type="s">
+      <default l10n="messages">"Hello, earthlings"</default>
+      <summary>A greeting</summary>
+      <description>
+        Greeting of the invading martians
+      </description>
+    </key>
+
+    <key name="build-system" enum="org.gsettings.test.BuildSystemType">
+      <!-- Uncomment to test schema error handling -->
+      <!-- <default>'moose'</default> -->
+      <default>'waf'</default>
+    </key>
+  </schema>
+</schemalist>

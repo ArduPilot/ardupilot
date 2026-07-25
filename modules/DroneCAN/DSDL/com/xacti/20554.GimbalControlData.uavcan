@@ -1,0 +1,34 @@
+#
+# Xacti camera gimbal control
+#
+#
+
+# signature from original file location
+OVERRIDE_SIGNATURE 0x3B058FA5B150C5BE
+
+#
+# pitch and yaw command type
+# 0: unused
+# 2: angle control
+# 3: angular velocity control
+#
+uint8 pitch_cmd_type
+uint8 yaw_cmd_type
+
+#
+# pitch command value
+# if cmd_type is 0 these values are ignored
+# if cmd_type is 2 (angle control) scale is centi-degrees. Range is -115 deg (e.g. -11500) to 45 (e.g. 4500). Positive values point gimbal upwards
+# if cmd_type is 3 (angular velocity control), scale is centi-degrees/sec
+# values are unsigned but gimbal will cast to signed
+#
+uint16 pitch_cmd_value
+
+#
+# yaw command value
+# if cmd_type is 0 these values are ignored
+# if cmd_type is 2 (angle control) scale is centi-degrees. Yaw range is -85 deg (e.g. -8500) to +85 deg (e.g. +8500).  Positive is clockwise
+# if cmd_type is 3 (angular velocity control), scale is centi-degrees/sec
+# values are unsigned but gimbal will cast to signed
+#
+uint16 yaw_cmd_value

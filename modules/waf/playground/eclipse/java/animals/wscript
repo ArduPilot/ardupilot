@@ -1,0 +1,28 @@
+#! /usr/bin/env python
+
+def build(bld):
+
+	t = bld(
+		features  = 'javac jar',
+		name      = 'animals',
+
+		# javac
+		srcdir    = 'src',
+		compat    = '1.7',
+
+		# jar
+		basedir   = '.',
+		destfile  = '../animals.jar',
+		manifest  = 'manifest',
+		use       = 'NNN',
+	)
+	t.env.JAVACFLAGS = ['-Xlint:unchecked']
+
+	if bld.env.DO_JUNIT:
+		t.features       += ' junit'
+		t.srcdir          = 'src junit'
+		t.junitsrc        = 'junit'
+		t.junitclasspath  = '.'
+		t.use            += ' JUNIT'
+		t.env.JUNIT_EXEC_FLAGS = ['-ea']
+

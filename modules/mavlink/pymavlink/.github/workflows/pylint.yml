@@ -1,0 +1,39 @@
+name: Pylint
+
+on: [push, pull_request]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.11"]
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install requests 'pylint<=3.3.7'
+
+    - name: Analysing the code known to be pylint clean
+      run: |
+        pylint __init__.py dialects/__init__.py dialects/v09/__init__.py \
+        dialects/v10/__init__.py dialects/v20/__init__.py \
+        examples/__init__.py generator/__init__.py tests/test_mavxml.py tools/__init__.py \
+        mavftp.py mavftp_op.py examples/mavftp_example.py examples/status_msg.py tests/test_mavftp.py \
+        tests/test_mavxml.py
+#        $(git ls-files '*.py')

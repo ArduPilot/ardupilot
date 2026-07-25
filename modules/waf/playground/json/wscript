@@ -1,0 +1,32 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Matt Clarkson, 2015 (ita)
+
+VERSION='0.0.1'
+APPNAME='json_test'
+
+top = '.'
+
+import sys
+import waflib.Configure
+waflib.Configure.autoconfig = True
+
+def options(opt):
+	opt.add_option(
+		'--pretty',
+		action  = 'store_true',
+		help    = 'pretty prints the writing of the JSON')
+
+def configure(conf):
+	pass
+
+def build(bld):
+	node = bld.srcnode.make_node('test.json')
+	json = node.read_json()
+	print('Read', json)
+	json['new_key'] = {
+		'number': 199
+	}
+	output = bld.bldnode.make_node('output.json')
+	output.write_json(json, pretty=bld.options.pretty)
+	print('Wrote', output.read())

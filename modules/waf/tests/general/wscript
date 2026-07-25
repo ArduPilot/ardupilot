@@ -1,0 +1,82 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2016 (ita)
+
+top = '.'
+out = 'build'
+
+import functools
+from waflib import Utils, Logs
+
+def configure(conf):
+	pass
+
+def fun1():
+	return 0
+
+def fun2(arg1, arg2):
+	return 1
+
+def fun(arg1, arg2, task, one=1, two=2):
+        print(arg1, arg2, task, one, two)
+
+par1 = functools.partial(fun, 'arg1')
+par2 = functools.partial(par1, 'arg2', one=11, two=22)
+
+def fun3():
+	return 32
+par3 = functools.partial(par1, 'arg2', one=11, two=22)
+
+def build(bld):
+
+	bld.failure = 0
+	def disp(color, result):
+		Logs.pprint(color, result)
+		if color == 'RED':
+			bld.failure=1
+	def stop_status(bld):
+		if bld.failure:
+			bld.fatal('One or several test failed, check the outputs above')
+	bld.add_post_fun(stop_status)
+
+	def simple_hash(fun):
+		status = ''
+		try:
+			Utils.h_cmd(fun)
+		except Exception as e:
+			status = str(e)
+		return status
+
+	def hash_test(name, fun):
+		ret = simple_hash(fun)
+		if not ret:
+			color = "GREEN"
+		else:
+			color = "RED"
+		ret = ret or 'ok'
+		disp(color, '%s\t\t%s' % (name, ret))
+
+	hash_test('simple function 1', fun1)
+	hash_test('simple function 2', fun1)
+	hash_test('simple partial', par1)
+	hash_test('nested partial', par2)
+
+	def hash_twice(name, fun):
+		try:
+			ret1 = Utils.h_cmd(fun)
+			ret2 = Utils.h_cmd(fun)
+		except Exception as e:
+			msg = str(e)
+			color = 'RED'
+		else:
+			if ret1 == ret2:
+				msg = 'ok %r' % ret1
+				color = 'GREEN'
+			else:
+				msg = '%r != %r' % (ret1, ret2)
+				color = 'RED'
+		disp(color, '%s\t\t%s' % (name, msg))
+
+	hash_twice('consistent on fun3', fun3)
+	hash_twice('consistent on par3', par3)
+

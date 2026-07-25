@@ -1,0 +1,11 @@
+#
+# Generic device temperature
+#
+
+uint16 device_id
+
+float16 temperature                  # in kelvin
+
+uint8 ERROR_FLAG_OVERHEATING = 1
+uint8 ERROR_FLAG_OVERCOOLING = 2
+uint8 error_flags

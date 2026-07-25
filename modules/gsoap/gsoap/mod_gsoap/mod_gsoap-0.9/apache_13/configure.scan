@@ -1,0 +1,41 @@
+# Process this file with autoconf to produce a configure script.
+AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
+AC_CONFIG_SRCDIR([config.h.in])
+AC_CONFIG_HEADER([config.h])
+
+# Checks for programs.
+AC_PROG_CXX
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+AC_PROG_AWK
+
+# Checks for libraries.
+# FIXME: Replace `main' with a function in `-le':
+AC_CHECK_LIB([e], [main])
+# FIXME: Replace `main' with a function in `-links':
+AC_CHECK_LIB([inks], [main])
+# FIXME: Replace `main' with a function in `-lltdl':
+AC_CHECK_LIB([ltdl], [main])
+# FIXME: Replace `main' with a function in `-lpthread':
+AC_CHECK_LIB([pthread], [main])
+
+# Checks for header files.
+AC_CHECK_HEADERS([memory.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+
+# Checks for library functions.
+AC_HEADER_STDC
+AC_CHECK_FUNCS([getcwd memset])
+
+AC_CONFIG_FILES([ConsoleServer/Makefile
+                 ConsoleServer/foo/Makefile
+                 Makefile
+                 example/calculator/Makefile
+                 mod_gsoap/Makefile])
+AC_OUTPUT

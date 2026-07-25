@@ -1,0 +1,5 @@
+<map id="_wsse__SecurityTokenReference" name="_wsse__SecurityTokenReference">
+<area shape="rect" id="node2" href="$struct__wsse_____embedded.html" title="This element defines a security token embedded reference Imported element _wsse__Embedded from typema..." alt="" coords="4,6,141,34"/>
+<area shape="rect" id="node4" href="$struct__wsse_____key_identifier.html" title="This element defines a key identifier reference Imported element _wsse__KeyIdentifier from typemap WS..." alt="" coords="166,6,313,34"/>
+<area shape="rect" id="node6" href="$struct__wsse_____reference.html" title="This element defines a security token reference Imported element _wsse__Reference from typemap WS/WS&#45;..." alt="" coords="338,6,472,34"/>
+</map>

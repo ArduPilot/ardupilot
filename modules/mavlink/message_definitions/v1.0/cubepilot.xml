@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<mavlink>
+  <!-- Cubepilot contact info:                                              -->
+  <!-- company URL: http://www.cubepilot.com                                -->
+  <!-- email contact: siddharth@cubepilot.com or michael@cubepilot.com      -->
+  <!-- mavlink ID range: 50000 - 50099                                      -->
+  <include>common.xml</include>
+  <messages>
+    <message id="50001" name="CUBEPILOT_RAW_RC">
+      <description>Raw RC Data</description>
+      <field type="uint8_t[32]" name="rc_raw"/>
+    </message>
+    <message id="50002" name="HERELINK_VIDEO_STREAM_INFORMATION">
+      <description>Information about video stream</description>
+      <field type="uint8_t" name="camera_id">Video Stream ID (1 for first, 2 for second, etc.)</field>
+      <field type="uint8_t" name="status">Number of streams available.</field>
+      <field type="float" name="framerate" units="Hz">Frame rate.</field>
+      <field type="uint16_t" name="resolution_h" units="pix">Horizontal resolution.</field>
+      <field type="uint16_t" name="resolution_v" units="pix">Vertical resolution.</field>
+      <field type="uint32_t" name="bitrate" units="bits/s">Bit rate.</field>
+      <field type="uint16_t" name="rotation" units="deg">Video image rotation clockwise.</field>
+      <field type="char[230]" name="uri">Video stream URI (TCP or RTSP URI ground station should connect to) or port number (UDP port ground station should listen to).</field>
+    </message>
+    <message id="50003" name="HERELINK_TELEM">
+      <description>Herelink Telemetry</description>
+      <field type="uint8_t" name="rssi"/>
+      <field type="int16_t" name="snr"/>
+      <field type="uint32_t" name="rf_freq"/>
+      <field type="uint32_t" name="link_bw"/>
+      <field type="uint32_t" name="link_rate"/>
+      <field type="int16_t" name="cpu_temp"/>
+      <field type="int16_t" name="board_temp"/>
+    </message>
+    <message id="50004" name="CUBEPILOT_FIRMWARE_UPDATE_START">
+      <description>Start firmware update with encapsulated data.</description>
+      <field type="uint8_t" name="target_system">System ID.</field>
+      <field type="uint8_t" name="target_component">Component ID.</field>
+      <field type="uint32_t" name="size" units="bytes">FW Size.</field>
+      <field type="uint32_t" name="crc">FW CRC.</field>
+    </message>
+    <message id="50005" name="CUBEPILOT_FIRMWARE_UPDATE_RESP">
+      <description>offset response to encapsulated data.</description>
+      <field type="uint8_t" name="target_system">System ID.</field>
+      <field type="uint8_t" name="target_component">Component ID.</field>
+      <field type="uint32_t" name="offset" units="bytes">FW Offset.</field>
+    </message>
+  </messages>
+</mavlink>

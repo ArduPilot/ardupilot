@@ -1,0 +1,25 @@
+OVERRIDE_SIGNATURE 0x1fd0404420983deb
+
+uint8 OPTION_READ = 0
+uint8 OPTION_WRITE = 1
+uint8 option
+
+uint16 MSG_ID
+
+uint8 RATE_500HZ = 1
+uint8 RATE_250HZ = 2
+uint8 RATE_200HZ = 3
+uint8 RATE_100HZ = 4
+uint8 RATE_50HZ = 5
+uint8 RATE_20HZ = 6
+uint8 RATE_10HZ = 7
+uint8 RATE_1HZ = 8
+uint8 RATE_0HZ = 9
+uint8 rate
+
+---
+
+uint8 option
+uint16 MSG_ID
+uint8 rate
+

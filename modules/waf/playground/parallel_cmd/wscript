@@ -1,0 +1,82 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+top = '.'
+out = 'build'
+
+"""
+Call "waf build_all_at_once"
+
+The commands will be executed in parallel, but the processes
+will be limited by a bounded semaphore to avoid excessive usage.
+"""
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.setenv('debug')
+	conf.load('compiler_c')
+	conf.env.DEFINES = ["A=1"]
+
+	conf.setenv('release', env=conf.env.derive())
+	conf.env.CFLAGS = ['-O2']
+	conf.env.DEFINES = ["A=2"]
+
+def build(bld):
+	if not bld.variant:
+		bld.fatal('call "waf build_debug" or "waf build_release", and try "waf --help"')
+	bld.program(source='main.c', target='app', includes='.')
+
+
+from waflib.Build import BuildContext, CleanContext, InstallContext, UninstallContext
+
+for x in 'debug release'.split():
+	for y in (BuildContext, CleanContext, InstallContext, UninstallContext):
+		name = y.__name__.replace('Context','').lower()
+		class tmp(y):
+			cmd = name + '_' + x
+			variant = x
+
+def buildall(ctx):
+	import waflib.Options
+	waflib.Options.commands.extend(['build_debug', 'build_release'])
+
+
+# The following defines a command which builds all the variants at once
+
+from waflib import Build, Task, Options, Utils, Scripting
+
+Scripting.default_cmd = "build_all_at_once"
+
+class buildall_ctx(Build.BuildContext):
+	cmd = fun = "build_all_at_once"
+	variant = ""
+	def compile(self): pass
+
+def build_all_at_once(ctx):
+	sem = Utils.threading.Semaphore(Options.options.jobs)
+	def with_sem(f):
+		def f2(self):
+			sem.acquire()
+			f(self)
+			sem.release()
+		return f2
+	Task.Task.process = with_sem(Task.Task.process)
+
+	threads = []
+	for var in ctx.all_envs:
+		if var == '': continue
+		cls = type(Build.BuildContext)(var, (Build.BuildContext,), {'cmd': var, 'variant': var})
+		bld = cls(top_dir=ctx.top_dir, out_dir=ctx.out_dir)
+		bld.targets = ctx.targets
+		t = Utils.threading.Thread()
+		t.run = bld.execute
+		threads.append(t)
+
+	for t in threads: t.start()
+	for t in threads: t.join()
+

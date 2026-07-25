@@ -1,0 +1,65 @@
+#! /usr/bin/env python
+
+# the Task class attribute "maxjobs" was deprecated in Waf 1.6
+# limiting the amount of jobs is commonly done by adding sequential
+# barriers (build groups) or even locks. But the feature might be
+# necessary in very few corner cases
+
+# in the following examples, remember that the method run() is the only
+# one actually executed by threads
+
+def configure(conf):
+	pass
+
+def build(bld):
+	bld.jobs = 4
+	bld(source='foo.a bar.a truc.a')
+
+
+import threading, time
+from waflib.TaskGen import extension
+from waflib import Task
+
+@extension('.a')
+def process_a_files(self, node):
+	self.create_task('a_to_b', node, node.change_ext('b'))
+	self.create_task('b_to_c', node.change_ext('b'), node.change_ext('c'))
+
+class a_to_b(Task.Task):
+	# classical way, using a lock or a semaphore
+	# in this case, at most 2 tasks can execute at a time
+	# this may lead to build starvation, as may tasks can get stalled while processing
+
+	lock = threading.Semaphore(2)
+	def run(self):
+		try:
+			self.lock.acquire()
+			for i in range(5):
+				print('a to b %r' % id(self))
+				time.sleep(1)
+			self.outputs[0].write('done')
+		finally:
+			self.lock.release()
+
+
+class b_to_c(Task.Task):
+	# this will enable other tasks to run concurrently, and without additional locks
+
+	active = []
+	def runnable_status(self):
+		ret = Task.Task.runnable_status(self)
+		if ret == Task.RUN_ME:
+			self.active = [tsk for tsk in self.active if not tsk.hasrun]
+			if len(self.active) < 2:
+				self.active.append(self)
+			else:
+				# too many tasks are still active, wait
+				ret = Task.ASK_LATER
+		return ret
+
+	def run(self):
+		for i in range(5):
+			print('b to c %r' % id(self))
+			time.sleep(1)
+		self.outputs[0].write('done')
+

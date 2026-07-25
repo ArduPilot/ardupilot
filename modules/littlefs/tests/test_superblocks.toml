@@ -1,0 +1,552 @@
+# simple formatting test
+[cases.test_superblocks_format]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+'''
+
+# mount/unmount
+[cases.test_superblocks_mount]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+# make sure the magic string "littlefs" is always at offset=8
+[cases.test_superblocks_magic]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    // check our magic string
+    //
+    // note if we lose power we may not have the magic string in both blocks!
+    // but we don't lose power in this test so we can assert the magic string
+    // is present in both
+    uint8_t magic[lfs_max(16, READ_SIZE)];
+    cfg->read(cfg, 0, 0, magic, lfs_max(16, READ_SIZE)) => 0;
+    assert(memcmp(&magic[8], "littlefs", 8) == 0);
+    cfg->read(cfg, 1, 0, magic, lfs_max(16, READ_SIZE)) => 0;
+    assert(memcmp(&magic[8], "littlefs", 8) == 0);
+'''
+
+# mount/unmount from interpretting a previous superblock block_count
+[cases.test_superblocks_mount_unknown_block_count]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    memset(&lfs, 0, sizeof(lfs));
+    struct lfs_config tweaked_cfg = *cfg;
+    tweaked_cfg.block_count = 0;
+    lfs_mount(&lfs, &tweaked_cfg) => 0;
+    assert(lfs.block_count == cfg->block_count);
+    lfs_unmount(&lfs) => 0;
+'''
+
+# reentrant format
+[cases.test_superblocks_reentrant_format]
+reentrant = true
+defines.POWERLOSS_BEHAVIOR = [
+    'LFS_EMUBD_POWERLOSS_NOOP',
+    'LFS_EMUBD_POWERLOSS_OOO',
+]
+code = '''
+    lfs_t lfs;
+    int err = lfs_mount(&lfs, cfg);
+    if (err) {
+        lfs_format(&lfs, cfg) => 0;
+        lfs_mount(&lfs, cfg) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+'''
+
+# invalid mount
+[cases.test_superblocks_invalid_mount]
+code = '''
+    lfs_t lfs;
+    lfs_mount(&lfs, cfg) => LFS_ERR_CORRUPT;
+'''
+
+# test we can read superblock info through lfs_fs_stat
+[cases.test_superblocks_stat]
+if = 'DISK_VERSION == 0'
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    // test we can mount and read fsinfo
+    lfs_mount(&lfs, cfg) => 0;
+
+    struct lfs_fsinfo fsinfo;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.disk_version == LFS_DISK_VERSION);
+    assert(fsinfo.name_max == LFS_NAME_MAX);
+    assert(fsinfo.file_max == LFS_FILE_MAX);
+    assert(fsinfo.attr_max == LFS_ATTR_MAX);
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+[cases.test_superblocks_stat_tweaked]
+if = 'DISK_VERSION == 0'
+defines.TWEAKED_NAME_MAX = 63
+defines.TWEAKED_FILE_MAX = '(1 << 16)-1'
+defines.TWEAKED_ATTR_MAX = 512
+code = '''
+    // create filesystem with tweaked params
+    struct lfs_config tweaked_cfg = *cfg;
+    tweaked_cfg.name_max = TWEAKED_NAME_MAX;
+    tweaked_cfg.file_max = TWEAKED_FILE_MAX;
+    tweaked_cfg.attr_max = TWEAKED_ATTR_MAX;
+
+    lfs_t lfs;
+    lfs_format(&lfs, &tweaked_cfg) => 0;
+
+    // test we can mount and read these params with the original config
+    lfs_mount(&lfs, cfg) => 0;
+
+    struct lfs_fsinfo fsinfo;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.disk_version == LFS_DISK_VERSION);
+    assert(fsinfo.name_max == TWEAKED_NAME_MAX);
+    assert(fsinfo.file_max == TWEAKED_FILE_MAX);
+    assert(fsinfo.attr_max == TWEAKED_ATTR_MAX);
+
+    lfs_unmount(&lfs) => 0;
+'''
+
+# expanding superblock
+[cases.test_superblocks_expand]
+defines.BLOCK_CYCLES = [32, 33, 1]
+defines.N = [10, 100, 1000]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    for (int i = 0; i < N; i++) {
+        lfs_file_t file;
+        lfs_file_open(&lfs, &file, "dummy",
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+        lfs_file_close(&lfs, &file) => 0;
+        struct lfs_info info;
+        lfs_stat(&lfs, "dummy", &info) => 0;
+        assert(strcmp(info.name, "dummy") == 0);
+        assert(info.type == LFS_TYPE_REG);
+        lfs_remove(&lfs, "dummy") => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+
+    // one last check after power-cycle
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "dummy",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    struct lfs_info info;
+    lfs_stat(&lfs, "dummy", &info) => 0;
+    assert(strcmp(info.name, "dummy") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    lfs_unmount(&lfs) => 0;
+'''
+
+# make sure the magic string "littlefs" is always at offset=8
+[cases.test_superblocks_magic_expand]
+defines.BLOCK_CYCLES = [32, 33, 1]
+defines.N = [10, 100, 1000]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    for (int i = 0; i < N; i++) {
+        lfs_file_t file;
+        lfs_file_open(&lfs, &file, "dummy",
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+        lfs_file_close(&lfs, &file) => 0;
+        struct lfs_info info;
+        lfs_stat(&lfs, "dummy", &info) => 0;
+        assert(strcmp(info.name, "dummy") == 0);
+        assert(info.type == LFS_TYPE_REG);
+        lfs_remove(&lfs, "dummy") => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+
+    // check our magic string
+    //
+    // note if we lose power we may not have the magic string in both blocks!
+    // but we don't lose power in this test so we can assert the magic string
+    // is present in both
+    uint8_t magic[lfs_max(16, READ_SIZE)];
+    cfg->read(cfg, 0, 0, magic, lfs_max(16, READ_SIZE)) => 0;
+    assert(memcmp(&magic[8], "littlefs", 8) == 0);
+    cfg->read(cfg, 1, 0, magic, lfs_max(16, READ_SIZE)) => 0;
+    assert(memcmp(&magic[8], "littlefs", 8) == 0);
+'''
+
+# expanding superblock with power cycle
+[cases.test_superblocks_expand_power_cycle]
+defines.BLOCK_CYCLES = [32, 33, 1]
+defines.N = [10, 100, 1000]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    for (int i = 0; i < N; i++) {
+        lfs_mount(&lfs, cfg) => 0;
+        // remove lingering dummy?
+        struct lfs_info info;
+        int err = lfs_stat(&lfs, "dummy", &info);
+        assert(err == 0 || (err == LFS_ERR_NOENT && i == 0));
+        if (!err) {
+            assert(strcmp(info.name, "dummy") == 0);
+            assert(info.type == LFS_TYPE_REG);
+            lfs_remove(&lfs, "dummy") => 0;
+        }
+
+        lfs_file_t file;
+        lfs_file_open(&lfs, &file, "dummy",
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+        lfs_file_close(&lfs, &file) => 0;
+        lfs_stat(&lfs, "dummy", &info) => 0;
+        assert(strcmp(info.name, "dummy") == 0);
+        assert(info.type == LFS_TYPE_REG);
+        lfs_unmount(&lfs) => 0;
+    }
+
+    // one last check after power-cycle
+    lfs_mount(&lfs, cfg) => 0;
+    struct lfs_info info;
+    lfs_stat(&lfs, "dummy", &info) => 0;
+    assert(strcmp(info.name, "dummy") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    lfs_unmount(&lfs) => 0;
+'''
+
+# reentrant expanding superblock
+[cases.test_superblocks_reentrant_expand]
+defines.BLOCK_CYCLES = [2, 1]
+defines.N = 24
+reentrant = true
+defines.POWERLOSS_BEHAVIOR = [
+    'LFS_EMUBD_POWERLOSS_NOOP',
+    'LFS_EMUBD_POWERLOSS_OOO',
+]
+code = '''
+    lfs_t lfs;
+    int err = lfs_mount(&lfs, cfg);
+    if (err) {
+        lfs_format(&lfs, cfg) => 0;
+        lfs_mount(&lfs, cfg) => 0;
+    }
+
+    for (int i = 0; i < N; i++) {
+        // remove lingering dummy?
+        struct lfs_info info;
+        err = lfs_stat(&lfs, "dummy", &info);
+        assert(err == 0 || (err == LFS_ERR_NOENT && i == 0));
+        if (!err) {
+            assert(strcmp(info.name, "dummy") == 0);
+            assert(info.type == LFS_TYPE_REG);
+            lfs_remove(&lfs, "dummy") => 0;
+        }
+
+        lfs_file_t file;
+        lfs_file_open(&lfs, &file, "dummy",
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+        lfs_file_close(&lfs, &file) => 0;
+        lfs_stat(&lfs, "dummy", &info) => 0;
+        assert(strcmp(info.name, "dummy") == 0);
+        assert(info.type == LFS_TYPE_REG);
+    }
+
+    lfs_unmount(&lfs) => 0;
+
+    // one last check after power-cycle
+    lfs_mount(&lfs, cfg) => 0;
+    struct lfs_info info;
+    lfs_stat(&lfs, "dummy", &info) => 0;
+    assert(strcmp(info.name, "dummy") == 0);
+    assert(info.type == LFS_TYPE_REG);
+    lfs_unmount(&lfs) => 0;
+'''
+
+
+# mount with unknown block_count
+[cases.test_superblocks_unknown_blocks]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    // known block_size/block_count
+    cfg->block_size = BLOCK_SIZE;
+    cfg->block_count = BLOCK_COUNT;
+    lfs_mount(&lfs, cfg) => 0;
+    struct lfs_fsinfo fsinfo;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_unmount(&lfs) => 0;
+
+    // unknown block_count
+    cfg->block_size = BLOCK_SIZE;
+    cfg->block_count = 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_unmount(&lfs) => 0;
+
+    // do some work
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "test",
+            LFS_O_CREAT | LFS_O_EXCL | LFS_O_WRONLY) => 0;
+    lfs_file_write(&lfs, &file, "hello!", 6) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_file_open(&lfs, &file, "test", LFS_O_RDONLY) => 0;
+    uint8_t buffer[256];
+    lfs_file_read(&lfs, &file, buffer, sizeof(buffer)) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    assert(memcmp(buffer, "hello!", 6) == 0);
+    lfs_unmount(&lfs) => 0;
+'''
+
+# mount with blocks fewer than the erase_count
+[cases.test_superblocks_fewer_blocks]
+defines.BLOCK_COUNT = ['ERASE_COUNT/2', 'ERASE_COUNT/4', '2']
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    // known block_size/block_count
+    cfg->block_size = BLOCK_SIZE;
+    cfg->block_count = BLOCK_COUNT;
+    lfs_mount(&lfs, cfg) => 0;
+    struct lfs_fsinfo fsinfo;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_unmount(&lfs) => 0;
+
+    // incorrect block_count
+    cfg->block_size = BLOCK_SIZE;
+    cfg->block_count = ERASE_COUNT;
+    lfs_mount(&lfs, cfg) => LFS_ERR_INVAL;
+
+    // unknown block_count
+    cfg->block_size = BLOCK_SIZE;
+    cfg->block_count = 0;
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_unmount(&lfs) => 0;
+
+    // do some work
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "test",
+            LFS_O_CREAT | LFS_O_EXCL | LFS_O_WRONLY) => 0;
+    lfs_file_write(&lfs, &file, "hello!", 6) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_file_open(&lfs, &file, "test", LFS_O_RDONLY) => 0;
+    uint8_t buffer[256];
+    lfs_file_read(&lfs, &file, buffer, sizeof(buffer)) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    assert(memcmp(buffer, "hello!", 6) == 0);
+    lfs_unmount(&lfs) => 0;
+'''
+
+# mount with more blocks than the erase_count
+[cases.test_superblocks_more_blocks]
+defines.FORMAT_BLOCK_COUNT = '2*ERASE_COUNT'
+in = 'lfs.c'
+code = '''
+    lfs_t lfs;
+    lfs_init(&lfs, cfg) => 0;
+    lfs.block_count = BLOCK_COUNT;
+
+    lfs_mdir_t root = {
+        .pair = {0, 0}, // make sure this goes into block 0
+        .rev = 0,
+        .off = sizeof(uint32_t),
+        .etag = 0xffffffff,
+        .count = 0,
+        .tail = {LFS_BLOCK_NULL, LFS_BLOCK_NULL},
+        .erased = false,
+        .split = false,
+    };
+
+    lfs_superblock_t superblock = {
+        .version     = LFS_DISK_VERSION,
+        .block_size  = BLOCK_SIZE,
+        .block_count = FORMAT_BLOCK_COUNT,
+        .name_max    = LFS_NAME_MAX,
+        .file_max    = LFS_FILE_MAX,
+        .attr_max    = LFS_ATTR_MAX,
+    };
+
+    lfs_superblock_tole32(&superblock);
+    lfs_dir_commit(&lfs, &root, LFS_MKATTRS(
+            {LFS_MKTAG(LFS_TYPE_CREATE, 0, 0), NULL},
+            {LFS_MKTAG(LFS_TYPE_SUPERBLOCK, 0, 8), "littlefs"},
+            {LFS_MKTAG(LFS_TYPE_INLINESTRUCT, 0, sizeof(superblock)),
+                &superblock})) => 0;
+    lfs_deinit(&lfs) => 0;
+
+    // known block_size/block_count
+    cfg->block_size = BLOCK_SIZE;
+    cfg->block_count = BLOCK_COUNT;
+    lfs_mount(&lfs, cfg) => LFS_ERR_INVAL;
+'''
+
+# mount and grow the filesystem
+[cases.test_superblocks_grow]
+defines.BLOCK_COUNT = ['ERASE_COUNT/2', 'ERASE_COUNT/4', '2']
+defines.BLOCK_COUNT_2 = 'ERASE_COUNT'
+defines.KNOWN_BLOCK_COUNT = [true, false]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+
+    if (KNOWN_BLOCK_COUNT) {
+        cfg->block_count = BLOCK_COUNT;
+    } else {
+        cfg->block_count = 0;
+    }
+
+    // mount with block_size < erase_size
+    lfs_mount(&lfs, cfg) => 0;
+    struct lfs_fsinfo fsinfo;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_unmount(&lfs) => 0;
+
+    // same size is a noop
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_grow(&lfs, BLOCK_COUNT) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT);
+    lfs_unmount(&lfs) => 0;
+
+    // grow to new size
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_grow(&lfs, BLOCK_COUNT_2) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT_2);
+    lfs_unmount(&lfs) => 0;
+
+    if (KNOWN_BLOCK_COUNT) {
+        cfg->block_count = BLOCK_COUNT_2;
+    } else {
+        cfg->block_count = 0;
+    }
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT_2);
+    lfs_unmount(&lfs) => 0;
+
+    // mounting with the previous size should fail
+    cfg->block_count = BLOCK_COUNT;
+    lfs_mount(&lfs, cfg) => LFS_ERR_INVAL;
+
+    if (KNOWN_BLOCK_COUNT) {
+        cfg->block_count = BLOCK_COUNT_2;
+    } else {
+        cfg->block_count = 0;
+    }
+
+    // same size is a noop
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_grow(&lfs, BLOCK_COUNT_2) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT_2);
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT_2);
+    lfs_unmount(&lfs) => 0;
+
+    // do some work
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT_2);
+    lfs_file_t file;
+    lfs_file_open(&lfs, &file, "test",
+            LFS_O_CREAT | LFS_O_EXCL | LFS_O_WRONLY) => 0;
+    lfs_file_write(&lfs, &file, "hello!", 6) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, cfg) => 0;
+    lfs_fs_stat(&lfs, &fsinfo) => 0;
+    assert(fsinfo.block_size == BLOCK_SIZE);
+    assert(fsinfo.block_count == BLOCK_COUNT_2);
+    lfs_file_open(&lfs, &file, "test", LFS_O_RDONLY) => 0;
+    uint8_t buffer[256];
+    lfs_file_read(&lfs, &file, buffer, sizeof(buffer)) => 6;
+    lfs_file_close(&lfs, &file) => 0;
+    assert(memcmp(buffer, "hello!", 6) == 0);
+    lfs_unmount(&lfs) => 0;
+'''
+
+# test that metadata_max does not cause problems for superblock compaction
+[cases.test_superblocks_metadata_max]
+defines.METADATA_MAX = [
+    'lfs_max(512, PROG_SIZE)',
+    'lfs_max(BLOCK_SIZE/2, PROG_SIZE)',
+    'BLOCK_SIZE'
+]
+defines.N = [10, 100, 1000]
+code = '''
+    lfs_t lfs;
+    lfs_format(&lfs, cfg) => 0;
+    lfs_mount(&lfs, cfg) => 0;
+    for (int i = 0; i < N; i++) {
+        lfs_file_t file;
+        char name[256];
+        sprintf(name, "hello%03x", i);
+        lfs_file_open(&lfs, &file, name,
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+        lfs_file_close(&lfs, &file) => 0;
+        struct lfs_info info;
+        lfs_stat(&lfs, name, &info) => 0;
+        assert(strcmp(info.name, name) == 0);
+        assert(info.type == LFS_TYPE_REG);
+    }
+    lfs_unmount(&lfs) => 0;
+'''

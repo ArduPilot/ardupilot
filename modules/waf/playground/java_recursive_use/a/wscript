@@ -1,0 +1,7 @@
+
+def build(bld):
+	bld(features='javac jar',
+		srcdir='src',
+		name='a',
+		basedir='.'
+	)

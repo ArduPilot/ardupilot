@@ -1,0 +1,60 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Chris Pickel, 2011
+
+VERSION='0.0.1'
+APPNAME='mac_app_test'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_c')
+	try:
+		# you must include the xcode generator in your waf file if you want to use it
+		opt.load('xcode')
+	except ImportError:
+		pass
+
+def configure(conf):
+	conf.load('compiler_c')
+	if not conf.env.ARCH_ST:
+		conf.fatal('This example is for macs only')
+	conf.env.FRAMEWORK_COCOA = 'Cocoa'
+	conf.env.ARCH_COCOA = ['x86_64', 'arm64']
+
+def build(bld):
+	bld.program(
+		features       = 'c cprogram',
+		target         = 'MacApp',
+		source         = 'sources/main.m',
+		mac_app        = True,
+		mac_plist      = 'Info.plist',
+		mac_files      = bld.path.ant_glob('resources/**'),
+		mac_files_root = 'resources',
+		use            = 'COCOA',
+		install_path   = '${PREFIX}',
+	)
+
+	return
+	# obscure iphone stuff
+
+	bld.env.LIPO = '/usr/bin/lipo'
+	ARCH = {'arm6':'arm6', 'cocoa': ['i386', 'x64']}
+	for arch, val in ARCH.items():
+		bld.env.ARCH = val
+		bld(source='sources/dump_sbpl.c', target='%s/dump_sbpl' % arch, features='c cprogram')
+
+	bld(rule='touch ${TGT} # ${LIPO} -create ${SRC} -output ${TGT}',
+		shell = True,
+		target = 'dump_sbpl.app/dump_sbpl',
+		source = ['%s/dump_sbpl' % x for x in ARCH.keys()]
+	)
+
+from waflib import TaskGen
+@TaskGen.extension('.m')
+def m_hook(self, node):
+	"""Alias .m files to be compiled the same as .c files, gcc will do the right thing."""
+	return self.create_compiled_task('c', node)
+
+# -*- indent-tabs-mode: t -*-

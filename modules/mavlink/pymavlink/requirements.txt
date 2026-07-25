@@ -1,0 +1,9 @@
+fastcrc
+lxml>=3.6.0
+setuptools>=42
+wheel>=0.37.1
+
+# dev dependencies:
+pytest<=7.4.4
+syrupy; python_version>='3.6'
+wsproto

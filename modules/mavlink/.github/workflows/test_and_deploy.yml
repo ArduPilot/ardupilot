@@ -1,0 +1,105 @@
+name: Test and deploy
+
+on:
+  push:
+    branches:
+    - 'master'
+  pull_request:
+    branches:
+    - '*'
+
+# paths:
+# - "*"
+# - "!README.md" <-- don't rebuild on doc change
+
+jobs:
+  format:
+    name: Formatting check
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - run: |
+          sudo apt update
+          sudo apt install -y libxml2-dev libxml2-utils
+      - name: Check formatting
+        run: |
+          ./scripts/test.sh format
+
+  spell-check:
+    name: Find typos with codespell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx run codespell --ignore-words-list=dependees,ned
+
+  python-tests:
+    name: Python ${{ matrix.python-version }} tests
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.7, 3.8, 3.9, "3.10", 3.11, 3.x]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install future lxml
+      - name: Test Python generator
+        run: |
+          ./scripts/test.sh py
+
+  node-tests:
+    name: Node ${{ matrix.node-version }} test
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['12', '14', 'lts/*']
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          pip install future lxml
+      - uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npm install || true  # Continue even if there is no package.json. 
+      - name: Test mavlink
+        run: |
+          ./scripts/test.sh node
+
+  deploy:
+    name: Generate and push C headers
+    needs: [format, python-tests, node-tests]
+    runs-on: ubuntu-22.04
+    if: github.ref == 'refs/heads/master'
+    env:
+      GH_TOKEN: ${{ secrets.GH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          pip install future lxml
+#      - name: Run deploy script
+#        run: |
+#          ./scripts/update_generated_repos.sh

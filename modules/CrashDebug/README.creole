@@ -1,0 +1,243 @@
+==Table of Contents
+[[https://github.com/adamgreen/CrashDebug#overview | Overview]] \\
+[[https://github.com/adamgreen/CrashDebug#how-to-clone | How to Clone]] \\
+[[https://github.com/adamgreen/CrashDebug#how-to-build | How to Build]] \\
+[[https://github.com/adamgreen/CrashDebug#crash-dump-generation | How to Generate Crash Dumps]]\\
+[[https://github.com/adamgreen/CrashDebug#how-to-run | How to Run]] \\
+
+
+==Overview
+CrashDebug is a post-mortem debugging tool for Cortex-M microcontrollers.  It allows developers to investigate a crash
+with GDB at a later point in time and without requiring direct access to the failing device.  GDB supports core dump
+generation and debugging on other targets (Linux for example) but not for Cortex-M targets.  CrashDebug fills that gap.
+
+A developer just needs these things to conduct post-mortem debugging:
+* This CrashDebug remote debugging stub for GDB.
+* arm-none-eabi-gdb which can be found and installed from [[https://launchpad.net/gcc-arm-embedded | this website.]]
+* The {{{.elf}}} which corresponds to the firmware running on the Cortex-M processor at the time of the crash.
+** Contains the symbols required by GDB.
+** Provides CrashDebug with the read-only contents of FLASH.  The crash dump therefore only needs to provide the
+   contents of RAM and the processor registers at the time of the crash.
+* A crash dump to debug.
+** The crash dump provides the contents of RAM and the processor registers (r0-r12, sp, lr, pc, xpsr) at the time of the
+   crash.
+** See [[https://github.com/adamgreen/CrashDebug#crash-dump-generation | this section]] to learn how to obtain these
+   crash dumps.
+
+
+==How to Clone
+This project uses submodules (ie. MRI and CrashCatcher).  Cloning therefore requires a few more steps to get all of the
+necessary code.
+
+{{{
+git clone --recursive git@github.com:adamgreen/CrashDebug.git
+}}}
+
+**- or -**
+
+{{{
+git clone git@github.com:adamgreen/CrashDebug.git
+cd CrashDebug
+git submodule init
+git submodule update
+cd mri
+git submodule init
+git submodule update
+cd ../CrashCatcher
+git submodule init
+git submodule update
+}}}
+
+
+== How to Build
+If you don't want to build the CrashDebug utility yourself, you can use the pre-built binaries (macOS, Windows, and
+Ubuntu) for CrashDebug that can be found at [[https://github.com/adamgreen/CrashDebug/tree/master/bins]].
+
+=== Toolchain
+You will need a **gcc** or **clang** toolchain appropriate for your platform:
+* **macOS**: [[https://developer.apple.com/xcode/downloads/ | Xcode]] and
+   [[https://developer.apple.com/library/ios/technotes/tn2339/_index.html | it's command line tools]].
+* **Windows**: [[http://www.mingw.org/wiki/Getting_Started | MinGW]]
+* **Linux**: You will need gcc and g++.
+
+=== Makefile
+CrashDebug uses a single non-recursive makefile at the root of the project to build everything.  It supports these top
+level targets:
+* **all**: This builds the CrashDebug code, builds the unit tests, executes the unit tests, and reports the test
+  results. This is the default target if no other is provided to make.
+* **clean**: Cleans up all ouptut files from any previous builds.  This forces everything to be rebuilt.
+* **gcov**: Like the **all** target, this builds all of the CrashDebug code and runs the unit tests but it also
+  instruments the binaries with code coverage tracking and then reports the code coverage obtained from executing
+  these unit tests.
+
+Example:\\
+{{{make all}}} - Build CrashDebug by just rebuilding what has changed since last build.\\
+{{{make clean all}}} - Build CrashDebug by rebuilding everything.\\
+
+The makefile is constructed in such a way that all dependencies for any single target within the build system are known
+by GNU Make, including header file dependencies.  This means that the user can specify a specific binary target on the
+make command line and it will build it and all of its dependencies.
+
+Examples:\\
+{{{make lib/libCrashDebug.a}}} - Build the main CrashDebug library.\\
+{{{make LIBCRASHDEBUG_tests}}} - Build the main CrashDebug library, unit tests, and all required dependencies.\\
+{{{make RUN_LIBCRASHDEBUG_TESTS}}} - This does what the previous example does but also runs the unit tests.\\
+{{{make GCOV_LIBCRASHDEBUG}}} - This is similar to the previous example except that it builds binaries which
+include code coverage instrumentation and then reports the resulting code coverage results after running the unit
+tests.\\
+{{{make CrashDebug}}} - Builds the CrashDebug application and all of the libraries on which it depends while skipping
+the unit tests.  **Windows** users would run {{{make CrashDebug.exe}}} instead.\\
+
+The build has been tested on the following operating systems:
+* macOS Big Sur
+* Windows 10
+* Ubuntu 20.04
+
+=== GCOV Code Coverage Notes
+All intermediate binaries (*.o and *.a) for code coverage runs are found in the gcov/obj and gcov/lib directories.  If
+you want to examine the line by line coverage results for a library like libCrashDebug, you would find it in the
+gcov/LIBCRASHDEBUG_tests/ directory.
+
+
+==Crash Dump Generation
+===Manual Crash Dump
+If a user has GDB attached to a halted Cortex-M processor then they can manually generate a dump of the processor state
+at the time of the crash.  This crash dump can be used for further debugging at a later point in time after the device
+has been freed from the debugger or it could be sent along with the corresponding **.elf** file to another developer for
+further investigation.
+
+We want to have GDB dump all of the RAM on the device.  The {{{info mem}}} command will ask GDB to display its knowledge
+of the memory map to the user.  The following shows an example of what you might get on a LPC1768 device:\\
+{{{
+(gdb) info mem
+Using memory regions provided by the target.
+Num Enb Low Addr   High Addr  Attrs
+0   y  	0x00000000 0x00010000 flash blocksize 0x1000 nocache
+1   y  	0x00010000 0x00080000 flash blocksize 0x8000 nocache
+2   y  	0x10000000 0x10008000 rw nocache
+3   y  	0x2007c000 0x20084000 rw nocache
+}}}
+In the above example, the first two regions are for read-only FLASH so we can ignore those as their contents can already
+be found in the **.elf**.  The next two regions, **0x10000000 to 0x10008000** and ** 0x2007c000 to 0x20084000**, are the
+RAM regions we are interested in dumping.
+
+The following GDB commands will generate a **gdb.txt** file which contains the crash dump state required for post-mortem
+debugging:\\
+{{{
+set pagination off
+set logging on
+set var $ptr=0x10000000
+while $ptr < 0x10008000
+x/4wx $ptr
+set var $ptr+=16
+end
+set var $ptr= 0x2007c000
+while $ptr < 0x20084000
+x/4wx $ptr
+set var $ptr+=16
+end
+info all-registers
+set logging off
+set pagination on
+}}}
+
+What is all of that doing?\\
+* Turn pagination off so that you don't have to keep pressing Enter to continue scrolling the text.
+* Ask GDB to save the output from the rest of these commands to a file named **gdb.txt** in the current directory at the
+  time GDB was launched.
+* A debugger variable, $ptr, is used to execute a loop, dumping RAM four words at a time.  This  example contains two
+  such loops, one for each RAM region shown in the earlier **info mem** output.
+* Dump the CPU registers.
+* Stop the logging of information to **gdb.txt** now that we have collected all of the information we need.
+* Turn pagination back on which is more friendly for interactive debugging.
+
+===CrashCatcher HexDump
+The following is an example of what the user will see when the
+[[https://github.com/adamgreen/CrashCatcher | CrashCatcher]] HexModule generates a crash dump.
+
+{{{
+
+CRASH ENCOUNTERED
+Enable logging and then press any key to start dump.
+
+63430200
+00000000
+01000000587D0010647F0010FFFFFFFF
+3C010010CDAB56347856341200000000
+00C002407F0000005FE19BFBFF3FF7AC
+DC000010
+687F0010
+1D0200003C02000000000081
+03000080
+0000001000800010
+00BE0AE00D782D0668400824400000D3
+...
+28ED00E03CED00E0
+008200000000004008000000FFFFFFFF
+FFFFFFFF
+
+End of dump
+
+
+CRASH ENCOUNTERED
+Enable logging and then press any key to start dump.
+}}}
+
+If the hex dump is sent over a serial connection, the user can record the contents of the dump by having their terminal
+program log the results.  Before the text from such a log can be used, the extra text from before and after the actual
+dump should be deleted.  The above example should therefore be edited to look like the following before using it with
+the CrashDebug utility:
+
+{{{
+63430200
+00000000
+01000000587D0010647F0010FFFFFFFF
+3C010010CDAB56347856341200000000
+00C002407F0000005FE19BFBFF3FF7AC
+DC000010
+687F0010
+1D0200003C02000000000081
+03000080
+0000001000800010
+00BE0AE00D782D0668400824400000D3
+...
+28ED00E03CED00E0
+008200000000004008000000FFFFFFFF
+FFFFFFFF
+}}}
+
+The first 4 characters in the hex dump must contain the "6343" signature and the dump should contain no extra text at
+the end which CrashDebug might mistake as an extra (and corrupt) memory region.
+
+===CrashCatcher Binary Dump
+A binary [[https://github.com/adamgreen/CrashCatcher | CrashCatcher]] dump file such as the **CRASH.DMP** generated by the
+[[https://github.com/adamgreen/CrashCatcher/blob/master/samples/LocalFileSystem/LocalFileSystem.c | LocalFileSystem sample]]
+should be ready to use by CrashDebug.
+
+
+==How to Run
+CrashDebug is launched from within GDB as part of the {{{target remote}}} command.  The following example shows how to
+start arm-none-eabi-gdb such that it automatically launches CrashDebug as a remote debugging stub.\\
+
+{{{arm-none-eabi-gdb main.elf -ex "set target-charset ASCII" -ex "target remote | CrashDebug --elf main.elf --dump MainCrashDump.txt"}}}
+
+===CrashDebug Parameters
+{{{
+CrashDebug (--elf elfFilename | --bin imageFilename baseAddress)
+            --dump dumpFilename
+}}}
+**NOTE:** The {{{--elf}}} and {{{--bin}}} options are mutually exclusive.  Use one or the other but not both.\\
+{{{--elf}}} is used to provide the filename of the .elf image containing the device's FLASH contents at the time of the
+crash.\\
+{{{--bin}}} is used to provide the filename of the binary image loaded into the device's FLASH when the crash occurred.
+These binary images are typically generated by running {{{arm-none-eabi-objcopy -O binary input.elf output.bin}}}  The
+baseAddress parameter indicates where the contents of the .bin file was loaded into FLASH.  This address will typically
+be 0x00000000 unless a boot loader was in use.\\
+{{{--dump}}} is used to provide the filename of the crash dump which contains the contents of RAM and the CPU registers
+at the time of the crash.  This dump can be a {{{gdb.txt}}} manually created by a user from within GDB, a hex dump
+generated by the CrashCatcher module or a binary dump generated by the CrashCatcher module.  See
+[[https://github.com/adamgreen/CrashDebug#crash-dump-generation | this section]] to learn more about generating crash
+dumps.
+
+**Windows Users:** Don't use backslashes (\) when specifying the path for CrashDebug, the elf file, or the dump file.
+Instead use forward slashes (/). GDB deletes backslashes that it encounters in {{{-ex}}} command line parameters.

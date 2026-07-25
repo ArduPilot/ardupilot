@@ -1,0 +1,6 @@
+OVERRIDE_SIGNATURE 0x1675da01c3b91297
+
+int16 input_voltage # 0.1V
+int16 current # 0.1A
+uint8 temperature # degC
+

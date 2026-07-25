@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+"""
+when linked, object files should bring the libraries (uselib) they refer to
+"""
+
+bld.env.LIB_Z = ['z']
+
+bld.recurse('lib')
+
+bld.recurse('libex')
+
+bld.objects(
+	 source   = 'a.c',
+	 target   = 'A',
+	 use      = 'Z',
+	)
+
+
+bld.program(
+	 source  = 'a-test.c',
+	 target  = 'a-test',
+	 use     = 'A libex',
+	)
+
+"""
+bld.objects(
+	 source   = 'b.c',
+	 target   = 'B',
+	 use      = 'A',
+	)
+
+bld.program(
+	 source = 'c.c',
+	 target = 'C',
+	 use    = 'B',
+	)
+"""
+

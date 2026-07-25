@@ -1,0 +1,88 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2016 (ita)
+# Federico Pellegrin, 2019 (fedepell)
+
+VERSION='0.0.1'
+APPNAME='qt5_test'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx qt5 waf_unit_test')
+
+def configure(conf):
+	conf.load('compiler_cxx qt5 waf_unit_test')
+	#conf.env.append_value('CXXFLAGS', ['-g']) # test
+
+	if not conf.env.QT_LRELEASE:
+		# While qt5 detects most Qt tools, most of them are optional
+		conf.fatal('lrelease was not found')
+
+	# These tests would run on Ubuntu but not on other platforms
+	conf.check(
+		define_name  = 'XYZ_QT5_TESTS',
+		mandatory    = False,
+		execute      = True,
+		features     = 'qt5 cxx cxxprogram',
+		includes     = '.',
+		defines      = 'QT_WIDGETS_LIB',
+		use          = 'QT5CORE QT5GUI QT5WIDGETS QT5TEST',
+		msg          = 'Checking whether Qt5 tests can run',
+		fragment     = '''
+#include <QtTest/QtTest>
+class TestQt5Test: public QObject {
+        Q_OBJECT
+        private:
+                void testGui() {
+			QWidget *widget = NULL;
+			QTest::mouseClick(widget, Qt::LeftButton, Qt::NoModifier, QPoint(5,5), 0);
+		}
+};
+
+QTEST_MAIN(TestQt5Test)
+#include "test.moc"
+''')
+
+def build(bld):
+	# According to the Qt5 documentation:
+	#   Qt classes in foo.h   -> declare foo.h as a header to be processed by moc
+	#			    add the resulting moc_foo.cpp to the source files
+	#   Qt classes in foo.cpp -> include foo.moc at the end of foo.cpp
+	#
+	bld(
+		features = 'qt5 cxx cxxprogram',
+		use      = 'QT5CORE QT5GUI QT5SVG QT5WIDGETS',
+		source   = 'main.cpp res.qrc but.ui foo.cpp',
+		moc      = 'foo.h',
+		target   = 'window',
+		includes = '.',
+		lang     = bld.path.ant_glob('linguist/*.ts'),
+		langname = 'somefile', # include the .qm files from somefile.qrc
+	)
+
+	if bld.env.XYZ_QT5_TESTS:
+		# Example of integration of Qt5 Unit tests using Qt5Test using waf_unit_test
+		bld(
+			features = 'qt5 cxx cxxprogram test',
+			use      = 'QT5CORE QT5GUI QT5WIDGETS QT5TEST',
+			defines  = 'QT_WIDGETS_LIB',
+			source   = 'foo.cpp testqt5.cpp',
+			moc      = 'foo.h',
+			target   = 'footest',
+			includes = '.',
+			# ut_str   = './${SRC} -o test-report.xml,xunitxml', # put output to a xunit xml
+		)
+
+		bld.add_post_fun(print_test_results)	# print output of test runner to user
+
+
+def print_test_results(bld):
+	lst = getattr(bld, 'utest_results', [])
+	if not lst:
+		return
+	for (f, code, out, err) in lst:
+		print(out.decode('utf-8'))
+		print(err.decode('utf-8'))
+

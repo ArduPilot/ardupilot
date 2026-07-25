@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="oop_nullstreams" descr="Null Streams" editcode="false">
+  <brief>Null streams class.</brief>
+  <imports>
+    <import>oop_base_object.xml</import>
+    <import>oop_sequential_stream.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="angular">string.h</include>
+      <include style="regular">oop_base_object.h</include>
+      <include style="regular">oop_sequential_stream.h</include>
+    </includes>
+    <types>
+      <class type="regular" name="null_stream"
+        namespace="nullstm" ancestorname="base_object"
+        descr="null stream">
+        <brief>Null streams class.</brief>
+        <details><![CDATA[This class implements a null stream.]]></details>
+        <implements>
+          <if name="sequential_stream">
+            <method shortname="write">
+              <implementation><![CDATA[
+
+(void)self;
+(void)bp;
+
+return n;]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+
+(void)self;
+(void)bp;
+
+return n;]]></implementation>
+            </method>
+            <method shortname="put">
+              <implementation><![CDATA[
+
+(void)self;
+(void)b;
+
+return STM_OK;]]></implementation>
+            </method>
+            <method shortname="get">
+              <implementation><![CDATA[
+
+(void)self;
+
+return 4;]]></implementation>
+            </method>
+            <method shortname="unget">
+              <implementation><![CDATA[
+
+(void)self;
+(void)b;
+
+return STM_RESET;]]></implementation>
+            </method>
+          </if>
+        </implements>
+        <fields>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <implementation><![CDATA[ ]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[ ]]></implementation>
+          </dispose>
+        </methods>
+      </class>
+    </types>
+  </public>
+  <private>
+  </private>
+</module>

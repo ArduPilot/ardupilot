@@ -1,0 +1,21 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "waf-launcher", "waf-launcher\waf-launcher.csproj", "{63E79792-BE8F-4AE5-9A99-99B1AE4D96E3}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{63E79792-BE8F-4AE5-9A99-99B1AE4D96E3}.Debug|x86.ActiveCfg = Debug|x86
+		{63E79792-BE8F-4AE5-9A99-99B1AE4D96E3}.Debug|x86.Build.0 = Debug|x86
+		{63E79792-BE8F-4AE5-9A99-99B1AE4D96E3}.Release|x86.ActiveCfg = Release|x86
+		{63E79792-BE8F-4AE5-9A99-99B1AE4D96E3}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = waf-launcher\waf-launcher.csproj
+		version = 1.0
+	EndGlobalSection
+EndGlobal

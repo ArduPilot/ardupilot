@@ -1,0 +1,47 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Frauendorfer, 2010
+
+VERSION='0.0.1'
+APPNAME='ruby_test'
+
+# these variables are mandatory ('/' are converted automatically)
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_c')
+	opt.load('ruby')
+
+def configure(conf):
+	conf.load('compiler_c')
+	conf.load('ruby')
+
+	# check for ruby
+	conf.check_ruby_version((1,8,0))
+	conf.check_ruby_ext_devel()
+	conf.check_ruby_module('libxml', mandatory=False)
+
+def build(bld):
+
+	# Build a ruby extension module
+	bld(
+		features = 'c cshlib rubyext',
+		source = 'rb_mytest.c',
+		target = 'mytest_ext',
+		install_path = '${ARCHDIR_RUBY}')
+
+	bld.install_files('${LIBDIR_RUBY}', 'Mytest.rb')
+
+	if bld.cmd == 'runit':
+		def foo(bld):
+			bld.exec_command(bld.env.RUBY + ' -I' + bld.get_variant_dir() + ' -rMytest -e "Mytest.hello()"')
+		bld.add_post_fun(foo)
+
+	# or, another way
+	bld(source='hello_world.rb')
+
+from waflib.Build import BuildContext
+class one(BuildContext):
+	cmd = 'runit'
+

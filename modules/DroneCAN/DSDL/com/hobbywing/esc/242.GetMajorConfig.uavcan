@@ -1,0 +1,19 @@
+OVERRIDE_SIGNATURE 0x1506774da3930bfd
+
+uint8 option
+
+---
+
+bool direction
+bool throttle_source
+uint6 throttle_channel
+
+uint5 led_status
+uint3 led_color
+
+uint4 MSG2_rate
+uint4 MSG1_rate
+
+uint16 positioning_angle
+
+uint8[2] reserved

@@ -1,0 +1,59 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+"""
+The build groups can be processed all at once (required for the progress bar)
+or sequentially in a lazy manner.
+
+Each time one more .c file will be added during the build and compiled and linked in app
+
+$ waf distclean configure build build
+'distclean' finished successfully (0.005s)
+Setting top to                           : /dynamic_build
+Setting out to                           : /dynamic_build/build
+Checking for 'gcc' (c compiler)          : ok
+'configure' finished successfully (0.091s)
+
+Waf: Entering directory `/dynamic_build/build'
+[1/1] foo_3.c:  -> build/foo_3.c
+[2/4] c: main.c -> build/main.c.1.o
+[3/4] c: build/foo_3.c -> build/foo_3.c.1.o
+[4/4] cprogram: build/main.c.1.o build/foo_3.c.1.o -> build/app
+Waf: Leaving directory `/dynamic_build/build'
+'build' finished successfully (5.169s)
+
+Waf: Entering directory `/dynamic_build/build'
+[1/1] foo_17.c:  -> build/foo_17.c
+[3/5] c: build/foo_17.c -> build/foo_17.c.1.o
+[5/5] cprogram: build/main.c.1.o build/foo_17.c.1.o build/foo_3.c.1.o -> build/app
+Waf: Leaving directory `/dynamic_build/build'
+'build' finished successfully (5.144s)
+"""
+
+top = '.'
+
+def options(opt):
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('compiler_c')
+
+
+def build(bld):
+	import random
+	rnd = random.randint(0, 25)
+	bld(
+		rule    = "sleep 2 && (echo 'int num%d = %d;' > ${TGT})" % (rnd, rnd),
+		target  = 'foo_%d.c' % rnd,
+	)
+
+	bld.add_group()
+
+	it = bld.path.get_bld().ant_glob('*.c', remove=False, quiet=True, generator=True)
+	src = ['main.c', it]
+	bld(features='c cprogram', source=src, target='app')
+

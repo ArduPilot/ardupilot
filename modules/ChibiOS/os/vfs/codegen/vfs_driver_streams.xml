@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- C module definition -->
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="drvstreams" descr="VFS Streams Driver"
+  check="VFS_CFG_ENABLE_DRV_STREAMS == TRUE" sourcepath="drivers/streams"
+  headerpath="drivers/streams" editcode="true">
+  <imports>
+    <import>vfs_nodes.xml</import>
+    <import>vfs_drivers.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_sequential_stream.h</include>
+    </includes>
+    <configs>
+      <config name="DRV_CFG_STREAMS_DIR_NODES_NUM" default="1">
+        <brief>Number of directory nodes pre-allocated in the pool.</brief>
+        <assert invalid="$N &lt; 1" />
+      </config>
+      <config name="DRV_CFG_STREAMS_FILE_NODES_NUM" default="1">
+        <brief>Number of file nodes pre-allocated in the pool.</brief>
+        <assert invalid="$N &lt; 1" />
+      </config>
+    </configs>
+    <types>
+      <typedef name="drv_streams_element_t">
+        <brief>Type of a stream association structure.</brief>
+        <basetype ctype="struct drv_streams_element" />
+      </typedef>
+      <struct name="drv_streams_element">
+        <brief>Structure representing a stream association.</brief>
+        <fields>
+          <field name="name" ctype="const char$I*">
+            <brief>Filename for the stream.</brief>
+          </field>
+          <field name="stm" ctype="sequential_stream_i$I*">
+            <brief>Pointer to the stream.</brief>
+          </field>
+          <field name="mode" ctype="vfs_mode_t">
+            <brief>Stream mode.</brief>
+          </field>
+        </fields>
+      </struct>
+      <class type="regular" name="vfs_streams_dir_node" namespace="stmdir"
+        ancestorname="vfs_directory_node" descr="VFS streams directory node">
+        <fields>
+          <field name="index" ctype="unsigned">
+            <brief>Current directory entry during scanning.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="false">
+            <param name="driver" ctype="vfs_driver_c *" dir="in"> Pointer to
+              the controlling driver.
+            </param>
+            <param name="mode" ctype="vfs_mode_t" dir="in"> Node mode flags.
+            </param>
+            <implementation><![CDATA[
+self = __vfsdir_objinit_impl(self, vmt, (vfs_driver_c *)driver, mode);
+self->index = 0U;]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="stat">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="first">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="next">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+      <class type="regular" name="vfs_streams_file_node"
+        namespace="stmfile" ancestorname="vfs_file_node"
+        descr="VFS streams file node">
+        <fields>
+          <field name="stm" ctype="sequential_stream_i$I*">
+            <brief>Stream interface for this file.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="false">
+            <param name="driver" ctype="vfs_driver_c *" dir="in"> Pointer to
+              the controlling driver.
+            </param>
+            <param name="mode" ctype="vfs_mode_t" dir="in"> Node mode flags.
+            </param>
+            <param name="stream" ctype="sequential_stream_i *" dir="in"> Stream
+              to be associated.
+            </param>
+            <implementation><![CDATA[
+self = __vfsfile_objinit_impl(self, vmt, (vfs_driver_c *)driver, mode);
+self->stm = stream;]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="stat">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="write">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="setpos">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="getpos">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="getstream">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+      <class type="regular" name="vfs_streams_driver" namespace="stmdrv"
+        ancestorname="vfs_driver" descr="VFS streams driver">
+        <fields>
+          <field name="streams" ctype="const drv_streams_element_t$I*">
+            <brief>Pointer to the stream elements to be exposed.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <param name="streams" ctype="const drv_streams_element_t *"
+              dir="in"> Pointer to a @p vfs_streams_driver_c structure.
+            </param>
+            <implementation><![CDATA[
+self->streams = streams;]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="setcwd">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="getcwd">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="stat">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="opendir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="openfile">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="unlink">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="rename">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="mkdir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="rmdir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+    </types>
+    <functions>
+      <function name="__drv_streams_init" ctype="void">
+        <brief>Module initialization.</brief>
+        <init />
+        <implementation><![CDATA[
+
+  /* Initializing pools.*/
+  chPoolObjectInit(&vfs_streams_driver_static.dir_nodes_pool,
+                   sizeof (vfs_streams_dir_node_c),
+                   chCoreAllocAlignedI);
+  chPoolObjectInit(&vfs_streams_driver_static.file_nodes_pool,
+                   sizeof (vfs_streams_file_node_c),
+                   chCoreAllocAlignedI);
+
+  /* Preloading pools.*/
+  chPoolLoadArray(&vfs_streams_driver_static.dir_nodes_pool,
+                  &vfs_streams_driver_static.dir_nodes[0],
+                  DRV_CFG_STREAMS_DIR_NODES_NUM);
+  chPoolLoadArray(&vfs_streams_driver_static.file_nodes_pool,
+                  &vfs_streams_driver_static.file_nodes[0],
+                  DRV_CFG_STREAMS_FILE_NODES_NUM);]]></implementation>
+      </function>
+    </functions>
+  </public>
+  <private>
+    <includes_always>
+      <include style="regular">vfs.h</include>
+    </includes_always>
+    <types>
+      <struct name="vfs_streams_driver_static_struct">
+        <brief>Structure representing the global state of @p
+          vfs_streams_driver_c.</brief>
+        <fields>
+          <field name="dir_nodes_pool" ctype="memory_pool_t">
+            <brief>Pool of directory nodes.</brief>
+          </field>
+          <field name="file_nodes_pool" ctype="memory_pool_t">
+            <brief>Pool of file nodes.</brief>
+          </field>
+          <field name="dir_nodes"
+            ctype="vfs_streams_dir_node_c$I$N[DRV_CFG_STREAMS_DIR_NODES_NUM]">
+            <brief>Static storage of directory nodes.</brief>
+          </field>
+          <field name="file_nodes"
+            ctype="vfs_streams_file_node_c$I$N[DRV_CFG_STREAMS_FILE_NODES_NUM]">
+            <brief>Static storage of file nodes.</brief>
+          </field>
+        </fields>
+      </struct>
+    </types>
+    <variables>
+      <variable name="vfs_streams_driver_static"
+        ctype="struct vfs_streams_driver_static_struct">
+        <brief>Global state of @p vfs_streams_driver_c</brief>
+      </variable>
+    </variables>
+  </private>
+</module>

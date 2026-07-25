@@ -1,0 +1,28 @@
+#! /usr/bin/env python
+# encoding: utf-8#
+# Federico Pellegrin, 2016 (fedepell)
+
+# Simple example with custom local extra tool to be able to use at the same 
+# time both qt5 and Python qt5. Both have a handler to some extensions 
+# (qrc/ui) so the last one loaded will overwrite the previous one.
+# The small extra tool will just override the handler and pass to the
+# correct one as needed. Must be loaded after qt5 and pyqt5.
+#
+
+def options(opt):
+	# Load what needed for qt5 and pyqt5 and chainer as *last* so it
+	# will chain to the proper one depending on feature
+	opt.load('compiler_cxx qt5 python pyqt5')
+	opt.load('qtchainer', tooldir='qtchainer')
+
+def configure(conf):
+	conf.load('compiler_cxx qt5 python pyqt5 qtchainer')
+	conf.check_python_version((2,7,4))	
+
+def build(bld):
+	# Build both pyqt5 and qt5.
+	# - qt5 is from demos/qt5, just a reference to waflogo.svg has been
+	# fixed as the directory is not one level deeper in this playground
+	# - pyqt5 is from playground/pyqt5
+	bld.recurse("pyqt5 qt5")
+

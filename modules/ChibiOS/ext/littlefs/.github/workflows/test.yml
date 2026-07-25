@@ -1,0 +1,446 @@
+name: test
+on: [push, pull_request]
+
+env:
+  CFLAGS: -Werror
+  MAKEFLAGS: -j
+
+jobs:
+  # run tests
+  test:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, thumb, mips, powerpc]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: |
+          # need toml, also pip3 isn't installed by default?
+          sudo apt-get update -qq
+          sudo apt-get install -qq python3 python3-pip lcov
+          sudo pip3 install toml
+          gcc --version
+
+          # setup a ram-backed disk to speed up reentrant tests
+          mkdir disks
+          sudo mount -t tmpfs -o size=100m tmpfs disks
+          TESTFLAGS="$TESTFLAGS --disk=disks/disk"
+
+          # collect coverage
+          mkdir -p coverage
+          TESTFLAGS="$TESTFLAGS --coverage=`
+            `coverage/${{github.job}}-${{matrix.arch}}.info"
+
+          echo "TESTFLAGS=$TESTFLAGS" >> $GITHUB_ENV
+
+      # cross-compile with ARM Thumb (32-bit, little-endian)
+      - name: install-thumb
+        if: ${{matrix.arch == 'thumb'}}
+        run: |
+          sudo apt-get install -qq \
+            gcc-arm-linux-gnueabi \
+            libc6-dev-armel-cross \
+            qemu-user
+          echo "CC=arm-linux-gnueabi-gcc -mthumb --static" >> $GITHUB_ENV
+          echo "EXEC=qemu-arm" >> $GITHUB_ENV
+          arm-linux-gnueabi-gcc --version
+          qemu-arm -version
+      # cross-compile with MIPS (32-bit, big-endian)
+      - name: install-mips
+        if: ${{matrix.arch == 'mips'}}
+        run: |
+          sudo apt-get install -qq \
+            gcc-mips-linux-gnu \
+            libc6-dev-mips-cross \
+            qemu-user
+          echo "CC=mips-linux-gnu-gcc --static" >> $GITHUB_ENV
+          echo "EXEC=qemu-mips" >> $GITHUB_ENV
+          mips-linux-gnu-gcc --version
+          qemu-mips -version
+      # cross-compile with PowerPC (32-bit, big-endian)
+      - name: install-powerpc
+        if: ${{matrix.arch == 'powerpc'}}
+        run: |
+          sudo apt-get install -qq \
+            gcc-powerpc-linux-gnu \
+            libc6-dev-powerpc-cross \
+            qemu-user
+          echo "CC=powerpc-linux-gnu-gcc --static" >> $GITHUB_ENV
+          echo "EXEC=qemu-ppc" >> $GITHUB_ENV
+          powerpc-linux-gnu-gcc --version
+          qemu-ppc -version
+
+      # make sure example can at least compile
+      - name: test-example
+        run: |
+          sed -n '/``` c/,/```/{/```/d; p}' README.md > test.c
+          make all CFLAGS+=" \
+            -Duser_provided_block_device_read=NULL \
+            -Duser_provided_block_device_prog=NULL \
+            -Duser_provided_block_device_erase=NULL \
+            -Duser_provided_block_device_sync=NULL \
+            -include stdio.h"
+          rm test.c
+
+      # test configurations
+      # normal+reentrant tests
+      - name: test-default
+        run: |
+          make clean
+          make test TESTFLAGS+="-nrk"
+      # NOR flash: read/prog = 1 block = 4KiB
+      - name: test-nor
+        run: |
+          make clean
+          make test TESTFLAGS+="-nrk \
+            -DLFS_READ_SIZE=1 -DLFS_BLOCK_SIZE=4096"
+      # SD/eMMC: read/prog = 512 block = 512
+      - name: test-emmc
+        run: |
+          make clean
+          make test TESTFLAGS+="-nrk \
+            -DLFS_READ_SIZE=512 -DLFS_BLOCK_SIZE=512"
+      # NAND flash: read/prog = 4KiB block = 32KiB
+      - name: test-nand
+        run: |
+          make clean
+          make test TESTFLAGS+="-nrk \
+            -DLFS_READ_SIZE=4096 -DLFS_BLOCK_SIZE=\(32*1024\)"
+      # other extreme geometries that are useful for various corner cases
+      - name: test-no-intrinsics
+        run: |
+          make clean
+          make test TESTFLAGS+="-nrk \
+            -DLFS_NO_INTRINSICS"
+      - name: test-byte-writes
+        # it just takes too long to test byte-level writes when in qemu,
+        # should be plenty covered by the other configurations
+        if: ${{matrix.arch == 'x86_64'}}
+        run: |
+          make clean
+          make test TESTFLAGS+="-nrk \
+            -DLFS_READ_SIZE=1 -DLFS_CACHE_SIZE=1"
+      - name: test-block-cycles
+        run: |
+          make clean
+          make test TESTFLAGS+="-nrk \
+            -DLFS_BLOCK_CYCLES=1"
+      - name: test-odd-block-count
+        run: |
+          make clean
+          make test TESTFLAGS+="-nrk \
+            -DLFS_BLOCK_COUNT=1023 -DLFS_LOOKAHEAD_SIZE=256"
+      - name: test-odd-block-size
+        run: |
+          make clean
+          make test TESTFLAGS+="-nrk \
+            -DLFS_READ_SIZE=11 -DLFS_BLOCK_SIZE=704"
+
+      # upload coverage for later coverage
+      - name: upload-coverage
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage
+          path: coverage
+          retention-days: 1
+
+      # update results
+      - name: results-code
+        run: |
+          mkdir -p results
+          make clean
+          make code \
+            CFLAGS+=" \
+              -DLFS_NO_ASSERT \
+              -DLFS_NO_DEBUG \
+              -DLFS_NO_WARN \
+              -DLFS_NO_ERROR" \
+            CODEFLAGS+="-o results/code-${{matrix.arch}}.csv"
+      - name: results-code-readonly
+        run: |
+          mkdir -p results
+          make clean
+          make code \
+            CFLAGS+=" \
+              -DLFS_NO_ASSERT \
+              -DLFS_NO_DEBUG \
+              -DLFS_NO_WARN \
+              -DLFS_NO_ERROR \
+              -DLFS_READONLY" \
+            CODEFLAGS+="-o results/code-${{matrix.arch}}-readonly.csv"
+      - name: results-code-threadsafe
+        run: |
+          mkdir -p results
+          make clean
+          make code \
+            CFLAGS+=" \
+              -DLFS_NO_ASSERT \
+              -DLFS_NO_DEBUG \
+              -DLFS_NO_WARN \
+              -DLFS_NO_ERROR \
+              -DLFS_THREADSAFE" \
+            CODEFLAGS+="-o results/code-${{matrix.arch}}-threadsafe.csv"
+      - name: results-code-migrate
+        run: |
+          mkdir -p results
+          make clean
+          make code \
+            CFLAGS+=" \
+              -DLFS_NO_ASSERT \
+              -DLFS_NO_DEBUG \
+              -DLFS_NO_WARN \
+              -DLFS_NO_ERROR \
+              -DLFS_MIGRATE" \
+            CODEFLAGS+="-o results/code-${{matrix.arch}}-migrate.csv"
+      - name: results-code-error-asserts
+        run: |
+          mkdir -p results
+          make clean
+          make code \
+            CFLAGS+=" \
+              -DLFS_NO_DEBUG \
+              -DLFS_NO_WARN \
+              -DLFS_NO_ERROR \
+              -D'LFS_ASSERT(test)=do {if(!(test)) {return -1;}} while(0)'" \
+            CODEFLAGS+="-o results/code-${{matrix.arch}}-error-asserts.csv"
+      - name: upload-results
+        uses: actions/upload-artifact@v2
+        with:
+          name: results
+          path: results
+      # limit reporting to Thumb, otherwise there would be too many numbers
+      # flying around for the results to be easily readable
+      - name: collect-status
+        if: ${{matrix.arch == 'thumb'}}
+        run: |
+          mkdir -p status
+          for f in $(shopt -s nullglob ; echo results/code*.csv)
+          do
+            export STEP="results-code$(
+              echo $f | sed -n 's/.*code-.*-\(.*\).csv/-\1/p')"
+            export CONTEXT="results / code$(
+              echo $f | sed -n 's/.*code-.*-\(.*\).csv/ (\1)/p')"
+            export PREV="$(curl -sS \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/status/master" \
+              | jq -re 'select(.sha != env.GITHUB_SHA) | .statuses[]
+                | select(.context == env.CONTEXT).description
+                | capture("Code size is (?<result>[0-9]+)").result' \
+              || echo 0)"
+            export DESCRIPTION="$(./scripts/code.py -u $f -s | awk '
+              NR==2 {printf "Code size is %d B",$2}
+              NR==2 && ENVIRON["PREV"]+0 != 0 {
+                printf " (%+.1f%%)",100*($2-ENVIRON["PREV"])/ENVIRON["PREV"]}')"
+            jq -n '{
+              state: "success",
+              context: env.CONTEXT,
+              description: env.DESCRIPTION,
+              target_job: "${{github.job}} (${{matrix.arch}})",
+              target_step: env.STEP}' \
+              | tee status/code$(
+                echo $f | sed -n 's/.*code-.*-\(.*\).csv/-\1/p').json
+          done
+      - name: upload-status
+        if: ${{matrix.arch == 'thumb'}}
+        uses: actions/upload-artifact@v2
+        with:
+          name: status
+          path: status
+          retention-days: 1
+
+  # run under Valgrind to check for memory errors
+  valgrind:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: |
+          # need toml, also pip3 isn't installed by default?
+          sudo apt-get update -qq
+          sudo apt-get install -qq python3 python3-pip
+          sudo pip3 install toml
+      - name: install-valgrind
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq valgrind
+          valgrind --version
+      # normal tests, we don't need to test all geometries
+      - name: test-valgrind
+        run: make test TESTFLAGS+="-k --valgrind"
+
+  # self-host with littlefs-fuse for a fuzz-like test
+  fuse:
+    runs-on: ubuntu-18.04
+    if: ${{!endsWith(github.ref, '-prefix')}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: |
+          # need toml, also pip3 isn't installed by default?
+          sudo apt-get update -qq
+          sudo apt-get install -qq python3 python3-pip libfuse-dev
+          sudo pip3 install toml
+          fusermount -V
+          gcc --version
+      - uses: actions/checkout@v2
+        with:
+          repository: littlefs-project/littlefs-fuse
+          ref: v2
+          path: littlefs-fuse
+      - name: setup
+        run: |
+          # copy our new version into littlefs-fuse
+          rm -rf littlefs-fuse/littlefs/*
+          cp -r $(git ls-tree --name-only HEAD) littlefs-fuse/littlefs
+
+          # setup disk for littlefs-fuse
+          mkdir mount
+          sudo chmod a+rw /dev/loop0
+          dd if=/dev/zero bs=512 count=128K of=disk
+          losetup /dev/loop0 disk
+      - name: test
+        run: |
+          # self-host test
+          make -C littlefs-fuse
+
+          littlefs-fuse/lfs --format /dev/loop0
+          littlefs-fuse/lfs /dev/loop0 mount
+
+          ls mount
+          mkdir mount/littlefs
+          cp -r $(git ls-tree --name-only HEAD) mount/littlefs
+          cd mount/littlefs
+          stat .
+          ls -flh
+          make -B test
+
+  # test migration using littlefs-fuse
+  migrate:
+    runs-on: ubuntu-18.04
+    if: ${{!endsWith(github.ref, '-prefix')}}
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: |
+          # need toml, also pip3 isn't installed by default?
+          sudo apt-get update -qq
+          sudo apt-get install -qq python3 python3-pip libfuse-dev
+          sudo pip3 install toml
+          fusermount -V
+          gcc --version
+      - uses: actions/checkout@v2
+        with:
+          repository: littlefs-project/littlefs-fuse
+          ref: v2
+          path: v2
+      - uses: actions/checkout@v2
+        with:
+          repository: littlefs-project/littlefs-fuse
+          ref: v1
+          path: v1
+      - name: setup
+        run: |
+          # copy our new version into littlefs-fuse
+          rm -rf v2/littlefs/*
+          cp -r $(git ls-tree --name-only HEAD) v2/littlefs
+
+          # setup disk for littlefs-fuse
+          mkdir mount
+          sudo chmod a+rw /dev/loop0
+          dd if=/dev/zero bs=512 count=128K of=disk
+          losetup /dev/loop0 disk
+      - name: test
+        run: |
+          # compile v1 and v2
+          make -C v1
+          make -C v2
+
+          # run self-host test with v1
+          v1/lfs --format /dev/loop0
+          v1/lfs /dev/loop0 mount
+
+          ls mount
+          mkdir mount/littlefs
+          cp -r $(git ls-tree --name-only HEAD) mount/littlefs
+          cd mount/littlefs
+          stat .
+          ls -flh
+          make -B test
+
+          # attempt to migrate
+          cd ../..
+          fusermount -u mount
+
+          v2/lfs --migrate /dev/loop0
+          v2/lfs /dev/loop0 mount
+
+          # run self-host test with v2 right where we left off
+          ls mount
+          cd mount/littlefs
+          stat .
+          ls -flh
+          make -B test
+
+  # collect coverage info
+  coverage:
+    runs-on: ubuntu-18.04
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq python3 python3-pip lcov
+          sudo pip3 install toml
+      # yes we continue-on-error nearly every step, continue-on-error
+      # at job level apparently still marks a job as failed, which isn't
+      # what we want
+      - uses: actions/download-artifact@v2
+        continue-on-error: true
+        with:
+          name: coverage
+          path: coverage
+      - name: results-coverage
+        continue-on-error: true
+        run: |
+          mkdir -p results
+          lcov $(for f in coverage/*.info ; do echo "-a $f" ; done) \
+            -o results/coverage.info
+          ./scripts/coverage.py results/coverage.info -o results/coverage.csv
+      - name: upload-results
+        uses: actions/upload-artifact@v2
+        with:
+          name: results
+          path: results
+      - name: collect-status
+        run: |
+          mkdir -p status
+          [ -e results/coverage.csv ] || exit 0
+          export STEP="results-coverage"
+          export CONTEXT="results / coverage"
+          export PREV="$(curl -sS \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/status/master" \
+            | jq -re 'select(.sha != env.GITHUB_SHA) | .statuses[]
+              | select(.context == env.CONTEXT).description
+              | capture("Coverage is (?<result>[0-9\\.]+)").result' \
+            || echo 0)"
+          export DESCRIPTION="$(
+            ./scripts/coverage.py -u results/coverage.csv -s | awk -F '[ /%]+' '
+              NR==2 {printf "Coverage is %.1f%% of %d lines",$4,$3}
+              NR==2 && ENVIRON["PREV"]+0 != 0 {
+                printf " (%+.1f%%)",$4-ENVIRON["PREV"]}')"
+          jq -n '{
+            state: "success",
+            context: env.CONTEXT,
+            description: env.DESCRIPTION,
+            target_job: "${{github.job}}",
+            target_step: env.STEP}' \
+            | tee status/coverage.json
+      - name: upload-status
+        uses: actions/upload-artifact@v2
+        with:
+          name: status
+          path: status
+          retention-days: 1

@@ -1,0 +1,2995 @@
+
+<instance locked="false"
+  id="org.chibios.spc5.components.portable.chibios_unitary_tests_engine">
+  <description>
+    <brief>
+      <value>ChibiOS OS Library Test Suite.</value>
+    </brief>
+    <copyright>
+      <value><![CDATA[/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/]]></value>
+    </copyright>
+    <introduction>
+      <value>Test suite for ChibiOS OS Library. The purpose of this
+        suite is to perform unit tests on the library modules and to
+        converge to 100% code coverage through successive improvements.
+      </value>
+    </introduction>
+  </description>
+  <global_data_and_code>
+    <code_prefix>
+      <value>oslib_</value>
+    </code_prefix>
+    <global_definitions>
+      <value />
+    </global_definitions>
+    <global_code>
+      <value />
+    </global_code>
+  </global_data_and_code>
+  <sequences>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Information.</value>
+      </brief>
+      <description>
+        <value>This sequence reports configuration and version
+          information about the OS library.</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include "ch.h"]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Port Info.</value>
+          </brief>
+          <description>
+            <value>Port-related info are reported.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Prints the version string.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[#if defined(PORT_ARCHITECTURE_NAME)
+test_print("--- Architecture:                       ");
+test_println(PORT_ARCHITECTURE_NAME);
+#endif
+#if defined(PORT_CORE_VARIANT_NAME)
+test_print("--- Core Variant:                       ");
+test_println(PORT_CORE_VARIANT_NAME);
+#endif
+#if defined(PORT_COMPILER_NAME)
+test_print("--- Compiler:                           ");
+test_println(PORT_COMPILER_NAME);
+#endif
+#if defined(PORT_INFO)
+test_print("--- Port Info:                          ");
+test_println(PORT_INFO);
+#endif
+#if defined(PORT_NATURAL_ALIGN)
+test_print("--- Natural alignment:                  ");
+test_printn(PORT_NATURAL_ALIGN);
+test_println("");
+#endif
+#if defined(PORT_STACK_ALIGN)
+test_print("--- Stack alignment:                    ");
+test_printn(PORT_STACK_ALIGN);
+test_println("");
+#endif
+#if defined(PORT_WORKING_AREA_ALIGN)
+test_print("--- Working area alignment:             ");
+test_printn(PORT_WORKING_AREA_ALIGN);
+test_println("");
+#endif]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS Library Info.</value>
+          </brief>
+          <description>
+            <value>The version numbers are reported.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Prints the version string.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+test_println("--- Product:                            ChibiOS/LIB");
+test_print("--- Stable Flag:                        ");
+test_printn(CH_OSLIB_STABLE);
+test_println("");
+test_print("--- Version String:                     ");
+test_println(CH_OSLIB_VERSION);
+test_print("--- Major Number:                       ");
+test_printn(CH_OSLIB_MAJOR);
+test_println("");
+test_print("--- Minor Number:                       ");
+test_printn(CH_OSLIB_MINOR);
+test_println("");
+test_print("--- Patch Number:                       ");
+test_printn(CH_OSLIB_PATCH);
+test_println("");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS Library Settings.</value>
+          </brief>
+          <description>
+            <value>The static OS Library settings are reported.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Prints the configuration options settings.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+test_print("--- CH_CFG_USE_MAILBOXES:               ");
+test_printn(CH_CFG_USE_MAILBOXES);
+test_println("");
+test_print("--- CH_CFG_USE_MEMCORE:                 ");
+test_printn(CH_CFG_USE_MEMCORE);
+test_println("");
+test_print("--- CH_CFG_USE_HEAP:                    ");
+test_printn(CH_CFG_USE_HEAP);
+test_println("");
+test_print("--- CH_CFG_USE_MEMPOOLS:                ");
+test_printn(CH_CFG_USE_MEMPOOLS);
+test_println("");
+test_print("--- CH_CFG_USE_OBJ_FIFOS:               ");
+test_printn(CH_CFG_USE_OBJ_FIFOS);
+test_println("");
+test_print("--- CH_CFG_USE_PIPES:                   ");
+test_printn(CH_CFG_USE_PIPES);
+test_println("");
+test_print("--- CH_CFG_USE_OBJ_CACHES:              ");
+test_printn(CH_CFG_USE_OBJ_CACHES);
+test_println("");
+test_print("--- CH_CFG_USE_DELEGATES:               ");
+test_printn(CH_CFG_USE_DELEGATES);
+test_println("");
+test_print("--- CH_CFG_USE_FACTORY:                 ");
+test_printn(CH_CFG_USE_FACTORY);
+test_println("");
+test_print("--- CH_CFG_FACTORY_MAX_NAMES_LENGTH:    ");
+test_printn(CH_CFG_FACTORY_MAX_NAMES_LENGTH);
+test_println("");
+test_print("--- CH_CFG_FACTORY_OBJECTS_REGISTRY:    ");
+test_printn(CH_CFG_FACTORY_OBJECTS_REGISTRY);
+test_println("");
+test_print("--- CH_CFG_FACTORY_GENERIC_BUFFERS:     ");
+test_printn(CH_CFG_FACTORY_GENERIC_BUFFERS);
+test_println("");
+test_print("--- CH_CFG_FACTORY_SEMAPHORES:          ");
+test_printn(CH_CFG_FACTORY_SEMAPHORES);
+test_println("");
+test_print("--- CH_CFG_FACTORY_MAILBOXES:           ");
+test_printn(CH_CFG_FACTORY_MAILBOXES);
+test_println("");
+test_print("--- CH_CFG_FACTORY_OBJ_FIFOS:           ");
+test_printn(CH_CFG_FACTORY_OBJ_FIFOS);
+test_println("");
+test_print("--- CH_CFG_FACTORY_PIPES:               ");
+test_printn(CH_CFG_FACTORY_PIPES);
+test_println("");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Mailboxes.</value>
+      </brief>
+      <description>
+        <value>This sequence tests the ChibiOS library functionalities
+          related to mailboxes.</value>
+      </description>
+      <condition>
+        <value><![CDATA[CH_CFG_USE_MAILBOXES == TRUE]]></value>
+      </condition>
+      <shared_code>
+        <value><![CDATA[#define MB_SIZE 4
+
+static msg_t mb_buffer[MB_SIZE];
+static MAILBOX_DECL(mb1, mb_buffer, MB_SIZE);]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Mailbox normal API, non-blocking tests.</value>
+          </brief>
+          <description>
+            <value>The mailbox normal API is tested without triggering
+              blocking conditions.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[chMBObjectInit(&mb1, mb_buffer, MB_SIZE);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[chMBReset(&mb1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[msg_t msg1, msg2;
+unsigned i;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Testing the mailbox size.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert_lock(chMBGetFreeCountI(&mb1) == MB_SIZE, "wrong size");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Resetting the mailbox, conditions are checked, no
+                  errors expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chMBReset(&mb1);
+test_assert_lock(chMBGetFreeCountI(&mb1) == MB_SIZE, "not empty");
+test_assert_lock(chMBGetUsedCountI(&mb1) == 0, "still full");
+test_assert_lock(mb1.buffer == mb1.wrptr, "write pointer not aligned to base");
+test_assert_lock(mb1.buffer == mb1.rdptr, "read pointer not aligned to base");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing the behavior of API when the mailbox is
+                  in reset state then return in active state.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[msg1 = chMBPostTimeout(&mb1, (msg_t)0, TIME_INFINITE);
+test_assert(msg1 == MSG_RESET, "not in reset state");
+msg1 = chMBPostAheadTimeout(&mb1, (msg_t)0, TIME_INFINITE);
+test_assert(msg1 == MSG_RESET, "not in reset state");
+msg1 = chMBFetchTimeout(&mb1, &msg2, TIME_INFINITE);
+test_assert(msg1 == MSG_RESET, "not in reset state");
+chMBResumeX(&mb1);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Filling the mailbox using chMBPostTimeout() and
+                  chMBPostAheadTimeout() once, no errors expected.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MB_SIZE - 1; i++) {
+  msg1 = chMBPostTimeout(&mb1, 'B' + i, TIME_INFINITE);
+  test_assert(msg1 == MSG_OK, "wrong wake-up message");
+}
+msg1 = chMBPostAheadTimeout(&mb1, 'A', TIME_INFINITE);
+test_assert(msg1 == MSG_OK, "wrong wake-up message");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing intermediate conditions. Data pointers
+                  must be aligned, semaphore counters are checked.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert_lock(chMBGetFreeCountI(&mb1) == 0, "still empty");
+test_assert_lock(chMBGetUsedCountI(&mb1) == MB_SIZE, "not full");
+test_assert_lock(mb1.rdptr == mb1.wrptr, "pointers not aligned");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Emptying the mailbox using chMBFetchTimeout(), no
+                  errors expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MB_SIZE; i++) {
+  msg1 = chMBFetchTimeout(&mb1, &msg2, TIME_INFINITE);
+  test_assert(msg1 == MSG_OK, "wrong wake-up message");
+  test_emit_token(msg2);
+}
+test_assert_sequence("ABCD", "wrong get sequence");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Posting and then fetching one more message, no
+                  errors expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[msg1 = chMBPostTimeout(&mb1, 'B' + i, TIME_INFINITE);
+test_assert(msg1 == MSG_OK, "wrong wake-up message");
+msg1 = chMBFetchTimeout(&mb1, &msg2, TIME_INFINITE);
+test_assert(msg1 == MSG_OK, "wrong wake-up message");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing final conditions. Data pointers must be
+                  aligned to buffer start, semaphore counters are
+                  checked.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert_lock(chMBGetFreeCountI(&mb1) == MB_SIZE, "not empty");
+test_assert_lock(chMBGetUsedCountI(&mb1) == 0, "still full");
+test_assert(mb1.buffer == mb1.wrptr, "write pointer not aligned to base");
+test_assert(mb1.buffer == mb1.rdptr, "read pointer not aligned to base");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Mailbox I-Class API, non-blocking tests.</value>
+          </brief>
+          <description>
+            <value>The mailbox I-Class API is tested without triggering
+              blocking conditions.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[chMBObjectInit(&mb1, mb_buffer, MB_SIZE);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[chMBReset(&mb1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[msg_t msg1, msg2;
+unsigned i;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Testing the mailbox size.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert_lock(chMBGetFreeCountI(&mb1) == MB_SIZE, "wrong size");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Resetting the mailbox, conditions are checked, no
+                  errors expected. The mailbox is then returned in
+                  active state.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chSysLock();
+chMBResetI(&mb1);
+chSysUnlock();
+test_assert_lock(chMBGetFreeCountI(&mb1) == MB_SIZE, "not empty");
+test_assert_lock(chMBGetUsedCountI(&mb1) == 0, "still full");
+test_assert_lock(mb1.buffer == mb1.wrptr, "write pointer not aligned to base");
+test_assert_lock(mb1.buffer == mb1.rdptr, "read pointer not aligned to base");
+chMBResumeX(&mb1);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Filling the mailbox using chMBPostI() and
+                  chMBPostAheadI() once, no errors expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MB_SIZE - 1; i++) {
+  chSysLock();
+  msg1 = chMBPostI(&mb1, 'B' + i);
+  chSysUnlock();
+  test_assert(msg1 == MSG_OK, "wrong wake-up message");
+}
+chSysLock();
+msg1 = chMBPostAheadI(&mb1, 'A');
+chSysUnlock();
+test_assert(msg1 == MSG_OK, "wrong wake-up message");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing intermediate conditions. Data pointers
+                  must be aligned, semaphore counters are checked.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert_lock(chMBGetFreeCountI(&mb1) == 0, "still empty");
+test_assert_lock(chMBGetUsedCountI(&mb1) == MB_SIZE, "not full");
+test_assert_lock(mb1.rdptr == mb1.wrptr, "pointers not aligned");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Emptying the mailbox using chMBFetchI(), no
+                  errors expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MB_SIZE; i++) {
+  chSysLock();
+  msg1 = chMBFetchI(&mb1, &msg2);
+  chSysUnlock();
+  test_assert(msg1 == MSG_OK, "wrong wake-up message");
+  test_emit_token(msg2);
+}
+test_assert_sequence("ABCD", "wrong get sequence");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Posting and then fetching one more message, no
+                  errors expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[msg1 = chMBPostTimeout(&mb1, 'B' + i, TIME_INFINITE);
+test_assert(msg1 == MSG_OK, "wrong wake-up message");
+msg1 = chMBFetchTimeout(&mb1, &msg2, TIME_INFINITE);
+test_assert(msg1 == MSG_OK, "wrong wake-up message");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing final conditions. Data pointers must be
+                  aligned to buffer start, semaphore counters are
+                  checked.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert_lock(chMBGetFreeCountI(&mb1) == MB_SIZE, "not empty");
+test_assert_lock(chMBGetUsedCountI(&mb1) == 0, "still full");
+test_assert(mb1.buffer == mb1.wrptr, "write pointer not aligned to base");
+test_assert(mb1.buffer == mb1.rdptr, "read pointer not aligned to base");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Mailbox timeouts.</value>
+          </brief>
+          <description>
+            <value>The mailbox API is tested for timeouts.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[chMBObjectInit(&mb1, mb_buffer, MB_SIZE);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[chMBReset(&mb1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[msg_t msg1, msg2;
+unsigned i;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Filling the mailbox.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MB_SIZE; i++) {
+  msg1 = chMBPostTimeout(&mb1, 'B' + i, TIME_INFINITE);
+  test_assert(msg1 == MSG_OK, "wrong wake-up message");
+}]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing chMBPostTimeout(), chMBPostI(),
+                  chMBPostAheadTimeout() and chMBPostAheadI() timeout.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[msg1 = chMBPostTimeout(&mb1, 'X', 1);
+test_assert(msg1 == MSG_TIMEOUT, "wrong wake-up message");
+chSysLock();
+msg1 = chMBPostI(&mb1, 'X');
+chSysUnlock();
+test_assert(msg1 == MSG_TIMEOUT, "wrong wake-up message");
+msg1 = chMBPostAheadTimeout(&mb1, 'X', 1);
+test_assert(msg1 == MSG_TIMEOUT, "wrong wake-up message");
+chSysLock();
+msg1 = chMBPostAheadI(&mb1, 'X');
+chSysUnlock();
+test_assert(msg1 == MSG_TIMEOUT, "wrong wake-up message");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Resetting the mailbox. The mailbox is then
+                  returned in active state.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chMBReset(&mb1);
+chMBResumeX(&mb1);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing chMBFetchTimeout() and chMBFetchI()
+                  timeout.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[msg1 = chMBFetchTimeout(&mb1, &msg2, 1);
+test_assert(msg1 == MSG_TIMEOUT, "wrong wake-up message");
+chSysLock();
+msg1 = chMBFetchI(&mb1, &msg2);
+chSysUnlock();
+test_assert(msg1 == MSG_TIMEOUT, "wrong wake-up message");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Pipes</value>
+      </brief>
+      <description>
+        <value>This sequence tests the ChibiOS library functionalities
+          related to pipes.</value>
+      </description>
+      <condition>
+        <value><![CDATA[CH_CFG_USE_PIPES == TRUE]]></value>
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include <string.h>
+
+#define PIPE_SIZE 16
+
+static uint8_t buffer[PIPE_SIZE];
+static PIPE_DECL(pipe1, buffer, PIPE_SIZE);
+
+static const uint8_t pipe_pattern[] = "0123456789ABCDEF";]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Pipes normal API, non-blocking tests.</value>
+          </brief>
+          <description>
+            <value>The pipe functionality is tested by loading and
+              emptying it, all conditions are tested.</value>
+          </description>
+          <condition>
+            <value>
+            </value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[chPipeObjectInit(&pipe1, buffer, PIPE_SIZE);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Resetting pipe.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[chPipeReset(&pipe1);
+
+test_assert((pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == 0),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Writing data, must fail.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+
+n = chPipeWriteTimeout(&pipe1, pipe_pattern, PIPE_SIZE, TIME_IMMEDIATE);
+test_assert(n == 0, "not reset");
+test_assert((pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == 0),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Reading data, must fail.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+uint8_t buf[PIPE_SIZE];
+
+n = chPipeReadTimeout(&pipe1, buf, PIPE_SIZE, TIME_IMMEDIATE);
+test_assert(n == 0, "not reset");
+test_assert((pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == 0),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Reactivating pipe.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[chPipeResume(&pipe1);
+test_assert((pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == 0),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Filling whole pipe.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+
+n = chPipeWriteTimeout(&pipe1, pipe_pattern, PIPE_SIZE, TIME_IMMEDIATE);
+test_assert(n == PIPE_SIZE, "wrong size");
+test_assert((pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == PIPE_SIZE),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Emptying pipe.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+uint8_t buf[PIPE_SIZE];
+
+n = chPipeReadTimeout(&pipe1, buf, PIPE_SIZE, TIME_IMMEDIATE);
+test_assert(n == PIPE_SIZE, "wrong size");
+test_assert((pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == 0),
+            "invalid pipe state");
+test_assert(memcmp(pipe_pattern, buf, PIPE_SIZE) == 0, "content mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Small write.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+
+n = chPipeWriteTimeout(&pipe1, pipe_pattern, 4, TIME_IMMEDIATE);
+test_assert(n == 4, "wrong size");
+test_assert((pipe1.rdptr != pipe1.wrptr) &&
+            (pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.cnt == 4),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Filling remaining space.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+
+n = chPipeWriteTimeout(&pipe1, pipe_pattern, PIPE_SIZE - 4, TIME_IMMEDIATE);
+test_assert(n == PIPE_SIZE - 4, "wrong size");
+test_assert((pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == PIPE_SIZE),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Small Read.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+uint8_t buf[PIPE_SIZE];
+
+n = chPipeReadTimeout(&pipe1, buf, 4, TIME_IMMEDIATE);
+test_assert(n == 4, "wrong size");
+test_assert((pipe1.rdptr != pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == PIPE_SIZE - 4),
+            "invalid pipe state");
+test_assert(memcmp(pipe_pattern, buf, 4) == 0, "content mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Reading remaining data.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+uint8_t buf[PIPE_SIZE];
+
+n = chPipeReadTimeout(&pipe1, buf, PIPE_SIZE - 4, TIME_IMMEDIATE);
+test_assert(n == PIPE_SIZE - 4, "wrong size");
+test_assert((pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == 0),
+            "invalid pipe state");
+test_assert(memcmp(pipe_pattern, buf, PIPE_SIZE - 4) == 0, "content mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Small Write.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+
+n = chPipeWriteTimeout(&pipe1, pipe_pattern, 5, TIME_IMMEDIATE);
+test_assert(n == 5, "wrong size");
+test_assert((pipe1.rdptr != pipe1.wrptr) &&
+            (pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.cnt == 5),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Small Read.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+uint8_t buf[PIPE_SIZE];
+
+n = chPipeReadTimeout(&pipe1, buf, 5, TIME_IMMEDIATE);
+test_assert(n == 5, "wrong size");
+test_assert((pipe1.rdptr == pipe1.wrptr) &&
+            (pipe1.wrptr != pipe1.buffer) &&
+            (pipe1.cnt == 0),
+            "invalid pipe state");
+test_assert(memcmp(pipe_pattern, buf, 5) == 0, "content mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Write wrapping buffer boundary.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+
+n = chPipeWriteTimeout(&pipe1, pipe_pattern, PIPE_SIZE, TIME_IMMEDIATE);
+test_assert(n == PIPE_SIZE, "wrong size");
+test_assert((pipe1.rdptr == pipe1.wrptr) &&
+            (pipe1.wrptr != pipe1.buffer) &&
+            (pipe1.cnt == PIPE_SIZE),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Read wrapping buffer boundary.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+uint8_t buf[PIPE_SIZE];
+
+n = chPipeReadTimeout(&pipe1, buf, PIPE_SIZE, TIME_IMMEDIATE);
+test_assert(n == PIPE_SIZE, "wrong size");
+test_assert((pipe1.rdptr == pipe1.wrptr) &&
+            (pipe1.wrptr != pipe1.buffer) &&
+            (pipe1.cnt == 0),
+            "invalid pipe state");
+test_assert(memcmp(pipe_pattern, buf, PIPE_SIZE) == 0, "content mismatch");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Pipe timeouts.</value>
+          </brief>
+          <description>
+            <value>The pipe API is tested for timeouts.</value>
+          </description>
+          <condition>
+            <value>
+            </value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[chPipeObjectInit(&pipe1, buffer, PIPE_SIZE / 2);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Reading while pipe is empty.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+uint8_t buf[PIPE_SIZE];
+
+n = chPipeReadTimeout(&pipe1, buf, PIPE_SIZE, TIME_IMMEDIATE);
+test_assert(n == 0, "wrong size");
+test_assert((pipe1.rdptr == pipe1.buffer) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == 0),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Writing a string larger than pipe buffer.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[size_t n;
+
+n = chPipeWriteTimeout(&pipe1, pipe_pattern, PIPE_SIZE, TIME_IMMEDIATE);
+test_assert(n == PIPE_SIZE / 2, "wrong size");
+test_assert((pipe1.rdptr == pipe1.wrptr) &&
+            (pipe1.wrptr == pipe1.buffer) &&
+            (pipe1.cnt == PIPE_SIZE / 2),
+            "invalid pipe state");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Jobs Queues</value>
+      </brief>
+      <description>
+        <value>This sequence tests the ChibiOS library functionalities
+          related to Jobs Queues.</value>
+      </description>
+      <condition>
+        <value><![CDATA[CH_CFG_USE_JOBS == TRUE]]></value>
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#define JOBS_QUEUE_SIZE 4
+
+static jobs_queue_t jq;
+static job_descriptor_t jobs[JOBS_QUEUE_SIZE];
+static msg_t msg_queue[JOBS_QUEUE_SIZE];
+
+static void job_slow(void *arg) {
+
+  test_emit_token((int)arg);
+  chThdSleepMilliseconds(10);
+}
+
+static THD_WORKING_AREA(wa1Thread1, 256);
+static THD_WORKING_AREA(wa2Thread1, 256);
+static THD_FUNCTION(Thread1, arg) {
+  msg_t msg;
+  
+  (void)arg;
+
+  do {
+    msg = chJobDispatch(&jq);
+  } while (msg == MSG_OK);
+}
+]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Dispatcher test.</value>
+          </brief>
+          <description>
+            <value>The dispatcher API is tested for functionality.
+            </value>
+          </description>
+          <condition>
+            <value>
+            </value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+thread_t *tp1, *tp2;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Initializing the Jobs Queue object.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+chJobObjectInit(&jq, JOBS_QUEUE_SIZE, jobs, msg_queue);
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Starting the dispatcher threads.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+thread_descriptor_t td1 = {
+  .name  = "dispatcher1",
+  .wbase = wa1Thread1,
+  .wend  = THD_WORKING_AREA_END(wa1Thread1),
+  .prio  = chThdGetPriorityX() - 1,
+  .funcp = Thread1,
+  .arg   = NULL
+};
+tp1 = chThdCreate(&td1);
+
+thread_descriptor_t td2 = {
+  .name  = "dispatcher2",
+  .wbase = wa2Thread1,
+  .wend  = THD_WORKING_AREA_END(wa2Thread1),
+  .prio  = chThdGetPriorityX() - 2,
+  .funcp = Thread1,
+  .arg   = NULL
+};
+tp2 = chThdCreate(&td2);
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Sending jobs with various timings.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+unsigned i;
+job_descriptor_t *jdp;
+
+for (i = 0; i < 8; i++) {
+  jdp = chJobGet(&jq);
+  jdp->jobfunc = job_slow;
+  jdp->jobarg  = (void *)('a' + i);
+  chJobPost(&jq, jdp);
+}
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Sending two null jobs to make threads exit.
+                </value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+job_descriptor_t *jdp;
+
+jdp = chJobGet(&jq);
+jdp->jobfunc = NULL;
+jdp->jobarg  = NULL;
+chJobPost(&jq, jdp);
+jdp = chJobGet(&jq);
+jdp->jobfunc = NULL;
+jdp->jobarg  = NULL;
+chJobPost(&jq, jdp);
+(void) chThdWait(tp1);
+(void) chThdWait(tp2);
+test_assert_sequence("abcdefgh", "unexpected tokens");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Verifying that all descriptors have been returned.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+cnt_t cnt;
+size_t used;
+
+chSysLock();
+cnt = chGuardedPoolGetCounterI(&jq.free);
+used = chMBGetUsedCountI(&jq.mbx);
+chSysUnlock();
+
+test_assert(cnt == (cnt_t)JOBS_QUEUE_SIZE, "lost descriptors");
+test_assert(used == 0U, "pending jobs");
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Thread Delegates</value>
+      </brief>
+      <description>
+        <value>This sequence tests the ChibiOS library functionalities
+          related to Thread Delegates.</value>
+      </description>
+      <condition>
+        <value><![CDATA[CH_CFG_USE_DELEGATES == TRUE]]></value>
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+static bool exit_flag;
+
+static int dis_func0(void) {
+
+  test_emit_token('0');
+
+  return (msg_t)0x55AA;
+}
+
+static msg_t dis_func1(msg_t a) {
+
+  test_emit_token((char)a);
+
+  return (msg_t)a;
+}
+
+static msg_t dis_func2(msg_t a, msg_t b) {
+
+  test_emit_token((char)a);
+  test_emit_token((char)b);
+
+  return (msg_t)a;
+}
+
+static msg_t dis_func3(msg_t a, msg_t b, msg_t c) {
+
+  test_emit_token((char)a);
+  test_emit_token((char)b);
+  test_emit_token((char)c);
+
+  return (msg_t)a;
+}
+
+static msg_t dis_func4(msg_t a, msg_t b, msg_t c, msg_t d) {
+
+  test_emit_token((char)a);
+  test_emit_token((char)b);
+  test_emit_token((char)c);
+  test_emit_token((char)d);
+
+  return (msg_t)a;
+}
+
+static int dis_func_end(void) {
+
+  test_emit_token('Z');
+  exit_flag = true;
+
+  return (msg_t)0xAA55;
+}
+
+static THD_WORKING_AREA(waThread1, 256);
+static THD_FUNCTION(Thread1, arg) {
+
+  (void)arg;
+
+  exit_flag = false;
+  do {
+    chDelegateDispatch();
+  } while (!exit_flag);
+
+  chThdExit(0x0FA5);
+}
+]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Dispatcher test.</value>
+          </brief>
+          <description>
+            <value>The dispatcher API is tested for functionality.
+            </value>
+          </description>
+          <condition>
+            <value>
+            </value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+thread_t *tp;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Starting the dispatcher thread.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+thread_descriptor_t td = {
+  .name  = "dispatcher",
+  .wbase = waThread1,
+  .wend  = THD_WORKING_AREA_END(waThread1),
+  .prio  = chThdGetPriorityX() + 1,
+  .funcp = Thread1,
+  .arg   = NULL
+};
+tp = chThdCreate(&td);
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Calling the default veneers, checking the result
+                  and the emitted tokens.
+                </value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+int retval;
+
+retval = chDelegateCallDirect0(tp, (delegate_fn0_t)dis_func0);
+test_assert(retval == 0x55AA, "invalid return value");
+
+retval = chDelegateCallDirect1(tp, (delegate_fn1_t)dis_func1, 'A');
+test_assert(retval == (int)'A', "invalid return value");
+
+retval = chDelegateCallDirect2(tp, (delegate_fn2_t)dis_func2, 'B', 'C');
+test_assert(retval == (int)'B', "invalid return value");
+
+retval = chDelegateCallDirect3(tp, (delegate_fn3_t)dis_func3, 'D', 'E', 'F');
+test_assert(retval == (int)'D', "invalid return value");
+
+retval = chDelegateCallDirect4(tp, (delegate_fn4_t)dis_func4, 'G', 'H', 'I', 'J');
+test_assert(retval == (int)'G', "invalid return value");
+
+retval = chDelegateCallDirect0(tp, (delegate_fn0_t)dis_func_end);
+test_assert(retval == 0xAA55, "invalid return value");
+
+test_assert_sequence("0ABCDEFGHIJZ", "unexpected tokens");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Waiting for the thread to terminate-</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+msg_t msg = chThdWait(tp);
+test_assert(msg == 0x0FA5, "invalid exit code");
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Objects Caches</value>
+      </brief>
+      <description>
+        <value>This sequence tests the ChibiOS library functionalities
+          related to Objects Caches.</value>
+      </description>
+      <condition>
+        <value><![CDATA[CH_CFG_USE_OBJ_CACHES == TRUE]]></value>
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include <string.h>
+
+#define SIZE_OBJECTS        16
+#define NUM_OBJECTS         4
+#define NUM_HASH_ENTRIES    (NUM_OBJECTS * 2)
+
+/* Cached object type used for test.*/
+typedef struct {
+  oc_object_t       header;
+  uint8_t           data[SIZE_OBJECTS];
+} cached_object_t;
+
+static oc_hash_header_t hash_headers[NUM_HASH_ENTRIES];
+static cached_object_t objects[NUM_OBJECTS];
+static objects_cache_t cache1;
+
+static bool obj_read(objects_cache_t *ocp,
+                     oc_object_t *objp,
+                     bool async) {
+
+  test_emit_token('a' + objp->obj_key);
+
+  objp->obj_flags &= ~OC_FLAG_NOTSYNC;
+
+  if (async) {
+    chCacheReleaseObject(ocp, objp);
+  }
+
+  return false;
+}
+
+static bool obj_write(objects_cache_t *ocp,
+                      oc_object_t *objp,
+                      bool async) {
+  (void)ocp;
+  (void)async;
+
+  test_emit_token('A' + objp->obj_key);
+
+  return false;
+}]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Cache initialization.</value>
+          </brief>
+          <description>
+            <value>A cache object is initialized, some initial
+              conditions are checked.</value>
+          </description>
+          <condition>
+            <value>
+            </value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Cache initialization.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+chCacheObjectInit(&cache1,
+                  NUM_HASH_ENTRIES,
+                  hash_headers,
+                  NUM_OBJECTS,
+                  sizeof (cached_object_t),
+                  objects,
+                  obj_read,
+                  obj_write);
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Getting and releasing objects without
+                  initialization.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+uint32_t i;
+
+for (i = 0; i < (NUM_OBJECTS * 2); i++) {
+  oc_object_t * objp = chCacheGetObject(&cache1, 0U, i);
+
+  test_assert((objp->obj_flags & OC_FLAG_INHASH) != 0U, "not in hash");
+  test_assert((objp->obj_flags & OC_FLAG_NOTSYNC) != 0U, "should not be in sync");
+
+  chCacheReleaseObject(&cache1, objp);
+}
+
+test_assert_sequence("", "unexpected tokens");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Getting and releasing objects with synchronous
+                  initialization.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+uint32_t i;
+bool error;
+
+for (i = 0; i < (NUM_OBJECTS * 2); i++) {
+  oc_object_t *objp = chCacheGetObject(&cache1, 0U, i);
+
+  test_assert((objp->obj_flags & OC_FLAG_INHASH) != 0U, "not in hash");
+  test_assert((objp->obj_flags & OC_FLAG_NOTSYNC) != 0U, "in sync");
+
+  error = chCacheReadObject(&cache1, objp, false);
+
+  test_assert(error == false, "returned error");
+  test_assert((objp->obj_flags & OC_FLAG_INHASH) != 0U, "not in hash");
+  test_assert((objp->obj_flags & OC_FLAG_NOTSYNC) == 0U, "not in sync");
+
+  chCacheReleaseObject(&cache1, objp);
+}
+
+test_assert_sequence("abcdefgh", "unexpected tokens");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Getting and releasing objects with asynchronous
+                  initialization.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+uint32_t i;
+bool error;
+
+for (i = 0; i < (NUM_OBJECTS * 2); i++) {
+  oc_object_t *objp = chCacheGetObject(&cache1, 0U, i);
+
+  test_assert((objp->obj_flags & OC_FLAG_INHASH) != 0U, "not in hash");
+  test_assert((objp->obj_flags & OC_FLAG_NOTSYNC) != 0U, "in sync");
+
+  error = chCacheReadObject(&cache1, objp, true);
+
+  test_assert(error == false, "returned error");
+
+  objp = chCacheGetObject(&cache1, 0U, i);
+
+  test_assert((objp->obj_flags & OC_FLAG_INHASH) != 0U, "not in hash");
+  test_assert((objp->obj_flags & OC_FLAG_NOTSYNC) == 0U, "not in sync");
+
+  chCacheReleaseObject(&cache1, objp);
+}
+
+test_assert_sequence("abcdefgh", "unexpected tokens");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Checking cached objects.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+uint32_t i;
+
+for (i = NUM_OBJECTS; i < (NUM_OBJECTS * 2); i++) {
+  oc_object_t *objp = chCacheGetObject(&cache1, 0U, i);
+
+  test_assert((objp->obj_flags & OC_FLAG_INHASH) != 0U, "not in hash");
+  test_assert((objp->obj_flags & OC_FLAG_NOTSYNC) == 0U, "not in sync");
+
+  chCacheReleaseObject(&cache1, objp);
+}
+
+test_assert_sequence("", "unexpected tokens");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Checking non-cached objects.</value>
+              </description>
+              <tags>
+                <value></value>
+              </tags>
+              <code>
+                <value><![CDATA[
+uint32_t i;
+
+for (i = 0; i < NUM_OBJECTS; i++) {
+  oc_object_t *objp = chCacheGetObject(&cache1, 0U, i);
+
+  test_assert((objp->obj_flags & OC_FLAG_INHASH) != 0U, "not in hash");
+  test_assert((objp->obj_flags & OC_FLAG_NOTSYNC) != 0U, "in sync");
+
+  chCacheReleaseObject(&cache1, objp);
+}
+
+test_assert_sequence("", "unexpected tokens");
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Memory Pools.</value>
+      </brief>
+      <description>
+        <value>This sequence tests the ChibiOS library functionalities
+          related to memory pools.</value>
+      </description>
+      <condition>
+        <value><![CDATA[CH_CFG_USE_MEMPOOLS == TRUE]]></value>
+      </condition>
+      <shared_code>
+        <value><![CDATA[#define MEMORY_POOL_SIZE 4
+
+static uint32_t objects[MEMORY_POOL_SIZE];
+static MEMORYPOOL_DECL(mp1, sizeof (uint32_t), PORT_NATURAL_ALIGN, NULL);
+
+#if CH_CFG_USE_SEMAPHORES
+static GUARDEDMEMORYPOOL_DECL(gmp1, sizeof (uint32_t), PORT_NATURAL_ALIGN);
+#endif
+
+static void *null_provider(size_t size, unsigned align) {
+
+  (void)size;
+  (void)align;
+
+  return NULL;
+}]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Loading and emptying a memory pool.</value>
+          </brief>
+          <description>
+            <value>The memory pool functionality is tested by loading
+              and emptying it, all conditions are tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[chPoolObjectInit(&mp1, sizeof (uint32_t), NULL);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[unsigned i;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Adding the objects to the pool using
+                  chPoolLoadArray().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chPoolLoadArray(&mp1, objects, MEMORY_POOL_SIZE);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Emptying the pool using chPoolAlloc().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MEMORY_POOL_SIZE; i++)
+  test_assert(chPoolAlloc(&mp1) != NULL, "list empty");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Now must be empty.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert(chPoolAlloc(&mp1) == NULL, "list not empty");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Adding the objects to the pool using
+                  chPoolFree().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MEMORY_POOL_SIZE; i++)
+  chPoolFree(&mp1, &objects[i]);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Emptying the pool using chPoolAlloc() again.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MEMORY_POOL_SIZE; i++)
+  test_assert(chPoolAlloc(&mp1) != NULL, "list empty");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Now must be empty again.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert(chPoolAlloc(&mp1) == NULL, "list not empty");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Covering the case where a provider is unable to
+                  return more memory.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chPoolObjectInit(&mp1, sizeof (uint32_t), null_provider);
+test_assert(chPoolAlloc(&mp1) == NULL, "provider returned memory");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Loading and emptying a guarded memory pool without waiting.</value>
+          </brief>
+          <description>
+            <value>The memory pool functionality is tested by loading
+              and emptying it, all conditions are tested.</value>
+          </description>
+          <condition>
+            <value><![CDATA[CH_CFG_USE_SEMAPHORES == TRUE]]></value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[chGuardedPoolObjectInit(&gmp1, sizeof (uint32_t));]]></value>
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[unsigned i;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Adding the objects to the pool using
+                  chGuardedPoolLoadArray().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chGuardedPoolLoadArray(&gmp1, objects, MEMORY_POOL_SIZE);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Emptying the pool using
+                  chGuardedPoolAllocTimeout().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MEMORY_POOL_SIZE; i++)
+  test_assert(chGuardedPoolAllocTimeout(&gmp1, TIME_IMMEDIATE) != NULL, "list empty");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Now must be empty.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert(chGuardedPoolAllocTimeout(&gmp1, TIME_IMMEDIATE) == NULL, "list not empty");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Adding the objects to the pool using
+                  chGuardedPoolFree().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MEMORY_POOL_SIZE; i++)
+  chGuardedPoolFree(&gmp1, &objects[i]);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Emptying the pool using
+                  chGuardedPoolAllocTimeout() again.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < MEMORY_POOL_SIZE; i++)
+  test_assert(chGuardedPoolAllocTimeout(&gmp1, TIME_IMMEDIATE) != NULL, "list empty");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Now must be empty again.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert(chGuardedPoolAllocTimeout(&gmp1, TIME_IMMEDIATE) == NULL, "list not empty");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Guarded Memory Pools timeout.</value>
+          </brief>
+          <description>
+            <value>The timeout features for the Guarded Memory Pools is
+              tested.</value>
+          </description>
+          <condition>
+            <value><![CDATA[CH_CFG_USE_SEMAPHORES == TRUE]]></value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[chGuardedPoolObjectInit(&gmp1, sizeof (uint32_t));]]></value>
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Trying to allocate with 100mS timeout, must fail
+                  because the pool is empty.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert(chGuardedPoolAllocTimeout(&gmp1, TIME_MS2I(100)) == NULL, "list not empty");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Memory Heaps.</value>
+      </brief>
+      <description>
+        <value>This sequence tests the ChibiOS library functionalities
+          related to memory heaps.</value>
+      </description>
+      <condition>
+        <value><![CDATA[CH_CFG_USE_HEAP == TRUE]]></value>
+      </condition>
+      <shared_code>
+        <value><![CDATA[#define ALLOC_SIZE 16
+#define HEAP_SIZE (ALLOC_SIZE * 8)
+
+static memory_heap_t test_heap;
+static uint8_t test_heap_buffer[HEAP_SIZE];]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Allocation and fragmentation.</value>
+          </brief>
+          <description>
+            <value>Series of allocations/deallocations are performed in
+              carefully designed sequences in order to stimulate all the
+              possible code paths inside the allocator. The test expects
+              to find the heap back to the initial status after each
+              sequence.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[chHeapObjectInit(&test_heap, test_heap_buffer, sizeof(test_heap_buffer));]]></value>
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[void *p1, *p2, *p3;
+size_t n, sz;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Testing initial conditions, the heap must not be
+                  fragmented and one free block present.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert(chHeapStatus(&test_heap, &sz, NULL) == 1, "heap fragmented");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Trying to allocate an block bigger than available
+                  space, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[p1 = chHeapAlloc(&test_heap, sizeof test_heap_buffer * 2);
+test_assert(p1 == NULL, "allocation not failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Single block allocation using chHeapAlloc() then
+                  the block is freed using chHeapFree(), must not fail.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[p1 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+test_assert(p1 != NULL, "allocation failed");
+chHeapFree(p1);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Using chHeapStatus() to assess the heap state.
+                  There must be at least one free block of sufficient
+                  size.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[size_t total_size, largest_size;
+
+n = chHeapStatus(&test_heap, &total_size, &largest_size);
+test_assert(n == 1, "missing free block");
+test_assert(total_size >= ALLOC_SIZE, "unexpected heap state");
+test_assert(total_size == largest_size, "unexpected heap state");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Allocating then freeing in the same order.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[p1 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+p2 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+p3 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+chHeapFree(p1);                                 /* Does not merge.*/
+chHeapFree(p2);                                 /* Merges backward.*/
+chHeapFree(p3);                                 /* Merges both sides.*/
+test_assert(chHeapStatus(&test_heap, &n, NULL) == 1, "heap fragmented");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Allocating then freeing in reverse order.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[p1 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+p2 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+p3 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+chHeapFree(p3);                                 /* Merges forward.*/
+chHeapFree(p2);                                 /* Merges forward.*/
+chHeapFree(p1);                                 /* Merges forward.*/
+test_assert(chHeapStatus(&test_heap, &n, NULL) == 1, "heap fragmented");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Small fragments handling. Checking the behavior
+                  when allocating blocks with size not multiple of
+                  alignment unit.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[p1 = chHeapAlloc(&test_heap, ALLOC_SIZE + 1);
+p2 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+chHeapFree(p1);
+test_assert(chHeapStatus(&test_heap, &n, NULL) == 2, "invalid state");
+p1 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+/* Note, the first situation happens when the alignment size is smaller
+   than the header size, the second in the other cases.*/
+test_assert((chHeapStatus(&test_heap, &n, NULL) == 1) ||
+            (chHeapStatus(&test_heap, &n, NULL) == 2), "heap fragmented");
+chHeapFree(p2);
+chHeapFree(p1);
+test_assert(chHeapStatus(&test_heap, &n, NULL) == 1, "heap fragmented");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Skipping a fragment, the first fragment in the
+                  list is too small so the allocator must pick the
+                  second one.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[p1 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+p2 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+chHeapFree(p1);
+test_assert( chHeapStatus(&test_heap, &n, NULL) == 2, "invalid state");
+p1 = chHeapAlloc(&test_heap, ALLOC_SIZE * 2); /* Skips first fragment.*/
+chHeapFree(p1);
+chHeapFree(p2);
+test_assert(chHeapStatus(&test_heap, &n, NULL) == 1, "heap fragmented");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Allocating the whole available space.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[(void)chHeapStatus(&test_heap, &n, NULL);
+p1 = chHeapAlloc(&test_heap, n);
+test_assert(p1 != NULL, "allocation failed");
+test_assert(chHeapStatus(&test_heap, NULL, NULL) == 0, "not empty");
+chHeapFree(p1);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing final conditions. The heap geometry must
+                  be the same than the one registered at beginning.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[test_assert(chHeapStatus(&test_heap, &n, NULL) == 1, "heap fragmented");
+test_assert(n == sz, "size changed");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Default Heap.</value>
+          </brief>
+          <description>
+            <value>The default heap is pre-allocated in the system. We
+              test base functionality.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[void *p1;
+size_t total_size, largest_size;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Single block allocation using chHeapAlloc() then
+                  the block is freed using chHeapFree(), must not fail.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[(void)chHeapStatus(NULL, &total_size, &largest_size);
+p1 = chHeapAlloc(&test_heap, ALLOC_SIZE);
+test_assert(p1 != NULL, "allocation failed");
+chHeapFree(p1);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Testing allocation failure.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[p1 = chHeapAlloc(NULL, (size_t)-256);
+test_assert(p1 == NULL, "allocation not failed");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Objects Factory.</value>
+      </brief>
+      <description>
+        <value>This sequence tests the ChibiOS library functionalities
+          related to the object factory.</value>
+      </description>
+      <condition>
+        <value><![CDATA[(CH_CFG_USE_FACTORY == TRUE) && (CH_CFG_USE_MEMPOOLS == TRUE) && (CH_CFG_USE_HEAP == TRUE)]]></value>
+      </condition>
+      <shared_code>
+        <value />
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>Objects Registry.</value>
+          </brief>
+          <description>
+            <value>This test case verifies the static objects registry.
+            </value>
+          </description>
+          <condition>
+            <value><![CDATA[CH_CFG_FACTORY_OBJECTS_REGISTRY == TRUE]]></value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[registered_object_t *rop;
+
+rop = chFactoryFindObject("myobj");
+if (rop != NULL) {
+  while (rop->element.refs > 0U) {
+    chFactoryReleaseObject(rop);
+  }
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[registered_object_t *rop;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Retrieving a registered object by name, must not
+                  exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[rop = chFactoryFindObject("myobj");
+test_assert(rop == NULL, "found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Registering an object, it must not exists, must
+                  succeed.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[static uint32_t myobj = 0x55aa;
+
+rop = chFactoryRegisterObject("myobj", (void *)&myobj);
+test_assert(rop != NULL, "cannot register");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Registering an object with the same name, must
+                  fail.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[registered_object_t *rop1;
+static uint32_t myobj = 0x55aa;
+
+rop1 = chFactoryRegisterObject("myobj", (void *)&myobj);
+test_assert(rop1 == NULL, "can register");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the registered object by name, must
+                  exist, then increasing the reference counter, finally
+                  releasing both references.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[registered_object_t *rop1, *rop2;
+
+rop1 = chFactoryFindObject("myobj");
+test_assert(rop1 != NULL, "not found");
+test_assert(*(uint32_t *)(rop1->objp) == 0x55aa, "object mismatch");
+test_assert(rop == rop1, "object reference mismatch");
+test_assert(rop1->element.refs == 2, "object reference mismatch");
+
+rop2 = (registered_object_t *)chFactoryDuplicateReference(&rop1->element);
+test_assert(rop1 == rop2, "object reference mismatch");
+test_assert(*(uint32_t *)(rop2->objp) == 0x55aa, "object mismatch");
+test_assert(rop2->element.refs == 3, "object reference mismatch");
+
+chFactoryReleaseObject(rop2);
+test_assert(rop1->element.refs == 2, "references mismatch");
+
+chFactoryReleaseObject(rop1);
+test_assert(rop->element.refs == 1, "references mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Releasing the first reference to the object, must
+                  not trigger an assertion.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chFactoryReleaseObject(rop);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the registered object by name again,
+                  must not exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[rop = chFactoryFindObject("myobj");
+test_assert(rop == NULL, "found");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Dynamic Buffers Factory.</value>
+          </brief>
+          <description>
+            <value>This test case verifies the dynamic buffers factory.
+            </value>
+          </description>
+          <condition>
+            <value><![CDATA[CH_CFG_FACTORY_GENERIC_BUFFERS == TRUE]]></value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[dyn_buffer_t *dbp;
+
+dbp = chFactoryFindBuffer("mybuf");
+if (dbp != NULL) {
+  while (dbp->element.refs > 0U) {
+    chFactoryReleaseBuffer(dbp);
+  }
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[dyn_buffer_t *dbp;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Retrieving a dynamic buffer by name, must not
+                  exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dbp = chFactoryFindBuffer("mybuf");
+test_assert(dbp == NULL, "found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic buffer it must not exists,
+                  must succeed.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dbp = chFactoryCreateBuffer("mybuf", 128U);
+test_assert(dbp != NULL, "cannot create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic buffer with the same name,
+                  must fail.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_buffer_t *dbp1;
+
+dbp1 = chFactoryCreateBuffer("mybuf", 128U);
+test_assert(dbp1 == NULL, "can create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic buffer by name, must
+                  exist, then increasing the reference counter, finally
+                  releasing both references.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_buffer_t *dbp1, *dbp2;
+
+dbp1 = chFactoryFindBuffer("mybuf");
+test_assert(dbp1 != NULL, "not found");
+test_assert(dbp == dbp1, "object reference mismatch");
+test_assert(dbp1->element.refs == 2, "object reference mismatch");
+
+dbp2 = (dyn_buffer_t *)chFactoryDuplicateReference(&dbp1->element);
+test_assert(dbp1 == dbp2, "object reference mismatch");
+test_assert(dbp2->element.refs == 3, "object reference mismatch");
+
+chFactoryReleaseBuffer(dbp2);
+test_assert(dbp1->element.refs == 2, "references mismatch");
+
+chFactoryReleaseBuffer(dbp1);
+test_assert(dbp->element.refs == 1, "references mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Releasing the first reference to the dynamic
+                  buffer, must not trigger an assertion.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chFactoryReleaseBuffer(dbp);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic buffer by name again, must
+                  not exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dbp = chFactoryFindBuffer("mybuf");
+test_assert(dbp == NULL, "found");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Dynamic Semaphores Factory.</value>
+          </brief>
+          <description>
+            <value>This test case verifies the dynamic semaphores
+              factory.</value>
+          </description>
+          <condition>
+            <value><![CDATA[CH_CFG_FACTORY_SEMAPHORES == TRUE]]></value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[dyn_semaphore_t *dsp;
+
+dsp = chFactoryFindSemaphore("mysem");
+if (dsp != NULL) {
+  while (dsp->element.refs > 0U) {
+    chFactoryReleaseSemaphore(dsp);
+  }
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[dyn_semaphore_t *dsp;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Retrieving a dynamic semaphore by name, must not
+                  exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dsp = chFactoryFindSemaphore("mysem");
+test_assert(dsp == NULL, "found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic semaphore it must not exists,
+                  must succeed.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dsp = chFactoryCreateSemaphore("mysem", 0);
+test_assert(dsp != NULL, "cannot create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic semaphore with the same name,
+                  must fail.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_semaphore_t *dsp1;
+
+dsp1 = chFactoryCreateSemaphore("mysem", 0);
+test_assert(dsp1 == NULL, "can create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic semaphore by name, must
+                  exist, then increasing the reference counter, finally
+                  releasing both references.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_semaphore_t *dsp1, *dsp2;
+
+dsp1 = chFactoryFindSemaphore("mysem");
+test_assert(dsp1 != NULL, "not found");
+test_assert(dsp == dsp1, "object reference mismatch");
+test_assert(dsp1->element.refs == 2, "object reference mismatch");
+
+dsp2 = (dyn_semaphore_t *)chFactoryDuplicateReference(&dsp1->element);
+test_assert(dsp1 == dsp2, "object reference mismatch");
+test_assert(dsp2->element.refs == 3, "object reference mismatch");
+
+chFactoryReleaseSemaphore(dsp2);
+test_assert(dsp1->element.refs == 2, "references mismatch");
+
+chFactoryReleaseSemaphore(dsp1);
+test_assert(dsp->element.refs == 1, "references mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Releasing the first reference to the dynamic
+                  semaphore must not trigger an assertion.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chFactoryReleaseSemaphore(dsp);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic semaphore by name again,
+                  must not exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dsp = chFactoryFindSemaphore("mysem");
+test_assert(dsp == NULL, "found");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Dynamic Mailboxes Factory.</value>
+          </brief>
+          <description>
+            <value>This test case verifies the dynamic mailboxes
+              factory.</value>
+          </description>
+          <condition>
+            <value><![CDATA[CH_CFG_FACTORY_MAILBOXES == TRUE]]></value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[dyn_mailbox_t *dmp;
+
+dmp = chFactoryFindMailbox("mymbx");
+if (dmp != NULL) {
+  while (dmp->element.refs > 0U) {
+    chFactoryReleaseMailbox(dmp);
+  }
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[dyn_mailbox_t *dmp;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Retrieving a dynamic mailbox by name, must not
+                  exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dmp = chFactoryFindMailbox("mymbx");
+test_assert(dmp == NULL, "found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic mailbox it must not exists,
+                  must succeed.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dmp = chFactoryCreateMailbox("mymbx", 16U);
+test_assert(dmp != NULL, "cannot create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic mailbox with the same name,
+                  must fail.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_mailbox_t *dmp1;
+
+dmp1 = chFactoryCreateMailbox("mymbx", 16U);
+test_assert(dmp1 == NULL, "can create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic mailbox by name, must
+                  exist, then increasing the reference counter, finally
+                  releasing both references.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_mailbox_t *dmp1, *dmp2;
+
+dmp1 = chFactoryFindMailbox("mymbx");
+test_assert(dmp1 != NULL, "not found");
+test_assert(dmp == dmp1, "object reference mismatch");
+test_assert(dmp1->element.refs == 2, "object reference mismatch");
+
+dmp2 = (dyn_mailbox_t *)chFactoryDuplicateReference(&dmp1->element);
+test_assert(dmp1 == dmp2, "object reference mismatch");
+test_assert(dmp2->element.refs == 3, "object reference mismatch");
+
+chFactoryReleaseMailbox(dmp2);
+test_assert(dmp1->element.refs == 2, "references mismatch");
+
+chFactoryReleaseMailbox(dmp1);
+test_assert(dmp->element.refs == 1, "references mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Releasing the first reference to the dynamic
+                  mailbox must not trigger an assertion.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chFactoryReleaseMailbox(dmp);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic mailbox by name again,
+                  must not exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dmp = chFactoryFindMailbox("mymbx");
+test_assert(dmp == NULL, "found");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Dynamic Objects FIFOs Factory.</value>
+          </brief>
+          <description>
+            <value>This test case verifies the dynamic objects FIFOs
+              factory.</value>
+          </description>
+          <condition>
+            <value><![CDATA[CH_CFG_FACTORY_OBJ_FIFOS == TRUE]]></value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[dyn_objects_fifo_t *dofp;
+
+dofp = chFactoryFindObjectsFIFO("myfifo");
+if (dofp != NULL) {
+  while (dofp->element.refs > 0U) {
+    chFactoryReleaseObjectsFIFO(dofp);
+  }
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[dyn_objects_fifo_t *dofp;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Retrieving a dynamic objects FIFO by name, must
+                  not exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dofp = chFactoryFindObjectsFIFO("myfifo");
+test_assert(dofp == NULL, "found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic objects FIFO it must not
+                  exists, must succeed.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dofp = chFactoryCreateObjectsFIFO("myfifo", 16U, 16U, PORT_NATURAL_ALIGN);
+test_assert(dofp != NULL, "cannot create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic objects FIFO with the same
+                  name, must fail.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_objects_fifo_t *dofp1;
+
+dofp1 = chFactoryCreateObjectsFIFO("myfifo", 16U, 16U, PORT_NATURAL_ALIGN);
+test_assert(dofp1 == NULL, "can create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic objects FIFO by name, must
+                  exist, then increasing the reference counter, finally
+                  releasing both references.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_objects_fifo_t *dofp1, *dofp2;
+
+dofp1 = chFactoryFindObjectsFIFO("myfifo");
+test_assert(dofp1 != NULL, "not found");
+test_assert(dofp == dofp1, "object reference mismatch");
+test_assert(dofp1->element.refs == 2, "object reference mismatch");
+
+dofp2 = (dyn_objects_fifo_t *)chFactoryDuplicateReference(&dofp1->element);
+test_assert(dofp1 == dofp2, "object reference mismatch");
+test_assert(dofp2->element.refs == 3, "object reference mismatch");
+
+chFactoryReleaseObjectsFIFO(dofp2);
+test_assert(dofp1->element.refs == 2, "references mismatch");
+
+chFactoryReleaseObjectsFIFO(dofp1);
+test_assert(dofp->element.refs == 1, "references mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Releasing the first reference to the dynamic
+                  objects FIFO must not trigger an assertion.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chFactoryReleaseObjectsFIFO(dofp);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic objects FIFO by name
+                  again, must not exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dofp = chFactoryFindObjectsFIFO("myfifo");
+test_assert(dofp == NULL, "found");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>Dynamic Pipes Factory.</value>
+          </brief>
+          <description>
+            <value>This test case verifies the dynamic pipes factory.
+            </value>
+          </description>
+          <condition>
+            <value><![CDATA[CH_CFG_FACTORY_PIPES == TRUE]]></value>
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[dyn_pipe_t *dpp;
+
+dpp = chFactoryFindPipe("mypipe");
+if (dpp != NULL) {
+  while (dpp->element.refs > 0U) {
+    chFactoryReleasePipe(dpp);
+  }
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[dyn_pipe_t *dpp;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Retrieving a dynamic pipe by name, must not
+                  exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dpp = chFactoryFindPipe("mypipe");
+test_assert(dpp == NULL, "found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic pipe it must not exists, must
+                  succeed.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dpp = chFactoryCreatePipe("mypipe", 16U);
+test_assert(dpp != NULL, "cannot create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating a dynamic pipe with the same name, must
+                  fail.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_pipe_t *dpp1;
+
+dpp1 = chFactoryCreatePipe("mypipe", 16U);
+test_assert(dpp1 == NULL, "can create");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic pipe by name, must exist,
+                  then increasing the reference counter, finally
+                  releasing both references.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dyn_pipe_t *dpp1, *dpp2;
+
+dpp1 = chFactoryFindPipe("mypipe");
+test_assert(dpp1 != NULL, "not found");
+test_assert(dpp == dpp1, "object reference mismatch");
+test_assert(dpp1->element.refs == 2, "object reference mismatch");
+
+dpp2 = (dyn_pipe_t *)chFactoryDuplicateReference(&dpp1->element);
+test_assert(dpp1 == dpp2, "object reference mismatch");
+test_assert(dpp2->element.refs == 3, "object reference mismatch");
+
+chFactoryReleasePipe(dpp2);
+test_assert(dpp1->element.refs == 2, "references mismatch");
+
+chFactoryReleasePipe(dpp1);
+test_assert(dpp->element.refs == 1, "references mismatch");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Releasing the first reference to the dynamic pipe
+                  must not trigger an assertion.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[chFactoryReleasePipe(dpp);]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Retrieving the dynamic pipe by name again, must
+                  not exist.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[dpp = chFactoryFindPipe("mypipe");
+test_assert(dpp == NULL, "found");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+  </sequences>
+</instance>

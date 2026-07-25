@@ -1,0 +1,56 @@
+
+DISTRIBUTION NOTES
+
+To install gSOAP, unpack the archive. You will get the following files:
+
+README.txt	read this first
+LICENSE.txt	licensing information for users of the GPLv2 open source version
+INSTALL.txt	installation instructions
+NOTES.txt	this file
+license.pdf	gSOAP public license applicable to some parts of the software
+factsheet.pdf	Quick overview of facts and features
+
+The 'gsoap' folder contains essential source code for the run-time libraries:
+
+stdsoap2.h	header file for stdsoap2.c[pp]
+stdsoap2.c	C library with the gSOAP engine, this is the source for libgsoap
+stdsoap2.cpp	C++ library (functionality identical to stdsoap2.c)
+dom.c		C DOM parser
+dom.cpp		C++ DOM parser (functionality identical to dom.c)
+
+and the following folders:
+
+bin		pre-built binaries of wsdl2h and soapcpp2 for Mac OS and Windows
+doc		documentation, including the user guide
+samples		examples
+import		#import-ed header files for soapcpp2 compiler
+plugin		plug-ins for advanced features
+custom		custom serializers for various data types
+mod_gsoap	Apache mod_gsoap, IIS, and WinInet support
+extras		contributed extras
+src		soapcpp2 tool source files
+wsdl		wsdl2h tool source files for WSDL and XSD translation
+WS		WS-typemap.dat and WS-* protocol schemas for plug-in development
+uddi2		UDDI v2
+Palm		Palm OS support (deprecated)
+Symbian		Symbian OS support
+TandemNonStop	Tandem NonStop OS support
+VisualStudio2005 To build soapcpp2 and wsdl2h for MS VS platforms 2005 and up
+
+The SOAP/XML client/server examples, XML-RPC, JSON, RSS, DOM parsing,
+WS-Security, SOAP/XML auto-testing services, XML databindings, and other
+examples of advanced features are available in the 'samples' subdirectory.
+
+The 'gsoap_mod' directory includes Apache 1.x and 2.0 mods for gSOAP, IIS, and
+WinInet support. WinInet allows gsoap to use the WinInet API instead of calls
+to the socket API. The primary benefit of this arrangement is that "if IE
+works, your program will work". There is no need to read proxy settings from
+the registry, deal with proxy configuration scripts, etc. Changes in the
+"Internet Options" dialog box will immediately take effect in your program.
+Additionally, this will allow gsoap to handle forms of authentication not yet
+supported natively, such as NTLM (Integrated Windows Authentication), etc.
+
+Contributions are included in the 'extras' directory. All contributions are
+covered by the gSOAP public license, unless specifically stated otherwise in
+the contributed file(s).
+

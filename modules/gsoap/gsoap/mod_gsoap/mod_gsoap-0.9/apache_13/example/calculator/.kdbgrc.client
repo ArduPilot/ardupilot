@@ -1,0 +1,28 @@
+[Breakpoint 0]
+Enabled=true
+File=calcclnt.cpp
+Line=12
+Temporary=false
+
+[Breakpoint 1]
+Enabled=true
+File=../../../stdsoap2.cpp
+Line=5105
+Temporary=false
+
+[Breakpoint 2]
+Enabled=true
+File=../../../stdsoap2.cpp
+Line=484
+Temporary=false
+
+[General]
+DebuggerCmdStr=
+FileVersion=1
+ProgramArgs=1 + 2
+TTYLevel=7
+WorkingDirectory=
+
+[Memory]
+ColumnWidths=80,0
+NumExprs=0

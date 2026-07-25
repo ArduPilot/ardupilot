@@ -1,0 +1,35 @@
+#! /usr/bin/env python
+# coding: utf-8
+
+def options(opt):
+	opt.load('compiler_c')
+def configure(cnf):
+	cnf.load('compiler_c')
+def build(bld):
+	from waflib import Build
+	bld.post_mode = Build.POST_LAZY
+
+	def create_files(tsk):
+		out = tsk.generator.path.make_node('generated')
+		from waflib import Utils
+		for x in out.ant_glob('*.c'):
+			x.delete()
+		import random
+		for x in range(2):
+			num = random.randint(0, 2**31)
+			k = out.make_node('test%d.c' % num)
+			k.write('int k%d = %d;' % (num, num))
+	bld(rule=create_files, source='wscript', name='codegen')
+
+	bld.add_group()
+
+	bld.program(features='find_them', source=['main.c'], target='app')
+
+from waflib.TaskGen import feature, before
+from waflib import Utils
+@feature('find_them')
+@before('process_source')
+def list_the_source_files(self):
+	self.source = Utils.to_list(self.source) + self.path.ant_glob('generated/*.c')
+
+

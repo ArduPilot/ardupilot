@@ -1,0 +1,5 @@
+<map id="soap_wsse_data" name="soap_wsse_data">
+<area shape="rect" id="node2" href="$structsoap__mec__data.html" title="The mecevp engine context data. " alt="" coords="5,99,120,127"/>
+<area shape="rect" id="node4" href="$structsoap__wsse__digest.html" title="Digest dictionary: linked list of ID&#45;hash pairs. " alt="" coords="145,99,276,127"/>
+<area shape="rect" id="node6" href="$structsoap__smd__data.html" title="The smdevp engine context data, which is hooked up to soap&#45;&gt;data[0]. " alt="" coords="153,6,268,34"/>
+</map>

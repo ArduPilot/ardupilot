@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE doc [
+  <!ENTITY oop_base_object SYSTEM "oop_base_object.xml">
+  <!ENTITY oop_base_interface SYSTEM "oop_base_interface.xml">
+  <!ENTITY oop_block_io_interface SYSTEM "oop_block_io_interface.xml">
+  <!ENTITY oop_referenced_object SYSTEM "oop_referenced_object.xml">
+  <!ENTITY oop_sequential_stream SYSTEM "oop_sequential_stream.xml">
+  <!ENTITY oop_synchronized_object SYSTEM "oop_synchronized_object.xml">
+  <!ENTITY oop_memstreams SYSTEM "oop_memstreams.xml">
+  <!ENTITY oop_nullstreams SYSTEM "oop_nullstreams.xml">
+]>
+<!-- Class/interfaces definitions -->
+<instance
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd">
+  <modules>
+    &oop_base_interface;
+    &oop_base_object;
+    &oop_block_io_interface;
+    &oop_referenced_object;
+    &oop_sequential_stream;
+    &oop_synchronized_object;
+    &oop_memstreams;
+    &oop_nullstreams;
+  </modules>
+</instance>

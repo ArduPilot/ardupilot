@@ -1,0 +1,9 @@
+# This script uses libA to do some internal logic. It uses the default
+# behavior so it will be re-archived every time libA changes, even if
+# changes in libA are only visible at runtime.
+bld.stlib(
+	target='B',
+	source='sum.c',
+	use='A',
+	includes='.',
+	export_includes='.')

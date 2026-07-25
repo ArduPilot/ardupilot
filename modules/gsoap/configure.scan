@@ -1,0 +1,59 @@
+# Process this file with autoconf to produce a configure script.
+AC_INIT(FULL-PACKAGE-NAME, VERSION, BUG-REPORT-ADDRESS)
+AC_CONFIG_SRCDIR([config.h.in])
+AC_CONFIG_HEADER([config.h])
+
+# Checks for programs.
+AC_PROG_CXX
+AC_PROG_CC
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_AWK
+AC_PROG_CPP
+AC_PROG_LEX
+AC_PROG_RANLIB
+AC_PROG_YACC
+
+# Checks for libraries.
+# FIXME: Replace `main' with a function in `-le':
+AC_CHECK_LIB([e], [main])
+# FIXME: Replace `main' with a function in `-lgsoap':
+AC_CHECK_LIB([gsoap], [main])
+# FIXME: Replace `main' with a function in `-links':
+AC_CHECK_LIB([inks], [main])
+# FIXME: Replace `main' with a function in `-lm':
+AC_CHECK_LIB([m], [main])
+
+# Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h limits.h netdb.h netinet/in.h stddef.h stdlib.h string.h strings.h sys/socket.h sys/time.h unistd.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_HEADER_TIME
+AC_STRUCT_TM
+
+# Checks for library functions.
+AC_FUNC_MALLOC
+AC_FUNC_MKTIME
+AC_TYPE_SIGNAL
+AC_FUNC_STRFTIME
+AC_FUNC_STRTOD
+AC_CHECK_FUNCS([gethostbyname localtime_r memset pow select socket strchr strerror strrchr strstr strtol strtoul])
+
+AC_CONFIG_FILES([Makefile
+                 soapcpp2/Makefile
+                 soapcpp2/samples/Makefile
+                 soapcpp2/samples/calc/Makefile
+                 soapcpp2/samples/dime/Makefile
+                 soapcpp2/samples/factory/Makefile
+                 soapcpp2/samples/factorytest/Makefile
+                 soapcpp2/samples/mybubble/Makefile
+                 soapcpp2/samples/quote/Makefile
+                 soapcpp2/samples/quote2/Makefile
+                 soapcpp2/samples/quote3/Makefile
+                 soapcpp2/samples/quotex/Makefile
+                 soapcpp2/src/Makefile])
+AC_OUTPUT

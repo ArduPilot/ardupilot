@@ -1,0 +1,19 @@
+build
+compile_commands.json
+.vscode
+.ycm_extra_conf.py
+.color_coded
+CMakeLists.txt.user
+tags
+
+# eclipse
+.cproject
+.project
+
+src/c/profile/transport/ip/tcp/tcp_transport_external.c
+src/c/profile/transport/ip/udp/udp_transport_external.c
+src/c/profile/transport/serial/serial_transport_external.c
+
+include/uxr/client/profile/transport/ip/tcp/tcp_transport_external.h
+include/uxr/client/profile/transport/ip/udp/udp_transport_external.h
+include/uxr/client/profile/transport/serial/serial_transport_external.h

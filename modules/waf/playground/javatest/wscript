@@ -1,0 +1,76 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Federico Pellegrin, 2019 (fedepell)
+
+#
+# Simple script to demonstrate integration of Java Unit testing inside
+# standard waf_unit_test using either TestNG or JUnit
+#
+
+def test_results(bld):
+	"""
+	Custom post- function that prints out test results.
+	"""
+	lst = getattr(bld, 'utest_results', [])
+	if not lst:
+		return
+	for (f, code, out, err) in lst:
+		print(out.decode('utf-8'))
+		print(err.decode('utf-8'))
+
+
+def options(opt):
+	opt.load('java waf_unit_test javatest')
+	opt.load('compiler_c')
+
+def configure(conf):
+	conf.load('java javatest')
+	conf.load('compiler_c')
+	conf.check_jni_headers()
+
+def build(bld):
+	bld(features = 'javac',
+		name = 'mainprog',
+		srcdir     = 'src/', # folder containing the sources to compile
+		outdir     = 'src', # folder where to output the classes (in the build directory)
+		sourcepath = ['src'],
+		basedir    = 'src', # folder containing the classes and other files to package (must match outdir)
+	)
+
+
+	bld(features = 'javac javatest',
+		srcdir     = 'test/', # folder containing the sources to compile
+		outdir     = 'test', # folder where to output the classes (in the build directory)
+		sourcepath = ['test'],
+		classpath  = [ 'src' ],
+		basedir    = 'test', # folder containing the classes and other files to package (must match outdir)
+		use = ['JAVATEST', 'mainprog'],
+		ut_str = 'java -cp ${CLASSPATH} ${JTRUNNER} ${SRC}',
+		jtest_source = bld.path.ant_glob('test/*.xml'),
+		# For JUnit do first JUnit configuration and no need to use jtest_source:
+		# ut_str = 'java -cp ${CLASSPATH} ${JTRUNNER} [TestClass]',
+	)
+
+
+	# Demonstrate correct handling also of dependency to non-java tasks (see !2257)
+	bld(name='stjni', features='javac jar', srcdir='jni/java', outdir='jni/java', basedir='jni/java', destfile='stringUtils.jar')
+
+	bld.shlib(source   = 'jni/jni/source/StringUtils.c',
+		includes = 'jni/jni/include',
+		target   = 'jni/stringUtils',
+		uselib   = 'JAVA')
+
+	bld(features = 'javac javatest',
+		srcdir     = 'jni/test/', # folder containing the sources to compile
+		outdir     = 'jni/test', # folder where to output the classes (in the build directory)
+		sourcepath = ['jni/test'],
+		classpath  = [ 'jni/src' ],
+		basedir    = 'jni/test', # folder containing the classes and other files to package (must match outdir)
+		use = ['JAVATEST', 'stjni', 'jni/stringUtils'],
+		ut_str = 'java -cp ${CLASSPATH} ${JTRUNNER} ${SRC}',
+		jtest_source = bld.path.ant_glob('jni/test/*.xml'),
+	)
+
+
+	bld.add_post_fun(test_results)
+

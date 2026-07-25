@@ -1,0 +1,15 @@
+[flake8]
+exclude = 
+    .git,
+    __pycache__,
+    build,
+    dist,
+    *.egg-info,
+    venv,
+    py37_env,
+    */dsdl_specs/*,
+    .eggs,
+    .tox,
+    docs/conf.py
+max-line-length = 127
+max-complexity = 10

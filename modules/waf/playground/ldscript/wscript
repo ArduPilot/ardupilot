@@ -1,0 +1,37 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2009 (ita)
+
+VERSION='0.0.1'
+APPNAME='cc_test'
+
+top = '.'
+out = 'build'
+
+def configure(conf):
+	conf.load('gcc')
+
+def build(bld):
+
+	bld.program(
+		source    = 'main.c',
+		target    = 'test',
+		ldscript  = 'myscript.ld',
+		linkflags = ['-nostdlib'],
+		)
+
+from waflib import Utils
+from waflib.TaskGen import after, feature
+
+@after('apply_link')
+@feature('cprogram', 'cshlib')
+def process_ldscript(self):
+	if not getattr(self, 'ldscript', None) or self.env.CC_NAME != 'gcc':
+		return
+
+	node = self.path.find_resource(self.ldscript)
+	if not node:
+		raise Utils.WafError('could not find %r' % self.ldscript)
+	self.link_task.env.append_value('LINKFLAGS', '-Wl,-T,%s' % node.abspath())
+	self.link_task.dep_nodes.append(node)
+

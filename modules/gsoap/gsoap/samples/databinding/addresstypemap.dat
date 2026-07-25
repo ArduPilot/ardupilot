@@ -1,0 +1,12 @@
+#	Example typemap.dat file for the address book example
+
+#	Bind the address book schema namespace to prefix 'a'
+
+a = "urn:address-book-example"
+
+#	By default the xsd:dateTime schema type is translated to time_t
+#	To map xsd:dateTime to struct tm, enable the following line:
+
+# xsd__dateTime = #import "../../custom/struct_tm.h"
+
+#	... and compile/link with custom/struct_tm.c

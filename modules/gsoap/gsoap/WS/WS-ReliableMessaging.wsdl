@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright(C) OASIS(R) 1993-2007. All Rights Reserved.
+     OASIS trademark, IPR and other policies apply.  -->
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:wsa="http://www.w3.org/2005/08/addressing" xmlns:wsam="http://www.w3.org/2007/05/addressing/metadata" xmlns:rm="http://docs.oasis-open.org/ws-rx/wsrm/200702" xmlns:tns="http://docs.oasis-open.org/ws-rx/wsrm/200702/wsdl" targetNamespace="http://docs.oasis-open.org/ws-rx/wsrm/200702/wsdl">
+
+  <wsdl:types>
+    <xs:schema>
+      <xs:import namespace="http://docs.oasis-open.org/ws-rx/wsrm/200702" schemaLocation="http://docs.oasis-open.org/ws-rx/wsrm/200702/wsrm-1.1-schema-200702.xsd"/>
+    </xs:schema>
+  </wsdl:types>
+
+  <wsdl:message name="CreateSequence">
+    <wsdl:part name="create" element="rm:CreateSequence"/>
+  </wsdl:message>
+  <wsdl:message name="CreateSequenceResponse">
+    <wsdl:part name="createResponse" element="rm:CreateSequenceResponse"/>
+  </wsdl:message>
+  <wsdl:message name="CloseSequence">
+    <wsdl:part name="close" element="rm:CloseSequence"/>
+  </wsdl:message>
+  <wsdl:message name="CloseSequenceResponse">
+    <wsdl:part name="closeResponse" element="rm:CloseSequenceResponse"/>
+  </wsdl:message>
+  <wsdl:message name="TerminateSequence">
+    <wsdl:part name="terminate" element="rm:TerminateSequence"/>
+  </wsdl:message>
+  <wsdl:message name="TerminateSequenceResponse">
+    <wsdl:part name="terminateResponse" element="rm:TerminateSequenceResponse"/>
+  </wsdl:message>
+
+  <wsdl:portType name="SequenceAbstractPortType">
+    <wsdl:operation name="CreateSequence">
+      <wsdl:input message="tns:CreateSequence" wsam:Action="http://docs.oasis-open.org/ws-rx/wsrm/200702/CreateSequence"/>
+      <wsdl:output message="tns:CreateSequenceResponse" wsam:Action="http://docs.oasis-open.org/ws-rx/wsrm/200702/CreateSequenceResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="CloseSequence">
+      <wsdl:input message="tns:CloseSequence" wsam:Action="http://docs.oasis-open.org/ws-rx/wsrm/200702/CloseSequence"/>
+      <wsdl:output message="tns:CloseSequenceResponse" wsam:Action="http://docs.oasis-open.org/ws-rx/wsrm/200702/CloseSequenceResponse"/>
+    </wsdl:operation>
+    <wsdl:operation name="TerminateSequence">
+      <wsdl:input message="tns:TerminateSequence" wsam:Action="http://docs.oasis-open.org/ws-rx/wsrm/200702/TerminateSequence"/>
+      <wsdl:output message="tns:TerminateSequenceResponse" wsam:Action="http://docs.oasis-open.org/ws-rx/wsrm/200702/TerminateSequenceResponse"/>
+    </wsdl:operation>
+  </wsdl:portType>
+
+</wsdl:definitions>

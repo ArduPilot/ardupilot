@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.ui.externaltools.ProgramLaunchConfigurationType">
+    <listAttribute key="org.eclipse.debug.ui.favoriteGroups">
+        <listEntry value="org.eclipse.ui.externaltools.launchGroup"/>
+    </listAttribute>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_LAUNCH_CONFIGURATION_BUILD_SCOPE" value="${none}"/>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_LOCATION" value="${env_var:OPENOCD_PICO}"/>
+    <stringAttribute key="org.eclipse.ui.externaltools.ATTR_TOOL_ARGUMENTS" value="-c &quot;telnet_port 4444&quot; -s &quot;${env_var:CHIBISTUDIO}/tools/openocd_pico/scripts&quot; --f interface/picoprobe.cfg -f target/rp2040.cfg"/>
+</launchConfiguration>

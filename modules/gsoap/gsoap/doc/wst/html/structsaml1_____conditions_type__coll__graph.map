@@ -1,0 +1,6 @@
+<map id="saml1__ConditionsType" name="saml1__ConditionsType">
+<area shape="rect" id="node2" href="$structsaml1_____conditions_type_1_1____saml1____union___conditions_type.html" title="saml1__ConditionsType\l::__saml1__union_ConditionsType" alt="" coords="476,49,703,90"/>
+<area shape="rect" id="node3" href="$structsaml1_____do_not_cache_condition_type.html" title="&quot;urn:oasis:names:tc:SAML:1.0:assertion&quot;:DoNotCacheConditionType is a complexType with complexContent ..." alt="" coords="5,5,240,32"/>
+<area shape="rect" id="node4" href="$structsaml1_____condition_abstract_type.html" title="&quot;urn:oasis:names:tc:SAML:1.0:assertion&quot;:ConditionAbstractType is an abstract complexType. " alt="" coords="19,56,226,83"/>
+<area shape="rect" id="node5" href="$structsaml1_____audience_restriction_condition_type.html" title="&quot;urn:oasis:names:tc:SAML:1.0:assertion&quot;:AudienceRestrictionConditionType is a complexType with comple..." alt="" coords="27,109,218,150"/>
+</map>

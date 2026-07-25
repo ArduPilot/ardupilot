@@ -1,0 +1,3 @@
+"""
+Nested file in bar/
+"""

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="oop_referenced_object" descr="Referenced Object" editcode="false">
+  <brief>Common ancestor class of all reference-counted objects.</brief>
+  <imports>
+    <import>oop_base_object.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_base_object.h</include>
+    </includes>
+    <types>
+      <typedef name="object_references_t">
+        <brief>Type of a references counter.</brief>
+        <basetype ctype="unsigned int" />
+      </typedef>
+      <class type="abstract" name="referenced_object" namespace="ro"
+        ancestorname="base_object" descr="referenced object">
+        <brief>Common ancestor class of all reference-counted objects.</brief>
+        <details><![CDATA[Base class for objects that implement a reference
+                 counter and are disposed when the number of references
+                 reaches zero. This class extends @p base_object_c class.]]></details>
+        <fields>
+          <field name="references" ctype="object_references_t">
+            <brief>Number of references to the object.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <implementation><![CDATA[self->references = (object_references_t)1;]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[ ]]></implementation>
+          </dispose>
+          <virtual>
+            <method name="roAddRef" shortname="addref" ctype="void *">
+              <brief>New object reference creation.</brief>
+              <details><![CDATA[The references counter is increased and a new
+                       reference pointer is returned.]]></details>
+              <return>A new reference pointer.</return>
+              <implementation><![CDATA[
+
+oopLock();
+self->references++;
+oopAssert(self->references != (object_references_t)0, "overflow");
+oopUnlock();
+
+return self;]]></implementation>
+            </method>
+            <method name="roRelease" shortname="release"
+              ctype="object_references_t">
+              <brief>Release of an object reference.</brief>
+              <details><![CDATA[The reference counter is decreased, if the counter
+                       reaches zero then the object is disposed.]]></details>
+              <return>The value of the reference counter.</return>
+              <implementation><![CDATA[
+
+oopLock();
+oopAssert(self->references > 0U, "zero references");
+if (--self->references == 0U) {
+  oopUnlock();
+  boDispose(self);
+}
+else {
+  oopUnlock();
+}
+
+return self->references;]]></implementation>
+            </method>
+          </virtual>
+        </methods>
+      </class>
+    </types>
+  </public>
+  <private>
+  </private>
+</module>

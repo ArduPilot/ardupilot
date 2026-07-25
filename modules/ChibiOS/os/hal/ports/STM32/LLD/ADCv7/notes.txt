@@ -1,0 +1,15 @@
+STM32 ADCv7 driver.
+
+Driver capability:
+
+- Supports the STM32 \"fast\" ADC cell integrated in the STM32U3 sub-family.
+  Conversion groups must provide the PCSEL mask and the split AWDx threshold
+  registers expected by this ADC implementation.
+
+The file registry must export:
+
+STM32_HAS_ADCx                  - ADCx presence flag (1..4).
+STM32_ADC1_HANDLER              - IRQ vector name for ADC1.
+STM32_ADC1_NUMBER               - IRQ vector number for ADC1.
+STM32_ADC2_HANDLER              - IRQ vector name for ADC2.
+STM32_ADC2_NUMBER               - IRQ vector number for ADC2.

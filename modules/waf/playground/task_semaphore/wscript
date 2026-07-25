@@ -1,0 +1,44 @@
+#! /usr/bin/env python
+
+"""
+Task semaphore demo. Compare the runtimes:
+
+	waf configure build --fast  # 0m08
+	waf configure build         # 1m15
+"""
+
+import random, time
+from waflib import Task, TaskGen, Utils
+
+def options(opt):
+	opt.add_option('--fast', action='store_true', default=False, help='Disable the semaphore to compare the runtime', dest='fast')
+
+def configure(conf):
+	pass
+
+def build(bld):
+	# max 20 jobs globally
+	bld.jobs = 20
+
+	bld(features='make_100')
+
+	class Foo(Task.Task):
+		always_run = True
+
+		if not bld.options.fast:
+			semaphore = Task.TaskSemaphore(2) # 2 jobs maximum
+
+		def uid(self):
+			# unique id for each object
+			return Utils.h_list(self.num)
+
+		def run(self):
+			time.sleep(random.randint(1000, 2000) / 1000.)
+			print("Task %r" % self.num)
+
+	@TaskGen.feature('make_100')
+	def make_100_bound_tasks(self):
+		for x in range(100):
+			tsk = self.create_task('Foo')
+			tsk.num = x
+

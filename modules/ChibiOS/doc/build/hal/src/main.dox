@@ -1,0 +1,37 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @mainpage Introduction
+ * @author Giovanni Di Sirio (gdisirio@users.sourceforge.net).
+ *
+ * <h2>Features</h2>
+ * - Hardware Abstraction Layer (HAL) supporting numerous high level device
+ *   drivers abstracting common features in modern MCUs.
+ * - Driver models for: ADC, CAN, DAC, EXT, GPT, I2C, I2S, ICU, MAC, MMC, PAL,
+ *   PWM, RTC, SDC, Serial, UART, USB, USB-CDC, SPI, ST, WDG.
+ * - Abstraction of streams.
+ * - Abstraction of block devices.
+ * - The drivers can be ported to virtually any MCU architecture thanks to
+ *   an high level API.
+ * - The HAL can be used with or without an RTOS.
+ * - The HAL can be adapted to any reasonable RTOS thanks to an Operating
+ *   System Abstraction Layer (OSAL). ChibiOS/RT and ChibiOS/NIL are supported
+ *   out of the box.
+ * .
+ */

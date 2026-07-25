@@ -1,0 +1,11 @@
+STM32 BDMAv1 driver.
+
+Driver capability:
+
+- The driver supports the "basic" DMA controller.
+
+The file registry must export:
+
+STM32_BDMAn_CHx_HANDLER     - Vector name for IRQ "x" (1..7). If the macro
+                              is not exported then the ISR is not declared.
+STM32_BDMAn_CHx_NUMBER      - Vector number for IRQ "x" (1..7).

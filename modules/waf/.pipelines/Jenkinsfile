@@ -1,0 +1,291 @@
+
+pipeline {
+    agent none
+    stages {
+        stage('Build and Lint') {
+            parallel {
+                stage('Python 2.7') {
+                    agent {
+                        label "ubuntu"
+                    }
+                    steps {
+                        sh 'python2.7 ./waf-light'
+                        stash includes: 'waf', name: 'waf'
+                    }
+                }
+                stage('Python 3.6') {
+                    agent {
+                        label "freebsd"
+                    }
+                    steps {
+                        sh 'python3.6 ./waf-light'
+                    }
+                }
+                stage('Deprecation warnings') {
+                    agent {
+                        label "ubuntu"
+                    }
+                    steps {
+                        sh '''
+cd waflib
+find . -iname "*.pyc" -exec rm -f {} \\; || true
+! (((PYTHONWARNINGS=all python3.6 -m compileall . > /dev/null) 2>&1 ) 2>&1) | grep -i DeprecationWarning
+'''
+                    }
+                }
+                stage('Pyflakes') {
+                    agent {
+                        label "freebsd"
+                    }
+                    steps {
+                        sh '''
+cd waflib
+var=`(/usr/local/bin/pyflakes3.py *.py Tools/*.py extras/*.py 2>&1) | egrep "undefined name|invalid syntax|inconsistent use|unindent does not match any outer indentation level" | wc -l`
+if [ "0" -eq "$var" ]
+then
+   /usr/local/bin/pyflakes3.py *.py Tools/*.py extras/*.py || true
+else
+   # just do it again and fail
+   /usr/local/bin/pyflakes3.py *.py Tools/*.py extras/*.py
+   exit 1
+fi
+'''
+                    }
+                }
+                stage('Unit tests') {
+                    agent {
+                        label "fedora"
+                    }
+                    steps {
+                        sh '''
+./waf-light
+cd tests/preproc/
+../../waf distclean
+../../waf configure build
+cd ../..'''
+                        sh '''
+cd tests/install/
+../../waf distclean
+../../waf configure build
+cd ../..'''
+                        sh '''
+cd tests/general/
+../../waf distclean
+../../waf configure build
+cd ../..'''
+                        sh '''
+export PATH=$PATH:$PWD
+cd tests/init/
+../../waf distclean
+../../waf configure build
+cd ../..'''
+                        sh '''
+export WAF_TEST_GROUP=waftest
+cd tests/install_group/
+../../waf distclean
+../../waf configure build
+'''
+                    }
+                }
+            }
+        }
+        stage('Integration') {
+            parallel {
+                stage('Ubuntu') {
+                    stages {
+                        stage('py25') {
+                            agent {
+                                label "ubuntu"
+                            }
+                            steps {
+                                dir('demos') {
+                                        unstash 'waf'
+                                }
+                                sh '''cd demos; LD_LIBRARY_PATH=/opt/lib ./waf distclean configure clean build --top=c'''
+                                sh '''cd demos; LD_LIBRARY_PATH=/opt/lib ./waf distclean configure clean build --top=c++'''
+                                sh '''cd demos; LD_LIBRARY_PATH=/opt/lib ./waf distclean configure clean build --top=java'''
+                                sh '''cd demos; LD_LIBRARY_PATH=/opt/lib ./waf distclean configure clean build --top=perl'''
+                                sh '''cd demos; LD_LIBRARY_PATH=/opt/lib ./waf distclean configure clean build --top=python'''
+                                sh '''cd demos; LD_LIBRARY_PATH=/opt/lib ./waf distclean configure clean build --top=qt5'''
+                                sh '''cd demos; LD_LIBRARY_PATH=/opt/lib ./waf distclean configure clean build --top=subst'''
+                            }
+                        }
+                        stage('py36') {
+                            agent {
+                                label "ubuntu"
+                            }
+                            steps {
+                                dir('demos') {
+                                    unstash 'waf'
+                                }
+                                sh '''cd demos; python3 ./waf configure clean build --top=c'''
+                                sh '''cd demos; python3 ./waf configure clean build --top=c++'''
+                                sh '''cd demos; python3 ./waf configure clean build --top=java'''
+                                sh '''cd demos; python3 ./waf configure clean build --top=perl'''
+                                sh '''cd demos; python3 ./waf configure clean build --top=python'''
+                                sh '''cd demos; python3 ./waf configure clean build --top=qt5'''
+                                sh '''cd demos; python3 ./waf configure clean build --top=subst'''
+                            }
+                        }
+                        stage('py27') {
+                            agent {
+                                label "ubuntu"
+                            }
+                            steps {
+                                dir('demos') {
+                                    unstash 'waf'
+                                }
+                                sh '''cd demos; ./waf configure clean build --top=c'''
+                                sh '''cd demos; ./waf configure clean build --top=c++'''
+                                sh '''cd demos; ./waf configure clean build --top=java'''
+                                sh '''cd demos; ./waf configure clean build --top=perl'''
+                                sh '''cd demos; ./waf configure clean build --top=python'''
+                                sh '''cd demos; ./waf configure clean build --top=qt5'''
+                                sh '''cd demos; ./waf configure clean build --top=subst'''
+                            }
+                        }
+                    }
+                }
+                stage('OpenBSD') {
+                    stages {
+                        stage('Jython') {
+                            agent {
+                                label "openbsd"
+                            }
+                            steps {
+                                sh '''
+        export WAF_NO_PREFORK=1
+        /home/jenkins/jython/bin/jython ./waf-light
+        cp waf demos/c
+        cd demos/c
+        /home/jenkins/jython/bin/jython ./waf distclean configure clean build
+        '''
+                            }
+                        }
+                        stage('py38') {
+                            agent {
+                                label "openbsd"
+                            }
+                            steps {
+                                dir('demos') {
+                                    unstash 'waf'
+                                }
+                                sh '''cd demos/asm; python3 ../waf configure clean build'''
+                                sh '''cd demos/c; python3 ../waf configure clean build'''
+                                sh '''cd demos/c++; python3 ../waf configure clean build'''
+                                sh '''cd demos/glib2; python3 ../waf configure clean build'''
+                                sh '''cd demos/perl; python3 ../waf configure clean build'''
+                                sh '''cd demos/python; python3 ../waf configure clean build'''
+                                sh '''cd demos/subst; python3 ../waf configure clean build'''
+                            }
+                        }
+                    }
+                }
+                stage('Windows') {
+                    stages {
+                        stage('C/py34') {
+                            agent {
+                                label "windows"
+                            }
+                            steps {
+                                bat ''' C:/Python34/python.exe waf-light --tools=msvs '''
+                                bat '''
+        copy waf demos\\c /Y
+        cd demos\\c
+        C:/Python34/python.exe waf distclean
+        C:/Python34/python.exe waf configure --no-msvc-lazy build -v
+        '''
+                                bat '''
+        copy waf demos\\qt5 /Y
+        cd demos\\qt5
+        C:/Python34/python.exe waf distclean
+        C:/Python34/python.exe waf configure --no-msvc-lazy build -v
+        '''
+                                bat '''
+        copy waf playground\\msvs /Y
+        cd playground\\msvs
+        C:/Python34/python.exe waf distclean
+        C:/Python34/python.exe waf configure
+        C:/Python34/python.exe waf msvs
+        '''
+                            }
+                        }
+                        stage('C/Msys2/py27') {
+                            agent {
+                                label "windows"
+                            }
+                            steps {
+                                unstash 'waf'
+                                bat '''
+        copy waf demos\\c /Y
+        cd demos\\c
+        set MSYSTEM=MINGW64
+        set WD=C:\\msys64\\usr\\bin
+        set CHERE_INVOKING=1
+        C:\\msys64\\usr\\bin\\sh --login -c 'exec /bin/bash -c "python waf configure clean build && python waf distclean"'
+        '''
+                            }
+                        }
+                        stage('C/Msys2/py35') {
+                            agent {
+                                label "windows"
+                            }
+                            steps {
+                                unstash 'waf'
+                                bat '''
+        copy waf demos\\c /Y
+        cd demos\\c
+        set MSYSTEM=MINGW64
+        set WD=C:\\msys64\\usr\\bin
+        set CHERE_INVOKING=1
+        C:\\msys64\\usr\\bin\\sh --login -c 'exec /bin/bash -c "python3 waf configure clean build && python3 waf distclean"'
+        '''
+                            }
+                        }
+                    }
+                }
+                stage('FreeBSD') {
+                    stages {
+                        stage('py36') {
+                            agent {
+                                label "freebsd"
+                            }
+                            steps {
+                                dir('demos') {
+                                    unstash 'waf'
+                                }
+                                sh '''cd demos/c; python3.6 ../waf distclean configure clean build'''
+                                sh '''cd demos/c++; python3.6 ../waf distclean configure clean build'''
+                                sh '''cd demos/java; python3.6 ../waf distclean configure clean build'''
+                                sh '''cd demos/jni; python3.6 ../waf distclean configure clean build'''
+                                sh '''cd demos/perl; python3.6 ../waf distclean configure clean build'''
+                                sh '''cd demos/python; python3.6 ../waf distclean configure clean build'''
+                                sh '''cd demos/ruby; python3.6 ../waf distclean configure clean build'''
+                                sh '''cd demos/glib2; python3.6 ../waf distclean configure clean build'''
+                                sh '''cd demos/qt5; python3.6 ../waf distclean configure clean build'''
+                                sh '''cd demos/dbus; python3.6 ../waf distclean configure clean build'''
+                            }
+                        }
+                    }
+                }
+                stage('MacOS') {
+                    stages {
+                        stage('py27') {
+                            agent {
+                                label "macos"
+                            }
+                            steps {
+                                dir('demos') {
+                                    unstash 'waf'
+                                }
+                                sh '''cd demos/c; ../waf distclean configure clean build'''
+                                sh '''cd demos/python; ../waf distclean configure clean build'''
+                                sh '''cd demos/mac_app; ../waf distclean configure clean build'''
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

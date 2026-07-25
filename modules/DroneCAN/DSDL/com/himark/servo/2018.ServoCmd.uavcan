@@ -1,0 +1,9 @@
+# Himark servo commands
+# it is not recommended that anyone implement this message. It is here as a placeholder
+# for existing Himark servos
+
+# signature from original file location
+OVERRIDE_SIGNATURE 0x5D09E48551CE9194
+
+uint10[<=17] cmd
+

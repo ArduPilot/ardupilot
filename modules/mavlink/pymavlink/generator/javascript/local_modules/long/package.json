@@ -1,0 +1,64 @@
+{
+  "_from": "long@^4.0.0",
+  "_id": "long@4.0.0",
+  "_inBundle": false,
+  "_integrity": "sha512-XsP+KhQif4bjX1kbuSiySJFNAehNxgLb6hPRGJ9QsUr8ajHkuXGdrHmFUTUUXhDwVX2R5bY4JNZEwbUiMhV+MA==",
+  "_location": "/long",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "range",
+    "registry": false,
+    "raw": "long@^4.0.0",
+    "name": "long",
+    "escapedName": "long",
+    "rawSpec": "^4.0.0",
+    "saveSpec": null,
+    "fetchSpec": "^4.0.0"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "local_modules/long",
+  "_shasum": "9a7b71cfb7d361a194ea555241c92f7468d5bf28",
+  "_spec": "long@^4.0.0",
+  "_where": "/home/buzz/GCS/mavlink/pymavlink/generator/javascript",
+  "author": {
+    "name": "Daniel Wirtz",
+    "email": "dcode@dcode.io"
+  },
+  "bugs": {
+    "url": "https://github.com/dcodeIO/long.js/issues"
+  },
+  "bundleDependencies": false,
+  "dependencies": {},
+  "deprecated": false,
+  "description": "A Long class for representing a 64-bit two's-complement integer value.",
+  "devDependencies": {
+    "webpack": "^3.10.0"
+  },
+  "files": [
+    "index.js",
+    "LICENSE",
+    "README.md",
+    "src/long.js",
+    "dist/long.js",
+    "dist/long.js.map"
+  ],
+  "homepage": "https://github.com/dcodeIO/long.js#readme",
+  "keywords": [
+    "math"
+  ],
+  "license": "Apache-2.0",
+  "main": "src/long.js",
+  "name": "long",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dcodeIO/long.js.git"
+  },
+  "scripts": {
+    "build": "webpack",
+    "test": "node tests"
+  },
+  "version": "4.0.0"
+}

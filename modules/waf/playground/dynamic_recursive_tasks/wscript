@@ -1,0 +1,78 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+VERSION='0.0.1'
+APPNAME='crazy_test'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx')
+
+def configure(conf):
+	conf.load('compiler_cxx')
+
+def build(bld):
+	bld.program(source='main.cpp', target='app')
+
+"""
+Only main.cpp is added to the program, then by looking at the include files,
+a <file.h> file is found. If a corresponding <file.cpp> exists,
+then a new c++ task is created to compile that file and to add it to the
+program (modify the link task).
+
+The idea is to change the method runnable_status of the task. A more correct but less obvious
+approach would be the creation of a specific c++ subclass, and using another
+extension mapping function (@extension).
+"""
+
+from waflib.Task import ASK_LATER
+from waflib.Tools.cxx import cxx
+def runnable_status(self):
+	ret = super(cxx, self).runnable_status()
+	self.more_tasks = []
+
+	# use a cache to avoid creating the same tasks
+	# for example, truc.cpp might be compiled twice
+	try:
+		shared = self.generator.bld.shared_tasks
+	except AttributeError:
+		shared = self.generator.bld.shared_tasks = {}
+
+	if ret != ASK_LATER:
+		for x in self.generator.bld.node_deps[self.uid()]:
+			node = x.parent.get_src().find_resource(x.name.replace('.h', '.cpp'))
+			if node:
+				try:
+					tsk = shared[node]
+				except:
+					tsk = shared[node] = self.generator.cxx_hook(node)
+
+					self.more_tasks.append(tsk)
+
+
+				# add the node created to the link task outputs
+				try:
+					link = self.generator.link_task
+				except AttributeError:
+					pass
+				else:
+					if not tsk.outputs[0] in link.inputs:
+						link.inputs.append(tsk.outputs[0])
+						link.set_run_after(tsk)
+
+						# any change in the order of the input nodes may cause a recompilation
+						link.inputs.sort(key=lambda x: x.abspath())
+
+		# if you want to modify some flags
+		# you *must* have the task recompute the signature
+		self.env.append_value('CXXFLAGS', '-O2')
+		delattr(self, 'cache_sig')
+		return super(cxx, self).runnable_status()
+
+	return ret
+
+cxx.runnable_status = runnable_status
+

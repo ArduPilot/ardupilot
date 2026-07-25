@@ -1,0 +1,18 @@
+# vim:syntax=python
+
+exts = [x+'.dll' for x in 'WixNetFxExtension WixUIExtension WixBalExtension WixUtilExtension'.split()]
+
+funi = ctx.env['dllname']
+funigui = ctx.env['guiname']
+funiversion = ctx.env['version']
+funivisiblename = funigui+'_'+funiversion
+funimsi = funivisiblename+'.msi'
+funicompany = ctx.env['company']
+
+define=lambda v:'-d'+v+'='+eval(v)
+wixvar = [define(v) for v in 'funi funigui funimsi funivisiblename funiversion funicompany'.split()]
+
+bld(features = 'wix', source=['funi.wxs']+exts , gen=funimsi, candleflags=wixvar)
+bld.add_group()
+bld(features = 'wix', source=['bundle.wxs']+exts, gen='setup.exe', candleflags=wixvar)
+

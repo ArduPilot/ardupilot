@@ -1,0 +1,28 @@
+******************************************************************************
+*** ChibiOS 21.11.x Release Notes.                                         ***
+******************************************************************************
+
+ChibiOS 21.11.x is composed of several independent but inter-operable
+sub-projects: RT, NIL, SB, HAL, EX. Plus several external libraries
+integrated in our structure: WolfSSL, FatFS, LittleFS and lwIP.
+
+*** ChibiOS 21.11.5 highlights ****
+
+- Fixed OSLIB jobs queues returning JOB_NULL descriptors to the free pool.
+- Fixed serialize reference duplication and hardened dynamic object size
+  calculations.
+- Hardened memcore and heap boundary checks against arithmetic overflow.
+- Fixed priority inheritance through prioritized message queues.
+- Fixed missing ready message assignment in chMsgSend() causing spurious
+  NULL returns from chMsgWaitTimeoutS().
+- Fixed NIL queues counter handling.
+- Fixed CH_PORT_SUPPORTS_RECURSIVE_LOCKS handling in NIL.
+
+*** ChibiOS 21.11.x highlights ****
+
+- New sandboxes sybsystem 2.0.
+- FatFS support for lwIP HTTPD subsystem.
+- Improved HTTPD support in MAC demo.
+- Improved STM32 HAL.
+- Added ARMv7-M (alternate) port.
+- New unit test library.

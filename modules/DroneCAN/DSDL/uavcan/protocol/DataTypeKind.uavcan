@@ -1,0 +1,7 @@
+#
+# Data type kind (message or service).
+#
+
+uint8 SERVICE = 0
+uint8 MESSAGE = 1
+uint8 value

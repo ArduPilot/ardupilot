@@ -1,0 +1,23 @@
+#! /usr/bin/env python
+# encoding: utf-8
+#  Mark Coggeshall 2010
+
+VERSION = '1.0.0'
+APPNAME = 'sastest'
+
+top = '.'
+out = 'build'
+
+def configure(ctx):
+	ctx.load('sas')
+
+def build(ctx):
+	sastester = ctx(
+		features = 'sas',
+		name = 'SAStest',
+		type = 'sas',
+		source = 'src/sastest.sas',
+		logdir = 'log',
+		lstdir = 'lst',
+		deps = ['data/mydata.csv']
+	)

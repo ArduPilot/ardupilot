@@ -1,0 +1,2671 @@
+
+<instance locked="false"
+  id="org.chibios.spc5.components.portable.chibios_unitary_tests_engine">
+  <description>
+    <brief>
+      <value>NASA OSAL Test Suite.</value>
+    </brief>
+    <copyright>
+      <value><![CDATA[/* Copyright statement.*/]]></value>
+    </copyright>
+    <introduction>
+      <value>Test suite for NASA OSAL implementation over ChibiOS/RT.
+        The purpose of this suite is to perform unit tests on the OSAL
+        module and to converge to 100% code coverage through successive
+        improvements.</value>
+    </introduction>
+  </description>
+  <global_data_and_code>
+    <code_prefix>
+      <value>nasa_osal_</value>
+    </code_prefix>
+    <global_definitions>
+      <value><![CDATA[#define TEST_SUITE_NAME                     "NASA OSAL over ChibiOS/RT Test Suite"
+
+#define TASKS_BASE_PRIORITY                 200
+#define TASKS_STACK_SIZE                    256
+
+extern THD_WORKING_AREA(wa_test1, TASKS_STACK_SIZE);
+extern THD_WORKING_AREA(wa_test2, TASKS_STACK_SIZE);
+extern THD_WORKING_AREA(wa_test3, TASKS_STACK_SIZE);
+extern THD_WORKING_AREA(wa_test4, TASKS_STACK_SIZE);]]></value>
+    </global_definitions>
+    <global_code>
+      <value><![CDATA[THD_WORKING_AREA(wa_test1, TASKS_STACK_SIZE);
+THD_WORKING_AREA(wa_test2, TASKS_STACK_SIZE);
+THD_WORKING_AREA(wa_test3, TASKS_STACK_SIZE);
+THD_WORKING_AREA(wa_test4, TASKS_STACK_SIZE);]]></value>
+    </global_code>
+  </global_data_and_code>
+  <sequences>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Tasks Functionality</value>
+      </brief>
+      <description>
+        <value>This sequence tests the NASA OSAL over ChibiOS/RT
+          functionalities related to threading.</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include "osapi.h"
+
+static void test_task1(void) {
+
+  test_emit_token('A');
+}
+
+static void test_task2(void) {
+
+  test_emit_token('B');
+}
+
+static void test_task3(void) {
+
+  test_emit_token('C');
+}
+
+static void test_task4(void) {
+
+  test_emit_token('D');
+}
+
+static void delete_handler(void) {
+
+  test_emit_token('C');
+}
+
+static void test_task_delete(void) {
+
+  test_emit_token('A');
+  (void) OS_TaskInstallDeleteHandler(delete_handler);
+  while (!OS_TaskDeleteCheck()) {
+    (void) OS_TaskDelay(1);
+  }
+  test_emit_token('B');
+}]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>OS_TaskCreate() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_TaskCreate() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_TaskCreate() is invoked with task_id set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TaskCreate(NULL,                   /* Error.*/
+                    "failing task",
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");
+test_assert_sequence("", "task executed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TaskCreate() is invoked with task_name set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tid;
+
+err = OS_TaskCreate(&tid,
+                    NULL,                   /* Error.*/
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");
+test_assert_sequence("", "task executed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TaskCreate() is invoked with stack_pointer set
+                  to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tid;
+
+err = OS_TaskCreate(&tid,
+                    "failing task",
+                    test_task1,
+                    (uint32 *)NULL,         /* Error.*/
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");
+test_assert_sequence("", "task executed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TaskCreate() is invoked with a very long task
+                  name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tid;
+
+err = OS_TaskCreate(&tid,
+                    "this is a very very long task name", /* Error.*/
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");
+test_assert_sequence("", "task executed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TaskCreate() is invoked with priority below
+                  and above allowed range, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tid;
+
+err = OS_TaskCreate(&tid,
+                    "failing task",
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    0,                      /* Error.*/
+                    0);
+test_assert(err == OS_ERR_INVALID_PRIORITY, "priority error not detected");
+test_assert_sequence("", "task executed");
+
+err = OS_TaskCreate(&tid,
+                   "failing task",
+                   test_task1,
+                   (uint32 *)wa_test1,
+                   sizeof wa_test1,
+                   256,                     /* Error.*/
+                   0);
+test_assert(err == OS_ERR_INVALID_PRIORITY, "priority error not detected");
+test_assert_sequence("", "task executed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TaskCreate() is invoked with a stack size
+                  below minimum, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tid;
+
+err = OS_TaskCreate(&tid,
+                    "failing task",
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    16,                     /* Error.*/
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_INVALID_INT_NUM, "stack insufficient size not detected");
+test_assert_sequence("", "task executed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TaskCreate() is invoked twice with duplicated
+                  name and then duplicated stack, an error is expected
+                  in both cases.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tid;
+
+err = OS_TaskCreate(&tid,
+                    "running task",
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_SUCCESS, "task creation failed");
+
+err = OS_TaskCreate(&tid,
+                    "running task",
+                    test_task2,
+                    (uint32 *)wa_test2,
+                    sizeof wa_test2,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_ERR_NAME_TAKEN, "name conflict not detected");
+
+err = OS_TaskCreate(&tid,
+                    "conflicting task",
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_ERR_NO_FREE_IDS, "stack conflict not detected");
+
+err = OS_TaskWait(tid);
+test_assert(err == OS_SUCCESS, "wait failed");
+test_assert_sequence("A", "task not executed");
+
+err = OS_TaskCreate(&tid,
+                    "running task",
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_SUCCESS, "task creation failed");
+
+err = OS_TaskWait(tid);
+test_assert(err == OS_SUCCESS, "wait failed");
+test_assert_sequence("A", "task not executed");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_TaskCreate() priority ordering</value>
+          </brief>
+          <description>
+            <value>Four tasks are created at different priorities and in
+              different order. The execution order must happen in order
+              of priority regardless the creation order.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Four tasks are created in priority order from low
+                  to high.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tid1, tid2, tid3, tid4;
+
+err = OS_TaskCreate(&tid4,
+                    "running task 4",
+                    test_task4,
+                    (uint32 *)wa_test4,
+                    sizeof wa_test4,
+                    TASKS_BASE_PRIORITY - 0,
+                    0);
+test_assert(err == OS_SUCCESS, "task 4 creation failed");
+
+err = OS_TaskCreate(&tid3,
+                    "running task 3",
+                    test_task3,
+                    (uint32 *)wa_test3,
+                    sizeof wa_test3,
+                    TASKS_BASE_PRIORITY - 1,
+                    0);
+test_assert(err == OS_SUCCESS, "task 3 creation failed");
+
+err = OS_TaskCreate(&tid2,
+                    "running task 2",
+                    test_task2,
+                    (uint32 *)wa_test2,
+                    sizeof wa_test2,
+                    TASKS_BASE_PRIORITY - 2,
+                    0);
+test_assert(err == OS_SUCCESS, "task 2 creation failed");
+
+err = OS_TaskCreate(&tid1,
+                    "running task 1",
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY - 3,
+                    0);
+test_assert(err == OS_SUCCESS, "task 1 creation failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Tasks are made runnable atomically and their
+                  execution order tested.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[OS_TaskDelay(5);
+test_assert_sequence("ABCD", "task order violation");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Four tasks are created in priority order from
+                  high to low.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tid1, tid2, tid3, tid4;
+
+err = OS_TaskCreate(&tid1,
+                    "running task 1",
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY - 3,
+                    0);
+test_assert(err == OS_SUCCESS, "task 1 creation failed");
+
+err = OS_TaskCreate(&tid2,
+                    "running task 2",
+                    test_task2,
+                    (uint32 *)wa_test2,
+                    sizeof wa_test2,
+                    TASKS_BASE_PRIORITY - 2,
+                    0);
+test_assert(err == OS_SUCCESS, "task 2 creation failed");
+
+err = OS_TaskCreate(&tid3,
+                    "running task 3",
+                    test_task3,
+                    (uint32 *)wa_test3,
+                    sizeof wa_test3,
+                    TASKS_BASE_PRIORITY - 1,
+                    0);
+test_assert(err == OS_SUCCESS, "task 3 creation failed");
+
+err = OS_TaskCreate(&tid4,
+                    "running task 4",
+                    test_task4,
+                    (uint32 *)wa_test4,
+                    sizeof wa_test4,
+                    TASKS_BASE_PRIORITY - 0,
+                    0);
+test_assert(err == OS_SUCCESS, "task 4 creation failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Tasks are made runnable atomically and their
+                  execution order tested.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[OS_TaskDelay(5);
+test_assert_sequence("ABCD", "task order violation");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Four tasks are created in an not ordered way.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tid1, tid2, tid3, tid4;
+
+err = OS_TaskCreate(&tid2,
+                    "running task 2",
+                    test_task2,
+                    (uint32 *)wa_test2,
+                    sizeof wa_test2,
+                    TASKS_BASE_PRIORITY - 2,
+                    0);
+test_assert(err == OS_SUCCESS, "task 2 creation failed");
+
+err = OS_TaskCreate(&tid1,
+                    "running task 1",
+                    test_task1,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY - 3,
+                    0);
+test_assert(err == OS_SUCCESS, "task 1 creation failed");
+
+err = OS_TaskCreate(&tid4,
+                    "running task 4",
+                    test_task4,
+                    (uint32 *)wa_test4,
+                    sizeof wa_test4,
+                    TASKS_BASE_PRIORITY - 0,
+                    0);
+test_assert(err == OS_SUCCESS, "task 4 creation failed");
+
+err = OS_TaskCreate(&tid3,
+                    "running task 3",
+                    test_task3,
+                    (uint32 *)wa_test3,
+                    sizeof wa_test3,
+                    TASKS_BASE_PRIORITY - 1,
+                    0);
+test_assert(err == OS_SUCCESS, "task 3 creation failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Tasks are made runnable atomically and their
+                  execution order tested.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[OS_TaskDelay(5);
+test_assert_sequence("ABCD", "task order violation");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_TaskDelete() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_TaskDelete() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_TaskDelete() is invoked with task_id set to
+                  -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TaskDelete((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "wrong task id not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_TaskDelete() and OS_TaskInstallDeleteHandler() functionality</value>
+          </brief>
+          <description>
+            <value>OS_TaskDelete() and OS_TaskInstallDeleteHandler() are
+              tested for functionality.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[uint32 tid;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Creating a task executing an infinite loop.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TaskCreate(&tid,
+                    "deletable task",
+                    test_task_delete,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_SUCCESS, "deletable task creation failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Letting the task run for a while then deleting
+                  it. A check is performed on the correct execution of
+                  the delete handler.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+(void) OS_TaskDelay(50);
+err = OS_TaskDelete(tid);
+test_assert(err == OS_SUCCESS, "delete failed");
+test_assert_sequence("ABC", "events order violation");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Queues Functionality</value>
+      </brief>
+      <description>
+        <value>This sequence tests the NASA OSAL over ChibiOS/RT
+          functionalities related to queues</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include <string.h>
+
+#include "osapi.h"
+
+uint32 qid, tid;
+
+#define WRITER_NUM_MESSAGES 16
+#define MESSAGE_SIZE        20
+
+static void test_task_writer(void) {
+  unsigned i;
+  int32 err;
+
+  for (i = 0; i < WRITER_NUM_MESSAGES; i++) {
+    err = OS_QueuePut(qid, "Hello World", 12, 0);
+    if (err != OS_SUCCESS) {
+      test_emit_token('*');
+    }
+  }
+}]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>OS_QueueCreate() and OS_QueueDelete() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_QueueCreate() and
+              OS_QueueDelete() is tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_QueueCreate() is invoked with queue_id set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_QueueCreate(NULL,                      /* Error.*/
+                     "failing queue",
+                     4,
+                     128,
+                     0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_QueueCreate() is invoked with task_name set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 qid;
+
+err = OS_QueueCreate(&qid,
+                     NULL,                      /* Error.*/
+                     4,
+                     128,
+                     0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_QueueCreate() is invoked with a very long task
+                  name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 qid;
+
+err = OS_QueueCreate(&qid,
+                     "very very long queue name",   /* Error.*/
+                     4,
+                     128,
+                     0);
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_QueueDelete() is invoked with queue_id set to
+                  -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_QueueDelete((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "wrong queue id not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_QueueCreate() is invoked twice with duplicated
+                  name, an error is expected, then the queue is deleted
+                  using OS_QueueDelete().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 qid1, qid2;
+
+err = OS_QueueCreate(&qid1, "my queue", 4, 128, 0);
+test_assert(err == OS_SUCCESS, "queue creation failed");
+
+err = OS_QueueCreate(&qid2, "my queue", 4, 128, 0);
+test_assert(err == OS_ERR_NAME_TAKEN, "name conflict not detected");
+
+err = OS_QueueDelete(qid1);
+test_assert(err == OS_SUCCESS, "queue deletion failed");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_QueueGetIdByName() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_QueueGetIdByName() is
+              tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_QueueGetIdByName() is invoked with queue_id
+                  set to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_QueueGetIdByName(NULL, "queue");
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_QueueGetIdByName() is invoked with queue_name
+                  set to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_QueueGetIdByName(&qid, NULL);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_QueueGetIdByName() is invoked with a very long
+                  task name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_QueueGetIdByName(&qid, "very very long queue name");
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_QueuePut() and OS_QueueGet() functionality</value>
+          </brief>
+          <description>
+            <value>A task writes on a queue, the messages are retrieved
+              on the other side in blocking mode.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[qid = 0;
+tid = 0;]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[if (qid != 0) {
+  (void) OS_QueueDelete(qid);
+}
+
+if (tid != 0) {
+  (void) OS_TaskWait(tid);
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[uint32 tid;
+unsigned i;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Creataing a queue with depth 4 and message size
+                  20</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_QueueCreate(&qid, "test queue", 4, MESSAGE_SIZE, 0);
+test_assert(err == OS_SUCCESS, "queue creation failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Creating the writer task.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TaskCreate(&tid,
+                    "writer task",
+                    test_task_writer,
+                    (uint32 *)wa_test1,
+                    sizeof wa_test1,
+                    TASKS_BASE_PRIORITY,
+                    0);
+test_assert(err == OS_SUCCESS, "writer task creation failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Reading messages from the writer task.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[for (i = 0; i < WRITER_NUM_MESSAGES; i++) {
+  int32 err;
+  char data[MESSAGE_SIZE];
+  uint32 copied;
+
+  err = OS_QueueGet(qid, data, MESSAGE_SIZE, &copied, OS_Milli2Ticks(200));
+  test_assert(err == OS_SUCCESS, "timed out");
+  test_assert(strncmp(data, "Hello World", sizeof (data)) == 0,
+              "wrong message");
+}]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Waiting for task termination then checking for
+                  errors.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[(void) OS_TaskWait(tid);
+tid = 0;
+test_assert_sequence("", "queue write errors occurred");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_QueueGet() with timeout functionality</value>
+          </brief>
+          <description>
+            <value>OS_QueueGet() timeout functionality is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[qid = 0;
+(void) OS_QueueCreate(&qid, "test queue", 2, MESSAGE_SIZE, 0);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[if (qid != 0) {
+  OS_QueueDelete(qid);
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[uint32 local_qid;
+uint32 copied;
+char data[MESSAGE_SIZE];]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Retrieving the queue by name.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_QueueGetIdByName(&local_qid, "test queue");
+test_assert(err == OS_SUCCESS, "queue not found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Get operation with a one second timeout, an error
+                  is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_QueueGet(qid, data, MESSAGE_SIZE, &copied, OS_Milli2Ticks(1000));
+test_assert(err == OS_QUEUE_TIMEOUT, "unexpected error code");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Get operation in non-blocking mode, an error is
+                  expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_QueueGet(qid, data, MESSAGE_SIZE, &copied, OS_CHECK);
+test_assert(err == OS_QUEUE_EMPTY, "unexpected error code");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Timers Functionality</value>
+      </brief>
+      <description>
+        <value>This sequence tests the NASA OSAL over ChibiOS/RT
+          functionalities related to timers</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include <string.h>
+
+#include "osapi.h"
+
+uint32 tmid;
+uint32 cnt;
+
+static void tmr_callback(uint32 timer_id) {
+
+  (void)timer_id;
+
+  cnt++;
+}]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>OS_TimerCreate() and OS_TimerDelete() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_TimerCreate() and
+              OS_TimerDelete() is tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_TimerCreate() is invoked with timer_id set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 accuracy;
+
+err = OS_TimerCreate(NULL,                      /* Error.*/
+                     "failing timer",
+                     &accuracy,
+                     tmr_callback);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TimerCreate() is invoked with timer_name set
+                  to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tmid;
+uint32 accuracy;
+
+err = OS_TimerCreate(&tmid,
+                     NULL,                      /* Error.*/
+                     &accuracy,
+                     tmr_callback);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TimerCreate() is invoked with accuracy set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tmid;
+
+err = OS_TimerCreate(&tmid,
+                     "failing timer",
+                     NULL,                      /* Error.*/
+                     tmr_callback);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TimerCreate() is invoked with callback_ptr set
+                  to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tmid;
+uint32 accuracy;
+
+err = OS_TimerCreate(&tmid,
+                     "failing timer",
+                     &accuracy,
+                     NULL);                     /* Error.*/
+test_assert(err == OS_TIMER_ERR_INVALID_ARGS, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TimerCreate() is invoked with a very long
+                  timer name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tmid;
+uint32 accuracy;
+
+err = OS_TimerCreate(&tmid,
+                     "very very long timer name",   /* Error.*/
+                     &accuracy,
+                     tmr_callback);
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TimerDelete() is invoked with timer_id set to
+                  -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TimerDelete((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "wrong timer id not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TimerCreate() is invoked twice with duplicated
+                  name, an error is expected, then the queue is deleted
+                  using OS_TimerDelete().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 tmid1, tmid2;
+uint32 accuracy;
+
+err = OS_TimerCreate(&tmid1, "my timer", &accuracy, tmr_callback);
+test_assert(err == OS_SUCCESS, "timer creation failed");
+
+err = OS_TimerCreate(&tmid2, "my timer", &accuracy, tmr_callback);
+test_assert(err == OS_ERR_NAME_TAKEN, "name conflict not detected");
+
+err = OS_TimerDelete(tmid1);
+test_assert(err == OS_SUCCESS, "timer deletion failed");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_TimerSet() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_TimerSet() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_TimerSet() is invoked with timer_id set to -1,
+                  an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TimerSet((uint32)-1, 10, 10);
+test_assert(err == OS_ERR_INVALID_ID, "invalid timer_id not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_TimerGetIdByName() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_TimerGetIdByName() is
+              tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_TimerGetIdByName() is invoked with timer_id
+                  set to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TimerGetIdByName(NULL, "timer");
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TimerGetIdByName() is invoked with timer name
+                  set to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TimerGetIdByName(&tmid, NULL);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_TimerGetIdByName() is invoked with a very long
+                  task name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TimerGetIdByName(&tmid, "very very long timer name");
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_TimerSet() one-shot functionality</value>
+          </brief>
+          <description>
+            <value>A timer is tested in one-shot mode.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[uint32 accuracy;
+
+cnt = 0;
+tmid = 0;
+(void) OS_TimerCreate(&tmid, "test timer", &accuracy, tmr_callback);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[if (tmid != 0) {
+  (void) OS_TimerDelete(tmid);
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[uint32 local_tmid;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Retrieving the timer by name.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TimerGetIdByName(&local_tmid, "test timer");
+test_assert(err == OS_SUCCESS, "timer not found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Setting up the timer for a 70mS one-shot tick.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[uint32 err;
+
+err = OS_TimerSet(local_tmid, 70000, 0);
+test_assert(err == OS_SUCCESS, "timer setup failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Waiting one second then counting the occurred
+                  ticks.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[(void) OS_TaskDelay(1000);
+test_assert(cnt == 1, "wrong ticks");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_TimerSet() periodic functionality</value>
+          </brief>
+          <description>
+            <value>A timer is tested in periodic mode.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[uint32 accuracy;
+
+cnt = 0;
+tmid = 0;
+(void) OS_TimerCreate(&tmid, "test timer", &accuracy, tmr_callback);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[if (tmid != 0) {
+  (void) OS_TimerSet(tmid, 0, 0);
+  (void) OS_TimerDelete(tmid);
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[uint32 local_tmid;]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>Retrieving the timer by name.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_TimerGetIdByName(&local_tmid, "test timer");
+test_assert(err == OS_SUCCESS, "timer not found");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Setting up the timer for a 70mS periodic tick.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[uint32 err;
+
+err = OS_TimerSet(local_tmid, 70000, 70000);
+test_assert(err == OS_SUCCESS, "timer setup failed");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Waiting one second then counting the occurred
+                  ticks.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[(void) OS_TaskDelay(1000);
+test_assert(cnt == 14, "wrong ticks");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Stopping the timer.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[uint32 err;
+
+err = OS_TimerSet(local_tmid, 0, 0);
+test_assert(err == OS_SUCCESS, "timer stop failed");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Binary Semaphores Functionality</value>
+      </brief>
+      <description>
+        <value>This sequence tests the NASA OSAL over ChibiOS/RT
+          functionalities related to binary semaphores.</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include "osapi.h"
+
+uint32 bsid;]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>OS_BinSemCreate() and OS_BinSemDelete() errors
+            </value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_BinSemCreate() and
+              OS_BinSemDelete() is tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_BinSemCreate() is invoked with sem_id set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemCreate(NULL,                     /* Error.*/
+                     "failing semaphore",
+                     0,
+                     0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_BinSemCreate() is invoked with sem_name set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemCreate(&bsid,
+                     NULL,                      /* Error.*/
+                     0,
+                     0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_BinSemCreate() is invoked with an invalid
+                  sem_initial_value, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemCreate(&bsid,
+                     "failing semaphore",
+                     2,                         /* Error.*/
+                     0);
+test_assert(err == OS_INVALID_INT_NUM, "counter error not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_BinSemCreate() is invoked with a very long
+                  timer name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[#if 0 /* Semaphore name currently not implemented.*/
+int32 err;
+
+err = OS_BinSemCreate(&bsid,
+                     "very very long semaphore name",   /* Error.*/
+                     0,
+                     0);
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");
+#endif]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_BinSemDelete() is invoked with timer_id set to
+                  -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemDelete((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "wrong semaphore id not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_BinSemCreate() is invoked twice with
+                  duplicated name, an error is expected, then the queue
+                  is deleted using OS_BinSemDelete().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 bsid1; /*, bsid2;*/
+
+err = OS_BinSemCreate(&bsid1, "my semaphore", 0, 0);
+test_assert(err == OS_SUCCESS, "semaphore creation failed");
+
+#if 0 /* Semaphore name currently not implemented.*/
+err = OS_BinSemCreate(&bsid2, "my semaphore", 0, 0);
+test_assert(err == OS_ERR_NAME_TAKEN, "name conflict not detected");
+#endif
+
+err = OS_BinSemDelete(bsid1);
+test_assert(err == OS_SUCCESS, "semaphore deletion failed");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_BinSemFlush() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_BinSemFlush() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_BinSemFlush() is invoked with sem_id set to
+                  -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemFlush((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "invalid sem_id not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_BinSemGive() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_BinSemGive() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_BinSemGive() is invoked with sem_id set to -1,
+                  an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemGive((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "invalid sem_id not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_BinSemTake() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_BinSemTake() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_BinSemTake() is invoked with sem_id set to -1,
+                  an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemTake((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "invalid sem_id not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_BinSemTimedWait() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_BinSemTimedWait() is
+              tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[bsid = 0;
+(void) OS_BinSemCreate(&bsid, "test semaphore", 0, 0);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[if (bsid > 0) {
+  (void) OS_BinSemDelete(bsid);
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_BinSemTimedWait() is invoked with sem_id set
+                  to -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemTimedWait((uint32)-1, 1000);
+test_assert(err == OS_ERR_INVALID_ID, "invalid sem_id not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_BinSemTimedWait() is invoked with msecs set to
+                  0, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemTimedWait(bsid, 0);
+test_assert(err == OS_INVALID_INT_NUM, "invalid msec not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_BinSemGetIdByName() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_BinSemGetIdByName() is
+              tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_BinSemGetIdByName() is invoked with sem_id set
+                  to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemGetIdByName(NULL, "semaphore");
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_BinSemGetIdByName() is invoked with semaphore
+                  name set to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemGetIdByName(&bsid, NULL);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_BinSemGetIdByName() is invoked with a very
+                  long task name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemGetIdByName(&bsid, "very very long semaphore name");
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_BinSemTimedWait() timeout functionality</value>
+          </brief>
+          <description>
+            <value>OS_BinSemCreate() timeout functionality is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[bsid = 0;
+(void) OS_BinSemCreate(&bsid, "test semaphore", 0, 0);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[if (bsid > 0) {
+  (void) OS_BinSemDelete(bsid);
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_BinSemTimedWait() is invoked with timeout set
+                  to one second, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_BinSemTimedWait(bsid, 1000);
+test_assert(err == OS_SEM_TIMEOUT, "unexpected error code");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Counter Semaphores Functionality</value>
+      </brief>
+      <description>
+        <value>This sequence tests the NASA OSAL over ChibiOS/RT
+          functionalities related to counter semaphores.</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include "osapi.h"
+
+uint32 csid;]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>OS_CountSemCreate() and OS_CountSemDelete() errors
+            </value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_CountSemCreate() and
+              OS_CountSemDelete() is tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_CountSemCreate() is invoked with sem_id set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemCreate(NULL,                   /* Error.*/
+                        "failing semaphore",
+                        0,
+                        0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_CountSemCreate() is invoked with sem_name set
+                  to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemCreate(&csid,
+                        NULL,                   /* Error.*/
+                        0,
+                        0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_CountSemCreate() is invoked with an invalid
+                  sem_initial_value, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemCreate(&csid,
+                        "failing semaphore",
+                        (uint32)-1,              /* Error.*/
+                        0);
+test_assert(err == OS_INVALID_INT_NUM, "counter error not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_CountSemCreate() is invoked with a very long
+                  timer name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[#if 0 /* Semaphore name currently not implemented.*/
+int32 err;
+
+err = OS_CountSemCreate(&csid,
+                        "very very long semaphore name",/* Error.*/
+                        0,
+                        0);
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");
+#endif]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_CountSemDelete() is invoked with timer_id set
+                  to -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemDelete((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "wrong semaphore id not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_CountSemCreate() is invoked twice with
+                  duplicated name, an error is expected, then the queue
+                  is deleted using OS_CountSemDelete().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 csid1; /*, csid2;*/
+
+err = OS_CountSemCreate(&csid1, "my semaphore", 0, 0);
+test_assert(err == OS_SUCCESS, "semaphore creation failed");
+
+#if 0 /* Semaphore name currently not implemented.*/
+err = OS_CountSemCreate(&csid2, "my semaphore", 0, 0);
+test_assert(err == OS_ERR_NAME_TAKEN, "name conflict not detected");
+#endif
+
+err = OS_CountSemDelete(csid1);
+test_assert(err == OS_SUCCESS, "semaphore deletion failed");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_CountSemGive() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_CountSemGive() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_CountSemGive() is invoked with sem_id set to
+                  -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemGive((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "invalid sem_id not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_CountSemTake() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_CountSemTake() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_CountSemTake() is invoked with sem_id set to
+                  -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemTake((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "invalid sem_id not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_CountSemTimedWait() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_CountSemTimedWait() is
+              tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[csid = 0;
+(void) OS_CountSemCreate(&csid, "test semaphore", 0, 0);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[if (csid > 0) {
+  (void) OS_CountSemDelete(csid);
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_CountSemTimedWait() is invoked with sem_id set
+                  to -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemTimedWait((uint32)-1, 1000);
+test_assert(err == OS_ERR_INVALID_ID, "invalid sem_id not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_CountSemTimedWait() is invoked with msecs set
+                  to 0, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemTimedWait(csid, 0);
+test_assert(err == OS_INVALID_INT_NUM, "invalid msec not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_CountSemGetIdByName() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_CountSemGetIdByName() is
+              tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_CountSemGetIdByName() is invoked with sem_id
+                  set to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemGetIdByName(NULL, "semaphore");
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_CountSemGetIdByName() is invoked with
+                  semaphore name set to NULL, an error is expected.
+                </value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemGetIdByName(&csid, NULL);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_CountSemGetIdByName() is invoked with a very
+                  long task name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemGetIdByName(&csid, "very very long semaphore name");
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_CountSemTimedWait() timeout functionality</value>
+          </brief>
+          <description>
+            <value>OS_CountSemCreate() timeout functionality is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[csid = 0;
+(void) OS_CountSemCreate(&csid, "test semaphore", 0, 0);]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[if (csid > 0) {
+  (void) OS_CountSemDelete(csid);
+}]]></value>
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_CountSemTimedWait() is invoked with timeout
+                  set to one second, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_CountSemTimedWait(csid, 1000);
+test_assert(err == OS_SEM_TIMEOUT, "unexpected error code");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>Mutex Semaphores Functionality</value>
+      </brief>
+      <description>
+        <value>This sequence tests the NASA OSAL over ChibiOS/RT
+          functionalities related to mutex semaphores.</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[#include "osapi.h"
+
+uint32 msid;]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>OS_MutSemCreate() and OS_MutSemDelete() errors
+            </value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_MutSemCreate() and
+              OS_MutSemDelete() is tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_MutSemCreate() is invoked with sem_id set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_MutSemCreate(NULL,                     /* Error.*/
+                     "failing semaphore",
+                     0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_MutSemCreate() is invoked with sem_name set to
+                  NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_MutSemCreate(&msid,
+                     NULL,                      /* Error.*/
+                     0);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_MutSemCreate() is invoked with a very long
+                  timer name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[#if 0 /* Semaphore name currently not implemented.*/
+int32 err;
+
+err = OS_MutSemCreate(&msid,
+                     "very very long semaphore name",   /* Error.*/
+                     0);
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");
+#endif]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_MutSemDelete() is invoked with timer_id set to
+                  -1, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_MutSemDelete((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "wrong semaphore id not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_MutSemCreate() is invoked twice with
+                  duplicated name, an error is expected, then the queue
+                  is deleted using OS_MutSemDelete().</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+uint32 msid1; /*, msid2;*/
+
+err = OS_MutSemCreate(&msid1, "my semaphore", 0);
+test_assert(err == OS_SUCCESS, "semaphore creation failed");
+
+#if 0 /* Semaphore name currently not implemented.*/
+err = OS_MutSemCreate(&msid2, "my semaphore", 0);
+test_assert(err == OS_ERR_NAME_TAKEN, "name conflict not detected");
+#endif
+
+err = OS_MutSemDelete(msid1);
+test_assert(err == OS_SUCCESS, "semaphore deletion failed");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_MutSemGive() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_MutSemGive() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_MutSemGive() is invoked with sem_id set to -1,
+                  an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_MutSemGive((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "invalid sem_id not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_MutSemTake() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_MutSemTake() is tested.
+            </value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_MutSemTake() is invoked with sem_id set to -1,
+                  an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_MutSemTake((uint32)-1);
+test_assert(err == OS_ERR_INVALID_ID, "invalid sem_id not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>OS_MutSemGetIdByName() errors</value>
+          </brief>
+          <description>
+            <value>Parameters checking in OS_MutSemGetIdByName() is
+              tested.</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value />
+            </setup_code>
+            <teardown_code>
+              <value />
+            </teardown_code>
+            <local_variables>
+              <value />
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>OS_MutSemGetIdByName() is invoked with sem_id set
+                  to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_MutSemGetIdByName(NULL, "semaphore");
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_MutSemGetIdByName() is invoked with semaphore
+                  name set to NULL, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_MutSemGetIdByName(&msid, NULL);
+test_assert(err == OS_INVALID_POINTER, "NULL not detected");]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>OS_MutSemGetIdByName() is invoked with a very
+                  long task name, an error is expected.</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[int32 err;
+
+err = OS_MutSemGetIdByName(&msid, "very very long semaphore name");
+test_assert(err == OS_ERR_NAME_TOO_LONG, "name limit not detected");]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+  </sequences>
+</instance>

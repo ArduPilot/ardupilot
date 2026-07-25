@@ -1,0 +1,8 @@
+#
+# Battery cell voltages
+# Rate: set by parameter on smart battery (default off)
+#
+
+float16[<=24] voltages            # [Volt]
+uint16 index                      # Index of the first cell in the array, index 0 is cells at array indices 0 - 23, index 24 is cells at array indices 24 - 47, etc.
+

@@ -1,0 +1,13 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+def build(bld):
+	bld.recurse('test0 test1')
+
+    # can't use bld.stlib
+	bld(
+        # cxxstlib not required?!
+		features = 'cxx',
+		source   = 'gtest_main.cc',
+		use      = 'GTEST',
+		target   = 'unittestmain')

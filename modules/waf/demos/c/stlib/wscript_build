@@ -1,0 +1,22 @@
+#! /usr/bin/env python
+
+bld.stlib(
+	source   = 'test_staticlib.c',
+	target   = 'my_static_lib')
+
+bld.program(
+	source   = 'main.c',
+	target   = 'test_static_link',
+	includes = '.',
+	use      = 'my_static_lib')
+
+def r1(self):
+	import time
+	time.sleep(1)
+	self.outputs[0].write('\n')
+bld(rule=r1, target='foo.h', before=['c'])
+
+# the default scanner may enforce the build order on generated headers, but it is just
+# better and faster to set before=['c', 'cxx'] explicitly
+# the dependency processing for 'gccdeps' also requires it
+

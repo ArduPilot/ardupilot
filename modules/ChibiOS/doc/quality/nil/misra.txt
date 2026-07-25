@@ -1,0 +1,24 @@
+
+--- Module:   ..\..\..\os\nil\src\ch.c (C)
+
+--- Module:   ..\..\..\os\nil\src\chevt.c (C)
+
+--- Module:   ..\..\..\os\nil\src\chmsg.c (C)
+
+--- Module:   ..\..\..\os\nil\src\chsem.c (C)
+
+--- Module:   ..\..\..\os\oslib\src\chmboxes.c (C)
+
+--- Module:   ..\..\..\os\oslib\src\chmemcore.c (C)
+
+--- Module:   ..\..\..\os\oslib\src\chmemheaps.c (C)
+
+--- Module:   ..\..\..\os\oslib\src\chmempools.c (C)
+
+--- Module:   ..\..\..\os\oslib\src\chpipes.c (C)
+
+--- Module:   ..\..\..\os\oslib\src\chobjcaches.c (C)
+
+--- Module:   ..\..\..\os\oslib\src\chdelegates.c (C)
+
+--- Module:   ..\..\..\os\oslib\src\chfactory.c (C)

@@ -1,0 +1,31 @@
+#
+# This service initiates firmware update on a remote node.
+#
+# The node that is being updated (slave) will retrieve the firmware image file 'image_file_remote_path' from the node
+# 'source_node_id' using the file read service, then it will update the firmware and reboot.
+#
+# The slave can explicitly reject this request if it is not possible to update the firmware at the moment
+# (e.g. if the node is busy).
+#
+# If the slave node accepts this request, the initiator will get a response immediately, before the update process
+# actually begins.
+#
+# While the firmware is being updated, the slave should set its mode (uavcan.protocol.NodeStatus.mode) to
+# MODE_SOFTWARE_UPDATE.
+#
+
+uint8 source_node_id         # If this field is zero, the caller's Node ID will be used instead.
+Path image_file_remote_path
+
+---
+
+#
+# Other error codes may be added in the future.
+#
+uint8 ERROR_OK               = 0
+uint8 ERROR_INVALID_MODE     = 1    # Cannot perform the update in the current operating mode or state.
+uint8 ERROR_IN_PROGRESS      = 2    # Firmware update is already in progress, and the slave doesn't want to restart.
+uint8 ERROR_UNKNOWN          = 255
+uint8 error
+
+uint8[<128] optional_error_message   # Detailed description of the error.

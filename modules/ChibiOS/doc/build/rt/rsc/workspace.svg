@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="250"
+   height="300"
+   id="svg2160"
+   sodipodi:version="0.32"
+   inkscape:version="0.45.1"
+   version="1.0"
+   sodipodi:docbase="D:\Progetti\ChibiOS-RT\docs\img"
+   sodipodi:docname="workspace.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   inkscape:export-filename="D:\Progetti\ChibiOS-RT\docs\img\workspace.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs2162">
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="Arrow1Mend"
+       style="overflow:visible">
+      <path
+         id="path3299"
+         d="M 0,0 L 5,-5 L -12.5,0 L 5,5 L 0,0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;marker-start:none"
+         transform="matrix(-0.4,0,0,-0.4,-4,0)" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient3224">
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="0"
+         id="stop3226" />
+      <stop
+         style="stop-color:#000000;stop-opacity:0"
+         offset="1"
+         id="stop3228" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3224"
+       id="linearGradient3230"
+       x1="199.30756"
+       y1="341.00253"
+       x2="348.78439"
+       y2="341.00253"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient3224"
+       id="linearGradient2357"
+       gradientUnits="userSpaceOnUse"
+       x1="199.30756"
+       y1="341.00253"
+       x2="348.78439"
+       y2="341.00253" />
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.6725"
+     inkscape:cx="125"
+     inkscape:cy="128.25112"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     width="250px"
+     height="300px"
+     gridspacingx="5px"
+     gridspacingy="5px"
+     inkscape:grid-points="false"
+     inkscape:grid-bbox="true"
+     gridtolerance="10"
+     inkscape:object-paths="true"
+     objecttolerance="1"
+     guidetolerance="1"
+     inkscape:window-width="993"
+     inkscape:window-height="871"
+     inkscape:window-x="352"
+     inkscape:window-y="69" />
+  <metadata
+     id="metadata2165">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Livello 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect2196"
+       width="139.07188"
+       height="279.0719"
+       x="110.46406"
+       y="10.464057" />
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3180"
+       transform="translate(1.8535156,-54.849147)"><flowRegion
+         id="flowRegion3182"><rect
+           id="rect3184"
+           width="97.01046"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara3186">Workspace base</flowPara></flowRoot>    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3188"
+       transform="translate(1.8535156,-329.84915)"><flowRegion
+         id="flowRegion3190"><rect
+           id="rect3192"
+           width="97.01046"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara3196">Workspace top</flowPara></flowRoot>    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1,1;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 109.94816,260.4823 C 249.5177,260.4823 249.5177,260.4823 249.5177,260.4823"
+       id="path3243"
+       inkscape:export-filename="C:\Progetti\ChibiOS\homepage\workspace.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;marker-start:none;stroke-miterlimit:4;stroke-dasharray:1, 1;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 110.5,74.5 C 249.57284,74.5 249.57284,74.5 249.57284,74.5"
+       id="path3245" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1, 1;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 110.5,149.5 C 249.57284,149.5 249.57284,149.5 249.57284,149.5"
+       id="path3247" />
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3249"
+       transform="translate(125.4043,-62.808117)"><flowRegion
+         id="flowRegion3251"><rect
+           id="rect3253"
+           width="107.01046"
+           height="12.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara3255">Thread Structure</flowPara></flowRoot>    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3257"
+       transform="translate(133.58398,-197.80812)"><flowRegion
+         id="flowRegion3259"><rect
+           id="rect3261"
+           width="102.01046"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara3263">intctx Structure</flowPara></flowRoot>    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3265"
+       transform="translate(137.71094,-292.80812)"><flowRegion
+         id="flowRegion3267"><rect
+           id="rect3269"
+           width="97.01046"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara3273">Thread Stack</flowPara></flowRoot>    <flowRoot
+       xml:space="preserve"
+       id="flowRoot3277"
+       transform="translate(1.2089844,-187.09523)"><flowRegion
+         id="flowRegion3279"><rect
+           id="rect3281"
+           width="97.01046"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara3283">Stack Pointer</flowPara></flowRoot>    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.6978516px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1"
+       d="M 100.34893,288.42983 C 109.31485,288.42983 109.31485,288.42983 109.31485,288.42983"
+       id="path3487" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.6978516px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1"
+       d="M 100.34893,148.42983 C 109.31485,148.42983 109.31485,148.42983 109.31485,148.42983"
+       id="path3489" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.6978516px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1"
+       d="M 100.16177,11.570166 C 109.12769,11.570166 109.12769,11.570166 109.12769,11.570166"
+       id="path3491" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1, 1;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 109.93046,230.5 C 249.5,230.5 249.5,230.5 249.5,230.5"
+       id="path2206"
+       inkscape:export-filename="C:\Progetti\ChibiOS\homepage\workspace.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot2208"
+       transform="translate(112.03516,-92.095227)"><flowRegion
+         id="flowRegion2210"><rect
+           id="rect2212"
+           width="132.01047"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara2214">Thread Local Storage</flowPara></flowRoot>    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.6978516px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1"
+       d="M 100.16177,261.57017 C 109.12769,261.57017 109.12769,261.57017 109.12769,261.57017"
+       id="path2216" />
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot2218"
+       transform="translate(1.359375,-83.728054)"><flowRegion
+         id="flowRegion2220"><rect
+           id="rect2222"
+           width="117.01046"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara2224">chThdLS()</flowPara></flowRoot>    <flowRoot
+       xml:space="preserve"
+       id="flowRoot2209"
+       transform="translate(2.3710937,-107.80812)"><flowRegion
+         id="flowRegion2211"><rect
+           id="rect2213"
+           width="97.01046"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara2215">Stack Limit</flowPara></flowRoot>    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.6978516px;stroke-linecap:butt;stroke-linejoin:miter;marker-end:url(#Arrow1Mend);stroke-opacity:1"
+       d="M 100.16177,231.57017 C 109.12769,231.57017 109.12769,231.57017 109.12769,231.57017"
+       id="path2217" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1, 1;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 110.42716,125.5 C 249.5,125.5 249.5,125.5 249.5,125.5"
+       id="path2221" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:1, 1;stroke-dashoffset:0;stroke-opacity:1"
+       d="M 110.42716,100.5 C 249.5,100.5 249.5,100.5 249.5,100.5"
+       id="path2223" />
+    <flowRoot
+       xml:space="preserve"
+       id="flowRoot2225"
+       transform="translate(130.04492,-248.01905)"><flowRegion
+         id="flowRegion2227"><rect
+           id="rect2229"
+           width="102.01046"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara2231">extctx Structure</flowPara></flowRoot>    <flowRoot
+       xml:space="preserve"
+       id="flowRoot2235"
+       transform="translate(110.82227,-224.75538)"><flowRegion
+         id="flowRegion2237"><rect
+           id="rect2239"
+           width="137.01047"
+           height="17.563538"
+           x="2.9895365"
+           y="332.43646" /></flowRegion><flowPara
+         id="flowPara2241">INT_REQUIRED_STACK</flowPara></flowRoot>  </g>
+</svg>

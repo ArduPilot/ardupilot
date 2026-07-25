@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="Service"
+ targetNamespace="http://www.genivia.com/mashup.wsdl"
+ xmlns:tns="http://www.genivia.com/mashup.wsdl"
+ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+ xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:dtx="urn:daystoxmas"
+ xmlns:SOAP="http://schemas.xmlsoap.org/wsdl/soap/"
+ xmlns:WSDL="http://schemas.xmlsoap.org/wsdl/"
+ xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<types>
+
+ <schema targetNamespace="urn:daystoxmas"
+  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:dtx="urn:daystoxmas"
+  xmlns="http://www.w3.org/2001/XMLSchema"
+  elementFormDefault="qualified"
+  attributeFormDefault="qualified">
+  <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+  <!-- operation request element -->
+  <element name="daystoxmas"/>
+  <!-- operation response element -->
+  <element name="commingtotown">
+   <complexType>
+    <sequence>
+     <element name="days" type="xsd:int" minOccurs="1" maxOccurs="1"/>
+    </sequence>
+   </complexType>
+  </element>
+ </schema>
+
+</types>
+
+<message name="daystoxmas">
+ <part name="parameters" element="dtx:daystoxmas"/>
+</message>
+
+<message name="commingtotown">
+ <part name="parameters" element="dtx:commingtotown"/>
+</message>
+
+<portType name="PortType">
+ <operation name="dtx">
+  <input message="tns:daystoxmas"/>
+  <output message="tns:commingtotown"/>
+ </operation>
+</portType>
+
+<binding name="mashup" type="tns:PortType">
+ <SOAP:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+ <operation name="dtx">
+  <SOAP:operation soapAction=""/>
+  <input>
+     <SOAP:body parts="parameters" use="literal"/>
+  </input>
+  <output>
+     <SOAP:body parts="parameters" use="literal"/>
+  </output>
+ </operation>
+</binding>
+
+<service name="mashup">
+ <port name="mashup" binding="tns:mashup">
+  <SOAP:address location="http://www.cs.fsu.edu/~engelen/mashup.cgi"/>
+ </port>
+</service>
+
+</definitions>

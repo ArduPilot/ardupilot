@@ -1,0 +1,63 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0; net461</TargetFrameworks>
+    <ApplicationIcon />
+    <OutputTypeEx>library</OutputTypeEx>
+    <StartupObject />
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>True</DebugSymbols>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>Michael Oborne</Authors>
+    <Company>Michael Oborne</Company>
+    <Description>MAVLink 1/2 for Ardupilot</Description>
+    <Version>1.0.6</Version>
+    <Copyright>Michael Oborne</Copyright>
+    <NeutralLanguage>en</NeutralLanguage>
+    <PackageLicenseUrl>GPLv3</PackageLicenseUrl>
+    <SignAssembly>false</SignAssembly>
+    <AssemblyOriginatorKeyFile>mykey.snk</AssemblyOriginatorKeyFile>
+    <Configurations>Debug;Release</Configurations>
+    <FileVersion>1.0.5.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <RepositoryUrl>https://github.com/ArduPilot/MissionPlanner/tree/master/ExtLibs/Mavlink</RepositoryUrl>
+    <RepositoryType>Git</RepositoryType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Optimize>false</Optimize>
+    <DefineConstants>TRACE;UNSAFE</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="mavlink\**" />
+    <Compile Remove="pymavlink\**" />
+    <EmbeddedResource Remove="mavlink\**" />
+    <EmbeddedResource Remove="pymavlink\**" />
+    <None Remove="mavlink\**" />
+    <None Remove="pymavlink\**" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
+      <Version>4.7.0</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
+      <Version>4.7.0</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+  </ItemGroup>
+
+
+</Project>

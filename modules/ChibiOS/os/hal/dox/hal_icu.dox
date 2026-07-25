@@ -1,0 +1,107 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+/**
+ * @defgroup ICU ICU Driver
+ * @brief   Generic ICU Driver.
+ * @details This module implements a generic ICU (Input Capture Unit) driver.
+ *          The purpose of the driver is to measure period and duty cycle of
+ *          an input digital signal (PWM input).
+ * @pre     In order to use the ICU driver the @p HAL_USE_ICU option
+ *          must be enabled in @p halconf.h.
+ *
+ * @section icu_1 Driver State Machine
+ * The driver implements a state machine internally, not all the driver
+ * functionalities can be used in any moment, any transition not explicitly
+ * shown in the following diagram has to be considered an error and shall
+ * be captured by an assertion (if enabled).
+ * @if LATEX_PDF
+ * @dot
+  digraph example {
+    size="5, 7";
+    rankdir="LR";
+
+    node [shape=circle, fontname=Sans, fontsize=8, fixedsize="true", width="0.9", height="0.9"];
+    edge [fontname=Sans, fontsize=8];
+
+    stop  [label="ICU_STOP\nLow Power"];
+    uninit [label="ICU_UNINIT", style="bold"];
+    ready [label="ICU_READY\nClock Enabled"];
+    waiting [label="ICU_WAITING"];
+    active [label="ICU_ACTIVE"];
+
+    uninit -> stop [label=" icuInit()", constraint=false];
+    stop -> stop [label="\nicuStop()"];
+    stop -> ready [label="\nicuStart()"];
+    ready -> stop [label="\nicuStop()"];
+    ready -> ready [label="\nicuStart()\nicuStopCapture()"];
+    ready -> waiting [label="\nicuStartCapture()"];
+    waiting -> active [label="\nFirst Activation Edge\nicuWaitCapture()"];
+    waiting -> ready [label="\nicuStopCapture()"];
+    active -> ready [label="\nicuStopCapture()"];
+    active -> active [label="\nActivation Edge\n>period_cb<"];
+    active -> active [label="\nDe-activation Edge\n>width_cb<"];
+  }
+ * @enddot
+ * @else
+ * @dot
+  digraph example {
+    rankdir="LR";
+
+    node [shape=circle, fontname=Sans, fontsize=8, fixedsize="true", width="0.9", height="0.9"];
+    edge [fontname=Sans, fontsize=8];
+
+    stop  [label="ICU_STOP\nLow Power"];
+    uninit [label="ICU_UNINIT", style="bold"];
+    ready [label="ICU_READY\nClock Enabled"];
+    waiting [label="ICU_WAITING"];
+    active [label="ICU_ACTIVE"];
+
+    uninit -> stop [label=" icuInit()", constraint=false];
+    stop -> stop [label="\nicuStop()"];
+    stop -> ready [label="\nicuStart()"];
+    ready -> stop [label="\nicuStop()"];
+    ready -> ready [label="\nicuStart()\nicuStopCapture()"];
+    ready -> waiting [label="\nicuStartCapture()"];
+    waiting -> active [label="\nFirst Activation Edge\nicuWaitCapture()"];
+    waiting -> ready [label="\nicuStopCapture()"];
+    active -> ready [label="\nicuStopCapture()"];
+    active -> active [label="\nActivation Edge\n>period_cb<"];
+    active -> active [label="\nDe-activation Edge\n>width_cb<"];
+  }
+ * @enddot
+ * @endif
+ *
+ * @section icu_2 ICU Operations.
+ * This driver abstracts a generic Input Capture Unit composed of:
+ * - A clock prescaler.
+ * - A main up counter.
+ * - Two capture registers triggered by the rising and falling edges on
+ *   the sampled input.
+ * .
+ * The ICU unit can be programmed to synchronize on the rising or falling
+ * edge of the sample input:
+ * - <b>ICU_INPUT_ACTIVE_HIGH</b>, a rising edge is the start signal.
+ * - <b>ICU_INPUT_ACTIVE_LOW</b>, a falling edge is the start signal.
+ * .
+ * Callbacks are optionally invoked when:
+ * - On the PWM de-activation edge.
+ * - On the PWM activation edge, measurements for the previous cycle are
+ *   available from this callback and can be retrieved using
+ *   @p icuGetPeriodX() and @p icuGetWidthX().
+ * .
+ * @ingroup HAL_NORMAL_DRIVERS
+ */

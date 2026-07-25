@@ -1,0 +1,7 @@
+==Hit a Problem!
+GDB allows for all of the data sent between your PC and the remote MRI target to be captured to a log file.  If you enter the following command in GDB before issuing the "target remote" command then everything for your session will be logged to a file called mri.log in the current directory where GDB was launched:
+{{{
+set remotelogfile mri.log
+}}}
+
+Describe as clearly as possible what you were doing when you encountered the problem and then e-mail me this description along with a log file captured as described above.  I have an electronic mail account at yahoo.com.  The alias I use there is adamgrym.

@@ -1,0 +1,15 @@
+def configure(ctx):
+    ctx.load('haxe')
+    ctx.check_haxe(mini='4.0.0', maxi='4.2.5')
+    ctx.check_haxe_pkg(
+        libs=['hashlink'],
+        uselib_store='HLR',
+        fetch=False)
+
+def build(ctx):
+    ctx.env.HAXE_FLAGS = ['-dce', 'full', '-main', 'Main']
+    ctx(
+        compiler = 'HL',
+        source = 'Main.hx',
+        target = 'out.hl',
+        use = ['HLR'])

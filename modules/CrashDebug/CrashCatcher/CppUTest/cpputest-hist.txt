@@ -1,0 +1,1626 @@
+------------------------------------------------------------------------
+r337 | basvodde | 2009-05-17 02:43:25 -0500 (Sun, 17 May 2009) | 1 line
+
+Fixed the MemoryLeakDetector again.
+------------------------------------------------------------------------
+r336 | basvodde | 2009-05-17 02:05:32 -0500 (Sun, 17 May 2009) | 1 line
+
+Removed the PlatformSpecificSPrintf. No need anymore
+------------------------------------------------------------------------
+r335 | basvodde | 2009-05-17 01:52:38 -0500 (Sun, 17 May 2009) | 1 line
+
+Added some String function and removed static buffers. Also removed an #undef which let to problems...
+------------------------------------------------------------------------
+r334 | jamesgrenning | 2009-05-15 23:46:33 -0500 (Fri, 15 May 2009) | 2 lines
+
+c leak detection is default on.
+
+------------------------------------------------------------------------
+r333 | jamesgrenning | 2009-05-07 18:09:55 -0500 (Thu, 07 May 2009) | 1 line
+
+using ranlib due to cygwin problem.  it does not support libtool -static
+------------------------------------------------------------------------
+r332 | jamesgrenning | 2009-05-07 18:01:04 -0500 (Thu, 07 May 2009) | 1 line
+
+Using libtool instead of $(AR) for library creation.  Needed for Mac OSX. 
+------------------------------------------------------------------------
+r331 | tpuronen | 2009-05-06 07:50:37 -0500 (Wed, 06 May 2009) | 1 line
+
+Clean up
+------------------------------------------------------------------------
+r330 | tpuronen | 2009-05-06 07:39:46 -0500 (Wed, 06 May 2009) | 1 line
+
+Symbian compilation fixes.
+------------------------------------------------------------------------
+r329 | tpuronen | 2009-05-06 06:50:36 -0500 (Wed, 06 May 2009) | 1 line
+
+The first batch of Symbian fixes, do not use new overloads as Symbian has built-in memory leak detection, remove obsolete stuff.
+------------------------------------------------------------------------
+r328 | tpuronen | 2009-05-06 03:21:45 -0500 (Wed, 06 May 2009) | 1 line
+
+64-bit compiler fixes. Examples still need fixes.
+------------------------------------------------------------------------
+r327 | jamesgrenning | 2009-04-23 21:43:25 -0500 (Thu, 23 Apr 2009) | 1 line
+
+
+------------------------------------------------------------------------
+r326 | jamesgrenning | 2009-04-23 08:28:44 -0500 (Thu, 23 Apr 2009) | 1 line
+
+
+------------------------------------------------------------------------
+r325 | jamesgrenning | 2009-04-23 07:50:16 -0500 (Thu, 23 Apr 2009) | 2 lines
+
+Adding IAR-STR912 ARM9 eval board support
+
+------------------------------------------------------------------------
+r324 | jamesgrenning | 2009-04-22 19:15:21 -0500 (Wed, 22 Apr 2009) | 2 lines
+
+added enable() during setup.
+
+------------------------------------------------------------------------
+r323 | jamesgrenning | 2009-04-22 18:57:38 -0500 (Wed, 22 Apr 2009) | 26 lines
+
+Changes to allow Memory Leak Detection to be turned off for an embedded platform
+
+MemoryLeakDetector.h:
+Added #include <stdlib.h> so that size_t works.
+
+MemoryLeakWarningPlugin.h: Modified:
+extern "C" { /* include for size_t definition */
+   #undef __cplusplus
+   #define _WCHART
+   #include "TestHarness_c.h"
+}
+
+MemoryLeakWarningPlugin.cpp:
+Removed the remaining operator new stuff
+added disable() to constructor
+added isEnabled() guard clauses to public methods that do something
+
+modified and do not like:
+void MemoryLeakWarningPlugin::Enable()
+{
+#if UT_NEW_OVERRIDES_ENABLED
+   memLeakDetector->enable();
+#endif
+}
+I would prefer a NullMemoryLeakWarningPlugin over all this conditional compilation, but can live with it.
+
+------------------------------------------------------------------------
+r322 | jamesgrenning | 2009-04-14 07:37:06 -0500 (Tue, 14 Apr 2009) | 1 line
+
+Adding IAR work in progress
+------------------------------------------------------------------------
+r321 | basvodde | 2009-04-10 03:28:35 -0500 (Fri, 10 Apr 2009) | 4 lines
+
+
+Changed back to use size_t :(
+
+
+------------------------------------------------------------------------
+r320 | jamesgrenning | 2009-04-06 06:14:51 -0500 (Mon, 06 Apr 2009) | 5 lines
+
+changed int to long
+
+   void* operator new(unsigned long size, const char* file, int line);
+   void* operator new[](unsigned long size, const char* file, int line);
+
+------------------------------------------------------------------------
+r319 | basvodde | 2009-04-05 23:55:09 -0500 (Sun, 05 Apr 2009) | 3 lines
+
+
+Removed dependencies to Std Lib C in order to increase portability.
+
+------------------------------------------------------------------------
+r318 | basvodde | 2009-04-05 02:26:26 -0500 (Sun, 05 Apr 2009) | 6 lines
+
+- Fixed memory leak detector stack usage.
+- Added UT_PRINT
+- Added STRCMP_CONTAINS
+- Added StringFromFormat
+- Added simple and inefficient string buffering
+- Added new target to Makefile
+------------------------------------------------------------------------
+r317 | jamesgrenning | 2009-03-30 23:49:30 -0500 (Mon, 30 Mar 2009) | 20 lines
+
+CommandLineTestRunner supports JUNitOutput from command line.  Using pimpl pattern.  No longer a header file dependency on stdio.
+
+NullJUnitTestOutput file added that can be included in builds that will not use JUnit output
+
+Removed OutputType from public interface of 
+CommandLineArguments
+now using
+	bool isJUnitOutput() const;
+	bool isEclipseOutput() const;
+also added -o eclipse
+-o normal still works
+
+(we'll want a -o vs some day)
+
+
+removed
+CommandLineTestRunner ::getOutputType
+
+
+
+------------------------------------------------------------------------
+r316 | jamesgrenning | 2009-03-30 09:51:10 -0500 (Mon, 30 Mar 2009) | 1 line
+
+Added conditional compile that allows swapping between no-placement new and yes-placement new
+------------------------------------------------------------------------
+r315 | basvodde | 2009-03-29 05:47:26 -0500 (Sun, 29 Mar 2009) | 2 lines
+
+Some tweaks to improve memory leak detector performance
+
+------------------------------------------------------------------------
+r314 | jamesgrenning | 2009-03-28 15:03:51 -0500 (Sat, 28 Mar 2009) | 33 lines
+
+TestHarness.h
+---------------
+Added PlatformSpecificPutchat
+Added PlatformSpecificFlush
+
+CommandLIneTestRunner.cpp
+-------------------------
+Needed to edit out JUnitOutput.h
+
+
+MemoryLeakDetector.cpp
+----------------------
+added #undef malloc and free
+added checkedMalloc that FAILs when malloc returns 0;
+called checkedMalloc instead of malloc
+
+MemoryLeakWarningPlugin.cpp
+---------------------------
+Added a malloc failure check and FAIL
+
+
+TestOutput.cpp
+--------------
+Extraced  PlatformSpecificPutchat
+and PlatformSpecificFlush
+
+Platformws
+----------
+Added IarPlatform
+Gcc/UtestPlatform.cpp - added new mehtods
+VisualCpp/UtestPlatform.cpp - added new methods
+Symbian/UtestPlatform.cpp - added new methods
+
+------------------------------------------------------------------------
+r313 | jamesgrenning | 2009-03-11 09:19:15 -0500 (Wed, 11 Mar 2009) | 1 line
+
+Removed static from operator new
+------------------------------------------------------------------------
+r312 | basvodde | 2009-03-11 01:50:46 -0500 (Wed, 11 Mar 2009) | 2 lines
+
+
+Nasty little cast caused a negative array index.
+------------------------------------------------------------------------
+r311 | basvodde | 2009-03-10 23:21:10 -0500 (Tue, 10 Mar 2009) | 1 line
+
+Fixed some bugs related to static initialization.
+------------------------------------------------------------------------
+r310 | jamesgrenning | 2009-03-10 12:43:24 -0500 (Tue, 10 Mar 2009) | 9 lines
+
+Added to #include <stdarg.h> to TestHarness.h.  
+Why is va_lst being passed as void* 
+left old until we can discuss.
+
+MemoryLeakDetector.cpp using changed PlatformSpecificVSNprintf2
+
+Added #undef __cplusplus to TestHarness_c.cpp
+
+Added PlatformSpecificVSNprintf2 to UTestPlatform.
+------------------------------------------------------------------------
+r309 | basvodde | 2009-03-10 02:24:35 -0500 (Tue, 10 Mar 2009) | 1 line
+
+Added realloc support
+------------------------------------------------------------------------
+r308 | basvodde | 2009-03-10 00:28:38 -0500 (Tue, 10 Mar 2009) | 1 line
+
+Fixed a / in the Makefile
+------------------------------------------------------------------------
+r307 | jamesgrenning | 2009-03-08 17:02:31 -0500 (Sun, 08 Mar 2009) | 1 line
+
+poking around SetPointerPlugin.
+------------------------------------------------------------------------
+r306 | jamesgrenning | 2009-03-08 16:26:22 -0500 (Sun, 08 Mar 2009) | 1 line
+
+VC projects OK after Mac change including CommandLineArguments fix.
+------------------------------------------------------------------------
+r305 | jamesgrenning | 2009-03-08 15:52:56 -0500 (Sun, 08 Mar 2009) | 14 lines
+
+
+Added CommandLineArguments class.
+
+Got rid of the statics that were causing the original trouble.  There still a some leak as part of CommandLineTestRunner::runAllTestsMain().  Silenced with FinalReport(3). 
+
+CommandLineTestRunner has no tests now.  The prior tests were only about parameters anyway.
+
+I added gone and isGone to MemoryLeakDetector.  This is preventing the detector from crashing during exit.  You should look this over.  Its kind of a kludge, but it works.
+
+I put thin into ignore.  Have not had a chance to check why it is broken.
+IGNORE_TEST(SetPointerPluginTest, installTooMuchFunctionPointer)
+
+Added a test to check the order of the pre and post test actions.  last plugin is run first,  post runs in opposite order.
+
+------------------------------------------------------------------------
+r304 | jamesgrenning | 2009-02-23 19:10:13 -0600 (Mon, 23 Feb 2009) | 1 line
+
+kludge fix for groupFilter and nameFilter in test regixtry.u
+------------------------------------------------------------------------
+r303 | jamesgrenning | 2009-02-23 14:36:47 -0600 (Mon, 23 Feb 2009) | 1 line
+
+turned on full parse indexing
+------------------------------------------------------------------------
+r302 | jamesgrenning | 2009-02-23 14:29:07 -0600 (Mon, 23 Feb 2009) | 38 lines
+
+I made this compile with ubuntu Linux gcc 4.3.2
+
+Many char*s and char**s had to be changed to const char* and const char**.
+
+For backwards compatibility there are two of these
+	static int RunAllTests(int ac, const char** av);
+	static int RunAllTests(int ac, char** av);
+
+one to work with each possible main
+	main(int argc, const char** argv).
+	main(int argc, char** argv)
+
+I did not want to break existing tests.
+
+
+There are also two of thes in TestPlugin for the same reason.
+	virtual bool parseAllArguments(int ac, const char** av, int index);
+	virtual bool parseAllArguments(int ac, char** av, int index);
+
+I did not modify the PluginTest file because parseArguments is not tested there.
+
+I took out CHECK_EQUAL("THIS", "THIS") from places like
+TEST(Utest, allMacros)
+{
+  CHECK(0 == 0);
+  LONGS_EQUAL(1,1);
+  BYTES_EQUAL(0xab,0xab);
+  CHECK_EQUAL(100,100);
+  STRCMP_EQUAL("THIS", "THIS");
+  DOUBLES_EQUAL(1.0, 1.0, .01);
+  POINTERS_EQUAL(this, this);
+}
+
+It was generating a warning.  For good reasons.  The use probably really wants STRCMP_EQUAL.
+
+Changed Makefile CPPFLAGS += -Wall 
+
+
+------------------------------------------------------------------------
+r301 | basvodde | 2009-01-10 03:29:18 -0600 (Sat, 10 Jan 2009) | 4 lines
+
+1. New memory leak detector
+2. CHECKs can be used for functions that return a value
+3. Teardown is always called
+4. Failed cases don't report memory leaks
+------------------------------------------------------------------------
+r300 | jamesgrenning | 2008-12-10 08:40:26 -0600 (Wed, 10 Dec 2008) | 1 line
+
+fixed alternative TEST_FAIL alternative to FAIL
+------------------------------------------------------------------------
+r299 | jamesgrenning | 2008-12-08 20:43:40 -0600 (Mon, 08 Dec 2008) | 2 lines
+
+Updated scripts for generating C starting point for multi instance classes
+
+------------------------------------------------------------------------
+r298 | basvodde | 2008-12-02 04:56:01 -0600 (Tue, 02 Dec 2008) | 1 line
+
+OrderedTest
+------------------------------------------------------------------------
+r297 | basvodde | 2008-12-02 04:39:38 -0600 (Tue, 02 Dec 2008) | 2 lines
+
+Added another search function...
+
+------------------------------------------------------------------------
+r296 | basvodde | 2008-11-30 20:48:31 -0600 (Sun, 30 Nov 2008) | 1 line
+
+Minor changes to support ordered tests
+------------------------------------------------------------------------
+r295 | jamesgrenning | 2008-11-10 10:48:40 -0600 (Mon, 10 Nov 2008) | 1 line
+
+Changed how pointers are printed so that it is compatible with MS VC6/Mac/Cygwin
+------------------------------------------------------------------------
+r294 | jamesgrenning | 2008-11-10 09:20:50 -0600 (Mon, 10 Nov 2008) | 1 line
+
+
+------------------------------------------------------------------------
+r293 | jamesgrenning | 2008-11-04 17:46:46 -0600 (Tue, 04 Nov 2008) | 1 line
+
+Fixed signature of PlatformSpecificSprintf
+------------------------------------------------------------------------
+r292 | jamesgrenning | 2008-11-04 06:43:18 -0600 (Tue, 04 Nov 2008) | 1 line
+
+delete q
+------------------------------------------------------------------------
+r291 | basvodde | 2008-11-04 00:32:13 -0600 (Tue, 04 Nov 2008) | 3 lines
+
+Removed the dependency on stdio.h in the TestHarness.h.
+
+It killed the usage of CppUTest on not so standard C platforms.
+------------------------------------------------------------------------
+r290 | jamesgrenning | 2008-11-03 06:11:34 -0600 (Mon, 03 Nov 2008) | 3 lines
+
+added CppUnit templates
+
+
+------------------------------------------------------------------------
+r289 | jamesgrenning | 2008-10-30 14:39:29 -0500 (Thu, 30 Oct 2008) | 1 line
+
+
+------------------------------------------------------------------------
+r288 | jamesgrenning | 2008-10-30 14:35:22 -0500 (Thu, 30 Oct 2008) | 2 lines
+
+improving new project script
+
+------------------------------------------------------------------------
+r287 | jamesgrenning | 2008-10-03 06:52:37 -0500 (Fri, 03 Oct 2008) | 2 lines
+
+added POINTERS_EQUAL support
+Updated code templates 
+------------------------------------------------------------------------
+r286 | jamesgrenning | 2008-09-04 14:10:15 -0500 (Thu, 04 Sep 2008) | 2 lines
+
+Added support scripts to build dir structure and other flavor of C modules
+
+------------------------------------------------------------------------
+r285 | jamesgrenning | 2008-08-02 16:14:51 -0500 (Sat, 02 Aug 2008) | 1 line
+
+initialized a pointer that made a failure in VS.NET 2003
+------------------------------------------------------------------------
+r284 | jamesgrenning | 2008-08-01 17:51:23 -0500 (Fri, 01 Aug 2008) | 1 line
+
+I changed cpputest_sprintf's name
+------------------------------------------------------------------------
+r283 | basvodde | 2008-08-01 04:03:46 -0500 (Fri, 01 Aug 2008) | 1 line
+
+Path fixed.
+------------------------------------------------------------------------
+r282 | jamesgrenning | 2008-07-15 20:35:04 -0500 (Tue, 15 Jul 2008) | 1 line
+
+removed platform include path
+------------------------------------------------------------------------
+r281 | jamesgrenning | 2008-07-15 15:41:15 -0500 (Tue, 15 Jul 2008) | 1 line
+
+
+------------------------------------------------------------------------
+r280 | jamesgrenning | 2008-07-15 11:53:22 -0500 (Tue, 15 Jul 2008) | 6 lines
+
+Created cpputest_snprintf to get isolate the platform dependencies around snprintf.
+Updated MS VC6 workspaces and projects
+Got rid of cygwin warnings
+
+This needs to be checked on symbian.  vsnprintf is not supported on symbian, but it does translate the call to vsprintf.
+this might cause a test to fail.  
+------------------------------------------------------------------------
+r279 | jamesgrenning | 2008-07-12 12:07:02 -0500 (Sat, 12 Jul 2008) | 20 lines
+
+I just got CppUTest to work with VC6 AGAIN!
+
+Here are some of the changes.
+
+JUnit... files
+add #include "Platform.h"
+the MS platform file defines snprintf
+
+Makefile:
+add the platform directory on the include search path.
+added condition build for the "Extensions"
+
+Testharness_c.cpp
+got rid of a warning here by using the ?: operator
+	void  CHECK_C_LOCATION(int condition, const char* conditionString, const char* fileName, int lineNumber)
+	{
+		CHECK_LOCATION(((condition) == 0 ? false : true), conditionString, fileName, lineNumber);	
+	}
+	
+
+------------------------------------------------------------------------
+r278 | tpuronen | 2008-06-27 02:09:10 -0500 (Fri, 27 Jun 2008) | 1 line
+
+Added NULL checking to overloaded delete operators
+------------------------------------------------------------------------
+r277 | tpuronen | 2008-06-26 08:14:25 -0500 (Thu, 26 Jun 2008) | 1 line
+
+Rewrote README_Symbian.txt, added missing tests to alltests.mmp.
+------------------------------------------------------------------------
+r276 | tpuronen | 2008-06-26 07:23:54 -0500 (Thu, 26 Jun 2008) | 1 line
+
+Symbian build file fixes
+------------------------------------------------------------------------
+r275 | tpuronen | 2008-06-26 05:21:13 -0500 (Thu, 26 Jun 2008) | 1 line
+
+Symbian build file fixes
+------------------------------------------------------------------------
+r274 | jamesgrenning | 2008-06-25 17:03:07 -0500 (Wed, 25 Jun 2008) | 2 lines
+
+added BYTES_EQUAL
+
+------------------------------------------------------------------------
+r273 | jamesgrenning | 2008-06-25 17:01:21 -0500 (Wed, 25 Jun 2008) | 1 line
+
+added BYTES_EQUAL
+------------------------------------------------------------------------
+r272 | basvodde | 2008-06-23 21:51:41 -0500 (Mon, 23 Jun 2008) | 1 line
+
+Fixed the output to console related to flushing.
+------------------------------------------------------------------------
+r271 | basvodde | 2008-06-23 21:42:13 -0500 (Mon, 23 Jun 2008) | 1 line
+
+Renamed the RealTestOutput and the MockTestOutput
+------------------------------------------------------------------------
+r270 | basvodde | 2008-06-23 03:22:57 -0500 (Mon, 23 Jun 2008) | 4 lines
+
+
+Renamed GenericTest to ExecFunctionTest and moved it to UTest.h Also renamed GenericFixture to TestTestingFixture and moved it to the include since this is useful when writing plugins or extensions.
+
+Fixed all the tests.
+------------------------------------------------------------------------
+r269 | jamesgrenning | 2008-05-20 10:41:08 -0500 (Tue, 20 May 2008) | 1 line
+
+report that tests are being run, before running them
+------------------------------------------------------------------------
+r268 | jamesgrenning | 2008-05-20 10:37:50 -0500 (Tue, 20 May 2008) | 2 lines
+
+flush buffer so that if a test crashes, the test name is printed.
+Ignore tests are indicated with a bang!
+------------------------------------------------------------------------
+r267 | basvodde | 2008-04-16 03:54:43 -0500 (Wed, 16 Apr 2008) | 1 line
+
+Use more gcc defaults
+------------------------------------------------------------------------
+r266 | tpuronen | 2008-04-06 05:42:39 -0500 (Sun, 06 Apr 2008) | 1 line
+
+Symbian build file fixes
+------------------------------------------------------------------------
+r265 | tpuronen | 2008-04-06 01:07:35 -0500 (Sun, 06 Apr 2008) | 1 line
+
+Updated Symbian README
+------------------------------------------------------------------------
+r264 | basvodde | 2008-04-03 23:06:08 -0500 (Thu, 03 Apr 2008) | 1 line
+
+Plugin changes
+------------------------------------------------------------------------
+r263 | basvodde | 2008-04-03 23:02:40 -0500 (Thu, 03 Apr 2008) | 2 lines
+
+
+Added a CHECK_C macro for C usage
+------------------------------------------------------------------------
+r262 | basvodde | 2008-04-03 22:59:43 -0500 (Thu, 03 Apr 2008) | 1 line
+
+Moved SimpleString earlier
+------------------------------------------------------------------------
+r261 | basvodde | 2008-04-02 02:19:02 -0500 (Wed, 02 Apr 2008) | 1 line
+
+Doing reverse resetting for SetPointerPlugin
+------------------------------------------------------------------------
+r260 | basvodde | 2008-04-02 02:18:32 -0500 (Wed, 02 Apr 2008) | 1 line
+
+Added test for setting the same pointer twice
+------------------------------------------------------------------------
+r259 | basvodde | 2008-04-01 00:36:10 -0500 (Tue, 01 Apr 2008) | 1 line
+
+Removed platform dependency
+------------------------------------------------------------------------
+r258 | basvodde | 2008-04-01 00:34:56 -0500 (Tue, 01 Apr 2008) | 1 line
+
+Removed Platform.h
+------------------------------------------------------------------------
+r257 | basvodde | 2008-04-01 00:25:30 -0500 (Tue, 01 Apr 2008) | 1 line
+
+t -> T
+------------------------------------------------------------------------
+r256 | basvodde | 2008-04-01 00:14:41 -0500 (Tue, 01 Apr 2008) | 1 line
+
+I -> i
+------------------------------------------------------------------------
+r255 | basvodde | 2008-04-01 00:10:30 -0500 (Tue, 01 Apr 2008) | 1 line
+
+HRM!
+------------------------------------------------------------------------
+r254 | basvodde | 2008-03-31 23:59:40 -0500 (Mon, 31 Mar 2008) | 1 line
+
+Always install the SetPointerPlugin
+------------------------------------------------------------------------
+r253 | basvodde | 2008-03-31 23:48:08 -0500 (Mon, 31 Mar 2008) | 3 lines
+
+Changed the UT_FPSET to UT_PTR_SET
+
+Now works generic with all pointers
+------------------------------------------------------------------------
+r252 | basvodde | 2008-03-31 23:45:29 -0500 (Mon, 31 Mar 2008) | 1 line
+
+JUnit output fix
+------------------------------------------------------------------------
+r251 | basvodde | 2008-03-31 23:45:01 -0500 (Mon, 31 Mar 2008) | 1 line
+
+JUnit output fix
+------------------------------------------------------------------------
+r250 | tpuronen | 2008-03-26 15:37:49 -0500 (Wed, 26 Mar 2008) | 1 line
+
+Symbian build fixes.
+------------------------------------------------------------------------
+r249 | jamesgrenning | 2008-03-26 14:33:17 -0500 (Wed, 26 Mar 2008) | 1 line
+
+Added setjmp/longjmp for symbian. not sure if it is right
+------------------------------------------------------------------------
+r248 | jamesgrenning | 2008-03-24 23:28:31 -0500 (Mon, 24 Mar 2008) | 1 line
+
+
+------------------------------------------------------------------------
+r247 | jamesgrenning | 2008-03-24 23:28:02 -0500 (Mon, 24 Mar 2008) | 2 lines
+
+made NewProject compatible with makefile changes
+
+------------------------------------------------------------------------
+r246 | jamesgrenning | 2008-03-24 23:27:15 -0500 (Mon, 24 Mar 2008) | 1 line
+
+MS Project dsp files up to date
+------------------------------------------------------------------------
+r245 | jamesgrenning | 2008-03-24 23:26:27 -0500 (Mon, 24 Mar 2008) | 2 lines
+
+update how throw/catch is done to get rid of warning
+
+------------------------------------------------------------------------
+r244 | jamesgrenning | 2008-03-24 23:25:25 -0500 (Mon, 24 Mar 2008) | 2 lines
+
+
+
+------------------------------------------------------------------------
+r243 | jamesgrenning | 2008-03-24 23:24:41 -0500 (Mon, 24 Mar 2008) | 1 line
+
+
+------------------------------------------------------------------------
+r242 | jamesgrenning | 2008-03-24 09:00:18 -0500 (Mon, 24 Mar 2008) | 6 lines
+
+Refactored early test exit so that macros are not needed for exiting tests early.
+gcc version and VC++ versions use exceptions
+symbian version is untested, but i put a setjmp/longjmp implementation in there that works on gcc.
+I added a StarterKit platform that has setjmp/longjmp implementations for early test exit 
+     and null implementations for the time stuff.
+
+------------------------------------------------------------------------
+r241 | jamesgrenning | 2008-03-22 14:18:09 -0500 (Sat, 22 Mar 2008) | 4 lines
+
+Made changes so that a test will exist on its first failure using setjmp/longjmp.  it works for gcc.  it is a NOP for VC++ and Symbian.
+
+Updated and tested VC++ project files
+
+------------------------------------------------------------------------
+r240 | jamesgrenning | 2008-03-22 14:15:30 -0500 (Sat, 22 Mar 2008) | 1 line
+
+experimental version of malloc/free  that will record line of malloc
+------------------------------------------------------------------------
+r239 | jamesgrenning | 2008-03-22 14:13:14 -0500 (Sat, 22 Mar 2008) | 1 line
+
+Commented out experiment with preprocessor stubs
+------------------------------------------------------------------------
+r238 | jamesgrenning | 2008-03-22 14:09:35 -0500 (Sat, 22 Mar 2008) | 4 lines
+
+refactor
+
+make clean deletion of gcov files works on cygwin
+
+------------------------------------------------------------------------
+r237 | jamesgrenning | 2008-03-22 06:04:17 -0500 (Sat, 22 Mar 2008) | 5 lines
+
+Updated scripts
+NewCModule - simpler template
+NewCmiModule - multiple instance C module
+NewProject supported
+
+------------------------------------------------------------------------
+r236 | jamesgrenning | 2008-03-05 04:37:55 -0600 (Wed, 05 Mar 2008) | 2 lines
+
+test results captured in a file, and other gcov changes
+
+------------------------------------------------------------------------
+r235 | jamesgrenning | 2008-01-30 23:38:07 -0600 (Wed, 30 Jan 2008) | 1 line
+
+Added format target to reformat code using astyle.
+------------------------------------------------------------------------
+r234 | jamesgrenning | 2008-01-30 22:25:24 -0600 (Wed, 30 Jan 2008) | 1 line
+
+Added ability to cause cpputest_malloc to return a NULL pointer.  
+------------------------------------------------------------------------
+r233 | jamesgrenning | 2008-01-28 01:21:44 -0600 (Mon, 28 Jan 2008) | 2 lines
+
+Deleted some unused templates
+
+------------------------------------------------------------------------
+r232 | jamesgrenning | 2008-01-28 01:15:20 -0600 (Mon, 28 Jan 2008) | 2 lines
+
+clean up temp files
+
+------------------------------------------------------------------------
+r231 | jamesgrenning | 2008-01-27 19:45:44 -0600 (Sun, 27 Jan 2008) | 1 line
+
+ignore gcov output
+------------------------------------------------------------------------
+r230 | jamesgrenning | 2008-01-27 19:42:41 -0600 (Sun, 27 Jan 2008) | 1 line
+
+ignore gcov files
+------------------------------------------------------------------------
+r229 | jamesgrenning | 2008-01-27 18:56:42 -0600 (Sun, 27 Jan 2008) | 5 lines
+
+Update makefile and makefile support
+Added test coverage to makefile
+updated templates for initial C modules
+
+
+------------------------------------------------------------------------
+r228 | jamesgrenning | 2007-12-27 18:19:34 -0600 (Thu, 27 Dec 2007) | 1 line
+
+Added -I for platform include
+------------------------------------------------------------------------
+r227 | jamesgrenning | 2007-12-27 18:16:54 -0600 (Thu, 27 Dec 2007) | 2 lines
+
+Added support for uint8_t uint16_t uint32_t. 
+
+------------------------------------------------------------------------
+r226 | jamesgrenning | 2007-12-27 15:41:48 -0600 (Thu, 27 Dec 2007) | 1 line
+
+Reversed the slashes in the includes
+------------------------------------------------------------------------
+r225 | basvodde | 2007-12-27 03:27:29 -0600 (Thu, 27 Dec 2007) | 1 line
+
+Added a very simple function pointer resetter plugin
+------------------------------------------------------------------------
+r224 | basvodde | 2007-12-26 02:15:55 -0600 (Wed, 26 Dec 2007) | 1 line
+
+Changed char* to SimpleString. To remove dependencies with StdC
+------------------------------------------------------------------------
+r223 | basvodde | 2007-12-26 02:15:29 -0600 (Wed, 26 Dec 2007) | 1 line
+
+Changed char* to SimpleString. To remove dependencies with StdC
+------------------------------------------------------------------------
+r222 | basvodde | 2007-12-26 02:15:03 -0600 (Wed, 26 Dec 2007) | 1 line
+
+Changed char* to SimpleString. To remove dependencies with StdC
+------------------------------------------------------------------------
+r221 | basvodde | 2007-12-26 01:48:33 -0600 (Wed, 26 Dec 2007) | 1 line
+
+Print out options and removed include dependencies
+------------------------------------------------------------------------
+r220 | basvodde | 2007-12-26 01:47:08 -0600 (Wed, 26 Dec 2007) | 1 line
+
+Changed #include dependency
+------------------------------------------------------------------------
+r219 | basvodde | 2007-12-26 01:46:41 -0600 (Wed, 26 Dec 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r218 | basvodde | 2007-12-26 01:46:23 -0600 (Wed, 26 Dec 2007) | 1 line
+
+Changed #include dependency
+------------------------------------------------------------------------
+r217 | basvodde | 2007-12-26 01:44:39 -0600 (Wed, 26 Dec 2007) | 1 line
+
+Removed Platform.h
+------------------------------------------------------------------------
+r216 | basvodde | 2007-12-24 03:41:43 -0600 (Mon, 24 Dec 2007) | 1 line
+
+Need both sys time and time. Windows/unix difference.
+------------------------------------------------------------------------
+r215 | basvodde | 2007-12-24 03:12:16 -0600 (Mon, 24 Dec 2007) | 3 lines
+
+
+Code for per test time checks both in -v mode and -ojunit mode.
+
+------------------------------------------------------------------------
+r214 | basvodde | 2007-12-24 03:11:30 -0600 (Mon, 24 Dec 2007) | 1 line
+
+Used the new macro
+------------------------------------------------------------------------
+r213 | basvodde | 2007-12-24 03:10:03 -0600 (Mon, 24 Dec 2007) | 1 line
+
+Added new macro for creating test base classes.
+------------------------------------------------------------------------
+r212 | basvodde | 2007-12-24 03:08:45 -0600 (Mon, 24 Dec 2007) | 4 lines
+
+
+Added some platform specific functions to TestHarness. Might need to find a better way to do this.
+
+Though... not today.
+------------------------------------------------------------------------
+r211 | basvodde | 2007-12-24 03:06:43 -0600 (Mon, 24 Dec 2007) | 1 line
+
+Removed extenstions since could not compile without it.
+------------------------------------------------------------------------
+r210 | basvodde | 2007-12-24 03:06:14 -0600 (Mon, 24 Dec 2007) | 1 line
+
+Updated the makefile and fixed some issues with the extentions
+------------------------------------------------------------------------
+r209 | jamesgrenning | 2007-12-17 20:39:37 -0600 (Mon, 17 Dec 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r208 | jamesgrenning | 2007-12-17 20:36:17 -0600 (Mon, 17 Dec 2007) | 1 line
+
+Refactored the makefile to add conditional inclusion of an extensions directory
+------------------------------------------------------------------------
+r207 | jamesgrenning | 2007-12-17 15:41:52 -0600 (Mon, 17 Dec 2007) | 1 line
+
+changed include to -include to get rid of the error messages when creating the.d files
+------------------------------------------------------------------------
+r206 | jamesgrenning | 2007-12-17 15:30:12 -0600 (Mon, 17 Dec 2007) | 10 lines
+
+To solve this error on a mac:
+    /usr/bin/ld: Undefined symbols:
+    __Unwind_Resume
+    collect2: ld returned 1 exit status
+    make: *** [CppUTest_tests] Error 1
+
+Changes $(CC) to $(CXX) everywhere but in the .o.c rule.
+
+Change running the target from @ to ./@ to be unix compatible.
+ 
+------------------------------------------------------------------------
+r205 | jamesgrenning | 2007-12-03 10:20:40 -0600 (Mon, 03 Dec 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r204 | jamesgrenning | 2007-12-03 10:19:21 -0600 (Mon, 03 Dec 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r203 | basvodde | 2007-11-30 00:12:54 -0600 (Fri, 30 Nov 2007) | 1 line
+
+Removed stdint.h dependency
+------------------------------------------------------------------------
+r202 | basvodde | 2007-11-29 20:10:45 -0600 (Thu, 29 Nov 2007) | 1 line
+
+Fixed a bug that was only visible on Linux
+------------------------------------------------------------------------
+r201 | basvodde | 2007-11-29 19:41:00 -0600 (Thu, 29 Nov 2007) | 1 line
+
+Deleted old makefiles
+------------------------------------------------------------------------
+r200 | basvodde | 2007-11-29 19:38:49 -0600 (Thu, 29 Nov 2007) | 1 line
+
+New makefile
+------------------------------------------------------------------------
+r199 | basvodde | 2007-11-29 19:38:24 -0600 (Thu, 29 Nov 2007) | 1 line
+
+Changed the timeing output
+------------------------------------------------------------------------
+r198 | jamesgrenning | 2007-11-28 17:11:01 -0600 (Wed, 28 Nov 2007) | 1 line
+
+Made a new StringFrom method so that pointers don't print as <true>, but rather in hex
+------------------------------------------------------------------------
+r197 | jamesgrenning | 2007-11-28 17:08:18 -0600 (Wed, 28 Nov 2007) | 1 line
+
+make depend now checks *.c* for dependencies, rather than just *.cpp
+------------------------------------------------------------------------
+r196 | basvodde | 2007-11-21 03:53:59 -0600 (Wed, 21 Nov 2007) | 2 lines
+
+
+Added time measurements
+------------------------------------------------------------------------
+r195 | basvodde | 2007-11-21 03:29:00 -0600 (Wed, 21 Nov 2007) | 1 line
+
+Added SimpleStringExtensions
+------------------------------------------------------------------------
+r194 | basvodde | 2007-11-21 00:09:11 -0600 (Wed, 21 Nov 2007) | 2 lines
+
+Changed the name of TARGET since it conflicted with an environment variable 
+called TARGET and therefore let to very strange error messages.
+------------------------------------------------------------------------
+r193 | basvodde | 2007-11-20 20:48:58 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Moved SimpleStringExtensions.cpp to the examples
+------------------------------------------------------------------------
+r192 | basvodde | 2007-11-20 20:30:08 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Removed TestInstaller
+------------------------------------------------------------------------
+r191 | basvodde | 2007-11-20 20:29:48 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Removed TestInstaller
+------------------------------------------------------------------------
+r190 | basvodde | 2007-11-20 20:29:20 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Removed TestInstaller
+------------------------------------------------------------------------
+r189 | basvodde | 2007-11-20 20:23:14 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Removed NullTest
+------------------------------------------------------------------------
+r188 | basvodde | 2007-11-20 20:22:53 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Removed NullTest
+------------------------------------------------------------------------
+r187 | basvodde | 2007-11-20 20:22:27 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Added UtestMacros.h
+------------------------------------------------------------------------
+r186 | basvodde | 2007-11-20 20:21:58 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Removed NullTest
+------------------------------------------------------------------------
+r185 | basvodde | 2007-11-20 20:14:39 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Removed EqualsFailure
+------------------------------------------------------------------------
+r184 | basvodde | 2007-11-20 20:14:14 -0600 (Tue, 20 Nov 2007) | 1 line
+
+Removed EqualsFailure
+------------------------------------------------------------------------
+r183 | jamesgrenning | 2007-11-20 00:59:21 -0600 (Tue, 20 Nov 2007) | 2 lines
+
+Added scripts and templates for NewProject and NewLibrary
+
+------------------------------------------------------------------------
+r182 | jamesgrenning | 2007-11-19 20:51:13 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r181 | jamesgrenning | 2007-11-19 18:44:02 -0600 (Mon, 19 Nov 2007) | 2 lines
+
+
+
+------------------------------------------------------------------------
+r180 | jamesgrenning | 2007-11-19 18:43:32 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r179 | jamesgrenning | 2007-11-19 18:43:06 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r178 | jamesgrenning | 2007-11-19 18:42:30 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r177 | jamesgrenning | 2007-11-19 18:41:50 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r176 | jamesgrenning | 2007-11-19 18:39:36 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r175 | jamesgrenning | 2007-11-19 18:38:48 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r174 | jamesgrenning | 2007-11-19 18:36:25 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r173 | jamesgrenning | 2007-11-19 17:48:13 -0600 (Mon, 19 Nov 2007) | 2 lines
+
+
+
+------------------------------------------------------------------------
+r172 | jamesgrenning | 2007-11-19 17:46:52 -0600 (Mon, 19 Nov 2007) | 2 lines
+
+
+
+------------------------------------------------------------------------
+r171 | jamesgrenning | 2007-11-19 17:44:53 -0600 (Mon, 19 Nov 2007) | 2 lines
+
+
+
+------------------------------------------------------------------------
+r170 | jamesgrenning | 2007-11-19 17:43:49 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r169 | jamesgrenning | 2007-11-19 17:42:31 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r168 | jamesgrenning | 2007-11-19 17:38:25 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r167 | jamesgrenning | 2007-11-19 17:37:48 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r166 | jamesgrenning | 2007-11-19 17:35:58 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r165 | jamesgrenning | 2007-11-19 17:29:35 -0600 (Mon, 19 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r164 | jamesgrenning | 2007-11-19 17:27:00 -0600 (Mon, 19 Nov 2007) | 3 lines
+
+Adding support for NewProject.sh and NewLibrary.sh
+This is an experiment right now
+
+------------------------------------------------------------------------
+r163 | jamesgrenning | 2007-11-06 13:12:20 -0600 (Tue, 06 Nov 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r162 | jamesgrenning | 2007-11-06 12:24:15 -0600 (Tue, 06 Nov 2007) | 1 line
+
+Added Hex printing and support for uint32_t
+------------------------------------------------------------------------
+r161 | jamesgrenning | 2007-11-06 12:19:43 -0600 (Tue, 06 Nov 2007) | 2 lines
+
+added conditional logic around copying hte created library
+
+------------------------------------------------------------------------
+r160 | basvodde | 2007-11-06 02:22:45 -0600 (Tue, 06 Nov 2007) | 1 line
+
+Removed the mmp file
+------------------------------------------------------------------------
+r159 | basvodde | 2007-10-07 04:53:58 -0500 (Sun, 07 Oct 2007) | 1 line
+
+Symbian build files
+------------------------------------------------------------------------
+r158 | basvodde | 2007-10-07 04:53:10 -0500 (Sun, 07 Oct 2007) | 1 line
+
+Symbian build file
+------------------------------------------------------------------------
+r157 | basvodde | 2007-10-07 04:52:37 -0500 (Sun, 07 Oct 2007) | 1 line
+
+Minor changes
+------------------------------------------------------------------------
+r156 | basvodde | 2007-10-07 04:51:55 -0500 (Sun, 07 Oct 2007) | 1 line
+
+Symbian files
+------------------------------------------------------------------------
+r155 | basvodde | 2007-10-07 04:47:36 -0500 (Sun, 07 Oct 2007) | 1 line
+
+Moved
+------------------------------------------------------------------------
+r154 | jamesgrenning | 2007-10-01 17:04:01 -0500 (Mon, 01 Oct 2007) | 1 line
+
+Deleted SymbianAllTests.cpp, it was breaking the make depend.
+------------------------------------------------------------------------
+r153 | jamesgrenning | 2007-09-29 12:04:00 -0500 (Sat, 29 Sep 2007) | 1 line
+
+LONGS_EQUAL outputs expected/but was numbers in both decimal and hex
+------------------------------------------------------------------------
+r152 | jamesgrenning | 2007-09-12 19:30:55 -0500 (Wed, 12 Sep 2007) | 2 lines
+
+got rid of printf infavor of putchar and a loop
+
+------------------------------------------------------------------------
+r151 | jamesgrenning | 2007-09-12 19:29:39 -0500 (Wed, 12 Sep 2007) | 2 lines
+
+added files for creating a new project
+changed the code templates so that they only use setup and teardown 
+------------------------------------------------------------------------
+r150 | jamesgrenning | 2007-09-12 19:20:30 -0500 (Wed, 12 Sep 2007) | 2 lines
+
+New project template
+
+------------------------------------------------------------------------
+r149 | jamesgrenning | 2007-09-12 19:14:10 -0500 (Wed, 12 Sep 2007) | 1 line
+
+Move symbian stuff to one directory
+------------------------------------------------------------------------
+r148 | basvodde | 2007-08-30 07:38:22 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Symbian test files
+------------------------------------------------------------------------
+r147 | basvodde | 2007-08-30 07:37:32 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Patched the wrong patch
+------------------------------------------------------------------------
+r146 | basvodde | 2007-08-30 07:36:19 -0500 (Thu, 30 Aug 2007) | 2 lines
+
+Symbian build files
+
+------------------------------------------------------------------------
+r145 | basvodde | 2007-08-30 03:52:40 -0500 (Thu, 30 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r144 | basvodde | 2007-08-30 03:46:05 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Added some methods because of symbian port
+------------------------------------------------------------------------
+r143 | basvodde | 2007-08-30 03:42:19 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Slightly different interface
+------------------------------------------------------------------------
+r142 | basvodde | 2007-08-30 03:41:14 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Added methods due to symbian
+------------------------------------------------------------------------
+r141 | basvodde | 2007-08-30 03:40:38 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Removed inline methods due to symbian
+------------------------------------------------------------------------
+r140 | basvodde | 2007-08-30 03:28:18 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Symbian test files.
+------------------------------------------------------------------------
+r139 | basvodde | 2007-08-30 03:27:30 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Platform specific test execution
+------------------------------------------------------------------------
+r138 | basvodde | 2007-08-30 03:26:34 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Symbian platform specifics
+------------------------------------------------------------------------
+r137 | basvodde | 2007-08-30 03:25:16 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Fixed a small memory leak
+------------------------------------------------------------------------
+r136 | basvodde | 2007-08-30 03:24:39 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Symbian support
+------------------------------------------------------------------------
+r135 | basvodde | 2007-08-30 03:21:36 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Symbian build file
+------------------------------------------------------------------------
+r134 | basvodde | 2007-08-30 03:20:34 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Added platform specific indirection
+------------------------------------------------------------------------
+r133 | basvodde | 2007-08-30 03:17:07 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Fixed a funny bug
+------------------------------------------------------------------------
+r132 | basvodde | 2007-08-30 03:16:08 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Added platform specific UTest execution method
+------------------------------------------------------------------------
+r131 | basvodde | 2007-08-30 03:15:46 -0500 (Thu, 30 Aug 2007) | 1 line
+
+Test executions platform specific method
+------------------------------------------------------------------------
+r130 | basvodde | 2007-08-30 03:06:13 -0500 (Thu, 30 Aug 2007) | 1 line
+
+New method for platform specific execution
+------------------------------------------------------------------------
+r129 | basvodde | 2007-08-29 04:30:54 -0500 (Wed, 29 Aug 2007) | 1 line
+
+Moved static method to not be inline anymore
+------------------------------------------------------------------------
+r128 | basvodde | 2007-08-29 04:30:14 -0500 (Wed, 29 Aug 2007) | 1 line
+
+Moved static method to not be inline anymore
+------------------------------------------------------------------------
+r127 | basvodde | 2007-08-28 05:02:32 -0500 (Tue, 28 Aug 2007) | 1 line
+
+Minor changes
+------------------------------------------------------------------------
+r126 | jamesgrenning | 2007-08-22 19:27:21 -0500 (Wed, 22 Aug 2007) | 1 line
+
+added extern "C" to get rid of compiler warning
+------------------------------------------------------------------------
+r125 | jamesgrenning | 2007-08-22 19:26:09 -0500 (Wed, 22 Aug 2007) | 2 lines
+
+removed unused parameter names to get rid of compiler warnings
+
+------------------------------------------------------------------------
+r124 | jamesgrenning | 2007-08-22 19:24:35 -0500 (Wed, 22 Aug 2007) | 1 line
+
+replaced printf with a loop and putchar
+------------------------------------------------------------------------
+r123 | jamesgrenning | 2007-08-22 19:23:46 -0500 (Wed, 22 Aug 2007) | 2 lines
+
+reformat
+
+------------------------------------------------------------------------
+r122 | basvodde | 2007-08-10 02:30:51 -0500 (Fri, 10 Aug 2007) | 1 line
+
+Fixed a bug which happened when using -r2
+------------------------------------------------------------------------
+r121 | basvodde | 2007-08-10 02:27:18 -0500 (Fri, 10 Aug 2007) | 1 line
+
+Changed the Test output
+------------------------------------------------------------------------
+r120 | basvodde | 2007-08-10 02:26:47 -0500 (Fri, 10 Aug 2007) | 1 line
+
+Changed the test output
+------------------------------------------------------------------------
+r119 | jamesgrenning | 2007-08-10 01:04:22 -0500 (Fri, 10 Aug 2007) | 1 line
+
+improved make and instructions
+------------------------------------------------------------------------
+r118 | jamesgrenning | 2007-08-09 23:19:30 -0500 (Thu, 09 Aug 2007) | 1 line
+
+I redid the VC6 project files.  
+------------------------------------------------------------------------
+r117 | jamesgrenning | 2007-08-09 23:18:13 -0500 (Thu, 09 Aug 2007) | 1 line
+
+VC6 project files added
+------------------------------------------------------------------------
+r116 | jamesgrenning | 2007-08-09 23:16:54 -0500 (Thu, 09 Aug 2007) | 1 line
+
+Got Win32MemoryLeakWarning working and added VC6 projects
+------------------------------------------------------------------------
+r115 | jamesgrenning | 2007-08-08 23:30:54 -0500 (Wed, 08 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r114 | jamesgrenning | 2007-08-08 23:29:56 -0500 (Wed, 08 Aug 2007) | 5 lines
+
+Removed the NewVCModule.sh file - it needs to be rethought, so i killed it
+Moved VirtualCall
+
+Updated template files and New* scripts
+
+------------------------------------------------------------------------
+r113 | jamesgrenning | 2007-08-08 23:27:51 -0500 (Wed, 08 Aug 2007) | 2 lines
+
+moved to an accessible place
+
+------------------------------------------------------------------------
+r112 | jamesgrenning | 2007-08-08 23:26:42 -0500 (Wed, 08 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r111 | jamesgrenning | 2007-08-08 20:23:31 -0500 (Wed, 08 Aug 2007) | 2 lines
+
+Added README for prior users
+
+------------------------------------------------------------------------
+r110 | jamesgrenning | 2007-08-07 23:43:46 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r109 | jamesgrenning | 2007-08-07 23:29:07 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r108 | jamesgrenning | 2007-08-07 23:28:13 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r107 | jamesgrenning | 2007-08-07 23:26:52 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r106 | jamesgrenning | 2007-08-07 23:26:30 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r105 | jamesgrenning | 2007-08-07 23:22:10 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r104 | jamesgrenning | 2007-08-07 23:19:11 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r103 | jamesgrenning | 2007-08-07 23:18:34 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r102 | jamesgrenning | 2007-08-07 23:03:37 -0500 (Tue, 07 Aug 2007) | 2 lines
+
+updated/added README files
+
+------------------------------------------------------------------------
+r101 | jamesgrenning | 2007-08-07 23:02:16 -0500 (Tue, 07 Aug 2007) | 1 line
+
+fixed make depend
+------------------------------------------------------------------------
+r100 | jamesgrenning | 2007-08-07 22:41:14 -0500 (Tue, 07 Aug 2007) | 2 lines
+
+removed exercise comments
+
+------------------------------------------------------------------------
+r99 | jamesgrenning | 2007-08-07 21:58:47 -0500 (Tue, 07 Aug 2007) | 2 lines
+
+Added instrutions for the NewClass... scripts
+
+------------------------------------------------------------------------
+r98 | jamesgrenning | 2007-08-07 21:34:56 -0500 (Tue, 07 Aug 2007) | 1 line
+
+Updated test template files to use the TEST_GROUP macro instead of namespace
+------------------------------------------------------------------------
+r97 | jamesgrenning | 2007-08-07 21:16:58 -0500 (Tue, 07 Aug 2007) | 3 lines
+
+Added vc6 workspace and project files
+added svn:ignore
+
+------------------------------------------------------------------------
+r96 | jamesgrenning | 2007-08-07 21:12:43 -0500 (Tue, 07 Aug 2007) | 1 line
+
+added svn:ignore
+------------------------------------------------------------------------
+r95 | jamesgrenning | 2007-08-07 21:12:17 -0500 (Tue, 07 Aug 2007) | 1 line
+
+added svn:ignore
+------------------------------------------------------------------------
+r94 | jamesgrenning | 2007-08-07 21:11:47 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r93 | jamesgrenning | 2007-08-07 21:11:10 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r92 | jamesgrenning | 2007-08-07 21:10:49 -0500 (Tue, 07 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r91 | jamesgrenning | 2007-08-07 21:08:58 -0500 (Tue, 07 Aug 2007) | 2 lines
+
+Added vc6 project
+
+------------------------------------------------------------------------
+r90 | jamesgrenning | 2007-08-07 21:08:28 -0500 (Tue, 07 Aug 2007) | 2 lines
+
+Added vc60 project
+
+------------------------------------------------------------------------
+r89 | jamesgrenning | 2007-08-07 20:44:44 -0500 (Tue, 07 Aug 2007) | 2 lines
+
+Compiles under vc6
+
+------------------------------------------------------------------------
+r88 | jamesgrenning | 2007-08-07 20:44:04 -0500 (Tue, 07 Aug 2007) | 2 lines
+
+Deleted src/Platforms/VisualCpp/Platform.h
+
+------------------------------------------------------------------------
+r87 | jamesgrenning | 2007-08-07 20:42:39 -0500 (Tue, 07 Aug 2007) | 1 line
+
+made compatible with bas changes
+------------------------------------------------------------------------
+r86 | jamesgrenning | 2007-08-07 20:40:43 -0500 (Tue, 07 Aug 2007) | 3 lines
+
+- Removed duplicate scope resoultion operator from
+void TestRegistry::TestRegistry::setCurrentRegistry(TestRegistry* registry)
+Odd this compiles under gcc in the first place
+------------------------------------------------------------------------
+r85 | jamesgrenning | 2007-08-07 20:37:23 -0500 (Tue, 07 Aug 2007) | 2 lines
+
+- Added #include "Platform.h" so snprintf can compile under vc6
+
+------------------------------------------------------------------------
+r84 | jamesgrenning | 2007-08-07 20:35:05 -0500 (Tue, 07 Aug 2007) | 3 lines
+
+added #define snprintf _snprintf
+so that snprintf can compile under VC6
+
+------------------------------------------------------------------------
+r83 | jamesgrenning | 2007-08-07 20:31:58 -0500 (Tue, 07 Aug 2007) | 2 lines
+
+made include guard match classname
+
+------------------------------------------------------------------------
+r82 | jamesgrenning | 2007-08-07 19:18:34 -0500 (Tue, 07 Aug 2007) | 1 line
+
+Fixed a warning in the if statement in count()
+------------------------------------------------------------------------
+r81 | basvodde | 2007-07-29 21:34:22 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Changed the dependency on TestOutput
+------------------------------------------------------------------------
+r80 | basvodde | 2007-07-29 21:34:07 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added tests for output formatting
+------------------------------------------------------------------------
+r79 | basvodde | 2007-07-29 21:33:53 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added tests for new String functions. Need more tests though.
+------------------------------------------------------------------------
+r78 | basvodde | 2007-07-29 21:33:35 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added tests to makefile
+------------------------------------------------------------------------
+r77 | basvodde | 2007-07-29 21:33:25 -0500 (Sun, 29 Jul 2007) | 1 line
+
+JUnitOutput tests
+------------------------------------------------------------------------
+r76 | basvodde | 2007-07-29 21:32:59 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Removed output from registry
+------------------------------------------------------------------------
+r75 | basvodde | 2007-07-29 21:32:38 -0500 (Sun, 29 Jul 2007) | 1 line
+
+CommandRunner test
+------------------------------------------------------------------------
+r74 | basvodde | 2007-07-29 21:32:16 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added new tests
+------------------------------------------------------------------------
+r73 | basvodde | 2007-07-29 21:31:50 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Moved formatting away
+------------------------------------------------------------------------
+r72 | basvodde | 2007-07-29 21:31:40 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added JUnitTestOutput
+------------------------------------------------------------------------
+r71 | basvodde | 2007-07-29 21:31:26 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Moved formatting away
+------------------------------------------------------------------------
+r70 | basvodde | 2007-07-29 21:31:14 -0500 (Sun, 29 Jul 2007) | 1 line
+
+JUnitTestOutput for integration with CruiseControl
+------------------------------------------------------------------------
+r69 | basvodde | 2007-07-29 21:30:58 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Moved all formatting here.
+------------------------------------------------------------------------
+r68 | basvodde | 2007-07-29 21:30:38 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Moved formatting to TestOutput
+------------------------------------------------------------------------
+r67 | basvodde | 2007-07-29 21:30:05 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Fixed a small bug
+------------------------------------------------------------------------
+r66 | basvodde | 2007-07-29 21:29:37 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added a whole bunch of small methods
+------------------------------------------------------------------------
+r65 | basvodde | 2007-07-29 21:29:25 -0500 (Sun, 29 Jul 2007) | 1 line
+
+JUnitTestOutput for integration with CruiseControl
+------------------------------------------------------------------------
+r64 | basvodde | 2007-07-29 21:28:30 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Moved formatting away
+------------------------------------------------------------------------
+r63 | basvodde | 2007-07-29 21:28:21 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Moved formatting away
+------------------------------------------------------------------------
+r62 | basvodde | 2007-07-29 21:28:10 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Removed dependency to TestOutput for now.
+------------------------------------------------------------------------
+r61 | basvodde | 2007-07-29 21:27:58 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Moved all the formatting to here, for now.
+------------------------------------------------------------------------
+r60 | basvodde | 2007-07-29 21:27:35 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added a bunch of useful methods
+------------------------------------------------------------------------
+r59 | basvodde | 2007-07-29 21:27:13 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added a flush method
+------------------------------------------------------------------------
+r58 | basvodde | 2007-07-29 21:26:56 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added copy constructor and getters
+------------------------------------------------------------------------
+r57 | basvodde | 2007-07-29 21:25:33 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added stuff about leaks to be expected. Not nice, but needed.
+------------------------------------------------------------------------
+r56 | basvodde | 2007-07-29 21:25:28 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added stuff about leaks to be expected. Not nice, but needed.
+------------------------------------------------------------------------
+r55 | basvodde | 2007-07-29 21:25:23 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added stuff about leaks to be expected. Not nice, but needed.
+------------------------------------------------------------------------
+r54 | basvodde | 2007-07-29 21:25:16 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Added stuff about leaks to be expected. Not nice, but needed.
+------------------------------------------------------------------------
+r53 | basvodde | 2007-07-29 21:24:43 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Non-static class and refactored and added junit output support
+------------------------------------------------------------------------
+r52 | basvodde | 2007-07-29 21:24:37 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Non-static class and refactored and added junit output support
+------------------------------------------------------------------------
+r51 | basvodde | 2007-07-29 21:24:03 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Removed PrintSpecifics
+------------------------------------------------------------------------
+r50 | basvodde | 2007-07-29 21:24:00 -0500 (Sun, 29 Jul 2007) | 1 line
+
+Removed PrintSpecifics
+------------------------------------------------------------------------
+r49 | basvodde | 2007-07-26 01:53:52 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Test for string with 0 pointer.
+------------------------------------------------------------------------
+r48 | basvodde | 2007-07-26 01:53:38 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Added tests for bugs
+------------------------------------------------------------------------
+r47 | basvodde | 2007-07-26 01:53:07 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Added getters for groupFilter and nameFilter
+------------------------------------------------------------------------
+r46 | basvodde | 2007-07-26 01:52:32 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Changed size_t to unsigned int
+------------------------------------------------------------------------
+r45 | basvodde | 2007-07-26 01:51:54 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Fixed a small bug for when passing a 0 pointer to SimpleString
+------------------------------------------------------------------------
+r44 | basvodde | 2007-07-26 01:51:30 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Removed IgnoredTest
+------------------------------------------------------------------------
+r43 | basvodde | 2007-07-26 01:50:41 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Removed IgnoredTest and changed the IGNORE_TEST macro. This enables fixture access from ignored test cases.
+------------------------------------------------------------------------
+r42 | basvodde | 2007-07-26 01:49:49 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Added some getters and "fixed" the layout
+------------------------------------------------------------------------
+r41 | basvodde | 2007-07-26 01:49:05 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Changed size_t to unsigned int. Led to problems with pure C prepocessor
+------------------------------------------------------------------------
+r40 | basvodde | 2007-07-26 01:48:14 -0500 (Thu, 26 Jul 2007) | 1 line
+
+Removed default constructor and used constructor with default value
+------------------------------------------------------------------------
+r39 | basvodde | 2007-07-25 22:15:16 -0500 (Wed, 25 Jul 2007) | 1 line
+
+Fixed the C style comments
+------------------------------------------------------------------------
+r38 | basvodde | 2007-07-25 22:04:07 -0500 (Wed, 25 Jul 2007) | 1 line
+
+Removed CPP commands
+------------------------------------------------------------------------
+r37 | basvodde | 2007-07-23 02:13:09 -0500 (Mon, 23 Jul 2007) | 1 line
+
+Fixed the fixture setup and teardown
+------------------------------------------------------------------------
+r36 | basvodde | 2007-07-23 02:12:34 -0500 (Mon, 23 Jul 2007) | 1 line
+
+Updated based on new setup
+------------------------------------------------------------------------
+r35 | basvodde | 2007-07-23 02:12:22 -0500 (Mon, 23 Jul 2007) | 1 line
+
+Added cleaning the examples to make clean
+------------------------------------------------------------------------
+r34 | basvodde | 2007-07-23 01:49:13 -0500 (Mon, 23 Jul 2007) | 1 line
+
+Use the new setup and teardown methods!
+------------------------------------------------------------------------
+r33 | basvodde | 2007-07-17 04:38:07 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Added FileName
+------------------------------------------------------------------------
+r32 | basvodde | 2007-07-17 04:37:51 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Added checks for FileName
+------------------------------------------------------------------------
+r31 | basvodde | 2007-07-17 04:37:39 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Added the char
+------------------------------------------------------------------------
+r30 | basvodde | 2007-07-17 04:37:17 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Added the fileName
+------------------------------------------------------------------------
+r29 | basvodde | 2007-07-17 04:36:50 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Use LOCATION macros
+------------------------------------------------------------------------
+r28 | basvodde | 2007-07-17 04:36:27 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Added FromString with char
+------------------------------------------------------------------------
+r27 | basvodde | 2007-07-17 04:36:03 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Added FileName parameter
+------------------------------------------------------------------------
+r26 | basvodde | 2007-07-17 04:35:36 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Changed to use LOCATION so the C location is real.
+------------------------------------------------------------------------
+r25 | basvodde | 2007-07-17 04:35:17 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Changed all the test macros to be able to specify the location!
+------------------------------------------------------------------------
+r24 | basvodde | 2007-07-17 04:34:56 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Added FromString with char
+------------------------------------------------------------------------
+r23 | basvodde | 2007-07-17 04:34:40 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Added fileName parameter to get the real filename
+------------------------------------------------------------------------
+r22 | basvodde | 2007-07-17 00:45:52 -0500 (Tue, 17 Jul 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r21 | basvodde | 2007-07-17 00:45:02 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Fixed the CHECK_REAL
+------------------------------------------------------------------------
+r20 | basvodde | 2007-07-17 00:44:31 -0500 (Tue, 17 Jul 2007) | 1 line
+
+Fixed the CHECK_REAL
+------------------------------------------------------------------------
+r19 | basvodde | 2007-07-15 21:30:02 -0500 (Sun, 15 Jul 2007) | 4 lines
+
+
+Added TestPlugin description to the README_CppUTest.txt.
+
+Wrote a new ReadMe for working with CppUTest in C.
+------------------------------------------------------------------------
+r18 | basvodde | 2007-07-10 00:32:28 -0500 (Tue, 10 Jul 2007) | 1 line
+
+A simple HelloWorld example
+------------------------------------------------------------------------
+r17 | basvodde | 2007-07-03 03:08:29 -0500 (Tue, 03 Jul 2007) | 1 line
+
+Refactored tests completely to use own registry.
+------------------------------------------------------------------------
+r16 | basvodde | 2007-07-03 03:06:37 -0500 (Tue, 03 Jul 2007) | 1 line
+
+This file is probably broken.
+------------------------------------------------------------------------
+r15 | basvodde | 2007-07-03 03:06:12 -0500 (Tue, 03 Jul 2007) | 1 line
+
+Changed to not use the static member functions anymore
+------------------------------------------------------------------------
+r14 | basvodde | 2007-07-03 03:05:25 -0500 (Tue, 03 Jul 2007) | 1 line
+
+Added C malloc methods that use the memory leak detector
+------------------------------------------------------------------------
+r13 | basvodde | 2007-07-03 03:04:58 -0500 (Tue, 03 Jul 2007) | 1 line
+
+Not using static member functions anymore
+------------------------------------------------------------------------
+r12 | basvodde | 2007-07-03 03:04:19 -0500 (Tue, 03 Jul 2007) | 1 line
+
+Removed all the static member functions
+------------------------------------------------------------------------
+r11 | basvodde | 2007-07-03 00:55:44 -0500 (Tue, 03 Jul 2007) | 1 line
+
+Header for C include files
+------------------------------------------------------------------------
+r10 | basvodde | 2007-06-24 03:43:42 -0500 (Sun, 24 Jun 2007) | 1 line
+
+Build files and readme
+------------------------------------------------------------------------
+r9 | basvodde | 2007-06-24 03:33:05 -0500 (Sun, 24 Jun 2007) | 1 line
+
+New scripts
+------------------------------------------------------------------------
+r8 | basvodde | 2007-06-24 03:15:04 -0500 (Sun, 24 Jun 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r7 | basvodde | 2007-06-24 03:12:04 -0500 (Sun, 24 Jun 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r6 | basvodde | 2007-06-24 03:09:34 -0500 (Sun, 24 Jun 2007) | 1 line
+
+Examples for TDD
+------------------------------------------------------------------------
+r5 | basvodde | 2007-06-24 02:37:59 -0500 (Sun, 24 Jun 2007) | 1 line
+
+Added extra .exe removal for Windows systems
+------------------------------------------------------------------------
+r4 | basvodde | 2007-06-24 02:33:02 -0500 (Sun, 24 Jun 2007) | 1 line
+
+Added the build files
+------------------------------------------------------------------------
+r3 | basvodde | 2007-06-24 00:58:58 -0500 (Sun, 24 Jun 2007) | 1 line
+
+Added source files
+------------------------------------------------------------------------
+r2 | basvodde | 2007-06-24 00:49:01 -0500 (Sun, 24 Jun 2007) | 1 line
+
+
+------------------------------------------------------------------------
+r1 | basvodde | 2007-06-24 00:37:56 -0500 (Sun, 24 Jun 2007) | 1 line
+
+Added trunk
+------------------------------------------------------------------------

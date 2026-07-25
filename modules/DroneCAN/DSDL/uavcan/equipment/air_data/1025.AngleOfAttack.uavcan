@@ -1,0 +1,10 @@
+#
+# Angle of attack.
+#
+
+uint8 SENSOR_ID_LEFT = 254
+uint8 SENSOR_ID_RIGHT = 255
+uint8 sensor_id
+
+float16 aoa             # Radians
+float16 aoa_variance    # Radians^2

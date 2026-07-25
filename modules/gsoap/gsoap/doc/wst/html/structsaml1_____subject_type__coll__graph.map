@@ -1,0 +1,29 @@
+<map id="saml1__SubjectType" name="saml1__SubjectType">
+<area shape="rect" id="node2" href="$structsaml1_____name_identifier_type.html" title="&quot;urn:oasis:names:tc:SAML:1.0:assertion&quot;:NameIdentifierType is a complexType with simpleContent extens..." alt="" coords="1957,120,2146,147"/>
+<area shape="rect" id="node3" href="$structsaml1_____subject_confirmation_type.html" title="&quot;urn:oasis:names:tc:SAML:1.0:assertion&quot;:SubjectConfirmationType is a complexType. ..." alt="" coords="1940,264,2163,291"/>
+<area shape="rect" id="node4" href="$structds_____key_info_type.html" title="Imported complexType &quot;http://www.w3.org/2000/09/xmldsig#&quot;:KeyInfoType from typemap WS/WS&#45;typemap..." alt="" coords="1589,307,1715,333"/>
+<area shape="rect" id="node5" href="$structxenc_____encrypted_key_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:EncryptedKeyType is a complexType with complexContent extension o..." alt="" coords="1963,171,2140,197"/>
+<area shape="rect" id="node6" href="$structxenc_____encryption_method_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:EncryptionMethodType is a complexType. " alt="" coords="1551,13,1753,40"/>
+<area shape="rect" id="node7" href="$structds_____digest_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:DigestMethodType is a complexType. " alt="" coords="1107,8,1269,35"/>
+<area shape="rect" id="node8" href="$structxenc_____encryption_properties_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:EncryptionPropertiesType is a complexType. " alt="" coords="1543,65,1761,92"/>
+<area shape="rect" id="node9" href="$structxenc_____encryption_property_type.html" title="Imported complexType &quot;http://www.w3.org/2001/04/xmlenc#&quot;:EncryptionPropertyType from typemap WS/WS&#45;ty..." alt="" coords="1084,59,1292,85"/>
+<area shape="rect" id="node10" href="$struct__xenc_____reference_list.html" title="Top&#45;level root element &quot;http://www.w3.org/2001/04/xmlenc#&quot;:ReferenceList. " alt="" coords="1575,120,1729,147"/>
+<area shape="rect" id="node11" href="$struct__xenc_____reference_list_1_1____xenc____union___reference_list.html" title="_xenc__ReferenceList\l::__xenc__union_ReferenceList" alt="" coords="1083,110,1293,151"/>
+<area shape="rect" id="node12" href="$structxenc_____reference_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:ReferenceType is a complexType. " alt="" coords="774,115,930,141"/>
+<area shape="rect" id="node13" href="$structxenc_____cipher_data_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:CipherDataType is a complexType. " alt="" coords="1571,175,1733,201"/>
+<area shape="rect" id="node14" href="$structxenc_____cipher_reference_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:CipherReferenceType is a complexType. " alt="" coords="1090,176,1286,203"/>
+<area shape="rect" id="node15" href="$structxenc_____transforms_type.html" title="&quot;http://www.w3.org/2001/04/xmlenc#&quot;:TransformsType is a complexType. " alt="" coords="771,165,933,192"/>
+<area shape="rect" id="node16" href="$structds_____transform_type.html" title="Imported complexType &quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformType from typemap WS/WS&#45;typemap..." alt="" coords="454,268,595,295"/>
+<area shape="rect" id="node22" href="$structds_____transforms_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformsType is a complexType. " alt="" coords="778,317,926,344"/>
+<area shape="rect" id="node17" href="$struct__c14n_____inclusive_namespaces.html" title="_c14n__InclusiveNamespaces" alt="" coords="5,268,208,295"/>
+<area shape="rect" id="node18" href="$structds_____key_value_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:KeyValueType is a complexType. " alt="" coords="1119,267,1257,293"/>
+<area shape="rect" id="node19" href="$structds_____r_s_a_key_value_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:RSAKeyValueType is a complexType. " alt="" coords="769,267,935,293"/>
+<area shape="rect" id="node20" href="$structds_____d_s_a_key_value_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:DSAKeyValueType is a complexType. " alt="" coords="769,216,935,243"/>
+<area shape="rect" id="node21" href="$structds_____retrieval_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:RetrievalMethodType is a complexType. " alt="" coords="1099,317,1277,344"/>
+<area shape="rect" id="node23" href="$struct__wsse_____security_token_reference.html" title="This element defines the wsse:SecurityTokenReference per Section 4.3. Imported element _wsse__Securit..." alt="" coords="1077,419,1299,445"/>
+<area shape="rect" id="node24" href="$struct__wsse_____embedded.html" title="This element defines a security token embedded reference Imported element _wsse__Embedded from typema..." alt="" coords="783,419,921,445"/>
+<area shape="rect" id="node25" href="$struct__wsse_____key_identifier.html" title="This element defines a key identifier reference Imported element _wsse__KeyIdentifier from typemap WS..." alt="" coords="777,469,927,496"/>
+<area shape="rect" id="node26" href="$structds_____x509_data_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:X509DataType is a complexType. " alt="" coords="782,536,922,563"/>
+<area shape="rect" id="node27" href="$structds_____x509_issuer_serial_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:X509IssuerSerialType is a complexType. " alt="" coords="433,536,616,563"/>
+<area shape="rect" id="node28" href="$struct__wsse_____reference.html" title="This element defines a security token reference Imported element _wsse__Reference from typemap WS/WS&#45;..." alt="" coords="784,368,920,395"/>
+</map>

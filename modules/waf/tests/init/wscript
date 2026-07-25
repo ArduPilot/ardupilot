@@ -1,0 +1,138 @@
+#! /usr/bin/env python
+
+top = '.'
+out = 'build'
+
+import os, shutil, sys
+from waflib import ConfigSet, Context, Logs
+
+def options(opt):
+	pass
+
+def configure(conf):
+	pass
+
+
+def run_command(ctx, *k, **kw):
+	with open('/dev/null', 'w') as f:
+		kw['stdout'] = f
+		ret = ctx.exec_command(*k, **kw)
+	if ret:
+		ctx.fatal('Command failed ret:%r - %r %r' % (ret, k, kw))
+	return ret
+
+def cleanup(ctx):
+	for y in ('side_cwd', 'up_cwd'):
+		lst = ctx.path.find_node(y).ant_glob(['**/.lock-waf*'])
+		for k in lst:
+			k.delete()
+
+	for k in ctx.path.ant_glob('**/tmp_out', dir=True):
+		shutil.rmtree(k.abspath())
+
+def build(bld):
+	failures = []
+	up_cwd = bld.path.find_node('up_cwd').abspath()
+	side_cwd = bld.path.find_node('side_cwd').abspath()
+	proj_cwd = bld.path.find_node('up_cwd/project').abspath()
+	proj_sub_cwd = bld.path.find_node('up_cwd/project/sub').abspath()
+	proj_out_cwd = bld.path.make_node('up_cwd/project/tmp_out').abspath()
+	wscript = bld.path.find_node('up_cwd/project/wscript').abspath()
+
+	d_node = bld.path.make_node('path_to_record')
+	dumpf_default = d_node.abspath()
+
+	def make_cmd(cmd, based=proj_cwd, dumpf=dumpf_default):
+		return list(cmd) + ['--based=%s' % based, '--dumpf=%s' % dumpf]
+
+	def test_cmd(cmd, cwd, test_name, cwd_dir='.', top_dir='.', out_dir='tmp_out', run_dir='.', launch_dir='.'):
+		cmd = make_cmd(cmd)
+		try:
+			run_command(bld, cmd, cwd=cwd)
+			v = ConfigSet.ConfigSet(dumpf_default)
+		finally:
+			for k in bld.path.ant_glob('**/path_to_record'):
+				k.delete()
+
+		err = []
+		def check_err(got, expected, var_name):
+			if got != expected:
+				Logs.pprint('RED', '- %s: %s -> got:%r expected:%r' % (test_name, var_name, got, expected))
+				err.append(var_name)
+
+		check_err(v.cwd_dir, cwd_dir, 'cwd')
+		check_err(v.top_dir, top_dir, 'top')
+		check_err(v.run_dir, run_dir, 'run')
+		check_err(v.out_dir, out_dir, 'out')
+		check_err(v.launch_dir, launch_dir, 'launch')
+		if err:
+			failures.append(test_name)
+		else:
+			Logs.pprint('GREEN', '- %s: ok' % test_name)
+
+	exe = os.path.abspath(os.path.join(Context.launch_dir, sys.argv[0]))
+
+	cleanup(bld)
+
+	test_cmd([exe, 'configure'], proj_cwd, 'regular configure')
+	test_cmd([exe], proj_cwd, '  regular build from top')
+	test_cmd([exe], proj_out_cwd, '  regular build from out', launch_dir='tmp_out')
+	test_cmd([exe], proj_sub_cwd, '  regular build from subfolder', launch_dir='sub')
+	cleanup(bld)
+
+	test_cmd([exe, 'configure', '--top=%s' % proj_cwd, '--out=%s' % proj_out_cwd], proj_cwd, 'configure with top/out from proj cwd')
+	test_cmd([exe], proj_cwd, '  next build from top')
+	test_cmd([exe], proj_out_cwd, '  next build from out', launch_dir='tmp_out')
+	test_cmd([exe], proj_sub_cwd, '  next build from subfolder', launch_dir='sub')
+	test_cmd([exe, '--top=%s' % proj_cwd, '--out=foobar'], proj_cwd,
+		'  next build from top, verify out_dir==lock_file.out_dir')
+	test_cmd([exe, '--top=%s' % proj_cwd, '--out=foobar'], proj_sub_cwd,
+		'  next build from subfolder, verify out_dir==lock_file.out_dir', launch_dir='sub')
+	cleanup(bld)
+
+	test_cmd([exe, 'configure', '--top=%s' % proj_cwd, '--out=%s' % proj_out_cwd], up_cwd, 'configure with top/out from up cwd',
+		launch_dir='..')
+	test_cmd([exe], proj_cwd, '  next build from top')
+	test_cmd([exe], proj_out_cwd, '  next build from out', launch_dir='tmp_out')
+	test_cmd([exe], proj_sub_cwd, '  next build from subfolder', launch_dir='sub')
+	cleanup(bld)
+
+	test_cmd([wscript, 'configure'], proj_cwd, 'wscript configure')
+	test_cmd([wscript], proj_cwd, '  next build from top')
+	test_cmd([wscript], proj_out_cwd, '  next build from out', launch_dir='tmp_out')
+	test_cmd([wscript], proj_sub_cwd, '  next build from subfolder', launch_dir='sub')
+	cleanup(bld)
+
+	test_cmd([wscript, 'configure', '--top=%s' % proj_cwd, '--out=%s' % proj_out_cwd], proj_cwd, 'wscript configure with top/out from proj cwd')
+	test_cmd([wscript], proj_cwd, '  next build from top')
+	test_cmd([wscript], proj_out_cwd, '  next build from out', launch_dir='tmp_out')
+	test_cmd([wscript], proj_sub_cwd, '  next build from subfolder', launch_dir='sub')
+	cleanup(bld)
+
+	test_cmd([wscript, 'configure', '--top=%s' % proj_cwd, '--out=%s' % proj_out_cwd], up_cwd, 'wscript configure with top/out from up cwd',
+		launch_dir='..')
+	test_cmd([wscript], proj_cwd, '  next build from top')
+	test_cmd([wscript], proj_out_cwd, '  next build from out', launch_dir='tmp_out')
+	test_cmd([wscript], proj_sub_cwd, '  next build from subfolder', launch_dir='sub')
+	cleanup(bld)
+
+	test_cmd([exe, '--top=%s' % proj_cwd], proj_cwd, 'autoconfig')
+	cleanup(bld)
+
+	test_cmd([wscript, 'configure', '--top=project', '--out=project/tmp_out'], up_cwd, 'wscript configure with relative top/out from up cwd',
+		launch_dir='..')
+	test_cmd([wscript], proj_cwd, '  next build from top')
+	test_cmd([wscript], proj_out_cwd, '  next build from out', launch_dir='tmp_out')
+	test_cmd([wscript], proj_sub_cwd, '  next build from subfolder', launch_dir='sub')
+	cleanup(bld)
+
+	test_cmd([exe, '--force-autoconfig', '--top=project'], up_cwd, 'autoconfig from up 1', launch_dir='..')
+	os.remove(dumpf_default + '_autoconfig')
+	test_cmd([exe, '--force-autoconfig', '--top=project'], up_cwd, 'autoconfig from up 2', launch_dir='..')
+	os.remove(dumpf_default + '_autoconfig')
+	test_cmd([exe, '--force-autoconfig', '--out=badout'], proj_cwd, 'autoconfig with clobber')
+	cleanup(bld)
+
+	if failures:
+		bld.fatal('there were errors')
+

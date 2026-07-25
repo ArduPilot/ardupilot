@@ -1,0 +1,179 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/**
+ * @defgroup kernel RT Kernel
+ * @details The kernel is the portable part of ChibiOS/RT, this section
+ *          documents the various kernel subsystems.
+ */
+
+/**
+ * @defgroup kernel_info Version Numbers and Identification
+ * @ingroup kernel
+ */
+
+/**
+ * @defgroup config_category Configuration
+ * @ingroup kernel
+ */
+
+/**
+ * @defgroup config Options
+ * @ingroup config_category
+ */
+
+/**
+ * @defgroup conf_checks Checks
+ * @ingroup config_category
+ */
+
+/**
+ * @defgroup rt_restrictions Restrictions
+ * @ingroup config_category
+ */
+
+/**
+ * @defgroup os System
+ * @ingroup kernel
+ */
+
+/**
+ * @defgroup port_wrapper Port Interface
+ * @ingroup os
+ */
+
+/**
+ * @defgroup os_structures OS Types and Structures
+ * @ingroup os
+ */
+
+/**
+ * @defgroup instances OS Instances
+ * @ingroup os
+ */
+
+/**
+ * @defgroup rfcu Runtime Faults Collection Unit
+ * @ingroup os
+ */
+
+/**
+ * @defgroup os_lists Lists and Queues
+ * @ingroup os
+ */
+
+/**
+ * @defgroup scheduler Scheduler
+ * @ingroup os
+ */
+
+/**
+ * @defgroup base Base Kernel Services
+ * @ingroup kernel
+ */
+
+/**
+ * @defgroup system System Management
+ * @ingroup base
+ */
+
+/**
+ * @defgroup mem Memory Alignment
+ * @ingroup base
+ */
+
+/**
+ * @defgroup time_intervals Time and Intervals
+ * @ingroup base
+ */
+
+/**
+ * @defgroup time Virtual Timers
+ * @ingroup base
+ */
+
+/**
+ * @defgroup threads Threads
+ * @ingroup base
+ */
+
+/**
+ * @defgroup time_measurement Time Measurement
+ * @ingroup base
+ */
+
+/**
+ * @defgroup synchronization Synchronization
+ * @details Synchronization services.
+ * @ingroup kernel
+ */
+
+/**
+ * @defgroup semaphores Counting Semaphores
+ * @ingroup synchronization
+ */
+
+/**
+ * @defgroup mutexes Mutexes
+ * @ingroup synchronization
+ */
+
+/**
+ * @defgroup condvars Condition Variables
+ * @ingroup synchronization
+ */
+
+/**
+ * @defgroup events Event Flags
+ * @ingroup synchronization
+ */
+
+/**
+ * @defgroup messages Synchronous Messages
+ * @ingroup synchronization
+ */
+
+/**
+ * @defgroup dynamic_threads Dynamic Threads
+ * @ingroup kernel
+ */
+
+/**
+ * @defgroup registry Registry
+ * @ingroup kernel
+ */
+
+/**
+ * @defgroup debug Debug
+ * @ingroup kernel
+ */
+
+/**
+ * @defgroup checks_assertions Checks and Assertions
+ * @ingroup debug
+ */
+
+/**
+ * @defgroup trace Tracing
+ * @ingroup debug
+ */
+
+/**
+ * @defgroup statistics Statistics
+ * @ingroup debug
+ */

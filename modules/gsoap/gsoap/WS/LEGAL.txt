@@ -1,0 +1,37 @@
+The specifications included in this directory are available to the public
+without fee or royalty.
+
+W3C notices included with XML specifications:
+
+Parts are governed by the W3C Software License [1] as described in the FAQ [2].
+
+[1] http://www.w3.org/Consortium/Legal/copyright-software-19980720
+[2] http://www.w3.org/Consortium/Legal/IPR-FAQ-20000620.html#DTD
+
+OASIS notices included with WS-* specifications:
+
+"Permission to copy, display, perform, modify and distribute the WS-*
+Specification, and to authorize others to do the foregoing, in any medium
+without fee or royalty is hereby granted for the purpose of developing and
+evaluating the WS-* Specification."
+
+"Permission to copy and display the WS-* (the "Specification", which includes
+WSDL and schema documents), in any medium without fee or royalty is hereby
+granted, provided that you include the following on ALL copies of the
+Specification that you make:
+
+1. A link or URL to the Specification at one of the Co-Developers' websites.
+2. The copyright notice as shown in the Specification."
+
+"OASIS takes no position regarding the validity or scope of any intellectual
+property or other rights that might be claimed to pertain to the implementation
+or use of the technology described in this document or the extent to which any
+license under such rights might or might not be available; neither does it
+represent that it has made any effort to identify any such rights. Information
+on OASIS's procedures with respect to rights in OASIS specifications can be
+found at the OASIS website. Copies of claims of rights made available for
+publication and any assurances of licenses to be made available, or the result
+of an attempt made to obtain a general license or permission for the use of
+such proprietary rights by implementors or users of this specification, can be
+obtained from the OASIS Executive Director."
+

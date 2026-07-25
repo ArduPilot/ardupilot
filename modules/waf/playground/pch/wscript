@@ -1,0 +1,59 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006 (ita)
+
+"""
+Note: the #warning will come once when the .h is compiled, it should not not come when the .cpp is compiled when precompiled headers are enabled
+
+Compare:
+   waf configure clean build
+and
+   waf configure clean build --without-pch
+"""
+
+VERSION='0.0.2'
+APPNAME='pch_test'
+
+top = '.'
+out = 'build'
+
+from waflib import Errors
+
+# to include <boost/asio.hpp> to slow down compilation of precompiled headers
+LOAD_BOOST = False
+
+def options(opt):
+	opt.load('compiler_cxx')
+	opt.load('pch')
+	if LOAD_BOOST:
+		opt.load('boost', mt=True)
+
+def configure(conf):
+	conf.load('compiler_cxx pch')
+	if LOAD_BOOST:
+		conf.load('boost')
+		conf.check_boost('thread system', mt=True)
+		#conf.env.append_value('LIB_BOOST', 'pthread') #?
+		conf.env.append_value('DEFINES_BOOST', ['HAS_MY_BOOST=1'])
+
+def build(bld):
+	# Simple way, when precompiled header is used in a single build task
+	bld.program(
+		target = 'test',
+		features = 'pch',
+		source = 'a.cpp b.cpp c.cpp main.cpp',
+		headers = 'a.h b.h c.h',
+		use = 'BOOST')
+
+	# More complex way, where precompiled header is reused by several build tasks
+	bld(features ='cxx pch',
+		name = 'base-with-pch',
+		target = 'pch-header',
+		headers = 'a.h b.h c.h',
+		source = 'a.cpp',
+		use = 'BOOST')
+
+	bld(features = 'cxx cxxprogram',
+		target = 'test1',
+		source = 'b.cpp c.cpp main.cpp',
+		use    = 'base-with-pch')

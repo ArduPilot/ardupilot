@@ -1,0 +1,56 @@
+#! /usr/bin/env python
+
+def options(ctx):
+	pass
+
+def configure(ctx):
+	ctx.load('mem_reducer')
+	pass
+
+def build(bld):
+	bld(features='make_a_lot')
+
+"""
+Testcase for the mem_reducer.py tool
+"""
+
+import itertools, random
+from waflib import Utils, Task, TaskGen, Runner
+
+random.seed(0)
+class a(Task.Task):
+	def run(self):
+		self.outputs[0].write('a')
+class b(Task.Task):
+	after = ['a']
+	def run(self):
+		self.outputs[0].write('b')
+class c(Task.Task):
+	after = ['b', 'c']
+	def run(self):
+		self.outputs[0].write('c')
+class d(Task.Task):
+	after = ['c', 'a']
+	def run(self):
+		self.outputs[0].write('d')
+
+@TaskGen.feature('make_a_lot')
+def make_a_lot_of_tasks(self):
+	src = self.path.find_resource('wscript')
+	for x in range(9000):
+		anode = self.path.find_or_declare('a%d' % x)
+		self.create_task('a', [src], [anode])
+
+		bnode = self.path.find_or_declare('b%d' % x)
+		self.create_task('b', [src], [bnode])
+
+		cnode = self.path.find_or_declare('c%d' % x)
+		self.create_task('c', [src], [cnode])
+
+		dnode = self.path.find_or_declare('d%d' % x)
+		self.create_task('d', [src], [dnode])
+
+	# shuffle the tasks, but in the same order
+	#random.seed(0)
+	#random.shuffle(self.tasks)
+

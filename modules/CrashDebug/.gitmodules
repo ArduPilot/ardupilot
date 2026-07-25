@@ -1,0 +1,6 @@
+[submodule "mri"]
+	path = mri
+	url = ../mri.git
+[submodule "CrashCatcher"]
+	path = CrashCatcher
+	url = ../CrashCatcher.git

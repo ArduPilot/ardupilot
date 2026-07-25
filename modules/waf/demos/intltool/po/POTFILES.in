@@ -1,0 +1,6 @@
+# List of source files containing translatable strings.
+# Please keep this file sorted alphabetically.
+[encoding: UTF-8]
+data/kupfer.desktop.in
+data/kupfer-mimetypes.xml.in
+

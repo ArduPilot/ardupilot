@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<mavlink>
+  <include>grandchild1.xml</include>
+  <include>grandchild2.xml</include>
+  <messages>
+    <message id="5555" name="INBREDMSG">
+      <description>This is a inbred message field</description>
+      <field type="uint32_t" name="INBREDFIELD">Inbred Field</field>
+    </message>
+  </messages>
+</mavlink>

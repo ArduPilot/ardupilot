@@ -1,0 +1,200 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+/**
+ * @defgroup IO HAL
+ * @brief   Hardware Abstraction Layer.
+ * @details Under ChibiOS the set of the various device driver interfaces
+ * is called the HAL subsystem: Hardware Abstraction Layer. The HAL is the
+ * abstract interface between ChibiOS applications and hardware.
+ *
+ * @section hal_device_driver_arch HAL Device Drivers Architecture
+ * The HAL contains several kind of modules:
+ * - Normal Device Drivers
+ * - Complex Device Drivers
+ * - Interfaces
+ * - Inner Code
+ * .
+ * @section hal_normal_device_drivers HAL Normal Device Drivers
+ * Normal device are meant to interface the application to the underlying
+ * hardware through an high level API. Normal Device Drivers are split in two
+ * layers:
+ * - High Level Device Driver (<b>HLD</b>). This layer contains the definitions
+ *   of the driver's APIs and the platform independent part of the driver.<br>
+ *   An HLD is composed by two files:
+ *   - @p hal_@<driver@>.c, the HLD implementation file. This file must be
+ *     included in the Makefile in order to use the driver.
+ *   - @p hal_@<driver@>.h, the HLD header file. This file is implicitly
+ *     included by the HAL header file @p hal.h.
+ * - Low Level Device Driver (<b>LLD</b>). This layer contains the platform
+ *   dependent part of the driver.<br>
+ *   A LLD is composed by two files:
+ *   - @p hal_@<driver@>_lld.c, the LLD implementation file. This file must be
+ *     included in the Makefile in order to use the driver.
+ *   - @p hal_@<driver@>_lld.h, the LLD header file. This file is implicitly
+ *     included by the HLD header file.
+ * @subsection hal_device_driver_diagram Diagram
+ * @dot
+  digraph example {
+    graph [size="5, 7", pad="1.5, 0"];
+    node [shape=rectangle, fontname=Helvetica, fontsize=8,
+          fixedsize="true", width="2.0", height="0.4"];
+    edge [fontname=Helvetica, fontsize=8];
+
+    app [label="Application"];
+    hld [label="High Level Driver"];
+    lld [label="Low Level Driver"];
+    hw [label="Microcontroller Hardware"];
+    hal_lld [label="HAL shared low level code"];
+
+    app->hld;
+    hld->lld;
+    lld-> hw;
+    lld->hal_lld;
+    hal_lld->hw;
+  }
+ * @enddot
+ *
+ * @section hal_complex_device_drivers HAL Complex Device Drivers
+ * It is a class of device drivers that offer an high level API but do not
+ * use the hardware directly. Complex device drivers use other drivers for
+ * accessing the machine resources.
+ *
+ * @section hal_interfaces HAL Interfaces
+ * An interface is a binary structure allowing the access to a service
+ * using virtual functions. This allows to create drivers that can be
+ * accessed using a common interface.
+ * The concept of interface is commonly found in object-oriented languages
+ * like Java or C++, their meaning in ChibiOS/HAL is exactly the same.
+ *
+ * @section hal_inner_code HAL Inner Code
+ * Some modules are shared among multiple device drivers and are not
+ * necessarily meant to be used by the application layer.
+ */
+
+/**
+ * @defgroup HAL_CONF Configuration
+ * @brief   HAL Configuration.
+ * @details The file @p halconf.h contains the high level settings for all
+ * the drivers supported by the HAL. The low level, platform dependent,
+ * settings are contained in the @p mcuconf.h file instead and are describe
+ * in the various platforms reference manuals.
+ *
+ * @ingroup IO
+ */
+
+/**
+ * @defgroup HAL_NORMAL_DRIVERS Normal Drivers
+ * @brief   HAL Normal Drivers.
+ *
+ * @ingroup IO
+ */
+
+/**
+ * @defgroup HAL_COMPLEX_DRIVERS Complex Drivers
+ * @brief   HAL Complex Drivers.
+ *
+ * @ingroup IO
+ */
+
+/**
+ * @defgroup HAL_INTERFACES_CLASSES Interfaces and Classes
+ * @brief   HAL Interfaces and Classes.
+ *
+ * @ingroup IO
+ */
+ 
+/**
+ * @defgroup HAL_INNER_CODE Inner Code
+ * @brief   HAL Inner Code.
+ *
+ * @ingroup IO
+ */
+
+/**
+ * @defgroup HAL_SUPPORT Support Code
+ * @brief   HAL Support Code.
+ *
+ * @ingroup IO
+ */
+
+/**
+ * @defgroup OSAL OSAL
+ * @brief   Operating System Abstraction Layer.
+ * @details <h2>The OSAL</h2>
+ *          The OSAL is the link between ChibiOS/HAL and services
+ *          provided by operating systems like:
+ *          - Critical Zones handling.
+ *          - Interrupts handling.
+ *          - Runtime Errors management.
+ *          - Inter-task synchronization.
+ *          - Task-ISR synchronization.
+ *          - Time management.
+ *          - Events.
+ *          .
+ *          ChibiOS/HAL is designed to tightly integrate with the underlying
+ *          RTOS in order to provide the best experience to developers and
+ *          minimize integration issues.<br>
+ *          This section describes the API that OSALs are expected to expose
+ *          to the HAL.
+ *
+ *          <h2>RTOS Requirements</h2>
+ *          The OSAL API closely resembles the ChibiOS/RT API, for obvious
+ *          reasons, however an OSAL module can be implemented for any
+ *          reasonably complete RTOS or even a RTOS-less bare metal
+ *          machine, if required.<br>
+ *          In order to be able to support an HAL an RTOS should support the
+ *          following minimal set of features:
+ *          - Task-level critical zones API.
+ *          - ISR-level critical zones API, only required on those CPU
+ *            architectures supporting preemptable ISRs like Cortex-Mx
+ *            cores.
+ *          - Ability to invoke API functions from inside a task critical
+ *            zone. Functions that are required to support this feature are
+ *            marked with an "I" or "S" letter at the end of the name.
+ *          - Ability to invoke API functions from inside an ISR critical
+ *            zone. Functions that are required to support this feature are
+ *            marked with an "I" letter at the end of the name.
+ *          - Tasks Queues or Counting Semaphores with Timeout capability.
+ *          - Ability to suspend a task and wakeup it from ISR with Timeout
+ *            capability.
+ *          - Event flags, the mechanism can be simulated using callbacks in
+ *            case the RTOS does not support it.
+ *          - Mutual Exclusion mechanism like Semaphores or Mutexes.
+ *          .
+ *          All the above requirements can be satisfied even on naked HW with
+ *          a very think SW layer. In case that the HAL is required to work
+ *          without an RTOS.
+ *
+ *          <h2>Supported RTOSes</h2>
+ *          The RTOSes supported out of the box are:
+ *          - ChibiOS/RT
+ *          - ChibiOS/NIL
+ *          .
+ *          Implementations have also been successfully created on RTOSes not
+ *          belonging to the ChibiOS products family but are not supported
+ *          as a core feature of ChibiOS/HAL.
+ *
+ * @ingroup IO
+ */
+
+/**
+ * @defgroup HAL_SAFETY Safety Subsystem
+ * @brief   HAL Safety Module
+ *
+ * @ingroup IO
+ */
+

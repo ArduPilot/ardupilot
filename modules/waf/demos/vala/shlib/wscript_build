@@ -1,0 +1,40 @@
+#! /usr/bin/env python
+
+bld.shlib(
+	#packages = 'gtk+-2.0',
+	features = 'c cshlib',
+	target   = 'hello-world',
+	#uselib   = 'GTK GLIB',
+	source   = 'hello.vala',
+	gir      = 'hello-1.0',
+	#gir_path  = '/tmp',
+	#vapi_path = '/tmp',
+	pkg_name = 'hello'
+	)
+
+
+bld(features   = 'c cstlib foreign_generator', # be specific
+	source = '',  # no source files
+	target = 'hello-world', # this is for the file name
+	name   = 'hello-world-static', # and this is when you want to reuse from wscript files
+	srcgen = 'hello-world',
+	use    = 'GTK GLIB', # mandatory here
+)
+
+# --- support code for 'foreign_generator' above ---
+
+from waflib import TaskGen
+@TaskGen.feature('foreign_generator')
+@TaskGen.before('apply_link')
+def call_me_static(self):
+	for x in self.to_list(getattr(self, 'srcgen')):
+		tg = self.bld.get_tgen_by_name(x)
+		if not tg:
+			self.bld.fatal('No task generator by the name %r' % x)
+		tg.post() # required by "waf clean build --target=hello-world-static"
+		for tsk in tg.tasks:
+			for out in tsk.outputs:
+				if out.name.endswith('.c'):
+					self.create_compiled_task('c', out)
+	if not self.compiled_tasks:
+		self.fatal('No source file for %r? this is unexpected' % self.name)

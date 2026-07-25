@@ -1,0 +1,25 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2006-2010 (ita)
+
+def build(bld):
+
+	# we can modify the way tex files are scanned
+	#import re, tex
+	#tex.tex_regexp = re.compile('^\\\\bringin{(?P<file>.*)}', re.M)
+
+	# now create your tex object for compiling the files
+	obj = bld(
+		features = 'tex',
+		type = 'latex', # default is pdflatex
+		source = 'document.ltx' # mandatory, the source
+	)
+
+	# optional parameters
+	obj.outs   = 'ps' # we want a postscript output too - 'ps pdf' works too
+	obj.prompt = 1 # put 0 for the nonstopmode (conceals the debug output)
+	obj.deps   = 'wscript crossreferencing.ltx' # use this to give dependencies directly
+
+	# or more simply, for a pdf..
+	bld(features='tex', source='document-glossaries.ltx')
+

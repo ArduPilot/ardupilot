@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="ssl"
+  targetNamespace="urn:ssl"
+  xmlns:tns="urn:ssl"
+  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+  xmlns:ns="urn:ssl"
+  xmlns:SOAP="http://schemas.xmlsoap.org/wsdl/soap/"
+  xmlns:HTTP="http://schemas.xmlsoap.org/wsdl/http/"
+  xmlns:MIME="http://schemas.xmlsoap.org/wsdl/mime/"
+  xmlns:DIME="http://schemas.xmlsoap.org/ws/2002/04/dime/wsdl/"
+  xmlns:WSDL="http://schemas.xmlsoap.org/wsdl/"
+  xmlns="http://schemas.xmlsoap.org/wsdl/">
+
+<types>
+
+  <schema targetNamespace="urn:ssl"
+    xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:ns="urn:ssl"
+    xmlns="http://www.w3.org/2001/XMLSchema"
+    elementFormDefault="unqualified"
+    attributeFormDefault="unqualified">
+    <import namespace="http://schemas.xmlsoap.org/soap/encoding/"/>
+  </schema>
+
+</types>
+
+<message name="addRequest">
+  <part name="a" type="xsd:double"/><!-- ns__add::a -->
+  <part name="b" type="xsd:double"/><!-- ns__add::b -->
+</message>
+
+<message name="addResponse">
+  <part name="result" type="xsd:double"/><!-- ns__add::result -->
+</message>
+
+<portType name="sslPortType">
+  <operation name="add">
+    <documentation>Service definition of function ns__add</documentation>
+    <input message="tns:addRequest"/>
+    <output message="tns:addResponse"/>
+  </operation>
+</portType>
+
+<binding name="ssl" type="tns:sslPortType">
+  <SOAP:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+  <operation name="add">
+    <SOAP:operation style="rpc" soapAction=""/>
+    <input>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:ssl"/>
+    </input>
+    <output>
+          <SOAP:body use="encoded" encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" namespace="urn:ssl"/>
+    </output>
+  </operation>
+</binding>
+
+<service name="ssl">
+  <documentation>gSOAP 2.8.114 generated service definition</documentation>
+  <port name="ssl" binding="tns:ssl">
+    <SOAP:address location="https://localhost:18081"/>
+  </port>
+</service>
+
+</definitions>

@@ -1,0 +1,91 @@
+/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/
+
+/**
+ * @defgroup various Various
+ *
+ * @brief   Utilities Library.
+ * @details This is a collection of useful library code that is not part of
+ *          the base kernel services.
+ * <h2>Notes</h2>
+ * The library code does not follow the same naming convention of the
+ * system APIs in order to make very clear that it is not "core" code.<br>
+ * The main difference is that library code is not formally  tested in the
+ * test suite but through usage in the various demo applications.
+ */
+
+/**
+ * @defgroup cpp_library C++ Wrapper
+ *
+ * @brief   C++ wrapper module.
+ * @details This module allows to use the ChibiOS/RT functionalities
+ *          from C++ as classes and objects rather the traditional "C" APIs.
+ *
+ * @ingroup various
+ */
+
+/**
+ * @defgroup memory_streams Memory Streams
+ *
+ * @brief   Memory Streams.
+ * @details This module allows to use a memory area (RAM or ROM) using a
+ *          @ref data_streams interface.
+ *
+ * @ingroup various
+ */
+
+/**
+ * @defgroup event_timer Periodic Events Timer
+ *
+ * @brief   Periodic Event Timer.
+ * @details This timer generates an event at regular intervals. The
+ *          listening threads can use the event to perform time related
+ *          activities. Multiple threads can listen to the same timer.
+ *
+ * @ingroup various
+ */
+
+/**
+ * @defgroup SHELL Command Shell
+ *
+ * @brief   Small extendible command line shell.
+ * @details This module implements a generic extendible command line interface.
+ *          The CLI just requires an I/O channel (@p BaseChannel), more
+ *          commands can be added to the shell using the configuration
+ *          structure.
+ *
+ * @ingroup various
+ */
+
+/**
+ * @defgroup chprintf System formatted print
+ *
+ * @brief   System formatted print service.
+ * @details This module implements printf()-like function able to send data
+ *          to any module implementing a @p BaseSequentialStream interface.
+ *
+ * @ingroup various
+ */
+
+/**
+ * @defgroup LWIP_THREAD LWIP bindings
+ *
+ * @brief   lwIP port and wrapper thread.
+ * @details This module implements the lwIP system abstraction and wrapper
+ *          thread.
+ *
+ * @ingroup various
+ */

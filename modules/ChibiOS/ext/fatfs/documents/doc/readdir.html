@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<link rel="up" title="FatFs" href="../00index_e.html">
+<link rel="alternate" hreflang="ja" title="Japanese" href="../ja/readdir.html">
+<link rel="stylesheet" href="../css_e.css" type="text/css" media="screen" title="ELM Default">
+<title>FatFs - f_readdir</title>
+</head>
+
+<body>
+
+<div class="para func">
+<h2>f_readdir</h2>
+<p>The f_readdir function reads an item of the directory.</p>
+<pre>
+FRESULT f_readdir (
+  DIR* <span class="arg">dp</span>,      <span class="c">/* [IN] Directory object */</span>
+  FILINFO* <span class="arg">fno</span>  <span class="c">/* [OUT] File information structure */</span>
+);
+</pre>
+<pre>
+FRESULT f_rewinddir (
+  DIR* <span class="arg">dp</span>       <span class="c">/* [IN] Directory object */</span>
+);
+</pre>
+</div>
+
+<div class="para arg">
+<h4>Parameters</h4>
+<dl class="par">
+<dt>dp</dt>
+<dd>Pointer to the open directory object.</dd>
+<dt>fno</dt>
+<dd>Pointer to the <a href="sfileinfo.html">file information structure</a> to store the information about read item. A null pointer rewinds the read index of the directory.</dd>
+</dl>
+</div>
+
+
+<div class="para ret">
+<h4>Return Values</h4>
+<p>
+<a href="rc.html#ok">FR_OK</a>,
+<a href="rc.html#de">FR_DISK_ERR</a>,
+<a href="rc.html#ie">FR_INT_ERR</a>,
+<a href="rc.html#io">FR_INVALID_OBJECT</a>,
+<a href="rc.html#tm">FR_TIMEOUT</a>,
+<a href="rc.html#nc">FR_NOT_ENOUGH_CORE</a>
+</p>
+</div>
+
+
+<div class="para desc">
+<h4>Description</h4>
+<p>The <tt>f_readdir</tt> function reads a directory item, informations about the object, from the open directory. Items in the directory can be read in sequence by <tt>f_readdir</tt> function calls. When all items in the directory have been read and no item to read, a null string is stored into the <tt>fno-&gt;fname[]</tt> without any error. When a null pointer is given to the <tt class="arg">fno</tt>, the read index of the directory object is rewinded. The <tt>f_rewinddir</tt> function is implemented as a macro.</p>
+<pre>
+#define <em>f_rewinddir</em>(dp) f_readdir((dp), 0)
+</pre>
+<p>When LFN is enabled, a member <tt>altname[]</tt> is defined in the file information structure to store the short file name of the object. If the long file name is not accessible due to a reason listed below, short file name is stored to the <tt>fname[]</tt> and the <tt>altname[]</tt> has a null string.</p>
+<ul>
+<li>The item has no LFN. (Not the case in exFAT volume)</li>
+<li><a href="config.html#max_lfn"><tt>FF_MAX_LFN</tt></a> is insufficient to handle the LFN. (Not the case in <tt>FF_MAX_LFN == 255</tt>)</li>
+<li><a href="config.html#lfn_buf"><tt>FF_LFN_BUF</tt></a> is insufficient to store the LFN.</li>
+<li>The LFN contains some character not defined in current CP. (Not the case in <tt>FF_LFN_UNICODE != 0</tt>)</li>
+</ul>
+<p>There is an issue on read directories in exFAT volume. The exFAT does not support short file name. This means no name can be returned on the condition above. If it is the case, "?" is returned as the file name to indicate that the object is not accessible. To avoid this problem, configure FatFs <tt><a href="config.html#lfn_unicode">FF_LFN_UNICODE</a> != 0</tt> and <tt>FF_MAX_LFN == 255</tt> to support the full feature of LFN specification.</p>
+<p>Dot entries (<tt>"."</tt> and <tt>".."</tt>) in the sub-directory of FAT volume are filtered out and they will never appear in the read items because exFAT lacks dot entries in the sub-directory.</p>
+</div>
+
+
+<div class="para comp">
+<h4>QuickInfo</h4>
+<p>Available when <tt><a href="config.html#fs_minimize">FF_FS_MINIMIZE</a> &lt;= 1</tt>.</p>
+</div>
+
+
+<div class="para use">
+<h4>Sample Code</h4>
+<pre>
+FRESULT scan_files (
+    char* path        <span class="c">/* Start node to be scanned (***also used as work area***) */</span>
+)
+{
+    FRESULT res;
+    DIR dir;
+    UINT i;
+    static FILINFO fno;
+
+
+    res = f_opendir(&amp;dir, path);                       <span class="c">/* Open the directory */</span>
+    if (res == FR_OK) {
+        for (;;) {
+            res = <em>f_readdir</em>(&amp;dir, &amp;fno);                   <span class="c">/* Read a directory item */</span>
+            if (res != FR_OK || fno.fname[0] == 0) break;  <span class="c">/* Break on error or end of dir */</span>
+            if (fno.fattrib &amp; AM_DIR) {                    <span class="c">/* It is a directory */</span>
+                i = strlen(path);
+                sprintf(&amp;path[i], "/%s", fno.fname);
+                res = scan_files(path);                    <span class="c">/* Enter the directory */</span>
+                if (res != FR_OK) break;
+                path[i] = 0;
+            } else {                                       <span class="c">/* It is a file. */</span>
+                printf("%s/%s\n", path, fno.fname);
+            }
+        }
+        f_closedir(&amp;dir);
+    }
+
+    return res;
+}
+
+
+int main (void)
+{
+    FATFS fs;
+    FRESULT res;
+    char buff[256];
+
+
+    res = f_mount(&amp;fs, "", 1);
+    if (res == FR_OK) {
+        strcpy(buff, "/");
+        res = scan_files(buff);
+    }
+
+    return res;
+}
+</pre>
+</div>
+
+
+<div class="para ref">
+<h4>See Also</h4>
+<p><tt><a href="opendir.html">f_opendir</a>, <a href="closedir.html">f_closedir</a>, <a href="stat.html">f_stat</a>, <a href="sfileinfo.html">FILINFO</a>, <a href="sdir.html">DIR</a></tt></p>
+</div>
+
+<p class="foot"><a href="../00index_e.html">Return</a></p>
+</body>
+</html>

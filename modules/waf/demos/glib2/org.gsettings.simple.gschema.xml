@@ -1,0 +1,7 @@
+<schemalist>
+  <schema id="org.gsettings.simple">
+    <key name="greeting" type="s">
+      <default>"Hello, world"</default>
+    </key>
+  </schema>
+</schemalist>

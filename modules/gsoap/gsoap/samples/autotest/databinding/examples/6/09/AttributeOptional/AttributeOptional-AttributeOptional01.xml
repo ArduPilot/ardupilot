@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+                    
+                    Copyright (C) 2006 W3C (R) (MIT ERCIM Keio), All Rights Reserved.
+                    W3C liability, trademark and document use rules apply.
+                    
+                    http://www.w3.org/Consortium/Legal/ipr-notice
+                    http://www.w3.org/Consortium/Legal/copyright-documents
+                    
+		    Generated from: $Id: examples.xml,v 1.57 2008/02/20 16:41:48 pdowney Exp $
+-->
+<ex:attributeOptional xmlns:ex="http://www.w3.org/2002/ws/databinding/examples/6/09/"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                      xmlns:wsdl11="http://schemas.xmlsoap.org/wsdl/"
+                      xmlns:soap11enc="http://schemas.xmlsoap.org/soap/encoding/"
+                      id="1711"
+                      currency="EUR">
+        <ex:amount>1250</ex:amount>
+      </ex:attributeOptional>

@@ -1,0 +1,11 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+bld(
+	features = 'cxx cxxprogram test',
+	source   = 'AccumulatorTest.cpp',
+	target   = 'unit_test_program',
+	use      = 'unittestmain useless CPPUNIT',
+	ut_cwd   = bld.path,
+)
+

@@ -1,0 +1,11 @@
+top = '.'
+out = 'build'
+
+def options(opt):
+    opt.load('compiler_cxx freeimage')
+
+def configure(conf):
+    conf.load('compiler_cxx freeimage')
+
+def build(bld):
+    bld.program(source='fi.cpp', target='app', use='FREEIMAGE')

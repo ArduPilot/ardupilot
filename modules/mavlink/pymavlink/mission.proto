@@ -1,0 +1,72 @@
+/* Protobuf definitions for defining a mavlink 1.0 mission. */
+
+package mavlink;
+
+enum CoordFrameType {
+  FRAME_GLOBAL = 0;
+  FRAME_LOCAL_NED = 1;
+  FRAME_MISSION = 2;
+  FRAME_GLOBAL_RELATIVE_ALT = 3;
+  FRAME_LOCAL_ENU = 4;
+  FRAME_ENUM_END = 5;
+}
+
+enum CommandType {
+  CMD_NAV_WAYPOINT = 16;
+  CMD_NAV_LOITER_UNLIM = 17;
+  CMD_NAV_LOITER_TURNS = 18;
+  CMD_NAV_LOITER_TIME = 19;
+  CMD_NAV_RETURN_TO_LAUNCH = 20;
+  CMD_NAV_LAND = 21;
+  CMD_NAV_TAKEOFF = 22;
+  CMD_NAV_ROI = 80;
+  CMD_NAV_PATHPLANNING = 81;
+  CMD_NAV_LAST = 95;
+  CMD_CONDITION_DELAY = 112;
+  CMD_CONDITION_CHANGE_ALT = 113;
+  CMD_CONDITION_DISTANCE = 114;
+  CMD_CONDITION_YAW = 115;
+  CMD_CONDITION_LAST = 159;
+  CMD_DO_SET_MODE = 176;
+  CMD_DO_JUMP = 177;
+  CMD_DO_CHANGE_SPEED = 178;
+  CMD_DO_SET_HOME = 179;
+  CMD_DO_SET_PARAMETER = 180;
+  CMD_DO_SET_RELAY = 181;
+  CMD_DO_REPEAT_RELAY = 182;
+  CMD_DO_SET_SERVO = 183;
+  CMD_DO_REPEAT_SERVO = 184;
+  CMD_DO_CONTROL_VIDEO = 200;
+  CMD_DO_DIGICAM_CONFIGURE = 202;
+  CMD_DO_DIGICAM_CONTROL = 203;
+  CMD_DO_MOUNT_CONFIGURE = 204;
+  CMD_DO_MOUNT_CONTROL = 205;
+  CMD_DO_LAST = 240;
+  CMD_PREFLIGHT_CALIBRATION = 241;
+  CMD_PREFLIGHT_SET_SENSOR_OFFSETS = 242;
+  CMD_PREFLIGHT_STORAGE = 245;
+  CMD_PREFLIGHT_REBOOT_SHUTDOWN = 246;
+  CMD_OVERRIDE_GOTO = 252;
+  CMD_MISSION_START = 300;
+  CMD_COMPONENT_ARM_DISARM = 400;
+}
+
+message Waypoint {
+  optional int32 seq = 1;
+  optional bool current = 2;
+  required CommandType command = 3;
+  optional CoordFrameType frame = 4;
+  optional bool autocontinue = 5;
+  optional float param1 = 6;
+  optional float param2 = 7;
+  optional float param3 = 8;
+  optional float param4 = 9;
+  optional float x = 10;
+  optional float y = 11;
+  optional float z = 12;
+}
+
+message Mission {
+  optional Waypoint defaults = 1;
+  repeated Waypoint waypoint = 2;
+}

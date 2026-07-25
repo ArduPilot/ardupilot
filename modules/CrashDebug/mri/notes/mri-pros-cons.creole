@@ -1,0 +1,33 @@
+=Advantages and Disadvantages
+Why use a debug monitor like MRI instead of hardware debugging solutions like JTAG or SWD?  When should you consider JTAG or SWD instead?
+
+==If You Have It, Really Use It!
+Many Cortex-M3/4 based products are likely to already have a serial port exposed for simplistic printf() style of debugging.  If the serial port is already available then adding a debug monitor to your code is really just super charging your existing debug channel.  For no extra hardware you are getting 99% of the debugging features available from JTAG or SWD solutions.
+
+==If They Have It, Use It!
+If a Cortex-M3/4 based product should fail in the field on a customer, it is often easier for them to connect via the ubiquitous serial protocol.  Without purchasing a JTAG/SWD debug pod they can still connect GDB to your product and extract valuable debugging information.  Even during internal and/or beta testing, it is often easier and cheaper to have the tester use the serial protocol for extracting information critical for you to help diagnose an issue.
+
+==CMSIS-DAP
+ARM's recent introduction of the CMSIS-DAP USB based JTAG/SWD debugging solution is likely to make hardware debugging solutions much cheaper and more common in the future.  This could really flip around the advantages currently held by serial solutions like MRI.	
+
+==UART Conflicts
+MRI communicates with GDB via one of the serial ports on the mbed device.  Since MRI requires exclusive access to its serial connection, the user must make sure to not use the same serial port from within their application.  This may require the use of another serial connection between the user's PC and their mbed through something like this [[http://www.sparkfun.com/products/9717|FTDI USB to TTL serial cable.]]  Your makefile can be used to override the mbed serial pins used by MRI.  For example to switch to the UART on pins 9 and 10 of the mbed, you could add this line to your makefile:\\ \\{{{MRI_UART=MRI_UART_MBED_P9_P10}}}\\ \\
+You can find all of the supported MRI_UART_* selections in the public mri/mri.h source file.
+
+If your only contention on the serial port is for printf() output then simply calling the standard C library functions (and never trying to override the baud rate or make other method calls on a Serial object) will allow MRI to intercept the data destined to stdout and redirect it to the GDB console.
+
+==Interrupt Priority Conflicts
+MRI runs its ISRs at priority level 0 and everything else in the system should run at a lower priority if you want to to be able to debug it.  If you never call NVIC_SetPriority() to customize the priorities of your interrupt handlers then you should have no problems.  If you do make calls to this function then only use priorities lower than 0 (a value of 1 or greater.)
+
+==Memory Resources
+Unlike a JTAG debugger, MRI does run on the microcontroller itself.  It doesn't use any CPU resources until a breakpoint or other debug event is encountered and you are interacting with it via GDB.  It does however take up code space in FLASH (<14k) and data space in RAM (<700 bytes) which could have been otherwise used by your code.
+
+==mbed Interface Chip
+The mbed interface chip uses the JTAG connection to the LPC1768 to provide special (and very useful) functionality on the mbed.  The biggest feature provided is programming via the USB mass storage device.  This awesome mbed feature remains intact while you are using the MRI debugging solution.  Other runtime features supplied by the interface chip such as obtaining a unique ethernet address for your mbed device and the LocalFileSystem are still available when using MRI but with slightly less fidelity.  The ethernet address is still available when MRI is running.  If your program does use the LocalFileSystem module to access files on the embedded FLASH drive then they will also be supported by MRI.  Calls to fopen, fread, fwrite, and fseek for files in the LocalFileSystem will be redirected to GDB where they provide access to GDB's current directory on the host PC.  This does introduce a few limitations to the LocalFileSystem functionality for Debug builds:
+
+* Slower performance since I/O is being redirected over the serial port to the gdb host computer.
+* No directory enumeration support (opendir,readdir,closedir).  Calling such functions for the LocalFileSystem while running under MRI will result in stops like:
+{{{
+Program received signal SIGTRAP, Trace/breakpoint trap.
+0x00011a00 in mbed::LocalDirHandle::readdir() ()
+}}}

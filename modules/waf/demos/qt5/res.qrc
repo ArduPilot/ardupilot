@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+<qresource>
+    <file alias="logo.svg">../../docs/slides/presentation/gfx/waflogo.svg</file>
+</qresource>
+</RCC>
+

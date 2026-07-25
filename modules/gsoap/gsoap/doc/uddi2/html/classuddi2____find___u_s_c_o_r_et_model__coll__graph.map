@@ -1,0 +1,6 @@
+<map id="uddi2__find_USCOREtModel" name="uddi2__find_USCOREtModel">
+<area shape="rect" id="node2" href="$classuddi2____find_qualifiers.html" title="Schema urn:uddi&#45;org:api_v2:&quot;findQualifiers&quot;. " alt="" coords="4,6,149,34"/>
+<area shape="rect" id="node4" href="$classuddi2____name.html" title="Schema urn:uddi&#45;org:api_v2:&quot;name&quot;. " alt="" coords="174,6,276,34"/>
+<area shape="rect" id="node6" href="$classuddi2____identifier_bag.html" title="Schema urn:uddi&#45;org:api_v2:&quot;identifierBag&quot;. " alt="" coords="301,6,443,34"/>
+<area shape="rect" id="node8" href="$classuddi2____category_bag.html" title="Schema urn:uddi&#45;org:api_v2:&quot;categoryBag&quot;. " alt="" coords="467,6,609,34"/>
+</map>

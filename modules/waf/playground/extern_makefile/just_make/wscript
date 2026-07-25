@@ -1,0 +1,29 @@
+#! /usr/bin/env python
+
+from waflib import Build
+def build(bld):
+
+	# Call make for building, but keep waf for install/uninstall
+	# there is no 'clean' here
+	def make_all(tsk):
+
+		# create the output folder in advance
+		d = tsk.generator.path
+		d.get_bld().mkdir()
+		ret = tsk.generator.bld.exec_command('make all', cwd=d.abspath())
+
+		# install the files by waf - it might be more maintainable to do it through make though
+		tsk.set_outputs(d.get_bld().ant_glob('*.so'))
+		tsk.generator.bld.install_files('${LIBDIR}', tsk.outputs, postpone=False)
+		return ret
+
+	# the attribute 'always' is used to force the make execution, else
+	# the make command will be called only once
+	bld(rule=make_all, always=True, name='call make')
+
+	# for a hybrid build...
+	bld.post_mode = Build.POST_LAZY
+	bld.add_group()
+	bld.read_shlib('foo', paths=[bld.path.get_bld().abspath()])
+	bld.program(source='main.c', target='a', use='foo')
+

@@ -1,0 +1,24 @@
+STM32 ADCv3 driver.
+
+Driver capability:
+
+- Supports the STM32 "fast" ADC found on F3, L4, L4+, G4 and WB sub-families.
+
+The file registry must export:
+
+STM32_HAS_ADCx                  - ADCx presence flag (1..5).
+STM32_ADC1_HANDLER              - IRQ vector name for ADC1.
+STM32_ADC1_NUMBER               - IRQ vector number for ADC1.
+STM32_ADC2_HANDLER              - IRQ vector name for ADC2.
+STM32_ADC2_NUMBER               - IRQ vector number for ADC2.
+STM32_ADC3_HANDLER              - IRQ vector name for ADC3.
+STM32_ADC3_NUMBER               - IRQ vector number for ADC3.
+STM32_ADC4_HANDLER              - IRQ vector name for ADC4.
+STM32_ADC4_NUMBER               - IRQ vector number for ADC4.
+STM32_ADC5_HANDLER              - IRQ vector name for ADC5.
+STM32_ADC5_NUMBER               - IRQ vector number for ADC5.
+
+If there is no DMAMUX then the file registry must export also:
+
+STM32_ADCx_DMA_MSK              - Mask of the compatible DMA channels (1..4).
+STM32_ADCx_DMA_CHN              - Mask of the channels mapping (1..4).

@@ -1,0 +1,32 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# DragoonX6 2019
+
+# the following two variables are used by the target "waf dist"
+VERSION='0.0.1'
+APPNAME='hello_msvc'
+
+top = '.'
+
+from waflib.Configure import conf, ConfigurationContext
+from waflib.Options import OptionsContext
+
+def options(opt):
+	opt.load('clang_cross')
+
+def configure(conf):
+	conf.load('clang_cross')
+
+	if not conf.env.implib_PATTERN == '%s.lib':
+		conf.fatal('''clang is not configured to compile in msvc mode.
+Use flag '--clang-target-triple=x86_64-windows-msvc' to configure.
+On Windows you're likely to require running from an MSVC command prompt.
+On Linux you will need to have access to a Windows partition with VS installed, and the environment set up properly.
+See the ReadMe for more information.''')
+
+	conf.env.append_value('CFLAGS', conf.env.CFLAGS_CRT_MULTITHREADED_DLL)
+
+def build(bld):
+	bld.program(
+		source = 'hello.c',
+		target = 'hello_msvc')

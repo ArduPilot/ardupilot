@@ -1,0 +1,144 @@
+#! /usr/bin/env python
+# encoding: utf-8
+# Thomas Nagy, 2010 (ita)
+
+VERSION='0.0.1'
+APPNAME='cpp_gen'
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx')
+
+def configure(conf):
+	conf.load('compiler_cxx')
+	conf.check(header_name='stdio.h', features='cxx cxxprogram', mandatory=False)
+
+def build(bld):
+	bld.program(source='main.cpp a.cpp', target='app')
+
+#--------
+
+import os
+from waflib import Task, TaskGen, Utils
+from waflib.Tools import cxx
+
+@TaskGen.extension('.cpp')
+def more_tasks_at_once(self, node):
+   task1 = self.create_task('prog1', node, [])
+   task2 = self.create_compiled_task('cxx', node)
+
+def cmpnodes(a, b):
+	return cmp(a.abspath(), b.abspath())
+
+class prog1(Task.Task):
+	before = ['cxxprogram', 'cxxshlib', 'cxxstlib']
+
+	def uid(self):
+		"""
+		the unique id of this task should only depend on the file inputs
+		"""
+		m = Utils.md5()
+		up = m.update
+		up(self.__class__.__name__.encode())
+		for x in self.inputs:
+			up(x.abspath().encode())
+		return m.digest()
+
+	def runnable_status(self):
+		"""
+		since it is called after the build has started,
+		any task added must be passed through 'more_tasks'
+		"""
+		for x in self.run_after:
+			if not x.hasrun:
+				return Task.ASK_LATER
+
+		# so this is a bit special, the goal here is to set the output nodes
+		# and to create the c++ tasks before the normal processing is done
+		sig = self.signature()
+		for x in self.generator.bld.raw_deps.get(sig, []):
+			self.outputs.append(self.generator.bld.srcnode.find_node(x))
+
+		if not self.outputs:
+			self.read_outputs_from_cache()
+
+		if self.outputs:
+			self.create_cxx_task()
+
+		ret = Task.Task.runnable_status(self)
+		return ret
+
+	def create_cxx_task(self):
+		"""
+		create a task dynamically during the build
+		notice the use of 'more_tasks'
+		"""
+		tsk = cxx.cxx_hook(self.generator, self.outputs[0])
+		tsk.set_run_after(self) # the build has started, so the order must be set manually
+		self.more_tasks = [tsk] # add tasks dynamically during the build
+		self.generator.link_task.inputs.append(tsk.outputs[0]) # add another input for the link task
+		try:
+			self.generator.link_task.inputs.sort(cmp=cmpnodes) # eliminate the random order (more tasks like this)
+		except:
+			self.generator.link_task.inputs.sort(key=lambda x: x.abspath()) # python3
+		self.generator.link_task.set_run_after(tsk) # do not forget to set the build order there too
+
+	def run(self):
+		"""
+		actual execution
+		this code should not be executed if the files are retrieved from the cache
+		"""
+		if self.inputs[0].name == 'a.cpp':
+			# simulate the creation of an interface file
+			out = self.inputs[0].parent.get_bld().make_node('a.ser.cpp')
+			out.write('\n\n')
+
+		# read the file system
+		# remember that nodes cannot be created concurrently
+		# so you might to crate a lock if several tasks want the same nodes
+		inp = self.inputs[0]
+		node = inp.parent.get_bld().find_node(inp.name.replace('.cpp', '.ser.cpp'))
+		if node:
+			self.outputs = [node]
+			h_node = inp.parent.find_node(inp.name.replace('.cpp', '.ser.h'))
+			if h_node:
+				self.outputs.append(h_node)
+
+		# if there are outputs, create a new c++ task
+		if self.outputs:
+			self.create_cxx_task()
+
+			# access the scanner data
+			self.generator.bld.raw_deps[self.signature()] = [x.path_from(self.generator.bld.srcnode) for x in self.outputs]
+
+	def read_outputs_from_cache(self):
+		"""
+		set the outputs from the results found in the cache
+		we assume that the files are created in the same folder as the inputs
+		if it is not like this, the nodes should be restored by another system, for example
+		by storing them in a separate file during run()
+		"""
+		env = self.env
+		sig = self.signature()
+		ssig = Utils.to_hex(sig)
+
+		# first try to access the cache folder for the task
+		dname = os.path.join(self.generator.bld.cache_global, ssig)
+		try:
+			t1 = os.stat(dname).st_mtime
+		except OSError:
+			return None
+
+		try:
+			lst = os.listdir(dname)
+		except:
+			return
+
+		for x in lst:
+			self.outputs.append(self.inputs[0].parent.find_or_declare(x))
+
+		# not a fresh build and the cache is removed -> remember the files in the scanner data
+		self.generator.bld.raw_deps[self.signature()] = [x.path_from(self.generator.bld.srcnode) for x in self.outputs]
+

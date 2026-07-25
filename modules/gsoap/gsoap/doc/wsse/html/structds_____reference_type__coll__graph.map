@@ -1,0 +1,6 @@
+<map id="ds__ReferenceType" name="ds__ReferenceType">
+<area shape="rect" id="node2" href="$structds_____digest_method_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:DigestMethodType is a complexType. " alt="" coords="5,193,165,221"/>
+<area shape="rect" id="node4" href="$structds_____transforms_type.html" title="&quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformsType is a complexType. " alt="" coords="190,193,335,221"/>
+<area shape="rect" id="node6" href="$structds_____transform_type.html" title="Imported complexType &quot;http://www.w3.org/2000/09/xmldsig#&quot;:TransformType from typemap WS/WS&#45;typemap..." alt="" coords="193,99,332,127"/>
+<area shape="rect" id="node8" href="$struct__c14n_____inclusive_namespaces.html" title="_c14n__InclusiveNamespaces" alt="" coords="162,6,363,34"/>
+</map>

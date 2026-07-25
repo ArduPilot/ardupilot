@@ -1,0 +1,15 @@
+#! /usr/bin/env python
+
+bld(
+	features     = 'c cshlib',
+	source       = 'test_shlib.c',
+	vnum         = '1.2.3',
+	defs         = 'foo.def',
+	target       = 'my_shared_lib')
+
+bld(
+	features     = 'c cprogram',
+	source       = 'main.c',
+	target       = 'test_shared_link',
+	use          = 'my_shared_lib')
+

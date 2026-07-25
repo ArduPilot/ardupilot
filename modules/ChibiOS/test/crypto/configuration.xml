@@ -1,0 +1,3890 @@
+
+<instance locked="false"
+  id="org.chibios.spc5.components.portable.chibios_unitary_tests_engine">
+  <description>
+    <brief>
+      <value>Chibios Hal Crypto Test Suite.</value>
+    </brief>
+    <copyright>
+      <value><![CDATA[/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+*/]]></value>
+    </copyright>
+    <introduction>
+      <value>Test suite for ChibiOS Crypto Hal. The purpose of this
+        suite is to perform unit tests on the Hal Crypto and to converge
+        to 100% code coverage through successive improvements.</value>
+    </introduction>
+  </description>
+  <global_data_and_code>
+    <code_prefix>
+      <value>cry_</value>
+    </code_prefix>
+    <global_definitions>
+      <value><![CDATA[
+extern void cryptoTest_setStream(BaseSequentialStream * s);
+extern void cryptoTest_printArray32(bool isLE,const uint32_t *a,size_t len);
+#ifdef LOG_CRYPTO_DATA
+#define SHOW_ENCRYPDATA(w) 	cryptoTest_printArray32(true,msg_encrypted,w)
+#define SHOW_DECRYPDATA(w)	cryptoTest_printArray32(true,msg_decrypted,w)
+#define SHOW_DATA(d,w)      cryptoTest_printArray32(true,d,w)
+#else
+#define SHOW_ENCRYPDATA(w)
+#define SHOW_DECRYPDATA(w)
+#define SHOW_DATA(d,w)
+#endif
+
+#define TEST_DATA_BYTE_LEN 	640
+#define TEST_DATA_WORD_LEN		(TEST_DATA_BYTE_LEN / 4)
+
+
+#define TEST_MSG_DATA_BYTE_LEN		640
+#define TEST_MSG_DATA_WORD_LEN		(TEST_MSG_DATA_BYTE_LEN / 4)
+
+#define SHA_LEN_0    3
+#define SHA_LEN_1    56
+#define SHA_LEN_2    64
+#define SHA_LEN_3    128
+
+#define TEST_GCM_KEY1_LEN   32
+#define TEST_P_LEN      60
+#define TEST_A_LEN      20
+#define TEST_IV1_LEN    12   
+#define TEST_CL_LEN     60
+#define TEST_TL_LEN     16  
+
+extern const char test_plain_data[TEST_DATA_BYTE_LEN];
+extern uint32_t msg_clear[TEST_MSG_DATA_WORD_LEN];
+extern uint32_t msg_encrypted[TEST_MSG_DATA_WORD_LEN];
+extern uint32_t msg_decrypted[TEST_MSG_DATA_WORD_LEN];
+extern const uint32_t test_keys[8];
+extern const uint32_t test_vectors[4];
+extern const uint8_t sha_msg0[SHA_LEN_0];
+extern const uint8_t sha_msg1[SHA_LEN_1];
+extern const uint8_t sha_msg2[SHA_LEN_2];
+extern const uint8_t sha_msg3[SHA_LEN_3];
+
+
+
+]]></value>
+    </global_definitions>
+    <global_code>
+      <value><![CDATA[
+
+#if CRYPTO_LOG_LEVEL == 1
+#include "chprintf.h"
+#endif
+
+
+
+const uint32_t test_keys[8]=
+{
+    0x01234567,       //KEY 1 low part
+    0x89ABCDEF,       //KEY 1 hi part
+    0x76543210,       //KEY 2 low part
+    0xFEDCBA98,       //KEY 2 hi part
+
+    0x55AA55AA,
+    0xAA55AA55,
+    0x0000FFFF,
+    0xFFFF0000
+
+};
+
+const uint32_t test_vectors[4]=
+{
+    0x11223344,   //VECTOR 1 low part
+    0x55667788,   //VECTOR 1 hi part
+    0x11112222,
+    0x33334444
+
+};
+
+const char test_plain_data[TEST_DATA_BYTE_LEN] ="\
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesen\
+t et pellentesque risus. Sed id gravida elit. Proin eget accumsa\
+n mi. Aliquam vitae dui porta, euismod velit viverra, elementum \
+lacus. Nunc turpis orci, venenatis vel vulputate nec, luctus sit\
+amet urna. Ut et nunc purus. Aliquam erat volutpat. Vestibulum n\
+ulla dolor, cursus vitae cursus eget, dapibus eget sapien. Integ\
+er justo eros, commodo ut massa eu, bibendum elementum tellus. N\
+am quis dolor in libero placerat congue. Sed sodales urna sceler\
+isque dui faucibus, vitae malesuada dui fermentum. Proin ultrici\
+es sit amet justo at ornare. Suspendisse efficitur purus nullam.";
+
+
+const uint8_t sha_msg0[SHA_LEN_0] = "abc";
+
+const uint8_t sha_msg1[SHA_LEN_1] = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+
+const uint8_t sha_msg2[SHA_LEN_2] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+const uint8_t sha_msg3[SHA_LEN_3] = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    
+ALIGNED_VAR(4) uint32_t msg_clear[TEST_MSG_DATA_WORD_LEN];
+ALIGNED_VAR(4) uint32_t msg_encrypted[TEST_MSG_DATA_WORD_LEN];
+ALIGNED_VAR(4) uint32_t msg_decrypted[TEST_MSG_DATA_WORD_LEN];
+BaseSequentialStream * ts;
+
+#if CRYPTO_LOG_LEVEL == 1
+static uint32_t toBigEndian(uint32_t v)
+{
+  return (v & 0x000000ff) << 24u |
+  ( (v & 0x0000ff00) << 8u ) |
+  ( (v & 0x00ff0000) >> 8u ) |
+  ( (v & 0xff000000) >> 24u );
+}
+#endif
+
+void cryptoTest_setStream(BaseSequentialStream * s)
+{
+	ts = s;
+}
+
+void cryptoTest_printArray(const uint8_t *a,size_t len)
+{
+#if CRYPTO_LOG_LEVEL == 1
+	for(size_t i=0;i<len;i++)
+	{
+		chprintf(ts,"%02X",a[i]);
+	}
+	chprintf(ts,"\r\n");
+#else
+	(void)a;
+	(void)len;
+#endif
+}
+
+void cryptoTest_printArray32(bool isLE,const uint32_t *a,size_t len)
+{
+#if CRYPTO_LOG_LEVEL == 1
+	uint32_t data;
+
+	for(size_t i=0;i<len;i++)
+	{
+		if (isLE)
+			data = toBigEndian(a[i]);
+		else
+			data = a[i];
+
+		chprintf(ts,"%08X ",data);
+
+	}
+	chprintf(ts,"\r\n");
+#else
+	(void)isLE;
+	(void)a;
+	(void)len;
+#endif
+}
+
+            	]]></value>
+    </global_code>
+  </global_data_and_code>
+
+  <sequences>
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>AES ECB</value>
+      </brief>
+      <description>
+        <value>AES ECB</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include <string.h>
+#include "ref_aes.h"
+static const CRYConfig config_Polling = {
+    TRANSFER_POLLING,
+    AES_CFBS_128       //cfbs
+};
+
+static const CRYConfig config_DMA = {
+    TRANSFER_DMA,
+    AES_CFBS_128       //cfbs
+};
+                ]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>AES ECB Polling</value>
+          </brief>
+          <description>
+            <value>testing AES ECB with various Keys</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &config_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_ECB_128)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_ECB_192)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 32 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,32, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_ECB_256)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>AES ECB DMA</value>
+          </brief>
+          <description>
+            <value>testing AES ECB with various Keys</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &config_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_ECB_128)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_ECB_192)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 32 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,32, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_ECB_256)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+
+
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>AES CFB</value>
+      </brief>
+      <description>
+        <value>AES CFB</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include <string.h>
+#include "ref_aes.h"
+static const CRYConfig config_Polling = {
+    TRANSFER_POLLING,
+    AES_CFBS_128       //cfbs
+};
+
+static const CRYConfig config_DMA = {
+    TRANSFER_DMA,
+    AES_CFBS_128       //cfbs
+};
+                ]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>AES CFB Polling</value>
+          </brief>
+          <description>
+            <value>testing AES CFB with various Keys</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &config_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CFB_128)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CFB_192)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 32 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,32, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CFB_256)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>AES CFB DMA</value>
+          </brief>
+          <description>
+            <value>testing AES CFB with various Keys</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &config_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CFB_128)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CFB_192)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 32 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,32, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CFB_256)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CFB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+
+
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>AES CBC</value>
+      </brief>
+      <description>
+        <value>AES CBC</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include <string.h>
+#include "ref_aes.h"
+static const CRYConfig config_Polling = {
+    TRANSFER_POLLING,
+    AES_CFBS_128       //cfbs
+};
+
+static const CRYConfig config_DMA = {
+    TRANSFER_DMA,
+    AES_CFBS_128       //cfbs
+};
+                ]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>AES CBC Polling</value>
+          </brief>
+          <description>
+            <value>testing AES CBC with various Keys</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &config_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CBC_128)[i], "encrypt mismatch");
+}
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CBC_192)[i], "encrypt mismatch");
+}
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 32 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,32, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CBC_256)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>AES CBC DMA</value>
+          </brief>
+          <description>
+            <value>testing AES CBC with various Keys</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &config_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CBC_128)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CBC_192)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 32 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,32, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refAES_CBC_256)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptAES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+
+
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>(T)DES</value>
+      </brief>
+      <description>
+        <value>(T)DES testing</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include <string.h>
+#include "ref_des.h"
+static const CRYConfig configDES_Polling=
+{
+		TRANSFER_POLLING,
+		0
+};
+
+static const CRYConfig configDES_DMA=
+{
+		TRANSFER_DMA,
+		0
+};
+
+                ]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>DES Polling</value>
+          </brief>
+          <description>
+            <value>testing DES in polled mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &configDES_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 8 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_des,8, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptDES(&CRYD1, 0, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(2);
+
+for (int i = 0; i < 2; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refDES_ECB_8)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptDES(&CRYD1, 0, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(2);
+
+for (int i = 0; i < 2; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+          </steps>
+        </case>
+
+        <case>
+          <brief>
+            <value>TDES CBC Polling</value>
+          </brief>
+          <description>
+            <value>testing TDES CBC in polled mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &configDES_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_des,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptDES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refTDES_CBC_16)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptDES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_des,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptDES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refTDES_CBC_24)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptDES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+
+
+
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>TDES ECB Polling</value>
+          </brief>
+          <description>
+            <value>testing TDES ECB in polling mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &configDES_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_des,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptDES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refTDES_ECB_16)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptDES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_des,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptDES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refTDES_ECB_24)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptDES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+
+
+
+          </steps>
+        </case>
+
+
+
+        <case>
+          <brief>
+            <value>TDES CBC DMA</value>
+          </brief>
+          <description>
+            <value>testing TDES CBC in polled mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &configDES_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_des,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptDES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refTDES_CBC_16)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptDES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_des,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptDES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refTDES_CBC_24)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptDES_CBC(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted,(uint8_t*)test_vectors);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+
+
+
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>TDES ECB DMA</value>
+          </brief>
+          <description>
+            <value>testing TDES ECB in DMA mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memcpy((char*) msg_clear, test_plain_data, TEST_DATA_BYTE_LEN);
+memset(msg_encrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+memset(msg_decrypted, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &configDES_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key with 16 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_des,16, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptDES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refTDES_ECB_16)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptDES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>loading the key with 24 byte size</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_des,24, (uint8_t *) test_keys);
+
+test_assert(ret == CRY_NOERROR, "failed load transient key");
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Encrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryEncryptDES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_clear, (uint8_t*) msg_encrypted);
+
+test_assert(ret == CRY_NOERROR, "encrypt failed");
+
+SHOW_ENCRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_encrypted[i] == ((uint32_t*) refTDES_ECB_24)[i], "encrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>Decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+ret = cryDecryptDES_ECB(&CRYD1, 0,TEST_DATA_BYTE_LEN, (uint8_t*) msg_encrypted, (uint8_t*) msg_decrypted);
+
+test_assert(ret == CRY_NOERROR, "decrypt failed");
+
+SHOW_DECRYPDATA(TEST_DATA_WORD_LEN);
+
+for (int i = 0; i < TEST_DATA_WORD_LEN; i++) {
+  test_assert(msg_decrypted[i] == msg_clear[i], "decrypt mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+
+
+
+          </steps>
+        </case>
+
+
+      </cases>
+    </sequence>
+
+
+
+
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>TRNG</value>
+      </brief>
+      <description>
+        <value>TRNG testing</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include <string.h>
+
+static const CRYConfig configTRNG_Polling=
+{
+    TRANSFER_POLLING,
+    0
+};
+
+                ]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>TRNG Polling</value>
+          </brief>
+          <description>
+            <value>testing TRNG in polled mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+cryStart(&CRYD1, &configTRNG_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+
+            <step>
+              <description>
+                <value>Random generation and test</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+uint32_t random[4];
+int i;
+
+ret = cryTRNG(&CRYD1,(uint8_t*)&random);
+
+test_assert(ret == CRY_NOERROR , "failed random");
+
+SHOW_DATA(&random[0],4);
+
+for (i=0;i<4;i++) {
+	test_assert(random[i]  != 0 , "failed random generation (zero)");
+}
+for (i=1;i<4;i++)
+{
+	test_assert(random[i-1]  != random[i] , "failed random generation");
+}
+
+
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+          </steps>
+        </case>
+
+
+
+      </cases>
+    </sequence>
+
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>SHA</value>
+      </brief>
+      <description>
+        <value>SHA testing</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include <string.h>
+#include "ref_sha.h"
+
+/* Buffer size for each SHA transfer, size should be multiple of block size
+   (block size: 64 for SHA_1/SHA_256/SHA_224, 128 for SHA_384/SHA_512) */
+#define MAX_SHA_BLOCK_SIZE			TEST_MSG_DATA_BYTE_LEN
+#define MAX_SHA_BLOCK_SIZE_INWORD  (MAX_SHA_BLOCK_SIZE/4)
+
+#define shabuffer	msg_decrypted
+
+
+#define MAX_DIGEST_SIZE_INBYTE  TEST_MSG_DATA_BYTE_LEN
+#define MAX_DIGEST_SIZE_INWORD  (MAX_DIGEST_SIZE_INBYTE/4)
+
+#define digest		msg_encrypted
+
+
+static const CRYConfig configSHA_Polling=
+{
+    TRANSFER_POLLING,
+    0
+};
+
+
+static cryerror_t crySHA1(CRYDriver *cryp, size_t size,const uint8_t *in, uint8_t *out) {
+
+	cryerror_t ret;
+	SHA1Context shactxp;
+    
+    shactxp.sha.sha_buffer = (uint8_t*)&shabuffer[0];
+	shactxp.sha.sha_buffer_size = MAX_SHA_BLOCK_SIZE;
+
+
+	ret = crySHA1Init(cryp,&shactxp);
+
+	ret = crySHA1Update(cryp,&shactxp,size,in);
+
+	ret = crySHA1Final(cryp,&shactxp,out);
+
+
+	return ret;
+}
+
+static cryerror_t crySHA256(CRYDriver *cryp, size_t size,const uint8_t *in, uint8_t *out) {
+
+	cryerror_t ret;
+	SHA256Context shactxp;
+    
+    shactxp.sha.sha_buffer = (uint8_t*)&shabuffer[0];
+	shactxp.sha.sha_buffer_size = MAX_SHA_BLOCK_SIZE;
+
+
+	ret = crySHA256Init(cryp,&shactxp);
+
+	ret = crySHA256Update(cryp,&shactxp,size,in);
+
+	ret = crySHA256Final(cryp,&shactxp,out);
+
+
+	return ret;
+}
+
+static cryerror_t crySHA512(CRYDriver *cryp, size_t size,const uint8_t *in, uint8_t *out) {
+
+	cryerror_t ret;
+	SHA512Context shactxp;
+
+    shactxp.sha.sha_buffer = (uint8_t*)&shabuffer[0];
+	shactxp.sha.sha_buffer_size = MAX_SHA_BLOCK_SIZE;
+
+    
+	ret = crySHA512Init(cryp,&shactxp);
+
+	ret = crySHA512Update(cryp,&shactxp,size,in);
+
+	ret = crySHA512Final(cryp,&shactxp,out);
+
+
+	return ret;
+}
+
+                ]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>SHA1 Polling</value>
+          </brief>
+          <description>
+            <value>testing SHA1 in polled mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memset(digest, 0, MAX_DIGEST_SIZE_INWORD);
+memcpy((char*) msg_clear, sha_msg0, SHA_LEN_0);
+cryStart(&CRYD1, &configSHA_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+  uint32_t *ref;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+
+            <step>
+              <description>
+                <value>Digest</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+//---- Empty Block Test   
+ret = crySHA1(&CRYD1,0,(uint8_t*)msg_clear,(uint8_t*)digest);    
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+ 
+SHOW_DATA(digest,5);
+
+
+ref = (uint32_t*)refSHA_SHA1_EMPTY;
+for (int i = 0; i < 5; i++) {
+  test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+//---- One Block Test
+ret = crySHA1(&CRYD1,SHA_LEN_0,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+
+
+SHOW_DATA(digest,5);
+
+ref = (uint32_t*)refSHA_SHA1_3;
+for (int i = 0; i < 5; i++) {
+  test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+
+//---- Multi Block Test 56 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg1, SHA_LEN_1);
+
+ret = crySHA1(&CRYD1,SHA_LEN_1,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+
+ SHOW_DATA(digest,5);
+
+
+ref = (uint32_t*)refSHA_SHA1_56;
+for (int i = 0; i < 5; i++) {
+  test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+//---- Multi Block Test 64 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg2, SHA_LEN_2);
+
+ret = crySHA1(&CRYD1,SHA_LEN_2,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+
+ SHOW_DATA(digest,5);
+
+
+ref = (uint32_t*)refSHA_SHA1_64;
+for (int i = 0; i < 5; i++) {
+  test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+
+//---- Multi Block Test 128 Byte
+
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg3, SHA_LEN_3);
+
+ret = crySHA1(&CRYD1,SHA_LEN_3,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+
+SHOW_DATA(digest,5);
+
+
+ref = (uint32_t*)refSHA_SHA1_128;
+for (int i = 0; i < 5; i++) {
+    test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+
+
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+          </steps>
+        </case>
+
+        <case>
+          <brief>
+            <value>SHA256 Polling</value>
+          </brief>
+          <description>
+            <value>testing SHA256 in polled mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memset(digest, 0, MAX_DIGEST_SIZE_INWORD);
+memcpy((char*) msg_clear, sha_msg0, SHA_LEN_0);
+cryStart(&CRYD1, &configSHA_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+  uint32_t *ref;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+
+            <step>
+              <description>
+                <value>Digest</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+
+//---- One Block Test
+ret = crySHA256(&CRYD1,SHA_LEN_0,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha256 failed");
+
+SHOW_DATA(digest,8);
+
+ref = (uint32_t*)refSHA_SHA256_3;
+for (int i = 0; i < 8; i++) {
+  test_assert(digest[i] == ref[i], "sha256 digest mismatch");
+}
+
+//---- Multi Block Test 56 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg1, SHA_LEN_1);
+
+ret = crySHA256(&CRYD1,SHA_LEN_1,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha256 56 byte failed");
+
+ SHOW_DATA(digest,8);
+
+
+ref = (uint32_t*)refSHA_SHA256_56;
+for (int i = 0; i < 8; i++) {
+  test_assert(digest[i] == ref[i], "sha256 56 byte digest mismatch");
+}
+//---- Multi Block Test 64 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg2, SHA_LEN_2);
+
+ret = crySHA256(&CRYD1,SHA_LEN_2,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha256 64 byte failed");
+
+ SHOW_DATA(digest,8);
+
+
+ref = (uint32_t*)refSHA_SHA256_64;
+for (int i = 0; i < 8; i++) {
+  test_assert(digest[i] == ref[i], "sha256 64 byte digest mismatch");
+}
+
+//---- Multi Block Test 128 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg3, SHA_LEN_3);
+
+ret = crySHA256(&CRYD1,SHA_LEN_3,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha256 128 byte failed");
+
+SHOW_DATA(digest,8);
+
+
+ref = (uint32_t*)refSHA_SHA256_128;
+for (int i = 0; i < 8; i++) {
+    test_assert(digest[i] == ref[i], "sha256 128 byte digest mismatch");
+}
+
+
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>SHA512 Polling</value>
+          </brief>
+          <description>
+            <value>testing SHA512 in polled mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memset(digest, 0, MAX_DIGEST_SIZE_INWORD);
+memcpy((char*) msg_clear, sha_msg0, SHA_LEN_0);
+cryStart(&CRYD1, &configSHA_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+  uint32_t *ref;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+
+            <step>
+              <description>
+                <value>Digest</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+//---- One Block Test
+ret = crySHA512(&CRYD1,SHA_LEN_0,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha512 failed");
+
+SHOW_DATA(digest,16);
+
+ref = (uint32_t*)refSHA_SHA512_3;
+for (int i = 0; i < 16; i++) {
+  test_assert(digest[i] == ref[i], "sha512 digest mismatch");
+}
+
+
+//---- Multi Block Test 56 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg1, SHA_LEN_1);
+
+ret = crySHA512(&CRYD1,SHA_LEN_1,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha512 56 byte failed");
+
+ SHOW_DATA(digest,16);
+
+
+ref = (uint32_t*)refSHA_SHA512_56;
+for (int i = 0; i < 16; i++) {
+  test_assert(digest[i] == ref[i], "sha512 56 byte digest mismatch");
+}
+//---- Multi Block Test 64 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg2, SHA_LEN_2);
+
+ret = crySHA512(&CRYD1,SHA_LEN_2,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha512 64 byte failed");
+
+ SHOW_DATA(digest,16);
+
+
+ref = (uint32_t*)refSHA_SHA512_64;
+for (int i = 0; i < 16; i++) {
+  test_assert(digest[i] == ref[i], "sha512 64 byte digest mismatch");
+}
+
+//---- Multi Block Test 128 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg3, SHA_LEN_3);
+
+ret = crySHA512(&CRYD1,SHA_LEN_3,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha512 128 byte failed");
+
+SHOW_DATA(digest,16);
+
+
+ref = (uint32_t*)refSHA_SHA512_128;
+for (int i = 0; i < 16; i++) {
+    test_assert(digest[i] == ref[i], "sha512 128 byte digest mismatch");
+}
+
+
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+
+
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>SHA</value>
+      </brief>
+      <description>
+        <value>SHA testing</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include <string.h>
+#include "ref_sha.h"
+
+/* Buffer size for each SHA transfer, size should be multiple of block size
+   (block size: 64 for SHA_1/SHA_256/SHA_224, 128 for SHA_384/SHA_512) */
+#define MAX_SHA_BLOCK_SIZE			TEST_MSG_DATA_BYTE_LEN
+#define MAX_SHA_BLOCK_SIZE_INWORD  (MAX_SHA_BLOCK_SIZE/4)
+
+#define shabuffer	msg_decrypted
+
+
+#define MAX_DIGEST_SIZE_INBYTE  TEST_MSG_DATA_BYTE_LEN
+#define MAX_DIGEST_SIZE_INWORD  (MAX_DIGEST_SIZE_INBYTE/4)
+
+#define digest		msg_encrypted
+static const CRYConfig configSHA_DMA=
+{
+    TRANSFER_DMA,
+    0
+};
+
+static cryerror_t crySHA1(CRYDriver *cryp, size_t size,const uint8_t *in, uint8_t *out) {
+
+	cryerror_t ret;
+	SHA1Context shactxp;
+    
+    shactxp.sha.sha_buffer = (uint8_t*)&shabuffer[0];
+	shactxp.sha.sha_buffer_size = MAX_SHA_BLOCK_SIZE;
+
+	ret = crySHA1Init(cryp,&shactxp);
+
+	ret = crySHA1Update(cryp,&shactxp,size,in);
+
+	ret = crySHA1Final(cryp,&shactxp,out);
+
+
+	return ret;
+}
+
+static cryerror_t crySHA256(CRYDriver *cryp, size_t size,const uint8_t *in, uint8_t *out) {
+
+	cryerror_t ret;
+	SHA256Context shactxp;
+    
+    shactxp.sha.sha_buffer = (uint8_t*)&shabuffer[0];
+	shactxp.sha.sha_buffer_size = MAX_SHA_BLOCK_SIZE;
+    
+
+	ret = crySHA256Init(cryp,&shactxp);
+
+	ret = crySHA256Update(cryp,&shactxp,size,in);
+
+	ret = crySHA256Final(cryp,&shactxp,out);
+
+
+	return ret;
+}
+
+static cryerror_t crySHA512(CRYDriver *cryp, size_t size,const uint8_t *in, uint8_t *out) {
+
+	cryerror_t ret;
+	SHA512Context shactxp;
+    
+    shactxp.sha.sha_buffer = (uint8_t*)&shabuffer[0];
+	shactxp.sha.sha_buffer_size = MAX_SHA_BLOCK_SIZE;
+
+	ret = crySHA512Init(cryp,&shactxp);
+
+	ret = crySHA512Update(cryp,&shactxp,size,in);
+
+	ret = crySHA512Final(cryp,&shactxp,out);
+
+
+	return ret;
+}
+
+                ]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>SHA1 DMA</value>
+          </brief>
+          <description>
+            <value>testing SHA1 in DMA mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memset(digest, 0, MAX_DIGEST_SIZE_INWORD);
+memcpy((char*) msg_clear, sha_msg0, SHA_LEN_0);
+cryStart(&CRYD1, &configSHA_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+  uint32_t *ref;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+
+            <step>
+              <description>
+                <value>Digest</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+//---- Empty Block Test   
+ret = crySHA1(&CRYD1,0,(uint8_t*)msg_clear,(uint8_t*)digest);    
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+ 
+SHOW_DATA(digest,5);
+
+
+ref = (uint32_t*)refSHA_SHA1_EMPTY;
+for (int i = 0; i < 5; i++) {
+  test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+//---- One Block Test
+ret = crySHA1(&CRYD1,SHA_LEN_0,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+
+
+SHOW_DATA(digest,5);
+
+ref = (uint32_t*)refSHA_SHA1_3;
+for (int i = 0; i < 5; i++) {
+  test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+
+//---- Multi Block Test 56 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg1, SHA_LEN_1);
+
+ret = crySHA1(&CRYD1,SHA_LEN_1,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+
+ SHOW_DATA(digest,5);
+
+
+ref = (uint32_t*)refSHA_SHA1_56;
+for (int i = 0; i < 5; i++) {
+  test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+//---- Multi Block Test 64 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg2, SHA_LEN_2);
+
+ret = crySHA1(&CRYD1,SHA_LEN_2,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+
+ SHOW_DATA(digest,5);
+
+
+ref = (uint32_t*)refSHA_SHA1_64;
+for (int i = 0; i < 5; i++) {
+  test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+
+//---- Multi Block Test 128 Byte
+
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg3, SHA_LEN_3);
+
+ret = crySHA1(&CRYD1,SHA_LEN_3,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha1 failed");
+
+SHOW_DATA(digest,5);
+
+
+ref = (uint32_t*)refSHA_SHA1_128;
+for (int i = 0; i < 5; i++) {
+    test_assert(digest[i] == ref[i], "sha1 digest mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+          </steps>
+        </case>
+
+        <case>
+          <brief>
+            <value>SHA256 DMA</value>
+          </brief>
+          <description>
+            <value>testing SHA256 in DMA mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memset(digest, 0, MAX_DIGEST_SIZE_INWORD);
+memcpy((char*) msg_clear, sha_msg0, SHA_LEN_0);
+cryStart(&CRYD1, &configSHA_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+  uint32_t *ref;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+
+            <step>
+              <description>
+                <value>Digest</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+
+//---- One Block Test
+ret = crySHA256(&CRYD1,SHA_LEN_0,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha256 failed");
+
+SHOW_DATA(digest,8);
+
+ref = (uint32_t*)refSHA_SHA256_3;
+for (int i = 0; i < 8; i++) {
+  test_assert(digest[i] == ref[i], "sha256 digest mismatch");
+}
+
+//---- Multi Block Test 56 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg1, SHA_LEN_1);
+
+ret = crySHA256(&CRYD1,SHA_LEN_1,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha256 56 byte failed");
+
+ SHOW_DATA(digest,8);
+
+
+ref = (uint32_t*)refSHA_SHA256_56;
+for (int i = 0; i < 8; i++) {
+  test_assert(digest[i] == ref[i], "sha256 56 byte digest mismatch");
+}
+//---- Multi Block Test 64 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg2, SHA_LEN_2);
+
+ret = crySHA256(&CRYD1,SHA_LEN_2,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha256 64 byte failed");
+
+ SHOW_DATA(digest,8);
+
+
+ref = (uint32_t*)refSHA_SHA256_64;
+for (int i = 0; i < 8; i++) {
+  test_assert(digest[i] == ref[i], "sha256 64 byte digest mismatch");
+}
+
+//---- Multi Block Test 128 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg3, SHA_LEN_3);
+
+ret = crySHA256(&CRYD1,SHA_LEN_3,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha256 128 byte failed");
+
+SHOW_DATA(digest,8);
+
+
+ref = (uint32_t*)refSHA_SHA256_128;
+for (int i = 0; i < 8; i++) {
+    test_assert(digest[i] == ref[i], "sha256 128 byte digest mismatch");
+}
+
+
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>SHA512 DMA</value>
+          </brief>
+          <description>
+            <value>testing SHA512 in DMA mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memset(digest, 0, MAX_DIGEST_SIZE_INWORD);
+memcpy((char*) msg_clear, sha_msg0, SHA_LEN_0);
+cryStart(&CRYD1, &configSHA_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+  cryerror_t ret;
+  uint32_t *ref;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+
+            <step>
+              <description>
+                <value>Digest</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+//---- One Block Test
+ret = crySHA512(&CRYD1,SHA_LEN_0,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha512 failed");
+
+SHOW_DATA(digest,16);
+
+ref = (uint32_t*)refSHA_SHA512_3;
+for (int i = 0; i < 16; i++) {
+  test_assert(digest[i] == ref[i], "sha512 digest mismatch");
+}
+
+
+//---- Multi Block Test 56 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg1, SHA_LEN_1);
+
+ret = crySHA512(&CRYD1,SHA_LEN_1,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha512 56 byte failed");
+
+ SHOW_DATA(digest,16);
+
+
+ref = (uint32_t*)refSHA_SHA512_56;
+for (int i = 0; i < 16; i++) {
+  test_assert(digest[i] == ref[i], "sha512 56 byte digest mismatch");
+}
+//---- Multi Block Test 64 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg2, SHA_LEN_2);
+
+ret = crySHA512(&CRYD1,SHA_LEN_2,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha512 64 byte failed");
+
+ SHOW_DATA(digest,16);
+
+
+ref = (uint32_t*)refSHA_SHA512_64;
+for (int i = 0; i < 16; i++) {
+  test_assert(digest[i] == ref[i], "sha512 64 byte digest mismatch");
+}
+
+//---- Multi Block Test 128 Byte
+memset(msg_clear, 0, TEST_MSG_DATA_BYTE_LEN);
+memcpy((char*) msg_clear, sha_msg3, SHA_LEN_3);
+
+ret = crySHA512(&CRYD1,SHA_LEN_3,(uint8_t*)msg_clear,(uint8_t*)digest);
+
+test_assert(ret == CRY_NOERROR, "sha512 128 byte failed");
+
+SHOW_DATA(digest,16);
+
+
+ref = (uint32_t*)refSHA_SHA512_128;
+for (int i = 0; i < 16; i++) {
+    test_assert(digest[i] == ref[i], "sha512 128 byte digest mismatch");
+}
+
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>GCM</value>
+      </brief>
+      <description>
+        <value>GCM testing</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include <string.h>
+#include "ref_gcm.h"
+#define plaintext msg_clear
+#define cypher	  msg_encrypted
+#define authtag	  msg_decrypted
+
+static const CRYConfig config_Polling=
+{
+		TRANSFER_POLLING,
+		0
+};
+
+static const CRYConfig config_DMA=
+{
+		TRANSFER_DMA,
+		0
+};
+
+struct test_el_t
+{
+		uint32_t size;
+		const uint8_t * data;
+
+};
+struct test_gcm_t
+{
+	struct test_el_t key;
+	struct test_el_t p;
+	struct test_el_t iv;
+	struct test_el_t aad;
+	struct test_el_t c;
+	struct test_el_t t;
+
+};
+#define TEST_GCM_LEN 3
+
+const struct test_gcm_t test_gcm_k[TEST_GCM_LEN]={
+
+	{ {K3_LEN,K3},{P3_LEN,P3},{IV3_LEN,IV3},{AAD3_LEN,A3},{C3_LEN,C3},{T3_LEN,T3}  },
+	{ {K4_LEN,K4},{P4_LEN,P4},{IV4_LEN,IV4},{AAD4_LEN,A4},{C4_LEN,C4},{T4_LEN,T4}  },
+	{ {K5_LEN,K5},{P5_LEN,P5},{IV5_LEN,IV5},{AAD5_LEN,A5},{C5_LEN,C5},{T5_LEN,T5}  }
+};
+
+ 
+
+                ]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>GCM Polling</value>
+          </brief>
+          <description>
+            <value>testing GCM in polled mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+  memset(cypher, 0xff, TEST_MSG_DATA_BYTE_LEN);
+  memset(authtag, 0xff, TEST_MSG_DATA_BYTE_LEN);
+  cryStart(&CRYD1, &config_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+cryerror_t ret;
+	uint32_t *ref;
+	uint8_t i,len1,len2;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key, encrypt and decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+for (i = 0;i<TEST_GCM_LEN;i++) {
+    
+        test_print("gcm test : ");
+        test_printn(i);
+        test_println("");
+		/* loading the key .*/
+
+		{
+			ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,test_gcm_k[i].key.size, (uint8_t *) test_gcm_k[i].key.data);
+
+			test_assert(ret == CRY_NOERROR, "failed load transient key");
+		}
+
+		/* Encrypt.*/
+
+		{
+
+			ret = cryEncryptAES_GCM(&CRYD1,
+									0,
+									test_gcm_k[i].p.size,
+									test_gcm_k[i].p.data,
+									(uint8_t*)cypher,
+									test_gcm_k[i].iv.data,
+									test_gcm_k[i].aad.size,
+									test_gcm_k[i].aad.data,
+									(uint8_t*)authtag);
+
+			test_assert(ret == CRY_NOERROR, "failed encryption");
+
+			len1 = test_gcm_k[i].c.size/4;
+			len2 = test_gcm_k[i].t.size/4;
+			SHOW_DATA(cypher,len1);
+			SHOW_DATA(authtag,len2);
+
+			ref = (uint32_t*)test_gcm_k[i].c.data;
+
+			for (uint8_t i = 0; i < len1; i++) {
+				test_assert(ref[i] == cypher[i], "c mismatch");
+			}
+			ref = (uint32_t*)test_gcm_k[i].t.data;
+
+			for (uint8_t i = 0; i < len2; i++) {
+				test_assert(ref[i] == authtag[i], "t mismatch");
+			}
+
+
+
+		}
+
+		/*  Decrypt.*/
+
+		{
+
+
+			memset(plaintext, 0, test_gcm_k[i].p.size);
+
+			ret = cryDecryptAES_GCM(&CRYD1,
+									0,
+									test_gcm_k[i].c.size,
+									(uint8_t*)cypher,
+									(uint8_t*)plaintext,
+									test_gcm_k[i].iv.data,
+									test_gcm_k[i].aad.size,
+									test_gcm_k[i].aad.data,
+									(uint8_t*)authtag);
+
+			test_assert(ret == CRY_NOERROR, "failed decryption");
+
+			len1 = test_gcm_k[i].p.size/4;
+			SHOW_DATA(plaintext,len1);
+
+			ref = (uint32_t*)test_gcm_k[i].p.data;
+
+			for (uint8_t i = 0; i < len1; i++) {
+				test_assert(ref[i] == plaintext[i], "decrypt plain mismatch");
+			}
+
+
+
+		}
+
+	}
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+
+
+          </steps>
+        </case>
+
+
+        <case>
+          <brief>
+            <value>GCM DMA</value>
+          </brief>
+          <description>
+            <value>testing GCM in DMA mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+  memset(cypher, 0xff, TEST_MSG_DATA_BYTE_LEN);
+  memset(authtag, 0xff, TEST_MSG_DATA_BYTE_LEN);
+  cryStart(&CRYD1, &config_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+cryerror_t ret;
+	uint32_t *ref;
+	uint8_t i,len1,len2;
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>loading the key, encrypt and decrypt</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+for (i = 0;i<TEST_GCM_LEN;i++) {
+
+        test_print("gcm test : ");
+        test_printn(i);
+        test_println("");
+		/* loading the key .*/
+
+		{
+			ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_aes,test_gcm_k[i].key.size, (uint8_t *) test_gcm_k[i].key.data);
+
+			test_assert(ret == CRY_NOERROR, "failed load transient key");
+		}
+
+		/* Encrypt.*/
+
+		{
+
+			ret = cryEncryptAES_GCM(&CRYD1,
+									0,
+									test_gcm_k[i].p.size,
+									test_gcm_k[i].p.data,
+									(uint8_t*)cypher,
+									test_gcm_k[i].iv.data,
+									test_gcm_k[i].aad.size,
+									test_gcm_k[i].aad.data,
+									(uint8_t*)authtag);
+
+			test_assert(ret == CRY_NOERROR, "failed encryption");
+
+			len1 = test_gcm_k[i].c.size/4;
+			len2 = test_gcm_k[i].t.size/4;
+			SHOW_DATA(cypher,len1);
+			SHOW_DATA(authtag,len2);
+
+			ref = (uint32_t*)test_gcm_k[i].c.data;
+
+			for (uint8_t i = 0; i < len1; i++) {
+				test_assert(ref[i] == cypher[i], "c mismatch");
+			}
+			ref = (uint32_t*)test_gcm_k[i].t.data;
+
+			for (uint8_t i = 0; i < len2; i++) {
+				test_assert(ref[i] == authtag[i], "t mismatch");
+			}
+
+
+
+		}
+
+		/*  Decrypt.*/
+
+		{
+
+
+			memset(plaintext, 0, test_gcm_k[i].p.size);
+
+			ret = cryDecryptAES_GCM(&CRYD1,
+									0,
+									test_gcm_k[i].c.size,
+									(uint8_t*)cypher,
+									(uint8_t*)plaintext,
+									test_gcm_k[i].iv.data,
+									test_gcm_k[i].aad.size,
+									test_gcm_k[i].aad.data,
+									(uint8_t*)authtag);
+
+			test_assert(ret == CRY_NOERROR, "failed decryption");
+
+			len1 = test_gcm_k[i].p.size/4;
+			SHOW_DATA(plaintext,len1);
+
+			ref = (uint32_t*)test_gcm_k[i].p.data;
+
+			for (uint8_t i = 0; i < len1; i++) {
+				test_assert(ref[i] == plaintext[i], "decrypt plain mismatch");
+			}
+
+
+
+		}
+
+	}
+]]></value>
+              </code>
+            </step>
+
+
+
+
+
+
+
+          </steps>
+        </case>
+
+
+      </cases>
+    </sequence>
+
+
+    <sequence>
+      <type index="0">
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>HMAC</value>
+      </brief>
+      <description>
+        <value>HMAC testing</value>
+      </description>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include <string.h>
+#include "ref_hmac.h"
+#define plaintext msg_clear
+#define HMACOUT	  msg_encrypted
+#define shabuffer msg_decrypted
+
+#define MAX_SHA_BLOCK_SIZE			TEST_MSG_DATA_BYTE_LEN
+#define MAX_SHA_BLOCK_SIZE_INWORD  (MAX_SHA_BLOCK_SIZE/4)
+
+static const CRYConfig config_Polling=
+{
+		TRANSFER_POLLING,
+		0
+};
+
+static const CRYConfig config_DMA=
+{
+		TRANSFER_DMA,
+		0
+};
+
+
+static const int hmackeys_size[]=
+{
+ 20,
+ 4,
+ 20
+};
+
+static const uint8_t hmackey_1[]=
+{
+     0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,
+     0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,0x0B,
+
+};
+
+//   "Hi There",
+static const uint8_t hmacmsg1[8]= "Hi There";
+static const size_t hmacmsg_size[]=
+{
+   8,
+};
+static void cryHMAC256(CRYDriver *cryp) {
+
+    cryerror_t ret;
+    HMACSHA256Context hmacshactxp;
+    uint8_t *keyp;
+
+
+    hmacshactxp.shacontext.sha.sha_buffer = (uint8_t*)&shabuffer[0];
+    hmacshactxp.shacontext.sha.sha_buffer_size = MAX_SHA_BLOCK_SIZE;
+
+    keyp =(uint8_t *)hmackey_1;
+    ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_hmac,hmackeys_size[0], keyp);
+
+    test_assert(ret == CRY_NOERROR, "failed load transient key");
+
+    ret = cryHMACSHA256Init(cryp,&hmacshactxp);
+	
+	test_assert(ret == CRY_NOERROR, "failed init HMACSHA256");
+
+    ret = cryHMACSHA256Update(cryp,&hmacshactxp,hmacmsg_size[0],(const uint8_t *)&hmacmsg1);
+	
+	test_assert(ret == CRY_NOERROR, "failed update HMACSHA256");
+
+    ret = cryHMACSHA256Final(cryp,&hmacshactxp,(uint8_t *)HMACOUT);
+	
+	test_assert(ret == CRY_NOERROR, "failed final HMACSHA256");
+
+
+    SHOW_DATA(HMACOUT,8);
+
+}
+
+static void cryHMAC512(CRYDriver *cryp) {
+
+    cryerror_t ret;
+    HMACSHA512Context hmacshactxp;
+    uint8_t *keyp;
+
+
+    hmacshactxp.shacontext.sha.sha_buffer = (uint8_t*)&shabuffer[0];
+    hmacshactxp.shacontext.sha.sha_buffer_size = MAX_SHA_BLOCK_SIZE;
+
+    keyp =(uint8_t *)hmackey_1;
+    ret = cryLoadTransientKey(&CRYD1, (cryalgorithm_t) cry_algo_hmac,hmackeys_size[0], keyp);
+
+    test_assert(ret == CRY_NOERROR, "failed load transient key");
+
+    ret = cryHMACSHA512Init(cryp,&hmacshactxp);
+	
+	test_assert(ret == CRY_NOERROR, "failed init HMACSHA512");
+
+    ret = cryHMACSHA512Update(cryp,&hmacshactxp,hmacmsg_size[0],(const uint8_t *)&hmacmsg1);
+	
+	test_assert(ret == CRY_NOERROR, "failed update HMACSHA512");
+
+    ret = cryHMACSHA512Final(cryp,&hmacshactxp,(uint8_t *)HMACOUT);
+	
+	test_assert(ret == CRY_NOERROR, "failed final HMACSHA512");
+
+
+    SHOW_DATA(HMACOUT,16);
+
+}
+
+                ]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>HMAC Polling</value>
+          </brief>
+          <description>
+            <value>testing HMAC in polled mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memset(HMACOUT, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &config_Polling);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>hmac 256</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+cryHMAC256(&CRYD1);    
+
+for (int i = 0; i < 8; i++) {
+   test_assert(HMACOUT[i] == ((uint32_t*) refHMAC_HMAC256_1)[i], "hmac mismatch");
+}
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>hmac 512</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+cryHMAC512(&CRYD1);    
+
+for (int i = 0; i < 16; i++) {
+   test_assert(HMACOUT[i] == ((uint32_t*) refHMAC_HMAC512_1)[i], "hmac mismatch");
+}
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+        <case>
+          <brief>
+            <value>HMAC DMA</value>
+          </brief>
+          <description>
+            <value>testing HMAC in DMA mode</value>
+          </description>
+          <condition>
+            <value />
+          </condition>
+          <various_code>
+            <setup_code>
+              <value><![CDATA[
+memset(HMACOUT, 0xff, TEST_MSG_DATA_BYTE_LEN);
+cryStart(&CRYD1, &config_DMA);
+
+                      ]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[cryStop(&CRYD1);]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+]]></value>
+            </local_variables>
+          </various_code>
+          <steps>
+            <step>
+              <description>
+                <value>hmac 256</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+cryHMAC256(&CRYD1);    
+
+
+for (int i = 0; i < 8; i++) {
+   test_assert(HMACOUT[i] == ((uint32_t*) refHMAC_HMAC256_1)[i], "hmac mismatch");
+}
+]]></value>
+              </code>
+            </step>
+            <step>
+              <description>
+                <value>hmac 512</value>
+              </description>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+cryHMAC512(&CRYD1);    
+
+for (int i = 0; i < 16; i++) {
+   test_assert(HMACOUT[i] == ((uint32_t*) refHMAC_HMAC512_1)[i], "hmac mismatch");
+}
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+  </sequences>
+</instance>

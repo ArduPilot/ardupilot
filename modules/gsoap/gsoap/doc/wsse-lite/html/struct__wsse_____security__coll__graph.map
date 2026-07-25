@@ -1,0 +1,5 @@
+<map id="_wsse__Security" name="_wsse__Security">
+<area shape="rect" id="node2" href="$struct__wsse_____binary_security_token.html" title="This element defines the wsse:BinarySecurityToken element per Section 4.2. Imported element _wsse__Bi..." alt="" coords="5,99,200,127"/>
+<area shape="rect" id="node4" href="$struct__wsse_____username_token.html" title="This element defines the wsse:UsernameToken element per Section 4.1. Imported element _wsse__Username..." alt="" coords="224,99,395,127"/>
+<area shape="rect" id="node6" href="$struct__wsse_____password.html" title="This element contains properties for transformations from any namespace, including DSIG..." alt="" coords="243,6,375,34"/>
+</map>

@@ -1,0 +1,2 @@
+extern void a();
+

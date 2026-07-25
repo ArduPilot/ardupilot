@@ -1,0 +1,486 @@
+
+[[case]] # simple file test
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "hello",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+    size = strlen("Hello World!")+1;
+    strcpy((char*)buffer, "Hello World!");
+    lfs_file_write(&lfs, &file, buffer, size) => size;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "hello", LFS_O_RDONLY) => 0;
+    lfs_file_read(&lfs, &file, buffer, size) => size;
+    assert(strcmp((char*)buffer, "Hello World!") == 0);
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # larger files
+define.SIZE = [32, 8192, 262144, 0, 7, 8193]
+define.CHUNKSIZE = [31, 16, 33, 1, 1023]
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+
+    // write
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE-i);
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            buffer[b] = rand() & 0xff;
+        }
+        lfs_file_write(&lfs, &file, buffer, chunk) => chunk;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // read
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => SIZE;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    lfs_file_read(&lfs, &file, buffer, CHUNKSIZE) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # rewriting files
+define.SIZE1 = [32, 8192, 131072, 0, 7, 8193]
+define.SIZE2 = [32, 8192, 131072, 0, 7, 8193]
+define.CHUNKSIZE = [31, 16, 1]
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+
+    // write
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE1; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE1-i);
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            buffer[b] = rand() & 0xff;
+        }
+        lfs_file_write(&lfs, &file, buffer, chunk) => chunk;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // read
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => SIZE1;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE1; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE1-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    lfs_file_read(&lfs, &file, buffer, CHUNKSIZE) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // rewrite
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_WRONLY) => 0;
+    srand(2);
+    for (lfs_size_t i = 0; i < SIZE2; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE2-i);
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            buffer[b] = rand() & 0xff;
+        }
+        lfs_file_write(&lfs, &file, buffer, chunk) => chunk;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // read
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => lfs_max(SIZE1, SIZE2);
+    srand(2);
+    for (lfs_size_t i = 0; i < SIZE2; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE2-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    if (SIZE1 > SIZE2) {
+        srand(1);
+        for (lfs_size_t b = 0; b < SIZE2; b++) {
+            rand();
+        }
+        for (lfs_size_t i = SIZE2; i < SIZE1; i += CHUNKSIZE) {
+            lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE1-i);
+            lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+            for (lfs_size_t b = 0; b < chunk; b++) {
+                assert(buffer[b] == (rand() & 0xff));
+            }
+        }
+    }
+    lfs_file_read(&lfs, &file, buffer, CHUNKSIZE) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # appending files
+define.SIZE1 = [32, 8192, 131072, 0, 7, 8193]
+define.SIZE2 = [32, 8192, 131072, 0, 7, 8193]
+define.CHUNKSIZE = [31, 16, 1]
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+
+    // write
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE1; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE1-i);
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            buffer[b] = rand() & 0xff;
+        }
+        lfs_file_write(&lfs, &file, buffer, chunk) => chunk;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // read
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => SIZE1;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE1; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE1-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    lfs_file_read(&lfs, &file, buffer, CHUNKSIZE) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // append
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_WRONLY | LFS_O_APPEND) => 0;
+    srand(2);
+    for (lfs_size_t i = 0; i < SIZE2; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE2-i);
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            buffer[b] = rand() & 0xff;
+        }
+        lfs_file_write(&lfs, &file, buffer, chunk) => chunk;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // read
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => SIZE1 + SIZE2;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE1; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE1-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    srand(2);
+    for (lfs_size_t i = 0; i < SIZE2; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE2-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    lfs_file_read(&lfs, &file, buffer, CHUNKSIZE) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # truncating files
+define.SIZE1 = [32, 8192, 131072, 0, 7, 8193]
+define.SIZE2 = [32, 8192, 131072, 0, 7, 8193]
+define.CHUNKSIZE = [31, 16, 1]
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+
+    // write
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado",
+            LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE1; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE1-i);
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            buffer[b] = rand() & 0xff;
+        }
+        lfs_file_write(&lfs, &file, buffer, chunk) => chunk;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // read
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => SIZE1;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE1; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE1-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    lfs_file_read(&lfs, &file, buffer, CHUNKSIZE) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // truncate
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_WRONLY | LFS_O_TRUNC) => 0;
+    srand(2);
+    for (lfs_size_t i = 0; i < SIZE2; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE2-i);
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            buffer[b] = rand() & 0xff;
+        }
+        lfs_file_write(&lfs, &file, buffer, chunk) => chunk;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // read
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => SIZE2;
+    srand(2);
+    for (lfs_size_t i = 0; i < SIZE2; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE2-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    lfs_file_read(&lfs, &file, buffer, CHUNKSIZE) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # reentrant file writing
+define.SIZE = [32, 0, 7, 2049]
+define.CHUNKSIZE = [31, 16, 65]
+reentrant = true
+code = '''
+    err = lfs_mount(&lfs, &cfg);
+    if (err) {
+        lfs_format(&lfs, &cfg) => 0;
+        lfs_mount(&lfs, &cfg) => 0;
+    }
+
+    err = lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY);
+    assert(err == LFS_ERR_NOENT || err == 0);
+    if (err == 0) {
+        // can only be 0 (new file) or full size
+        size = lfs_file_size(&lfs, &file);
+        assert(size == 0 || size == SIZE);
+        lfs_file_close(&lfs, &file) => 0;
+    }
+
+    // write
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_WRONLY | LFS_O_CREAT) => 0;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE-i);
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            buffer[b] = rand() & 0xff;
+        }
+        lfs_file_write(&lfs, &file, buffer, chunk) => chunk;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => SIZE;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    lfs_file_read(&lfs, &file, buffer, CHUNKSIZE) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # reentrant file writing with syncs
+define = [
+    # append (O(n))
+    {MODE='LFS_O_APPEND',   SIZE=[32, 0, 7, 2049],  CHUNKSIZE=[31, 16, 65]},
+    # truncate (O(n^2))
+    {MODE='LFS_O_TRUNC',    SIZE=[32, 0, 7, 200],   CHUNKSIZE=[31, 16, 65]},
+    # rewrite (O(n^2))
+    {MODE=0,                SIZE=[32, 0, 7, 200],   CHUNKSIZE=[31, 16, 65]},
+]
+reentrant = true
+code = '''
+    err = lfs_mount(&lfs, &cfg);
+    if (err) {
+        lfs_format(&lfs, &cfg) => 0;
+        lfs_mount(&lfs, &cfg) => 0;
+    }
+
+    err = lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY);
+    assert(err == LFS_ERR_NOENT || err == 0);
+    if (err == 0) {
+        // with syncs we could be any size, but it at least must be valid data
+        size = lfs_file_size(&lfs, &file);
+        assert(size <= SIZE);
+        srand(1);
+        for (lfs_size_t i = 0; i < size; i += CHUNKSIZE) {
+            lfs_size_t chunk = lfs_min(CHUNKSIZE, size-i);
+            lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+            for (lfs_size_t b = 0; b < chunk; b++) {
+                assert(buffer[b] == (rand() & 0xff));
+            }
+        }
+        lfs_file_close(&lfs, &file) => 0;
+    }
+
+    // write
+    lfs_file_open(&lfs, &file, "avacado",
+        LFS_O_WRONLY | LFS_O_CREAT | MODE) => 0;
+    size = lfs_file_size(&lfs, &file);
+    assert(size <= SIZE);
+    srand(1);
+    lfs_size_t skip = (MODE == LFS_O_APPEND) ? size : 0;
+    for (lfs_size_t b = 0; b < skip; b++) {
+        rand();
+    }
+    for (lfs_size_t i = skip; i < SIZE; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE-i);
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            buffer[b] = rand() & 0xff;
+        }
+        lfs_file_write(&lfs, &file, buffer, chunk) => chunk;
+        lfs_file_sync(&lfs, &file) => 0;
+    }
+    lfs_file_close(&lfs, &file) => 0;
+
+    // read
+    lfs_file_open(&lfs, &file, "avacado", LFS_O_RDONLY) => 0;
+    lfs_file_size(&lfs, &file) => SIZE;
+    srand(1);
+    for (lfs_size_t i = 0; i < SIZE; i += CHUNKSIZE) {
+        lfs_size_t chunk = lfs_min(CHUNKSIZE, SIZE-i);
+        lfs_file_read(&lfs, &file, buffer, chunk) => chunk;
+        for (lfs_size_t b = 0; b < chunk; b++) {
+            assert(buffer[b] == (rand() & 0xff));
+        }
+    }
+    lfs_file_read(&lfs, &file, buffer, CHUNKSIZE) => 0;
+    lfs_file_close(&lfs, &file) => 0;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # many files
+define.N = 300
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    // create N files of 7 bytes
+    lfs_mount(&lfs, &cfg) => 0;
+    for (int i = 0; i < N; i++) {
+        sprintf(path, "file_%03d", i);
+        lfs_file_open(&lfs, &file, path,
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+        char wbuffer[1024];
+        size = 7;
+        snprintf(wbuffer, size, "Hi %03d", i);
+        lfs_file_write(&lfs, &file, wbuffer, size) => size;
+        lfs_file_close(&lfs, &file) => 0;
+
+        char rbuffer[1024];
+        lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+        lfs_file_read(&lfs, &file, rbuffer, size) => size;
+        assert(strcmp(rbuffer, wbuffer) == 0);
+        lfs_file_close(&lfs, &file) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # many files with power cycle
+define.N = 300
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    // create N files of 7 bytes
+    lfs_mount(&lfs, &cfg) => 0;
+    for (int i = 0; i < N; i++) {
+        sprintf(path, "file_%03d", i);
+        lfs_file_open(&lfs, &file, path,
+                LFS_O_WRONLY | LFS_O_CREAT | LFS_O_EXCL) => 0;
+        char wbuffer[1024];
+        size = 7;
+        snprintf(wbuffer, size, "Hi %03d", i);
+        lfs_file_write(&lfs, &file, wbuffer, size) => size;
+        lfs_file_close(&lfs, &file) => 0;
+        lfs_unmount(&lfs) => 0;
+
+        char rbuffer[1024];
+        lfs_mount(&lfs, &cfg) => 0;
+        lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+        lfs_file_read(&lfs, &file, rbuffer, size) => size;
+        assert(strcmp(rbuffer, wbuffer) == 0);
+        lfs_file_close(&lfs, &file) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # many files with power loss
+define.N = 300
+reentrant = true
+code = '''
+    err = lfs_mount(&lfs, &cfg);
+    if (err) {
+        lfs_format(&lfs, &cfg) => 0;
+        lfs_mount(&lfs, &cfg) => 0;
+    }
+    // create N files of 7 bytes
+    for (int i = 0; i < N; i++) {
+        sprintf(path, "file_%03d", i);
+        err = lfs_file_open(&lfs, &file, path, LFS_O_WRONLY | LFS_O_CREAT);
+        char wbuffer[1024];
+        size = 7;
+        snprintf(wbuffer, size, "Hi %03d", i);
+        if ((lfs_size_t)lfs_file_size(&lfs, &file) != size) {
+            lfs_file_write(&lfs, &file, wbuffer, size) => size;
+        }
+        lfs_file_close(&lfs, &file) => 0;
+
+        char rbuffer[1024];
+        lfs_file_open(&lfs, &file, path, LFS_O_RDONLY) => 0;
+        lfs_file_read(&lfs, &file, rbuffer, size) => size;
+        assert(strcmp(rbuffer, wbuffer) == 0);
+        lfs_file_close(&lfs, &file) => 0;
+    }
+    lfs_unmount(&lfs) => 0;
+'''

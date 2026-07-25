@@ -1,0 +1,5 @@
+obj = bld(features='d dprogram')
+obj.source      = 'main.d extra.d'
+obj.target      = 'test2'
+obj.includes = '.'
+

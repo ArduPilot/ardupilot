@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<instance
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/unittest/unittest.xsd">
+  <description>
+    <brief>
+      <value>Example Test Suite.</value>
+    </brief>
+    <copyright>
+      <value><![CDATA[/*
+    ChibiOS - Copyright (C) 2006-2026 Giovanni Di Sirio.
+
+    This file is part of ChibiOS.
+
+    ChibiOS is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation version 3 of the License.
+
+    ChibiOS is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/]]></value>
+    </copyright>
+    <introduction>
+      <value>Test suite for EXAMPLE. The purpose of this suite is to
+        perform unit tests on the EXAMPLE modules.</value>
+    </introduction>
+  </description>
+  <global_data_and_code>
+    <code_prefix>
+      <value>example_</value>
+    </code_prefix>
+    <global_definitions>
+      <value><![CDATA[
+#define EXAMPLE_GLOBAL_DEFINITIONS_HERE 1
+]]></value>
+    </global_definitions>
+    <global_code>
+      <value><![CDATA[
+#define EXAMPLE_GLOBAL_CODE_HERE 1
+]]></value>
+    </global_code>
+  </global_data_and_code>
+  <sequences>
+    <sequence>
+      <type>
+        <value>Internal Tests</value>
+      </type>
+      <brief>
+        <value>This is a sequence.</value>
+      </brief>
+      <details>
+        <value>A sequence is a collection of test cases executed in sequence
+sharing static code and data.</value>
+      </details>
+      <condition>
+        <value />
+      </condition>
+      <shared_code>
+        <value><![CDATA[
+#include "example.h"
+]]></value>
+      </shared_code>
+      <cases>
+        <case>
+          <brief>
+            <value>This is a test case.</value>
+          </brief>
+          <details>
+            <value>A test case is a small program testing a specific feature
+of the system under test. Test cases should not depend on things done in
+previous test cases because those could have failed leaving an unexpected
+state.</value>
+          </details>
+          <condition>
+            <value />
+          </condition>
+          <wrappers>
+            <setup_code>
+              <value><![CDATA[
+/* Put here code that prepares for the test case execution, this code is
+   executed before the test case.*/
+]]></value>
+            </setup_code>
+            <teardown_code>
+              <value><![CDATA[
+/* Put here code undoes what the test cases did, as a good practice this code
+   should be able to undo things regardles of how the test case succeeded or
+   failed.*/
+]]></value>
+            </teardown_code>
+            <local_variables>
+              <value><![CDATA[
+/* Declare here automatic variables used in the test case, it is good practice
+   to not initialize values here.*/
+]]></value>
+            </local_variables>
+          </wrappers>
+          <steps>
+            <step>
+              <details>
+                <value>This is a test case step. A step is an elementary
+piece of code part of a test case.</value>
+              </details>
+              <tags>
+                <value />
+              </tags>
+              <code>
+                <value><![CDATA[
+/* Put here the step code.*/
+]]></value>
+              </code>
+            </step>
+          </steps>
+        </case>
+      </cases>
+    </sequence>
+  </sequences>
+</instance>

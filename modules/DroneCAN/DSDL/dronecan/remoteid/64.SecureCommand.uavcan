@@ -1,0 +1,29 @@
+# DroneCAN version of MAVLink2 SECURE_COMMAND. Please see MAVLink2 spec for more details
+
+uint32 sequence
+
+uint32 SECURE_COMMAND_GET_SESSION_KEY = 0
+uint32 SECURE_COMMAND_GET_REMOTEID_SESSION_KEY = 1
+uint32 SECURE_COMMAND_REMOVE_PUBLIC_KEYS = 2
+uint32 SECURE_COMMAND_GET_PUBLIC_KEYS = 3
+uint32 SECURE_COMMAND_SET_PUBLIC_KEYS = 4
+uint32 SECURE_COMMAND_GET_REMOTEID_CONFIG = 5
+uint32 SECURE_COMMAND_SET_REMOTEID_CONFIG = 6
+uint32 operation
+
+uint8 sig_length
+uint8[<=220] data
+
+---
+
+uint32 sequence
+uint32 operation
+
+uint8 RESULT_ACCEPTED = 0
+uint8 RESULT_TEMPORARILY_REJECTED = 1
+uint8 RESULT_DENIED = 2
+uint8 RESULT_UNSUPPORTED = 3
+uint8 RESULT_FAILED = 4
+uint8 result
+
+uint8[<=220] data

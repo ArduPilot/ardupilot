@@ -1,0 +1,64 @@
+#! /usr/bin/env python
+
+import os
+from waflib import Logs
+
+top = '.'
+out = 'build'
+
+def options(opt):
+	opt.load('compiler_cxx python java')
+
+def configure(conf):
+	conf.load('compiler_cxx python java protoc')
+	conf.check_python_version(minver=(2, 5, 0))
+	# Here you have to point to your protobuf-java JAR
+	if os.path.isfile('/tmp/cp/protobuf-java-2.5.0.jar'):
+		conf.env.CLASSPATH_PROTOBUF = ['/tmp/cp/protobuf-java-2.5.0.jar']
+	else:
+		Logs.warn('Edit the wscript file and set CLASSPATH_PROTOBUF for java')
+
+def build(bld):
+	bld(
+		features = 'cxx cxxshlib',
+		source   = ['inc/message_inc.proto','inc/message.proto'],
+		name     = 'somelib',
+		target   = 'somelib',
+		includes = ['inc'],
+		export_includes = ['inc'])
+
+	bld(
+		features = 'cxx cxxshlib',
+		source   = ['incdeep/a/b/test.proto'],
+		target   = 'somedeeplib',
+		includes = ['incdeep'])
+
+	bld(
+		features = 'cxx cxxshlib',
+		source   = ['incseparate/depinotherdir.proto'],
+		target   = 'crossdirlib',
+		includes = ['incseparate'],
+		use      = ['somelib'])
+
+	bld(
+		features = 'py',
+		name = 'pbpy',
+		source   = ['inc/message_inc.proto','inc/message.proto'],
+		protoc_includes = ['inc'])
+
+	bld(
+		features = 'cxx py',
+		name = 'pbboth',
+		source   = ['incboth/messageboth_inc.proto', 'incboth/messageboth.proto'],
+		protoc_includes = ['incboth']) # either protoc_includes or includes would work in this case
+
+	if bld.env.CLASSPATH_PROTOBUF:
+		bld(
+			features = 'javac protoc',
+			name = 'pbjava',
+			srcdir = 'inc/',
+			source   = ['inc/message_inc.proto', 'inc/message.proto', 'inc/msgCaseTest.proto' ],
+			use = 'PROTOBUF',
+			protoc_includes = ['inc'])
+
+	bld.recurse('increcurse')

@@ -1,0 +1,120 @@
+[[case]] # orphan test
+in = "lfs.c"
+if = 'LFS_PROG_SIZE <= 0x3fe' # only works with one crc per commit
+code = '''
+    lfs_format(&lfs, &cfg) => 0;
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_mkdir(&lfs, "parent") => 0;
+    lfs_mkdir(&lfs, "parent/orphan") => 0;
+    lfs_mkdir(&lfs, "parent/child") => 0;
+    lfs_remove(&lfs, "parent/orphan") => 0;
+    lfs_unmount(&lfs) => 0;
+
+    // corrupt the child's most recent commit, this should be the update
+    // to the linked-list entry, which should orphan the orphan. Note this
+    // makes a lot of assumptions about the remove operation.
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_dir_open(&lfs, &dir, "parent/child") => 0;
+    lfs_block_t block = dir.m.pair[0];
+    lfs_dir_close(&lfs, &dir) => 0;
+    lfs_unmount(&lfs) => 0;
+    uint8_t bbuffer[LFS_BLOCK_SIZE];
+    cfg.read(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    int off = LFS_BLOCK_SIZE-1;
+    while (off >= 0 && bbuffer[off] == LFS_ERASE_VALUE) {
+        off -= 1;
+    }
+    memset(&bbuffer[off-3], LFS_BLOCK_SIZE, 3);
+    cfg.erase(&cfg, block) => 0;
+    cfg.prog(&cfg, block, 0, bbuffer, LFS_BLOCK_SIZE) => 0;
+    cfg.sync(&cfg) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_stat(&lfs, "parent/orphan", &info) => LFS_ERR_NOENT;
+    lfs_stat(&lfs, "parent/child", &info) => 0;
+    lfs_fs_size(&lfs) => 8;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_stat(&lfs, "parent/orphan", &info) => LFS_ERR_NOENT;
+    lfs_stat(&lfs, "parent/child", &info) => 0;
+    lfs_fs_size(&lfs) => 8;
+    // this mkdir should both create a dir and deorphan, so size
+    // should be unchanged
+    lfs_mkdir(&lfs, "parent/otherchild") => 0;
+    lfs_stat(&lfs, "parent/orphan", &info) => LFS_ERR_NOENT;
+    lfs_stat(&lfs, "parent/child", &info) => 0;
+    lfs_stat(&lfs, "parent/otherchild", &info) => 0;
+    lfs_fs_size(&lfs) => 8;
+    lfs_unmount(&lfs) => 0;
+
+    lfs_mount(&lfs, &cfg) => 0;
+    lfs_stat(&lfs, "parent/orphan", &info) => LFS_ERR_NOENT;
+    lfs_stat(&lfs, "parent/child", &info) => 0;
+    lfs_stat(&lfs, "parent/otherchild", &info) => 0;
+    lfs_fs_size(&lfs) => 8;
+    lfs_unmount(&lfs) => 0;
+'''
+
+[[case]] # reentrant testing for orphans, basically just spam mkdir/remove
+reentrant = true
+# TODO fix this case, caused by non-DAG trees
+if = '!(DEPTH == 3 && LFS_CACHE_SIZE != 64)'
+define = [
+    {FILES=6,  DEPTH=1, CYCLES=20},
+    {FILES=26, DEPTH=1, CYCLES=20},
+    {FILES=3,  DEPTH=3, CYCLES=20},
+]
+code = '''
+    err = lfs_mount(&lfs, &cfg);
+    if (err) {
+        lfs_format(&lfs, &cfg) => 0;
+        lfs_mount(&lfs, &cfg) => 0;
+    }
+
+    srand(1);
+    const char alpha[] = "abcdefghijklmnopqrstuvwxyz";
+    for (int i = 0; i < CYCLES; i++) {
+        // create random path
+        char full_path[256];
+        for (int d = 0; d < DEPTH; d++) {
+            sprintf(&full_path[2*d], "/%c", alpha[rand() % FILES]);
+        }
+
+        // if it does not exist, we create it, else we destroy
+        int res = lfs_stat(&lfs, full_path, &info);
+        if (res == LFS_ERR_NOENT) {
+            // create each directory in turn, ignore if dir already exists
+            for (int d = 0; d < DEPTH; d++) {
+                strcpy(path, full_path);
+                path[2*d+2] = '\0';
+                err = lfs_mkdir(&lfs, path);
+                assert(!err || err == LFS_ERR_EXIST);
+            }
+
+            for (int d = 0; d < DEPTH; d++) {
+                strcpy(path, full_path);
+                path[2*d+2] = '\0';
+                lfs_stat(&lfs, path, &info) => 0;
+                assert(strcmp(info.name, &path[2*d+1]) == 0);
+                assert(info.type == LFS_TYPE_DIR);
+            }
+        } else {
+            // is valid dir?
+            assert(strcmp(info.name, &full_path[2*(DEPTH-1)+1]) == 0);
+            assert(info.type == LFS_TYPE_DIR);
+
+            // try to delete path in reverse order, ignore if dir is not empty
+            for (int d = DEPTH-1; d >= 0; d--) {
+                strcpy(path, full_path);
+                path[2*d+2] = '\0';
+                err = lfs_remove(&lfs, path);
+                assert(!err || err == LFS_ERR_NOTEMPTY);
+            }
+
+            lfs_stat(&lfs, full_path, &info) => LFS_ERR_NOENT;
+        }
+    }
+    lfs_unmount(&lfs) => 0;
+'''
+

@@ -1,0 +1,4 @@
+#
+# Changing Type0's signature to check that this error is caught.
+#
+uint16 field0

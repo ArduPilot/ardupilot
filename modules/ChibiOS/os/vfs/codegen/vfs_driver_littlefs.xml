@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- C module definition -->
+<module xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="http://www.chibios.org/xml/schema/ccode/modules.xsd"
+  name="drvlittlefs" descr="VFS LittleFS Driver"
+  check="VFS_CFG_ENABLE_DRV_LITTLEFS == TRUE" sourcepath="drivers/littlefs"
+  headerpath="drivers/littlefs" editcode="true">
+  <imports>
+    <import>vfs_nodes.xml</import>
+    <import>vfs_drivers.xml</import>
+  </imports>
+  <public>
+    <includes>
+      <include style="regular">oop_sequential_stream.h</include>
+      <include style="regular">lfs.h</include>
+    </includes>
+    <configs>
+      <config name="DRV_CFG_LITTLEFS_DIR_NODES_NUM" default="2">
+        <brief>Number of directory nodes pre-allocated in the pool.</brief>
+        <assert invalid="$N &lt; 2" />
+      </config>
+      <config name="DRV_CFG_LITTLEFS_FILE_NODES_NUM" default="2">
+        <brief>Number of file nodes pre-allocated in the pool.</brief>
+        <assert invalid="$N &lt; 1" />
+      </config>
+      <verbatim><![CDATA[
+/* Check on paths length settings.*/
+#if VFS_CFG_PATHLEN_MAX < LFS_NAME_MAX
+#error "VFS_CFG_PATHLEN_MAX is lower than LFS_NAME_MAX"
+#endif]]></verbatim>
+    </configs>
+    <types>
+      <class type="regular" name="vfs_littlefs_driver" namespace="lfsdrv"
+        ancestorname="vfs_driver" descr="VFS LittleFS driver">
+        <fields>
+          <field name="mounted" ctype="bool">
+            <brief>LittleFS driver mounted flag.</brief>
+          </field>
+          <field name="lfs" ctype="lfs_t">
+            <brief>LittleFS driver structure.</brief>
+          </field>
+          <field name="cfgp" ctype="const struct lfs_config$I*">
+            <brief>Associated LittleFS configuration.</brief>
+          </field>
+          <field name="cwd" ctype="struct vfs_littlefs_dir_node$I*">
+            <brief>Current working directory node.</brief>
+          </field>
+          <field name="path_cwd" ctype="char$I$N[LFS_NAME_MAX + 1]">
+            <brief>Current working directory path.</brief>
+          </field>
+          <field name="scratch" ctype="char$I$N[LFS_NAME_MAX + 1]">
+            <brief>Path scratch pad.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="true">
+            <param name="cfgp" ctype="const struct lfs_config *" dir="in"><![CDATA[Pointer to @p lfs_config configuration.]]></param>
+            <implementation><![CDATA[
+self->cfgp = cfgp;
+self->cwd  = NULL;
+self->path_cwd[0] = '\0';]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <regular>
+            <method name="lfsdrvMount" ctype="msg_t">
+              <brief>Mounts a LittleFS volume.</brief>
+              <return>The operation result.</return>
+              <api />
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method name="lfsdrvUnmount" ctype="msg_t">
+              <brief>Unmounts a LittleFS volume.</brief>
+              <return>The operation result.</return>
+              <api />
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method name="lfsdrvFormat" ctype="msg_t">
+              <brief>Formats a LittleFS volume.</brief>
+              <return>The operation result.</return>
+              <api />
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+          </regular>
+          <override>
+            <method shortname="setcwd">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="getcwd">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="stat">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="opendir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="openfile">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="unlink">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="rename">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="mkdir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="rmdir">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+    </types>
+    <variables>
+      <variable name="vfs_littlefs_driver_static"
+        ctype="struct vfs_littlefs_driver_static_struct">
+        <brief>Global state of @p vfs_littlefs_driver_c</brief>
+      </variable>
+    </variables>
+    <functions>
+      <function name="__drv_littlefs_init" ctype="void">
+        <brief>Module initialization.</brief>
+        <init />
+        <implementation><![CDATA[
+
+  /* Initializing pools.*/
+  chPoolObjectInit(&vfs_littlefs_driver_static.dir_nodes_pool,
+                   sizeof (vfs_littlefs_dir_node_c),
+                   chCoreAllocAlignedI);
+  chPoolObjectInit(&vfs_littlefs_driver_static.file_nodes_pool,
+                   sizeof (vfs_littlefs_file_node_c),
+                   chCoreAllocAlignedI);
+  chPoolObjectInit(&vfs_littlefs_driver_static.info_nodes_pool,
+                   sizeof (struct lfs_info),
+                   chCoreAllocAlignedI);
+
+  /* Preloading pools.*/
+  chPoolLoadArray(&vfs_littlefs_driver_static.dir_nodes_pool,
+                  &vfs_littlefs_driver_static.dir_nodes[0],
+                  DRV_CFG_LITTLEFS_DIR_NODES_NUM);
+  chPoolLoadArray(&vfs_littlefs_driver_static.file_nodes_pool,
+                  &vfs_littlefs_driver_static.file_nodes[0],
+                  DRV_CFG_LITTLEFS_FILE_NODES_NUM);]]></implementation>
+      </function>
+    </functions>
+  </public>
+  <private>
+    <includes_always>
+      <include style="regular">vfs.h</include>
+    </includes_always>
+    <includes>
+    	<include style="regular">lfs.h</include>
+    </includes>
+    <types>
+      <class type="regular" name="vfs_littlefs_dir_node" namespace="lfsdir"
+        ancestorname="vfs_directory_node" descr="VFS LittleFS directory node">
+        <fields>
+          <field name="dir" ctype="lfs_dir_t">
+            <brief>LittleFS inner @p lfs_dir_t structure.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="false">
+            <param name="driver" ctype="vfs_driver_c *" dir="in">Pointer to
+ the controlling driver.</param>
+            <param name="mode" ctype="vfs_mode_t" dir="in">Node mode flags.</param>
+            <implementation><![CDATA[
+self = __vfsdir_objinit_impl(ip, vmt, (vfs_driver_c *)driver, mode);]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="stat">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="next">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+            <method shortname="first">
+              <implementation><![CDATA[]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+      <class type="regular" name="vfs_littlefs_file_node" namespace="lfsfile"
+        ancestorname="vfs_file_node" descr="VFS LittleFS file node">
+        <implements>
+          <if name="sequential_stream">
+            <method shortname="write">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="put">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="get">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+          </if>
+        </implements>
+        <fields>
+          <field name="file" ctype="lfs_file_t">
+            <brief>LittleFS inner @p lfs_file_t structure.</brief>
+          </field>
+        </fields>
+        <methods>
+          <objinit callsuper="false">
+            <param name="driver" ctype="vfs_driver_c *" dir="in">Pointer to
+ the controlling driver.</param>
+            <param name="mode" ctype="vfs_mode_t" dir="in">Node mode flags.
+            </param>
+            <implementation><![CDATA[
+self = __vfsfile_objinit_impl(ip, vmt, (vfs_driver_c *)driver, mode);]]></implementation>
+          </objinit>
+          <dispose>
+            <implementation><![CDATA[]]></implementation>
+          </dispose>
+          <override>
+            <method shortname="stat">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="read">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="write">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="setpos">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="getpos">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+            <method shortname="getstream">
+              <implementation><![CDATA[
+]]></implementation>
+            </method>
+          </override>
+        </methods>
+      </class>
+      <struct name="vfs_littlefs_driver_static_struct">
+        <brief>Global state of @p vfs_littlefs_driver_c.</brief>
+        <fields>
+          <field name="info_nodes_pool" ctype="memory_pool_t">
+            <brief>Pool of file info objects.</brief>
+          </field>
+          <field name="dir_nodes_pool" ctype="memory_pool_t">
+            <brief>Pool of directory nodes.</brief>
+          </field>
+          <field name="file_nodes_pool" ctype="memory_pool_t">
+            <brief>Pool of file nodes.</brief>
+          </field>
+          <field name="dir_nodes"
+            ctype="vfs_littlefs_dir_node_c$I$N[DRV_CFG_LITTLEFS_DIR_NODES_NUM]">
+            <brief>Static storage of directory nodes.</brief>
+          </field>
+          <field name="file_nodes"
+            ctype="vfs_littlefs_file_node_c$I$N[DRV_CFG_LITTLEFS_FILE_NODES_NUM]">
+            <brief>Static storage of file nodes.</brief>
+          </field>
+        </fields>
+      </struct>
+    </types>
+  </private>
+</module>

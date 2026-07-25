@@ -1,0 +1,5 @@
+==Supported Host Platforms
+GDB has been tested to work properly with MRI on the following platforms so far:
+* macOS Sierra
+* Windows 10
+* Ubuntu 16.04

@@ -1,0 +1,18 @@
+#
+# Proximity data
+#
+uint8 sensor_id                      # Sensor ID
+
+uint3 READING_TYPE_NO_DATA   = 0     # Distance is unknown
+uint3 READING_TYPE_NOT_CONNECTED = 1 # Distance field contains valid distance
+uint3 READING_TYPE_GOOD   = 2        # Distance field contains valid reading for the sensor
+
+uint3 reading_type                   # Sensor Status
+
+uint5 flags                          # Reserved
+uint5 FLAGS_NONE = 0
+
+float16 yaw                          # Degrees in body frame
+float16 pitch                        # Degrees in body frame
+float16 distance                     # Meters
+

@@ -1,0 +1,17 @@
+//
+// Prefix header for all source files of the 'Calc' target in the 'Calc' project
+//
+
+#define DEBUG
+#ifdef DEBUG
+#define DLog(...) NSLog(__VA_ARGS__)
+#else
+#define DLog(...) /* empty*/
+#endif
+
+#define ALog(...) NSLog(__VA_ARGS_)
+#ifdef __OBJC__
+#import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
+#endif
+

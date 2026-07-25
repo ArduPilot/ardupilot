@@ -1,0 +1,5 @@
+<map id="uddi2__bindingTemplate" name="uddi2__bindingTemplate">
+<area shape="rect" id="node2" href="$classuddi2____t_model_instance_details.html" title="Schema urn:uddi&#45;org:api_v2:&quot;tModelInstanceDetails&quot;. " alt="" coords="4,6,203,34"/>
+<area shape="rect" id="node4" href="$classuddi2____hosting_redirector.html" title="Schema urn:uddi&#45;org:api_v2:&quot;hostingRedirector&quot;. " alt="" coords="228,6,400,34"/>
+<area shape="rect" id="node6" href="$classuddi2____access_point.html" title="Schema urn:uddi&#45;org:api_v2:&quot;accessPoint&quot;. " alt="" coords="426,6,565,34"/>
+</map>

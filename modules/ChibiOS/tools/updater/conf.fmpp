@@ -1,0 +1,10 @@
+outputRoot: .
+dataRoot: .
+
+freemarkerLinks: {
+    lib: ../ftl/libs
+}
+
+data : {
+  doc:properties (./values.txt)
+}

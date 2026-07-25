@@ -1,0 +1,377 @@
+
+*** ChibiOS/RT Test Suite
+***
+*** Compiled:     Nov  7 2021 - 14:06:41
+*** Platform:     RP2040
+*** Test Board:   Raspberry Pi Pico
+***
+*** Text size:    57344 bytes
+*** RO data size: 11928 bytes
+*** Data size:    220 bytes
+*** BSS size:     4240 bytes
+
+============================================================================
+=== Test Sequence 1 (Information)
+----------------------------------------------------------------------------
+--- Test Case 1.1 (Port Info)
+--- Architecture:                       ARMv6-M
+--- Core Variant:                       Cortex-M0+
+--- Compiler:                           GCC 10.3.1 20210621 (release)
+--- Port Info:                          Preemption through NMI (SMP)
+--- Natural alignment:                  4
+--- Stack alignment:                    8
+--- Working area alignment:             8
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 1.2 (Kernel Info)
+--- Product:                            ChibiOS/RT
+--- Stable Flag:                        0
+--- Version String:                     7.0.1
+--- Major Number:                       7
+--- Minor Number:                       0
+--- Patch Number:                       1
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 1.3 (Kernel Settings)
+--- CH_CFG_ST_RESOLUTION:               32
+--- CH_CFG_ST_FREQUENCY:                1000000
+--- CH_CFG_INTERVALS_SIZE:              32
+--- CH_CFG_TIME_TYPES_SIZE:             32
+--- CH_CFG_ST_TIMEDELTA:                20
+--- CH_CFG_TIME_QUANTUM:                0
+--- CH_CFG_MEMCORE_SIZE:                0
+--- CH_CFG_NO_IDLE_THREAD:              0
+--- CH_CFG_OPTIMIZE_SPEED:              1
+--- CH_CFG_USE_TM:                      1
+--- CH_CFG_USE_REGISTRY:                1
+--- CH_CFG_USE_WAITEXIT:                1
+--- CH_CFG_USE_SEMAPHORES:              1
+--- CH_CFG_USE_SEMAPHORES_PRIORITY:     0
+--- CH_CFG_USE_MUTEXES:                 1
+--- CH_CFG_USE_MUTEXES_RECURSIVE:       0
+--- CH_CFG_USE_CONDVARS:                1
+--- CH_CFG_USE_CONDVARS_TIMEOUT:        1
+--- CH_CFG_USE_EVENTS:                  1
+--- CH_CFG_USE_EVENTS_TIMEOUT:          1
+--- CH_CFG_USE_MESSAGES:                1
+--- CH_CFG_USE_MESSAGES_PRIORITY:       0
+--- CH_CFG_USE_DYNAMIC:                 1
+--- CH_DBG_STATISTICS:                  0
+--- CH_DBG_SYSTEM_STATE_CHECK:          0
+--- CH_DBG_ENABLE_CHECKS:               0
+--- CH_DBG_ENABLE_ASSERTS:              0
+--- CH_DBG_TRACE_MASK:                  255
+--- CH_DBG_TRACE_BUFFER_SIZE:           128
+--- CH_DBG_ENABLE_STACK_CHECK:          0
+--- CH_DBG_FILL_THREADS:                0
+--- CH_DBG_THREADS_PROFILING:           0
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 2 (System layer and port interface)
+----------------------------------------------------------------------------
+--- Test Case 2.1 (System integrity functionality)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 2.2 (Critical zones functionality)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 2.3 (Interrupts handling functionality)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 3 (Time and Intervals Functionality)
+----------------------------------------------------------------------------
+--- Test Case 3.1 (System Tick Counter functionality)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 3.2 (Time ranges functionality)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 4 (Time Stamps Functionality)
+----------------------------------------------------------------------------
+--- Test Case 4.1 (Time Stamps functionality)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 5 (Threads Functionality)
+----------------------------------------------------------------------------
+--- Test Case 5.1 (Thread Sleep functionality)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 5.2 (Ready List functionality, threads priority order)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 5.3 (Priority change test)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 5.4 (Priority change test with Priority Inheritance)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 6 (Suspend/Resume)
+----------------------------------------------------------------------------
+--- Test Case 6.1 (Suspend and Resume functionality)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 7 (Counter Semaphores)
+----------------------------------------------------------------------------
+--- Test Case 7.1 (Semaphore primitives, no state change)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 7.2 (Semaphore enqueuing test)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 7.3 (Semaphore timeout test)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 7.4 (Testing chSemAddCounterI() functionality)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 7.5 (Testing chSemWaitSignal() functionality)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 7.6 (Testing Binary Semaphores special case)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 8 (Mutexes, Condition Variables and Priority Inheritance)
+----------------------------------------------------------------------------
+--- Test Case 8.1 (Priority enqueuing test)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 8.2 (Priority return verification)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 8.3 (Repeated locks, non recursive scenario)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 8.4 (Condition Variable signal test)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 8.5 (Condition Variable broadcast test)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 8.6 (Condition Variable priority boost test)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 9 (Synchronous Messages)
+----------------------------------------------------------------------------
+--- Test Case 9.1 (Messages Server loop)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 10 (Event Sources and Event Flags)
+----------------------------------------------------------------------------
+--- Test Case 10.1 (Events registration)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 10.2 (Event Flags dispatching)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 10.3 (Events Flags wait using chEvtWaitOne())
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 10.4 (Events Flags wait using chEvtWaitAny())
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 10.5 (Events Flags wait using chEvtWaitAll())
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 10.6 (Events Flags wait timeouts)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 10.7 (Broadcasting using chEvtBroadcast())
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 11 (Dynamic threads)
+----------------------------------------------------------------------------
+--- Test Case 11.1 (Threads creation from Memory Heap)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 11.2 (Threads creation from Memory Pool)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 12 (Benchmarks)
+----------------------------------------------------------------------------
+--- Test Case 12.1 (Messages performance #1)
+--- Score : 404519 msgs/S, 809038 ctxswc/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.2 (Messages performance #2)
+--- Score : 324666 msgs/S, 649332 ctxswc/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.3 (Messages performance #3)
+--- Score : 326362 msgs/S, 652724 ctxswc/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.4 (Context Switch performance)
+--- Score : 1312296 ctxswc/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.5 (Threads performance, full cycle)
+--- Score : 218909 threads/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.6 (Threads performance, create/exit only)
+--- Score : 284731 threads/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.7 (Mass reschedule performance)
+--- Score : 102794 reschedules/S, 616764 ctxswc/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.8 (Round-Robin voluntary reschedule)
+--- Score : 773980 ctxswc/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.9 (Virtual Timers set/reset performance)
+--- Score : 507362 timers/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.10 (Semaphores wait/signal performance)
+--- Score : 1408412 wait+signal/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.11 (Mutexes lock/unlock performance)
+--- Score : 1022468 lock+unlock/S
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 12.12 (RAM Footprint)
+--- OS    : 128 bytes
+--- Thread: 72 bytes
+--- Timer : 24 bytes
+--- Semaph: 12 bytes
+--- Mutex : 16 bytes
+--- CondV.: 8 bytes
+--- EventS: 4 bytes
+--- EventL: 20 bytes
+--- MailB.: 40 bytes
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+
+Final result: SUCCESS
+
+*** ChibiOS OS Library Test Suite
+***
+*** Compiled:     Nov  7 2021 - 14:06:41
+*** Platform:     RP2040
+*** Test Board:   Raspberry Pi Pico
+***
+*** Text size:    57344 bytes
+*** RO data size: 11928 bytes
+*** Data size:    220 bytes
+*** BSS size:     4240 bytes
+
+============================================================================
+=== Test Sequence 1 (Information)
+----------------------------------------------------------------------------
+--- Test Case 1.1 (Port Info)
+--- Architecture:                       ARMv6-M
+--- Core Variant:                       Cortex-M0+
+--- Compiler:                           GCC 10.3.1 20210621 (release)
+--- Port Info:                          Preemption through NMI (SMP)
+--- Natural alignment:                  4
+--- Stack alignment:                    8
+--- Working area alignment:             8
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 1.2 (OS Library Info)
+--- Product:                            ChibiOS/LIB
+--- Stable Flag:                        0
+--- Version String:                     1.3.0
+--- Major Number:                       1
+--- Minor Number:                       3
+--- Patch Number:                       0
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 1.3 (OS Library Settings)
+--- CH_CFG_USE_MAILBOXES:               1
+--- CH_CFG_USE_MEMCORE:                 1
+--- CH_CFG_USE_HEAP:                    1
+--- CH_CFG_USE_MEMPOOLS:                1
+--- CH_CFG_USE_OBJ_FIFOS:               1
+--- CH_CFG_USE_PIPES:                   1
+--- CH_CFG_USE_OBJ_CACHES:              1
+--- CH_CFG_USE_DELEGATES:               1
+--- CH_CFG_USE_FACTORY:                 1
+--- CH_CFG_FACTORY_MAX_NAMES_LENGTH:    8
+--- CH_CFG_FACTORY_OBJECTS_REGISTRY:    1
+--- CH_CFG_FACTORY_GENERIC_BUFFERS:     1
+--- CH_CFG_FACTORY_SEMAPHORES:          1
+--- CH_CFG_FACTORY_MAILBOXES:           1
+--- CH_CFG_FACTORY_OBJ_FIFOS:           1
+--- CH_CFG_FACTORY_PIPES:               1
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 2 (Mailboxes)
+----------------------------------------------------------------------------
+--- Test Case 2.1 (Mailbox normal API, non-blocking tests)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 2.2 (Mailbox I-Class API, non-blocking tests)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 2.3 (Mailbox timeouts)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 3 (Pipes)
+----------------------------------------------------------------------------
+--- Test Case 3.1 (Pipes normal API, non-blocking tests)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 3.2 (Pipe timeouts)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 4 (Jobs Queues)
+----------------------------------------------------------------------------
+--- Test Case 4.1 (Dispatcher test)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 5 (Thread Delegates)
+----------------------------------------------------------------------------
+--- Test Case 5.1 (Dispatcher test)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 6 (Objects Caches)
+----------------------------------------------------------------------------
+--- Test Case 6.1 (Cache initialization)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 7 (Memory Pools)
+----------------------------------------------------------------------------
+--- Test Case 7.1 (Loading and emptying a memory pool)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 7.2 (Loading and emptying a guarded memory pool without waiting)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 7.3 (Guarded Memory Pools timeout)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 8 (Memory Heaps)
+----------------------------------------------------------------------------
+--- Test Case 8.1 (Allocation and fragmentation)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 8.2 (Default Heap)
+--- Result: SUCCESS
+============================================================================
+=== Test Sequence 9 (Objects Factory)
+----------------------------------------------------------------------------
+--- Test Case 9.1 (Objects Registry)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 9.2 (Dynamic Buffers Factory)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 9.3 (Dynamic Semaphores Factory)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 9.4 (Dynamic Mailboxes Factory)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 9.5 (Dynamic Objects FIFOs Factory)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+--- Test Case 9.6 (Dynamic Pipes Factory)
+--- Result: SUCCESS
+----------------------------------------------------------------------------
+
+Final result: SUCCESS
+

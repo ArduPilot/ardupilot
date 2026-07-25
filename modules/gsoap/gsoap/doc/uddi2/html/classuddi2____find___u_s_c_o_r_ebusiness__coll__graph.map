@@ -1,0 +1,7 @@
+<map id="uddi2__find_USCOREbusiness" name="uddi2__find_USCOREbusiness">
+<area shape="rect" id="node2" href="$classuddi2____discovery_u_r_ls.html" title="Schema urn:uddi&#45;org:api_v2:&quot;discoveryURLs&quot;. " alt="" coords="6,5,165,33"/>
+<area shape="rect" id="node4" href="$classuddi2____find_qualifiers.html" title="Schema urn:uddi&#45;org:api_v2:&quot;findQualifiers&quot;. " alt="" coords="12,57,159,85"/>
+<area shape="rect" id="node6" href="$classuddi2____identifier_bag.html" title="Schema urn:uddi&#45;org:api_v2:&quot;identifierBag&quot;. " alt="" coords="14,109,157,137"/>
+<area shape="rect" id="node8" href="$classuddi2____category_bag.html" title="Schema urn:uddi&#45;org:api_v2:&quot;categoryBag&quot;. " alt="" coords="14,161,157,189"/>
+<area shape="rect" id="node10" href="$classuddi2____t_model_bag.html" title="Schema urn:uddi&#45;org:api_v2:&quot;tModelBag&quot;. " alt="" coords="19,213,152,241"/>
+</map>
