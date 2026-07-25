@@ -21,7 +21,6 @@
  */
 
 #pragma once
-
 #include "AP_TemperatureSensor_Backend.h"
 
 #if AP_TEMPERATURE_SENSOR_MCP9808_ENABLED
@@ -33,28 +32,24 @@
 
 class AP_TemperatureSensor_MCP9808 : public AP_TemperatureSensor_Backend {
     using AP_TemperatureSensor_Backend::AP_TemperatureSensor_Backend;
-
 public:
 
     __INITFUNC__ void init(void) override;
 
-
     void update() override {};
 
-
 private:
-
     // update the temperature, called at 20Hz
     void _timer(void);
-
 
     // read a 16-bit big-endian register
     bool read_registers(uint8_t reg, uint16_t &value) const;
 
-
     // write a 16-bit big-endian register
     bool write_register(uint8_t reg, uint16_t value) const;
-};
 
+    // write a 8-bit big-endian register
+    bool write_register8(uint8_t reg, uint8_t value) const;
+};
 
 #endif // AP_TEMPERATURE_SENSOR_MCP9808_ENABLED
