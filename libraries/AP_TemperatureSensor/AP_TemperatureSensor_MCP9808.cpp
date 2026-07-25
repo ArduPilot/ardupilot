@@ -25,11 +25,8 @@
 extern const AP_HAL::HAL &hal;
 
 // MCP9808 register addresses
-#define MCP9808_REG_CONFIG          0x01    // configuration register
 #define MCP9808_REG_AMBIENT_TEMP    0x05    // ambient temperature register
 #define MCP9808_REG_RESOLUTION      0x08    // resolution register
-// Configuration register - continuous conversion mode
-#define MCP9808_CONFIG_VALUE        0x0000
 // Resolution register - 0.25°C resolution (65ms conversion time)
 #define MCP9808_RESOLUTION_VALUE    0x01
 
@@ -43,12 +40,8 @@ void AP_TemperatureSensor_MCP9808::init()
     WITH_SEMAPHORE(_dev->get_semaphore());
     // Increase retries during startup
     _dev->set_retries(10);
-    // Configure sensor for continuous conversion
-    if (!write_register(MCP9808_REG_CONFIG, MCP9808_CONFIG_VALUE)) {
-        return;
-    }
     // Configure sensor resolution
-    if (!write_register(MCP9808_REG_RESOLUTION, MCP9808_RESOLUTION_VALUE)) {
+    if (!write_register8(MCP9808_REG_RESOLUTION, MCP9808_RESOLUTION_VALUE)) {
         return;
     }
     // Reduce retries during normal operation
@@ -88,6 +81,13 @@ bool AP_TemperatureSensor_MCP9808::read_registers(uint8_t reg, uint16_t &value) 
     // MCP9808 registers are 16-bit big endian
     value = UINT16_VALUE(val[0], val[1]);
     return true;
+}
+
+bool AP_TemperatureSensor_MCP9808::write_register8(uint8_t reg, uint8_t value) const
+{
+    // Registers are 8-bit big endian
+    uint8_t buf[2] = {reg, value};
+    return _dev->transfer(buf, sizeof(buf), nullptr, 0);
 }
 
 bool AP_TemperatureSensor_MCP9808::write_register(uint8_t reg, uint16_t value) const
