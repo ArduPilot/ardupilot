@@ -1,0 +1,1264 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/rocks/protos/Rock.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Pine.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Oak.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Cypress.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/PalmTree.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/Sassafras.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/trees/protos/BigSassafras.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/plants/protos/BunchOfSunFlowers.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/plants/protos/PottedTree.proto"
+
+WorldInfo {
+  title "ugv_rover"
+  basicTimeStep 8
+  contactProperties [
+    ContactProperties {
+      material1 "wheel"
+      material2 "floor"
+      coulombFriction [
+        1.3
+      ]
+      bounce 0
+      softCFM 0.0001
+    }
+    ContactProperties {
+      material1 "wheel"
+      maxContactJoints 20
+    }
+  ]
+}
+Viewpoint {
+  orientation 0.2166687918377753 -0.03562272804904877 -0.975595026581164 3.457285744320197
+  position 9.40020438095882 4.324281223719716 4.1262482131743985
+  follow "ugv_rover"
+  followSmoothness 0.2
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  contactMaterial "floor"
+  floorSize 10 10
+  floorTileSize 1 1
+  wallHeight 0.3
+}
+Rock {
+  translation 1.5 0 0
+  name "rock_ahead"
+}
+Rock {
+  translation 1.2 -0.9 0
+  rotation 0 0 1 0.8
+  name "rock_side"
+  scale 1.3
+}
+Rock {
+  translation -1.3 1 0
+  rotation 0 0 1 2.1
+  name "rock_small"
+  scale 0.7
+}
+Rock {
+  translation 1.23 -4.18 0
+  rotation 0 0 1 1.402
+  name "rock_1"
+  scale 0.91
+}
+Rock {
+  translation 1.55 3.45 0
+  rotation 0 0 1 2.651
+  name "rock_2"
+  type "flat"
+  scale 0.63
+}
+Rock {
+  translation -2.48 0.05 0
+  rotation 0 0 1 1.249
+  name "rock_3"
+  scale 0.54
+}
+Rock {
+  translation 0.4 -2.46 0
+  rotation 0 0 1 5.086
+  name "rock_4"
+  type "flat"
+  scale 1.38
+}
+Rock {
+  translation 2.69 1.74 0
+  rotation 0 0 1 0.977
+  name "rock_5"
+  scale 1.01
+}
+Rock {
+  translation -1.44 -3.58 0
+  rotation 0 0 1 5.325
+  name "rock_6"
+  scale 0.65
+}
+Rock {
+  translation 0.32 4.16 0
+  rotation 0 0 1 3.469
+  name "rock_7"
+  scale 1.07
+}
+Rock {
+  translation 1.04 3.18 0
+  rotation 0 0 1 4.427
+  name "rock_8"
+  type "flat"
+  scale 1.37
+}
+Rock {
+  translation -2.39 -1.85 0
+  rotation 0 0 1 1.463
+  name "rock_9"
+  type "flat"
+  scale 0.62
+}
+Rock {
+  translation -1.95 1.19 0
+  rotation 0 0 1 2.326
+  name "rock_10"
+  type "flat"
+  scale 1.05
+}
+Rock {
+  translation -2.05 3.84 0
+  rotation 0 0 1 3.827
+  name "rock_11"
+  type "flat"
+  scale 1.47
+}
+Rock {
+  translation 2.02 -2.96 0
+  rotation 0 0 1 6.217
+  name "rock_12"
+  scale 1.07
+}
+Rock {
+  translation 0.5 1.62 0
+  rotation 0 0 1 4.876
+  name "rock_13"
+  type "flat"
+  scale 1.76
+}
+Rock {
+  translation -4.12 -1.62 0
+  rotation 0 0 1 1.326
+  name "rock_14"
+  scale 0.9
+}
+Rock {
+  translation 3.31 -1.63 0
+  rotation 0 0 1 2.486
+  name "rock_15"
+  scale 1.48
+}
+Rock {
+  translation -0.36 -2.07 0
+  rotation 0 0 1 3.527
+  name "rock_16"
+  scale 0.87
+}
+Rock {
+  translation -0.89 -2.47 0
+  rotation 0 0 1 3.201
+  name "rock_17"
+  type "flat"
+  scale 2
+}
+Rock {
+  translation -3.99 -3.44 0
+  rotation 0 0 1 4.977
+  name "rock_18"
+  scale 1.44
+}
+Rock {
+  translation -3.84 -1.04 0
+  rotation 0 0 1 3.325
+  name "rock_19"
+  scale 1.99
+}
+Rock {
+  translation 3.17 -4.3 0
+  rotation 0 0 1 4.283
+  name "rock_20"
+  scale 1.58
+}
+Rock {
+  translation 1.04 0.29 0
+  rotation 0 0 1 3.681
+  name "rock_21"
+  type "flat"
+  scale 1.05
+}
+Rock {
+  translation 2.85 -1.02 0
+  rotation 0 0 1 5.791
+  name "rock_22"
+  scale 1.68
+}
+Rock {
+  translation 4.33 -2.6 0
+  rotation 0 0 1 5.732
+  name "rock_23"
+  type "flat"
+  scale 1.48
+}
+Rock {
+  translation -3.82 1.75 0
+  rotation 0 0 1 2.536
+  name "rock_24"
+  scale 1.02
+}
+Rock {
+  translation 2.93 0.83 0
+  rotation 0 0 1 6.017
+  name "rock_25"
+  scale 1.19
+}
+Rock {
+  translation -1.64 1.68 0
+  rotation 0 0 1 2.872
+  name "rock_26"
+  scale 1.87
+}
+Rock {
+  translation -2.63 -3.81 0
+  rotation 0 0 1 3.887
+  name "rock_27"
+  scale 1.29
+}
+Rock {
+  translation 1.35 1.05 0
+  rotation 0 0 1 3.99
+  name "rock_28"
+  type "flat"
+  scale 1.51
+}
+Rock {
+  translation -1.89 -0.42 0
+  rotation 0 0 1 5.015
+  name "rock_29"
+  scale 1.87
+}
+Rock {
+  translation -0.6 2.56 0
+  rotation 0 0 1 4.876
+  name "rock_30"
+  scale 1.32
+}
+Rock {
+  translation 2.42 -3.96 0
+  rotation 0 0 1 4.628
+  name "rock_31"
+  scale 1.24
+}
+Rock {
+  translation 3.51 2.68 0
+  rotation 0 0 1 4.726
+  name "rock_32"
+  scale 1.23
+}
+Rock {
+  translation -1.3 0.51 0
+  rotation 0 0 1 1.617
+  name "rock_33"
+  type "flat"
+  scale 1.35
+}
+Rock {
+  translation -3.25 -3.88 0
+  rotation 0 0 1 5.152
+  name "rock_34"
+  type "flat"
+  scale 0.76
+}
+Rock {
+  translation -0.64 0.94 0
+  rotation 0 0 1 5.85
+  name "rock_35"
+  scale 1.82
+}
+Rock {
+  translation 1.86 3.02 0
+  rotation 0 0 1 1.222
+  name "rock_36"
+  scale 1.09
+}
+Rock {
+  translation -3 -0.27 0
+  rotation 0 0 1 2.021
+  name "rock_37"
+  type "flat"
+  scale 1.55
+}
+Rock {
+  translation 0.41 2.47 0
+  rotation 0 0 1 1.414
+  name "rock_38"
+  scale 1.81
+}
+Rock {
+  translation -0.53 -1.06 0
+  rotation 0 0 1 0.905
+  name "rock_39"
+  scale 1.45
+}
+Rock {
+  translation 2.31 -2.32 0
+  rotation 0 0 1 0.539
+  name "rock_40"
+  scale 1.72
+}
+Rock {
+  translation -1.39 3 0
+  rotation 0 0 1 3.312
+  name "rock_41"
+  scale 0.91
+}
+Rock {
+  translation -0.98 -3.17 0
+  rotation 0 0 1 3.168
+  name "rock_42"
+  scale 1.79
+}
+Rock {
+  translation 1.23 -3.4 0
+  rotation 0 0 1 0.328
+  name "rock_43"
+  scale 0.86
+}
+Rock {
+  translation 3.77 0.7 0
+  rotation 0 0 1 5.381
+  name "rock_44"
+  scale 0.65
+}
+Rock {
+  translation -0.03 -4.26 0
+  rotation 0 0 1 6.144
+  name "rock_45"
+  scale 0.72
+}
+Rock {
+  translation 3.79 2.07 0
+  rotation 0 0 1 4.968
+  name "rock_46"
+  type "flat"
+  scale 0.53
+}
+Rock {
+  translation 2.22 1.3 0
+  rotation 0 0 1 5.022
+  name "rock_47"
+  scale 1.57
+}
+Rock {
+  translation -3.5 -2.9 0
+  rotation 0 0 1 5.703
+  name "rock_48"
+  scale 1.58
+}
+Rock {
+  translation 3.16 -3.02 0
+  rotation 0 0 1 0.492
+  name "rock_49"
+  scale 0.8
+}
+Rock {
+  translation -3.88 -2.4 0
+  rotation 0 0 1 2.063
+  name "rock_50"
+  scale 1.68
+}
+Rock {
+  translation -3.75 3.06 0
+  rotation 0 0 1 2.268
+  name "rock_51"
+  scale 1.49
+}
+Rock {
+  translation -4.16 3.85 0
+  rotation 0 0 1 5.982
+  name "rock_52"
+  type "flat"
+  scale 1.52
+}
+Rock {
+  translation 0.44 -3.39 0
+  rotation 0 0 1 2.502
+  name "rock_53"
+  scale 1.48
+}
+Rock {
+  translation 0.55 -1.87 0
+  rotation 0 0 1 0.044
+  name "rock_54"
+  scale 1.53
+}
+Rock {
+  translation -1.77 -1.13 0
+  rotation 0 0 1 2.026
+  name "rock_55"
+  scale 1.65
+}
+Rock {
+  translation -3.93 2.3 0
+  rotation 0 0 1 3.916
+  name "rock_56"
+  scale 1.7
+}
+Rock {
+  translation 4.1 1.23 0
+  rotation 0 0 1 0.993
+  name "rock_57"
+  type "flat"
+  scale 1.68
+}
+Rock {
+  translation -2.43 -2.76 0
+  rotation 0 0 1 6.031
+  name "rock_58"
+  scale 0.53
+}
+Rock {
+  translation -0.08 2.88 0
+  rotation 0 0 1 4.883
+  name "rock_59"
+  scale 0.99
+}
+Rock {
+  translation -3.49 0.34 0
+  rotation 0 0 1 0.389
+  name "rock_60"
+  scale 1.55
+}
+Rock {
+  translation -0.89 -4.06 0
+  rotation 0 0 1 6.159
+  name "rock_61"
+  type "flat"
+  scale 1.1
+}
+Rock {
+  translation -0.38 4.33 0
+  rotation 0 0 1 3.862
+  name "rock_62"
+  scale 1.4
+}
+Rock {
+  translation 4.02 -3.61 0
+  rotation 0 0 1 4.232
+  name "rock_63"
+  scale 1.97
+}
+Rock {
+  translation -3.11 -2.39 0
+  rotation 0 0 1 1.029
+  name "rock_64"
+  type "flat"
+  scale 1.43
+}
+Rock {
+  translation -2.5 2.85 0
+  rotation 0 0 1 1.688
+  name "rock_65"
+  scale 1.82
+}
+Rock {
+  translation -0.14 -3.07 0
+  rotation 0 0 1 1.287
+  name "rock_66"
+  scale 0.66
+}
+Rock {
+  translation -4.02 -4.38 0
+  rotation 0 0 1 2.21
+  name "rock_67"
+  scale 0.86
+}
+Rock {
+  translation 1.38 2.03 0
+  rotation 0 0 1 3.299
+  name "rock_68"
+  scale 1.13
+}
+Rock {
+  translation 2.03 -0.85 0
+  rotation 0 0 1 1.163
+  name "rock_69"
+  scale 0.8
+}
+Rock {
+  translation 1.88 3.9 0
+  rotation 0 0 1 4.159
+  name "rock_70"
+  type "flat"
+  scale 1.3
+}
+Pine {
+  translation 0.012046 4.05396 0
+  rotation 0 0 1 6.161
+  name "tree_1"
+}
+Oak {
+  translation 2.63 -0.01 0
+  rotation 0 0 1 4.336
+  name "tree_2"
+}
+Cypress {
+  translation 3.03028 1.46588 0
+  rotation 0 0 1 5.634
+  name "tree_3"
+}
+PalmTree {
+  translation 4.19 -0.29 0
+  rotation 0 0 1 1.72
+  name "tree_4"
+}
+Sassafras {
+  translation -4.1348 1.9036 0
+  rotation 0 0 1 1.38
+  name "tree_5"
+}
+BigSassafras {
+  translation 3.46187 -3.7135 0
+  rotation 0 0 1 4.058
+  name "tree_6"
+}
+Pine {
+  translation -4.29715 -1.84748 0
+  rotation 0 0 1 3.623
+  name "tree_7"
+}
+Oak {
+  translation 2.77 3.42 0
+  rotation 0 0 1 5.961
+  name "tree_8"
+}
+Cypress {
+  translation -3.32 3.73 0
+  rotation 0 0 1 5.938
+  name "tree_9"
+}
+PalmTree {
+  translation -3.90992 -3.88102 0
+  rotation 0 0 1 4.99
+  name "tree_10"
+}
+BunchOfSunFlowers {
+  translation -4.06 0.99 0
+  rotation 0 0 1 0.713
+  name "sunflowers_1"
+}
+PottedTree {
+  translation -0.85 3.4 0
+  rotation 0 0 1 0.461
+  name "potted_tree_2"
+}
+BunchOfSunFlowers {
+  translation 4.18 3.7 0
+  rotation 0 0 1 4.475
+  name "sunflowers_3"
+}
+PottedTree {
+  translation -1.81 -2.98 0
+  rotation 0 0 1 5.325
+  name "potted_tree_4"
+}
+BunchOfSunFlowers {
+  translation 1.03 4.01 0
+  rotation 0 0 1 1.979
+  name "sunflowers_5"
+}
+PottedTree {
+  translation 4.19 2.89 0
+  rotation 0 0 1 1.673
+  name "potted_tree_6"
+}
+Solid {
+  translation 3.33 1.52 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.82 0.71 0.55
+        roughness 1
+        metalness 0
+      }
+      geometry ElevationGrid {
+        height [
+          0.009, 0.017, 0.028, 0.041, 0.051, 0.055, 0.051, 0.041, 0.028, 0.017, 0.009, 0.017, 0.033, 0.055, 0.08, 0.1, 0.107, 0.1, 0.08, 0.055, 0.033, 0.017, 0.028, 0.055, 0.092, 0.134, 0.167, 0.18, 0.167, 0.134, 0.092, 0.055, 0.028, 0.041, 0.08, 0.134, 0.194, 0.242, 0.26, 0.242, 0.194, 0.134, 0.08, 0.041, 0.051, 0.1, 0.167, 0.242, 0.302, 0.325, 0.302, 0.242, 0.167, 0.1, 0.051, 0.055, 0.107, 0.18, 0.26, 0.325, 0.35, 0.325, 0.26, 0.18, 0.107, 0.055, 0.051, 0.1, 0.167, 0.242, 0.302, 0.325, 0.302, 0.242, 0.167, 0.1, 0.051, 0.041, 0.08, 0.134, 0.194, 0.242, 0.26, 0.242, 0.194, 0.134, 0.08, 0.041, 0.028, 0.055, 0.092, 0.134, 0.167, 0.18, 0.167, 0.134, 0.092, 0.055, 0.028, 0.017, 0.033, 0.055, 0.08, 0.1, 0.107, 0.1, 0.08, 0.055, 0.033, 0.017, 0.009, 0.017, 0.028, 0.041, 0.051, 0.055, 0.051, 0.041, 0.028, 0.017, 0.009
+        ]
+        xDimension 11
+        xSpacing 0.3
+      }
+    }
+  ]
+  name "sand_dune_1"
+}
+Solid {
+  translation -1.2 4.06 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.82 0.71 0.55
+        roughness 1
+        metalness 0
+      }
+      geometry ElevationGrid {
+        height [
+          0.009, 0.017, 0.028, 0.041, 0.051, 0.055, 0.051, 0.041, 0.028, 0.017, 0.009, 0.017, 0.033, 0.055, 0.08, 0.1, 0.107, 0.1, 0.08, 0.055, 0.033, 0.017, 0.028, 0.055, 0.092, 0.134, 0.167, 0.18, 0.167, 0.134, 0.092, 0.055, 0.028, 0.041, 0.08, 0.134, 0.194, 0.242, 0.26, 0.242, 0.194, 0.134, 0.08, 0.041, 0.051, 0.1, 0.167, 0.242, 0.302, 0.325, 0.302, 0.242, 0.167, 0.1, 0.051, 0.055, 0.107, 0.18, 0.26, 0.325, 0.35, 0.325, 0.26, 0.18, 0.107, 0.055, 0.051, 0.1, 0.167, 0.242, 0.302, 0.325, 0.302, 0.242, 0.167, 0.1, 0.051, 0.041, 0.08, 0.134, 0.194, 0.242, 0.26, 0.242, 0.194, 0.134, 0.08, 0.041, 0.028, 0.055, 0.092, 0.134, 0.167, 0.18, 0.167, 0.134, 0.092, 0.055, 0.028, 0.017, 0.033, 0.055, 0.08, 0.1, 0.107, 0.1, 0.08, 0.055, 0.033, 0.017, 0.009, 0.017, 0.028, 0.041, 0.051, 0.055, 0.051, 0.041, 0.028, 0.017, 0.009
+        ]
+        xDimension 11
+        xSpacing 0.3
+      }
+    }
+  ]
+  name "sand_dune_2"
+}
+Solid {
+  translation -4.05 -0.18 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.82 0.71 0.55
+        roughness 1
+        metalness 0
+      }
+      geometry ElevationGrid {
+        height [
+          0.009, 0.017, 0.028, 0.041, 0.051, 0.055, 0.051, 0.041, 0.028, 0.017, 0.009, 0.017, 0.033, 0.055, 0.08, 0.1, 0.107, 0.1, 0.08, 0.055, 0.033, 0.017, 0.028, 0.055, 0.092, 0.134, 0.167, 0.18, 0.167, 0.134, 0.092, 0.055, 0.028, 0.041, 0.08, 0.134, 0.194, 0.242, 0.26, 0.242, 0.194, 0.134, 0.08, 0.041, 0.051, 0.1, 0.167, 0.242, 0.302, 0.325, 0.302, 0.242, 0.167, 0.1, 0.051, 0.055, 0.107, 0.18, 0.26, 0.325, 0.35, 0.325, 0.26, 0.18, 0.107, 0.055, 0.051, 0.1, 0.167, 0.242, 0.302, 0.325, 0.302, 0.242, 0.167, 0.1, 0.051, 0.041, 0.08, 0.134, 0.194, 0.242, 0.26, 0.242, 0.194, 0.134, 0.08, 0.041, 0.028, 0.055, 0.092, 0.134, 0.167, 0.18, 0.167, 0.134, 0.092, 0.055, 0.028, 0.017, 0.033, 0.055, 0.08, 0.1, 0.107, 0.1, 0.08, 0.055, 0.033, 0.017, 0.009, 0.017, 0.028, 0.041, 0.051, 0.055, 0.051, 0.041, 0.028, 0.017, 0.009
+        ]
+        xDimension 11
+        xSpacing 0.3
+      }
+    }
+  ]
+  name "sand_dune_3"
+}
+Robot {
+  translation 0 0 0.665
+  rotation 0 0 1 0
+  name "ugv_rover"
+  controller "ugv_teleop"
+  children [
+    Shape {
+      appearance PBRAppearance { baseColor 0.36 0.38 0.3 roughness 0.7 metalness 0.1 }
+      geometry Box { size 1.83 0.8 0.61 }
+    }
+    Pose {
+      translation 0.75 0 0.325
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0 0.85 0.85 roughness 0.5 metalness 0.3 }
+          geometry Box { size 0.35 0.5 0.3 }
+        }
+      ]
+    }
+    Pose {
+      translation 0.885 0 -0.165
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.1 0.85 0.1 roughness 0.5 metalness 0.3 }
+          geometry Box { size 0.08 0.72 0.18 }
+        }
+      ]
+    }
+    Pose {
+      translation -0.885 0 -0.165
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.85 0.1 0.1 roughness 0.5 metalness 0.3 }
+          geometry Box { size 0.08 0.72 0.18 }
+        }
+      ]
+    }
+    Pose {
+      translation 0.15 0.17 0.385
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.15 0.15 0.15 roughness 0.6 metalness 0.2 }
+          geometry Box { size 0.3 0.24 0.16 }
+        }
+      ]
+    }
+    Pose {
+      translation 0.15 -0.17 0.385
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.15 0.15 0.15 roughness 0.6 metalness 0.2 }
+          geometry Box { size 0.3 0.24 0.16 }
+        }
+      ]
+    }
+    Pose {
+      translation -0.35 0.17 0.385
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.15 0.15 0.15 roughness 0.6 metalness 0.2 }
+          geometry Box { size 0.3 0.24 0.16 }
+        }
+      ]
+    }
+    Pose {
+      translation -0.35 -0.17 0.385
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.15 0.15 0.15 roughness 0.6 metalness 0.2 }
+          geometry Box { size 0.3 0.24 0.16 }
+        }
+      ]
+    }
+    Pose {
+      translation -0.5 0.18 0.755
+      children [
+        Shape { appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 0.4 metalness 0.5 }
+          geometry Cylinder { radius 0.015 height 0.9 } }
+      ]
+    }
+    Pose {
+      translation -0.5 -0.18 0.665
+      children [
+        Shape { appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 0.4 metalness 0.5 }
+          geometry Cylinder { radius 0.015 height 0.72 } }
+      ]
+    }
+    SliderJoint {
+      jointParameters JointParameters {
+        axis 0 0 1
+        minStop -0.12
+        maxStop 0.12
+        springConstant 7000
+        dampingConstant 800
+      }
+      endPoint DEF WHEEL_WHEEL_FL_CARRIER Solid {
+        translation 0.6 0.55 -0.4364
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.2 0.2 0.2 roughness 0.8 metalness 0.3 }
+            geometry Box { size 0.15 0.12 0.08 }
+          }
+          Pose {
+            translation 0 -0.125 0.1157
+            rotation 1 0 0 0.824016
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.15 0.15 0.15 roughness 0.7 metalness 0.4 }
+                geometry Box { size 0.08 0.09 0.340655 }
+              }
+            ]
+          }
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 0 0 1
+              minStop -0.575
+              maxStop 0.575
+            }
+            device [
+              RotationalMotor { name "steer_fl" controlPID 100 0 10 maxVelocity 3 maxTorque 2000 }
+              PositionSensor { name "steer_fl_sensor" }
+            ]
+            endPoint DEF WHEEL_WHEEL_FL_KNUCKLE Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.2 0.2 0.2 roughness 0.8 metalness 0.3 }
+                  geometry Box { size 0.08 0.08 0.12 }
+                }
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 0 1 0
+              anchor 0.08 0 0
+              dampingConstant 1.0
+            }
+            endPoint DEF WHEEL_WHEEL_FL Solid {
+              translation 0.08 0 0
+              rotation 1 0 0 1.5708
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 1 metalness 0 }
+                  geometry Cylinder { radius 0.2286 height 0.18 }
+                }
+                Shape {
+                  appearance PBRAppearance { baseColor 0.1 0.9 0.1 roughness 0.4 metalness 0 }
+                  geometry Box { size 0.43434 0.05 0.19 }
+                }
+              ]
+              name "wheel_fl"
+              contactMaterial "wheel"
+              boundingObject Cylinder { radius 0.2286 height 0.18 }
+              physics Physics { density -1 mass 12 }
+            }
+          }
+              ]
+              name "wheel_fl_knuckle"
+              boundingObject Box { size 0.08 0.08 0.12 }
+              physics Physics { density -1 mass 3 }
+            }
+          }
+        ]
+        name "wheel_fl_carrier"
+        boundingObject Box { size 0.15 0.12 0.08 }
+        physics Physics { density -1 mass 4 }
+      }
+    }
+    SliderJoint {
+      jointParameters JointParameters {
+        axis 0 0 1
+        minStop -0.12
+        maxStop 0.12
+        springConstant 7000
+        dampingConstant 800
+      }
+      endPoint DEF WHEEL_WHEEL_FR_CARRIER Solid {
+        translation 0.6 -0.55 -0.4364
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.2 0.2 0.2 roughness 0.8 metalness 0.3 }
+            geometry Box { size 0.15 0.12 0.08 }
+          }
+          Pose {
+            translation 0 0.125 0.1157
+            rotation 1 0 0 -0.824016
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.15 0.15 0.15 roughness 0.7 metalness 0.4 }
+                geometry Box { size 0.08 0.09 0.340655 }
+              }
+            ]
+          }
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 0 0 1
+              minStop -0.575
+              maxStop 0.575
+            }
+            device [
+              RotationalMotor { name "steer_fr" controlPID 100 0 10 maxVelocity 3 maxTorque 2000 }
+              PositionSensor { name "steer_fr_sensor" }
+            ]
+            endPoint DEF WHEEL_WHEEL_FR_KNUCKLE Solid {
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.2 0.2 0.2 roughness 0.8 metalness 0.3 }
+                  geometry Box { size 0.08 0.08 0.12 }
+                }
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 0 1 0
+              anchor 0.08 0 0
+              dampingConstant 1.0
+            }
+            endPoint DEF WHEEL_WHEEL_FR Solid {
+              translation 0.08 0 0
+              rotation 1 0 0 1.5708
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 1 metalness 0 }
+                  geometry Cylinder { radius 0.2286 height 0.18 }
+                }
+                Shape {
+                  appearance PBRAppearance { baseColor 0.1 0.9 0.1 roughness 0.4 metalness 0 }
+                  geometry Box { size 0.43434 0.05 0.19 }
+                }
+              ]
+              name "wheel_fr"
+              contactMaterial "wheel"
+              boundingObject Cylinder { radius 0.2286 height 0.18 }
+              physics Physics { density -1 mass 12 }
+            }
+          }
+              ]
+              name "wheel_fr_knuckle"
+              boundingObject Box { size 0.08 0.08 0.12 }
+              physics Physics { density -1 mass 3 }
+            }
+          }
+        ]
+        name "wheel_fr_carrier"
+        boundingObject Box { size 0.15 0.12 0.08 }
+        physics Physics { density -1 mass 4 }
+      }
+    }
+    SliderJoint {
+      jointParameters JointParameters {
+        axis 0 0 1
+        minStop -0.12
+        maxStop 0.12
+        springConstant 7000
+        dampingConstant 800
+      }
+      endPoint DEF WHEEL_WHEEL_RL_CARRIER Solid {
+        translation -0.6 0.55 -0.4364
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.2 0.2 0.2 roughness 0.8 metalness 0.3 }
+            geometry Box { size 0.15 0.12 0.08 }
+          }
+          Pose {
+            translation 0 -0.125 0.1157
+            rotation 1 0 0 0.824016
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.15 0.15 0.15 roughness 0.7 metalness 0.4 }
+                geometry Box { size 0.08 0.09 0.340655 }
+              }
+            ]
+          }
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 0 1 0
+              anchor 0 0 0
+            }
+            device [
+              RotationalMotor { name "wheel_rl" maxVelocity 30 maxTorque 200 }
+            ]
+            endPoint DEF WHEEL_WHEEL_RL Solid {
+              translation 0 0 0
+              rotation 1 0 0 1.5708
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 1 metalness 0 }
+                  geometry Cylinder { radius 0.2286 height 0.18 }
+                }
+                Shape {
+                  appearance PBRAppearance { baseColor 0.9 0.1 0.1 roughness 0.4 metalness 0 }
+                  geometry Box { size 0.43434 0.05 0.19 }
+                }
+              ]
+              name "wheel_rl"
+              contactMaterial "wheel"
+              boundingObject Cylinder { radius 0.2286 height 0.18 }
+              physics Physics { density -1 mass 12 }
+            }
+          }
+        ]
+        name "wheel_rl_carrier"
+        boundingObject Box { size 0.15 0.12 0.08 }
+        physics Physics { density -1 mass 4 }
+      }
+    }
+    SliderJoint {
+      jointParameters JointParameters {
+        axis 0 0 1
+        minStop -0.12
+        maxStop 0.12
+        springConstant 7000
+        dampingConstant 800
+      }
+      endPoint DEF WHEEL_WHEEL_RR_CARRIER Solid {
+        translation -0.6 -0.55 -0.4364
+        children [
+          Shape {
+            appearance PBRAppearance { baseColor 0.2 0.2 0.2 roughness 0.8 metalness 0.3 }
+            geometry Box { size 0.15 0.12 0.08 }
+          }
+          Pose {
+            translation 0 0.125 0.1157
+            rotation 1 0 0 -0.824016
+            children [
+              Shape {
+                appearance PBRAppearance { baseColor 0.15 0.15 0.15 roughness 0.7 metalness 0.4 }
+                geometry Box { size 0.08 0.09 0.340655 }
+              }
+            ]
+          }
+          HingeJoint {
+            jointParameters HingeJointParameters {
+              axis 0 1 0
+              anchor 0 0 0
+            }
+            device [
+              RotationalMotor { name "wheel_rr" maxVelocity 30 maxTorque 200 }
+            ]
+            endPoint DEF WHEEL_WHEEL_RR Solid {
+              translation 0 0 0
+              rotation 1 0 0 1.5708
+              children [
+                Shape {
+                  appearance PBRAppearance { baseColor 0.05 0.05 0.05 roughness 1 metalness 0 }
+                  geometry Cylinder { radius 0.2286 height 0.18 }
+                }
+                Shape {
+                  appearance PBRAppearance { baseColor 0.9 0.1 0.1 roughness 0.4 metalness 0 }
+                  geometry Box { size 0.43434 0.05 0.19 }
+                }
+              ]
+              name "wheel_rr"
+              contactMaterial "wheel"
+              boundingObject Cylinder { radius 0.2286 height 0.18 }
+              physics Physics { density -1 mass 12 }
+            }
+          }
+        ]
+        name "wheel_rr_carrier"
+        boundingObject Box { size 0.15 0.12 0.08 }
+        physics Physics { density -1 mass 4 }
+      }
+    }
+    Camera { translation 0.895 0 0.355 name "camera" width 640 height 480 }
+    Pose {
+      translation 0.905 0 0.355
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.1 0.3 0.95 emissiveColor 0 0.1 0.35 roughness 0.4 metalness 0.2 }
+          geometry Sphere { radius 0.05 }
+        }
+      ]
+    }
+    Camera {
+      translation 0 0 30
+      rotation 0 1 0 1.5708
+      name "map_camera"
+      fieldOfView 1.0
+      width 400
+      height 400
+    }
+    GPS {
+    }
+    InertialUnit {
+      name "imu"
+    }
+    Gyro {
+    }
+    Accelerometer {
+      name "accel"
+    }
+    Pose {
+      translation 0 0 0.355
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.95 0.5 0.1 emissiveColor 0.35 0.15 0 roughness 0.4 metalness 0.2 }
+          geometry Sphere { radius 0.06 }
+        }
+      ]
+    }
+    DistanceSensor {
+      translation 0.865 0.22 -0.1
+      rotation 0 0 1 0.3
+      name "ds_left"
+      lookupTable [ 0 0 0, 8 8 0 ]
+    }
+    DistanceSensor {
+      translation 0.865 -0.22 -0.1
+      rotation 0 0 1 -0.3
+      name "ds_right"
+      lookupTable [ 0 0 0, 8 8 0 ]
+    }
+    Pose {
+      translation 0.865 0.22 -0.1
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.95 0.85 0.1 emissiveColor 0.3 0.25 0 roughness 0.4 metalness 0.2 }
+          geometry Sphere { radius 0.045 }
+        }
+      ]
+    }
+    Pose {
+      translation 0.865 -0.22 -0.1
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 0.95 0.85 0.1 emissiveColor 0.3 0.25 0 roughness 0.4 metalness 0.2 }
+          geometry Sphere { radius 0.045 }
+        }
+      ]
+    }
+    Radar {
+      translation 0.865 0.35 -0.1
+      rotation 0 0 1 0.20944
+      name "radar_fl"
+      # --- Hi-Link HLK-LD2451 24 GHz FMCW vehicle radar ---
+      minRange 0.5
+      maxRange 100
+      horizontalFieldOfView 0.698
+      verticalFieldOfView 0.2
+      minAbsoluteRadialSpeed 1.0
+      minRadialSpeed -33.3
+      maxRadialSpeed 33.3
+      cellDistance 0.75
+      frequency 24.0
+    }
+    Pose {
+      translation 0.865 0.35 -0.09
+      rotation 0 0 1 0.20944
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 1 0 1 roughness 0.3 metalness 0.6 emissiveColor 0.3 0 0.3 }
+          geometry Sphere { radius 0.05 }
+        }
+        Shape {
+          appearance PBRAppearance { baseColor 1 0 1 transparency 0.9 roughness 1 metalness 0 }
+          geometry IndexedFaceSet {
+            coord Coordinate {
+              point [
+                0 0 -0.09
+                9.3972 -3.4196 -0.09
+                9.6594 -2.5877 -0.09
+                9.8481 -1.7362 -0.09
+                9.9620 -0.8714 -0.09
+                10.0000 0.0000 -0.09
+                9.9620 0.8714 -0.09
+                9.8481 1.7362 -0.09
+                9.6594 2.5877 -0.09
+                9.3972 3.4196 -0.09
+              ]
+            }
+            coordIndex [
+              0, 1, 2, -1, 0, 2, 3, -1, 0, 3, 4, -1, 0, 4, 5, -1, 0, 5, 6, -1, 0, 6, 7, -1, 0, 7, 8, -1, 0, 8, 9, -1, 0, 2, 1, -1, 0, 3, 2, -1, 0, 4, 3, -1, 0, 5, 4, -1, 0, 6, 5, -1, 0, 7, 6, -1, 0, 8, 7, -1, 0, 9, 8, -1
+            ]
+          }
+        }
+      ]
+    }
+    Radar {
+      translation 0.865 -0.35 -0.1
+      rotation 0 0 1 -0.20944
+      name "radar_fr"
+      # --- Hi-Link HLK-LD2451 24 GHz FMCW vehicle radar ---
+      minRange 0.5
+      maxRange 100
+      horizontalFieldOfView 0.698
+      verticalFieldOfView 0.2
+      minAbsoluteRadialSpeed 1.0
+      minRadialSpeed -33.3
+      maxRadialSpeed 33.3
+      cellDistance 0.75
+      frequency 24.0
+    }
+    Pose {
+      translation 0.865 -0.35 -0.08
+      rotation 0 0 1 -0.20944
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 1 0 1 roughness 0.3 metalness 0.6 emissiveColor 0.3 0 0.3 }
+          geometry Sphere { radius 0.05 }
+        }
+        Shape {
+          appearance PBRAppearance { baseColor 1 0 1 transparency 0.9 roughness 1 metalness 0 }
+          geometry IndexedFaceSet {
+            coord Coordinate {
+              point [
+                0 0 -0.09
+                9.3972 -3.4196 -0.09
+                9.6594 -2.5877 -0.09
+                9.8481 -1.7362 -0.09
+                9.9620 -0.8714 -0.09
+                10.0000 0.0000 -0.09
+                9.9620 0.8714 -0.09
+                9.8481 1.7362 -0.09
+                9.6594 2.5877 -0.09
+                9.3972 3.4196 -0.09
+              ]
+            }
+            coordIndex [
+              0, 1, 2, -1, 0, 2, 3, -1, 0, 3, 4, -1, 0, 4, 5, -1, 0, 5, 6, -1, 0, 6, 7, -1, 0, 7, 8, -1, 0, 8, 9, -1, 0, 2, 1, -1, 0, 3, 2, -1, 0, 4, 3, -1, 0, 5, 4, -1, 0, 6, 5, -1, 0, 7, 6, -1, 0, 8, 7, -1, 0, 9, 8, -1
+            ]
+          }
+        }
+      ]
+    }
+    Radar {
+      translation -0.865 0.35 -0.1
+      rotation 0 0 1 2.93215
+      name "radar_rl"
+      # --- Hi-Link HLK-LD2451 24 GHz FMCW vehicle radar ---
+      minRange 0.5
+      maxRange 100
+      horizontalFieldOfView 0.698
+      verticalFieldOfView 0.2
+      minAbsoluteRadialSpeed 1.0
+      minRadialSpeed -33.3
+      maxRadialSpeed 33.3
+      cellDistance 0.75
+      frequency 24.0
+    }
+    Pose {
+      translation -0.865 0.35 -0.07
+      rotation 0 0 1 2.93215
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 1 0 1 roughness 0.3 metalness 0.6 emissiveColor 0.3 0 0.3 }
+          geometry Sphere { radius 0.05 }
+        }
+        Shape {
+          appearance PBRAppearance { baseColor 1 0 1 transparency 0.9 roughness 1 metalness 0 }
+          geometry IndexedFaceSet {
+            coord Coordinate {
+              point [
+                0 0 -0.09
+                9.3972 -3.4196 -0.09
+                9.6594 -2.5877 -0.09
+                9.8481 -1.7362 -0.09
+                9.9620 -0.8714 -0.09
+                10.0000 0.0000 -0.09
+                9.9620 0.8714 -0.09
+                9.8481 1.7362 -0.09
+                9.6594 2.5877 -0.09
+                9.3972 3.4196 -0.09
+              ]
+            }
+            coordIndex [
+              0, 1, 2, -1, 0, 2, 3, -1, 0, 3, 4, -1, 0, 4, 5, -1, 0, 5, 6, -1, 0, 6, 7, -1, 0, 7, 8, -1, 0, 8, 9, -1, 0, 2, 1, -1, 0, 3, 2, -1, 0, 4, 3, -1, 0, 5, 4, -1, 0, 6, 5, -1, 0, 7, 6, -1, 0, 8, 7, -1, 0, 9, 8, -1
+            ]
+          }
+        }
+      ]
+    }
+    Radar {
+      translation -0.865 -0.35 -0.1
+      rotation 0 0 1 -2.93215
+      name "radar_rr"
+      # --- Hi-Link HLK-LD2451 24 GHz FMCW vehicle radar ---
+      minRange 0.5
+      maxRange 100
+      horizontalFieldOfView 0.698
+      verticalFieldOfView 0.2
+      minAbsoluteRadialSpeed 1.0
+      minRadialSpeed -33.3
+      maxRadialSpeed 33.3
+      cellDistance 0.75
+      frequency 24.0
+    }
+    Pose {
+      translation -0.865 -0.35 -0.06
+      rotation 0 0 1 -2.93215
+      children [
+        Shape {
+          appearance PBRAppearance { baseColor 1 0 1 roughness 0.3 metalness 0.6 emissiveColor 0.3 0 0.3 }
+          geometry Sphere { radius 0.05 }
+        }
+        Shape {
+          appearance PBRAppearance { baseColor 1 0 1 transparency 0.9 roughness 1 metalness 0 }
+          geometry IndexedFaceSet {
+            coord Coordinate {
+              point [
+                0 0 -0.09
+                9.3972 -3.4196 -0.09
+                9.6594 -2.5877 -0.09
+                9.8481 -1.7362 -0.09
+                9.9620 -0.8714 -0.09
+                10.0000 0.0000 -0.09
+                9.9620 0.8714 -0.09
+                9.8481 1.7362 -0.09
+                9.6594 2.5877 -0.09
+                9.3972 3.4196 -0.09
+              ]
+            }
+            coordIndex [
+              0, 1, 2, -1, 0, 2, 3, -1, 0, 3, 4, -1, 0, 4, 5, -1, 0, 5, 6, -1, 0, 6, 7, -1, 0, 7, 8, -1, 0, 8, 9, -1, 0, 2, 1, -1, 0, 3, 2, -1, 0, 4, 3, -1, 0, 5, 4, -1, 0, 6, 5, -1, 0, 7, 6, -1, 0, 8, 7, -1, 0, 9, 8, -1
+            ]
+          }
+        }
+      ]
+    }
+  ]
+  boundingObject Box { size 1.83 0.8 0.61 }
+  physics Physics { density -1 mass 100 }
+}
