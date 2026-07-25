@@ -3,14 +3,14 @@
 #
 # What this script does:
 #   1. Kills any leftover SITL / simulator processes on the relevant ports
-#   2. Starts ArduCopter SITL with PRX1_TYPE=19 (HLK-LD2451), SERIAL2 configured
+#   2. Starts ArduRover SITL with PRX1_TYPE=19 (HLK-LD2451), SERIAL4 configured
 #      for the sensor protocol
 #   3. Waits for SITL to initialise
-#   4. Starts hlk_ld2451_sim.py in the background to feed frames on port 5763
+#   4. Starts hlk_ld2451_sim.py in the background to feed frames on port 5765
 #   5. Connects via pymavlink on port 5760, waits 15 s for the sensor to come up,
 #      then checks:
 #        a) PRX1_TYPE parameter reads back as 19
-#        b) SYS_STATUS proximity-present bit (MAV_SYS_STATUS_SENSOR_PROXIMITY) is set
+#        b) SYS_STATUS proximity-present bit (MAV_SYS_STATUS_OBSTACLE_AVOIDANCE) is set
 #   6. Reports PASS or FAIL and cleans up all background processes.
 #
 # Usage:
@@ -18,7 +18,7 @@
 #   Tools/autotest/test_hlk_ld2451.sh
 #
 # Requirements:
-#   - ArduCopter SITL binary at build/sitl/bin/arducopter
+#   - ArduRover SITL binary at build/sitl/bin/ardurover
 #   - Python 3 with pymavlink (modules/mavlink/pymavlink)
 #   - hlk_ld2451_sim.py in the same directory as this script
 
@@ -27,12 +27,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
-SITL_BIN="${REPO_ROOT}/build/sitl/bin/arducopter"
+SITL_BIN="${REPO_ROOT}/build/sitl/bin/ardurover"
 SIM_PY="${SCRIPT_DIR}/hlk_ld2451_sim.py"
-DEFAULT_PARAMS="${SCRIPT_DIR}/default_params/copter.parm"
+DEFAULT_PARAMS="${SCRIPT_DIR}/default_params/rover.parm"
 
 SITL_HOME="-35.363261,149.165230,584,353"
-SITL_MODEL="+"
+SITL_MODEL="rover"
 MAVLINK_PORT=5760
 RADAR_PORT=5765
 SITL_WAIT_S=10
@@ -61,8 +61,8 @@ trap cleanup EXIT
 
 # ── Sanity checks ───────────────────────────────────────────────────────────
 if [ ! -x "${SITL_BIN}" ]; then
-    fail "ArduCopter SITL binary not found: ${SITL_BIN}"
-    fail "Build it with: ./waf configure --board sitl && ./waf build"
+    fail "ArduRover SITL binary not found: ${SITL_BIN}"
+    fail "Build it with: ./waf configure --board sitl && ./waf rover"
     exit 1
 fi
 
@@ -91,8 +91,8 @@ SERIAL4_BAUD    115
 EOF
 info "Extra params written to ${PARAM_FILE}"
 
-# ── Start ArduCopter SITL ───────────────────────────────────────────────────
-info "Starting ArduCopter SITL ..."
+# ── Start ArduRover SITL ────────────────────────────────────────────────────
+info "Starting ArduRover SITL ..."
 "${SITL_BIN}" \
     --home "${SITL_HOME}" \
     --model "${SITL_MODEL}" \
