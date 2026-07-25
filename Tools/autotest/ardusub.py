@@ -1143,6 +1143,34 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         if m is None:
             raise NotAchievedException("Did not get good TEMP message")
 
+    def MCP9808(self):
+        '''test for the MCP9808 temperature driver'''
+
+        self.set_parameters({
+            'TEMP1_TYPE': 11,      # Replace with your MCP9808 enum
+            'TEMP1_ADDR': 0x18,   # MCP9808 default I2C address
+            'TEMP1_BUS': 0,       # Bus used by your SITL simulator
+            'TEMP_LOG': 1,
+        })
+        self.reboot_sitl()
+        self.context_push()
+        self.set_parameter('LOG_DISARMED', 1)
+        self.delay_sim_time(10, reason="temperature data to be logged")
+        self.context_pop()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+
+        while True:
+            m = dfreader.recv_match(type='TEMP')
+            if m is None:
+                break
+            self.progress(m)
+            # Check for a reasonable temperature
+            if 30 < m.Temp < 90:
+                return
+
+        raise NotAchievedException("Did not get valid MCP9808 TEMP message")
+
     def MAV_mgs(self):
         '''test individual GCS backends timestamps'''
         self.reboot_sitl()
@@ -1644,6 +1672,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.INA3221,
             self.PosHoldBounceBack,
             self.SHT3X,
+            self.MCP9808,
             self.SurfaceSensorless,
             self.GPSForYaw,
             self.WaterDepth,
