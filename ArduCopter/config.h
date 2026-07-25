@@ -30,6 +30,7 @@
 #include <AP_ADSB/AP_ADSB_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AC_Avoidance/AC_Avoidance_config.h>
+#include <AC_CustomControl/AC_CustomControl_config.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -639,7 +640,7 @@
 #endif
 
 #ifndef AC_CUSTOMCONTROL_MULTI_ENABLED
-#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_CUSTOMCONTROL_ENABLED
+#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_COPTER_CUSTOMCONTROL_ENABLED
 #endif
 
 #ifndef AC_PAYLOAD_PLACE_ENABLED

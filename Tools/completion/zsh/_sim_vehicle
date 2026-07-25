@@ -9,47 +9,91 @@ _sim_vehicle() {
 
   _arguments -C \
     '(- 1 *)'{-h,--help}'[show help options and exit]' \
+    '--vehicle-binary=[vehicle binary path]:PATH:_files' \
+    '(-C --sim_vehicle_sh_compatible)'{-C,--sim_vehicle_sh_compatible}'[be compatible with the way sim_vehicle.sh works]' \
+    '(-P --param)*'{-P,--param=}'[set some param with the format PARAM=VALUE]:PARAM=VALUE:' \
+    '--gui[start GUI launcher]' \
     '(-j --jobs)'{-j,--jobs}'[number of processors to use during build]:int:' \
     '(-N --no-rebuild)'{-N,--no-rebuild}'[do not rebuild before starting ardupilot]' \
+    '--no-configure[do not run waf configure before building]' \
     '(-D --debug)'{-D,--debug}'[build with debugging]' \
     '(-c --clean)'{-c,--clean}'[do a make clean before building]' \
+    '(-b --build-target=)'{-b,--build-target=}'[override SITL build target]:TARGET:' \
+    '--enable-math-check-indexes[enable checking of math indexes]' \
+    '--force-32bit[compile sitl using 32-bit]' \
+    '*--configure-define=[create a preprocessor define]:DEFINE:' \
+    '--rebuild-on-failure[if build fails, do not clean and rebuild]' \
+    '*--waf-configure-arg=[extra arguments to pass to waf in configure step]:ARG:' \
+    '*--waf-build-arg=[extra arguments to pass to waf in its build step]:ARG:' \
+    '--coverage[use coverage build]' \
+    '--ubsan[compile sitl with undefined behaviour sanitiser]' \
+    '--ubsan-abort[compile sitl with undefined behaviour sanitiser and abort on error]' \
+    '--num-aux-imus=[number of auxiliary IMUs to simulate]:int:' \
     '(-I --instance=)'{-I,--instance=}'[instance of simulator]:int:' \
+    '(-n --count=)'{-n,--count=}'[vehicle count; if specified, -I is used as a base-value]:int:' \
+    '(-i --instances=)'{-i,--instances=}'[space delimited list of instances to spawn]:INSTANCES:' \
     '(-V --valgrind)'{-V,--valgrind}'[enable valgrind for memory access checking (slow!)]' \
     '--callgrind[enable valgrind for performance analysis (slow!!)]' \
     '(-T --tracker)'{-T,--tracker}'[start an antenna tracker instance]' \
-    '(-A --sitl-instance-args)'{-A,--sitl-instance-args}'[pass arguments to SITL instance]:SITL_INSTANCE_ARGS:' \
+    '--enable-onvif[enable onvif camera control sim using AntennaTracker]' \
+    '--can-peripherals[start a DroneCAN peripheral instance]' \
+    '(-A --sitl-instance-args=)'{-A,--sitl-instance-args=}'[pass arguments to SITL instance]:SITL_INSTANCE_ARGS:' \
     '(-G --gdb)'{-G,--gdb}'[use gdb for debugging ardupilot]' \
     '(-g --gdb-stopped)'{-g,--gdb-stopped}'[use gdb for debugging ardupilot (no auto-start)]' \
     '--lldb[use lldb for debugging ardupilot]' \
     '--lldb-stopped[use ldb for debugging ardupilot (no auto-start)]' \
     '(-d --delay-start=)'{-d,--delay-start=}'[delay start of mavproxy by this number of seconds]:int:' \
     '(-B --breakpoint=)'{-B,--breakpoint=}'[add a breakpoint at given location in debugger]:LOCATION:' \
+    '--disable-breakpoints[disable all breakpoints before starting]' \
     '(-M --mavlink-gimbal)'{-M,--mavlink-gimbal}'[enable MAVLink gimbal]' \
-    '(-L --location=)'{-L,--location=}'[use start location from Tools/autotest/locations.txt]:LOCATION:' \
+    '(-L --location=)'{-L,--location=}'[use start location from Tools/autotest/locations.txt]:location:_sim_vehicle_locations' \
     '(-l --custom-location=)'{-l,--custom-location=}'[set custom start location (lat,lon,alt,heading)]:LOCATION:' \
     '(-S --speedup=)'{-S,--speedup=}'[set simulation speedup (1 for wall clock time)]:SPEEDUP:' \
     '(-t --tracker-location=)'{-t,--tracker-location=}'[set antenna tracker start location]:TRACKER_LOCATION:' \
     '(-w --wipe-eeprom)'{-w,--wipe-eeprom}'[wipe EEPROM and reload parameters]' \
     '(-m --mavproxy-args=)'{-m,--mavproxy-args=}'[additional arguments to pass to mavproxy.py]:MAVPROXY_ARGS:' \
+    '--scrimmage-args=[arguments used to populate SCRIMMAGE mission]:SCRIMMAGE_ARGS:' \
     '--strace[strace the ArduPilot binary]' \
     '--model=[Override simulation model to use]:MODEL:' \
     '--use-dir=[Store SITL state and output in named directory]:DIR:' \
     '--no-mavproxy[Do notlaunch MAVProxy]' \
     '--fresh-params[Generate and use local parameter help XML]' \
     '--mcast[Use multicasting at default 239.255.145.50:14550]' \
+    '--udp[Use UDP on 127.0.0.1:5760]' \
     '--osd[Enable SITL OSD]' \
+    '--osdmsp[Enable SITL OSD using MSP]' \
     '--tonealarm[Enable SITL ToneAlarm]' \
     '--rgbled[Enable SITL RGBLed]' \
-    '--add-param-file=[Add a parameters file to use]:ADD_PARAM_FILE:' \
+    '*--add-param-file=[Add a parameters file to use]:ADD_PARAM_FILE:_files' \
     '--no-extra-ports[Disable setup of UDP 14550 and 14551 output]' \
+    '--no-wsl2-network[Disable setup of WSL2 network for output]' \
     '(-Z --swarm=)'{-Z,--swarm=}'[Specify path of swarminit.txt for shifting spawn
-                        location]:SWARM:' \
+                        location]:SWARM:_files' \
+    '--auto-offset-line=[form a line along bearing with an interval of distance]:BEARING,DISTANCE:' \
     '--flash-storage[enable use of flash storage emulation]' \
-    '--out=[create an additional mavlink output]:OUT:' \
+    '--fram-storage[use fram storage emulation]' \
+    '--enable-ekf2[enable EKF2 in build]' \
+    '--disable-ekf3[disable EKF3 in build]' \
+    '--start-time=[simulation start time in format YYYY-MM-DD-HH:MM]:START_TIME:' \
+    '--sysid=[Set MAV_SYSID]:int:' \
+    '--postype-single[force single precision postype_t]' \
+    '--ekf-double[use double precision in EKF]' \
+    '--ekf-single[use single precision in EKF]' \
+    '--slave=[Set the number of JSON slave]:int:' \
+    '--auto-sysid[Set MAV_SYSID based upon instance number]' \
+    '--sim-address=[IP address of the simulator]:ADDRESS:' \
+    '--enable-DDS[Enable the dds client to connect with ROS2/DDS]' \
+    '--disable-networking[Disable networking APIs]' \
+    '--enable-ppp[Enable PPP networking]' \
+    '--enable-networking-tests[Enable networking tests]' \
+    '--enable-fgview[Enable FlightGear output]' \
+    '*--out=[create an additional mavlink output]:OUT:' \
     '--map[load map module on startup]' \
+    '--mavcesium[load MAVCesium module on startup]' \
     '--console[load console module on startup]' \
     '--aircraft=[store state and logs in named directory]:AIRCRAFT:' \
     '--moddebug=[mavproxy module debug]:int:' \
+    '--no-rcin[disable mavproxy rcin]' \
     '(-v --vehicle)'{-v,--vehicle}'[vehicle type]:vehicle:_sim_vehicle_vehicles' \
     '(-f --frame)'{-f,--frame}'[set vehicle frame type]:frame:_vehicle_frames' \
   && ret=0
@@ -65,6 +109,12 @@ _get_vehicle_type() {
 _sim_vehicle_vehicles() {
   _get_vehicle_type
   _describe -t vehicles 'vehicle' vehicles "$@" && ret=0
+}
+
+(( $+functions[_sim_vehicle_locations] )) ||
+_sim_vehicle_locations() {
+  local locations; locations=( $($caller --list-locations) )
+  _describe -t locations 'location' locations "$@" && ret=0
 }
 
 (( $+functions[_vehicle_frames] )) ||

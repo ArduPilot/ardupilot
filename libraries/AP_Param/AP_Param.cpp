@@ -2327,7 +2327,7 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
     /*
       work out how many parameter default structures to allocate
      */
-    while (AP::FS().fgets(line, sizeof(line)-1, file_apfs)) {
+    while (AP::FS().fgets(line, sizeof(line), file_apfs)) {
         char *pname;
         float value;
         bool read_only;
@@ -2356,7 +2356,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
 
     bool done_all = true;
     char line[100];
-    while (AP::FS().fgets(line, sizeof(line)-1, file_apfs)) {
+    while (AP::FS().fgets(line, sizeof(line), file_apfs)) {
         char *pname;
         float value;
         bool read_only;
@@ -2459,6 +2459,10 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
     free(mutable_filename);
 
     num_param_overrides = num_defaults;
+
+#if AP_PARAM_DEFAULTS_ENABLED
+    purge_defaults_list_overrides();
+#endif
 
     return true;
 }
@@ -2589,6 +2593,10 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
         }
     }
     num_param_overrides = num_defaults;
+
+#if AP_PARAM_DEFAULTS_ENABLED
+    purge_defaults_list_overrides();
+#endif
 }
 #endif // AP_PARAM_MAX_EMBEDDED_PARAM > 0 || defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
 
@@ -2900,6 +2908,36 @@ void AP_Param::check_default(AP_Param *ap, float *default_value)
         }
     }
 }
+
+/*
+  Remove default_list entries that are in param_overrides.  Constructors may
+  call add_default() before param_overrides is populated, leaving stale nodes.
+ */
+#if AP_PARAM_DEFAULTS_ENABLED
+void AP_Param::purge_defaults_list_overrides(void)
+{
+    defaults_list **prev = &default_list;
+    defaults_list *item = default_list;
+    while (item != nullptr) {
+        bool found = false;
+        for (uint16_t i = 0; i < num_param_overrides; i++) {
+            if (item->ap == param_overrides[i].object_ptr) {
+                found = true;
+                break;
+            }
+        }
+        if (found) {
+            *prev = item->next;
+            defaults_list *to_delete = item;
+            item = item->next;
+            delete to_delete;
+        } else {
+            prev = &item->next;
+            item = item->next;
+        }
+    }
+}
+#endif // AP_PARAM_DEFAULTS_ENABLED
 
 void AP_Param::add_default(AP_Param *ap, float v)
 {

@@ -378,6 +378,7 @@ public:
     void send_gimbal_manager_information() const;
     void send_gimbal_manager_status() const;
     void send_named_float(const char *name, float value) const;
+    void send_named_int(const char *name, int32_t value) const;
     void send_home_position() const;
     void send_gps_global_origin() const;
     virtual void send_attitude_target() {};
@@ -780,7 +781,10 @@ protected:
     MAV_RESULT handle_control_high_latency(const mavlink_command_int_t &packet);
 
 #endif // HAL_HIGH_LATENCY2_ENABLED
-    
+
+    // note that the mavlink specification only uses 21196 as the
+    // magic value to force and arm or disarm.  We continue to support
+    // 2989 for force-arming for backwards-compatability reasons.
     static constexpr const float magic_force_arm_value = 2989.0f;
     static constexpr const float magic_force_arm_disarm_value = 21196.0f;
 
@@ -1199,6 +1203,7 @@ public:
     void send_message(enum ap_message id);
     void send_mission_item_reached_message(uint16_t mission_index);
     void send_named_float(const char *name, float value) const;
+    void send_named_int(const char *name, int32_t value) const;
     void send_named_string(const char *name, const char *value) const;
 
     void send_parameter_value(const char *param_name,

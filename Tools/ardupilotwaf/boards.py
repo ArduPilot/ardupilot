@@ -169,23 +169,6 @@ class Board:
         else:
             cfg.msg("GPS Debug Logging", 'no', color='YELLOW')
 
-        # allow enable of custom controller for any board
-        # enabled on sitl by default
-        if (cfg.options.enable_custom_controller or self.get_name() == "sitl") and not cfg.options.no_gcs:
-            env.ENABLE_CUSTOM_CONTROLLER = True
-            env.DEFINES.update(
-                AP_CUSTOMCONTROL_ENABLED=1,
-            )
-            env.AP_LIBRARIES += [
-                'AC_CustomControl'
-            ]
-            cfg.msg("Enabled custom controller", 'yes')
-        else:
-            env.DEFINES.update(
-                AP_CUSTOMCONTROL_ENABLED=0,
-            )
-            cfg.msg("Enabled custom controller", 'no', color='YELLOW')
-
         # support enabling any option in build_options.py
         for opt in build_options.BUILD_OPTIONS:
             enable_option = opt.config_option().replace("-","_")
@@ -288,7 +271,7 @@ class Board:
             '-Wextra',
             '-Werror=format',
             '-Wpointer-arith',
-            '-Wcast-align',
+            '-Werror=cast-align',
             '-Wno-missing-field-initializers',
             '-Wno-unused-parameter',
             '-Wno-redundant-decls',
@@ -344,6 +327,7 @@ class Board:
             env.CFLAGS += [
                 '-Wno-format-contains-nul',
                 '-fsingle-precision-constant', # force const vals to be float , not double. so 100.0 means 100.0f
+                '-Wcast-align=strict',
             ]
 
         if cfg.env.DEBUG:
@@ -472,6 +456,7 @@ class Board:
                 '-Werror=unused-but-set-variable',
                 '-fsingle-precision-constant',
                 '-Wno-psabi',
+                '-Wcast-align=strict',
             ]
             if self.cc_version_gte(cfg, 5, 2):
                 env.CXXFLAGS += [
@@ -875,7 +860,9 @@ class SITLBoard(Board):
                 '-O3',
             ]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
+            if not cfg.env.DEBUG:
+                cfg.fatal('--asan requires --debug for reliable instrumentation')
             env.CXXFLAGS += [
                 '-fsanitize=address',
                 '-fno-omit-frame-pointer',
@@ -890,8 +877,8 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if cfg.env.DEBUG and 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
-             env.LINKFLAGS += ['-fsanitize=address']
+        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+            env.LINKFLAGS += ['-fsanitize=address']
 
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',

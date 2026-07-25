@@ -80,9 +80,6 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK(set_servos,            400,    200,  15),
     SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),
-#if AP_BEACON_ENABLED
-    SCHED_TASK_CLASS(AP_Beacon,           &rover.g2.beacon,        update,         50,  200,  24),
-#endif
 #if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,        &rover.g2.proximity,     update,         200,  200,  27),
 #endif
@@ -380,8 +377,8 @@ void Rover::update_logging1(void)
     if (should_log(MASK_LOG_THR)) {
         Log_Write_Throttle();
 #if AP_BEACON_ENABLED
-        g2.beacon.log();
-#endif
+        beacon.log();
+#endif  // AP_BEACON_ENABLED
     }
 
     if (should_log(MASK_LOG_NTUN)) {
@@ -486,20 +483,20 @@ void Rover::one_second_loop(void)
     AP_Notify::flags.pre_arm_check = arming.pre_arm_checks(false);
     AP_Notify::flags.pre_arm_gps_check = true;
     AP_Notify::flags.armed = arming.is_armed();
-    AP_Notify::flags.flying = hal.util->get_soft_armed();
+    AP_Notify::flags.flying = arming.is_armed_and_safety_off();
 
 #if AP_ROVER_AUTO_ARM_ONCE_ENABLED
     handle_auto_arm_once();
 #endif  // AP_ROVER_AUTO_ARM_ONCE_ENABLED
 
     // attempt to update home position and baro calibration if not armed:
-    if (!hal.util->get_soft_armed()) {
+    if (!arming.is_armed_and_safety_off()) {
         update_home();
     }
 
     // need to set "likely flying" when armed to allow for compass
     // learning to run
-    set_likely_flying(hal.util->get_soft_armed());
+    set_likely_flying(arming.is_armed_and_safety_off());
 
     // send latest param values to wp_nav
     g2.wp_nav.set_turn_params(g2.turn_radius, g2.motors.have_skid_steering());

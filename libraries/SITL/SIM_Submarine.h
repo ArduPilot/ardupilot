@@ -21,6 +21,7 @@
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
 #include "SIM_Frame.h"
+#include <AP_InternalError/AP_InternalError.h>
 
 namespace SITL {
 
@@ -105,6 +106,12 @@ protected:
     void calculate_angular_drag_torque(const Vector3f &angular_velocity, const Vector3f &drag_coefficient, Vector3f &torque) const;
     // calculate torque induced by buoyancy foams
     void calculate_buoyancy_torque(Vector3f &torque);
+    // compute and set battery usage
+    void update_battery(const struct sitl_input &input) override;
+    // Sub needs the sitl_input, should never use the parent's input-free version.
+    // (Using it would be using the wrong battery model, but it would silently work.)
+    void update_battery() override { INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); };
+    bool battery_is_empty() { return battery_voltage < 0.5f; };
 
     Frame *frame;
     Thruster* thrusters;

@@ -2,7 +2,7 @@
 
 #include "AC_CustomControl_config.h"
 
-#if AP_CUSTOMCONTROL_EMPTY_ENABLED
+#if AP_COPTER_CUSTOMCONTROL_EMPTY_ENABLED
 
 #include "AC_CustomControl_Backend.h"
 
@@ -24,4 +24,4 @@ protected:
     AP_Float param3;
 };
 
-#endif  // AP_CUSTOMCONTROL_EMPTY_ENABLED
+#endif  // AP_COPTER_CUSTOMCONTROL_EMPTY_ENABLED

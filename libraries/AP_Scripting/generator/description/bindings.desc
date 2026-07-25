@@ -315,6 +315,7 @@ singleton GCS rename gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t'skip_check uint32_t'skip_check int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float'skip_check
+singleton GCS method send_named_int void string int32_t'skip_check
 singleton GCS method send_named_string void string string
 singleton GCS method frame_type MAV_TYPE'enum
 singleton GCS method get_hud_throttle int16_t
@@ -387,6 +388,7 @@ singleton AP_Vehicle method has_ekf_failsafed boolean
 singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
+singleton AP_Vehicle method is_crashed boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
 singleton AP_Vehicle method register_custom_mode AP_Vehicle::custom_mode_state uint8_t'skip_check string string
 
@@ -1163,3 +1165,15 @@ userdata DroneCAN_Handle method subscribe boolean
 userdata DroneCAN_Handle manual check_message DroneCAN_Handle::check_message 0 4
 userdata DroneCAN_Handle manual_operator __gc DroneCAN_Handle::__gc
 
+include AP_OSD/AP_OSD_Backend.h depends defined(OSD_ENABLED) && OSD_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+singleton AP_OSD_Backend depends defined(OSD_ENABLED) && OSD_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+singleton AP_OSD_Backend rename osd
+singleton AP_OSD_Backend get AP_OSD::get_singleton() == nullptr ? nullptr : AP_OSD::get_singleton()->scripting_get_backend()
+singleton AP_OSD_Backend semaphore
+singleton AP_OSD_Backend method write void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX string
+singleton AP_OSD_Backend method flush void
+singleton AP_OSD_Backend method clear void
+singleton AP_OSD_Backend method draw_screen void
+singleton AP_OSD_Backend method get_aspect_ratio_correction float
+singleton AP_OSD_Backend method get_screen uint8_t
+singleton AP_OSD_Backend method display_disabled boolean

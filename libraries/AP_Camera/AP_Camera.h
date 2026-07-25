@@ -105,6 +105,7 @@ public:
     // methods to handle mavlink-style instance-id (0 meaning all cameras)
     MAV_RESULT handle_mav_DO_SET_CAM_TRIGG_DISTANCE(uint8_t instance_id, bool trigger, float dist_m);
     MAV_RESULT handle_mav_SET_CAMERA_ZOOM(uint8_t instance_id, CAMERA_ZOOM_TYPE mav_zoom_type, float zoom_value);
+    MAV_RESULT handle_mav_SET_CAMERA_FOCUS(uint8_t instance_id, SET_FOCUS_TYPE mav_focus_type, float focus_value);
 #endif  // HAL_MAVLINK_BINDINGS_ENABLED
 
     // select which instance to send on the next deferred MSG_CAMERA_INFORMATION send

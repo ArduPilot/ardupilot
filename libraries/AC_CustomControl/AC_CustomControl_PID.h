@@ -2,7 +2,7 @@
 
 #include "AC_CustomControl_config.h"
 
-#if AP_CUSTOMCONTROL_PID_ENABLED
+#if AP_COPTER_CUSTOMCONTROL_PID_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -40,4 +40,4 @@ protected:
     AC_PID _pid_atti_rate_yaw;
 };
 
-#endif  // AP_CUSTOMCONTROL_PID_ENABLED
+#endif  // AP_COPTER_CUSTOMCONTROL_PID_ENABLED

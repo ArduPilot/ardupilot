@@ -151,8 +151,12 @@ void AP_OpenDroneID::get_persistent_params(ExpandingString &str) const
     if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
         && (_options & LockUASIDOnFirstBasicIDRx)
         && id_len == 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "OpenDroneID: ID is locked as %s", pkt_basic_id.uas_id);
-        str.printf("DID_UAS_ID=%s\nDID_UAS_ID_TYPE=%u\nDID_UA_TYPE=%u\n", pkt_basic_id.uas_id, pkt_basic_id.id_type, pkt_basic_id.ua_type);
+        static constexpr size_t uas_id_size = sizeof(pkt_basic_id.uas_id);
+        char buffer[uas_id_size+1];
+        memcpy(buffer, pkt_basic_id.uas_id, uas_id_size);
+        buffer[uas_id_size] = '\0'; // make null terminated
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "OpenDroneID: ID is locked as %s", buffer);
+        str.printf("DID_UAS_ID=%s\nDID_UAS_ID_TYPE=%u\nDID_UA_TYPE=%u\n", buffer, pkt_basic_id.id_type, pkt_basic_id.ua_type);
     }
 }
 

@@ -99,11 +99,6 @@
 #include "AP_ExternalControl_Copter.h"
 #endif
 
-#include <AP_Beacon/AP_Beacon_config.h>
-#if AP_BEACON_ENABLED
- #include <AP_Beacon/AP_Beacon.h>
-#endif
-
 #if AP_AVOIDANCE_ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
@@ -315,9 +310,10 @@ private:
 #endif
 
 
-    // system time in milliseconds of last recorded yaw reset from ekf
-    uint32_t ekfYawReset_ms;
-    int8_t ekf_primary_core;
+    // old value of counter which increments when our yaw estimate is reset
+    uint16_t ahrs_yaw_reset_count;
+    // old value of counter which increments when our attitude estimate is reset
+    uint16_t attitude_reset_count;
 
     // vibration check
     struct {
@@ -721,6 +717,9 @@ private:
     void read_AHRS(void);
     void update_altitude();
     bool get_wp_distance_m(float &distance) const override;
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    bool get_wp_location(Location &loc) const override;
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
     bool get_rate_ef_targets(Vector3f& rate_ef_targets_rads) const override;

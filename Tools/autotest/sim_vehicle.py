@@ -733,8 +733,8 @@ def find_geocoder_location(locname):
     return [lat, lon, alt, 0.0]
 
 
-def find_location_by_name(locname):
-    """Search locations.txt for locname, return GPS coords"""
+def parse_locations():
+    """Yield (name, [lat, lon, alt, heading]) tuples from locations files."""
     locations_userpath = os.environ.get('ARDUPILOT_LOCATIONS',
                                         get_user_locations_path())
     locations_filepath = os.path.join(autotest_dir, "locations.txt")
@@ -749,8 +749,19 @@ def find_location_by_name(locname):
                 if len(line) == 0:
                     continue
                 (name, loc) = line.split("=")
-                if name == locname:
-                    return [(float)(x) for x in loc.split(",")]
+                yield (name, [float(x) for x in loc.split(",")])
+
+
+def list_locations():
+    """Return the location names from the user and autotest locations.txt"""
+    return [name for name, _ in parse_locations()]
+
+
+def find_location_by_name(locname):
+    """Search locations.txt for locname, return GPS coords"""
+    for name, loc in parse_locations():
+        if name == locname:
+            return loc
 
     # fallback to geocoder if available
     loc = find_geocoder_location(locname)
@@ -996,12 +1007,14 @@ def start_vehicle(binary, opts, stuff, spawns=None):
                       (file,))
                 sys.exit(1)
 
-            if path is not None:
-                path += "," + str(file)
-            else:
-                path = str(file)
+            file = os.path.abspath(file)
 
-            progress("Adding parameters from (%s)" % (str(file),))
+            if path is not None:
+                path += "," + file
+            else:
+                path = file
+
+            progress("Adding parameters from (%s)" % (file,))
     if opts.param:
         param_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
         atexit.register(os.unlink, param_file.name)
@@ -1636,6 +1649,9 @@ group_completion.add_option("", "--list-frame",
                             type='string',
                             default=None,
                             help="List the vehicle frames")
+group_completion.add_option("", "--list-locations",
+                            action='store_true',
+                            help="List the locations")
 parser.add_option_group(group_completion)
 
 cmd_opts, cmd_args = parser.parse_args()
@@ -1676,6 +1692,9 @@ if cmd_opts.list_frame:
     frame_options = sorted(vinfo.options[cmd_opts.list_frame]["frames"].keys())
     frame_options_string = ' '.join(frame_options)
     print(frame_options_string)
+    sys.exit(1)
+if cmd_opts.list_locations:
+    print(' '.join(list_locations()))
     sys.exit(1)
 
 # clean up processes at exit:

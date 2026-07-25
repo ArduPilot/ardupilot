@@ -551,11 +551,6 @@ public:
     AP_TempCalibration temp_calibration;
 #endif
 
-#if AP_BEACON_ENABLED
-    // beacon (non-GPS positioning) library
-    AP_Beacon beacon;
-#endif
-
 #if HAL_PROXIMITY_ENABLED
     // proximity (aka object avoidance) library
     AP_Proximity proximity;

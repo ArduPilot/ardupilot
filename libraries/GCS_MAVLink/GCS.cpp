@@ -353,6 +353,34 @@ void GCS::send_named_float(const char *name, float value) const
 #endif  // HAL_LOGGING_ENABLED
 }
 
+void GCS::send_named_int(const char *name, int32_t value) const
+{
+    mavlink_named_value_int_t packet {};
+    packet.time_boot_ms = AP_HAL::millis();
+    packet.value = value;
+    memcpy(packet.name, name, MIN(strlen(name), (uint8_t)MAVLINK_MSG_NAMED_VALUE_INT_FIELD_NAME_LEN));
+
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_INT,
+                                  (const char *)&packet);
+#if HAL_LOGGING_ENABLED
+// @LoggerMessage: NVI
+// @Description: Named Value Int messages; messages sent to GCS via NAMED_VALUE_INT
+// @Field: TimeUS: Time since system startup
+// @Field: Name: Name of int
+// @Field: Value: Value of int
+    AP::logger().Write(
+        "NVI",
+        "TimeUS," "Name," "Value",
+        "s"       "#"     "-",
+        "F"       "-"     "-",
+        "Q"       "N"     "f",
+        AP_HAL::micros64(),
+        name,
+        value
+    );
+#endif  // HAL_LOGGING_ENABLED
+}
+
 void GCS::send_named_string(const char *name, const char *value) const
 {
     mavlink_named_value_string_t packet {};

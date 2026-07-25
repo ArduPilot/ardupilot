@@ -189,7 +189,17 @@ bool CANIface::computeTimings(uint32_t target_bitrate, Timings& out_timings)
      * ==>
      *   PRESCALER_BS = PCLK / BITRATE
      */
+#if HAL_CAN_ALLOW_INEXACT_CLOCK
+    /*
+     *
+     * Rounded to nearest so a PCLK that is not an exact multiple of the bitrate
+     * (e.g. MSI-PLL derived clocks like 79.96MHz) still resolves to a divisor.
+     * This is a no-op when PCLK is an exact multiple.
+     */
+    const uint32_t prescaler_bs = (pclk + target_bitrate / 2) / target_bitrate;
+#else
     const uint32_t prescaler_bs = pclk / target_bitrate;
+#endif
 
     /*
      * Searching for such prescaler value so that the number of quanta per bit is highest.
@@ -266,9 +276,20 @@ bool CANIface::computeTimings(uint32_t target_bitrate, Timings& out_timings)
      *     return (1+ts1+1)/(1+ts1+1+ts2+1)
      *
      */
+#if HAL_CAN_ALLOW_INEXACT_CLOCK
+    // accept the closest achievable bitrate within CAN oscillator tolerance;
+    // an exact match is not possible when PCLK is not an integer multiple.
+    const uint32_t achieved_bitrate = pclk / (prescaler * (1 + solution.bs1 + solution.bs2));
+    const uint32_t bitrate_error = achieved_bitrate > target_bitrate ?
+                                   achieved_bitrate - target_bitrate : target_bitrate - achieved_bitrate;
+    if ((bitrate_error > target_bitrate / 100U) || !solution.isValid()) {
+        return false;
+    }
+#else
     if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
         return false;
     }
+#endif
 
     out_timings.prescaler = uint16_t(prescaler - 1U);
     out_timings.sjw = 0;                                        // Which means one
