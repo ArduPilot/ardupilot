@@ -45,6 +45,7 @@
 #include "SIM_Temperature_SHT3x.h"
 #include "SIM_Temperature_TSYS01.h"
 #include "SIM_Temperature_TSYS03.h"
+#include "SIM_Temperature_MCP9808.h"
 #include "SIM_TeraRangerI2C.h"
 #include "SIM_TFS20L.h"
 #include "SIM_ToshibaLED.h"
@@ -97,6 +98,9 @@ static TSYS03 tsys03;
 #endif
 #if AP_SIM_TEMPERATURE_MCP9600_ENABLED
 static MCP9600 mcp9600;
+#endif
+#if AP_SIM_TEMPERATURE_MCP9808_ENABLED
+static MCP9808 mcp9808;
 #endif
 #if AP_SIM_ICM40609_ENABLED
 static ICM40609 icm40609;
@@ -161,6 +165,9 @@ struct i2c_device_at_address {
 #endif
 #if AP_SIM_TEMPERATURE_MCP9600_ENABLED
     { 0, 0x60, mcp9600 }, // 0x60 is low address
+#endif
+#if AP_SIM_TEMPERATURE_MCP9808_ENABLED
+    { 0, 0x18, mcp9808 }, // MCP9808 default address
 #endif
 #if AP_SIM_MAXSONAR_I2C_XL_ENABLED
     { 0, 0x71, maxsonari2cxl_2 }, // RNGFNDx_TYPE = 2, RNGFNDx_ADDR = 113
