@@ -23,15 +23,8 @@ import traceback
 
 from pymavlink.generator import mavtemplate
 
-import antennatracker
-import arducopter
-import arduplane
-import ardusub
 import balancebot
-import blimp
 import examples
-import helicopter
-import quadplane
 import rover
 import sailboat
 
@@ -179,12 +172,7 @@ def param_parse_filepath():
 
 def all_vehicles():
     """Get all vehicles name."""
-    return ('ArduPlane',
-            'ArduCopter',
-            'Rover',
-            'AntennaTracker',
-            'ArduSub',
-            'Blimp',
+    return ('Rover',
             'AP_Periph',
             )
 
@@ -264,33 +252,11 @@ def should_run_step(step):
 
 
 __bin_names = {
-    "Copter": "arducopter",
-    "CopterTests1a": "arducopter",
-    "CopterTests1b": "arducopter",
-    "CopterTests1c": "arducopter",
-    "CopterTests1d": "arducopter",
-    "CopterTests1e": "arducopter",
-
-    "CopterTests2a": "arducopter",
-    "CopterTests2b": "arducopter",
-
-    "Plane": "arduplane",
-    "PlaneTests1a": "arduplane",
-    "PlaneTests1b": "arduplane",
-    "PlaneTests1c": "arduplane",
-
     "Rover": "ardurover",
-    "Tracker": "antennatracker",
-    "Helicopter": "arducopter-heli",
-    "QuadPlane": "arduplane",
-    "Sub": "ardusub",
-    "Blimp": "blimp",
     "BalanceBot": "ardurover",
     "Sailboat": "ardurover",
     "SITLPeriphUniversal": ("sitl_periph_universal", "AP_Periph"),
     "SITLPeriphBattMon": ("sitl_periph_battmon", "AP_Periph"),
-    "CAN": "arducopter",
-    "BattCAN": "arducopter",
 }
 
 
@@ -343,37 +309,12 @@ def find_specific_test_to_run(step):
 
 
 tester_class_map = {
-    "test.Blimp": blimp.AutoTestBlimp,
-    "test.Copter": arducopter.AutoTestCopter,
-    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
-    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s
-    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # 5m17s
-    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # 8m20s
-    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
-    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
-    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
-    "test.Plane": arduplane.AutoTestPlane,
-    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
-    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
-    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c,
-    "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
-    "test.Helicopter": helicopter.AutoTestHelicopter,
-    "test.Sub": ardusub.AutoTestSub,
-    "test.Tracker": antennatracker.AutoTestTracker,
-    "test.CAN": arducopter.AutoTestCAN,
-    "test.BattCAN": arducopter.AutoTestBattCAN,
 }
 
-supplementary_test_binary_map = {
-    "test.CAN": ["sitl_periph_universal:AP_Periph:0:Tools/autotest/default_params/periph.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
-                 "sitl_periph_universal:AP_Periph:1:Tools/autotest/default_params/periph.parm"],
-    "test.BattCAN": [
-        "sitl_periph_battmon:AP_Periph:0:Tools/autotest/default_params/periph-battmon.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
-    ],
-}
+supplementary_test_binary_map = {}
 
 
 def run_specific_test(step, *args, **kwargs):
@@ -435,26 +376,8 @@ def run_step(step):
 
     vehicle_binary = None
     board = "sitl"
-    if step == 'build.Plane':
-        vehicle_binary = 'bin/arduplane'
-
     if step == 'build.Rover':
         vehicle_binary = 'bin/ardurover'
-
-    if step == 'build.Copter':
-        vehicle_binary = 'bin/arducopter'
-
-    if step == 'build.Blimp':
-        vehicle_binary = 'bin/blimp'
-
-    if step == 'build.Tracker':
-        vehicle_binary = 'bin/antennatracker'
-
-    if step == 'build.Helicopter':
-        vehicle_binary = 'bin/arducopter-heli'
-
-    if step == 'build.Sub':
-        vehicle_binary = 'bin/ardusub'
 
     if step == 'build.SITLPeriphUniversal':
         vehicle_binary = 'bin/AP_Periph'
@@ -789,7 +712,7 @@ def run_tests(steps):
     return passed
 
 
-vehicle_list = ['Sub', 'Copter', 'Plane', 'Tracker', 'Rover', 'QuadPlane', 'BalanceBot', 'Helicopter', 'Sailboat', 'Blimp']
+vehicle_list = ['Rover', 'BalanceBot', 'Sailboat']
 
 
 def list_subtests():
@@ -1098,85 +1021,31 @@ if __name__ == "__main__":
         'build.examples',
         'run.examples',
 
-        'build.Plane',
-        'test.Plane',
-        'test.QuadPlane',
-
         'build.Rover',
         'test.Rover',
         'test.BalanceBot',
         'test.Sailboat',
 
-        'build.Copter',
-        'test.Copter',
-
-        'build.Helicopter',
-        'test.Helicopter',
-
-        'build.Tracker',
-        'test.Tracker',
-
-        'build.Sub',
-        'test.Sub',
-
-        'build.Blimp',
-        'test.Blimp',
-
         'build.SITLPeriphUniversal',
-        'test.CAN',
 
         'build.SITLPeriphBattMon',
-        'test.BattCAN',
 
         # convertgps disabled as it takes 5 hours
         # 'convertgpx',
     ]
 
     moresteps = [
-        'test.CopterTests1a',
-        'test.CopterTests1b',
-        'test.CopterTests1c',
-        'test.CopterTests1d',
-        'test.CopterTests1e',
-
-        'test.CopterTests2a',
-        'test.CopterTests2b',
-
-        'test.PlaneTests1a',
-        'test.PlaneTests1b',
-        'test.PlaneTests1c',
-
         'clang-scan-build',
     ]
 
     # canonicalise the step names.  This allows
     # backwards-compatability from the hodge-podge
-    # fly.ArduCopter/drive.APMrover2 to the more common test.Copter
-    # test.Rover
+    # drive.APMrover2 to the more common test.Rover
     step_mapping = {
-        "build.ArduPlane": "build.Plane",
-        "build.ArduCopter": "build.Copter",
         "build.APMrover2": "build.Rover",
-        "build.ArduSub": "build.Sub",
-        "build.AntennaTracker": "build.Tracker",
-        "fly.ArduCopter": "test.Copter",
-        "fly.ArduPlane": "test.Plane",
-        "fly.QuadPlane": "test.QuadPlane",
-        "dive.ArduSub": "test.Sub",
         "drive.APMrover2": "test.Rover",
         "drive.BalanceBot": "test.BalanceBot",
         "drive.balancebot": "test.BalanceBot",
-        "fly.CopterAVC": "test.Helicopter",
-        "test.AntennaTracker": "test.Tracker",
-        "fly.ArduCopterTests1a": "test.CopterTests1a",
-        "fly.ArduCopterTests1b": "test.CopterTests1b",
-        "fly.ArduCopterTests1c": "test.CopterTests1c",
-        "fly.ArduCopterTests1d": "test.CopterTests1d",
-        "fly.ArduCopterTests1e": "test.CopterTests1e",
-
-        "fly.ArduCopterTests2a": "test.CopterTests2a",
-        "fly.ArduCopterTests2b": "test.CopterTests2b",
-
     }
 
     # form up a list of bits NOT to run, mapping from old step names

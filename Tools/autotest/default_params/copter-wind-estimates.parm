@@ -1,5 +1,0 @@
-# copter with wind speed estimates enabled
-EK3_DRAG_BCOEF_X 9.5
-EK3_DRAG_BCOEF_Y 9.5
-EK3_DRAG_MCOEF 0.082
-SIM_WIND_SPD 3
