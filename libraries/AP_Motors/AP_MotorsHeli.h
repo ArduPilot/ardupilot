@@ -107,6 +107,9 @@ public:
     // helper for vehicle code to request autorotation states in the RSC.
     void set_autorotation_active(bool tf) { _main_rotor.autorotation.set_active(tf, false); }
 
+    // true if we are using a manual collective flight mode
+    void set_using_manual_collective_mode(bool using_manual_collective_mode) { _main_rotor.set_using_manual_collective_mode(using_manual_collective_mode); }
+
     // helper to force the RSC autorotation state to deactivated
     void force_deactivate_autorotation(void) { _main_rotor.autorotation.set_active(false, true); }
 

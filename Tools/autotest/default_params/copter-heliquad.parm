@@ -1,0 +1,11 @@
+FRAME_CLASS 13
+# symmetric collective so the zero-thrust point lands on mid-PWM
+# (1500), matching the SITL heli-quad model's flat-pitch point
+H_COL_MIN 1000
+H_COL_MAX 2000
+H_COL_ANG_MIN -10
+H_COL_ANG_MAX 10
+H_COL_ZERO_THRST 0
+H_COL_LAND_MIN -2
+# no tail rotor, so no roll trim required in hover
+ATC_HOVR_ROL_TRM 0

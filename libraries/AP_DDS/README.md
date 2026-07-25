@@ -314,11 +314,11 @@ publishing #1: ardupilot_msgs.msg.GlobalPosition(header=std_msgs.msg.Header(stam
 When running in a simulated environment, The master simulation clock (usually ``/clock``) needs to be provided to Ardupilot to ensure ArduPilot's topics
 have the correct timestamp. This ensure that any sensor fusion (or similar) nodes in ROS 2 fuse the correct data.
 
-On startup, ArduPilot will automatically attempt to subscribe to ``/clock`` topic. If this is unsuccessful, ArduPilot
-will use it's own internal clock. In either case, ArduPilot will publish the clock to ``/ap/clock``
-(or ``/ap/vN/clock`` if namespacing is used).
+ArduPilot SITL uses the standard ROS2 parameter of ``--use-sim-time <true|false>``. If ``true`` ArduPilot will automatically attempt
+to subscribe to ``/clock`` topic and use this for the timestamping of DDS topics. If this is unsuccessful, ArduPilot
+will use it's own internal clock.
 
-For simulators such as Gazebo, the ``/clock`` topic is published automatically and no further configuration is required.
+In either case, ArduPilot will publish the clock to ``/ap/clock`` (or ``/ap/vN/clock`` if namespacing is used).
 
 ## Contributing to `AP_DDS` library
 

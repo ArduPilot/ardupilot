@@ -23,6 +23,8 @@
 
 #include <SITL/SIM_SerialRangeFinder.h>
 
+#include <SITL/SIM_Beacon_NoopLoop.h>
+
 #include <SITL/SIM_Siyi_ZT30.h>
 #include <SITL/SIM_Topotek.h>
 #include <SITL/SIM_Viewpro.h>
@@ -33,6 +35,7 @@
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
 #include <SITL/SIM_PS_LD06.h>
+#include <SITL/SIM_HLK_LD2451.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
 #include <SITL/SIM_PS_RPLidarA1.h>
 #include <SITL/SIM_PS_RPLidarS2.h>
@@ -118,6 +121,11 @@ public:
     SITL::SerialRangeFinder *serial_rangefinders[16];
     uint8_t num_serial_rangefinders;
 
+#if AP_SIM_NOOPLOOP_ENABLED
+    // simulated NoopLoop beacon system:
+    SITL::Beacon_NoopLoop *nooploop;
+#endif  // AP_SIM_NOOPLOOP_ENABLED
+
     // simulated Frsky devices
     SITL::Frsky_D *frsky_d;
     // SITL::Frsky_SPort *frsky_sport;
@@ -127,6 +135,11 @@ public:
     // simulated LD06:
     SITL::PS_LD06 *ld06;
 #endif  // AP_SIM_PS_LD06_ENABLED
+
+#if AP_SIM_HLK_LD2451_ENABLED
+    // simulated HLK-LD2451 radar:
+    SITL::PS_HLK_LD2451 *hlk_ld2451;
+#endif  // AP_SIM_HLK_LD2451_ENABLED
 
 #if AP_SIM_PS_RPLIDARA2_ENABLED
     // simulated RPLidarA2:
@@ -228,7 +241,7 @@ protected:
 
     SITL::SIM *_sitl;
 
-    void update_voltage_current(struct sitl_input &input, float throttle);
+    void set_voltage_current_pins(float voltage, float current_amp);
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

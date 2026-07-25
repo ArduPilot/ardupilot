@@ -34,7 +34,24 @@ void Motor::calculate_forces(const struct sitl_input &input,
 {
 
     const float pwm = input.servos[motor_offset+servo];
-    float command = pwm_to_command(pwm);
+    float command;
+    float thrust_sign = 1;
+    if (rsc_servo >= 0) {
+        // variable-pitch rotor; the motor's servo channel commands
+        // blade pitch about mid-PWM and rotor speed comes from the
+        // shared rotor-speed-control servo. The governor is assumed
+        // to hold the rotor at nominal speed from half RSC output;
+        // thrust scales with blade pitch and the square of rotor
+        // speed
+        const float rotor_speed = constrain_float((input.servos[motor_offset+rsc_servo]-1000)*0.002, 0, 1);
+        const float collective = constrain_float((pwm-1500)*0.002, -1, 1);
+        if (is_negative(collective)) {
+            thrust_sign = -1;
+        }
+        command = fabsf(collective) * sq(rotor_speed);
+    } else {
+        command = pwm_to_command(pwm);
+    }
     float voltage_scale = voltage / voltage_max;
 
     if (voltage_scale < 0.1) {
@@ -65,10 +82,13 @@ void Motor::calculate_forces(const struct sitl_input &input,
     float velocity_in = MAX(0, -motor_vel.projected(thrust_vector).z);
 
     // get thrust for untilted motor
-    float motor_thrust = calc_thrust(command, air_density, velocity_in, voltage_scale);
+    float motor_thrust = thrust_sign * calc_thrust(command, air_density, velocity_in, voltage_scale);
 
-    // the yaw torque of the motor
-    const float yaw_scale = 0.05 * diagonal_size * motor_thrust;
+    // the yaw torque of the motor. A variable-pitch rotor spins in
+    // the same direction regardless of blade pitch sign, so the drag
+    // torque reaction on the frame does not reverse with negative
+    // thrust
+    const float yaw_scale = 0.05 * diagonal_size * motor_thrust * thrust_sign;
     Vector3f rotor_torque = thrust_vector * yaw_factor * command * yaw_scale * -1.0;
 
     // thrust in bodyframe NED

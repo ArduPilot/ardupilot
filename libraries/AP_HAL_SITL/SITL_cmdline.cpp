@@ -88,7 +88,6 @@ void SITL_State::_usage(void)
            "\t--rate|-r RATE           set SITL framerate\n"
            "\t--console|-C             use console instead of TCP ports\n"
            "\t--instance|-I N          set instance of SITL (adds 10*instance to all port numbers)\n"
-           "\t--synthetic-clock|-S     set synthetic clock mode\n"
            "\t--home|-O HOME           set start location (lat,lng,alt,yaw) or location name\n"
            "\t--model|-M MODEL         set simulation model\n"
            "\t--config string          set additional simulation config string\n"
@@ -118,6 +117,7 @@ void SITL_State::_usage(void)
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
            "\t--sysid ID               set MAV_SYSID\n"
            "\t--slave number           set the number of JSON slaves\n"
+           "\t--use_sim_time <true|false>  use ROS2 simulation clock for DDS topics. Defaults to false\n"
         );
 }
 
@@ -154,6 +154,8 @@ static const struct {
     { "y6",                 MultiCopter::create },
     { "deca",               MultiCopter::create },
     { "deca-cwx",           MultiCopter::create },
+    // heli-quad must precede heli as matching is partial:
+    { "heli-quad",          MultiCopter::create },
     { "heli",               Helicopter::create },
     { "heli-dual",          Helicopter::create },
     { "heli-compound",      Helicopter::create },
@@ -313,6 +315,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 #if STORAGE_USE_FRAM
         CMDLINE_SET_STORAGE_FRAM_ENABLED,
 #endif
+#if AP_DDS_ENABLED
+        CMDLINE_DDS_USE_SIM_TIME,
+#endif
     };
 
     const struct GetOptLong::option options[] = {
@@ -323,7 +328,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"rate",            true,   0, 'r'},
         {"console",         false,  0, 'C'},
         {"instance",        true,   0, 'I'},
-        {"synthetic-clock", false,  0, 'S'},
+        {"synthetic-clock", false,  0, 'S'}, // kept to warn that it's always enabled
         {"home",            true,   0, 'O'},
         {"model",           true,   0, 'M'},
         {"config",          true,   0, 'c'},
@@ -371,6 +376,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
 #endif
 #if STORAGE_USE_FRAM
         {"set-storage-fram-enabled", true,   0, CMDLINE_SET_STORAGE_FRAM_ENABLED},
+#endif
+#if AP_DDS_ENABLED
+        {"use_sim_time",    true,  0, CMDLINE_DDS_USE_SIM_TIME},
 #endif
         {"vehicle",           true,   0, 'v'},
         {0, false, 0, 0}
@@ -445,7 +453,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         }
         break;
         case 'S':
-            printf("Ignoring stale command-line parameter '-S'");
+            printf("Ignoring obsolete command-line parameter '-S'/'--synthetic-clock'. Synthetic clock mode is now always enabled.\n");
             break;
         case 'O':
             home_str = gopt.optarg;
@@ -554,6 +562,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             storage_fram_enabled = atoi(gopt.optarg);
             break;
 #endif
+#if AP_DDS_ENABLED
+        case CMDLINE_DDS_USE_SIM_TIME:
+            if (strcasecmp(gopt.optarg, "true") == 0) {
+                _use_dds_sim_time = true;
+            } else {
+                _use_dds_sim_time = false;
+            }
+            break;
+#endif
         case 'h':
             _usage();
             exit(0);
@@ -591,6 +608,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         printf("You must specify a vehicle model.\n");
         exit(1);
     }
+
+    _model_str = model_str;
 
     if (AP::sitl() != nullptr) {  // some examples don't instantiate this object
         AP::sitl()->init();
@@ -794,6 +813,12 @@ static void append_frame_defaults(std::string &joined, const AP_JSON::value &fra
 /*
   search a single vehicle entry for a frame matching model_str. Returns
   true and fills `joined` if found.
+
+  A frame matches when either its JSON key equals model_str (e.g. "X",
+  "octa-quad") or its explicit "model" field equals model_str (e.g.
+  "Callisto" defines model "octa-quad:@ROMFS/models/Callisto.json").
+  Without the second check, frames with a custom model string would
+  not load their per-frame defaults.
  */
 static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
                                      const char *model_str,
@@ -810,6 +835,42 @@ static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
         append_frame_defaults(joined, frames.get(std::string(model_str)));
         return true;
     }
+    const AP_JSON::value::object &frames_obj = frames.get<AP_JSON::value::object>();
+    for (const auto &kv : frames_obj) {
+        if (!kv.second.is<AP_JSON::value::object>()) {
+            continue;
+        }
+        const AP_JSON::value &model_val = kv.second.get("model");
+        if (model_val.is<std::string>() &&
+            model_val.get<std::string>() == model_str) {
+            append_frame_defaults(joined, kv.second);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Search own vehicle first, then all vehicles, for a single candidate string.
+static bool search_once(const AP_JSON::value *root, const char *vehicle_str,
+                        const std::string &candidate, std::string &out)
+{
+    if (vehicle_str != nullptr && root->contains(std::string(vehicle_str))) {
+        if (resolve_frame_in_vehicle(root->get(std::string(vehicle_str)),
+                                     candidate.c_str(), out)) {
+            return true;
+        }
+    }
+    if (root->is<AP_JSON::value::object>()) {
+        const AP_JSON::value::object &top = root->get<AP_JSON::value::object>();
+        for (const auto &kv : top) {
+            if (vehicle_str != nullptr && kv.first == vehicle_str) {
+                continue;       // already tried
+            }
+            if (resolve_frame_in_vehicle(kv.second, candidate.c_str(), out)) {
+                return true;
+            }
+        }
+    }
     return false;
 }
 
@@ -824,6 +885,11 @@ static bool resolve_frame_in_vehicle(const AP_JSON::value &vehicle,
   and fall back to scanning every top-level vehicle. The scan covers
   the case where a heli binary (AP_BUILD_TARGET_NAME=ArduCopter) is
   asked for a frame that lives under "Helicopter" in the JSON.
+
+  If the full model string is not found, trailing dash-separated suffixes
+  are stripped and the lookup is retried (e.g. "plane-catapult" falls back
+  to "plane"). This mirrors the model-constructor prefix matching so that
+  physics variants automatically inherit the base frame's defaults.
  */
 void SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str)
 {
@@ -838,23 +904,18 @@ void SITL_State::resolve_defaults_from_romfs(const char *model_str, const char *
 
     std::string joined;
     bool found = false;
+    std::string candidate = model_str;
 
-    if (vehicle_str != nullptr && root->contains(std::string(vehicle_str))) {
-        found = resolve_frame_in_vehicle(root->get(std::string(vehicle_str)),
-                                         model_str, joined);
-    }
-
-    if (!found && root->is<AP_JSON::value::object>()) {
-        const AP_JSON::value::object &top = root->get<AP_JSON::value::object>();
-        for (const auto &kv : top) {
-            if (vehicle_str != nullptr && kv.first == vehicle_str) {
-                continue;       // already tried
-            }
-            if (resolve_frame_in_vehicle(kv.second, model_str, joined)) {
-                found = true;
-                break;
-            }
+    while (!found) {
+        found = search_once(root, vehicle_str, candidate, joined);
+        if (found) {
+            break;
         }
+        const size_t dash = candidate.rfind('-');
+        if (dash == std::string::npos) {
+            break;
+        }
+        candidate = candidate.substr(0, dash);
     }
 
     if (found && !joined.empty()) {

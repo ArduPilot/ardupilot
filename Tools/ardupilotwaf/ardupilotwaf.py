@@ -438,8 +438,12 @@ def ap_stlib(bld, **kw):
     for l in kw['ap_libraries']:
         bld.ap_library(l, kw['ap_vehicle'])
 
-    if 'dynamic_source' not in kw:
-        kw['dynamic_source'] = 'modules/DroneCAN/libcanard/dsdlc_generated/src/**.c'
+    # Pull the shared 'dronecan_libs' objects target (see
+    # _build_common_taskgens()) in via 'use'
+    if 'dynamic_source' not in kw and \
+            (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and \
+            not bld.env.AP_PERIPH:
+        kw['use'] = unique_list(Utils.to_list(kw.get('use', [])) + ['dronecan_libs'])
 
     kw['features'] = kw.get('features', []) + ['cxx', 'cxxstlib']
     kw['target'] = kw['name']
@@ -719,9 +723,10 @@ arducopter and upload it to my board".
 
     g.add_option('--asan',
         action='store_true',
-        help='''Build using the macOS clang Address Sanitizer. In order to run with
-Address Sanitizer support llvm-symbolizer is required to be on the PATH.
-This option is only supported on macOS versions of clang.
+        help='''Build using the clang Address Sanitizer (Linux and macOS). Requires
+clang to be selected via the CXX/CC environment variables, e.g.:
+  CXX=clang++-19 CC=clang-19 ./waf configure --board sitl --asan
+llvm-symbolizer must be on the PATH for symbolised reports.
 ''')
 
     g.add_option('--ubsan',

@@ -24,17 +24,11 @@
 
 #include "SITL.h"
 #include "SITL_Input.h"
-#include "SIM_Sprayer.h"
-#include "SIM_Gripper_Servo.h"
-#include "SIM_Gripper_EPM.h"
-#include "SIM_Parachute.h"
-#include "SIM_Precland.h"
 #include "SIM_RichenPower.h"
 #include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
 #include "SIM_Volz.h"
 #include "SIM_I2C.h"
-#include "SIM_Buzzer.h"
 #include "SIM_Battery.h"
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
@@ -157,9 +151,6 @@ public:
     const Location &get_home() const { return home; }
     float get_home_yaw() const { return home_yaw; }
 
-    void set_buzzer(Buzzer *_buzzer) { buzzer = _buzzer; }
-    void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
-    void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_richenpower(RichenPower *_richenpower) { richenpower = _richenpower; }
     void set_adsb(class ADSB *_adsb) { adsb = _adsb; }
 #if AP_SIM_LOWEHEISER_ENABLED
@@ -170,15 +161,9 @@ public:
     void set_volz(Volz *_volz) { volz = _volz; }
 #endif
     void set_ie24(IntelligentEnergy24 *_ie24) { ie24 = _ie24; }
-    void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
-    void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
-    void set_precland(SIM_Precland *_precland);
-    void set_i2c(class I2C *_i2c) { i2c = _i2c; }
-#if AP_TEST_DRONECAN_DRIVERS
-    void set_dronecan_device(DroneCANDevice *_dronecan) { dronecan = _dronecan; }
-#endif
     float get_battery_voltage() const { return battery_voltage; }
-    float get_battery_temperature_degC() const { return battery.get_temperature_degC(); }
+    float get_battery_temperature_degC() const { return battery_temperature_degC; }
+    float get_battery_current() const { return battery_current; }
 
     float ambient_outside_temperature_degC() const;
     float ambient_outside_pressure_Pascal() const;
@@ -240,12 +225,15 @@ protected:
     float airspeed_pitot;                // m/s, EAS airspeed, as seen by fwd pitot tube
     float battery_voltage;
     float battery_current;
+    float battery_temperature_degC;
     float local_ground_level;            // ground level at local position
     bool lock_step_scheduled;
     bool flightaxis_sync_imus_to_frames; // causes the frame counter to be incremented on each timestep, IMUs will then update at the same rate
     uint32_t last_one_hz_ms;
 
-    // battery model
+    // OPTIONAL internal battery model.
+    // ("OPTIONAL" because a child can ignore it and directly set battery_* protected members, exposed publicly via getters.)
+    // (Note that some aircraft get battery-info from an external source, ignoring this "internal" one.)
     Battery battery;
 
     uint32_t motor_mask;
@@ -361,6 +349,10 @@ protected:
     // extrapolate sensors by a given delta time in seconds
     void extrapolate_sensors(float delta_time);
 
+    // update battery
+    virtual void update_battery();
+    virtual void update_battery(const struct sitl_input &input);
+
     // update external payload/sensor dynamic
     void update_external_payload(const struct sitl_input &input);
 
@@ -405,11 +397,6 @@ private:
         Location location;
     } smoothing;
 
-    Buzzer *buzzer;
-    Sprayer *sprayer;
-    Gripper_Servo *gripper;
-    Gripper_EPM *gripper_epm;
-    Parachute *parachute;
     RichenPower *richenpower;
 #if AP_SIM_LOWEHEISER_ENABLED
     Loweheiser *loweheiser;
@@ -420,11 +407,6 @@ private:
 #endif  // AP_SIM_VOLZ_ENABLED
 
     IntelligentEnergy24 *ie24;
-    SIM_Precland *precland;
-    class I2C *i2c;
-#if AP_TEST_DRONECAN_DRIVERS
-    DroneCANDevice *dronecan;
-#endif
 
 
 #if AP_SIM_GPIO_LED_1_ENABLED

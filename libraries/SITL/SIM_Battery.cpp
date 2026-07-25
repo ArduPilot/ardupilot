@@ -17,6 +17,7 @@
 */
 
 #include "SIM_Battery.h"
+#include <float.h>
 #include <AP_Math/AP_Math.h>
 
 using namespace SITL;
@@ -69,6 +70,8 @@ static const struct {
     { 0.01,  0.01},
     { 0.001, 0.001 }};
 
+constexpr float maximum_permissible_dt = 0.1f; // seconds
+
 /*
   use table to get resting voltage from remaining capacity
  */
@@ -96,10 +99,14 @@ float Battery::get_resting_voltage(void) const
 }
 
 /*
-  use table to set initial state of charge from voltage
+  return remaining Amp-hours (aka "charge", "state of charge") corresponding to a voltage
  */
-void Battery::set_initial_SoC(float voltage)
+float Battery::compute_remaining_Ah(float voltage) const
 {
+    if (capacity_is_unlimited()) {
+        return FLT_MAX;
+    }
+
     const float max_cell_voltage = soc_table[0].volt_per_cell;
     const float cell_volt = (voltage / max_voltage) * max_cell_voltage;
 
@@ -111,13 +118,11 @@ void Battery::set_initial_SoC(float voltage)
             const float soc1 = soc_table[i].soc_pct;
             const float soc2 = soc_table[i-1].soc_pct;
             const float soc = soc1 + (dv1 / dv2) * (soc2 - soc1);
-            remaining_Ah = capacity_Ah * soc * 0.01;
-            return;
+            return capacity_Ah * (soc * 0.01);
         }
     }
-
     // off the bottom of the table
-    remaining_Ah = 0;
+    return 0.0f;
 }
 
 // Reminder: capacity <= 0 means **unlimited**
@@ -130,11 +135,16 @@ void Battery::setup(float _capacity_Ah, float _resistance_ohm, float _max_voltag
 
     voltage_set = max_voltage;
     voltage_filter.reset(voltage_set);
-    set_initial_SoC(voltage_set);
+    remaining_Ah = compute_remaining_Ah(voltage_set);
 }
 
-void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah)
+// A negative value for desired_resistance means "no change".
+void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah, float desired_resistance_ohm)
 {
+    if (!is_negative(desired_resistance_ohm)) {
+        resistance_ohm = desired_resistance_ohm;
+    }
+
     const bool reset_not_needed = (is_equal(voltage_set, desired_voltage)
                                    && is_equal(capacity_Ah, desired_capacity_Ah));
     if (reset_not_needed) {
@@ -145,31 +155,30 @@ void Battery::maybe_reset(float desired_voltage, float desired_capacity_Ah)
     // a negative desired voltage is unexpected, but not problematic
     voltage_set = MIN(desired_voltage, max_voltage);
     voltage_filter.reset(voltage_set);
-    set_initial_SoC(voltage_set);
+    remaining_Ah = compute_remaining_Ah(voltage_set);
 }
 
-void Battery::consume_energy(float current_amp, uint64_t now_us)
+void Battery::consume_energy(float attempted_current_amp, uint64_t now_us)
 {
     constexpr float microsec_to_sec = 1.0e-6f;
-    float dt = static_cast<float>(now_us - last_us) * microsec_to_sec;
-    if (dt > 0.1) {
-        // we stopped updating
-        dt = 0;
+    const float dt = static_cast<float>(now_us - last_us) * microsec_to_sec;
+    if (dt <= 0.0f) {
+        return;
     }
     last_us = now_us;
-    const float delta_Ah = current_amp * dt / 3600;
-    remaining_Ah -= delta_Ah;
-    remaining_Ah = MAX(0, remaining_Ah);
-
-    const float voltage_delta = current_amp * resistance_ohm;
-    float voltage;
-    if (!is_positive(capacity_Ah)) {
-        voltage = voltage_set;
-    } else {
-        voltage = get_resting_voltage() - voltage_delta;
+    if (dt > maximum_permissible_dt) {
+        return;
     }
-
-    voltage_filter.apply(voltage, dt);
+    constexpr float hours_per_second = 1.0f / 3600.0f;
+    const float dt_hr = dt * hours_per_second;
+    const float delta_Ah = MIN(attempted_current_amp * dt_hr, remaining_Ah);
+    if (!capacity_is_unlimited()) {
+        remaining_Ah -= delta_Ah;
+    }
+    const float current_amp = delta_Ah / dt_hr;
+    const float voltage_delta = current_amp * resistance_ohm;
+    const float sagged_voltage = get_resting_voltage() - voltage_delta;
+    voltage_filter.apply(sagged_voltage, dt);
 
     update_temperature(current_amp, dt);
 }

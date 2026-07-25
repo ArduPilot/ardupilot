@@ -21,6 +21,25 @@
 
 #include <AP_Math/AP_Math.h>
 
+// Reset vessel to default unknown state
+void AP_AIS::ais_vehicle_t::reset()
+{
+    // Set to values for invalid in MAVLink spec
+    memset(this, 0, sizeof(*this));
+    info.lat                 = INT32_MAX;
+    info.lon                 = INT32_MAX;
+    info.COG                 = UINT16_MAX;
+    info.heading             = UINT16_MAX;
+    info.velocity            = UINT16_MAX;
+    info.dimension_bow       = UINT16_MAX;
+    info.dimension_stern     = UINT16_MAX;
+    info.turn_rate           = INT8_MAX;
+    info.navigational_status = AIS_NAV_STATUS::AIS_NAV_STATUS_UNKNOWN;
+    info.type                = AIS_TYPE::AIS_TYPE_UNKNOWN;
+    info.dimension_port      = UINT8_MAX;
+    info.dimension_starboard = UINT8_MAX;
+}
+
 // Apply dimensions to a vessel
 // All dimensions are in meters from the provided location
 void AP_AIS::ais_vehicle_t::set_dimensions(uint16_t bow, uint16_t stern, uint8_t port, uint8_t star)
@@ -72,7 +91,7 @@ void AP_AIS::ais_vehicle_t::set_cog(uint16_t cog)
 
     // Invalid
     info.flags &= ~AIS_FLAGS_VALID_COG;
-    info.COG = 0;
+    info.COG = UINT16_MAX;
 }
 
 // Apply speed over ground to a vessel
@@ -82,7 +101,7 @@ void AP_AIS::ais_vehicle_t::set_sog(uint16_t sog)
     if (sog >= 1023) {
         // Invalid
         info.flags &= ~(AIS_FLAGS_VALID_VELOCITY | AIS_FLAGS_HIGH_VELOCITY);
-        info.velocity = 0;
+        info.velocity = UINT16_MAX;
         return;
     }
 
@@ -119,7 +138,7 @@ void AP_AIS::ais_vehicle_t::set_rot(int8_t rot)
     if (rot <= -128) {
         // Invalid
         info.flags &= ~(AIS_FLAGS_VALID_TURN_RATE | AIS_FLAGS_TURN_RATE_SIGN_ONLY);
-        info.turn_rate = 0;
+        info.turn_rate = INT8_MAX;
         return;
     }
 
@@ -135,6 +154,20 @@ void AP_AIS::ais_vehicle_t::set_rot(int8_t rot)
     // Apply expo formula and convert from deg per min to cdeg per second
     // constrain to avoid overflow, probably need to change the units or increase to int16
     info.turn_rate = sign * MIN(sq(rot / 4.733) * (100.0 / 60.0), INT8_MAX - 1);
+}
+
+// Set true heading of vessel
+// heading in centi-degrees
+void AP_AIS::ais_vehicle_t::set_heading(uint16_t heading)
+{
+    if (heading < 360 * 100) {
+        // Valid
+        info.heading = heading;
+        return;
+    }
+
+    // Invalid
+    info.heading = UINT16_MAX;
 }
 
 // Set call sign of vessel

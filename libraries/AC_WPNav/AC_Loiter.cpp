@@ -177,10 +177,12 @@ void AC_Loiter::set_pilot_desired_acceleration_rad(float euler_roll_angle_rad, f
 
     // convert our desired attitude to an acceleration vector assuming we are not accelerating vertically
     const Vector3f desired_euler_rad {euler_roll_angle_rad, euler_pitch_angle_rad, _ahrs.yaw};
-    const Vector3f desired_accel_ned_mss = _pos_control.lean_angles_rad_to_accel_NED_mss(desired_euler_rad);
+    _desired_accel_ne_mss = _pos_control.lean_angles_rad_to_accel_NED_mss(desired_euler_rad).xy();
 
-    _desired_accel_ne_mss.x = desired_accel_ned_mss.x;
-    _desired_accel_ne_mss.y = desired_accel_ned_mss.y;
+    // Reset brake timer if there is pilot input
+    if (!_desired_accel_ne_mss.is_zero()) {
+        _brake_timer_ms = AP_HAL::millis();
+    }
 
     // Compute attitude error between desired and predicted lean angles
     Vector2f angle_error_euler_rad(wrap_PI(euler_roll_angle_rad - _predicted_euler_angle_rad.x), wrap_PI(euler_pitch_angle_rad - _predicted_euler_angle_rad.y));
@@ -328,7 +330,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     gnd_speed_limit_ms = MAX(gnd_speed_limit_ms, LOITER_SPEED_MIN_MS);
 
     // Determine acceleration limit based on maximum allowed lean angle
-    float pilot_acceleration_max_mss = angle_rad_to_accel_mss(get_angle_max_rad());
+    float pilot_acceleration_max_mss = (gnd_speed_limit_ms / _speed_max_ne_ms) * angle_rad_to_accel_mss(get_angle_max_rad());
 
     // Check for invalid dt
     if (is_negative(dt_s)) {
@@ -349,16 +351,11 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         // Apply drag: deceleration proportional to current velocity
         float drag_decel_mss = pilot_acceleration_max_mss * desired_speed_ms / gnd_speed_limit_ms;
 
-        // Determine braking acceleration based on stick release and delay timer
+        // Determine braking acceleration based on stick release and delay timer, stick must have been released for at least a full loop
         float loiter_brake_accel_mss = 0.0f;
-        if (_desired_accel_ne_mss.is_zero()) {
-            if ((AP_HAL::millis() - _brake_timer_ms) > _brake_delay_s * 1000.0) {
-                float brake_gain = _pos_control.NE_get_vel_pid().kP() * 0.5f;
-                loiter_brake_accel_mss = constrain_float(sqrt_controller(desired_speed_ms, brake_gain, _brake_jerk_max_msss, dt_s), 0.0f, _brake_accel_max_mss);
-            }
-        } else {
-            loiter_brake_accel_mss = 0.0f;
-            _brake_timer_ms = AP_HAL::millis();
+        if ((AP_HAL::millis() - _brake_timer_ms) > MAX(_brake_delay_s, dt_s) * 1000.0) {
+            const float brake_gain = _pos_control.NE_get_vel_pid().kP() * 0.5f;
+            loiter_brake_accel_mss = constrain_float(sqrt_controller(desired_speed_ms, brake_gain, _brake_jerk_max_msss, dt_s), 0.0f, _brake_accel_max_mss);
         }
 
         // Integrate jerk-limited brake acceleration

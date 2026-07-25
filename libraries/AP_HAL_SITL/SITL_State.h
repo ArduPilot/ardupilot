@@ -74,7 +74,7 @@ private:
     void _update_rangefinder();
     void _set_signal_handlers(void) const;
 
-    void _update_airspeed(float airspeed);
+    void _update_airspeed(float eas);
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
     void _simulator_servos(struct sitl_input &input);
@@ -95,8 +95,14 @@ private:
     uint16_t _irlock_port;
 
     bool _use_fg_view;
+
+    bool _use_dds_sim_time = false;
     
     const char *_fg_address;
+
+    // simulation model name as given on the command line, for
+    // model-specific flightgear view output
+    const char *_model_str = nullptr;
 
     // delay buffer variables
     static const uint8_t wind_buffer_length = 50;

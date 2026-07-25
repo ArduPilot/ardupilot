@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
@@ -648,11 +649,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
 
-#if AP_BEACON_ENABLED
-    // @Group: BCN
-    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
-    AP_SUBGROUPINFO(beacon, "BCN", 14, ParametersG2, AP_Beacon),
-#endif
+    // 14 was AP_Beacon
 
 #if HAL_PROXIMITY_ENABLED
     // @Group: PRX
@@ -1204,9 +1201,6 @@ ParametersG2::ParametersG2(void) :
 #if AP_TEMPCALIBRATION_ENABLED
     , temp_calibration()
 #endif
-#if AP_BEACON_ENABLED
-    , beacon()
-#endif
 #if HAL_PROXIMITY_ENABLED
     , proximity()
 #endif
@@ -1289,6 +1283,10 @@ void Copter::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
         { &gripper, gripper.var_info, 13 },
 #endif
+#if AP_BEACON_ENABLED
+    // PARAMETER_CONVERSION - Added: Jun-2026 for Copter-4.8
+        { &beacon, beacon.var_info, 14 },
+#endif  // AP_BEACON_ENABLED
     };
 
     AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));

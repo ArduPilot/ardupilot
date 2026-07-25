@@ -42,7 +42,8 @@ public:
         }
         return &obj_channels[chan];
     }
-    const RC_Channel_Blimp *channel(const uint8_t chan) const override {
+    const RC_Channel_Blimp *channel(const uint8_t chan) const override
+    {
         if (chan >= ARRAY_SIZE(obj_channels)) {
             return nullptr;
         }

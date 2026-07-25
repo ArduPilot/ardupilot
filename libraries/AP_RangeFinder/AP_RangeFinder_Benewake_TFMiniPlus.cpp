@@ -79,13 +79,13 @@ bool AP_RangeFinder_Benewake_TFMiniPlus::init()
         return false;
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TFMiniPlus: found fw version %u.%u.%u\n",
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TFMiniPlus: found fw version %u.%u.%u",
                         val[5], val[4], val[3]);
 
     for (i = 0; i < ARRAY_SIZE(cmds); i++) {
         ret = dev.transfer(cmds[i], cmds[i][1], nullptr, 0);
         if (!ret) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TFMiniPlus: Unable to set configuration register %u\n",
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TFMiniPlus: Unable to set configuration register %u",
                                 cmds[i][2]);
             return false;
         }
@@ -166,16 +166,24 @@ void AP_RangeFinder_Benewake_TFMiniPlus::timer()
         } val;
         uint8_t arr[11];
     } u;
-    bool ret;
     uint16_t distance;
 
-    ret = dev.transfer(CMD_READ_MEASUREMENT, sizeof(CMD_READ_MEASUREMENT), nullptr, 0);
-    if (!ret || !dev.transfer(nullptr, 0, (uint8_t *)&u, sizeof(u))) {
+    if (!dev.transfer(CMD_READ_MEASUREMENT, sizeof(CMD_READ_MEASUREMENT), nullptr, 0)) {
+        // Failed write
         return;
     }
 
-    if (u.val.header1 != 0x59 || u.val.header2 != 0x59 || !check_checksum(u.arr, sizeof(u)))
+    // Short delay helps avoid bad data, despite datasheet saying its not needed
+    hal.scheduler->delay_microseconds(10);
+
+    if (!dev.transfer(nullptr, 0, (uint8_t *)&u, sizeof(u))) {
+        // Failed read
         return;
+    }
+
+    if (u.val.header1 != 0x59 || u.val.header2 != 0x59 || !check_checksum(u.arr, sizeof(u))) {
+        return;
+    }
 
     process_raw_measure(u.val.distance, u.val.strength, distance);
 

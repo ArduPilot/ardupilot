@@ -129,7 +129,10 @@ public:
     // unmount filesystem for reboot
     void unmount(void);
 
-    // returns null-terminated string; cr or lf terminates line
+    // reads a line into buf, guaranteeing null-termination.  buflen
+    // is the full size of buf, including the space required for the
+    // null terminator, so up to buflen-1 characters are returned.  cr
+    // or lf terminates the line and is consumed but not returned.
     bool fgets(char *buf, uint8_t buflen, int fd);
 
     // run crc32 over file with given name, returns true if successful

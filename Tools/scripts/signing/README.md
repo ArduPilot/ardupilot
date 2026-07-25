@@ -140,7 +140,7 @@ public keys and one of your own public keys then X will be 4 in the
 above command.
 
 Re-run the 'securecommand getpublickeys' command again and check that "No public keys" is returned.
-This confirms that all keys have been removed.
+This confirms that all keys have been removed.  By design, ArduPilot accepts all SECURE_COMMANDs when there are no public keys present.
 
 Now exit MAVProxy and build a firmware using the normal bootloader but still using the --signed-fw option:
 

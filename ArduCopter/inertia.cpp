@@ -25,6 +25,15 @@ void Copter::read_inertia()
     // current_loc.alt is alt-above-home, converted from AHRS's alt-above-ekf-origin
     const float alt_above_origin_m = -pos_d_m;
     current_loc.set_alt_m(alt_above_origin_m, Location::AltFrame::ABOVE_ORIGIN);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    if (!current_loc.initialised()) {
+        // this can happen if we don't have lat/lng and our altitude
+        // is *very* close the origin i.e.  lat=0, lng=0 and
+        // int32_t(abs(pos_d_m)*100)==0
+        return;
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
     if (!ahrs.home_is_set() || !current_loc.change_alt_frame(Location::AltFrame::ABOVE_HOME)) {
         // if home has not been set yet we treat alt-above-origin as alt-above-home
         current_loc.set_alt_m(alt_above_origin_m, Location::AltFrame::ABOVE_HOME);

@@ -584,6 +584,12 @@
 #define WSPI_USE_MUTUAL_EXCLUSION           TRUE
 #endif
 
+/**
+ * @brief   Enables inexact clock matching.
+ */
+#if !defined(HAL_CAN_ALLOW_INEXACT_CLOCK) || defined(__DOXYGEN__)
+#define HAL_CAN_ALLOW_INEXACT_CLOCK         FALSE
+#endif
 
 
 /** @} */

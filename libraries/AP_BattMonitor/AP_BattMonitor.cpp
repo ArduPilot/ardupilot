@@ -76,6 +76,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: _
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: _
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[0], "_", 41, AP_BattMonitor, backend_var_info[0]),
 
 #if AP_BATT_MONITOR_MAX_INSTANCES > 1
@@ -105,6 +107,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: 2_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: 2_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_", 42, AP_BattMonitor, backend_var_info[1]),
 #endif
 
@@ -135,6 +139,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: 3_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: 3_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_", 43, AP_BattMonitor, backend_var_info[2]),
 #endif
 
@@ -165,6 +171,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: 4_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: 4_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_", 44, AP_BattMonitor, backend_var_info[3]),
 #endif
 
@@ -195,6 +203,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: 5_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: 5_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[4], "5_", 45, AP_BattMonitor, backend_var_info[4]),
 #endif
 
@@ -225,6 +235,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: 6_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: 6_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[5], "6_", 46, AP_BattMonitor, backend_var_info[5]),
 #endif
 
@@ -255,6 +267,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: 7_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: 7_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[6], "7_", 47, AP_BattMonitor, backend_var_info[6]),
 #endif
 
@@ -285,6 +299,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: 8_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: 8_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[7], "8_", 48, AP_BattMonitor, backend_var_info[7]),
 #endif
 
@@ -315,6 +331,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: 9_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: 9_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[8], "9_", 49, AP_BattMonitor, backend_var_info[8]),
 #endif
 
@@ -345,6 +363,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: A_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: A_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[9], "A_", 50, AP_BattMonitor, backend_var_info[9]),
 #endif
 
@@ -375,6 +395,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: B_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: B_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[10], "B_", 51, AP_BattMonitor, backend_var_info[10]),
 #endif
 
@@ -405,6 +427,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: C_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: C_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[11], "C_", 52, AP_BattMonitor, backend_var_info[11]),
 #endif
 
@@ -435,6 +459,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: D_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: D_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[12], "D_", 53, AP_BattMonitor, backend_var_info[12]),
 #endif
 
@@ -465,6 +491,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: E_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: E_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[13], "E_", 54, AP_BattMonitor, backend_var_info[13]),
 #endif
 
@@ -495,6 +523,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: F_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: F_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[14], "F_", 55, AP_BattMonitor, backend_var_info[14]),
 #endif
 
@@ -525,6 +555,8 @@ const AP_Param::GroupInfo AP_BattMonitor::var_info[] = {
     // @Path: AP_BattMonitor_INA3221.cpp
     // @Group: G_
     // @Path: AP_BattMonitor_AD7091R5.cpp
+    // @Group: G_
+    // @Path: AP_BattMonitor_TIBQ76952.cpp
     AP_SUBGROUPVARPTR(drivers[15], "G_", 56, AP_BattMonitor, backend_var_info[15]),
 #endif
 
@@ -1257,6 +1289,16 @@ bool AP_BattMonitor::handle_scripting(uint8_t idx, const BattMonitorScript_State
     return drivers[idx]->handle_scripting(_state);
 }
 #endif
+
+// set battery BMS sleep timeout in seconds
+// set to zero to disable sleep
+void AP_BattMonitor::set_sleep_timeout(uint8_t instance, uint16_t timeout_sec)
+{
+    if (instance >= _num_instances || drivers[instance] == nullptr) {
+        return;
+    }
+    drivers[instance]->set_sleep_timeout(timeout_sec);
+}
 
 namespace AP {
 

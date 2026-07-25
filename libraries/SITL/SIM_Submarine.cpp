@@ -63,6 +63,12 @@ Submarine::Submarine(const char *frame_str) :
         n_thrusters = 8;
     }
     lock_step_scheduled = true;
+
+    constexpr float default_battery_resistance_ohm = 0.033;
+    battery.setup(sitl->batt_capacity_ah,
+                  default_battery_resistance_ohm,
+                  sitl->batt_voltage,
+                  ambient_outside_temperature_degC());
 }
 
 float Submarine::perpendicular_distance_to_rangefinder_surface() const
@@ -85,7 +91,7 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
         float output = 0;
         // if valid pwm and not in the esc deadzone
         // TODO: extract deadzone from parameters/vehicle code
-        if (pwm < 2000 && pwm > 1000 && (pwm < 1475 || pwm > 1525)) {
+        if (!battery_is_empty() && pwm < 2000 && pwm > 1000 && (pwm < 1475 || pwm > 1525)) {
             output = (pwm - 1500) / 400.0; // range -1~1
         }
 
@@ -120,6 +126,20 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     add_shove_forces(rot_accel, body_accel);
 }
 
+void Submarine::update_battery(const struct sitl_input &input)
+{
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery_current = 0.0f;
+    constexpr float current_draw_scaler_amps = 15.0f;
+    for (uint8_t i=0; i<6; i++) {
+        const float pwm = input.servos[i];
+        const float fraction = fabsf(pwm - 1500) / 500.0f;
+        battery_current += fraction * current_draw_scaler_amps;
+    }
+    battery.consume_energy(battery_current, AP_HAL::micros64());
+    battery_voltage = battery.get_voltage();
+    battery_temperature_degC = battery.get_temperature_degC();
+}
 
 /**
  * @brief Calculate the torque induced by buoyancy foam
@@ -239,6 +259,7 @@ void Submarine::update(const struct sitl_input &input)
     Vector3f rot_accel;
 
     calculate_forces(input, rot_accel, accel_body);
+    update_battery(input);
 
     update_dynamics(rot_accel);
     update_external_payload(input);
