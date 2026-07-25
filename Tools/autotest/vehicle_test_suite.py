@@ -10691,12 +10691,11 @@ Also, ignores heartbeats not from our target system'''
                 m = self.mav.recv_match(type='MAG_CAL_PROGRESS', blocking=True, timeout=5)
                 if m is None:
                     if tstop is not None:
-                        # wait 3 second to unsure that the calibration is well stopped
-                        if self.get_sim_time_cached() - tstop > 10:
-                            if reached_pct[0] > 33:
-                                raise NotAchievedException("Mag calibration didn't stop")
-                            else:
-                                break
+                        # if no more progress arrives for a few seconds after cancel,
+                        # treat the calibration as stopped regardless of the last
+                        # reported completion percentage.
+                        if self.get_sim_time_cached() - tstop > 3:
+                            break
                         else:
                             continue
                     else:
@@ -10728,7 +10727,8 @@ Also, ignores heartbeats not from our target system'''
                     if tstop is None:
                         tstop = self.get_sim_time_cached()
                 if tstop is not None:
-                    # wait 3 second to unsure that the calibration is well stopped
+                    # receiving progress for more than a few seconds after cancel
+                    # means the calibration did not stop promptly.
                     if self.get_sim_time_cached() - tstop > 3:
                         raise NotAchievedException("Mag calibration didn't stop")
             self.check_zero_mag_parameters(params)
@@ -10743,6 +10743,9 @@ Also, ignores heartbeats not from our target system'''
             tstart = self.get_sim_time()
             reached_pct = [0] * compass_tnumber
             report_get = [0] * compass_tnumber
+            # COMPASS_CAL_FIT=0.001 forces fitness > tolerance, so we expect
+            # MAG_CAL_FAILED_RESIDUALS_HIGH.
+            MAG_CAL_FAILED_RESIDUALS_HIGH = mavutil.mavlink.MAG_CAL_FAILED_RESIDUALS_HIGH
             while True:
                 if self.get_sim_time_cached() - tstart > timeout:
                     raise NotAchievedException("Cannot receive enough MAG_CAL_PROGRESS")
@@ -10750,10 +10753,10 @@ Also, ignores heartbeats not from our target system'''
                 if m.get_type() == "MAG_CAL_REPORT":
                     if report_get[m.compass_id] == 0:
                         self.progress("Report: %s" % str(m))
-                        if m.cal_status == mavutil.mavlink.MAG_CAL_FAILED:
+                        if m.cal_status == MAG_CAL_FAILED_RESIDUALS_HIGH:
                             report_get[m.compass_id] = 1
                         else:
-                            raise NotAchievedException("Mag calibration didn't failed")
+                            raise NotAchievedException("Expected MAG_CAL_FAILED_RESIDUALS_HIGH (10), got %u" % m.cal_status)
                     if all(ele >= 1 for ele in report_get):
                         self.progress("All Mag report failure")
                         break
@@ -10771,6 +10774,80 @@ Also, ignores heartbeats not from our target system'''
             self.check_zero_mag_parameters(params)
             self.check_zeros_mag_orient()
             self.set_parameter("COMPASS_CAL_FIT", old_cal_fit, add_to_context=False)
+
+            #################################################
+            if compass_tnumber > 1 and target_mask == 0:
+                self.start_subtest("Try magcal with one bad compass and ensure others continue")
+                self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
+
+                old_sim_mag1_ofs_x = self.get_parameter("SIM_MAG1_OFS_X")
+                old_sim_mag1_ofs_y = self.get_parameter("SIM_MAG1_OFS_Y")
+                old_sim_mag1_ofs_z = self.get_parameter("SIM_MAG1_OFS_Z")
+
+                self.set_parameters({
+                    "SIM_MAG1_OFS_X": 2000,
+                    "SIM_MAG1_OFS_Y": 2000,
+                    "SIM_MAG1_OFS_Z": 2000,
+                }, add_to_context=False)
+
+                try:
+                    reset_pos_and_start_magcal(mavproxy, target_mask)
+                    report_status = [None] * compass_tnumber
+                    tstart = self.get_sim_time()
+                    while True:
+                        if self.get_sim_time_cached() - tstart > timeout:
+                            raise NotAchievedException("Cannot receive enough MAG_CAL_REPORT in selective-failure test")
+                        m = self.mav.recv_match(type=["MAG_CAL_PROGRESS", "MAG_CAL_REPORT"], blocking=True, timeout=1)
+                        if m is None:
+                            continue
+                        if m.get_type() != "MAG_CAL_REPORT":
+                            continue
+
+                        report_status[m.compass_id] = m.cal_status
+                        self.progress("Selective-failure report compass %u status %u" %
+                                      (m.compass_id, m.cal_status))
+                        if all(status is not None for status in report_status):
+                            break
+
+                    # SIM_MAG1_OFS_X/Y/Z=2000 exceeds COMPASS_OFFS_MAX, so one
+                    # compass is expected to report FAILED_OFFSETS. Do not
+                    # assume compass_id ordering here; some SITL setups can
+                    # differ in instance mapping.
+                    MAG_CAL_FAILED_OFFSETS = mavutil.mavlink.MAG_CAL_FAILED_OFFSETS
+                    failed_offsets_idxs = []
+                    for i, status in enumerate(report_status):
+                        if status == MAG_CAL_FAILED_OFFSETS:
+                            failed_offsets_idxs.append(i)
+
+                    if len(failed_offsets_idxs) != 1:
+                        raise NotAchievedException(
+                            "Expected exactly one compass to report MAG_CAL_FAILED_OFFSETS (8), got %u" %
+                            len(failed_offsets_idxs)
+                        )
+
+                    degraded_idx = failed_offsets_idxs[0]
+                    other_non_degraded_terminal = False
+                    for i, status in enumerate(report_status):
+                        if i == degraded_idx:
+                            continue
+                        if status is not None and status != MAG_CAL_FAILED_OFFSETS:
+                            other_non_degraded_terminal = True
+                            break
+
+                    if not other_non_degraded_terminal:
+                        raise NotAchievedException(
+                            "Expected at least one non-degraded compass terminal result"
+                        )
+
+                finally:
+                    self.set_parameters({
+                        "SIM_MAG1_OFS_X": old_sim_mag1_ofs_x,
+                        "SIM_MAG1_OFS_Y": old_sim_mag1_ofs_y,
+                        "SIM_MAG1_OFS_Z": old_sim_mag1_ofs_z,
+                    }, add_to_context=False)
+
+                self.check_zero_mag_parameters(params)
+                self.check_zeros_mag_orient()
 
             #################################################
             self.start_subtest("Try magcal and wait success")
