@@ -72,17 +72,35 @@ SIM_GPS1_GLTCH_X 0
 SIM_GPS1_GLTCH_Y 0
 
 # --- Radar -> proximity / object avoidance ---
-# The front corner radars feed ArduPilot via tools/radar_mav.py, which
-# speaks the real Hi-Link HLK-LD2451 UART protocol over this serial port -
-# the actual AP_Proximity_HLK_LD2451 backend (PRX1_TYPE=19) parses it, same
-# driver code as the real sensor. Avoidance stops the rover AVOID_MARGIN
-# metres short of an obstacle (all modes except MANUAL) and backs away at
-# AVOID_BACKUP_SPD. Needs radar_mav.py running alongside SITL:
-#   python3 tools/radar_mav.py --side front --port 5763
-SERIAL2_PROTOCOL 11    # Proximity
+# All 4 corner radars feed ArduPilot via tools/radar_mav.py, which speaks
+# the real Hi-Link HLK-LD2451 UART protocol - the actual
+# AP_Proximity_HLK_LD2451 backend parses it, same driver code as the real
+# sensor, one instance per corner for real 360-ish coverage. Avoidance
+# stops the rover AVOID_MARGIN metres short of an obstacle (all modes
+# except MANUAL) and backs away at AVOID_BACKUP_SPD. Needs radar_mav.py
+# running alongside SITL (default runs all 4 corners at once):
+#   python3 tools/radar_mav.py
+#
+# PRX_YAW_CORR matches each radar's mounting rotation in the .wbt worlds
+# (Radar node "rotation" field, converted to degrees):
+#   fl (PRX1/SERIAL2): +12 deg    fr (PRX2/SERIAL3): -12 deg
+#   rl (PRX3/SERIAL4): +168 deg   rr (PRX4/SERIAL5): -168 deg
+SERIAL2_PROTOCOL 11    # Proximity (PRX1 = front-left radar)
 SERIAL2_BAUD     115   # 115200, matches the real HLK-LD2451's UART
-SERIAL4_PROTOCOL 0     # not used by this sensor - keep default/disabled
-PRX1_TYPE        19    # HLK-LD2451
+SERIAL3_PROTOCOL 11    # Proximity (PRX2 = front-right radar)
+SERIAL3_BAUD     115
+SERIAL4_PROTOCOL 11    # Proximity (PRX3 = rear-left radar)
+SERIAL4_BAUD     115
+SERIAL5_PROTOCOL 11    # Proximity (PRX4 = rear-right radar)
+SERIAL5_BAUD     115
+PRX1_TYPE        19    # HLK-LD2451, front-left
+PRX1_YAW_CORR    12
+PRX2_TYPE        19    # HLK-LD2451, front-right
+PRX2_YAW_CORR    -12
+PRX3_TYPE        19    # HLK-LD2451, rear-left
+PRX3_YAW_CORR    168
+PRX4_TYPE        19    # HLK-LD2451, rear-right
+PRX4_YAW_CORR    -168
 AVOID_ENABLE     7     # use all barrier sources incl. proximity (simple avoidance)
 AVOID_MARGIN     2.5   # m: stop this far short of an obstacle
 AVOID_BACKUP_SPD 0.5   # m/s: back away speed (0 = just stop)

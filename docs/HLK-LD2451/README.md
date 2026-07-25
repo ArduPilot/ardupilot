@@ -140,13 +140,15 @@ Webots project, wired in as a submodule at
 git submodule update --init Webots_Rover   # first time only
 ```
 
-`Webots_Rover/tools/radar_mav.py` reads the nearest real target from the
-model's front corner radars and re-encodes it as real HLK-LD2451 frames
-into SITL — same driver, same protocol, physically-simulated detection.
+`Webots_Rover/tools/radar_mav.py` reads the nearest real target from each of
+the model's 4 corner radars and re-encodes each as its own real HLK-LD2451
+stream into SITL — one `AP_Proximity` instance per corner (`PRX1`=front-left,
+`PRX2`=front-right, `PRX3`=rear-left, `PRX4`=rear-right), same driver, same
+protocol, physically-simulated detection on all 4.
 [`webots_rover.parm`](webots_rover.parm) here is a synced copy of the
-submodule's tuned `rover.parm` (navigation gains, servo mapping,
-`PRX1_TYPE 19` on SERIAL2) so you can run against it without initialising
-the submodule first, if you just want the parameters:
+submodule's tuned `rover.parm` (navigation gains, servo mapping, all 4
+`PRXn_TYPE 19` + `PRXn_YAW_CORR` set) so you can run against it without
+initialising the submodule first, if you just want the parameters:
 
 ```bash
 Tools/autotest/sim_vehicle.py -v Rover --model webots-python \
@@ -157,11 +159,14 @@ Tools/autotest/sim_vehicle.py -v Rover --model webots-python \
 ```
 
 Then, in a second terminal (once Webots is running the world and SITL is
-up):
+up) — default drives all 4 corners at once:
 
 ```bash
-python3 Webots_Rover/tools/radar_mav.py --side front --port 5763
+python3 Webots_Rover/tools/radar_mav.py
 ```
+
+For a single-sensor setup instead (only `PRX1_TYPE 19` configured), pass
+`--side {fl,fr,rl,rr} --port <n>`.
 
 Full setup (opening the world in Webots on Windows, IP addressing across
 WSL2, etc.) is documented in `Webots_Rover/README.md`.
