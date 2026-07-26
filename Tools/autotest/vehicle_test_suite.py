@@ -2192,6 +2192,9 @@ class TestSuite(abc.ABC):
         self.max_set_rc_timeout = 0
         self.last_wp_load = 0
         self.forced_post_test_sitl_reboots = 0
+        # DFReaders handed out by dfreader_for_path(); closed after each
+        # test by close_dfreaders()
+        self.dfreaders = []
         self.run_tests_called = False
         self._show_test_timings = _show_test_timings
         self.test_timings = dict()
@@ -9724,6 +9727,9 @@ Also, ignores heartbeats not from our target system'''
                 if h not in start_message_hooks:
                     self.message_hooks.remove(h)
             hooks_removed = True
+        # the test is done with any log it opened; release the
+        # filehandles rather than holding them for the life of the run:
+        self.close_dfreaders()
         self.test_timings[desc] = time.time() - start_time
         reset_needed = any(ctx.sitl_commandline_customised for ctx in self.contexts[old_contexts_length:])
 
@@ -13381,8 +13387,20 @@ switch value'''
         return latest
 
     def dfreader_for_path(self, path):
-        return DFReader.DFReader_binary(path,
-                                        zero_time_base=True)
+        '''return a DFReader for path.  The reader holds an open filehandle
+        (and an mmap) on the log until it is closed, so stash it for
+        close_dfreaders() to release at the end of the test rather than
+        leaking it for the life of the process.'''
+        ret = DFReader.DFReader_binary(path,
+                                       zero_time_base=True)
+        self.dfreaders.append(ret)
+        return ret
+
+    def close_dfreaders(self):
+        '''close all readers handed out by dfreader_for_path()'''
+        for dfreader in self.dfreaders:
+            dfreader.close()
+        self.dfreaders = []
 
     def assert_log_dsf_no_drops(self, path):
         """Assert that DSF.Dp (write-buffer drop count) is zero in the given log file"""
