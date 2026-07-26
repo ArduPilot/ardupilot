@@ -1586,8 +1586,14 @@ protected:
 
 private:
 
+    // advance_state - move to the next stage when the current one is complete
+    void advance_state();
+
+    // set_submode - performs all normal stage changes; sets _state, clears _state_complete and runs the stage's entry init
+    void set_submode(SubMode submode);
+
     void climb_start();
-    void return_start();
+    bool return_start();
     void climb_return_run();
     void hold_at_return_point_start();
     void hold_at_return_point_run();
@@ -1600,7 +1606,7 @@ private:
     AP_Float alt_final_m;
     AP_Float climb_min_m;
 
-    SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning, etc)
+    SubMode _state = SubMode::STARTING;
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
@@ -1618,8 +1624,8 @@ private:
         TERRAINDATABASE = 2
     };
 
-    // Hold timer - Records how long we have been holding at the return point
-    uint32_t _hold_start_time;
+    // time the current stage was entered (set by set_submode); used by the hold timer
+    uint32_t _stage_start_ms;
 
     bool terrain_following_allowed;
 
