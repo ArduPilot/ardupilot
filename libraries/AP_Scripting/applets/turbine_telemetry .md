@@ -1,12 +1,12 @@
-# Turbine Telemetry 
+# Turbine Telemetry
 
 Allows logging turbine values from ECU S.Port telemetry adapters, ECU status is displayed as GCS message (viewable through Yaapu or MP)
-Currently implemented adapters are Vspeak and Xicoy 
+Currently implemented adapters are Vspeak and Xicoy
 For Xicoy adapter set ECU_TYPE to 8
 
 ## Parameters
 
-ECU_TYPE 
+ECU_TYPE
 
  1 = Jakadofsky - Vspeak adapter
  2 = EvoJet - Vspeak adapter

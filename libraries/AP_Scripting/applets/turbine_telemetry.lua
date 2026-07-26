@@ -752,4 +752,4 @@ if port then
     last_poll = millis()
 end
 
-return update, 1
+return update, 100
