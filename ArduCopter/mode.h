@@ -585,15 +585,6 @@ public:
     bool resume() override;
     bool paused() const;
 
-    bool loiter_start();
-    void rtl_start();
-    void takeoff_start(const Location& dest_loc);
-    bool wp_start(const Location& dest_loc);
-    void land_start();
-    void circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
-    void circle_start();
-    void nav_guided_start();
-
     bool is_landing() const override;
 
     bool is_taking_off() const override;
@@ -667,6 +658,15 @@ private:
     void exit_mission();
 
     bool check_for_mission_change();    // detect external changes to mission
+
+    bool loiter_start();
+    void rtl_start();
+    void takeoff_start(const Location& dest_loc);
+    bool wp_start(const Location& dest_loc);
+    void land_start();
+    void circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
+    void circle_start();
+    void nav_guided_start();
 
     void takeoff_run();
     void wp_run();
