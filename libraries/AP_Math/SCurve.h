@@ -179,13 +179,6 @@ private:
     // fill segment[first..last] with zero-delta constant-jerk segments anchored to segment[src]
     void fill_empty_segments(uint8_t first, uint8_t last, uint8_t src);
 
-    // set speed and acceleration limits for the path
-    // origin and destination are offsets from EKF origin
-    // speed and acceleration parameters are given in horizontal, up and down.
-    void set_kinematic_limits(const Vector3p &origin, const Vector3p &destination,
-                              float speed_xy, float speed_up, float speed_down,
-                              float accel_xy, float accel_z);
-
     // return true if the curve is valid.  Used to identify and protect against code errors
     bool valid() const WARN_IF_UNUSED;
 
