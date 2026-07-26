@@ -151,12 +151,21 @@ submodule's tuned `rover.parm` (navigation gains, servo mapping, all 4
 initialising the submodule first, if you just want the parameters:
 
 ```bash
-Tools/autotest/sim_vehicle.py -v Rover --model webots-python \
+python3 Tools/autotest/sim_vehicle.py -v Rover --model webots-python \
   --sim-address=<windows-host-ip> \
   --custom-location=28.5016472,77.3921611,0,0 \
   --add-param-file=docs/HLK-LD2451/webots_rover.parm \
-  --console --map
+  --out=<windows-host-ip>:14550 \
+  -w --console --map
 ```
+
+- `--out=<windows-host-ip>:14550` adds a link for a GCS — point QGroundControl /
+  Mission Planner at UDP 14550.
+- `-w` wipes and reloads params cleanly from the file — without it, stale
+  params from a previous run can silently override what's in the file
+  (this is exactly what caused the "no vehicle on GCS" GPS investigation:
+  a stale saved param dump had `GPS1_TYPE`/`PRX1-4_TYPE`/`ARMING_SKIPCHK`
+  all reverted to broken defaults).
 
 Then, in a second terminal (once Webots is running the world and SITL is
 up) — default drives all 4 corners at once:
