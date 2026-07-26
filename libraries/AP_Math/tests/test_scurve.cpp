@@ -248,6 +248,11 @@ TEST(SCurveCalcPath, constraints)
 // calculate_track: arc speed limit must come from the arc length, not the chord
 // ---------------------------------------------------------------------------
 
+// Runaway guard for the drive loops below. Both legs complete in well under this
+// (roughly 8k iterations), so it only bounds a regression that never reports
+// completion. 50000 iterations is 125 s of simulated time at 400 Hz.
+static const uint32_t MAX_DRIVE_ITERS = 50000;
+
 // drive a prepared leg to completion, returning the peak horizontal and vertical target speed
 struct LegPeak { float speed_xy; float speed_z; bool finished; };
 static LegPeak drive_leg(SCurve &leg, const Vector3p &origin)
@@ -260,7 +265,7 @@ static LegPeak drive_leg(SCurve &leg, const Vector3p &origin)
     Vector3p pos;
     Vector3f vel, accel;
     bool done = false;
-    for (int i = 0; i < 400000 && !done; i++) {
+    for (uint32_t i = 0; i < MAX_DRIVE_ITERS && !done; i++) {
         pos = origin;
         vel.zero();
         accel.zero();
@@ -297,6 +302,46 @@ TEST(SCurveTrack, climbing_arc_limit_from_arc_length)
     EXPECT_NEAR(p.speed_xy, speed_xy, 0.15f);
     // vertical rate stays within its limit
     EXPECT_LE(p.speed_z, speed_down + 0.02f);
+}
+
+// The projected velocity must equal the derivative of the projected position, including for a
+// climbing arc. Regression: the arc velocity/acceleration previously used a unit horizontal tangent
+// where the horizontal fraction arc.length_ne/seg_length was required, tilting a climbing arc's
+// reported velocity too far toward horizontal (and inflating the centripetal term).
+TEST(SCurveTrack, arc_velocity_matches_position_derivative)
+{
+    const Vector3p origin{20, 0, -50};
+    const Vector3p dest{0, 20, -20};   // 90-degree arc, radius 20 (~31.4 m arc), climbing 30 m
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI_2,
+                        10.0f, 5.0f, 5.0f, 3.0f, 3.0f, 3.0f, 60.0f, 10.0f);
+
+    SCurve prev, next;
+    prev.init();
+    next.init();
+    const float dt = 0.0025f;
+    Vector3p pos, pos_prev;
+    Vector3f vel, accel;
+    bool have_prev = false;
+    float max_err = 0.0f;
+    for (uint32_t i = 0; i < MAX_DRIVE_ITERS; i++) {
+        pos = origin;
+        vel.zero();
+        accel.zero();
+        const bool done = leg.advance_target_along_track(prev, next, 2.0f, 2.0f, false, dt, pos, vel, accel);
+        if (have_prev && vel.length() > 3.0f) {
+            const Vector3f fd = (pos - pos_prev).tofloat() / dt;   // derivative of the reported position
+            max_err = MAX(max_err, (fd - vel).length());
+        }
+        pos_prev = pos;
+        have_prev = true;
+        if (done) {
+            break;
+        }
+    }
+    // finite difference matches the reported velocity to O(dt); a large gap means the reported
+    // velocity is not tangent to the path actually flown
+    EXPECT_LT(max_err, 0.05f);
 }
 
 AP_GTEST_MAIN()

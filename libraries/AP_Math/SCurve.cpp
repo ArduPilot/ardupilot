@@ -645,18 +645,19 @@ void SCurve::project_scurve_onto_track(float scurve_A1, float scurve_V1, float s
         Vector3f delta_pos(arc.center_ne + center_to_pos_ne, scurve_P1 * dz_ds);
         pos += delta_pos.topostype();
 
-        // direction unit (tangent + vertical slope)
+        // direction unit
         Vector2f arc_tangent_ne = Vector2f(-center_to_pos_ne.y, center_to_pos_ne.x) * turn_dir;
         arc_tangent_ne /= arc.radius_ne;
-        Vector3f path_unit(arc_tangent_ne.x, arc_tangent_ne.y, dz_ds);
+        const float horiz_ds = arc.length_ne / seg_length;
+        Vector3f path_unit(arc_tangent_ne.x * horiz_ds, arc_tangent_ne.y * horiz_ds, dz_ds);
         path_unit.normalize();
 
         // velocity & tangential accel
         vel += path_unit * scurve_V1;
         accel += path_unit * scurve_A1;
 
-        // centripetal accel
-        accel.xy() -= center_to_pos_ne * sq(scurve_V1 / arc.radius_ne);
+        // centripetal accel uses the horizontal speed component (scurve_V1 * horiz_ds)
+        accel.xy() -= center_to_pos_ne * sq(scurve_V1 * horiz_ds / arc.radius_ne);
 
         return;
     }
