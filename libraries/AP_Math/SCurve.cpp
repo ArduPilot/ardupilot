@@ -82,52 +82,29 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
         return;
     }
 
+    // convert the origin, destination and arc angle into the canonical arc/straight geometry
     const Vector2f chord = seg_delta.xy();
-    const float chord_length = seg_delta.xy().length();
+    const float chord_length = chord.length();
     if (!is_positive(chord_length) || fabsf(wrap_PI(arc_ang_rad)) < radians(1.0f)) {
-        // straight segment
-        is_arc_segment = false;
-        arc.angle_rad = 0.0f;
-        arc.length_ne = chord_length;
-        arc.radius_ne = 0.0f;
-        arc.center_ne = Vector2f();
-        seg_length = seg_delta.length();
+        set_straight_geometry();
     } else {
         // arc segment. The outer condition guarantees chord_length > 0 and
-        // |sin(arc_ang_rad/2)| >= sin(0.5 deg), so both divisions below are safe and
-        // arc.radius_ne is always positive (>= chord_length/2).
-        is_arc_segment = true;
-        arc.angle_rad = arc_ang_rad;
-        arc.radius_ne = fabsf(chord_length / (2.0f * fabsf(sinf(arc.angle_rad * 0.5f))));
-        const float center_offset = safe_sqrt(sq(arc.radius_ne) - sq(chord_length * 0.5f)); // perpendicular offset from chord to circle center
-        const float turn_dir = is_negative(arc.angle_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW
-        const float center_side = (is_positive(wrap_PI(fabsf(arc.angle_rad)))) ? 1.0f : -1.0f; // 1 for |angle| < PI, -1 for |angle| > PI
-        arc.center_ne = chord * 0.5f + Vector2f(-chord.y, chord.x) * (center_side * turn_dir * center_offset / chord_length);
-        arc.length_ne = arc.radius_ne * fabsf(arc.angle_rad);
-        seg_length = safe_sqrt(sq(seg_delta.z) + sq(arc.length_ne));
-        accel_c = is_positive(accel_c) ? accel_c : accel_xy;
-        speed_xy = MIN(speed_xy, safe_sqrt(accel_c * arc.radius_ne));
+        // |sin(arc_ang_rad/2)| >= sin(0.5 deg), so radius is positive (>= chord_length/2)
+        // and both divisions below are safe.
+        const float radius = fabsf(chord_length / (2.0f * fabsf(sinf(arc_ang_rad * 0.5f))));
+        const float center_offset = safe_sqrt(sq(radius) - sq(chord_length * 0.5f)); // perpendicular offset from chord to circle center
+        const float turn_dir = is_negative(arc_ang_rad) ? -1.0f : 1.0f; // -1 for CCW, 1 for CW
+        const float center_side = (is_positive(wrap_PI(fabsf(arc_ang_rad)))) ? 1.0f : -1.0f; // 1 for |angle| < PI, -1 for |angle| > PI
+        const Vector2f center_ne = chord * 0.5f + Vector2f(-chord.y, chord.x) * (center_side * turn_dir * center_offset / chord_length);
+        set_arc_geometry(center_ne, radius, arc_ang_rad);
     }
     if (is_zero(seg_length)) {
         seg_delta.zero();
         return;
     }
 
-    // set snap_max and jerk max
-    snap_max = snap_maximum;
-    jerk_max = jerk_maximum;
-
-    // Set speed and acceleration limits from the path that is actually flown: the
-    // horizontal extent is the arc length (equal to the chord for a straight
-    // segment) and the vertical extent is seg_delta.z. Using the straight-line
-    // chord here would understate a climbing arc's horizontal travel and needlessly
-    // throttle it against the vertical speed limit.
-    vel_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, speed_down);
-    accel_max = kinematic_limit(arc.length_ne, seg_delta.z, accel_xy, accel_z, accel_z);
-    accel_z_max = accel_z;
-
-    // validate limits, build the segment profile and verify the result
-    finalise_path(seg_length);
+    // build the jerk-limited profile from the configured geometry and limits
+    generate_path(speed_xy, speed_up, speed_down, accel_xy, accel_z, accel_c, snap_maximum, jerk_maximum);
 }
 
 // generate a 3D trigonometric track that follows a circular arc about center_ne.
@@ -160,40 +137,74 @@ void SCurve::calculate_circle_track(const Vector3p &origin, const Vector2f &cent
         return;
     }
 
-    // configure the arc geometry directly from the circle parameters
-    is_arc_segment = true;
-    arc.angle_rad = total_angle_rad;
-    arc.radius_ne = radius;
-    arc.center_ne = origin_to_center_ne;
-    arc.length_ne = radius * fabsf(total_angle_rad);
-
-    // seg_delta must hold the true origin-to-destination displacement (not just the net
-    // vertical change): SCurve::move_to_pos_vel_accel() relies on it to exactly cancel a
-    // finished leg's contribution when that leg is preserved as another leg's prev_leg for
-    // corner blending (see AC_WPNav::set_wp_destination_NED_m). For a closed arc the endpoint
-    // is the origin rotated about the center by the swept angle, so the NE displacement is
-    // the origin-to-center vector minus that same vector rotated by the swept angle -- zero
-    // for whole turns, but not in general.
+    // seg_delta must hold the true origin-to-destination displacement (not just the climb):
+    // SCurve::move_to_pos_vel_accel() relies on it to exactly cancel a finished leg's
+    // contribution when that leg is preserved as another leg's prev_leg for corner blending
+    // (see AC_WPNav::set_wp_destination_NED_m), and AC_WPNav derives the leg destination
+    // from it via get_origin_to_destination(). For a closed arc the endpoint is the origin
+    // rotated about the center by the swept angle, so the NE displacement is the
+    // origin-to-center vector minus that same vector rotated by the swept angle -- zero for
+    // whole turns, but not in general.
     Vector2f end_offset_ne = origin_to_center_ne;
     end_offset_ne.rotate(total_angle_rad);
     seg_delta = Vector3f(origin_to_center_ne - end_offset_ne, climb_d_m);
-    seg_length = safe_sqrt(sq(climb_d_m) + sq(arc.length_ne));
+    set_arc_geometry(origin_to_center_ne, radius, total_angle_rad);
     if (is_zero(seg_length)) {
         seg_delta.zero();
         return;
     }
 
-    // limit horizontal speed so centripetal acceleration stays within the corner acceleration limit
-    accel_c = is_positive(accel_c) ? accel_c : accel_xy;
-    speed_xy = MIN(speed_xy, safe_sqrt(accel_c * radius));
+    // build the jerk-limited profile from the configured geometry and limits
+    generate_path(speed_xy, speed_up, speed_down, accel_xy, accel_z, accel_c, snap_maximum, jerk_maximum);
+}
+
+// populate the canonical straight-segment geometry from seg_delta (the net
+// start-to-end displacement). The arc fields are cleared and the path length is
+// the full 3D chord length.
+void SCurve::set_straight_geometry()
+{
+    is_arc_segment = false;
+    arc.angle_rad = 0.0f;
+    arc.length_ne = seg_delta.xy().length();
+    arc.radius_ne = 0.0f;
+    arc.center_ne = Vector2f();
+    seg_length = seg_delta.length();
+}
+
+// populate the canonical arc geometry (center relative to the origin, radius and
+// signed swept angle) and the resulting path length. seg_delta must already hold the
+// net start-to-end displacement; its vertical component sets the constant climb.
+void SCurve::set_arc_geometry(const Vector2f &center_ne_rel, float radius, float angle_rad)
+{
+    is_arc_segment = true;
+    arc.angle_rad = angle_rad;
+    arc.radius_ne = radius;
+    arc.center_ne = center_ne_rel;
+    arc.length_ne = radius * fabsf(angle_rad);
+    seg_length = safe_sqrt(sq(seg_delta.z) + sq(arc.length_ne));
+}
+
+// build the jerk-limited S-curve profile for the already-configured geometry
+// (is_arc_segment, arc.*, seg_delta, seg_length). Applies the corner-acceleration
+// speed limit for arcs, derives the speed and acceleration limits from the path
+// actually flown (arc length plus vertical component), and calls finalise_path().
+void SCurve::generate_path(float speed_xy, float speed_up, float speed_down,
+                           float accel_xy, float accel_z, float accel_c,
+                           float snap_maximum, float jerk_maximum)
+{
+    if (is_arc_segment) {
+        // limit horizontal speed so centripetal acceleration stays within the corner acceleration limit
+        accel_c = is_positive(accel_c) ? accel_c : accel_xy;
+        speed_xy = MIN(speed_xy, safe_sqrt(accel_c * arc.radius_ne));
+    }
 
     // set snap and jerk maxima
     snap_max = snap_maximum;
     jerk_max = jerk_maximum;
 
-    // set speed and acceleration limits from the horizontal arc length and vertical component.
-    // NOTE: set_kinematic_limits(origin, destination) cannot be used here because for a closed
-    // circle destination == origin, giving a zero direction and a zero speed limit.
+    // set speed and acceleration limits from the path actually flown: the horizontal
+    // extent is the arc length (equal to the chord for a straight segment) and the
+    // vertical extent is seg_delta.z
     vel_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, speed_down);
     accel_max = kinematic_limit(arc.length_ne, seg_delta.z, accel_xy, accel_z, accel_z);
     accel_z_max = accel_z;
@@ -545,7 +556,7 @@ bool SCurve::advance_target_along_track(SCurve &prev_leg, SCurve &next_leg, floa
         ) {
 
         // Calculate the position, velocity and acceleration at the turn mid point
-        Vector3p turn_pos = -get_track().topostype();
+        Vector3p turn_pos = -get_origin_to_destination().topostype();
         Vector3f turn_vel, turn_accel;
         move_from_time_pos_vel_accel(get_time_elapsed() + time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);
         next_leg.move_from_time_pos_vel_accel(time_to_destination * 0.5f, turn_pos, turn_vel, turn_accel);

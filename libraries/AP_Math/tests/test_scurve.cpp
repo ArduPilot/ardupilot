@@ -254,8 +254,9 @@ TEST(SCurveCalcPath, constraints)
 // 125 s of simulated time at 400 Hz.
 static const uint32_t MAX_DRIVE_ITERS = 50000;
 
-// drive a prepared leg to completion, returning the peak horizontal and vertical target speed
-struct LegPeak { float speed_xy; float speed_z; bool finished; };
+// drive a prepared leg to completion, returning the peak horizontal and vertical
+// target speed and the final target position
+struct LegPeak { float speed_xy; float speed_z; Vector3p final_pos; bool finished; };
 static LegPeak drive_leg(SCurve &leg, const Vector3p &origin)
 {
     SCurve prev, next;
@@ -274,8 +275,33 @@ static LegPeak drive_leg(SCurve &leg, const Vector3p &origin)
         r.speed_xy = MAX(r.speed_xy, vel.xy().length());
         r.speed_z = MAX(r.speed_z, fabsf(vel.z));
     }
+    r.final_pos = pos;
     r.finished = done;
     return r;
+}
+
+// A level straight leg reaches the full horizontal speed, has no vertical motion, and
+// finishes at the destination. Covers the set_straight_geometry / generate_path path
+// for a non-arc segment.
+TEST(SCurveTrack, straight_leg)
+{
+    const Vector3p origin{0, 0, -50};
+    const Vector3p dest{50, 0, -50};    // 50 m north, level
+    const float speed_xy = 5.0f;
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, 0.0f,   // arc angle 0 -> straight segment
+                        speed_xy, 3.0f, 2.0f,
+                        2.0f, 2.0f, 2.0f,
+                        60.0f, 10.0f);
+
+    const LegPeak p = drive_leg(leg, origin);
+    EXPECT_TRUE(p.finished);
+    EXPECT_NEAR(p.speed_xy, speed_xy, 0.05f);   // reaches the horizontal speed
+    EXPECT_LE(p.speed_z, 0.02f);                // stays level
+    EXPECT_NEAR((float)p.final_pos.x, 50.0f, 0.05f);
+    EXPECT_NEAR((float)p.final_pos.y, 0.0f, 0.05f);
+    EXPECT_NEAR((float)p.final_pos.z, -50.0f, 0.05f);
 }
 
 // A climbing arc must take its speed limit from the path it actually flies (the arc
@@ -452,7 +478,8 @@ TEST(SCurveCircle, geometry)
 // AC_WPNav does when a plain WP leg follows a circle leg: the finished circle is preserved as
 // the new leg's _scurve_prev_leg for corner blending (see AC_WPNav::set_wp_destination_NED_m),
 // and advance_target_along_track() unconditionally calls prev_leg.move_to_pos_vel_accel() every
-// tick, which subtracts get_track() to cancel a finished leg's contribution to zero.
+// tick, which subtracts get_origin_to_destination() to cancel a finished leg's contribution
+// to zero.
 TEST(SCurveCircle, prev_leg_handoff)
 {
     const Vector3p O{10, 0, -50};
@@ -482,8 +509,9 @@ TEST(SCurveCircle, prev_leg_handoff)
         ASSERT_TRUE(done);
     }
 
-    // the orbit destination, computed independently here from the endpoint rotation so the
-    // test does not trust seg_delta
+    // the orbit destination (AC_WPNav derives this from the leg's get_origin_to_destination();
+    // computed independently here from the endpoint rotation so the test does not trust
+    // seg_delta)
     Vector2f origin_to_end_ne = O.xy().tofloat() - center;
     origin_to_end_ne.rotate(turns * M_2PI);
     const Vector3p D(center.x + origin_to_end_ne.x, center.y + origin_to_end_ne.y, O.z);

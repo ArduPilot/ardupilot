@@ -93,6 +93,10 @@ public:
     // time has reached the end of the sequence
     bool finished() const WARN_IF_UNUSED;
 
+    // return the vector from the origin to the destination
+    // (for an arc segment this is the chord between the endpoints, not the path flown)
+    const Vector3f& get_origin_to_destination() const WARN_IF_UNUSED { return seg_delta; };
+
     // calculate the segment times for the trigonometric S-Curve path defined by:
     // Sm - maximum value of the snap profile
     // Jm - maximum value of the raised cosine jerk profile
@@ -128,9 +132,6 @@ private:
 
     // get desired maximum acceleration along track
     float get_accel_z_max() const WARN_IF_UNUSED { return accel_z_max; }
-
-    // return the change in position from origin to destination
-    const Vector3f& get_track() const WARN_IF_UNUSED { return seg_delta; };
 
     // return the current time elapsed
     float get_time_elapsed() const WARN_IF_UNUSED { return time; }
@@ -188,6 +189,18 @@ private:
 
     // fill segment[first..last] with zero-delta constant-jerk segments anchored to segment[src]
     void fill_empty_segments(uint8_t first, uint8_t last, uint8_t src);
+
+    // populate the canonical straight-segment geometry from seg_delta
+    void set_straight_geometry();
+
+    // populate the canonical arc geometry (center relative to origin, radius and signed swept angle)
+    // seg_delta (its vertical component) must already be set
+    void set_arc_geometry(const Vector2f &center_ne_rel, float radius, float angle_rad);
+
+    // build the jerk-limited profile from the already-configured geometry and the given limits
+    void generate_path(float speed_xy, float speed_up, float speed_down,
+                        float accel_xy, float accel_z, float accel_c,
+                        float snap_maximum, float jerk_maximum);
 
     // validate the configured limits, build the segment profile over path_length and verify the result
     // snap_max, jerk_max, vel_max, accel_max and accel_z_max must already be set
