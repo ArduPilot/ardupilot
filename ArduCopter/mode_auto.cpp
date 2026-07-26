@@ -30,7 +30,7 @@ bool ModeAuto::init(bool ignore_checks)
             return false;
         }
 
-        _mode = SubMode::LOITER;
+        _mode = SubMode::STARTING;
 
         // stop ROI from carrying over from previous runs of the mission
         // To-Do: reset the yaw as part of auto_wp_start when the previous command was not a wp command to remove the need for this special ROI check
@@ -115,6 +115,11 @@ void ModeAuto::run()
 
     // call the correct auto controller
     switch (_mode) {
+
+    case SubMode::STARTING:
+        // hold position until the mission dispatches the first navigation submode
+        loiter_run();
+        break;
 
     case SubMode::TAKEOFF:
         takeoff_run();
@@ -227,6 +232,7 @@ bool ModeAuto::move_vehicle_on_ekf_reset() const
 {
     // decide based on the current submode
     switch (_mode) {
+    case SubMode::STARTING:
     case SubMode::TAKEOFF:
     case SubMode::LAND:
     case SubMode::RTL:

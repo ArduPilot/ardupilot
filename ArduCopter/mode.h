@@ -561,6 +561,7 @@ public:
 
     // Auto modes
     enum class SubMode : uint8_t {
+        STARTING,       // initial submode; holds position until the mission dispatches the first navigation submode
         TAKEOFF,
         WP,
         LAND,
@@ -682,7 +683,7 @@ private:
     // returns false if the location cannot be determined which only happens if the terrain data is unavailable
     bool get_loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& loc) const WARN_IF_UNUSED;
 
-    SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
+    SubMode _mode = SubMode::STARTING;   // controls which auto controller is run
 
     // subtract position controller offsets from target location
     // should be used when the location will be used as a target for the position controller
