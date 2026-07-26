@@ -126,26 +126,8 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
     accel_max = kinematic_limit(arc.length_ne, seg_delta.z, accel_xy, accel_z, accel_z);
     accel_z_max = accel_z;
 
-    // avoid divide-by zeros. Path will be left as a zero length path
-    if (!is_positive(snap_max) || !is_positive(jerk_max) || !is_positive(accel_max) || !is_positive(vel_max)) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        ::printf("SCurve::calculate_track created zero length path\n");
-#endif
-        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-        return;
-    }
-
-    add_segments(seg_length);
-
-    // catch calculation errors
-    if (!valid()) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        ::printf("SCurve::calculate_track invalid path\n");
-        debug();
-#endif
-        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-        init();
-    }
+    // validate limits, build the segment profile and verify the result
+    finalise_path(seg_length);
 }
 
 // generate a 3D trigonometric track that follows a circular arc about center_ne.
@@ -216,26 +198,8 @@ void SCurve::calculate_circle_track(const Vector3p &origin, const Vector2f &cent
     accel_max = kinematic_limit(arc.length_ne, seg_delta.z, accel_xy, accel_z, accel_z);
     accel_z_max = accel_z;
 
-    // avoid divide-by zeros. Path will be left as a zero length path
-    if (!is_positive(snap_max) || !is_positive(jerk_max) || !is_positive(accel_max) || !is_positive(vel_max)) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        ::printf("SCurve::calculate_circle_track created zero length path\n");
-#endif
-        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-        return;
-    }
-
-    add_segments(seg_length);
-
-    // catch calculation errors
-    if (!valid()) {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        ::printf("SCurve::calculate_circle_track invalid path\n");
-        debug();
-#endif
-        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
-        init();
-    }
+    // validate limits, build the segment profile and verify the result
+    finalise_path(seg_length);
 }
 
 // set maximum velocity and re-calculate the path using these limits
@@ -1184,6 +1148,35 @@ void SCurve::add_segment(uint8_t &index, float end_time, SegmentType seg_type, f
     segment[index].end_vel = end_vel;
     segment[index].end_pos = end_pos;
     index++;
+}
+
+// validate the configured limits, build the S-curve segment profile over the
+// given path length, and verify the result. snap_max, jerk_max, vel_max,
+// accel_max and accel_z_max must already be set. On error the path is left
+// zero length.
+void SCurve::finalise_path(float path_length)
+{
+    // avoid divide-by zeros. Path will be left as a zero length path
+    if (!is_positive(snap_max) || !is_positive(jerk_max) || !is_positive(accel_max) || !is_positive(vel_max)) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        ::printf("SCurve::finalise_path created zero length path\n");
+#endif
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        init();
+        return;
+    }
+
+    add_segments(path_length);
+
+    // catch calculation errors
+    if (!valid()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        ::printf("SCurve::finalise_path invalid path\n");
+        debug();
+#endif
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        init();
+    }
 }
 
 // return true if the curve is valid.  Used to identify and protect against code errors

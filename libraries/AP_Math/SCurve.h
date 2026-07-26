@@ -189,6 +189,10 @@ private:
     // fill segment[first..last] with zero-delta constant-jerk segments anchored to segment[src]
     void fill_empty_segments(uint8_t first, uint8_t last, uint8_t src);
 
+    // validate the configured limits, build the segment profile over path_length and verify the result
+    // snap_max, jerk_max, vel_max, accel_max and accel_z_max must already be set
+    void finalise_path(float path_length);
+
     // return true if the curve is valid.  Used to identify and protect against code errors
     bool valid() const WARN_IF_UNUSED;
 
