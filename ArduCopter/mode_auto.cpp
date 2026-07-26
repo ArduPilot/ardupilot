@@ -2254,23 +2254,7 @@ bool ModeAuto::verify_loiter_to_alt() const
 // do_RTL should have been called once first to initialise all variables
 bool ModeAuto::verify_RTL()
 {
-    // return immediately if RTL's current state has not completed
-    if (!copter.mode_rtl.state_complete()) {
-        return false;
-    }
-
-    switch (copter.mode_rtl.state()) {
-        case ModeRTL::SubMode::FINAL_DESCENT:
-            return true;
-        case ModeRTL::SubMode::LAND:
-            // if landing ensure motors have spooled down
-            return motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE;
-        default:
-            break;
-    }
-
-    // RTL has not completed
-    return false;
+    return copter.mode_rtl.is_complete();
 }
 
 /********************************************************************************/
