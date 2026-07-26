@@ -190,3 +190,10 @@
 #ifndef AP_DDS_MAX_NAME_LEN
 #define AP_DDS_MAX_NAME_LEN 128
 #endif
+
+// Minimum interval between two sends of the same status text. These texts are
+// emitted from paths driven by an external node, so the rate has to be bounded
+// here or a high rate publisher would flood the GCS link.
+#ifndef AP_DDS_STATUSTEXT_MIN_INTERVAL_MS
+#define AP_DDS_STATUSTEXT_MIN_INTERVAL_MS 5000
+#endif
