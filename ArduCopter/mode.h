@@ -1595,6 +1595,7 @@ private:
 
     void climb_start();
     bool return_start();
+    bool run_wp_controllers();
     void climb_return_run();
     void hold_at_return_point_start();
     void hold_at_return_point_run();
