@@ -39,8 +39,31 @@ bool Sub::set_home(const Location& loc, bool lock)
         return false;
     }
 
+    Location new_home_loc = loc;
+
+    // If the caller's requested altitude is exactly 0 in the absolute
+    // (AMSL) frame, treat it as a request to lock home to the current
+    // water surface instead. A deliberate home altitude of exactly AMSL 0
+    // is never a meaningful choice for a submersible vehicle; this only
+    // catches the ambiguous case from #33827, where a GCS lets a user set
+    // home to "0m" meaning AMSL rather than the water surface. Any other
+    // explicit altitude supplied by the caller (e.g. this class's own
+    // set_home_to_current_location(), or a test explicitly setting home
+    // to a specific altitude) is respected unmodified.
+    int32_t requested_alt_cm;
+    if (new_home_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, requested_alt_cm) && requested_alt_cm == 0) {
+        Location surface_ref_loc;
+        if (ahrs.get_location(surface_ref_loc)) {
+            surface_ref_loc.offset_up_m(-barometer.get_altitude());
+            int32_t surface_alt_cm;
+            if (surface_ref_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, surface_alt_cm)) {
+                new_home_loc.set_alt_cm(surface_alt_cm, Location::AltFrame::ABSOLUTE);
+            }
+        }
+    }
+
     // set ahrs home (used for RTL)
-    if (!ahrs.set_home(loc)) {
+    if (!ahrs.set_home(new_home_loc)) {
         return false;
     }
 
