@@ -35,7 +35,7 @@ private:
         uint16_t curr_cmd_index;            // local copy of AP_Mission's current command index
         uint8_t cmd_count;                  // number of commands in the cmd array
         AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max]; // local copy of the next few mission commands
-    } mis_change_detect;
+    } mis_change_detect {};
 };
 
 #endif // AP_MISSION_ENABLED

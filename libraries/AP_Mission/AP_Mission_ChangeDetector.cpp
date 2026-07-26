@@ -35,7 +35,7 @@ bool AP_Mission_ChangeDetector::check_for_mission_change()
     // retrieve cmds from mission and compare with mis_change_detect
     uint8_t num_cmds = 0;
     uint16_t cmd_idx = curr_cmd_idx;
-    AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max];
+    AP_Mission::Mission_Command cmd[mis_change_detect_cmd_max] {};
     while ((num_cmds < ARRAY_SIZE(cmd)) && mission->get_next_nav_cmd(cmd_idx, cmd[num_cmds])) {
         num_cmds++;
         if ((num_cmds > mis_change_detect.cmd_count) || (cmd[num_cmds-1] != mis_change_detect.cmd[num_cmds-1])) {
