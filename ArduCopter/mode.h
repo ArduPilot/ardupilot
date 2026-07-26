@@ -545,7 +545,7 @@ public:
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override;
     bool is_autopilot() const override { return true; }
-    bool in_guided_mode() const override { return _mode == SubMode::NAVGUIDED || _mode == SubMode::NAV_SCRIPT_TIME; }
+    bool in_guided_mode() const override { return _mode == SubMode::NAV_GUIDED || _mode == SubMode::NAV_SCRIPT_TIME; }
 #if FRAME_CONFIG == HELI_FRAME
     bool allows_inverted() const override { return true; };
 #endif
@@ -567,7 +567,7 @@ public:
         RTL,
         CIRCLE_MOVE_TO_EDGE,
         CIRCLE,
-        NAVGUIDED,
+        NAV_GUIDED,
         LOITER,
         LOITER_TO_ALT,
 #if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
@@ -577,7 +577,7 @@ public:
         NAV_ATTITUDE_TIME,
     };
 
-    // set submode.  returns true on success, false on failure
+    // set the auto submode (rechecks the EKF failsafe when leaving NAV_ATTITUDE_TIME)
     void set_submode(SubMode new_submode);
 
     // pause continue in auto mode
@@ -766,11 +766,11 @@ private:
     uint32_t condition_start;
 
     // Land within Auto state
-    enum class State {
+    enum class LandState {
         FlyToLocation = 0,
         Descending = 1
     };
-    State state = State::FlyToLocation;
+    LandState land_state = LandState::FlyToLocation;
 
     bool waiting_to_start;  // true if waiting for vehicle to be armed or EKF origin before starting mission
 
