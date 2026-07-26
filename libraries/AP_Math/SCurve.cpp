@@ -148,6 +148,96 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
     }
 }
 
+// generate a 3D trigonometric track that follows a circular arc about center_ne.
+// total_angle_rad is the signed swept angle (may exceed 2*pi for multiple turns);
+// its sign sets direction. climb_d_m is the net D-axis change applied linearly
+// along the arc. The radius is the distance from origin to center so the origin
+// lies on the circle. Includes speed, acceleration and jerk limits.
+void SCurve::calculate_circle_track(const Vector3p &origin, const Vector2f &center_ne,
+                                    float total_angle_rad, float climb_d_m,
+                                    float speed_xy, float speed_up, float speed_down,
+                                    float accel_xy, float accel_z, float accel_c,
+                                    float snap_maximum, float jerk_maximum)
+{
+    init();
+
+    // ensure limit arguments are positive
+    speed_xy = fabsf(speed_xy);
+    speed_up = fabsf(speed_up);
+    speed_down = fabsf(speed_down);
+    accel_xy = fabsf(accel_xy);
+    accel_z = fabsf(accel_z);
+
+    // the arc radius is the distance from the origin to the circle center, so the origin lies on the circle
+    const Vector2f origin_to_center_ne = center_ne - origin.xy().tofloat();
+    const float radius = origin_to_center_ne.length();
+
+    // leave track as zero length if the radius or swept angle is too small to form an arc
+    if (!is_positive(radius) || fabsf(total_angle_rad) < radians(1.0f)) {
+        seg_delta.zero();
+        return;
+    }
+
+    // configure the arc geometry directly from the circle parameters
+    is_arc_segment = true;
+    arc.angle_rad = total_angle_rad;
+    arc.radius_ne = radius;
+    arc.center_ne = origin_to_center_ne;
+    arc.length_ne = radius * fabsf(total_angle_rad);
+
+    // seg_delta must hold the true origin-to-destination displacement (not just the net
+    // vertical change): SCurve::move_to_pos_vel_accel() relies on it to exactly cancel a
+    // finished leg's contribution when that leg is preserved as another leg's prev_leg for
+    // corner blending (see AC_WPNav::set_wp_destination_NED_m). For a closed arc the endpoint
+    // is the origin rotated about the center by the swept angle, so the NE displacement is
+    // the origin-to-center vector minus that same vector rotated by the swept angle -- zero
+    // for whole turns, but not in general.
+    Vector2f end_offset_ne = origin_to_center_ne;
+    end_offset_ne.rotate(total_angle_rad);
+    seg_delta = Vector3f(origin_to_center_ne - end_offset_ne, climb_d_m);
+    seg_length = safe_sqrt(sq(climb_d_m) + sq(arc.length_ne));
+    if (is_zero(seg_length)) {
+        seg_delta.zero();
+        return;
+    }
+
+    // limit horizontal speed so centripetal acceleration stays within the corner acceleration limit
+    accel_c = is_positive(accel_c) ? accel_c : accel_xy;
+    speed_xy = MIN(speed_xy, safe_sqrt(accel_c * radius));
+
+    // set snap and jerk maxima
+    snap_max = snap_maximum;
+    jerk_max = jerk_maximum;
+
+    // set speed and acceleration limits from the horizontal arc length and vertical component.
+    // NOTE: set_kinematic_limits(origin, destination) cannot be used here because for a closed
+    // circle destination == origin, giving a zero direction and a zero speed limit.
+    vel_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, speed_down);
+    accel_max = kinematic_limit(arc.length_ne, seg_delta.z, accel_xy, accel_z, accel_z);
+    accel_z_max = accel_z;
+
+    // avoid divide-by zeros. Path will be left as a zero length path
+    if (!is_positive(snap_max) || !is_positive(jerk_max) || !is_positive(accel_max) || !is_positive(vel_max)) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        ::printf("SCurve::calculate_circle_track created zero length path\n");
+#endif
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        return;
+    }
+
+    add_segments(seg_length);
+
+    // catch calculation errors
+    if (!valid()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        ::printf("SCurve::calculate_circle_track invalid path\n");
+        debug();
+#endif
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        init();
+    }
+}
+
 // set maximum velocity and re-calculate the path using these limits
 void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
 {

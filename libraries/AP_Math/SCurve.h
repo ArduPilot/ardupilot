@@ -59,6 +59,16 @@ public:
                          float accel_xy, float accel_z, float accel_c,
                          float snap_maximum, float jerk_maximum);
 
+    // generate a trigonometric track that follows a circular arc about center_ne
+    // total_angle_rad is the signed swept angle and may exceed 2*pi for multiple turns
+    // climb_d_m is the net change along the down (D) axis, applied linearly over the arc
+    // the arc radius is taken as the distance from origin to center, so the origin lies on the circle
+    void calculate_circle_track(const Vector3p &origin, const Vector2f &center_ne,
+                                float total_angle_rad, float climb_d_m,
+                                float speed_xy, float speed_up, float speed_down,
+                                float accel_xy, float accel_z, float accel_c,
+                                float snap_maximum, float jerk_maximum);
+
     // set maximum velocity and re-calculate the path using these limits
     void set_speed_max(float speed_xy, float speed_up, float speed_down);
 
