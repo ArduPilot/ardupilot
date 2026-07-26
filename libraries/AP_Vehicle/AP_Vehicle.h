@@ -579,6 +579,11 @@ protected:
     // Bitmask of modes to disable from gcs
     AP_Int32 flight_mode_GCS_block;
 
+#if AP_PARAM_LOCKDOWN_ENABLED
+    // level of parameter write lockdown via MAVLink
+    AP_Int8 param_lockdown;
+#endif
+
 private:
 
 #if AP_SCHEDULER_ENABLED

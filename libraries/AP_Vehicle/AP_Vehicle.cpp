@@ -212,6 +212,14 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_GROUPINFO("FLTMODE_GCSBLOCK", 20, AP_Vehicle, flight_mode_GCS_block, 0),
 #endif // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane) || APM_BUILD_TYPE(APM_BUILD_Rover)
 
+#if AP_PARAM_LOCKDOWN_ENABLED
+    // @Param: PARAM_LOCKDOWN
+    // @DisplayName: Parameter write lockdown via MAVLink
+    // @Description: Protection against MAVLink parameter writes. 0:No restriction, 1:Reject parameter writes while armed, 2:Reject all parameter writes except PARAM_LOCKDOWN itself (allows unlocking), 3:Reject all parameter writes including PARAM_LOCKDOWN (recovery requires full firmware reflash)
+    // @Values: 0:Disabled,1:Lock when armed,2:Lock all except this param,3:Lock all (reflash to recover)
+    // @User: Advanced
+    AP_GROUPINFO("PARAM_LOCKDOWN", 34, AP_Vehicle, param_lockdown, 0),
+#endif
 
 #if AP_NETWORKING_ENABLED
     // @Group: NET_
@@ -334,6 +342,13 @@ void AP_Vehicle::setup()
     // values from storage:
     AP_Param::check_var_info();
     load_parameters();
+
+#if AP_PARAM_LOCKDOWN_ENABLED
+    // push lockdown state into AP_Param early so there is no
+    // boot-time gap where a saved PARAM_LOCKDOWN value is unenforced
+    AP_Param::set_lockdown_level(param_lockdown);
+    AP_Param::set_lockdown_param(static_cast<const AP_Param*>(&param_lockdown));
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (AP_BoardConfig::get_sdcard_slowdown() != 0) {
@@ -1080,6 +1095,15 @@ void AP_Vehicle::update_arming()
 void AP_Vehicle::one_Hz_update(void)
 {
     one_Hz_counter++;
+
+#if AP_PARAM_LOCKDOWN_ENABLED
+    // keep AP_Param's cached lockdown state current.  A MAVLink change
+    // to PARAM_LOCKDOWN only takes effect at the next 1 Hz tick, so
+    // parameter writes are governed by the previous level for up to one
+    // second after the change.
+    AP_Param::set_lockdown_level(param_lockdown);
+    AP_Param::set_lockdown_param(static_cast<const AP_Param*>(&param_lockdown));
+#endif
 
     /*
       every 10s check if using a 2M firmware on a 1M board
