@@ -1161,22 +1161,8 @@ void ModeAuto::nav_guided_run()
 //      called by auto_run at 100hz or more
 void ModeAuto::loiter_run()
 {
-    // if not armed set throttle to zero and exit immediately
-    if (is_disarmed_or_landed()) {
-        make_safe_ground_handling();
-        return;
-    }
-
-    // set motors to full range
-    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
-    // run waypoint and z-axis position controller
-    copter.failsafe_terrain_set_status(wp_nav->update_wpnav());
-
-    pos_control->D_update_controller();
-
-    // call attitude controller with auto yaw
-    attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
+    // loiter runs the same waypoint controller as wp_run
+    wp_run();
 }
 
 // loiter_to_alt_run - loiter to altitude in AUTO flight mode
