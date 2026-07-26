@@ -124,10 +124,14 @@ void SCurve::calculate_track(const Vector3p &origin, const Vector3p &destination
     snap_max = snap_maximum;
     jerk_max = jerk_maximum;
 
-    // update speed and acceleration limits along path
-    set_kinematic_limits(origin, destination,
-                         speed_xy, speed_up, speed_down,
-                         accel_xy, accel_z);
+    // Set speed and acceleration limits from the path that is actually flown: the
+    // horizontal extent is the arc length (equal to the chord for a straight
+    // segment) and the vertical extent is seg_delta.z. Using the straight-line
+    // chord here would understate a climbing arc's horizontal travel and needlessly
+    // throttle it against the vertical speed limit.
+    vel_max = kinematic_limit(arc.length_ne, seg_delta.z, speed_xy, speed_up, speed_down);
+    accel_max = kinematic_limit(arc.length_ne, seg_delta.z, accel_xy, accel_z, accel_z);
+    accel_z_max = accel_z;
 
     // avoid divide-by zeros. Path will be left as a zero length path
     if (!is_positive(snap_max) || !is_positive(jerk_max) || !is_positive(accel_max) || !is_positive(vel_max)) {
@@ -1131,22 +1135,6 @@ void SCurve::add_segment(uint8_t &index, float end_time, SegmentType seg_type, f
     segment[index].end_vel = end_vel;
     segment[index].end_pos = end_pos;
     index++;
-}
-
-// set speed and acceleration limits for the path
-// origin and destination are offsets from EKF origin
-// speed and acceleration parameters are given in horizontal, up and down.
-void SCurve::set_kinematic_limits(const Vector3p &origin, const Vector3p &destination,
-                                  float speed_xy, float speed_up, float speed_down,
-                                  float accel_xy, float accel_z)
-{
-    Vector3f direction = (destination - origin).tofloat();
-    const float track_speed_max = kinematic_limit(direction, speed_xy, speed_up, speed_down);
-    const float track_accel_max = kinematic_limit(direction, accel_xy, accel_z, accel_z);
-
-    vel_max = track_speed_max;
-    accel_max = track_accel_max;
-    accel_z_max = accel_z;
 }
 
 // return true if the curve is valid.  Used to identify and protect against code errors

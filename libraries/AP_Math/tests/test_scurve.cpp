@@ -244,5 +244,60 @@ TEST(SCurveCalcPath, constraints)
     }
 }
 
+// ---------------------------------------------------------------------------
+// calculate_track: arc speed limit must come from the arc length, not the chord
+// ---------------------------------------------------------------------------
+
+// drive a prepared leg to completion, returning the peak horizontal and vertical target speed
+struct LegPeak { float speed_xy; float speed_z; bool finished; };
+static LegPeak drive_leg(SCurve &leg, const Vector3p &origin)
+{
+    SCurve prev, next;
+    prev.init();
+    next.init();
+    const float dt = 0.0025f;
+    LegPeak r {};
+    Vector3p pos;
+    Vector3f vel, accel;
+    bool done = false;
+    for (int i = 0; i < 400000 && !done; i++) {
+        pos = origin;
+        vel.zero();
+        accel.zero();
+        done = leg.advance_target_along_track(prev, next, 2.0f, 2.0f, false, dt, pos, vel, accel);
+        r.speed_xy = MAX(r.speed_xy, vel.xy().length());
+        r.speed_z = MAX(r.speed_z, fabsf(vel.z));
+    }
+    r.finished = done;
+    return r;
+}
+
+// A climbing arc must take its speed limit from the path it actually flies (the arc
+// length), not the shorter chord. This 180-degree arc of radius 20 m spans ~62.8 m
+// horizontally but only 40 m of chord; combined with a 10 m altitude change and a
+// tight 1 m/s vertical limit, the chord basis would wrongly throttle the leg to
+// ~4.1 m/s. Using the arc length lets it reach the full 5 m/s horizontal speed while
+// the vertical rate stays within its limit.
+TEST(SCurveTrack, climbing_arc_limit_from_arc_length)
+{
+    const Vector3p origin{20, 0, -50};
+    const Vector3p dest{-20, 0, -40};   // 40 m chord, 10 m altitude change
+    const float speed_xy = 5.0f, speed_up = 1.0f, speed_down = 1.0f;
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, M_PI,
+                        speed_xy, speed_up, speed_down,
+                        2.0f, 2.0f, 2.0f,   // accel xy, z, corner
+                        60.0f, 10.0f);      // snap, jerk
+
+    const LegPeak p = drive_leg(leg, origin);
+    EXPECT_TRUE(p.finished);
+
+    // reaches the full horizontal budget (the chord basis would cap it near 4.1 m/s)
+    EXPECT_NEAR(p.speed_xy, speed_xy, 0.15f);
+    // vertical rate stays within its limit
+    EXPECT_LE(p.speed_z, speed_down + 0.02f);
+}
+
 AP_GTEST_MAIN()
 int hal = 0; //weirdly the build will fail without this
