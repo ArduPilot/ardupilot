@@ -18663,6 +18663,123 @@ RTL_ALT_M 111
 
         self.do_RTL()
 
+    def ParamLockdown(self):
+        '''test C++ PARAM_LOCKDOWN feature'''
+        # feature is compile-time gated; skip if not built in
+        try:
+            self.get_parameter("PARAM_LOCKDOWN", timeout=5)
+        except NotAchievedException:
+            self.progress("PARAM_LOCKDOWN not compiled in, skipping test")
+            return
+        self.set_parameter("PARAM_LOCKDOWN", 0)
+        self.wait_ready_to_arm()
+
+        # --- Level 1: lock when armed ---
+        self.start_subtest("Level 1: lockdown when armed")
+        self.set_parameter("PARAM_LOCKDOWN", 1)
+        self.delay_sim_time(1, reason="wait for lockdown level to take effect")
+        self.arm_vehicle(force=True)
+
+        # 1a: armed write rejected
+        old_disarm_delay = self.get_parameter('DISARM_DELAY')
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.send_set_parameter_direct('DISARM_DELAY', 42)
+        self.wait_statustext(
+            'Param set rejected: lockdown active',
+            check_context=True,
+            timeout=5,
+        )
+        self.context_pop()
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay)
+        self.disarm_vehicle()
+
+        # 1b: disarmed write allowed
+        self.set_parameter("DISARM_DELAY", 30)
+        self.assert_parameter_value("DISARM_DELAY", 30)
+
+        # 1c: armed again rejected
+        self.arm_vehicle(force=True)
+        old_disarm_delay = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 50)
+        self.delay_sim_time(1, reason="wait for param set to settle")
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay)
+        self.disarm_vehicle()
+
+        # reset for level 2 tests
+        self.set_parameter("PARAM_LOCKDOWN", 0)
+
+        # --- Level 2: lock all except self ---
+        self.start_subtest("Level 2: lock all except PARAM_LOCKDOWN")
+        self.set_parameter("PARAM_LOCKDOWN", 2)
+        self.delay_sim_time(1, reason="wait for lockdown level to take effect")
+
+        # 2a: self-exempt — PARAM_LOCKDOWN still writable
+        self.set_parameter("PARAM_LOCKDOWN", 2)
+
+        # 2b: other param rejected
+        old_disarm_delay = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 60)
+        self.delay_sim_time(1, reason="wait for param set to settle")
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay)
+
+        # 2c: unlock via PARAM_LOCKDOWN=0
+        self.set_parameter("PARAM_LOCKDOWN", 0)
+        self.delay_sim_time(1, reason="wait for lockdown level to take effect")
+        self.set_parameter("DISARM_DELAY", 40)
+        self.assert_parameter_value("DISARM_DELAY", 40)
+
+        # --- Boot-gap test ---
+        self.start_subtest("Boot-gap: saved lockdown enforced immediately")
+        self.set_parameter("PARAM_LOCKDOWN", 2)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        old_disarm_delay = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 99)
+        self.delay_sim_time(1, reason="wait for param set to settle")
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay)
+        # cleanup
+        self.set_parameter("PARAM_LOCKDOWN", 0)
+        self.delay_sim_time(1, reason="wait for lockdown level to take effect")
+        self.set_parameter("DISARM_DELAY", 20)
+
+        # --- Level 3: permanent lock (reflash to recover) ---
+        # Level 3 rejects ALL writes including PARAM_LOCKDOWN itself,
+        # so recovery requires wiping SITL EEPROM after the test.
+        self.start_subtest("Level 3: permanent lock")
+        self.set_parameter("PARAM_LOCKDOWN", 3)
+        self.delay_sim_time(1, reason="wait for lockdown level to take effect")
+
+        # 3a: other param rejected
+        old_disarm_delay = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 70)
+        self.delay_sim_time(1, reason="wait for param set to settle")
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay)
+
+        # 3b: PARAM_LOCKDOWN itself rejected (no self-exemption)
+        old_lockdown = self.get_parameter('PARAM_LOCKDOWN')
+        self.send_set_parameter_direct('PARAM_LOCKDOWN', 0)
+        self.delay_sim_time(1, reason="wait for param set to settle")
+        self.assert_parameter_value('PARAM_LOCKDOWN', old_lockdown)
+
+        # 3c: after reboot, lockdown persists
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        old_disarm_delay = self.get_parameter('DISARM_DELAY')
+        self.send_set_parameter_direct('DISARM_DELAY', 80)
+        self.delay_sim_time(1, reason="wait for param set to settle")
+        self.assert_parameter_value('DISARM_DELAY', old_disarm_delay)
+
+        # cleanup: level 3 has no self-exemption, so we must wipe EEPROM
+        self.stop_SITL()
+        self.start_SITL()
+        self.set_streamrate(self.sitl_streamrate())
+        self.wait_heartbeat()
+        self.set_parameters({
+            'PARAM_LOCKDOWN': 0,
+            'DISARM_DELAY': 20,
+        })
+
     def LuaParamLockdown(self):
         '''test param-lockdown.lua applet'''
         self.set_parameters({
@@ -19198,6 +19315,7 @@ return update, 1000
             self.mission_NAV_LOITER_TURNS,
             self.mission_NAV_LOITER_TURNS_off_center,
             self.StaticNotches,
+            self.ParamLockdown,
             self.LuaParamLockdown,
             self.RefindGPS,
             Test(self.GyroFFT, attempts=1, speedup=8),
