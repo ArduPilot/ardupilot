@@ -2,7 +2,7 @@
 
 ArduPilot `AP_Proximity` backend for the Hi-Link HLK-LD2451 24GHz FMCW
 motion/speed radar (vehicle/intruder detection radar, UART output), plus
-three different ways to exercise it in SITL without hardware.
+two different ways to exercise it in SITL without hardware.
 
 See [HLK-LD2451_data.md](HLK-LD2451_data.md) for the sensor's UART protocol
 as reverse-engineered from the datasheet and live capture (the *hardware's*
@@ -32,7 +32,7 @@ HLK-LD2451 (or a simulator) --UART/TCP--> AP_Proximity_HLK_LD2451 --> AP_Proximi
 ```
 
 **In SITL**, the same driver code runs unmodified — only what's on the
-other end of the serial port changes. Three options, in increasing order
+other end of the serial port changes. Two options, in increasing order
 of physical realism:
 
 1. **Built-in native simulator** (`libraries/SITL/SIM_HLK_LD2451.cpp`) —
@@ -46,13 +46,11 @@ of physical realism:
    — connects to SITL over TCP and streams scripted scenarios (a target
    approaching, a static target, multiple targets). Good for repeatable,
    deterministic test scenarios (this is what `test_hlk_ld2451.sh` uses).
-3. **Full Webots simulation** (`Webots_Rover/` submodule) — a physically
-   modelled rover with 4 corner radar sensors in an actual 3D world.
-   `Webots_Rover/tools/radar_mav.py` reads the nearest real detected
-   target (Webots' own radar physics, not scripted) and re-encodes it as
-   the same real HLK-LD2451 frames, over TCP into SITL. This is the only
-   option where target detection comes from actual sensor-model physics
-   rather than being scripted or map-lookup-based.
+
+A full Webots simulation (physically modelled rover, 4 corner radars,
+real sensor-model physics) also exists, developed separately on Windows —
+see `webots_rover.parm` below for the tuned parameter set it uses; it's
+not wired into this repo as a submodule.
 
 ## Relevant files
 
@@ -62,8 +60,7 @@ of physical realism:
 | `libraries/SITL/SIM_HLK_LD2451.cpp/.h` | Built-in SITL simulator (option 1 above): generates frames from SITL's obstacle map, no external process |
 | `Tools/autotest/hlk_ld2451_sim.py` | External scripted frame generator (option 2 above), speaks the UART protocol over TCP |
 | `Tools/autotest/test_hlk_ld2451.sh` | Automated end-to-end SITL test using option 2 |
-| `Webots_Rover/` (git submodule) | Full Webots simulation (option 3 above) — see its own README |
-| `webots_rover.parm` | Copy of `Webots_Rover`'s tuned `rover.parm`, kept here so it can be used without initialising the submodule |
+| `webots_rover.parm` | Tuned `rover.parm` for the separate (Windows-only) Webots rover project — see below |
 
 ## Parameters
 
@@ -129,26 +126,15 @@ In MAVProxy: check `param show PRX1_TYPE`, watch `SYS_STATUS` for the
 proximity bit, or use the map's proximity/object-avoidance overlay to see
 targets reported by the sim.
 
-### Option 3 — full Webots simulation (real rover model + 4-radar rig)
+### Testing against the Webots rover (developed separately on Windows)
 
-For visual, physics-driven testing where target detection comes from an
-actual sensor model instead of scripted/map-lookup data, use the companion
-Webots project, wired in as a submodule at
-[`Webots_Rover/`](../../Webots_Rover):
-
-```bash
-git submodule update --init Webots_Rover   # first time only
-```
-
-`Webots_Rover/tools/radar_mav.py` reads the nearest real target from each of
-the model's 4 corner radars and re-encodes each as its own real HLK-LD2451
-stream into SITL — one `AP_Proximity` instance per corner (`PRX1`=front-left,
-`PRX2`=front-right, `PRX3`=rear-left, `PRX4`=rear-right), same driver, same
-protocol, physically-simulated detection on all 4.
-[`webots_rover.parm`](webots_rover.parm) here is a synced copy of the
-submodule's tuned `rover.parm` (navigation gains, servo mapping, all 4
-`PRXn_TYPE 19` + `PRXn_YAW_CORR` set) so you can run against it without
-initialising the submodule first, if you just want the parameters:
+A full Webots simulation (physically modelled rover, 4 corner radars, real
+sensor-model physics) is developed and run directly on Windows — it's not
+wired into this repo. [`webots_rover.parm`](webots_rover.parm) is a copy of
+its tuned `rover.parm` (navigation gains, servo mapping, `PRXn_TYPE 19` +
+`PRXn_YAW_CORR` for the radars) kept here for reference; sync it manually
+if the Windows-side config changes. From `ashoka`, SITL is started the same
+way regardless of what's driving the FDM on the other end:
 
 ```bash
 python3 Tools/autotest/sim_vehicle.py -v Rover --model webots-python \
@@ -167,18 +153,8 @@ python3 Tools/autotest/sim_vehicle.py -v Rover --model webots-python \
   a stale saved param dump had `GPS1_TYPE`/`PRX1-4_TYPE`/`ARMING_SKIPCHK`
   all reverted to broken defaults).
 
-Then, in a second terminal (once Webots is running the world and SITL is
-up) — default drives all 4 corners at once:
-
-```bash
-python3 Webots_Rover/tools/radar_mav.py
-```
-
-For a single-sensor setup instead (only `PRX1_TYPE 19` configured), pass
-`--side {fl,fr,rl,rr} --port <n>`.
-
-Full setup (opening the world in Webots on Windows, IP addressing across
-WSL2, etc.) is documented in `Webots_Rover/README.md`.
+The radar bridge (Webots → real HLK-LD2451 UART frames → SITL) is a
+Windows-side script, part of that separate project — not in this repo.
 
 **Gotcha:** if arming fails with `PreArm: 3D Accel calibration needed` even
 though you set `ARMING_CHECK 0`, that's because ArduPilot 4.7 renamed
