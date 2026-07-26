@@ -189,7 +189,9 @@ static const struct AP_Param::defaults_table_struct defaults_table_tailsitter[] 
     { "Q_P_NE_VEL_P",        1.0},
     { "Q_P_NE_VEL_I",        0.5},
     { "Q_P_NE_VEL_D",        0.25},
-    
+    // Control surface tailsitters don't like descending fast, especially if they are still moving.
+    // A 5 second pause before descent gives them a chance to stabilize
+    { "Q_RTL_PAUSE_TIME",     5.0},
 };
 
 Tailsitter::Tailsitter(QuadPlane& _quadplane, AP_MotorsMulticopter*& _motors):quadplane(_quadplane),motors(_motors)
