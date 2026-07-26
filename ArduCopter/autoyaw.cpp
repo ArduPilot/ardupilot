@@ -264,8 +264,33 @@ float Mode::AutoYaw::yaw_rad()
     case Mode::CIRCLE:
 #if MODE_CIRCLE_ENABLED
         if (copter.circle_nav->is_active()) {
+            // standalone Circle mode provides its own yaw
             _yaw_angle_rad = copter.circle_nav->get_yaw_rad();
+            break;
         }
+        if (!copter.circle_nav->face_direction_of_travel()) {
+            // Auto's S-curve circle: face the circle center held by circle_nav, the parameter
+            // store the orbit leg was built from.  The position target is used rather than the
+            // estimate so the yaw target carries no position noise and does not lag by the
+            // tracking error (AC_Circle does the same).  If the target is exactly at the
+            // center, the last yaw target is held
+            const Vector2f pos_to_center_ne = (copter.circle_nav->get_center_NED_m().xy() - copter.pos_control->get_pos_desired_NED_m().xy()).tofloat();
+            if (!pos_to_center_ne.is_zero()) {
+                _yaw_angle_rad = pos_to_center_ne.angle();
+            }
+            break;
+        }
+        {
+            // FACE_DIRECTION_OF_TRAVEL option set: yaw follows the desired direction of travel.
+            // The last yaw target is held while the desired velocity is too small to define one
+            const Vector2f vel_desired_ne_ms = copter.pos_control->get_vel_desired_NED_ms().xy();
+            if (vel_desired_ne_ms.length() > 0.1f) {
+                _yaw_angle_rad = vel_desired_ne_ms.angle();
+            }
+        }
+#else
+        // circle mode compiled out: yaw follows the position controller's travel direction
+        _yaw_angle_rad = copter.pos_control->get_yaw_rad();
 #endif
         break;
 
