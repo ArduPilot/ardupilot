@@ -572,6 +572,13 @@ public:
     // MAVLink interface:
     bool allow_set_via_mavlink(uint16_t flags) const;
 
+#if AP_PARAM_LOCKDOWN_ENABLED
+    // Push lockdown state from AP_Vehicle into AP_Param so that
+    // AP_Param never needs to include AP_Vehicle.h.
+    static void set_lockdown_level(int8_t level) { _lockdown_level = level; }
+    static void set_lockdown_param(const AP_Param *p) { _lockdown_param = p; }
+#endif
+
     // count of parameters in tree
     static uint16_t count_parameters(void);
 
@@ -624,6 +631,11 @@ protected:
 
 private:
     static AP_Param *_singleton;
+
+#if AP_PARAM_LOCKDOWN_ENABLED
+    static int8_t _lockdown_level;
+    static const AP_Param *_lockdown_param;
+#endif
 
     /// EEPROM header
     ///
