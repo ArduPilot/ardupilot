@@ -372,7 +372,6 @@ bool ModeAuto::loiter_start()
     if (!copter.position_ok()) {
         return false;
     }
-    _mode = SubMode::LOITER;
 
     // calculate stopping point
     Vector3p stopping_point_ned_m;
@@ -383,6 +382,9 @@ bool ModeAuto::loiter_start()
 
     // hold yaw at current heading
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+
+    // set submode
+    set_submode(SubMode::LOITER);
 
     return true;
 }
