@@ -44,6 +44,13 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @Range: 0 1000
     AP_GROUPINFO("_TRIGG_DIST", 5, AP_Camera_Params, trigg_dist, 0),
 
+    // @Param: _TRIGG_3D
+    // @DisplayName: Camera trigger distance 3D
+    // @Description: Enable 3D distance calculation for camera trigger distance. When disabled the camera triggers based on the horizontal distance between the current and last trigger location. When enabled the camera triggers based on the 3D distance including North, East and vertical/Down displacement.
+    // @Values: 0:Disabled,1:Enabled
+    // @User: Standard
+    AP_GROUPINFO("_TRIGG_3D", 14, AP_Camera_Params, trigg_dist_3d, 0),
+
     // @Param: _RELAY_ON
     // @DisplayName: Camera relay ON value
     // @Description: This sets whether the relay goes high or low when it triggers. Note that you should also set RELAY_DEFAULT appropriately for your camera
