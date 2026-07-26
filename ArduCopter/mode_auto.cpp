@@ -30,6 +30,9 @@ bool ModeAuto::init(bool ignore_checks)
             return false;
         }
 
+        // set _mode directly rather than via set_submode(): a stale NAV_ATTITUDE_TIME
+        // from a previous Auto session must not trigger an EKF failsafe recheck (and
+        // possible mode change) from inside init()
         _mode = SubMode::STARTING;
 
         // stop ROI from carrying over from previous runs of the mission
@@ -374,7 +377,6 @@ bool ModeAuto::loiter_start()
     if (!copter.position_ok()) {
         return false;
     }
-    _mode = SubMode::LOITER;
 
     // calculate stopping point
     Vector3p stopping_point_ned_m;
@@ -385,6 +387,9 @@ bool ModeAuto::loiter_start()
 
     // hold yaw at current heading
     auto_yaw.set_mode(AutoYaw::Mode::HOLD);
+
+    // set submode
+    set_submode(SubMode::LOITER);
 
     return true;
 }
