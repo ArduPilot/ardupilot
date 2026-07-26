@@ -197,6 +197,20 @@ public:
     // arc_rad specifies the signed arc angle in radians for an ARC_WAYPOINT segment (0 for straight path)
     bool set_wp_destination_next_NED_m(const Vector3p& destination_ned_m, bool is_terrain_alt = false, float arc_rad = 0.0);
 
+    // Sets a circular-orbit destination about center_ne_m using the S-curve engine.
+    // The current destination (used as the leg origin) must lie on the circle; the radius is the
+    // distance from that origin to the center. turns_signed is the signed number of turns (its sign
+    // selects direction and its magnitude may exceed 1 for multiple turns). dest_d_m is the altitude
+    // (NED down) at the end of the orbit and is_terrain_alt selects the altitude frame. The orbit is
+    // flown at the waypoint speed, limited by the corner acceleration through the arc radius.
+    // Returns false if a terrain-frame transition is required but terrain data is unavailable.
+    bool set_circle_destination_NED_m(const Vector2f& center_ne_m, float turns_signed, float dest_d_m, bool is_terrain_alt);
+
+    // Returns the angle swept around the current circular-orbit leg so far, in radians.
+    // Unsigned and unwrapped, so it grows past 2*pi on a multi-turn orbit.
+    // Returns zero unless the current leg was set by set_circle_destination_NED_m().
+    float get_circle_angle_covered_rad() const { return _this_leg_is_circle ? _scurve_this_leg.get_arc_angle_covered_rad() : 0.0; }
+
     // Computes the horizontal stopping point in NE frame, returned in centimeters.
     // See get_wp_stopping_point_NE_m() for full details.
     void get_wp_stopping_point_NE_cm(Vector2f& stopping_point_ne_cm) const;
