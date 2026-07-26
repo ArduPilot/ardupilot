@@ -1534,8 +1534,8 @@ public:
     enum class SubMode : uint8_t {
         STARTING,
         INITIAL_CLIMB,
-        RETURN_HOME,
-        LOITER_AT_HOME,
+        FLY_TO_RETURN_POINT,
+        HOLD_AT_RETURN_POINT,
         FINAL_DESCENT,
         LAND
     };
@@ -1589,8 +1589,8 @@ private:
     void climb_start();
     void return_start();
     void climb_return_run();
-    void loiterathome_start();
-    void loiterathome_run();
+    void hold_at_return_point_start();
+    void hold_at_return_point_run();
     void build_path();
     void compute_return_target();
 
@@ -1600,7 +1600,7 @@ private:
     AP_Float alt_final_m;
     AP_Float climb_min_m;
 
-    SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
+    SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning, etc)
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
@@ -1618,8 +1618,8 @@ private:
         TERRAINDATABASE = 2
     };
 
-    // Loiter timer - Records how long we have been in loiter
-    uint32_t _loiter_start_time;
+    // Hold timer - Records how long we have been holding at the return point
+    uint32_t _hold_start_time;
 
     bool terrain_following_allowed;
 
