@@ -449,6 +449,59 @@ bool AC_WPNav::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool 
     return true;
 }
 
+// Sets a circular-orbit destination about center_ne_m using the S-curve engine.
+// See the header for the full parameter description. The current destination is used as the
+// leg origin and must lie on the circle; the radius is derived from origin-to-center distance.
+bool AC_WPNav::set_circle_destination_NED_m(const Vector2f& center_ne_m, float turns_signed, float dest_d_m, bool is_terrain_alt, float speed_ne_ms)
+{
+    // re-initialise if previous destination has been interrupted
+    if (!is_active() || !_flags.reached_destination) {
+        wp_and_spline_init_m(_wp_desired_speed_ne_ms);
+    }
+
+    _scurve_prev_leg.init();
+
+    // use previous destination as origin; it is assumed to lie on the circle
+    _origin_ned_m = _destination_ned_m;
+
+    if (is_terrain_alt != _is_terrain_alt) {
+        // Handle transition between terrain-relative and origin-relative altitude frames
+        float terrain_d_m;
+        if (!get_terrain_D_m(terrain_d_m)) {
+            return false;
+        }
+        if (is_terrain_alt) {
+            _origin_ned_m.z -= terrain_d_m;
+            _pos_control.init_pos_terrain_D_m(terrain_d_m);
+        } else {
+            _origin_ned_m.z += terrain_d_m;
+            _pos_control.init_pos_terrain_D_m(0.0);
+        }
+    }
+
+    // build the S-curve orbit leg; net climb is applied linearly along the arc
+    const float total_angle_rad = turns_signed * M_2PI;
+    const float climb_d_m = dest_d_m - _origin_ned_m.z;
+    _scurve_this_leg.calculate_circle_track(_origin_ned_m, center_ne_m, total_angle_rad, climb_d_m,
+                                            speed_ne_ms, _pos_control.get_max_speed_up_ms(), _pos_control.get_max_speed_down_ms(),
+                                            get_wp_acceleration_mss(), get_accel_D_mss(), get_corner_acceleration_mss(),
+                                            _scurve_snap_max_mssss, _scurve_jerk_max_msss);
+
+    // the leg itself is the source of truth for where the orbit ends (for whole turns it
+    // returns to the origin's NE position). A degenerate arc leaves the origin-to-destination
+    // vector zero, so the destination stays at the origin and the leg completes in place.
+    _destination_ned_m = _origin_ned_m + _scurve_this_leg.get_origin_to_destination().topostype();
+    _is_terrain_alt = is_terrain_alt;
+
+    _this_leg_is_spline = false;
+    _scurve_next_leg.init();
+    _next_destination_ned_m.zero();
+    _flags.fast_waypoint = false;
+    _flags.reached_destination = false;
+
+    return true;
+}
+
 // Sets the next waypoint destination using a NED position vector in meters.
 // Only updates if terrain frame matches current leg.
 // Calculates trajectory preview for smoother transition into next segment.
