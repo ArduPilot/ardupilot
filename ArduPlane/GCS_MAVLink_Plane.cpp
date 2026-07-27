@@ -746,13 +746,15 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
 #endif
 
 #if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
-    case MAV_CMD_DO_FOLLOW:
+    case MAV_CMD_DO_FOLLOW: {
         // param1: sysid of target to follow
-        if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-            plane.g2.follow.set_target_sysid((uint8_t)packet.param1);
+        const int64_t sysid = (int64_t)packet.param1;
+        if (sysid > 0 && sysid <= (int64_t)0xFFFFFFFF) {
+            plane.g2.follow.set_target_sysid((uint32_t)sysid);
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_DENIED;
+    }
 #endif
 
 #if AP_ICENGINE_ENABLED
