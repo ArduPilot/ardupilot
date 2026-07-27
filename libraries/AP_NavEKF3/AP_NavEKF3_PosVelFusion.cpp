@@ -425,6 +425,16 @@ bool NavEKF3_core::resetHeightDatum(float origin_alt_tolerance_m)
         outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
         vertCompFiltState.vel = outputDataNew.velocity.z;
 
+        // detectFlight() refreshes its position.z-based on-ground
+        // references each cycle, but arming in the same cycle as the
+        // reset freezes them at the stale value and the height jump
+        // reads as a takeoff (false inFlight, spurious in-flight mag
+        // yaw alignment while still on the ground)
+        posDownAtTakeoff = stateStruct.position.z;
+        if (magStateInitComplete) {
+            posDownAtLastMagReset = stateStruct.position.z;
+        }
+
         // baroHgtOffset (calcFiltBaroOffset) is a slow first-order
         // filter tracking baroDataDelayed.hgt + position.z.  Post-reset
         // baro reads 0 and position.z is 0, so the steady-state offset
