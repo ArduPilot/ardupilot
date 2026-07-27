@@ -135,7 +135,7 @@ on:
 
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 permissions:
   contents: read  # checkout; build-test adds actions:write per-job
