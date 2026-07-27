@@ -88,6 +88,7 @@ extern "C" {
   bool            sysStartLoadMeasure(void);
   bool            sysStopLoadMeasure(void);
   sys_cpu_load_t  sysGetCPUPeakLoad(void);
+  void            sysClearCPUPeakLoad(void);
   sys_cpu_load_t  sysGetCPUAverageLoad(void);
   msg_t           sysGetCPULoadStatistics(sys_load_stats_t *stats);
 #endif /* HAL_USE_LOAD_MEASURE == TRUE */

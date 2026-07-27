@@ -383,7 +383,11 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
     if (AP_BoardConfig::use_idle_stats()) {
+        // LOAD is the current moving average; PEAK is the peak since the
+        // previous read, cleared here; the read does not disturb the
+        // measurement
         str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
+        sysClearCPUPeakLoad();
     } else
 #endif
     str.printf("ThreadsV2\n");
@@ -437,12 +441,6 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                     unsigned(stack_free(tp->wabase)), unsigned(total_stack));
 #endif
     }
-#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
-    if (AP_BoardConfig::use_idle_stats()) {
-        sysStopLoadMeasure();
-        sysStartLoadMeasure();
-    }
-#endif
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 

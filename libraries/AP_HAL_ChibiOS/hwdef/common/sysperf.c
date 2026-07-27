@@ -106,6 +106,18 @@ sys_cpu_load_t sysGetCPUPeakLoad(void) {
 }
 
 /**
+ * @brief Clear the peak CPU load so it restarts from the current load.
+ * @note  Called from thread context. No locking is needed: the idle hooks
+ *        that update the peak only run when no other thread is runnable.
+ *
+ * @api
+ */
+void sysClearCPUPeakLoad(void) {
+
+  _load.peak = (sys_cpu_load_t)0;
+}
+
+/**
  * @brief Get the moving average of CPU load.
  *
  * @return CPU average load as percentage * 100
