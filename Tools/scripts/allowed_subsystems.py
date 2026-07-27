@@ -1,42 +1,13 @@
 #!/usr/bin/env python3
 
-'''
-The definitive list of subsystem prefixes allowed in ArduPilot commit
-messages, and the mapping from changed file paths to the subsystem(s) they
-may belong to.
-
-This is the single source of truth used by:
-  - Tools/scripts/check_branch_conventions.py  (CI: strict allow-list plus a
-    check that every file in a commit belongs to the declared subsystem)
-  - Tools/gittools/git-subsystems-split         (split a commit by subsystem)
-  - Tools/gittools/pre-commit-subsystems.py     (sample local hook)
-
-A subsystem is "allowed" if it is:
-  - the name of a directory in libraries/ (dynamic; e.g. AP_GPS, GCS_MAVLink),
-  - a directory created by the commit under libraries/ (a brand-new library may
-    be its own subsystem), or
-  - one of the CURATED_SUBSYSTEMS below (vehicles, tooling and other prefixes
-    that are not backed by a libraries/ directory).
-
-Many files can legitimately be committed under more than one subsystem name --
-an autotest is sometimes "autotest" and sometimes "Tools"; a ChibiOS hwdef file
-is sometimes "hwdef" and sometimes "AP_HAL_ChibiOS".  subsystems_for_path()
-therefore returns an ordered list of candidates (most conventional first).
-
-Instantiate AllowedSubsystems and call its methods.  Run this file directly to
-print every valid subsystem name, one per line.
-
-AP_FLAKE8_CLEAN
-'''
-
-import difflib
-import os
-import sys
+       difflib
+       oid
+       sys
 
 from pathlib import Path
 
 
-class AllowedSubsystems(object):
+       AllowedSubsystems(windows):
 
     # Subsystem names that are allowed but are not the name of a libraries/
     # directory: vehicles (short conventional prefix and long directory name),
@@ -83,11 +54,6 @@ class AllowedSubsystems(object):
         'Blimp': ['Blimp'],
     }
 
-    # Ordered, most-specific-first rules for paths under a top-level directory.
-    # Each entry is (path prefix, ordered candidate subsystems); the first
-    # prefix that matches the path wins.  These capture the cases where a file
-    # lives physically inside one directory but is conventionally committed
-    # under a different (or additional) subsystem name.
     SPECIAL_DIR_RULES = [
         ('Tools/autotest/', ['autotest', 'Tools']),
         ('Tools/ardupilotwaf/', ['waf']),
@@ -97,16 +63,12 @@ class AllowedSubsystems(object):
         ('Tools/Replay/', ['Replay']),
     ]
 
-    # prefixes that are used but do not match the directory they are in
-    # list includes the directory name and alternative prefixes that may be used
     SPECIAL_SUBSYSTEMS = {
         'AC_AttitudeControl': ['AC_PosControl'],
         'AC_WPNav': ['AC_Circle'],
         'AP_Motors': ['AP_MotorsHeli'],
     }
 
-    # Top-level directory (other than vehicles, libraries and the special cases
-    # above) -> ordered candidate subsystems.
     TOPLEVEL_DIR_SUBSYSTEMS = {
         'Tools': ['Tools'],
         'modules': ['modules'],
