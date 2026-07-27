@@ -3856,7 +3856,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
     const uint8_t max_prefix_len = 14;
     const uint8_t text_len = MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+max_prefix_len;
     if (msg.sysid != statustext_chunking.last_src_system ||
-        msg.compid != statustext_chunking.last_src_system ||
+        msg.compid != statustext_chunking.last_src_component ||
         packet.id != statustext_chunking.last_id) {
         statustext_chunking.last_src_system = msg.sysid;
         statustext_chunking.last_src_component = msg.compid;
