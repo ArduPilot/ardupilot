@@ -13154,12 +13154,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         # wait for EKF to notice GPS is gone
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, "EKF to notice GPS is gone")
 
         # simulate temperature baro drift at 0.3 m/s while sitting
         # on the ground for 30 s (~9 m of drift accumulated)
         self.set_parameter("SIM_BARO_DRIFT", 0.3)
-        self.delay_sim_time(30)
+        self.delay_sim_time(30, "accumulate baro drift")
         self.set_parameter("SIM_BARO_DRIFT", 0)
 
         self.change_mode("STABILIZE")
@@ -13206,11 +13206,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # ARMING_SKIPCHK=-1), and the EKF emits no statustext for the
         # saved-origin path on subsequent reboots, so a fixed delay
         # is the only available wait here.
-        self.delay_sim_time(15)
+        self.delay_sim_time(15, "EKF to read AHRS_ORIGIN_* and start fusing baro")
 
         # simulate temperature baro drift
         self.set_parameter("SIM_BARO_DRIFT", 0.3)
-        self.delay_sim_time(30)
+        self.delay_sim_time(30, "accumulate baro drift")
         self.set_parameter("SIM_BARO_DRIFT", 0)
 
         self.change_mode("STABILIZE")
@@ -19223,7 +19223,7 @@ return update, 1000
             # the reported AMSL altitude jumps up by the full cliff
             # height (O(500 m)) -- wrecking AMSL mission targeting.
             self.arm_vehicle()
-            self.delay_sim_time(2)
+            self.delay_sim_time(2, "let post-rearm altitude estimate settle")
             post_rearm_amsl_mm = self.assert_receive_message('GLOBAL_POSITION_INT').alt
             self.progress("Post-rearm AMSL: %.1f m" % (post_rearm_amsl_mm * 0.001))
 
