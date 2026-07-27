@@ -2,6 +2,10 @@
 
 The CoreWing F405 Wing Mini V2 is a compact fixed-wing and QuadPlane/VTOL flight controller produced by [CoreWing](https://www.corewing.com/en/).
 
+## Where to Buy
+
+- [CoreWing F405 Wing Mini V2](<direct product purchase link>)
+
 ## Features
 
 - Processor
@@ -18,11 +22,13 @@ The CoreWing F405 Wing Mini V2 is a compact fixed-wing and QuadPlane/VTOL flight
   - Integrated PDB with separate FC and servo power rails
   - FC BEC: fixed 5V, 2A continuous / 3A peak
   - Servo BEC: 5V or 6V, 4A continuous / 5A peak
-  - VTX/CAM output: shared with 5V or battery input, 1.5A continuous / 2A peak
+  - VTX/CAM output: selectable between 5V and battery voltage, 1.5A continuous / 2A peak
 - Interfaces
-  - 12 PWM outputs
-  - PWM 1-10 support PWM/DShot
-  - PWM 11-12 support normal PWM only
+  - 9 servo/motor outputs on pin headers, labeled S1 to S9
+  - Additional solder pads labeled S10 and S11
+  - Additional pad labeled `LED` mapped as PWM12
+  - PWM1-PWM10 support PWM/DShot
+  - PWM11-PWM12 support normal PWM only
   - SBUS/PPM input
   - Dedicated serial RC input for CRSF/ELRS/TBS Crossfire
   - 6 UARTs plus USB; UART1 is internally tied to the wireless module
@@ -45,37 +51,49 @@ The CoreWing F405 Wing Mini V2 is a compact fixed-wing and QuadPlane/VTOL flight
 
 ## UART Mapping
 
-The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
-- SERIAL0 -> USB
-- SERIAL1 -> USART1, tied to the wireless module, MAVLink2 telemetry
-- SERIAL2 -> USART2, RX tied to the inverted SBUS RC input, but can be used as a normal UART if [BRD_ALT_CONFIG](https://ardupilot.org/copter/docs/parameters.html#brd-alt-config-alternative-hw-config) = 1
-- SERIAL3 -> USART3, available on the DJI air unit connector
-- SERIAL4 -> UART4, user port
-- SERIAL5 -> UART5, GPS
-- SERIAL6 -> USART6, serial RC input
+| Port | UART    | Protocol | TX DMA | RX DMA |
+|------|---------|----------|:------:|:------:|
+| 0    | USB     | MAVLink2 | ✘      | ✘      |
+| 1    | USART1  | MAVLink2 | ✔      | ✔      |
+| 2    | USART2* | None     | ✘      | ✘      |
+| 3    | USART3  | None     | ✔      | ✘      |
+| 4    | UART4   | None     | ✔      | ✘      |
+| 5    | UART5   | GPS      | ✔      | ✘      |
+| 6    | USART6  | RCIN     | ✔      | ✔      |
 
-Serial protocols shown are defaults, but can be adjusted by the user.
+\* USART2 RX is tied to the inverted SBUS RC input, but can be used as a normal UART if `BRD_ALT_CONFIG = 1` and no signal drives the SBUS pin.
 
 ## RC Input
 
 The SBUS input is passed through an inverter to RX2. By default, RX2 is mapped to a timer input instead of the UART and can be used for SBUS, PPM, and receiver protocols that do not require a true UART.
 
-Serial receiver protocols such as CRSF, ELRS, MAVLink RC input, and SRXL2 should be connected to UART6 using TX6 and RX6. SERIAL6_PROTOCOL is set to 23 by default for serial RC input.
+Serial receiver protocols such as CRSF, ELRS, MAVLink RC input, and SRXL2 should be connected to UART6 using TX6 and RX6. `SERIAL6_PROTOCOL = 23` is set by default for serial RC input.
 
 Recommended receiver connections:
 
 - PPM: connect to the SBUS input
 - SBUS: connect to the SBUS input
-- CRSF / TBS Crossfire: connect to TX6 and RX6
-- ELRS: connect to TX6 and RX6, same as CRSF; set bit 13 of RC_OPTIONS if required
+- CRSF / ELRS / TBS Crossfire: connect to TX6 and RX6, set `SERIAL6_OPTIONS = 0`
 - DSM / SRXL: connect to RX6
-- SRXL2: connect to TX6 and set SERIAL6_OPTIONS to 4
-- FPort: connect to TX6 and RX6 through a bidirectional inverter
+- SRXL2: connect to TX6 and set `SERIAL6_OPTIONS = 4`
+- FPort: connect to TX6 and RX6 through a bidirectional inverter, set `SERIAL6_OPTIONS = 15`
+
+For more information, see [Radio Control Systems](https://ardupilot.org/plane/docs/common-rc-systems.html).
 
 ## PWM Output
 
-All motor/servo outputs are PWM capable. PWM outputs 1 to 10 are also DShot capable. PWM outputs 11 and 12 support normal PWM only. Unlike the CoreWing F405 Wing V2, the Wing Mini V2 does not support bi-directional DShot.
+The board provides 12 PWM output channels.
+
+PWM outputs 1 to 9 are available on pin headers, labeled S1 to S9. PWM10 and
+PWM11 are available on solder pads labeled S10 and S11. An additional pad
+labeled `LED` is mapped as PWM12.
+
+PWM outputs 1 to 10 support PWM and DShot. PWM outputs 11 and 12 support normal
+PWM only.
+
+The `LED`-labeled pad is not configured as a serial LED / NeoPixel output in
+ArduPilot. It is mapped as PWM12 and is used as a normal PWM output only.
 
 The PWM outputs are in 5 groups:
 
@@ -87,13 +105,32 @@ The PWM outputs are in 5 groups:
 
 Channels within the same group need to use the same output rate and protocol. If any DShot-capable output in a group uses DShot then all DShot-capable outputs in that group need to use DShot.
 
+## GPIOs
+
+| GPIO | Function |
+|------|----------|
+| 50 | PWM1 |
+| 51 | PWM2 |
+| 52 | PWM3 |
+| 53 | PWM4 |
+| 54 | PWM5 |
+| 55 | PWM6 |
+| 56 | PWM7 |
+| 57 | PWM8 |
+| 58 | PWM9 |
+| 59 | PWM10 / S10 solder pad |
+| 60 | PWM11 / S11 solder pad, normal PWM only |
+| 61 | PWM12 / pad labeled `LED`, normal PWM only |
+| 80 | Buzzer |
+| 81 | VTX/CAM power relay |
+
 ## Integrated PDB and Power Wiring
 
 The board includes an integrated PDB with separate power rails for the flight controller/peripherals, servos, and VTX/camera equipment.
 
-CoreWing F405 Wing Mini V2 includes two onboard BECs: an FC BEC and a servo BEC. Its VTX/CAM power output is selectable between 5V and battery input, but it is not a separate third BEC.
+CoreWing F405 Wing Mini V2 includes two onboard BECs: an FC BEC and a servo BEC. Its VTX/CAM power output is selectable between 5V and battery voltage, but it is not a separate third BEC.
 
-![CoreWingF405WMiniV2 PDB](CoreWingF405WingMiniV2_pdb.jpg)
+![CoreWingF405WingMiniV2 PDB](CoreWingF405WingMiniV2_pdb.jpg)
 
 Do not connect an ESC BEC red wire to the servo rail unless the board power jumper configuration allows an external BEC input.
 
@@ -146,11 +183,19 @@ The board does not have a built-in GPS or compass. An external GPS/compass modul
 
 The 4V5 pins are also powered when USB is connected. Avoid connecting high-current loads to 4V5 when powered only from USB.
 
+## Analog Inputs
+
+| ADC Pin | Function |
+|---------|----------|
+| 10 | Battery voltage |
+| 11 | Battery current |
+| 15 | Analog airspeed |
+
 ## Airspeed
 
 The board supports both analog and digital airspeed sensors.
 
-- Analog airspeed: use the AIR analog input, 0V to 6.6V range (ARSPD_PIN 15, set by default)
+- Analog airspeed: use the AIR analog input, 0V to 6.6V range
 - Digital airspeed: use the I2C airspeed connector
 
 The MS4525DO, ASP5033, MS5525, SDP3X and NMEA digital airspeed sensors are enabled by default, in addition to analog airspeed. Other digital airspeed sensor drivers require a custom firmware build using the [Custom Firmware Build Server](https://custom.ardupilot.org).
