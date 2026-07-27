@@ -83,7 +83,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _SYSID
     // @DisplayName: Follow target's mavlink system id
     // @Description: Follow target's mavlink system id
-    // @Range: 0 255
+    // @Range: 0 16777215
     // @User: Standard
     AP_GROUPINFO("_SYSID", 3, AP_Follow, _sysid, 0),
 
@@ -226,6 +226,15 @@ AP_Follow::AP_Follow() :
 {
     _singleton = this;
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+// convert parameters. Must be called before anything reads FOLL_SYSID,
+// which includes mode entry at startup, so this is done from the vehicle's
+// load_parameters() rather than lazily on first use
+void AP_Follow::convert_params()
+{
+    // PARAMETER_CONVERSION - Added: Jul-2026 for 32 bit sysids
+    _sysid.convert_parameter_width(AP_PARAM_INT16);
 }
 
 
@@ -558,7 +567,7 @@ bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
     }
 
     // skip message if not from our target
-    if (_sysid != 0 && msg.sysid != _sysid) {
+    if (_sysid != 0 && msg.sysid != uint32_t(_sysid.get())) {
         return false;
     }
 
