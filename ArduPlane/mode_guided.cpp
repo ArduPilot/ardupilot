@@ -174,24 +174,35 @@ void ModeGuided::update_target_altitude()
     if ((plane.guided_state.target_alt_time_ms != 0) ||
         !plane.guided_state.target_location_alt_is_minus_one()) { // target_alt now defaults to -1, and _time_ms defaults to zero.
         // offboard altitude demanded
-        uint32_t now = AP_HAL::millis();
-        float delta = 1e-3f * (now - plane.guided_state.target_alt_time_ms);
+        const uint32_t now = AP_HAL::millis();
+        const float dt = 1e-3f * (now - plane.guided_state.target_alt_time_ms);
         plane.guided_state.target_alt_time_ms = now;
-        // determine delta accurately as a float
-        float delta_amt_f = delta * plane.guided_state.target_alt_rate;
-        // then scale x100 to match last_target_alt and convert to a signed int32_t as it may be negative
-        int32_t delta_amt_i = (int32_t)(100.0 * delta_amt_f); 
-        // To calculate the required velocity (up or down), we need to target and current altitudes in the target frame
+        // the largest altitude step allowed this cycle at the requested rate
+        const float delta_alt_m = dt * plane.guided_state.target_alt_rate;
+        // the interim demand is advanced in the target's altitude frame
         const Location::AltFrame target_frame = plane.guided_state.target_location.get_alt_frame();
-        int32_t target_alt_previous_cm;
-        if (plane.current_loc.initialised() && plane.guided_state.target_location.initialised() && 
-            plane.current_loc.get_alt_cm(target_frame, target_alt_previous_cm)) {
-            // create a new interim target location that that takes current_location and moves delta_amt_i in the right direction
-            int32_t temp_alt_cm = constrain_int32(plane.guided_state.target_location.alt, target_alt_previous_cm - delta_amt_i,  target_alt_previous_cm + delta_amt_i);
-            Location temp_location = plane.guided_state.target_location;
-            temp_location.set_alt_cm(temp_alt_cm, target_frame);
+        float current_alt_m, target_alt_m;
+        if (plane.current_loc.initialised() && plane.guided_state.target_location.initialised() &&
+            plane.current_loc.get_alt_m(target_frame, current_alt_m) &&
+            plane.guided_state.target_location.get_alt_m(target_frame, target_alt_m)) {
+            // seed the interim demand from the current altitude when a new target is accepted
+            if (!plane.guided_state.target_alt_interim_valid) {
+                plane.guided_state.target_alt_interim_m = current_alt_m;
+                plane.guided_state.target_alt_interim_valid = true;
+            }
+            // Advance the persistent interim demand towards the target at the requested
+            // rate, never past it. Anchoring on the previous demand rather than on
+            // current_loc is what makes the requested rate actually achieved: the demand
+            // accumulates ahead of the aircraft instead of sitting one cycle's step away
+            // from it.
+            float interim_alt_m = plane.guided_state.target_alt_interim_m;
+            interim_alt_m = constrain_float(target_alt_m, interim_alt_m - delta_alt_m, interim_alt_m + delta_alt_m);
+            plane.guided_state.target_alt_interim_m = interim_alt_m;
 
-            // incrementally step the altitude towards the target            
+            Location temp_location = plane.guided_state.target_location;
+            temp_location.set_alt_m(interim_alt_m, target_frame);
+
+            // incrementally step the altitude towards the target
             plane.set_target_altitude_location(temp_location);
         }
     } else 
