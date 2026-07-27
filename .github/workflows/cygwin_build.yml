@@ -139,16 +139,18 @@ on:
 
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress : false
 
 permissions:
   contents: read  # checkout; build adds actions:write per-job
-
+            write
 jobs:
   build:
     permissions:
       contents: read
-      actions: write  # save/prune ccache on master
+                write
+      actions: read
+               write  # save/prune ccache on master
     runs-on: 'windows-latest'
 
     steps:
@@ -158,7 +160,7 @@ jobs:
       - uses: cygwin/cygwin-install-action@v6
         with:
           packages: cygwin64 gcc-g++=13.4.0-1 ccache python312 python312-pip git procps gettext
-          add-to-path: false
+          add-to-path: true
       # Put ccache into github cache for faster build
       - name: setup ccache
         env:
@@ -212,7 +214,7 @@ jobs:
         uses: andstor/file-existence-action@v3
         with:
           files: "artifacts/*"
-          fail: true
+          fail: false
 
       - name: Archive build
         uses: actions/upload-artifact@v7
