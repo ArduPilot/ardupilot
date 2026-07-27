@@ -13995,6 +13995,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode("LAND")
         self.wait_landed_and_disarmed()
 
+    def MissionRTLAltFinalContinue(self):
+        '''ensure AUTO mission can continue past a NAV_RETURN_TO_LAUNCH item
+        even if the vehicle holds altitude at RTL_ALT_FINAL_M'''
+        target_alt = 5
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+            "RTL_ALT_FINAL_M": target_alt,
+        })
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),
+        ])
+
+        # ensure the vehicle reaches the LAND command instead of getting stuck at RTL
+        self.wait_current_waypoint(4, timeout=60)
+        self.wait_disarmed()
+
     def SMART_RTL(self):
         '''Check SMART_RTL'''
         self.progress("arm the vehicle and takeoff in Guided")
@@ -18796,6 +18815,7 @@ return update, 1000
             self.EKFYawResetLogged,
             self.AP_Avoidance,
             self.RTL_ALT_FINAL_M,
+            self.MissionRTLAltFinalContinue,
             self.SMART_RTL,
             self.MAV_CMD_DO_SET_HOME_bad_location,
             self.SMART_RTL_EnterLeave,
