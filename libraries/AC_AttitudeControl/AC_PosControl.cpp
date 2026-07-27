@@ -126,23 +126,23 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // IDs 8,9 used for _TC_XY and _TC_Z in beta release candidate
 
-    // @Param: _JERK_NE
+    // @Param: _NE_JERK
     // @DisplayName: Jerk limit for the horizontal kinematic input shaping
     // @Description: Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
     // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("_JERK_NE", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
+    AP_GROUPINFO("_NE_JERK", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
 
-    // @Param: _JERK_D
+    // @Param: _D_JERK
     // @DisplayName: Jerk limit for the vertical kinematic input shaping
     // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
     // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("_JERK_D", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
+    AP_GROUPINFO("_D_JERK", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
 
     // @Param: _D_VEL_P
     // @DisplayName: Velocity (vertical) controller P gain
