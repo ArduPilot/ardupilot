@@ -6779,6 +6779,27 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             )
             self.wait_altitude(target_alt+alt-1, target_alt+alt+1, timeout=30, minimum_duration=10, relative=False)
 
+        self.start_subtest("requested climb/descent rate (param3) is honoured")
+        # climb 120m at 2.5m/s and check the sustained rate mid-slew
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
+            p3=2.5,
+            p7=190+height_diff,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_climbrate(1.5, 3.5, minimum_duration=10, timeout=60)
+        self.wait_altitude(target_alt+190-5, target_alt+190+5, timeout=120, relative=False)
+
+        # descend back to 70 at 2m/s and check the sustained rate mid-slew
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
+            p3=2.0,
+            p7=70+height_diff,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_climbrate(-3.0, -1.0, minimum_duration=10, timeout=60)
+        self.wait_altitude(target_alt+70-1, target_alt+70+1, timeout=120, minimum_duration=10, relative=False)
+
         # test for #24535
         self.start_subtest("switch to loiter and resume guided maintains home relative altitude")
         self.change_mode('LOITER')
@@ -6921,7 +6942,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         )
 
         self.delay_sim_time(5, reason="terrain altitude to stabilise before landing")
-        self.fly_home_land_and_disarm()
+        self.fly_home_land_and_disarm(timeout=240)
 
     def _MAV_CMD_PREFLIGHT_CALIBRATION(self, command):
         self.context_push()
