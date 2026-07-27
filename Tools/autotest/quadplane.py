@@ -3619,7 +3619,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
             # Plane::update_home() runs every 5 s while disarmed;
             # wait long enough to guarantee at least two cycles.
-            self.delay_sim_time(15)
+            self.delay_sim_time(15, "Wait for two cycles of update_home")
 
             post_update_amsl_mm = self.assert_receive_message('GLOBAL_POSITION_INT').alt
             self.progress("Post-update_home AMSL: %.1f m" % (post_update_amsl_mm * 0.001))
