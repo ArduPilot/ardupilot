@@ -2,11 +2,11 @@ name: pre-commit
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [main,master]
 
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   ci:
