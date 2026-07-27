@@ -3281,6 +3281,20 @@ uint8_t GCS::get_channel_from_port_number(uint8_t port_num)
     return UINT8_MAX;
 }
 
+void GCS::available_modes_changed()
+{
+    available_modes_sequence += 1;
+
+    // Now that the modes have really changed, start streaming
+    // AVAILABLE_MODES_MONITOR on any channel that asked for the mode list
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        GCS_MAVLINK *link = chan(i);
+        if (link != nullptr) {
+            link->available_modes_now_changed();
+        }
+    }
+}
+
 MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int_t &packet)
 {
     const uint32_t mavlink_id = (uint32_t)packet.param1;
@@ -3301,9 +3315,13 @@ MAV_RESULT GCS_MAVLINK::handle_command_request_message(const mavlink_command_int
         available_modes.next_index = 1;
         available_modes.requested_index = (uint8_t)packet.param2;
 
-        // After the first request sequnece is streamed in the AVAILABLE_MODES_MONITOR message
-        // This allows the GCS to re-request modes if there is a change
-        set_ap_message_interval(MSG_AVAILABLE_MODES_MONITOR, 5000);
+        // Per the MAVLink standard modes spec, AVAILABLE_MODES_MONITOR should only
+        // start streaming once the set of available modes actually changes for the
+        // first time, not immediately on a GCS's initial request. Remember that
+        // this channel is interested; available_modes_now_changed() (called from
+        // GCS::available_modes_changed() when a real change happens) will start
+        // the stream.
+        available_modes.monitor_requested = true;
         break;
 
 #if AP_CAMERA_ENABLED
@@ -6593,6 +6611,16 @@ bool GCS_MAVLINK::send_available_modes()
     }
 
     return true;
+}
+
+void GCS_MAVLINK::available_modes_now_changed()
+{
+    if (!available_modes.monitor_requested) {
+        // this channel has never asked for the available modes, don't stream
+        // the monitor message at it
+        return;
+    }
+    set_ap_message_interval(MSG_AVAILABLE_MODES_MONITOR, 5000);
 }
 
 bool GCS_MAVLINK::send_available_mode_monitor()

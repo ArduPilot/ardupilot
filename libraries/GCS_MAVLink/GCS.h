@@ -1114,9 +1114,15 @@ private:
         // Note these start at 1
         uint8_t requested_index;
         uint8_t next_index;
+        // set once a GCS has requested AVAILABLE_MODES; used to decide whether
+        // to start streaming AVAILABLE_MODES_MONITOR once modes actually change
+        bool monitor_requested;
     } available_modes;
     bool send_available_modes();
     bool send_available_mode_monitor();
+    // start streaming AVAILABLE_MODES_MONITOR to this channel if it previously
+    // requested AVAILABLE_MODES and the mode set has now actually changed
+    void available_modes_now_changed();
 
 };
 
@@ -1313,7 +1319,10 @@ public:
     // Sequence number should be incremented when available modes changes
     // Sent in AVAILABLE_MODES_MONITOR msg
     uint8_t get_available_modes_sequence() const { return available_modes_sequence; }
-    void available_modes_changed() { available_modes_sequence += 1; }
+    // call whenever the set of available modes actually changes; increments the
+    // sequence number and kicks off AVAILABLE_MODES_MONITOR streaming on any
+    // channel that previously requested AVAILABLE_MODES
+    void available_modes_changed();
 
 protected:
 
