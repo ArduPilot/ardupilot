@@ -175,7 +175,7 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
                               const mavlink_message_t &msg)
 {
     // extract the targets for this packet
-    int16_t target_system = -1;
+    int64_t target_system = -1;
     int16_t target_component = -1;
     get_targets(msg, target_system, target_component);
 
@@ -230,11 +230,11 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
             if (&in_link != out_link && !sent_to_chan[routes[i].channel]) {
                 if (out_link->check_payload_size(msg.len)) {
 #if ROUTING_DEBUG
-                    ::printf("fwd msg %u from chan %u on chan %u sysid=%d compid=%d\n",
+                    ::printf("fwd msg %u from chan %u on chan %u sysid=%lld compid=%d\n",
                              msg.msgid,
                              (unsigned)in_link.get_chan(),
                              (unsigned)routes[i].channel,
-                             (int)target_system,
+                             (long long)target_system,
                              (int)target_component);
 #endif
                     _mavlink_resend_uart(routes[i].channel, &msg);
@@ -299,12 +299,20 @@ void MAVLink_routing::send_to_components(const char *pkt, const mavlink_msg_entr
                           entry->max_msg_len, pkt_len);
         }
 #endif
-        _mav_finalize_message_chan_send(routes[i].channel,
+        // the target is a component of this system; pass our (possibly
+        // 32 bit) sysid so it can go in the extended header if needed
+        uint8_t target_compid = 0;
+        if (entry->flags & MAV_MSG_ENTRY_FLAG_HAVE_TARGET_COMPONENT) {
+            target_compid = pkt[entry->target_component_ofs];
+        }
+        _mav_finalize_message_chan_send_target(routes[i].channel,
                                         entry->msgid,
                                         pkt,
                                         entry->min_msg_len,
                                         MIN(entry->max_msg_len, pkt_len),
-                                        entry->crc_extra);
+                                        entry->crc_extra,
+                                        mavlink_system.sysid,
+                                        target_compid);
         sent_to_chan[routes[i].channel] = true;
     }
 }
@@ -313,7 +321,7 @@ void MAVLink_routing::send_to_components(const char *pkt, const mavlink_msg_entr
   search for the first vehicle or component in the routing table with given mav_type and retrieve it's sysid, compid and channel
   returns true if a match is found
  */
-bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel)
+bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint32_t &sysid, uint8_t &compid, mavlink_channel_t &channel)
 {
     // check learned routes
     for (uint8_t i=0; i<num_routes; i++) {
@@ -333,7 +341,7 @@ bool MAVLink_routing::find_by_mavtype(uint8_t mavtype, uint8_t &sysid, uint8_t &
   search for the first vehicle or component in the routing table with given mav_type and component id and retrieve its sysid and channel
   returns true if a match is found
  */
-bool MAVLink_routing::find_by_mavtype_and_compid(uint8_t mavtype, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) const
+bool MAVLink_routing::find_by_mavtype_and_compid(uint8_t mavtype, uint8_t compid, uint32_t &sysid, mavlink_channel_t &channel) const
 {
     for (uint8_t i=0; i<num_routes; i++) {
         if ((routes[i].mavtype == mavtype) && (routes[i].compid == compid)) {
@@ -451,17 +459,20 @@ void MAVLink_routing::handle_heartbeat(GCS_MAVLINK &link, const mavlink_message_
   that the caller can set them to -1 and know when a sysid or compid
   target is found in the message
 */
-void MAVLink_routing::get_targets(const mavlink_message_t &msg, int16_t &sysid, int16_t &compid)
+void MAVLink_routing::get_targets(const mavlink_message_t &msg, int64_t &sysid, int16_t &compid)
 {
     const mavlink_msg_entry_t *msg_entry = mavlink_get_msg_entry(msg.msgid);
-    if (msg_entry == nullptr) {
+    const bool targetted = (msg.incompat_flags & MAVLINK_IFLAG_TARGETTED) != 0;
+    if (msg_entry == nullptr && !targetted) {
         return;
     }
-    if (msg_entry->flags & MAV_MSG_ENTRY_FLAG_HAVE_TARGET_SYSTEM) {
-        sysid = _MAV_RETURN_uint8_t(&msg,  msg_entry->target_system_ofs);
+    if (targetted ||
+        (msg_entry != nullptr && (msg_entry->flags & MAV_MSG_ENTRY_FLAG_HAVE_TARGET_SYSTEM))) {
+        sysid = mavlink_msg_get_target_sysid(&msg, msg_entry);
     }
-    if (msg_entry->flags & MAV_MSG_ENTRY_FLAG_HAVE_TARGET_COMPONENT) {
-        compid = _MAV_RETURN_uint8_t(&msg,  msg_entry->target_component_ofs);
+    if (targetted ||
+        (msg_entry != nullptr && (msg_entry->flags & MAV_MSG_ENTRY_FLAG_HAVE_TARGET_COMPONENT))) {
+        compid = mavlink_msg_get_target_compid(&msg, msg_entry);
     }
 }
 

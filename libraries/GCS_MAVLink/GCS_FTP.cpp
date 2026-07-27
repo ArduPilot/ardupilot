@@ -110,7 +110,8 @@ bool GCS_FTP::send_reply(const Transaction &reply)
     }
     mavlink_file_transfer_protocol_t pkt {};
     pkt.target_network = 0;
-    pkt.target_system = reply.sysid;
+    // targets > 255 travel in the extended header
+    pkt.target_system = reply.sysid>255?0:reply.sysid;
     pkt.target_component = reply.compid;
     uint8_t *payload = pkt.payload;
     put_le16_ptr(payload, reply.seq_number);
@@ -121,7 +122,7 @@ bool GCS_FTP::send_reply(const Transaction &reply)
     payload[6] = reply.burst_complete ? 1 : 0;
     put_le32_ptr(&payload[8], reply.offset);
     memcpy(&pkt.payload[12], reply.data, sizeof(reply.data));
-    mavlink_msg_file_transfer_protocol_send_struct(reply.chan, &pkt);
+    mavlink_msg_file_transfer_protocol_send(reply.chan, pkt.target_network, reply.sysid, reply.compid, pkt.payload);
     return true;
 }
 

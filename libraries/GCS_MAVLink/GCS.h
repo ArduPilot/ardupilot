@@ -149,13 +149,13 @@ public:
     Type task;
     MAV_CMD mav_cmd;
 
-    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint8_t sysid, uint8_t compid, mavlink_channel_t chan);
+    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan);
 
     static void check_tasks();
 
 private:
 
-    uint8_t requesting_sysid;
+    uint32_t requesting_sysid;
     uint8_t requesting_compid;
     mavlink_channel_t chan;
 
@@ -259,6 +259,26 @@ public:
                                         entry->min_msg_len,
                                         entry->max_msg_len,
                                         entry->crc_extra);
+    }
+    // variant for raw payload structs with a target sysid over 255; the
+    // caller must have written the payload target_system byte as
+    // (target_sysid > 255 ? 0 : target_sysid)
+    void send_message_target(uint32_t msgid, const char *pkt, uint32_t target_sysid, uint8_t target_compid) {
+        const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
+        if (entry == nullptr) {
+            return;
+        }
+        if (!check_payload_size(entry->max_msg_len)) {
+            return;
+        }
+        _mav_finalize_message_chan_send_target(chan,
+                                               entry->msgid,
+                                               pkt,
+                                               entry->min_msg_len,
+                                               entry->max_msg_len,
+                                               entry->crc_extra,
+                                               target_sysid,
+                                               target_compid);
     }
 
     // accessor for uart
@@ -391,7 +411,7 @@ public:
     void send_accelcal_vehicle_position(uint32_t position);
     void send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag, int16_t temperature));
     void send_sys_status();
-    void send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc);
+    void send_set_position_target_global_int(uint32_t target_system, uint8_t target_component, const Location& loc);
     void send_rpm() const;
     void send_generator_status() const;
 #if AP_WINCH_ENABLED
@@ -469,16 +489,16 @@ public:
       search for a component in the routing table with given mav_type and retrieve it's sysid, compid and channel
       returns if a matching component is found
      */
-    static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
+    static bool find_by_mavtype(uint8_t mav_type, uint32_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
 
     /*
       search for the first vehicle or component in the routing table with given mav_type and component id and retrieve its sysid and channel
       returns true if a match is found
      */
-    static bool find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) { return routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel); }
+    static bool find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint32_t &sysid, mavlink_channel_t &channel) { return routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel); }
     // same as above, but returns a pointer to the GCS_MAVLINK object
     // corresponding to the channel
-    static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid);
+    static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint32_t &sysid);
 
 #if AP_MAVLINK_SIGNING_ENABLED
     // update signing timestamp on GPS lock
@@ -681,7 +701,7 @@ protected:
 
     void handle_statustext(const mavlink_message_t &msg);
     struct {
-        uint8_t last_src_system;
+        uint32_t last_src_system;
         uint8_t last_src_component;
         uint8_t last_id; // ID from the mavlink packet
         uint8_t msg_id;  // ID used in our logs
@@ -983,7 +1003,7 @@ private:
         mavlink_channel_t chan;
         int16_t param_index;
         char param_name[AP_MAX_NAME_SIZE+1];
-        uint8_t src_system_id;
+        uint32_t src_system_id;
         uint8_t src_component_id;
     };
 
@@ -994,7 +1014,7 @@ private:
         int16_t param_index;
         uint16_t count;
         char param_name[AP_MAX_NAME_SIZE+1];
-        uint8_t src_system_id;
+        uint32_t src_system_id;
         uint8_t src_component_id;
         MAV_PARAM_ERROR param_error;
     };
@@ -1176,7 +1196,7 @@ public:
     /*
       return true if a MAVLink system ID is a GCS
      */
-    bool sysid_is_gcs(uint8_t sysid) const;
+    bool sysid_is_gcs(uint32_t sysid) const;
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
@@ -1302,7 +1322,7 @@ public:
     bool get_high_latency_status();
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
-    uint8_t sysid_this_mav() const { return sysid; }
+    uint32_t sysid_this_mav() const { return sysid; }
     uint32_t telem_delay() const { return mav_telem_delay; }
 
 #if AP_SCRIPTING_ENABLED
@@ -1330,9 +1350,9 @@ protected:
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
 
     // parameters
-    AP_Int16                 sysid;
-    AP_Int16                 mav_gcs_sysid;
-    AP_Int16                 mav_gcs_sysid_high;
+    AP_Int32                 sysid;
+    AP_Int32                 mav_gcs_sysid;
+    AP_Int32                 mav_gcs_sysid_high;
     AP_Enum16<Option>        mav_options;
     AP_Int8                  mav_telem_delay;
 

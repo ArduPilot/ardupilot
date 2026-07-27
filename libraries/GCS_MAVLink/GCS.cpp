@@ -38,14 +38,14 @@ const AP_Param::GroupInfo GCS::var_info[] {
     // @Param: _SYSID
     // @DisplayName: MAVLink system ID of this vehicle
     // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network.
-    // @Range: 1 255
+    // @Range: 1 16777215
     // @User: Advanced
     AP_GROUPINFO("_SYSID",    1,     GCS,  sysid,  MAV_SYSID_DEFAULT),
 
     // @Param: _GCS_SYSID
     // @DisplayName: My ground station number
     // @Description: This sets what MAVLink source system IDs are accepted for GCS failsafe handling, RC overrides and manual control. When MAV_GCS_SYSID_HI is less than MAV_GCS_SYSID then only this value is considered to be a GCS. When MAV_GCS_SYSID_HI is greater than or equal to MAV_GCS_SYSID then the range of values between MAV_GCS_SYSID and MAV_GCS_SYSID_HI (inclusive) are all treated as valid GCS MAVLink system IDs
-    // @Range: 1 255
+    // @Range: 1 16777215
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_GCS_SYSID",    2,      GCS, mav_gcs_sysid, 255),
@@ -53,7 +53,7 @@ const AP_Param::GroupInfo GCS::var_info[] {
     // @Param: _GCS_SYSID_HI
     // @DisplayName: ground station system ID, maximum
     // @Description: Upper limit of MAVLink source system IDs considered to be from the GCS. When this is less than MAV_GCS_SYSID then only MAV_GCS_SYSID is used as GCS ID. When this is greater than or equal to MAV_GCS_SYSID then the range of values from MAV_GCS_SYSID to MAV_GCS_SYSID_HI (inclusive) is treated as a GCS ID.
-    // @Range: 0 255
+    // @Range: 0 16777215
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_GCS_SYSID_HI",    5,   GCS, mav_gcs_sysid_high, 0),
@@ -261,6 +261,11 @@ MissionItemProtocol *GCS::missionitemprotocols[3];
 
 void GCS::init()
 {
+    // sysid parameters widened for 32 bit system IDs
+    sysid.convert_parameter_width(AP_PARAM_INT16);
+    mav_gcs_sysid.convert_parameter_width(AP_PARAM_INT16);
+    mav_gcs_sysid_high.convert_parameter_width(AP_PARAM_INT16);
+
     mavlink_system.sysid = sysid_this_mav();
 }
 
@@ -724,12 +729,12 @@ MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
 /*
   return true if a MAVLink system ID is a GCS for this vehicle
 */
-bool GCS::sysid_is_gcs(uint8_t _sysid) const
+bool GCS::sysid_is_gcs(uint32_t _sysid) const
 {
     if (mav_gcs_sysid_high <= mav_gcs_sysid) {
-        return mav_gcs_sysid == _sysid;
+        return uint32_t(mav_gcs_sysid.get()) == _sysid;
     }
-    return _sysid >= mav_gcs_sysid && _sysid <= mav_gcs_sysid_high;
+    return _sysid >= uint32_t(mav_gcs_sysid.get()) && _sysid <= uint32_t(mav_gcs_sysid_high.get());
 }
 
 #endif  // HAL_GCS_ENABLED
