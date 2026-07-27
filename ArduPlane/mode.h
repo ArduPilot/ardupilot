@@ -876,6 +876,14 @@ private:
         climb,
         RTL,
     } submode;
+
+    // state latched at the start of the fixed wing approach, used to
+    // gradually ramp the target altitude down to RTL_ALTITUDE
+    struct {
+        bool valid;
+        float alt_delta_m;  // height above the QRTL destination altitude
+        float dist_m;       // distance to the QRTL destination
+    } approach_start;
 };
 
 class ModeQAcro : public Mode
