@@ -1068,6 +1068,24 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Range: 0 10000
     // @User: Standard
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
+
+#if AP_CPU_IDLE_STATS_ENABLED
+    // @Param: TKOFF_CPU_AVG
+    // @DisplayName: Takeoff Check average CPU load maximum
+    // @Description: Takeoff is not permitted while the average true CPU load, captured using the idle threads over the previous 2 seconds, exceeds this value. REQUIRES BRD_IDLE_STATS: the load is measured by the idle threads, so this check does nothing, whatever this value, while BRD_IDLE_STATS is zero. Set to zero to disable check
+    // @Units: %
+    // @Range: 0 99.9
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_CPU_AVG", 60, ParametersG2, takeoff_cpu_avg_max, 95.0),
+
+    // @Param: TKOFF_CPU_PEAK
+    // @DisplayName: Takeoff Check peak CPU load maximum
+    // @Description: Takeoff is not permitted while the peak true CPU load, captured using the idle threads over the previous 2 seconds, exceeds this value. REQUIRES BRD_IDLE_STATS: the load is measured by the idle threads, so this check does nothing, whatever this value, while BRD_IDLE_STATS is zero. Set to zero to disable check
+    // @Units: %
+    // @Range: 0 99.9
+    // @User: Advanced
+    AP_GROUPINFO("TKOFF_CPU_PEAK", 61, ParametersG2, takeoff_cpu_peak_max, 99.5),
+#endif
 #endif
 
     // @Param: FS_EKF_FILT

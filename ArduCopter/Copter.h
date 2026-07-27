@@ -332,6 +332,14 @@ private:
     // takeoff check
     uint32_t takeoff_check_warning_ms;  // system time user was last warned of takeoff check failure
 
+#if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME && AP_CPU_IDLE_STATS_ENABLED
+    // cached previous window of the takeoff CPU load check
+    uint32_t takeoff_load_window_ms;    // system time the CPU load window was last consumed
+    float takeoff_load_avg;             // average CPU load in percent over the previous window
+    float takeoff_load_peak;            // peak CPU load in percent over the previous window
+    bool takeoff_load_valid;            // true if the previous window contained data
+#endif
+
     // GCS selection
     GCS_Copter _gcs; // avoid using this; use gcs()
     GCS_Copter &gcs() { return _gcs; }

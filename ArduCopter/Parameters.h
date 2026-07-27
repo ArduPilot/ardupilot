@@ -699,6 +699,10 @@ public:
 #if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
     AP_Int16 takeoff_rpm_min;
     AP_Int16 takeoff_rpm_max;
+#if AP_CPU_IDLE_STATS_ENABLED
+    AP_Float takeoff_cpu_avg_max;
+    AP_Float takeoff_cpu_peak_max;
+#endif
 #endif
 
     // EKF variance filter cutoff
