@@ -394,7 +394,7 @@ void AP_Mount_Backend::set_roi_target_wpnext_offset(const Vector3f &rpy)
 #endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
 // set_sys_target - sets system that mount should attempt to point towards
-void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
+void AP_Mount_Backend::set_target_sysid(uint32_t sysid)
 {
     _target_sysid = sysid;
 
@@ -536,7 +536,7 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
                                            AP_HAL::millis(),    // autopilot system time
                                            flags,               // bitmap of gimbal manager flags
                                            _instance + 1,       // gimbal device id
-                                           mavlink_control_id.sysid,    // primary control system id
+                                           mavlink_control_id.sysid>255?0:mavlink_control_id.sysid,    // primary control system id (8 bit only in this message)
                                            mavlink_control_id.compid,   // primary control component id
                                            0,                           // secondary control system id
                                            0);                          // secondary control component id
@@ -606,8 +606,10 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
 // requires original message in order to extract caller's sysid and compid
 MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    // sanity check param1 and param2 values
-    if ((packet.param1 < -3) || (packet.param1 > UINT8_MAX) || (packet.param2 < -3) || (packet.param2 > UINT8_MAX)) {
+    // sanity check param1 and param2 values. param1 is a system ID, which a
+    // float parameter can only carry exactly up to 2^24-1; param2 is a compid
+    if ((packet.param1 < -3) || (packet.param1 > float((1U<<24)-1)) ||
+        (packet.param2 < -3) || (packet.param2 > UINT8_MAX)) {
         return MAV_RESULT_FAILED;
     }
 
@@ -615,7 +617,7 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
     mavlink_control_id_t prev_control_id = mavlink_control_id;
 
     // convert negative packet1 and packet2 values
-    int16_t new_sysid = packet.param1;
+    int64_t new_sysid = packet.param1;
     switch (new_sysid) {
         case -1:
             // leave unchanged
@@ -647,7 +649,7 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const ma
 }
 
 // handle a GLOBAL_POSITION_INT message
-bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavlink_global_position_int_t &packet)
+bool AP_Mount_Backend::handle_global_position_int(uint32_t msg_sysid, const mavlink_global_position_int_t &packet)
 {
     if (_target_sysid != msg_sysid) {
         return false;
