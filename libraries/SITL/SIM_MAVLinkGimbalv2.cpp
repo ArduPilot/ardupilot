@@ -70,8 +70,9 @@ void MAVLinkGimbalv2::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_COMMAND_LONG: {
         mavlink_command_long_t cmd;
         mavlink_msg_command_long_decode(&msg, &cmd);
-        // only handle messages addressed to this gimbal
-        if (cmd.target_system != _vehicle_system_id ||
+        // only handle messages addressed to this gimbal. Use the header-aware
+        // getter: the payload byte is zero for a target over 255
+        if (mavlink_msg_command_long_get_target_system(&msg) != _vehicle_system_id ||
             cmd.target_component != _compid) {
             break;
         }
@@ -88,7 +89,7 @@ void MAVLinkGimbalv2::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_COMMAND_INT: {
         mavlink_command_int_t cmd;
         mavlink_msg_command_int_decode(&msg, &cmd);
-        if (cmd.target_system != _vehicle_system_id ||
+        if (mavlink_msg_command_int_get_target_system(&msg) != _vehicle_system_id ||
             cmd.target_component != _compid) {
             break;
         }
@@ -105,7 +106,7 @@ void MAVLinkGimbalv2::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE: {
         mavlink_gimbal_device_set_attitude_t cmd;
         mavlink_msg_gimbal_device_set_attitude_decode(&msg, &cmd);
-        if (cmd.target_system != _vehicle_system_id ||
+        if (mavlink_msg_gimbal_device_set_attitude_get_target_system(&msg) != _vehicle_system_id ||
             cmd.target_component != _compid) {
             break;
         }
@@ -292,42 +293,36 @@ void MAVLinkGimbalv2::send_attitude_status()
         q.from_rotation_matrix(body_to_gimbal);
     }
 
-    mavlink_gimbal_device_attitude_status_t status {};
-    status.target_system    = _vehicle_system_id;
-    status.target_component = _vehicle_component_id;
-    status.time_boot_ms     = AP_HAL::millis();
-    status.flags = flags;
-    status.q[0] = q.q1;  // w
-    status.q[1] = q.q2;  // x
-    status.q[2] = q.q3;  // y
-    status.q[3] = q.q4;  // z
-    status.angular_velocity_x = 0.0f;
-    status.angular_velocity_y = 0.0f;
-    status.angular_velocity_z = 0.0f;
-    status.failure_flags = 0;
+    const float qarr[4] { q.q1, q.q2, q.q3, q.q4 };  // w, x, y, z
 
+    // pack rather than encode so a target over 255 goes in the extended
+    // header rather than being truncated in the payload
     mavlink_message_t msg;
-    mavlink_msg_gimbal_device_attitude_status_encode_status(
+    mavlink_msg_gimbal_device_attitude_status_pack_status(
         _vehicle_system_id, _compid,
-        &mav.status, &msg, &status);
+        &mav.status, &msg,
+        _vehicle_system_id, _vehicle_component_id,
+        AP_HAL::millis(), flags, qarr,
+        0.0f, 0.0f, 0.0f,   // angular velocity x, y, z
+        0,                  // failure_flags
+        0.0f, 0.0f,         // delta_yaw, delta_yaw_velocity
+        0);                 // gimbal_device_id
     send_mavlink_message(msg);
 }
 
-void MAVLinkGimbalv2::send_command_ack(uint8_t target_sysid, uint8_t target_compid,
+void MAVLinkGimbalv2::send_command_ack(uint32_t target_sysid, uint8_t target_compid,
                                         MAV_CMD command, MAV_RESULT result)
 {
-    mavlink_command_ack_t ack {};
-    ack.command          = (uint16_t)command;
-    ack.result           = (uint8_t)result;
-    ack.progress         = 255;
-    ack.result_param2    = 0;
-    ack.target_system    = target_sysid;
-    ack.target_component = target_compid;
-
+    // pack rather than encode so a target over 255 goes in the extended
+    // header rather than being truncated in the payload
     mavlink_message_t msg;
-    mavlink_msg_command_ack_encode_status(
+    mavlink_msg_command_ack_pack_status(
         _vehicle_system_id, _compid,
-        &mav.status, &msg, &ack);
+        &mav.status, &msg,
+        (uint16_t)command, (uint8_t)result,
+        255,                // progress
+        0,                  // result_param2
+        target_sysid, target_compid);
     send_mavlink_message(msg);
 }
 

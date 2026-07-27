@@ -38,14 +38,14 @@ protected:
 
     // transport — combined device class wires these to the shared serial link
     virtual void camera_send_mavlink_message(const mavlink_message_t &msg) = 0;
-    virtual uint8_t camera_vehicle_sysid() const = 0;
+    virtual uint32_t camera_vehicle_sysid() const = 0;
     virtual mavlink_status_t &camera_mav_status() = 0;
 
 private:
     void send_camera_heartbeat();
-    void send_camera_information(uint8_t target_sysid, uint8_t target_compid);
+    void send_camera_information(uint32_t target_sysid, uint8_t target_compid);
     void send_camera_settings();
-    void send_camera_command_ack(uint8_t target_sysid, uint8_t target_compid,
+    void send_camera_command_ack(uint32_t target_sysid, uint8_t target_compid,
                                   MAV_CMD cmd, MAV_RESULT result);
 
     uint8_t  _camera_compid {MAV_COMP_ID_CAMERA};

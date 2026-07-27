@@ -191,7 +191,10 @@ void SoloGimbal::send_report(void)
                 case MAVLINK_MSG_ID_PARAM_REQUEST_LIST: {
                     mavlink_param_request_list_t pkt;
                     mavlink_msg_param_request_list_decode(&msg, &pkt);
-                    if (pkt.target_system == 0 && pkt.target_component == MAV_COMP_ID_GIMBAL) {
+                    // use the header-aware getter: the payload byte is zero
+                    // for a target over 255, which would look like a broadcast
+                    if (mavlink_msg_param_request_list_get_target_system(&msg) == 0 &&
+                        pkt.target_component == MAV_COMP_ID_GIMBAL) {
                         // start param send
                         param_send_idx = 0;
                         param_send_last_ms = AP_HAL::millis();
@@ -227,7 +230,11 @@ void SoloGimbal::send_report(void)
                                                   &mavlink.status,
                                                   &msg, &heartbeat);
 
-        mav_socket.send(&msg.magic, len);
+        uint8_t msgbuf[len];
+        len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+        if (len > 0) {
+            mav_socket.send(msgbuf, len);
+        }
         last_heartbeat_ms = now;
     }
 
@@ -246,24 +253,24 @@ void SoloGimbal::send_report(void)
         Vector3f joint_angles;
         gimbal.get_joint_angles(joint_angles);
 
-        mavlink_gimbal_report_t gimbal_report;
-        gimbal_report.target_system = vehicle_system_id;
-        gimbal_report.target_component = vehicle_component_id;
-        gimbal_report.delta_time = delta_time_us * 1e-6;
-        gimbal_report.delta_angle_x = delta_angle.x;
-        gimbal_report.delta_angle_y = delta_angle.y;
-        gimbal_report.delta_angle_z = delta_angle.z;
-        gimbal_report.delta_velocity_x = delta_velocity.x;
-        gimbal_report.delta_velocity_y = delta_velocity.y;
-        gimbal_report.delta_velocity_z = delta_velocity.z;
-        gimbal_report.joint_roll = joint_angles.x;
-        gimbal_report.joint_el = joint_angles.y;
-        gimbal_report.joint_az = joint_angles.z;
-
-        len = mavlink_msg_gimbal_report_encode_status(vehicle_system_id,
-                                                      gimbal_component_id,
-                                                      &mavlink.status,
-                                                      &msg, &gimbal_report);
+        // pack rather than encode so a target over 255 goes in the
+        // extended header rather than being truncated in the payload
+        len = mavlink_msg_gimbal_report_pack_status(vehicle_system_id,
+                                                    gimbal_component_id,
+                                                    &mavlink.status,
+                                                    &msg,
+                                                    vehicle_system_id,
+                                                    vehicle_component_id,
+                                                    delta_time_us * 1e-6,
+                                                    delta_angle.x,
+                                                    delta_angle.y,
+                                                    delta_angle.z,
+                                                    delta_velocity.x,
+                                                    delta_velocity.y,
+                                                    delta_velocity.z,
+                                                    joint_angles.x,
+                                                    joint_angles.y,
+                                                    joint_angles.z);
 
         uint8_t msgbuf[len];
         len = mavlink_msg_to_send_buffer(msgbuf, &msg);
