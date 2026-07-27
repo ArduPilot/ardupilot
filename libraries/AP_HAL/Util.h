@@ -195,8 +195,19 @@ public:
     virtual void* last_crash_dump_ptr() const { return nullptr; }
 #endif
 
-    // get the system load
-    virtual bool get_system_load(float& avg_load, float& peak_load) const { return false; }
+    // readers of windowed system load statistics; each reader owns one
+    // measurement window and must have exactly one call site
+    enum class LoadReader : uint8_t {
+        LOG,        // PM2 dataflash logging
+        TAKEOFF,    // vehicle takeoff CPU overload check
+    };
+
+    // consume a reader's window of system load statistics: average and peak
+    // load since the reader's previous call. Ends the reader's window, so
+    // the call cadence sets the window length. Returns false when the window
+    // contains no data: either measurement is not running, or the CPU was so
+    // overloaded that the idle threads never ran during the window.
+    virtual bool consume_system_load(LoadReader reader, float& avg_load, float& peak_load) { return false; }
 
 #if HAL_ENABLE_DFU_BOOT
     virtual void boot_to_dfu(void) {}
