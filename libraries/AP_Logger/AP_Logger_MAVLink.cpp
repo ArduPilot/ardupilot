@@ -254,7 +254,7 @@ void AP_Logger_MAVLink::handle_ack(const GCS_MAVLINK &link,
             _next_seq_num = 0;
             start_new_log_reset_variables();
             _last_response_time = AP_HAL::millis();
-            Debug("Target: (%u/%u)", _target_system_id, _target_component_id);
+            Debug("Target: (%u/%u)", (unsigned)_target_system_id, _target_component_id);
         }
         return;
     }
