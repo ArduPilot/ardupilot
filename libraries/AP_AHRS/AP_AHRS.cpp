@@ -1867,7 +1867,14 @@ void AP_AHRS::resetHeightDatum(float origin_alt_tolerance_m)
 
     for (auto &backend_and_estimates : backends_and_estimates) {
         backend_and_estimates.backend.resetHeightDatum(origin_alt_tolerance_m);
+        backend_and_estimates.estimates = {};
+        backend_and_estimates.backend.get_results(backend_and_estimates.estimates);
     }
+
+    // refresh the published state so get_location() and the
+    // relative-position accessors reflect the reset immediately;
+    // arming code sets home from them straight after this call
+    update_state();
 }
 
 #if HAL_GCS_ENABLED
