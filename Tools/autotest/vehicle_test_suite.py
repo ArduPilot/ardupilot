@@ -16403,6 +16403,16 @@ SERIAL5_BAUD 128
         # ridge (~206 m AMSL) while staying 10 m below both tests' max
         # fence altitude (225 m AMSL), so use the higher of the current
         # altitude and 215 m AMSL.
+        # north_m must be generous: on QuadPlane the reposition flies as
+        # fixed-wing GUIDED, which orbits the target at ~60-70 m
+        # (WP_LOITER_RAD plus tracking error), so arrival is accepted at
+        # 100 m -- a tighter radius is only ever satisfied transiently
+        # while joining the orbit.  The wait can therefore fire ~100 m
+        # short of the target, and the back-transition carries the
+        # aircraft tens of metres further, so the actual descent point
+        # must still be well past the cliff edge for the min-alt fence
+        # floor (~150 m AMSL in both cliff tests) to sit clearly above
+        # the terrain below.
         reposition_alt_amsl = max(current_loc.alt, 215.0)
 
         # fly to target using GUIDED mode waypoint navigation
@@ -16417,7 +16427,7 @@ SERIAL5_BAUD 128
             reposition_alt_amsl,
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
         )
-        self.wait_location(target_loc, accuracy=50, height_accuracy=None,
+        self.wait_location(target_loc, accuracy=100, height_accuracy=None,
                            timeout=timeout)
 
         # switch back to loiter mode and descend to breach the fence floor
@@ -16597,7 +16607,7 @@ SERIAL5_BAUD 128
         self.takeoff(25, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
         self.assert_mode_is(self.FenceRelative_TakeoffMode())
-        self.FenceRelative_fly_north_then_descend(150)
+        self.FenceRelative_fly_north_then_descend(300)
         self.wait_mode('RTL', timeout=120)
         expected_breach_alt = offset_home.alt + fence_alt_min
         self.assert_altitude(expected_breach_alt, accuracy=10)
@@ -16765,7 +16775,7 @@ SERIAL5_BAUD 128
         self.takeoff(20, mode=self.FenceRelative_TakeoffMode())
         self.do_fence_enable()
         self.assert_mode_is(self.FenceRelative_TakeoffMode())
-        self.FenceRelative_fly_north_then_descend(150)
+        self.FenceRelative_fly_north_then_descend(300)
         self.wait_mode('RTL', timeout=120)
         expected_breach_alt = fence_min_below_arming
         self.assert_altitude(expected_breach_alt, accuracy=10)
