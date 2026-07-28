@@ -7,9 +7,9 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_NavEKF/EKFGSF_yaw.h>
 
-#if COMPASS_LEARN_ENABLED
-
 #include <AP_Logger/AP_Logger.h>
+
+#if COMPASS_LEARN_ENABLED
 
 extern const AP_HAL::HAL &hal;
 
@@ -70,7 +70,9 @@ void CompassLearn::update(void)
     }
 }
 
-#if AP_AHRS_ENABLED
+#endif  // COMPASS_LEARN_ENABLED
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 /*
   save any compass offsets the EKF has learned.  Called on disarm.
  */
@@ -122,6 +124,4 @@ void Compass::save_ekf_learned_offsets()
     }
 #endif  // HAL_LOGGING_ENABLED
 }
-#endif // AP_AHRS_ENABLED
-
-#endif // COMPASS_LEARN_ENABLED
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED

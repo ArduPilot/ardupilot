@@ -34,6 +34,13 @@
 #define COMPASS_LEARN_ENABLED AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
 #endif
 
+// COMPASS_LEARN=2, copying the offsets the EKF has learned into the
+// COMPASS_OFS parameters on disarm.  COMPASS_LEARN_ENABLED provides the
+// parameter this is selected with, and an AHRS is needed to ask.
+#ifndef AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+#define AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED (COMPASS_LEARN_ENABLED && AP_AHRS_ENABLED)
+#endif
+
 // define default compass calibration fitness and consistency checks
 #define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
 #define AP_COMPASS_MAX_XYZ_ANG_DIFF radians(90.0f)
@@ -221,13 +228,13 @@ public:
     // learn offsets accessor
     bool learn_offsets_enabled() const { return _learn == LearnType::INFLIGHT; }
 
-#if COMPASS_LEARN_ENABLED && AP_AHRS_ENABLED
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
     // if COMPASS_LEARN==COPY_FROM_EKF, save the offsets the EKF has
     // learned into the COMPASS_OFS parameters.  Called from
     // AP_Arming::disarm(); note that this *must* happen before the
     // vehicle calls hal.util->set_soft_armed(false).
     void save_ekf_learned_offsets();
-#endif  // COMPASS_LEARN_ENABLED && AP_AHRS_ENABLED
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(uint8_t i) const;
@@ -328,7 +335,16 @@ public:
 
     // return the chosen learning type
     LearnType get_learn_type(void) const {
-        return (LearnType)_learn.get();
+        const LearnType learn_type = (LearnType)_learn.get();
+#if !AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+        if (learn_type == LearnType::COPY_FROM_EKF) {
+            // there is no code compiled in to save the EKF's offsets,
+            // so report the feature as off rather than letting callers
+            // believe a learning type is selected which cannot run
+            return LearnType::NONE;
+        }
+#endif
+        return learn_type;
     }
 
     // set the learning type
