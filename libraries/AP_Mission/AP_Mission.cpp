@@ -670,8 +670,18 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     // if the mission is stopped or completed move the nav_cmd index to the specified point and set the state to stopped
     // so that if the user resumes the mission it will begin at the specified index
     if (_flags.state != MISSION_RUNNING) {
+        // avoid endless loops: a jump loop that holds no nav command, such as a
+        // forever DO_JUMP over do commands, never runs out of repeats and never
+        // reaches a nav command, so the search below would never finish
+        uint8_t max_loops = 255;
+
         // search until we find next nav command or reach end of command list
         while (!_flags.nav_cmd_loaded) {
+            if (max_loops-- == 0) {
+                _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+                return false;
+            }
+
             // get next command
             if (!get_next_cmd(index, cmd, true)) {
                 _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
