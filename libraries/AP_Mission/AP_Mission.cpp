@@ -555,13 +555,25 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 
 /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
 ///     returns true if found, false if not found (i.e. reached end of mission command list)
-///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
+///     follows do_jump commands on a private copy of the jump tracking, so the live mission's
+///     num_times_run counters are left untouched (advance_current_nav_cmd owns those)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
+    // advance a private copy of the jump tracking, seeded from the live state, so the look-ahead
+    // follows jumps exactly as execution would (and terminates on finite jumps) without mutating
+    // the running mission's counters
+    jump_tracking_struct jump_state[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    memcpy(jump_state, _jump_tracking, sizeof(jump_state));
+
+    // avoid endless loops, as advance_current_nav_cmd does: a DO_JUMP loop containing no nav
+    // command (e.g. a forever jump back over only do-commands) would otherwise spin here
+    uint8_t max_loops = 255;
+
     // search until the end of the mission command list
-    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
-        // get next command
-        if (!get_next_cmd(cmd_index, cmd, false)) {
+    uint16_t cmd_index = start_index;
+    while (cmd_index < (unsigned)_cmd_total && max_loops-- > 0) {
+        // get next command, following jumps on the private cursor
+        if (!get_next_cmd(cmd_index, cmd, true, jump_state)) {
             // no more commands so return failure
             return false;
         }
@@ -569,9 +581,12 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
         if (is_nav_cmd(cmd)) {
             return true;
         }
+        // resume from the command the scan resolved to.  A jump moves the scan elsewhere in the
+        // mission, so stepping our own index instead would silently discard it
+        cmd_index = cmd.index + 1;
     }
 
-    // if we got this far we did not find a navigation command
+    // reached the end of the command list or the loop guard without finding a nav command
     return false;
 }
 
