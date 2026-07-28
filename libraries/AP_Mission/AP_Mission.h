@@ -818,6 +818,13 @@ private:
 
     static bool stored_in_location(uint16_t id);
 
+    // record of how many times a do-jump command has been run. The mission keeps one set of these
+    // in _jump_tracking; look-aheads scan on a copy so the running mission is unaffected
+    struct jump_tracking_struct {
+        uint16_t index;                 // index of do-jump commands in mission
+        int16_t num_times_run;          // number of times this jump command has been run
+    };
+
     struct {
         uint16_t age;   // a value of 0 means we have never seen a tag. Once a tag is seen, age will increment every time the mission index changes.
         uint16_t tag;   // most recent tag that was successfully jumped to. Only valid if age > 0
@@ -867,7 +874,9 @@ private:
     ///     returns true if found, false if not found (i.e. mission complete)
     ///     accounts for do_jump commands
     ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg = true);
+    ///     jump_state, when supplied, is used in place of the live _jump_tracking so callers can look
+    ///     ahead without disturbing the running mission's jump counters; nullptr uses _jump_tracking
+    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg = true, jump_tracking_struct *jump_state = nullptr);
 
     /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
     ///     returns true if found, false if not found
@@ -883,10 +892,12 @@ private:
 
     /// get_jump_times_run - returns number of times the jump command has been run
     ///     return is signed to be consistent with do-jump cmd's repeat count which can be -1 (to signify to repeat forever)
-    int16_t get_jump_times_run(const Mission_Command& cmd);
+    ///     jump_state, when supplied, is used in place of the live _jump_tracking; nullptr uses _jump_tracking
+    int16_t get_jump_times_run(const Mission_Command& cmd, jump_tracking_struct *jump_state = nullptr);
 
     /// increment_jump_times_run - increments the recorded number of times the jump command has been run
-    void increment_jump_times_run(Mission_Command& cmd, bool send_gcs_msg = true);
+    ///     jump_state, when supplied, is used in place of the live _jump_tracking; nullptr uses _jump_tracking
+    void increment_jump_times_run(Mission_Command& cmd, bool send_gcs_msg = true, jump_tracking_struct *jump_state = nullptr);
 
     /// check_eeprom_version - checks version of missions stored in eeprom matches this library
     /// command list will be cleared if they do not match
@@ -941,10 +952,7 @@ private:
     Location         _exit_position;  // the position in the mission that the mission was exited
 
     // jump related variables
-    struct jump_tracking_struct {
-        uint16_t index;                 // index of do-jump commands in mission
-        int16_t num_times_run;          // number of times this jump command has been run
-    } _jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    jump_tracking_struct    _jump_tracking[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
 
     // last time that mission changed
     uint32_t _last_change_time_ms;

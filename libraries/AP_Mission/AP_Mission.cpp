@@ -2218,8 +2218,12 @@ void AP_Mission::advance_current_do_cmd()
 ///     returns true if found, false if not found (i.e. mission complete)
 ///     accounts for do_jump commands
 ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg)
+bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg, jump_tracking_struct *jump_state)
 {
+    // default to the live jump tracking; callers may pass a private cursor to look ahead without side effects
+    if (jump_state == nullptr) {
+        jump_state = _jump_tracking;
+    }
     uint16_t cmd_index = start_index;
     Mission_Command temp_cmd;
     uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
@@ -2267,10 +2271,10 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
 
             // get number of times jump command has already been run
             if (temp_cmd.content.jump.num_times == AP_MISSION_JUMP_REPEAT_FOREVER ||
-                get_jump_times_run(temp_cmd) < temp_cmd.content.jump.num_times) {
+                get_jump_times_run(temp_cmd, jump_state) < temp_cmd.content.jump.num_times) {
                 // update the record of the number of times run
                 if (increment_jump_num_times_if_found && !_flags.resuming_mission) {
-                    increment_jump_times_run(temp_cmd, send_gcs_msg);
+                    increment_jump_times_run(temp_cmd, send_gcs_msg, jump_state);
                 }
                 // continue searching from jump target
                 cmd_index = temp_cmd.content.jump.target;
@@ -2282,8 +2286,8 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
                       they get the count again
                     */
                     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-                        if (_jump_tracking[i].index == cmd_index) {
-                            _jump_tracking[i].num_times_run = 0;
+                        if (jump_state[i].index == cmd_index) {
+                            jump_state[i].num_times_run = 0;
                             break;
                         }
                     }
@@ -2386,8 +2390,13 @@ void AP_Mission::init_jump_tracking()
 }
 
 /// get_jump_times_run - returns number of times the jump command has been run
-int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
+int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd, jump_tracking_struct *jump_state)
 {
+    // default to the live jump tracking; callers may pass a private cursor to look ahead without side effects
+    if (jump_state == nullptr) {
+        jump_state = _jump_tracking;
+    }
+
     // exit immediately if cmd is not a do-jump command or target is invalid
     if ((cmd.id != MAV_CMD_DO_JUMP) || (cmd.content.jump.target >= (unsigned)_cmd_total) || (cmd.content.jump.target == 0)) {
         // To-Do: log an error?
@@ -2396,12 +2405,12 @@ int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 
     // search through jump_tracking array for this cmd
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        if (_jump_tracking[i].index == cmd.index) {
-            return _jump_tracking[i].num_times_run;
-        } else if (_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
-            // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
-            _jump_tracking[i].index = cmd.index;
-            _jump_tracking[i].num_times_run = 0;
+        if (jump_state[i].index == cmd.index) {
+            return jump_state[i].num_times_run;
+        } else if (jump_state[i].index == AP_MISSION_CMD_INDEX_NONE) {
+            // we've searched through all known jump commands and haven't found it so allocate new space in jump_state array
+            jump_state[i].index = cmd.index;
+            jump_state[i].num_times_run = 0;
             return 0;
         }
     }
@@ -2412,8 +2421,13 @@ int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 }
 
 /// increment_jump_times_run - increments the recorded number of times the jump command has been run
-void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_msg)
+void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_msg, jump_tracking_struct *jump_state)
 {
+    // default to the live jump tracking; callers may pass a private cursor to look ahead without side effects
+    if (jump_state == nullptr) {
+        jump_state = _jump_tracking;
+    }
+
     // exit immediately if cmd is not a do-jump command
     if (cmd.id != MAV_CMD_DO_JUMP) {
         // To-Do: log an error?
@@ -2422,20 +2436,20 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_ms
 
     // search through jump_tracking array for this cmd
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        if (_jump_tracking[i].index == cmd.index) {
-            _jump_tracking[i].num_times_run++;
+        if (jump_state[i].index == cmd.index) {
+            jump_state[i].num_times_run++;
             if (send_gcs_msg) {
                 if (cmd.content.jump.num_times == AP_MISSION_JUMP_REPEAT_FOREVER) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/unlimited", _jump_tracking[i].index, _jump_tracking[i].num_times_run);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/unlimited", jump_state[i].index, jump_state[i].num_times_run);
                 } else {
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", jump_state[i].index, jump_state[i].num_times_run, cmd.content.jump.num_times);
                 }
             }
             return;
-        } else if (_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
-            // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
-            _jump_tracking[i].index = cmd.index;
-            _jump_tracking[i].num_times_run = 1;
+        } else if (jump_state[i].index == AP_MISSION_CMD_INDEX_NONE) {
+            // we've searched through all known jump commands and haven't found it so allocate new space in jump_state array
+            jump_state[i].index = cmd.index;
+            jump_state[i].num_times_run = 1;
             return;
         }
     }
