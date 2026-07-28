@@ -104,12 +104,23 @@ void Compass::save_ekf_learned_offsets()
     // takes a different compass (AP_NavEKF3_Measurements.cpp
     // update_mag_selection) and the frontend asks every core for each
     // instance in turn (AP_NavEKF3.cpp getMagOffsets).
+    uint8_t saved_count = 0;
     for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
         Vector3f magOffsets;
         if (ahrs.getMagOffsets(i, magOffsets)) {
             set_and_save_offsets(i, magOffsets);
+            saved_count++;
         }
     }
+
+#if HAL_LOGGING_ENABLED
+    if (saved_count != 0) {
+        // the EKF frequently has nothing to offer here, so log the fact
+        // that we did save something; otherwise a failure to learn is
+        // indistinguishable from the feature not being enabled
+        AP::logger().Write_Event(LogEvent::EKF_MAG_OFFSETS_SAVED);
+    }
+#endif  // HAL_LOGGING_ENABLED
 }
 #endif // AP_AHRS_ENABLED
 
