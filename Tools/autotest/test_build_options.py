@@ -249,6 +249,7 @@ class TestBuildOptions(object):
             'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
             'AP_DRONECAN_VOLZ_FEEDBACK_ENABLED',  # broken, no subscriber
+            'AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED',  # no symbol
             # Baro drivers either come in because you have
             # external-probing enabled or you have them specified in
             # your hwdef.  If you're not probing and its not in your
