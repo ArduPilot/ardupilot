@@ -313,6 +313,7 @@ public:
         // also, if you add an option >255, you will need to fix duplicate_options_exist
 
         // options 150-199 continue user rc switch options
+        STEP =                149,  // STEP mode
         CRUISE =             150,  // CRUISE mode
         TURTLE =             151,  // Turtle mode - flip over after crash
         SIMPLE_HEADING_RESET = 152, // reset simple mode reference heading to current

@@ -278,6 +278,11 @@
 #endif
 #endif
 
+// Step - move the vehicle on small distances
+#ifndef MODE_STEP_ENABLED
+# define MODE_STEP_ENABLED 1
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 // RADIO CONFIGURATION
 //////////////////////////////////////////////////////////////////////////////
@@ -647,5 +652,5 @@
 #endif
 
 #ifndef USER_PARAMS_ENABLED
-  #define USER_PARAMS_ENABLED 0
+#define USER_PARAMS_ENABLED 1
 #endif

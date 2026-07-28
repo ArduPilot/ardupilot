@@ -192,9 +192,7 @@ public:
     friend class ToyMode;
     friend class RC_Channel_Copter;
     friend class RC_Channels_Copter;
-
     friend class AutoTune;
-
     friend class Mode;
     friend class ModeAcro;
     friend class ModeAcro_Heli;
@@ -222,9 +220,8 @@ public:
     friend class ModeZigZag;
     friend class ModeAutorotate;
     friend class ModeTurtle;
-
+    friend class ModeStep;
     friend class _AutoTakeoff;
-
     friend class PayloadPlace;
 
     Copter(void);
@@ -731,7 +728,7 @@ private:
     void set_accel_throttle_I_from_pilot_throttle();
     float get_pilot_speed_dn_ms() const;
     float get_pilot_speed_up_adjusted_ms() const;
-    float get_pilot_speed_dn_adjusted_ms() const;
+    float get_pilot_speed_dn_adjusted_ms() const; 
     void run_rate_controller_main();
 
     // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
@@ -1104,6 +1101,9 @@ private:
 #endif
 #if MODE_TURTLE_ENABLED
     ModeTurtle mode_turtle;
+#endif
+#if MODE_STEP_ENABLED
+    ModeStep mode_step;
 #endif
 
     // mode.cpp

@@ -227,7 +227,7 @@ static const char* FLTMODES[] = {
     "STAB", "ACRO", "ALTHOLD", "AUTO", "GUIDED", "LOIT", "RTL", "CIRC", "", "LAND",
     "", "DRFT", "", "SPORT", "FLIP", "ATUN", "POSHLD", "BRAKE", "THROW", "AVD_ADSB",
     "GUID_NOGPS", "SMRTRTL", "FLOHOLD", "FOLLOW", "ZIGZAG", "SYSID", "HELI_ARO", "AUTORTL",
-    "TRTLE"
+    "TRTLE", "STEP"
 };
 
 static const char* FS_OPTIONS[] = {

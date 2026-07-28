@@ -101,6 +101,7 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        STEP =         29,  // Flying "step by step" for accurate movements
 
         // Mode number 30 reserved for "offboard" for external/lua control.
 
@@ -2156,3 +2157,64 @@ private:
 
 };
 #endif
+
+class ModeStep : public Mode {
+
+public:
+    // inherit constructor
+    using Mode::Mode;
+    Number mode_number() const override { return Number::STEP; }
+
+    bool init(bool ignore_checks) override;
+    void run() override;
+    void waiting();
+    void moving_xy();
+    void moving_z();
+    void moving();
+
+    bool requires_position() const override { return true; }
+    bool has_manual_throttle() const override { return true; }
+    bool is_autopilot() const override { return false; }
+    bool allows_arming(AP_Arming::Method method) const override { return true; };
+
+    Vector3p target_loc_vec; //où on veut aller
+    Vector3p current_loc_vec; //position actuelle
+    Vector3p start_loc_vec; //position de départd'une manoeuvre
+    Vector3p stop_loc_vec; //position à laquelle le drone s'arrête après une manoeuvre
+
+    bool can_receive_cmd_xy; //prêt à recevoir une commande de déplacement sur le plan horizontal ? 
+    bool can_receive_cmd_z; //prêt à recevoir une commande de déplacement sur l'axe vertical ?
+    bool received_cmd_xy; //une commande de déplacement sur le plan horizontal a été reçue ?
+    bool received_cmd_z; //une commande de déplacement sur l'axe vertical a été reçue ?
+
+    uint32_t wp_time; //temps depuis lequel on est arrivé au wp (en ms)
+    uint32_t wp_time_max; // temps après lequel on confirme qu'on est arrêté à un wp (en ms)
+    uint32_t move_start_ms; //instant (ms) auquel la manoeuvre en cours a débuté
+    static constexpr uint32_t MOVE_TIMEOUT_MS = 8000; //délai max (ms) avant de débloquer une manoeuvre bloquée
+    float step_m;
+
+    float move_x;
+    float move_y;
+    float move_z;
+
+    int w;
+    int xy;
+    int z;
+
+    enum class SubMode {
+        Waiting, //en attente
+        Moving_xy, //prêt à se déplacer sur le plan horizontal
+        Moving_z, //prêt à se déplacer sur l'axe vertical
+    };
+
+    SubMode Step_state = SubMode::Waiting; 
+
+protected:
+
+    const char *name() const override { return "STEP"; }
+    const char *name4() const override { return "STEP"; }
+
+
+private:
+
+};

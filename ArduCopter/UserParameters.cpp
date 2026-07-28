@@ -11,6 +11,12 @@ const AP_Param::GroupInfo UserParameters::var_info[] = {
     AP_GROUPINFO("_INT16", 1, UserParameters, _int16, 0),
     AP_GROUPINFO("_FLOAT", 2, UserParameters, _float, 0),
 
+    // @Param: USR_STEP_DIST
+    // @DisplayName: Step distance
+    // @Description: Longueur d'un pas du mode step
+    // @Units: m
+    AP_GROUPINFO("_STEP_DIST", 3, UserParameters, _step_dist,1),
+    
     AP_GROUPEND
 };
 

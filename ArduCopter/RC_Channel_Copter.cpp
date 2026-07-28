@@ -110,6 +110,7 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::ACRO:
     case AUX_FUNC::AUTO_RTL:
     case AUX_FUNC::TURTLE:
+    case AUX_FUNC::STEP:
     case AUX_FUNC::SIMPLE_HEADING_RESET:
     case AUX_FUNC::ARMDISARM_AIRMODE:
     case AUX_FUNC::TURBINE_START:
@@ -490,6 +491,12 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
 
         case AUX_FUNC::USER_FUNC3:
             copter.userhook_auxSwitch3(ch_flag);
+            break;
+#endif
+
+#if MODE_STEP_ENABLED
+        case AUX_FUNC::STEP:
+            do_aux_function_change_mode(Mode::Number::STEP, ch_flag);
             break;
 #endif
 
