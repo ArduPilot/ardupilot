@@ -44,11 +44,11 @@ public:
     // set the PID notch sample rates
     void set_notch_sample_rate(float sample_rate) { rate_pid.set_notch_sample_rate(sample_rate); }
 
-    AP_Float &kP(void) { return rate_pid.kP(); }
-    AP_Float &kI(void) { return rate_pid.kI(); }
-    AP_Float &kD(void) { return rate_pid.kD(); }
-    AP_Float &kFF(void) { return rate_pid.ff(); }
-    AP_Float &tau(void) { return gains.tau; }
+    AP_Float &kP(void) {  rate_pid.kP(); }
+    AP_Float &kI(void) {  rate_pid.kI(); }
+    AP_Float &kD(void) {  rate_pid.kD(); }
+    AP_Float &kFF(void) {  rate_pid.ff(); }
+    AP_Float &tau(void) {  gains.tau; }
 
     // Get input shaping angle, rate, and accel for logging
     void get_input_shaping(float &angle_deg, float &rate_degs, float &accel_degss) const;
@@ -62,7 +62,7 @@ public:
     // Get angle P gain
     float get_angle_p() const;
 
-protected:
+        :
     const AP_FixedWing &aparm;
     AP_AutoTune::ATGains gains;
     AP_AutoTune *autotune;
@@ -122,7 +122,7 @@ protected:
 
     const AP_AutoTune::ATType autotune_type;
 
-private:
+       :
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     // Ticks tracking to check that the controller is called once per loop and no more
