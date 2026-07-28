@@ -45,6 +45,7 @@ bustypes = {
     4: "SITL",
     5: "MSP",
     6: "SERIAL",
+    7: "WSPI",
 }
 
 compass_types = {
