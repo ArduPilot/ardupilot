@@ -1056,7 +1056,10 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         }
 
         // predicted yaw and zero yaw body to earth rotation matrix for this order
-        buildTbnZeroYaw(order, Tbn_zeroYaw, &yawAngPredicted);
+        if (!buildTbnZeroYaw(order, Tbn_zeroYaw, &yawAngPredicted)) {
+            // rotation order not supported: cannot build the predicted yaw and zero-yaw rotation
+            return false;
+        }
 
     } else if (order == rotationOrder::TAIT_BRYAN_312) {
         // calculate 312 yaw observation matrix - option A or B to avoid singularity in derivation at +-90 degrees yaw
@@ -1111,7 +1114,10 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
         }
 
         // predicted yaw and zero yaw body to earth rotation matrix for this order
-        buildTbnZeroYaw(order, Tbn_zeroYaw, &yawAngPredicted);
+        if (!buildTbnZeroYaw(order, Tbn_zeroYaw, &yawAngPredicted)) {
+            // rotation order not supported: cannot build the predicted yaw and zero-yaw rotation
+            return false;
+        }
     } else {
         // order not supported
         return false;
