@@ -69,6 +69,10 @@ public:
     // yaw is in body-frame.
     virtual bool get_attitude_quaternion(Quaternion& att_quat) = 0;
 
+    // get mount's current delta yaw and delta yaw velocity in rad and rad/s. Only available on some backends
+    // returns true on success
+    virtual bool get_attitude_deltas(float& delta_yaw, float& delta_yaw_velocity) { return false; }
+
     // get angular velocity of mount. Only available on some backends
     virtual bool get_angular_velocity(Vector3f& rates) { return false; }
 

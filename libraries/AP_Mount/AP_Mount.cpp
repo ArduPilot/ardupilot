@@ -700,6 +700,17 @@ bool AP_Mount::get_attitude_euler(uint8_t instance, float& roll_deg, float& pitc
     return true;
 }
 
+// get mount's current delta yaw and delta yaw velocity in rad and rad/s.
+// returns true on success
+bool AP_Mount::get_attitude_deltas(uint8_t instance, float &delta_yaw, float& delta_yaw_velocity)
+{
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->get_attitude_deltas(delta_yaw, delta_yaw_velocity);
+}
+
 // run pre-arm check.  returns false on failure and fills in failure_msg
 // any failure_msg returned will not include a prefix
 bool AP_Mount::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len)

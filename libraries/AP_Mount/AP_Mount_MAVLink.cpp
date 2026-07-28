@@ -64,6 +64,20 @@ bool AP_Mount_MAVLink::get_attitude_quaternion(Quaternion& att_quat)
     return true;
 }
 
+// get mount's current delta yaw and delta yaw velocity in rad and rad/s.
+// returns true on success
+bool AP_Mount_MAVLink::get_attitude_deltas(float &delta_yaw, float& delta_yaw_velocity)
+{
+    if (!_found_deltas ||
+        isnan(_gimbal_device_attitude_status.delta_yaw) ||
+        isnan(_gimbal_device_attitude_status.delta_yaw_velocity)) {
+        return false;
+    }
+    delta_yaw = _gimbal_device_attitude_status.delta_yaw;
+    delta_yaw_velocity = _gimbal_device_attitude_status.delta_yaw_velocity;
+    return true;
+}
+
 // search for gimbal in GCS_MAVLink routing table
 void AP_Mount_MAVLink::find_gimbal()
 {
@@ -165,6 +179,12 @@ void AP_Mount_MAVLink::handle_gimbal_device_attitude_status(const mavlink_messag
     // take copy of message so it can be forwarded onto GCS later
     mavlink_msg_gimbal_device_attitude_status_decode(&msg, &_gimbal_device_attitude_status);
     _last_attitude_status_ms = AP_HAL::millis();
+
+    // Check if gimbal provides extended delta yaw and delta yaw rate information. (Will always be 0 if not provided)
+    if (!is_zero(_gimbal_device_attitude_status.delta_yaw) ||
+    !is_zero(_gimbal_device_attitude_status.delta_yaw_velocity)) {
+        _found_deltas = true;
+    }
 }
 
 // request GIMBAL_DEVICE_INFORMATION message

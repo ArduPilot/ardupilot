@@ -456,6 +456,9 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
     Vector3f ang_velocity { nanf(""), nanf(""), nanf("") };
     IGNORE_RETURN(get_angular_velocity(ang_velocity));
 
+    float delta_yaw, delta_yaw_velocity;
+    const bool has_deltas = get_attitude_deltas(delta_yaw, delta_yaw_velocity);
+
     // construct quaternion array
     const float quat_array[4] = {att_quat.q1, att_quat.q2, att_quat.q3, att_quat.q4};
 
@@ -469,8 +472,8 @@ void AP_Mount_Backend::send_gimbal_device_attitude_status(mavlink_channel_t chan
                                                    ang_velocity.y,    // pitch axis angular velocity (NaN for unknown)
                                                    ang_velocity.z,    // yaw axis angular velocity (NaN for unknown)
                                                    0,                                           // failure flags (not supported)
-                                                   std::numeric_limits<double>::quiet_NaN(),    // delta_yaw (NaN for unknonw)
-                                                   std::numeric_limits<double>::quiet_NaN(),    // delta_yaw_velocity (NaN for unknonw)
+                                                   has_deltas ? delta_yaw : std::numeric_limits<double>::quiet_NaN(),    // delta_yaw (NaN for unknown)
+                                                   has_deltas ? delta_yaw_velocity : std::numeric_limits<double>::quiet_NaN(),    // delta_yaw_velocity (NaN for unknown)
                                                    _instance + 1);  // gimbal_device_id
 }
 #endif
