@@ -870,15 +870,18 @@ private:
     ///     returns true if successfully advanced (can it ever be unsuccessful?)
     void advance_current_do_cmd();
 
-    /// get_next_cmd - gets next command found at or after start_index
+    /// get_next_cmd - gets next command found at or after scan_index
     ///     returns true if found, false if not found (i.e. mission complete)
     ///     accounts for do_jump commands
+    ///     scan_index is the caller's position in the mission, and is advanced by this function to
+    ///     the command the scan should resume from, so that a scan continued through this function
+    ///     follows jumps the same way the running mission does; unspecified on failure
     ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
     ///     jump_state, when supplied, is used in place of the live _jump_tracking so callers can look
     ///     ahead without disturbing the running mission's jump counters; nullptr uses _jump_tracking.
     ///     A look-ahead on a private cursor is not taking the jumps it follows, so it does not
     ///     report them to the GCS either
-    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, jump_tracking_struct *jump_state = nullptr);
+    bool get_next_cmd(uint16_t &scan_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, jump_tracking_struct *jump_state = nullptr);
 
     /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
     ///     returns true if found, false if not found
