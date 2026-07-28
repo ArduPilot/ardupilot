@@ -393,6 +393,8 @@ singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
 singleton AP_Vehicle method is_crashed boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
+singleton AP_Vehicle method set_tecs_descent_rate_override boolean float'skip_check uint32_t'skip_check
+singleton AP_Vehicle method set_tecs_descent_rate_override depends AP_TECS_DESCENT_RATE_ENABLED
 singleton AP_Vehicle method register_custom_mode AP_Vehicle::custom_mode_state uint8_t'skip_check string string
 
 

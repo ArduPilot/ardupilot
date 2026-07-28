@@ -2930,6 +2930,16 @@ function vehicle:is_landing() end
 ---@return boolean -- true on success
 function vehicle:set_crosstrack_start(new_start_location) end
 
+-- Override the TECS height controller to track the demanded descent rate in m/s
+-- descent_rate is positive descending and must satisfy -TECS_CLMB_MAX <= descent_rate <= TECS_SINK_MAX
+-- timeout_ms is the duration of the command in milli-seconds, after which TECS height control reverts to normal operation
+-- send with timeout_ms = 0 to cancel a previous command
+-- the request is dropped, not suspended, if a landing approach or flare starts
+---@param descent_rate number
+---@param timeout_ms uint32_t_ud|integer|number
+---@return boolean -- false if the command cannot be executed
+function vehicle:set_tecs_descent_rate_override(descent_rate, timeout_ms) end
+
 -- Register a custom mode. This behaves like guided mode but will report with a custom number and name
 ---@param number integer -- mode number to use, should be over 100
 ---@param full_name string -- Full mode name
