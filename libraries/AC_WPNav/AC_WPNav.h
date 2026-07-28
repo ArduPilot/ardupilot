@@ -35,6 +35,9 @@ public:
     // Returns true if rangefinder is enabled and currently healthy.
     bool rangefinder_used_and_healthy() const { return _rangefinder_use && _rangefinder_healthy; }
 
+    // returns true if the PSC_RNGFND_FBK parameter = 1
+    bool rangefinder_fallback() const { return _rangefinder_fallback != 0; }
+
     // Returns the expected source of terrain data when using alt-above-terrain commands.
     // Used by systems like ModeRTL to determine which terrain provider is active.
     enum class TerrainSource {
@@ -399,6 +402,7 @@ protected:
     bool _is_terrain_alt;               // true if altitude values are relative to terrain height, false if relative to EKF origin
     bool _rangefinder_available;        // true if a rangefinder is enabled and available for use
     AP_Int8 _rangefinder_use;           // parameter specifying whether rangefinder should be used for terrain tracking
+    AP_Int8 _rangefinder_fallback;      // parameter: if rangefinder is used for terrain tracking, fallback to terrain if rangefinder is unhealthy
     bool _rangefinder_healthy;          // true if the rangefinder reading is valid and within operational range
     float _rangefinder_terrain_u_m;     // rangefinder-derived terrain offset (meters above EKF origin)
 };
