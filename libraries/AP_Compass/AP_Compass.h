@@ -136,9 +136,6 @@ public:
     ///
     /// @param  i                   compass instance
     ///
-    /// This should be invoked periodically to save the offset values maintained by
-    /// ::learn_offsets.
-    ///
     void save_offsets(uint8_t i);
     void save_offsets(void);
 
@@ -223,6 +220,14 @@ public:
 
     // learn offsets accessor
     bool learn_offsets_enabled() const { return _learn == LearnType::INFLIGHT; }
+
+#if COMPASS_LEARN_ENABLED && AP_AHRS_ENABLED
+    // if COMPASS_LEARN==COPY_FROM_EKF, save the offsets the EKF has
+    // learned into the COMPASS_OFS parameters.  Called from
+    // AP_Arming::disarm(); note that this *must* happen before the
+    // vehicle calls hal.util->set_soft_armed(false).
+    void save_ekf_learned_offsets();
+#endif  // COMPASS_LEARN_ENABLED && AP_AHRS_ENABLED
 
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(uint8_t i) const;
