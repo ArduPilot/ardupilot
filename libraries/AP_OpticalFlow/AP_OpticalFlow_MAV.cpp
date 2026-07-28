@@ -19,6 +19,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <GCS_MAVLink/GCS_config.h>
 
 #define OPTFLOW_MAV_TIMEOUT_SEC 0.5f
 
@@ -73,7 +74,7 @@ void AP_OpticalFlow_MAV::update(void)
             state.bodyRate.zero();
         } else {
             // copy average body rate to state structure
-            state.bodyRate = { gyro_sum.x / gyro_sum_count, gyro_sum.y / gyro_sum_count };   
+            state.bodyRate = { gyro_sum.x / gyro_sum_count, gyro_sum.y / gyro_sum_count };
         }
 
         // we only apply yaw to flowRate as body rate comes from AHRS
@@ -99,36 +100,41 @@ void AP_OpticalFlow_MAV::update(void)
 // handle OPTICAL_FLOW mavlink messages
 void AP_OpticalFlow_MAV::handle_msg(const mavlink_message_t &msg)
 {
-    mavlink_optical_flow_t packet;
-    mavlink_msg_optical_flow_decode(&msg, &packet);
+    switch (msg.msgid) {
+    #if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+    case MAVLINK_MSG_ID_OPTICAL_FLOW_RAD:
+        handle_msg_optical_flow_rad(msg);
+        break;
+#endif // AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
 
-    // record time message was received
-    // ToDo: add jitter correction
-    latest_frame_us = AP_HAL::micros64();
+    case MAVLINK_MSG_ID_OPTICAL_FLOW: {
+        // Handle the standard (older) message
+        mavlink_optical_flow_t packet;
+        mavlink_msg_optical_flow_decode(&msg, &packet);
 
-    // use flow_rate_x/y fields if non-zero values are ever provided
-    if (!flow_sum_is_rads && (!is_zero(packet.flow_rate_x) || !is_zero(packet.flow_rate_y))) {
-        flow_sum_is_rads = true;
-        flow_sum.zero();
-        quality_sum = 0;
-        count = 0;
-    }
-
-    // add sensor values to sum
-    if (flow_sum_is_rads) {
-        // higher precision flow_rate_x/y fields are used
-        flow_sum.x += packet.flow_rate_x;
-        flow_sum.y += packet.flow_rate_y;
-    } else {
-        // lower precision flow_x/y fields are used
+        latest_frame_us = packet.time_usec;
         flow_sum.x += packet.flow_x;
         flow_sum.y += packet.flow_y;
+        quality_sum += packet.quality;
+        count++;
+        flow_sum_is_rads = false;
+        break;
     }
-    quality_sum += packet.quality;
-    count++;
-
-    // take sensor id from message
-    sensor_id = packet.sensor_id;
+    }
 }
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+void AP_OpticalFlow_MAV::handle_msg_optical_flow_rad(const mavlink_message_t &msg)
+{
+    mavlink_optical_flow_rad_t packet;
+    mavlink_msg_optical_flow_rad_decode(&msg, &packet);
 
-#endif  // AP_OPTICALFLOW_MAV_ENABLED
+    const struct AP_OpticalFlow::OpticalFlow_state state {
+        packet.quality,
+        {packet.integrated_x, packet.integrated_y},
+        {packet.integrated_xgyro, packet.integrated_ygyro},
+    }; 
+    // Pass to the frontend handler
+    _update_frontend(state);
+}
+#endif // AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+#endif // AP_OPTICALFLOW_MAV_ENABLED
