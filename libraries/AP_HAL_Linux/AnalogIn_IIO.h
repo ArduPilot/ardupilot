@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AnalogIn_config.h"
+
+#if AP_HAL_LINUX_ANALOGIN_IIO_ENABLED
+
 #include "AP_HAL_Linux.h"
 
 #include <fcntl.h>
@@ -48,3 +52,5 @@ public:
     // we don't yet know how to get the board voltage
     float board_voltage(void) override { return 5.0f; }
 };
+
+#endif  // AP_HAL_LINUX_ANALOGIN_IIO_ENABLED
