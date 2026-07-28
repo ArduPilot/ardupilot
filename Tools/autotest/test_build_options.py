@@ -338,6 +338,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('HAL_QUADPLANE_ENABLED')
             feature_define_whitelist.add('MODE_AUTOLAND_ENABLED')
             feature_define_whitelist.add('AP_PLANE_GLIDER_PULLUP_ENABLED')
+            feature_define_whitelist.add('AP_TECS_DESCENT_RATE_ENABLED')
             feature_define_whitelist.add('AP_QUICKTUNE_ENABLED')
             feature_define_whitelist.add('AP_PLANE_SYSTEMID_ENABLED')
 
