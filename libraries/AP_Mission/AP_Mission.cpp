@@ -2685,28 +2685,25 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
 {
     Mission_Command temp_cmd;
     tot_distance = 0.0f;
-    bool ret = false;  // reached end of loop without getting to a landing
 
-    // back up jump tracking to reset after distance calculation
-    jump_tracking_struct _jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
-    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking_backup[i] = _jump_tracking[i];
-    }
+    // look ahead on a private copy of the jump tracking so the running mission's jump counters are untouched
+    jump_tracking_struct jump_state[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    memcpy(jump_state, _jump_tracking, sizeof(jump_state));
 
     // run through remainder of mission to approximate a distance to landing
     for (uint8_t i=0; i<UINT8_MAX; i++) {
         // search until the end of the mission command list
         for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
             // get next command
-            if (!get_next_cmd(cmd_index, temp_cmd, true, false)) {
+            if (!get_next_cmd(cmd_index, temp_cmd, true, false, jump_state)) {
                 // we got to the end of the mission
-                goto reset_do_jump_tracking;
+                return false;
             }
             if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT || temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT || is_landing_type_cmd(temp_cmd.id)) {
                 break;
             } else if (is_nav_cmd(temp_cmd) || temp_cmd.id == MAV_CMD_CONDITION_DELAY) {
                 // if we receive a nav command that we dont handle then give up as cant measure the distance e.g. MAV_CMD_NAV_LOITER_UNLIM
-                goto reset_do_jump_tracking;
+                return false;
             }
         }
         index = temp_cmd.index+1;
@@ -2722,17 +2719,11 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
 
         if (is_landing_type_cmd(temp_cmd.id)) {
             // reached a landing!
-            ret = true;
-            goto reset_do_jump_tracking;
+            return true;
         }
     }
 
-reset_do_jump_tracking:
-    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking[i] = _jump_tracking_backup[i];
-    }
-
-    return ret;
+    return false;
 }
 
 // Approximate the distance travelled to return to the mission path. DO_JUMP commands are observed in look forward.
@@ -2745,22 +2736,20 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
     rejoin_index = -1;
     bool ret = false;
 
-    // back up jump tracking to reset after distance calculation
-    jump_tracking_struct _jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
-    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking_backup[i] = _jump_tracking[i];
-    }
+    // look ahead on a private copy of the jump tracking so the running mission's jump counters are untouched
+    jump_tracking_struct jump_state[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    memcpy(jump_state, _jump_tracking, sizeof(jump_state));
 
     // run through remainder of mission to approximate a distance to landing
     uint16_t index = start_index;
     for (; search_remaining > 0; search_remaining--) {
         // search until the end of the mission command list
         for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
-            if (get_next_cmd(cmd_index, temp_cmd, true, false)) {
+            if (get_next_cmd(cmd_index, temp_cmd, true, false, jump_state)) {
                 break;
             } else {
                 // got to the end of the mission
-                goto reset_do_jump_tracking;
+                return ret;
             }
         }
         index = temp_cmd.index + 1;
@@ -2805,18 +2794,12 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
 
         if (is_landing_type_cmd(temp_cmd.id) || (temp_cmd.id == MAV_CMD_DO_LAND_START)) {
             // reached a landing!
-            goto reset_do_jump_tracking;
+            return ret;
         }
     }
+
     // reached end of loop without getting to a landing or DO_LAND_START
-    ret = false;
-
-reset_do_jump_tracking:
-    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking[i] = _jump_tracking_backup[i];
-    }
-
-    return ret;
+    return false;
 }
 
 // check if command is a landing type command.
