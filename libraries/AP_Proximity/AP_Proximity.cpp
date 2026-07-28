@@ -127,6 +127,14 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     AP_SUBGROUPVARPTR(drivers[4], "5_",  31, AP_Proximity, backend_var_info[4]),
 #endif
 
+    // @Param{Copter}: _ARM_DIST
+    // @DisplayName: Proximity arming check distance
+    // @Description: Minimum distance to the nearest object required to arm when proximity-based avoidance is enabled.
+    // @Units: m
+    // @Range: 0 10
+    // @User: Advanced
+    AP_GROUPINFO_FRAME("_ARM_DIST", 32, AP_Proximity, _arm_dist_m, 0.6f, AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_HELI | AP_PARAM_FRAME_TRICOPTER),
+
     AP_GROUPEND
 };
 
