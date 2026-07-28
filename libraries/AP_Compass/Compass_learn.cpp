@@ -70,4 +70,47 @@ void CompassLearn::update(void)
     }
 }
 
+#if AP_AHRS_ENABLED
+/*
+  save any compass offsets the EKF has learned.  Called on disarm.
+ */
+void Compass::save_ekf_learned_offsets()
+{
+    if (get_learn_type() != LearnType::COPY_FROM_EKF) {
+        return;
+    }
+
+    auto &ahrs = AP::ahrs();
+    if (!ahrs.healthy()) {
+        // Note that this is a deliberate tightening rather than part of
+        // moving the vehicles' code here: Copter, Sub and Blimp each
+        // asked getMagOffsets() directly, with no health precondition.
+        // getMagOffsets() judges whether an individual estimate is
+        // usable, but it cannot tell that the estimator as a whole is
+        // unhealthy or that the active backend is no longer the
+        // configured one - and offsets are set_and_save()d, so a bad
+        // set persists across a reboot and has to be recalibrated out
+        // by hand.  Declining to copy costs a learning opportunity; the
+        // vehicle keeps the offsets it already had.
+        return;
+    }
+    if (!ahrs.use_compass()) {
+        return;
+    }
+
+    // note that this loop is not redundant even though a single EKF
+    // core will only ever return offsets for its own selected
+    // compass; with EK3_AFFINITY compass affinity enabled each core
+    // takes a different compass (AP_NavEKF3_Measurements.cpp
+    // update_mag_selection) and the frontend asks every core for each
+    // instance in turn (AP_NavEKF3.cpp getMagOffsets).
+    for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
+        Vector3f magOffsets;
+        if (ahrs.getMagOffsets(i, magOffsets)) {
+            set_and_save_offsets(i, magOffsets);
+        }
+    }
+}
+#endif // AP_AHRS_ENABLED
+
 #endif // COMPASS_LEARN_ENABLED
