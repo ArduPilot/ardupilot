@@ -28,6 +28,7 @@ import vehicle_test_suite
 
 from pysim import util
 from pysim import vehicleinfo
+from vehicle_test_suite import EKF_MAG_OFFSETS_SAVED
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
@@ -19243,6 +19244,7 @@ RTL_ALT_M 111
             "COMPASS_OFS2_X": new_compass2_ofs_x,
         }
         self.assert_parameter_values(expected_offsets, epsilon=30)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 1)
         self.reboot_sitl()
         self.assert_parameter_values(expected_offsets, epsilon=30)
 
@@ -19282,6 +19284,7 @@ RTL_ALT_M 111
         self.arm_vehicle()
         self.disarm_vehicle()
         self.assert_parameter_values(wrong_offsets)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 0)
 
         self.start_subtest("offsets are saved on disarm when COMPASS_LEARN=2")
         self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
@@ -19290,6 +19293,7 @@ RTL_ALT_M 111
         # all three compasses should have been saved; the SIM backend
         # returns offsets for every instance, unlike a single EKF core:
         self.assert_parameter_values(expected_offsets)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 1)
         self.reboot_sitl()
         self.assert_parameter_values(expected_offsets)
 

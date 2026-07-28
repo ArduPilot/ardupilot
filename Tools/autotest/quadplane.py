@@ -18,6 +18,7 @@ from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
 
+from vehicle_test_suite import EKF_MAG_OFFSETS_SAVED
 from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import Location
@@ -825,6 +826,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "COMPASS_OFS2_X": new_compass2_ofs_x,
         }
         self.assert_parameter_values(expected_offsets, epsilon=30)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 1)
         self.reboot_sitl()
         self.assert_parameter_values(expected_offsets, epsilon=30)
 
