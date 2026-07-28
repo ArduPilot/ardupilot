@@ -93,6 +93,10 @@ extern const AP_HAL::HAL& hal;
 static constexpr uint16_t MAX_LOG_FILES = 500;
 static constexpr uint16_t MIN_LOG_FILES = 2;
 
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+static constexpr uint16_t REPLAY_LOG_FILES_DEFAULT = MAX_LOG_FILES;
+#endif
+
 const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Param: _BACKEND_TYPE
     // @DisplayName: AP_Logger Backend Storage type
@@ -111,16 +115,17 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
     // @Param: _DISARMED
     // @DisplayName: Enable logging while disarmed
-    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled at all times including when disarmed. Logging before arming can make for very large logfiles but can help a lot when tracking down startup issues and is necessary if logging of EKF replay data is selected via the LOG_REPLAY parameter. If LOG_DISARMED is set to 2, then logging will be enabled when disarmed, but not if a USB connection is detected. This can be used to prevent unwanted data logs being generated when the vehicle is connected via USB for log downloading or parameter changes. If LOG_DISARMED is set to 3 then logging will happen while disarmed, but if the vehicle never arms then the logs using the filesystem backend will be discarded on the next boot.
+    // @Description: If LOG_DISARMED is set to 1 then logging will be enabled at all times including when disarmed. Logging before arming can make for very large logfiles but can help a lot when tracking down startup issues and is necessary if merged logging of EKF replay data is selected via LOG_REPLAY=1 (LOG_REPLAY=2 logs replay data to its own log and does not need it). If LOG_DISARMED is set to 2, then logging will be enabled when disarmed, but not if a USB connection is detected. This can be used to prevent unwanted data logs being generated when the vehicle is connected via USB for log downloading or parameter changes. If LOG_DISARMED is set to 3 then logging will happen while disarmed, but if the vehicle never arms then the logs using the filesystem backend will be discarded on the next boot.
     // @Values: 0:Disabled,1:Enabled,2:Disabled on USB connection,3:Discard log on reboot if never armed
     // @User: Standard
     AP_GROUPINFO("_DISARMED",  2, AP_Logger, _params.log_disarmed,       0),
 
     // @Param: _REPLAY
     // @DisplayName: Enable logging of information needed for Replay
-    // @Description: If LOG_REPLAY is set to 1 then the EKF2 and EKF3 state estimators will log detailed information needed for diagnosing problems with the Kalman filter. LOG_DISARMED must be set to 1 or 2 or else the log will not contain the pre-flight data required for replay testing of the EKF's. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost.
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: If LOG_REPLAY is set to 1 then the EKF2 and EKF3 state estimators will log detailed information needed for diagnosing problems with the Kalman filter into the main log, and LOG_DISARMED must be set to 1 or 2 or else the log will not contain the pre-flight data required for replay testing of the EKF's. If LOG_REPLAY is set to 2 the replay data goes to its own log in the REPLAY directory instead, which is written from boot without needing LOG_DISARMED and leaves the main log unchanged. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost.
+    // @Values: 0:Disabled,1:Enabled,2:Enabled in a separate log
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("_REPLAY",  3, AP_Logger, _params.log_replay,       0),
 
     // @Param: _FILE_DSRMROT
@@ -203,6 +208,33 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("_MAX_FILES", 12, AP_Logger, _params.max_log_files, MAX_LOG_FILES),
 
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+    // @Param: _REPLAY_MAX
+    // @DisplayName: Maximum number of replay log files
+    // @Description: When LOG_REPLAY is set to 2 the replay data is written to its own log in the REPLAY directory. This sets how many of those logs are kept before the oldest is reused, independently of LOG_MAX_FILES. Replay logs are large and only fetched on demand, so a low value may be wanted to bound SD card usage.
+    // @Range: 2 500
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("_REPLAY_MAX", 13, AP_Logger, _params.replay_max_files, REPLAY_LOG_FILES_DEFAULT),
+
+    // @Param: _REPLAY_MB
+    // @DisplayName: Replay log size cap
+    // @Description: When LOG_REPLAY is set to 2, a replay log is rotated once it reaches this size, so that a long time spent on the ground cannot grow a single unbounded file. Rotation only happens while disarmed, so a flight's replay data is never split. Zero disables the size cap. Total replay usage is bounded by this times LOG_REPLAY_MAX.
+    // @Units: MB
+    // @Range: 0 1000
+    // @User: Advanced
+    AP_GROUPINFO("_REPLAY_MB", 14, AP_Logger, _params.replay_max_MB, 0),
+
+    // @Param: _REPLAY_RSV
+    // @DisplayName: Free space reserved from replay logging
+    // @Description: When LOG_REPLAY is set to 2 and the card has less than this much free space, the oldest replay logs are deleted to keep headroom for the main log. This lets replay logs use spare space while it is available but give way to normal logging under pressure. Zero disables the reserve.
+    // @Units: MB
+    // @Range: 0 8000
+    // @User: Advanced
+    AP_GROUPINFO("_REPLAY_RSV", 15, AP_Logger, _params.replay_reserve_MB, 0),
+#endif
+
     AP_GROUPEND
 };
 
@@ -282,6 +314,10 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
         return;
     }
 
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+    init_replay_backend();
+#endif
+
     for (uint8_t i=0; i<_next_backend; i++) {
         backends[i]->Init();
     }
@@ -290,6 +326,33 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
 
     EnableWrites(true);
 }
+
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+/*
+  the replay backend is not selectable through LOG_BACKEND_TYPE: it only
+  makes sense on the filesystem, and it is driven entirely by LOG_REPLAY
+ */
+void AP_Logger::init_replay_backend(void)
+{
+    if (!replay_separate_file()) {
+        return;
+    }
+    if (_next_backend == LOGGER_MAX_BACKENDS) {
+        AP_BoardConfig::config_error("Too many backends");
+        return;
+    }
+    LoggerMessageWriter_DFLogStart *message_writer =
+        NEW_NOTHROW LoggerMessageWriter_DFLogStart();
+    if (message_writer == nullptr)  {
+        AP_BoardConfig::allocation_error("replay message writer");
+    }
+    backends[_next_backend] = AP_Logger_File::probe_replay(*this, message_writer);
+    if (backends[_next_backend] == nullptr) {
+        AP_BoardConfig::allocation_error("replay logger backend");
+    }
+    _next_backend++;
+}
+#endif  // AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <stdio.h>
@@ -597,13 +660,14 @@ bool AP_Logger::logging_present() const
 {
     return _next_backend != 0;
 }
+// replay-only backends are left out of GCS status and arming checks
 bool AP_Logger::logging_enabled() const
 {
     if (_next_backend == 0) {
         return false;
     }
     for (uint8_t i=0; i<_next_backend; i++) {
-        if (backends[i]->logging_enabled()) {
+        if (!backends[i]->replay_only() && backends[i]->logging_enabled()) {
             return true;
         }
     }
@@ -616,7 +680,7 @@ bool AP_Logger::logging_failed() const
         return true;
     }
     for (uint8_t i=0; i<_next_backend; i++) {
-        if (backends[i]->logging_failed()) {
+        if (!backends[i]->replay_only() && backends[i]->logging_failed()) {
             return true;
         }
     }
@@ -689,6 +753,18 @@ const struct MultiplierStructure *AP_Logger::multiplier(uint16_t num) const
         }                                         \
     } while (0)
 
+// as FOR_EACH_BACKEND but skips replay-only backends: ordinary vehicle
+// messages must not reach a separate replay log
+#define FOR_EACH_LOGGING_BACKEND(methodcall)      \
+    do {                                          \
+        for (uint8_t i=0; i<_next_backend; i++) { \
+            if (backends[i]->replay_only()) {     \
+                continue;                         \
+            }                                     \
+            backends[i]->methodcall;              \
+        }                                         \
+    } while (0)
+
 void AP_Logger::PrepForArming()
 {
     FOR_EACH_BACKEND(PrepForArming());
@@ -754,17 +830,20 @@ void AP_Logger::WriteBlock(const void *pBuffer, uint16_t size) {
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     save_format_Replay(pBuffer);
 #endif
-    FOR_EACH_BACKEND(WriteBlock(pBuffer, size));
+    FOR_EACH_LOGGING_BACKEND(WriteBlock(pBuffer, size));
 }
 
 // only the first backend write need succeed for us to be successful
-bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size) 
+bool AP_Logger::WriteBlock_first_succeed(const void *pBuffer, uint16_t size)
 {
-    if (_next_backend == 0) {
+    if (_next_backend == 0 || backends[0]->replay_only()) {
         return false;
     }
-    
+
     for (uint8_t i=1; i<_next_backend; i++) {
+        if (backends[i]->replay_only()) {
+            continue;
+        }
         backends[i]->WriteBlock(pBuffer, size);
     }
 
@@ -781,7 +860,11 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
         buf[1] = HEAD_BYTE2;
         buf[2] = msg_id;
         memcpy(&buf[3], pBuffer, size);
+        const bool separate = replay_separate_file();
         for (uint8_t i=0; i<_next_backend; i++) {
+            if (backends[i]->replay_only() != separate) {
+                continue;
+            }
             if (!backends[i]->WritePrioritisedBlock(buf, sizeof(buf), true)) {
                 ret = false;
             }
@@ -791,7 +874,10 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
     // things will almost certainly go sour.  However, if we are not
     // logging while disarmed then the EKF can be started and trying
     // to log things even 'though the backends might be saying "no".
-    if (!ret && log_while_disarmed()) {
+    // a separate replay backend has the same excuse: its buffer can still
+    // be draining the startup headers when the EKF first writes, and the
+    // dropped block is forced out on the next DAL write.
+    if (!ret && log_while_disarmed() && !replay_separate_file()) {
         AP_HAL::panic("Failed to log replay block");
     }
 #endif
@@ -799,11 +885,11 @@ bool AP_Logger::WriteReplayBlock(uint8_t msg_id, const void *pBuffer, uint16_t s
 }
 
 void AP_Logger::WriteCriticalBlock(const void *pBuffer, uint16_t size) {
-    FOR_EACH_BACKEND(WriteCriticalBlock(pBuffer, size));
+    FOR_EACH_LOGGING_BACKEND(WriteCriticalBlock(pBuffer, size));
 }
 
 void AP_Logger::WritePrioritisedBlock(const void *pBuffer, uint16_t size, bool is_critical) {
-    FOR_EACH_BACKEND(WritePrioritisedBlock(pBuffer, size, is_critical));
+    FOR_EACH_LOGGING_BACKEND(WritePrioritisedBlock(pBuffer, size, is_critical));
 }
 
 // change me to "DoTimeConsumingPreparations"?
@@ -864,6 +950,12 @@ uint16_t AP_Logger::get_max_num_logs() {
     return static_cast<uint16_t>(_params.max_log_files.get());
 }
 
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+uint16_t AP_Logger::get_max_num_replay_logs() const {
+    return constrain_uint16(_params.replay_max_files.get(), MIN_LOG_FILES, MAX_LOG_FILES);
+}
+#endif
+
 /* we're started if any of the backends are started */
 bool AP_Logger::logging_started(void) const {
     for (uint8_t i=0; i< _next_backend; i++) {
@@ -896,8 +988,50 @@ void AP_Logger::periodic_tasks() {
 #ifndef HAL_BUILD_AP_PERIPH
     handle_log_send();
 #endif
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+    annotate_replay_log();
+#endif
     FOR_EACH_BACKEND(periodic_tasks());
 }
+
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+/*
+  record in the main log which replay log it pairs with, so ground tooling
+  can map a downloaded main log to its replay data. Re-emitted on rotation
+  so each main log carries the reference.
+ */
+void AP_Logger::annotate_replay_log()
+{
+    if (!replay_separate_file()) {
+        return;
+    }
+    AP_Logger_Backend *main_be = nullptr;
+    AP_Logger_Backend *replay_be = nullptr;
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (backends[i]->replay_only()) {
+            replay_be = backends[i];
+        } else if (main_be == nullptr) {
+            main_be = backends[i];
+        }
+    }
+    if (main_be == nullptr || replay_be == nullptr) {
+        return;
+    }
+    const uint16_t main_num = main_be->current_log_number();
+    const uint16_t replay_num = replay_be->current_log_number();
+    if (main_num == 0 || replay_num == 0) {
+        return;
+    }
+    if (main_num == _annotated_main_log) {
+        return;
+    }
+    // the write is dropped while the main log's startup headers are still
+    // going out, so only mark done on success and retry until it lands
+    if (main_be->Write_MessageF("Replay data in REPLAY/%08u.BIN", (unsigned)replay_num)) {
+        _annotated_main_log = main_num;
+    }
+}
+#endif  // AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only AP_Logger_File support this:
@@ -909,23 +1043,24 @@ void AP_Logger::flush(void) {
 
 void AP_Logger::Write_EntireMission()
 {
-    FOR_EACH_BACKEND(Write_EntireMission());
+    FOR_EACH_LOGGING_BACKEND(Write_EntireMission());
 }
 
 void AP_Logger::Write_Message(const char *message)
 {
-    FOR_EACH_BACKEND(Write_Message(message));
+    FOR_EACH_LOGGING_BACKEND(Write_Message(message));
 }
 void AP_Logger::Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq)
 {
-    FOR_EACH_BACKEND(Write_MessageChunk(id, messagechunk, chunk_seq));
+    FOR_EACH_LOGGING_BACKEND(Write_MessageChunk(id, messagechunk, chunk_seq));
 }
 
 void AP_Logger::Write_Mode(uint8_t mode, const ModeReason reason)
 {
-    FOR_EACH_BACKEND(Write_Mode(mode, reason));
+    FOR_EACH_LOGGING_BACKEND(Write_Mode(mode, reason));
 }
 
+// Replay reads PARM, so parameter changes go to every backend
 void AP_Logger::Write_Parameter(const char *name, float value)
 {
     FOR_EACH_BACKEND(Write_Parameter(name, value, quiet_nanf()));
@@ -935,7 +1070,7 @@ void AP_Logger::Write_Mission_Cmd(const AP_Mission &mission,
                                   const AP_Mission::Mission_Command &cmd,
                                   LogMessages id)
 {
-    FOR_EACH_BACKEND(Write_Mission_Cmd(mission, cmd, id));
+    FOR_EACH_LOGGING_BACKEND(Write_Mission_Cmd(mission, cmd, id));
 }
 
 #if HAL_RALLY_ENABLED
@@ -943,19 +1078,19 @@ void AP_Logger::Write_RallyPoint(uint8_t total,
                                  uint8_t sequence,
                                  const RallyLocation &rally_point)
 {
-    FOR_EACH_BACKEND(Write_RallyPoint(total, sequence, rally_point));
+    FOR_EACH_LOGGING_BACKEND(Write_RallyPoint(total, sequence, rally_point));
 }
 
 void AP_Logger::Write_Rally()
 {
-    FOR_EACH_BACKEND(Write_Rally());
+    FOR_EACH_LOGGING_BACKEND(Write_Rally());
 }
 #endif
 
 #if HAL_LOGGER_FENCE_ENABLED
 void AP_Logger::Write_Fence()
 {
-    FOR_EACH_BACKEND(Write_Fence());
+    FOR_EACH_LOGGING_BACKEND(Write_Fence());
 }
 #endif
 
@@ -976,9 +1111,7 @@ void AP_Logger::Write_NamedValueFloat(const char *name, float value)
 // output a FMT message for each backend if not already done so
 void AP_Logger::Safe_Write_Emit_FMT(log_write_fmt *f)
 {
-    for (uint8_t i=0; i<_next_backend; i++) {
-        backends[i]->Safe_Write_Emit_FMT(f->msg_type);
-    }
+    FOR_EACH_LOGGING_BACKEND(Safe_Write_Emit_FMT(f->msg_type));
 }
 
 uint32_t AP_Logger::num_dropped() const
@@ -1063,6 +1196,9 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
     }
 
     for (uint8_t i=0; i<_next_backend; i++) {
+        if (backends[i]->replay_only()) {
+            continue;
+        }
         va_list arg_copy;
         va_copy(arg_copy, arg_list);
         backends[i]->Write(f->msg_type, arg_copy, is_critical, is_streaming);
@@ -1077,7 +1213,22 @@ void AP_Logger::WriteV(const char *name, const char *labels, const char *units, 
  */
 bool AP_Logger::allow_start_ekf() const
 {
-    if (!log_replay() || !log_while_disarmed()) {
+    if (!log_replay()) {
+        return true;
+    }
+
+    if (replay_separate_file()) {
+        // that log is written from boot, so it alone gates the EKF and
+        // LOG_DISARMED has no bearing on whether the headers are out
+        for (uint8_t i=0; i<_next_backend; i++) {
+            if (backends[i]->replay_only() && !backends[i]->allow_start_ekf()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    if (!log_while_disarmed()) {
         return true;
     }
 

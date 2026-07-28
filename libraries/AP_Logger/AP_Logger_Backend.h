@@ -51,7 +51,8 @@ public:
     FUNCTOR_TYPEDEF(vehicle_startup_message_Writer, void);
 
     AP_Logger_Backend(AP_Logger &front,
-                      class LoggerMessageWriter_DFLogStart *writer);
+                      class LoggerMessageWriter_DFLogStart *writer,
+                      bool replay_only = false);
 
     vehicle_startup_message_Writer vehicle_message_writer() const;
 
@@ -175,6 +176,21 @@ public:
     virtual bool logging_enabled() const;
     virtual bool logging_failed() const = 0;
 
+    // true for the backend carrying only replay data
+    bool replay_only() const {
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+        return _replay_only;
+#else
+        return false;
+#endif
+    }
+
+    // number of logs to keep before the oldest is reused
+    virtual uint16_t get_max_num_logs() const;
+
+    // number of the log currently being written, 0 if none
+    virtual uint16_t current_log_number() const { return 0; }
+
     // We may need to make sure data is loggable before starting the
     // EKF; when allow_start_ekf we should be able to log that data
     bool allow_start_ekf() const;
@@ -190,6 +206,8 @@ public:
 protected:
 
     AP_Logger &_front;
+
+    const bool _replay_only;
 
     virtual void periodic_10Hz(const uint32_t now);
     virtual void periodic_1Hz();

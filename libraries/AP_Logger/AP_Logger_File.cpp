@@ -48,13 +48,85 @@ extern const AP_HAL::HAL& hal;
   constructor
  */
 AP_Logger_File::AP_Logger_File(AP_Logger &front,
-                               LoggerMessageWriter_DFLogStart *writer) :
-    AP_Logger_Backend(front, writer),
-    _log_directory(HAL_BOARD_LOG_DIRECTORY)
+                               LoggerMessageWriter_DFLogStart *writer,
+                               const char *log_directory,
+                               bool replay_only) :
+    AP_Logger_Backend(front, writer, replay_only),
+    _log_directory(log_directory)
 {
     df_stats_clear();
 }
 
+uint16_t AP_Logger_File::get_max_num_logs() const
+{
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+    if (replay_only()) {
+        return _front.get_max_num_replay_logs();
+    }
+#endif
+    return AP_Logger_Backend::get_max_num_logs();
+}
+
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+/*
+  bound a separate replay log's footprint. Rotate once past the size cap
+  (only while disarmed, so a flight's replay stays in one file). Under the
+  free-space reserve, evict the oldest replay log so the main log always
+  has room; rotation there is only a fallback to make the current log
+  evictable. Returns true if the current log was rotated.
+ */
+bool AP_Logger_File::bound_replay_usage()
+{
+    const bool armed = hal.util->get_soft_armed();
+    const uint32_t cap_MB = _front._params.replay_max_MB;
+    if (!armed && cap_MB > 0 && _write_offset >= (uint64_t)cap_MB * MB_to_B) {
+        start_new_log();
+        return true;
+    }
+    const uint32_t reserve_MB = _front._params.replay_reserve_MB;
+    if (reserve_MB == 0) {
+        return false;
+    }
+    const int64_t avail = disk_space_avail();
+    if (avail < 0 || avail >= (int64_t)reserve_MB * MB_to_B) {
+        return false;
+    }
+    const uint16_t oldest = find_oldest_log();
+    if (oldest != 0 && oldest != _cur_log_num) {
+        char *fname = _log_file_name(oldest);
+        if (fname != nullptr) {
+            AP::FS().unlink(fname);
+            free(fname);
+        }
+        _cached_oldest_log = 0;
+        return false;
+    }
+    if (!armed) {
+        start_new_log();
+        return true;
+    }
+    return false;
+}
+
+/*
+  the replay directory sits below the main log directory, which may not
+  have been created yet when nothing has been logged there
+ */
+void AP_Logger_File::ensure_parent_directory_exists()
+{
+    const char *sep = strrchr(_log_directory, '/');
+    if (sep == nullptr || sep == _log_directory) {
+        return;
+    }
+    char *parent = nullptr;
+    if (asprintf(&parent, "%.*s", int(sep - _log_directory), _log_directory) == -1) {
+        return;
+    }
+    EXPECT_DELAY_MS(3000);
+    AP::FS().mkdir(parent);
+    free(parent);
+}
+#endif  // AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
 
 void AP_Logger_File::ensure_log_directory_exists()
 {
@@ -64,6 +136,11 @@ void AP_Logger_File::ensure_log_directory_exists()
     EXPECT_DELAY_MS(3000);
     ret = AP::FS().stat(_log_directory, &st);
     if (ret == -1) {
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+        if (replay_only()) {
+            ensure_parent_directory_exists();
+        }
+#endif
         ret = AP::FS().mkdir(_log_directory);
     }
     if (ret == -1 && errno != EEXIST) {
@@ -98,7 +175,15 @@ void AP_Logger_File::Init()
 
     const char* custom_dir = hal.util->get_custom_log_directory();
     if (custom_dir != nullptr){
-        _log_directory = custom_dir;
+        if (replay_only()) {
+            // keep the replay log out of the directory the custom path names
+            char *replay_dir = nullptr;
+            if (asprintf(&replay_dir, "%s/REPLAY", custom_dir) != -1) {
+                _log_directory = replay_dir;
+            }
+        } else {
+            _log_directory = custom_dir;
+        }
     }
 
     uint16_t last_log_num = find_last_log();
@@ -237,7 +322,7 @@ bool AP_Logger_File::dirent_to_log_num(const dirent *de, uint16_t &log_num) cons
     }
 
     uint16_t thisnum = strtoul(de->d_name, nullptr, 10);
-    if (thisnum > _front.get_max_num_logs()) {
+    if (thisnum > get_max_num_logs()) {
         return false;
     }
     log_num = thisnum;
@@ -333,7 +418,7 @@ void AP_Logger_File::Prep_MinSpace()
         if (avail >= target_free) {
             break;
         }
-        if (count++ > _front.get_max_num_logs() + 10) {
+        if (count++ > get_max_num_logs() + 10) {
             // *way* too many deletions going on here.  Possible internal error.
             INTERNAL_ERROR(AP_InternalError::error_t::logger_too_many_deletions);
             break;
@@ -363,7 +448,7 @@ void AP_Logger_File::Prep_MinSpace()
             }
         }
         log_to_remove++;
-        if (log_to_remove > _front.get_max_num_logs()) {
+        if (log_to_remove > get_max_num_logs()) {
             log_to_remove = 1;
         }
     } while (log_to_remove != first_log_to_remove);
@@ -700,7 +785,7 @@ uint16_t AP_Logger_File::get_num_logs()
     AP::FS().closedir(d);
     if (smallest_above_last != 0) {
         // we have wrapped, add in the logs with high numbers
-        ret += (_front.get_max_num_logs() - smallest_above_last) + 1;
+        ret += (get_max_num_logs() - smallest_above_last) + 1;
     }
 
     return ret;
@@ -716,6 +801,7 @@ void AP_Logger_File::stop_logging(void)
     if (_write_fd != -1) {
         int fd = _write_fd;
         _write_fd = -1;
+        _cur_log_num = 0;
         AP::FS().close(fd);
     }
     if (have_sem) {
@@ -800,7 +886,7 @@ void AP_Logger_File::start_new_log(void)
     if (_get_log_size(log_num) > 0 || log_num == 0) {
         log_num++;
     }
-    if (log_num > _front.get_max_num_logs()) {
+    if (log_num > get_max_num_logs()) {
         log_num = 1;
     }
     if (!write_fd_semaphore.take(1)) {
@@ -845,6 +931,7 @@ void AP_Logger_File::start_new_log(void)
     _last_write_ms = AP_HAL::millis();
     _open_error_ms = 0;
     _write_offset = 0;
+    _cur_log_num = log_num;
     _writebuf.clear();
     write_fd_semaphore.give();
 
@@ -956,6 +1043,12 @@ void AP_Logger_File::io_timer(void)
             last_io_operation = "";
             return;
         }
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+        if (replay_only() && bound_replay_usage()) {
+            last_io_operation = "";
+            return;
+        }
+#endif
         last_io_operation = "";
     }
 #endif
@@ -1099,7 +1192,7 @@ void AP_Logger_File::erase_next(void)
     free(fname);
 
     erase.log_num++;
-    if (erase.log_num <= _front.get_max_num_logs()) {
+    if (erase.log_num <= get_max_num_logs()) {
         return;
     }
     

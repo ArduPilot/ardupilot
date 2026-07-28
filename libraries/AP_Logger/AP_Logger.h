@@ -236,6 +236,9 @@ public:
     void get_log_boundaries(uint16_t log_num, uint32_t & start_page, uint32_t & end_page);
     uint16_t get_num_logs(void);
     uint16_t get_max_num_logs();
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+    uint16_t get_max_num_replay_logs() const;
+#endif
 
     void setVehicle_Startup_Writer(vehicle_startup_message_Writer writer);
 
@@ -344,6 +347,21 @@ public:
         LOG_WHILE_DISARMED_DISCARD = 3,
     };
 
+    enum class ReplayMode : uint8_t {
+        DISABLED = 0,
+        MERGED = 1,
+        SEPARATE_FILE = 2,
+    };
+
+    // true when replay data goes to its own log rather than the main one
+    bool replay_separate_file(void) const {
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+        return ReplayMode(_params.log_replay.get()) == ReplayMode::SEPARATE_FILE;
+#else
+        return false;
+#endif
+    }
+
     // parameter support
     static const struct AP_Param::GroupInfo        var_info[];
     struct {
@@ -360,6 +378,11 @@ public:
         AP_Float blk_ratemax;
         AP_Float disarm_ratemax;
         AP_Int16 max_log_files;
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+        AP_Int16 replay_max_files;
+        AP_Int16 replay_max_MB;
+        AP_Int16 replay_reserve_MB;
+#endif
     } _params;
 
     const struct LogStructure *structure(uint16_t num) const;
@@ -442,10 +465,25 @@ protected:
                                bool is_critical);
 
 private:
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+    // every configurable backend plus the separate replay log backend
+    #define LOGGER_MAX_BACKENDS 4
+#else
     #define LOGGER_MAX_BACKENDS 2
+#endif
     uint8_t _next_backend;
     AP_Logger_Backend *backends[LOGGER_MAX_BACKENDS];
     const AP_Int32 *_log_bitmask;
+
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+    // instantiate the separate replay backend, if LOG_REPLAY asks for one
+    void init_replay_backend(void);
+
+    // record the paired replay log number in the main log
+    void annotate_replay_log(void);
+    // main log number we last wrote the replay cross-reference into
+    uint16_t _annotated_main_log;
+#endif
 
     enum class Backend_Type : uint8_t {
         NONE       = 0,
