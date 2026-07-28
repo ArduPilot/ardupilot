@@ -2218,7 +2218,7 @@ void AP_Mission::advance_current_do_cmd()
 ///     returns true if found, false if not found (i.e. mission complete)
 ///     accounts for do_jump commands
 ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg, jump_tracking_struct *jump_state)
+bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, jump_tracking_struct *jump_state)
 {
     // default to the live jump tracking; callers may pass a private cursor to look ahead without side effects
     if (jump_state == nullptr) {
@@ -2274,7 +2274,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
                 get_jump_times_run(temp_cmd, jump_state) < temp_cmd.content.jump.num_times) {
                 // update the record of the number of times run
                 if (increment_jump_num_times_if_found && !_flags.resuming_mission) {
-                    increment_jump_times_run(temp_cmd, send_gcs_msg, jump_state);
+                    increment_jump_times_run(temp_cmd, jump_state);
                 }
                 // continue searching from jump target
                 cmd_index = temp_cmd.content.jump.target;
@@ -2421,12 +2421,16 @@ int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd, jump_tracking
 }
 
 /// increment_jump_times_run - increments the recorded number of times the jump command has been run
-void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_msg, jump_tracking_struct *jump_state)
+void AP_Mission::increment_jump_times_run(Mission_Command& cmd, jump_tracking_struct *jump_state)
 {
     // default to the live jump tracking; callers may pass a private cursor to look ahead without side effects
     if (jump_state == nullptr) {
         jump_state = _jump_tracking;
     }
+
+    // only the running mission takes the jumps recorded in the live counters, so only those are
+    // worth telling the GCS about; a look-ahead on a private cursor stays quiet
+    const bool send_gcs_msg = (jump_state == _jump_tracking);
 
     // exit immediately if cmd is not a do-jump command
     if (cmd.id != MAV_CMD_DO_JUMP) {
@@ -2695,7 +2699,7 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
         // search until the end of the mission command list
         for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
             // get next command
-            if (!get_next_cmd(cmd_index, temp_cmd, true, false, jump_state)) {
+            if (!get_next_cmd(cmd_index, temp_cmd, true, jump_state)) {
                 // we got to the end of the mission
                 return false;
             }
@@ -2745,7 +2749,7 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
     for (; search_remaining > 0; search_remaining--) {
         // search until the end of the mission command list
         for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
-            if (get_next_cmd(cmd_index, temp_cmd, true, false, jump_state)) {
+            if (get_next_cmd(cmd_index, temp_cmd, true, jump_state)) {
                 break;
             } else {
                 // got to the end of the mission

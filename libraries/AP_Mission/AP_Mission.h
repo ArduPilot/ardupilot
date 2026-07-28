@@ -875,8 +875,10 @@ private:
     ///     accounts for do_jump commands
     ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
     ///     jump_state, when supplied, is used in place of the live _jump_tracking so callers can look
-    ///     ahead without disturbing the running mission's jump counters; nullptr uses _jump_tracking
-    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg = true, jump_tracking_struct *jump_state = nullptr);
+    ///     ahead without disturbing the running mission's jump counters; nullptr uses _jump_tracking.
+    ///     A look-ahead on a private cursor is not taking the jumps it follows, so it does not
+    ///     report them to the GCS either
+    bool get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, jump_tracking_struct *jump_state = nullptr);
 
     /// get_next_do_cmd - gets next "do" or "conditional" command after start_index
     ///     returns true if found, false if not found
@@ -896,8 +898,9 @@ private:
     int16_t get_jump_times_run(const Mission_Command& cmd, jump_tracking_struct *jump_state = nullptr);
 
     /// increment_jump_times_run - increments the recorded number of times the jump command has been run
-    ///     jump_state, when supplied, is used in place of the live _jump_tracking; nullptr uses _jump_tracking
-    void increment_jump_times_run(Mission_Command& cmd, bool send_gcs_msg = true, jump_tracking_struct *jump_state = nullptr);
+    ///     jump_state, when supplied, is used in place of the live _jump_tracking; nullptr uses _jump_tracking.
+    ///     The jump is reported to the GCS only when the live counters are the ones being advanced
+    void increment_jump_times_run(Mission_Command& cmd, jump_tracking_struct *jump_state = nullptr);
 
     /// check_eeprom_version - checks version of missions stored in eeprom matches this library
     /// command list will be cleared if they do not match
