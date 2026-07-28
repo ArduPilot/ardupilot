@@ -5950,6 +5950,32 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             want_result=mavutil.mavlink.MAV_RESULT_FAILED,
         )
 
+    def MAV_CMD_DO_SET_MISSION_CURRENT_no_nav_command(self):
+        '''Test setting the current command in a mission whose loop holds no nav command'''
+
+        # setting the current command searches forward for a nav command to
+        # load, following jumps as it goes.  A forever jump over nothing but
+        # do commands never runs out of repeats and never reaches a nav
+        # command, so the search has nothing to terminate on and locks up the
+        # main loop, taking the vehicle with it
+        self.upload_simple_relhome_mission([
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_SET_ROI_NONE),       # 1
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_JUMP, p1=1, p2=-1),  # 2 jump to 1 forever
+        ])
+
+        # the vehicle must answer.  A missing ack here means it never came back
+        # from the search, not that it declined the command
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
+            p1=1,
+            timeout=10,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        # and must still be talking to us afterwards
+        self.wait_heartbeat()
+        self.wait_heartbeat()
+
     def FlashStorage(self):
         '''Test flash storage (for parameters etc)'''
         self.set_parameter("LOG_BITMASK", 1)
@@ -7490,6 +7516,7 @@ return update()
             self.SET_POSITION_TARGET_LOCAL_NED,
             self.MAV_CMD_DO_SET_MISSION_CURRENT,
             self.MAV_CMD_DO_SET_MISSION_CURRENT_looped_mission,
+            self.MAV_CMD_DO_SET_MISSION_CURRENT_no_nav_command,
             self.MAV_CMD_DO_CHANGE_SPEED,
             self.MAV_CMD_MISSION_START,
             self.Button,
