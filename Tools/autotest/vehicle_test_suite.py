@@ -331,6 +331,9 @@ class Location(object):
 
 NUM_RC_CHANNELS = 16
 
+# values from LogEvent in libraries/AP_Logger/AP_Logger.h:
+EKF_MAG_OFFSETS_SAVED = 167
+
 
 class Context(object):
     def __init__(self):
@@ -13922,6 +13925,21 @@ switch value'''
 
     def dfreader_for_current_onboard_log(self):
         return self.dfreader_for_path(self.current_onboard_log_filepath())
+
+    def assert_EV_count(self, event_id, count):
+        '''assert the current onboard log holds count instances of EV.Id=event_id'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        found = 0
+        while True:
+            m = dfreader.recv_match(type='EV')
+            if m is None:
+                break
+            if m.Id == event_id:
+                found += 1
+        if found != count:
+            raise NotAchievedException("Want %u EV.Id=%u, got %u" %
+                                       (count, event_id, found))
+        self.progress("Found %u EV.Id=%u as expected" % (found, event_id))
 
     def assert_log_has_no_dropped_blocks(self, path):
         '''check the DSF.Dp (dropped-block) counter in a dataflash log is
