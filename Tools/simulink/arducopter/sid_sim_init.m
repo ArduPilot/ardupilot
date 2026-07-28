@@ -654,7 +654,7 @@ simIn.param.PSCD.JERK_MAX_Z_DFLT = single(500); % Default vertical jerk, defined
 simIn.param.PSCD.VEL_MAX_DN = getParamVal(sid, 'PILOT_SPEED_DN'); % Maximum vertical descending velocity in cm/s, defined in parameters.cpp, line 906
 simIn.param.PSCD.VEL_MAX_UP = getParamVal(sid, 'PILOT_SPEED_UP'); % Maximum vertical ascending velocity in cm/s, defined in parameters.cpp, line 223
 simIn.param.PSCD.ACC_MAX_Z = getParamVal(sid, 'PILOT_ACCEL_Z'); % Maximum vertical acceleration used when pilot is controlling the altitude, parameters.cpp, line 232
-simIn.param.PSCD.JERK_MAX_Z = getParamVal(sid, 'PSC_JERK_D'); % Jerk limit of vertical kinematic path generation in m/s^3. Determines how quickly aircraft changes acceleration target
+simIn.param.PSCD.JERK_MAX_Z = getParamVal(sid, 'PSC_D_JERK'); % Jerk limit of vertical kinematic path generation in m/s^3. Determines how quickly aircraft changes acceleration target
 simIn.param.PSCD.OVERSPEED_GAIN_Z = single(2); % gain controlling rate at which z-axis speed is brought back within SPEED_UP and SPEED_DOWN range, defined in AC_PosControl.h 
 %% Position Controller z
 
