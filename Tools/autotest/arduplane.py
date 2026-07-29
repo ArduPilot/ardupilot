@@ -5821,6 +5821,38 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def TakeoffIdleThrottleAuto(self):
+        '''Apply idle throttle before a takeoff command in an AUTO mission.'''
+        self.customise_SITL_commandline(
+            [],
+            model='plane-catapult',
+            defaults_filepath=self.model_defaults_filepath("plane")
+        )
+        self.set_parameters({
+            "TKOFF_THR_IDLE": 20.0,
+            "TKOFF_THR_MINSPD": 3.0,
+        })
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, 50),
+        ])
+        self.change_mode("AUTO")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # While the AUTO mission waits on the takeoff command for launch, the
+        # throttle should idle at TKOFF_THR_IDLE. In AUTO the flight stage is
+        # not yet TAKEOFF, so this exercises the current-mission-command path.
+        expected_idle_throttle = 1000 + 10 * self.get_parameter("TKOFF_THR_IDLE")
+        self.wait_servo_channel_in_range(3, expected_idle_throttle - 10, expected_idle_throttle + 10, timeout=15)
+
+        # Launch the catapult and confirm we leave idle and climb.
+        self.set_servo(7, 2000)
+        self.wait_altitude(20, 45, relative=True, timeout=30)
+
+        self.disarm_vehicle(force=True)
+
     def TakeoffBadLevelOff(self):
         '''Ensure that the takeoff can be completed under 0 pitch demand.'''
         '''
@@ -8790,6 +8822,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TakeoffTakeoff5,
             self.TakeoffGround,
             self.TakeoffIdleThrottle,
+            self.TakeoffIdleThrottleAuto,
             self.TakeoffBadLevelOff,
             self.TakeoffLevelOffWind,
             self.ForcedDCM,
