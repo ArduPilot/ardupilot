@@ -14,6 +14,25 @@
 
 extern const AP_HAL::HAL& hal;
 
+AP_RCProtocol_UDP *AP_RCProtocol_UDP::_singleton;
+
+AP_RCProtocol_UDP::AP_RCProtocol_UDP(AP_RCProtocol &_frontend)
+    : AP_RCProtocol_Backend(_frontend),
+      _ibus2_active(false)
+{
+    _singleton = this;
+}
+
+bool AP_RCProtocol_UDP::get_channels(uint16_t *channels, uint8_t &count) const
+{
+    if (num_channels == 0) {
+        return false;
+    }
+    count = num_channels;
+    memcpy(channels, pwm_input, count * sizeof(uint16_t));
+    return true;
+}
+
 void AP_RCProtocol_UDP::set_default_pwm_input_values()
 {
     pwm_input[0] = 1500;
@@ -99,6 +118,12 @@ void AP_RCProtocol_UDP::update()
         return;
     }
     last_input_ms = AP_HAL::millis();
+
+    if (_ibus2_active) {
+        // IBus2Master reads pwm_input via get_channels() and drives add_input
+        // through the IBus2 encode/decode chain.
+        return;
+    }
 
     add_input(
         num_channels,
