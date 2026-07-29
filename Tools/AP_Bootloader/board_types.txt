@@ -432,6 +432,9 @@ AP_HW_A2M6X                          1850
 AP_HW_A2M6X_NANO                     1855
 AP_HW_A2M6X_V2                       1860
 
+# IDs 1940–1949 reserved for Agam Robotics
+AP_HW_AGAM_MEGH7                     1940
+
 # IDs 1950-1979 reserved for HC Robotics
 AP_HW_HCR-504                        1950
 AP_HW_HCR-506                        1951
