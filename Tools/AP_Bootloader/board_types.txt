@@ -344,7 +344,7 @@ AP_HW_AMOV_FLYCORE                   1218
 AP_HW_ORBITH743v2                    1219
 AP_HW_X-MAV-AP-H743V3                1220
 
-AP_HW_SIMPLIFLYH7                    1220
+AP_HW_SIMPLIFLYH7                    1221
 
 AP_HW_MUPilot                        1222
 AP_HW_HWH7                           1223
