@@ -115,6 +115,8 @@ imu_types = {
     0x40 : "DEVTYPE_INS_ADIS16607",
     0x42 : "DEVTYPE_INS_LSM6DSV32X",
     0x43 : "DEVTYPE_INS_LSM6DSK320X",
+    0x44 : "DEVTYPE_INS_LSM6DSO",
+    0x45 : "DEVTYPE_INS_LSM6DSO32",
 }
 
 baro_types = {
