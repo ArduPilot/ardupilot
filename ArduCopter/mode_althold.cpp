@@ -76,22 +76,7 @@ void ModeAltHold::run()
         break;
 
     case AltHoldModeState::Flying:
-
-#if AP_AVOIDANCE_ALTHOLD_ENABLED
-        // apply avoidance
-        copter.avoid.adjust_roll_pitch_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad());
-#endif
-
-        // get avoidance adjusted climb rate
-        target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
-
-#if AP_RANGEFINDER_ENABLED
-        // update the vertical offset based on the surface measurement
-        copter.surface_tracking.update_surface_offset();
-#endif
-
-        // Send the commanded climb rate to the position controller
-        pos_control->D_set_pos_target_from_climb_rate_ms(target_climb_rate_ms);
+        alt_hold_run_flying(target_roll_rad, target_pitch_rad, target_climb_rate_ms);
         break;
     }
 
@@ -100,4 +85,25 @@ void ModeAltHold::run()
 
     // run the vertical position controller and set output throttle
     pos_control->D_update_controller();
+}
+
+// alt_hold_run_flying - handle the Flying state; virtual so subclasses
+// (ModeVelAltHold) can replace just this piece
+void ModeAltHold::alt_hold_run_flying(float &target_roll_rad, float &target_pitch_rad, float target_climb_rate_ms)
+{
+#if AP_AVOIDANCE_ALTHOLD_ENABLED
+    // apply avoidance
+    copter.avoid.adjust_roll_pitch_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad());
+#endif
+
+    // get avoidance adjusted climb rate
+    target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
+
+#if AP_RANGEFINDER_ENABLED
+    // update the vertical offset based on the surface measurement
+    copter.surface_tracking.update_surface_offset();
+#endif
+
+    // Send the commanded climb rate to the position controller
+    pos_control->D_set_pos_target_from_climb_rate_ms(target_climb_rate_ms);
 }
