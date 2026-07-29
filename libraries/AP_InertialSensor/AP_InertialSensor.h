@@ -195,6 +195,17 @@ public:
     // IMU instance, used to seed the EKF's gyro bias covariance.
     float get_gyro_bias_init_dps(uint8_t instance) const;
 
+    // get/set vibration rectification Z-axis bias (learned during hover)
+    float get_accel_vrf_bias_z(uint8_t instance) const {
+        return _accel_vrf_bias_z(instance).get();
+    }
+    void set_accel_vrf_bias_z(uint8_t instance, float bias) {
+        _accel_vrf_bias_z(instance).set(bias);
+    }
+    void save_accel_vrf_bias_z(uint8_t instance) {
+        _accel_vrf_bias_z(instance).save();
+    }
+
     // return the temperature if supported. Zero is returned if no
     // temperature is available
     float get_temperature(uint8_t instance) const { return _temperature[instance]; }
@@ -589,6 +600,9 @@ private:
     // accelerometer position offset in body frame
     AP_Vector3f _accel_pos_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
 
+    // vibration rectification Z-axis bias (learned during hover)
+    AP_Float _accel_vrf_bias_z_old_param[INS_MAX_INSTANCES-INS_AUX_INSTANCES];
+
     // Use Accessor methods to access above variables
 #if INS_AUX_INSTANCES
     #define INS_PARAM_WRAPPER(var) \
@@ -619,6 +633,7 @@ private:
     INS_PARAM_WRAPPER(_accel_offset);
     INS_PARAM_WRAPPER(_gyro_offset);
     INS_PARAM_WRAPPER(_accel_pos);
+    INS_PARAM_WRAPPER(_accel_vrf_bias_z);
 
     // accelerometer and gyro raw sample rate in units of Hz
     float  _accel_raw_sample_rates[INS_MAX_INSTANCES];
