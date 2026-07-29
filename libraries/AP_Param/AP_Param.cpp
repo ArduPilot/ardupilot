@@ -2458,7 +2458,7 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
     }
     free(mutable_filename);
 
-    num_param_overrides = num_defaults;
+    num_param_overrides = idx;
 
 #if AP_PARAM_DEFAULTS_ENABLED
     purge_defaults_list_overrides();
@@ -2592,7 +2592,7 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
             vp->set_float(value, var_type);
         }
     }
-    num_param_overrides = num_defaults;
+    num_param_overrides = idx;
 
 #if AP_PARAM_DEFAULTS_ENABLED
     purge_defaults_list_overrides();
