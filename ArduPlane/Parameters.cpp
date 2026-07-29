@@ -1487,8 +1487,6 @@ void Plane::load_parameters(void)
             { Parameters::k_param_ins, 421, AP_PARAM_FLOAT, "INS_HNTC2_BW" },
         };
         AP_Param::convert_old_parameters(&notchfilt_conversion_info[0], ARRAY_SIZE(notchfilt_conversion_info));
-        AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
-        AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
     }
 #endif // HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
 #endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
