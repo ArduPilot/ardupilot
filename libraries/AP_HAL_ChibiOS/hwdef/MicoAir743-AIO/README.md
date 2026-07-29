@@ -73,13 +73,13 @@ The default battery parameters are:
 
 The MicoAir743-AIO does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL connector.
 
-## Mechanical
+## Physical
 
 - Mounting: 25.5 x 25.5mm, Φ3mm
 - Dimensions: 36 x 36 x 8 mm
 - Weight: 10g
 
-## Ports Connector
+## Pinout
 
 ![MicoAir H743 AIO Ports Connection](MicoAir743-AIO_Ports_Connection.jpg)
 

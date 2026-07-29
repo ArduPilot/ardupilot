@@ -19,18 +19,18 @@ The PilotGaeaSH7V1-bdshot is a flight controller designed and produced by PilotG
 - 5V/1.5A BEC for main power supply
 - 8V/1.5A BEC for powering Video Transmitter
 
-## Mechanical
+## Physical
 
 - Dimensions: 36 x 36 x 17 mm
 - Weight: 10.5g
 
-## Physical and pinout
+## Pinout
 
 ![PilotGaeaSH7V1-bdshot front view](./PilotGaea_front_view_Pin.jpg)
 
 ![PilotGaeaSH7V1-bdshot rear view](./PilotGaea_rear_view_Pin.jpg)
 
-## Power supply
+## Power Supply
 
 The PilotGaeaSH7V1-bdshot supports 3-8s Li battery input. It has 2 ways of BEC, which result in 3 ways of power supplies. Please see the table below.
 
@@ -71,7 +71,7 @@ RC input can be attached to any UART port. To reassign it:
 
 The PilotGaeaSH7V1-bdshot Supports onboard analog OSD using the AT7456 chip. The composited image is output via the VTX pin.  Simultaneous HD VTX DisplayPort is supported via SERIAL6.
 
-## PWM Output and DShot
+## PWM Output
 
 The PilotGaeaSH7V1-bdshot supports up to **11 physical PWM outputs**, organized into **6 independent timer groups**. All groups support DShot, but **Bi-directional DShot (BDShot)** is fully optimized for **Groups 1-4 (Outputs 1-8)**.
 

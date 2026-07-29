@@ -178,7 +178,7 @@ The 12 PWM outputs are in 3 groups:
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot or then all channels in the group need to use DShot.
 
-## CAN Port
+## CAN
 
 The CAN port is disabled by default. Enable the CAN port setting the parameters CAN_P1_Driver to 1 (DroneCAN protocol).
 

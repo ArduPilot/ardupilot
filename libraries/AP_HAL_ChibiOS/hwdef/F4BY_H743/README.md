@@ -36,7 +36,7 @@ The instructions, schematic, 3D model  are available [here](https://f4by.com/en/
   - USB GHS type port for external connector.
   - DFU bootloader button
 
-## Analog sensors
+## Analog Inputs
 
 - Analog airspeed PC0 (0...+3.3v range) pin 10
 - Analog rssi PC1     (0...+3.3v range) pin 11
@@ -128,7 +128,7 @@ Group #4
 
 **Note:**  0 ... +3.3V range. This pins can be used for relay control, camera shutter, camera feedback e.t.c.
 
-## Dimensions
+## Physical
 
 - Size: 50 x 50 mm
 - Mounting holes: 45 x 45 mm (M3)

@@ -110,7 +110,7 @@ All outputs are directly wired to the H743 MCU. All 8 outputs support normal
 PWM output formats. All outputs support DShot, outputs 1-6 support
 Bi-Directional DShot.
 
-## Analog Video and OSD Support
+## OSD Support
 
 The Raspberry Pi Zero 2 support analog video output through a pad on its PCB.
 Installing the included POGO pin connects this pad to the H7 Pi and routes the

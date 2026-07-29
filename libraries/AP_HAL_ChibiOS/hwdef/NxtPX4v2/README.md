@@ -79,7 +79,7 @@ The numbering of the GPIOs for PIN variables in ardupilot is:
 - Dimensions: 27 x 32 x 8 mm
 - Weight: 6.5g
 
-## Ports Connector
+## Pinout
 
 ![NxtPX4v2 Front View](NxtPX4v2_FrontView.jpg)
 

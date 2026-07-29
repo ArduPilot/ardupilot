@@ -22,13 +22,13 @@ The **FlySpark F4** flight controller is sold by [FlySpark](https://flyspark.in/
 - 3 S - 6 S LiPo input voltage range
 - 30.5 x 30.5 mm mounting pattern (⌀4 mm holes)
 
-## Mechanical
+## Physical
 
 - 41.6mm x 39.4mm x 7.8mm
 - 10.5g
 - Mounting: 30.5mmx30.5mm (4 mm holes)
 
-## Wiring / Pinout
+## Pinout
 
 ![FlySparkF4 Pinout1](flyspark_f4_connections.png "Pinout1")
 ![FlySparkF4 Pinout2](flyspark_f4_connections_1.png "Pinout2")

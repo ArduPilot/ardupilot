@@ -25,7 +25,7 @@ Contact dheeranlabs@gmail.com for sales
   - Buzzer port
   - USB-C port
 
-## Connectors
+## Pinout
 
 ### POWER ADC
 

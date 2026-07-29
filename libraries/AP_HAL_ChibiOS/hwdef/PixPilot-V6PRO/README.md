@@ -38,7 +38,7 @@ The PixPilot-V6PRO flight controller is sold by a range of resellers listed at [
 - SERIAL4 -> UART8 (GPS2) (RX is DMA capable)
 - SERIAL5 -> UART7   (USER)
 
-## Connector pin assignments
+## Pinout
 
 ### POWER_CAN1 port, POWER_CAN2 ports
 

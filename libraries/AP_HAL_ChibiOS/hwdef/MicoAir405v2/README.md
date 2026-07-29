@@ -73,7 +73,7 @@ The default battery parameters are:
 
 The MicoAir405v2 does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL connector.
 
-## Ports Connector
+## Pinout
 
 ![MicoAir F405 V2.1 Ports Connection](MicoAir405v2_PortsConnection.jpg)
 
