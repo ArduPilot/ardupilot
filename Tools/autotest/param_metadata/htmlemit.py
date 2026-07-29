@@ -14,11 +14,12 @@ except Exception:
 
 class HtmlEmit(Emit):
 
+    def output_fname(self):
+        return 'Parameters.html'
+
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
-        html_fname = 'Parameters.html'
-        self.html_fname = html_fname
-        self.f = open(html_fname, mode='w')
+        self.f = open(self.output_fname(), mode='w')
         # Build optional firmware metadata line for inclusion in the generated comment
         firmware_line = ''
         if self.git_sha is not None:
@@ -50,9 +51,6 @@ DO NOT EDIT
         s = s.replace('(', '')
         s = s.replace(')', '')
         return s
-
-    def output_fname(self):
-        return self.html_fname
 
     def close(self):
         self.f.write(self.preamble)

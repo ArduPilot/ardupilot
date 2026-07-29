@@ -7,16 +7,14 @@ from emit import Emit
 
 # Emit ArduPilot documentation in JSON format
 class JSONEmit(Emit):
+    def output_fname(self):
+        return 'apm.pdef.json'
+
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
-        self.json_fname = 'apm.pdef.json'
-        self.f = open(self.json_fname, mode='w')
+        self.f = open(self.output_fname(), mode='w')
         self.content = {"json": {"version": 0}}
         self.firmware_content = {}
-
-    def output_fname(self):
-        return self.json_fname
-
 
     def close(self):
         # Include optional firmware metadata if provided

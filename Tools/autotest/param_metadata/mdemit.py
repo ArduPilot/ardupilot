@@ -18,12 +18,13 @@ nparams = ['RCn_', 'SERVOn_', 'SRn_', 'BTNn_']
 
 class MDEmit(Emit):
 
+    def output_fname(self):
+        return 'Parameters.md'
+
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
-        fname = 'Parameters.md'
-        self.md_fname = fname
         self.nparams = []
-        self.f = open(fname, mode='w')
+        self.f = open(self.output_fname(), mode='w')
         self.blacklist = None
 
         # Flag to generate navigation header for BlueRobotics' ArduSub docs
@@ -32,9 +33,6 @@ class MDEmit(Emit):
 
         self.preamble = """\nThis is a complete list of the parameters which can be set via the MAVLink protocol in the EEPROM of your autopilot to control vehicle behaviour. This list is automatically generated from the latest ardupilot source code, and so may contain parameters which are not yet in the stable released versions of the code. Some parameters may only be available for developers, and are enabled at compile-time."""
         self.t = ''
-
-    def output_fname(self):
-        return self.md_fname
 
     def close(self):
         # Write navigation header for BlueRobotics' ArduSub docs

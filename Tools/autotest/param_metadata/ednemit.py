@@ -14,7 +14,6 @@ from emit import Emit
 class EDNEmit(Emit):
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
-        self.edn_fname = "parameters.edn"
         self.output = "{:date " + edn_format.dumps(datetime.datetime.now(pytz.utc)) + " "
         git = subprocess.Popen(["git log --pretty=format:'%h'  -n 1"], shell=True, stdout=subprocess.PIPE).communicate()[0]
         self.output += ":git-hash \"" + git.decode("ascii") + "\" "
@@ -23,7 +22,7 @@ class EDNEmit(Emit):
         self.vehicle_name = None
 
     def output_fname(self):
-        return self.edn_fname
+        return "parameters.edn"
 
     def close(self):
         if self.vehicle_name is not None:
@@ -35,7 +34,7 @@ class EDNEmit(Emit):
         if self.git_tag is not None:
             self.output += ":firmware-tag \"" + self.git_tag + "\" "
         self.output += "}"
-        f = open(self.edn_fname, mode='w')
+        f = open(self.output_fname(), mode='w')
         f.write(self.output)
         f.close()
 
