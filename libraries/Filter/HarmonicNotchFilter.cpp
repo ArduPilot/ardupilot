@@ -539,13 +539,16 @@ void HarmonicNotchFilterParams::init()
  */
 void HarmonicNotchFilterParams::save_params()
 {
-    _enable.save();
-    _center_freq_hz.save();
-    _bandwidth_hz.save();
+    // force the tuned values into storage, a value that matches the parameter
+    // default is not saved and the notch would move if that default ever changed
+    _enable.save(true);
+    _center_freq_hz.save(true);
+    _bandwidth_hz.save(true);
     _attenuation_dB.save();
-    _harmonics.save();
-    _reference.save();
-    _freq_min_ratio.save();
+    _harmonics.save(true);
+    _reference.save(true);
+    _freq_min_ratio.save(true);
+    _tracking_mode.save(true);
 }
 
 
