@@ -452,35 +452,12 @@ void SITL_State::multicast_state_open(void)
 #ifdef HAVE_SOCK_SIN_LEN
     sockaddr.sin_len = sizeof(sockaddr);
 #endif
-    sockaddr.sin_port = htons(SITL_MCAST_PORT);
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(SITL_MCAST_IP);
-
-    mc_out_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (mc_out_fd == -1) {
-        fprintf(stderr, "socket failed - %s\n", strerror(errno));
-        exit(1);
-    }
-    ret = fcntl(mc_out_fd, F_SETFD, FD_CLOEXEC);
-    if (ret == -1) {
-        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
-        exit(1);
-    }
-
-    // try to setup for broadcast, this may fail if insufficient privileges
-    int one = 1;
-    setsockopt(mc_out_fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
-
-    ret = connect(mc_out_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-    if (ret == -1) {
-        fprintf(stderr, "udp connect failed on port %u - %s\n",
-                (unsigned)ntohs(sockaddr.sin_port),
-                strerror(errno));
-        exit(1);
-    }
 
     /*
-      open servo input socket
+      open the servo input socket; state is also sent from this socket
+      so that peripherals can reply to the source address and port they
+      observe, whatever this instance's servo port is
      */
     servo_in_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (servo_in_fd == -1) {
@@ -493,14 +470,28 @@ void SITL_State::multicast_state_open(void)
         exit(1);
     }
 
+    // try to setup for broadcast, this may fail if insufficient privileges
+    int one = 1;
+    setsockopt(servo_in_fd, SOL_SOCKET, SO_BROADCAST, (char *)&one, sizeof(one));
+
     sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     sockaddr.sin_port = htons(SITL_SERVO_PORT + _instance);
 
     ret = bind(servo_in_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {
-        fprintf(stderr, "udp servo connect failed\n");
+        fprintf(stderr, "udp servo bind failed\n");
         exit(1);
     }
+
+    // destination address for the multicast state
+    mc_dest = {};
+#ifdef HAVE_SOCK_SIN_LEN
+    mc_dest.sin_len = sizeof(mc_dest);
+#endif
+    mc_dest.sin_family = AF_INET;
+    mc_dest.sin_port = htons(SITL_MCAST_PORT);
+    mc_dest.sin_addr.s_addr = inet_addr(SITL_MCAST_IP);
+
     ::printf("multicast initialised\n");
 }
 
@@ -512,11 +503,11 @@ void SITL_State::multicast_state_send(void)
     if (_sitl == nullptr) {
         return;
     }
-    if (mc_out_fd == -1) {
+    if (servo_in_fd == -1) {
         multicast_state_open();
     }
     const auto &sfdm = _sitl->state;
-    send(mc_out_fd, (void*)&sfdm, sizeof(sfdm), 0);
+    sendto(servo_in_fd, (void*)&sfdm, sizeof(sfdm), 0, (struct sockaddr *)&mc_dest, sizeof(mc_dest));
 
     check_servo_input();
 }
