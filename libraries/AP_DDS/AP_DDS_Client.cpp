@@ -92,6 +92,9 @@ static constexpr uint16_t DELAY_PING_MS = 500;
 #if AP_DDS_STATUS_PUB_ENABLED
 static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
 #endif // AP_DDS_STATUS_PUB_ENABLED
+#if AP_DDS_HOME_POSE_PUB_ENABLED
+static constexpr uint16_t DELAY_HOME_POSE_TOPIC_MS = AP_DDS_DELAY_HOME_POSE_TOPIC_MS;
+#endif // AP_DDS_HOME_POSE_PUB_ENABLED
 
 // Define the subscriber data members, which are static class scope.
 // If these are created on the stack in the subscriber,
@@ -787,6 +790,55 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Status& msg)
     }
 }
 #endif // AP_DDS_STATUS_PUB_ENABLED
+
+#if AP_DDS_HOME_POSE_PUB_ENABLED
+bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_HomePosition& msg)
+{
+    update_topic(msg.header.stamp);
+    STRCPY(msg.header.frame_id, BASE_LINK_FRAME_ID);
+
+    auto &ahrs = AP::ahrs();
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+    if (!ahrs.home_is_set()) {
+        return false;
+    }
+
+    const Location &home = ahrs.get_home();
+
+    // WGS84 global coordinates of home
+    msg.latitude  = home.lat * 1E-7;
+    msg.longitude = home.lng * 1E-7;
+    msg.altitude  = home.alt * 0.01f;  // cm to m
+
+    // Local ENU position of home relative to EKF origin
+    Vector3f pos_neu_m;
+    if (home.get_vector_from_origin_NEU_m(pos_neu_m)) {
+        // NEU x=North, y=East, z=Up → ENU x=East, y=North, z=Up
+        msg.position.x =  pos_neu_m.y;
+        msg.position.y =  pos_neu_m.x;
+        msg.position.z =  pos_neu_m.z;
+    } else {
+        msg.position.x = NAN;
+        msg.position.y = NAN;
+        msg.position.z = NAN;
+    }
+
+    // ArduPilot does not compute surface orientation at home; signal unavailable with NaN
+    msg.orientation.x = NAN;
+    msg.orientation.y = NAN;
+    msg.orientation.z = NAN;
+    msg.orientation.w = NAN;
+
+    // Approach vector: not computed by ArduPilot
+    msg.approach.x = 0.0;
+    msg.approach.y = 0.0;
+    msg.approach.z = 0.0;
+
+    return true;
+}
+#endif // AP_DDS_HOME_POSE_PUB_ENABLED
+
+
 /*
   start the DDS thread
  */
@@ -1867,6 +1919,22 @@ void AP_DDS_Client::write_status_topic()
 }
 #endif // AP_DDS_STATUS_PUB_ENABLED
 
+#if AP_DDS_HOME_POSE_PUB_ENABLED
+void AP_DDS_Client::write_home_pose_topic()
+{
+    WITH_SEMAPHORE(csem);
+    if (connected) {
+        ucdrBuffer ub {};
+        const uint32_t topic_size = ardupilot_msgs_msg_HomePosition_size_of_topic(&home_pose_topic, 0);
+        uxr_prepare_output_stream(&session, reliable_out, topics[to_underlying(TopicIndex::HOME_POSE_PUB)].dw_id, &ub, topic_size);
+        const bool success = ardupilot_msgs_msg_HomePosition_serialize_topic(&ub, &home_pose_topic);
+        if (!success) {
+            // AP_HAL::panic("FATAL: DDS_Client failed to serialize");
+        }
+    }
+}
+#endif // AP_DDS_HOME_POSE_PUB_ENABLED
+
 void AP_DDS_Client::update()
 {
     WITH_SEMAPHORE(csem);
@@ -1971,6 +2039,14 @@ void AP_DDS_Client::update()
         last_status_check_time_ms = cur_time_ms;
     }
 #endif // AP_DDS_STATUS_PUB_ENABLED
+#if AP_DDS_HOME_POSE_PUB_ENABLED
+    if (cur_time_ms - last_home_pose_time_ms > DELAY_HOME_POSE_TOPIC_MS) {
+        if (update_topic(home_pose_topic)) {
+            write_home_pose_topic();
+        }
+        last_home_pose_time_ms = cur_time_ms;
+    }
+#endif // AP_DDS_HOME_POSE_PUB_ENABLED
 
     status_ok = uxr_run_session_time(&session, 1);
 }
