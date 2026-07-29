@@ -37,7 +37,7 @@ namespace AP_HAL {
     class WSPIDeviceManager;
 
     class CANIface;
-    class CANFrame;
+    struct CANFrame;
 
     class Util;
     class Flash;
