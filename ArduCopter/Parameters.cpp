@@ -1378,8 +1378,12 @@ void Copter::convert_pid_parameters(void)
             { Parameters::k_param_ins, 421, AP_PARAM_FLOAT, "INS_HNTC2_BW" },
         };
         AP_Param::convert_old_parameters(&notchfilt_conversion_info[0], ARRAY_SIZE(notchfilt_conversion_info));
-        AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
-        AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
+        if (ins.harmonic_notches[1].params.enabled()) {
+            // the old notch was fixed on the first harmonic, so save that rather than
+            // defaulting it, as the default stops being applied once the notch is enabled
+            AP_Param::set_and_save_by_name("INS_HNTC2_MODE", 0);
+            AP_Param::set_and_save_by_name("INS_HNTC2_HMNCS", 1);
+        }
     }
 #endif
 #endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
