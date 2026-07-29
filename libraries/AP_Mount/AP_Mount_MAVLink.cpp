@@ -10,7 +10,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_MAVLINK_SEARCH_MS  60000    // search for gimbal for 1 minute after startup
-#define AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_US    20000  // send ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE at 50hz
+#define AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_MS    20  // send ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE at 50hz
 
 // update mount position
 void AP_Mount_MAVLink::update()
@@ -198,11 +198,12 @@ bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
     if (_link == nullptr) {
         return false;
     }
-    // send AUTOPILOT_STATE_FOR_GIMBAL_DEVICE
-    const MAV_RESULT res = _link->set_message_interval(MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_US);
 
-    // return true on success
-    return (res == MAV_RESULT_ACCEPTED);
+    // request AUTOPILOT_STATE_FOR_GIMBAL_DEVICE be streamed to the gimbal.
+    // set_ap_message_interval() caps the rate to what SCHED_LOOP_RATE allows
+    // rather than refusing it, so vehicles with a low loop rate (e.g. Plane
+    // and Sub default to 50Hz) still get the message, just at a lower rate.
+    return _link->set_ap_message_interval(MSG_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_MS);
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to command gimbal to retract (aka relax)
