@@ -19,7 +19,9 @@ from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
 
+from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
@@ -2310,6 +2312,182 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def QLandPositionHold(self, turning_transition=False, straight_entry=False):
+        '''check position hold during a QLAND from fixed-wing flight
+
+        Take off in QLOITER, then transition to fixed-wing in GUIDED -
+        on a long straight leg by default, or banked around a point one
+        loiter radius abeam with turning_transition=True, which leaves
+        the VTOL attitude controller's last target frozen mid-turn.
+        Every flavor then establishes the same guided circle and waits
+        for a due-east ground course.  QLAND is commanded straight off
+        the circle, or with straight_entry=True after ten seconds
+        settled on a long straight eastbound leg, which takes the turn
+        out of the entry and leaves only the fixed-wing to VTOL
+        handover.  The vehicle must brake to a stop without hunting in
+        every case.
+        '''
+        alt = 30
+        self.takeoff(30, mode='QLOITER')
+        radius = self.get_parameter('WP_LOITER_RAD')
+        if turning_transition:
+            # transition while circling a point one loiter radius
+            # abeam, freezing a banked VTOL attitude target
+            trans_loc = self.offset_location_ne(self.home_position_as_location(), 0, radius)
+        else:
+            # transition on a long straight leg, freezing a level
+            # VTOL attitude target
+            trans_loc = self.offset_location_ne(self.home_position_as_location(), 500, 0)
+        trans_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.send_do_reposition(trans_loc, change_mode=True)
+        self.wait_statustext('Transition done', timeout=60)
+        self.delay_sim_time(5, reason="transition tail freezes the VTOL attitude target")
+
+        # both flavors converge on the same circle for the QLAND entry
+        circle_loc = self.offset_location_ne(self.home_position_as_location(), 500, 0)
+        circle_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+        self.send_do_reposition(circle_loc)
+        self.wait_altitude(alt-5, alt+5, relative=True, timeout=180)
+        # L1 tracks somewhat outside WP_LOITER_RAD, so allow a generous
+        # margin; we only care that a stable circle is established
+        self.wait_circling_point_with_radius(circle_loc, radius, epsilon=15,
+                                             min_circle_time=10, timeout=300)
+
+        # trigger QLAND when ground course is due east
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 300:
+                raise AutoTestTimeoutException("Did not reach eastbound trigger point")
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            course_deg = math.degrees(math.atan2(m.vy, m.vx))
+            if abs(course_deg - 90) <= 3:
+                break
+
+        if straight_entry:
+            # leave the circle for a long straight eastbound leg, so
+            # the vehicle is rolled out and settled when QLAND is
+            # commanded rather than merely pointing east for an instant
+            run_loc = self.offset_location_ne(
+                Location.latlon_only(m.lat * 1.0e-7, m.lon * 1.0e-7), 0, 10000)
+            run_loc.set_alt_m(alt, AltFrame.ABOVE_HOME)
+            self.send_do_reposition(run_loc)
+            self.delay_sim_time(10, reason="settle wings-level on the eastbound leg")
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+
+        # ATTITUDE_TARGET carries the demanded yaw; it is not in the
+        # default streams
+        self.set_message_rate_hz('ATTITUDE_TARGET', 10)
+        self.change_mode('QLAND')
+        entry_loc = Location.latlon_only(m.lat * 1.0e-7, m.lon * 1.0e-7)
+
+        # sample position, attitude and demanded attitude from mode
+        # entry until nearly landed
+        samples = []
+        coord = []
+        yaw_deg = None
+        vel_ms = None
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 180:
+                raise AutoTestTimeoutException("Did not descend to sampling floor")
+            m = self.assert_receive_message(
+                ['GLOBAL_POSITION_INT', 'ATTITUDE', 'ATTITUDE_TARGET'])
+            mtype = m.get_type()
+            if mtype == 'ATTITUDE':
+                yaw_deg = math.degrees(m.yaw)
+                continue
+            if mtype == 'ATTITUDE_TARGET':
+                if yaw_deg is None or vel_ms is None:
+                    continue
+                qw, qx, qy, qz = m.q
+                yaw_des_deg = math.degrees(
+                    math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz)))
+                yaw_err_deg = abs((yaw_deg - yaw_des_deg + 180) % 360 - 180)
+                course_deg = math.degrees(math.atan2(vel_ms[1], vel_ms[0]))
+                crossflow_ms = abs(math.hypot(vel_ms[0], vel_ms[1]) *
+                                   math.sin(math.radians(course_deg - yaw_des_deg)))
+                coord.append((now, yaw_err_deg, crossflow_ms))
+                continue
+            if m.relative_alt * 0.001 < 2:
+                break
+            vel_ms = (m.vx * 0.01, m.vy * 0.01)
+            samples.append((now, Location.latlon_only(m.lat * 1.0e-7, m.lon * 1.0e-7)))
+        if len(samples) < 20 or len(coord) < 20:
+            raise NotAchievedException(
+                "Insufficient samples (%u position, %u attitude)" %
+                (len(samples), len(coord)))
+
+        # final stopping position: average of the last 5 seconds
+        tail = [s for s in samples if s[0] > samples[-1][0] - 5]
+        final_loc = Location.latlon_only(
+            sum(s[1].lat for s in tail) / len(tail),
+            sum(s[1].lng for s in tail) / len(tail),
+        )
+        dist = [(s[0], self.get_distance(final_loc, s[1])) for s in samples]
+
+        # retreat: once the vehicle starts closing on its resting
+        # point it must keep closing - track the largest rise in
+        # distance back above the closest approach so far
+        min_d = dist[0][1]
+        retreat_m = 0.0
+        for t, d in dist:
+            min_d = min(min_d, d)
+            retreat_m = max(retreat_m, d - min_d)
+
+        # settling: time from first coming within 20m of the final
+        # position until permanently within 3m of it.  The inner band
+        # sits above the ~2m wobble of a normal descent so a clean
+        # hover cannot straddle it.
+        t20 = next(t for t, d in dist if d < 20)
+        settle_s = max((t for t, d in dist if d > 3), default=t20) - t20
+
+        # coordination: the deceleration must not fight the airframe's
+        # aerodynamic stability. Judged on commanded crossflow: the controller
+        # must not demand a yaw that would put the airframe into a crossflow
+        # greater than the maximum loiter speed. Additionally judged on
+        # sustained yaw error.
+        yaw_err_s = sum(b[0] - a[0] for a, b in zip(coord, coord[1:]) if a[1] > 20)
+        crossflow_peak = max(c[2] for c in coord)
+
+        self.progress(
+            "QLAND hold: %u samples, entry->final %.2fm, retreat %.2fm, settle %.2fs" %
+            (len(samples), self.get_distance(entry_loc, final_loc), retreat_m, settle_s))
+        self.progress("QLAND coordination: %.2fs with yaw error >20deg, "
+                      "peak commanded crossflow %.2fm/s" %
+                      (yaw_err_s, crossflow_peak))
+
+        failures = []
+        if retreat_m > 5.0:
+            failures.append(
+                "retreated %.2fm from closest approach to stopping point (want <5m)" % retreat_m)
+        if settle_s > 6.0:
+            failures.append("took %.2fs to settle from 20m out (want <6s)" % settle_s)
+        if yaw_err_s > 1.0:
+            failures.append(
+                "held >20deg of yaw error for %.2fs (want <1s)" % yaw_err_s)
+        max_loiter_spd = self.get_parameter('Q_LOIT_SPEED_MS')
+        if crossflow_peak > max_loiter_spd:
+            failures.append(
+                "peak commanded crossflow %.2fm/s exceeds max loiter speed %.1fm/s" %
+                (crossflow_peak, max_loiter_spd))
+        if failures:
+            raise NotAchievedException("QLAND misbehaved: " + "; ".join(failures))
+
+        self.wait_disarmed(timeout=180)
+
+    def QLandPositionHoldTurningTransition(self):
+        '''check QLAND position hold after a mid-turn transition'''
+        self.QLandPositionHold(turning_transition=True)
+
+    def QLandPositionHoldStraightEntry(self):
+        '''check QLAND position hold entered off a straight leg'''
+        self.QLandPositionHold(straight_entry=True)
+
+    def QLandPositionHoldTurningTransitionStraightEntry(self):
+        '''check QLAND position hold off a straight leg after a mid-turn transition'''
+        self.QLandPositionHold(turning_transition=True, straight_entry=True)
+
     def WindEstimateConsistency(self):
         '''test that DCM and EKF3 roughly agree on wind speed and direction'''
         self.set_parameters({
@@ -3445,6 +3623,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.DCMClimbRate,
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
+            self.QLandPositionHold,
+            self.QLandPositionHoldTurningTransition,
+            self.QLandPositionHoldStraightEntry,
+            self.QLandPositionHoldTurningTransitionStraightEntry,
             self.AHRSFlyForwardFlag,
             self.DoRepositionTerrain,
             self.DoRepositionTerrain2,

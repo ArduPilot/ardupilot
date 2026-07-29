@@ -8858,12 +8858,14 @@ class TestSuite(abc.ABC):
             self.delay_sim_time(0.2, "let RC inputs settle")
             self.context_pop()
 
-    def send_do_reposition(self, loc, frame=None):
+    def send_do_reposition(self, loc, frame=None, change_mode=False):
         '''send a DO_REPOSITION command for a location.  loc is ideally
         a (frame-aware) Location, in which case the MAV_FRAME comes
         from the Location itself and frame must be left None.  Passing
         a mavutil.location and a frame is deprecated, as the object's
-        altitude frame can silently contradict the passed frame'''
+        altitude frame can silently contradict the passed frame.
+        change_mode requests a switch to GUIDED; without it the
+        command is rejected unless already in GUIDED'''
         if isinstance(loc, Location):
             if frame is not None:
                 raise ValueError("frame comes from the Location; do not pass one")
@@ -8872,10 +8874,11 @@ class TestSuite(abc.ABC):
             if frame is None:
                 frame = mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT
             alt = loc.alt
+        flags = mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE if change_mode else 0
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
             0,
-            0,
+            flags,
             0,
             0,
             int(loc.lat*1e7), # lat* 1e7
