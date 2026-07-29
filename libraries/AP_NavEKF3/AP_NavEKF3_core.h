@@ -180,6 +180,17 @@ public:
     // return accelerometer bias in m/s/s
     void getAccelBias(Vector3f &accelBias) const;
 
+    // set Z-axis accelerometer bias in m/s/s (for hover bias learning)
+    void setAccelBiasZ(float bias);
+
+    // check if accel bias learning should be inhibited
+    // combines internal state inhibition with vehicle-requested inhibition
+    bool accelBiasLearningInhibited() const;
+
+    // true when the Z gyro bias must not be learned from optical flow because there is
+    // no yaw source to make it observable
+    bool flowYawGyroBiasInhibited() const;
+
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
