@@ -1653,38 +1653,6 @@ void AP_AHRS::writeTerrainAMSL(float alt_amsl_m)
 #endif
 }
 
-// get compass offset estimates
-// true if offsets are valid
-bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
-{
-    switch (configured_ekf_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return false;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.EKF2.getMagOffsets(mag_idx, magOffsets);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.getMagOffsets(mag_idx, magOffsets);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return sim.get_mag_offsets(mag_idx, magOffsets);
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return false;
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return false;
-}
-
 // Retrieves the NED delta velocity corrected
 bool AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 {

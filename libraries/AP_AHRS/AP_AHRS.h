@@ -363,7 +363,9 @@ public:
 
     // get compass offset estimates
     // true if offsets are valid
-    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
+    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const {
+        return configured_backend->get_mag_offsets(mag_idx, magOffsets);
+    }
 
     // returns the number of times the yaw angle has been reset
     uint16_t get_yaw_reset_count(void) const {

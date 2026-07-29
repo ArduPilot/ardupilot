@@ -58,6 +58,10 @@ public:
         return EKF2.use_compass();
     }
 
+    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override {
+        return EKF2.getMagOffsets(mag_idx, magOffsets);
+    }
+
     void resetHeightDatum(void) override {
         EKF2.resetHeightDatum();
     }

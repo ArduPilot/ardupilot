@@ -321,6 +321,14 @@ public:
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
 
+    // return the compass offsets this backend has estimated for a
+    // compass instance; returns true if the offsets are valid.
+    // backends which do not estimate compass offsets need not override
+    // this.
+    virtual bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const {
+        return false;
+    }
+
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
