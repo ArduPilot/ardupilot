@@ -1536,15 +1536,16 @@ public:
     enum class SubMode : uint8_t {
         STARTING,
         INITIAL_CLIMB,
-        RETURN_HOME,
-        LOITER_AT_HOME,
+        FLY_TO_RETURN_POINT,
+        HOLD_AT_RETURN_POINT,
         FINAL_DESCENT,
         LAND
     };
-    SubMode state() { return _state; }
-
-    // this should probably not be exposed
-    bool state_complete() const { return _state_complete; }
+    
+    // true once RTL has completed its final stage: the final descent has reached
+    // RTL_ALT_FINAL, or the vehicle has landed and spooled to ground idle;
+    // used by ModeAuto::verify_RTL
+    bool is_complete() const;
 
     virtual bool is_landing() const override;
 
@@ -1588,11 +1589,18 @@ protected:
 
 private:
 
+    // advance_state - move to the next stage when the current one is complete
+    void advance_state();
+
+    // set_submode - performs all normal stage changes; sets _state, clears _state_complete and runs the stage's entry init
+    void set_submode(SubMode submode);
+
     void climb_start();
-    void return_start();
+    bool return_start();
+    bool run_wp_controllers();
     void climb_return_run();
-    void loiterathome_start();
-    void loiterathome_run();
+    void hold_at_return_point_start();
+    void hold_at_return_point_run();
     void build_path();
     void compute_return_target();
 
@@ -1602,7 +1610,7 @@ private:
     AP_Float alt_final_m;
     AP_Float climb_min_m;
 
-    SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
+    SubMode _state = SubMode::STARTING;
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
@@ -1620,8 +1628,8 @@ private:
         TERRAINDATABASE = 2
     };
 
-    // Loiter timer - Records how long we have been in loiter
-    uint32_t _loiter_start_time;
+    // time the current stage was entered (set by set_submode); used by the hold timer
+    uint32_t _stage_start_ms;
 
     bool terrain_following_allowed;
 
@@ -1681,11 +1689,11 @@ protected:
 
 private:
 
+    void set_submode(SubMode submode);
     void wait_cleanup_run();
     void path_follow_run();
     void pre_land_position_run();
-    void land();
-    SubMode smart_rtl_state = SubMode::PATH_FOLLOW;
+    SubMode smart_rtl_state = SubMode::WAIT_FOR_PATH_CLEANUP;
 
     // keep track of how long we have failed to get another return
     // point while following our path home.  If we take too long we
