@@ -2500,7 +2500,11 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
     if(!vtx->has_option(AP_VideoTX::VideoOptions::VTX_PITMODE)){
         powr = vtx->get_power_mw();
     }
-    backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYMBOL(SYM_MW));
+    uint8_t band = vtx->get_configured_band();
+    uint8_t channel = vtx->get_configured_channel();
+    float pwr_w = powr / 1000.0f;
+    backend->write(x, y, !vtx->is_configuration_finished(), "%s%u:%.1f",
+                   AP_VideoTX::band_names[band], channel + 1, pwr_w);
 }
 #endif  // AP_VIDEOTX_ENABLED
 

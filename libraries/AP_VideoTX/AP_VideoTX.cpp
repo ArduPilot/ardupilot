@@ -75,6 +75,41 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
     // @Range: 25 1000
     AP_GROUPINFO("MAX_POWER", 7, AP_VideoTX, _max_power_mw, 800),
 
+
+
+    // @Param: BC1_BAND
+    // @DisplayName: Band/Channel preset 1 - band
+    // @Description: Video band for switch-selectable preset 1
+    // @Values: 0:Band A,1:Band B,2:Band E,3:Airwave,4:RaceBand,5:Low RaceBand,6:1G3 Band A,7:1G3 Band B,8:Band X,9:3G3 Band A,10:3G3 Band B
+    AP_GROUPINFO("BC1_BAND", 8, AP_VideoTX, _bc_band[0], 4),
+    // @Param: BC1_CH
+    // @DisplayName: Band/Channel preset 1 - channel
+    // @Description: Video channel for switch-selectable preset 1
+    // @Range: 0 7
+    AP_GROUPINFO("BC1_CH",   9, AP_VideoTX, _bc_channel[0], 0),
+
+    AP_GROUPINFO("BC2_BAND", 10, AP_VideoTX, _bc_band[1], 4),
+    AP_GROUPINFO("BC2_CH",   11, AP_VideoTX, _bc_channel[1], 1),
+
+    AP_GROUPINFO("BC3_BAND", 12, AP_VideoTX, _bc_band[2], 4),
+    AP_GROUPINFO("BC3_CH",   13, AP_VideoTX, _bc_channel[2], 2),
+
+    AP_GROUPINFO("BC4_BAND", 14, AP_VideoTX, _bc_band[3], 4),
+    AP_GROUPINFO("BC4_CH",   15, AP_VideoTX, _bc_channel[3], 3),
+
+    AP_GROUPINFO("BC5_BAND", 16, AP_VideoTX, _bc_band[4], 4),
+    AP_GROUPINFO("BC5_CH",   17, AP_VideoTX, _bc_channel[4], 4),
+
+    AP_GROUPINFO("BC6_BAND", 18, AP_VideoTX, _bc_band[5], 4),
+    AP_GROUPINFO("BC6_CH",   19, AP_VideoTX, _bc_channel[5], 5),
+
+    // @Param: MODEL
+    // @DisplayName: VTX Model
+    // @Description: VTX Model: 0 generic,  D1, ...
+    // @Range: 0 7
+    AP_GROUPINFO("MODEL", 20, AP_VideoTX, _model, 1),
+
+
     AP_GROUPEND
 };
 
@@ -118,6 +153,7 @@ AP_VideoTX::PowerLevel AP_VideoTX::_power_levels[VTX_MAX_POWER_LEVELS] = {
     { 0x12, 600,  28, 0xFF }, // Tramp lies above power levels and always returns 25/100/200/400/600
     { 3,    800,  29, 40   },
     { 0x13, 1000, 30, 0xFF }, // only in SA 2.1
+    { 0x23, 2500, 34, 0xFF }, // NEW: 2.5W level, only in SA 2.1
     { 0xFF, 0,    0,  0XFF, PowerActive::Inactive }  // slot reserved for a custom power level
 };
 
@@ -130,7 +166,24 @@ AP_VideoTX::AP_VideoTX()
     singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
+
+    switch (model()) {
+    case Model::D1: {
+        constexpr uint16_t  d1PwrMwMax = 2500;
+        for(uint8_t  i = VTX_MAX_POWER_LEVELS - 1; i > 0; --i) {
+            if(_power_levels[i].active != PowerActive::Inactive) {
+                if(_power_levels[i].mw > d1PwrMwMax)
+                    _power_levels[i].active = PowerActive::Inactive;
+                else break;
+            }
+        }
+        break;
+    }
+    default:
+        break;
+    }
 }
+
 
 AP_VideoTX::~AP_VideoTX(void)
 {
@@ -541,6 +594,21 @@ void AP_VideoTX::change_power(int8_t position)
         set_configured_power_mw(power);
     }
 }
+
+
+// change the band/channel preset based on switch input
+// 6-pos range maps directly to the 6 stored presets
+void AP_VideoTX::change_band_channel(int8_t position)
+{
+    if (!_enabled || position < 0 || position > 5) {
+        return;
+    }
+    set_configured_band(_bc_band[position].get());
+    set_configured_channel(_bc_channel[position].get());
+    update_configured_frequency();
+}
+
+
 
 namespace AP {
     AP_VideoTX& vtx() {

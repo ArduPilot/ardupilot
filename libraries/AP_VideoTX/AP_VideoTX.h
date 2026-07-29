@@ -21,13 +21,22 @@
 #include <AP_Param/AP_Param.h>
 
 #define VTX_MAX_CHANNELS 8
-#define VTX_MAX_POWER_LEVELS 10
+#define VTX_MAX_POWER_LEVELS 11
 
 class AP_VideoTX {
 public:
     AP_VideoTX();
     ~AP_VideoTX();
 
+
+
+    // VTX Model
+    enum class Model: uint8_t {
+        GENERIC = 0,
+        D1 = 1
+    };
+
+    
     /* Do not allow copies */
     CLASS_NO_COPY(AP_VideoTX);
 
@@ -131,6 +140,9 @@ public:
     bool update_power() const;
     // change the video power based on switch input
     void change_power(int8_t position);
+    // change the video frequency based on switch input
+    void change_band_channel(int8_t position);
+
     // get / set the frequency band
     void set_band(uint8_t band) { _current_band = band; }
     void set_configured_band(uint8_t band) { _band.set_and_save_ifchanged(band); }
@@ -157,6 +169,9 @@ public:
     void set_enabled(bool enabled);
     bool get_enabled() const { return _enabled; }
     bool update_enabled() const { return _defaults_set && _enabled != _current_enabled; }
+
+
+    Model model() const  { return static_cast<Model>(static_cast<uint8_t>(_model)); }
 
     // have the parameters been updated
     bool have_params_changed() const;
@@ -197,12 +212,19 @@ private:
     AP_Int8 _channel;
     uint8_t _current_channel;
 
+    AP_Int8 _bc_band[6];
+    AP_Int8 _bc_channel[6];
+
     // vtx options
     AP_Int16 _options;
     uint16_t _current_options;
 
     AP_Int8 _enabled;
     bool _current_enabled;
+
+    // VTX model
+    AP_Int8  _model;
+
 
     bool _initialized;
     // when defaults have been configured

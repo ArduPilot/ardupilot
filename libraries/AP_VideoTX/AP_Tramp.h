@@ -27,10 +27,10 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_VideoTX.h"
 
-#define VTX_TRAMP_POWER_COUNT 5
+#define VTX_TRAMP_POWER_COUNT 8
 
 #define VTX_TRAMP_MIN_FREQUENCY_MHZ 1000             //min freq in MHz
-#define VTX_TRAMP_MAX_FREQUENCY_MHZ 5999             //max freq in MHz
+#define VTX_TRAMP_MAX_FREQUENCY_MHZ 6100             //max freq in MHz
 // Maximum number of requests sent to try a config change
 // Some VTX fail to respond to every request (like Matek FCHUB-VTX) so
 // we sometimes need multiple retries to get the VTX to respond.
