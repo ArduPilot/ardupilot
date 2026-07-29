@@ -72,6 +72,11 @@ public:
 
     bool            use_compass() override { return true; }
 
+    // return the ideal compass offsets for a mag instance; these are
+    // simply the offsets the simulation is applying, so the SIM
+    // backend behaves like a perfectly-converged estimator
+    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const;
+
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override { return true; }

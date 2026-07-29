@@ -64,6 +64,32 @@ bool AP_AHRS_SIM::get_origin(Location &ret) const
     return true;
 }
 
+/*
+  return the ideal offsets for a compass instance.  The simulated
+  sensor has mag_ofs subtracted from the field it reports
+  (AP_Compass_SITL::_timer), and Compass adds COMPASS_OFS back when
+  correcting, so the perfect COMPASS_OFS is simply mag_ofs.
+
+  Note this is exact only for the default SIM_MAGn_ORIENT,
+  SIM_MAGn_SCALING and board orientation: mag_ofs is applied before
+  those rotations and the scale factor.  mag_idx is a compass priority
+  index, which maps directly to the simulated instance only while the
+  compasses have not been reordered.
+ */
+bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
+{
+    if (_sitl == nullptr) {
+        return false;
+    }
+    if (mag_idx >= ARRAY_SIZE(_sitl->mag_ofs)) {
+        return false;
+    }
+
+    magOffsets = _sitl->mag_ofs[mag_idx];
+
+    return true;
+}
+
 // return the innovations for the specified instance
 // An out of range instance (eg -1) returns data for the primary instance
 bool AP_AHRS_SIM::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const

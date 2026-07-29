@@ -1674,8 +1674,7 @@ bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
-        magOffsets.zero();
-        return true;
+        return sim.get_mag_offsets(mag_idx, magOffsets);
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
     case EKFType::EXTERNAL:
