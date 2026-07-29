@@ -8181,6 +8181,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     f"compid {compid} focus wrong: want={want_focus} got={got}")
 
+    def MountAVTCM62DeltaYaw(self):
+        '''check autopilot forwards gimbal-reported delta_yaw in GIMBAL_DEVICE_ATTITUDE_STATUS'''
+        self.set_parameters({
+            "MNT1_TYPE": 6,         # MAVLink
+            "CAM1_TYPE": 4,         # Mount
+            "SERIAL5_PROTOCOL": 2,  # MAVLink2
+        })
+        self.customise_SITL_commandline(["--serial5=sim:avt_cm62_gimbal:"])
+        self.wait_ready_to_arm()
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("autopilot never forwarded non-NaN delta_yaw")
+            m = self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=10)
+            if m.get_srcComponent() != 1:
+                # message from the simulated gimbal itself, not the autopilot
+                continue
+            if math.isnan(m.delta_yaw):
+                # backend hasn't latched delta support yet
+                continue
+            break
+
+        sim = self.assert_receive_message('SIMSTATE')
+        err_deg = abs(math.degrees(m.delta_yaw - sim.yaw))
+        if err_deg > 180:
+            err_deg = 360 - err_deg
+        if err_deg > 1:
+            raise NotAchievedException(
+                "forwarded delta_yaw %f deg does not match vehicle yaw %f deg" %
+                (math.degrees(m.delta_yaw), math.degrees(sim.yaw)))
+        self.progress("delta_yaw forwarded correctly")
+
     def assert_mount_rpy(self, r, p, y, tolerance=1):
         '''assert mount atttiude in degrees'''
         got_r, got_p, got_y, yaw_is_absolute = self.get_mount_roll_pitch_yaw_deg()
@@ -18860,6 +18893,7 @@ return update, 1000
             self.MountAVTCM62,
             self.MountAVTCM62Dual,
             self.MountAVTCM62DualMission,
+            self.MountAVTCM62DeltaYaw,
             self.MountRCFailAngle,
             self.MountRCFailRate,
             self.FlyMissionTwice,
