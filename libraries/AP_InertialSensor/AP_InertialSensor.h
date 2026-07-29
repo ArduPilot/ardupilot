@@ -243,8 +243,8 @@ public:
     uint16_t get_accel_filter_hz(void) const { return _accel_filter_cutoff; }
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-    // setup the notch for throttle based tracking
-    bool setup_throttle_gyro_harmonic_notch(float center_freq_hz, float lower_freq_hz, float ref, uint8_t harmonics);
+    // setup the notch for throttle based tracking, returning the notch used in notch_idx
+    bool setup_throttle_gyro_harmonic_notch(float center_freq_hz, float lower_freq_hz, float ref, uint8_t harmonics, uint8_t *notch_idx = nullptr);
 
     // write out harmonic notch log messages
     void write_notch_log_messages() const;
