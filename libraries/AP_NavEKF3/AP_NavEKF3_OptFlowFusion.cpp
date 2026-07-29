@@ -112,11 +112,33 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
+        // Detect ground effect entry/exit.  Snapshot baroHgtOffset at
+        // entry while it is still uncontaminated, so we can convert
+        // raw baro height into EKF NED-D frame on exit.
+        const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
+        const bool gndEffectJustEntered = !prevGndEffectActive && gndEffectActive;
+        const bool gndEffectJustCleared = prevGndEffectActive && !gndEffectActive;
+        prevGndEffectActive = gndEffectActive;
+        if (gndEffectJustEntered) {
+            baroHgtOffsetPreGndEffect = baroHgtOffset;
+        }
+
         // fuse range finder data
         if (rangeDataToFuse) {
-            // reset terrain state if rangefinder data not fused for 5 seconds
             if (imuSampleTime_ms - gndHgtValidTime_ms > 5000) {
+                // reset terrain state if rangefinder data not fused for 5 seconds
                 terrainState = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd) + stateStruct.position.z;
+            } else if (gndEffectJustCleared && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
+                // Reset terrain offset using raw baro height (now
+                // trusted) and rangefinder, independent of PD which
+                // may have been contaminated during ground effect.
+                // Convert raw baro into EKF NED-D frame using the
+                // baroHgtOffset snapshot from before ground effect,
+                // since the live baroHgtOffset tracks the contaminated PD.
+                // Only applies when baro is the active height source.
+                const ftype rngAgl = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+                terrainState = -(baroDataDelayed.hgt - baroHgtOffsetPreGndEffect) + rngAgl;
+                Popt = sq(frontend->_rngNoise);
             }
 
             // predict range
