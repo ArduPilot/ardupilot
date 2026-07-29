@@ -41,8 +41,10 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
         case Mode::Number::STABILIZE:
             return &mode_stabilize;
 
+#if MODE_ALTHOLD_ENABLED
         case Mode::Number::ALT_HOLD:
             return &mode_althold;
+#endif
 
 #if MODE_AUTO_ENABLED
         case Mode::Number::AUTO:
@@ -225,7 +227,9 @@ uint32_t Copter::get_available_mode_enabled_mask() const
         &copter.mode_acro,
 #endif
         &copter.mode_stabilize,
+#if MODE_ALTHOLD_ENABLED
         &copter.mode_althold,
+#endif
 #if MODE_CIRCLE_ENABLED
         &copter.mode_circle,
 #endif
@@ -309,7 +313,8 @@ uint32_t Copter::get_available_mode_enabled_mask() const
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was successfully set
-// ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+// compiled-in ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT modes can always be set successfully,
+// but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
     // update last reason
@@ -777,7 +782,9 @@ void Mode::land_run_horizontal_control()
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+#if MODE_ALTHOLD_ENABLED
                 set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+#endif
             }
         }
 
@@ -871,7 +878,9 @@ void Mode::precland_retry_position(const Vector3p &retry_pos_ned_m)
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+#if MODE_ALTHOLD_ENABLED
                 set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+#endif
             }
         }
 
