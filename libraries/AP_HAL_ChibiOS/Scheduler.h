@@ -198,6 +198,12 @@ private:
 
 #if MEMCHECK_ENABLED
     void check_low_memory_is_zero();
+    void report_low_memory_write(uint16_t offset, uint32_t value);
+
+    // last write reported in the reserved low memory region, used to
+    // avoid repeating the same message on every check
+    uint16_t last_low_memory_offset;
+    uint32_t last_low_memory_value;
 #endif
 
     // check for free stack space
