@@ -751,22 +751,25 @@ bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, 
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
 /*
- * 2-state IMU-aided AGL Kalman filter
+ * 3-state IMU-aided AGL Kalman filter
  *
- * State:       x  = [h_agl (m), v_agl (m/s)]'   (AGL is "up")
- * Transition:  F  = [[1, imuDt], [0, 1]]
- * Input:       u  = -velDotNED.z * imuDt             (gravity-included accel)
+ * State:       x  = [h_agl (m), v_agl (m/s), b_az (m/s/s)]'   (AGL is "up")
+ *              b_az is the accel-Z bias in velDotNED.z; estimating it here keeps the
+ *              AGL height independent of the main filter's accel-Z bias estimate.
+ * Transition:  F  = [[1, imuDt, 0], [0, 1, imuDt], [0, 0, 1]]
+ * Input:       u  = (b_az - velDotNED.z) * imuDt        (bias-corrected, gravity-included)
  * Noise:       Qvel = sq(EK3_ACC_P_NSE * imuDt)
- *              Qhgt = sq(EK3_TERR_GRAD) * horizDist²
+ *              Qhgt = sq(EK3_TERR_GRAD) * horizDist^2
+ *              Qbias = sq(EK3_ABIAS_P_NSE * imuDt)
  *
- * Prediction:  x(k+1) = F*x(k) + [0, u]'
+ * Prediction:  x(k+1) = F*x(k)
  *              P(k+1) = F*P*F' + Q
  *
- * Observation: z = rng * prevTnb.c.z,  H = [1, 0],  R = sq(EK3_RNG_M_NSE)
+ * Observation: z = rng * prevTnb.c.z,  H = [1, 0, 0],  R = sq(EK3_RNG_M_NSE)
  * Update:      innov = z - H*x,  innovVar = H*P*H' + R
  *              K = P*H' / innovVar
  *              x += K * innov
- *              P  = (I-KH)*P*(I-KH)' + K*R*K'
+ *              P  = (I-KH)*P*(I-KH)' + K*R*K'   (b_az observable via successive RF updates)
  */
 void NavEKF3_core::UpdateAglKf()
 {
@@ -776,10 +779,12 @@ void NavEKF3_core::UpdateAglKf()
     // h_agl(k+1) = h_agl(k) + v_agl(k)*imuDt
     aglKfH += aglKfV * imuDt;
 
-    // v_agl(k+1) = v_agl(k) - velDotNED.z*imuDt
+    // v_agl(k+1) = v_agl(k) + (aglKfB - velDotNED.z)*imuDt
     // velDotNED.z is NED-down acceleration (positive = downward, includes gravity).
-    // Negate: downward acceleration reduces AGL rate.
-    aglKfV -= velDotNED.z * imuDt;
+    // Negate to get AGL (up) rate, and remove the estimated accel-Z bias aglKfB so the
+    // height stays independent of the main filter's accel-bias estimate.
+    // aglKfB itself is a random walk with no deterministic prediction term.
+    aglKfV += (aglKfB - velDotNED.z) * imuDt;
 
     // First-order decay of v_agl toward zero when RF is absent (tau = 2 s).
     // Without range measurements v_agl is unobservable; accumulated IMU bias
@@ -797,43 +802,58 @@ void NavEKF3_core::UpdateAglKf()
 
     // ----- Covariance prediction: P = F*P*F' + Q -----
     //
-    // F = [[1, imuDt],   state-transition matrix
-    //      [0,  1]]
+    // F = [[1, imuDt, 0    ],   state [h, v, b]; v gains imuDt*b from the bias state
+    //      [0,  1,   imuDt ],
+    //      [0,  0,   1     ]]
     //
     // Process noise Q:
     //
-    // Qhgt — terrain-induced AGL uncertainty during forward flight.
+    // Qhgt - terrain-induced AGL uncertainty during forward flight.
     //   As the vehicle moves horizontally by dist over terrain with unknown gradient "g",
     //   the true AGL changes by ~g * dist.  Since "g" is unknown, we treat it as zero-mean
-    //   with std-dev terrGradMax, giving variance: Qhgt = terrGradMax² * horizDist²
-    //   horizDist² = (vx²+vy²)*imuDt² is the squared horizontal distance travelled this step.
-    //   Capped at 1 m² so a single large-velocity step can't blow up the covariance.
+    //   with std-dev terrGradMax, giving variance: Qhgt = terrGradMax^2 * horizDist^2
+    //   horizDist^2 = (vx^2+vy^2)*imuDt^2 is the squared horizontal distance travelled this step.
+    //   Capped at 1 m^2 so a single large-velocity step can't blow up the covariance.
     //   The intended effect is that P[0][0] grows quickly during fast horizontal flight over rough terrain,
     //   allowing the RF measurement to pull h_agl back when the next reading arrives.
     //
-    // Qvel — unmodelled vertical accelerations (IMU noise, vibration, model error).
+    // Qvel - unmodelled vertical accelerations (IMU noise, vibration, model error).
     //   Uses the same accNoise parameter as CovariancePrediction (sq(imuDt*accNoise)),
     //   so the velocity uncertainty budget is consistent with the main EKF.
     //   The intended effect is that P[1][1] grows every step when RF is absent, reflecting accumulating IMU integration error in v_agl.
+    //
+    // Qbias - random walk of the accel-Z bias state, from EK3_AGL_ABIAS_P (its own parameter,
+    //   not the main filter's EK3_ABIAS_P_NSE). Sized so the bias can track a slowly drifting
+    //   accelerometer offset (e.g. IMU temperature change in flight) instead of locking to its
+    //   initial value and leaking the residual into the velocity. The bias state only changes in
+    //   the rangefinder measurement update, so loosening this cannot learn a bad bias on stale RF.
     //
     const ftype horizDistSq = MIN(sq(stateStruct.velocity.x * imuDt)
                                   + sq(stateStruct.velocity.y * imuDt), 1.0f);  // cap at 1 m²
     const ftype Qvel = sq(frontend->_accNoise * imuDt);   // matches CovariancePrediction: sq(imuDt*accNoise)
     const ftype Qhgt = sq(frontend->_terrGradMax) * horizDistSq;
+    const ftype Qbias = sq(frontend->_aglKfAccelBiasPnse.get() * imuDt);
 
-    // Capture before overwrite (P is symmetric, so P[0][1] == P[1][0])
+    // Capture before overwrite (P is symmetric)
     const ftype P00 = aglKfP[0][0];
-    const ftype P01 = aglKfP[0][1];   // == P[1][0]
+    const ftype P01 = aglKfP[0][1];
+    const ftype P02 = aglKfP[0][2];
     const ftype P11 = aglKfP[1][1];
+    const ftype P12 = aglKfP[1][2];
+    const ftype P22 = aglKfP[2][2];
 
     // Expanded F*P*F' + Q:
     aglKfP[0][0] = P00 + imuDt * (P01 + P01) + sq(imuDt) * P11 + Qhgt;
-    aglKfP[0][1] = aglKfP[1][0] = P01 + imuDt * P11;
-    aglKfP[1][1] = P11 + Qvel;
+    aglKfP[0][1] = aglKfP[1][0] = P01 + imuDt * (P11 + P02) + sq(imuDt) * P12;
+    aglKfP[0][2] = aglKfP[2][0] = P02 + imuDt * P12;
+    aglKfP[1][1] = P11 + imuDt * (P12 + P12) + sq(imuDt) * P22 + Qvel;
+    aglKfP[1][2] = aglKfP[2][1] = P12 + imuDt * P22;
+    aglKfP[2][2] = P22 + Qbias;
 
     // Cap covariance to prevent runaway during prolonged RF absence
     aglKfP[0][0] = MIN(aglKfP[0][0], 100.0f);  // 10 m std-dev cap
     aglKfP[1][1] = MIN(aglKfP[1][1], 100.0f);  // 10 m/s std-dev cap
+    aglKfP[2][2] = MIN(aglKfP[2][2], 25.0f);   // 5 m/s/s std-dev cap on bias
 
     // mark invalid if RF has been absent too long
     if (!rangeDataToFuse) {
@@ -854,9 +874,12 @@ void NavEKF3_core::UpdateAglKf()
         // Tilt-corrected AGL directly from rangefinder reading
         aglKfH = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
         aglKfV = 0.0f;                          // assume stationary on reset
+        // keep the learned aglKfB (it is slowly varying) but re-open its uncertainty
+        // and drop the cross-covariances
+        memset(aglKfP, 0, sizeof(aglKfP));
         aglKfP[0][0] = sq(frontend->_rngNoise); // initialise h uncertainty to RF noise
-        aglKfP[0][1] = aglKfP[1][0] = 0.0f;
         aglKfP[1][1] = 1.0f;                    // 1 m/s velocity uncertainty after reset
+        aglKfP[2][2] = 1.0f;                    // 1 m/s/s bias uncertainty after reset
         lastAglRngFuseTime_ms = imuSampleTime_ms;
         aglKfValid = true;
         return;  // skip measurement update this cycle (just used the reading for reset)
@@ -882,36 +905,49 @@ void NavEKF3_core::UpdateAglKf()
     // gate is expressed as a multiplier on the 1-sigma bound.
     const ftype innovGate = MAX(0.01f * (ftype)frontend->_rngInnovGate, 1.0f);
     if (sq(hgtInnov) > sq(innovGate) * innovVar) {
-        // Innovation too large, likely a glitch.  Inflate both height and velocity
-        // uncertainty so the next valid reading can correct both states more aggressively.
+        // Innovation too large, likely a glitch.  Inflate the state uncertainties so the
+        // next valid reading can correct them more aggressively.
         aglKfP[0][0] = MIN(aglKfP[0][0] * 2.0f, 100.0f);
         aglKfP[1][1] = MIN(aglKfP[1][1] * 2.0f, 100.0f);
+        aglKfP[2][2] = MIN(aglKfP[2][2] * 2.0f, 25.0f);
         return;
     }
 
-    // Kalman gain:  K = P*H' / innovVar = [P[0][0]/innovVar, P[1][0]/innovVar]'
-    // (H = [1, 0], so P*H' = first column of P)
+    // Kalman gain:  K = P*H' / innovVar = [P[0][0], P[1][0], P[2][0]]' / innovVar
+    // (H = [1, 0, 0], so P*H' is the first column of P)
     const ftype Kh = aglKfP[0][0] / innovVar;
     const ftype Kv = aglKfP[1][0] / innovVar;
+    const ftype Kb = aglKfP[2][0] / innovVar;
 
     // State update:  x += K * hgtInnov
     aglKfH += Kh * hgtInnov;
     aglKfV += Kv * hgtInnov;
+    aglKfB += Kb * hgtInnov;
     aglKfH  = MAX(aglKfH, rngOnGnd);  // enforce physical constraint after update
 
-    // Covariance update P = (I-KH)*P*(I-KH)' + K*R*K'
-    // With H = [1, 0], (I-KH) = [[1-Kh, 0], [-Kv, 1]]:
-    //   P[0][0] = (1-Kh)²*Phh + Kh²*R
+    // Covariance update P = (I-KH)*P*(I-KH)' + K*R*K'  (Joseph form).
+    // With H = [1, 0, 0], (I-KH) = [[1-Kh, 0, 0], [-Kv, 1, 0], [-Kb, 0, 1]]:
+    //   P[0][0] = (1-Kh)^2*Phh + Kh^2*R
     //   P[0][1] = (1-Kh)*(Phv - Kv*Phh) + Kh*Kv*R
-    //   P[1][1] = Pvv - 2*Kv*Phv + Kv²*innovVar
+    //   P[0][2] = (1-Kh)*(Phb - Kb*Phh) + Kh*Kb*R
+    //   P[1][1] = Pvv - 2*Kv*Phv + Kv^2*innovVar
+    //   P[1][2] = Pvb - Kb*Phv - Kv*Phb + Kv*Kb*innovVar
+    //   P[2][2] = Pbb - 2*Kb*Phb + Kb^2*innovVar
+    // The h/v terms reduce to the original 2-state expressions when the bias terms are 0.
     const ftype oneMinusKh = 1.0f - Kh;
     const ftype Phh = aglKfP[0][0];
     const ftype Phv = aglKfP[0][1];
+    const ftype Phb = aglKfP[0][2];
     const ftype Pvv = aglKfP[1][1];
+    const ftype Pvb = aglKfP[1][2];
+    const ftype Pbb = aglKfP[2][2];
 
     aglKfP[0][0] = MAX(sq(oneMinusKh) * Phh + sq(Kh) * measNoiseVar, 0.0f);
     aglKfP[0][1] = aglKfP[1][0] = oneMinusKh * (Phv - Kv * Phh) + Kh * Kv * measNoiseVar;
+    aglKfP[0][2] = aglKfP[2][0] = oneMinusKh * (Phb - Kb * Phh) + Kh * Kb * measNoiseVar;
     aglKfP[1][1] = MAX(Pvv - 2.0f * Kv * Phv + sq(Kv) * innovVar, 0.0f);
+    aglKfP[1][2] = aglKfP[2][1] = Pvb - Kb * Phv - Kv * Phb + Kv * Kb * innovVar;
+    aglKfP[2][2] = MAX(Pbb - 2.0f * Kb * Phb + sq(Kb) * innovVar, 0.0f);
 
     lastAglRngFuseTime_ms = imuSampleTime_ms;
     aglKfValid = true;
