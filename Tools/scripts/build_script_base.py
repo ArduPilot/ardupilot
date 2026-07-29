@@ -124,7 +124,6 @@ class BuildScriptBase(ABC):
             'TBS-L431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
             'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
             'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
-            'ARKV6X-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
 
             'MatekL431-ADSB',  # uses USE_BOOTLOADER_FROM_BOARD
             'MatekL431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
