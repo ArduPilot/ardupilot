@@ -660,7 +660,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // see if the user has specified a maximum distance to waypoint
     // If override with p3 - then this is not used as it will overfly badly
     if (g.waypoint_max_radius > 0 &&
-        auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
+        auto_state.wp_distance > g.waypoint_max_radius) {
         if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
             if (cmd_passby == 0) {
