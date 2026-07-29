@@ -129,16 +129,16 @@ void Plane::load_coeffs(const char *model_json)
         fname = strdup(model_json);
     } else {
         IGNORE_RETURN(asprintf(&fname, "@ROMFS/models/%s", model_json));
-        if (AP::FS().stat(model_json, &st) != 0) {
+        if (fname == nullptr || AP::FS().stat(fname, &st) != 0) {
             AP_HAL::panic("%s failed to load", model_json);
         }
     }
     if (fname == nullptr) {
         AP_HAL::panic("%s failed to load", model_json);
     }
-    AP_JSON::value *obj = AP_JSON::load_json(model_json);
+    AP_JSON::value *obj = AP_JSON::load_json(fname);
     if (obj == nullptr) {
-        AP_HAL::panic("%s failed to load", model_json);
+        AP_HAL::panic("%s failed to load", fname);
     }
 
     enum class VarType {
@@ -212,7 +212,8 @@ void Plane::load_coeffs(const char *model_json)
 
     delete obj;
 
-    ::printf("Loaded plane aero coefficients from %s\n", model_json);
+    ::printf("Loaded plane aero coefficients from %s\n", fname);
+    free(fname);
 }
 
 void Plane::parse_float(AP_JSON::value val, const char* label, float &param) {
