@@ -292,6 +292,9 @@ void MAVLinkGimbalv2::send_attitude_status()
         q.from_rotation_matrix(body_to_gimbal);
     }
 
+    float veh_roll, veh_pitch, veh_yaw;
+    _vehicle_dcm.to_euler(&veh_roll, &veh_pitch, &veh_yaw);
+
     mavlink_gimbal_device_attitude_status_t status {};
     status.target_system    = _vehicle_system_id;
     status.target_component = _vehicle_component_id;
@@ -305,6 +308,8 @@ void MAVLinkGimbalv2::send_attitude_status()
     status.angular_velocity_y = 0.0f;
     status.angular_velocity_z = 0.0f;
     status.failure_flags = 0;
+    status.delta_yaw = veh_yaw;
+    status.delta_yaw_velocity = 0.0f;
 
     mavlink_message_t msg;
     mavlink_msg_gimbal_device_attitude_status_encode_status(
