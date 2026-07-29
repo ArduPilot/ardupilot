@@ -66,7 +66,7 @@ const AP_Param::GroupInfo AP_OABendyRuler::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("CONT_ANGLE", 3, AP_OABendyRuler, _bendy_angle, OA_BENDYRULER_ANGLE_DEFAULT),
 
-    // @Param{Copter}: TYPE
+    // @Param{Copter,Heli}: TYPE
     // @DisplayName: Type of BendyRuler
     // @Description: BendyRuler will search for clear path along the direction defined by this parameter
     // @Values: 1:Horizontal search, 2:Vertical search

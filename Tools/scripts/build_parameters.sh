@@ -53,3 +53,5 @@ generate_parameters AntennaTracker
 generate_parameters AP_Periph
 
 generate_parameters Blimp
+
+generate_parameters Heli
