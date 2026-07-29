@@ -21,6 +21,7 @@ from waflib.Tools import clang, clangxx, gcc, gxx
 from waflib.Tools import c_config
 from waflib import Logs
 
+import glob
 import os
 import re
 import sys
@@ -130,6 +131,41 @@ def _set_pkgconfig_crosscompilation_wrapper(cfg):
 
     cfg.validate_cfg = new_validate_cfg
 
+# Directories where ArduPilot's own setup scripts (Tools/environment_install/
+# install-prereqs-*.sh) install the cross toolchains, keyed by toolchain triple.
+ARDUPILOT_TOOLCHAIN_DIRS = {
+    'arm-none-eabi': ['/opt/gcc-arm-none-eabi-10-2020-q4-major/bin'],
+}
+
+def _prefer_installed_toolchain(cfg):
+    """Bias program lookup toward ArduPilot's own installed toolchain.
+
+    Prepends the first matching install dir to the PATH that waf's find_program
+    consults (cfg.environ), so gcc/g++/ar/nm/objcopy/size all resolve to the
+    same toolchain, with a normal PATH fallback when it is not installed there.
+    This lets the build find its supported compiler even when a *different*
+    arm-none-eabi-gcc is the system default on PATH (e.g. for another project),
+    so ArduPilot need not prepend its toolchain to the global PATH.
+
+    A user-supplied --toolchain (which sets TOOLCHAIN to an explicit value rather
+    than a plain triple) takes precedence and is left untouched.
+    """
+    dirs = list(ARDUPILOT_TOOLCHAIN_DIRS.get(cfg.env.TOOLCHAIN, []))
+    if cfg.env.TOOLCHAIN == 'arm-none-eabi':
+        # accept any versioned install too, preferring the highest version
+        dirs += sorted(glob.glob('/opt/gcc-arm-none-eabi-*/bin'), reverse=True)
+    for d in dirs:
+        if not os.path.exists(os.path.join(d, '%s-gcc' % cfg.env.TOOLCHAIN)):
+            continue
+        # copy os.environ the first time so we never mutate the real process env
+        if getattr(cfg, 'environ', os.environ) is os.environ:
+            cfg.environ = dict(os.environ)
+        path = cfg.environ.get('PATH', '')
+        if d not in path.split(os.pathsep):
+            cfg.environ['PATH'] = d + os.pathsep + path
+        cfg.msg('Using toolchain dir', d)
+        return
+
 def configure(cfg):
     _filter_supported_c_compilers('gcc', 'clang')
     _filter_supported_cxx_compilers('g++', 'clang++')
@@ -142,6 +178,8 @@ def configure(cfg):
         cfg.load('compiler_cxx compiler_c gccdeps')
 
         return
+
+    _prefer_installed_toolchain(cfg)
 
     _set_pkgconfig_crosscompilation_wrapper(cfg)
     if sys.platform.startswith("cygwin"):
