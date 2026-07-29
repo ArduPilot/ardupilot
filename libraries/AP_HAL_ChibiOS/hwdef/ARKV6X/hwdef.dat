@@ -158,13 +158,16 @@ PG7  FRAM_CS CS
 # use GPIO(93) for data ready on ADIS16507
 #define ADIS_DRDY_PIN 93
 
-# PWM output pins
-PI0  TIM5_CH4 TIM5 PWM(1) GPIO(50)
+# PWM output pins, BIDIR on alternating channels per timer for bi-directional dshot
+PI0  TIM5_CH4 TIM5 PWM(1) GPIO(50) BIDIR
 PH12 TIM5_CH3 TIM5 PWM(2) GPIO(51)
-PH11 TIM5_CH2 TIM5 PWM(3) GPIO(52)
+PH11 TIM5_CH2 TIM5 PWM(3) GPIO(52) BIDIR
 PH10 TIM5_CH1 TIM5 PWM(4) GPIO(53)
-PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54)
-PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55)
+PD13 TIM4_CH2 TIM4 PWM(5) GPIO(54) BIDIR
+PD14 TIM4_CH3 TIM4 PWM(6) GPIO(55) BIDIR
+
+# motor output DMA must not be shared
+DMA_NOSHARE TIM5* TIM4*
 
 # we need to disable DMA on the last 2 FMU channels
 # as timer 12 doesn't have a TIMn_UP DMA option
