@@ -151,6 +151,10 @@
 #include <AC_CustomControl/AC_CustomControl.h>                  // Custom control library
 #endif
 
+#if MODE_BRAKE_ENABLED && !MODE_ALTHOLD_ENABLED
+  #error Brake mode requires AltHold; disable MODE_BRAKE_ENABLED or enable MODE_ALTHOLD_ENABLED
+#endif
+
 #if AP_AVOIDANCE_ENABLED && !AP_FENCE_ENABLED
   #error AC_Avoidance relies on AP_FENCE_ENABLED which is disabled
 #endif
@@ -1031,7 +1035,9 @@ private:
     ModeAcro mode_acro;
 #endif
 #endif
+#if MODE_ALTHOLD_ENABLED
     ModeAltHold mode_althold;
+#endif
 #if MODE_AUTO_ENABLED
     ModeAuto mode_auto;
 #endif
