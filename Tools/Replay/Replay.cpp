@@ -44,17 +44,11 @@ bool show_progress;
 const AP_Param::Info ReplayVehicle::var_info[] = {
     GSCALAR(dummy,         "_DUMMY", 0),
 
-    // @Group: BARO
-    // @Path: ../libraries/AP_Baro/AP_Baro.cpp
-    GOBJECT(barometer, "BARO", AP_Baro),
+    // BARO was here
 
     // @Group: INS
     // @Path: ../libraries/AP_InertialSensor/AP_InertialSensor.cpp
     GOBJECT(ins,                    "INS", AP_InertialSensor),
-
-    // @Group: AHRS_
-    // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
-    GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 
 #if AP_AIRSPEED_ENABLED
     // @Group: ARSPD_
@@ -74,10 +68,8 @@ const AP_Param::Info ReplayVehicle::var_info[] = {
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
     GOBJECTN(ekf3, NavEKF3, "EK3_", NavEKF3),
 
-    // @Group: GPS
-    // @Path: ../libraries/AP_GPS/AP_GPS.cpp
-    GOBJECT(gps, "GPS", AP_GPS),
-    
+    // GPS was here
+
     AP_VAREND
 };
 

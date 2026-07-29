@@ -13,10 +13,6 @@ void Tracker::init_ardupilot()
     // initialise battery
     battery.init();
 
-    // init baro before we start the GCS, so that the CLI baro test works
-    barometer.set_log_baro_bit(MASK_LOG_IMU);
-    barometer.init();
-
     // setup telem slots with serial ports
     gcs().setup_uarts();
     // update_send so that if the first packet we receive happens to
@@ -30,15 +26,12 @@ void Tracker::init_ardupilot()
 
     // GPS Initialization
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init();
 
     ahrs.init();
     ahrs.set_fly_forward(false);
 
     ins.init(scheduler.get_loop_rate_hz());
     ahrs.reset();
-
-    barometer.calibrate();
 
 #if HAL_LOGGING_ENABLED
     // initialise AP_Logger library

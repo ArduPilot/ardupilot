@@ -1,3 +1,9 @@
+#pragma once
+
+#include "AP_Compass_config.h"
+
+#if COMPASS_MOT_ENABLED
+
 /*
   per-motor compass compensation
  */
@@ -64,3 +70,5 @@ private:
     uint8_t motor_map[4];
 };
 
+
+#endif  // COMPASS_MOT_ENABLED

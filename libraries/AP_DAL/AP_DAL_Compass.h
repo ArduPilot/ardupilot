@@ -1,5 +1,9 @@
 #pragma once
 
+#include <AP_Compass/AP_Compass_config.h>
+
+#if AP_COMPASS_ENABLED
+
 #include <AP_Logger/LogStructure.h>
 
 #include <AP_Compass/AP_Compass.h>
@@ -75,3 +79,5 @@ private:
     struct log_RMGH _RMGH;
     struct log_RMGI _RMGI[COMPASS_MAX_INSTANCES];
 };
+
+#endif  // AP_COMPASS_ENABLED

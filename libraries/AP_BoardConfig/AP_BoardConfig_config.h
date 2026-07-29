@@ -3,6 +3,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
 
+#ifndef AP_BOARDCONFIG_SINGLETON_ENABLED
+#define AP_BOARDCONFIG_SINGLETON_ENABLED 1
+#endif
+
 #ifndef AP_FEATURE_BOARD_DETECT
 #if defined(HAL_CHIBIOS_ARCH_FMUV3)
 #define AP_FEATURE_BOARD_DETECT 1
