@@ -232,16 +232,19 @@ class HWDef:
             line = line.strip()
             if len(line) == 0 or line[0] == '#':
                 continue
-            a = self.split_line(line)
-            if a[0] == "include" and len(a) > 1:
-                include_file = a[1]
-                if include_file[0] != '/':
-                    dir = os.path.dirname(filename)
-                    include_file = os.path.normpath(
-                        os.path.join(dir, include_file))
-                self.process_file(include_file, depth+1)
-            else:
-                self.process_line(line, depth)
+            # only the include lines need splitting here; every other
+            # line is split once, by process_line:
+            if "include" in line:
+                a = self.split_line(line)
+                if a[0] == "include" and len(a) > 1:
+                    include_file = a[1]
+                    if include_file[0] != '/':
+                        dir = os.path.dirname(filename)
+                        include_file = os.path.normpath(
+                            os.path.join(dir, include_file))
+                    self.process_file(include_file, depth+1)
+                    continue
+            self.process_line(line, depth)
 
     def process_hwdefs(self):
         for fname in self.hwdef:
@@ -261,9 +264,11 @@ class HWDef:
         # flow should call self.write_ROMFS() directly there.
         self.write_ROMFS()
 
-    def process_line(self, line, depth):
-        '''process one line of pin definition file'''
-        a = self.split_line(line, posix=False)
+    def process_line(self, line, depth, a=None):
+        '''process one line of pin definition file.  a is the line already
+        split into words, if the caller has done that itself'''
+        if a is None:
+            a = self.split_line(line, posix=False)
 
         if a[0] == 'undef':
             return self.process_line_undef(line, depth, a)

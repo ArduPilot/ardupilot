@@ -82,7 +82,7 @@ class ESP32HWDef(hwdef.HWDef):
         if a[0] == 'ESP32_SDSPI':
             self.process_line_esp32_sdspi(line, depth, a)
 
-        super(ESP32HWDef, self).process_line(line, depth)
+        super(ESP32HWDef, self).process_line(line, depth, a)
 
     # ESP32_I2CBUS support:
     def process_line_esp32_i2cbus(self, line, depth, a):
