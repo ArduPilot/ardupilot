@@ -74,6 +74,43 @@ void CompassLearn::update(void)
 
 #if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 /*
+  true if the field published for this instance reaches us in the body
+  frame.  rotate_field() applies, in order, MAG_BOARD_ORIENTATION, the
+  board-specific per-instance rotation, and then either the board
+  orientation (internal compasses) or COMPASS_ORIENT (external ones).
+  Any of those leaves the reading in a frame a body-frame offset does
+  not belong in - checking only the board orientation would accept a
+  compass carrying a COMPASS_ORIENT and save an offset in the wrong
+  frame, and would reject every instance on a board which merely
+  defines MAG_BOARD_ORIENTATION.
+ */
+bool Compass::instance_is_unrotated(uint8_t i) const
+{
+    if (i >= COMPASS_MAX_INSTANCES) {
+        return false;
+    }
+    if (MAG_BOARD_ORIENTATION != ROTATION_NONE) {
+        return false;
+    }
+    const mag_state &state = _get_state(Priority(i));
+    if (state.rotation != ROTATION_NONE) {
+        return false;
+    }
+    if (!state.external) {
+        return _board_orientation == ROTATION_NONE;
+    }
+    return (enum Rotation)state.orientation.get() == ROTATION_NONE;
+}
+
+uint32_t Compass::get_dev_id(uint8_t i) const
+{
+    if (i >= COMPASS_MAX_INSTANCES) {
+        return 0;
+    }
+    return uint32_t(_get_state(Priority(i)).dev_id.get());
+}
+
+/*
   save any compass offsets the EKF has learned.  Called on disarm.
  */
 void Compass::save_ekf_learned_offsets()
