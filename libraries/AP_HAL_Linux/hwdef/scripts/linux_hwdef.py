@@ -8,7 +8,6 @@ AP_FLAKE8_CLEAN
 
 import argparse
 import os
-import shlex
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../../libraries/AP_HAL/hwdef/scripts'))
@@ -38,7 +37,7 @@ class LinuxHWDef(hwdef.HWDef):
         self.all_lines.append(line)
         self.alllines.append(line)
 
-        a = shlex.split(line, posix=False)
+        a = self.split_line(line, posix=False)
         if a[0] == 'LINUX_SPIDEV':
             self.process_line_linux_spidev(line, depth, a)
 

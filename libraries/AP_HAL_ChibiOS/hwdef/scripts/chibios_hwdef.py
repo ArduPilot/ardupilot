@@ -10,7 +10,6 @@ import argparse
 import fnmatch
 import os
 import re
-import shlex
 import shutil
 import sys
 
@@ -2828,7 +2827,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
         self.all_lines.append(line)
-        a = shlex.split(line, posix=False)
+        a = self.split_line(line, posix=False)
         # keep all config lines for later use
         self.alllines.append(line)
 
