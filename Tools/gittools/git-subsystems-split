@@ -144,10 +144,23 @@ class GitSubsystemsSplit(object):
             return subject.split(":", 1)[0].strip()
         return None
 
+    def fill_template(self, template, subsystem):
+        '''substitute subsystem into a $subsystem template, labelling the
+        subject with it exactly once'''
+        message = template.replace("$subsystem", subsystem)
+        lines = message.splitlines()
+        prefix = subsystem + ":"
+        if lines and lines[0].startswith(prefix):
+            rest = lines[0][len(prefix):].lstrip()
+            while rest.startswith(prefix):
+                rest = rest[len(prefix):].lstrip()
+            lines[0] = f"{prefix} {rest}" if rest else prefix
+        return "\n".join(lines) + ("\n" if message.endswith("\n") else "")
+
     def new_subject(self, subject, subsystem):
         '''the subject a commit would get once labelled with subsystem'''
-        templated = self.build_template(subject).splitlines()[0]
-        return templated.replace("$subsystem", subsystem)
+        templated = self.build_template(subject)
+        return self.fill_template(templated, subsystem).splitlines()[0]
 
     def make_message_file(self, git_dir, message):
         '''write the (possibly templated) commit message to a file, honouring
@@ -248,7 +261,7 @@ class GitSubsystemsSplit(object):
 
     def commit_group(self, subsystem, paths, template, author, date, msg_file):
         '''stage the given paths and create a single commit for them'''
-        message = template.replace("$subsystem", subsystem)
+        message = self.fill_template(template, subsystem)
         with open(msg_file, "w") as fh:
             fh.write(message)
         self.git(["reset", "--quiet"], capture=False)
