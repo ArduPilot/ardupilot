@@ -64,6 +64,7 @@ bool AP_AHRS_SIM::get_origin(Location &ret) const
     return true;
 }
 
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 /*
   return the ideal offsets for a compass instance.  The simulated
   sensor has mag_ofs subtracted from the field it reports
@@ -89,6 +90,7 @@ bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
 
     return true;
 }
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
 // return the innovations for the specified instance
 // An out of range instance (eg -1) returns data for the primary instance

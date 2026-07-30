@@ -28,6 +28,7 @@
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include "AP_AHRS_config.h"
+#include <AP_Compass/AP_Compass_config.h>
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -321,13 +322,15 @@ public:
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
 
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
     // return the compass offsets this backend has estimated for a
-    // compass instance; returns true if the offsets are valid.
-    // backends which do not estimate compass offsets need not override
-    // this.
+    // compass instance, in body frame, milligauss; returns true if the
+    // offsets are valid.  Backends which do not estimate compass
+    // offsets need not override this.
     virtual bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const {
         return false;
     }
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero

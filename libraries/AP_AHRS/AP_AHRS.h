@@ -361,11 +361,13 @@ public:
         return configured_estimates->filter_status_valid;
     }
 
-    // get compass offset estimates
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // get compass offset estimates, in body frame, milligauss
     // true if offsets are valid
     bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const {
         return configured_backend->get_mag_offsets(mag_idx, magOffsets);
     }
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
     // returns the number of times the yaw angle has been reset
     uint16_t get_yaw_reset_count(void) const {
