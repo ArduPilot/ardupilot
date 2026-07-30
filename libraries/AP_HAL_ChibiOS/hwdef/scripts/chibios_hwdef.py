@@ -40,6 +40,19 @@ class ChibiOSHWDef(hwdef.HWDef):
         r'SDMMC\d+|SDIO|QUADSPI\d|OCTOSPI\d|ETH\d|RCC'
     )
 
+    # the peripheral number in a pin's type must match the one in its
+    # label; these are checked for every pin line, so are compiled here
+    # rather than per-call:
+    TIM_TYPE_RE = re.compile(r'TIM(\d+)')
+    TIM_LABEL_RE = re.compile(r'TIM(\d+)_CH\d+')
+    CAN_TYPE_RE = re.compile(r'CAN(\d+)')
+    CAN_LABEL_RE = re.compile(r'CAN(\d+)_(RX|TX)')
+    UART_INV_LABEL_RE = re.compile(r'US?ART\d+_(TXINV|RXINV)')
+    USART_TYPE_RE = re.compile(r'USART(\d+)')
+    USART_LABEL_RE = re.compile(r'USART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)')
+    UART_TYPE_RE = re.compile(r'UART(\d+)')
+    UART_LABEL_RE = re.compile(r'UART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)')
+
     def __init__(self, bootloader=False, signed_fw=False, default_params_filepath=None, **kwargs):
         super(ChibiOSHWDef, self).__init__(**kwargs)
         self.bootloader = bootloader
@@ -2806,25 +2819,25 @@ Please run: Tools/scripts/build_bootloaders.py %s
         if not self.VALID_PIN_TYPE_RE.match(ptype):
             return False
         # special checks for common errors
-        m1 = re.match(r'TIM(\d+)', ptype)
-        m2 = re.match(r'TIM(\d+)_CH\d+', label)
+        m1 = self.TIM_TYPE_RE.match(ptype)
+        m2 = self.TIM_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''timer numbers need to match'''
             return False
-        m1 = re.match(r'CAN(\d+)', ptype)
-        m2 = re.match(r'CAN(\d+)_(RX|TX)', label)
+        m1 = self.CAN_TYPE_RE.match(ptype)
+        m2 = self.CAN_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''CAN numbers need to match'''
             return False
-        if ptype == 'OUTPUT' and re.match(r'US?ART\d+_(TXINV|RXINV)', label):
+        if ptype == 'OUTPUT' and self.UART_INV_LABEL_RE.match(label):
             return True
-        m1 = re.match(r'USART(\d+)', ptype)
-        m2 = re.match(r'USART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)', label)
+        m1 = self.USART_TYPE_RE.match(ptype)
+        m2 = self.USART_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''usart numbers need to match'''
             return False
-        m1 = re.match(r'UART(\d+)', ptype)
-        m2 = re.match(r'UART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)', label)
+        m1 = self.UART_TYPE_RE.match(ptype)
+        m2 = self.UART_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''uart numbers need to match'''
             return False
