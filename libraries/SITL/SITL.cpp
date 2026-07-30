@@ -1907,6 +1907,43 @@ OUT:
     return min_dist_cm * 0.01f;
 }
 
+/*
+  apply the transformation a simulated compass applies to a vector once
+  SIM_MAGn_OFS has been taken off it.  AP_Compass_SITL applies this to
+  the field it reports; get_mag_offsets() applies it to the offset
+  itself.  Keeping the two in one place stops them diverging.
+ */
+void SIM::mag_sensor_transform(uint8_t instance, Vector3f &v) const
+{
+    v.rotate_inverse((enum Rotation)mag_orient[instance].get());
+    v.rotate(AP::compass().get_board_orientation());
+
+    // SIM_BRD_TRIM: rigid board mounting offset (same rotation applied
+    // to the accels and gyros), keeping the compass consistent with the
+    // IMU
+    const Vector3f &trim = board_trim.get();
+    if (!trim.is_zero()) {
+        Matrix3f trim_rotation;
+        trim_rotation.from_euler(trim.x, trim.y, trim.z);
+        v = trim_rotation.transposed() * v;
+    }
+
+    // scale the compass to simulate sensor scale factor errors
+    v *= mag_scaling[instance];
+}
+
+bool SIM::get_mag_offsets(uint8_t instance, Vector3f &offsets) const
+{
+    if (instance >= ARRAY_SIZE(mag_ofs)) {
+        return false;
+    }
+
+    offsets = mag_ofs[instance];
+    mag_sensor_transform(instance, offsets);
+
+    return true;
+}
+
 } // namespace SITL
 
 namespace AP {
