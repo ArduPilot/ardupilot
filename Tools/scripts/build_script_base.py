@@ -116,8 +116,6 @@ class BuildScriptBase(ABC):
             'Pixhawk1-1M-bdshot',
             'Pixhawk1-bdshot',
             'RADIX2HD',
-            'canzero',
-            't3-gem-o1',
             'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
             'kha_eth',  # no hwdef-bl.dat
             'TBS-L431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
