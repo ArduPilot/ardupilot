@@ -144,7 +144,7 @@ class BuildScriptBase(ABC):
         ])
 
         for board in self.boards_by_name.values():
-            if board.hal in ["Linux", "ESP32", "SITL"]:
+            if board.hal in ["Linux", "ESP32", "SITL", "QURT"]:
                 ret.add(board.name)
 
         return ret
