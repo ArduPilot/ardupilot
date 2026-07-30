@@ -250,6 +250,19 @@ public:
         return _board_orientation;
     }
 
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // true if the field published for this instance reaches us in the
+    // body frame - that is, AP_Compass_Backend::rotate_field() applies
+    // no rotation to it.  An offset computed in the body frame is only
+    // meaningful for such an instance; see AP_AHRS_SIM::get_mag_offsets().
+    bool instance_is_unrotated(uint8_t i) const;
+
+    // device id of the compass at this priority index.  Used to find
+    // the simulated sensor a priority index corresponds to; see
+    // AP_AHRS_SIM::get_mag_offsets().  Zero if there is none.
+    uint32_t get_dev_id(uint8_t i) const;
+#endif
+
     /// Set the motor compensation type
     ///
     /// @param  comp_type           0 = disabled, 1 = enabled use throttle, 2 = enabled use current
