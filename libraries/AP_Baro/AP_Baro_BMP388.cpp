@@ -83,15 +83,6 @@ bool AP_Baro_BMP388::init()
     if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
         dev->set_read_flag(0x80);
     }
-    // BMP390 soft reset, sensor unready without
-    if (!dev->write_register(BMP388_REG_CMD, BMP388_SOFT_RESET)) {
-        return false;
-    }
-    hal.scheduler->delay(10);
-
-    // normal mode, temp and pressure
-    dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
-    
     uint8_t whoami;
     if (!read_registers(BMP388_REG_ID, &whoami, 1)) {
         return false;
@@ -107,6 +98,15 @@ bool AP_Baro_BMP388::init()
     default:
         return false;
     }
+
+    // BMP390 needs a soft reset to start converting 
+    if (!dev->write_register(BMP388_REG_CMD, BMP388_SOFT_RESET)) {
+        return false;
+    }
+    hal.scheduler->delay(10);
+
+    // normal mode, temp and pressure
+    dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
 
     // read the calibration data
     read_registers(BMP388_REG_CAL_P, (uint8_t *)&calib_p, sizeof(calib_p));
