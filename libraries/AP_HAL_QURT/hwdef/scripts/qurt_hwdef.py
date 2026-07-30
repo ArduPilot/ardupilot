@@ -60,7 +60,7 @@ class QURTHWDef(hwdef.HWDef):
         elif a[0] == 'I2C_BUS':
             self.process_line_i2c_bus(line, depth, a)
 
-        super(QURTHWDef, self).process_line(line, depth)
+        super(QURTHWDef, self).process_line(line, depth, a)
 
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:

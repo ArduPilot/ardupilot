@@ -2912,7 +2912,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         elif a[0] == 'AIRSPEED':
             self.airspeed_list.append(a[1:])
         else:
-            super(ChibiOSHWDef, self).process_line(line, depth)
+            super(ChibiOSHWDef, self).process_line(line, depth, a)
 
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:

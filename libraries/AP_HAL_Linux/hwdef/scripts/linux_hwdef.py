@@ -41,7 +41,7 @@ class LinuxHWDef(hwdef.HWDef):
         if a[0] == 'LINUX_SPIDEV':
             self.process_line_linux_spidev(line, depth, a)
 
-        super(LinuxHWDef, self).process_line(line, depth)
+        super(LinuxHWDef, self).process_line(line, depth, a)
 
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
