@@ -72,8 +72,6 @@ PA1 BATT_CURRENT_SENS ADC1 SCALE(1) #Battery Current Sensor
 PA2 BATT2_VOLTAGE_SENS ADC1 SCALE(1) #Battery2 Voltage
 PA3 BATT2_CURRENT_SENS ADC1 SCALE(1) #Battery2 Current Sensor
 
-define HAL_WITH_RAMTRON 1
-
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
