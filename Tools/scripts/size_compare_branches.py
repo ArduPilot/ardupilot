@@ -139,8 +139,6 @@ class SizeCompareBranches(BuildScriptBase):
             exclude_board_glob=exclude_board_glob,
         )
 
-        self.bootloader_blacklist = self.make_bootloader_blacklist()
-
     def find_bin_dir(self, toolchain_prefix="arm-none-eabi-"):
         '''attempt to find where the arm-none-eabi tools are'''
         binary = shutil.which(toolchain_prefix + "g++")
