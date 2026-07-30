@@ -662,6 +662,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
             sitl_model->set_config(config);
+            sitl_model->launch_external_sim();
             break;
         }
     }
