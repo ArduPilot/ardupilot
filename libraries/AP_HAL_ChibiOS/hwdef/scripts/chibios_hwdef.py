@@ -32,6 +32,14 @@ class ChibiOSHWDef(hwdef.HWDef):
     f1_vtypes = ['CRL', 'CRH', 'ODR']
     af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO']
 
+    # the pin types a pin line may take; checked for every pin line, so
+    # compiled once here rather than per-call:
+    VALID_PIN_TYPE_RE = re.compile(
+        r'INPUT|OUTPUT|TIM\d+|USART\d+|UART\d+|ADC\d+|'
+        r'SPI\d+|OTG\d+|SWD|CAN\d?|I2C\d+|CS|'
+        r'SDMMC\d+|SDIO|QUADSPI\d|OCTOSPI\d|ETH\d|RCC'
+    )
+
     def __init__(self, bootloader=False, signed_fw=False, default_params_filepath=None, **kwargs):
         super(ChibiOSHWDef, self).__init__(**kwargs)
         self.bootloader = bootloader
@@ -39,6 +47,9 @@ class ChibiOSHWDef(hwdef.HWDef):
         self.default_params_filepath = default_params_filepath
         self.processed_defaults_filepath = None
         self.have_defaults_file = False
+
+        # modules for MCUs we have already imported, by MCU name:
+        self.mcu_lib_cache = {}
 
         # if true then parameters will be appended in special apj-tool
         # section at end of binary:
@@ -120,10 +131,15 @@ class ChibiOSHWDef(hwdef.HWDef):
     def get_mcu_lib(self, mcu):
         '''get library file for the chosen MCU'''
         import importlib
+        # this is called for every pin line, so remember what we found:
+        if mcu in self.mcu_lib_cache:
+            return self.mcu_lib_cache[mcu]
         try:
-            return importlib.import_module(mcu)
+            lib = importlib.import_module(mcu)
         except ImportError:
             self.error("Unable to find module for MCU %s" % mcu)
+        self.mcu_lib_cache[mcu] = lib
+        return lib
 
     def setup_mcu_type_defaults(self):
         '''setup defaults for given mcu type'''
@@ -2787,17 +2803,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
     def valid_type(self, ptype, label):
         '''check type of a pin line is valid'''
-        patterns = [
-            r'INPUT', r'OUTPUT', r'TIM\d+', r'USART\d+', r'UART\d+', r'ADC\d+',
-            r'SPI\d+', r'OTG\d+', r'SWD', r'CAN\d?', r'I2C\d+', r'CS',
-            r'SDMMC\d+', r'SDIO', r'QUADSPI\d', r'OCTOSPI\d', r'ETH\d', r'RCC',
-        ]
-        matches = False
-        for p in patterns:
-            if re.match(p, ptype):
-                matches = True
-                break
-        if not matches:
+        if not self.VALID_PIN_TYPE_RE.match(ptype):
             return False
         # special checks for common errors
         m1 = re.match(r'TIM(\d+)', ptype)
