@@ -50,6 +50,22 @@ class Compass():
 
 
 class HWDef:
+
+    # a line which contains none of shlex's special characters, and whose
+    # whitespace is only spaces and tabs, is split identically by
+    # str.split() and by shlex.split() in either posix mode:
+    NEEDS_SHLEX_RE = re.compile(r"""[\\'"]|[^\S \t]""")
+
+    @staticmethod
+    def split_line(line, posix=True):
+        '''shlex.split(), but taking a much cheaper path for the simple lines
+        which make up almost all of a hwdef.  shlex is a
+        character-at-a-time lexer written in Python, and parsing every
+        line of every hwdef with it is slow.'''
+        if HWDef.NEEDS_SHLEX_RE.search(line) is None:
+            return line.split()
+        return shlex.split(line, posix=posix)
+
     def __init__(self, quiet=False, outdir=None, hwdef: list | None = None):
         if hwdef is None:
             hwdef = []
@@ -116,7 +132,7 @@ class HWDef:
         ret = []
         for line in lines:
             if line.startswith("include"):
-                a = shlex.split(line)
+                a = self.split_line(line)
                 if len(a) > 1 and a[0] == "include":
                     fname2 = os.path.relpath(os.path.join(os.path.dirname(fname), a[1]))
                     ret.extend(self.load_file_with_include(fname2))
@@ -216,7 +232,7 @@ class HWDef:
             line = line.strip()
             if len(line) == 0 or line[0] == '#':
                 continue
-            a = shlex.split(line)
+            a = self.split_line(line)
             if a[0] == "include" and len(a) > 1:
                 include_file = a[1]
                 if include_file[0] != '/':
@@ -247,7 +263,7 @@ class HWDef:
 
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
-        a = shlex.split(line, posix=False)
+        a = self.split_line(line, posix=False)
 
         if a[0] == 'undef':
             return self.process_line_undef(line, depth, a)
