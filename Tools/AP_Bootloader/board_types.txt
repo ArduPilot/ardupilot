@@ -363,6 +363,11 @@ AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
 
+# IDs 1251-1260 reserved for Skyronin
+AP_HW_SkyroninL431                   1251
+AP_HW_Skyronin-Mag                   1252
+AP_HW_Skyronin-PowerMon              1253
+
 AP_HW_GPILOT_P1						 1275
 
 AP_HW_SKYDROID-S3                    1300
