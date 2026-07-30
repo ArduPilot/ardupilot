@@ -38,6 +38,7 @@ from sensor_msgs.msg import Joy
 from scipy.spatial.transform import Rotation as R
 import pytest
 from launch_pytest.tools import process as process_tools
+from ros_helpers import ros_node
 import threading
 
 from launch_fixtures import launch_sitl_copter_dds_udp
@@ -83,10 +84,6 @@ class PlaneFbwbJoyControl(Node):
 
         self._subscription_twist = self.create_subscription(TwistStamped, "/ap/twist/filtered", self.twist_cb, qos)
         self._climb_rate = 0.0
-
-        # Add a spin thread.
-        self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
-        self.ros_spin_thread.start()
 
     def geopose_cb(self, msg: GeoPoseStamped):
         """Process a GeoPose message."""
@@ -197,12 +194,8 @@ def test_dds_udp_joy_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
     process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
-    rclpy.init()
-    try:
-        node = PlaneFbwbJoyControl()
+    with ros_node(PlaneFbwbJoyControl) as node:
         node.arm_and_takeoff()
         climb_flag = node.climbing_event_object.wait(10)
         assert climb_flag, "Could not climb"
-    finally:
-        rclpy.shutdown()
     yield
