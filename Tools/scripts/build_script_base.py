@@ -42,6 +42,18 @@ VEHICLE_MAP = {
 class BuildScriptBase(ABC):
     """Base class for build scripts with common utilities for running programs"""
 
+    # filled in on first use of the bootloader_blacklist property:
+    _bootloader_blacklist = None
+
+    @property
+    def bootloader_blacklist(self):
+        '''set of board names for which we do not build bootloaders.  Worked
+        out on first use rather than up-front, as it parses hwdefs and
+        most runs never build a bootloader'''
+        if self._bootloader_blacklist is None:
+            self._bootloader_blacklist = self.make_bootloader_blacklist()
+        return self._bootloader_blacklist
+
     def __init__(self, progress_file=None):
         self.tmpdir = None  # Can be set by subclasses that need it
         self.progress_file = progress_file
