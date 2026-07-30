@@ -31,6 +31,9 @@ class ChibiOSHWDef(hwdef.HWDef):
     f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
     f1_vtypes = ['CRL', 'CRH', 'ODR']
     af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO']
+    # for the callers which only want to know whether a label names an
+    # alternative function, not which one:
+    af_label_prefixes = tuple(af_labels)
 
     # the pin types a pin line may take; checked for every pin line, so
     # compiled once here rather than per-call:
@@ -186,9 +189,8 @@ class ChibiOSHWDef(hwdef.HWDef):
             alt_map = lib.AltFunction_map
         else:
             # just check if Alt Func is available or not
-            for label in self.af_labels:
-                if function.startswith(label):
-                    return 0
+            if function.startswith(self.af_label_prefixes):
+                return 0
             return None
 
         if function and (function.endswith("_RTS") or function.endswith("_CTS_GPIO")) and (
@@ -196,12 +198,11 @@ class ChibiOSHWDef(hwdef.HWDef):
             # we do software RTS and can do either software CTS or hardware CTS
             return None
 
-        for label in self.af_labels:
-            if function.startswith(label):
-                s = pin + ":" + function
-                if s not in alt_map:
-                    self.error("Unknown pin function %s for MCU %s" % (s, mcu))
-                return alt_map[s]
+        if function.startswith(self.af_label_prefixes):
+            s = pin + ":" + function
+            if s not in alt_map:
+                self.error("Unknown pin function %s for MCU %s" % (s, mcu))
+            return alt_map[s]
         return None
 
     def have_type_prefix(self, ptype):
@@ -1887,12 +1888,11 @@ INCLUDE common.ld
                         return "UINT8_MAX"
 
                     pin = self.bylabel[rts_line_name]
-                    for label in self.af_labels:
-                        if rts_line_name.startswith(label):
-                            s = pin.portpin + ":" + rts_line_name
-                            if s not in lib.AltFunction_map:
-                                return "UINT8_MAX"
-                            return lib.AltFunction_map[s]
+                    if rts_line_name.startswith(self.af_label_prefixes):
+                        s = pin.portpin + ":" + rts_line_name
+                        if s not in lib.AltFunction_map:
+                            return "UINT8_MAX"
+                        return lib.AltFunction_map[s]
                 if have_low_noise:
                     low_noise = 'false'
                     rx_port = dev + '_RX'
