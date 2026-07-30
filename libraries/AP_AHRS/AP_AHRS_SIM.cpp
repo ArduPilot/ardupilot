@@ -66,29 +66,32 @@ bool AP_AHRS_SIM::get_origin(Location &ret) const
 
 #if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 /*
-  return the ideal offsets for a compass instance.  The simulated
-  sensor has mag_ofs subtracted from the field it reports
-  (AP_Compass_SITL::_timer), and Compass adds COMPASS_OFS back when
-  correcting, so the perfect COMPASS_OFS is simply mag_ofs.
-
-  Note this is exact only for the default SIM_MAGn_ORIENT,
-  SIM_MAGn_SCALING and board orientation: mag_ofs is applied before
-  those rotations and the scale factor.  mag_idx is a compass priority
-  index, which maps directly to the simulated instance only while the
-  compasses have not been reordered.
+  return the ideal offsets for a compass instance, in body frame,
+  milligauss.  The simulation subtracts SIM_MAGn_OFS from the field it
+  reports and Compass adds COMPASS_OFS back when correcting, so the
+  offset the compass wants is SIM_MAGn_OFS put through the same
+  transformation the simulated sensor applies after subtracting it.
+  SITL::SIM::get_mag_offsets_for_devid() does that, so the maths lives in one
+  place rather than being duplicated here.
  */
 bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
 {
     if (_sitl == nullptr) {
         return false;
     }
-    if (mag_idx >= ARRAY_SIZE(_sitl->mag_ofs)) {
+    // the Compass may rotate the reading before adding COMPASS_OFS, and
+    // the simulated offset is in the body frame; only offer it for an
+    // instance whose field arrives unrotated.  The rotation which
+    // matters is this instance's, not the board's - an external compass
+    // carries its own COMPASS_ORIENT:
+    if (!AP::compass().instance_is_unrotated(mag_idx)) {
         return false;
     }
 
-    magOffsets = _sitl->mag_ofs[mag_idx];
-
-    return true;
+    // mag_idx is a priority index; the simulated sensors are indexed
+    // in detection order, and COMPASS_PRIO*_ID can reorder one
+    // against the other.  Go via the device id:
+    return _sitl->get_mag_offsets_for_devid(AP::compass().get_dev_id(mag_idx), magOffsets);
 }
 #endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
