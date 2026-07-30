@@ -30,16 +30,6 @@
 #ifndef COMPASS_MOT_ENABLED
 #define COMPASS_MOT_ENABLED 1
 #endif
-#ifndef COMPASS_LEARN_ENABLED
-#define COMPASS_LEARN_ENABLED AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
-#endif
-
-// COMPASS_LEARN=2, copying the offsets the EKF has learned into the
-// COMPASS_OFS parameters on disarm.  COMPASS_LEARN_ENABLED provides the
-// parameter this is selected with, and an AHRS is needed to ask.
-#ifndef AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
-#define AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED (COMPASS_LEARN_ENABLED && AP_AHRS_ENABLED)
-#endif
 
 // define default compass calibration fitness and consistency checks
 #define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
