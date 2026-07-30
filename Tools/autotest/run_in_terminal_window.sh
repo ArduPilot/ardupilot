@@ -29,7 +29,10 @@ if [ -n "$SITL_RITW_TERMINAL" ]; then
   chmod +x "$FILEPATH"
   $SITL_RITW_TERMINAL "$FILEPATH" &
 elif [ -n "$TMUX" ]; then
-  tmux new-window -dn "$name" "$TMUX_PREFIX $*"
+  # tmux starts the pane's command from the *server's* environment, and parents
+  # it to the server, so sim_vehicle.py's cleanup paths do not reach it. Poll 
+  # whether sim_vehicle.py has died and if so close yourself too.
+  tmux new-window -dn "$name" "$TMUX_PREFIX $* & c=\$!; while kill -0 $PPID 2>/dev/null && kill -0 \$c 2>/dev/null; do sleep 1; done; kill \$c 2>/dev/null"
 elif [ -n "$DISPLAY" -a -n "$(which osascript)" ]; then
   osascript -e 'tell application "Terminal" to do script "'"cd $(pwd) && clear && $* "'"'
 elif [ -n "$DISPLAY" -a -n "$(which xterm)" ]; then
