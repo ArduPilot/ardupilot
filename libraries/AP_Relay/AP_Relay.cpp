@@ -58,6 +58,45 @@
   #define RELAY6_PIN_DEFAULT -1
 #endif
 
+#ifndef RELAY1_DEFAULT
+  #define RELAY1_DEFAULT -1
+#endif
+
+#ifndef RELAY2_DEFAULT
+  #define RELAY2_DEFAULT -1
+#endif
+
+#ifndef RELAY3_DEFAULT
+  #define RELAY3_DEFAULT -1
+#endif
+
+#ifndef RELAY4_DEFAULT
+  #define RELAY4_DEFAULT -1
+#endif
+
+#ifndef RELAY5_DEFAULT
+  #define RELAY5_DEFAULT -1
+#endif
+
+#ifndef RELAY6_DEFAULT
+  #define RELAY6_DEFAULT -1
+#endif
+
+static constexpr bool relay_default_valid(const int8_t state)
+{
+    // -1 means no hwdef-level default was specified; the parameter keeps its compiled-in default
+    return (state == -1) ||
+           ((state >= int8_t(AP_Relay_Params::DefaultState::OFF)) &&
+            (state <= int8_t(AP_Relay_Params::DefaultState::NO_CHANGE)));
+}
+
+static_assert(relay_default_valid(RELAY1_DEFAULT), "Invalid RELAY1_DEFAULT");
+static_assert(relay_default_valid(RELAY2_DEFAULT), "Invalid RELAY2_DEFAULT");
+static_assert(relay_default_valid(RELAY3_DEFAULT), "Invalid RELAY3_DEFAULT");
+static_assert(relay_default_valid(RELAY4_DEFAULT), "Invalid RELAY4_DEFAULT");
+static_assert(relay_default_valid(RELAY5_DEFAULT), "Invalid RELAY5_DEFAULT");
+static_assert(relay_default_valid(RELAY6_DEFAULT), "Invalid RELAY6_DEFAULT");
+
 
 const AP_Param::GroupInfo AP_Relay::var_info[] = {
     // 0 was PIN
@@ -299,11 +338,22 @@ void AP_Relay::set_defaults() {
                              RELAY4_PIN_DEFAULT,
                              RELAY5_PIN_DEFAULT,
                              RELAY6_PIN_DEFAULT };
+    const int8_t default_states[] = { RELAY1_DEFAULT,
+                                      RELAY2_DEFAULT,
+                                      RELAY3_DEFAULT,
+                                      RELAY4_DEFAULT,
+                                      RELAY5_DEFAULT,
+                                      RELAY6_DEFAULT };
+
+    static_assert(ARRAY_SIZE(pins) == ARRAY_SIZE(default_states));
 
     for (uint8_t i = 0; i < MIN(ARRAY_SIZE(_params), ARRAY_SIZE(pins)); i++) {
         // set the default
         if (pins[i] != -1) {
             _params[i].pin.set_default(pins[i]);
+        }
+        if (default_states[i] != -1) {
+            _params[i].default_state.set_default(default_states[i]);
         }
     }
 }
