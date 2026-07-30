@@ -26,6 +26,7 @@ The FlyingRC H7D Pro is available from the
 - WS2812 LED output on PWM13 / S13.
 - Switchable onboard 9 V VTX/camera BEC controlled by `PINIO1` / User1.
 - Digital VTX connector on UART4 (`T4`/`R4`, ArduPilot `SERIAL6`).
+- DJI digital VTX SBUS input on UART8 (`R8`, ArduPilot `SERIAL5`).
 
 ## Physical
 
@@ -66,9 +67,9 @@ BDShot-target difference.
 | SERIAL2 | USART1 | Telem2 | MAVLink2 | RX and TX |
 | SERIAL3 | USART2 | GPS1 | GPS | RX and TX |
 | SERIAL4 | USART3 | R3, ESC telemetry | ESC telemetry | RX only |
-| SERIAL5 | UART8 | Spare | None | Standard: TX only; BDShot: none |
+| SERIAL5 | UART8 | DJI VTX SBUS input, R8 | None | RX only, interrupt-driven |
 | SERIAL6 | UART4 | Digital VTX, T4/R4 | MSP DisplayPort | Standard: RX and TX; BDShot: TX only |
-| SERIAL7 | USART6 | UART6 RCIN, R6/T6 | Standard: None; BDShot: RCIN | RX and TX when UART mode is active |
+| SERIAL7 | USART6 | UART6 RCIN, R6/T6 | RCIN | RX and TX; standard ALT(1) uses timer RCIN |
 
 Both 4-in-1 ESC connectors expose the same `R3` signal, which is
 `USART3_RX`/PD9 (`SERIAL4`). It is an RX-only ESC telemetry input; there is no
@@ -78,10 +79,16 @@ source to the shared `R3` signal.
 ## RC Input
 
 The receiver connector is labelled `UART6 RCIN` and exposes `4V5`, `G`, `R6`,
-and `T6`. The standard target keeps `R6`/PC7 as timer-based `RCININT` by default,
-which supports unidirectional receiver protocols. To use the full USART6 UART
-for a bidirectional receiver, set `BRD_ALT_CONFIG=1` and
-`SERIAL7_PROTOCOL=23` (RCIN). USART6 RX and TX both have DMA.
+and `T6`. Both targets default to the full USART6 UART with
+`SERIAL7_PROTOCOL=23` (RCIN), so CRSF/ELRS can use `R6` and `T6` for
+bidirectional telemetry without changing `BRD_ALT_CONFIG`. USART6 RX and TX
+both have DMA.
+
+On the standard target, set `BRD_ALT_CONFIG=1` to change `R6`/PC7 to
+timer-based `RCININT` for single-wire receiver protocols such as SBUS and PPM.
+This alternate configuration does not provide bidirectional UART receiver
+telemetry. The BDShot target uses TIM3 for motor outputs, so it always keeps
+R6/T6 in USART6 mode and does not support PPM on this connector.
 
 For common serial receiver configurations:
 
@@ -89,9 +96,11 @@ For common serial receiver configurations:
 - CRSF/ELRS: connect both `R6` and `T6` and set `SERIAL7_OPTIONS=0`.
 - SRXL2: connect the receiver to `T6` and set `SERIAL7_OPTIONS=4`.
 
-The `FlyingRCH7DPro-bdshot` target always uses USART6 as the RC input UART
-because the timer resources are needed for bi-directional DShot. It defaults
-`SERIAL7_PROTOCOL` to RCIN. See the
+The DJI digital VTX connector also exposes its SBUS output on `R8`, which is
+UART8 RX (`SERIAL5`). To use it as an alternate RC input, set
+`SERIAL5_PROTOCOL=23`. For the standard inverted SBUS signal from a DJI air
+unit, set `SERIAL5_OPTIONS=3`. UART8 is RX-only on this board and uses
+interrupt-driven input rather than DMA. See the
 [ArduPilot RC systems documentation](https://ardupilot.org/copter/docs/common-rc-systems.html)
 for receiver-specific setup.
 

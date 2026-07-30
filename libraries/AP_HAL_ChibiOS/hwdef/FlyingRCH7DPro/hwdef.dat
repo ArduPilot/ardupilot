@@ -95,14 +95,14 @@ PB9 UART4_TX UART4
 PB8 UART4_RX UART4
 define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_MSP_DisplayPort
 
-# USART6 (RC input), SERIAL7
-PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW
+# USART6 (RC input), SERIAL7. Default to the full UART for CRSF/ELRS.
+PC7 USART6_RX USART6
 PC6 USART6_TX USART6
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_RCIN
 
-# as an alternative config setup the RX6 pin as a uart. This allows
-# for bi-directional UART based receiver protocols such as FPort
-# without any extra hardware
-PC7 USART6_RX USART6 ALT(1)
+# BRD_ALT_CONFIG=1 changes R6 to timer-based RC input for protocols such as
+# SBUS and PPM. Bidirectional UART receiver protocols are not available then.
+PC7 TIM3_CH2 TIM3 RCININT PULLDOWN LOW ALT(1)
 
 # UART7 (telem1)
 PE7 UART7_RX UART7
@@ -110,9 +110,9 @@ PE8 UART7_TX UART7
 PE10 UART7_CTS UART7
 PE9  UART7_RTS UART7
 
-# UART8 (spare). RX is interrupt-driven to leave DMA available for USART6.
+# UART8 (DJI digital VTX SBUS input R8), SERIAL5. RX is interrupt-driven to
+# leave DMA available for USART6. UART8 TX is not exposed by the board.
 PE0 UART8_RX UART8 NODMA
-PE1 UART8_TX UART8
 
 # CAN bus
 PD0 CAN1_RX CAN1
