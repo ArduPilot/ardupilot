@@ -3823,42 +3823,41 @@ class TestSuite(abc.ABC):
     def do_timesync_roundtrip(self, quiet=False, timeout_in_wallclock=False, mav=None):
         if not quiet:
             self.progress("Doing timesync roundtrip")
-        if mav is None or mav is self or mav is self.mav:
-            # Original single-MAV path
+        conn = mav if mav is not None else self.mav
+        if timeout_in_wallclock:
+            tstart = time.time()
+        else:
+            tstart = self.get_sim_time()
+        conn.mav.timesync_send(0, self.timesync_number * 1000 + conn.source_system)
+        while True:
             if timeout_in_wallclock:
-                tstart = time.time()
+                now = time.time()
             else:
-                tstart = self.get_sim_time()
-            self.mav.mav.timesync_send(0, self.timesync_number * 1000 + self.mav.source_system)
-            while True:
-                if timeout_in_wallclock:
-                    now = time.time()
-                else:
-                    now = self.get_sim_time_cached()
-                if now - tstart > 5:
-                    raise AutoTestTimeoutException("Did not get timesync response")
-                m = self.mav.recv_match(type='TIMESYNC', blocking=True, timeout=1)
-                if not quiet:
-                    self.progress("Received: %s" % str(m))
-                if m is None:
-                    continue
-                if m.ts1 % 1000 != self.mav.source_system:
-                    self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
-                    continue
-                if m.tc1 == 0:
-                    continue
-                if int(m.ts1 / 1000) != self.timesync_number:
-                    self.progress("this isn't the one we just sent")
-                    continue
-                if m.get_srcSystem() != self.mav.target_system:
-                    self.progress("response from system other than our target (want=%u got=%u" %
-                                  (self.mav.target_system, m.get_srcSystem()))
-                    continue
-                if not quiet:
-                    self.progress("Received TIMESYNC response after %fs" % (now - tstart))
-                self.timesync_number += 1
-                break
-            return
+                now = self.get_sim_time_cached()
+            if now - tstart > 5:
+                raise AutoTestTimeoutException("Did not get timesync response")
+            m = conn.recv_match(type='TIMESYNC', blocking=True, timeout=1)
+            if not quiet:
+                self.progress("Received: %s" % str(m))
+            if m is None:
+                continue
+            if m.ts1 % 1000 != conn.source_system:
+                self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
+                continue
+            if m.tc1 == 0:
+                continue
+            if int(m.ts1 / 1000) != self.timesync_number:
+                self.progress("this isn't the one we just sent")
+                continue
+            if m.get_srcSystem() != conn.target_system:
+                self.progress("response from system other than our target (want=%u got=%u" %
+                              (conn.target_system, m.get_srcSystem()))
+                continue
+            if not quiet:
+                self.progress("Received TIMESYNC response after %fs" % (now - tstart))
+            self.timesync_number += 1
+            break
+        return
 
     def log_filepath(self, lognum):
         '''return filepath to lognum (where lognum comes from LOG_ENTRY'''
