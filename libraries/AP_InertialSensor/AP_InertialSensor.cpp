@@ -1221,9 +1221,6 @@ AP_InertialSensor::detect_backends(void)
 #if defined(HAL_INS_PROBE_LIST)
     // IMUs defined by IMU lines in hwdef.dat
     HAL_INS_PROBE_LIST;
-#if defined(HAL_SITL_INVENSENSEV3)
-    ADD_BACKEND(AP_InertialSensor_Invensensev3::probe(*this, hal.i2c_mgr->get_device(1, 1), ROTATION_NONE));
-#endif
 #elif AP_FEATURE_BOARD_DETECT
     switch (AP_BoardConfig::get_board_type()) {
     case AP_BoardConfig::PX4_BOARD_PX4V1:

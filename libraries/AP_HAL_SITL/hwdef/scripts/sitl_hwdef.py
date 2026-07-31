@@ -23,6 +23,11 @@ class SITLHWDef(hwdef.HWDef):
         for d in self.alllines:
             if d.startswith('define '):
                 f.write('#define %s\n' % d[7:])
+        # emit the INS probe list generated from any IMU lines, mirroring the
+        # ChibiOS hwdef system.  This lets SITL boards select simulated sensor
+        # drivers via IMU lines instead of ad-hoc HAL_SITL_* hooks in the
+        # inertial sensor library.  Boards with no IMU lines emit nothing.
+        self.write_IMU_config(f)
 
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
