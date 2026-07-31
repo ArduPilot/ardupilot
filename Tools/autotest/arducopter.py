@@ -31,6 +31,7 @@ from pysim import vehicleinfo
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
@@ -18962,6 +18963,197 @@ RTL_ALT_M 111
         self.arm_vehicle()
         self.wait_disarmed()
 
+    def mission_NAV_LOITER_TURNS_speed(self):
+        '''LOITER_TURNS orbits at WP_SPD, not at CIRCLE_RATE * radius'''
+        radius = 20
+        # CIRCLE_RATE is deliberately far too low to produce this speed: the orbit must ignore
+        # it and fly at WP_SPD, bounded only by the corner acceleration.  Deriving the speed
+        # from the rate, as the orbit used to, would give radians(2) * 20 = 0.7 m/s.
+        # WP_SPD is set explicitly so the check below does not track its default.
+        self.set_parameters({
+            'AUTO_OPTIONS': 3,
+            'CIRCLE_RATE': 2,
+            'WP_SPD': 5,
+        })
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=1,
+                p3=radius,
+                z=30,  # circle is 10m higher than takeoff
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # the leg out to the circle edge also flies at WP_SPD, and ends stopped on the edge, so
+        # only sample the speed once the orbit itself has been announced
+        self.wait_statustext("Mission: circling", timeout=120)
+        tstart = self.get_sim_time()
+
+        # hold the orbit speed while still on the LOITER_TURNS command.  The minimum_duration and
+        # the seq assertion together stop a following leg from satisfying this: RTL also flies at
+        # WP_SPD, so without them an orbit that is skipped entirely still passes.
+        self.wait_groundspeed(4.0, 6.0, timeout=30, minimum_duration=5)
+        self.assert_current_waypoint(2)
+
+        # the command must also last about one circumference (2*pi*20 / 5 = 25s).  A skipped
+        # orbit reaches RTL in about a tick; the old rate-derived 0.7 m/s would take ~180s.
+        self.wait_current_waypoint(3, timeout=120)
+        orbit_time_s = self.get_sim_time_cached() - tstart
+        expected_s = 2 * math.pi * radius / 5.0
+        if orbit_time_s < expected_s * 0.6 or orbit_time_s > expected_s * 2.0:
+            raise NotAchievedException(
+                "orbit took %.1fs, expected about %.1fs" % (orbit_time_s, expected_s))
+
+        self.wait_disarmed()
+
+    def mission_NAV_LOITER_TURNS_zero_radius(self):
+        '''radius-0 LOITER_TURNS holds position and spins yaw at CIRCLE_RATE (panorama)'''
+        turns = 2
+        rate_degs = 20.0
+        expected_duration_s = turns * 360.0 / rate_degs
+        # a zero radius cannot encode a direction in the mission item (loiter_ccw comes from
+        # param3 < 0), so CIRCLE_RATE's sign is the panorama's only direction control.  A
+        # negative rate must therefore spin counter-clockwise.
+        self.set_parameters({
+            'AUTO_OPTIONS': 3,
+            'CIRCLE_RATE': -rate_degs,
+        })
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=turns,
+                p3=0,  # zero radius: panorama
+                z=20,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # the panorama timer starts when circle_start announces the command
+        self.wait_statustext("Mission: circling", timeout=120)
+        tstart = self.get_sim_time()
+        start_pos = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
+
+        # accumulate heading change and position drift until the mission moves on to RTL
+        total_angle_deg = 0.0
+        last_yaw_deg = None
+        max_drift_m = 0.0
+        while True:
+            if self.get_sim_time_cached() - tstart > expected_duration_s * 2 + 30:
+                raise AutoTestTimeoutException("panorama did not complete")
+            m = self.assert_receive_message(
+                ['ATTITUDE', 'GLOBAL_POSITION_INT', 'MISSION_CURRENT'],
+                timeout=5,
+            )
+            m_type = m.get_type()
+            if m_type == 'ATTITUDE':
+                yaw_deg = math.degrees(m.yaw)
+                if last_yaw_deg is not None:
+                    delta_deg = yaw_deg - last_yaw_deg
+                    if delta_deg > 180:
+                        delta_deg -= 360
+                    elif delta_deg < -180:
+                        delta_deg += 360
+                    total_angle_deg += delta_deg
+                last_yaw_deg = yaw_deg
+            elif m_type == 'GLOBAL_POSITION_INT':
+                max_drift_m = max(max_drift_m, self.get_distance_int(start_pos, m))
+            elif m_type == 'MISSION_CURRENT':
+                if m.seq >= 3:
+                    break
+        elapsed_s = self.get_sim_time_cached() - tstart
+
+        if elapsed_s < expected_duration_s * 0.9:
+            raise NotAchievedException(
+                "Panorama completed too quickly (want>=%.1fs got %.1fs)" %
+                (expected_duration_s * 0.9, elapsed_s))
+        # CIRCLE_RATE was set negative, so the spin must be counter-clockwise through roughly
+        # the commanded total angle
+        target_angle_deg = -turns * 360.0
+        if abs(total_angle_deg - target_angle_deg) > 80:
+            raise NotAchievedException(
+                "Panorama spun %.1fdeg, expected %.1fdeg (negative CIRCLE_RATE = CCW)" %
+                (total_angle_deg, target_angle_deg))
+        if max_drift_m > 5:
+            raise NotAchievedException(
+                "Vehicle did not hold position during panorama (drift %.1fm)" % max_drift_m)
+
+        self.wait_disarmed()
+
+    def mission_NAV_LOITER_TURNS_direction(self):
+        '''LOITER_TURNS orbits the way the sign of param3 asks'''
+        radius = 20
+        self.set_parameters({
+            'AUTO_OPTIONS': 3,
+            'WP_SPD': 5,
+        })
+        self.wait_ready_to_arm()
+        circle_centre_loc = self.offset_location_ne(self.get_location(), 2 * radius, 0)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=1,
+                p3=-radius,  # a negative radius asks for a counter-clockwise orbit
+                x=int(circle_centre_loc.lat*1e7),
+                y=int(circle_centre_loc.lng*1e7),
+                z=20,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # only start measuring once the orbit itself has been announced, so the leg out to the
+        # circle edge does not contribute
+        self.wait_statustext("Mission: circling", timeout=120)
+        tstart = self.get_sim_time()
+
+        # accumulate the bearing from the circle centre out to the vehicle.  Going clockwise makes
+        # that bearing increase and counter-clockwise makes it decrease, so the sign of the total
+        # is the direction flown
+        total_angle_deg = 0.0
+        last_bearing_deg = None
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise AutoTestTimeoutException("orbit did not complete")
+            m = self.assert_receive_message(
+                ['GLOBAL_POSITION_INT', 'MISSION_CURRENT'],
+                timeout=5,
+            )
+            if m.get_type() == 'GLOBAL_POSITION_INT':
+                pos = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+                bearing_deg = self.get_bearing(circle_centre_loc, pos)
+                if last_bearing_deg is not None:
+                    delta_deg = bearing_deg - last_bearing_deg
+                    if delta_deg > 180:
+                        delta_deg -= 360
+                    elif delta_deg < -180:
+                        delta_deg += 360
+                    total_angle_deg += delta_deg
+                last_bearing_deg = bearing_deg
+            elif m.seq >= 3:
+                break
+
+        if abs(total_angle_deg + 360) > 80:
+            raise NotAchievedException(
+                "Orbit swept %.0fdeg, expected -360deg (negative param3 = counter-clockwise)" %
+                total_angle_deg)
+
+        self.wait_disarmed()
+
     def AHRSAutoTrim(self):
         '''calibrate AHRS trim using RC input'''
         self.progress("Making earth frame same as body frame")  # because I'm lazy
@@ -19920,6 +20112,9 @@ return update, 1000
             self.PIDNotches,
             self.mission_NAV_LOITER_TURNS,
             self.mission_NAV_LOITER_TURNS_off_center,
+            self.mission_NAV_LOITER_TURNS_speed,
+            self.mission_NAV_LOITER_TURNS_zero_radius,
+            self.mission_NAV_LOITER_TURNS_direction,
             self.StaticNotches,
             self.LuaParamLockdown,
             self.RefindGPS,
