@@ -23,6 +23,7 @@ from pysim import vehicleinfo
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import OldpymavlinkException
 from vehicle_test_suite import PreconditionFailedException
@@ -8888,15 +8889,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     timeout=5,
                     delay_fn=self.drain_all_pexpects,
                 )
-                follower_loc = mavutil.location(
+                follower_loc = Location.latlon_only(
                     follower_gpi.lat * 1e-7,
                     follower_gpi.lon * 1e-7,
-                    follower_gpi.alt * 1e-3,
                 )
-                target_loc = mavutil.location(
+                target_loc = Location.latlon_only(
                     target_gpi.lat * 1e-7,
                     target_gpi.lon * 1e-7,
-                    target_gpi.alt * 1e-3,
                 )
                 return self.get_distance(follower_loc, target_loc)
 
@@ -8918,15 +8917,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     timeout=5,
                     delay_fn=self.drain_all_pexpects,
                 )
-                follower_loc = mavutil.location(
+                follower_loc = Location.latlon_only(
                     follower_gpi.lat * 1e-7,
                     follower_gpi.lon * 1e-7,
-                    follower_gpi.alt * 1e-3,
                 )
-                target_loc = mavutil.location(
+                target_loc = Location.latlon_only(
                     target_gpi.lat * 1e-7,
                     target_gpi.lon * 1e-7,
-                    target_gpi.alt * 1e-3,
                 )
                 separation = self.get_distance(follower_loc, target_loc)
                 ideal_dist = math.sqrt(FOLL_OFS_X**2 + FOLL_OFS_Y**2 + FOLL_OFS_Z**2)
