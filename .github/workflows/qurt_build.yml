@@ -175,5 +175,10 @@ jobs:
             build/ModalAI-VOXL2/ArduPilot_Plane.so
             build/ModalAI-VOXL2/ArduPilot_Rover.so
             build/ModalAI-VOXL2/ArduPilot.so
+            build/ModalAI-VOXL3/ardupilot
+            build/ModalAI-VOXL3/ArduPilot_Copter.so
+            build/ModalAI-VOXL3/ArduPilot_Plane.so
+            build/ModalAI-VOXL3/ArduPilot_Rover.so
+            build/ModalAI-VOXL3/ArduPilot.so
             libraries/AP_HAL_QURT/packaging/*.deb
           retention-days: 7
