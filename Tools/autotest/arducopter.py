@@ -8388,22 +8388,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     f"Camera still has an interval set: {got}")
         img_idx_at_stop = self.camera_feedback_img_idx(1)
 
-        self.progress("Multiple images with a zero interval must not work")
+        self.progress("Multiple images with a zero interval must be denied")
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
             p1=1,  # camera instance 1
             p2=0,  # interval
             p3=2,  # total images
-            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
-        self.progress("Negative camera id must not work")
+        self.progress("Negative camera id must be denied")
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
             p1=-1,  # invalid camera instance
             p2=0,   # interval
             p3=1,   # total images
-            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
         )
 
         self.progress("Capture on an absent camera instance must fail")
