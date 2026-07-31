@@ -49,7 +49,7 @@ extern "C" {
 
 /*
   diagnostics for one trapped access. Written by MemManage_Handler at exception
-  priority 0, read by the monitor thread. The handler publishes the payload with
+  priority 0, read by the storage thread. The handler publishes the payload with
   a barrier before setting pending, so only the flags need to be volatile.
  */
 struct memprotect_state_t {
@@ -75,8 +75,9 @@ extern struct memprotect_state_t memprotect_state;
 void memprotect_init(void);
 
 /*
-  arm and disarm the region. Only the monitor thread may call these, so that
-  there is a single owner of the region state
+  arm and disarm the region.  memprotect_init arms at startup, the MemManage
+  handler disarms when it traps an access, and the storage thread disarms for
+  its scan; the storage thread is the only re-armer
  */
 void memprotect_arm(void);
 void memprotect_disarm(void);
