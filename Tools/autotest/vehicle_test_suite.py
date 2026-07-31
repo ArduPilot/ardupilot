@@ -10310,17 +10310,30 @@ class TestSuite(abc.ABC):
                                       verbose=True,
                                       target_system=1,
                                       target_component=1,
-                                      mav=None):
-        '''mavlink2 required'''
+                                      mav=None,
+                                      start_index=None):
+        '''mavlink2 required.  If start_index is supplied then a partial
+        update is done using MISSION_WRITE_PARTIAL_LIST; items must have
+        sequence numbers starting from start_index'''
         if mav is None:
             mav = self.mav
         self.do_timesync_roundtrip()
         tstart = self.get_sim_time()
-        mav.mav.mission_count_send(target_system,
-                                   target_component,
-                                   len(items),
-                                   mission_type)
-        remaining_to_send = set(range(0, len(items)))
+        if start_index is not None:
+            item_base = start_index
+            mav.mav.mission_write_partial_list_send(
+                target_system,
+                target_component,
+                start_index,
+                start_index + len(items) - 1,
+                mission_type)
+        else:
+            item_base = 0
+            mav.mav.mission_count_send(target_system,
+                                       target_component,
+                                       len(items),
+                                       mission_type)
+        remaining_to_send = set(range(item_base, item_base + len(items)))
 
         sent = set()
         timeout = (10 + len(items)/10.0)
@@ -10347,7 +10360,7 @@ class TestSuite(abc.ABC):
                 raise NotAchievedException(f"Received unexpected mission ack {self.dump_message_verbose(m)}")
 
             if verbose:
-                self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
+                self.progress("Handling request for item %u/%u" % (m.seq, item_base + len(items)-1))
             if m.seq in sent:
                 self.progress("received duplicate request for item %u" % m.seq)
                 continue
@@ -10358,20 +10371,21 @@ class TestSuite(abc.ABC):
             if m.mission_type != mission_type:
                 raise NotAchievedException("received request for item from wrong mission type")
 
-            if items[m.seq].mission_type != mission_type:
-                raise NotAchievedException(f"supplied item not of correct mission type (want={mission_type} got={items[m.seq].mission_type}")  # noqa: E501
-            if items[m.seq].target_system != target_system:
+            item = items[m.seq - item_base]
+            if item.mission_type != mission_type:
+                raise NotAchievedException(f"supplied item not of correct mission type (want={mission_type} got={item.mission_type}")  # noqa: E501
+            if item.target_system != target_system:
                 raise NotAchievedException("supplied item not of correct target system %d got %d" %
-                                           (target_system, items[m.seq].target_system))
-            if items[m.seq].target_component != target_component:
+                                           (target_system, item.target_system))
+            if item.target_component != target_component:
                 raise NotAchievedException("supplied item not of correct target component %d got %d" %
-                                           (target_component, items[m.seq].target_component))
-            if items[m.seq].seq != m.seq:
+                                           (target_component, item.target_component))
+            if item.seq != m.seq:
                 raise NotAchievedException("supplied item has incorrect sequence number (%u vs %u)" %
-                                           (items[m.seq].seq, m.seq))
+                                           (item.seq, m.seq))
 
-            items[m.seq].pack(mav.mav)
-            mav.mav.send(items[m.seq])
+            item.pack(mav.mav)
+            mav.mav.send(item)
 
             remaining_to_send.discard(m.seq)
             sent.add(m.seq)
