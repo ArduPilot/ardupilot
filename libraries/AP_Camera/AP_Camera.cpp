@@ -460,7 +460,7 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
         // param3 : total num images
         // sanity check instance
         if (is_negative(packet.param1)) {
-            return MAV_RESULT_UNSUPPORTED;
+            return MAV_RESULT_DENIED;
         }
         // check if this is a single picture request (e.g. total images is 1 or interval and total images are zero)
         if (is_equal(packet.param3, 1.0f) ||
@@ -479,6 +479,10 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
             }
             return take_multiple_pictures(packet.param1-1, packet.param2*1000, -1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
         } else {
+            if (is_zero(packet.param2)) {
+                // multiple pictures with zero interval is not permitted
+                return MAV_RESULT_DENIED;
+            }
             // take multiple pictures equal to the number specified in param3
             if (is_zero(packet.param1)) {
                 // take pictures for every backend
