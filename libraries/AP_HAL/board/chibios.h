@@ -206,11 +206,14 @@
 
 /*
   the custom build server can ask for this on any board, so silently ignore it
-  where it cannot work: only H7 has the reserved region at address 0, and on
-  external flash boards ITCM holds executable code just above it
+  where it cannot work: only H7 has the reserved region at address 0, on
+  external flash boards ITCM holds executable code just above it, and the
+  periph, bootloader and iofirmware builds have no storage thread to re-arm
+  the region (nor the logger and GCS the reporting relies on)
  */
 #if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED && \
-    (!defined(STM32H7) || EXT_FLASH_SIZE_MB != 0 || defined(HAL_USE_EMPTY_STORAGE))
+    (!defined(STM32H7) || EXT_FLASH_SIZE_MB != 0 || defined(HAL_USE_EMPTY_STORAGE) || \
+     defined(HAL_BUILD_AP_PERIPH) || defined(HAL_BOOTLOADER_BUILD) || defined(IOMCU_FW))
 #undef AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
 #define AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED 0
 #endif
