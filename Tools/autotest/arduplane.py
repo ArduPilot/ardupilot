@@ -8670,12 +8670,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # ------------------------------------------------------------
             self.progress("Configuring primary vehicle as FOLLOWER")
             self.install_applet_script_context("plane_follow.lua")
-            self.install_script_module(
+            self.install_script_module_context(
                 self.script_modules_source_path("pid.lua"), "pid.lua")
-            self.install_script_module(
+            self.install_script_module_context(
                 self.script_modules_source_path("mavlink_attitude.lua"),
                 "mavlink_attitude.lua")
-            self.install_mavlink_module()
+            self.install_mavlink_module_context()
 
             self.set_parameters({
                 "SERIAL5_PROTOCOL": 2,
