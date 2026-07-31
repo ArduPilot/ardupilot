@@ -8084,6 +8084,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.customise_SITL_commandline(["--serial5=sim:avt_cm62_gimbal:"])
 
+        self.progress("Capture on an unconfigured camera instance must fail")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=2,  # camera instance 2 is not configured
+            p2=0,  # interval
+            p3=1,  # total images
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
     def _setup_avt_cm62_dual(self):
         '''configure two SIM_AVT_CM62 simulators on serial5 and serial6'''
         self.set_parameters({
@@ -8204,6 +8213,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
             self.create_MISSION_ITEM_INT(
                 mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+                p1=0,    # 0 means all cameras
+                p2=0,    # interval (0 = single shot)
+                p3=1,    # total images = 1
+                autocontinue=1,
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
                 p1=1,    # camera instance 1
                 p2=0,    # interval (0 = single shot)
                 p3=1,    # total images = 1
@@ -8266,10 +8282,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_flying_simple_relhome_mission(mission_items)
 
         self.progress("Verify CAMERA_CAPTURE_STATUS reports the interval capture")
-        # wait for camera 2 to finish the images it was asked for, leaving
-        # camera 1 as the only one with an interval set for the rest of the
-        # climb
-        self.wait_camera_img_idx([(1, 2)])
+        # wait for camera 2 to finish the images it was asked for (one
+        # from the all-cameras item, two from its own item), leaving
+        # camera 1 as the only one with an interval set for the rest of
+        # the climb
+        self.wait_camera_img_idx([(1, 3)])
         got = sorted(self.camera_capture_statuses(2))
         if got != [CAMERA_IMAGE_STATUS_IDLE, CAMERA_IMAGE_STATUS_INTERVAL_IDLE]:
             raise NotAchievedException(
@@ -8289,7 +8306,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
 
         self.progress("Verify per-camera shot counts from mission items")
-        self.wait_camera_img_idx([(0, img_idx_at_stop), (1, 2)])
+        self.wait_camera_img_idx([(0, img_idx_at_stop), (1, 3)])
 
         self.progress("Verify CAMERA_CAPTURE_STATUS reports no interval capture")
         got = self.camera_capture_statuses(2)
@@ -8301,6 +8318,115 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (cam1_compid, 25, 40),
             (cam2_compid, 75, 80),
         ])
+
+    def MountAVTCM62DualImageStartCapture(self):
+        '''test MAV_CMD_IMAGE_START_CAPTURE mavlink command against two
+        SIM_AVT_CM62 cameras'''
+        self._setup_avt_cm62_dual()
+
+        # note that CAMERA_FEEDBACK uses cam_idx numbers starting from 0
+        want_img_idx = [1, 1]
+        self.progress("Single image on all cameras (interval and total both zero)")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=0,  # 0 means all cameras
+            p2=0,  # interval
+            p3=0,  # total images; zero with a zero interval means one image
+        )
+        self.wait_camera_img_idx(list(enumerate(want_img_idx)))
+
+        for cam in 0, 1:
+            self.progress(f"Single image on just cam{cam} (total images is 1)")
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+                p1=cam+1,  # camera instance
+                p2=0,      # interval
+                p3=1,      # total images
+            )
+            # the count for the other camera must not move
+            want_img_idx[cam] += 1
+            self.wait_camera_img_idx(list(enumerate(want_img_idx)))
+
+        self.progress("Fixed number of images on just cam0, via COMMAND_LONG")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=1,  # camera instance 1
+            p2=1,  # interval (s)
+            p3=3,  # total images
+        )
+        want_img_idx[0] += 3
+        self.wait_camera_img_idx(list(enumerate(want_img_idx)))
+
+        self.progress("Capture-until-stopped on cam1 (total images is 0)")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=2,  # camera instance 2
+            p2=1,  # interval (s)
+            p3=0,  # total images; zero with an interval means until stopped
+        )
+        # wait for several images so we know it does not stop by itself
+        want_img_idx[1] += 3
+        self.wait_camera_img_idx(list(enumerate(want_img_idx)))
+        got = sorted(self.camera_capture_statuses(2))
+        if got != [CAMERA_IMAGE_STATUS_IDLE, CAMERA_IMAGE_STATUS_INTERVAL_IDLE]:
+            raise NotAchievedException(
+                f"Wanted exactly one camera capturing on an interval: {got}")
+
+        self.progress("Stop the capture on cam1")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_STOP_CAPTURE,
+            p1=2,  # camera instance 2
+        )
+        self.progress("Wait for CAMERA_CAPTURE_STATUS to report no interval capture")
+        tstart = self.get_sim_time()
+        while True:
+            got = self.camera_capture_statuses(2)
+            if got == [CAMERA_IMAGE_STATUS_IDLE, CAMERA_IMAGE_STATUS_IDLE]:
+                break
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException(
+                    f"Camera still has an interval set: {got}")
+        img_idx_at_stop = self.camera_feedback_img_idx(1)
+
+        self.progress("Multiple images with a zero interval must not work")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=1,  # camera instance 1
+            p2=0,  # interval
+            p3=2,  # total images
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.progress("Negative camera id must not work")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=-1,  # invalid camera instance
+            p2=0,   # interval
+            p3=1,   # total images
+            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED,
+        )
+
+        self.progress("Capture on an absent camera instance must fail")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=3,  # camera instance 3 does not exist
+            p2=0,  # interval
+            p3=1,  # total images
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.progress("Two-image capture on cam0; cam1 must remain stopped")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=1,  # camera instance 1
+            p2=1,  # interval (s)
+            p3=2,  # total images
+        )
+        # waiting for these images to arrive also spans two of cam1's
+        # old capture intervals, so this checks cam1 really stopped and
+        # that the denied/failed commands above took no images
+        want_img_idx[0] += 2
+        self.wait_camera_img_idx([(0, want_img_idx[0]), (1, img_idx_at_stop)])
 
     def assert_mount_rpy(self, r, p, y, tolerance=1):
         '''assert mount atttiude in degrees'''
@@ -19015,6 +19141,7 @@ return update, 1000
             self.MountAVTCM62,
             self.MountAVTCM62Dual,
             self.MountAVTCM62DualMission,
+            self.MountAVTCM62DualImageStartCapture,
             self.MountRCFailAngle,
             self.MountRCFailRate,
             self.FlyMissionTwice,
