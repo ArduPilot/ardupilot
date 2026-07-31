@@ -9099,7 +9099,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 except NotAchievedException:
                     self.set_rc(7, 1000)
                     self.disarm_vehicle(force=True)
-                    self.disarm_vehicle(mav=target_mav, force=True)
+                    self.disarm_vehicle(mav=target_mav, force=True, target_sysid=target_sysid)
                     raise
             self.progress("FOLLOWER successfully tracked target through mission")
 
