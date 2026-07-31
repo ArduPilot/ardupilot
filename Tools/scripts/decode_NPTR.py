@@ -25,7 +25,7 @@ import subprocess
 import sys
 
 # heuristic backtrace fields, in the order the fault handler recorded them
-BT_FIELDS = ['BT0', 'BT1', 'BT2', 'BT3', 'BT4', 'BT5']
+BT_FIELDS = ['B0', 'B1', 'B2', 'B3', 'B4', 'B5']
 
 
 class DecodeNPTR(object):
@@ -89,8 +89,17 @@ class DecodeNPTR(object):
 
     def print_message(self, m):
         print('')
-        print('NPTR hit %u  address=0x%x  thread=%s%s' % (
-            m.Cnt, m.FA, m.TN, '  LATCHED (trapping now disabled)' if m.Ltch else ''))
+        # Val was added after the first NPTR firmwares; show it when present
+        val = getattr(m, 'Val', None)
+        value_str = '' if val is None else '  value=0x%08x' % val
+        if m.TN == 'untrapped':
+            # from the zero-invariant scan: no fault context to describe
+            print('NPTR untrapped write  address=0x%x%s  (DMA/bus-master, '
+                  'or CPU access while the region was disarmed)' % (
+                      m.FA, value_str))
+            return
+        print('NPTR hit %u  address=0x%x%s  thread=%s%s' % (
+            m.Cnt, m.FA, value_str, m.TN, '  LATCHED (trapping now disabled)' if m.Ltch else ''))
         print('  time %.3fs   exc_return=0x%08x   %s' % (
             m.TimeUS*1.0e-6, m.ExcR,
             'thread mode' if m.IPSR == 0 else 'exception %u' % m.IPSR))
@@ -104,7 +113,11 @@ class DecodeNPTR(object):
                 print('    %s' % line)
         print('  heuristic backtrace (stack scan, may contain stale frames):')
         any_bt = False
-        for f in BT_FIELDS:
+        # the backtrace fields were named BT0..BT5 before the Val field was
+        # added and B0..B5 after; accept either
+        bt_prefix = 'B' if hasattr(m, 'B0') else 'BT'
+        bt_fields = ['%s%u' % (bt_prefix, i) for i in range(len(BT_FIELDS))]
+        for f in bt_fields:
             lines = self.describe(getattr(m, f), True)
             if lines is None:
                 continue
