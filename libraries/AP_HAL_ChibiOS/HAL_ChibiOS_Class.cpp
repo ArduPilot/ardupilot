@@ -330,7 +330,7 @@ static void main_loop()
 #endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
 
 #if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
-    // the monitor thread is already running, so the region always has a re-armer
+    // the storage thread is already running, so the region always has a re-armer
     memprotect_init();
 #endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
 

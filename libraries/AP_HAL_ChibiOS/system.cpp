@@ -259,7 +259,7 @@ void MemManage_Handler(void) {
 
 #if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
 /*
-  intercept MemManage to trap writes to the reserved first 1k. This must be
+  intercept MemManage to trap accesses to the reserved first 1k. This must be
   naked: r4-r11 are not stacked by hardware, and on the fallback path we have to
   reach the fatal handler with MSP, PSP and LR exactly as the hardware left them
  */
@@ -283,7 +283,7 @@ void MemManage_Handler(void)
         "   pop     {r1, lr}                \n"
         "   cmp     r0, #0                  \n"
         "   it      ne                      \n"
-        "   bxne    lr                      \n" // recovered, retry the store
+        "   bxne    lr                      \n" // recovered, retry the access
         "   b       " MEMPROTECT_FALLBACK "  \n"
     );
 }
