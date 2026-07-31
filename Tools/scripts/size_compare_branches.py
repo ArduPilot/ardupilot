@@ -676,6 +676,7 @@ class SizeCompareBranches(BuildScriptBase):
 
     def compare_results_sizes(self, result_master, result_branch):
         ret = {}
+        board = result_master.board
         for vehicle in result_master.vehicle.keys():
             # check for the difference in size (and identicality)
             # of the two binaries:
@@ -695,6 +696,10 @@ class SizeCompareBranches(BuildScriptBase):
                 new_path = os.path.join(new_bin_dir, elf_filename)
                 master_size = os.path.getsize(master_path)
                 new_size = os.path.getsize(new_path)
+                if self.boards_by_name[board].hal == "QURT":
+                    # use text+data for the size delta; file identity is evaluated separately below
+                    master_size = self.size_for_elf(master_path, toolchain="hexagon")["size_total"]
+                    new_size = self.size_for_elf(new_path, toolchain="hexagon")["size_total"]
 
                 identical = self.files_are_identical(master_path, new_path)
                 if not identical:
@@ -702,15 +707,14 @@ class SizeCompareBranches(BuildScriptBase):
                     # This treats symbol renames as then "identical".
                     master_path_stripped = self.create_stripped_elf(
                         master_path,
-                        toolchain=result_master.toolchain,
+                        toolchain="hexagon" if self.boards_by_name[board].hal == "QURT" else result_master.toolchain,
                     )
                     new_path_stripped = self.create_stripped_elf(
                         new_path,
-                        toolchain=result_branch.toolchain,
+                        toolchain="hexagon" if self.boards_by_name[board].hal == "QURT" else result_branch.toolchain,
                     )
                     identical = self.files_are_identical(master_path_stripped, new_path_stripped)
 
-            board = result_master.board
             ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size, identical)
 
         return ret
