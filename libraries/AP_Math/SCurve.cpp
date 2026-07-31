@@ -48,6 +48,7 @@ void SCurve::init()
     snap_max = 0.0f;
     jerk_max = 0.0f;
     accel_max = 0.0f;
+    accel_c_max = 0.0f;
     vel_max = 0.0f;
     time = 0.0f;
     num_segs = SEG_INIT;
@@ -194,8 +195,8 @@ void SCurve::generate_path(float speed_xy, float speed_up, float speed_down,
 {
     if (is_arc_segment) {
         // limit horizontal speed so centripetal acceleration stays within the corner acceleration limit
-        accel_c = is_positive(accel_c) ? accel_c : accel_xy;
-        speed_xy = MIN(speed_xy, safe_sqrt(accel_c * arc.radius_ne));
+        accel_c_max = is_positive(accel_c) ? accel_c : accel_xy;
+        speed_xy = MIN(speed_xy, safe_sqrt(accel_c_max * arc.radius_ne));
     }
 
     // set snap and jerk maxima
@@ -224,6 +225,11 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
     // return immediately if zero length path
     if (num_segs != segments_max) {
         return;
+    }
+
+    if (is_arc_segment) {
+        // limit horizontal speed so centripetal acceleration stays within the corner acceleration limit
+        speed_xy = MIN(speed_xy, safe_sqrt(accel_c_max * arc.radius_ne));
     }
 
     // segment accelerations can not be changed after segment creation.

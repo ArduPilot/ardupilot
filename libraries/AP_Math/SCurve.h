@@ -228,7 +228,8 @@ private:
     float snap_max;     // maximum snap magnitude
     float jerk_max;     // maximum jerk magnitude
     float accel_max;    // maximum acceleration magnitude
-    float accel_z_max;    // maximum acceleration magnitude
+    float accel_c_max;  // maximum cornering acceleration magnitude
+    float accel_z_max;  // maximum acceleration magnitude
     float vel_max;      // maximum velocity magnitude
     float time;         // time that defines position on the path
 
