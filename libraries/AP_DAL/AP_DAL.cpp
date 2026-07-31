@@ -67,7 +67,11 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
-    _RFRN.EAS2TAS = ahrs.get_EAS2TAS();
+    // EAS2TAS is essentially a sensor input to the EKFs, so it is
+    // deliberately taken from the barometer's atmosphere model
+    // rather than the AHRS, lest a state estimator's output be fed
+    // back into the EKFs as an input:
+    _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
     _RFRN.vehicle_class = (uint8_t)ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
