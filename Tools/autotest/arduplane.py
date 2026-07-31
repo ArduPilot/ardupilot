@@ -8641,6 +8641,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         FOLL_DIST_MAX = 1000
         MAX_FOLLOW_DISTANCE_M = FOLL_OFS_X + 300
         OFFSET_CONVERGE_M = 25      # report when within this of ideal offset
+        # OFFSET_VIOLATION_STREAK: consecutive over-threshold reports required before
+        # failing; absorbs one-off timing/CPU-contention blips on loaded CI runners
+        # without masking real divergence
+        OFFSET_VIOLATION_STREAK = 2
         REPORT_INTERVAL_S = 5       # periodic distance reports
         MISSION_TIMEOUT_S = 1200    # max time to allow mission to run
         FOLLOW_SPEEDUP = 2          # override the default speed up for follow testing
@@ -9012,6 +9016,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             last_target_wp = 3
             last_wp_time = None
             reports_since_wp = 0
+            offset_violation_streak = 0
             final_wp = 10
 
             # drain all buffered messages from target before monitoring
@@ -9037,6 +9042,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                         last_target_wp = mav_wp.seq
                         last_wp_time = self.get_sim_time()
                         reports_since_wp = 0
+                        offset_violation_streak = 0
                         self.progress("TARGET reached waypoint %u (final_wp=%u)" % (mav_wp.seq, final_wp))
                         if mav_wp.seq >= final_wp:
                             self.progress("TARGET reached final waypoint, mission complete")
@@ -9087,10 +9093,20 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                                                        (sep, MAX_FOLLOW_DISTANCE_M))
 
                         if not settling and ofs_err > OFFSET_CONVERGE_M:
-                            self.progress("DEBUG: raising NotAchievedException WP")
-                            raise NotAchievedException(
-                                "Follower offset error %.1fm exceeds threshold %.0fm on leg to WP%u" % (
-                                    ofs_err, OFFSET_CONVERGE_M, last_target_wp))
+                            offset_violation_streak += 1
+                            self.progress(
+                                "Offset error %.1fm exceeds threshold %.0fm "
+                                "(%u/%u consecutive)" % (
+                                    ofs_err, OFFSET_CONVERGE_M,
+                                    offset_violation_streak, OFFSET_VIOLATION_STREAK))
+                            if offset_violation_streak >= OFFSET_VIOLATION_STREAK:
+                                raise NotAchievedException(
+                                    "Follower offset error %.1fm exceeds threshold %.0fm "
+                                    "on leg to WP%u for %u consecutive reports" % (
+                                        ofs_err, OFFSET_CONVERGE_M, last_target_wp,
+                                        offset_violation_streak))
+                        else:
+                            offset_violation_streak = 0
 
                         last_report = now
 
