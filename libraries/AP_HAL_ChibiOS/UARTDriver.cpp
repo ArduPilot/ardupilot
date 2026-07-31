@@ -521,6 +521,15 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
         if (_baudrate != 0) {
 #ifndef HAL_UART_NODMA
             bool was_initialised = _device_initialised;
+            // sioStart() leaves the FIFOs alone when the peripheral is already
+            // running, so bytes framed at the old baud would survive into the
+            // new window. Clearing FEN flushes RX and TX; setting it re-enables
+            // them empty.
+            if (clear_buffers && _device_initialised) {
+                auto *pl011 = ((SIODriver*)sdef.serial)->uart;
+                pl011->UARTLCR_H &= ~UART_UARTLCR_H_FEN;
+                pl011->UARTLCR_H |=  UART_UARTLCR_H_FEN;
+            }
             // setup Rx DMA for RP2350
             if (!_device_initialised) {
                 if (rx_dma_enabled) {
