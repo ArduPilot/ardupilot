@@ -479,6 +479,58 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.reboot_sitl()  # far from home
 
+    def QAUTOTUNEYawRepoint(self):
+        '''check QAutoTune survives a slow position-hold yaw re-point'''
+        # Each tuning twitch displaces the vehicle a little; beyond 5m
+        # of drift autotune's position hold commands a yaw re-point
+        # along the drift direction (+90deg while tuning pitch).  With
+        # a low yaw target acceleration that re-point's traverse takes
+        # longer than the failed-to-level timeout while remaining below
+        # the yaw-rate-based timeout deferral threshold, so autotune
+        # must not run the level timeout while the yaw target is still
+        # slewing towards the desired yaw.
+        self.set_parameters({
+            "Q_A_ACC_Y_MAX": 5,
+            "Q_AUTOTUNE_AXES": 3,  # roll and pitch only
+            # adjust tune so QAUTOTUNE can cope:
+            "Q_AUTOTUNE_AGGR": 0.1,
+            "Q_AUTOTUNE_MIN_D": 0.0004,
+            "Q_A_RAT_RLL_P": 0.15,
+            "Q_A_RAT_RLL_I": 0.25,
+            "Q_A_RAT_RLL_D": 0.002,
+            "Q_A_RAT_PIT_P": 0.15,
+            "Q_A_RAT_PIT_I": 0.25,
+            "Q_A_RAT_PIT_D": 0.002,
+            "Q_A_RAT_YAW_P": 0.18,
+            "Q_A_RAT_YAW_I": 0.018,
+            "Q_A_ANG_RLL_P": 4.5,
+            "Q_A_ANG_PIT_P": 4.5,
+        })
+
+        self.takeoff(15, mode='GUIDED')
+        self.hover()
+        self.change_mode("QLOITER")
+        tstart = self.get_sim_time()
+        self.context_collect('STATUSTEXT')
+        self.change_mode("QAUTOTUNE")
+        self.wait_text(
+            "AutoTune: (Success|Failed to level).*",
+            timeout=5000,
+            check_context=True,
+            regex=True,
+        )
+        if self.re_match.group(1) != "Success":
+            raise NotAchievedException("autotune did not succeed")
+        self.progress("AUTOTUNE OK (%u seconds)" % (self.get_sim_time() - tstart))
+
+        # leave QAUTOTUNE before disarming so the tuned gains are not saved
+        self.change_mode("QLOITER")
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()  # may have drifted far from home
+
+    def hover(self, hover_throttle=1500):
+        self.set_rc(3, hover_throttle)
+
     def takeoff(self, height, mode, timeout=30):
         """climb to specified height and set throttle to 1500"""
         self.set_current_waypoint(0, check_afterwards=False)
@@ -3404,6 +3456,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.PilotYaw,
             self.ParameterChecks,
             self.QAUTOTUNE,
+            self.QAUTOTUNEYawRepoint,
             self.TestLogDownload,
             self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
