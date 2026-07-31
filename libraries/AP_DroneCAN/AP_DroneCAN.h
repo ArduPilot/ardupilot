@@ -72,6 +72,10 @@
 #include "AP_DroneCAN_serial.h"
 #endif
 
+#ifndef AP_DRONECAN_VESC_RTDATA_ENABLED
+#define AP_DRONECAN_VESC_RTDATA_ENABLED 0
+#endif
+
 // fwd-declare callback classes
 class AP_DroneCAN_DNA_Server;
 class CANSensor;
@@ -96,7 +100,7 @@ public:
 
     // handler for outgoing frames for auxillary drivers
     bool write_aux_frame(AP_HAL::CANFrame &out_frame, const uint64_t timeout_us) override;
-    
+
     uint8_t get_driver_index() const { return _driver_index; }
 
     // define string with length structure
@@ -205,13 +209,13 @@ private:
 
     // send queued parameter get/set request. called from loop
     void send_parameter_request();
-    
+
     // send queued parameter save request. called from loop
     void send_parameter_save_request();
 
     // periodic logging
     void logging();
-    
+
     // get parameter on a node
     ParamGetSetIntCb *param_int_cb;         // latest get param request callback function (for integers)
     ParamGetSetFloatCb *param_float_cb;     // latest get param request callback function (for floats)
@@ -271,7 +275,7 @@ private:
     // send GNSS Fix and yaw, same thing AP_GPS_DroneCAN would receive
     void gnss_send_fix();
     void gnss_send_yaw();
-    
+
     // GNSS Fix and Status
     struct {
         uint32_t last_gps_lib_fix_ms;
@@ -301,6 +305,17 @@ private:
 
 #if AP_DRONECAN_SERIAL_ENABLED
     AP_DroneCAN_Serial serial;
+#endif
+
+#if AP_DRONECAN_VESC_RTDATA_ENABLED
+    static constexpr uint8_t VESC_NODE_TABLE_SIZE = 128;
+
+    // A value of 0 means "mapping not yet known".
+    // Store esc_index + 1.
+    uint8_t _vesc_node_to_esc[VESC_NODE_TABLE_SIZE] {};
+
+    // Limitation of the frequency of recording the extended log.
+    uint32_t _vesc_last_log_ms[DRONECAN_SRV_NUMBER] {};
 #endif
 
     Canard::Publisher<uavcan_protocol_NodeStatus> node_status{canard_iface};
@@ -334,6 +349,18 @@ private:
 
     Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_Status> esc_status_cb{this, &AP_DroneCAN::handle_ESC_status};
     Canard::Subscriber<uavcan_equipment_esc_Status> esc_status_listener{esc_status_cb, _driver_index};
+
+    #if AP_DRONECAN_VESC_RTDATA_ENABLED
+        Canard::ObjCallback<AP_DroneCAN, vesc_RTData> vesc_rtdata_cb{
+            this,
+            &AP_DroneCAN::handle_vesc_rtdata
+        };
+
+        Canard::Subscriber<vesc_RTData> vesc_rtdata_listener{
+            vesc_rtdata_cb,
+            _driver_index
+        };
+    #endif
 
 #if AP_EXTENDED_ESC_TELEM_ENABLED
     Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_StatusExtended> esc_status_extended_cb{this, &AP_DroneCAN::handle_esc_ext_status};
@@ -372,7 +399,7 @@ private:
     Canard::ObjCallback<AP_DroneCAN, dronecan_protocol_FlexDebug> FlexDebug_cb{this, &AP_DroneCAN::handle_FlexDebug};
     Canard::Subscriber<dronecan_protocol_FlexDebug> FlexDebug_listener{FlexDebug_cb, _driver_index};
 #endif
-    
+
 #if AP_DRONECAN_HOBBYWING_ESC_SUPPORT
     /*
       Hobbywing ESC support. Note that we need additional meta-data as
@@ -404,13 +431,16 @@ private:
 #if AP_DRONECAN_HIMARK_SERVO_SUPPORT
     void handle_himark_servoinfo(const CanardRxTransfer& transfer, const com_himark_servo_ServoInfo &msg);
 #endif
-    
+
     // incoming button handling
     void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
     void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
     void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);
     void handle_ESC_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_Status& msg);
+#if AP_DRONECAN_VESC_RTDATA_ENABLED
+    void handle_vesc_rtdata(const CanardRxTransfer& transfer, const vesc_RTData& msg);
+#endif
 #if AP_EXTENDED_ESC_TELEM_ENABLED
     void handle_esc_ext_status(const CanardRxTransfer& transfer, const uavcan_equipment_esc_StatusExtended& msg);
 #endif

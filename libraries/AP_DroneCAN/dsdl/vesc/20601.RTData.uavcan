@@ -1,0 +1,50 @@
+#
+# VESC Realtime Data
+#
+
+# Voltages
+float16 volt_in
+float16 volt_d
+float16 volt_q
+
+# Temperatures
+float16 temp_mos_max
+float16 temp_mos_1
+float16 temp_mos_2
+float16 temp_mos_3
+float16 temp_motor_max
+float16 temp_motor_1
+float16 temp_motor_2
+
+# Currents
+float16 curr_motor
+float16 curr_in
+float16 curr_d
+float16 curr_q
+
+# IMU
+float16 roll
+float16 pitch
+float16 yaw
+float16 acc_x
+float16 acc_y
+float16 acc_z
+float16 gyro_x
+float16 gyro_y
+float16 gyro_z
+
+# Other
+float16 erpm
+float16 rpm
+float16 duty
+float16 ah_used
+float16 ah_charged
+float16 wh_used
+float16 wh_charged
+float16 encoder_pos
+float16 battery_level
+float16 battery_wh_tot
+
+uint8 fault_code
+uint8 vesc_id
+

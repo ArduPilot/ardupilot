@@ -131,7 +131,7 @@ const AP_Param::GroupInfo AP_DroneCAN::var_info[] = {
     // @Bitmask: 0:ClearDNADatabase,1:IgnoreDNANodeConflicts,2:EnableCanfd,3:IgnoreDNANodeUnhealthy,4:SendServoAsPWM,5:SendGNSS,6:UseHimarkServo,7:HobbyWingESC,8:EnableStats,9:EnableFlexDebug
     // @User: Advanced
     AP_GROUPINFO("OPTION", 5, AP_DroneCAN, _options, 0),
-    
+
     // @Param: NTF_RT
     // @DisplayName: Notify State rate
     // @Description: Maximum transmit rate for Notify State Message
@@ -311,7 +311,7 @@ bool AP_DroneCAN::add_interface(AP_HAL::CANIface* can_iface)
 {
     if (!canard_iface.add_interface(can_iface)) {
         debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: can't add DroneCAN interface\n\r");
-        return false;   
+        return false;
     }
     return true;
 }
@@ -675,7 +675,7 @@ void AP_DroneCAN::send_node_status(void)
             if (canard_iface.ifaces[i] == nullptr) {
                 continue;
             }
-            auto* iface = hal.can[0]; 
+            auto* iface = hal.can[0];
             for (uint8_t j=0; j<HAL_NUM_CAN_IFACES; j++) {
                 if (hal.can[j] == canard_iface.ifaces[i]) {
                     iface = hal.can[j];
@@ -1452,6 +1452,15 @@ void AP_DroneCAN::handle_ESC_status(const CanardRxTransfer& transfer, const uavc
         return;
     }
 
+#if AP_DRONECAN_VESC_RTDATA_ENABLED
+    if ((transfer.source_node_id < ARRAY_SIZE(_vesc_node_to_esc)) &&
+        (esc_index < DRONECAN_SRV_NUMBER)) {
+
+        // +1 використовується, щоб нуль означав "невідомо".
+        _vesc_node_to_esc[transfer.source_node_id] = esc_index + 1U;
+    }
+#endif
+
     TelemetryData t {
         .temperature_cdeg = int16_t((KELVIN_TO_C(msg.temperature)) * 100),
         .voltage = msg.voltage,
@@ -1500,6 +1509,178 @@ void AP_DroneCAN::handle_esc_ext_status(const CanardRxTransfer& transfer, const 
         | AP_ESC_Telem_Backend::TelemetryType::FLAGS);
 }
 #endif // AP_EXTENDED_ESC_TELEM_ENABLED
+
+#if AP_DRONECAN_VESC_RTDATA_ENABLED
+
+void AP_DroneCAN::handle_vesc_rtdata(
+    const CanardRxTransfer& transfer,
+    const vesc_RTData& msg
+)
+{
+    const uint8_t node_id = transfer.source_node_id;
+
+    // DroneCAN node ID повинен вміщатися в таблицю.
+    if (node_id >= ARRAY_SIZE(_vesc_node_to_esc)) {
+        return;
+    }
+
+    // Mapping is created after receiving the standard ESC Status.
+    const uint8_t mapped_index = _vesc_node_to_esc[node_id];
+
+    if (mapped_index == 0) {
+        return;
+    }
+
+    const uint8_t esc_index = mapped_index - 1U;
+
+    if (esc_index >= DRONECAN_SRV_NUMBER) {
+        return;
+    }
+
+#if HAL_WITH_ESC_TELEM
+    /*
+     * We do not duplicate voltage/current/MOS temperature with the standard
+     * uavcan.equipment.esc.Status so that two messages do not overwrite
+     * the same fields with different semantics.
+     *
+     * Through RTData we add what is not in the standard Status:
+     * - separate engine temperature;
+     * - consumed mAh;
+     * - duty;
+     * - fault flags.
+     */
+
+    TelemetryData telem {};
+    uint16_t present = 0;
+
+    if (isfinite(msg.temp_motor_max)) {
+        telem.motor_temp_cdeg = int16_t(
+            constrain_float(
+                msg.temp_motor_max * 100.0f,
+                -32768.0f,
+                32767.0f
+            )
+        );
+
+        present |= AP_ESC_Telem_Backend::TelemetryType::MOTOR_TEMPERATURE;
+    }
+
+    if (isfinite(msg.ah_used)) {
+        telem.consumption_mah = MAX(msg.ah_used, 0.0f) * 1000.0f;
+        present |= AP_ESC_Telem_Backend::TelemetryType::CONSUMPTION;
+    }
+
+#if AP_EXTENDED_ESC_TELEM_ENABLED
+    if (isfinite(msg.duty)) {
+        telem.output_duty = uint8_t(
+            constrain_float(fabsf(msg.duty) * 100.0f, 0.0f, 100.0f)
+        );
+
+        present |= AP_ESC_Telem_Backend::TelemetryType::OUTPUT_DUTY;
+    }
+
+    telem.flags = msg.fault_code;
+    present |= AP_ESC_Telem_Backend::TelemetryType::FLAGS;
+#endif
+
+    if (isfinite(msg.rpm)) {
+        update_rpm(esc_index, msg.rpm);
+    }
+
+    if (present != 0) {
+        update_telem_data(esc_index, telem, present);
+    }
+#endif // HAL_WITH_ESC_TELEM
+
+#if HAL_LOGGING_ENABLED
+    /*
+     * RTData can be received at a frequency of 50 Hz.
+     * For DataFlash, we limit the recording to 10 Hz per ESC.
+     */
+    constexpr uint32_t VESC_LOG_PERIOD_MS = 100;
+
+    const uint32_t now_ms = AP_HAL::millis();
+
+    if ((now_ms - _vesc_last_log_ms[esc_index]) <
+        VESC_LOG_PERIOD_MS) {
+        return;
+    }
+
+    _vesc_last_log_ms[esc_index] = now_ms;
+
+    if (!AP::logger().logging_enabled()) {
+        return;
+    }
+
+    const uint64_t now_us = AP_HAL::micros64();
+
+    /*
+     * VRT1 - main electrical and mechanical parameters
+     */
+    AP::logger().WriteStreaming(
+        "VRT1",
+        "TimeUS,I,N,Vid,Vin,Dty,ERPM,RPM,Imot,Iin,Id,Iq,Flt",
+        "QBBBffffffffB",
+        now_us,
+        _driver_index,
+        node_id,
+        msg.vesc_id,
+        msg.volt_in,
+        msg.duty,
+        msg.erpm,
+        msg.rpm,
+        msg.curr_motor,
+        msg.curr_in,
+        msg.curr_d,
+        msg.curr_q,
+        msg.fault_code
+    );
+
+    /*
+     * VRT2 - temperatures and FOC voltages
+     */
+    AP::logger().WriteStreaming(
+        "VRT2",
+        "TimeUS,I,N,Vid,TMx,TM1,TM2,TM3,MMx,MM1,MM2,Vd,Vq",
+        "QBBBfffffffff",
+        now_us,
+        _driver_index,
+        node_id,
+        msg.vesc_id,
+        msg.temp_mos_max,
+        msg.temp_mos_1,
+        msg.temp_mos_2,
+        msg.temp_mos_3,
+        msg.temp_motor_max,
+        msg.temp_motor_1,
+        msg.temp_motor_2,
+        msg.volt_d,
+        msg.volt_q
+    );
+
+    /*
+     * VRT3 - accumulated energy and position
+     */
+    AP::logger().WriteStreaming(
+        "VRT3",
+        "TimeUS,I,N,Vid,AhU,AhC,WhU,WhC,BLev,BWh,Pos",
+        "QBBBfffffff",
+        now_us,
+        _driver_index,
+        node_id,
+        msg.vesc_id,
+        msg.ah_used,
+        msg.ah_charged,
+        msg.wh_used,
+        msg.wh_charged,
+        msg.battery_level,
+        msg.battery_wh_tot,
+        msg.encoder_pos
+    );
+#endif // HAL_LOGGING_ENABLED
+}
+
+#endif // AP_DRONECAN_VESC_RTDATA_ENABLED
 
 bool AP_DroneCAN::is_esc_data_index_valid(const uint8_t index) {
     if (index > DRONECAN_SRV_NUMBER) {
