@@ -48,6 +48,7 @@ BUILD_OPTIONS = [
     Feature('AHRS', 'MicroStrain7', 'AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED', 'Enable MICROSTRAIN 7-series external AHRS', 0, "AHRS_EXT"),  # noqa: E501
     Feature('AHRS', 'AHRS_EXT_VECTORNAV', 'AP_EXTERNAL_AHRS_VECTORNAV_ENABLED', 'Enable VectorNav external AHRS', 0, "AHRS_EXT"),  # noqa
     Feature('AHRS', 'InertialLabs', 'AP_EXTERNAL_AHRS_INERTIALLABS_ENABLED', 'Enable InertialLabs external AHRS', 0, "AHRS_EXT"),  # noqa
+    Feature('AHRS', 'InertialSense', 'AP_EXTERNAL_AHRS_INERTIALSENSE_ENABLED', 'Enable Inertial Sense external AHRS', 0, "AHRS_EXT"),  # noqa
     Feature('AHRS', 'SBG', 'AP_EXTERNAL_AHRS_SBG_ENABLED', 'Enable SBG external AHRS', 0, "AHRS_EXT"),
     Feature('AHRS', 'AHRS_EXT_SENSAITION', 'AP_EXTERNAL_AHRS_SENSAITION_ENABLED',
             'Enable SensAItion external AHRS', 0, "AHRS_EXT"),
