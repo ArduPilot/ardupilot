@@ -415,6 +415,15 @@ uint8_t AP_GPS::num_sensors(void) const
     return num_instances;
 }
 
+void AP_GPS::set_spoofing_flag(uint8_t instance, bool spoofed)
+{
+    if (instance >= GPS_MAX_INSTANCES) {
+        return;
+    }
+    WITH_SEMAPHORE(rsem);
+    spoofing_override[instance] = spoofed;
+}
+
 bool AP_GPS::speed_accuracy(uint8_t instance, float &sacc) const
 {
     if (state[instance].have_speed_accuracy) {

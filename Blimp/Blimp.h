@@ -169,11 +169,12 @@ private:
         uint8_t radio               : 1; // A status flag for the radio failsafe
         uint8_t gcs                 : 1; // A status flag for the ground station failsafe
         uint8_t ekf                 : 1; // true if ekf failsafe has occurred
+        uint8_t gps_spoof           : 1; // true if GPS spoofing failsafe has occurred
     } failsafe;
 
     bool any_failsafe_triggered() const
     {
-        return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf;
+        return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.gps_spoof;
     }
 
     // Motor Output
@@ -300,6 +301,7 @@ private:
     void failsafe_gcs_check();
     bool should_disarm_on_failsafe();
     void do_failsafe_action(Failsafe_Action action, ModeReason reason);
+    void gpsspoof_check();
     void gpsglitch_check();
 
     // failsafe.cpp
