@@ -9502,10 +9502,8 @@ class TestSuite(abc.ABC):
             m = mav.recv_match(type='HEARTBEAT', blocking=True, timeout=1)
             if m is None:
                 continue
-            if (m.get_srcSystem() == self.sysid_thismav() and
+            if (m.get_srcSystem() == mav_sysid and
                     m.get_srcComponent() == self.compid_thismav()):
-            # if we have a heatbeat from the specific vehicle we are looking for
-            if m.get_srcSystem() == mav_sysid:
                 return m
 
     def wait_ekf_happy(self, require_absolute=True, mav=None, **kwargs):
@@ -10349,7 +10347,7 @@ class TestSuite(abc.ABC):
                 raise NotAchievedException(f"Received unexpected mission ack {self.dump_message_verbose(m)}")
 
             if verbose:
-                self.progress("Handling request for item %u/%u" % (m.seq, item_base + len(items)-1))
+                self.progress("Handling request for item %u/%u" % (m.seq, len(items)-1))
             if m.seq in sent:
                 self.progress("received duplicate request for item %u" % m.seq)
                 continue
