@@ -239,6 +239,7 @@ public:
         float relPosD;                     ///< Reported Vertical distance in meters
         float accHeading;                  ///< Reported Heading Accuracy in degrees
         uint32_t relposheading_ts;        ///< True if new data has been received since last time it was false
+        bool spoofing_detected;            ///< GPS spoofing detected by receiver
     };
 
     /// Startup initialisation.
@@ -401,6 +402,21 @@ public:
     uint8_t num_sats() const {
         return num_sats(primary_instance);
     }
+
+    // GPS spoofing detection
+    bool is_spoofed(uint8_t instance) const {
+        if (instance >= GPS_MAX_INSTANCES) {
+            return false;
+        }
+        return state[instance].spoofing_detected || spoofing_override[instance];
+    }
+    bool is_spoofed() const {
+        return is_spoofed(primary_instance);
+    }
+
+    // override spoofing flag from GCS/companion
+    void set_spoofing_flag(uint8_t instance, bool spoofed);
+
 
     // GPS time of week in milliseconds
     uint32_t time_week_ms(uint8_t instance) const {
@@ -669,6 +685,7 @@ private:
     GPS_State state[GPS_MAX_INSTANCES];
     AP_GPS_Backend *drivers[GPS_MAX_INSTANCES];
     AP_HAL::UARTDriver *_port[GPS_MAX_RECEIVERS];
+    bool spoofing_override[GPS_MAX_INSTANCES] = {};
 
     /// primary GPS instance
     uint8_t primary_instance;
