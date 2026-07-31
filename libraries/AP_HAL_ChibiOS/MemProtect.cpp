@@ -185,9 +185,9 @@ static void memprotect_backtrace(struct port_extctx *ctx, uint32_t exc_return, t
 }
 
 /*
-  returns non-zero if this was a write to the reserved region that we have
-  recorded and can resume from. Anything else is left for the normal fatal
-  fault path
+  returns non-zero if this was an access (read or write; DACCVIOL covers
+  both) to the reserved region that we have recorded and can resume from.
+  Anything else is left for the normal fatal fault path
  */
 uint32_t memprotect_handle_fault(struct port_extctx *ctx, uint32_t exc_return);
 uint32_t memprotect_handle_fault(struct port_extctx *ctx, uint32_t exc_return)
