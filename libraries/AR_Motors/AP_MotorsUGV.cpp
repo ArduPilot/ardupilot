@@ -118,6 +118,17 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THST_ASYM", 14, AP_MotorsUGV, _thrust_asymmetry, 1.0f),
 
+    // @Param: OUT_SLEW
+    // @DisplayName: Skid steering output slew rate
+    // @Description: Slew rate applied separately to the final left and right skid steering motor
+    // outputs after mixing. A value of 100 allows an output to change from zero to full output in one
+    // second. Zero disables this limiter.
+    // @Units: %/s
+    // @Range: 0 1000
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("OUT_SLEW", 17, AP_MotorsUGV, _output_slew_rate, 0),
+
     AP_GROUPEND
 };
 
@@ -805,6 +816,10 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
 
     // handle simpler disarmed case
     if (!armed) {
+        // Disarm must stop immediately and must not preserve
+        // an old ramp position for the next arming.
+        _skid_left_prev = 0.0f;
+        _skid_right_prev = 0.0f;
         if (_disarm_disable_pwm) {
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleLeft, SRV_Channel::Limit::ZERO_PWM);
             SRV_Channels::set_output_limit(SRV_Channel::k_throttleRight, SRV_Channel::Limit::ZERO_PWM);
@@ -910,9 +925,35 @@ void AP_MotorsUGV::output_skid_steering(bool armed, float steering, float thrott
         motor_left *= thrust_asymmetry;
     }
 
+     // Apply separate slew limiters after skid-steering mixing.
+    // This limits both throttle and steering-induced changes.
+    motor_left = slew_limit_skid_output(motor_left, _skid_left_prev, dt);
+    motor_right = slew_limit_skid_output(motor_right, _skid_right_prev, dt);
+
     // send pwm value to each motor
     output_throttle(SRV_Channel::k_throttleLeft, 100.0f * motor_left, dt);
     output_throttle(SRV_Channel::k_throttleRight, 100.0f * motor_right, dt);
+}
+
+// slew limit one final skid-steering motor output
+// target and previous are normalised to the range -1.0 to +1.0
+float AP_MotorsUGV::slew_limit_skid_output(float target,
+                                           float &previous,
+                                           float dt)
+{
+    target = constrain_float(target, -1.0f, 1.0f);
+    // Disabled or invalid loop time: pass the value through,
+    // but continue tracking it to avoid a jump if enabled in flight.
+    if ((_output_slew_rate <= 0) || !is_positive(dt)) {
+        previous = target;
+        return target;
+    }
+    // Parameter is in percent per second, while target is -1 to +1.
+    const float max_delta = static_cast<float>(_output_slew_rate) * 0.01f * dt;
+    previous = constrain_float(target,
+                               previous - max_delta,
+                               previous + max_delta);
+    return previous;
 }
 
 // output for omni frames

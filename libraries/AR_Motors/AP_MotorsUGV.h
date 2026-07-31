@@ -183,6 +183,9 @@ private:
     // slew limit throttle for one iteration
     void slew_limit_throttle(float dt);
 
+    // slew limit the final left or right skid-steering output
+    float slew_limit_skid_output(float target, float &previous, float dt);
+
     // set limits based on steering and throttle input
     void set_limits_from_input(bool armed, float steering, float throttle);
 
@@ -202,6 +205,7 @@ private:
     AP_Int8 _pwm_freq;  // PWM output freq for brushed motors
     AP_Int8 _disarm_disable_pwm;    // disable PWM output while disarmed
     AP_Int16 _slew_rate; // slew rate expressed as a percentage / second
+    AP_Int16 _output_slew_rate; // final left/right output slew rate in percent per second
     AP_Int8 _throttle_min; // throttle minimum percentage
     AP_Int8 _throttle_max; // throttle maximum percentage
     AP_Float _thrust_curve_expo; // thrust curve exponent from -1 to +1 with 0 being linear
@@ -214,11 +218,13 @@ private:
     float   _steering;  // requested steering as a value from -4500 to +4500
     float   _throttle;  // requested throttle as a value from -100 to 100
     float   _throttle_prev; // throttle input from previous iteration
+    float _skid_left_prev = 0.0f;
+    float _skid_right_prev = 0.0f;
     bool    _scale_steering = true; // true if we should scale steering by speed or angle
     float   _lateral;  // requested lateral input as a value from -100 to +100
     float   _roll;      // requested roll as a value from -1 to +1
     float   _pitch;     // requested pitch as a value from -1 to +1
-    float   _walking_height; // requested height as a value from -1 to +1   
+    float   _walking_height; // requested height as a value from -1 to +1
     float   _mainsail;  // requested mainsail input as a value from 0 to 100
     float   _wingsail;  // requested wing sail input as a value in the range +- 100
     float   _mast_rotation;  // requested mast rotation input as a value in the range +- 100
