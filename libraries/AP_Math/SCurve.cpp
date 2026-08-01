@@ -50,6 +50,7 @@ void SCurve::init()
     accel_max = 0.0f;
     accel_c_max = 0.0f;
     vel_max = 0.0f;
+    vel_xy_max = 0.0f;
     time = 0.0f;
     num_segs = SEG_INIT;
     add_segment(num_segs, 0.0f, SegmentType::CONSTANT_JERK, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -155,6 +156,12 @@ void SCurve::calculate_circle_track(const Vector3p &origin, const Vector2f &cent
         return;
     }
 
+    // Remember the caller's horizontal speed limit. An orbit's speed comes from the commanded
+    // turn rate, not from the waypoint speed, so unlike a straight or arc leg it must not be
+    // raised back to the position controller's limit when the speed limits are later updated
+    // (see set_speed_max).
+    vel_xy_max = speed_xy;
+
     // build the jerk-limited profile from the configured geometry and limits
     generate_path(speed_xy, speed_up, speed_down, accel_xy, accel_z, accel_c, snap_maximum, jerk_maximum);
 }
@@ -230,6 +237,12 @@ void SCurve::set_speed_max(float speed_xy, float speed_up, float speed_down)
     if (is_arc_segment) {
         // limit horizontal speed so centripetal acceleration stays within the corner acceleration limit
         speed_xy = MIN(speed_xy, safe_sqrt(accel_c_max * arc.radius_ne));
+    }
+
+    if (is_positive(vel_xy_max)) {
+        // re-apply the leg's own horizontal speed limit so a later speed change can slow the
+        // leg but never raise it above the speed the leg was created with
+        speed_xy = MIN(speed_xy, vel_xy_max);
     }
 
     // segment accelerations can not be changed after segment creation.

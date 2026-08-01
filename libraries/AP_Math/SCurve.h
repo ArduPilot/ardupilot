@@ -231,6 +231,7 @@ private:
     float accel_c_max;  // maximum cornering acceleration magnitude
     float accel_z_max;  // maximum acceleration magnitude
     float vel_max;      // maximum velocity magnitude
+    float vel_xy_max;   // horizontal speed limit intrinsic to this leg, re-applied by set_speed_max (0 if the leg has none)
     float time;         // time that defines position on the path
 
     // segment 0 is the initial segment and holds the vehicle's initial position and velocity

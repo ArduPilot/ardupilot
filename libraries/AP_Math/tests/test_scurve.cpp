@@ -538,5 +538,56 @@ TEST(SCurveCircle, prev_leg_handoff)
     EXPECT_NEAR((float)target_pos.z, (float)D.z, 0.05f);
 }
 
+// A circular orbit's speed comes from the commanded turn rate, not from the waypoint speed, so a
+// later speed update must be able to slow the orbit but never raise it. Regression: set_speed_max()
+// re-derived the leg speed purely from the limits handed to it, which discarded the orbit speed and
+// let an unrelated WPNAV_SPEED/WPNAV_SPEED_UP/WPNAV_SPEED_DN change accelerate the circle.
+TEST(SCurveCircle, speed_update_cannot_raise_orbit_speed)
+{
+    const Vector3p origin{10, 0, -50};
+    const Vector2f center{0, 0};
+    const float orbit_speed = 1.5f;     // well below both the waypoint speed and the centripetal cap
+    const float accel_c = 2.0f;         // centripetal cap at radius 10 is sqrt(2 * 10) = 4.47 m/s
+
+    // a speed increase must not be applied to the orbit
+    {
+        SCurve leg;
+        leg.calculate_circle_track(origin, center, M_2PI, 0.0f,
+                                   orbit_speed, 3.0f, 2.0f,
+                                   2.0f, 2.0f, accel_c,
+                                   60.0f, 10.0f);
+        leg.set_speed_max(5.0f, 3.0f, 2.0f);
+        const LegPeak p = drive_leg(leg, origin);
+        EXPECT_TRUE(p.finished);
+        EXPECT_NEAR(p.speed_xy, orbit_speed, 0.05f);
+    }
+
+    // a speed reduction must still be applied
+    {
+        SCurve leg;
+        leg.calculate_circle_track(origin, center, M_2PI, 0.0f,
+                                   orbit_speed, 3.0f, 2.0f,
+                                   2.0f, 2.0f, accel_c,
+                                   60.0f, 10.0f);
+        leg.set_speed_max(1.0f, 3.0f, 2.0f);
+        const LegPeak p = drive_leg(leg, origin);
+        EXPECT_TRUE(p.finished);
+        EXPECT_NEAR(p.speed_xy, 1.0f, 0.05f);
+    }
+
+    // contrast: a straight leg carries no intrinsic speed limit, so a speed increase still applies
+    {
+        SCurve leg;
+        leg.calculate_track(origin, origin + Vector3p(50, 0, 0), 0.0f,
+                            orbit_speed, 3.0f, 2.0f,
+                            2.0f, 2.0f, 2.0f,
+                            60.0f, 10.0f);
+        leg.set_speed_max(3.0f, 3.0f, 2.0f);
+        const LegPeak p = drive_leg(leg, origin);
+        EXPECT_TRUE(p.finished);
+        EXPECT_NEAR(p.speed_xy, 3.0f, 0.05f);
+    }
+}
+
 AP_GTEST_MAIN()
 int hal = 0; //weirdly the build will fail without this
