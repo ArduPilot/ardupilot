@@ -1,5 +1,11 @@
 #pragma once
 
+// board-specific values generated into a hwdef fragment
+#if __has_include(<hwdef_gpio.h>)
+#include <hwdef_gpio.h>
+#endif
+
+
 #include <stdint.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>

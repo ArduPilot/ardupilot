@@ -1,4 +1,9 @@
 #pragma once
+
+// board-specific values generated into a hwdef fragment
+#if __has_include(<hwdef_gpio.h>)
+#include <hwdef_gpio.h>
+#endif
 #include <AP_HAL/AP_HAL.h>
 #if HAL_ENABLE_DRONECAN_DRIVERS
 #include <canard/interface.h>

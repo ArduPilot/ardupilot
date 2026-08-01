@@ -16,7 +16,7 @@
  */
 #pragma once
 
-#include "hwdef.h"
+#include "hwdef_internal.h"
 
 #ifndef HAL_BOARD_INIT_HOOK_DEFINE
 #define HAL_BOARD_INIT_HOOK_DEFINE
