@@ -4,6 +4,9 @@
 
 #if AP_DDS_ENABLED
 
+// Whether to include Transform support
+#define AP_DDS_NEEDS_TRANSFORMS AP_DDS_DYNAMIC_TF_SUB_ENABLED || AP_DDS_STATIC_TF_PUB_ENABLED
+
 #include "uxr/client/client.h"
 #include "ucdr/microcdr.h"
 
@@ -77,6 +80,58 @@
 #if AP_DDS_UDP_ENABLED
 #include <AP_HAL/utility/Socket.h>
 #include <AP_Networking/AP_Networking_address.h>
+
+#ifndef AP_DDS_DEFAULT_UDP_IP_ADDR
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define AP_DDS_DEFAULT_UDP_IP_ADDR "192.168.144.2"
+#else
+#define AP_DDS_DEFAULT_UDP_IP_ADDR "127.0.0.1"
+#endif
+#endif
+#ifndef AP_DDS_DELAY_AIRSPEED_TOPIC_MS
+#define AP_DDS_DELAY_AIRSPEED_TOPIC_MS 33
+#endif
+#ifndef AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS
+#define AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS 1000
+#endif
+#ifndef AP_DDS_DELAY_CLOCK_TOPIC_MS
+#define AP_DDS_DELAY_CLOCK_TOPIC_MS 10
+#endif
+#ifndef AP_DDS_DELAY_GEO_POSE_TOPIC_MS
+#define AP_DDS_DELAY_GEO_POSE_TOPIC_MS 33
+#endif
+#ifndef AP_DDS_DELAY_GOAL_TOPIC_MS
+#define AP_DDS_DELAY_GOAL_TOPIC_MS  200
+#endif
+#ifndef AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS
+#define AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS 1000
+#endif
+#ifndef AP_DDS_DELAY_IMU_TOPIC_MS
+#define AP_DDS_DELAY_IMU_TOPIC_MS 5
+#endif
+#ifndef AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS
+#define AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS 33
+#endif
+#ifndef AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS
+#define AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS 33
+#endif
+#ifndef AP_DDS_DELAY_RC_TOPIC_MS
+#define AP_DDS_DELAY_RC_TOPIC_MS 100
+#endif
+#ifndef AP_DDS_DELAY_STATUS_TOPIC_MS
+#define AP_DDS_DELAY_STATUS_TOPIC_MS 100
+#endif
+#ifndef AP_DDS_DELAY_TIME_TOPIC_MS
+#define AP_DDS_DELAY_TIME_TOPIC_MS 10
+#endif
+
+// Whether DDS needs GPS
+#define AP_DDS_NEEDS_GPS AP_DDS_NAVSATFIX_PUB_ENABLED || AP_DDS_STATIC_TF_PUB_ENABLED
+
+// Max DDS topic/service string
+#ifndef AP_DDS_MAX_NAME_LEN
+#define AP_DDS_MAX_NAME_LEN 128
+#endif
 #endif
 
 extern const AP_HAL::HAL& hal;
