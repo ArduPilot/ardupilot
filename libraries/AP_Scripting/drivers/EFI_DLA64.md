@@ -6,7 +6,7 @@ This driver implements support for the DLA64 EFI serial protocol
 
 The script used the following parameters:
 
-## EFI_DFA64_ENABLE
+### EFI_DFA64_ENABLE
 
 this must be set to 1 to enable the driver
 

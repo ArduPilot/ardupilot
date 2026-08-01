@@ -9,11 +9,11 @@ control units.
 
 The script used the following parameters:
 
-## EFI_INF_ENABLE
+### EFI_INF_ENABLE
 
 this must be set to 1 to enable the driver
 
-## EFI_INF_OPTIONS
+### EFI_INF_OPTIONS
 
 This sets options for the driver. Currently the only option is to set
 EFI_INF_OPTIONS to 1 to enable logging of the raw serial bytes to a
