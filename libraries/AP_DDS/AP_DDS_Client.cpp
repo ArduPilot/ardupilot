@@ -53,6 +53,28 @@
 
 #define STRCPY(D,S) strncpy(D, S, ARRAY_SIZE(D))
 
+/*
+  send a status text, sending the first occurrence immediately and then at
+  most one per AP_DDS_STATUSTEXT_MIN_INTERVAL_MS. Each call site keeps its own
+  timer, so one chatty message does not mute the others.
+
+  Used on the paths driven by an external node, where the send rate is set by
+  the remote publisher and would otherwise flood the GCS link. Only called
+  from the DDS thread.
+ */
+#define GCS_SEND_TEXT_THROTTLED(severity, fmt, args...)                     \
+    do {                                                                    \
+        static bool sent_once;                                              \
+        static uint32_t last_send_ms;                                       \
+        const uint32_t now_ms = AP_HAL::millis();                           \
+        if (!sent_once ||                                                   \
+            now_ms - last_send_ms > AP_DDS_STATUSTEXT_MIN_INTERVAL_MS) {    \
+            sent_once = true;                                               \
+            last_send_ms = now_ms;                                          \
+            GCS_SEND_TEXT(severity, fmt, ##args);                           \
+        }                                                                   \
+    } while (0)
+
 // Enable DDS at runtime by default
 static constexpr uint8_t ENABLED_BY_DEFAULT = 1;
 #if AP_DDS_TIME_PUB_ENABLED
@@ -871,7 +893,7 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 #endif // AP_DDS_VISUALODOM_ENABLED
 
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Received tf2_msgs/TFMessage: TF is empty", msg_prefix);
+            GCS_SEND_TEXT_THROTTLED(MAV_SEVERITY_INFO, "%s Received tf2_msgs/TFMessage: TF is empty", msg_prefix);
         }
         break;
     }
@@ -884,7 +906,8 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         }
 #if AP_EXTERNAL_CONTROL_ENABLED
         if (!AP_DDS_External_Control::handle_velocity_control(rx_velocity_control_topic)) {
-            // TODO #23430 handle velocity control failure through rosout, throttled.
+            // TODO #23430 report this through rosout as well.
+            GCS_SEND_TEXT_THROTTLED(MAV_SEVERITY_WARNING, "%s Velocity control rejected", msg_prefix);
         }
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
@@ -899,7 +922,8 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
 
 #if AP_EXTERNAL_CONTROL_ENABLED
         if (!AP_DDS_External_Control::handle_global_position_control(rx_global_position_control_topic)) {
-            // TODO #23430 handle global position control failure through rosout, throttled.
+            // TODO #23430 report this through rosout as well.
+            GCS_SEND_TEXT_THROTTLED(MAV_SEVERITY_WARNING, "%s Global position control rejected", msg_prefix);
         }
 #endif // AP_EXTERNAL_CONTROL_ENABLED
         break;
@@ -945,7 +969,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             break;
         }
 
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for %sing received", msg_prefix, arm_motors_request.arm ? "arm" : "disarm");
+        GCS_SEND_TEXT_THROTTLED(MAV_SEVERITY_INFO, "%s Request for %sing received", msg_prefix, arm_motors_request.arm ? "arm" : "disarm");
 #if AP_EXTERNAL_CONTROL_ENABLED
         const bool do_checks = true;
         arm_motors_response.result = arm_motors_request.arm ? AP_DDS_External_Control::arm(AP_Arming::Method::DDS, do_checks) : AP_DDS_External_Control::disarm(AP_Arming::Method::DDS, do_checks);
@@ -969,7 +993,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Arming/Disarming : %s", msg_prefix, arm_motors_response.result ? "SUCCESS" : "FAIL");
+        GCS_SEND_TEXT_THROTTLED(MAV_SEVERITY_INFO, "%s Request for Arming/Disarming : %s", msg_prefix, arm_motors_response.result ? "SUCCESS" : "FAIL");
         break;
     }
 #endif // AP_DDS_ARM_SERVER_ENABLED
@@ -999,7 +1023,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Mode Switch : %s", msg_prefix, mode_switch_response.status ? "SUCCESS" : "FAIL");
+        GCS_SEND_TEXT_THROTTLED(MAV_SEVERITY_INFO, "%s Request for Mode Switch : %s", msg_prefix, mode_switch_response.status ? "SUCCESS" : "FAIL");
         break;
     }
 #endif // AP_DDS_MODE_SWITCH_SERVER_ENABLED
@@ -1028,7 +1052,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
         }
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Request for Takeoff : %s", msg_prefix, takeoff_response.status ? "SUCCESS" : "FAIL");
+        GCS_SEND_TEXT_THROTTLED(MAV_SEVERITY_INFO, "%s Request for Takeoff : %s", msg_prefix, takeoff_response.status ? "SUCCESS" : "FAIL");
         break;
     }
 #endif // AP_DDS_VTOL_TAKEOFF_SERVER_ENABLED
@@ -1065,7 +1089,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
     case services[to_underlying(ServiceIndex::SET_PARAMETERS)].rep_id: {
         const bool deserialize_success = rcl_interfaces_srv_SetParameters_Request_deserialize_topic(ub, &set_parameter_request);
         if (deserialize_success == false) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Set Parameters Request : Failed to deserialize request.", msg_prefix);
+            GCS_SEND_TEXT_THROTTLED(MAV_SEVERITY_ERROR, "%s Set Parameters Request : Failed to deserialize request.", msg_prefix);
             break;
         }
 
@@ -1167,13 +1191,13 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
             // Check that all the parameters were set successfully
             successful_params &= set_parameter_response.results[i].successful;
         }
-        GCS_SEND_TEXT(successful_params ? MAV_SEVERITY_INFO : MAV_SEVERITY_WARNING, "%s Set Parameters Request : %s", msg_prefix, successful_params ? "SUCCESSFUL" : "ONE OR MORE PARAMS FAILED" );
+        GCS_SEND_TEXT_THROTTLED(successful_params ? MAV_SEVERITY_INFO : MAV_SEVERITY_WARNING, "%s Set Parameters Request : %s", msg_prefix, successful_params ? "SUCCESSFUL" : "ONE OR MORE PARAMS FAILED" );
         break;
     }
     case services[to_underlying(ServiceIndex::GET_PARAMETERS)].rep_id: {
         const bool deserialize_success = rcl_interfaces_srv_GetParameters_Request_deserialize_topic(ub, &get_parameters_request);
         if (deserialize_success == false) {
-            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Get Parameters Request : Failed to deserialize request.", msg_prefix);
+            GCS_SEND_TEXT_THROTTLED(MAV_SEVERITY_ERROR, "%s Get Parameters Request : Failed to deserialize request.", msg_prefix);
             break;
         }
 
@@ -1249,7 +1273,7 @@ void AP_DDS_Client::on_request(uxrSession* uxr_session, uxrObjectId object_id, u
 
         uxr_buffer_reply(uxr_session, reliable_out, replier_id, sample_id, reply_buffer, ucdr_buffer_length(&reply_ub));
 
-        GCS_SEND_TEXT(successful_read ? MAV_SEVERITY_INFO : MAV_SEVERITY_WARNING, "%s Get Parameters Request : %s", msg_prefix, successful_read ? "SUCCESSFUL" : "ONE OR MORE PARAM NOT FOUND");
+        GCS_SEND_TEXT_THROTTLED(successful_read ? MAV_SEVERITY_INFO : MAV_SEVERITY_WARNING, "%s Get Parameters Request : %s", msg_prefix, successful_read ? "SUCCESSFUL" : "ONE OR MORE PARAM NOT FOUND");
         break;
     }
 #endif // AP_DDS_PARAMETER_SERVER_ENABLED
