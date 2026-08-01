@@ -55,7 +55,6 @@
 #define SERIALMANAGER_MAX_PORTS 10
 #endif
 
-
 #ifndef AP_SERIALMANAGER_REGISTER_ENABLED
 #define AP_SERIALMANAGER_REGISTER_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024 && (AP_NETWORKING_ENABLED || HAL_ENABLE_DRONECAN_DRIVERS || CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
@@ -69,76 +68,12 @@
 #define AP_SERIALMANAGER_DEFAULTS_CHECKS_ENABLED 0
 #endif
 
-// serial ports registered by AP_Networking will use IDs starting at 21 for the first port
-#define AP_SERIALMANAGER_NET_PORT_1         21 // NET_P1_*
-
-// serial ports registered by AP_DroneCAN will use IDs starting at 41/51 for the first port
-#define AP_SERIALMANAGER_CAN_D1_PORT_1         41 // CAN_D1_UC_S1_*
-#define AP_SERIALMANAGER_CAN_D2_PORT_1         51 // CAN_D2_UC_S1_*
-
-// serial device simulation ports registered by AP_Scripting will use IDs starting at 61 for the first port
-#define AP_SERIALMANAGER_SCR_PORT_1         61 // SCR_SDEV1_*
-
  // console default baud rates and buffer sizes
 #ifdef DEFAULT_SERIAL0_BAUD
 #define AP_SERIALMANAGER_CONSOLE_BAUD          DEFAULT_SERIAL0_BAUD
 #else
 #define AP_SERIALMANAGER_CONSOLE_BAUD          115200
 #endif
-#define AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX    128
-#define AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX    512
-
-// mavlink default baud rates and buffer sizes
-#define AP_SERIALMANAGER_MAVLINK_BAUD           57600
-#define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     256
-
-// LTM buffer sizes
-#define AP_SERIALMANAGER_LTM_BUFSIZE_RX         0
-#define AP_SERIALMANAGER_LTM_BUFSIZE_TX         32
-
-// FrSky default baud rates, use default buffer sizes
-#define AP_SERIALMANAGER_FRSKY_D_BAUD           9600
-#define AP_SERIALMANAGER_FRSKY_SPORT_BAUD       57600
-#define AP_SERIALMANAGER_FRSKY_BUFSIZE_RX       0
-#define AP_SERIALMANAGER_FRSKY_BUFSIZE_TX       0
-
-// GPS default baud rates and buffer sizes
-// we need a 256 byte buffer for some GPS types (eg. UBLOX)
-#define AP_SERIALMANAGER_GPS_BAUD               230400
-#define AP_SERIALMANAGER_GPS_BUFSIZE_RX         256
-#define AP_SERIALMANAGER_GPS_BUFSIZE_TX         16
-
-// AlexMos Gimbal protocol default baud rates and buffer sizes
-#define AP_SERIALMANAGER_ALEXMOS_BAUD           115200
-#define AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX     128
-
-#define AP_SERIALMANAGER_GIMBAL_BAUD            115200
-#define AP_SERIALMANAGER_GIMBAL_BUFSIZE_RX      128
-#define AP_SERIALMANAGER_GIMBAL_BUFSIZE_TX      128
-
-#define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX  128
-#define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX  128
-
-// MegaSquirt EFI protocol
-#define AP_SERIALMANAGER_EFI_MS_BAUD           115
-#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX     512
-#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX     16
-
-#define AP_SERIALMANAGER_SLCAN_BAUD             115200
-#define AP_SERIALMANAGER_SLCAN_BUFSIZE_RX       128
-#define AP_SERIALMANAGER_SLCAN_BUFSIZE_TX       128
-
-// MSP protocol default buffer sizes
-#define AP_SERIALMANAGER_MSP_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
-#define AP_SERIALMANAGER_MSP_BAUD           115200
-
-// IMU OUT protocol
-#define AP_SERIALMANAGER_IMUOUT_BAUD           921600
-#define AP_SERIALMANAGER_IMUOUT_BUFSIZE_RX     128
-#define AP_SERIALMANAGER_IMUOUT_BUFSIZE_TX     2048
 
 #ifndef HAL_HAVE_SERIAL0
 #define HAL_HAVE_SERIAL0 (HAL_NUM_SERIAL_PORTS > 0)
