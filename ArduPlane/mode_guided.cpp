@@ -122,6 +122,12 @@ bool ModeGuided::handle_guided_request(Location target_loc)
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
 bool ModeGuided::handle_change_airspeed(const float airspeed, const float acceleration)
 {
+    // a NaN compares false against both limits below, so it would pass the
+    // envelope check and be stored as the guided airspeed target
+    if (isnan(airspeed)) {
+        return false;
+    }
+
     // reject airspeeds that are outside of the tuning envelope
     if (airspeed > plane.aparm.airspeed_max || airspeed < plane.aparm.airspeed_min) {
         return false;
