@@ -5013,6 +5013,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
         self.install_test_modules_context()
         self.install_mavlink_module_context()
+        self.install_script_module_context(self.script_modules_source_path("pid.lua"), "pid.lua")
 
         self.install_test_scripts_context([
             "scripting_test.lua",
@@ -5020,6 +5021,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "math.lua",
             "strings.lua",
             "mavlink_test.lua",
+            "pid_test.lua",
         ])
 
         self.context_collect('STATUSTEXT')
@@ -5032,6 +5034,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "Require test 2 passed",
                 "Math tests passed",
                 "String tests passed",
+                "PID tests passed",
                 "Received heartbeat from"
         ]:
             self.wait_statustext(success_text, check_context=True)
