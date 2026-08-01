@@ -304,8 +304,23 @@ local windspeed_max = WINDSPEED_MAX:get()
 --- Utility Functions
 -------------------------------------------------------------------------------
 
+local last_constrain_nan_warning_ms = 0
+
 ---@diagnostic disable-next-line:lowercase-global
 function constrain(v, vmin, vmax)
+   -- a NaN fails every comparison below, so without this check it would be
+   -- returned unclamped and could propagate into a MAVLink command. Follow
+   -- AP_Math::constrain_value()'s lead: return the mid-range value, and make
+   -- noise about it rather than silently papering over the caller's bug.
+   -- Rate limited so a persistent NaN can't flood the link.
+   if v ~= v then
+      local nan_now_ms = millis():tofloat()
+      if nan_now_ms - last_constrain_nan_warning_ms > 2000 then
+         gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. ": constrain() got NaN, using mid-range")
+         last_constrain_nan_warning_ms = nan_now_ms
+      end
+      return (vmin + vmax) * 0.5
+   end
    if v < vmin then
       v = vmin
    end

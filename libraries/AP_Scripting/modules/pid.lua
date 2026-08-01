@@ -37,8 +37,24 @@ PIDcontroller.SCRIPT_NAME_SHORT = "PID"
 
 PIDcontroller.MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 
+local last_constrain_nan_warning_ms = 0
+
 -- constrain a value between limits
 function PIDcontroller.constrain(v, vmin, vmax)
+    -- a NaN fails every comparison below, so without this check it would be
+    -- returned unclamped and could propagate into a MAVLink command. Follow
+    -- AP_Math::constrain_value()'s lead: return the mid-range value, and make
+    -- noise about it rather than silently papering over the caller's bug.
+    -- Rate limited so a persistent NaN can't flood the link.
+    if v ~= v then
+       local nan_now_ms = millis():tofloat()
+       if nan_now_ms - last_constrain_nan_warning_ms > 2000 then
+          gcs:send_text(PIDcontroller.MAV_SEVERITY.ERROR,
+                        PIDcontroller.SCRIPT_NAME_SHORT .. ": constrain() got NaN, using mid-range")
+          last_constrain_nan_warning_ms = nan_now_ms
+       end
+       return (vmin + vmax) * 0.5
+    end
     if v < vmin then
        v = vmin
     end
@@ -122,7 +138,11 @@ function PIDcontroller.PID_controller(kP,kI,kD,iMax,min,max)
             _error = _error + self.get_filt_E_alpha(dt) * ((_target - current) - _error);
 
             -- calculate and filter derivative
-            if (dt >= 0) then
+            -- dt must be strictly positive: at dt == 0 this divide is 0/0 when
+            -- the error is unchanged (NaN) and +/-Inf otherwise, and either
+            -- poisons _derivative and every later output of this controller.
+            -- AC_PID guards the same divide with is_positive(dt).
+            if (dt > 0) then
                 local derivative = (_error - error_last) / dt;
                 _derivative = _derivative + self.get_filt_D_alpha(dt) * (derivative - _derivative);
             end
