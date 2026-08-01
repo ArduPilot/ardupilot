@@ -20,6 +20,15 @@
 
 #include "AP_TemperatureSensor_Params.h"
 
+// maximum number of Temperature Sensors
+#ifndef AP_TEMPERATURE_SENSOR_MAX_INSTANCES
+#define AP_TEMPERATURE_SENSOR_MAX_INSTANCES             3
+#endif
+// first sensor is always the primary sensor
+#ifndef AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE
+#define AP_TEMPERATURE_SENSOR_PRIMARY_INSTANCE          0
+#endif
+
 // declare backend class
 class AP_TemperatureSensor_Backend;
 class AP_TemperatureSensor_TSYS01;
