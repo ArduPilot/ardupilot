@@ -223,3 +223,4 @@ define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 define AP_DRONECAN_VESC_RTDATA_ENABLED 1
+define AP_CUSTOM_FIRMWARE_STRING "Ungeziefer 4.6.3-u1.2.7"
