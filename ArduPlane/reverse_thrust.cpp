@@ -127,9 +127,9 @@ bool Plane::have_reverse_thrust(void) const
 }
 
 /*
-  return control in from the radio throttle channel.
+  return control in from the radio throttle channel. (0 to 1 or -1 to 1)
  */
-float Plane::get_throttle_input(bool no_deadzone) const
+float Plane::get_throttle_input_norm(bool no_deadzone) const
 {
     if (!rc().has_valid_input()) {
         // Return 0 if there is no valid input
@@ -137,9 +137,9 @@ float Plane::get_throttle_input(bool no_deadzone) const
     }
     float ret;
     if (no_deadzone) {
-        ret = channel_throttle->get_control_in_zero_dz();
+        ret = channel_throttle->norm_input();
     } else {
-        ret = channel_throttle->get_control_in();
+        ret = channel_throttle->norm_input_dz();
     }
     if (reversed_throttle) {
         // RC option for reverse throttle has been set
@@ -159,9 +159,9 @@ float Plane::get_adjusted_throttle_input(bool no_deadzone) const
     }
     if ((plane.channel_throttle->get_type() != RC_Channel::ControlType::RANGE) ||
         (flight_option_enabled(FlightOptions::CENTER_THROTTLE_TRIM)) == 0) {
-       return  get_throttle_input(no_deadzone);
+       return  get_throttle_input_norm(no_deadzone);
     }
-    float ret = channel_throttle->get_range() * throttle_curve(aparm.throttle_cruise * 0.01, 0, 0.5 + 0.5*channel_throttle->norm_input());
+    float ret = throttle_curve(aparm.throttle_cruise * 0.01, 0, 0.5 + 0.5*channel_throttle->norm_input());
     if (reversed_throttle) {
         // RC option for reverse throttle has been set
         return -ret;

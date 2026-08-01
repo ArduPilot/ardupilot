@@ -121,7 +121,7 @@ void ModeAuto::auto_wp_run()
     float target_yaw_rate = 0;
     if (!sub.failsafe.pilot_input) {
         // get pilot's desired yaw rate
-        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz() * 4500.0f);
         if (!is_zero(target_yaw_rate)) {
             set_auto_yaw_mode(AUTO_YAW_HOLD);
         }
@@ -155,7 +155,7 @@ void ModeAuto::auto_wp_run()
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
+    sub.get_pilot_desired_lean_angles(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     // call attitude controller
     if (sub.auto_yaw_mode == AUTO_YAW_HOLD) {
@@ -249,7 +249,7 @@ void ModeAuto::auto_circle_run()
     position_control->D_update_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
-    attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw_cd(), true);
+    attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, sub.circle_nav.get_yaw_cd(), true);
 }
 
 #if NAV_GUIDED
@@ -312,7 +312,7 @@ void ModeAuto::auto_loiter_run()
     // accept pilot input of yaw
     float target_yaw_rate = 0;
     if (!sub.failsafe.pilot_input) {
-        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz() * 4500.0f);
     }
 
     // set motors to full range
@@ -336,7 +336,7 @@ void ModeAuto::auto_loiter_run()
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
+    sub.get_pilot_desired_lean_angles(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     // roll & pitch & yaw rate from pilot
     attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
@@ -573,7 +573,7 @@ void ModeAuto::auto_terrain_recover_run()
 
     // convert pilot input to lean angles
     // To-Do: convert sub.get_pilot_desired_lean_angles to return angles as floats
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
+    sub.get_pilot_desired_lean_angles(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     float target_yaw_rate = 0;
 

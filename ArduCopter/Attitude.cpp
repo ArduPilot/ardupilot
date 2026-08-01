@@ -78,7 +78,7 @@ float Copter::get_pilot_desired_climb_rate_ms()
         return 0.0f;
     }
 
-    float throttle_control = copter.channel_throttle->get_control_in();
+    float throttle_control = copter.channel_throttle->norm_input_dz() * 1000.0f;
 
 #if TOY_MODE_ENABLED
     if (g2.toy_mode.enabled()) {

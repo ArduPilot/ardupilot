@@ -26,10 +26,10 @@ void Copter::init_rc_in()
     channel_yaw      = &rc().get_yaw_channel();
 
     // set rc channel ranges
-    channel_roll->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
-    channel_pitch->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
-    channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
-    channel_throttle->set_range(1000);
+    channel_roll->set_angle();
+    channel_pitch->set_angle();
+    channel_yaw->set_angle();
+    channel_throttle->set_range();
 
 #if AP_RC_TRANSMITTER_TUNING_ENABLED
     rc_tuning = rc().find_channel_for_option(RC_Channel::AUX_FUNC::TRANSMITTER_TUNING);
@@ -97,13 +97,13 @@ void Copter::read_radio()
         ap.new_radio_frame = true;
 
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
-        set_throttle_zero_flag(channel_throttle->get_control_in());
+        set_throttle_zero_flag(int16_t(channel_throttle->norm_input_dz() * 1000.0f));
 
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
         radio_passthrough_to_motors();
 
         const float dt = (tnow_ms - last_radio_update_ms)*1.0e-3f;
-        rc_throttle_control_in_filter.apply(channel_throttle->get_control_in(), dt);
+        rc_throttle_control_in_filter.apply(channel_throttle->norm_input_dz() * 1000.0f, dt);
         last_radio_update_ms = tnow_ms;
         return;
     }
@@ -201,7 +201,7 @@ void Copter::radio_passthrough_to_motors()
 {
     motors->set_radio_passthrough(channel_roll->norm_input(),
                                   channel_pitch->norm_input(),
-                                  channel_throttle->get_control_in_zero_dz()*0.001f,
+                                  channel_throttle->norm_input(),
                                   channel_yaw->norm_input());
 }
 
@@ -215,5 +215,14 @@ int16_t Copter::get_throttle_mid(void)
         return g2.toy_mode.get_throttle_mid();
     }
 #endif
-    return channel_throttle->get_control_mid();
+    // Use the geometric mid-point of the PWM range (matches original get_control_mid() behaviour).
+    // radio_trim is intentionally not used — it affects feel but not stick centre.
+    const int16_t r_min = channel_throttle->get_radio_min();
+    const int16_t r_max = channel_throttle->get_radio_max();
+    const int16_t r_mid = (r_min + r_max) / 2;
+    const int16_t dead_zone_top = r_min + int16_t(channel_throttle->get_dead_zone());
+    if (dead_zone_top >= r_max || r_mid <= dead_zone_top) {
+        return 500;
+    }
+    return int16_t(1000.0f * float(r_mid - dead_zone_top) / float(r_max - dead_zone_top));
 }

@@ -289,7 +289,7 @@ void Copter::update_throttle_mix()
 
     if (flightmode->has_manual_throttle()) {
         // manual throttle
-        if (channel_throttle->get_control_in() <= 0 && air_mode != AirMode::AIRMODE_ENABLED) {
+        if (channel_throttle->norm_input_dz() <= 0.0f && air_mode != AirMode::AIRMODE_ENABLED) {
             attitude_control->set_throttle_mix_min();
         } else {
             attitude_control->set_throttle_mix_man();

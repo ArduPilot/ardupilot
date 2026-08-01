@@ -596,10 +596,10 @@ void Tailsitter::check_input(void)
         // is active. We switch around the control_in value for the
         // channels to do this, as that ensures the value is
         // consistent throughout the code
-        int16_t roll_in = plane.channel_roll->get_control_in();
-        int16_t yaw_in = plane.channel_rudder->get_control_in();
-        plane.channel_roll->set_control_in(yaw_in);
-        plane.channel_rudder->set_control_in(-roll_in);
+        const float roll_in = plane.channel_roll->norm_input_dz();
+        const float yaw_in = plane.channel_rudder->norm_input_dz();
+        plane.channel_roll->set_norm_in(yaw_in);
+        plane.channel_rudder->set_norm_in(-roll_in);
     }
 }
 

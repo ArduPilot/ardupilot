@@ -10,12 +10,12 @@ void Sub::init_rc_in()
     channel_lateral  = &rc().get_lateral_channel();
 
     // set rc channel ranges
-    channel_roll->set_angle(ROLL_PITCH_INPUT_MAX);
-    channel_pitch->set_angle(ROLL_PITCH_INPUT_MAX);
-    channel_yaw->set_angle(ROLL_PITCH_INPUT_MAX);
-    channel_throttle->set_range(1000);
-    channel_forward->set_angle(ROLL_PITCH_INPUT_MAX);
-    channel_lateral->set_angle(ROLL_PITCH_INPUT_MAX);
+    channel_roll->set_angle();
+    channel_pitch->set_angle();
+    channel_yaw->set_angle();
+    channel_throttle->set_range();
+    channel_forward->set_angle();
+    channel_lateral->set_angle();
 
     // set default dead zones
     channel_roll->set_default_dead_zone(30);

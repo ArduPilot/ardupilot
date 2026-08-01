@@ -34,7 +34,7 @@ void ModeStabilize_Heli::run()
     float target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
+    pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(int16_t(channel_throttle->norm_input_dz() * 1000.0f));
 
     // Tradheli should not reset roll, pitch, yaw targets when motors are not runup while flying, because
     // we may be in autorotation flight.  This is so that the servos move in a realistic fashion while disarmed

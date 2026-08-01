@@ -196,7 +196,7 @@ void Rover::Log_Write_Steering()
     struct log_Steering pkt = {
         LOG_PACKET_HEADER_INIT(LOG_STEERING_MSG),
         time_us        : AP_HAL::micros64(),
-        steering_in        : channel_steer->get_control_in(),
+        steering_in        : (int16_t)(channel_steer->norm_input_dz() * 4500.0f),
         steering_out       : g2.motors.get_steering(),
         desired_lat_accel  : control_mode->get_desired_lat_accel(),
         lat_accel          : lat_accel,
@@ -225,7 +225,7 @@ void Rover::Log_Write_Throttle()
     struct log_Throttle pkt = {
         LOG_PACKET_HEADER_INIT(LOG_THR_MSG),
         time_us         : AP_HAL::micros64(),
-        throttle_in     : channel_throttle->get_control_in(),
+        throttle_in     : (int16_t)(channel_throttle->norm_input_dz() * 1000.0f),
         throttle_out    : g2.motors.get_throttle(),
         desired_speed   : g2.attitude_control.get_desired_speed(),
         speed           : speed,
