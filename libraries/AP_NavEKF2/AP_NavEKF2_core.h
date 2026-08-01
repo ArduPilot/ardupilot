@@ -24,6 +24,7 @@
     #pragma GCC optimize("O2")
 #endif
 
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/vectorN.h>
