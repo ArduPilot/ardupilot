@@ -1,5 +1,11 @@
 #pragma once
 
+#include <hwdef_notify.h>
+
+#ifndef HAL_DSHOT_ALARM_ENABLED
+#define HAL_DSHOT_ALARM_ENABLED 0
+#endif
+
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #include <GCS_MAVLink/GCS_config.h>

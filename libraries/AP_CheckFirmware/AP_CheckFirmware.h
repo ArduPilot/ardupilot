@@ -3,6 +3,8 @@
  */
 #pragma once
 
+#include "AP_CheckFirmware_config.h"
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS_config.h>

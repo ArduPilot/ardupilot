@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef_logging.h>
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
 #include <GCS_MAVLink/GCS_config.h>

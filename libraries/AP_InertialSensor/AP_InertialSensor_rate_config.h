@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include <hwdef_ins.h>
 
 #ifndef HAL_INS_RATE_LOOP
 #define HAL_INS_RATE_LOOP 0

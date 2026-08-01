@@ -17,6 +17,8 @@
 
 #if AP_RSSI_ENABLED
 
+#include <hwdef_rssi.h>
+
 #include <AP_RSSI/AP_RSSI.h>
 #include <GCS_MAVLink/GCS.h>
 #include <RC_Channel/RC_Channel.h>
