@@ -941,6 +941,33 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl(force=True)
 
+    def GuidedChangeSpeedNaN(self):
+        '''ensure GUIDED_CHANGE_SPEED rejects a NaN airspeed'''
+        # a NaN compares false against both envelope limits, so before the fix
+        # it passed the range check and was stored as the guided airspeed
+        # target, where the next is_positive() on it tripped the SITL floating
+        # point trap and aborted the vehicle
+        self.takeoff(alt=100, mode="TAKEOFF", timeout=120)
+        self.set_rc(3, 1500)
+        self.change_mode("GUIDED")
+        self.send_do_reposition(self.get_location(frame=AltFrame.ABOVE_HOME))
+        self.delay_sim_time(5, reason="vehicle to establish GUIDED position")
+
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_SPEED,
+            p1=0,              # SPEED_TYPE_AIRSPEED
+            p2=float("nan"),   # target airspeed m/s
+            p3=5,              # acceleration m/s/s
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        # keep flying; an accepted NaN would abort the vehicle here rather
+        # than merely leaving a bad target behind
+        self.delay_sim_time(10, reason="vehicle to keep flying on a sane airspeed")
+        self.assert_mode("GUIDED")
+
+        self.reboot_sitl(force=True)
+
     def DO_CHANGE_SPEED_mavlink_int(self):
         self.DO_CHANGE_SPEED_mavlink(self.run_cmd_int)
 
@@ -8710,6 +8737,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TestFlaps,
             self.DO_CHANGE_SPEED,
             self.GuidedThrottleNudge,
+            self.GuidedChangeSpeedNaN,
             self.DO_REPOSITION,
             self.GuidedRequest,
             self.MainFlight,
