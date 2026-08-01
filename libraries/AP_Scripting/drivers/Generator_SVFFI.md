@@ -7,7 +7,7 @@ this system [SVFFI](http://www.svffi.com/en/)
 
 The script used the following parameters:
 
-## EFI_SVF_ENABLE
+### EFI_SVF_ENABLE
 
 this must be set to 1 to enable the driver
 

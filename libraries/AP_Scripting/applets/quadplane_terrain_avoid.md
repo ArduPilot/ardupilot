@@ -35,71 +35,71 @@ Note:
 Beyond the normal Q_ASSIST parameters the script adds several additional parameters to
 control it's behaviour. The parameters are prefixed with ZTA and ZTB. The parameters are:
 
-## TA_ACT_FN
+### TA_ACT_FN
 
 An RC scripting function to disable terrain avoidance. It defaults to on.
 
-## TA_HOME_DIST
+### TA_HOME_DIST
 
 A circle around home (in meters), where terrain avoidance will not run.
 Allows for safe takeoff and landing at the home location.
 
-## TA_ALT_MAX
+### TA_ALT_MAX
 
 Maximum altitude above terrain that the plane can go to if avoiding terrain.
 Set this to avoid "flyways" usually caused by malfunctioning rangefinders.
 
-## TA_PTCH_DWN_MIN
+### TA_PTCH_DWN_MIN
 
 The minimum distance to the ground directly when pitching will start.
 
-## TA_PTCH_FWD_MIN
+### TA_PTCH_FWD_MIN
 
 The minimum distance forward where pitching will start. This requires
 a forward facing range finder best installed pointing at a 45 degree
 angle.
 
-## TA_PTCH_GSP_MIN
+### TA_PTCH_GSP_MIN
 
 The minimum groundspeed to use pitching. If groundspeed is below this then
 pitching will not be attempted.
 
-## TA_QUAD_DWN_MIN
+### TA_QUAD_DWN_MIN
 
 The minimum distance to the ground directly when quading will start.
 Should be lower than TA_PTCH_DWN_MIN by at least 5m.
 
-## TA_QUAD_FWD_MIN
+### TA_QUAD_FWD_MIN
 
 The minimum distance forward where quadinging will start. This requires
 a forward facing range finder best installed pointing at a 45 degree
 angle. (the same one used by TA_PTCH_FWD_MIN)
 
-## TA_GSP_MAX
+### TA_GSP_MAX
 
 The maximum groundspeed to attempt to fly. For best results when doing
 magnetometry surveys ideally a steady groundspeed is required even
 in windy conditions. This attempts to achieve that.
 
-## TA_GSP_AIRBRAKE
+### TA_GSP_AIRBRAKE
 
 If the vehicle exceeds ZTB_GSP_MAX and slowing the motors (desired airspeed)
 isn't working then if this is set to 1, the script will attempt to use QHOVER
 to reduce airspeed. This doesn't work very well, so test it for your use case.
 It defaults to off.
 
-## TA_CMTC_ENABLE
+### TA_CMTC_ENABLE
 
 Enable the Can't Make That Climb (CMTC) feature, which will circle to gain altitude if
 the required pitch up to the next waypoint exceeds PTCH_LIM_MAX_DEG / 2.
 
-## TA_CMTC_HGT
+### TA_CMTC_HGT
 
 If CMTC is enabled, uses this height as the clearance required above terrain altitude to
 use for CMTC calculation. If the plane can't make this number of meters clearance above the
 terrain between the current location and the next waypoint then CMTC will be engaged.
 
-## TA_CMTC_RAD
+### TA_CMTC_RAD
 
 When loitering to gain altitude if CMTC is triggered, use this as the loiter radius. If not set
 or is <= 0 then use WP_LOITER_RAD. Should normally be set lower than WP_LOITER_RAD.

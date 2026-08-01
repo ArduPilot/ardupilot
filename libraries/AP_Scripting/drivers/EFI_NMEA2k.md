@@ -7,11 +7,11 @@ CAN messages.
 
 The script used the following parameters:
 
-## EFI_2K_ENABLE
+### EFI_2K_ENABLE
 
 this must be set to 1 to enable the driver
 
-## EFI_2K_OPTIONS
+### EFI_2K_OPTIONS
 
 This sets options for the driver. Currently the only option is to set
 EFI_2K_OPTIONS to 1 to enable logging of the raw CAN frames for

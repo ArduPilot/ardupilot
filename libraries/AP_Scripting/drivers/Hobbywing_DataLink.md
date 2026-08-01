@@ -10,16 +10,16 @@ to 8 ESCs.
 
 The script used the following parameters:
 
-## ESC_HW_ENABLE
+### ESC_HW_ENABLE
 
 this must be set to 1 to enable the driver
 
-## ESC_HW_POLES
+### ESC_HW_POLES
 
 this should be set to the number of motor poles for eRPM to RPM
 scaling. Please confirm the correct RPM using a tachometer
 
-## ESC_HW_OFS
+### ESC_HW_OFS
 
 this parameter sets an offset for the first ESC number. It is useful
 on vehicles where the first ESC is not the first SERVOn output, for
