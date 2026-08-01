@@ -17,6 +17,7 @@
  */
 
 #include "AP_BoardConfig.h"
+#include "IMU_heater.h"
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
@@ -514,7 +515,7 @@ void AP_BoardConfig::init()
         hal.scheduler->delay(delay_ms);
     }
     
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && defined(USE_POSIX)
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && (HAL_OS_FATFS_IO || HAL_OS_LITTLEFS_IO)
     uint8_t slowdown = constrain_int16(_sdcard_slowdown.get(), 0, 32);
     const uint8_t max_slowdown = 8;
     do {

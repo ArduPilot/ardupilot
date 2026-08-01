@@ -1,11 +1,14 @@
 #pragma once
 
+
+// board-specific values generated into a hwdef fragment
 // board-specific values generated into a hwdef fragment
 #if __has_include(<hwdef_boardid.h>)
 #include <hwdef_boardid.h>
 #endif
-
-// board-specific values generated into a hwdef fragment
+#if __has_include(<hwdef_notify.h>)
+#include <hwdef_notify.h>
+#endif
 #if __has_include(<hwdef_gpio.h>)
 #include <hwdef_gpio.h>
 #endif

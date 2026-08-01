@@ -1,10 +1,11 @@
 #pragma once
 
+
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS_config.h>
-#include <AP_BoardConfig/AP_BoardConfig_config.h>
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
@@ -237,9 +238,7 @@ protected:
 
     bool fence_checks(bool report);
 
-#if HAL_HAVE_IMU_HEATER
     bool heater_min_temperature_checks(bool report);
-#endif
 
     bool camera_checks(bool display_failure);
 

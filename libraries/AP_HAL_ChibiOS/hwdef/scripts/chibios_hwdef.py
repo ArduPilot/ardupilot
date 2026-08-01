@@ -39,6 +39,7 @@ class HeaderRouter(object):
     define_re = re.compile(r'\s*#\s*(?:define|undef|ifdef|ifndef)\s+([A-Za-z_][A-Za-z0-9_]*)')
     cond_open_re = re.compile(r'\s*#\s*(?:if|ifdef|ifndef)\b')
     cond_close_re = re.compile(r'\s*#\s*endif\b')
+    pending_re = re.compile(r'\s*(//|$)')
 
     def __init__(self, default):
         self.outputs = {}
@@ -50,9 +51,18 @@ class HeaderRouter(object):
         self.depth = 0
         self.group = []
         self.group_target = None
+        self.pending = []
+        self.line_open = {}
+        # fragment headers must contain only preprocessor directives:
+        # blank and comment lines would survive preprocessing as blank
+        # output lines, making otherwise-identical translation units
+        # differ between boards
+        self.directives_only = set()
 
-    def add_output(self, name, fh):
+    def add_output(self, name, fh, directives_only=False):
         self.outputs[name] = fh
+        if directives_only:
+            self.directives_only.add(name)
 
     def add_rules(self, rules):
         for (pattern, target) in rules:
@@ -83,7 +93,15 @@ class HeaderRouter(object):
                 return
             if m is not None:
                 self.current = self.valid_target(self.target_for_name(m.group(1)))
-            self.outputs[self.current].write(line)
+                self.flush_pending()
+            elif self.pending_re.match(line) and not self.line_open.get(self.current, False):
+                # comments and blank lines describe the definition which
+                # follows; hold them so they land in the same file
+                self.pending.append(line)
+                return
+            else:
+                self.flush_pending()
+            self.emit(self.current, line)
             return
         self.group.append(line)
         if self.cond_open_re.match(line):
@@ -99,16 +117,32 @@ class HeaderRouter(object):
             if m is not None:
                 self.group_target = self.target_for_name(m.group(1))
 
+    def flush_pending(self):
+        for line in self.pending:
+            self.emit(self.current, line)
+        self.pending = []
+
     def flush_group(self):
         self.current = self.valid_target(self.group_target)
+        self.flush_pending()
         for line in self.group:
-            self.outputs[self.current].write(line)
+            self.emit(self.current, line)
         self.group = []
         self.group_target = None
+
+    def emit(self, target, line):
+        if target in self.directives_only:
+            stripped = line.strip()
+            if (stripped == '' or stripped.startswith('//') or
+                    (stripped.startswith('/*') and stripped.endswith('*/'))):
+                return
+        self.outputs[target].write(line)
+        self.line_open[target] = not line.endswith('\n')
 
     def close(self):
         if self.group:
             self.flush_group()
+        self.flush_pending()
         for fh in self.outputs.values():
             fh.close()
 
@@ -2575,7 +2609,9 @@ Please run: Tools/scripts/build_bootloaders.py %s
     # included from the owning subsystem's _config.h (or equivalent), so
     # its board-specific values only enter the include closure of code
     # which actually uses them:
-    HWDEF_FRAGMENTS = ['serial', 'ins', 'mag', 'baro', 'airspeed',
+    HWDEF_FRAGMENTS = ['logging', 'camera', 'parachute', 'filesystem',
+                       'button', 'rssi', 'storage', 'caps', 'heater',
+                       'serial', 'ins', 'mag', 'baro', 'airspeed',
                        'battery', 'notify', 'boardid', 'gpio', 'spidev']
 
     # macro-name → header routing table; first match wins, no match
@@ -2611,6 +2647,14 @@ Please run: Tools/scripts/build_bootloaders.py %s
         (r'HAL_RAM0_START', 'internal'),
         (r'HAL_RAM_RESERVE_START', 'internal'),
         (r'HAL_PWM_GROUP', 'internal'),
+        (r'HAL_ANALOG\d*_PINS$', 'internal'),
+        (r'HAL_GPIO_PINS$', 'internal'),
+        (r'BOARD_CHECK_', 'boardid'),
+        (r'HAL_WITH_IO_MCU_DSHOT$', 'caps'),
+        (r'HAL_HAVE_IMU_HEATER$', 'heater'),
+        (r'INS_MAX_INSTANCES$', 'ins'),
+        (r'HAL_SERIAL_DEVICE_LIST$', 'internal'),
+        (r'STORAGE_FLASH_PAGE$', 'internal'),
         (r'HAL_TIM\d+_UP_SHARED', 'internal'),
         (r'HAL_PWM\d+_DMA_CONFIG', 'internal'),
         (r'HAL_IC\d+_CH\d+_DMA_CONFIG', 'internal'),
@@ -2642,6 +2686,20 @@ Please run: Tools/scripts/build_bootloaders.py %s
         (r'HAL_BUZZER', 'notify'),
         (r'HAL_PWM_ALARM$', 'notify'),
         (r'HAL_GPIO_[A-C]_LED_PIN$', 'notify'),
+        (r'HAL_LOGGING_', 'logging'),
+        (r'HAL_RUNCAM_ENABLED$', 'camera'),
+        (r'HAL_PARACHUTE_ENABLED$', 'parachute'),
+        (r'HAL_OS_(FATFS|LITTLEFS|POSIX)_IO$', 'filesystem'),
+        (r'USE_POSIX$', 'filesystem'),
+        (r'AP_FILESYSTEM_LITTLEFS_FLASH_TYPE$', 'filesystem'),
+        # derived from HAL_OS_*_IO so must be evaluated after them:
+        (r'AP_TERRAIN_AVAILABLE$', 'filesystem'),
+        (r'HAL_BOARD_TERRAIN_DIRECTORY$', 'filesystem'),
+        (r'HAL_BUTTON_ENABLED$', 'button'),
+        (r'BOARD_RSSI_', 'rssi'),
+        (r'HAL_PWM_COUNT$', 'notify'),
+        (r'HAL_DSHOT_ALARM_ENABLED$', 'notify'),
+        (r'AP_BOOTLOADER_FLASHING_ENABLED$', 'caps'),
         (r'APJ_BOARD_ID$', 'boardid'),
         (r'CHIBIOS_BOARD_NAME$', 'boardid'),
         (r'CHIBIOS_SHORT_BOARD_NAME$', 'boardid'),
@@ -2651,9 +2709,37 @@ Please run: Tools/scripts/build_bootloaders.py %s
         (r'HAL_WITH_SPI_', 'spidev'),
     ]
 
-    def open_generated_header(self, path):
-        '''open a generated header with the standard prologue'''
+    def open_generated_header(self, path, unique_tag=None):
+        '''open a generated header with the standard prologue.  A
+        directives-only header contains no comments or blank lines
+        anywhere: any textual output would survive preprocessing and
+        make otherwise-identical translation units differ between
+        boards'''
         f = open(path, 'w')
+        if unique_tag is not None:
+            # no comments or blank lines: any textual output line would
+            # survive preprocessing and make otherwise-identical
+            # translation units differ between boards.  The unique
+            # guard stops gcc treating identical-content fragments as
+            # duplicates of one #pragma once file and skipping them;
+            # the marker declaration guarantees one constant line of
+            # text output so gcc represents the inclusion identically
+            # whether or not the board defines anything in it
+            f.write('''#pragma once
+#ifndef HWDEF_%s_H
+#define HWDEF_%s_H
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef __ASSEMBLER__
+struct hwdef_fragment_marker;
+#endif
+''' % (unique_tag, unique_tag))
+            return f
         f.write('''/*
  generated hardware definitions from hwdef.dat - DO NOT EDIT
 */
@@ -2685,13 +2771,33 @@ Please run: Tools/scripts/build_bootloaders.py %s
         internal = self.open_generated_header(self.get_output_path('hwdef_internal.h'))
         internal.write('#include "hwdef.h"\n')
         for frag in self.HWDEF_FRAGMENTS:
-            router.add_output(frag, self.open_generated_header(self.get_output_path('hwdef_%s.h' % frag)))
+            fh = self.open_generated_header(self.get_output_path('hwdef_%s.h' % frag), unique_tag=frag.upper())
+            router.add_output(frag, fh, directives_only=True)
             internal.write('#include "hwdef_%s.h"\n' % frag)
         internal.write('\n')
         router.add_output('internal', internal)
         router.add_rules(self.header_routing_rules)
 
         self.write_hwdef_header_content(router)
+
+        rate_capable = (self.mcu_series.startswith('STM32H7') or
+                        self.mcu_series.startswith('STM32F7') or
+                        (self.mcu_series.startswith('STM32F4') and
+                         self.intdefines.get('INS_MAX_INSTANCES') == 1))
+        if rate_capable:
+            # resolved here: the STM32 family macros and INS_MAX_INSTANCES
+            # this was previously derived from in AP_HAL/board/chibios.h
+            # are no longer visible together anywhere
+            router.outputs['ins'].write("""#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
+#endif
+""")
+
+        if (self.get_config('STORAGE_FLASH_PAGE', required=False) is not None or
+                'STORAGE_FLASH_PAGE' in self.intdefines):
+            # the page number lives in hwdef_internal.h; AP_Param needs
+            # to know flash-backed storage is in use
+            router.outputs['storage'].write('#define HAL_STORAGE_FLASH_PAGE_ENABLED 1\n')
 
         if 'SAFETY_IN' in self.bylabel and 'HAL_HAVE_SAFETY_SWITCH' not in self.intdefines:
             # the safety switch pin definition lives in hwdef_gpio.h;

@@ -1,6 +1,10 @@
 /*
   support checking board ID and firmware CRC in the bootloader
  */
+// board-specific values generated into a hwdef fragment
+#if __has_include(<hwdef_boardid.h>)
+#include <hwdef_boardid.h>
+#endif
 #include "AP_CheckFirmware.h"
 #include <AP_HAL/HAL.h>
 #include <AP_Math/crc.h>

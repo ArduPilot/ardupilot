@@ -16,9 +16,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#ifndef HAL_BUTTON_ENABLED
-#define HAL_BUTTON_ENABLED 1
-#endif
+#include "AP_Button_config.h"
 
 #if HAL_BUTTON_ENABLED
 

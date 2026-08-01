@@ -29,14 +29,6 @@ extern const AP_HAL::HAL& hal;
 #define BOARD_RSSI_DEFAULT 0
 #endif
 
-#ifndef BOARD_RSSI_ANA_PIN
-#define BOARD_RSSI_ANA_PIN -1
-#endif
-
-#ifndef BOARD_RSSI_ANA_PIN_HIGH
-#define BOARD_RSSI_ANA_PIN_HIGH 5.0f
-#endif
-
 const AP_Param::GroupInfo AP_RSSI::var_info[] = {
 
     // @Param: TYPE

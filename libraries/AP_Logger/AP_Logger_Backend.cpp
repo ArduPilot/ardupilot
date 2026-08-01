@@ -1,3 +1,7 @@
+// board-specific values generated into a hwdef fragment
+#if __has_include(<hwdef_boardid.h>)
+#include <hwdef_boardid.h>
+#endif
 #include "AP_Logger_config.h"
 
 #if HAL_LOGGING_ENABLED

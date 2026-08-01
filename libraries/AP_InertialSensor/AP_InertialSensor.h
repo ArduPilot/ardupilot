@@ -2,6 +2,12 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
+// board-specific values for this subsystem are generated into a hwdef
+// fragment so they only enter the include closure of code using them
+#if __has_include(<hwdef_ins.h>)
+#include <hwdef_ins.h>
+#endif
+
 #ifndef INS_AUX_INSTANCES
 #define INS_AUX_INSTANCES 0
 #endif

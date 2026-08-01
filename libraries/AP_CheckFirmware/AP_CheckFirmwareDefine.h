@@ -1,6 +1,10 @@
 #ifndef FORCE_VERSION_H_INCLUDE
 #error AP_CheckFirmwareDefines.h should never be included directly. You probably want to include AP_CheckFirmware/AP_CheckFirmware.h
 #endif
+// board-specific values generated into a hwdef fragment
+#if __has_include(<hwdef_boardid.h>)
+#include <hwdef_boardid.h>
+#endif
 #include "AP_CheckFirmware.h"
 
 #if AP_CHECK_FIRMWARE_ENABLED
