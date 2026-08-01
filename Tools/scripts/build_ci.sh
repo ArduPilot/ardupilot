@@ -95,6 +95,7 @@ function run_autotest() {
     NAME="$1"
     BVEHICLE="$2"
     RVEHICLE="$3"
+    EXTRA_WAF_ARGS="${4:-}"
     if [ "$CI" = "true" ]; then
       echo "::group::cpuinfo"
     fi
@@ -124,6 +125,9 @@ function run_autotest() {
     fi
     if [ "$NAME" == "Examples" ]; then
         w="$w --speedup=5 --timeout=14400 --debug --no-clean"
+    fi
+    if [ -n "$EXTRA_WAF_ARGS" ]; then
+        w="$w $EXTRA_WAF_ARGS"
     fi
     Tools/autotest/autotest.py --show-test-timings --junit --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
@@ -161,7 +165,7 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
     if [ "$t" == "sitltest-copter-tests2b" ]; then
-        run_autotest "Copter" "build.Copter" "test.CopterTests2b"
+        run_autotest "Copter" "build.Copter" "test.CopterTests2b" "--enable-PARAM_LOCKDOWN"
         continue
     fi
     if [ "$t" == "sitltest-can" ]; then
