@@ -3,6 +3,16 @@
 
 #define AP_REBOOT_MASS_STORAGE_ENABLED 0
 
+// periph boards never enable HAL_DSHOT_ALARM_ENABLED, so only an
+// alarm pin enables the tone alarm
+#ifndef AP_NOTIFY_TONEALARM_ENABLED
+#if defined(HAL_PWM_ALARM)
+#define AP_NOTIFY_TONEALARM_ENABLED 1
+#else
+#define AP_NOTIFY_TONEALARM_ENABLED 0
+#endif
+#endif
+
 #ifndef AP_SCHEDULER_ENABLED
 #define AP_SCHEDULER_ENABLED 0
 #endif

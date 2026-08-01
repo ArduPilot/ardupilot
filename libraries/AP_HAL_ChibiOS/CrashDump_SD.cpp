@@ -16,13 +16,13 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "CrashDump.h"
+#include <hal.h>
 
 #if AP_CRASHDUMP_FATFS_ENABLED && (HAL_USE_SDC || \
     (HAL_USE_MMC_SPI && CRASHDUMP_SD_SPI_SUPPORTED_MCU))
 
 #include <AP_Common/AP_FWVersion.h>
 #include <AP_Math/crc.h>
-#include <hal.h>
 
 #include "hwdef/common/bouncebuffer.h"
 #include "sdcard.h"

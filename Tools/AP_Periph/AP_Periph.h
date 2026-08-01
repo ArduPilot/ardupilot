@@ -1,5 +1,9 @@
 #pragma once
 
+#include <hwdef_boardid.h>
+#include <hwdef_notify.h>
+#include <hwdef_gpio.h>
+
 #include <AP_HAL/AP_HAL.h>
 #include <canard.h>
 #include <AP_Param/AP_Param.h>
