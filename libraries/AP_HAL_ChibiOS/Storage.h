@@ -64,6 +64,20 @@ static_assert(CH_STORAGE_SIZE % CH_STORAGE_LINE_SIZE == 0,
 #define AP_FLASH_STORAGE_QUAD_PAGE 0
 #endif
 
+/*
+  pages aggregated into one AP_FlashStorage sector. Every sector index
+  conversion and sector-relative bounds check must derive from this; deriving it
+  independently is what let the read bounds check disagree with the sector size
+  AP_FlashStorage was constructed with.
+ */
+#if AP_FLASH_STORAGE_QUAD_PAGE
+#define AP_FLASH_STORAGE_PAGES_PER_SECTOR 4
+#elif AP_FLASH_STORAGE_DOUBLE_PAGE
+#define AP_FLASH_STORAGE_PAGES_PER_SECTOR 2
+#else
+#define AP_FLASH_STORAGE_PAGES_PER_SECTOR 1
+#endif
+
 class ChibiOS::Storage : public AP_HAL::Storage {
 public:
     void init() override {}
@@ -105,13 +119,7 @@ private:
 
 #ifdef STORAGE_FLASH_PAGE
     AP_FlashStorage _flash{_buffer,
-#if AP_FLASH_STORAGE_QUAD_PAGE
-            stm32_flash_getpagesize(STORAGE_FLASH_PAGE)*4,
-#elif AP_FLASH_STORAGE_DOUBLE_PAGE
-            stm32_flash_getpagesize(STORAGE_FLASH_PAGE)*2,
-#else
-            stm32_flash_getpagesize(STORAGE_FLASH_PAGE),
-#endif
+            stm32_flash_getpagesize(STORAGE_FLASH_PAGE)*AP_FLASH_STORAGE_PAGES_PER_SECTOR,
             FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),
