@@ -57,7 +57,7 @@ PA44 UART0_TX UART0
 PA45 UART0_RX UART0
 
 # Hold the IMU chip-select inactive while the bootloader is running.
-PA33 ICM45686_CS CS
+PA33 IMU1_CS CS
 
 # Leave board rails disabled in the bootloader.  Both enables are active HIGH
 # (MP4334 EN with a pull-down), so LOW is off.
