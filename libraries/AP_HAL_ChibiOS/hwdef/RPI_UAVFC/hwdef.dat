@@ -73,16 +73,21 @@ define HAL_OTG1_BAUD 115200
 # Pins
 # --------------------------------------------------------------------------
 
-# SPI0 - IMU.  The schematic names the part TDK ICM-56686, which is the same
-# silicon as the ICM-45686 and reports its WHOAMI (0xE9 at register 0x72), so
-# the Invensensev3 ICM-456xy path drives it.
+# SPI0 - IMU.  The device is named imu1 rather than after a part because the
+# board line does not carry a single one: the R2 Rev C schematic shows a TDK
+# ICM-56686, while earlier samples carry an ICM42688P.  Invensensev3 probes
+# both WHOAMI registers (0x75 for the ICM-426xx family, 0x72 for ICM-456xy)
+# and configures whichever it finds, so no hwdef change is needed to switch.
+# A true ICM-56686 has its own register map - PWR_MGMT0 at 0x14 rather than
+# 0x10, ACCEL_CONFIG0 at 0x1F, GYRO_CONFIG0 at 0x20 - so if one appears that
+# matches neither WHOAMI it needs driver work, not a hwdef edit.
 #   CIPO/MISO=GPIO32, CSn=GPIO33, SCLK=GPIO34, COPI/MOSI=GPIO35, IRQn=GPIO26.
 # All four bus pins take SPI0 on ALT F1.
 PA34 SPI0_SCK SPI0
 PA32 SPI0_RX  SPI0
 PA35 SPI0_TX  SPI0
-PA33 ICM45686_CS CS
-PA26 ICM45686_DRDY INPUT
+PA33 IMU1_CS CS
+PA26 IMU1_DRDY INPUT
 
 # SPI1 - microSD
 #   CIPO/DAT0=GPIO28, CSn=GPIO29, SCLK=GPIO30, COPI/CMD=GPIO31.
@@ -188,7 +193,7 @@ PA40 RSSI_ADC ADC1 SCALE(1)
 # SPI device table
 # --------------------------------------------------------------------------
 
-SPIDEV icm45686 SPI0 DEVID1 ICM45686_CS MODE3 2*MHZ 8*MHZ
+SPIDEV imu1 SPI0 DEVID1 IMU1_CS MODE3 2*MHZ 8*MHZ
 SPIDEV sdcard   SPI1 DEVID3 SDCARD_CS   MODE0 400*KHZ 25*MHZ
 
 # --------------------------------------------------------------------------
@@ -382,7 +387,7 @@ define RP_QMI_RXDELAY 2
 #   the boot XIP flash and logs go to the microSD card.
 
 # Sensors
-IMU Invensensev3 SPI:icm45686 ROTATION_NONE
+IMU Invensensev3 SPI:imu1 ROTATION_NONE
 # The fitted part is a DPS368; it shares the DPS280/DPS310 register map and
 # reports the same product ID (0x10), so the DPS310 backend drives it.
 BARO DPS310 I2C:0:0x76

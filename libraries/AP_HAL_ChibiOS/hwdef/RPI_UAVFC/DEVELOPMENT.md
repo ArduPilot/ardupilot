@@ -16,7 +16,7 @@ that.
 | Pinout | Verified against R2 Rev C schematic |
 | Build | `./waf configure --board RPI_UAVFC && ./waf copter` |
 | Bootloader | Built, board ID 1215 |
-| IMU | Working on hardware, accel calibration completes |
+| IMU | Working on hardware; fitted part varies, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
 | microSD logging | Working on hardware |
 | Parameter storage | Working, accel cal persists across reboot |
@@ -26,14 +26,72 @@ that.
 
 ## The IMU
 
-The schematic names the part TDK ICM-56686. That is the same silicon as the
-ICM-45686, so it reports `0xE9` at register `0x72` and
-`AP_InertialSensor_Invensensev3::check_whoami()` picks it up through the
-ICM-456xy path with no driver change. The hwdef labels the device `icm45686`
-to match what the driver actually detects.
+The board line does not carry a single part. The R2 Rev C schematic shows a TDK
+ICM-56686; earlier samples carry an ICM42688P. The hwdef therefore names the
+SPI device `imu1` rather than after any part, following the convention most
+boards already use.
 
-If it ever fails to probe, the first thing to check is which WHOAMI register
-responds: `0x75` for the ICM-426xx family, `0x72` for the ICM-456xy family.
+This needs no hwdef change to switch, because Invensensev3 probes both WHOAMI
+registers - `0x75` for the ICM-426xx family, `0x72` for ICM-456xy - and
+configures whichever it finds.
+
+An actual ICM-56686 is a different chip, not a rebadged ICM-45686, and would
+need driver work rather than a hwdef edit. Its register map diverges from the
+ICM-45686 that ArduPilot's ICM-456xy path assumes: `PWR_MGMT0` at `0x14`
+rather than `0x10`, `ACCEL_CONFIG0` at `0x1F` rather than `0x1B`,
+`GYRO_CONFIG0` at `0x20` rather than `0x1C`. Note ArduPilot reads `FIFO_DATA`
+at `0x14`, which is `PWR_MGMT0` on the ICM-56686, so the maps cannot be used
+interchangeably. There is a Betaflight driver on the `accgyro_spi_icm56686`
+branch of `mjs1441/betaflight` to model any such work on.
+
+To confirm which part is fitted, read `INS_ACC1_ID` and take the top byte
+(divide by 65536): `0x34` (52) is ICM42688, `0x3B` (59) is ICM45686.
+
+### ICM-56686 notes for whoever writes the driver
+
+Deferred until a datasheet is available. Everything below is second-hand, read
+off the Betaflight driver rather than a TDK document, so treat the datasheet as
+authoritative where it disagrees.
+
+| | ICM-45686 (ArduPilot) | ICM-56686 (Betaflight) |
+|-------------------|-----------------------|------------------------|
+| `WHO_AM_I` | `0x72` | `0x72` |
+| `PWR_MGMT0` | `0x10` | `0x14` |
+| `ACCEL_CONFIG0` | `0x1B` | `0x1F` |
+| `GYRO_CONFIG0` | `0x1C` | `0x20` |
+| IREG addr/data | `0x7C`/`0x7D`/`0x7E` | same |
+| `REG_MISC2` | `0x7F` | same |
+
+`FIFO_DATA` is `0x14` in ArduPilot's ICM-456xy path, which is `PWR_MGMT0` on
+the ICM-56686. The maps are not interchangeable.
+
+Two traps worth knowing before writing any of it:
+
+- Gyro full-scale encoding differs. On the ICM-56686, `GYRO_FS_SEL` `0x0 << 4`
+  selects 4000 dps and `0x1 << 4` selects 2000 dps. ArduPilot's ICM-456xy setup
+  writes `0x0 << 4` intending 2000 dps, so carrying that across unchanged would
+  give a silent 2x gyro scale error.
+- The chip powers up in 20-bit big-endian sample format. Betaflight explicitly
+  switches it to 16-bit little-endian via `SREG_CTRL` at `IPREG_TOP1_BASE +
+  0x60` (`SIFS_20BITS_EN` bit 3, `DATA_ENDIAN_SEL_BIG` bit 1).
+
+Other facts collected: IREG bases `IPREG_SYS1 0xA400`, `IPREG_SYS2 0xA500`,
+`IPREG_TOP1 0xA200`; IREG access is an auto-incrementing burst of addr-high,
+addr-low, data with CS held low, polling `REG_MISC2` bit 0 for done with a 4 us
+minimum gap. Data registers are `ACCEL_DATA_X1 0x00`, `GYRO_DATA_X1 0x06`,
+`TEMP_DATA0 0x0C`. Accel FS codes are 32G/16G/8G/4G/2G at `0x00`-`0x04 << 4`;
+ODR codes are 6.4k `0x03`, 3.2k `0x04`, 1.6k `0x05`, 800 `0x06`. Betaflight
+reads samples directly rather than through a FIFO, so it is a starting point
+for register setup but not for ArduPilot's FIFO-based sampling.
+
+Source: `mjs1441/betaflight`, branch `accgyro_spi_icm56686`,
+`src/main/drivers/accgyro/accgyro_spi_icm56686.c`.
+
+The quickest health check is the `ICM dbg:` line. Gravity magnitude should come
+to about 9.81 across the three accel axes, the gyro should sit near zero at
+rest, and `t=` should read a plausible room temperature - temperature is
+decoded from the same FIFO packet as accel and gyro, so a sane value confirms
+the packet layout and register map are right.
 
 Failure is loud here: `HAL_INS_ALLOW_NO_SENSORS` is deliberately not set. On
 Laurel v1 it was, and a failed probe silently
