@@ -51,6 +51,12 @@ extern const AP_HAL::HAL& hal;
 #define HAL_FLASH_READ_FAIL_LIMIT 10
 #endif
 
+// defer all storage writes while armed. For boards where a storage write
+// stalls the control loop badly enough that it must not happen in flight.
+#ifndef AP_STORAGE_NO_WRITE_WHILE_ARMED
+#define AP_STORAGE_NO_WRITE_WHILE_ARMED 0
+#endif
+
 #ifdef USE_POSIX
 #ifndef HAL_STORAGE_SDCARD_RETRY_MS
 #define HAL_STORAGE_SDCARD_RETRY_MS 2000U
@@ -304,6 +310,15 @@ void Storage::_timer_tick(void)
     if (_initialisedType == StorageBackend::None) {
         return;
     }
+#if AP_STORAGE_NO_WRITE_WHILE_ARMED
+    if (hal.util->get_soft_armed()) {
+        // Dirty lines stay set and are flushed once disarmed, so nothing is
+        // lost by deferring. Keep _last_empty_ms fresh: a deliberate deferral
+        // is not a storage fault and must not fail the healthy() arming check.
+        _last_empty_ms = AP_HAL::millis();
+        return;
+    }
+#endif
     if (_dirty_mask.empty()) {
         _last_empty_ms = AP_HAL::millis();
         return;
@@ -444,11 +459,7 @@ bool Storage::_flash_write(uint16_t line)
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
-#if AP_FLASH_STORAGE_QUAD_PAGE
-    sector *= 4;
-#elif AP_FLASH_STORAGE_DOUBLE_PAGE
-    sector *= 2;
-#endif
+    sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         EXPECT_DELAY_MS(1);
@@ -485,17 +496,14 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
         return true;
     }
 
-#if AP_FLASH_STORAGE_QUAD_PAGE
-    sector *= 4;
-#elif AP_FLASH_STORAGE_DOUBLE_PAGE
-    sector *= 2;
-#endif
+    sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
 
     const uint32_t page = _flash_page + sector;
     const size_t base_address = hal.flash->getpageaddr(page);
-    const uint32_t page_size = hal.flash->getpagesize(page);
+    // bound against the whole aggregated sector, not the first page of it
+    const uint32_t sector_size = hal.flash->getpagesize(page)*AP_FLASH_STORAGE_PAGES_PER_SECTOR;
     if (base_address == 0 || base_address == SIZE_MAX ||
-        offset > page_size || length > page_size || (offset + length) > page_size) {
+        offset > sector_size || length > sector_size || (offset + length) > sector_size) {
         _flash_read_fail_count++;
         if (_flash_read_fail_count > HAL_FLASH_READ_FAIL_LIMIT) {
             _flash_read_disabled = true;
@@ -522,30 +530,19 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
 #ifdef STORAGE_FLASH_PAGE
-#if AP_FLASH_STORAGE_QUAD_PAGE
-    sector *= 4;
-#elif AP_FLASH_STORAGE_DOUBLE_PAGE
-    sector *= 2;
-#endif
+    sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
     // erasing a page can take long enough that USB may not initialise properly if it happens
     // while the host is connecting. Only do a flash erase if we have been up for more than 4s
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         // a sector erase stops the whole MCU so set up a long expected delay
         EXPECT_DELAY_MS(1000);
-#if AP_FLASH_STORAGE_QUAD_PAGE
-        if (hal.flash->erasepage(_flash_page+sector)   && hal.flash->erasepage(_flash_page+sector+1) &&
-            hal.flash->erasepage(_flash_page+sector+2) && hal.flash->erasepage(_flash_page+sector+3)) {
+        bool ok = true;
+        for (uint8_t p=0; ok && p<AP_FLASH_STORAGE_PAGES_PER_SECTOR; p++) {
+            ok = hal.flash->erasepage(_flash_page+sector+p);
+        }
+        if (ok) {
             return true;
         }
-#elif AP_FLASH_STORAGE_DOUBLE_PAGE
-        if (hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1)) {
-            return true;
-        }
-#else
-        if (hal.flash->erasepage(_flash_page+sector)) {
-            return true;
-        }
-#endif
         hal.scheduler->delay(1);
     }
     return false;
