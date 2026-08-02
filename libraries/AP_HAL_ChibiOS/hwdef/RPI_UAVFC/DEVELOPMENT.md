@@ -7,34 +7,36 @@ users see it; this file is for whoever is working on the port. See
 ## Where things stand
 
 The hwdef is complete and builds, and the pinout is verified against the
-schematic. The board has not yet flown. The IMU does not currently probe, and
-that is the one thing blocking everything else.
+schematic. Both sensors, parameter storage and microSD logging are confirmed
+on hardware. The ports and outputs still marked untested below are exactly
+that.
 
 | Area | State |
 |-----------------------|--------------------------------------------------|
 | Pinout | Verified against R2 Rev C schematic |
 | Build | `./waf configure --board RPI_UAVFC && ./waf copter` |
 | Bootloader | Built, board ID 1215 |
-| IMU | BLOCKED - ICM-56686 not supported by the driver |
-| Barometer | DPS368 on I2C0 at 0x76, untested on hardware |
-| microSD logging | Untested on this revision |
+| IMU | Working on hardware, accel calibration completes |
+| Barometer | DPS368 detected on I2C0 at 0x76 |
+| microSD logging | Working on hardware |
+| Parameter storage | Working, accel cal persists across reboot |
 | Serial ports | Wiring verified, protocols untested |
 | Battery monitoring | Scale factors are placeholders from v1 |
+| Motor outputs | Untested; channel order corrected from schematic |
 
-## The IMU blocker
+## The IMU
 
-The fitted part is a TDK ICM-56686. `AP_InertialSensor_Invensensev3::
-check_whoami()` recognises ICM40605, ICM40609, ICM42605, ICM42688 P and V,
-IIM42652, IIM42653, ICM42670 and ICM45686. The ICM-56686 is not among them,
-and the ICM-456xy path accepts only `0xE9` at register `0x72`.
+The schematic names the part TDK ICM-56686. That is the same silicon as the
+ICM-45686, so it reports `0xE9` at register `0x72` and
+`AP_InertialSensor_Invensensev3::check_whoami()` picks it up through the
+ICM-456xy path with no driver change. The hwdef labels the device `icm45686`
+to match what the driver actually detects.
 
-The part is very likely register-compatible with the ICM-45686, but its WHOAMI
-value has not been confirmed. Do not guess it. Either read WHOAMI from the
-hardware over SWD, or add a temporary print of both WHOAMI registers
-(`0x75` and `0x72`) in `check_whoami()` and read it from the boot messages.
+If it ever fails to probe, the first thing to check is which WHOAMI register
+responds: `0x75` for the ICM-426xx family, `0x72` for the ICM-456xy family.
 
-Note the failure is now loud: `HAL_INS_ALLOW_NO_SENSORS` is deliberately NOT
-set for this board. On Laurel v1 it was, and a failed probe silently
+Failure is loud here: `HAL_INS_ALLOW_NO_SENSORS` is deliberately not set. On
+Laurel v1 it was, and a failed probe silently
 substituted `AP_InertialSensor_NONE`, which synthesises a flat 0.01 on each
 axis with no gravity term. That produced plausible-looking but wrong IMU data
 and cost a day of chasing a phantom performance problem. Leave the flag off.
@@ -157,14 +159,15 @@ made a wrong-orientation fault very hard to diagnose.
 
 ## Next steps
 
-1. Identify the ICM-56686 WHOAMI and add driver support. Nothing else can be
-   tested on hardware until the IMU probes.
-2. Confirm the DPS368 responds at 0x76.
-3. Verify microSD mount and logging.
-4. Measure the battery voltage and current dividers and replace the v1
+1. Bring up the serial ports one at a time: GPS on SERIAL2, then the PIO ports
+   on SERIAL3/SERIAL4, which ship disabled.
+2. Verify motor output channel order on the bench before fitting props. The
+   schematic reversed it relative to the vendor sheet and it is untested.
+3. Measure the battery voltage and current dividers and replace the v1
    placeholders in `hwdef.dat`.
-5. Determine the mounting orientation and set `AHRS_ORIENTATION` as a user
+4. Determine the mounting orientation and set `AHRS_ORIENTATION` as a user
    parameter, not a board default.
-6. Re-check the QMI flash timing if this revision fits a different flash part.
+5. Re-check the QMI flash timing if this revision fits a different flash part.
    `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
-7. Establish a fresh profiling baseline and compare against v1's numbers.
+6. Establish a fresh profiling baseline and compare against v1's numbers.
+   Logging now works, so `/log-analyze` is available for this.

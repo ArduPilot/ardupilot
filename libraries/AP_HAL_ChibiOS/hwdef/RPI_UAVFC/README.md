@@ -16,7 +16,7 @@ QMI flash timing and SMP configuration are shared between the two.
  - MCU - RP2350B dual-core Cortex-M33 running at 225 MHz
  - 520 KB SRAM
  - 4 MB boot/XIP flash (QSPI, dedicated `QSPI_SS` chip-select)
- - TDK ICM-56686 IMU on SPI0
+ - TDK ICM-56686 IMU on SPI0 (same silicon as the ICM-45686)
  - DPS368 barometer on the internal I2C0 bus (address 0x76)
  - microSD card slot (SPI mode) for logging
  - 2 hardware UARTs plus 2 PIO UARTs
@@ -138,4 +138,3 @@ with any ArduPilot ground station using the `*.apj` firmware files.
 | RGB LED (GPIO2) | Serial LED output not supported on RP2350 |
 | Battery scaling | Placeholder factors carried from Laurel v1 |
 | IMU rotation | `ROTATION_NONE`; set `AHRS_ORIENTATION` to match your mounting |
-| ICM-56686 IMU | Not recognised by `AP_InertialSensor_Invensensev3::check_whoami()` |
