@@ -204,6 +204,10 @@ define HAL_STORAGE_SIZE 8192
 define HAL_WITH_RAMTRON 0
 STORAGE_FLASH_PAGE 8
 define AP_FLASH_STORAGE_QUAD_PAGE 1
+# A boot-flash write turns XIP off for both cores and parks core1 for the whole
+# operation, stalling the 2 kHz rate loop, so defer every storage write until
+# disarmed. Dirty lines persist in the RAM buffer and flush on disarm.
+define AP_STORAGE_NO_WRITE_WHILE_ARMED 1
 
 define HAL_HAVE_SAFETY_SWITCH 0
 define HAL_WITH_MCU_MONITORING 1

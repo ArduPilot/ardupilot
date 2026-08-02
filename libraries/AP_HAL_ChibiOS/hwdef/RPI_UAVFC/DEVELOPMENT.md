@@ -151,6 +151,18 @@ Parameter storage sits at 0x10008000 in the 64 KB reserve below the app, on the
 4 MB boot flash. There is no blackbox flash on this board. A sibling branch
 implemented a QMI M1 driver for a second flash part; it does not apply here.
 
+Storage writes are deferred entirely while armed via
+`AP_STORAGE_NO_WRITE_WHILE_ARMED`. A boot-flash write parks core1 for the whole
+operation, which the 2 kHz rate loop cannot absorb, and stock ArduPilot only
+guards the full sector erase. Nothing is lost: `_timer_tick()` clears a dirty
+line only after a successful write, so pending data sits in the RAM buffer and
+flushes on disarm.
+
+Editing `hwdef.dat` requires a reconfigure. `./waf copter` on its own will not
+regenerate `hwdef.h`, and the build will silently succeed without the change.
+Check the define landed in `build/RPI_UAVFC/hwdef.h` if a hwdef edit appears to
+have no effect.
+
 `defaults.parm` deliberately does not set `AHRS_ORIENTATION`, `FRAME_CLASS`,
 `FRAME_TYPE`, `COMPASS_ENABLE` or the harmonic notch parameters. Those are
 mounting and airframe choices, not board properties. Laurel v1 baked in
