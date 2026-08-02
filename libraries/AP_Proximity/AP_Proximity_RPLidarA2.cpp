@@ -487,7 +487,7 @@ void AP_Proximity_RPLidarA2::parse_response_data()
                 frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
             } else {
                 // reset distance from last face
-                frontend.boundary.reset_face(face, state.instance);
+                frontend.boundary.reset_face(_last_face, state.instance);
             }
 
             // initialize the new face
@@ -628,7 +628,7 @@ void AP_Proximity_RPLidarA2::parse_response_express(const uint8_t *buf)
             frontend.boundary.set_face_attributes(_last_face, _last_angle_deg, _last_distance_m, state.instance);
         } else {
             // reset distance from last face
-            frontend.boundary.reset_face(face, state.instance);
+            frontend.boundary.reset_face(_last_face, state.instance);
         }
 
         // initialize the new face
