@@ -307,6 +307,14 @@ local windspeed_max = WINDSPEED_MAX:get()
 
 ---@diagnostic disable-next-line:lowercase-global
 function constrain(v, vmin, vmax)
+   -- a NaN fails every comparison below, so without this check it would be
+   -- returned unclamped and could propagate into a MAVLink command. Error
+   -- rather than clamp: a substituted value hides whatever upstream
+   -- computation went wrong, where an error is caught by Protected_Wrapper's
+   -- pcall, reported on the GCS with the call site, and retried in 1s.
+   if v ~= v then
+      error(string.format("%s: constrain() given NaN (min=%s max=%s)", SCRIPT_NAME_SHORT, tostring(vmin), tostring(vmax)), 2)
+   end
    if v < vmin then
       v = vmin
    end
