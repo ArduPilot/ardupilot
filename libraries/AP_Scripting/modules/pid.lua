@@ -39,6 +39,16 @@ PIDcontroller.MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING
 
 -- constrain a value between limits
 function PIDcontroller.constrain(v, vmin, vmax)
+    -- a NaN fails every comparison below, so without this check it would be
+    -- returned unclamped and could propagate into a MAVLink command. Error
+    -- rather than clamp: a substituted value hides whatever upstream
+    -- computation went wrong. A caller wrapping its update loop in pcall (as
+    -- plane_follow.lua's Protected_Wrapper does) can catch this, report it,
+    -- and retry; a caller that isn't gets its script halted, which is the
+    -- correct outcome for an unguarded consumer of a shared PID module.
+    if v ~= v then
+       error(string.format("%s: constrain() given NaN (min=%s max=%s)", PIDcontroller.SCRIPT_NAME_SHORT, tostring(vmin), tostring(vmax)), 2)
+    end
     if v < vmin then
        v = vmin
     end
