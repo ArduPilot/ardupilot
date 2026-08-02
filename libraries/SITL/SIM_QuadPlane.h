@@ -45,6 +45,7 @@ public:
 
 private:
     Frame *frame;
+    void update_battery(const struct sitl_input &input) override;
 };
 
 } // namespace SITL
