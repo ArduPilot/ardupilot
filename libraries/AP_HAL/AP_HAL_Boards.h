@@ -301,6 +301,12 @@
 #define AP_RP2350_DEBUG_REPORT_ENABLED 1
 #endif
 
+// RP2350 statistical PC sampler. Off by default: it costs a ~5.1 kHz ISR per
+// core and 24 KB of BSS, and is only wanted when profiling.
+#ifndef AP_RP2350_PC_SAMPLER_ENABLED
+#define AP_RP2350_PC_SAMPLER_ENABLED 0
+#endif
+
 #ifndef AP_STATS_ENABLED
 #define AP_STATS_ENABLED 1
 #endif
