@@ -23978,6 +23978,8 @@ return update, 1000
             self.AHRSAutoTrim,
             self.AHRSTrim,
             self.PeriphMultiUARTTunnel,
+            self.CANForward,
+            self.CANFilterModify,
         ])
         return ret
 
@@ -24145,6 +24147,71 @@ return update, 1000
             # reset SITL home back to the default location so the framework's
             # post-test reboot_sitl() location check passes
             self.customise_SITL_commandline([])
+
+    def CANForward(self):
+        '''test MAV_CMD_CAN_FORWARD CAN-over-MAVLink forwarding'''
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+        })
+        self.reboot_sitl()
+
+        # out-of-range buses must be rejected; 256 and 257 used to alias
+        # bus 0 (disable forwarding) and bus 1:
+        for bus in [-5, -50, 50, 255, 256, 257]:
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_CAN_FORWARD,
+                p1=bus,
+                want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            )
+            self.wait_heartbeat()
+
+        # bus 1 is hal.can[0]:
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_CAN_FORWARD,
+            p1=1,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
+        # bus 0 disables forwarding:
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_CAN_FORWARD,
+            p1=0,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
+
+    def CANFilterModify(self):
+        '''test CAN_FILTER_MODIFY CAN-over-MAVLink filtering'''
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+        })
+        self.reboot_sitl()
+
+        # invalid buses must be ignored.  CAN_FILTER_MODIFY is not
+        # acknowledged, so check commands are still processed afterwards:
+        ids = [0] * 16
+        for bus in [0, 200, 255]:
+            self.mav.mav.can_filter_modify_send(
+                self.sysid_thismav(),
+                1,  # target component
+                bus,
+                mavutil.mavlink.CAN_FILTER_REPLACE,
+                0,  # num_ids
+                ids,
+            )
+        self.wait_heartbeat()
+        # a valid bus:
+        self.mav.mav.can_filter_modify_send(
+            self.sysid_thismav(),
+            1,
+            1,
+            mavutil.mavlink.CAN_FILTER_REPLACE,
+            0,
+            ids,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_CAN_FORWARD,
+            p1=0,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
 
     def testcan(self):
         ret = ([
