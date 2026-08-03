@@ -7677,7 +7677,7 @@ class TestSuite(abc.ABC):
             if (timeout is not None and
                     self.get_sim_time_cached(mav=mav) > tstart + timeout):
                 raise WaitModeTimeout("Did not change mode")
-            self.send_cmd_do_set_mode(mode, mav=mav)
+            self.send_cmd_do_set_mode(mode, mav=mav, target_sysid=mav_sysid)
         self.progress("Got mode %s" % mode)
 
     def capable(self, capability):
