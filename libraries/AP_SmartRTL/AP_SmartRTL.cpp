@@ -442,6 +442,11 @@ void AP_SmartRTL::routine_cleanup(uint16_t path_points_count, uint16_t path_poin
     const uint16_t points_to_simplify = (path_points_count > _simplify.path_points_completed) ? (path_points_count - _simplify.path_points_completed) : 0 ;
     const bool low_on_space = (_path_points_max - path_points_count) <= SMARTRTL_CLEANUP_START_MARGIN;
 
+    if(_prune.loops_count > 0 && low_on_space){
+        remove_points_by_loops(SMARTRTL_CLEANUP_POINT_MIN);
+        return;
+    }
+
     // if 50 points can be simplified or we are low on space and at least 10 points can be simplified
     if ((points_to_simplify >= SMARTRTL_CLEANUP_POINT_TRIGGER) || (low_on_space && (points_to_simplify >= SMARTRTL_CLEANUP_POINT_MIN))) {
         restart_simplification(path_points_count);
@@ -602,7 +607,7 @@ void AP_SmartRTL::detect_loops()
 
         // find the closest distance between two line segments and the mid-point
         dist_point dp = segment_segment_dist(_path[_prune.i], _path[_prune.i-1], _path[_prune.j-1], _path[_prune.j]);
-        if (dp.distance < SMARTRTL_PRUNING_DELTA) {
+        if (dp.distance < (_accuracy * 0.99f)) {
             // if there is a loop here, add to loop array
             if (!add_loop(_prune.j, _prune.i-1, dp.midpoint)) {
                 // if the buffer is full, stop trying to prune
@@ -657,6 +662,7 @@ void AP_SmartRTL::restart_pruning(uint16_t path_points_count)
     _prune.i = (path_points_count > 0) ? path_points_count - 1 : 0;
     _prune.j = 0;
     _prune.path_points_count = path_points_count;
+    _prune.path_points_completed = 0;
 }
 
 // reset pruning algorithm so that it will re-check all points in the path
