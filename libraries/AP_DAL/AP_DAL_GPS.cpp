@@ -14,7 +14,7 @@ AP_DAL_GPS::AP_DAL_GPS()
     }
 }
 
-void AP_DAL_GPS::start_frame()
+void AP_DAL_GPS::start_frame(bool log_mb_yaw_offset)
 {
     const auto &gps = AP::gps();
 
@@ -54,10 +54,13 @@ void AP_DAL_GPS::start_frame()
         // The offset is derived from parameters but is zeroed while gps_yaw is
         // not calculated from a moving baseline, so it tracks the active yaw
         // source and yaw validity as well as parameter changes. All of these
-        // change rarely, so the message is only written when changed.
+        // change rarely, so the message is only written when changed. The
+        // offset is left at zero unless the EKF applies the correction, so a
+        // build that applies none never logs an offset Replay would then
+        // correct for.
         log_RGPK &RGPK = _RGPK[i];
         const log_RGPK old_RGPK = RGPK;
-        RGPK.mb_yaw_offset = gps.get_mb_yaw_offset(i);
+        RGPK.mb_yaw_offset = log_mb_yaw_offset ? gps.get_mb_yaw_offset(i) : Vector3f();
 
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPI, RGPI, old_RGPI);
         WRITE_REPLAY_BLOCK_IFCHANGED(RGPJ, RGPJ, old_RGPJ);

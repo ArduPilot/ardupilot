@@ -87,7 +87,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
 
     _ins.start_frame();
     _baro.start_frame();
-    _gps.start_frame();
+    _gps.start_frame(EK3_FEATURE_MOVING_BASELINE);
     _compass.start_frame();
     if (_airspeed) {
         _airspeed->start_frame();
