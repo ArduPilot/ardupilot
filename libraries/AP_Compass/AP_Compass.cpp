@@ -1136,7 +1136,7 @@ void Compass::_probe_external_i2c_compasses(void)
             RETURN_IF_NO_SPACE;
         }
     }
-#endif  // AP_COMPASS_KMC5843_INTERNAL_BUS_PROBING_ENABLED
+#endif  // AP_COMPASS_HMC5843_INTERNAL_BUS_PROBING_ENABLED
 #endif  // AP_COMPASS_HMC5843_ENABLED
 
 #if AP_COMPASS_QMC5883L_ENABLED
@@ -1196,7 +1196,7 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 #endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
-#endif  // AP_COMPASS_QMC5883P_ENABLED
+#endif  // AP_COMPASS_IIS2MDC_ENABLED
 
     // AK09916 on ICM20948
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
