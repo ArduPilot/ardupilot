@@ -81,8 +81,15 @@ The default battery parameters are:
  - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 1.0
 
 The voltage multiplier was checked against a bench supply and matches the usual
-11.1 divider ratio. The current scale is still the placeholder carried over from
-the original Laurel; measure it against a known load before relying on it.
+11.1 divider ratio.
+
+The current sense is on the ESC, not the board, so `BATT_AMP_PERVLT` is left at
+the placeholder 1.0 and is yours to set. Convert from a Betaflight current
+scale, which is in 0.1 mV/A, by dividing 1000 by the millivolts per amp: a scale
+of 200 is 20 mV/A, so `BATT_AMP_PERVLT` = 50. Most of these sensors also idle at
+a non-zero voltage - read `BATT_CURR_PIN` with the battery connected and nothing
+drawing, and put that figure in `BATT_AMP_OFFSET`, or the board will report tens
+of amps at rest.
 
 ## Analog RSSI input
 
@@ -137,5 +144,6 @@ with any ArduPilot ground station using the `*.apj` firmware files.
 | SBUS pad (GPIO41) | Needs an inverted UART; not currently supported |
 | ESC telemetry (GPIO5) | Can only reach UART1 RX, which the GPS owns |
 | RGB LED (GPIO2) | Serial LED output not supported on RP2350 |
-| Battery current scaling | Placeholder factor carried from Laurel v1 |
+| Battery current scaling | ESC-dependent; set `BATT_AMP_PERVLT` and `BATT_AMP_OFFSET` yourself |
 | IMU rotation | `ROTATION_NONE`; set `AHRS_ORIENTATION` to match your mounting |
+| Compass | None on the board; attach one on I2C1 or the EKF stays in constant-position mode |

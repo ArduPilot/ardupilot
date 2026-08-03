@@ -262,7 +262,7 @@ define HAL_BATT_CURR_PIN 7
 # which puts the divider on the usual 11.1 ratio.
 define HAL_BATT_VOLT_SCALE 11.1
 # Still the v1 placeholder; measure against a known load before relying on it.
-define HAL_BATT_CURR_SCALE 1.0
+define HAL_BATT_CURR_SCALE 0.1
 define BOARD_RSSI_ANA_PIN 0
 
 define HAL_I2C_MAX_CLOCK 100000
@@ -395,7 +395,7 @@ define RP_QMI_RXDELAY 2
 #   the boot XIP flash and logs go to the microSD card.
 
 # Sensors
-IMU Invensensev3 SPI:imu1 ROTATION_NONE
+IMU Invensensev3 SPI:imu1 ROTATION_PITCH_180
 # The fitted part is a DPS368; it shares the DPS280/DPS310 register map and
 # reports the same product ID (0x10), so the DPS310 backend drives it.
 BARO DPS310 I2C:0:0x76
