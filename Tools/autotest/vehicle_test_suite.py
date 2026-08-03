@@ -9245,7 +9245,7 @@ Also, ignores heartbeats not from our target system'''
         if drain_mav:
             self.drain_mav(quiet=quiet)
         if poll:
-            self.send_poll_message('HEARTBEAT')
+            self.send_poll_message('HEARTBEAT', quiet=True)
         orig_timeout = x.get("timeout", 20)
         x["timeout"] = 1
         tstart = time.time()
