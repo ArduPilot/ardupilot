@@ -75,6 +75,13 @@ void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 #define TOGGLE_PIN_CH_DEBUG(pin, channel) do {} while (0)
 #endif
 
+/*
+  Everything from here to the eRPM decode below drives DShot telemetry with a
+  timer in input-capture mode and a DMAR burst. RP2350 has neither; it
+  collects the reply in the PIO state machine instead (RCOutput_pico.cpp) and
+  only needs the decode itself, which is shared.
+ */
+#if !defined(RP2350)
 bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
 {
     // check if already allocated
@@ -709,36 +716,6 @@ uint32_t RCOutput::bdshot_get_output_rate_hz(const enum output_mode mode)
     }
 }
 
-// decode the four GCR quintets of a 20 bit telemetry word and verify the checksum
-uint32_t RCOutput::bdshot_decode_gcr_erpm(uint32_t value)
-{
-    // 0xff marks the sixteen quintets GCR never emits
-    static const uint8_t decode[32] = {
-        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 9, 10, 11, 0xff, 13, 14, 15,
-        0xff, 0xff, 2, 3, 0xff, 5, 6, 7, 0xff, 0, 8, 1, 0xff, 4, 12, 0xff };
-
-    const uint32_t n0 = decode[value & 0x1fU];
-    const uint32_t n1 = decode[(value >> 5U) & 0x1fU];
-    const uint32_t n2 = decode[(value >> 10U) & 0x1fU];
-    const uint32_t n3 = decode[(value >> 15U) & 0x1fU];
-
-    if ((n0 | n1 | n2 | n3) > 0x0fU) {
-        return INVALID_ERPM;
-    }
-
-    uint32_t decodedValue = n0 | (n1 << 4U) | (n2 << 8U) | (n3 << 12U);
-
-    uint32_t csum = decodedValue;
-    csum = csum ^ (csum >> 8U); // xor bytes
-    csum = csum ^ (csum >> 4U); // xor nibbles
-
-    if ((csum & 0xfU) != 0xfU) {
-        return INVALID_ERPM;
-    }
-    decodedValue >>= 4;
-
-    return decodedValue;
-}
 
 // decode a telemetry packet from a GCR encoded stride buffer, take from betaflight decodeTelemetryPacket
 // see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625 for a description of the protocol
@@ -776,6 +753,44 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t 
 #pragma GCC pop_options
 
 // update ESC telemetry information. Returns true if valid eRPM data was decoded.
+#endif // !defined(RP2350)
+
+/*
+  GCR word to eRPM. Outside the RP2350 guard above: a timer in
+  input-capture mode measures edge times and the PIO oversamples the
+  line, but from the GCR word on the decode is the same, so both
+  receive paths share this. See the declaration in RCOutput.h.
+ */
+uint32_t RCOutput::bdshot_decode_gcr_erpm(uint32_t value)
+{
+    // 0xff marks the sixteen quintets GCR never emits
+    static const uint8_t decode[32] = {
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 9, 10, 11, 0xff, 13, 14, 15,
+        0xff, 0xff, 2, 3, 0xff, 5, 6, 7, 0xff, 0, 8, 1, 0xff, 4, 12, 0xff };
+
+    const uint32_t n0 = decode[value & 0x1fU];
+    const uint32_t n1 = decode[(value >> 5U) & 0x1fU];
+    const uint32_t n2 = decode[(value >> 10U) & 0x1fU];
+    const uint32_t n3 = decode[(value >> 15U) & 0x1fU];
+
+    if ((n0 | n1 | n2 | n3) > 0x0fU) {
+        return INVALID_ERPM;
+    }
+
+    uint32_t decodedValue = n0 | (n1 << 4U) | (n2 << 8U) | (n3 << 12U);
+
+    uint32_t csum = decodedValue;
+    csum = csum ^ (csum >> 8U); // xor bytes
+    csum = csum ^ (csum >> 4U); // xor nibbles
+
+    if ((csum & 0xfU) != 0xfU) {
+        return INVALID_ERPM;
+    }
+    decodedValue >>= 4;
+
+    return decodedValue;
+}
+
 bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t chan)
 {
     if (encodederpm == INVALID_ERPM) {

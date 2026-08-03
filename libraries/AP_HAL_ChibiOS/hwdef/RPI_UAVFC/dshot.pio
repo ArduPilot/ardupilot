@@ -1,0 +1,150 @@
+;
+; DShot PIO programs for RP2350.
+;
+; Taken unmodified from Betaflight, src/platform/PICO/dshot.pio, so that the
+; assembled words embedded in AP_HAL_ChibiOS/RCOutput_pico.cpp can be checked
+; and regenerated. ArduPilot has no pioasm in its build.
+;
+; Copyright (c) Betaflight contributors.
+; Written by Matthew Selby, with later work by Andy Piper and qqqlab.
+;
+; This program is free software: you can redistribute it and/or modify it
+; under the terms of the GNU General Public License as published by the
+; Free Software Foundation, either version 3 of the License, or (at your
+; option) any later version.
+;
+; This program is distributed in the hope that it will be useful, but WITHOUT
+; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+; FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+; more details.
+;
+; You should have received a copy of the GNU General Public License along
+; with this program. If not, see <http://www.gnu.org/licenses/>.
+;
+
+; DSHOT protocol rate (150, 300, 600) is dynamic
+; DSHOT bidir / not bidir is compiled in
+; For rate, could have separate programs ready to load in (maybe easiest)
+;  or could have effectively dynamic based on contents of x register if spare, which can be
+; set with pio_sm_exec_wait_blocking
+; For >4 motors, could configure pin with disable, config set, enable, [but run out of time in gyro loop? might need another PIO for more SMs]
+;
+
+; presumably BF writes dshot async, at max of ~10k/sec or so (typical aiming for 8k loop for gyro)
+; dshot frame takes approx. 0.1ms dshot150 or dshot300_bidir
+; so hopefully never going to be overflowing the tx fifo (but could happen with 150bidir and be close with 150, 300bidir)
+
+; DSHOT 600 (non-bidirectional)
+; 1 bit ~ 1.667us = 40 PIO cycles
+; Min delay between frames of 2us = 48 cycles, allow 56 cycles
+.program dshot_600
+start:
+    set    pins, 0                [31]      ; Set pin low [assumed pin already set for output]
+    nop                           [20]      ; min delay 2us at DSHOT600 is 48 cycles, allow 56 before next set
+    pull   block                            ; Block until someone puts something into the TX FIFO
+    out    y, 16                            ; Discard top 16 bits
+bitloop:
+    out    y, 1                             ; Shift next bit into y
+    jmp    !y, outzero                      ;
+    set    pins, 1                [26]      ; To output a '1' bit, set high for 27 then low for 13 (based on bitlength = 40 cycles)
+    set    pins, 0                [9]       ; Delay to next "set" adds up to 13
+    jmp    !osre, bitloop                   ; If not done output (finished shifting bits) then loop
+    jmp    start
+outzero:
+    set    pins, 1                [12]      ; To output a '0', set high for 13 then low for 27
+    set    pins, 0                [22]      ; Delay to next "set" adds up to 27
+    jmp    !osre, bitloop         [1]       ; If not done output (finished shifting bits) then loop else wrap to start
+
+
+; DSHOT 600 bidirectional with edge detection receive (integer clock divider)
+; Uses 'wait' instructions for precise edge detection (jmp pin is broken on RP2350)
+;
+; INTEGER CLOCK DIVIDER: PIO runs at 75 MHz (150 MHz / 2) for clean timing.
+; This gives exactly 125 cycles per DShot bit and 100 cycles per telemetry bit.
+; The 'wait' instruction jitter is 0-1 cycle at 75 MHz = 0-13.3ns.
+;
+; 1 output bit ~ 1.667us = 125 PIO cycles (at clkdiv=2, 75 MHz)
+; NB output levels are inverted compared to normal DSHOT (idle HIGH, 1=LOW pulse, 0=HIGH pulse)
+; Input bit rate is 5/4 times output, so 100 PIO cycles per telemetry bit
+;
+; Receive: wait for falling edge, assuming line is held HIGH until ESC responds
+; gpio_set_pulls(pin, true, false) provides pull-up for idle HIGH when pindirs=0
+; Expect to receive frame ~30us (independent of DSHOT speed) after output frame.
+;
+; Transmit: 14 instructions
+; Receive: 13 instructions
+;       settling delay before switching to input
+;       switch to input mode
+;       wait 1 pin (wait for HIGH)
+;       set x (setup outer loop count before edge detection)
+;       wait 0 pin (wait for falling edge)
+;       5.56x oversampling loop (4 outer x 32 inner = 128 samples)
+;       switch back to output, drive HIGH
+; Total: 27 instructions
+
+.program dshot_600_bidir
+
+.define public BIDIR_START 0
+
+.wrap_target
+PUBLIC pull_data:
+    pull   block                            ; Wait for TX data
+    set    pindirs, 1                       ; Switch to output mode
+    out    y, 16                            ; Discard top 16 bits
+bitloop_tx:
+    out    y, 1                             ; Shift bit to y
+    set    pins, 0               [31]       ; Start of bit (LOW)
+    jmp    !y, outzero_tx        [8]        ; Branch on bit value
+outone_tx:
+    ; '1' bit: 84 cycles LOW (67%), 41 cycles HIGH (33%)
+    nop                          [31]       ; 32 cycles
+    nop                          [10]       ; 18 cycles (total delay=82, LOW=1+1+82=84)
+    set    pins, 1               [31]       ; 32 cycles HIGH
+    ; 7 cycles HIGH
+    jmp    !osre, bitloop_tx     [7]        ; 1 cycle, + out(1) = 41 HIGH total
+    jmp    receive                          ; Done TX -> receive
+outzero_tx:
+    ; '0' bit: 41 cycles LOW (33%), 84 cycles HIGH (67%)
+    ; 7 cycles (total delay=39, LOW=1+1+39=41)
+    set    pins, 1               [31]       ; 32 cycles HIGH
+    nop                          [31]       ; 32 cycles HIGH
+    ; 18 cycles HIGH
+    jmp    !osre, bitloop_tx     [18]       ; 1 cycle, + out(1) = 84 HIGH total
+
+receive:
+    ; Delay before switching to input to let line settle after TX
+    ; ~280ns settling delay = 21 cycles at 75 MHz
+    nop                          [20]       ; 21 cycles settling delay
+    set    pindirs, 0                       ; Switch to input mode
+    ; Wait for start bit (falling edge from idle HIGH)
+    ; Using 'wait' instructions for precise, deterministic edge detection
+    ; At 75 MHz (clkdiv=2), 'wait' has 0-1 cycle jitter = 0-13.3ns
+PUBLIC wait_one:
+    wait   1 pin 0                          ; Wait for line to go HIGH (idle)
+    set    x, 3                             ; Setup outer loop count (4 iterations) BEFORE edge detection
+PUBLIC wait_zero:
+    wait   0 pin 0               [16]       ; Wait for falling edge (start bit), then 18 cycles until in pins
+    ; Inner loop: 18 cycles per sample at 75 MHz
+    ; Telemetry bit = 100 cycles, so 100/18 = 5.56x oversampling
+    ; 21 bits × 5.56 = 117 samples needed, fits in 128 with margin (actually only +20 bit periods until final edge)
+
+
+outer_loop:
+    set    y, 31                            ; 32 inner loop iterations
+inner_loop:
+    in     pins, 1               [14]       ; Sample pin + 14 delay = 15 cycles
+    jmp    y--, delayed_inner_loop          ; Continue inner loop via detour + 1 delay = 3 cycles, total 18
+    jmp    x--, outer_loop                  ; Continue outer loop, total 18
+    jmp    complete
+delayed_inner_loop:
+    jmp    inner_loop            [1]
+
+    ; Sampling complete - 128 samples pushed via autopush (4 x 32-bit words)
+    ; Set pin back to output HIGH (idle state) before wrapping.
+PUBLIC complete:
+    set    pindirs, 1                       ; Switch back to output mode
+    set    pins, 1                          ; Set pin HIGH (idle state)
+    set    y, 4                             ;
+delay_next_output:
+    jmp    !y, delay_next_output [29]       ; TODO how much min delay here? 2us seen somewhere?? 5*30/75 = 2 us
+.wrap
