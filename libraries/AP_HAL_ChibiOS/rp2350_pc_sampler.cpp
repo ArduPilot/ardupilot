@@ -42,7 +42,7 @@
 // extern "C" callers in ArduCopter would not resolve.
 #include "rp2350_pc_sampler.h"
 
-#if defined(RP2350) && defined(AP_RP2350_PC_SAMPLER_ENABLED)
+#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
 
 #include <AP_Common/ExpandingString.h>
 
