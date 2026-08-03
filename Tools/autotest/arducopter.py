@@ -19115,6 +19115,8 @@ return update, 1000
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.HomeAltResetTest,
+            self.CANForward,
+            self.CANFilterModify,
         ])
         return ret
 
@@ -19281,6 +19283,93 @@ return update, 1000
             # reset SITL home back to the default location so the framework's
             # post-test reboot_sitl() location check passes
             self.customise_SITL_commandline([])
+
+    def CANForward(self):
+        '''test MAV_CMD_CAN_FORWARD CAN-over-MAVLink forwarding'''
+        # for now this exercises bus validation: MAV_CMD_CAN_FORWARD must
+        # reject malformed bus values without indexing hal.can[] out of
+        # bounds
+        # MAV_CMD_CAN_FORWARD maps the requested bus to hal.can[bus-1].  A
+        # value that wraps to a negative int8_t previously read hal.can[]
+        # below the start of the array before the bounds check was applied,
+        # which could result in the request being accepted against a bogus
+        # interface.
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+        })
+        self.reboot_sitl()
+
+        # MAV_CMD_CAN_FORWARD is handled as a COMMAND_INT.  param1 is a
+        # float, so as well as negative and out-of-range buses the handler
+        # must reject values whose float-to-integer narrowing is undefined:
+        # 256 previously aliased the "disable forwarding" sentinel and 257
+        # aliased bus 1 where the conversion wrapped.  255 is the narrowing
+        # boundary; it maps to hal.can[254], which does not exist:
+        for bus in [-5, -50, 50, 255, 256, 257]:
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_CAN_FORWARD,
+                p1=bus,
+                want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            )
+            self.wait_heartbeat()
+
+        # bus 1 maps to hal.can[0], which exists, so forwarding is accepted:
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_CAN_FORWARD,
+            p1=1,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
+        # bus 0 is the documented "disable forwarding" sentinel:
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_CAN_FORWARD,
+            p1=0,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
+
+    def CANFilterModify(self):
+        '''test CAN_FILTER_MODIFY CAN-over-MAVLink filtering'''
+        # for now this exercises bus validation: CAN_FILTER_MODIFY must
+        # reject malformed bus values without indexing hal.can[] out of
+        # bounds
+        # CAN_FILTER_MODIFY maps the requested bus to hal.can[bus-1].  A bus
+        # of 0 maps to hal.can[-1], and 200/255 wrap to negative int8_t
+        # values; all previously read hal.can[] below the start of the array
+        # before the bounds check.  The message is not acknowledged, so send
+        # the malformed values and confirm the vehicle keeps running and
+        # still processes commands.
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+        })
+        self.reboot_sitl()
+
+        ids = [0] * 16
+        for bus in [0, 200, 255]:
+            self.mav.mav.can_filter_modify_send(
+                self.sysid_thismav(),
+                1,  # target component
+                bus,
+                mavutil.mavlink.CAN_FILTER_REPLACE,
+                0,  # num_ids
+                ids,
+            )
+        self.wait_heartbeat()
+        # send a valid CAN_FILTER_MODIFY on bus 1.  The message has no
+        # acknowledgement, so this is a liveness check only; the command
+        # below being acked shows messages on the same channel are still
+        # being processed after the malformed ones:
+        self.mav.mav.can_filter_modify_send(
+            self.sysid_thismav(),
+            1,
+            1,
+            mavutil.mavlink.CAN_FILTER_REPLACE,
+            0,
+            ids,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_CAN_FORWARD,
+            p1=0,
+            want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+        )
 
     def testcan(self):
         ret = ([
