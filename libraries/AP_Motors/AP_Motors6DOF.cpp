@@ -273,6 +273,18 @@ float AP_Motors6DOF::get_current_limit_max_throttle()
     return 1.0f;
 }
 
+// clamp upwards thrust to the limit set by set_max_throttle()
+// Used to limit the motors output when surfaced to avoid sucking in air and wasting power
+float AP_Motors6DOF::apply_max_throttle(float throttle_thrust)
+{
+    if (throttle_thrust > _max_throttle) {
+        // set the limit flag so the vertical controller's integrators do not wind up
+        limit.throttle_upper = true;
+        return _max_throttle;
+    }
+    return throttle_thrust;
+}
+
 // output_armed_stabilizing - sends commands to the motors
 // ToDo calculate headroom for rpy to be added for stabilization during full throttle/forward/lateral commands
 void AP_Motors6DOF::output_armed_stabilizing()
@@ -298,18 +310,17 @@ void AP_Motors6DOF::output_armed_stabilizing()
         limit.throttle_upper = true;
     }
 
+    // _throttle_thrust_max (above) is the spool ramp limit, applied symmetrically.
+    // Battery current limiting is applied separately, after the mix, via _output_limited.
+    // _max_throttle is set by the depth-holding modes (see SURFACE_MAX_THR) to attenuate
+    // upwards thrust only, so the vehicle doesn't keep pushing against the surface.
+    throttle_thrust = apply_max_throttle(throttle_thrust);
+
     if ((sub_frame_t)_active_frame_class == SUB_FRAME_VECTORED_6DOF) {
         // Band Aid fix for motor normalization issues.
         // TODO: find a global solution for managing saturation that works for all vehicles
         float rpt_out[AP_MOTORS_MAX_NUM_MOTORS]; // buffer so we don't have to multiply coefficients multiple times.
         float yfl_out[AP_MOTORS_MAX_NUM_MOTORS]; // 3 linear DOF mix for each motor
-
-        // _throttle_thrust_max (above) is the spool ramp limit, applied symmetrically.
-        // Battery current limiting is applied separately, after the mix, via _output_limited.
-        // _max_throttle is set by the depth-holding modes (see SURFACE_MAX_THR) to attenuate
-        // upwards thrust only, so the vehicle doesn't keep pushing against the surface.
-        // TODO: this is only applied to VECTORED_6DOF; consider applying it to all frames.
-        throttle_thrust = constrain_float(throttle_thrust, -1.0f, _max_throttle);
 
         // calculate roll, pitch and Throttle for each motor (only used by vertical thrusters)
         float rpt_max = 1; // initialized to 1 so that normalization will only occur if value is saturated
