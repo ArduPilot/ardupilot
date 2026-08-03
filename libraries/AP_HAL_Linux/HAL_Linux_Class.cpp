@@ -233,6 +233,10 @@ RCOutput_Multi::RCOutputGroup rcoutSysfsDriver = {2, NEW_NOTHROW RCOutput_Sysfs(
 static RCOutput_Multi rcoutDriver{2, &rcoutPcaDriver, &rcoutSysfsDriver};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_T3_GEM_O1
 static RCOutput_Sysfs rcoutDriver(0, 0, 7);
+#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_SYSFS_PWM
+static RCOutput_Sysfs rcoutDriver(HAL_RCOUT_SYSFS_CHIP,
+                                  HAL_RCOUT_SYSFS_CHANNEL_BASE,
+                                  HAL_RCOUT_SYSFS_CHANNEL_COUNT);
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_RPI
 static RCOutput_RPI rcoutDriver;
 #else

@@ -7,7 +7,8 @@
  Its a rip-off of _SITL with all the sitl stuff removed or replaced with constants.
 */
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || \
+    CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_SYSFS_PWM
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
@@ -52,4 +53,4 @@ private:
 
     static uint8_t bus_id;
 };
-#endif // CONFIG_HAL_BOARD
+#endif
