@@ -26,7 +26,8 @@ while disarmed.
 | Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
 | Battery current | WRONG - hwdef ships 0.1, should be ~50; see below |
-| Motor outputs | Flown; 4x PWM at 490 Hz |
+| Motor outputs | Flown on 4x PWM at 490 Hz |
+| DShot | DShot600 via PIO, bidir or not; builds, NEVER RUN |
 | Compass | None fitted; EKF runs in constant-position mode |
 | Rate loop in flight | 2 kHz held, dtMax 0.8 ms, no scheduler overruns |
 | Tune | Flyable starting tune, see below; not autotuned yet |
@@ -459,6 +460,56 @@ oscillations chased so far were all sub-15 Hz control modes, which a notch
 cannot touch. There is no ESC telemetry on this board, so if a notch is ever
 needed it has to be throttle-based (`INS_HNTCH_MODE` 1).
 
+## DShot
+
+**Compiles, has never driven a motor.** Everything below is written from the
+datasheet and the PIOUART idiom; none of it is confirmed against hardware.
+
+DShot600 comes out of the PIO, not a timer and DMAR burst, so almost none of
+ArduPilot's DShot path applies. `RCOutput_pico.cpp` holds the driver;
+`set_group_mode()` and `dshot_send()` branch to it, and `setup_group_DMA()`
+and `timer_info()` refuse on this chip because both are built around a timer
+clock that does not exist here.
+
+ - `MOT_PWM_TYPE` 6. Any other DShot rate raises a config error at boot rather
+   than falling back - the PIO programs are written for DShot600 timing.
+ - `SERVO_BLH_BDMASK` selects bidirectional channels, `SERVO_BLH_POLES` scales
+   the eRPM.
+ - `HAL_DSHOT_ENABLED 1` in the hwdef is the only build-time switch.
+   `HAL_WITH_BIDIR_DSHOT` is emitted for every RP2350 board by
+   chibios_hwdef.py, deliberately not gated on the BIDIR pin tag: that encodes
+   an STM32 timer-pair constraint with no equivalent when each state machine
+   turns its own line around.
+
+The programs are assembled from Betaflight's `src/platform/PICO/dshot.pio`,
+committed here as `dshot.pio` so the embedded words can be checked. ArduPilot
+has no pioasm and requiring one for a single board is not worth the ~45 lines
+of table it would save - the state machine setup is register writes either way.
+
+Things that constrain any change here:
+
+ - **PIO2, GPIOBASE 0.** PIOUART owns PIO0 and PIO1 and sets GPIOBASE 16 on
+   them to reach GPIO16-47, which would put the motor pins at GPIO6-9 out of
+   range. A separate block sidesteps that entirely.
+ - **Only one program fits.** 13 and 29 instructions against 32 per block, so
+   the block is reloaded when the direction changes. All channels share a
+   direction, so this only happens at mode-set.
+ - **The bidirectional decode assumes a 75MHz PIO.** It converts sample counts
+   to bit times against that constant, so a fractional divider would put the
+   decode on the wrong scale rather than merely adding jitter. There is a
+   static_assert that the system clock is a multiple of 75MHz; 225 gives 3.
+   The non-bidirectional program has no such constraint and takes 9.375.
+ - **No DMA.** FIFOs are read and written directly, which avoids the
+   allocation trap that silently killed the GPS (see the DMA note below).
+
+The GCR decode is shared with the timer path (`bdshot_decode_gcr()`); only the
+recovery of run lengths differs, because input capture measures edge times
+while the PIO oversamples the line at 5.56 samples a bit.
+
+Expect a poor telemetry error rate. Betaflight's own note on this code says
+5-8% of frames fail to decode with motors spinning, against under 1% at rest,
+and that feeds the harmonic notch here. Worth measuring before relying on it.
+
 ## Logging setup for tuning work
 
 The stock `LOG_BITMASK` logs `RATE` at **10 Hz**, which aliases anything
@@ -490,14 +541,18 @@ scale above is fixed.
    verify against a known load - compare logged mAh with what the charger puts
    back.
 2. Fix the battery failsafe thresholds, per above.
-3. Run AUTOTUNE, one axis at a time. The tune is stable enough to start from
+3. Bench the DShot output before flying it: confirm the pad hands over from
+   PWM to PIO FUNCSEL 11, that the idle level and pull are right in each
+   direction, and that FLEVEL's RX nibble is where the driver assumes. None of
+   that has been checked against hardware.
+4. Run AUTOTUNE, one axis at a time. The tune is stable enough to start from
    and this is the point at which the 8:1 thrust-to-weight gets measured
    instead of guessed at.
-4. Find out why the GPS never gets a fix. It is detected and communicating, so
+5. Find out why the GPS never gets a fix. It is detected and communicating, so
    this is antenna, siting or configuration rather than the port.
-5. Attack core0's flash share, starting with the veneers - see the veneer
+6. Attack core0's flash share, starting with the veneers - see the veneer
    section in `PROFILING.md`. Core1 is done and needs nothing further.
-6. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
-7. Re-check the QMI flash timing if this revision fits a different flash part.
+7. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
+8. Re-check the QMI flash timing if this revision fits a different flash part.
    `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
-8. Re-measure glat before acting on it, per the retraction above.
+9. Re-measure glat before acting on it, per the retraction above.

@@ -2449,6 +2449,11 @@ INCLUDE common.ld
                 f.write('#define HAL_PWM_ALARM_GPIO_LINE %s\n' % alarm_pal_line)
             f.write('// RP2350 PWM slices have 2 channels only (no complementary outputs)\n')
             f.write('#define HAL_PWM_GROUP_CHANNELS 2\n')
+            # DShot comes out of the PIO here and each state machine turns its
+            # own line around, so bidirectional support is not gated on the
+            # BIDIR pin tag - that encodes an STM32 timer-pair constraint with
+            # no equivalent. Use is still decided at runtime by SERVO_BLH_BDMASK.
+            f.write('#define HAL_WITH_BIDIR_DSHOT\n')
         else:
             if bidir is not None:
                 f.write('#define HAL_WITH_BIDIR_DSHOT\n')
