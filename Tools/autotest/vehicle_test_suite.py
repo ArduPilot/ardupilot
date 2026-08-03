@@ -14251,6 +14251,11 @@ switch value'''
                     "device": "MicroStrain7",
                     "eahrs_type": 7,
                 },
+                {
+                    "name": "SBG",
+                    "device": "SBG",
+                    "eahrs_type": 8,
+                },
             ]
 
             self.start_subtest("ExternalAHRS backend attitude")
