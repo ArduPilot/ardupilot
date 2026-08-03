@@ -116,8 +116,10 @@ Logs are written to the microSD card on SPI1 (`LOG_BACKEND_TYPE` = 1, set
 `@READONLY` so a stale stored value cannot silently disable logging). There is
 no blackbox flash on this board, so the card is the only logging medium.
 
-Parameter storage uses a 32 KB region of the boot XIP flash at 0x10008000,
-inside the 64 KB reserve below the application.
+Parameter storage uses a 32 KB region of the boot XIP flash at 0x10010000. The
+flash is divided one region per 64 KB erase block - bootloader in block 0,
+parameter storage in block 1, application from block 2 - so erasing any one of
+them cannot disturb another.
 
 ## Loading Firmware
 
