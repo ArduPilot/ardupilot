@@ -17,8 +17,32 @@ Do not run the command until the user explicitly approves it.
 
 | Board | Build target | USB serial symlink |
 |---|---|---|
+| **RPI_UAVFC** | `--board=RPI_UAVFC` | `/dev/serial/by-id/usb-ArduPilot_RPI_UAVFC_*-if00` |
 | **Laurel** | `--board=Laurel` | `/dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00` |
 | **Pico2** | `--board=Pico2` | `/dev/serial/by-id/usb-ArduPilot_Pico2_*-if00` |
+
+RPI_UAVFC is the board this directory documents; the Laurel and Pico2 rows are
+kept because the same debug probe and workflow serve all three.
+
+Pico2 does not currently link - `undefined reference to rp2350_idle_c1` from
+ChibiOS `chinstances.c`. Unrelated to RPI_UAVFC, but do not expect a Pico2
+build to succeed as a sanity check.
+
+### Flash layout (RPI_UAVFC)
+
+One region per 64 KB erase block. Get these right before pointing a programmer
+at the part:
+
+| Address | Contents |
+|---|---|
+| `0x10000000` | Bootloader (block 0) |
+| `0x10010000` | Parameter storage (block 1, first 32 KB used) |
+| `0x10020000` | **Application** (block 2 on, `FLASH_RESERVE_START_KB 128`) |
+
+Flash the app `.bin` at **`0x10020000`**. Erasing `0x10010000` for `0x10000`
+resets every parameter to defaults without touching the bootloader or the app,
+which is the way out of a bad stored parameter when no MAVLink session can be
+reached (see ESC calibration in `DEVELOPMENT.md`).
 
 ---
 
@@ -50,19 +74,39 @@ The target's SWD 3-pin debug header (centre of board, left→right) is: SWCLK / 
 
 ### Binary and scripts location
 
-```bash
-~/openocd-pico/openocd          # binary
-~/openocd-pico/scripts/         # config scripts
+The working OpenOCD is the **native Windows** build, run from WSL:
+
 ```
+/opt/openocd-0.12.0+dev-x64-win/openocd.exe    # binary
+/opt/openocd-0.12.0+dev-x64-win/scripts/       # config scripts
+```
+
+There is no Linux `openocd` on PATH. An older `~/openocd-pico/` tree may still
+exist; it is not what is in use.
+
+Two consequences of it being a Windows binary:
+
+- **File paths passed to OpenOCD must be Windows-side.** It cannot see WSL
+  paths, so copy the image somewhere under `/mnt/c/...` first and give OpenOCD
+  the corresponding `C:\...` path.
+- **Kill it with `taskkill`, not `pkill`** - the process is not in the WSL
+  process table.
+
+WSL2 mirrored networking makes the GDB/TCL/telnet ports reachable at
+`localhost` from the Linux side, which is how `rp2350_pc_profiler.py` connects
+with `--host localhost --tcl-port 50001`.
 
 ### Start (always background this)
 
+Run from the OpenOCD directory so the relative `scripts` path resolves:
+
 ```bash
-~/openocd-pico/openocd \
+cd /opt/openocd-0.12.0+dev-x64-win
+./openocd.exe \
   -c "gdb_port 50000" \
   -c "tcl_port 50001" \
   -c "telnet_port 50002" \
-  -s ~/openocd-pico/scripts \
+  -s scripts \
   -f interface/cmsis-dap.cfg \
   -f target/rp2350.cfg \
   -c "adapter speed 5000" &
@@ -81,7 +125,7 @@ Target is not powered. Plug in the target USB cable.
 
 ### Lost comms / hung OpenOCD
 ```bash
-pkill -f openocd
+/mnt/c/Windows/System32/taskkill.exe /F /IM openocd.exe
 # re-run the start command above
 ```
 
@@ -89,25 +133,43 @@ pkill -f openocd
 
 ## Flash Workflows
 
-### Laurel — App Firmware via OpenOCD SWD (preferred / always works)
+### RPI_UAVFC / Laurel — App Firmware via OpenOCD SWD (preferred / always works)
 
 **IMPORTANT:** Flash the `.bin` file at `0x10020000` (app offset = `FLASH_RESERVE_START_KB 128`).
 Do **NOT** use `arducopter_with_bl.hex` — it contains segments at the STM32 address 0x08000000
 that cause verify failures on RP2350.
 
-Do **NOT** use `uploader.py` / `--upload` for Laurel. It sends a MAVLink reboot-to-bootloader
+Do **NOT** use `uploader.py` / `--upload`. It sends a MAVLink reboot-to-bootloader
 command and then waits for the board to re-enumerate as a bootloader device. If the board does not
 respond automatically, it hangs forever printing "If the board does not respond, unplug and re-plug
 the USB connector." — which requires a human to physically press the reset button on the target.
 That is often not possible (board mounted in vehicle, user remote, etc.).
 If `uploader.py` is already stuck, use OpenOCD to reset the target, then flash via SWD.
 
+OpenOCD is a Windows binary and cannot read WSL paths, so stage the image on
+the Windows side first and give it the `C:\` path:
+
 ```bash
-~/openocd-pico/openocd \
-  -s ~/openocd-pico/scripts \
+cp build/RPI_UAVFC/bin/arducopter.bin /mnt/c/support/raspberrypi/rp2350v2/
+
+cd /opt/openocd-0.12.0+dev-x64-win
+./openocd.exe \
+  -s scripts \
   -f interface/cmsis-dap.cfg \
   -f target/rp2350.cfg \
-  -c "adapter speed 5000; program build/RPI_UAVFC/bin/arducopter.bin verify reset exit 0x10020000"
+  -c "adapter speed 5000; program C:/support/raspberrypi/rp2350v2/arducopter.bin verify reset exit 0x10020000"
+```
+
+To wipe stored parameters instead (all params return to defaults; bootloader
+and app untouched):
+
+```bash
+cd /opt/openocd-0.12.0+dev-x64-win
+./openocd.exe \
+  -s scripts \
+  -f interface/cmsis-dap.cfg \
+  -f target/rp2350.cfg \
+  -c "init; halt; flash erase_address 0x10010000 0x10000; reset; exit"
 ```
 
 Expected output ends with:
@@ -195,12 +257,12 @@ Always flash the ELF (no extension), not `.uf2` or `.bin`, when using GDB load.
 
 ### CRITICAL: always use `--nx`
 
-`/home/buzz/ardupilot/.gdbinit` contains `mon reset halt`.
-**This resets the board on every standard GDB connect**, masking the real live state.
+A `.gdbinit` in the repo root containing `mon reset halt`
+**resets the board on every standard GDB connect**, masking the real live state.
 Always use `--nx` for diagnostics:
 
 ```bash
-gdb-multiarch --nx build/Pico2/bin/arducopter
+gdb-multiarch --nx build/RPI_UAVFC/bin/arducopter
 # then manually:
 (gdb) target extended-remote :50000
 (gdb) mon halt          # halt without reset
@@ -243,8 +305,8 @@ The ACM number changes on every reboot — use the stable symlinks above.
 ```python
 import serial, time, glob, os
 
-BY_ID = '/dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00'
-# For Pico2: BY_ID = '/dev/serial/by-id/usb-ArduPilot_Pico2_9EE4ECE8FA06028D6EAD2FF9-if00'
+BY_ID = '/dev/serial/by-id/usb-ArduPilot_RPI_UAVFC_*-if00'
+# The glob needs expanding; see find_port() below, or paste the resolved path.
 
 def find_port():
     if os.path.exists(BY_ID):
@@ -291,15 +353,20 @@ After adding prints: rebuild → flash via SWD → monitor USB output.
 
 ## Build Commands
 
+Run from the repository root.
+
 ```bash
-cd /home/buzz/ardupilot
+# RPI_UAVFC
+./waf configure --board=RPI_UAVFC
+./waf copter -j12
+# output: build/RPI_UAVFC/bin/arducopter.bin
 
 # Laurel
 ./waf configure --board=Laurel
 ./waf copter -j12
 # output: build/Laurel/bin/arducopter.bin
 
-# Pico2
+# Pico2 - currently fails to link, see Board Identity above
 ./waf configure --board=Pico2 --debug
 ./waf copter -j12
 # output: build/Pico2/bin/arducopter (ELF)
@@ -313,7 +380,7 @@ cd /home/buzz/ardupilot
 
 ```bash
 timeout 30 mavproxy.py \
-  --master=/dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00 \
+  --master=/dev/serial/by-id/usb-ArduPilot_RPI_UAVFC_*-if00 \
   --cmd="reboot" \
   --cmd="repeat add 10 ftp get @SYS/tasks.txt -"
 ```
@@ -335,7 +402,7 @@ Always discard the first result. Never analyse the first fetch output.
 ```bash
 # one-shot, no reboot needed — stack marks accumulate from boot
 timeout 15 mavproxy.py \
-  --master=/dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00 \
+  --master=/dev/serial/by-id/usb-ArduPilot_RPI_UAVFC_*-if00 \
   --cmd="ftp get @SYS/threads.txt -"
 ```
 
@@ -343,7 +410,7 @@ timeout 15 mavproxy.py \
 
 ```bash
 timeout 15 mavproxy.py \
-  --master=/dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00 \
+  --master=/dev/serial/by-id/usb-ArduPilot_RPI_UAVFC_*-if00 \
   --cmd="ftp get @SYS/free_memory.txt -"
 ```
 
@@ -381,7 +448,10 @@ SERIAL_CONTROL_SERIAL2 = 102
 | Symptom | Cause | Fix |
 |---|---|---|
 | `uploader.py` loops "If the board does not respond, unplug..." forever | Requires human to physically press reset on target — often not possible (board mounted, user remote) | Use OpenOCD SWD flash instead; no physical access needed |
-| OpenOCD verify fails at 0x08000000 | Used `_with_bl.hex` which has STM32 address segments | Use `.bin` at `0x10010000` for Laurel |
+| OpenOCD verify fails at 0x08000000 | Used `_with_bl.hex` which has STM32 address segments | Use the `.bin` at `0x10020000` |
+| OpenOCD "Can't find file" on a valid path | It is a Windows binary and cannot see WSL paths | Copy the image under `/mnt/c/...` and pass the `C:/...` path |
+| `pkill -f openocd` does nothing | Windows process, not in the WSL process table | `taskkill.exe /F /IM openocd.exe` |
+| Board boots straight back into ESC calibration | `ESC_CALIBRATION` 2 or 3 never persists its own clear | Reflash, or erase parameter storage at `0x10010000` |
 | GDB connect resets board unexpectedly | `.gdbinit` has `mon reset halt` | Use `gdb --nx` for live diagnosis |
 | OpenOCD "cannot read IDR" | Target not powered | Plug in target USB |
 | UART completely silent | FUNCSEL not set to UART before `sioStart` | Add `palSetLineMode(ALTERNATE_UART)` in `_begin()` |

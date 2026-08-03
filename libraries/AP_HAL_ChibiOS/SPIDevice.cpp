@@ -53,7 +53,11 @@ extern const AP_HAL::HAL& hal;
 #define SPIDEV_MODE2    (1U << 6)                   // SPO=1 (CPOL)
 #define SPIDEV_MODE3    ((1U << 7) | (1U << 6))     // SPH=1, SPO=1
 
-#define RP2350_SPI_SYSCLK   150000000U  // 150 MHz system clock
+// The PL022 is fed by clk_peri, which rp_clocks.c ties to CLK_SYS with DIV=1.
+// It therefore follows the board's PLL setting and is not a fixed 150MHz: a
+// hardcoded value makes every requested SPI speed wrong by the ratio between
+// the two, silently overclocking the bus on a board that runs CLK_SYS faster.
+#define RP2350_SPI_SYSCLK   RP_CLK_PERI_FREQ
 #define RP2350_SPI_CPSR     2U          // minimum even SSPCPSR prescaler
 
 // Both RP2350 SPI buses share the system clock; use the same value for array.

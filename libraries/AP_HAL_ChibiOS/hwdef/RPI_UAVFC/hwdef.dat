@@ -196,7 +196,7 @@ PA40 RSSI_ADC ADC1 SCALE(1)
 # SPI device table
 # --------------------------------------------------------------------------
 
-SPIDEV imu1 SPI0 DEVID1 IMU1_CS MODE3 2*MHZ 8*MHZ
+SPIDEV imu1 SPI0 DEVID1 IMU1_CS MODE3 2*MHZ 16*MHZ
 SPIDEV sdcard   SPI1 DEVID3 SDCARD_CS   MODE0 400*KHZ 25*MHZ
 
 # --------------------------------------------------------------------------
