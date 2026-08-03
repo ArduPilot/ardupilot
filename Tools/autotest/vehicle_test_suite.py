@@ -10431,7 +10431,7 @@ class TestSuite(abc.ABC):
         if mav is None:
             mav = self.mav
         self.progress("Sending mission_request_list")
-        tstart = self.get_sim_time()
+        tstart = self.get_sim_time(mav=mav)
         mav.mav.mission_request_list_send(target_system,
                                           target_component,
                                           mission_type)
