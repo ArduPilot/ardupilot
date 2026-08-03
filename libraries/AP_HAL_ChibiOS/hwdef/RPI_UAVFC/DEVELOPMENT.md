@@ -8,8 +8,8 @@ users see it; this file is for whoever is working on the port. See
 
 The hwdef is complete and builds, and the pinout is verified against the
 schematic. Both sensors, parameter storage and microSD logging are confirmed
-on hardware. The ports and outputs still marked untested below are exactly
-that.
+on hardware, as is an armed run with CRSF RC and motors turning. The items
+still marked untested below are exactly that.
 
 | Area | State |
 |-----------------------|--------------------------------------------------|
@@ -20,9 +20,11 @@ that.
 | Barometer | DPS368 detected on I2C0 at 0x76 |
 | microSD logging | Working on hardware |
 | Parameter storage | Working, accel cal persists across reboot |
-| Serial ports | Wiring verified, protocols untested |
-| Battery monitoring | Scale factors are placeholders from v1 |
-| Motor outputs | Untested; channel order corrected from schematic |
+| RC input | CRSF on SERIAL3 working |
+| Serial ports | SERIAL3 confirmed; SERIAL1/2/4 protocols untested |
+| Battery voltage | Multiplier measured, 11.1 |
+| Battery current | Scale is still the v1 placeholder |
+| Motor outputs | Armed and spun on the bench; channel order not yet confirmed against the frame |
 
 ## The IMU
 
@@ -145,8 +147,8 @@ locking for no benefit at these loop rates. Do not reintroduce it.
 
 ## The XIP-off / core1 park problem
 
-This is the biggest remaining performance issue and it is worth understanding
-before touching anything flash-related.
+Worth understanding before touching anything flash-related, but no longer the
+top performance item - see the measurement at the end of this section.
 
 Setting `DIRECT_CSR_EN=1` for a flash write disables instruction fetch for
 BOTH cores. To stop core1 faulting, `rpEflBeforeXipOff()` in
@@ -171,8 +173,38 @@ during the QMI flash work on a sibling branch. And every ISR that can fire on
 core1, plus the ChibiOS context-switch path, has to be covered too.
 
 `rp2350_xip_park_stats()` reports park count and worst-case duration; it is
-emitted as the `XIPpark:` line by `perf_report`. If the park maximum tracks the
-`RTlat` glat maximum, the lockout is the jitter source.
+emitted as the `XIPpark:` line by `perf_report`.
+
+That test has now been run and the park came out innocent. Across twelve
+`perf_report` intervals on hardware, park maxima of 2331 and 3061 us sat
+alongside `RTlat` glat maxima of 475 and 729 us, while park-free intervals ran
+732 to 1143 us. Only one interval of the twelve was high on both. The rate loop
+therefore sees 700-1100 us worst-case latency whether or not a flash write
+happened, so the lockout is not the jitter source and removing the park will
+not fix it. Chase the phase/batching effect below first.
+
+The park is still a correctness hazard and the SRAM relocation still has to be
+complete before it can go, so nothing above is wrong - it is just not where the
+jitter is coming from.
+
+## Gyro-to-attitude latency is phase-dependent
+
+The `RTlat` glat average is bimodal: it sits at 197-210 us in some ten-second
+windows and 34-116 us in others, with nothing in between. Rate-controller
+compute (`rtc`) is a flat 13 us in every window, so this is not load.
+
+The cause looks like a beat between the IMU FIFO read cadence and the rate
+loop. The `ICM dbg` counters give roughly 3040 FIFO reads/s delivering 4055
+samples/s against a 2026 Hz rate loop, so a read yields 1.3 samples on average
+and the rate thread sometimes drains a batch - the last sample out of a batch
+is old by the time the controller finishes with it. Which regime you land in
+appears to be set by the last disturbance: in eleven of twelve windows, the low
+average coincided with a window containing a flash write, which stalls core1
+briefly and re-phases the two rates.
+
+There is roughly 165 us of gyro-to-attitude latency available here, which is
+more than anything left in the relocation work. Locking the rate loop to sample
+arrival rather than letting it free-run against the backend is the thing to try.
 
 ## Build and flash
 
@@ -229,15 +261,18 @@ made a wrong-orientation fault very hard to diagnose.
 
 ## Next steps
 
-1. Bring up the serial ports one at a time: GPS on SERIAL2, then the PIO ports
-   on SERIAL3/SERIAL4, which ship disabled.
-2. Verify motor output channel order on the bench before fitting props. The
-   schematic reversed it relative to the vendor sheet and it is untested.
-3. Measure the battery voltage and current dividers and replace the v1
-   placeholders in `hwdef.dat`.
-4. Determine the mounting orientation and set `AHRS_ORIENTATION` as a user
+1. Chase the glat phase effect above. It is worth more than anything left in
+   the relocation work.
+2. Attack core0's flash share, starting with the veneers - see the veneer
+   section in `PROFILING.md`. Core1 is done and needs nothing further.
+3. Bring up the remaining serial ports: GPS on SERIAL2, then SERIAL1 and
+   SERIAL4. SERIAL3 is confirmed working with CRSF.
+4. Verify motor output channel order against the frame before fitting props.
+   The outputs spin, but the schematic reversed the order relative to the
+   vendor sheet and that has not been checked end to end.
+5. Measure the current shunt against a known load and replace the v1
+   placeholder `HAL_BATT_CURR_SCALE`. Voltage is done.
+6. Determine the mounting orientation and set `AHRS_ORIENTATION` as a user
    parameter, not a board default.
-5. Re-check the QMI flash timing if this revision fits a different flash part.
+7. Re-check the QMI flash timing if this revision fits a different flash part.
    `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
-6. Establish a fresh profiling baseline and compare against v1's numbers.
-   Logging now works, so `/log-analyze` is available for this.
