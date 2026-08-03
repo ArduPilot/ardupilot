@@ -248,6 +248,10 @@ public:
     // returns true on success
     bool get_attitude_euler(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_bf_deg);
 
+    // get mount's current delta yaw and delta yaw velocity in rad and rad/s.
+    // returns true on success
+    bool get_attitude_deltas(uint8_t instance, float &delta_yaw, float& delta_yaw_velocity);
+
     // run pre-arm check.  returns false on failure and fills in failure_msg
     // any failure_msg returned will not include a prefix
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);

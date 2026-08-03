@@ -63,6 +63,10 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // get mount's current delta yaw and delta yaw velocity in rad and rad/s.
+    // returns true on success
+    bool get_attitude_deltas(float &delta_yaw, float& delta_yaw_velocity) override;
+
 private:
 
     // returns true if the camera is reporting that it has the
@@ -101,6 +105,7 @@ private:
     uint8_t _sysid;                 // sysid of gimbal
     uint8_t _compid;                // component id of gimbal
     mavlink_gimbal_device_attitude_status_t _gimbal_device_attitude_status;  // copy of most recently received gimbal status
+    bool _found_deltas = false; // true if gimbal has provided delta yaw and delta yaw rate in GIMBAL_DEVICE_ATTITUDE_STATUS
     uint32_t _last_attitude_status_ms;  // system time last attitude status was received (used for health reporting)
     char vendor_name[MAVLINK_MSG_GIMBAL_DEVICE_INFORMATION_FIELD_VENDOR_NAME_LEN];  // vendor name
     char model_name[MAVLINK_MSG_GIMBAL_DEVICE_INFORMATION_FIELD_MODEL_NAME_LEN];  // model name
