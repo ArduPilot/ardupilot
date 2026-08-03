@@ -213,11 +213,9 @@ class upload_fw_pico2(Task.Task):
         return "Uploading Bootloader (UF2/BOOTSEL)"
 
 
-def board_uses_rp2350_bootsel(board_name):
+def board_uses_rp2350_bootsel(env):
     '''Return true for boards that use the RP2350 ROM BOOTSEL + picotool path.'''
-    board = board_name.lower()
-    return ('pico2' in board or board.startswith('laurel')
-            or board.startswith('rpi_uavfc'))
+    return bool(env.RP_MCU)
 
 class set_default_parameters(Task.Task):
     color='CYAN'
@@ -508,7 +506,7 @@ def chibios_firmware(self):
     # artifacts just before linking so hot functions land in SRAM.  The task
     # takes the full link-input list as dependencies so it waits for every .a
     # to be ready, then the link task is ordered after it.
-    if board_uses_rp2350_bootsel(self.env.BOARD):
+    if board_uses_rp2350_bootsel(self.env):
         rf2_task = self.create_task('rp2350_ramfunc2_gen',
                                     src=list(self.link_task.inputs))
         self.link_task.set_run_after(rf2_task)
@@ -571,7 +569,7 @@ def chibios_firmware(self):
             hex_task.set_run_after(generate_bin_task)
         
     if self.bld.options.upload:
-        if board_uses_rp2350_bootsel(self.env.BOARD) and self.bld.env.BOOTLOADER:
+        if board_uses_rp2350_bootsel(self.env) and self.bld.env.BOOTLOADER:
             # First-time BL flash: convert to UF2 and load via picotool (requires BOOTSEL mode)
             _upload_task = self.create_task('upload_fw_pico2', src=link_output)
             _upload_task.set_run_after(generate_apj_task)
@@ -708,6 +706,11 @@ def configure(cfg):
     env.ENABLE_CRASHDUMP_FATFS = crashdump_fatfs_enabled
     env.ENABLE_CRASHDUMP_FLASH = crashdump_flash_enabled
     env.ENABLE_CRASHDUMP = crashdump_fatfs_enabled or crashdump_flash_enabled
+
+    # RP series MCUs take the BOOTSEL upload path and the SRAM relocation
+    # linker scripts. Keyed off the hwdef rather than the board name so a
+    # rename cannot silently skip either.
+    env.RP_MCU = hwdef_obj.is_rp_mcu()
 
     if env.DEBUG or env.DEBUG_SYMBOLS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
@@ -857,7 +860,7 @@ def build(bld):
     # For RP2350/Pico2: force board.o out of libch.a so the strong __late_init()
     # (calling halInit/chSysInit) overrides the weak crt1.o stub. boardInit
     # (defined T in ArduPilot's board.o) is used as the pull handle.
-    if board_uses_rp2350_bootsel(bld.env.BOARD):
+    if board_uses_rp2350_bootsel(bld.env):
         bld.env.LINKFLAGS += ['-Wl,--undefined=boardInit']
         # Ensure scratch/ramfunc LD files exist as empty placeholders so the
         # linker-script INCLUDEs don't fail before rp2350_ramfunc2_gen runs.
