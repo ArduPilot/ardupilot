@@ -179,8 +179,10 @@ define HAL_BUZZER_NOMINAL_FREQ_HZ 4000
 # schematic is the authority.
 # 5V is enabled at boot for peripherals; the 9V rail (VID connector) is held
 # off until the power tree is validated on this revision.
-PA18 BEC_9V_EN OUTPUT LOW
-PA19 BEC_5V_EN OUTPUT HIGH
+PA18 BEC_9V_EN OUTPUT LOW GPIO(81)
+PA19 BEC_5V_EN OUTPUT HIGH GPIO(82)
+define RELAY2_PIN_DEFAULT 81
+define RELAY3_PIN_DEFAULT 82
 
 # Analog inputs on RP2350B-only ADC pins.
 #   GPIO46 = ADC6 battery voltage, GPIO47 = ADC7 battery current,
@@ -249,9 +251,10 @@ define HAL_SDCARD_RETRY_INTERVAL_MS 1000
 define HAL_BATT_MONITOR_DEFAULT 4
 define HAL_BATT_VOLT_PIN 6
 define HAL_BATT_CURR_PIN 7
-# Divider not yet characterised on this revision; carried over from Laurel v1
-# and must be re-measured against a known VBAT before use.
-define HAL_BATT_VOLT_SCALE 10.52
+# Measured 21.99 V against a 23.1 V bench supply with the v1 value of 10.52,
+# which puts the divider on the usual 11.1 ratio.
+define HAL_BATT_VOLT_SCALE 11.1
+# Still the v1 placeholder; measure against a known load before relying on it.
 define HAL_BATT_CURR_SCALE 1.0
 define BOARD_RSSI_ANA_PIN 0
 
@@ -306,12 +309,10 @@ define HAL_USE_WSPI                        FALSE
 # Port roles chosen to match the RPI_UAVFC carrier wiring.
 define DEFAULT_SERIAL1_PROTOCOL            SerialProtocol_MSP_DisplayPort
 define DEFAULT_SERIAL2_PROTOCOL            SerialProtocol_GPS
-# PIOUART ports stay disabled by default during bring-up: floating RX inputs on
-# unconnected headers can generate high-rate IRQ traffic that starves startup.
-# Enable at runtime once wiring is validated:
-#   SERIAL3_PROTOCOL=23 (RCIN) with a CRSF/ELRS receiver attached
-#   SERIAL4_PROTOCOL=2  (MAVLink2) with an AUX telemetry link attached
-define DEFAULT_SERIAL3_PROTOCOL            SerialProtocol_None
+define DEFAULT_SERIAL3_PROTOCOL            SerialProtocol_RCIN
+# SERIAL4 stays disabled by default: a floating RX input on an unconnected
+# header can generate high-rate IRQ traffic that starves startup. Set
+# SERIAL4_PROTOCOL=2 for a MAVLink telemetry link once wiring is validated.
 define DEFAULT_SERIAL4_PROTOCOL            SerialProtocol_None
 
 define PAL_USE_CALLBACKS                   TRUE
