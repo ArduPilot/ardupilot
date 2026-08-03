@@ -535,6 +535,6 @@ void LoggerMessageWriter_Write_Polyfence::reset()
     _fence_number_to_send = 0;
 }
 #endif // !APM_BUILD_TYPE(APM_BUILD_Replay)
-#endif // AP_FENCE_ENABLED
+#endif // HAL_LOGGER_FENCE_ENABLED
 
 #endif  // HAL_LOGGING_ENABLED
