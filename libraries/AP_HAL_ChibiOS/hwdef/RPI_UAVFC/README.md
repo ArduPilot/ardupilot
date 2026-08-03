@@ -78,13 +78,14 @@ The default battery parameters are:
  - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 6 (GPIO46)
  - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 7 (GPIO47)
  - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.1
- - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 1.0
+ - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 0.1
 
 The voltage multiplier was checked against a bench supply and matches the usual
 11.1 divider ratio.
 
-The current sense is on the ESC, not the board, so `BATT_AMP_PERVLT` is left at
-the placeholder 1.0 and is yours to set. Convert from a Betaflight current
+The current sense is on the ESC, not the board, so `BATT_AMP_PERVLT` is a
+placeholder and is yours to set - the shipped value reads roughly 500x low on
+the ESC tested so far. Convert from a Betaflight current
 scale, which is in 0.1 mV/A, by dividing 1000 by the millivolts per amp: a scale
 of 200 is 20 mV/A, so `BATT_AMP_PERVLT` = 50. Most of these sensors also idle at
 a non-zero voltage - read `BATT_CURR_PIN` with the battery connected and nothing
@@ -145,5 +146,6 @@ with any ArduPilot ground station using the `*.apj` firmware files.
 | ESC telemetry (GPIO5) | Can only reach UART1 RX, which the GPS owns |
 | RGB LED (GPIO2) | Serial LED output not supported on RP2350 |
 | Battery current scaling | ESC-dependent; set `BATT_AMP_PERVLT` and `BATT_AMP_OFFSET` yourself |
-| IMU rotation | `ROTATION_NONE`; set `AHRS_ORIENTATION` to match your mounting |
+| IMU rotation | `ROTATION_PITCH_180` in the hwdef; set `AHRS_ORIENTATION` for your mounting |
+| ESC calibration | Throttle-high procedure only; `ESC_CALIBRATION` 2 or 3 boot-loops the board |
 | Compass | None on the board; attach one on I2C1 or the EKF stays in constant-position mode |

@@ -43,6 +43,17 @@ ChibiOS ST handlers off those two alarms.
 Core0's sampler is armed on the first `perf_report`; core1's is armed from the
 rate thread.
 
+That makes the two flags coupled in one direction: `rp2350_pc_sampler_init_
+core0()` is called only from inside `Copter::perf_report`, which is compiled
+out with `AP_RP2350_DEBUG_REPORT_ENABLED` 0. Enabling the sampler on its own
+therefore leaves `@SYS/pcprof0.txt` empty, because core0's alarm is never
+armed - core1 still works, since the rate thread arms it independently. Set
+both, or move the init call out of the gated function.
+
+`AP_RP2350_PC_SAMPLER_ENABLED` defaults to 0 in `AP_HAL/AP_HAL_Boards.h`.
+Before that default existed only RPI_UAVFC defined it, so every other RP2350
+board failed to build on `-Werror=undef` once the guards became value tests.
+
 Attribution to function names happens offline against the ELF symbol table, so
 a `--debug` build gives better file and line resolution.
 
@@ -97,10 +108,6 @@ Core1 is effectively finished - every function in its top 45 is SRAM-resident
 and the only remaining flash candidates are a few bytes each. Core0 is now the
 flash-bound core and is where the remaining wins are.
 
-Core1 is effectively finished - every function in its top 45 is SRAM-resident
-and the only remaining flash candidates are a few bytes each. Core0 is now the
-flash-bound core and is where the remaining wins are.
-
 ### Full histograms over MAVLink FTP
 
 The STATUSTEXT dump only covers concentrated hotspots. Spread-out code such as
@@ -133,8 +140,9 @@ Tools/debug/rp2350_pc_profiler.py --elf build/RPI_UAVFC/bin/arducopter \
 To sample core1, OpenOCD has to select it first: pass
 `--target-select rp2350.cm1`. Run `targets` in the OpenOCD telnet console to
 confirm the core names for your build. Needs `arm-none-eabi-nm` and
-`arm-none-eabi-c++filt` on PATH. Use the `flash-debug-hardware` skill to bring
-OpenOCD up rather than hand-rolling the invocation.
+`arm-none-eabi-c++filt` on PATH. See `FLASHING.md` for the OpenOCD invocation;
+`--host localhost` works because WSL2 mirrored networking exposes the Windows
+binary's TCL port on the Linux side.
 
 Besides the ranked table, this mode prints ready-to-paste registry lines for
 the hottest XIP-resident functions that are not yet relocated.
