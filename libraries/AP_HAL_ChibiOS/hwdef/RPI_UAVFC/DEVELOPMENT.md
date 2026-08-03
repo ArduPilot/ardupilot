@@ -6,9 +6,11 @@ users see it; this file is for whoever is working on the port. See
 
 ## Where things stand
 
-The hwdef is complete and builds, and the pinout is verified against the
-schematic. Sensors, storage, logging, RC, GPS and an armed bench run with
-motors turning are all confirmed on hardware. Nothing has flown yet.
+The board flies. Six flights so far, all in Stabilize, longest about 40 s.
+The hwdef is complete, the pinout is verified against the schematic, and the
+timing architecture holds up in the air: the rate thread sits on 2 kHz with a
+worst-case dt of 0.8 ms in flight, and the 4 ms XIP parks only ever appear
+while disarmed.
 
 | Area | State |
 |-----------------------|--------------------------------------------------|
@@ -17,15 +19,31 @@ motors turning are all confirmed on hardware. Nothing has flown yet.
 | Bootloader | Built, board ID 1215 |
 | IMU | Working; fitted part is ICM42688P, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
-| microSD logging | Working on hardware |
+| microSD logging | Working; 19 MB logs at 1 kHz RATE without drops |
 | Parameter storage | Working; survives reboot since the sector-bound fix |
-| RC input | CRSF on SERIAL3 working |
-| GPS | Working on SERIAL2 (UART1), ublox at 230400 |
+| RC input | CRSF/ELRS on SERIAL3, 333 Hz link, 199 Hz telemetry |
+| GPS | Detected (ublox at 230400) but has never got a fix |
 | Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
-| Battery current | 50 A/V with a 0.61 V offset, from the ESC spec; not load-verified |
-| Motor outputs | Props-off motor test done; never flown |
+| Battery current | WRONG - hwdef ships 0.1, should be ~50; see below |
+| Motor outputs | Flown; 4x PWM at 490 Hz |
 | Compass | None fitted; EKF runs in constant-position mode |
+| Rate loop in flight | 2 kHz held, dtMax 0.8 ms, no scheduler overruns |
+| Tune | Flyable starting tune, see below; not autotuned yet |
+
+Two things are known-wrong and neither is a board fault:
+
+`HAL_BATT_CURR_SCALE` is 0.1 in the hwdef, which reads current about 500x low
+(0.02 A in a hover). The ESC vendor figure is 20 mV/A, giving 50 A/V with a
+0.61 V idle offset. Nothing that depends on current - consumed mAh, the
+resistance estimate, sag-compensated battery failsafe - means anything until
+this is fixed.
+
+The GPS is detected and talks (the driver reads its firmware version) but has
+never reported a satellite: `NSats` 0 and `HDop` 99.99 in every flight log so
+far. Note ArduPilot still marks a no-fix GPS *healthy* - `min_status_for_gps_
+healthy()` returns `NONE`, which only excludes "no GPS at all" - so this does
+not show up as a failing sensor.
 
 The fitted IMU is an ICM42688P, not the ICM-56686 the schematic shows:
 `INS_ACC_ID` 3408130 has top byte `0x34` = 52. So the standard Invensensev3
@@ -233,8 +251,9 @@ matters.
 common one, and it hardcodes the path to `c1_main.c`. Both files are per-board
 copies; if you create another revision, copy and fix the path.
 
-For flashing and SWD debugging use the `flash-debug-hardware` skill rather than
-hand-rolling OpenOCD invocations.
+For flashing and SWD debugging see `FLASHING.md`, which has the working
+OpenOCD invocation and the flash layout. Note OpenOCD here is a native Windows
+binary run from WSL, so it cannot see WSL paths - stage images under `/mnt/c`.
 
 ### Diagnostics that cost real time
 
@@ -267,6 +286,62 @@ ChibiOS is built by a single waf task that shells out to `make`, and its
 signature comes from its declared inputs (`hwdef.h`, `ldscript.ld` and so on),
 not from anything under `modules/ChibiOS`. Touching a ChibiOS source does
 nothing. Delete `build/<board>/modules/ChibiOS` to force it.
+
+## Upstream bugs found during bring-up
+
+Four of these are not board-specific. This port just exercises paths that most
+vehicles do not, so they surfaced here first. All are PR candidates.
+
+**The gyro calibration stripped the board rotation from the accel.**
+`_init_gyro()` zeroed `_board_orientation` for the duration so its gyro samples
+came out in board frame - but that is a single global field, so it stripped the
+rotation from the accel too. The last accel published in that window stays in
+`_accel[0]`, and `AP_AHRS_DCM::reset()` reads it a few lines later during
+`init_ardupilot()`, gating only on the vector *magnitude*. A board-frame 9.81
+passes, so DCM aligned to it. On a board mounted inverted that is 180 degrees
+out, and DCM's drift correction crawls back at 0.5 deg/s per minute, failing
+the attitude pre-arm for the whole of that time. Fixed by skipping the rotation
+in the gyro backend while `_calibrating_gyro` is set, alongside the offset
+subtraction it already gates. Requires an `AHRS_ORIENTATION` that flips Z to be
+visible at all, which is why it has gone unnoticed.
+
+**Sensor health flags had a cross-thread race.** `AP_InertialSensor::update()`
+cleared `_gyro_healthy`/`_accel_healthy` and relied on the backends to set them
+true again microseconds later. Those flags are read from other threads -
+`AP_RCTelemetry::check_sensor_status_flags()` runs from the CRSF frame handler
+on the RC input thread - so every main loop left a window in which a healthy
+sensor read unhealthy. At 199 Hz telemetry that produced a continuous "Bad Gyro
+Health" on a vehicle whose gyro never missed a sample. It is invisible in a log
+by construction: `IMU.GH` is written from the main loop, which cannot be inside
+`update()` at the same time, so it reads 1 even logged at loop rate. Fixed by
+assigning the flag exactly once per cycle in `update_gyro()`/`update_accel()`.
+
+**RP2350 SPI ran at the wrong clock.** `SPIDevice.cpp` hardcoded a 150 MHz
+source, but the PL022 is fed by `clk_peri`, which `rp_clocks.c` ties to
+`CLK_SYS` with DIV=1 - so it follows the board's PLL. At 225 MHz every
+requested speed came out 1.5x: the IMU ran at 11.25 MHz where 8 was asked for,
+and the microSD at 28.1 MHz against a 25 MHz SPI-mode limit with its 400 kHz
+init clock at 598 kHz. Now derived from `RP_CLK_PERI_FREQ`. Note the SCR clamp
+at 255 still bounds the minimum to `clk_peri`/512 = 439 kHz at 225 MHz, so the
+400 kHz SD init requirement is still not quite met; that needs an `SSPCPSR`
+above the fixed 2.
+
+**`ESC_CALIBRATION` 2 and 3 are a one-way door.** Both block in `while(1)`
+unconditionally, and the `set_and_save(ESCCAL_NONE)` they issue first never
+reaches flash: `AP_Param::save()` only queues, and both the IO thread that
+drains the queue and the storage thread that writes it wait on
+`_hal_initialized`, which is set *after* `setup()` returns. Since the
+calibration never returns, the clear is never persisted and the board boots
+straight back into calibration forever, with no MAVLink up to fix the
+parameter. Recovery is a reflash. Mode 1 escapes only by accident of its
+throttle check, which lets a later boot fall through and return normally.
+**Use the throttle-high procedure (mode 1); never set 3 on this board.**
+
+Note this was initially misdiagnosed as `AP_STORAGE_NO_WRITE_WHILE_ARMED`
+swallowing the write, since ESC calibration arms and never disarms. That guard
+is a real and separate issue - fixed by draining what was queued before the arm
+transition - but it is not what caused the boot loop, because the write never
+reaches the storage layer at all.
 
 ## Gotchas worth knowing
 
@@ -336,23 +411,93 @@ mounting and airframe choices, not board properties. Laurel v1 baked in
 `AHRS_ORIENTATION 8 @READONLY`, which could not be corrected from a GCS and
 made a wrong-orientation fault very hard to diagnose.
 
+## Orientation
+
+The board is mounted inverted in the airframe and the IMU is flipped relative
+to the board, so **both** rotations are real and both are needed:
+
+ - `AHRS_ORIENTATION` = 8 (`ROTATION_ROLL_180`) - board to vehicle
+ - hwdef `IMU ... ROTATION_PITCH_180` - chip to board
+
+They each flip Z, so the net is `ROTATION_YAW_180` and a level vehicle reads
+level. Do not "simplify" this to one rotation without checking how the board
+and the chip are actually mounted; the composition is correct, not redundant.
+
+Verify orientation from the gyro, not the compass (there isn't one): nose up
+gives positive pitch, right side down positive roll, and yaw clockwise seen
+from above positive.
+
+## The tune
+
+Starting gains, arrived at from flight data rather than autotune. The airframe
+is roughly 8:1 thrust-to-weight (`MOT_THST_HOVER` learned to 0.125), so stock
+ArduPilot defaults - which assume something much heavier and slower - are far
+too hot and produce a violent limit cycle before it will even leave the ground.
+
+```
+ATC_RAT_RLL_P 0.060   ATC_RAT_RLL_I 0.060   ATC_RAT_RLL_D 0.0008
+ATC_RAT_PIT_P 0.060   ATC_RAT_PIT_I 0.060   ATC_RAT_PIT_D 0.0008
+```
+
+Halving P and I from the defaults got it flying. What then remained was a
+narrow peak at 14 Hz on roll only, carrying about 20% of roll power, with the
+roll loop D-dominated (D output 2.2x P output). Halving roll D removed it;
+halving pitch D removed the matching 13 Hz peak on pitch. Tracking went from
+3.6x demand to about 1.15x.
+
+There is still a residual around 11.4 Hz at roughly 3 deg/s rms. It is stable
+across flights and is only about 7% of where this started.
+
+**Do not read the actual/demand ratio when the stick input varies.** A gentle
+flight and an aggressive one gave 1.63x and 1.12x with an *identical* 2.95
+deg/s residual - the ratio moved entirely because the denominator did. Compare
+the absolute amplitude at the peak frequency instead.
+
+The harmonic notch is deliberately still off. The motor fundamental is around
+180-190 Hz and appears in the accel, but the gyro is clean there - the
+oscillations chased so far were all sub-15 Hz control modes, which a notch
+cannot touch. There is no ESC telemetry on this board, so if a notch is ever
+needed it has to be throttle-based (`INS_HNTCH_MODE` 1).
+
+## Logging setup for tuning work
+
+The stock `LOG_BITMASK` logs `RATE` at **10 Hz**, which aliases anything
+interesting into nonsense - a 14 Hz oscillation reads as a random walk of
++/-250 deg/s. `ArduCopter/rate_thread.cpp` picks between `fast_logging_rate`
+(1 kHz) and `medium_logging_rate` (10 Hz) purely on one bit.
+
+```
+LOG_BITMASK 442367     # 180222 + bit 0 (ATTITUDE_FAST) + bit 18 (IMU_FAST)
+LOG_DISARMED 2
+```
+
+Bit 0 gives `RATE`/`PID` at 1 kHz; bit 18 moves `IMU` from ~7 Hz to loop rate.
+Keep `INS_LOG_BAT_MASK` 3 and `INS_LOG_BAT_OPT` 4 - the pre/post-filter batch
+samples are the only way to see the spectrum above the loop rate. Expect
+around 19 MB for a 40 s flight; the card keeps up.
+
+## Battery failsafe
+
+`BATT_LOW_VOLT` shipped at 21.6 V, which on 6S is 3.60 V/cell and fires a Land
+in mid-discharge on a healthy pack. It did exactly that on flight 17. For 6S
+use 21.0 (3.5 V/cell) low and 19.8 (3.3 V/cell) critical. Sag compensation
+(`BATT_FS_VOLTSRC` 1) is the better answer but is useless until the current
+scale above is fixed.
+
 ## Next steps
 
-1. First hover, in Stabilize. Everything below is secondary to finding out
-   whether it flies. Check `VIBE` and clip counts in the log afterwards - the
-   only vibration figures so far are from a props-off bench run and predict
-   nothing.
-2. Confirm the accel calibration. At rest the board reads ax about 0.7 m/s^2,
-   which is 4 degrees of pitch, and `INS_ACCOFFS_X` is 0.0015 - not what a
-   completed six-point cal usually leaves. Redo it level and set
-   `AHRS_ORIENTATION` to match the real mounting.
-3. Verify the current scale against a known load. 50 A/V with a 0.61 V offset
-   comes from the ESC vendor's 20 mV/A figure and the measured idle voltage,
-   not from measurement under load. Compare logged mAh against what the charger
-   returns and scale from there.
-4. Attack core0's flash share, starting with the veneers - see the veneer
+1. Fix `HAL_BATT_CURR_SCALE` (0.1 -> ~50) and `BATT_AMP_OFFSET` (0.61), then
+   verify against a known load - compare logged mAh with what the charger puts
+   back.
+2. Fix the battery failsafe thresholds, per above.
+3. Run AUTOTUNE, one axis at a time. The tune is stable enough to start from
+   and this is the point at which the 8:1 thrust-to-weight gets measured
+   instead of guessed at.
+4. Find out why the GPS never gets a fix. It is detected and communicating, so
+   this is antenna, siting or configuration rather than the port.
+5. Attack core0's flash share, starting with the veneers - see the veneer
    section in `PROFILING.md`. Core1 is done and needs nothing further.
-5. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
-6. Re-check the QMI flash timing if this revision fits a different flash part.
+6. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
+7. Re-check the QMI flash timing if this revision fits a different flash part.
    `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
-7. Re-measure glat before acting on it, per the retraction above.
+8. Re-measure glat before acting on it, per the retraction above.
