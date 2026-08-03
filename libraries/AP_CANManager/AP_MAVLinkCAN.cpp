@@ -69,6 +69,18 @@ int16_t AP_MAVLinkCAN::packet_bus_num_to_bus(uint8_t bus_num)
 }
 
 /*
+  return the CAN interface for a 1-indexed bus number, or nullptr
+ */
+AP_HAL::CANIface *AP_MAVLinkCAN::get_can_iface(uint8_t packet_bus_num)
+{
+    const int16_t bus = packet_bus_num_to_bus(packet_bus_num);
+    if (bus < 0 || bus >= HAL_NUM_CAN_IFACES) {
+        return nullptr;
+    }
+    return hal.can[bus];
+}
+
+/*
   handle MAV_CMD_CAN_FORWARD mavlink long command
  */
 bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg)
@@ -78,9 +90,9 @@ bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_co
     if (packet.param1 < 0 || packet.param1 > UINT8_MAX) {
         return false;
     }
-    const int16_t bus = packet_bus_num_to_bus(uint8_t(packet.param1));
+    const uint8_t bus_num = uint8_t(packet.param1);
 
-    if (bus == -1) {
+    if (bus_num == 0) {
         /*
           a request to stop forwarding
          */
@@ -91,9 +103,11 @@ bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_co
         return true;
     }
 
-    if (bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
+    auto *iface = get_can_iface(bus_num);
+    if (iface == nullptr) {
         return false;
     }
+    const int16_t bus = packet_bus_num_to_bus(bus_num);
 
     if (can_forward.callback_id != 0 && can_forward.callback_bus != bus && can_forward.callback_bus < HAL_NUM_CAN_IFACES) {
         /*
@@ -104,7 +118,7 @@ bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_co
     }
 
     if (can_forward.callback_id == 0 &&
-        !hal.can[bus]->register_frame_callback(
+        !iface->register_frame_callback(
             FUNCTOR_BIND_MEMBER(&AP_MAVLinkCAN::can_frame_callback, void, uint8_t, const AP_HAL::CANFrame &, AP_HAL::CANIface::CanIOFlags), can_forward.callback_id)) {
         // failed to register the callback
         return false;
@@ -219,8 +233,7 @@ void AP_MAVLinkCAN::_handle_can_filter_modify(const mavlink_message_t &msg)
 {
     mavlink_can_filter_modify_t p;
     mavlink_msg_can_filter_modify_decode(&msg, &p);
-    const int16_t bus = packet_bus_num_to_bus(p.bus);
-    if (bus < 0 || bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
+    if (get_can_iface(p.bus) == nullptr) {
         return;
     }
     if (p.num_ids > ARRAY_SIZE(p.ids)) {

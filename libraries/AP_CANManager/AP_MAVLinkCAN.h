@@ -74,6 +74,9 @@ private:
     // convert a 1-indexed MAVLink bus number to a hal.can[] index
     static int16_t packet_bus_num_to_bus(uint8_t bus_num);
 
+    // return the CAN interface for a 1-indexed bus number, or nullptr
+    static AP_HAL::CANIface *get_can_iface(uint8_t packet_bus_num);
+
     // Process CAN frame forwarding
     void process_frame_buffer();
 
