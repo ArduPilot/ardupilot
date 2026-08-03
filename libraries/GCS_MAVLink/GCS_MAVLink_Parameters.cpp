@@ -82,7 +82,7 @@ const struct AP_Param::GroupInfo *GCS::_chan_var_info[MAVLINK_COMM_NUM_BUFFERS];
 #else
 #error Need to set streamrates
 #endif  // APM_BUILD_TYPE
-#endif  // AP_MAV_DEFAULT_STREAM_RATE
+#endif  // AP_MAV_DEFAULT_STREAM_RATE_RAW_SENS
 
 // this must be ordered identically to GCS_MAVLINK::streams!
 static const uint8_t default_rates[] {
