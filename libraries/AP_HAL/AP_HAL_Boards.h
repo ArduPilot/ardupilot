@@ -294,6 +294,13 @@
 #define HAL_ENABLE_THREAD_STATISTICS 0
 #endif
 
+// RP2350 bring-up diagnostics: the perf_report, rate-thread and IMU FIFO
+// STATUSTEXT lines. Cheap at 0.1 Hz, but they crowd the GCS message pane where
+// a pre-arm or failsafe warning could be missed. Set 0 in a hwdef to silence.
+#ifndef AP_RP2350_DEBUG_REPORT_ENABLED
+#define AP_RP2350_DEBUG_REPORT_ENABLED 1
+#endif
+
 #ifndef AP_STATS_ENABLED
 #define AP_STATS_ENABLED 1
 #endif
