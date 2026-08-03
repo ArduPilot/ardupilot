@@ -71,6 +71,9 @@ private:
 
     static AP_MAVLinkCAN *ensure_singleton();
 
+    // convert a 1-indexed MAVLink bus number to a hal.can[] index
+    static int16_t packet_bus_num_to_bus(uint8_t bus_num);
+
     // Process CAN frame forwarding
     void process_frame_buffer();
 
