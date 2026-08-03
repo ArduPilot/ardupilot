@@ -2070,4 +2070,4 @@ bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t ti
     return canard_iface.write_aux_frame(out_frame, timeout_us);
 }
 
-#endif // HAL_NUM_CAN_IFACES
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
