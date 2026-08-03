@@ -93,6 +93,12 @@ protected:
     void land_run_horizontal_control();
     void land_run_vertical_control(bool pause_descent = false);
 
+    // limit upwards throttle as the vehicle approaches the surface
+    void set_surface_throttle_limit();
+
+    // run the vertical position controller, easing the climb demand when surfaced
+    void update_depth_controller();
+
     // convenience references to avoid code churn in conversion:
     Parameters &g;
     ParametersG2 &g2;

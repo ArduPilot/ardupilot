@@ -433,7 +433,9 @@ bool Sub::verify_surface(const AP_Mission::Mission_Command& cmd)
             break;
 
         case AUTO_SURFACE_STATE_ASCEND:
-            if (wp_nav.reached_wp_destination()) {
+            // the destination is at zero depth, but the depth controller holds the vehicle
+            // at SURFACE_DEPTH, which may be further than WP_RADIUS_M from it
+            if (wp_nav.reached_wp_destination() || ap.at_surface) {
                 retval = true;
             }
             break;

@@ -87,5 +87,5 @@ void ModeCircle::run()
 
     // update altitude target and call position controller
     position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate);
-    position_control->D_update_controller();
+    update_depth_controller();
 }

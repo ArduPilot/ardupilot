@@ -194,6 +194,9 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
     // send disarm command to motors
     sub.motors.armed(false);
 
+    // clear any upwards thrust limit left over by the surface handling
+    sub.motors.set_max_throttle(1.0f);
+
     // reset the mission
     sub.mission.reset();
 
