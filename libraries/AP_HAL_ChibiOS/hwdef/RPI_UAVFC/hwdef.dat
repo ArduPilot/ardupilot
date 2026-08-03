@@ -37,11 +37,12 @@ FLASH_SIZE_KB 4096
 # Tie RP_FLASH_SIZE to the hwdef flash size so efl_lld_program and block-erase
 # bounds-check against the real part rather than the ChibiOS default.
 define RP_FLASH_SIZE (BOARD_FLASH_SIZE * 1024U)
-# Flash layout:
-#   Bootloader: 0x10000000-0x10007FFF (32KB)
-#   Parameter storage: 0x10008000-0x1000FFFF (32KB)
-#   App: 0x10010000-0x103FFFFF
-FLASH_RESERVE_START_KB 64
+# Flash layout, one region per 64KB erase block so a block erase of any one of
+# them cannot take out another:
+#   Bootloader:        block 0, 0x10000000-0x1000FFFF (32KB used)
+#   Parameter storage: block 1, 0x10010000-0x1001FFFF (32KB used, pages 16-23)
+#   App:               block 2 onwards, 0x10020000-0x103FFFFF
+FLASH_RESERVE_START_KB 128
 
 # GPIO IRQ handling and early bring-up on RP2350 need a large MSP; the ISR
 # stack grows with every __RAMFUNC2__ addition.
@@ -205,11 +206,12 @@ SPIDEV sdcard   SPI1 DEVID3 SDCARD_CS   MODE0 400*KHZ 25*MHZ
 undef HAL_CHIBIOS_ARCH_FMUV3
 define AP_FEATURE_BOARD_DETECT 0
 
-# Parameter storage lives in the 32KB region below the app, inside the 64KB
-# reserve at the bottom of the XIP flash.
+# Parameter storage owns erase block 1 outright. It only needs the first 32KB
+# of it; the rest is left unused so no block erase ever spans storage and
+# something else.
 define HAL_STORAGE_SIZE 8192
 define HAL_WITH_RAMTRON 0
-STORAGE_FLASH_PAGE 8
+STORAGE_FLASH_PAGE 16
 define AP_FLASH_STORAGE_QUAD_PAGE 1
 # A boot-flash write turns XIP off for both cores and parks core1 for the whole
 # operation, stalling the 2 kHz rate loop, so defer every storage write until

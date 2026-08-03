@@ -9,10 +9,17 @@ OSCILLATOR_HZ 12000000
 
 FLASH_SIZE_KB 4096
 FLASH_RESERVE_START_KB 0
+# Must be explicit. Left unset, chibios_hwdef.py assumes any storage page above
+# the bootloader means storage sits at the top of flash and reserves everything
+# from it to the end, which here would leave the app area empty.
+FLASH_RESERVE_END_KB 0
 
+# Erase block 1 (0x10010000) is parameter storage and must not be part of the
+# app area, so the app starts at block 2. Keep in step with
+# FLASH_RESERVE_START_KB and STORAGE_FLASH_PAGE in hwdef.dat.
 FLASH_BOOTLOADER_LOAD_KB 32
-APP_START_OFFSET_KB 32
-define APP_START_ADDRESS 0x10010000
+APP_START_OFFSET_KB 96
+define APP_START_ADDRESS 0x10020000
 
 # Tie RP_FLASH_SIZE to the hwdef flash size so efl_lld_program and
 # efl_lld_start_erase_block bounds-check against the real part.
