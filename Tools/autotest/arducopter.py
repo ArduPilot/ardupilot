@@ -2233,7 +2233,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.progress("Push time up")
                 break
             # make sure we don't RTL:
-            if not self.mode_is(using_mode):
+            if not self.mode_is(using_mode, poll=False):
                 raise NotAchievedException("Changed mode away from %s" % using_mode)
             distance = self.distance_to_home(use_cached_home=True)
             inner_radius = fence_radius - fence_margin
@@ -5506,7 +5506,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # ensure vehicle remain in Loiter for 15 seconds
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 15:
-            if not self.mode_is('LOITER'):
+            if not self.mode_is('LOITER', poll=False):
                 raise NotAchievedException("Expected to stay in loiter for >15 seconds")
 
         # re-enable vicon
@@ -5519,7 +5519,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # ensure vehicle remain in Loiter for 15 seconds
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 15:
-            if not self.mode_is('LOITER'):
+            if not self.mode_is('LOITER', poll=False):
                 raise NotAchievedException("Expected to stay in loiter for >15 seconds")
 
         # RTL and check vehicle arrives within 10m of home
