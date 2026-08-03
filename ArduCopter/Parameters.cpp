@@ -629,12 +629,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, (float)ModeThrow::ThrowType::Upward),
 #endif
 
-    // @Param: GND_EFFECT_COMP
-    // @DisplayName: Ground Effect Compensation Enable/Disable
-    // @Description: Ground Effect Compensation Enable/Disable
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 1),
+    // 5 was GND_EFFECT_COMP, folded into AP_GroundEffect GNDEFF_ALT (<0 disables)
 
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // @Group: AFS_
@@ -1070,6 +1065,12 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
 #endif
 
+#if AP_GROUNDEFFECT_ENABLED
+    // @Group: GNDEFF_
+    // @Path: ../libraries/AP_GroundEffect/AP_GroundEffect.cpp
+    AP_SUBGROUPINFO(ground_effect, "GNDEFF_", 24, ParametersG2, AP_GroundEffect),
+#endif
+
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
     // @Description: EKF Failsafe filter cutoff frequency. EKF variances are filtered using this value to avoid spurious failsafes from transient high variances. A higher value means the failsafe is more likely to trigger.
@@ -1348,6 +1349,29 @@ void Copter::load_parameters(void)
         };
         AP_Param::convert_old_parameters_scaled(pilot_conversion_info, ARRAY_SIZE(pilot_conversion_info), 0.01, 0);
     }
+
+#if AP_GROUNDEFFECT_ENABLED
+    // GND_EFFECT_COMP was an Int8 0/1 master switch; the disable case
+    // is now folded into GNDEFF_ALT as a negative sentinel. Only the
+    // explicitly-disabled case needs migrating - users at the old
+    // default (=1, enabled) get the new defaults automatically.
+    // PARAMETER_CONVERSION - Added: May 2026 for ArduPilot-4.8
+    {
+        AP_Int8 old_gndeff;
+        const AP_Param::ConversionInfo info = {
+            Parameters::k_param_g2, 5, AP_PARAM_INT8, nullptr
+        };
+        if (AP_Param::find_old_parameter(&info, &old_gndeff)
+            && old_gndeff.configured()
+            && old_gndeff.get() == 0) {
+            enum ap_var_type ptype;
+            AP_Param *p = AP_Param::find("GNDEFF_ALT", &ptype);
+            if (p != nullptr && ptype == AP_PARAM_FLOAT) {
+                ((AP_Float *)p)->set_and_save(-1.0f);
+            }
+        }
+    }
+#endif  // AP_GROUNDEFFECT_ENABLED
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
