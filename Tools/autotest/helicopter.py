@@ -1360,7 +1360,7 @@ class AutoTestHelicopter(AutoTestCopter):
         tstart = self.get_sim_time()
         try:
             while self.get_sim_time_cached() - tstart < timeout:
-                if self.armed():
+                if self.armed(poll=False):
                     raise NotAchievedException("Stick-armed when it should not have")
         finally:
             self.set_output_to_trim(arming_channel)

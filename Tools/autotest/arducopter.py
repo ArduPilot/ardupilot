@@ -5587,7 +5587,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         last_mission_current_msg = 0
         last_seq = None
-        while self.armed(): # we RTL at end of mission
+        while self.armed(poll=False): # we RTL at end of mission
             now = self.get_sim_time_cached()
             if now - tstart > 200:
                 raise AutoTestTimeoutException("Did not disarm as expected")
@@ -6345,7 +6345,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1600)
         count_stop = -1
         tstart = self.get_sim_time()
-        while self.armed(): # we RTL at end of mission
+        while self.armed(poll=False): # we RTL at end of mission
             now = self.get_sim_time_cached()
             if now - tstart > 240:
                 raise AutoTestTimeoutException("Did not disarm as expected")
@@ -6385,7 +6385,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # should not take off for about least 77 seconds
         tstart = self.get_sim_time()
         took_off = False
-        while self.armed():
+        while self.armed(poll=False):
             now = self.get_sim_time_cached()
             if now - tstart > 200:
                 # timeout
@@ -16005,7 +16005,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time_cached() - tstart > 60:
                 break
-            if self.armed():
+            if self.armed(poll=False):
                 raise NotAchievedException("Armed after reboot with switch high")
             armmsg = self.statustext_in_collections('Arm: ')
             if armmsg is not None:
