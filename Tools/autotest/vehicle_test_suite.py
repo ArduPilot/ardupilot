@@ -9000,7 +9000,9 @@ class TestSuite(abc.ABC):
         """Wait for mode to change."""
         self.progress("Waiting for mode %s" % mode)
         tstart = self.get_sim_time()
-        while not self.mode_is(mode, drain_mav=False):
+        # poll=False: pace this loop on the scheduled heartbeat lest
+        # we spin at poll-round-trip rate, printing as we go
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             custom_num = self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s custom=%u" % (
                 self.mav.flightmode, mode, custom_num))

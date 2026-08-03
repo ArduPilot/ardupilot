@@ -2324,7 +2324,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Waiting for fence breach")
         tstart = self.get_sim_time()
-        while not self.mode_is("RTL"):
+        while not self.mode_is("RTL", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not breach fence")
 
@@ -2799,7 +2799,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("Circle and Polygon fences in ([0-9]+[.])?[0-9]?m", regex=True)
         self.progress("Waiting for fence breach")
         tstart = self.get_sim_time()
-        while not self.mode_is("RTL"):
+        while not self.mode_is("RTL", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not breach fence")
 

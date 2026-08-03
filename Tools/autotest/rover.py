@@ -5073,7 +5073,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
-        while not self.mode_is("HOLD"):
+        while not self.mode_is("HOLD", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not move to hold")
             m = self.assert_receive_message('VFR_HUD')

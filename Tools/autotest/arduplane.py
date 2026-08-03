@@ -4186,7 +4186,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Waiting for RTL")
             tstart = self.get_sim_time()
             mode = "RTL"
-            while not self.mode_is(mode, drain_mav=False):
+            while not self.mode_is(mode, drain_mav=False, poll=False):
                 self.mav.messages['HEARTBEAT'].custom_mode
                 self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                     self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4221,7 +4221,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
         mode = "RTL"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4260,7 +4260,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
         mode = "RTL"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4527,7 +4527,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for GUIDED")
         tstart = self.get_sim_time()
         mode = "GUIDED"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4593,7 +4593,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
         mode = "RTL"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4630,7 +4630,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
         mode = "RTL"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
