@@ -190,6 +190,7 @@ class AllowedSubsystems(object):
         matches; callers should treat that as "needs a mapping rule".
         '''
         # normalise a leading "./"
+        path = path.replace('\\', '/')
         if path.startswith('./'):
             path = path[2:]
 
@@ -218,7 +219,7 @@ class AllowedSubsystems(object):
             filename = parts[-1]
             for sub_prefix in self.SPECIAL_SUBSYSTEMS.get(lib, []):
                 if filename.startswith(sub_prefix):
-                    return [lib, sub_prefix]
+                    return [sub_prefix, lib]
             return [lib]
 
         # most-specific-first special directory rules
