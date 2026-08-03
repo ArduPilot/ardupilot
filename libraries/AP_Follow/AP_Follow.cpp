@@ -165,7 +165,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _ACCEL_NE
     // @DisplayName: Acceleration limit for the horizontal kinematic input shaping
     // @Description: Acceleration limit of the horizontal kinematic path generation used to determine how quickly the estimate varies in velocity
-    // @Range: 0 5
+    // @Range: 0 10
     // @Units: m/s/s
     // @User: Advanced
     AP_GROUPINFO("_ACCEL_NE", 12, AP_Follow, _accel_max_ne_mss, 5.0),
@@ -181,7 +181,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _ACCEL_D
     // @DisplayName: Acceleration limit for the vertical kinematic input shaping
     // @Description: Acceleration limit of the vertical kinematic path generation used to determine how quickly the estimate varies in velocity
-    // @Range: 0 2.5
+    // @Range: 0 10
     // @Units: m/s/s
     // @User: Advanced
     AP_GROUPINFO("_ACCEL_D", 14, AP_Follow, _accel_max_d_mss, 5.0),
@@ -189,7 +189,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _JERK_D
     // @DisplayName: Jerk limit for the vertical kinematic input shaping
     // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the estimate varies in acceleration
-    // @Range: 0 5
+    // @Range: 0 20
     // @Units: m/s/s/s
     // @User: Advanced
     AP_GROUPINFO("_JERK_D", 15, AP_Follow, _jerk_max_d_msss, 10.0),
@@ -197,7 +197,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _ACCEL_H
     // @DisplayName: Angular acceleration limit for the heading kinematic input shaping
     // @Description: Angular acceleration limit of the heading kinematic path generation used to determine how quickly the estimate varies in angular velocity
-    // @Range: 0 90
+    // @Range: 0 720
     // @Units: deg/s/s
     // @User: Advanced
     AP_GROUPINFO("_ACCEL_H", 16, AP_Follow, _accel_max_h_degss, 360.0),
@@ -205,7 +205,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _JERK_H
     // @DisplayName: Angular jerk limit for the heading kinematic input shaping
     // @Description: Angular jerk limit of the heading kinematic path generation used to determine how quickly the estimate varies in angular acceleration
-    // @Range: 0 360
+    // @Range: 0 1440
     // @Units: deg/s/s/s
     // @User: Advanced
     AP_GROUPINFO("_JERK_H", 17, AP_Follow, _jerk_max_h_degsss, 720.0),
