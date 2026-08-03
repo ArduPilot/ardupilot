@@ -729,15 +729,50 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
         // we have reset height, so arming height is zero
         copter.arming_altitude_m = 0;
     } else if (!ahrs.home_is_locked()) {
-        // Reset home position if it has already been set before (but not locked)
-        if (!copter.set_home_to_current_location(false)) {
-            // ignore failure
+        // Re-arm path: home was set on a previous arm but is not
+        // locked, so home will move to the current location below.
+        //
+        // Goal: clear any baro temperature drift accumulated while
+        // disarmed, but only when doing so would not corrupt the AMSL
+        // altitude reported by the EKF.
+        //
+        // HGT_RESET_ALT controls this:
+        //   <  0  : disable entirely -- preserve all state, do nothing
+        //   == 0  : always do a full reset (legacy behaviour)
+        //   >  0  : pass to the EKF as the origin-vs-GPS altitude
+        //           tolerance.  If |EKF_origin.alt - GPS.alt| is
+        //           within the tolerance the EKF does a full reset
+        //           (zero position.z, recalibrate baro, flush baro
+        //           buffer).  If it exceeds the tolerance -- typical
+        //           when the user pinned the origin at a different
+        //           elevation via AHRS_ORIGIN_ALT or
+        //           MAV_CMD_DO_SET_GLOBAL_ORIGIN -- the EKF leaves
+        //           position.z, the baro calibration, the baro buffer
+        //           and baroHgtOffset alone, so AMSL stays correct.
+        //
+        // Note: do NOT call barometer.update_calibration() here.  The
+        // EKF performs the baro recalibration itself (via the DAL) on
+        // the full-reset path only.  Calling it unconditionally here
+        // would destroy the baro drift signal even on the partial
+        // path, defeating the AMSL-preserving intent of the tolerance.
+        const float threshold = copter.g2.hgt_reset_threshold;
+        if (!is_negative(threshold)) {
+            const float origin_alt_tolerance_m = (threshold > 0) ?
+                threshold : -1.0f;
+            ahrs.resetHeightDatum(origin_alt_tolerance_m);
+            LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
         }
 
-        // remember the height when we armed (ignore failures)
+        // arming_altitude_m records the EKF altitude at arm time.
+        // After a full reset position.z is zero so this is zero;
+        // after a partial reset (or skipped reset) it captures the
+        // existing EKF position.z relative to origin.
         float pos_d_m = 0;
-        UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
+        UNUSED_RESULT(ahrs.get_relative_position_D_origin_float(pos_d_m));
         copter.arming_altitude_m = -pos_d_m;
+
+        // Reset home position if it has already been set before (but not locked)
+        UNUSED_RESULT(copter.set_home_to_current_location(false));
     }
     copter.update_super_simple_bearing(false);
 

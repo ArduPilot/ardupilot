@@ -1861,17 +1861,24 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
     return true;
 }
 
-// Resets the baro so that it reads zero at the current height
-// Resets the EKF height to zero
-// Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-void AP_AHRS::resetHeightDatum(void)
+// Resets the baro so that it reads zero at the current height,
+// and resets the EKF height datum.  See AP_AHRS::resetHeightDatum
+// declaration for the meaning of origin_alt_tolerance_m.
+void AP_AHRS::resetHeightDatum(float origin_alt_tolerance_m)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
     for (auto &backend_and_estimates : backends_and_estimates) {
-        backend_and_estimates.backend.resetHeightDatum();
+        backend_and_estimates.backend.resetHeightDatum(origin_alt_tolerance_m);
+        backend_and_estimates.estimates = {};
+        backend_and_estimates.backend.get_results(backend_and_estimates.estimates);
     }
+
+    // refresh the published state so get_location() and the
+    // relative-position accessors reflect the reset immediately;
+    // arming code sets home from them straight after this call
+    update_state();
 }
 
 #if HAL_GCS_ENABLED
