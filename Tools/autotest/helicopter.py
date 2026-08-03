@@ -87,12 +87,7 @@ class AutoTestHelicopter(AutoTestCopter):
         )
         runup_time = self.get_sim_time() - tstart
         self.progress("Collective is now at PWM %u" % servo.servo1_raw)
-        self.mav.wait_heartbeat()
         if runup_time < TARGET_RUNUP_TIME:
-            self.zero_throttle()
-            self.set_rc(8, 1000)
-            self.disarm_vehicle()
-            self.mav.wait_heartbeat()
             raise NotAchievedException("Takeoff initiated before runup time complete %u" % runup_time)
         self.progress("Runup time %u" % runup_time)
         self.zero_throttle()
@@ -1365,7 +1360,6 @@ class AutoTestHelicopter(AutoTestCopter):
         tstart = self.get_sim_time()
         try:
             while self.get_sim_time_cached() - tstart < timeout:
-                self.wait_heartbeat()
                 if self.armed():
                     raise NotAchievedException("Stick-armed when it should not have")
         finally:
