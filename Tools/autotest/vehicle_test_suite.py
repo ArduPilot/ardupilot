@@ -9274,11 +9274,11 @@ class TestSuite(abc.ABC):
                           ((now - tstart), timeout))
             return
 
-    def assert_sensor_state(self, sensor, present=True, enabled=True, healthy=True, verbose=False):
-        return self.sensor_has_state(sensor, present, enabled, healthy, do_assert=True, verbose=verbose)
+    def assert_sensor_state(self, sensor, present=True, enabled=True, healthy=True, verbose=False, mav=None):
+        return self.sensor_has_state(sensor, present, enabled, healthy, do_assert=True, verbose=verbose, mav=mav)
 
-    def sensor_has_state(self, sensor, present=True, enabled=True, healthy=True, do_assert=False, verbose=False):
-        m = self.assert_receive_message('SYS_STATUS', timeout=5, very_verbose=verbose)
+    def sensor_has_state(self, sensor, present=True, enabled=True, healthy=True, do_assert=False, verbose=False, mav=None):
+        m = self.assert_receive_message('SYS_STATUS', timeout=5, very_verbose=verbose, mav=mav)
         reported_present = m.onboard_control_sensors_present & sensor
         reported_enabled = m.onboard_control_sensors_enabled & sensor
         reported_healthy = m.onboard_control_sensors_health & sensor
@@ -9339,7 +9339,7 @@ class TestSuite(abc.ABC):
                 except Exception:  # noqa: BLE001
                     pass
                 raise AutoTestTimeoutException("Prearm bit never went true")
-            if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True):
+            if self.sensor_has_state(mavutil.mavlink.MAV_SYS_STATUS_PREARM_CHECK, True, True, True, mav=mav):
                 break
 
     def assert_fence_enabled(self, timeout=2):
