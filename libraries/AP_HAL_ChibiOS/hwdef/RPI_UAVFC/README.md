@@ -32,20 +32,18 @@ hardware UARTs, so the sheet's UART2 and UART3 are served by PIO UARTs.
  - SERIAL0 -> USB (MAVLink2)
  - SERIAL1 -> UART0, GPIO44/45, DVTX connector (DisplayPort, DMA-enabled)
  - SERIAL2 -> UART1, GPIO36/37, GPS connector (GPS, DMA-enabled)
- - SERIAL3 -> PIOUART0, GPIO42/43, RADIO connector (Spare)
+ - SERIAL3 -> PIOUART0, GPIO42/43, RADIO connector (RC Input)
  - SERIAL4 -> PIOUART1, GPIO16/17, VID connector (Spare)
 
-Both PIO ports default to `SerialProtocol_None`. A floating RX input on an
+SERIAL4 defaults to `SerialProtocol_None`. A floating RX input on an
 unconnected header can generate enough IRQ traffic to stall startup, so enable
-them only once wiring is confirmed:
-
- - :ref:`SERIAL3_PROTOCOL<SERIAL3_PROTOCOL>` = 23 with a CRSF/ELRS receiver attached
- - :ref:`SERIAL4_PROTOCOL<SERIAL4_PROTOCOL>` = 2 for a MAVLink telemetry link
+it only once wiring is confirmed: set
+:ref:`SERIAL4_PROTOCOL<SERIAL4_PROTOCOL>` = 2 for a MAVLink telemetry link.
 
 ## RC Input
 
-RC input is expected on SERIAL3 (the RADIO connector, GPIO42/43). Set
-:ref:`SERIAL3_PROTOCOL<SERIAL3_PROTOCOL>` = 23 to enable it.
+RC input is on SERIAL3 (the RADIO connector, GPIO42/43), which defaults to
+:ref:`SERIAL3_PROTOCOL<SERIAL3_PROTOCOL>` = 23.
 
  - CRSF requires :ref:`SERIAL3_OPTIONS<SERIAL3_OPTIONS>` = 0
  - FPort requires :ref:`SERIAL3_OPTIONS<SERIAL3_OPTIONS>` = 15
@@ -78,12 +76,12 @@ The default battery parameters are:
  - :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
  - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 6 (GPIO46)
  - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 7 (GPIO47)
- - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 10.52
+ - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.1
  - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 1.0
 
-The scale factors are carried over from the original Laurel and have not been
-characterised on this revision. Measure them against a known battery voltage
-and current before relying on them.
+The voltage multiplier was checked against a bench supply and matches the usual
+11.1 divider ratio. The current scale is still the placeholder carried over from
+the original Laurel; measure it against a known load before relying on it.
 
 ## Analog RSSI input
 
@@ -136,5 +134,5 @@ with any ArduPilot ground station using the `*.apj` firmware files.
 | SBUS pad (GPIO41) | Needs an inverted UART; not currently supported |
 | ESC telemetry (GPIO5) | Can only reach UART1 RX, which the GPS owns |
 | RGB LED (GPIO2) | Serial LED output not supported on RP2350 |
-| Battery scaling | Placeholder factors carried from Laurel v1 |
+| Battery current scaling | Placeholder factor carried from Laurel v1 |
 | IMU rotation | `ROTATION_NONE`; set `AHRS_ORIENTATION` to match your mounting |
