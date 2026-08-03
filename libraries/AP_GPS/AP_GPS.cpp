@@ -1070,7 +1070,7 @@ void AP_GPS::update(void)
     if (primary_instance != old_primary) {
         AP::logger().Write_Event(LogEvent::GPS_PRIMARY_CHANGED);
     }
-#endif  // HAL_LOGING_ENABLED
+#endif  // HAL_LOGGING_ENABLED
 #endif  // GPS_MAX_RECEIVERS > 1
 
 #ifndef HAL_BUILD_AP_PERIPH
