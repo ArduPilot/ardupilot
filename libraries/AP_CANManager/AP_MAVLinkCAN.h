@@ -71,6 +71,12 @@ private:
 
     static AP_MAVLinkCAN *ensure_singleton();
 
+    // convert the 1-indexed bus number carried by MAV_CMD_CAN_FORWARD and
+    // CAN_FILTER_MODIFY into a zero-indexed hal.can[] index. The result is
+    // -1 for "no bus" and non-negative otherwise; it must be range-checked
+    // before indexing hal.can[].
+    static int16_t packet_bus_num_to_bus(uint8_t bus_num);
+
     // Process CAN frame forwarding
     void process_frame_buffer();
 

@@ -60,6 +60,20 @@ void AP_MAVLinkCAN::handle_can_filter_modify(const mavlink_message_t &msg)
 
 
 /*
+  convert the 1-indexed bus number carried by MAV_CMD_CAN_FORWARD and
+  CAN_FILTER_MODIFY into a zero-indexed hal.can[] index. Unlike
+  CAN_FRAME/CANFD_FRAME, which carry a zero-indexed bus, these messages use
+  a 1-indexed bus number (bus 1 is the first interface, 0 means "no bus").
+  The bus number is unsigned, so the result is -1 for "no bus" and is
+  otherwise non-negative; the caller must still range-check it against
+  HAL_NUM_CAN_IFACES before indexing hal.can[].
+ */
+int16_t AP_MAVLinkCAN::packet_bus_num_to_bus(uint8_t bus_num)
+{
+    return int16_t(bus_num) - 1;
+}
+
+/*
   handle MAV_CMD_CAN_FORWARD mavlink long command
  */
 bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg)
@@ -73,7 +87,7 @@ bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_co
     if (packet.param1 < 0 || packet.param1 > UINT8_MAX) {
         return false;
     }
-    const int8_t bus = int8_t(uint8_t(packet.param1))-1;
+    const int16_t bus = packet_bus_num_to_bus(uint8_t(packet.param1));
 
     if (bus == -1) {
         /*
@@ -86,7 +100,7 @@ bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_co
         return true;
     }
 
-    if (bus < 0 || bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
+    if (bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
         return false;
     }
 
@@ -214,7 +228,7 @@ void AP_MAVLinkCAN::_handle_can_filter_modify(const mavlink_message_t &msg)
 {
     mavlink_can_filter_modify_t p;
     mavlink_msg_can_filter_modify_decode(&msg, &p);
-    const int8_t bus = int8_t(p.bus)-1;
+    const int16_t bus = packet_bus_num_to_bus(p.bus);
     if (bus < 0 || bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
         return;
     }
