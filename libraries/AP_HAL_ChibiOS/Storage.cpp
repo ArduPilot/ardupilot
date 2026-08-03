@@ -51,12 +51,6 @@ extern const AP_HAL::HAL& hal;
 #define HAL_FLASH_READ_FAIL_LIMIT 10
 #endif
 
-// defer all storage writes while armed. For boards where a storage write
-// stalls the control loop badly enough that it must not happen in flight.
-#ifndef AP_STORAGE_NO_WRITE_WHILE_ARMED
-#define AP_STORAGE_NO_WRITE_WHILE_ARMED 0
-#endif
-
 #ifdef USE_POSIX
 #ifndef HAL_STORAGE_SDCARD_RETRY_MS
 #define HAL_STORAGE_SDCARD_RETRY_MS 2000U
@@ -311,12 +305,24 @@ void Storage::_timer_tick(void)
         return;
     }
 #if AP_STORAGE_NO_WRITE_WHILE_ARMED
-    if (hal.util->get_soft_armed()) {
-        // Dirty lines stay set and are flushed once disarmed, so nothing is
-        // lost by deferring. Keep _last_empty_ms fresh: a deliberate deferral
-        // is not a storage fault and must not fail the healthy() arming check.
-        _last_empty_ms = AP_HAL::millis();
-        return;
+    const bool armed = hal.util->get_soft_armed();
+    if (armed && !_was_armed) {
+        // drain what was queued before we armed. Deferring only holds data
+        // safely if we disarm again, and paths that arm and then block until
+        // power is pulled (ESC calibration) never do, losing the write.
+        _arm_flush_budget = CH_STORAGE_NUM_LINES;
+    }
+    _was_armed = armed;
+
+    if (armed) {
+        if (_dirty_mask.empty() || _arm_flush_budget == 0) {
+            // Keep _last_empty_ms fresh: a deliberate deferral is not a
+            // storage fault and must not fail the healthy() arming check.
+            _arm_flush_budget = 0;
+            _last_empty_ms = AP_HAL::millis();
+            return;
+        }
+        _arm_flush_budget--;
     }
 #endif
     if (_dirty_mask.empty()) {
