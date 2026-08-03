@@ -107,9 +107,75 @@ AP_InertialSensor_ADIS16607::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_ADIS16607::start()
 {
+    // pre-fetch instance numbers for checking fast sampling settings
+    if (!_imu.get_gyro_instance(gyro_instance) || !_imu.get_accel_instance(accel_instance)) {
+        return;
+    }
+
+    backend_rate_hz = 1000;
+    if (enable_fast_sampling(accel_instance) && (get_fast_sampling_rate() > 1) && (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI)) {
+        // constrain the gyro rate to be at least the loop rate
+        uint8_t loop_limit = 1;
+        if (get_loop_rate_hz() > 1000) {
+            loop_limit = 2;
+        }
+        if (get_loop_rate_hz() > 2000) {
+            loop_limit = 4;
+        }
+        // constrain the gyro rate to be a 2^N multiple
+        uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
+        backend_rate_hz *= fast_sampling_rate;
+    }
+
+    switch (backend_rate_hz) {
+    case 2000:
+        expected_sample_rate_hz = 2390;
+        dec_rate = DEC_RATE_2390HZ;
+        break;
+    case 4000:
+        expected_sample_rate_hz = 4780;
+        dec_rate = DEC_RATE_4780HZ;
+        break;
+    case 8000:
+        expected_sample_rate_hz = 9560;
+        dec_rate = DEC_RATE_9560HZ;
+        break;
+    default:
+        expected_sample_rate_hz = 1195;
+        dec_rate = DEC_RATE_1195HZ;
+        break;
+    }
+
     if (!_imu.register_accel(accel_instance, expected_sample_rate_hz, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS16607)) ||
         !_imu.register_gyro(gyro_instance, expected_sample_rate_hz, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS16607))) {
         return;
+    }
+
+    {
+        WITH_SEMAPHORE(dev->get_semaphore());
+
+        // Enable SPI Writes to Register Map
+        write_reg16(REG_WRITE_LOCK, 0xAAAA, false);
+        write_reg16(REG_WRITE_LOCK, 0x5555, false);
+
+        /**
+         * Bring rate down
+         * The actual decimation rate, D, is the DEC_RATE+1. Note that when changing the decimation rate, it is
+         * recommended to first reset DEC_RATE to 0x000 before entering the new value. This
+         * allows the decimation accumulator to reset.
+         */
+        const bool rate_ok = write_reg16(REG_DEC_RATE, 0, true) && write_reg16(REG_DEC_RATE, dec_rate, true);
+
+        // discard samples taken at the old rate
+        write_reg16(REG_USER_FIFO_CFG, USER_FIFO_CFG_CLEAR_FIFO_B | (ADIS16607_FIFO_THRESHOLD << 0), false);
+
+        // Write lock
+        write_reg16(REG_WRITE_LOCK, 0x5555, false);
+        write_reg16(REG_WRITE_LOCK, 0xAAAA, false);
+
+        if (!rate_ok) {
+            return;
+        }
     }
 
     // setup sensor rotations from probe()
@@ -134,44 +200,10 @@ bool AP_InertialSensor_ADIS16607::check_dev_id()
     // Lock the SPI mode
     write_reg16(REG_SPI_HALFDUPLEX_KEY, 0xB4B4, false);
 
-    backend_rate_hz = 1000;
-    if (enable_fast_sampling(accel_instance) && (get_fast_sampling_rate() > 1) && (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI)) {
-        // constrain the gyro rate to be at least the loop rate
-        uint8_t loop_limit = 1;
-        if (get_loop_rate_hz() > 1000) {
-            loop_limit = 2;
-        }
-        if (get_loop_rate_hz() > 2000) {
-            loop_limit = 4;
-        }
-        // constrain the gyro rate to be a 2^N multiple
-        uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
-        backend_rate_hz *= fast_sampling_rate;
-    }
-
     if (read_reg16(REG_DEV_ID) == DEV_ID_16607) {
         accel_scale = GRAVITY_MSS / 200000.0f;  // Accel: Dynamic Range ±40g. 24-bit data format 200000.0 LSB/g
         gyro_scale = radians(1.0 / 4000.0);     // Gyro: ADIS16607-3, 24-bit data format 4000.0 LSB/°/sec
         _clip_limit = 39.5f * GRAVITY_MSS;
-
-        switch (backend_rate_hz) {
-            case 2000:
-                expected_sample_rate_hz = 2390;
-                dec_rate = DEC_RATE_2390HZ;
-                break;
-            case 4000:
-                expected_sample_rate_hz = 4780;
-                dec_rate = DEC_RATE_4780HZ;
-                break;
-            case 8000:
-                expected_sample_rate_hz = 9560;
-                dec_rate = DEC_RATE_9560HZ;
-                break;
-            default:
-                expected_sample_rate_hz = 1195;
-                dec_rate = DEC_RATE_1195HZ;
-                break;
-        }
 
         return true;
     }
@@ -232,20 +264,6 @@ bool AP_InertialSensor_ADIS16607::init()
 
     // Filter BW. fC=500Hz.
     if (!write_reg16(REG_MSC_CTRL, 0x100, true)) {
-        return false;
-    }
-
-    /**
-     * Bring rate down
-     * The actual decimation rate, D, is the DEC_RATE+1. Note that when changing the decimation rate, it is 
-     * recommended to first reset DEC_RATE to 0x000 before entering the new value. This 
-     * allows the decimation accumulator to reset.
-     */
-    if (!write_reg16(REG_DEC_RATE, 0, true)) {
-        return false;
-    }
-
-    if (!write_reg16(REG_DEC_RATE, dec_rate, true)) {
         return false;
     }
 
