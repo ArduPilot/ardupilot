@@ -42,8 +42,8 @@ SCHED_OPTIONS 1
 
 # GPS_DRV_OPTIONS bit 2 caps ublox baud at 115200 instead of 230400: less
 # overhead, and the more proven rate on this hardware.
-GPS_DRV_OPTIONS 4
-SERIAL2_BAUD 115
+# GPS_DRV_OPTIONS 4
+# SERIAL2_BAUD 115
 
 # Deliberately not set here, as board defaults should not carry user choices:
 #   AHRS_ORIENTATION - depends on how the board is mounted, not on the board.
