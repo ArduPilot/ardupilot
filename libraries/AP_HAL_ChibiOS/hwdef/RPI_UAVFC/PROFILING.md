@@ -40,7 +40,7 @@ seconds with no action needed. Connect a GCS and watch the messages:
 - `XIPpark: n=<count> max=<us>` - core1 park count and worst case
 - the core1 PC-sampler top 16, as region-tagged `offset:count` tokens
 
-Region tags in those tokens are `F` for flash from 0x10010000, `S` for SRAM
+Region tags in those tokens are `F` for flash from 0x10020000, `S` for SRAM
 from 0x20000000, and `C` for scratch from 0x20080000.
 
 Do not trust the `F=`/`S=`/`o=` percentages on the summary line. `cnt` is a

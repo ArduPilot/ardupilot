@@ -237,9 +237,23 @@ flash-resident functions on the core1 rate/IMU path. The relocation has a
 boot-order gotcha involving a volatile copy loop; see the memcpy/memset section
 of `../Laurel/BASELINE.md` before touching it.
 
-Parameter storage sits at 0x10008000 in the 64 KB reserve below the app, on the
-4 MB boot flash. There is no blackbox flash on this board. A sibling branch
-implemented a QMI M1 driver for a second flash part; it does not apply here.
+Flash is laid out one region per 64 KB erase block: bootloader in block 0,
+parameter storage in block 1 (pages 16-23, using the first 32 KB of it), app
+from block 2. Storage and the bootloader used to share block 0, which meant a
+64 KB block erase aimed at the bootloader took the parameters with it - and the
+bootloader's own `flash_func_erase_apparea_fast()` uses exactly that erase.
+Keep `FLASH_RESERVE_START_KB` and `STORAGE_FLASH_PAGE` in `hwdef.dat` in step
+with `APP_START_OFFSET_KB` and `APP_START_ADDRESS` in `hwdef-bl.dat`; the app
+and the bootloader compute the app base independently and nothing checks that
+they agree.
+
+`FLASH_RESERVE_END_KB 0` in `hwdef-bl.dat` is load-bearing. Left unset,
+`chibios_hwdef.py` sees a storage page above the bootloader, assumes storage
+must therefore be at the top of flash, and reserves everything from it to the
+end - which reserved 4032 KB of a 4096 KB part and left no app area at all.
+
+There is no blackbox flash on this board. A sibling branch implemented a QMI M1
+driver for a second flash part; it does not apply here.
 
 Storage writes are deferred entirely while armed via
 `AP_STORAGE_NO_WRITE_WHILE_ARMED`. A boot-flash write parks core1 for the whole
