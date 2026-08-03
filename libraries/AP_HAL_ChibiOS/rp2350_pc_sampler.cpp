@@ -61,6 +61,11 @@
 #define PROF_HASH_MASK     (PROF_HASH_SIZE - 1u)
 #define PROF_PROBE_MAX     8u
 
+/* Start of XIP text, from the linker rather than a literal: the app base moves
+ * with FLASH_RESERVE_START_KB, and a stale value silently misattributes every
+ * flash sample and shifts the reported offsets. */
+extern uint32_t __vectors_base__[];
+
 /* Code regions, used only to classify PCs for the summary line. Bases:
  * F=XIP flash text, S=SRAM ramfunc, C=scratch banks (ram4/ram5). */
 static const struct {
@@ -68,7 +73,7 @@ static const struct {
     uint32_t span;
     char     tag;
 } prof_regions[] = {
-    { 0x10010000u, 0x160000u, 'F' },
+    { (uint32_t)(uintptr_t)__vectors_base__, 0x160000u, 'F' },
     { 0x20000000u, 0x020000u, 'S' },
     { 0x20080000u, 0x002000u, 'C' },
 };
