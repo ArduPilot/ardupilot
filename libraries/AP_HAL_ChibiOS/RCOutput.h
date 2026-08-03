@@ -350,7 +350,6 @@ private:
     // input capture is expecting TELEM_IC_SAMPLE (16) ticks per transition (22) so the maximum
     // value of the counter in CCR registers is 16*22 == 352, so must be 16-bit
     static const uint16_t GCR_TELEMETRY_BUFFER_LEN = GCR_TELEMETRY_BIT_LEN*sizeof(dmar_uint_t);
-    static const uint16_t INVALID_ERPM = 0xffffU;
     static const uint16_t ZERO_ERPM = 0x0fffU;
 
     struct pwm_group {
@@ -363,7 +362,10 @@ private:
         bool have_up_dma; // can we do DMAR outputs for DShot?
         uint8_t dma_up_stream_id;
         uint8_t dma_up_channel;
-#ifdef HAL_WITH_BIDIR_DSHOT
+// RP2350 receives telemetry in the PIO state machine, so it has no
+// per-channel input-capture DMA to describe and hwdef.h emits no initialiser
+// for these. Leaving them in would silently absorb the alt_functions values.
+#if defined(HAL_WITH_BIDIR_DSHOT) && !defined(RP2350)
         struct {
             bool have_dma;
             uint8_t stream_id;
@@ -756,10 +758,21 @@ private:
      */
     void bdshot_ic_dma_allocate(Shared_DMA *ctx);
     void bdshot_ic_dma_deallocate(Shared_DMA *ctx);
-    static uint32_t bdshot_decode_gcr_erpm(uint32_t value);
     static uint32_t bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t count);
     static uint32_t bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32_t count, bool reversed);
     bool bdshot_decode_telemetry_from_erpm(uint16_t erpm, uint8_t chan);
+public:
+    /*
+      Turn an assembled 21-bit GCR telemetry word into a 12-bit eRPM value, or
+      INVALID_ERPM if a quintet or the checksum does not hold. Shared by the two
+      receive paths: a timer in input-capture mode measures edge times, the PIO
+      oversamples the line, but from the GCR word on the decode is the same.
+     */
+    static uint32_t bdshot_decode_gcr_erpm(uint32_t value);
+
+    // returned by bdshot_decode_gcr_erpm() when the word does not decode
+    static const uint16_t INVALID_ERPM = 0xffffU;
+private:
     bool bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan);
     static uint8_t bdshot_find_next_ic_channel(const pwm_group& group);
     static void bdshot_dma_ic_irq_callback(void *p, uint32_t flags);
