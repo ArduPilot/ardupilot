@@ -6210,7 +6210,7 @@ class TestSuite(abc.ABC):
         if cached:
             m = self.mav.messages.get("HEARTBEAT", None)
         if m is None:
-            m = self.wait_heartbeat()
+            m = self.wait_heartbeat(poll=True)
         return (m.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED) != 0
 
     def send_mavlink_arm_command(self):
@@ -8991,9 +8991,9 @@ class TestSuite(abc.ABC):
         '''returns the most-recently received instance of message_type'''
         return self.mav.messages[message_type]
 
-    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True):
+    def mode_is(self, mode, cached=False, drain_mav=True, drain_mav_quietly=True, poll=True):
         if not cached:
-            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly)
+            self.wait_heartbeat(drain_mav=drain_mav, quiet=drain_mav_quietly, poll=poll)
         return self.mav.messages['HEARTBEAT'].custom_mode == self.get_mode_from_mode_mapping(mode)
 
     def wait_mode(self, mode, timeout=60):
@@ -9239,11 +9239,13 @@ class TestSuite(abc.ABC):
         self.total_waiting_to_arm_time += armable_time
         self.waiting_to_arm_count += 1
 
-    def wait_heartbeat(self, drain_mav=True, quiet=False, *args, **x):
+    def wait_heartbeat(self, drain_mav=True, quiet=False, poll=False, *args, **x):
         '''as opposed to mav.wait_heartbeat, raises an exception on timeout.
 Also, ignores heartbeats not from our target system'''
         if drain_mav:
             self.drain_mav(quiet=quiet)
+        if poll:
+            self.send_poll_message('HEARTBEAT')
         orig_timeout = x.get("timeout", 20)
         x["timeout"] = 1
         tstart = time.time()
@@ -10915,7 +10917,6 @@ Also, ignores heartbeats not from our target system'''
             self.check_zero_mag_parameters(params)
             self.check_zeros_mag_orient()
             self.progress("Send acceptation and check value")
-            self.wait_heartbeat()
             self.run_cmd(
                 mavutil.mavlink.MAV_CMD_DO_ACCEPT_MAG_CAL,
                 p1=target_mask, # p1: mag_mask
@@ -11739,7 +11740,6 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(
                     "Disarmed with rudder when ARMING_RUDDER=0")
             self.disarm_vehicle()
-            self.wait_heartbeat()
             self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
             self.set_parameter("ARMING_RUDDER", 1)
             self.arm_vehicle()
@@ -11751,7 +11751,6 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(
                     "Disarmed with rudder with ARMING_RUDDER=1")
             self.disarm_vehicle()
-            self.wait_heartbeat()
             self.set_parameter("ARMING_RUDDER", 2)
 
             if self.is_copter():
@@ -11771,7 +11770,6 @@ Also, ignores heartbeats not from our target system'''
                 if self.armed():
                     raise NotAchievedException("Armed with switch when interlock enabled")
                 self.disarm_vehicle()
-                self.wait_heartbeat()
                 self.set_rc(arming_switch, 1000)
                 self.set_rc(interlock_channel, 1000)
                 if self.is_heli():
@@ -11841,7 +11839,6 @@ Also, ignores heartbeats not from our target system'''
                 self.wait_ekf_happy()
                 self.change_mode(mode)
                 self.arm_vehicle()
-                self.wait_heartbeat()
                 self.disarm_vehicle()
                 self.progress("PASS arm mode : %s" % mode)
                 self.progress("Not armable mode without Position : %s" % mode)
