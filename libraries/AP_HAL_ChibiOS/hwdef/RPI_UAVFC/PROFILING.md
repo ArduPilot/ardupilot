@@ -43,9 +43,31 @@ seconds with no action needed. Connect a GCS and watch the messages:
 Region tags in those tokens are `F` for flash from 0x10010000, `S` for SRAM
 from 0x20000000, and `C` for scratch from 0x20080000.
 
-The v1 baseline for comparison, at the same 225 MHz / 4 kHz / 2 kHz / 200 Hz
-configuration: core0 around 65%, core1 around 37%, core1 flash share around
-0.7%, rate-loop gyro-to-output latency around 190 us average.
+Do not trust the `F=`/`S=`/`o=` percentages on the summary line. `cnt` is a
+saturating `uint16_t` but `osum` is computed as `total - fsum - ssum`, so once
+the idle PCs peg at 65535 the shortfall lands entirely in `o` and both real
+shares shrink. On a two-minute run `o` climbed 29% to 58% with nothing actually
+migrating. Take the region split from the full FTP histogram instead, and
+discount the saturated entries.
+
+### Baselines
+
+RPI_UAVFC, measured armed with CRSF RC and motors running, at 225 MHz / 4 kHz /
+2 kHz / 200 Hz:
+
+ - core0 load 44-47%, core1 load 37-42%
+ - XIP cache hit rate 88-89%
+ - core1 non-idle sample split: 1.6% flash, 97.6% SRAM, 0.9% scratch
+ - core0 non-idle sample split: 62% flash, 31% SRAM, 7% scratch
+ - `RTlat` glat 34-210 us average (bimodal, see `DEVELOPMENT.md`), 700-1100 us
+   maximum, `rtc` a flat 13 us
+
+The v1 baseline, for comparison: core0 around 65%, core1 around 37%, core1
+flash share around 0.7%, gyro-to-output latency around 190 us average.
+
+Core1 is effectively finished - every function in its top 45 is SRAM-resident
+and the only remaining flash candidates are a few bytes each. Core0 is now the
+flash-bound core and is where the remaining wins are.
 
 ### Full histograms over MAVLink FTP
 
@@ -114,6 +136,16 @@ canonical example is `AC_PID`, used only by the rate controllers, versus the
 `AC_PID_2D` / `AC_P_2D` / `AC_PID_Basic` / `AC_P_1D` family used by position
 control on core0.
 
+**Relocation is not free for the cores left behind.** A flash-resident caller
+reaching an SRAM-resident callee is out of branch range, so the linker leaves a
+16-byte veneer in flash and core0 fetches it through the XIP cache. On the
+current build 35 distinct veneers account for 19% of all core0 flash-resident
+samples - `AP_HAL::millis`, the `WithSemaphore` constructor and destructor,
+`constrain_value_line`, `__stats_stop_measure_crit_isr`, `memcpy`, `memset`.
+Relocating a small hot leaf that core0 calls from flash can therefore cost core0
+more than it saves. Prefer relocating whole call trees, and when the profiler
+suggests a tiny leaf, check who calls it first.
+
 Entries carry a size comment (`# 164 B (sram)`) so the budgets can be tracked
 by eye. Keep adding them.
 
@@ -123,12 +155,19 @@ raised repeatedly as RAMFUNC2 grew, and it has previously run at 98% occupancy.
 ## Interpreting what you see
 
 A high core1 flash share means the rate path is still fetching through the XIP
-cache and competing with core0. That is what the relocation work targets.
+cache and competing with core0. That is what the relocation work targets, and
+on the current build it is done.
 
-A high `XIPpark` maximum that tracks the `RTlat` glat maximum means flash
-writes are freezing core1 and are the jitter source, not compute. Those are
-different problems with different fixes; see the XIP-off section in
-`DEVELOPMENT.md`.
+`XIPpark` maxima have been checked against `RTlat` glat maxima on hardware and
+do not track: see the XIP-off section in `DEVELOPMENT.md`. Do not read a large
+park maximum as an explanation for rate-loop jitter without re-running that
+comparison.
+
+Check the drop count in the histogram header before believing a low share. The
+hash table is 2048 slots per core, and core0 dropped 42% of its samples against
+core1's 9% because core0's code is far more spread out. Anything diffuse on
+core0 - the EKF above all - is undersampled, so its share is a floor rather
+than a measurement.
 
 Samples taken while a higher-priority ISR was running are attributed to the
 last thread frame. On core1 almost all time is thread-mode compute so the bias
