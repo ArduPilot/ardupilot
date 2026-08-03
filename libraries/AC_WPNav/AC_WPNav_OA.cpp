@@ -293,4 +293,4 @@ bool AC_WPNav_OA::update_wpnav()
     return AC_WPNav::update_wpnav();
 }
 
-#endif  // Ac_WPNAV_OA_ENABLED
+#endif  // AC_WPNAV_OA_ENABLED
