@@ -113,7 +113,11 @@ public:
         return _RGPK[instance].mb_yaw_offset;
     }
 
-    void start_frame();
+    // log_mb_yaw_offset is the caller's EK3_FEATURE_MOVING_BASELINE. This file
+    // is compiled once and shared across vehicles so it cannot see the EKF
+    // feature macros itself, and the offset must only be logged when the EKF
+    // that consumes it applies the correction
+    void start_frame(bool log_mb_yaw_offset);
 
     void handle_message(const log_RGPH &msg) {
         _RGPH = msg;
