@@ -6,10 +6,31 @@ How to measure where CPU time goes on this board and how to act on the result.
 Everything here is investigation-only and should be stripped before any of this
 is proposed upstream.
 
+## Turning it on
+
+`hwdef.dat` ships with all of it off, because it is not free:
+
+```
+define HAL_ENABLE_THREAD_STATISTICS TRUE
+define AP_RP2350_PC_SAMPLER_ENABLED 1
+define AP_RP2350_DEBUG_REPORT_ENABLED 1
+```
+
+then reconfigure - `./waf copter` alone will not regenerate `hwdef.h`. Statistics
+cost 13.6% of core1 and 10.2% of core0 non-idle time, so a profile taken with
+them on is measuring a slower machine than the one you fly. The PC sampler adds
+a ~5.1 kHz ISR per core and 24 KB of BSS, and cannot see itself: it samples the
+interrupted PC, so its own cost never appears in its own output.
+
+Without `HAL_ENABLE_THREAD_STATISTICS` the `Perf` line loses `core1load`
+entirely - `Scheduler::get_core1_load_pct()` reads
+`ch1.idlethread.stats.cumulative`, which only exists with `CH_DBG_STATISTICS`.
+Core0 load comes from `AP_Scheduler` and survives either way.
+
 ## What is compiled in
 
-`hwdef.dat` sets `AP_RP2350_PC_SAMPLER_ENABLED 1`, which builds the on-chip
-statistical PC sampler in `libraries/AP_HAL_ChibiOS/rp2350_pc_sampler.cpp`.
+`AP_RP2350_PC_SAMPLER_ENABLED` builds the on-chip statistical PC sampler in
+`libraries/AP_HAL_ChibiOS/rp2350_pc_sampler.cpp`.
 
 The RP2350 SMP tickless scheduler binds TIMER0 ALARM0 to core0 and ALARM1 to
 core1 for its own ticks, leaving ALARM2 and ALARM3 free. The sampler takes
@@ -52,18 +73,29 @@ discount the saturated entries.
 
 ### Baselines
 
-RPI_UAVFC, measured armed with CRSF RC and motors running, at 225 MHz / 4 kHz /
-2 kHz / 200 Hz:
+RPI_UAVFC, armed with CRSF RC and motors running, at 225 MHz / 4 kHz / 2 kHz /
+200 Hz, **with statistics and the sampler compiled in** - so core loads here are
+several points higher than the same firmware built to fly:
 
- - core0 load 44-47%, core1 load 37-42%
- - XIP cache hit rate 88-89%
- - core1 non-idle sample split: 1.6% flash, 97.6% SRAM, 0.9% scratch
- - core0 non-idle sample split: 62% flash, 31% SRAM, 7% scratch
- - `RTlat` glat 34-210 us average (bimodal, see `DEVELOPMENT.md`), 700-1100 us
-   maximum, `rtc` a flat 13 us
+ - core0 load 45-47%, core1 load 36-40%
+ - XIP cache hit rate 87-89%
+ - core1 non-idle sample split: 1.8% flash, 97.2% SRAM, 1.0% scratch
+ - core0 non-idle sample split: 62.3% flash, 30.7% SRAM, 7.0% scratch
+ - of core0's flash time, 23.3% is linker veneers
+ - `RTlat` glat about 197 us average, 700-1400 us maximum, `rtc` flat at 13 us
 
-The v1 baseline, for comparison: core0 around 65%, core1 around 37%, core1
-flash share around 0.7%, gyro-to-output latency around 190 us average.
+Two runs a few hours apart agree to within a point on every split, so the
+numbers are stable. The v1 baseline, for comparison: core0 around 65%, core1
+around 37%, core1 flash share around 0.7%, gyro-to-output latency around 190 us.
+
+A flight build (statistics off, sampler off, debug reports off) measured
+`xip=95%` and `rtc=12us` on the same hardware, against 88% and 13 us here.
+Core0 load is not comparable between the two runs - the flight build also had a
+working GPS and an EKF doing real fusion, which the profiled runs did not.
+
+Core1 is effectively finished - every function in its top 45 is SRAM-resident
+and the only remaining flash candidates are a few bytes each. Core0 is now the
+flash-bound core and is where the remaining wins are.
 
 Core1 is effectively finished - every function in its top 45 is SRAM-resident
 and the only remaining flash candidates are a few bytes each. Core0 is now the
@@ -139,7 +171,7 @@ control on core0.
 **Relocation is not free for the cores left behind.** A flash-resident caller
 reaching an SRAM-resident callee is out of branch range, so the linker leaves a
 16-byte veneer in flash and core0 fetches it through the XIP cache. On the
-current build 35 distinct veneers account for 19% of all core0 flash-resident
+current build 35 distinct veneers account for 23% of all core0 flash-resident
 samples - `AP_HAL::millis`, the `WithSemaphore` constructor and destructor,
 `constrain_value_line`, `__stats_stop_measure_crit_isr`, `memcpy`, `memset`.
 Relocating a small hot leaf that core0 calls from flash can therefore cost core0
@@ -158,10 +190,10 @@ A high core1 flash share means the rate path is still fetching through the XIP
 cache and competing with core0. That is what the relocation work targets, and
 on the current build it is done.
 
-`XIPpark` maxima have been checked against `RTlat` glat maxima on hardware and
-do not track: see the XIP-off section in `DEVELOPMENT.md`. Do not read a large
-park maximum as an explanation for rate-loop jitter without re-running that
-comparison.
+`XIPpark` maxima explain the worst `RTlat` outliers but not the baseline
+jitter - a 4097 us park produced a 4318 us glat maximum, while park-free windows
+still ran 700-1400 us. Attribute a single large excursion to the park, but not
+the routine spread. See the XIP-off section in `DEVELOPMENT.md`.
 
 Check the drop count in the histogram header before believing a low share. The
 hash table is 2048 slots per core, and core0 dropped 42% of its samples against

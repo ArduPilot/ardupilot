@@ -7,24 +7,29 @@ users see it; this file is for whoever is working on the port. See
 ## Where things stand
 
 The hwdef is complete and builds, and the pinout is verified against the
-schematic. Both sensors, parameter storage and microSD logging are confirmed
-on hardware, as is an armed run with CRSF RC and motors turning. The items
-still marked untested below are exactly that.
+schematic. Sensors, storage, logging, RC, GPS and an armed bench run with
+motors turning are all confirmed on hardware. Nothing has flown yet.
 
 | Area | State |
 |-----------------------|--------------------------------------------------|
 | Pinout | Verified against R2 Rev C schematic |
 | Build | `./waf configure --board RPI_UAVFC && ./waf copter` |
 | Bootloader | Built, board ID 1215 |
-| IMU | Working on hardware; fitted part varies, see below |
+| IMU | Working; fitted part is ICM42688P, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
 | microSD logging | Working on hardware |
-| Parameter storage | Working, accel cal persists across reboot |
+| Parameter storage | Working; survives reboot since the sector-bound fix |
 | RC input | CRSF on SERIAL3 working |
-| Serial ports | SERIAL3 confirmed; SERIAL1/2/4 protocols untested |
+| GPS | Working on SERIAL2 (UART1), ublox at 230400 |
+| Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
-| Battery current | Scale is still the v1 placeholder |
-| Motor outputs | Armed and spun on the bench; channel order not yet confirmed against the frame |
+| Battery current | 50 A/V with a 0.61 V offset, from the ESC spec; not load-verified |
+| Motor outputs | Props-off motor test done; never flown |
+| Compass | None fitted; EKF runs in constant-position mode |
+
+The fitted IMU is an ICM42688P, not the ICM-56686 the schematic shows:
+`INS_ACC_ID` 3408130 has top byte `0x34` = 52. So the standard Invensensev3
+path is in use and the driver notes below are not needed for this unit.
 
 ## The IMU
 
@@ -175,36 +180,39 @@ core1, plus the ChibiOS context-switch path, has to be covered too.
 `rp2350_xip_park_stats()` reports park count and worst-case duration; it is
 emitted as the `XIPpark:` line by `perf_report`.
 
-That test has now been run and the park came out innocent. Across twelve
-`perf_report` intervals on hardware, park maxima of 2331 and 3061 us sat
-alongside `RTlat` glat maxima of 475 and 729 us, while park-free intervals ran
-732 to 1143 us. Only one interval of the twelve was high on both. The rate loop
-therefore sees 700-1100 us worst-case latency whether or not a flash write
-happened, so the lockout is not the jitter source and removing the park will
-not fix it. Chase the phase/batching effect below first.
+That test has been run twice and the answer is narrower than it first looked.
+The park is not the source of the routine jitter, but it does produce the worst
+outliers.
 
-The park is still a correctness hazard and the SRAM relocation still has to be
-complete before it can go, so nothing above is wrong - it is just not where the
-jitter is coming from.
+The first run suggested innocence: park maxima of 2331 and 3061 us sat next to
+`RTlat` glat maxima of 475 and 729 us, while park-free windows ran 732 to
+1143 us. A later run contradicts that in one window - a 4097 us park alongside a
+4318 us glat maximum, tracking within 221 us, which is a direct hit.
 
-## Gyro-to-attitude latency is phase-dependent
+Read together: the baseline 700-1400 us worst case happens with `park n=0`, so
+removing the park will not fix the routine jitter and something else is behind
+it. But a long park lands on top of that, and a 4 ms freeze is eight missed
+iterations at 2 kHz. Storage writes are deferred while armed
+(`AP_STORAGE_NO_WRITE_WHILE_ARMED`) and armed windows do show `n=0`, so it
+should not reach flight - that guard is the only thing preventing it, and it is
+worth confirming nothing else writes flash while armed before trusting it.
 
-The `RTlat` glat average is bimodal: it sits at 197-210 us in some ten-second
-windows and 34-116 us in others, with nothing in between. Rate-controller
-compute (`rtc`) is a flat 13 us in every window, so this is not load.
+## Gyro-to-attitude latency
 
-The cause looks like a beat between the IMU FIFO read cadence and the rate
-loop. The `ICM dbg` counters give roughly 3040 FIFO reads/s delivering 4055
-samples/s against a 2026 Hz rate loop, so a read yields 1.3 samples on average
-and the rate thread sometimes drains a batch - the last sample out of a batch
-is old by the time the controller finishes with it. Which regime you land in
-appears to be set by the last disturbance: in eleven of twelve windows, the low
-average coincided with a window containing a flash write, which stalls core1
-briefly and re-phases the two rates.
+Retracted: an earlier version of this section claimed the glat average was
+bimodal, correlated with flash writes in eleven of twelve windows, and that
+~165 us was available by re-phasing the rate loop against the IMU FIFO reads.
 
-There is roughly 165 us of gyro-to-attitude latency available here, which is
-more than anything left in the relocation work. Locking the rate loop to sample
-arrival rather than letting it free-run against the backend is the thing to try.
+That did not reproduce. A later run is flat at 183-198 us across every window,
+with the only low value (26 us) in the boot window before the rate loop was
+running. One window had 12 parks and glat stayed at 197. The likely explanation
+is that the original measurement predates the storage sector-bound fix, when
+`AP_FlashStorage` was erasing and rewriting constantly - exactly the kind of
+churn that would perturb the phase.
+
+What does hold across both runs: glat averages about 190-200 us and `rtc` is
+flat at 12-13 us, so the latency is not rate-controller compute. If you want to
+chase it, re-measure first rather than trusting the numbers above.
 
 ## Build and flash
 
@@ -214,10 +222,12 @@ arrival rather than letting it free-run against the backend is the thing to try.
 python3 Tools/scripts/build_bootloaders.py RPI_UAVFC   # only if hwdef-bl changes
 ```
 
-The board build path is gated on the board name: `board_uses_rp2350_bootsel()`
-in `Tools/ardupilotwaf/chibios.py` matches names starting with `laurel` or
-containing `pico2`. A board that does not match silently skips the RP2350
-linker script generation and fails at link on a missing scratch section file.
+`board_uses_rp2350_bootsel()` in `Tools/ardupilotwaf/chibios.py` decides whether
+a board gets the SRAM relocation linker scripts and the BOOTSEL upload path. It
+used to match on board name (`laurel*`, `*pico2*`), which meant a rename
+silently skipped both and failed at link on a missing scratch section file. It
+now reads `env.RP_MCU`, set at configure from the hwdef, so the name no longer
+matters.
 
 `chibios_board.mk` in this directory is a standalone RP2350 makefile, not the
 common one, and it hardcodes the path to `c1_main.c`. Both files are per-board
@@ -225,6 +235,38 @@ copies; if you create another revision, copy and fix the path.
 
 For flashing and SWD debugging use the `flash-debug-hardware` skill rather than
 hand-rolling OpenOCD invocations.
+
+### Diagnostics that cost real time
+
+Three switches, all off in this hwdef. Turn them on to measure, off to fly.
+
+| Define | Cost when on |
+|-----------------------------------|-------------------------------------|
+| `HAL_ENABLE_THREAD_STATISTICS` | 13.6% of core1, 10.2% of core0 non-idle |
+| `AP_RP2350_PC_SAMPLER_ENABLED` | ~5.1 kHz ISR per core, 24 KB BSS |
+| `AP_RP2350_DEBUG_REPORT_ENABLED` | negligible CPU; clutters the GCS pane |
+
+Statistics instrument every critical section and context switch. Turning them
+off also removes `core1load` from the `Perf` line - `Scheduler::get_core1_load_pct()`
+reads `ch1.idlethread.stats.cumulative`, which only exists with
+`CH_DBG_STATISTICS`. There is no way to keep the core1 load figure without
+paying for the statistics.
+
+Two traps here, both of which cost an afternoon:
+
+- `chibios_board.mk` had `-DHAL_ENABLE_THREAD_STATISTICS` hardcoded in the base
+  `UDEFS`. A command-line `-D` with no value is 1 and beats the hwdef, so the
+  define looked off in `hwdef.h` while `CH_DBG_STATISTICS` stayed TRUE. If a
+  hwdef define appears to have no effect, grep this makefile before anything else.
+- The PC sampler guards were `#if defined(...)`, so setting the flag to 0 left
+  it compiled in. All the RP2350 flags are value-tested now; keep them that way.
+
+### The ChibiOS library does not rebuild on source edits
+
+ChibiOS is built by a single waf task that shells out to `make`, and its
+signature comes from its declared inputs (`hwdef.h`, `ldscript.ld` and so on),
+not from anything under `modules/ChibiOS`. Touching a ChibiOS source does
+nothing. Delete `build/<board>/modules/ChibiOS` to force it.
 
 ## Gotchas worth knowing
 
@@ -255,6 +297,27 @@ end - which reserved 4032 KB of a 4096 KB part and left no app area at all.
 There is no blackbox flash on this board. A sibling branch implemented a QMI M1
 driver for a second flash part; it does not apply here.
 
+The DMA channel numbers in `hwdef.h` are advisory. They are generated
+STM32-style, but `rp2350_mcuconf.h` gives every SPI channel
+`RP_DMA_CHANNEL_ID_ANY`, so the ChibiOS RP drivers take the lowest free channel
+and the SPI buses start before the serial ports. `dmaChannelAllocI()` with a
+specific id has no fallback and returns NULL when that channel is gone. This is
+what kept the GPS off the air: SPI1 had taken channel 2, UART1 RX got NULL, and
+`RXDMAE` was still set because `rx_dma_enabled` is a config flag rather than an
+allocation result - so the UART raised DMA requests nothing serviced and the
+FIFO overran in silence. UART0 only worked because channel 4 happened to be
+free. `UARTDriver` now falls back to `RP_DMA_CHANNEL_ID_ANY`; the channel number
+carries no meaning because TREQ selects the peripheral. Anything new that wants
+DMA on this chip should do the same rather than trust the hwdef number.
+
+Storage sector geometry is set in two places and they must agree.
+`AP_FlashStorage` is constructed with `pagesize * AP_FLASH_STORAGE_PAGES_PER_SECTOR`,
+and `Storage::_flash_read_data()` bounds the read against the same figure. It
+used to bound against a single page while the sector was four, so every read
+past the first 4 KB was rejected, `load_sector()` failed and `init()` fell
+through to `erase_all()`. The symptom was parameters surviving a few reboots
+and then vanishing once enough of them had accumulated to cross 4 KB.
+
 Storage writes are deferred entirely while armed via
 `AP_STORAGE_NO_WRITE_WHILE_ARMED`. A boot-flash write parks core1 for the whole
 operation, which the 2 kHz rate loop cannot absorb, and stock ArduPilot only
@@ -275,18 +338,21 @@ made a wrong-orientation fault very hard to diagnose.
 
 ## Next steps
 
-1. Chase the glat phase effect above. It is worth more than anything left in
-   the relocation work.
-2. Attack core0's flash share, starting with the veneers - see the veneer
+1. First hover, in Stabilize. Everything below is secondary to finding out
+   whether it flies. Check `VIBE` and clip counts in the log afterwards - the
+   only vibration figures so far are from a props-off bench run and predict
+   nothing.
+2. Confirm the accel calibration. At rest the board reads ax about 0.7 m/s^2,
+   which is 4 degrees of pitch, and `INS_ACCOFFS_X` is 0.0015 - not what a
+   completed six-point cal usually leaves. Redo it level and set
+   `AHRS_ORIENTATION` to match the real mounting.
+3. Verify the current scale against a known load. 50 A/V with a 0.61 V offset
+   comes from the ESC vendor's 20 mV/A figure and the measured idle voltage,
+   not from measurement under load. Compare logged mAh against what the charger
+   returns and scale from there.
+4. Attack core0's flash share, starting with the veneers - see the veneer
    section in `PROFILING.md`. Core1 is done and needs nothing further.
-3. Bring up the remaining serial ports: GPS on SERIAL2, then SERIAL1 and
-   SERIAL4. SERIAL3 is confirmed working with CRSF.
-4. Verify motor output channel order against the frame before fitting props.
-   The outputs spin, but the schematic reversed the order relative to the
-   vendor sheet and that has not been checked end to end.
-5. Measure the current shunt against a known load and replace the v1
-   placeholder `HAL_BATT_CURR_SCALE`. Voltage is done.
-6. Determine the mounting orientation and set `AHRS_ORIENTATION` as a user
-   parameter, not a board default.
-7. Re-check the QMI flash timing if this revision fits a different flash part.
+5. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
+6. Re-check the QMI flash timing if this revision fits a different flash part.
    `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
+7. Re-measure glat before acting on it, per the retraction above.
