@@ -778,37 +778,40 @@ function Update()
       target_velocity == nil or target_velocity_offset == nil or current_target == nil or
       simulate_failure.telemetry then
       -- work out why the target is unusable, so the operator can tell radio
-      -- silence apart from a rejected estimate
-      local lost_reason
-      if simulate_failure.telemetry then
-         lost_reason = "simulated telemetry failure"
-      elseif not follow:have_target() then
-         -- no GLOBAL_POSITION_INT/FOLLOW_TARGET from FOLL_SYSID within the
-         -- AP_Follow timeout: genuine loss of telemetry
-         lost_reason = "no telemetry"
-      elseif target_location == nil or target_location_offset == nil or
-             target_velocity == nil or target_velocity_offset == nil then
-         -- telemetry is fresh but AP_Follow has invalidated its estimate.
-         -- This is almost always the target being further away than
-         -- FOLL_DIST_MAX (it can also mean we have no position estimate of
-         -- our own, but ahrs:get_location() was checked above)
-         lost_reason = string.format("beyond FOLL_DIST_MAX %.0fm", FOLL_DIST_MAX:get() or 0)
-      else
-         -- AP_Follow data is all good: the vehicle itself has no navigation
-         -- target (e.g. mode change away from GUIDED)
-         lost_reason = "no vehicle nav target"
+      -- silence apart from a rejected estimate. Only actually evaluated
+      -- where consumed below (on final failure, or at most every 2s for the
+      -- lost-target warning), not every Update() cycle the target is lost.
+      local function lost_reason()
+         if simulate_failure.telemetry then
+            return "simulated telemetry failure"
+         elseif not follow:have_target() then
+            -- no GLOBAL_POSITION_INT/FOLLOW_TARGET from FOLL_SYSID within the
+            -- AP_Follow timeout: genuine loss of telemetry
+            return "no telemetry"
+         elseif target_location == nil or target_location_offset == nil or
+                target_velocity == nil or target_velocity_offset == nil then
+            -- telemetry is fresh but AP_Follow has invalidated its estimate.
+            -- This is almost always the target being further away than
+            -- FOLL_DIST_MAX (it can also mean we have no position estimate of
+            -- our own, but ahrs:get_location() was checked above)
+            return string.format("beyond FOLL_DIST_MAX %.0fm", FOLL_DIST_MAX:get() or 0)
+         else
+            -- AP_Follow data is all good: the vehicle itself has no navigation
+            -- target (e.g. mode change away from GUIDED)
+            return "no vehicle nav target"
+         end
       end
       lost_target_countdown = lost_target_countdown - 1
       if lost_target_countdown <= 0 then
          follow_mode.enabled = false
          vehicle:set_mode(fail_mode)
-         gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. string.format(": follow: %.0f FAILED (%s)", foll_sysid, lost_reason))
+         gcs:send_text(MAV_SEVERITY.ERROR, SCRIPT_NAME_SHORT .. string.format(": follow: %.0f FAILED (%s)", foll_sysid, lost_reason()))
          return
       end
 
       -- maintain the current heading for 2 seconds until we re-establish telemetry from the target vehicle
       if (now_ms - now_follow_lost_ms) > 2000 then
-         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. string.format(": follow: lost %.0f (%s) set hdg: %.0f", foll_sysid, lost_reason, save_target_heading1))
+         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. string.format(": follow: lost %.0f (%s) set hdg: %.0f", foll_sysid, lost_reason(), save_target_heading1))
          now_follow_lost_ms = now_ms
          set_vehicle_heading({heading = save_target_heading1})
       end
