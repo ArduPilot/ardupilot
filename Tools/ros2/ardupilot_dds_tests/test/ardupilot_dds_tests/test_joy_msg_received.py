@@ -65,6 +65,7 @@ class PlaneFbwbJoyControl(Node):
         self.arming_event_object = threading.Event()
         self.mode_event_object = threading.Event()
         self.climbing_event_object = threading.Event()
+        self.stop_climb_object = threading.Event()
 
         self._client_arm = self.create_client(ArmMotors, "/ap/arm_motors")
 
@@ -114,7 +115,7 @@ class PlaneFbwbJoyControl(Node):
         """Try to arm. Returns true on success, or false if arming fails or times out."""
         armed = False
         start = self.get_clock().now()
-        while not armed and self.get_clock().now() - start < timeout:
+        while not armed and self.get_clock().now() - start < timeout and not self.stop_climb_object.is_set():
             armed = self.arm()
             time.sleep(1)
         return armed
@@ -162,7 +163,7 @@ class PlaneFbwbJoyControl(Node):
         joy_msg.axes.append(0.8)  # - straight up
         joy_msg.axes.append(0.0)
 
-        while True:
+        while not self.stop_climb_object.is_set():
             self.send_joy_value(joy_msg)
             self.arm()  # - Keep the system armed (sometimes it disarms and the test fails)
             time.sleep(0.1)
@@ -171,13 +172,9 @@ class PlaneFbwbJoyControl(Node):
                 self.climbing_event_object.set()
                 return
 
-    def climb(self):
-        self.climb_thread = threading.Thread(target=self.process_climb)
-        self.climb_thread.start()
-
     def arm_and_takeoff_process(self):
         self.process_arm()
-        self.climb()
+        self.process_climb()
 
     def arm_and_takeoff(self):
         self.climb_thread = threading.Thread(target=self.arm_and_takeoff_process)
@@ -198,11 +195,14 @@ def test_dds_udp_joy_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
+    node = None
     try:
         node = PlaneFbwbJoyControl()
         node.arm_and_takeoff()
         climb_flag = node.climbing_event_object.wait(10)
         assert climb_flag, "Could not climb"
     finally:
+        if node is not None:
+            node.stop_climb_object.set()
         rclpy.shutdown()
     yield
