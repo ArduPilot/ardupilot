@@ -8831,9 +8831,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             #                    DO_SET_MISSION_CURRENT.
 
             def wait_airborne(mav_conn, label, min_alt_m=30, timeout=120):
-                tstart = self.get_sim_time()
+                tstart = self.get_sim_time(mav=mav_conn)
                 while True:
-                    if self.get_sim_time_cached() - tstart > timeout:
+                    if self.get_sim_time_cached(mav=mav_conn) - tstart > timeout:
                         raise AutoTestTimeoutException(
                             "%s did not reach %um AGL" % (label, min_alt_m))
                     gpi = self.assert_receive_message(
