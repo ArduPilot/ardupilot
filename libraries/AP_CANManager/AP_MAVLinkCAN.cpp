@@ -65,7 +65,11 @@ void AP_MAVLinkCAN::handle_can_filter_modify(const mavlink_message_t &msg)
 bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
     WITH_SEMAPHORE(can_forward.sem);
-    const int8_t bus = int8_t(packet.param1)-1;
+
+    if (packet.param1 < 0 || packet.param1 > UINT8_MAX) {
+        return false;
+    }
+    const int8_t bus = int8_t(uint8_t(packet.param1))-1;
 
     if (bus == -1) {
         /*
