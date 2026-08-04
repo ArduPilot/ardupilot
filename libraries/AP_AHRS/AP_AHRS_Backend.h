@@ -350,6 +350,14 @@ protected:
     // estimated wind in m/s
     Vector3f _wind;
 
+    // true once the wind estimation has actually updated _wind;
+    // estimate_wind's early calls merely seed its filter history, so
+    // until this is set the zero _wind is not an estimate at all.
+    // Note DCM deliberately does not consult this when publishing
+    // wind_valid: DCM has always reported its initial zero wind as a
+    // valid estimate.  New consumers should gate on it.
+    bool _have_wind_estimate;
+
 private:
 
     // support for wind estimation
