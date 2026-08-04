@@ -14,3 +14,9 @@ libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::attitude
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::thrust_heading_rotation_angles
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::update_ang_vel_target_from_att_error
+#
+# CRSF RC input drain (core0 only). PIOUART is IRQ-driven with no DMA, so every RX interrupt runs
+# this to empty the PIO FIFO. At 420 kbaud that is a byte every 24 us into a shallow FIFO, and it
+# was the port that went into continuous failsafe once core1's bdshot fetches started evicting
+# core0 from the shared XIP cache. Fetching the drain itself from flash is the worst place for it.
+libraries/AP_HAL_ChibiOS/PIOUART.cpp|ChibiOS::PIORXDriver::_service_rx_fifo  # 360 B

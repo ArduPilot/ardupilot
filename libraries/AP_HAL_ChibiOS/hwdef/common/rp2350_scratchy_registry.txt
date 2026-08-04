@@ -29,3 +29,26 @@ libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::appl
 # check_for_failed_motor are core1-only and the biggest core1 consumer (~2.1% armed), but moving
 # them here showed no improvement - they are data-heavy mixing math (thrust factors, per-motor
 # loops), not fetch-bound, so the dedicated I-code bus does nothing. They stay in RAMFUNC2.
+#
+# Bidirectional DShot send/receive (core1 only): the rcout thread is pinned to core1 and the
+# whole chain below runs from it - build the frame, hand it to the PIO, collect the reply, decode
+# the GCR and publish the eRPM. Profiled at ~54% of core1 non-idle time with all of it in XIP,
+# which took core1's flash share from 1.8% on PWM to 65.6% on bdshot. read_telemetry alone was
+# 19.2% of emitted samples. None of it is reachable from core0: RCOutput_serial is the only other
+# caller of can_send_dshot_pulse and BLHeli passthrough is not supported on RP2350.
+#
+# The point is as much core0 as core1. Core1's fetches were evicting core0's working set from the
+# shared 16 KB XIP cache, which is what pushed CRSF RC input into continuous failsafe.
+#
+# rcout_thread, dshot_collect_dma_locks, trigger_groups, get_erpm_error_rate and
+# AP_ESC_Telem::update_rpm stay in RAMFUNC2 - the first four did not fit in the SRAM9 budget, and
+# update_rpm writes state that core0 reads for logging and telemetry.
+libraries/AP_HAL_ChibiOS/RCOutput_pico.cpp|ChibiOS::RCOutput_pico::read_telemetry  # 392 B
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::dshot_send  # 416 B
+libraries/AP_HAL_ChibiOS/RCOutput_bdshot.cpp|ChibiOS::RCOutput::bdshot_decode_telemetry_from_erpm  # 330 B
+libraries/AP_HAL_ChibiOS/RCOutput_pico.cpp|ChibiOS::RCOutput_pico::write_frame  # 160 B
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::dshot_send_groups  # 156 B
+libraries/AP_HAL_ChibiOS/RCOutput_bdshot.cpp|ChibiOS::RCOutput::bdshot_decode_gcr  # 84 B
+libraries/AP_HAL_ChibiOS/RCOutput.h|ChibiOS::RCOutput::pwm_group::can_send_dshot_pulse  # 52 B
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::create_dshot_packet  # 38 B
+libraries/AP_HAL_ChibiOS/RCOutput.h|ChibiOS::RCOutput::pwm_group::is_chan_enabled  # 28 B

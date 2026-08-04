@@ -460,3 +460,12 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
 (archive)|lib_a-kf_sin.o     # __kernel_sinf, 144 B
 (archive)|lib_a-sf_sin.o     # sinf, 140 B
 (archive)|lib_a-sf_cos.o     # cosf, 136 B
+# Bidirectional DShot, the half that did not fit in Scratch Y. The hot send/decode chain is in
+# rp2350_scratchy_registry.txt; these are the outer rate-thread frame and the eRPM publish.
+# update_rpm belongs here rather than Scratch Y because core0 reads ESC telemetry state for
+# logging and GCS telemetry, and Scratch Y punishes any core0 access.
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::rcout_thread  # 292 B
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::dshot_collect_dma_locks  # 196 B
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::trigger_groups  # 124 B
+libraries/AP_ESC_Telem/AP_ESC_Telem.cpp|AP_ESC_Telem::update_rpm  # 124 B
+libraries/AP_HAL_ChibiOS/RCOutput.h|ChibiOS::RCOutput::get_erpm_error_rate  # 52 B

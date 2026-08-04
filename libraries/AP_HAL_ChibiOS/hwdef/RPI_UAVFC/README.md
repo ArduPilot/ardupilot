@@ -77,8 +77,12 @@ configuration error at boot rather than quietly falling back.
  - :ref:`SERVO_BLH_POLES<SERVO_BLH_POLES>` must match the motors for the
    reported RPM to be right
 
-Leaving `MOT_PWM_TYPE` at 0 keeps the outputs as plain PWM at 490 Hz, which is
-what the board has flown on so far.
+Leaving `MOT_PWM_TYPE` at 0 keeps the outputs as plain PWM at 490 Hz.
+
+Bidirectional DShot returns eRPM per motor, which makes RPM-referenced
+harmonic notch tracking (:ref:`INS_HNTCH_MODE<INS_HNTCH_MODE>` = 3) available.
+Without it the notch has to be throttle-based, since the board has no serial
+ESC telemetry path.
 
 ## Battery Monitoring
 
@@ -158,7 +162,7 @@ with any ArduPilot ground station using the `*.apj` firmware files.
 | CAN / DroneCAN | Not supported by RP2350 hardware |
 | Hardware OSD | No SPI OSD device on this revision; use MSP DisplayPort |
 | SBUS pad (GPIO41) | Needs an inverted UART; not currently supported |
-| ESC telemetry (GPIO5) | Can only reach UART1 RX, which the GPS owns |
+| Serial ESC telemetry (GPIO5) | Can only reach UART1 RX, which the GPS owns; use bidirectional DShot instead |
 | RGB LED (GPIO2) | Serial LED output not supported on RP2350 |
 | Battery current scaling | ESC-dependent; set `BATT_AMP_PERVLT` and `BATT_AMP_OFFSET` yourself |
 | IMU rotation | `ROTATION_PITCH_180` in the hwdef; set `AHRS_ORIENTATION` for your mounting |

@@ -104,9 +104,55 @@ A flight build (statistics off, sampler off, debug reports off) measured
 Core0 load is not comparable between the two runs - the flight build also had a
 working GPS and an EKF doing real fusion, which the profiled runs did not.
 
-Core1 is effectively finished - every function in its top 45 is SRAM-resident
-and the only remaining flash candidates are a few bytes each. Core0 is now the
-flash-bound core and is where the remaining wins are.
+That was measured with the outputs on PWM. It stopped being true the moment
+bidirectional DShot ran, because the whole send/decode chain was flash-resident
+and none of it had ever been profiled.
+
+### Bidirectional DShot, before and after relocation
+
+Same hardware and rates, sampler on, **statistics off** - see the warning below.
+Core1 non-idle split:
+
+| | PWM baseline | bdshot, unrelocated | bdshot, relocated |
+|--------|--------------|---------------------|-------------------|
+| flash  | 1.8%         | 65.6%               | 17.7%             |
+| SRAM   | 97.2%        | 34.1%               | 73.3%             |
+| scratch| 1.0%         | 0.2%                | 9.0%              |
+
+Core1 idle went from 21.9% of emitted samples to 51.4%, so the core is doing
+roughly half the work it was. `RCOutput_pico::read_telemetry` alone fell from
+19.2% of emitted samples to 3.5%.
+
+That 5.5x drop settles a question worth remembering: a high sample count does
+not by itself prove code is fetch-bound, and `AP_MotorsMatrix` is the local
+counter-example that gained nothing from Scratch Y. `read_telemetry` was
+genuinely fetch-bound, and the only way to tell the two apart was to move it and
+re-measure.
+
+Treat both improvements as lower bounds. The idle PC saturates its `uint16_t`
+(`S175C` on core1, `S1758` on core0 both pegged at 65535), so real idle is
+higher than the histogram can express and the non-idle shares are overstated.
+
+What is left on core1 is small and diffuse. The largest single item is
+`__udivmoddi4` at 1.2% of emitted - a 64-bit division on the per-frame path,
+which wants removing rather than relocating. `bdshot_decode_gcr::decode` is
+still in flash and always will be under this mechanism: the registries relocate
+`.text` only, and it is a lookup table read per nibble, so it is XIP *data*
+traffic the PC sampler cannot see.
+
+### Statistics breaks CRSF on this board
+
+Do not profile RC-critical behaviour with `--enable-stats`. `CH_IRQ_PROLOGUE`
+and `CH_IRQ_EPILOGUE` call `__stats_start_measure_crit_isr` /
+`__stats_stop_measure_crit_isr`, both SRAM-relocated, so a flash-resident
+handler reaches them through XIP veneers. PIOUART RX uses that prologue and
+epilogue, and at CRSF's 420 kbaud - a byte every 24 us into a shallow FIFO with
+no DMA - the added latency drops bytes and the link sits in continuous failsafe.
+
+It was survivable on PWM, which is why the baseline above exists at all. It
+stopped being survivable once core1's bdshot fetches started competing for the
+same XIP cache. The cost is losing `core1load`; the sampler's region split,
+which is what the relocation work actually needs, does not depend on statistics.
 
 ### Full histograms over MAVLink FTP
 
