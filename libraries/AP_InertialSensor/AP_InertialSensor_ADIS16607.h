@@ -62,6 +62,7 @@ private:
     bool check_dev_id();
     void accumulate_samples(const struct adis_fifo_data *fifo, const uint8_t num);
     void read_sensor_fifo(void);
+    void calc_sample_and_dec_rate();
 
     // read a 16 bit register
     uint16_t read_reg16(uint8_t regnum) const;
