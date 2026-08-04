@@ -2453,7 +2453,11 @@ INCLUDE common.ld
             # own line around, so bidirectional support is not gated on the
             # BIDIR pin tag - that encodes an STM32 timer-pair constraint with
             # no equivalent. Use is still decided at runtime by SERVO_BLH_BDMASK.
-            f.write('#define HAL_WITH_BIDIR_DSHOT\n')
+            # Still conditional on DShot itself: the bdshot code is guarded by
+            # #ifdef HAL_WITH_BIDIR_DSHOT but reaches members declared under
+            # #if HAL_DSHOT_ENABLED, so claiming it with DShot off will not build.
+            if self.intdefines.get('HAL_DSHOT_ENABLED', 1):
+                f.write('#define HAL_WITH_BIDIR_DSHOT\n')
         else:
             if bidir is not None:
                 f.write('#define HAL_WITH_BIDIR_DSHOT\n')
@@ -2671,6 +2675,13 @@ INCLUDE common.ld
             f.write('{ %2u, %2u, %12s }, /* %s %s */ \\\n' %
                     (chan, analog, scale_str,  portpin, label))
         f.write('\n\n')
+        if self.is_rp_mcu() and len(adc_chans[0]) > 0:
+            # RP ADC pads need FUNCSEL NULL with the pulls and the input buffer
+            # off, which only adcRPGpioInit() does. Emit the GPIO numbers so the
+            # board init walks the pins actually declared above rather than a
+            # hardcoded list that silently rots when a board changes pinout.
+            gpios = sorted(int(portpin[2:]) for (_, _, _, _, portpin) in adc_chans[0])
+            f.write('#define HAL_RP_ADC_GPIOS %s\n\n' % ', '.join(str(g) for g in gpios))
         if len(adc_chans[1]) > 0:
             f.write('#define STM32_ADC_SAMPLES_SIZE 32\n')
             f.write('#define ADC12_CCR_DUAL ADC_CCR_DUAL_REG_INTERL\n')
