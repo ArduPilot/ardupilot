@@ -8640,6 +8640,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         FOLL_OFS_Y = 0
         FOLL_OFS_Z = -10
         FOLL_DIST_MAX = 1000
+        # Airspeed envelope both vehicles fly.  The defaults claim 10..30 but
+        # this airframe flies no slower than about 16.2m/s and tops out a
+        # little over 31, so state what it can really do -- see the comment
+        # where these are set below.  AIRSPEED_MIN and AIRSPEED_MAX are
+        # integer parameters.  Cruise sits at the midpoint of that envelope.
+        AIRSPEED_MIN = 17
+        AIRSPEED_MAX = 31
+        AIRSPEED_CRUISE = (AIRSPEED_MIN + AIRSPEED_MAX) / 2
+        # Cruise the target below that midpoint.  The follower is the same
+        # airframe, so it only has speed in hand to close a gap while the
+        # target is flying slower than the speed the follower can reach.
+        TARGET_AIRSPEED_CRUISE = 22
         MAX_FOLLOW_DISTANCE_M = FOLL_OFS_X + 400
         OFFSET_CONVERGE_M = 30      # report when within this of ideal offset
         # OFFSET_VIOLATION_STREAK/DISTANCE_VIOLATION_STREAK: consecutive
@@ -8689,6 +8701,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.set_parameters({
                 "SERIAL5_PROTOCOL": 2,
                 "SCR_ENABLE": 1,
+                # The applet clamps the airspeed it commands to
+                # AIRSPEED_MIN..AIRSPEED_MAX, so those have to describe what
+                # the airframe can actually fly or it spends its time asking
+                # for speeds the vehicle never reaches.  Measured from the
+                # applet's own logs, this model flies no slower than about
+                # 16.2m/s and reaches a little over 31, where the defaults
+                # claim 10 and 30 -- it was commanding 10 and flying 16.
+                # These are read once when the script loads, so they have to
+                # be set before the reboot below.
+                "AIRSPEED_MIN": AIRSPEED_MIN,
+                "AIRSPEED_MAX": AIRSPEED_MAX,
+                "AIRSPEED_CRUISE": AIRSPEED_CRUISE,
                 "FOLL_ENABLE": 1,
                 "FOLL_SYSID": target_sysid,
                 "FOLL_OFS_X": FOLL_OFS_X,
@@ -8751,16 +8775,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     "MAV_SYSID": target_sysid,
                     "SERIAL5_PROTOCOL": 2,
                     "SIM_SPEEDUP": self.speedup,
-                    # Cruise the target at the midpoint of the airframe's
-                    # airspeed envelope (AIRSPEED_MIN 10, AIRSPEED_MAX 30) so
-                    # the follower has speed in hand to close a gap with.
-                    # Both vehicles are the same airframe, so at the default
-                    # cruise of 22 the follower could close at only around
-                    # 4m/s even with its throttle pinned at AIRSPEED_MAX --
-                    # thin enough that a waypoint turn, or telemetry stale by
-                    # a few simulated seconds, left it losing ground instead
-                    # of catching up.
-                    "AIRSPEED_CRUISE": 20,
+                    # Same airspeed envelope as the follower, but cruising
+                    # slower than it so the follower can close a gap.  At the
+                    # default cruise of 22 against the follower's reachable
+                    # ceiling, it could close at only around 4m/s -- thin
+                    # enough that a waypoint turn, or telemetry stale by a few
+                    # simulated seconds, left it losing ground instead of
+                    # catching up.
+                    "AIRSPEED_MIN": AIRSPEED_MIN,
+                    "AIRSPEED_MAX": AIRSPEED_MAX,
+                    "AIRSPEED_CRUISE": TARGET_AIRSPEED_CRUISE,
                     # MAVn_ params are numbered by MAVLink channel, in
                     # serial-port order: SERIAL0=MAV1, SERIAL1=MAV2,
                     # SERIAL2=MAV3, SERIAL5=MAV4.  We want position and
