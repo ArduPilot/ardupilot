@@ -8648,13 +8648,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         OFFSET_VIOLATION_STREAK = 2
         REPORT_INTERVAL_S = 5       # periodic distance reports
         MISSION_TIMEOUT_S = 1200    # max time to allow mission to run
-        FOLLOW_SPEEDUP = 10         # override the default speed up for follow testing
         ACQUIRE_DISTANCE_M = FOLL_OFS_X + 75  # must be within 100m before release
         ACQUIRE_TIME_S = 120
         SETTLE_REPORTS = 4          # number of distance reports after a waypoint to use relaxed threshold
 
-        self.context_push()
-        self.context_set_speedup(FOLLOW_SPEEDUP)
         target_sitl = None
         target_mav = None
         target_sysid = 2
@@ -8721,25 +8718,25 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if not os.path.exists(target_rundir):
                 os.mkdir(target_rundir)
 
-            self.progress("Starting TARGET with speedup=%u (self.speedup=%u)" % (FOLLOW_SPEEDUP, self.speedup))
+            self.progress("Starting TARGET with speedup=%u" % self.speedup)
             target_sitl = util.start_SITL(
                 self.binary,
                 cwd=target_rundir,
                 model='plane',
                 home=self.sitl_home(),
-                speedup=FOLLOW_SPEEDUP,
+                speedup=self.speedup,
                 defaults_filepath=target_defaults,
                 gdb=self.gdb,
                 wipe=True,
                 customisations=[
                     '--serial5=mcast:',
                     '-I1',
-                    f'--speedup={FOLLOW_SPEEDUP}',
+                    f'--speedup={self.speedup}',
                 ],
                 param_defaults={
                     "MAV_SYSID": target_sysid,
                     "SERIAL5_PROTOCOL": 2,
-                    "SIM_SPEEDUP": FOLLOW_SPEEDUP,
+                    "SIM_SPEEDUP": self.speedup,
                     # MAVn_ params are numbered by MAVLink channel, in
                     # serial-port order: SERIAL0=MAV1, SERIAL1=MAV2,
                     # SERIAL2=MAV3, SERIAL5=MAV4.  We want position and
@@ -9134,8 +9131,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.expect_list_remove(target_sitl)
                 util.pexpect_close(target_sitl)
 
-        # pop the STATUSTEXT collection context
-        self.context_pop()
         if ex is not None:
             raise ex
 
@@ -9396,7 +9391,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksAppletEStop,
             self.ScriptedArmingChecksAppletRally,
             self.PlaneFollowAppletSanity,
-            self.PlaneFollowApplet,
+            Test(self.PlaneFollowApplet, speedup=10),
             self.PreflightRebootComponent,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
