@@ -64,6 +64,8 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     results.accel_ef = accel_ef;
 
     results.velocity_NED_valid = AP::externalAHRS().get_velocity_NED(results.velocity_NED);
+    // the external device supplies velocity independently of airspeed:
+    results.have_velocity_source = results.velocity_NED_valid;
     // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     results.vert_pos_rate_D_valid = AP::externalAHRS().get_speed_down(results.vert_pos_rate_D);
