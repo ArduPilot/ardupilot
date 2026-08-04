@@ -2055,31 +2055,6 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 #endif
 }
 
-// returns true when the state estimates are significantly degraded by vibration
-bool AP_AHRS::is_vibration_affected() const
-{
-    switch (configured_ekf_type()) {
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.isVibrationAffected();
-#endif
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-        return false;
-    }
-    return false;
-}
-
 // get 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
 bool AP_AHRS::get_pos_vel_uncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const
 {

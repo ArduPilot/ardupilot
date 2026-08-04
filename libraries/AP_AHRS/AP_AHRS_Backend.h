@@ -87,6 +87,9 @@ public:
         uint16_t attitude_reset_count;  // counter incremented each time a sudden shift happens in attitude
         uint16_t yaw_reset_count;  // incremented when a sudden shift happens in yaw
 
+        // true when the state estimates are significantly degraded by vibration:
+        bool is_vibration_affected;
+
         // backends must always return the result in the vehicle body
         // frame.  A backend using the autopilot sensors will need to
         // rotate according to the TRIM parameters.  An ExternalAHRS

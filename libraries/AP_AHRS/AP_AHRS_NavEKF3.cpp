@@ -120,6 +120,8 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.yaw_reset_count = yaw_reset_tracker.count();
 
+    results.is_vibration_affected = EKF3.isVibrationAffected();
+
     /*
      * acceleration estimates
      */
