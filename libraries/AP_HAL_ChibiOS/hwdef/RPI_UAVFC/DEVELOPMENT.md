@@ -25,20 +25,14 @@ while disarmed.
 | GPS | Detected (ublox at 230400) but has never got a fix |
 | Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
-| Battery current | WRONG - hwdef ships 0.1, should be ~50; see below |
+| Battery current | Scale 50 (20 mV/A ESC); offset and load check outstanding |
 | Motor outputs | Flown on 4x PWM at 490 Hz |
 | DShot | DShot600 via PIO, bidir or not; builds, NEVER RUN |
 | Compass | None fitted; EKF runs in constant-position mode |
 | Rate loop in flight | 2 kHz held, dtMax 0.8 ms, no scheduler overruns |
 | Tune | Flyable starting tune, see below; not autotuned yet |
 
-Two things are known-wrong and neither is a board fault:
-
-`HAL_BATT_CURR_SCALE` is 0.1 in the hwdef, which reads current about 500x low
-(0.02 A in a hover). The ESC vendor figure is 20 mV/A, giving 50 A/V with a
-0.61 V idle offset. Nothing that depends on current - consumed mAh, the
-resistance estimate, sag-compensated battery failsafe - means anything until
-this is fixed.
+One thing is known-wrong and it is not a board fault:
 
 The GPS is detected and talks (the driver reads its firmware version) but has
 never reported a satellite: `NSats` 0 and `HDop` 99.99 in every flight log so
@@ -537,9 +531,12 @@ scale above is fixed.
 
 ## Next steps
 
-1. Fix `HAL_BATT_CURR_SCALE` (0.1 -> ~50) and `BATT_AMP_OFFSET` (0.61), then
-   verify against a known load - compare logged mAh with what the charger puts
-   back.
+1. Set `BATT_AMP_OFFSET` and verify the current scale against a known load -
+   compare logged mAh with what the charger puts back. `HAL_BATT_CURR_SCALE` is
+   now 50, but re-read the idle voltage on `BATT_CURR_PIN` first: the 0.61 V
+   measured before was taken through a pad whose input buffer and pulls were
+   never configured for analog use, so it may not be the sensor's real
+   quiescent point.
 2. Fix the battery failsafe thresholds, per above.
 3. Bench the DShot output before flying it: confirm the pad hands over from
    PWM to PIO FUNCSEL 11, that the idle level and pull are right in each

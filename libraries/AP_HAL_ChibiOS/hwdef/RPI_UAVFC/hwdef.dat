@@ -261,8 +261,11 @@ define HAL_BATT_CURR_PIN 7
 # Measured 21.99 V against a 23.1 V bench supply with the v1 value of 10.52,
 # which puts the divider on the usual 11.1 ratio.
 define HAL_BATT_VOLT_SCALE 11.1
-# Still the v1 placeholder; measure against a known load before relying on it.
-define HAL_BATT_CURR_SCALE 0.1
+# The current sense is on the ESC, not the board: R49 120R series into an 82.5k
+# pulldown, so the ADC sees the ESC output 1:1 and the scale is just 1000/(mV
+# per amp). 50 suits a 20 mV/A ESC. Set BATT_AMP_OFFSET to the idle voltage on
+# BATT_CURR_PIN as well; these sensors do not sit at 0 V with no load.
+define HAL_BATT_CURR_SCALE 50
 define BOARD_RSSI_ANA_PIN 0
 
 define HAL_I2C_MAX_CLOCK 100000
