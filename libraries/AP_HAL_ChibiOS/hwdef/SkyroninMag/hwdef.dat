@@ -1,7 +1,6 @@
 include ../SkyroninL431/hwdef.inc
 
 define AP_PERIPH_MAG_ENABLED 1
-define AP_COMPASS_PROBING_ENABLED 1
 
 define HAL_COMPASS_MAX_SENSORS 1
 

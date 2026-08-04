@@ -62,7 +62,7 @@ PB9 CAN1_TX CAN1
 define HAL_CAN_POOL_SIZE 6000
 
 # ---------------------- UARTs ---------------------------
-#           | sr0  | MSP | GPS  |
+# SERIAL0 = USART1 debug console; SERIAL1/2 are unused (no MSP or GPS ports on this board)
 SERIAL_ORDER USART1 EMPTY EMPTY
 
 # USART1 for debug (not broken out on production boards)
