@@ -384,8 +384,8 @@ class SizeCompareBranches(BuildScriptBase):
             board = master.board
             try:
                 results[board] = self.compare_results_sizes(master, pair["branch"])
-            except FileNotFoundError:
-                pass
+            except FileNotFoundError as e:
+                self.progress(f"{board}: missing build product: {e.filename}")
 
         return results
 
@@ -498,6 +498,13 @@ class SizeCompareBranches(BuildScriptBase):
             bin_dirname = "bin"
             bin_filename = self.vehicle_map[vehicle] + '.bin'
             elf_filename = self.vehicle_map[vehicle]
+            if vehicle == 'iofirmware':
+                # boards whose hwdef has no IMU heater pin build a
+                # single "iofirmware" binary rather than the
+                # {low,high}polh heater-polarity pair:
+                if not os.path.exists(os.path.join(elf_basedir, task.board, bin_dirname, bin_filename)):
+                    bin_filename = 'iofirmware.bin'
+                    elf_filename = 'iofirmware'
             esp32_elf_dirname = "esp-idf_build"
             if os.path.exists(os.path.join(elf_basedir, task.board, esp32_elf_dirname)):
                 bin_filename = "ardupilot.bin"

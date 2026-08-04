@@ -212,8 +212,6 @@ PB5  HEATER4_EN OUTPUT LOW GPIO(83) # control board, GPIO2
 
 define HAL_HEATER_GPIO_PIN 80
 define HAL_HEATER2_GPIO_PIN 81
-define HAL_HEATER3_GPIO_PIN 82
-define HAL_HEATER4_GPIO_PIN 83
 
 # the heater impacts the RM3100 compass
 define HAL_HEATER_MAG_OFFSET {AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SPI,1,0x2,0x11),Vector3f(60,7,-11)}

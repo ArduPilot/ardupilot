@@ -209,11 +209,6 @@ PE15 VDD_BRICK_VALID INPUT PULLDOWN
 
 #This maps to the MAV_POWER_STATUS_SERVO_VALID in mavlink
 #see AnalogIn.cpp
-#secondary "brick" power supply valid pin. This is servo rail power valid on some boards. Some boards have this active high,
-#some active low. Use nVALID for active low, VALID for active high. This maps to the MAV_POWER_STATUS_SERVO_VALID in mavlink
-#(as this was first added for older boards that used servo rail for backup power)
-
-define VDD_BRICK2_VALID 1
 
 define HAL_BATT_MONITOR_DEFAULT 4  # Analog voltage and current
 define HAL_BATT2_MONITOR_DEFAULT 4  # Analog voltage and current
