@@ -194,7 +194,7 @@ private:
     //==========================================================================
 
     AP_Int8     _enabled;           // 1 = Follow mode is enabled; 0 = disabled
-    AP_Int16    _sysid;             // MAVLink system ID of the target (0 = auto-select first sender)
+    AP_Int16    _sysid;             // MAVLink system ID of the target (0 = no target selected)
     AP_Float    _dist_max_m;        // Maximum allowed distance to target in meters; if exceeded, estimation is rejected
     AP_Int8     _offset_type;       // Offset frame type: 0 = NED, 1 = relative to lead vehicle heading
     AP_Vector3f _offset_m;          // Offset from lead vehicle (meters), in NED or FRD frame depending on _offset_type
@@ -236,7 +236,6 @@ private:
     Vector3f    _ofs_estimate_vel_ned_ms;       // Estimated velocity with offsets applied (NED frame)
     Vector3f    _ofs_estimate_accel_ned_mss;    // Estimated acceleration with offsets applied (NED frame)
 
-    bool        _automatic_sysid;               // True if target sysid was automatically selected
     int16_t     _sysid_used;                    // Currently active sysid used for updates
     float       _dist_to_target_m;              // Horizontal distance to target, for reporting (meters)
     float       _bearing_to_target_deg;         // Bearing to target from vehicle (degrees, 0 = North)
