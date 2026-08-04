@@ -132,7 +132,12 @@ function PIDcontroller.PID_controller(kP,kI,kD,iMax,min,max)
             _error = _error + self.get_filt_E_alpha(dt) * ((_target - current) - _error);
 
             -- calculate and filter derivative
-            if (dt >= 0) then
+            -- dt must be strictly positive: at dt == 0 this divide is 0/0
+            -- (NaN) when the error is unchanged, or +/-Inf otherwise, and
+            -- either poisons _derivative permanently since there is no
+            -- reset path -- every later ret = target+P+I+D is NaN from here
+            -- on. AC_PID guards the same divide with is_positive(dt).
+            if (dt > 0) then
                 local derivative = (_error - error_last) / dt;
                 _derivative = _derivative + self.get_filt_D_alpha(dt) * (derivative - _derivative);
             end
