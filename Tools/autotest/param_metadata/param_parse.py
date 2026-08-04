@@ -90,6 +90,9 @@ def lua_applets():
     '''return list of Library objects for lua applets and drivers'''
     lua_lib = Library("", reference="Lua Script", not_rst=True, check_duplicates=True)
     dirs = ["libraries/AP_Scripting/applets", "libraries/AP_Scripting/drivers"]
+    custom_scripts_dir = "ROMFS_custom/scripts"
+    if os.path.isdir(os.path.join(apm_path, custom_scripts_dir)):
+        dirs.append(custom_scripts_dir)
     paths = []
     for d in dirs:
         for root, dirs, files in os.walk(os.path.join(apm_path, d)):

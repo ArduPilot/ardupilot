@@ -120,9 +120,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
 
     // @Param: OUT_SLEW
     // @DisplayName: Skid steering output slew rate
-    // @Description: Slew rate applied separately to the final left and right skid steering motor
-    // outputs after mixing. A value of 100 allows an output to change from zero to full output in one
-    // second. Zero disables this limiter.
+    // @Description: Slew rate applied separately to the final left and right skid steering motor outputs after mixing. A value of 100 allows an output to change from zero to full output in one second. Zero disables this limiter.
     // @Units: %/s
     // @Range: 0 1000
     // @Increment: 1
