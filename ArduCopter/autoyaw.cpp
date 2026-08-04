@@ -124,6 +124,11 @@ void Mode::AutoYaw::set_fixed_yaw_rad(float yaw_rad, float yaw_rate_rads, int8_t
         _fixed_yaw_offset_rad = angle_rad * (direction >= 0 ? 1.0 : -1.0);
     } else {
         // absolute angle
+        if (_mode == Mode::HOLD) {
+            // _yaw_angle_rad is not maintained while in HOLD so re-anchor it to
+            // the attitude controller's yaw target before taking the offset
+            _yaw_angle_rad = copter.attitude_control->get_att_target_euler_rad().z;
+        }
         _fixed_yaw_offset_rad = wrap_PI(angle_rad - _yaw_angle_rad);
         if (direction < 0 && is_positive(_fixed_yaw_offset_rad)) {
             _fixed_yaw_offset_rad -= M_2PI;
