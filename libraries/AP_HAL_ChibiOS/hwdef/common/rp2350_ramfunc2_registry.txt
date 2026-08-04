@@ -1,5 +1,12 @@
 # RP2350 RAMFUNC2 registry
 # format: path|symbol
+#
+# A "no symbol match" warning at link time means the entry did nothing. The
+# __stats_* entries below raise it on any build with HAL_ENABLE_THREAD_STATISTICS
+# off, which is every flight build - the symbols do not exist to match. The
+# bdshot entries here and in the scratch registries likewise do not match on a
+# board without HAL_WITH_BIDIR_DSHOT. Those two sets are expected; anything
+# else in the warning list is not.
 ArduCopter/Attitude.cpp|Copter::run_rate_controller_main  # 70 B (sram)
 ArduCopter/Copter.cpp|Copter::read_AHRS  # 12 B (sram)
 ArduCopter/ekf_check.cpp|Copter::check_ekf_reset  # 140 B (sram)
@@ -17,8 +24,9 @@ ArduCopter/rate_thread.cpp|Copter::update_dynamic_notch_at_specified_rate_main  
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::update_attitude_target  # 56 B (sram)
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::thrust_vector_rotation_angles  # 418 B (sram)
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::attitude_command_model  # 152 B (sram)
-libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update  # 208 B (sram)
-libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update_EKF3  # 236 B (sram)
+# update_EKF3/update_DCM were folded into AP_AHRS::update by the backend-loop
+# rework, which is why this entry grew from 208 B to 424 B.
+libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update  # 424 B (sram)
 libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::update_trig  # 48 B (sram)
 libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::update_cd_values  # 112 B (sram)
 libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::update  # 480 B (sram)
@@ -241,11 +249,9 @@ modules/ChibiOS/os/hal/src/hal_st.c|stGetCounter
 modules/ChibiOS/os/rt/src/chtm.c|chTMStopMeasurementX
 modules/ChibiOS/os/rt/include/chthreads.h|chThdGetSelfX
 modules/ChibiOS/os/rt/src/chmtx.c|chMtxUnlock
-(profiled)|memset
 (profiled)|calc_lowpass_alpha_dt
 modules/ChibiOS/os/rt/src/chmtx.c|chMtxLockS
 modules/ChibiOS/os/rt/include/chsys.h|chSysUnlock
-(profiled)|memcpy
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|dmaChannelAllocI
 (profiled)|DigitalLPF<float>::_apply
 # constrain_value_line<float>: keep in SRAM. It looks core1-cold by sample count
@@ -430,9 +436,16 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
 # (rp_clocks.c). Relocating a helper that early boot calls executes
 # uninitialised SRAM and the FC double-faults.
 #
-# memcpy and memset ARE relocated (entries above): the copy loop in rp_clocks.c
-# was rewritten as a volatile word loop so it no longer calls them. See the
-# memcpy/memset section of hwdef/Laurel/BASELINE.md before touching that.
+# memcpy and memset ARE relocated, but not from here - common_rp2350_smp.ld
+# picks the newlib archive members directly, with a matching EXCLUDE_FILE on
+# the flash .text sweep. That is the only mechanism that works for them:
+# newlib has no per-function sections, and its libc.a is not under the build
+# root that the symbol map is built from, so a symbol entry here matches
+# nothing and only prints a warning. It is safe because the copy loop in
+# rp_clocks.c was rewritten as a volatile word loop so it no longer calls
+# them. See the memcpy/memset section of hwdef/Laurel/BASELINE.md before
+# touching that, and do not add entries for them here - a duplicate pick is
+# claimed first-come-first-served and silently drops one of the two.
 #
 # __udivmoddi4 and __aeabi_uldivmod are NOT relocated and must stay in flash -
 # nothing has been done to keep them off the early-boot path. They profile hot
