@@ -227,6 +227,12 @@ define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 1
 # is independent of the main tick.
 define AP_SCHEDULER_FAST_TASK_MODULO 1
 
+# 32-bit timestamps in the rcout cycle. The 64-bit default puts micros64() and
+# the wrap arithmetic around it on core1's dshot path, where PC sampling found
+# the micros64 veneer alone at 1.2% of samples. AP_HAL::timeout_remaining() is
+# unsigned delta subtraction so the 71 minute micros() wrap is safe here.
+define AP_RCOUT_USE_32BIT_TIME 1
+
 # Timer-driven statistical PC sampler (rp2350_pc_sampler.cpp), used to guide
 # __RAMFUNC2__ relocation. Off by default; set to 1 to profile.
 define AP_RP2350_PC_SAMPLER_ENABLED 0

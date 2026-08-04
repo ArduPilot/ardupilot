@@ -140,6 +140,60 @@ still in flash and always will be under this mechanism: the registries relocate
 `.text` only, and it is a lookup table read per nibble, so it is XIP *data*
 traffic the PC sampler cannot see.
 
+### Current baseline
+
+Bidirectional DShot600 at 2 kHz (`SERVO_DSHOT_RATE` 1, `FSTRATE_DIV` 2),
+`SERVO_DSHOT_ESC` 0, sampler on, statistics off:
+
+| | core1 | core0 |
+|---------|-------|-------|
+| idle    | 58.3% | 53.9% |
+| flash   | 13.2% | 72.2% |
+| SRAM    | 77.1% | 19.4% |
+| scratch |  9.7% |  8.3% |
+
+Splits are of non-idle samples. Every one of core1's top 24 functions is
+SRAM-resident; nothing in flash appears until 0.4%, and what is left is two
+16-byte `chSysLock`/`chSysUnlock` veneers and `RCOutput::timer_tick`. That is
+the tail, and the veneers are exactly the tiny hot leaves the relocation
+warnings above say to leave alone.
+
+`__udivmoddi4` and the `AP_HAL::micros64` veneer are both gone from core1, which
+is the confirmation that the RCOUT_US2I and 32-bit rcout timer changes landed.
+The remaining `hrt_micros64` at 0.9% is the underlying HAL timer read in SRAM,
+not on the rcout path.
+
+Treat the improvement from the previous run as directional only. Three things
+changed together - those two commits, `SERVO_DSHOT_ESC` coming out, and the
+DShot rate becoming a confirmed 2 kHz - so the idle gain cannot be attributed to
+any one of them. What is unambiguous is structural: a symbol either appears in
+the histogram or it does not.
+
+### The idle PC moves between builds
+
+`rp2350_idle_c0` and `rp2350_idle_c1` are a few bytes apart in SRAM and their
+addresses shift with almost any code change. Any script that hard-codes the idle
+token to separate idle from non-idle will silently report 0% idle and a
+meaningless split after the next build. Read the addresses out of the ELF each
+time:
+
+```
+arm-none-eabi-nm -S build/RPI_UAVFC/bin/arducopter | grep rp2350_idle_c
+```
+
+### The sampler cannot see blocking
+
+The PC sampler records the interrupted PC, so a thread blocked on a mutex, an
+event or a parked core shows up as idle time, not as contention. It is the wrong
+instrument for stalls, lock contention or anything that manifests as absence.
+
+What worked instead was a handful of `volatile uint32_t` counters compiled in
+temporarily and read over SWD while the vehicle ran: one per stage of the path
+under suspicion, plus a max-interval counter to latch a transient that would
+otherwise have to be caught live. That is how the 17 ms flash-park stall was
+found, and how `SERVO_DSHOT_ESC` was caught injecting sends nobody asked for -
+the send, wake and signal counters simply would not add up.
+
 ### Statistics breaks CRSF on this board
 
 Do not profile RC-critical behaviour with `--enable-stats`. `CH_IRQ_PROLOGUE`

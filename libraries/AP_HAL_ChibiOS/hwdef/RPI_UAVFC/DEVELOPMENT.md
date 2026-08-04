@@ -27,7 +27,8 @@ while disarmed.
 | Battery voltage | Multiplier measured, 11.1 |
 | Battery current | Scale 50 (20 mV/A ESC); offset and load check outstanding |
 | Motor outputs | 4x DShot600 via PIO; has also flown on PWM at 490 Hz |
-| DShot | Bidirectional DShot600 running, eRPM telemetry decoding |
+| DShot | Bidirectional DShot600 at 2 kHz, eRPM telemetry decoding |
+| DShot params | `SERVO_DSHOT_RATE` 1, `FSTRATE_DIV` 2, `SERVO_DSHOT_ESC` 0 - see below |
 | Compass | None fitted; EKF runs in constant-position mode |
 | Rate loop in flight | 2 kHz held, dtMax 0.8 ms, no scheduler overruns |
 | Tune | Flyable starting tune, see below; not autotuned yet |
@@ -557,6 +558,81 @@ places where shared ArduPilot code assumed an STM32.
    to produce telemetry. It now reads `is_bidir_dshot_enabled()`, the same
    source the PIO program selection and the telemetry read path use.
 
+## DShot parameters: the two that cost a day
+
+Both of these presented identically - the ESCs repeating part of their arming
+tone and never arming - and neither is obvious from the parameter name.
+
+**`SERVO_DSHOT_ESC` must be 0 on this board.** It was set to 3 (BLHeli32 with
+Extended DShot Telemetry). EDT enables itself by sending DShot command 13
+repeatedly, and DShot commands 1-5 are the beep commands, so a command stream
+the ESCs mishandle sounds exactly like a failed arm. It also showed up in the
+numbers: with EDT on, the rcout thread issued about 170 more sends per second
+than push() asked for, and the send/wake/signal counters would not reconcile.
+With it off they balance exactly. Bidirectional eRPM does not need EDT - plain
+bidir DShot600 returns RPM on its own.
+
+**`SERVO_DSHOT_RATE` is a multiple of the rate loop, not of `SCHED_LOOP_RATE`.**
+`ArduCopter/rate_thread.cpp` calls `set_dshot_rate(rate, attitude_rate)`, where
+`attitude_rate` is `raw_gyro_rate / FSTRATE_DIV`. With a 4 kHz gyro:
+
+| `SERVO_DSHOT_RATE` | `FSTRATE_DIV` 2 | `FSTRATE_DIV` 4 |
+|--------------------|-----------------|-----------------|
+| 0                  | 1 kHz fixed     | 1 kHz fixed     |
+| 1                  | 2 kHz           | 1 kHz           |
+| 2                  | 4 kHz           | 2 kHz           |
+
+`SCHED_LOOP_RATE` is 200 here, so "1" looks like it should mean something slow
+and does not. There is no setting between 0 and the rate-loop rate.
+
+Beware that `SRV_Channels.cpp` also calls `set_dshot_rate()`, but with
+`AP::scheduler().get_loop_rate_hz()` - 200, not `attitude_rate`. At 200 the
+`while (drate < 800)` bump loop runs and yields `_dshot_rate` 4, where the rate
+thread's call yields 1. The two disagree and whichever ran last wins, which also
+decides whether the virtual timer gets armed. `SERVO_DSHOT_RATE` 0 is immune
+because both callers then take the same early return. This looks like an
+upstream bug on any board running the fast rate thread; it has not been raised.
+
+At `_dshot_rate` 1 the virtual timer is deliberately not armed - the code
+assumes push() provides the tick. Nothing guarantees that. A watchdog timer at
+twice the period was tried and rejected: it bounded the gap at `FSTRATE_DIV` 4
+but not at 2, because the stalls are not missed pushes at all (below).
+
+## Flash writes stop motor output for up to 17 ms
+
+Measured with a counter on the interval between `dshot_send_groups()` calls:
+nine gaps over 5 ms, worst 17.6 ms, against a 500 us period. A virtual timer
+cannot cover them, which is the tell - the whole of core1 is stopped, not just
+waiting on an event. That is `rpEflBeforeXipOff()` parking core1 for a boot-flash
+write; `rp2350_xip_park_max_us` had already been seen at 5298 us.
+
+All the observed gaps were during boot and arming, and they persist unchanged
+with the DShot parameters correct, so they are not what caused the arming-tone
+problem. They matter anyway: 17 ms with no DShot to any motor is a real hole.
+`AP_STORAGE_NO_WRITE_WHILE_ARMED` defers parameter writes while armed and
+dataflash logging goes to the SD card over SPI rather than boot flash, so
+nothing should write boot flash in the air - but that is read from the code, not
+confirmed on the vehicle. Confirming `rp2350_xip_park_count` stops advancing once
+armed is the outstanding check.
+
+## AP_RCOUT_USE_32BIT_TIME
+
+Set in `hwdef.dat`. No other ArduPilot board defines it, so this is its first
+use anywhere and it is worth treating as unproven. It makes `rcout_timer_t`
+32-bit and `rcout_micros()` resolve to `micros()`, which took the `micros64`
+veneer off core1's dshot path - it had been 1.2% of samples.
+
+`micros()` wraps at 71.6 minutes of uptime. `AP_HAL::timeout_remaining()` is
+unsigned delta subtraction so it is wrap-safe, but two sites subtracted
+`last_dmar_send_us` from `AP_HAL::micros64()` directly, which only agrees while
+`rcout_timer_t` is 64-bit; past the wrap they compared a full clock against a
+truncated stamp and always read "safe to send". Both now go through
+`rcout_micros()`. Nothing caught it at compile time because they used raw
+subtraction rather than the helper, whose static_asserts enforce matching types.
+
+Until someone soaks the board past 71 minutes of uptime arming and disarming,
+reboot before flying.
+
 ## Logging setup for tuning work
 
 The stock `LOG_BITMASK` logs `RATE` at **10 Hz**, which aliases anything
@@ -581,6 +657,27 @@ in mid-discharge on a healthy pack. It did exactly that on flight 17. For 6S
 use 21.0 (3.5 V/cell) low and 19.8 (3.3 V/cell) critical. Sag compensation
 (`BATT_FS_VOLTSRC` 1) is the better answer but is useless until the current
 scale above is fixed.
+
+## Before the next flight
+
+Nothing flight-critical below has been flown - the DShot path, the SRAM
+relocations and the timer commits are all bench-verified only. The board has
+flown, but on PWM.
+
+1. Build a flight image. `AP_RP2350_PC_SAMPLER_ENABLED` and
+   `AP_RP2350_DEBUG_REPORT_ENABLED` must both be 0 in `hwdef.dat`; they are
+   committed as 0, so only an uncommitted edit can turn them on. Check
+   `git diff` on `hwdef.dat` is empty before flying.
+2. Confirm `rp2350_xip_park_count` stops advancing once armed, per the flash
+   section above.
+3. Reboot shortly before arming, until the 71 minute wrap has been soaked.
+4. Check `BATT_LOW_VOLT` is off 21.6 V - it fired a Land mid-discharge on
+   flight 17. Use 21.0 low and 19.8 critical for 6S.
+5. Keep the harmonic notch throttle-referenced. eRPM decodes but the error rate
+   has never been measured, and Betaflight's note on this decode is 5-8% frame
+   failures with motors spinning.
+6. Stabilize only. No GPS fix and no compass, so no position modes, no RTL and
+   no failsafe-to-home.
 
 ## Next steps
 
