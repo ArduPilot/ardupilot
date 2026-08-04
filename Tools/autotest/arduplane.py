@@ -8665,9 +8665,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # "acquired" has to mean the same tolerance the mission monitoring
         # below goes on to enforce, otherwise the wait hands over while still
         # outside it and the monitoring fails the run for a gap the follower
-        # was never given the chance to close.
+        # was never given the chance to close.  That has to bound both sides:
+        # sitting on top of the target is as far out of station as trailing
+        # too far back, and releasing from there is worse -- the target
+        # accelerates away from a follower with nowhere to go but backwards.
         IDEAL_OFFSET_M = math.sqrt(FOLL_OFS_X**2 + FOLL_OFS_Y**2 + FOLL_OFS_Z**2)
-        ACQUIRE_DISTANCE_M = IDEAL_OFFSET_M + OFFSET_CONVERGE_M
         ACQUIRE_TIME_S = 120
         SETTLE_REPORTS = 4          # number of distance reports after a waypoint to use relaxed threshold
 
@@ -9012,7 +9014,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Waiting %us for follower to acquire loitering target" %
                           ACQUIRE_TIME_S)
 
-            self.progress("Waiting for follower to acquire loitering target (within %.0fm)" % ACQUIRE_DISTANCE_M)
+            self.progress("Waiting for follower to acquire loitering target (within %.0fm of the %.0fm offset)" % (
+                OFFSET_CONVERGE_M, IDEAL_OFFSET_M))
             tstart = self.get_sim_time()
             last_update = self.get_sim_time()
 
@@ -9027,7 +9030,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     self.progress("Acquiring: separation=%.1fm offset_error=%.1fm (%.0fs elapsed)" % (
                         sep, ofs_err, now - tstart))
                     last_update = now
-                if sep < ACQUIRE_DISTANCE_M:
+                if abs(sep - IDEAL_OFFSET_M) <= OFFSET_CONVERGE_M:
                     self.progress("Follower acquired target: separation=%.1fm offset_error=%.1fm after %.0fs" % (
                         sep, ofs_err, now - tstart))
                     break
@@ -9067,7 +9070,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             while self.get_sim_time() - tstart < ACQUIRE_TIME_S:
                 self.drain_all_pexpects()
                 sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
-                if sep < ACQUIRE_DISTANCE_M:
+                if abs(sep - IDEAL_OFFSET_M) <= OFFSET_CONVERGE_M:
                     self.progress(
                         "Follower re-acquired moving target: "
                         "separation=%.1fm offset_error=%.1fm after %.0fs" % (
