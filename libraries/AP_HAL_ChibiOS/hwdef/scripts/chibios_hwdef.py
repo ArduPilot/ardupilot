@@ -1211,6 +1211,7 @@ class ChibiOSHWDef(hwdef.HWDef):
         if self.env_vars['EXT_FLASH_SIZE_MB'] and not self.is_bootloader_fw() and not self.env_vars['INT_FLASH_PRIMARY']:
             f.write('#ifndef CRT0_AREAS_NUMBER\n#define CRT0_AREAS_NUMBER 4\n#endif\n')
             f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
+            f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
             f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
         elif self.is_rp_mcu():
             # RP2350 uses CRT0_AREAS_NUMBER=6 to enable startup copy for:
@@ -2168,12 +2169,12 @@ INCLUDE common.ld
 #define HAL_USE_SERIAL HAL_USE_SERIAL_USB
 #endif
 ''')
-        num_ports = len(devlist)
-        # nports is the total number of enabled serial ports (including PIO pseudo-UARTs);
-        # HAL_UART_NUM_SERIAL_PORTS must cover all ports so SERIALMANAGER state[] is large enough.
-        if nports > 10:
-            self.error("Exceeded max num SERIALs of 10 (%u)" % nports)
-        f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % nports)
+        # this is the number of SERIALn slots, so it counts EMPTY entries, the
+        # hidden IOMCU UART and the PIO pseudo-UARTs, none of which are in devlist
+        num_ports = len(serial_list)
+        if num_ports > 10:
+            self.error("Exceeded max num SERIALs of 10 (%u)" % num_ports)
+        f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % num_ports)
 
     def write_UART_config_bootloader(self, f):
         '''write UART config defines'''
@@ -2559,10 +2560,10 @@ INCLUDE common.ld
 # define HAL_IC%u_CH%u_DMA_CONFIG false, 0, 0
 #endif
 ''' % (n, i, n, i, n, i, n, i, n, i, n, i)
-                if up_shared is not None:
-                    hal_icu_cfg += '}, HAL_TIM%u_UP_SHARED, \\' % n
-                else:
-                    hal_icu_cfg += '}, \\'
+                    if up_shared is not None:
+                        hal_icu_cfg += '}, HAL_TIM%u_UP_SHARED, \\' % n
+                    else:
+                        hal_icu_cfg += '}, \\'
 
             if not self.is_rp_mcu():
                 f.write('''#if defined(STM32_TIM_TIM%u_UP_DMA_STREAM) && defined(STM32_TIM_TIM%u_UP_DMA_CHAN)
@@ -2757,6 +2758,20 @@ INCLUDE common.ld
                         (gpio, enabled, pwm, self.make_pal_line(port, pin), p))
             # and write #defines for use by config code
             f.write('}\n\n')
+        if self.is_rp_mcu():
+            # RP has no port-wide ODR register to preload, so the OUTPUT
+            # HIGH/LOW level from hwdef.dat has to be applied pin by pin at
+            # board init. Emitted separately from HAL_GPIO_PINS because that
+            # macro initialises a struct whose next member is the IRQ handler.
+            levels = [(port, pin, p) for (gpio, pwm, port, pin, p, enabled) in gpios
+                      if pwm == 0 and enabled == 'true']
+            if levels:
+                f.write('#define HAL_GPIO_INIT_LEVELS { \\\n')
+                for (port, pin, p) in levels:
+                    f.write('{ %s, %u}, /* %s */ \\\n' %
+                            (self.make_pal_line(port, pin),
+                             1 if p.get_ODR_value() == 'HIGH' else 0, p))
+                f.write('}\n\n')
         f.write('// full pin define list\n')
         last_label = None
         for label in sorted(list(set(self.bylabel.keys()))):
@@ -3283,9 +3298,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
             if a[0] in self.config:
                 self.error("Pin %s redefined" % a[0])
-        else:
-            # warn user it needs to start with p, and the digit after needs to be in ports.
-            print("Not a pin line: %s" % a[0])
 
         if p is None and line.find('ALT(') != -1:
             self.error("ALT() invalid for %s" % a[0])
@@ -3301,7 +3313,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.config[a[0]] = a[1:]
         if p is not None:
             # add to set of pins for primary config
-            print("pin: %s ; port %s ; p %s" % (pin, port, p))
             self.portmap[port][pin] = p
             self.allpins.append(p)
             if type not in self.bytype:

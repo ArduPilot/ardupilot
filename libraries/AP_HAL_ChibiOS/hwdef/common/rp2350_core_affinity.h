@@ -19,7 +19,7 @@
 #define HAL_CORE_IO       0
 #define HAL_CORE_STORAGE  0   // MUST stay Core0: XIP lockout protocol parks Core1 FROM Core0
 #define HAL_CORE_SPI0     1   // Best Config: SPI on Core1 + DCM/8 + ekf_decim_min=2
-#define HAL_CORE_SPI1     1
+#define HAL_CORE_SPI1     0
 #define HAL_CORE_I2C0     0
 #define HAL_CORE_I2C1     0
 #define HAL_CORE_UART     0

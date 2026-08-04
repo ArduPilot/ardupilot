@@ -6,11 +6,12 @@ users see it; this file is for whoever is working on the port. See
 
 ## Where things stand
 
-The board flies. Six flights so far, all in Stabilize, longest about 40 s.
+The board flies, and now flies on bidirectional DShot600. Six flights on PWM,
+then three more on bdshot (logs 51-53), all in Stabilize, longest about 35 s.
 The hwdef is complete, the pinout is verified against the schematic, and the
 timing architecture holds up in the air: the rate thread sits on 2 kHz with a
-worst-case dt of 0.8 ms in flight, and the 4 ms XIP parks only ever appear
-while disarmed.
+worst-case dt of 1.3 ms in flight, and no XIP park has ever been seen while
+armed across the three bdshot flights.
 
 | Area | State |
 |-----------------------|--------------------------------------------------|
@@ -19,7 +20,7 @@ while disarmed.
 | Bootloader | Built, board ID 1215 |
 | IMU | Working; fitted part is ICM42688P, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
-| microSD logging | Working; 19 MB logs at 1 kHz RATE without drops |
+| microSD logging | Works, but drops ~70% of messages - see below |
 | Parameter storage | Working; needs both the sector-bound and write-verify fixes |
 | RC input | CRSF/ELRS on SERIAL3, 333 Hz link, 199 Hz telemetry |
 | GPS | Detected (ublox at 230400) but has never got a fix |
@@ -27,11 +28,14 @@ while disarmed.
 | Battery voltage | Multiplier measured, 11.1 |
 | Battery current | Scale 50 (20 mV/A ESC); offset and load check outstanding |
 | Motor outputs | 4x DShot600 via PIO; has also flown on PWM at 490 Hz |
-| DShot | Bidirectional DShot600 at 2 kHz, eRPM telemetry decoding |
+| DShot | Bidirectional DShot600 at 2 kHz, flown; eRPM scale verified |
 | DShot params | `SERVO_DSHOT_RATE` 1, `FSTRATE_DIV` 2, `SERVO_DSHOT_ESC` 0 - see below |
+| eRPM error rate | Not measurable: `ESC.Err` is hardcoded 0 here, see below |
+| Harmonic notch | `INS_HNTCH_MODE` 3 flown, per-motor, -34 dB in the motor band |
 | Compass | None fitted; EKF runs in constant-position mode |
-| Rate loop in flight | 2 kHz held, dtMax 0.8 ms, no scheduler overruns |
+| Rate loop in flight | 2 kHz held, dtMax 1.3 ms, no scheduler overruns |
 | Tune | Flyable starting tune, see below; not autotuned yet |
+| 9V rail (VID) | Stuck on; relay does not switch it, see below |
 
 One thing is known-wrong and it is not a board fault:
 
@@ -129,8 +133,11 @@ three places:
 - ESC channel order. The connector is wired descending: DSHOT1 is GPIO9 and
   DSHOT4 is GPIO6. The sheet lists them ascending.
 - Regulator enables. GPIO18 is the 9V rail and GPIO19 the 5V rail, the
-  opposite of the sheet, and both are active HIGH. The sheet's "ENn" naming
-  implied active low. Each drives an MP4334 EN pin with a pull-down.
+  opposite of the sheet. Each drives an MP4334 EN pin with a pull-down. These
+  were recorded here as active HIGH, against the sheet's "ENn" naming; flight
+  behaviour contradicts that - software holds both pins low from boot and the
+  9V rail is on. Treat them as active LOW until someone meters the EN pin.
+  See the RP2350 initial-level section below.
 - Sensor part numbers. The IMU is an ICM-56686 and the baro a DPS368, not the
   ICM42688P and DPS310 the sheet names.
 
@@ -350,6 +357,17 @@ flash-resident functions on the core1 rate/IMU path. The relocation has a
 boot-order gotcha involving a volatile copy loop; see the memcpy/memset section
 of `../Laurel/BASELINE.md` before touching it.
 
+They are relocated by `common_rp2350_smp.ld` picking the newlib archive members
+directly, *not* through a registry, and that is the only mechanism that can
+work for them: newlib has no per-function sections, and its `libc.a` sits in
+the toolchain rather than under the build root that the symbol map is built
+from. Registry entries for them existed for a while and did nothing except
+print `no symbol match` at link time, which reads exactly like the relocation
+having failed - it had not, `nm` put both in SRAM throughout. Verify placement
+with `arm-none-eabi-nm` on the ELF rather than trusting either the registry or
+the warning. A `no symbol match` line for anything else is a real miss; the
+`__stats_*` ones are expected on any build with statistics off.
+
 Flash is laid out one region per 64 KB erase block: bootloader in block 0,
 parameter storage in block 1 (pages 16-23, using the first 32 KB of it), app
 from block 2. Storage and the bootloader used to share block 0, which meant a
@@ -423,6 +441,59 @@ mounting and airframe choices, not board properties. Laurel v1 baked in
 `AHRS_ORIENTATION 8 @READONLY`, which could not be corrected from a GCS and
 made a wrong-orientation fault very hard to diagnose.
 
+## The hwdef OUTPUT HIGH/LOW initial level was ignored on RP2350 (fixed)
+
+`board_rp2350.c` used to walk every `HAL_GPIO_PINS` entry and call only
+`palSetLineMode(line, PAL_MODE_OUTPUT_PUSHPULL)`. Nothing applied the
+`HIGH`/`LOW` qualifier from `hwdef.dat`, and the qualifier did not even
+survive generation - `hwdef.h` rendered the entry as
+`/* PA18 BEC_9V_EN OUTPUT */` with the level dropped. Contrast the chip-select
+pins further down, which each do an explicit `palSetLine()` *before*
+`palSetLineMode()` precisely because CS has to idle high; the generic GPIO loop
+had no equivalent.
+
+So `PA19 BEC_5V_EN OUTPUT HIGH` did not come up high. Both regulator enables
+came up at the SIO `GPIO_OUT` reset value, which is 0, and `AP_Relay::init()`
+then drove both low again because `RELAY2_DEFAULT` and `RELAY3_DEFAULT` are
+both 0. Every software path was holding these pins low from boot onwards.
+
+Fixed by emitting a `HAL_GPIO_INIT_LEVELS` table from `chibios_hwdef.py` for
+RP MCUs and applying it in `board_rp2350.c` before the mode loop, matching the
+chip-select ordering so the pad never briefly drives the wrong way. It is a
+separate macro rather than a fifth field on `HAL_GPIO_PINS` because that macro
+initialises `gpio_entry`, whose next member is the IRQ handler. Levels come
+from the existing `get_ODR_value()`, so a pin with no explicit qualifier now
+takes the STM32 default of HIGH - every non-PWM GPIO pin on all three RP2350
+boards states its level explicitly today, so nothing changed underneath them,
+but a new board that omits it will get HIGH rather than LOW.
+
+That has a consequence for the pin data below: the 9V rail is *on* in that
+state, and no relay command has been observed to change it. If software holds
+the pin low and the rail is on, then low enables the rail - the enables are
+effectively active LOW, not active HIGH as recorded in the provenance section,
+and the vendor sheet's `ENn` naming was right after all. `RELAY2_INVERTED`
+would then need to be 1 for the relay sense to match reality.
+
+Not yet resolved: with the pin driven, setting `RELAY2` on should take it high
+and switch the rail off, and that has not been seen. Note the initial-level
+fix does not change this - `AP_Relay::init()` drives the pin to
+`RELAY2_DEFAULT` immediately afterwards either way, so the 9V rail still comes
+up on. Either the GCS is addressing a different instance, or the pad is not
+actually driving and the external pull-down is what holds EN low.
+
+The cheap discriminator needs no tools - set `RELAY2_DEFAULT` 1 and reboot. If
+the 9V rail goes off, the pad drives correctly and this is purely a
+polarity/sense problem, fixed with `RELAY2_INVERTED` 1. If it stays on, the
+pad is not driving and this is another FUNCSEL/OE fault of the kind that has
+already bitten the UART and PIO2. Check `RELAY3`/5V at the same time, and note
+`MAV_CMD_DO_SET_RELAY` is 0-indexed, so RELAY2 is instance 1 - a GCS that
+numbers its relays from 1 will be one out, and instance 0 is rejected outright
+because `RELAY1_FUNCTION` is 0.
+
+The 5V rail is the one the fix visibly changes: `PA19 BEC_5V_EN OUTPUT HIGH`
+now really is high for the window between board init and `AP_Relay::init()`,
+where before it was low throughout.
+
 ## Orientation
 
 The board is mounted inverted in the airframe and the IMU is flipped relative
@@ -465,11 +536,14 @@ flight and an aggressive one gave 1.63x and 1.12x with an *identical* 2.95
 deg/s residual - the ratio moved entirely because the denominator did. Compare
 the absolute amplitude at the peak frequency instead.
 
-The harmonic notch is deliberately still off. The motor fundamental is around
-180-190 Hz and appears in the accel, but the gyro is clean there - the
-oscillations chased so far were all sub-15 Hz control modes, which a notch
-cannot touch. There is no ESC telemetry on this board, so if a notch is ever
-needed it has to be throttle-based (`INS_HNTCH_MODE` 1).
+The harmonic notch is now on and RPM-referenced - see the notch section above.
+It was off for the whole PWM era, correctly: the motor fundamental sits around
+180-190 Hz and shows in the accel, but the oscillations chased during tuning
+were all sub-15 Hz control modes, which a notch cannot touch. That is still
+true, and the notch has not moved the sub-30 Hz residual. What it does is
+remove 34 dB of motor-band content from the gyro the rate loop sees, which is
+worth having on its own terms. Bidirectional DShot supplies the eRPM, so the
+throttle-based fallback (`INS_HNTCH_MODE` 1) is no longer needed.
 
 ## DShot
 
@@ -598,6 +672,73 @@ assumes push() provides the tick. Nothing guarantees that. A watchdog timer at
 twice the period was tried and rejected: it bounded the gap at `FSTRATE_DIV` 4
 but not at 2, because the stalls are not missed pushes at all (below).
 
+## eRPM is correct, but `ESC.Err` cannot measure the error rate
+
+The eRPM scale is verified against an independent sensor. Across log51 the
+accel vibration peak tracks the eRPM-derived fundamental with correlation
++0.963 and a best-fit slope of 1.011, implying 14.2 poles against the
+`SERVO_BLH_POLES` 14 that is set. Per-channel correlation between eRPM and
+`RCOU` is +0.983 to +0.994, with only 0.2-0.6% repeated consecutive values, so
+the decode is live rather than a stale register. That is enough to trust the
+telemetry to drive a notch.
+
+What is *not* available is the frame error rate. `ESC.Err` reads exactly
+0.0000 on all four ESCs in every bdshot flight, and that is structural rather
+than a perfect link. On RP2350 the decode runs through `RCOutput.cpp`, in the
+`is_bidir_dshot_enabled()` branch that calls `RCOutput_pico::read_telemetry()`
+- and neither the success nor the failure path touches the counters.
+`_bdshot.erpm_clean_frames[]` and `_bdshot.erpm_errors[]` are only incremented
+in `RCOutput_bdshot.cpp`, inside a test on `group.dshot_state` being
+`RECV_COMPLETE` or `RECV_FAILED`. This port never enters either state, because
+the DShot state fix returns the group straight to `IDLE`. So
+`get_erpm_error_rate()` evaluates `0 / (1 + 0 + 0)` forever.
+
+The plan recorded earlier - read `erpm_clean_frames[]` against `erpm_errors[]`
+before letting telemetry drive a notch - therefore cannot be run as written.
+Counting the `read_telemetry()` false returns in the RP2350 branch is a few
+lines and would make it measurable. This matters more now than it did before
+the notch was enabled, not less: if telemetry goes stale the notch falls back
+toward the `INS_HNTCH_FREQ` floor rather than tracking, and nothing currently
+reports that happening.
+
+## The harmonic notch works, and needs to be per-motor
+
+Flown in log52 as `INS_HNTCH_MODE` 3 (ESC RPM), `FREQ` 40, `BW` 10, `HMNCS` 1,
+`OPTS` 22 - which decodes as TripleNotch + LoopRateUpdate + DynamicHarmonic
+against the `Options` enum in `libraries/Filter/HarmonicNotchFilter.h`.
+
+Within one flight the pre- and post-filter batch samples share the same
+vibration input, so post/pre is a clean measure of what the filter chain
+removes. Comparing that ratio between the notch-off and notch-on flights
+isolates the notch from the 75 Hz `INS_GYRO_FILTER` low-pass:
+
+| gyro rms, 150-240 Hz | roll | pitch |
+|-------------------------------|-----------------|-----------------|
+| notch off (log51), LPF only | 0.132 (-17.6 dB) | 0.137 (-17.2 dB) |
+| notch on (log52), LPF + notch | 0.003 (-51.6 dB) | 0.003 (-52.0 dB) |
+| notch contribution | -34.0 dB | -34.8 dB |
+
+In absolute terms the post-filter motor band falls from 0.67 to 0.014 deg/s on
+roll and 1.13 to 0.022 on pitch. The pre-filter motor band was comparable
+between the two flights (5.08 to 5.37 roll, 8.24 to 8.91 pitch), so the
+cross-flight step is not confounded by a change in vibration input.
+
+Per-motor is not optional here. The four motors span 164-212 Hz, and `FTN`
+shows `NDn` 4 with the centres landing within about 1.5% of each motor's own
+eRPM fundamental (184.3/162.9/208.7/185.9 Hz against 186.8/164.3/211.7/188.6).
+A single notch cannot cover a 48 Hz spread. Note the notch is constant-Q, so
+`BW` 10 at a 40 Hz base is roughly 48 Hz wide at 190 Hz, tripled by the
+TripleNotch option - the four overlap into a continuous stopband over about
+150-240 Hz. That is a lot of filtering, but it is matched to the motor spread
+rather than excessive, and it cost nothing measurable: `Dmod` stayed at 1.0
+and D-output rms was 0.0034 roll / 0.0026 pitch against 0.0036 / 0.0043 with
+the notch off.
+
+Do not read the actual/demand ratio across these two flights. It moved 1.00 to
+1.08, but demand amplitude fell about 40% at the same time, which is exactly
+the trap recorded in the tune section. The absolute 11-12 Hz residual is
+0.72 deg/s against 0.88 - essentially unchanged.
+
 ## Flash writes stop motor output for up to 17 ms
 
 Measured with a counter on the interval between `dshot_send_groups()` calls:
@@ -611,9 +752,18 @@ with the DShot parameters correct, so they are not what caused the arming-tone
 problem. They matter anyway: 17 ms with no DShot to any motor is a real hole.
 `AP_STORAGE_NO_WRITE_WHILE_ARMED` defers parameter writes while armed and
 dataflash logging goes to the SD card over SPI rather than boot flash, so
-nothing should write boot flash in the air - but that is read from the code, not
-confirmed on the vehicle. Confirming `rp2350_xip_park_count` stops advancing once
-armed is the outstanding check.
+nothing should write boot flash in the air.
+
+Three bdshot flights now support that. `RTDT.dtMax` is a max-since-last-log at
+10 Hz, so it bounds any stall the rate loop actually saw. Across the armed
+window it never exceeds 1.05 ms in log51, 1.1 ms in log52 and 1.3 ms in log53
+against a 500 us period. The only outliers in any of the three sit outside the
+armed window entirely: 5.97 ms at t=43.757 in log51 against a disarm at 43.7,
+which is the deferred storage flush landing exactly where predicted, and
+5.45 ms at t=116.06 in log52, 28 s after disarm. log53 has none at all. That
+bounds the stall rather than counting parks, so reading
+`rp2350_xip_park_count` directly is still the cleaner confirmation, but no
+in-flight park has shown up in the timing.
 
 ## AP_RCOUT_USE_32BIT_TIME
 
@@ -633,7 +783,67 @@ subtraction rather than the helper, whose static_asserts enforce matching types.
 Until someone soaks the board past 71 minutes of uptime arming and disarming,
 reboot before flying.
 
+## The SD card drops about 70% of log messages
+
+Measured on all three bdshot flights, from `DSF`:
+
+| | log51 | log52 | log53 |
+|--------------------|---------------|---------------|---------------|
+| dropped / written | 218885/102083 | 519262/233903 | 308115/134076 |
+| loss | 68% | 69% | 70% |
+| `RATE` actual rate | 320 Hz | 319 Hz | 315 Hz |
+| throughput | 101 KB/s | 101 KB/s | 99 KB/s |
+
+The sink is saturated, not contended. `DSF.Bytes` is a steady ~100 KB per
+period in every flight and `DSF.FMn` - minimum free buffer space - sits at
+about 900 bytes *every* period. A buffer that is perpetually almost full with
+a flat write rate means the writer cannot drain it. The arithmetic on log53:
+134076 written plus 308115 dropped is 442191 messages over 69.5 s, about
+6360 msg/s or 331 KB/s wanted against 100 KB/s delivered.
+
+An earlier note here claimed 19 MB at 1 kHz `RATE` without drops. That is
+475 KB/s, 4.7x what any of these three flights achieved on the same
+`LOG_BITMASK` 442367. Either it was a different card or `DSF.Dp` was never
+read. Treat it as unverified rather than as a baseline.
+
+Two things it is *not*. Moving the SD off the rate-loop core was tried in
+log53 - `HAL_CORE_SPI1` from 1 to 0 - and changed nothing: 70% against 68%
+and 69%, and `RATE` still at 315 Hz. Core contention was the wrong
+explanation. The move is kept anyway, since it takes SD work off the core
+running the 2 kHz loop and log53 had no in-flight `dtMax` outlier at all, but
+it is not the fix.
+
+Nor is it the de-overclock. The PL022 is fed by `clk_peri`, which
+`rp_clocks.h` ties to `RP_PLL_SYS_CLK`, and `SPIDevice.cpp` fixes `SSPCPSR` at
+2 and varies `SCR` only. For the 25 MHz sdcard entry that gives `SCR` 4 and
+22.50 MHz at 225 MHz, against `SCR` 7 and 23.44 MHz at the old 375 MHz - a 4%
+difference. It was 28.13 MHz before the SPI clock fix, which was 12.5% over
+the SPI-mode limit, so that fix cost 20%. Neither figure explains 4.7x. At
+22.50 MHz the raw bus is 2.81 MB/s and 100 KB/s is 3.6% utilisation, so the
+cost is per-transaction overhead in the FATFS and SD path, not the bit clock.
+If that path is CPU-bound then 375 to 225 MHz is a 40% core reduction and does
+contribute, but it cannot be the whole gap.
+
+Separately, the write buffer is far smaller than configured.
+`LOG_FILE_BUFSIZE` is 80, but `DSF.FMx` - the largest free space ever seen -
+never exceeds about 5.1 KB, so the allocation is around 5 KB.
+`AP_Logger_File::Init()` steps the request down 10% at a time until
+`ByteBuffer::set_size()` succeeds, and that needs one contiguous `calloc`.
+`PM.Mem` reports about 71.6 KB free in flight, so the memory exists later and
+the failure is at init - ordering or fragmentation. Init prints
+`AP_Logger: reduced buffer N/M` and `AP_Logger_File: buffer size=N` through
+`DEV_PRINTF`, which reaches the USB console but never the log, so one boot
+with the console attached gives the real number. Worth fixing, but with the
+sink saturated a larger buffer absorbs bursts rather than raising sustained
+throughput.
+
 ## Logging setup for tuning work
+
+Note the bitmask below asks for about 331 KB/s and the card delivers about
+100, so roughly 70% of it is dropped - see the section above. `RATE` lands
+near 320 Hz rather than 1 kHz. It is still the right setting for tuning work,
+but the sample rate is not what it claims and anything spectral should come
+from the `ISBH`/`ISBD` batch samples, which are logged whole.
 
 The stock `LOG_BITMASK` logs `RATE` at **10 Hz**, which aliases anything
 interesting into nonsense - a 14 Hz oscillation reads as a random walk of
@@ -660,23 +870,23 @@ scale above is fixed.
 
 ## Before the next flight
 
-Nothing flight-critical below has been flown - the DShot path, the SRAM
-relocations and the timer commits are all bench-verified only. The board has
-flown, but on PWM.
+The DShot path, the SRAM relocations, the timer commits and the harmonic notch
+have all now flown (logs 51-53). What remains unflown is anything touching
+position: there is still no GPS fix and no compass.
 
 1. Build a flight image. `AP_RP2350_PC_SAMPLER_ENABLED` and
    `AP_RP2350_DEBUG_REPORT_ENABLED` must both be 0 in `hwdef.dat`; they are
    committed as 0, so only an uncommitted edit can turn them on. Check
    `git diff` on `hwdef.dat` is empty before flying.
 2. Confirm `rp2350_xip_park_count` stops advancing once armed, per the flash
-   section above.
+   section above. The timing evidence says no in-flight park, but the counter
+   has still not been read directly.
 3. Reboot shortly before arming, until the 71 minute wrap has been soaked.
-4. Check `BATT_LOW_VOLT` is off 21.6 V - it fired a Land mid-discharge on
-   flight 17. Use 21.0 low and 19.8 critical for 6S.
-5. Keep the harmonic notch throttle-referenced. eRPM decodes but the error rate
-   has never been measured, and Betaflight's note on this decode is 5-8% frame
-   failures with motors spinning.
-6. Stabilize only. No GPS fix and no compass, so no position modes, no RTL and
+4. Set `BATT_LOW_VOLT` off 21.6 V - it fired a Land mid-discharge on flight 17
+   and is *still* 21.6 as of log53, with `BATT_CRT_VOLT` at 21.0. Use 21.0 low
+   and 19.8 critical for 6S. It has not bitten on the short bdshot flights
+   (minimum 23.03 V, 368 mAh out) but it is live for a longer one.
+5. Stabilize only. No GPS fix and no compass, so no position modes, no RTL and
    no failsafe-to-home.
 
 ## Next steps
@@ -688,10 +898,10 @@ flown, but on PWM.
    never configured for analog use, so it may not be the sensor's real
    quiescent point.
 2. Fix the battery failsafe thresholds, per above.
-3. Measure the bidirectional telemetry error rate before letting it drive the
-   harmonic notch, and fly DShot600 - the flights so far were on PWM. With
-   eRPM available `INS_HNTCH_MODE` 3 becomes possible, which the board could
-   not do at all before.
+3. Make the bidirectional telemetry error rate measurable, by counting the
+   `read_telemetry()` false returns in the RP2350 branch. `ESC.Err` is a
+   hardcoded 0 on this port, so the notch is now being driven by telemetry
+   whose frame loss nobody can see.
 4. Establish whether flash page programs now succeed first time or only on the
    retry after a failed verify. Harmless either way for correctness, but a
    retry every time means the underlying QSPI defect is still there and double
@@ -707,3 +917,9 @@ flown, but on PWM.
 9. Re-check the QMI flash timing if this revision fits a different flash part.
    `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
 10. Re-measure glat before acting on it, per the retraction above.
+11. Find the ~100 KB/s ceiling in the SD write path. The bit clock is only
+    3.6% utilised, so it is per-transaction overhead -
+    `HAL_LOGGER_WRITE_CHUNK_SIZE`, the FATFS IO size and the per-write CS
+    handling are where to look. Read the `AP_Logger_File: buffer size=` line
+    off the USB console first, since the write buffer is also allocating about
+    5 KB against the 80 KB requested.
