@@ -79,6 +79,22 @@ extern AP_IOMCU iomcu;
 #define HAL_PWM_GROUP_CHANNELS 4
 #endif
 
+/*
+  Microseconds to system intervals on the dshot cycle path.
+
+  TIME_US2I() is (us * CH_CFG_ST_FREQUENCY + 999999) / 1000000 evaluated in
+  time_conv_t, which is 64 bit whenever CH_CFG_TIME_TYPES_SIZE is 32. At a 1 MHz
+  tick that whole expression is the identity, but the compiler cannot rule out
+  the intermediate multiply overflowing, so it emits a __udivmoddi4 call - and
+  Cortex-M has no 64 bit divide. PC sampling put that call at 1.2% of core1
+  samples, three times per dshot cycle.
+ */
+#if CH_CFG_ST_FREQUENCY == 1000000
+#define RCOUT_US2I(us) ((sysinterval_t)(us))
+#else
+#define RCOUT_US2I(us) chTimeUS2I(us)
+#endif
+
 struct RCOutput::pwm_group RCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 #if HAL_SERIAL_ESC_COMM_ENABLED
 struct RCOutput::irq_state RCOutput::irq;
@@ -264,7 +280,7 @@ void RCOutput::rcout_thread()
             last_cycle_run_us = rcout_micros();
             // register a timer for the next tick if push() will not be providing it
             if (_dshot_rate != 1) {
-                chVTSet(&_dshot_rate_timer, chTimeUS2I(_dshot_period_us), dshot_update_tick, this);
+                chVTSet(&_dshot_rate_timer, RCOUT_US2I(_dshot_period_us), dshot_update_tick, this);
             }
         }
 
@@ -309,7 +325,7 @@ __RAMFUNC__ void RCOutput::dshot_update_tick(virtual_timer_t* vt, void* p)
     RCOutput* rcout = (RCOutput*)p;
 
     if (rcout->_dshot_cycle + 1 < rcout->_dshot_rate) {
-        chVTSetI(&rcout->_dshot_rate_timer, chTimeUS2I(rcout->_dshot_period_us), dshot_update_tick, p);
+        chVTSetI(&rcout->_dshot_rate_timer, RCOUT_US2I(rcout->_dshot_period_us), dshot_update_tick, p);
     }
     chEvtSignalI(rcout->rcout_thread_ctx, EVT_PWM_SYNTHETIC_SEND);
     chSysUnlockFromISR();
@@ -338,7 +354,7 @@ sysinterval_t RCOutput::calc_ticks_remaining(pwm_group &group, rcout_timer_t cyc
     const rcout_timer_t min_delay_us = 10; // matches our CH_CFG_ST_TIMEDELTA
     wait_us = constrain_uint32(wait_us, min_delay_us, max_delay_us);
 
-    return MIN(TIME_MAX_INTERVAL, chTimeUS2I(wait_us));
+    return MIN(TIME_MAX_INTERVAL, RCOUT_US2I(wait_us));
 }
 
 // release locks on the groups that are pending in reverse order
@@ -1904,7 +1920,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
 
 #if HAL_DSHOT_ENABLED
     if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)
-        || AP_HAL::micros64() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
+        || rcout_micros() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
     }
