@@ -255,6 +255,27 @@ void pico2_gpio_init(void)
     palSetLineMode(HAL_PWM_ALARM_GPIO_LINE, PAL_MODE_ALTERNATE_PWM);
 #endif
 
+#if defined(HAL_GPIO_INIT_LEVELS)
+    /*
+      Apply the hwdef OUTPUT HIGH/LOW level before enabling the driver, so the
+      pad never briefly drives the wrong way. Writing SIO GPIO_OUT is valid
+      before FUNCSEL selects SIO; it only takes effect once the mode is set
+      below. Same ordering as the chip selects further down.
+     */
+    typedef struct {
+        ioline_t pal_line;
+        uint8_t level;
+    } rp_gpio_level_t;
+    const rp_gpio_level_t gpio_levels[] = HAL_GPIO_INIT_LEVELS;
+    for (unsigned i = 0; i < sizeof(gpio_levels) / sizeof(gpio_levels[0]); i++) {
+        if (gpio_levels[i].level != 0U) {
+            palSetLine(gpio_levels[i].pal_line);
+        } else {
+            palClearLine(gpio_levels[i].pal_line);
+        }
+    }
+#endif
+
 #if defined(HAL_GPIO_PINS)
     typedef struct {
         uint8_t pin_num;
