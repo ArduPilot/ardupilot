@@ -9081,15 +9081,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                         "%.1fm, no improvement on its best of %.1fm for %us "
                         "(wanted within %.0fm of the %.0fm offset). In that "
                         "time the target's clock advanced %.0fs against the "
-                        "follower's %.0fs (%.2fx): a target whose simulated "
-                        "clock outruns the follower's flies further than the "
-                        "follower can ever catch, which is a host that cannot "
-                        "deliver the requested speedup of %u, not a follow "
-                        "failure" % (
+                        "follower's %.0fs (%.2fx). The two vehicles are "
+                        "separate processes with nothing tying their clocks "
+                        "together, so a target whose simulated clock outruns "
+                        "the follower's covers ground the follower is never "
+                        "given the time to cover: anything much above 1.0x "
+                        "here is that, not a failure to follow" % (
                             sep, best_sep, NO_PROGRESS_S,
                             OFFSET_CONVERGE_M, IDEAL_OFFSET_M,
-                            target_elapsed, follower_elapsed, skew,
-                            self.speedup))
+                            target_elapsed, follower_elapsed, skew))
                 if now - last_acquire_report > REPORT_INTERVAL_S:
                     last_acquire_report = now
                     self.progress(
