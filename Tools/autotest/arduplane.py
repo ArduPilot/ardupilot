@@ -9016,6 +9016,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # before we begin enforcing distance limits
             self.progress("Waiting for follower to re-acquire moving target")
             tstart = self.get_sim_time()
+            last_acquire_report = tstart
             while self.get_sim_time() - tstart < ACQUIRE_TIME_S:
                 self.drain_all_pexpects()
                 sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
@@ -9025,6 +9026,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                         "separation=%.1fm offset_error=%.1fm after %.0fs" % (
                             sep, ofs_err, self.get_sim_time() - tstart))
                     break
+                now = self.get_sim_time()
+                if now - last_acquire_report > REPORT_INTERVAL_S:
+                    last_acquire_report = now
+                    self.progress(
+                        "Re-acquiring: separation=%.1fm offset_error=%.1fm elapsed=%.0fs" % (
+                            sep, ofs_err, now - tstart))
                 time.sleep(0.1)
             else:
                 raise AutoTestTimeoutException(
