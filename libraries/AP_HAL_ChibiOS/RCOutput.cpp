@@ -377,7 +377,9 @@ void RCOutput::dshot_collect_dma_locks(rcout_timer_t cycle_start_us, rcout_timer
                 }
             }
 #endif
-            group.dma_handle->unlock();
+            if (group.dma_handle != nullptr) {
+                group.dma_handle->unlock();
+            }
         }
     }
 }
@@ -1293,7 +1295,20 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
             // this group is not affected
             continue;
         }
-        if (mode_requires_dma(thismode) && !group.have_up_dma) {
+        bool needs_up_dma = mode_requires_dma(thismode);
+#if defined(RP2350)
+        /*
+          DShot comes out of the PIO on this chip, not a timer DMAR burst, so
+          the group's UP DMA has nothing to do with it - requiring one here
+          downgraded every DShot request to plain PWM before set_group_mode()
+          could reach the PIO path. Serial LED and ESC passthrough do still
+          need a DMA and are still refused.
+         */
+        if (is_dshot_protocol(thismode)) {
+            needs_up_dma = false;
+        }
+#endif
+        if (needs_up_dma && !group.have_up_dma) {
             print_group_setup_error(group, "failed, no DMA");
             thismode = MODE_PWM_NORMAL;
         }
@@ -1744,15 +1759,24 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
     }
 
 #if AP_HAL_SHARED_DMA_ENABLED
-    // first make sure we have the DMA channel before anything else
-    osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
-    group.dma_handle->lock();
+    /*
+      There is no handle at all on RP2350: DShot comes out of the PIO and
+      setup_group_DMA() refuses before one is ever created, so there is nothing
+      to arbitrate for and nothing to lock.
+     */
+    if (group.dma_handle != nullptr) {
+        // first make sure we have the DMA channel before anything else
+        osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
+        group.dma_handle->lock();
+    }
 #endif
     // if we are sharing UP channels then it might have taken a long time to get here,
     // if there's not enough time to actually send a pulse then cancel
 #if AP_HAL_SHARED_DMA_ENABLED
     if (AP_HAL::timeout_remaining(cycle_start_us, rcout_micros(), timeout_period_us) < group.dshot_pulse_time_us) {
-        group.dma_handle->unlock();
+        if (group.dma_handle != nullptr) {
+            group.dma_handle->unlock();
+        }
         return;
     }
 #endif
@@ -1927,8 +1951,15 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
       Nothing further to do: writing the packets above already handed them to
       the state machines, which clock them out on their own. Everything below
       is the timer/DMAR burst that RP2350 does not have.
+
+      Straight back to IDLE, not SEND_COMPLETE. On a timer the DMA completion
+      walks the state on and dma_unlock() eventually returns it to IDLE; here
+      there is no completion event to do that, and is_dshot_send_allowed()
+      rejects SEND_COMPLETE - so the group would send exactly one frame at boot
+      and then be refused for good. The frame is on its way out of the state
+      machine by the time we return, so the group really is idle.
      */
-    group.dshot_state = DshotState::SEND_COMPLETE;
+    group.dshot_state = DshotState::IDLE;
     return;
 #else
 
