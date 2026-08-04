@@ -64,6 +64,7 @@
 #include "afs_rover.h"
 #endif
 #include "Parameters.h"
+#include "PWMForwarder.h"
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
@@ -127,6 +128,9 @@ private:
 
     // mapping between input channels
     RCMapper rcmap;
+
+    // external PWM input to SERVO output forwarding
+    PWMForwarder pwm_forwarder;
 
     // primary control channels
     RC_Channel *channel_steer;

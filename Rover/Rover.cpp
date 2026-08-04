@@ -77,6 +77,7 @@ const AP_Scheduler::Task Rover::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_OpticalFlow,      &rover.optflow,          update,         200, 160,  11),
 #endif
     SCHED_TASK(update_current_mode,   400,    200,  12),
+    SCHED_TASK_CLASS(PWMForwarder,       &rover.pwm_forwarder,     update,         100, 200,  14),
     SCHED_TASK(set_servos,            400,    200,  15),
     SCHED_TASK_CLASS(AP_GPS,              &rover.gps,              update,         50,  300,  18),
     SCHED_TASK_CLASS(AP_Baro,             &rover.barometer,        update,         10,  200,  21),

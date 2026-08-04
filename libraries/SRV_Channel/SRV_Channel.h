@@ -189,6 +189,10 @@ public:
         k_rcin15_mapped         = 154,
         k_rcin16_mapped         = 155,
         k_lift_release          = 156,
+        k_external_pwm_in1      = 157,
+        k_external_pwm_out1     = 158,
+        k_external_pwm_in2      = 159,
+        k_external_pwm_out2     = 160,
         k_nr_aux_servo_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } Aux_servo_function_t;
 

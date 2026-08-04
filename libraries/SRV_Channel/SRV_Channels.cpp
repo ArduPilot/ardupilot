@@ -444,7 +444,7 @@ bool SRV_Channels::get_output_pwm_chan(uint8_t chan, uint16_t &value)
     return true;
 }
 
-#if AP_SCRIPTING_ENABLED && AP_SCHEDULER_ENABLED
+#if AP_SCHEDULER_ENABLED
 // set output value for a specific function channel as a pwm value with loop based timeout
 // timeout_ms of zero will clear override of the channel
 // minimum override is 1 MAIN_LOOP
@@ -470,7 +470,7 @@ void SRV_Channels::set_output_pwm_chan_timeout(uint8_t chan, uint16_t value, uin
         }
     }
 }
-#endif  // AP_SCRIPTING_ENABLED
+#endif  // AP_SCHEDULER_ENABLED
 
 /*
   wrapper around hal.rcout->cork()
@@ -568,7 +568,10 @@ void SRV_Channels::zero_rc_outputs()
  */
 bool SRV_Channels::is_GPIO(uint8_t channel)
 {
-    if (channel_function(channel) == SRV_Channel::k_GPIO) {
+    const auto function = channel_function(channel);
+    if (function == SRV_Channel::k_GPIO ||
+        function == SRV_Channel::k_external_pwm_in1 ||
+        function == SRV_Channel::k_external_pwm_in2) {
         return true;
     }
     if (_singleton != nullptr && (_singleton->gpio_mask & (1U<<channel)) != 0) {

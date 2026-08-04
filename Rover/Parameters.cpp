@@ -106,6 +106,10 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Standard
     GSCALAR(pilot_steer_type, "PILOT_STEER_TYPE", 0),
 
+    // @Group: PWMFWD_
+    // @Path: PWMForwarder.cpp
+    GOBJECT(pwm_forwarder, "PWMFWD_", PWMForwarder),
+
     // @Param: FS_ACTION
     // @DisplayName: Failsafe Action
     // @Description: What to do on a failsafe event
