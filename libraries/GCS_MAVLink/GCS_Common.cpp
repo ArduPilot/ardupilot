@@ -15,6 +15,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// board-specific values generated into a hwdef fragment
+#if __has_include(<hwdef_boardid.h>)
+#include <hwdef_boardid.h>
+#endif
 #include "GCS_config.h"
 
 #if HAL_GCS_ENABLED

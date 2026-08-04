@@ -1,4 +1,4 @@
-#include "hwdef.h"
+#include "hwdef_internal.h"
 
 /*---------------------------------------------------------------------------/
 /  FatFs Functional Configurations

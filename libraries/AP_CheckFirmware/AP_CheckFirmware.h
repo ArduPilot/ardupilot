@@ -3,6 +3,9 @@
  */
 #pragma once
 
+#include "AP_CheckFirmware_config.h"
+
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_OpenDroneID/AP_OpenDroneID_config.h>
 #include <AP_HAL/AP_HAL.h>

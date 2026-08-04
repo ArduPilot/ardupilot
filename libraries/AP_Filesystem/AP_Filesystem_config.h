@@ -1,10 +1,25 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+// board-specific values for this subsystem are generated into a hwdef
+// fragment so they only enter the include closure of code using them
+#if __has_include(<hwdef_filesystem.h>)
+#include <hwdef_filesystem.h>
+#endif
 
-// used by LittleFS
-#define AP_FILESYSTEM_FLASH_JEDEC_NOR 1
-#define AP_FILESYSTEM_FLASH_W25NXX 2
+#ifndef HAL_OS_FATFS_IO
+#define HAL_OS_FATFS_IO 0
+#endif
+
+#ifndef HAL_OS_LITTLEFS_IO
+#define HAL_OS_LITTLEFS_IO 0
+#endif
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
+
+
+#include <AP_HAL/AP_HAL_Boards.h>
 
 // backends:
 
@@ -18,10 +33,6 @@
 
 #ifndef AP_FILESYSTEM_LITTLEFS_ENABLED
 #define AP_FILESYSTEM_LITTLEFS_ENABLED HAL_OS_LITTLEFS_IO
-#endif
-
-#ifndef AP_FILESYSTEM_LITTLEFS_FLASH_TYPE
-#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_JEDEC_NOR
 #endif
 
 #ifndef AP_FILESYSTEM_PARAM_ENABLED
@@ -38,11 +49,6 @@
 
 #ifndef AP_FILESYSTEM_SYS_ENABLED
 #define AP_FILESYSTEM_SYS_ENABLED 1
-#endif
-
-#ifndef AP_FILESYSTEM_POSIX_MAP_FILENAME_ALLOC
-// this requires AP_FILESYSTEM_POSIX_MAP_FILENAME_BASEDIR
-#define AP_FILESYSTEM_POSIX_MAP_FILENAME_ALLOC 0
 #endif
 
 // AP_FILESYSTEM_FILE_WRITING_ENABLED is true if you could expect to
@@ -65,19 +71,8 @@
 #define AP_FILESYSTEM_SYS_FLASH_ENABLED CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #endif
 
-#ifndef AP_FILESYSTEM_HAVE_DIRENT_DTYPE
-#define AP_FILESYSTEM_HAVE_DIRENT_DTYPE 1
-#endif
-
 #ifndef AP_FILESYSTEM_MISSION_ENABLED
 #include <AP_Mission/AP_Mission_config.h>
 #define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED
 #endif
 
-#ifndef AP_FATFS_MAX_IO_SIZE
-#define AP_FATFS_MAX_IO_SIZE 4096
-#endif
-
-#ifndef AP_FATFS_MIN_IO_SIZE
-#define AP_FATFS_MIN_IO_SIZE 4096
-#endif

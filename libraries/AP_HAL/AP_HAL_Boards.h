@@ -162,16 +162,8 @@
 #define HAL_OS_SOCKETS 0
 #endif
 
-#ifndef HAL_OS_POSIX_IO
-#define HAL_OS_POSIX_IO 0
-#endif
-
 #ifndef HAL_PARAM_DEFAULTS_PATH
 #define HAL_PARAM_DEFAULTS_PATH nullptr
-#endif
-
-#ifndef HAL_HAVE_IMU_HEATER
-#define HAL_HAVE_IMU_HEATER 0
 #endif
 
 #ifndef HAL_NUM_CAN_IFACES
@@ -186,16 +178,8 @@
 #define HAL_WITH_IO_MCU_BIDIR_DSHOT 0
 #endif
 
-#ifndef HAL_WITH_IO_MCU_DSHOT
-#define HAL_WITH_IO_MCU_DSHOT HAL_WITH_IO_MCU_BIDIR_DSHOT
-#endif
-
 #ifndef HAL_REQUIRES_BDSHOT_SUPPORT
 #define HAL_REQUIRES_BDSHOT_SUPPORT (defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT)
-#endif
-
-#ifndef AP_NOTIFY_TONEALARM_ENABLED
-#define AP_NOTIFY_TONEALARM_ENABLED 0
 #endif
 
 // support for Extended DShot Telemetry v2 is enabled only if any kind of such telemetry
@@ -218,14 +202,6 @@
 
 #ifndef AP_HAL_UARTDRIVER_ENABLED
 #define AP_HAL_UARTDRIVER_ENABLED 1
-#endif
-
-#ifndef HAL_OS_FATFS_IO
-#define HAL_OS_FATFS_IO 0
-#endif
-
-#ifndef HAL_OS_LITTLEFS_IO
-#define HAL_OS_LITTLEFS_IO 0
 #endif
 
 #ifndef HAL_BARO_DEFAULT
@@ -306,10 +282,6 @@
 #define AP_SIGNED_FIRMWARE 0
 #endif
 
-#ifndef HAL_DSHOT_ALARM_ENABLED
-#define HAL_DSHOT_ALARM_ENABLED 0
-#endif
-
 #ifndef HAL_DSHOT_ENABLED
 #define HAL_DSHOT_ENABLED 1
 #endif
@@ -320,10 +292,6 @@
 
 #ifndef HAL_SERIAL_ESC_COMM_ENABLED
 #define HAL_SERIAL_ESC_COMM_ENABLED 1
-#endif
-
-#ifndef AP_BOOTLOADER_FLASHING_ENABLED
-#define AP_BOOTLOADER_FLASHING_ENABLED 0
 #endif
 
 #ifndef HAL_HNF_MAX_FILTERS
@@ -400,10 +368,6 @@
 
 #ifndef HAL_WITH_POSTYPE_DOUBLE
 #define HAL_WITH_POSTYPE_DOUBLE HAL_PROGRAM_SIZE_LIMIT_KB > 1024
-#endif
-
-#ifndef HAL_INS_RATE_LOOP
-#define HAL_INS_RATE_LOOP 0
 #endif
 
 #define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)

@@ -14,6 +14,11 @@
  */
 #pragma once
 
+// board-specific values generated into a hwdef fragment
+#if __has_include(<hwdef_gpio.h>)
+#include <hwdef_gpio.h>
+#endif
+
 /*
   AP_Radio implementation for CC2500 2.4GHz radio.
 

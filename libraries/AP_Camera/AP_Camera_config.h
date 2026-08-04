@@ -1,5 +1,12 @@
 #pragma once
 
+// board-specific values for this subsystem are generated into a hwdef
+// fragment so they only enter the include closure of code using them
+#if __has_include(<hwdef_camera.h>)
+#include <hwdef_camera.h>
+#endif
+
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Mount/AP_Mount_config.h>
 #include <AP_Relay/AP_Relay_config.h>

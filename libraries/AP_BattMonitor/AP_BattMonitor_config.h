@@ -1,5 +1,12 @@
 #pragma once
 
+// board-specific values for this subsystem are generated into a hwdef
+// fragment so they only enter the include closure of code using them
+#if __has_include(<hwdef_battery.h>)
+#include <hwdef_battery.h>
+#endif
+
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_config.h>
 #include <AP_EFI/AP_EFI_config.h>

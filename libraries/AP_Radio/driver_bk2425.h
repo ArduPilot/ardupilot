@@ -6,6 +6,11 @@
 
 #pragma once
 
+// board-specific values generated into a hwdef fragment
+#if __has_include(<hwdef_gpio.h>)
+#include <hwdef_gpio.h>
+#endif
+
 #include "AP_Radio_config.h"
 
 #if AP_RADIO_BK2425_ENABLED

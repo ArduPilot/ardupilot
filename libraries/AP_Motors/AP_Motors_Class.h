@@ -10,6 +10,16 @@
 #include <AP_Logger/AP_Logger_config.h>
 #include <SRV_Channel/SRV_Channel_config.h>
 
+#ifndef AP_MOTORS_MAX_NUM_MOTORS
+#if AP_SCRIPTING_ENABLED
+#define AP_MOTORS_MAX_NUM_MOTORS 32
+#else
+#define AP_MOTORS_MAX_NUM_MOTORS 12
+#endif
+#endif
+
+#define AP_MOTORS_FRAME_OCTAQUAD_COROTATING_SCALE_FACTOR 0.9
+
 // offsets for motors in motor_out and _motor_filtered arrays
 #define AP_MOTORS_MOT_1 0U
 #define AP_MOTORS_MOT_2 1U

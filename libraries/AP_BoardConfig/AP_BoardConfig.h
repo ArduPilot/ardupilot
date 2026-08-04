@@ -1,5 +1,24 @@
 #pragma once
 
+// board-specific values generated into a hwdef fragment
+#include "IMU_heater_config.h"
+
+#if __has_include(<hwdef_caps.h>)
+#include <hwdef_caps.h>
+#endif
+
+#ifndef HAL_WITH_IO_MCU_DSHOT
+#define HAL_WITH_IO_MCU_DSHOT HAL_WITH_IO_MCU_BIDIR_DSHOT
+#endif
+
+
+// board-specific values generated into a hwdef fragment
+#include <AP_Filesystem/AP_Filesystem_config.h>
+#if __has_include(<hwdef_gpio.h>)
+#include <hwdef_gpio.h>
+#endif
+
+
 #include "AP_BoardConfig_config.h"
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>

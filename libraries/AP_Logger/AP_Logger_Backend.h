@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include "AP_Logger_config.h"
 
 #if HAL_LOGGING_ENABLED

@@ -1,5 +1,12 @@
 #pragma once
 
+// board-specific values for this subsystem are generated into a hwdef
+// fragment so they only enter the include closure of code using them
+#if __has_include(<hwdef_airspeed.h>)
+#include <hwdef_airspeed.h>
+#endif
+
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_MSP/AP_MSP_config.h>

@@ -26,6 +26,127 @@ class ChibiOSHWDefIncludeNotFoundException(Exception):
         self.includer = includer
 
 
+class HeaderRouter(object):
+    '''file-like writer which routes generated definitions to one of
+    several output headers based on the name of the macro being defined.
+    Board-specific definitions (pins, DMA assignments, peripheral
+    tables) are kept out of the header included by every translation
+    unit so that ccache can share object files between similar boards
+    (direct mode hashes the raw bytes of every included file).  Lines
+    which do not start a new definition stay with the most recently
+    selected output.'''
+
+    define_re = re.compile(r'\s*#\s*(?:define|undef|ifdef|ifndef)\s+([A-Za-z_][A-Za-z0-9_]*)')
+    cond_open_re = re.compile(r'\s*#\s*(?:if|ifdef|ifndef)\b')
+    cond_close_re = re.compile(r'\s*#\s*endif\b')
+    pending_re = re.compile(r'\s*(//|$)')
+
+    def __init__(self, default):
+        self.outputs = {}
+        self.rules = []
+        self.default = default
+        self.current = default
+        # conditional groups (#if..#endif) are routed atomically so a
+        # group can never be split between output files:
+        self.depth = 0
+        self.group = []
+        self.group_target = None
+        self.pending = []
+        self.line_open = {}
+        # fragment headers must contain only preprocessor directives:
+        # blank and comment lines would survive preprocessing as blank
+        # output lines, making otherwise-identical translation units
+        # differ between boards
+        self.directives_only = set()
+
+    def add_output(self, name, fh, directives_only=False):
+        self.outputs[name] = fh
+        if directives_only:
+            self.directives_only.add(name)
+
+    def add_rules(self, rules):
+        for (pattern, target) in rules:
+            self.rules.append((re.compile(pattern), target))
+
+    def target_for_name(self, name):
+        for (regex, target) in self.rules:
+            if regex.match(name):
+                return target
+        return self.default
+
+    def valid_target(self, target):
+        if target is None or target not in self.outputs:
+            return self.default
+        return target
+
+    def write(self, s):
+        for line in s.splitlines(keepends=True):
+            self.route_line(line)
+
+    def route_line(self, line):
+        if self.depth == 0:
+            m = self.define_re.match(line)
+            if self.cond_open_re.match(line):
+                self.depth = 1
+                self.group = [line]
+                self.group_target = self.target_for_name(m.group(1)) if m else None
+                return
+            if m is not None:
+                self.current = self.valid_target(self.target_for_name(m.group(1)))
+                self.flush_pending()
+            elif self.pending_re.match(line) and not self.line_open.get(self.current, False):
+                # comments and blank lines describe the definition which
+                # follows; hold them so they land in the same file
+                self.pending.append(line)
+                return
+            else:
+                self.flush_pending()
+            self.emit(self.current, line)
+            return
+        self.group.append(line)
+        if self.cond_open_re.match(line):
+            self.depth += 1
+            return
+        if self.cond_close_re.match(line):
+            self.depth -= 1
+            if self.depth == 0:
+                self.flush_group()
+            return
+        if self.group_target is None:
+            m = self.define_re.match(line)
+            if m is not None:
+                self.group_target = self.target_for_name(m.group(1))
+
+    def flush_pending(self):
+        for line in self.pending:
+            self.emit(self.current, line)
+        self.pending = []
+
+    def flush_group(self):
+        self.current = self.valid_target(self.group_target)
+        self.flush_pending()
+        for line in self.group:
+            self.emit(self.current, line)
+        self.group = []
+        self.group_target = None
+
+    def emit(self, target, line):
+        if target in self.directives_only:
+            stripped = line.strip()
+            if (stripped == '' or stripped.startswith('//') or
+                    (stripped.startswith('/*') and stripped.endswith('*/'))):
+                return
+        self.outputs[target].write(line)
+        self.line_open[target] = not line.endswith('\n')
+
+    def close(self):
+        if self.group:
+            self.flush_group()
+        self.flush_pending()
+        for fh in self.outputs.values():
+            fh.close()
+
+
 class ChibiOSHWDef(hwdef.HWDef):
 
     # output variables for each pin
@@ -890,7 +1011,12 @@ class ChibiOSHWDef(hwdef.HWDef):
 
     def write_mcu_config(self, f):
         '''write MCU config defines'''
-        f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % os.path.basename(os.path.dirname(self.hwdef[0])))
+        board_name = os.path.basename(os.path.dirname(self.hwdef[0]))
+        f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % board_name)
+        if not any(line.startswith('define CHIBIOS_SHORT_BOARD_NAME') for line in self.alllines):
+            # resolved here rather than aliased in AP_HAL/board/chibios.h
+            # so consumers only need the hwdef_boardid.h fragment
+            f.write('#define CHIBIOS_SHORT_BOARD_NAME "%s"\n' % board_name)
         f.write('// MCU type (ChibiOS define)\n')
         f.write('#define %s_MCUCONF\n' % self.get_config('MCU'))
         mcu_subtype = self.get_config('MCU', 1)
@@ -2427,10 +2553,12 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 f.write('#define STM32_SPI_USE_%s                  TRUE\n' % type)
             if type.startswith('I2C'):
                 f.write('#define STM32_I2C_USE_%s                  TRUE\n' % type)
-            if type.startswith('QUADSPI'):
+            if type.startswith('QUADSPI') or type.startswith('OCTOSPI'):
                 f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
-            if type.startswith('OCTOSPI'):
-                f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
+                # STM32_WSPI_USE_* lives in hwdef_internal.h;
+                # AP_HAL/board/chibios.h needs the derived flag where
+                # all code can see it
+                f.write('#define HAL_USE_%s TRUE\n' % type)
 
     def get_dma_exclude(self, periph_list):
         '''return list of DMA devices to exclude from DMA'''
@@ -2475,6 +2603,210 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         if not self.is_periph_fw() and not os.getenv("NO_ROMFS_HWDEF", False):
             self.romfs["hwdef.dat"] = hwdat
+
+    # headers a definition can be routed to.  "internal" is only visible
+    # to the ChibiOS system layer and AP_HAL_ChibiOS; each fragment is
+    # included from the owning subsystem's _config.h (or equivalent), so
+    # its board-specific values only enter the include closure of code
+    # which actually uses them:
+    HWDEF_FRAGMENTS = ['logging', 'camera', 'parachute', 'filesystem',
+                       'button', 'rssi', 'storage', 'caps', 'heater',
+                       'serial', 'ins', 'mag', 'baro', 'airspeed',
+                       'battery', 'notify', 'boardid', 'gpio', 'spidev']
+
+    # macro-name → header routing table; first match wins, no match
+    # goes to the public hwdef.h:
+    header_routing_rules = [
+        # board-private: ChibiOS configuration, pin muxing, DMA
+        # assignments and peripheral tables
+        (r'STM32_', 'internal'),
+        (r'VAL_GPIO', 'internal'),
+        (r'PIN_(MODE|ODR|OTYPE|OSPEED|PUPDR|AFIO|SPEED|PULLUP|PULLDOWN|UNDEFINED|INPUT)', 'internal'),
+        (r'HAL_GPIO_LINE_', 'internal'),
+        (r'HAL_SPI\d', 'internal'),
+        (r'HAL_SPI_BUS_LIST$', 'internal'),
+        (r'HAL_SPI_DEVICE', 'internal'),
+        (r'HAL_SPI_CHECK_CLOCK', 'internal'),
+        (r'HAL_WSPI', 'internal'),
+        (r'HAL_I2C\d', 'internal'),
+        (r'HAL_I2C_DEVICE_LIST$', 'internal'),
+        # exceptions consumed by shared code:
+        (r'HAL_USE_MAC$', 'public'),
+        (r'HAL_USE_(QUAD|OCTO)SPI\d$', 'public'),
+        (r'HAL_USE_', 'internal'),
+        (r'HAL_US?ART\d+_CONFIG', 'internal'),
+        # AP_SerialManager tests presence of the OTG configs:
+        (r'HAL_OTG\d+_CONFIG', 'serial'),
+        (r'HAL_SERIAL\w*_DRIVER', 'internal'),
+        (r'HAL_UART_IO', 'internal'),
+        (r'HAL_CRASH_SERIAL_PORT', 'internal'),
+        (r'IRQ_DISABLE_HAL_CRASH', 'internal'),
+        (r'RCC_RESET_HAL_CRASH', 'internal'),
+        (r'HAL_USB_STRING_', 'internal'),
+        (r'HAL_(CC_)?MEMORY_REGIONS', 'internal'),
+        (r'HAL_RAM0_START', 'internal'),
+        (r'HAL_RAM_RESERVE_START', 'internal'),
+        (r'HAL_PWM_GROUP', 'internal'),
+        (r'HAL_ANALOG\d*_PINS$', 'internal'),
+        (r'HAL_GPIO_PINS$', 'internal'),
+        (r'BOARD_CHECK_', 'boardid'),
+        (r'HAL_WITH_IO_MCU_DSHOT$', 'caps'),
+        (r'HAL_HAVE_IMU_HEATER$', 'heater'),
+        (r'INS_MAX_INSTANCES$', 'ins'),
+        (r'HAL_SERIAL_DEVICE_LIST$', 'internal'),
+        (r'STORAGE_FLASH_PAGE$', 'internal'),
+        (r'HAL_TIM\d+_UP_SHARED', 'internal'),
+        (r'HAL_PWM\d+_DMA_CONFIG', 'internal'),
+        (r'HAL_IC\d+_CH\d+_DMA_CONFIG', 'internal'),
+        (r'SHARED_DMA_MASK', 'internal'),
+        (r'BOARD_PHY_', 'internal'),
+        (r'CH_CFG_', 'internal'),
+        (r'HAL_EXPECTED_SYSCLOCK', 'internal'),
+        (r'FATFS_HAL_DEVICE', 'internal'),
+        # subsystem fragments
+        (r'DEFAULT_SERIAL', 'serial'),
+        (r'HAL_HAVE_SERIAL\d', 'serial'),
+        (r'HAL_HAVE_RTSCTS_SERIAL\d', 'serial'),
+        (r'HAL_HAVE_LOW_NOISE_UART', 'serial'),
+        (r'HAL_NUM_SERIAL_PORTS$', 'serial'),
+        (r'HAL_UART_NUM_SERIAL_PORTS$', 'serial'),
+        (r'HAL_INS_', 'ins'),
+        (r'HAL_DEFAULT_INS_FAST_SAMPLE', 'ins'),
+        (r'HAL_MAG_PROBE', 'mag'),
+        (r'HAL_PROBE_EXTERNAL_I2C_COMPASSES', 'mag'),
+        (r'AP_COMPASS_', 'mag'),
+        (r'HAL_COMPASS_', 'mag'),
+        (r'HAL_BARO_PROBE', 'baro'),
+        (r'HAL_BARO_ALLOW_INIT_NO_BARO', 'baro'),
+        (r'AP_BARO_', 'baro'),
+        (r'HAL_AIRSPEED_PROBE', 'airspeed'),
+        (r'HAL_DEFAULT_AIRSPEED_PIN', 'airspeed'),
+        (r'HAL_BATT', 'battery'),
+        (r'AP_NOTIFY_', 'notify'),
+        (r'HAL_BUZZER', 'notify'),
+        (r'HAL_PWM_ALARM$', 'notify'),
+        (r'HAL_GPIO_[A-C]_LED_PIN$', 'notify'),
+        (r'HAL_LOGGING_', 'logging'),
+        (r'HAL_RUNCAM_ENABLED$', 'camera'),
+        (r'HAL_PARACHUTE_ENABLED$', 'parachute'),
+        (r'HAL_OS_(FATFS|LITTLEFS|POSIX)_IO$', 'filesystem'),
+        (r'USE_POSIX$', 'filesystem'),
+        (r'AP_FILESYSTEM_LITTLEFS_FLASH_TYPE$', 'filesystem'),
+        # derived from HAL_OS_*_IO so must be evaluated after them:
+        (r'AP_TERRAIN_AVAILABLE$', 'filesystem'),
+        (r'HAL_BOARD_TERRAIN_DIRECTORY$', 'filesystem'),
+        (r'HAL_BUTTON_ENABLED$', 'button'),
+        (r'BOARD_RSSI_', 'rssi'),
+        (r'HAL_PWM_COUNT$', 'notify'),
+        (r'HAL_DSHOT_ALARM_ENABLED$', 'notify'),
+        (r'AP_BOOTLOADER_FLASHING_ENABLED$', 'caps'),
+        (r'APJ_BOARD_ID$', 'boardid'),
+        (r'CHIBIOS_BOARD_NAME$', 'boardid'),
+        (r'CHIBIOS_SHORT_BOARD_NAME$', 'boardid'),
+        (r'HAL_USB_VENDOR_ID$', 'boardid'),
+        (r'HAL_USB_PRODUCT_ID$', 'boardid'),
+        (r'HAL_GPIO_PIN_', 'gpio'),
+        (r'HAL_WITH_SPI_', 'spidev'),
+    ]
+
+    def open_generated_header(self, path, unique_tag=None):
+        '''open a generated header with the standard prologue.  A
+        directives-only header contains no comments or blank lines
+        anywhere: any textual output would survive preprocessing and
+        make otherwise-identical translation units differ between
+        boards'''
+        f = open(path, 'w')
+        if unique_tag is not None:
+            # no comments or blank lines: any textual output line would
+            # survive preprocessing and make otherwise-identical
+            # translation units differ between boards.  The unique
+            # guard stops gcc treating identical-content fragments as
+            # duplicates of one #pragma once file and skipping them;
+            # the marker declaration guarantees one constant line of
+            # text output so gcc represents the inclusion identically
+            # whether or not the board defines anything in it
+            f.write('''#pragma once
+#ifndef HWDEF_%s_H
+#define HWDEF_%s_H
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef __ASSEMBLER__
+struct hwdef_fragment_marker;
+#endif
+''' % (unique_tag, unique_tag))
+            return f
+        f.write('''/*
+ generated hardware definitions from hwdef.dat - DO NOT EDIT
+*/
+
+#pragma once
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
+''')
+        return f
+
+    def write_hwdef_header(self, outfilename):
+        '''write hwdef header files.  Definitions are routed by macro
+        name to hwdef.h (seen by all translation units),
+        hwdef_internal.h (ChibiOS system layer and AP_HAL_ChibiOS only)
+        or per-subsystem hwdef_<subsystem>.h fragments, so that
+        board-specific values stay out of headers included everywhere;
+        this lets ccache share object files between similar boards.'''
+        self.progress("Writing hwdef setup in %s" % outfilename)
+
+        router = HeaderRouter('public')
+        router.add_output('public', self.open_generated_header(outfilename))
+        internal = self.open_generated_header(self.get_output_path('hwdef_internal.h'))
+        internal.write('#include "hwdef.h"\n')
+        for frag in self.HWDEF_FRAGMENTS:
+            fh = self.open_generated_header(self.get_output_path('hwdef_%s.h' % frag), unique_tag=frag.upper())
+            router.add_output(frag, fh, directives_only=True)
+            internal.write('#include "hwdef_%s.h"\n' % frag)
+        internal.write('\n')
+        router.add_output('internal', internal)
+        router.add_rules(self.header_routing_rules)
+
+        self.write_hwdef_header_content(router)
+
+        rate_capable = (self.mcu_series.startswith('STM32H7') or
+                        self.mcu_series.startswith('STM32F7') or
+                        (self.mcu_series.startswith('STM32F4') and
+                         self.intdefines.get('INS_MAX_INSTANCES') == 1))
+        if rate_capable:
+            # resolved here: the STM32 family macros and INS_MAX_INSTANCES
+            # this was previously derived from in AP_HAL/board/chibios.h
+            # are no longer visible together anywhere
+            router.outputs['ins'].write("""#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
+#endif
+""")
+
+        if (self.get_config('STORAGE_FLASH_PAGE', required=False) is not None or
+                'STORAGE_FLASH_PAGE' in self.intdefines):
+            # the page number lives in hwdef_internal.h; AP_Param needs
+            # to know flash-backed storage is in use
+            router.outputs['storage'].write('#define HAL_STORAGE_FLASH_PAGE_ENABLED 1\n')
+
+        if 'SAFETY_IN' in self.bylabel and 'HAL_HAVE_SAFETY_SWITCH' not in self.intdefines:
+            # the safety switch pin definition lives in hwdef_gpio.h;
+            # AP_HAL/board/chibios.h derives HAL_HAVE_SAFETY_SWITCH from
+            # its presence, so provide the derived flag where all code
+            # can see it
+            router.outputs['public'].write('#define HAL_HAVE_SAFETY_SWITCH 1\n')
+
+        router.close()
 
     def write_hwdef_header_content(self, f):
         '''write hwdef header file'''
