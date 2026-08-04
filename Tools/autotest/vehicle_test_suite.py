@@ -3472,6 +3472,134 @@ class TestSuite(abc.ABC):
         util.pexpect_close(self.sitl)
         self.sitl = None
 
+    def additional_vehicle_port(self, instance):
+        '''TCP port an additional vehicle's SERIAL0 listens on.  SITL offsets
+        its base port by ten for each -I instance (SITL_cmdline.cpp).'''
+        return self.adjust_ardupilot_port(5760) + instance * 10
+
+    def start_additional_vehicle(self,
+                                 instance,
+                                 sysid,
+                                 model,
+                                 rundir=None,
+                                 defaults_filepath=None,
+                                 param_defaults=None,
+                                 customisations=None,
+                                 home=None,
+                                 wipe=True,
+                                 timeout=60):
+        '''Start a second vehicle alongside the one under test and connect to
+        it.  Returns (sitl, mav); pass both to stop_additional_vehicle() when
+        done, from a finally: block so a failing test cannot leak the process.
+
+        The vehicle is started at this test's speedup so that both vehicles
+        agree about how fast time passes, and given MAV_SYSID so the two can
+        be told apart on a shared link.
+
+        Two things to know before writing a test against a second vehicle:
+
+        pause_SITL(), and so drain_mav() and every get_sim_time() that calls
+        it, stops only self.sitl.  A vehicle started here keeps flying
+        through those pauses, so a loop polling get_sim_time() hands it
+        simulated time the vehicle under test never gets, and the two drift
+        apart.  Poll with get_sim_time_cached(), which does not drain.
+
+        Each vehicle also stops its own main loop while its serial0 output
+        queue is full, waiting for whoever is reading it (SITL_State.cpp).
+        Whatever is streamed from either vehicle has to be read promptly, or
+        that vehicle's clock stops while the other's runs on.
+        '''
+        if home is None:
+            home = self.sitl_home()
+        if rundir is None:
+            # each vehicle needs its own directory: they write logs, terrain
+            # and an eeprom, and sharing those between instances corrupts all
+            # of them in ways that are tedious to work out afterwards
+            rundir = 'additional-vehicle-%u' % instance
+        rundir = util.reltopdir(rundir)
+        if not os.path.exists(rundir):
+            os.mkdir(rundir)
+
+        params = {
+            "MAV_SYSID": sysid,
+            "SIM_SPEEDUP": self.speedup,
+        }
+        if param_defaults is not None:
+            params.update(param_defaults)
+
+        cust = [
+            '-I%u' % instance,
+            '--speedup=%u' % self.speedup,
+        ]
+        if customisations is not None:
+            cust.extend(customisations)
+
+        self.progress("Starting additional vehicle (instance=%u sysid=%u speedup=%u)" %
+                      (instance, sysid, self.speedup))
+        sitl = util.start_SITL(
+            self.binary,
+            cwd=rundir,
+            model=model,
+            home=home,
+            speedup=self.speedup,
+            defaults_filepath=defaults_filepath,
+            gdb=self.gdb,
+            wipe=wipe,
+            customisations=cust,
+            param_defaults=params,
+        )
+        self.expect_list_add(sitl)
+
+        mav = None
+        try:
+            # let it get through early boot, draining its output the whole
+            # time so it cannot block writing to a full pty
+            tstart = time.time()
+            while time.time() - tstart < 2:
+                self.drain_all_pexpects()
+                time.sleep(0.1)
+
+            port = self.additional_vehicle_port(instance)
+            self.progress("Connecting to additional vehicle on tcp:localhost:%u" % port)
+            mav = mavutil.mavlink_connection(
+                "tcp:localhost:%u" % port,
+                robust_parsing=True,
+                source_system=250 + instance,
+                source_component=250 + instance,
+            )
+
+            tstart = time.time()
+            while True:
+                if time.time() - tstart > timeout:
+                    raise AutoTestTimeoutException(
+                        "No heartbeat from additional vehicle (sysid=%u)" % sysid)
+                self.drain_all_pexpects()
+                msg = mav.recv_match(type='HEARTBEAT', blocking=True, timeout=0.5)
+                if msg is None:
+                    continue
+                if msg.get_srcSystem() != sysid:
+                    continue
+                mav.target_system = msg.get_srcSystem()
+                mav.target_component = msg.get_srcComponent()
+                self.progress("Additional vehicle connected, sysid=%u" % msg.get_srcSystem())
+                break
+        except Exception:
+            self.stop_additional_vehicle(sitl, mav)
+            raise
+
+        return sitl, mav
+
+    def stop_additional_vehicle(self, sitl, mav):
+        '''tear down a vehicle started by start_additional_vehicle().  Safe to
+        call with either argument None, so it can be used in a finally: block
+        which may run before both were created.'''
+        if mav is not None:
+            mav.close()
+        if sitl is not None:
+            self.progress("Stopping additional vehicle")
+            self.expect_list_remove(sitl)
+            util.pexpect_close(sitl)
+
     def start_test(self, description):
         self.progress("##################################################################################")
         self.progress("########## %s  ##########" % description)
