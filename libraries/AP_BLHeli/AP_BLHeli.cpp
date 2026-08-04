@@ -418,15 +418,9 @@ void AP_BLHeli::msp_process_command(void)
     case MSP_UID:
         // MCU identifier
         debug("MSP_UID");
-#ifdef UDID_START
-        msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
-#else
-        {
-            // boards without a fixed UID address (e.g. SITL) reply with zeros
-            const uint8_t zero_uid[12] = {0};
-            msp_send_reply(msp.cmdMSP, zero_uid, sizeof(zero_uid));
-        }
-#endif
+      uint8_t uid[12] {};
+      hal.util->get_system_id_unformatted(uid, sizeof(uid));
+      msp_send_reply(msp.cmdMSP, uid, sizeof(uid));
         break;
 
         // a literal "4" is used for the PWMType here to allow Rover
