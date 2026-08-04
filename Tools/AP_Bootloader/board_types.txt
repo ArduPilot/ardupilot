@@ -50,6 +50,7 @@ TARGET_HW_ARK_CAN_RTK_GPS              82
 TARGET_HW_ARK_CANNODE                  83
 TARGET_HW_FF_RTK_CAN_GPS               85
 TARGET_HW_PDW_MAS_MAIN-V1              86
+TARGET_HW_ARK_X20_GPS                  89
 TARGET_HW_ATL_MANTIS_EDU               97
 TARGET_HW_THE_PEACH_K1                212
 TARGET_HW_THE_PEACH_R1                213
