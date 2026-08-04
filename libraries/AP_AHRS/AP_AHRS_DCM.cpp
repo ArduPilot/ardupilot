@@ -153,6 +153,9 @@ AP_AHRS_DCM::update()
 #endif // HAL_LOGGING_ENABLED
 }
 
+// note that contrary to most code we leave commented code in here as
+// an exhaustive list of all of the data that *can* be returned in the
+// Estimates:
 void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 {
     const auto now_ms = AP_HAL::millis();
