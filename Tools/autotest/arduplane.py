@@ -8763,8 +8763,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # drains (SITL_State.cpp), which freezes this vehicle's clock
             # while the target's keeps running -- the two then disagree about
             # how much time has passed and the target flies away from a
-            # follower that was never given the time to catch it.  This test
-            # reads position every few seconds, so ask for much less.
+            # follower that cannot catch what it can no longer see moving.
+            # This test reads position every few seconds, so ask for less.
             self.set_streamrate(FOLLOWER_STREAMRATE_HZ)
 
             # ------------------------------------------------------------
@@ -9033,11 +9033,22 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             last_update = self.get_sim_time()
 
             while True:
-                if self.get_sim_time() - tstart > ACQUIRE_TIME_S:
+                # get_sim_time_cached(), never get_sim_time(), anywhere this test
+                # polls.  get_sim_time() drains, and drain_mav() SIGSTOPs the SITL
+                # process while it does so -- but only the primary vehicle's, since
+                # that is the only one the suite knows about.  The target is not
+                # paused and goes on flying, so every poll hands it simulated time
+                # the follower never gets.  Poll often enough and the two vehicles
+                # disagree about how much time has passed, the target draws away,
+                # and the follower is failed for not keeping up with something it
+                # was never given the chance to reach.  Do not change these back.
+                if self.get_sim_time_cached() - tstart > ACQUIRE_TIME_S:
                     raise AutoTestTimeoutException(
                         "Follower failed to acquire loitering target within %us" % ACQUIRE_TIME_S)
                 self.drain_all_pexpects()
-                now = self.get_sim_time()
+                # cached: get_sim_time() would pause only this vehicle, letting the
+                # target gain simulated time on it -- see the note above
+                now = self.get_sim_time_cached()
                 sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
                 if now - last_update >= 5:
                     self.progress("Acquiring: separation=%.1fm offset_error=%.1fm (%.0fs elapsed)" % (
@@ -9079,19 +9090,40 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # before we begin enforcing distance limits
             self.progress("Waiting for follower to re-acquire moving target")
             tstart = self.get_sim_time()
+            # Both vehicles are separate SITL processes, each free-running at
+            # whatever rate the host gives it, with nothing tying their clocks
+            # together.  If the target's simulated clock outruns the
+            # follower's it covers ground the follower cannot make up, and no
+            # amount of chasing closes the gap -- so measure the two clocks
+            # and say so, rather than reporting it as a failure to follow.
+            target_tstart = self.get_sim_time(mav=target_mav)
             last_acquire_report = tstart
             best_sep = None
             best_sep_time = tstart
-            while self.get_sim_time() - tstart < ACQUIRE_TIME_S:
+            # get_sim_time_cached(), never get_sim_time(), anywhere this test
+            # polls.  get_sim_time() drains, and drain_mav() SIGSTOPs the SITL
+            # process while it does so -- but only the primary vehicle's, since
+            # that is the only one the suite knows about.  The target is not
+            # paused and goes on flying, so every poll hands it simulated time
+            # the follower never gets.  Poll often enough and the two vehicles
+            # disagree about how much time has passed, the target draws away,
+            # and the follower is failed for not keeping up with something it
+            # was never given the chance to reach.  Do not change these back.
+            while self.get_sim_time_cached() - tstart < ACQUIRE_TIME_S:
                 self.drain_all_pexpects()
                 sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
                 if abs(sep - IDEAL_OFFSET_M) <= OFFSET_CONVERGE_M:
+                    # cached: get_sim_time() would pause only this vehicle,
+                    # letting the target gain simulated time on it -- see the
+                    # note above
                     self.progress(
                         "Follower re-acquired moving target: "
                         "separation=%.1fm offset_error=%.1fm after %.0fs" % (
-                            sep, ofs_err, self.get_sim_time() - tstart))
+                            sep, ofs_err, self.get_sim_time_cached() - tstart))
                     break
-                now = self.get_sim_time()
+                # cached: get_sim_time() would pause only this vehicle, letting the
+                # target gain simulated time on it -- see the note above
+                now = self.get_sim_time_cached()
                 # A follower that is closing will keep improving on its best
                 # separation.  One that has stopped closing altogether -- for
                 # instance holding the target's heading and flying alongside
@@ -9102,12 +9134,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     best_sep = sep
                     best_sep_time = now
                 elif now - best_sep_time > NO_PROGRESS_S:
+                    follower_elapsed = now - tstart
+                    target_elapsed = self.get_sim_time(mav=target_mav) - target_tstart
+                    skew = target_elapsed / follower_elapsed if follower_elapsed > 0 else 0
                     raise NotAchievedException(
                         "Follower stopped closing on the target: separation "
                         "%.1fm, no improvement on its best of %.1fm for %us "
-                        "(wanted within %.0fm of the %.0fm offset)" % (
+                        "(wanted within %.0fm of the %.0fm offset). In that "
+                        "time the target's clock advanced %.0fs against the "
+                        "follower's %.0fs (%.2fx): a target whose simulated "
+                        "clock outruns the follower's flies further than the "
+                        "follower can ever catch, which is a host that cannot "
+                        "deliver the requested speedup of %u, not a follow "
+                        "failure" % (
                             sep, best_sep, NO_PROGRESS_S,
-                            OFFSET_CONVERGE_M, IDEAL_OFFSET_M))
+                            OFFSET_CONVERGE_M, IDEAL_OFFSET_M,
+                            target_elapsed, follower_elapsed, skew,
+                            self.speedup))
                 if now - last_acquire_report > REPORT_INTERVAL_S:
                     last_acquire_report = now
                     self.progress(
@@ -9137,7 +9180,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Monitoring loop start: sim_time=%.1f" % tstart)
             while True:
                 try:
-                    if self.get_sim_time() - tstart >= MISSION_TIMEOUT_S:
+                    # get_sim_time_cached(), never get_sim_time(), anywhere this test
+                    # polls.  get_sim_time() drains, and drain_mav() SIGSTOPs the SITL
+                    # process while it does so -- but only the primary vehicle's, since
+                    # that is the only one the suite knows about.  The target is not
+                    # paused and goes on flying, so every poll hands it simulated time
+                    # the follower never gets.  Poll often enough and the two vehicles
+                    # disagree about how much time has passed, the target draws away,
+                    # and the follower is failed for not keeping up with something it
+                    # was never given the chance to reach.  Do not change these back.
+                    if self.get_sim_time_cached() - tstart >= MISSION_TIMEOUT_S:
                         sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
                         raise AutoTestTimeoutException(
                             "Mission did not complete within %us: "
@@ -9149,7 +9201,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     mav_wp = target_mav.recv_match(type='MISSION_CURRENT', blocking=False)
                     if mav_wp is not None and mav_wp.seq != last_target_wp:
                         last_target_wp = mav_wp.seq
-                        last_wp_time = self.get_sim_time()
+                        # cached: get_sim_time() would pause only this vehicle, letting the
+                        # target gain simulated time on it -- see the note above
+                        last_wp_time = self.get_sim_time_cached()
                         reports_since_wp = 0
                         offset_violation_streak = 0
                         distance_violation_streak = 0
@@ -9169,7 +9223,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                         self.progress("TARGET: %s" % st_target.text)
 
                     # periodic distance report
-                    now = self.get_sim_time()
+                    # cached: get_sim_time() would pause only this vehicle, letting the
+                    # target gain simulated time on it -- see the note above
+                    now = self.get_sim_time_cached()
                     if now - last_report >= REPORT_INTERVAL_S:
                         try:
                             sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
