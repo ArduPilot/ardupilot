@@ -46,7 +46,7 @@ extern const AP_HAL::HAL& hal;
 //==============================================================================
 
 #define AP_FOLLOW_TIMEOUT          3     // position estimate timeout in seconds
-#define AP_FOLLOW_SYSID_TIMEOUT_MS 10000 // forget sysid we are following if we have not heard from them in 10 seconds
+#define AP_FOLLOW_ESTIMATE_TIMEOUT_MS 10000 // discard the target estimate if we have not heard from the target in 10 seconds
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
@@ -500,7 +500,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 {
     // Invalidate the estimate if no position update has been received within the timeout period.
     if ((_last_location_update_ms == 0) ||
-        (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
+        (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_ESTIMATE_TIMEOUT_MS)) {
         _estimate_valid = false;   // mark estimate as invalid
         _using_follow_target = false; // reset follow-target usage flag
     }
