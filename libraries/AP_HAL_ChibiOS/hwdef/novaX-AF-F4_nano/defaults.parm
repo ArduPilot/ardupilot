@@ -1,0 +1,5 @@
+# novaX AF-F4 nano default parameters
+
+# WS2812 LED strip on the PWM9 output (PA8)
+NTF_LED_LEN 4
+SERVO9_FUNCTION 120
