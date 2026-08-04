@@ -8905,15 +8905,41 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     "Separation %.1fm exceeds FOLL_DIST_MAX %.0fm at enable; "
                     "loitering-target geometry is broken" % (sep, FOLL_DIST_MAX))
 
+            def latest_gpi(mav_conn):
+                '''return the most recently received GLOBAL_POSITION_INT on
+                mav_conn, discarding any older ones still queued.
+
+                Both vehicles emit position at the simulation rate, so at high
+                SIM_SPEEDUP they arrive far faster than this Python loop
+                consumes them.  Taking the next queued message would then
+                report where a vehicle was, not where it is, and that lag
+                grows without bound as the backlog builds -- the separation
+                computed below would climb steadily even while the two
+                vehicles are holding station perfectly.  Returns None if
+                nothing is buffered, leaving the caller to wait for one.
+                '''
+                gpi = None
+                while True:
+                    m = mav_conn.recv_match(
+                        type='GLOBAL_POSITION_INT', blocking=False)
+                    if m is None:
+                        break
+                    gpi = m
+                return gpi
+
             def follow_offset_error_m():
-                follower_gpi = self.assert_receive_message(
-                    'GLOBAL_POSITION_INT', timeout=5)
-                target_gpi = self.assert_receive_message(
-                    'GLOBAL_POSITION_INT',
-                    mav=target_mav,
-                    timeout=5,
-                    delay_fn=self.drain_all_pexpects,
-                )
+                follower_gpi = latest_gpi(self.mav)
+                if follower_gpi is None:
+                    follower_gpi = self.assert_receive_message(
+                        'GLOBAL_POSITION_INT', timeout=5)
+                target_gpi = latest_gpi(target_mav)
+                if target_gpi is None:
+                    target_gpi = self.assert_receive_message(
+                        'GLOBAL_POSITION_INT',
+                        mav=target_mav,
+                        timeout=5,
+                        delay_fn=self.drain_all_pexpects,
+                    )
                 follower_loc = Location.latlon_only(
                     follower_gpi.lat * 1e-7,
                     follower_gpi.lon * 1e-7,
