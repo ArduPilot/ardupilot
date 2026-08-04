@@ -8687,15 +8687,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         ex = None
 
         try:
-            def drain_wait(seconds):
-                '''wall-clock wait that keeps all pexpect children drained so
-                spawned SITLs don't block writing to their (tiny, on macOS)
-                pty buffers'''
-                tstart = time.time()
-                while time.time() - tstart < seconds:
-                    self.drain_all_pexpects()
-                    time.sleep(0.1)
-
             # ------------------------------------------------------------
             # 1. Configure the PRIMARY autotest vehicle as the FOLLOWER
             # ------------------------------------------------------------
@@ -8770,31 +8761,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # ------------------------------------------------------------
             # 2. Start the TARGET (sysid=2, instance 1)
             # ------------------------------------------------------------
-            self.progress("Starting TARGET (sysid=%u, instance 1)" % target_sysid)
-            target_defaults = os.path.join(util.reltopdir('Tools/autotest/models'), 'plane.parm')
-            target_rundir = util.reltopdir('target-plane')
-            if not os.path.exists(target_rundir):
-                os.mkdir(target_rundir)
-
-            self.progress("Starting TARGET with speedup=%u" % self.speedup)
-            target_sitl = util.start_SITL(
-                self.binary,
-                cwd=target_rundir,
+            target_sitl, target_mav = self.start_additional_vehicle(
+                instance=1,
+                sysid=target_sysid,
                 model='plane',
-                home=self.sitl_home(),
-                speedup=self.speedup,
-                defaults_filepath=target_defaults,
-                gdb=self.gdb,
-                wipe=True,
-                customisations=[
-                    '--serial5=mcast:',
-                    '-I1',
-                    f'--speedup={self.speedup}',
-                ],
+                rundir='target-plane',
+                defaults_filepath=os.path.join(
+                    util.reltopdir('Tools/autotest/models'), 'plane.parm'),
+                customisations=['--serial5=mcast:'],
                 param_defaults={
-                    "MAV_SYSID": target_sysid,
                     "SERIAL5_PROTOCOL": 2,
-                    "SIM_SPEEDUP": self.speedup,
                     # Same airspeed envelope as the follower, but cruising
                     # slower than it so the follower can close a gap.
                     "AIRSPEED_MIN": AIRSPEED_MIN,
@@ -8810,43 +8786,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     "MAV4_OPTIONS": 2,
                 },
             )
-            self.expect_list_add(target_sitl)
-
-            # let the target get through early boot, draining its output
-            # the whole time so it can't block on a full pty
-            self.progress("Waiting for target to boot")
-            drain_wait(2)
-
-            # ------------------------------------------------------------
-            # 3. Connect to the target's SERIAL0 (this also releases its
-            #    "Waiting for connection ...." accept())
-            # ------------------------------------------------------------
-            self.progress("Connecting to target on tcp:localhost:5770")
-            target_mav = mavutil.mavlink_connection(
-                "tcp:localhost:5770",
-                robust_parsing=True,
-                source_system=251,
-                source_component=251,
-            )
-
-            self.progress("Waiting for target heartbeat")
-            tstart = time.time()
-            while True:
-                if time.time() - tstart > 60:
-                    raise AutoTestTimeoutException(
-                        "No heartbeat from target")
-                self.drain_all_pexpects()
-                msg = target_mav.recv_match(
-                    type='HEARTBEAT', blocking=True, timeout=0.5)
-                if msg is None:
-                    continue
-                if msg.get_srcSystem() != target_sysid:
-                    continue
-                target_mav.target_system = msg.get_srcSystem()
-                target_mav.target_component = msg.get_srcComponent()
-                self.progress("Target connected, sysid=%u" %
-                              msg.get_srcSystem())
-                break
 
             def get_target_param(name, timeout=10):
                 target_mav.mav.param_request_read_send(target_sysid, 1, name.encode(), -1)
@@ -9305,12 +9244,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.print_exception_caught(e)
             ex = e
         finally:
-            if target_mav is not None:
-                target_mav.close()
-            if target_sitl is not None:
-                self.progress("Stopping TARGET SITL")
-                self.expect_list_remove(target_sitl)
-                util.pexpect_close(target_sitl)
+            self.stop_additional_vehicle(target_sitl, target_mav)
 
         if ex is not None:
             raise ex
