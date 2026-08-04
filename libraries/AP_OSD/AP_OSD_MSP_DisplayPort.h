@@ -150,7 +150,7 @@ private:
     static const uint8_t SYM_FENCE_ENABLED = 0xF5;
     static const uint8_t SYM_FENCE_DISABLED = 0xF6;
     static const uint8_t SYM_RNGFD = 0x7F;
-    static const uint8_t SYM_LQ = 0xF8;
+    static const uint8_t SYM_LQ = 0x7B;
 
     static const uint8_t SYM_SIDEBAR_L_ARROW = 0x02;
     static const uint8_t SYM_SIDEBAR_R_ARROW = 0x03;
