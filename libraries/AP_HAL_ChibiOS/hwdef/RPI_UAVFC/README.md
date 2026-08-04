@@ -90,19 +90,21 @@ The default battery parameters are:
  - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 6 (GPIO46)
  - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 7 (GPIO47)
  - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.1
- - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 0.1
+ - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 50
 
 The voltage multiplier was checked against a bench supply and matches the usual
 11.1 divider ratio.
 
-The current sense is on the ESC, not the board, so `BATT_AMP_PERVLT` is a
-placeholder and is yours to set - the shipped value reads roughly 500x low on
-the ESC tested so far. Convert from a Betaflight current
-scale, which is in 0.1 mV/A, by dividing 1000 by the millivolts per amp: a scale
-of 200 is 20 mV/A, so `BATT_AMP_PERVLT` = 50. Most of these sensors also idle at
-a non-zero voltage - read `BATT_CURR_PIN` with the battery connected and nothing
-drawing, and put that figure in `BATT_AMP_OFFSET`, or the board will report tens
-of amps at rest.
+The current sense is on the ESC, not the board - the board just brings it in
+through a 120R series resistor to an 82.5k pulldown, so the ADC sees the ESC
+output 1:1. The default suits a 20 mV/A ESC; for anything else,
+`BATT_AMP_PERVLT` is 1000 divided by the millivolts per amp. A Betaflight
+current scale is in units of 0.1 mV/A, so a scale of 200 is 20 mV/A and gives
+50.
+
+Most of these sensors idle at a non-zero voltage. Read `BATT_CURR_PIN` with the
+battery connected and nothing drawing, put that figure in `BATT_AMP_OFFSET`, or
+the board will report tens of amps at rest.
 
 ## Analog RSSI input
 

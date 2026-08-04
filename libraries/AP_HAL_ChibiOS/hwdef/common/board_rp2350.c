@@ -415,10 +415,14 @@ void rp2350_board_post_hal_init(void)
 /* Run RP2350 board-level late init hooks used by boardInit(). */
 void rp2350_board_init(void)
 {
-#if defined(RP2350B_QFN80) && (HAL_USE_ADC == TRUE)
-    adcRPGpioInit(40U);
-    adcRPGpioInit(41U);
-    adcRPGpioInit(42U);
+#if defined(HAL_RP_ADC_GPIOS) && (HAL_USE_ADC == TRUE)
+    /* From the hwdef's own ADC pins. The list used to be hardcoded to GPIO
+       40/41/42 - Laurel's pinout - so on any other board the sense pads kept
+       their digital input buffer and pulls, and unrelated pins got clobbered. */
+    static const uint8_t adc_gpios[] = { HAL_RP_ADC_GPIOS };
+    for (unsigned i = 0; i < sizeof(adc_gpios) / sizeof(adc_gpios[0]); i++) {
+        adcRPGpioInit(adc_gpios[i]);
+    }
 #endif
 }
 
