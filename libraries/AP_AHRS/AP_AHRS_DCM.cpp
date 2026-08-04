@@ -241,6 +241,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
      * air data estimates
      */
     results.wind = _wind;
+    // deliberately not gated on _have_wind_estimate: DCM has always
+    // reported its (initially zero) wind estimate as valid:
     results.wind_valid = true;
 
     /*
@@ -1179,6 +1181,7 @@ void AP_AHRS_Backend::estimate_wind(const Vector3f &velocity, const Vector3f &fu
 
         if (wind.length() < _wind.length() + 20) {
             _wind = _wind * 0.95f + wind * 0.05f;
+            _have_wind_estimate = true;
         }
 
         _last_wind_time = now;
@@ -1192,6 +1195,7 @@ void AP_AHRS_Backend::estimate_wind(const Vector3f &velocity, const Vector3f &fu
         const Vector3f airspeed = fuselageDirection * AP::airspeed()->get_airspeed();
         const Vector3f wind = velocity - (airspeed * get_EAS2TAS());
         _wind = _wind * 0.92f + wind * 0.08f;
+        _have_wind_estimate = true;
     }
 #endif
 }
@@ -1201,6 +1205,7 @@ void AP_AHRS_Backend::set_external_wind_estimate(float speed, float direction) {
     _wind.x = -cosf(radians(direction)) * speed;
     _wind.y = -sinf(radians(direction)) * speed;
     _wind.z = 0;
+    _have_wind_estimate = true;
 }
 #endif
 
