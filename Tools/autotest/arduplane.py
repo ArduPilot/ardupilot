@@ -8677,6 +8677,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # has stopped closing rather than merely being slow about it
         NO_PROGRESS_S = 60
         PROGRESS_MARGIN_M = 5
+        FOLLOWER_STREAMRATE_HZ = 4  # see set_streamrate() call below
+        DRAIN_INTERVAL_S = 0.02     # wall-clock; keeps serial0 from backing up
         SETTLE_REPORTS = 4          # number of distance reports after a waypoint to use relaxed threshold
 
         target_sitl = None
@@ -8754,6 +8756,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # budget below, so allow longer before abandoning the target and
             # let the wait below decide when the test has actually failed.
             self.set_parameter("FOLLP_TIMEOUT", 30)
+            # The follower streams telemetry at the *simulated* rate, so the
+            # default 10Hz becomes 150Hz of wall-clock traffic at fifteen
+            # times realtime.  When the harness cannot read that fast enough
+            # SITL stops the vehicle's main loop until its serial0 queue
+            # drains (SITL_State.cpp), which freezes this vehicle's clock
+            # while the target's keeps running -- the two then disagree about
+            # how much time has passed and the target flies away from a
+            # follower that was never given the time to catch it.  This test
+            # reads position every few seconds, so ask for much less.
+            self.set_streamrate(FOLLOWER_STREAMRATE_HZ)
 
             # ------------------------------------------------------------
             # 2. Start the TARGET (sysid=2, instance 1)
@@ -9035,7 +9047,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     self.progress("Follower acquired target: separation=%.1fm offset_error=%.1fm after %.0fs" % (
                         sep, ofs_err, now - tstart))
                     break
-                time.sleep(0.1)
+                time.sleep(DRAIN_INTERVAL_S)
 
             sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
             self.progress("Separation after acquisition: %.1fm, offset error: %.1fm" %
@@ -9102,7 +9114,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                         "Re-acquiring: separation=%.1fm offset_error=%.1fm "
                         "best=%.1fm elapsed=%.0fs" % (
                             sep, ofs_err, best_sep, now - tstart))
-                time.sleep(0.1)
+                time.sleep(DRAIN_INTERVAL_S)
             else:
                 raise AutoTestTimeoutException(
                     "Follower failed to re-acquire moving target within %us" % ACQUIRE_TIME_S)
