@@ -20,14 +20,14 @@ while disarmed.
 | IMU | Working; fitted part is ICM42688P, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
 | microSD logging | Working; 19 MB logs at 1 kHz RATE without drops |
-| Parameter storage | Working; survives reboot since the sector-bound fix |
+| Parameter storage | Working; needs both the sector-bound and write-verify fixes |
 | RC input | CRSF/ELRS on SERIAL3, 333 Hz link, 199 Hz telemetry |
 | GPS | Detected (ublox at 230400) but has never got a fix |
 | Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
 | Battery current | Scale 50 (20 mV/A ESC); offset and load check outstanding |
-| Motor outputs | Flown on 4x PWM at 490 Hz |
-| DShot | DShot600 via PIO, bidir or not; builds, NEVER RUN |
+| Motor outputs | 4x DShot600 via PIO; has also flown on PWM at 490 Hz |
+| DShot | Bidirectional DShot600 running, eRPM telemetry decoding |
 | Compass | None fitted; EKF runs in constant-position mode |
 | Rate loop in flight | 2 kHz held, dtMax 0.8 ms, no scheduler overruns |
 | Tune | Flyable starting tune, see below; not autotuned yet |
@@ -388,6 +388,22 @@ past the first 4 KB was rejected, `load_sector()` failed and `init()` fell
 through to `erase_all()`. The symptom was parameters surviving a few reboots
 and then vanishing once enough of them had accumulated to cross 4 KB.
 
+A refused page program used to be invisible. `efl_lld_program()` in the
+ChibiOS RP EFL driver ends with an unconditional `return FLASH_NO_ERROR`, and
+the `rp_flash_wait_ready()` under it polls only the BUSY status bit, which
+never sets if the chip declines the write. Nothing reads WEL or the error bits.
+That false success runs all the way up to `AP_FlashStorage`, which clears its
+dirty mask and drops the data, so every parameter silently read back whatever
+flash already held. `stm32_flash_write()` now reads the range back through XIP
+and compares before reporting success, which leaves the dirty bit set so
+`_timer_tick()` retries.
+
+Worth knowing when reading that code: the symptom is not "the value you just
+set is wrong". Everything reverts, but only the parameter you changed looks
+wrong, because the rest were already correct in flash. Diagnosing it means
+watching the write frontier in the active sector rather than trusting a
+readback of the value itself.
+
 Storage writes are deferred entirely while armed via
 `AP_STORAGE_NO_WRITE_WHILE_ARMED`. A boot-flash write parks core1 for the whole
 operation, which the 2 kHz rate loop cannot absorb, and stock ArduPilot only
@@ -456,8 +472,10 @@ needed it has to be throttle-based (`INS_HNTCH_MODE` 1).
 
 ## DShot
 
-**Compiles, has never driven a motor.** Everything below is written from the
-datasheet and the PIOUART idiom; none of it is confirmed against hardware.
+**Working.** Motors arm and spin on bidirectional DShot600 and the eRPM
+telemetry decodes. Bring-up took six separate fixes, listed at the end of this
+section; each one masked the next, so the failure never presented the same way
+twice.
 
 DShot600 comes out of the PIO, not a timer and DMAR burst, so almost none of
 ArduPilot's DShot path applies. `RCOutput_pico.cpp` holds the driver;
@@ -502,7 +520,42 @@ while the PIO oversamples the line at 5.56 samples a bit.
 
 Expect a poor telemetry error rate. Betaflight's own note on this code says
 5-8% of frames fail to decode with motors spinning, against under 1% at rest,
-and that feeds the harmonic notch here. Worth measuring before relying on it.
+and that feeds the harmonic notch here. Telemetry decoding now, but the rate
+has not been measured - `_bdshot.erpm_clean_frames[]` against
+`_bdshot.erpm_errors[]`, both reset every 5 s, is the figure to take before
+letting it drive a notch.
+
+### What it took to get here
+
+In order found. The first four are RP2350 hardware details, the last two are
+places where shared ArduPilot code assumed an STM32.
+
+1. **`set_output_mode()` downgraded to PWM before the PIO path ran.** The
+   generic code checks `mode_requires_dma()` against `have_up_dma` and falls
+   back to `MODE_PWM_NORMAL`. There is no UP DMA here and none needed, so
+   RP2350 is exempted from that check.
+2. **FUNCSEL 11 routed the pads to the aux UART.** PIO2 is FUNCSEL 8 on
+   RP2350 (PIO0 is 6, PIO1 is 7). The state machines ran and nothing reached
+   the pin.
+3. **The frame went into the high half of the FIFO word.** Both programs open
+   with `out y, 16` to discard the top half, so the frame belongs in the low
+   half. In the high half the discard eats the frame itself and sixteen zeros
+   go out - a well formed packet meaning throttle zero, which an ESC accepts
+   and sits on, so the output looked alive.
+4. **`dshot_state` stuck at `SEND_COMPLETE`.** Nothing returns it to `IDLE`
+   without a DMA completion interrupt, so exactly one frame left the board at
+   boot. `send_pulses_DMAR()` now sets `IDLE` directly on this chip.
+5. **Parameters never reached flash**, so `SERVO_BLH_BDMASK` reverted to 0 on
+   every reboot and the bidirectional path was never entered at all. See the
+   storage section - the QSPI driver cannot report a refused page program.
+6. **The checksum was not inverted for bidirectional.** `create_dshot_packet()`
+   took its direction from `group.bdshot.enabled`, which is only set once a
+   timer input capture DMA handle is held. There is no input capture here, so
+   it was always false while the PIO ran the inverted program selected from
+   `SERVO_BLH_BDMASK`. Inverted waveform, plain checksum, every frame rejected
+   - so enabling `BDMASK` stopped the motors arming rather than merely failing
+   to produce telemetry. It now reads `is_bidir_dshot_enabled()`, the same
+   source the PIO program selection and the telemetry read path use.
 
 ## Logging setup for tuning work
 
@@ -538,18 +591,22 @@ scale above is fixed.
    never configured for analog use, so it may not be the sensor's real
    quiescent point.
 2. Fix the battery failsafe thresholds, per above.
-3. Bench the DShot output before flying it: confirm the pad hands over from
-   PWM to PIO FUNCSEL 11, that the idle level and pull are right in each
-   direction, and that FLEVEL's RX nibble is where the driver assumes. None of
-   that has been checked against hardware.
-4. Run AUTOTUNE, one axis at a time. The tune is stable enough to start from
+3. Measure the bidirectional telemetry error rate before letting it drive the
+   harmonic notch, and fly DShot600 - the flights so far were on PWM. With
+   eRPM available `INS_HNTCH_MODE` 3 becomes possible, which the board could
+   not do at all before.
+4. Establish whether flash page programs now succeed first time or only on the
+   retry after a failed verify. Harmless either way for correctness, but a
+   retry every time means the underlying QSPI defect is still there and double
+   the flash wear. One counter on the `memcmp` mismatch answers it.
+5. Run AUTOTUNE, one axis at a time. The tune is stable enough to start from
    and this is the point at which the 8:1 thrust-to-weight gets measured
    instead of guessed at.
-5. Find out why the GPS never gets a fix. It is detected and communicating, so
+6. Find out why the GPS never gets a fix. It is detected and communicating, so
    this is antenna, siting or configuration rather than the port.
-6. Attack core0's flash share, starting with the veneers - see the veneer
+7. Attack core0's flash share, starting with the veneers - see the veneer
    section in `PROFILING.md`. Core1 is done and needs nothing further.
-7. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
-8. Re-check the QMI flash timing if this revision fits a different flash part.
+8. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
+9. Re-check the QMI flash timing if this revision fits a different flash part.
    `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
-9. Re-measure glat before acting on it, per the retraction above.
+10. Re-measure glat before acting on it, per the retraction above.
