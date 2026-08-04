@@ -8648,7 +8648,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         OFFSET_VIOLATION_STREAK = 2
         REPORT_INTERVAL_S = 5       # periodic distance reports
         MISSION_TIMEOUT_S = 1200    # max time to allow mission to run
-        FOLLOW_SPEEDUP = 2          # override the default speed up for follow testing
+        FOLLOW_SPEEDUP = 10         # override the default speed up for follow testing
         ACQUIRE_DISTANCE_M = FOLL_OFS_X + 75  # must be within 100m before release
         ACQUIRE_TIME_S = 120
         SETTLE_REPORTS = 4          # number of distance reports after a waypoint to use relaxed threshold
