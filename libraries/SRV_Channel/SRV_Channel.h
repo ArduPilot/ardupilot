@@ -488,6 +488,12 @@ public:
     // return the current function for a channel
     static SRV_Channel::Aux_servo_function_t channel_function(uint8_t channel);
 
+    // change a channel function at runtime and optionally save it to storage
+    // channel is zero based; save=false avoids flash writes for temporary switching
+    static bool set_channel_function(uint8_t channel,
+                                     SRV_Channel::Aux_servo_function_t function,
+                                     bool save);
+
     // refresh aux servo to function mapping
     static void update_aux_servo_function(void);
 

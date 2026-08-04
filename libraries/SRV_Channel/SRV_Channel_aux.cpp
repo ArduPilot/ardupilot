@@ -129,6 +129,42 @@ SRV_Channel::Aux_servo_function_t SRV_Channels::channel_function(uint8_t channel
 }
 
 /*
+  change the function assigned to a channel at runtime
+*/
+bool SRV_Channels::set_channel_function(uint8_t channel,
+                                        SRV_Channel::Aux_servo_function_t function,
+                                        bool save)
+{
+    if ((channel >= NUM_SERVO_CHANNELS) || !SRV_Channel::valid_function(function)) {
+        return false;
+    }
+
+    SRV_Channel &srv = channels[channel];
+    if (srv.function == function) {
+        return true;
+    }
+
+    // A channel override belongs to the old function. Clear it so a previous
+    // scripting/PWM-forwarding override cannot leak into the new assignment.
+    {
+        WITH_SEMAPHORE(_singleton->override_counter_sem);
+        override_counter[channel] = 0;
+        srv.set_override(false);
+    }
+    SRV_Channel::have_pwm_mask &= ~(1U << channel);
+
+    srv.type_setup = false;
+    if (save) {
+        srv.function.set_and_save(int16_t(function));
+    } else {
+        srv.function.set(function);
+    }
+
+    update_aux_servo_function();
+    return srv.function == function;
+}
+
+/*
    setup a channels aux servo function
 */
 void SRV_Channel::aux_servo_function_setup(void)

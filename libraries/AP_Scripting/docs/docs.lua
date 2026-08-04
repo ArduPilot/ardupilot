@@ -2568,6 +2568,18 @@ function SRV_Channels:get_output_pwm_chan(chan) end
 ---@param pwm integer -- pwm value
 function SRV_Channels:set_output_pwm(function_num, pwm) end
 
+-- Change the function assigned to a servo output channel at runtime
+---@param chan integer -- servo channel number (zero indexed; 0 is SERVO1)
+---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
+---@param save boolean -- true to save to storage, false for a temporary runtime change
+---@return boolean -- true if the function was changed or was already assigned
+function SRV_Channels:set_channel_function(chan, function_num, save) end
+
+-- Return the function currently assigned to a servo output channel
+---@param chan integer -- servo channel number (zero indexed; 0 is SERVO1)
+---@return integer -- servo function (See SERVOx_FUNCTION parameters)
+function SRV_Channels:get_channel_function(chan) end
+
 -- Returns first servo output number (zero indexed) of an output assigned output_function (See SERVOx_FUNCTION parameters ). 0 = SERVO1_FUNCTION ect. Nil if none is assigned.
 ---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
 ---@return integer|nil -- output channel number if available
