@@ -1859,7 +1859,15 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
             bool request_telemetry = telem_request_mask & chan_mask;
             uint16_t packet = create_dshot_packet(value, request_telemetry,
 #ifdef HAL_WITH_BIDIR_DSHOT
+#if defined(RP2350)
+             // bdshot.enabled tracks the input capture DMA, which RP2350 has
+             // none of - the PIO does the receive. Take the direction from the
+             // same place the PIO program does, or the waveform comes out
+             // inverted carrying a plain checksum and every ESC rejects it.
+             is_bidir_dshot_enabled(group)
+#else
              group.bdshot.enabled
+#endif
 #else
              false
 #endif
