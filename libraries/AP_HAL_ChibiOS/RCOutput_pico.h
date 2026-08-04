@@ -70,6 +70,9 @@ private:
      */
     static void set_transitions(float bits_per_sample);
 
+    // put a state machine parked on a wait back at the top of the program
+    static void restart_sm(uint8_t chan, uint16_t frame);
+
     static bool     _initialised;
     static bool     _bidir;
     static uint32_t _chan_mask;
@@ -77,6 +80,11 @@ private:
 
     // sample counts at which a run becomes 1, 2, 3 or 4 bits long
     static uint8_t  _len_transition[4];
+
+    // consecutive updates found parked on a wait, and how often that has
+    // forced a restart - the second is a diagnostic for a flaky ESC or wiring
+    static uint8_t  _stall_count[MAX_CHANNELS];
+    static uint32_t _stall_restarts[MAX_CHANNELS];
 };
 
 } // namespace ChibiOS

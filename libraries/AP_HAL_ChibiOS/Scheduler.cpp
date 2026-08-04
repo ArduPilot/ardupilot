@@ -30,6 +30,9 @@
 #include "Scheduler.h"
 #include "Util.h"
 #include "GPIO.h"
+#if defined(RP2350)
+#include "hwdef/common/rp2350_core_affinity.h"
+#endif
 
 #include <AP_HAL_ChibiOS/UARTDriver.h>
 #include <AP_HAL_ChibiOS/AnalogIn.h>
@@ -177,11 +180,44 @@ void Scheduler::init()
 
 #ifndef HAL_NO_RCOUT_THREAD
     // setup the RCOUT thread - this will call tasks at 1kHz
+#if defined(RP2350) && CH_CFG_SMP_MODE == TRUE && HAL_CORE_RCOUT == 1
+    /*
+      Pinned to core1 so it shares a core with the rate thread: the motor
+      demands are then handed over in SRAM rather than across the cores.
+      chThdCreateStatic() has no way to name an instance, so build the
+      descriptor by hand - same shape as thread_create_alloc_affinity().
+     */
+    {
+        /*
+          Lay down the canary first. chThdCreateStatic() does this for you;
+          creating from a descriptor does not, and stack_free() measures
+          headroom by counting canary words from the base - so an unfilled area
+          reads as zero free and trips a stack_overflow internal error on a
+          thread that has barely touched its stack.
+         */
+#if CH_DBG_FILL_THREADS == TRUE
+        __thd_stackfill((uint8_t *)THD_WORKING_AREA_BASE(_rcout_thread_wa),
+                        (uint8_t *)THD_WORKING_AREA_END(_rcout_thread_wa));
+#endif
+        thread_descriptor_t td = __THD_DECL_DATA("rcout",
+                                                 THD_WORKING_AREA_BASE(_rcout_thread_wa),
+                                                 THD_WORKING_AREA_END(_rcout_thread_wa),
+                                                 APM_RCOUT_PRIORITY,
+                                                 _rcout_thread,
+                                                 this,
+                                                 &ch1);
+        chSysLock();
+        _rcout_thread_ctx = chThdCreateSuspendedI(&td);
+        chSchWakeupS(_rcout_thread_ctx, MSG_OK);
+        chSysUnlock();
+    }
+#else
     _rcout_thread_ctx = chThdCreateStatic(_rcout_thread_wa,
                      sizeof(_rcout_thread_wa),
                      APM_RCOUT_PRIORITY,        /* Initial priority.    */
                      _rcout_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
+#endif
 #endif
 
 #if HAL_RCIN_THREAD_ENABLED

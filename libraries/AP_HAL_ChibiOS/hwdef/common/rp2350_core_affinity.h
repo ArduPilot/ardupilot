@@ -14,7 +14,7 @@
 
 #if defined(RP2350) && CH_CFG_SMP_MODE == TRUE
 #define HAL_CORE_TIMER    0
-#define HAL_CORE_RCOUT    0
+#define HAL_CORE_RCOUT    1   // with the rate thread: motor demands stay in SRAM
 #define HAL_CORE_RCIN     0
 #define HAL_CORE_IO       0
 #define HAL_CORE_STORAGE  0   // MUST stay Core0: XIP lockout protocol parks Core1 FROM Core0
