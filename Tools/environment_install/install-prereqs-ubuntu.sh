@@ -3,6 +3,29 @@ echo "---------- $0 start ----------"
 set -e
 set -x
 
+# Display a very visible error banner if any step of this script fails so that
+# users do not miss the failure (see https://github.com/ArduPilot/ardupilot/issues/13415)
+function install_failure() {
+    local _status=$?
+    set +e
+    printf "\n\033[1;31m"
+    echo "############################################################"
+    echo "#                                                          #"
+    echo "#                  SOMETHING WENT WRONG !                  #"
+    echo "#                                                          #"
+    echo "#  Task failed:  $BASH_COMMAND"
+    echo "#                                                          #"
+    echo "#  The ArduPilot environment setup did not complete.       #"
+    echo "#  Please fix the reported error and re-run this script.   #"
+    echo "#  If the problem persists, ask for help on:               #"
+    echo "#      https://discuss.ardupilot.org/                      #"
+    echo "#                                                          #"
+    echo "############################################################"
+    printf "\033[0m\n"
+    exit $_status
+}
+trap install_failure ERR
+
 if [ $EUID == 0 ]; then
     echo "Please do not run this script as root; don't sudo it!"
     exit 1
