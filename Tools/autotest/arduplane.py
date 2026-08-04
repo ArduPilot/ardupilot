@@ -8650,7 +8650,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         DISTANCE_VIOLATION_STREAK = 2
         REPORT_INTERVAL_S = 5       # periodic distance reports
         MISSION_TIMEOUT_S = 1200    # max time to allow mission to run
-        ACQUIRE_DISTANCE_M = FOLL_OFS_X + 75  # must be within 100m before release
+        # "acquired" has to mean the same tolerance the mission monitoring
+        # below goes on to enforce, otherwise the wait hands over while still
+        # outside it and the monitoring fails the run for a gap the follower
+        # was never given the chance to close.
+        IDEAL_OFFSET_M = math.sqrt(FOLL_OFS_X**2 + FOLL_OFS_Y**2 + FOLL_OFS_Z**2)
+        ACQUIRE_DISTANCE_M = IDEAL_OFFSET_M + OFFSET_CONVERGE_M
         ACQUIRE_TIME_S = 120
         SETTLE_REPORTS = 4          # number of distance reports after a waypoint to use relaxed threshold
 
@@ -8968,8 +8973,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     target_gpi.lon * 1e-7,
                 )
                 separation = self.get_distance(follower_loc, target_loc)
-                ideal_dist = math.sqrt(FOLL_OFS_X**2 + FOLL_OFS_Y**2 + FOLL_OFS_Z**2)
-                offset_error = abs(separation - ideal_dist)
+                offset_error = abs(separation - IDEAL_OFFSET_M)
                 follower_alt = follower_gpi.relative_alt * 1e-3
                 target_alt = target_gpi.relative_alt * 1e-3
                 return separation, offset_error, follower_alt, target_alt
@@ -9056,7 +9060,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 raise AutoTestTimeoutException(
                     "Follower failed to re-acquire moving target within %us" % ACQUIRE_TIME_S)
 
-            ideal_dist = math.sqrt(FOLL_OFS_X**2 + FOLL_OFS_Y**2 + FOLL_OFS_Z**2)
             last_report = self.get_sim_time()
             converged_reported = False
             last_target_wp = 3
@@ -9127,7 +9130,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                             "Distance report: separation=%.1fm ideal=%.1fm "
                             "offset_error=%.1fm (threshold=%.0fm) "
                             "alt follower=%.1fm target=%.1fm diff=%.1fm" % (
-                                sep, ideal_dist, ofs_err, effective_converge_m,
+                                sep, IDEAL_OFFSET_M, ofs_err, effective_converge_m,
                                 follower_alt, target_alt, follower_alt - target_alt))
 
                         if ofs_err <= OFFSET_CONVERGE_M and not converged_reported:
