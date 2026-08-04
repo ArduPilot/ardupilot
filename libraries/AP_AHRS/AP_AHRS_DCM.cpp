@@ -182,6 +182,9 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
 
+    // true when the state estimates are significantly degraded by vibration:
+    // results.is_vibration_affected = false;
+
     /*
      * acceleration estimates
      */
