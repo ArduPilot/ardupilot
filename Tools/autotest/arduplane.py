@@ -8710,6 +8710,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 regex=True,
                 check_context=True,
             )
+            # FOLLP_TIMEOUT is the applet's own grace period, in seconds,
+            # before it gives up on a lost target and switches to the failsafe
+            # mode -- a terminal state this test cannot recover from.  The
+            # default of 10 spends only a small part of the ACQUIRE_TIME_S
+            # budget below, so allow longer before abandoning the target and
+            # let the wait below decide when the test has actually failed.
+            self.set_parameter("FOLLP_TIMEOUT", 30)
 
             # ------------------------------------------------------------
             # 2. Start the TARGET (sysid=2, instance 1)
