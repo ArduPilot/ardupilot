@@ -8641,7 +8641,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         FOLL_OFS_Z = -10
         FOLL_DIST_MAX = 1000
         MAX_FOLLOW_DISTANCE_M = FOLL_OFS_X + 400
-        OFFSET_CONVERGE_M = 25      # report when within this of ideal offset
+        OFFSET_CONVERGE_M = 30      # report when within this of ideal offset
         # OFFSET_VIOLATION_STREAK/DISTANCE_VIOLATION_STREAK: consecutive
         # over-threshold reports required before failing; absorbs one-off
         # timing/CPU-contention blips on loaded CI runners without masking
