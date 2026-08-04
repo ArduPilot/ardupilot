@@ -204,6 +204,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.accel_ef = _accel_ef;
 
     results.velocity_NED_valid = get_velocity_NED(results.velocity_NED);
+    // DCM's airspeed-independent velocity source is the GPS:
+    results.have_velocity_source = have_gps();
 
     // ground velocity estimate in meters/second, in North/East order
     // note: velocity_NE is significantly different to results.velocity_NED.xy()!

@@ -110,6 +110,12 @@ public:
         // a ground velocity in meters/second, North/East/Down
         Vector3f velocity_NED;
         bool velocity_NED_valid;
+        // true if this backend has a ground-velocity source which is
+        // independent of airspeed (e.g. GPS or an external INS); such
+        // a velocity may be used for wind estimation or synthetic
+        // airspeed without circularity.  This may be true while
+        // velocity_NED_valid is false (e.g. DCM with a 2D GPS fix):
+        bool have_velocity_source;
         // return a ground velocity in meters/second, North/East/Down
         bool get_velocity_NED(Vector3f &vel) const WARN_IF_UNUSED {
             if (!velocity_NED_valid) {
