@@ -8644,7 +8644,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # this airframe flies no slower than about 16.2m/s and tops out a
         # little over 31, so state what it can really do -- see the comment
         # where these are set below.  AIRSPEED_MIN and AIRSPEED_MAX are
-        # integer parameters.  Cruise sits at the midpoint of that envelope.
+        # integer parameters.  Cruise sits at the midpoint so the follower has
+        # the same authority to fall back as it has to catch up.
         AIRSPEED_MIN = 17
         AIRSPEED_MAX = 31
         AIRSPEED_CRUISE = (AIRSPEED_MIN + AIRSPEED_MAX) / 2
@@ -8668,9 +8669,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # was never given the chance to close.  That has to bound both sides:
         # sitting on top of the target is as far out of station as trailing
         # too far back, and releasing from there is worse -- the target
-        # accelerates away from a follower with nowhere to go but backwards.
+        # accelerates away from a follower that has nowhere to go but back.
         IDEAL_OFFSET_M = math.sqrt(FOLL_OFS_X**2 + FOLL_OFS_Y**2 + FOLL_OFS_Z**2)
         ACQUIRE_TIME_S = 120
+        # a follower that is still closing keeps beating its best separation;
+        # NO_PROGRESS_S without doing so by at least PROGRESS_MARGIN_M means it
+        # has stopped closing rather than merely being slow about it
+        NO_PROGRESS_S = 60
+        PROGRESS_MARGIN_M = 5
         SETTLE_REPORTS = 4          # number of distance reports after a waypoint to use relaxed threshold
 
         target_sitl = None
@@ -8778,12 +8784,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     "SERIAL5_PROTOCOL": 2,
                     "SIM_SPEEDUP": self.speedup,
                     # Same airspeed envelope as the follower, but cruising
-                    # slower than it so the follower can close a gap.  At the
-                    # default cruise of 22 against the follower's reachable
-                    # ceiling, it could close at only around 4m/s -- thin
-                    # enough that a waypoint turn, or telemetry stale by a few
-                    # simulated seconds, left it losing ground instead of
-                    # catching up.
+                    # slower than it so the follower can close a gap.
                     "AIRSPEED_MIN": AIRSPEED_MIN,
                     "AIRSPEED_MAX": AIRSPEED_MAX,
                     "AIRSPEED_CRUISE": TARGET_AIRSPEED_CRUISE,
@@ -9067,6 +9068,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Waiting for follower to re-acquire moving target")
             tstart = self.get_sim_time()
             last_acquire_report = tstart
+            best_sep = None
+            best_sep_time = tstart
             while self.get_sim_time() - tstart < ACQUIRE_TIME_S:
                 self.drain_all_pexpects()
                 sep, ofs_err, follower_alt, target_alt = follow_offset_error_m()
@@ -9077,11 +9080,28 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                             sep, ofs_err, self.get_sim_time() - tstart))
                     break
                 now = self.get_sim_time()
+                # A follower that is closing will keep improving on its best
+                # separation.  One that has stopped closing altogether -- for
+                # instance holding the target's heading and flying alongside
+                # rather than turning toward it -- will not, and would
+                # otherwise sit here until the timeout and report only that
+                # 120s had passed.  Say which of the two happened.
+                if best_sep is None or sep < best_sep - PROGRESS_MARGIN_M:
+                    best_sep = sep
+                    best_sep_time = now
+                elif now - best_sep_time > NO_PROGRESS_S:
+                    raise NotAchievedException(
+                        "Follower stopped closing on the target: separation "
+                        "%.1fm, no improvement on its best of %.1fm for %us "
+                        "(wanted within %.0fm of the %.0fm offset)" % (
+                            sep, best_sep, NO_PROGRESS_S,
+                            OFFSET_CONVERGE_M, IDEAL_OFFSET_M))
                 if now - last_acquire_report > REPORT_INTERVAL_S:
                     last_acquire_report = now
                     self.progress(
-                        "Re-acquiring: separation=%.1fm offset_error=%.1fm elapsed=%.0fs" % (
-                            sep, ofs_err, now - tstart))
+                        "Re-acquiring: separation=%.1fm offset_error=%.1fm "
+                        "best=%.1fm elapsed=%.0fs" % (
+                            sep, ofs_err, best_sep, now - tstart))
                 time.sleep(0.1)
             else:
                 raise AutoTestTimeoutException(
