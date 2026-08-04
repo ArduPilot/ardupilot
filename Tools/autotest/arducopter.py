@@ -3489,50 +3489,51 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_parameter("SIM_GPS1_FIXTYPE", 6)
             self.wait_ready_to_arm()
 
-    #   fly_simple - assumes the simple bearing is initialised to be
-    #   directly north flies a box with 100m west, 15 seconds north,
-    #   50 seconds east, 15 seconds south
-    def SimpleMode(self, side=50):
+    #   SimpleMode - test simple mode flies North regardless of vehicle heading
+    def SimpleMode(self):
         '''Fly in SIMPLE mode'''
+
+        # set SIMPLE mode for FlightMode2 (AltHold)
+        self.set_parameters({
+            "FLTMODE_CH": 5,
+            "FLTMODE1": 5, # Loiter
+            "FLTMODE2": 2, # AltHold
+            "SIMPLE": 2,   # FLTMODE2 uses simple mode
+        })
+
+        # Takeoff in loiter
         self.takeoff(10, mode="LOITER")
 
-        # set SIMPLE mode for all flight modes
-        self.set_parameter("SIMPLE", 63)
+        # Try a range of headings
+        for yaw_angle in [0, 90, 180, 270]:
+            self.progress("Testing SIMPLE mode with copter yaw=%u degrees" % yaw_angle)
 
-        # switch to stabilize mode
-        self.change_mode('STABILIZE')
-        self.set_rc(3, 1545)
+            # yaw to test angle
+            self.set_rc(4, 1560)
+            self.wait_heading(yaw_angle, timeout=60)
+            self.set_rc(4, 1500)
 
-        # fly south 50m
-        self.progress("# Flying south %u meters" % side)
-        self.set_rc(1, 1300)
-        self.wait_distance(side, 5, 60)
-        self.set_rc(1, 1500)
+            # switch to alt hold mode
+            self.set_rc(5, 1298)
 
-        # fly west 8 seconds
-        self.progress("# Flying west for 8 seconds")
-        self.set_rc(2, 1300)
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() < (tstart + 8):
-            self.assert_receive_message('VFR_HUD')
-        self.set_rc(2, 1500)
+            # RC input to roll right towards North
+            start = self.get_location()
+            self.set_rc(1, 1700)
+            self.wait_distance(50)
+            self.set_rc(1, 1500)
 
-        # fly north 25 meters
-        self.progress("# Flying north %u meters" % (side/2.0))
-        self.set_rc(1, 1700)
-        self.wait_distance(side/2, 5, 60)
-        self.set_rc(1, 1500)
+            # verify ground course is approximately north
+            end = self.get_location()
+            bearing = self.get_bearing(start, end)
+            if self.heading_delta(bearing, 0) > 10:
+                raise NotAchievedException(
+                    "SIMPLE mode yaw=%u: ground course %f, want ~0 (north)" %
+                    (yaw_angle, bearing)
+                )
 
-        # fly east 8 seconds
-        self.progress("# Flying east for 8 seconds")
-        self.set_rc(2, 1700)
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() < (tstart + 8):
-            self.assert_receive_message('VFR_HUD')
-        self.set_rc(2, 1500)
-
-        # hover in place
-        self.hover()
+            # Loiter to a stop before next iteration
+            self.set_rc(5, 1165)
+            self.wait_groundspeed(0, 0.1)
 
         self.do_RTL(timeout=500)
 
