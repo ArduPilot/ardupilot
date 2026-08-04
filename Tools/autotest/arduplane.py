@@ -8746,6 +8746,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     "MAV_SYSID": target_sysid,
                     "SERIAL5_PROTOCOL": 2,
                     "SIM_SPEEDUP": self.speedup,
+                    # Cruise the target at the midpoint of the airframe's
+                    # airspeed envelope (AIRSPEED_MIN 10, AIRSPEED_MAX 30) so
+                    # the follower has speed in hand to close a gap with.
+                    # Both vehicles are the same airframe, so at the default
+                    # cruise of 22 the follower could close at only around
+                    # 4m/s even with its throttle pinned at AIRSPEED_MAX --
+                    # thin enough that a waypoint turn, or telemetry stale by
+                    # a few simulated seconds, left it losing ground instead
+                    # of catching up.
+                    "AIRSPEED_CRUISE": 20,
                     # MAVn_ params are numbered by MAVLink channel, in
                     # serial-port order: SERIAL0=MAV1, SERIAL1=MAV2,
                     # SERIAL2=MAV3, SERIAL5=MAV4.  We want position and
