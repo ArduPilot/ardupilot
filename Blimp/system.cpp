@@ -97,10 +97,10 @@ void Blimp::init_ardupilot()
     }
 
     //Initialise velocity filters
-    vel_x_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 0.5f, 15.0f);
-    vel_y_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 0.5f, 15.0f);
-    vel_z_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 1.0f, 15.0f);
-    vel_yaw_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 5.0f, 15.0f);
+    vel_x_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 0.5f, 15.0f, 1);
+    vel_y_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 0.5f, 15.0f, 1);
+    vel_z_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 1.0f, 15.0f, 1);
+    vel_yaw_filter.init(scheduler.get_loop_rate_hz(), motors->freq_hz, 5.0f, 15.0f, 1);
 
     // attempt to switch to MANUAL, if this fails then switch to Land
     if (!set_mode((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED)) {
