@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_LeakDetector_config.h"
+
+#if AP_LEAKDETECTOR_ENABLED
+
 #include "AP_LeakDetector.h"
 
 class AP_LeakDetector_Backend {
@@ -13,3 +17,4 @@ protected:
     AP_LeakDetector &leak_detector;
     AP_LeakDetector::LeakDetector_State &state;
 };
+#endif // AP_LEAKDETECTOR_ENABLED
