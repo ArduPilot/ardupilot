@@ -484,6 +484,17 @@ public:
 
     // return true if states have been initialised by a bootstrap alignment
     bool isStatesInitialised(void) const { return statesInitialised; }
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    // LOG_REPLAY=2 support: serialise the filter state at arming so
+    // Replay can warm-start without pre-arm data. The blob layout is
+    // private to this class; bump SNAPSHOT_VERSION on any change. The
+    // length depends on the delayed-horizon buffer sizes, so it is only
+    // valid once the core has been set up.
+    static constexpr uint8_t SNAPSHOT_VERSION = 5;
+    uint16_t snapshot_len(void) const;
+    void serialiseSnapshot(uint8_t *buf) const;
+    bool deserialiseSnapshot(const uint8_t *buf, uint16_t len);
+#endif
 
 private:
     EKFGSF_yaw *yawEstimator;
@@ -583,11 +594,84 @@ private:
         struct state_elements stateStruct;
     };
 
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    uint32_t packSnapshotFlags(void) const;
+    void unpackSnapshotFlags(uint32_t flags);
+    // apply fn to every buffer section in this build; the single source
+    // of truth for what a snapshot contains
+    template <typename F> void forEachSnapshotSection(F &fn) const;
+#endif
+
     struct output_elements {
         QuaternionF quat;           // quaternion defining rotation from local NED earth frame to body frame
         Vector3F    velocity;       // velocity of body frame origin in local NED earth frame (m/sec)
         Vector3F    position;       // position of body frame origin in local NED earth frame (m)
     };
+
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    /*
+      fixed part of the serialised filter state written to the log at
+      arming for LOG_REPLAY=2; the delayed-horizon and output predictor
+      buffers are appended as length-prefixed sections. Members are
+      ordered so the natural layout has no padding in either single or
+      double precision builds (the ftype block stays 8-byte aligned).
+      Timer fields hold ages relative to the snapshot time so the
+      loader can rebase them; 0xFFFF means the timer had never fired.
+     */
+    struct Snapshot {
+        struct state_elements states;
+        Matrix24 P;
+        struct output_elements out_new;
+        struct output_elements out_delayed;
+        Vector3F del_ang_correction;
+        Vector3F vel_err_integral;
+        Vector3F pos_err_integral;
+        ftype vert_comp_pos;
+        ftype vert_comp_vel;
+        ftype vert_comp_acc;
+        Matrix3F prev_tnb;
+        ftype dt_imu_avg;
+        ftype dt_ekf_avg;
+        ftype hgt_rate;
+        ftype terrain_state;
+        ftype baro_hgt_offset;
+        Vector3F earth_mag_var;
+        Vector3F body_mag_var;
+        Vector3F inactive_gyro_bias[3];
+        Vector3F inactive_accel_bias[3];
+        Vector2F last_known_pos_ne;
+        ftype pos_down_at_takeoff;
+        ftype mea_hgt_at_takeoff;
+        ftype terrain_var;
+        ftype bad_imu_vel_err_integral;
+        double gps_ref_hgt;
+        uint16_t age_vel_ms;
+        uint16_t age_gpspos_ms;
+        uint16_t age_hgt_ms;
+        uint16_t age_tas_ms;
+        uint16_t age_flow_ms;
+        uint16_t age_bodyvel_ms;
+        uint16_t age_drag_ms;
+        uint16_t age_unused_ms;
+        uint32_t snapshot_time_ms;
+        uint8_t active_hgt_source;
+        uint8_t prev_hgt_source;
+        uint8_t source_set;
+        uint8_t reserved0;
+        int32_t origin_lat;
+        int32_t origin_lng;
+        int32_t origin_alt_cm;
+        // the public origin can differ from the EKF origin; getPosNE
+        // reports that delta, so it must survive the warm start
+        int32_t public_origin_lat;
+        int32_t public_origin_lng;
+        int32_t public_origin_alt_cm;
+        uint32_t age_arming_ms;     // uint16 age in a uint32 slot
+        uint32_t flags;
+    };
+    uint16_t snapshot_age(uint32_t last_time_ms) const;
+    void restore_snapshot_age(uint32_t &last_time_ms, uint16_t age, uint32_t base_time_ms) const;
+#endif
 
     struct imu_elements {
         Vector3F    delAng;         // IMU delta angle measurements in body frame (rad)

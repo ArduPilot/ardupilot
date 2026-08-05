@@ -9,6 +9,7 @@
 #include <AP_Beacon/AP_Beacon_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
+#include <AP_Logger/AP_Logger_config.h>
 
 // define for when to include all features
 #define EK3_FEATURE_ALL APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) || APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -16,6 +17,18 @@
 // body odomotry (which includes wheel encoding) on rover or 2M boards
 #ifndef EK3_FEATURE_BODY_ODOM
 #define EK3_FEATURE_BODY_ODOM EK3_FEATURE_ALL || APM_BUILD_TYPE(APM_BUILD_Rover) || HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#endif
+
+// EKF state snapshot at arming for replay of armed-only logs
+// (LOG_REPLAY=2). On by default only in SITL builds; enable elsewhere
+// with --enable-EKF3_REPLAY_SNAPSHOT. APM_BUILD_TYPE must not be
+// evaluated here: example sketches reach this header through AP_DAL.h
+// and their APM_BUILD_DIRECTORY values are not defined macros, which
+// trips -Wundef. The AP_DAL_Standalone example, which links without
+// AP_Logger, instead compiles the implementation out in the .cpp files
+#ifndef EK3_FEATURE_REPLAY_SNAPSHOT
+#define EK3_FEATURE_REPLAY_SNAPSHOT (CONFIG_HAL_BOARD == HAL_BOARD_SITL) && \
+    HAL_LOGGING_ENABLED && HAL_NAVEKF3_AVAILABLE
 #endif
 
 // external navigation on 2M boards

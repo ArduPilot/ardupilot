@@ -13,6 +13,14 @@
 
 #include <new>
 
+// the AP_DAL_Standalone example links without AP_Logger; this exclusion
+// cannot live in AP_NavEKF3_feature.h, where APM_BUILD_TYPE must not be
+// evaluated (see there)
+#if APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
+#undef EK3_FEATURE_REPLAY_SNAPSHOT
+#define EK3_FEATURE_REPLAY_SNAPSHOT 0
+#endif
+
 /*
   parameter defaults for different types of vehicle. The
   APM_BUILD_DIRECTORY is taken from the main vehicle directory name
@@ -892,6 +900,14 @@ bool NavEKF3::InitialiseFilter(void)
         ret &= core[i].InitialiseFilterBootstrap();
     }
 
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    // warm-start cores from any snapshots loaded from a LOG_REPLAY=2 log;
+    // only on full init success, as a failed attempt is retried next call
+    if (ret) {
+        ret &= applyCoreSnapshots();
+    }
+#endif
+
     // set last time the cores were primary to 0
     memset(coreLastTimePrimary_us, 0, sizeof(coreLastTimePrimary_us));
 
@@ -955,6 +971,15 @@ void NavEKF3::UpdateFilter(void)
         }
         core[i].UpdateFilter(allow_state_prediction);
     }
+
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    if (dal.replay_snapshot_pending()) {
+        writeReplaySnapshots();
+    } else if (snapshot_write_buf != nullptr) {
+        // request withdrawn (e.g. disarmed mid-write); drop partial state
+        resetReplaySnapshotWriter();
+    }
+#endif
 
     // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
     // Don't start running the check until the primary core has started returned healthy for at least 10 seconds to avoid switching
@@ -2112,3 +2137,161 @@ bool NavEKF3::InitialiseFilterBootstrap()
     }
     return ret;
 }
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+/*
+  LOG_REPLAY=2 support: at arming, serialise each core's state into the
+  log so Replay can warm-start without pre-arm data. All cores are
+  serialised in the same frame so their snapshots stay time-consistent,
+  then drained; writes resume where they stalled, since restarting on
+  every dropped block floods the buffer faster than it can empty.
+ */
+void NavEKF3::writeReplaySnapshots(void)
+{
+    if (snapshot_write_buf == nullptr) {
+        uint32_t total = 0;
+        for (uint8_t i=0; i<num_cores; i++) {
+            // each core serialises through a Snapshot struct overlay, so
+            // its slice of the buffer must stay 8 byte aligned
+            total = (total + 7U) & ~7U;
+            snapshot_write_ofs[i] = total;
+            snapshot_write_len[i] = core[i].snapshot_len();
+            if (snapshot_write_len[i] == 0) {
+                // oversized snapshot; open the stream rather than gating
+                // the whole flight's replay data on it
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 replay snapshot skipped");
+                resetReplaySnapshotWriter();
+                dal.complete_replay_snapshot();
+                return;
+            }
+            total += snapshot_write_len[i];
+        }
+        snapshot_write_buf = (uint8_t *)malloc(total);
+        if (snapshot_write_buf == nullptr) {
+            if (!snapshot_alloc_warned) {
+                snapshot_alloc_warned = true;
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 replay snapshot alloc failed");
+            } else {
+                // second attempt also failed; give up and open the stream
+                resetReplaySnapshotWriter();
+                dal.complete_replay_snapshot();
+            }
+            return;
+        }
+        for (uint8_t i=0; i<num_cores; i++) {
+            core[i].serialiseSnapshot(&snapshot_write_buf[snapshot_write_ofs[i]]);
+        }
+        snapshot_write_core = 0;
+        snapshot_hdr_written = false;
+        snapshot_chunks_done = 0;
+    }
+    while (snapshot_write_core < num_cores) {
+        if (!dal.write_replay_snapshot(snapshot_write_core, NavEKF3_core::SNAPSHOT_VERSION,
+                                       sizeof(ftype),
+                                       &snapshot_write_buf[snapshot_write_ofs[snapshot_write_core]],
+                                       snapshot_write_len[snapshot_write_core],
+                                       snapshot_hdr_written, snapshot_chunks_done)) {
+            return;
+        }
+        snapshot_write_core++;
+        snapshot_hdr_written = false;
+        snapshot_chunks_done = 0;
+    }
+    resetReplaySnapshotWriter();
+    dal.complete_replay_snapshot();
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 replay snapshot logged");
+}
+
+void NavEKF3::resetReplaySnapshotWriter(void)
+{
+    free(snapshot_write_buf);
+    snapshot_write_buf = nullptr;
+    snapshot_write_core = 0;
+    snapshot_hdr_written = false;
+    snapshot_chunks_done = 0;
+    snapshot_alloc_warned = false;
+}
+
+// accept a snapshot read from a log; applied when cores are initialised
+bool NavEKF3::loadCoreSnapshot(uint8_t core_index, uint8_t version, uint8_t ftype_size,
+                               const uint8_t *blob, uint16_t len)
+{
+    // the exact length is only checkable against a running core; a
+    // mismatch there is caught by deserialiseSnapshot
+    if (core_index >= MAX_EKF_CORES ||
+        version != NavEKF3_core::SNAPSHOT_VERSION ||
+        ftype_size != sizeof(ftype) ||
+        len < sizeof(uint32_t)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 snapshot core %u rejected, cold start", (unsigned)core_index);
+        return false;
+    }
+    uint8_t *copy = (uint8_t *)malloc(len);
+    if (copy == nullptr) {
+        return false;
+    }
+    memcpy(copy, blob, len);
+    free(pending_snapshot[core_index]);
+    pending_snapshot[core_index] = copy;
+    pending_snapshot_len[core_index] = len;
+    if (core != nullptr && core_index < num_cores) {
+        // cores already running (a later arming segment of the log);
+        // warm-start once the whole set has arrived
+        for (uint8_t i=0; i<num_cores; i++) {
+            if (pending_snapshot[i] == nullptr) {
+                return true;
+            }
+        }
+        return applyCoreSnapshots();
+    }
+    return true;
+}
+
+bool NavEKF3::applyCoreSnapshots(void)
+{
+    // apply all cores or none: a partially written snapshot set (one
+    // backend dropping the tail) must not mix warm and cold lanes
+    uint8_t have = 0;
+    for (uint8_t i=0; i<num_cores; i++) {
+        if (pending_snapshot[i] != nullptr) {
+            have++;
+        }
+    }
+    // drop snapshots for cores this build does not run (the log may come
+    // from a vehicle with more cores)
+    for (uint8_t i=num_cores; i<MAX_EKF_CORES; i++) {
+        free(pending_snapshot[i]);
+        pending_snapshot[i] = nullptr;
+    }
+    if (have != num_cores) {
+        if (have != 0) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 snapshot set incomplete, cold start");
+            for (uint8_t i=0; i<num_cores; i++) {
+                free(pending_snapshot[i]);
+                pending_snapshot[i] = nullptr;
+            }
+        }
+        return true;
+    }
+    bool ok = true;
+    for (uint8_t i=0; i<num_cores; i++) {
+        if (pending_snapshot[i] == nullptr) {
+            continue;
+        }
+        if (core[i].deserialiseSnapshot(pending_snapshot[i], pending_snapshot_len[i])) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u warm start from snapshot", (unsigned)i);
+#if APM_BUILD_TYPE(APM_BUILD_Replay)
+            // the Replay tool's GCS does not log statustext, so record the
+            // warm start in the output log directly
+            AP::logger().Write_MessageF("EKF3 IMU%u warm start from snapshot", (unsigned)i);
+#endif
+        } else {
+            // the core may be part restored; attempt to put it back into
+            // a defined cold-start state
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u snapshot rejected, cold start", (unsigned)i);
+            ok &= core[i].InitialiseFilterBootstrap();
+        }
+        free(pending_snapshot[i]);
+        pending_snapshot[i] = nullptr;
+    }
+    return ok;
+}
+#endif  // EK3_FEATURE_REPLAY_SNAPSHOT
