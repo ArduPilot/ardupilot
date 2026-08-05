@@ -37,14 +37,14 @@ const AP_Param::GroupInfo Sprayer::var_info[] = {
     // @Param: PUMP
     // @DisplayName: Sprayer pump pin
     // @Description: The pin number that the Sprayer pump is connected to. (start at 1)
-    // @Range: 0 15
+    // @Range: -1 15
     // @User: Advanced
     AP_GROUPINFO("PUMP", 1, Sprayer, sprayer_pump_pin, -1),
 
     // @Param: SPIN
     // @DisplayName: Sprayer spinner servo pin
     // @Description: The pin number that the Sprayer spinner servo is connected to. (start at 1)
-    // @Range: 0 15
+    // @Range: -1 15
     // @User: Advanced
     AP_GROUPINFO("SPIN", 2, Sprayer, sprayer_spin_pin, -1),
 
