@@ -2232,6 +2232,11 @@ class TestSuite(abc.ABC):
 
         self.expect_list = []
 
+        # connections to vehicles other than the one under test.  Kept so
+        # that waiting on one vehicle does not leave another unread -- see
+        # idle_hook().
+        self.additional_connections = []
+
         self.start_mavproxy_count = 0
 
         self.last_sim_time_cached = 0
@@ -3583,6 +3588,7 @@ class TestSuite(abc.ABC):
                 mav.target_component = msg.get_srcComponent()
                 self.progress("Additional vehicle connected, sysid=%u" % msg.get_srcSystem())
                 break
+            self.additional_connections.append(mav)
         except Exception:
             self.stop_additional_vehicle(sitl, mav)
             raise
@@ -3594,6 +3600,8 @@ class TestSuite(abc.ABC):
         call with either argument None, so it can be used in a finally: block
         which may run before both were created.'''
         if mav is not None:
+            if mav in self.additional_connections:
+                self.additional_connections.remove(mav)
             mav.close()
         if sitl is not None:
             self.progress("Stopping additional vehicle")
@@ -3689,6 +3697,33 @@ class TestSuite(abc.ABC):
         if self.in_drain_mav:
             return
         self.drain_all_pexpects()
+        self.drain_additional_connections(exclude=mav)
+
+    def drain_additional_connections(self, exclude=None):
+        """Read anything pending from vehicles other than the one we are
+        waiting on.
+
+        A vehicle stops its own main loop while its serial0 output queue is
+        full, waiting for whoever is reading it, and that queue is only 1024
+        bytes.  Blocking on one vehicle therefore stops another simply by not
+        reading it, and with simulated time running many times faster than
+        wall-clock that happens in milliseconds.  Only the vehicle we neglect
+        is stopped, so the two end up disagreeing about how much time has
+        passed.
+
+        Messages are left in each connection's cache rather than returned,
+        so read them with mav.messages[...] if a wait might have consumed the
+        stream first.
+        """
+        for conn in self.additional_connections:
+            if conn is exclude:
+                continue
+            try:
+                while conn.recv_msg() is not None:
+                    pass
+            except Exception:  # noqa: BLE001
+                # a vehicle being torn down is not this method's problem
+                pass
 
     class MessageHook():
         '''base class for objects that watch the message stream and check for
