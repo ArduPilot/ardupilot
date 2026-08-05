@@ -115,13 +115,13 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Param: RAT_RLL_NTF
     // @DisplayName: Roll Target notch filter index
     // @Description: Roll Target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_RLL_NEF
     // @DisplayName: Roll Error notch filter index
     // @Description: Roll Error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_atti_rate_roll, "RAT_RLL_", 4, AC_CustomControl_PID, AC_PID),
@@ -209,13 +209,13 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Param: RAT_PIT_NTF
     // @DisplayName: Pitch Target notch filter index
     // @Description: Pitch Target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_PIT_NEF
     // @DisplayName: Pitch Error notch filter index
     // @Description: Pitch Error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_atti_rate_pitch, "RAT_PIT_", 5, AC_CustomControl_PID, AC_PID),
@@ -275,7 +275,7 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Param: RAT_YAW_FLTD
     // @DisplayName: Yaw axis rate controller derivative frequency in Hz
     // @Description: Yaw axis rate controller derivative frequency in Hz
-    // @Range: 5 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -304,13 +304,13 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Param: RAT_YAW_NTF
     // @DisplayName: Yaw Target notch filter index
     // @Description: Yaw Target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_YAW_NEF
     // @DisplayName: Yaw Error notch filter index
     // @Description: Yaw Error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_atti_rate_yaw, "RAT_YAW_", 6, AC_CustomControl_PID, AC_PID),
