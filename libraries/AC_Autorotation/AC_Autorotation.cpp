@@ -73,8 +73,8 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
 
     // @Param: HS_SENSOR
     // @DisplayName: Main Rotor RPM Sensor 
-    // @Description: Allocate the RPM sensor instance to use for measuring head speed. RPM1 = 0.  RPM2 = 1.
-    // @Range: 0 1
+    // @Description: Allocate the RPM sensor instance to use for measuring head speed. RPM1 = 0.  RPM2 = 1.  RPM3 = 2.  RPM4 = 3.
+    // @Range: 0 3
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("HS_SENSOR", 8, AC_Autorotation, _param_rpm_instance, 0),
