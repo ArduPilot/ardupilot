@@ -813,7 +813,7 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @DisplayName: Deadzone for the position PIDs
     // @Description: Output 0 thrust signal when blimp is within this distance (in meters) of the target position. Warning: If this param is greater than LOIT_MAX_POS_X multiplied by LOIT_LAG then the blimp won't move at all in the X axis in Loiter mode. Same for the other axes.
     // @Units: m
-    // @Range: 0.1 1
+    // @Range: 0 1
     // @User: Standard
     AP_GROUPINFO("PID_DZ", 17, Loiter, pid_dz, 0),
 
@@ -828,7 +828,7 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @DisplayName: Loiter position lag
     // @Description: Number of seconds' worth of travel that the actual position can be behind the target position.
     // @Units: s
-    // @Range: 0 0.999
+    // @Range: 0 1
     // @User: Standard
     AP_GROUPINFO("POS_LAG", 19, Loiter, pos_lag, 1),
 
