@@ -49,7 +49,7 @@ const AP_Param::GroupInfo QuadPlane::var_info[] = {
     // @DisplayName: Pilot maximum vertical speed down
     // @Description: The maximum vertical velocity the pilot may request in m/s going down. If 0, uses Q_PILOT_SPD_UP value.
     // @Units: m/s
-    // @Range: 0.5 5
+    // @Range: 0 5
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("PILOT_SPD_DN", 60, QuadPlane, pilot_speed_z_max_dn_ms, 0),
@@ -385,7 +385,7 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Param: TKOFF_FAIL_SCL
     // @DisplayName: Takeoff time failure scalar
     // @Description: Scalar for how long past the expected takeoff time a takeoff should be considered as failed and the vehicle will switch to QLAND. If set to 0 there is no limit on takeoff time.
-    // @Range: 1.1 5.0
+    // @Range: 0 5.0
     // @Increment: 5.1
     // @User: Advanced
     AP_GROUPINFO("TKOFF_FAIL_SCL", 14, QuadPlane, takeoff_failure_scalar, 0),
