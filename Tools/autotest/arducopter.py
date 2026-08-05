@@ -14236,6 +14236,82 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not ok:
             raise NotAchievedException("check_replay (%s) failed" % current_log_filepath)
 
+    def ReplaySeparateLog(self):
+        '''check LOG_REPLAY=2 writes replay data to a separate, replayable log'''
+        util.build_SITL('tool/Replay', clean=False, configure=False)
+        self.set_parameters({
+            "LOG_REPLAY": 2,
+            "LOG_DISARMED": 0,
+            "LOG_FILE_BUFSIZE": 200,  # replay wants a large write buffer
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+        })
+        self.reboot_sitl()
+
+        # the separate replay log runs from boot; fly to also produce a main log
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm(require_absolute=True)
+        self.arm_vehicle()
+        self.takeoffAndMoveAway()
+        self.do_RTL()
+
+        # capture the flight's logs before rebooting, otherwise the reboot
+        # opens a fresh (still-being-written) replay log
+        main_log = self.current_onboard_log_filepath()
+        replay_dir = "logs/REPLAY"
+        if not os.path.isdir(replay_dir):
+            raise NotAchievedException("No REPLAY directory created")
+        replay_files = sorted(f for f in os.listdir(replay_dir) if f.endswith(".BIN"))
+        if len(replay_files) == 0:
+            raise NotAchievedException("No replay log written")
+        replay_log = os.path.join(replay_dir, replay_files[-1])
+        self.reboot_sitl()  # close and flush the flight's logs
+
+        # the flight's replay log must survive the reboot
+        if not os.path.exists(replay_log):
+            raise NotAchievedException("Flight's replay log was discarded")
+
+        # the replay log must be self-describing and carry replay data
+        if self.dfreader_for_path(replay_log).recv_match(type='PARM') is None:
+            raise NotAchievedException("Replay log missing PARM")
+        if self.dfreader_for_path(replay_log).recv_match(type='RFRH') is None:
+            raise NotAchievedException("Replay log missing replay data")
+
+        # replay data must not leak into the main log, which instead points at
+        # its replay log
+        if self.dfreader_for_path(main_log).recv_match(type='RFRH') is not None:
+            raise NotAchievedException("Replay data leaked into the main log")
+        dfreader = self.dfreader_for_path(main_log)
+        if not any('REPLAY/' in m.Message
+                   for m in iter(lambda: dfreader.recv_match(type='MSG'), None)):
+            raise NotAchievedException("Main log missing replay cross-reference")
+
+        # the separate log must be a valid Replay input
+        self.run_replay(replay_log)
+        if self.dfreader_for_current_onboard_log().recv_match(type='XKF1') is None:
+            raise NotAchievedException("Replay of separate log produced no EKF output")
+
+        # by default replay logs are kept even when the boot never arms, so a
+        # disarmed session can still be replayed
+        n_before = len([f for f in os.listdir(replay_dir) if f.endswith(".BIN")])
+        self.reboot_sitl()
+        n_kept = len([f for f in os.listdir(replay_dir) if f.endswith(".BIN")])
+        if n_kept <= n_before:
+            raise NotAchievedException(
+                "never-armed replay log discarded without LOG_DISARMED=3")
+
+        # with LOG_DISARMED=3 a never-armed boot's replay log is discarded on
+        # the next boot like the main log, so no-arm reboots do not accumulate
+        self.set_parameters({"LOG_DISARMED": 3})
+        self.reboot_sitl()  # this boot's log is the first marked for discard
+        n_before = len([f for f in os.listdir(replay_dir) if f.endswith(".BIN")])
+        self.reboot_sitl()
+        self.reboot_sitl()
+        n_after = len([f for f in os.listdir(replay_dir) if f.endswith(".BIN")])
+        if n_after > n_before:
+            raise NotAchievedException(
+                "never-armed replay logs accumulated (%u -> %u)" % (n_before, n_after))
+
     def DefaultIntervalsFromFiles(self):
         '''Test setting default mavlink message intervals from files'''
         ex = None
@@ -19245,6 +19321,7 @@ return update, 1000
             self.PerfInfo,
             self.ModeAllowsEntryWhenNoPilotInput,
             self.Replay,
+            self.ReplaySeparateLog,
             self.FETtecESC,
             self.ProximitySensors,
             self.GroundEffectCompensation_touchDownExpected,
