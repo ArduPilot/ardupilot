@@ -31,7 +31,7 @@ const AP_Param::GroupInfo AC_WeatherVane::var_info[] = {
     // @Param: GAIN
     // @DisplayName: Weathervaning gain
     // @Description: This converts the target roll/pitch angle of the aircraft into the correcting (into wind) yaw rate. e.g. Gain = 2, roll = 30 deg, pitch = 0 deg, yaw rate = 60 deg/s.
-    // @Range: 0.5 4
+    // @Range: 0 4
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("GAIN", 2, AC_WeatherVane, _gain, WVANE_PARAM_GAIN_DEFAULT),
