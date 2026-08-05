@@ -118,8 +118,8 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
     // @Param: _REPLAY
     // @DisplayName: Enable logging of information needed for Replay
-    // @Description: If LOG_REPLAY is set to 1 then the EKF2 and EKF3 state estimators will log detailed information needed for diagnosing problems with the Kalman filter. LOG_DISARMED must be set to 1 or 2 or else the log will not contain the pre-flight data required for replay testing of the EKF's. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost.
-    // @Values: 0:Disabled,1:Enabled
+    // @Description: If LOG_REPLAY is set to 1 then the EKF2 and EKF3 state estimators will log detailed information needed for diagnosing problems with the Kalman filter. LOG_DISARMED must be set to 1 or 2 or else the log will not contain the pre-flight data required for replay testing of the EKF's. If LOG_REPLAY is set to 2 the replay data starts at arming instead: an EKF3 snapshot is written to the log at arm and the replay stream runs only while armed, so LOG_DISARMED is only needed for LOG_REPLAY=1 and the log stays flight-sized. Replay of such logs warm-starts from the snapshot when one was successfully written; the result is close to but not bit-exact with the original flight. EKF2 is not supported. It is suggested that you also raise LOG_FILE_BUFSIZE to give more buffer space for logging and use a high quality microSD card to ensure no sensor data is lost.
+    // @Values: 0:Disabled,1:Enabled,2:Enabled from arming with EKF snapshot
     // @User: Standard
     AP_GROUPINFO("_REPLAY",  3, AP_Logger, _params.log_replay,       0),
 
@@ -1087,6 +1087,19 @@ bool AP_Logger::allow_start_ekf() const
         }
     }
 
+    return true;
+}
+
+bool AP_Logger::log_startup_complete(void) const
+{
+    if (_next_backend == 0) {
+        return false;
+    }
+    for (uint8_t i=0; i<_next_backend; i++) {
+        if (!backends[i]->allow_start_ekf()) {
+            return false;
+        }
+    }
     return true;
 }
 
