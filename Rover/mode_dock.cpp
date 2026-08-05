@@ -16,7 +16,7 @@ const AP_Param::GroupInfo ModeDock::var_info[] = {
     // @DisplayName: Dock mode direction of approach
     // @Description: Compass direction in which vehicle should approach towards dock. -1 value represents unset parameter
     // @Units: deg
-    // @Range: 0 360
+    // @Range: -1 360
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("_DIR", 2, ModeDock, desired_dir, -1.00f),
