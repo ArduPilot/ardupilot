@@ -1053,6 +1053,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def default_mode(self):
         return "MANUAL"
 
+    def parameters_with_known_out_of_range_values(self):
+        ret = super().parameters_with_known_out_of_range_values()
+        ret.update({
+            "YAW_RATE_P": "Plane ships 0.04, documented 0.08 to 0.35",
+            "Q_LOIT_BRK_JRK_M": "QuadPlane ships 2.5, documented 5 to 50",
+        })
+        return ret
+
     def disabled_tests(self):
         return {
             "FRSkyPassThrough": "Currently failing",

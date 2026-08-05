@@ -24388,6 +24388,23 @@ return update, 1000
         ret.extend(self.tests2d())
         return ret
 
+    def parameters_with_known_out_of_range_values(self):
+        ret = super().parameters_with_known_out_of_range_values()
+        ret.update({
+            # Copter's @Group: ATC_ takes in both
+            # AC_AttitudeControl_Multi.cpp and AC_AttitudeControl_Heli.cpp,
+            # so where a parameter is documented in both files one set of
+            # documentation wins and a multirotor ends up advertising the
+            # helicopter's range.  Fixing this needs the documentation
+            # restructured, not a range widened:
+            "ATC_RAT_RLL_FF": "multirotor gets the AC_AttitudeControl_Heli range",
+            "ATC_RAT_PIT_FF": "multirotor gets the AC_AttitudeControl_Heli range",
+            "ATC_RAT_RLL_FLTE": "multirotor gets the AC_AttitudeControl_Heli range",
+            "ATC_RAT_PIT_FLTE": "multirotor gets the AC_AttitudeControl_Heli range",
+            "ATC_RAT_YAW_FLTE": "multirotor gets the AC_AttitudeControl_Heli range",
+        })
+        return ret
+
     def disabled_tests(self):
         return {
             "GroundEffectCompensation_takeOffExpected": "Flapping",
