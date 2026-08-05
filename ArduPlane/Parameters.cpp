@@ -307,7 +307,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Stall airspeed
     // @Description: If stall prevention is enabled this speed is used to calculate the minimum airspeed while banking. It is also used during landing final as the minimum airspeed that can be demanded by the TECS, which allows using TECS_LAND_ARSPD or LAND_PF_ARSPD to achieve landings slower than AIRSPEED_MIN. If this is set to 0 then the stall speed is assumed to be the minimum airspeed speed. Typically set slightly higher then true stall speed.
     // @Units: m/s
-    // @Range: 5 75
+    // @Range: 0 75
     // @User: Standard
     ASCALAR(airspeed_stall, "AIRSPEED_STALL", 0),
 
@@ -1141,7 +1141,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FWD_BAT_VOLT_MAX
     // @DisplayName: Forward throttle battery voltage compensation maximum voltage
     // @Description: Forward throttle battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust). Recommend 4.2 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
-    // @Range: 6 35
+    // @Range: 0 35
     // @Units: V
     // @Increment: 0.1
     // @User: Advanced
@@ -1150,7 +1150,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FWD_BAT_VOLT_MIN
     // @DisplayName: Forward throttle battery voltage compensation minimum voltage
     // @Description: Forward throttle battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.5 * cell count, 0 = Disabled. Recommend THR_MAX is set to no more than 100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX, THR_MIN is set to no less than -100 x FWD_BAT_VOLT_MIN / FWD_BAT_VOLT_MAX and climb descent rate limits are set accordingly.
-    // @Range: 6 35
+    // @Range: 0 35
     // @Units: V
     // @Increment: 0.1
     // @User: Advanced
