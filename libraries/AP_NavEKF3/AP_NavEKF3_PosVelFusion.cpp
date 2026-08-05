@@ -122,11 +122,16 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 #endif
 
 #if EK3_FEATURE_EXTERNAL_NAV
+        // Use `lastExtNavPosReceived_ms` (raw arrival time), not `extNavDataDelayed.time_ms`
+        // (the delay-buffer-adjusted timestamp, relative to the fusion horizon rather than "now").
+        // The EKF's own fusion horizon delay can be greater than `POSITION_RESET_MAX_AGE_MS`
+        // by construction (it scales with configured sensor delays, e.g. `VISO_DELAY_MS`, and
+        // with this vehicle's own loop rate).
         const bool reset_from_extnav =
             posResetSource == resetDataSource::EXTNAV ||
             (posResetSource == resetDataSource::DEFAULT &&
              posxy_source() == AP_NavEKF_Source::SourceXY::EXTNAV &&
-             imuSampleTime_ms - extNavDataDelayed.time_ms < POSITION_RESET_MAX_AGE_MS);
+             imuSampleTime_ms - lastExtNavPosReceived_ms < POSITION_RESET_MAX_AGE_MS);
 #endif
 
         if (reset_from_gps) {
