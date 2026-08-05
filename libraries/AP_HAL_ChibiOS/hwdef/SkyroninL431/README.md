@@ -8,4 +8,3 @@ This is the bare base target.
 - MCU: STM32L431 (256KB flash)
 - CAN: single CAN1 port
 - Debug: USART1, 57600 baud
-
