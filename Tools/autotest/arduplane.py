@@ -8678,7 +8678,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         NO_PROGRESS_S = 60
         PROGRESS_MARGIN_M = 5
         FOLLOWER_STREAMRATE_HZ = 4  # see set_streamrate() call below
-        DRAIN_INTERVAL_S = 0.02     # wall-clock; keeps serial0 from backing up
+        # Wall-clock gap between reads.  A vehicle stops itself once 1024
+        # bytes are waiting on its serial0 queue, and at fifteen times
+        # realtime the two vehicles produce that in a few milliseconds, so
+        # this bounds how long either is left unread while we are not
+        # blocked on anything.  Measured on CI at 20ms: 26.3 stalls per
+        # simulated second and the target's clock still gaining 1.47x.
+        DRAIN_INTERVAL_S = 0.005
         SETTLE_REPORTS = 4          # number of distance reports after a waypoint to use relaxed threshold
 
         target_sitl = None
@@ -9023,7 +9029,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             while time.time() - tstart < 2:
                 self.drain_all_pexpects()
                 target_mav.recv_match(type='MISSION_CURRENT', blocking=False)
-                time.sleep(0.05)
+                time.sleep(DRAIN_INTERVAL_S)
 
             # give the follower time to react to the target starting to move
             # before we begin enforcing distance limits
@@ -9230,7 +9236,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
                         last_report = now
 
-                    time.sleep(0.05)
+                    time.sleep(DRAIN_INTERVAL_S)
 
                 except NotAchievedException:
                     self.set_rc(7, 1000)
