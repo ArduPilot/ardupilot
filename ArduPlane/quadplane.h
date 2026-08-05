@@ -181,6 +181,11 @@ public:
      */
     bool in_vtol_land_descent(void) const;
 
+    // Inside class QuadPlane
+    uint16_t get_mav_vtol_state() const {
+        return transition->get_mav_vtol_state();
+    }
+
     // Should we allow stick mixing from the pilot
     bool allow_stick_mixing() const;
 
