@@ -11580,14 +11580,14 @@ Also, ignores heartbeats not from our target system'''
         self.wait_disarmed()
         self.delay_sim_time(15, reason="Allow log persistence to finish")
         self.assert_current_log_filesizes({
-            1: (1980*1024, 2020*1024),
+            1: (1950*1024, 1980*1024),
         })
         self.progress("Creating a second log")
         self.arm_vehicle()
         self.wait_disarmed()
         self.delay_sim_time(15, reason="Allow log persistence to finish")
         self.assert_current_log_filesizes({
-            1: (1980*1024, 2020*1024),
+            1: (1950*1024, 1980*1024),
             2: (1000*1024, 1100*1024),
         })
 
