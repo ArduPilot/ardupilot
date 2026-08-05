@@ -346,9 +346,6 @@ void ModeRTL::descent_run()
         }
 
         if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
             // convert pilot input to reposition velocity
             vel_correction_ms = get_pilot_desired_velocity(wp_nav->get_wp_acceleration_mss() * 0.5);
 

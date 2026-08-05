@@ -564,8 +564,15 @@ void Mode::get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_o
         return;
     }
 
-    //transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
-    rc_input_to_roll_pitch_rad(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), angle_max_rad,  angle_limit_rad, roll_out_rad, pitch_out_rad);
+    // fetch roll and pitch inputs
+    float roll_in_norm = channel_roll->norm_input_dz();
+    float pitch_in_norm = channel_pitch->norm_input_dz();
+
+    // apply SIMPLE mode transform to pilot inputs
+    apply_simple_mode(roll_in_norm, pitch_in_norm);
+
+    // transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
+    rc_input_to_roll_pitch_rad(roll_in_norm, pitch_in_norm, angle_max_rad, angle_limit_rad, roll_out_rad, pitch_out_rad);
 }
 
 // transform pilot's roll or pitch input into a desired velocity
@@ -579,6 +586,9 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     // fetch roll and pitch inputs
     float roll_out_norm = channel_roll->norm_input_dz();
     float pitch_out_norm = channel_pitch->norm_input_dz();
+
+    // apply SIMPLE mode transform to pilot inputs
+    apply_simple_mode(roll_out_norm, pitch_out_norm);
 
     // convert roll and pitch inputs into velocity in NE frame
     vel_ne_ms = Vector2f(-pitch_out_norm, roll_out_norm);
@@ -788,9 +798,6 @@ void Mode::land_run_horizontal_control()
         }
 
         if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
             // convert pilot input to reposition velocity
             // use half maximum acceleration as the maximum velocity to ensure aircraft will
             // stop from full reposition speed in less than 1 second.
@@ -1091,9 +1098,30 @@ float Mode::get_non_takeoff_throttle() const
     return copter.get_non_takeoff_throttle();
 }
 
-// Updates simple/super-simple heading reference based on current yaw and mode.
-void Mode::update_simple_mode(void) {
-    copter.update_simple_mode();
+// Rotates roll/pitch pilot input if simple or super simple mode is active.
+// roll and pitch may be in any units/scale; the rotation is scale-independent
+void Mode::apply_simple_mode(float &roll, float &pitch) const
+{
+    // exit immediately if not in simple mode
+    if (copter.simple_mode == Copter::SimpleMode::NONE) {
+        return;
+    }
+
+    float roll_out, pitch_out;
+
+    if (copter.simple_mode == Copter::SimpleMode::SIMPLE) {
+        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
+        roll_out = roll*copter.simple_cos_yaw - pitch*copter.simple_sin_yaw;
+        pitch_out = roll*copter.simple_sin_yaw + pitch*copter.simple_cos_yaw;
+    } else {
+        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
+        roll_out = roll*copter.super_simple_cos_yaw - pitch*copter.super_simple_sin_yaw;
+        pitch_out = roll*copter.super_simple_sin_yaw + pitch*copter.super_simple_cos_yaw;
+    }
+
+    // rotate roll, pitch input from north facing to vehicle's perspective
+    roll = roll_out*copter.ahrs.cos_yaw() + pitch_out*copter.ahrs.sin_yaw();
+    pitch = -roll_out*copter.ahrs.sin_yaw() + pitch_out*copter.ahrs.cos_yaw();
 }
 
 // Requests a mode change with the specified reason; returns true if accepted.
