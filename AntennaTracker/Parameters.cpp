@@ -299,7 +299,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH2SRV_FLTT
     // @DisplayName: Pitch axis controller target frequency in Hz
     // @Description: Pitch axis controller target frequency in Hz
-    // @Range: 1 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -307,7 +307,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH2SRV_FLTE
     // @DisplayName: Pitch axis controller error frequency in Hz
     // @Description: Pitch axis controller error frequency in Hz
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -315,7 +315,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH2SRV_FLTD
     // @DisplayName: Pitch axis controller derivative frequency in Hz
     // @Description: Pitch axis controller derivative frequency in Hz
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -345,13 +345,13 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: PITCH2SRV_NTF
     // @DisplayName: Pitch Target notch filter index
     // @Description: Pitch Target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: PITCH2SRV_NEF
     // @DisplayName: Pitch Error notch filter index
     // @Description: Pitch Error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
@@ -395,7 +395,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: YAW2SRV_FLTT
     // @DisplayName: Yaw axis controller target frequency in Hz
     // @Description: Yaw axis controller target frequency in Hz
-    // @Range: 1 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -403,7 +403,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: YAW2SRV_FLTE
     // @DisplayName: Yaw axis controller error frequency in Hz
     // @Description: Yaw axis controller error frequency in Hz
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -411,7 +411,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: YAW2SRV_FLTD
     // @DisplayName: Yaw axis controller derivative frequency in Hz
     // @Description: Yaw axis controller derivative frequency in Hz
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -441,13 +441,13 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: YAW2SRV_NTF
     // @DisplayName: Yaw Target notch filter index
     // @Description: Yaw Target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: YAW2SRV_NEF
     // @DisplayName: Yaw Error notch filter index
     // @Description: Yaw Error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),
