@@ -8917,17 +8917,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 report where a vehicle was, not where it is, and that lag
                 grows without bound as the backlog builds -- the separation
                 computed below would climb steadily even while the two
-                vehicles are holding station perfectly.  Returns None if
-                nothing is buffered, leaving the caller to wait for one.
+                vehicles are holding station perfectly.
+
+                Read from the connection's cache rather than returning what
+                the drain above saw: the suite drains the vehicles it is not
+                waiting on, so the stream may already have been consumed
+                elsewhere.  Returns None only until the first one arrives.
                 '''
-                gpi = None
-                while True:
-                    m = mav_conn.recv_match(
-                        type='GLOBAL_POSITION_INT', blocking=False)
-                    if m is None:
-                        break
-                    gpi = m
-                return gpi
+                while mav_conn.recv_match(
+                        type='GLOBAL_POSITION_INT', blocking=False) is not None:
+                    pass
+                return mav_conn.messages.get('GLOBAL_POSITION_INT', None)
 
             def follow_offset_error_m():
                 follower_gpi = latest_gpi(self.mav)
@@ -9137,7 +9137,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     self.drain_all_pexpects()
 
                     # check for target waypoint advances
-                    mav_wp = target_mav.recv_match(type='MISSION_CURRENT', blocking=False)
+                    # cache, not the stream: the suite drains connections it
+                    # is not waiting on, so a blocking wait elsewhere may have
+                    # taken this message before we looked
+                    while target_mav.recv_match(
+                            type='MISSION_CURRENT', blocking=False) is not None:
+                        pass
+                    mav_wp = target_mav.messages.get('MISSION_CURRENT', None)
                     if mav_wp is not None and mav_wp.seq != last_target_wp:
                         last_target_wp = mav_wp.seq
                         # cached: get_sim_time() would pause only this vehicle, letting the
