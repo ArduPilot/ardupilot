@@ -1176,14 +1176,43 @@ void RCOutput::set_group_mode(pwm_group &group)
     case MODE_PROFILED:
 #if HAL_SERIALLED_ENABLED
     {
-        uint8_t bits_per_pixel = 24;
-        uint32_t bit_width = NEOP_BIT_WIDTH_TICKS;
-        bool active_high = true;
-
         if (!start_led_thread()) {
             group.current_mode = MODE_PWM_NONE;
             break;
         }
+
+#if defined(RP2350)
+        /*
+          On RP2350 the LED waveform comes out of the PIO rather than a timer
+          plus DMAR, so the bit widths and setup_group_DMA() below do not
+          apply. ProfiLED needs a second program and a clock pin and has
+          neither here, so it is refused rather than quietly driven as a
+          NeoPixel.
+         */
+        if (group.current_mode == MODE_PROFILED) {
+            print_group_setup_error(group, "RP2350: ProfiLED not supported");
+            group.current_mode = MODE_PWM_NONE;
+            break;
+        }
+        {
+            bool ok = RCOutput_pico::neopixel_init();
+            for (uint8_t j = 0; ok && j < HAL_PWM_GROUP_CHANNELS; j++) {
+                if (group.chan[j] == CHAN_DISABLED) {
+                    continue;
+                }
+                ok = RCOutput_pico::neopixel_add_channel(j, PAL_PAD(group.pal_lines[j]));
+            }
+            if (!ok) {
+                print_group_setup_error(group, "PIO NeoPixel setup failed");
+                group.current_mode = MODE_PWM_NONE;
+                break;
+            }
+        }
+        break;
+#else
+        uint8_t bits_per_pixel = 24;
+        uint32_t bit_width = NEOP_BIT_WIDTH_TICKS;
+        bool active_high = true;
 
         if (group.current_mode == MODE_PROFILED) {
             bits_per_pixel = 25;
@@ -1207,6 +1236,7 @@ void RCOutput::set_group_mode(pwm_group &group)
             break;
         }
         break;
+#endif // defined(RP2350)
     }
 #endif
 
@@ -1918,6 +1948,42 @@ bool RCOutput::serial_led_send(pwm_group &group)
         return true;
     }
 
+#if defined(RP2350)
+    /*
+      Pack straight from the LED data into the PIO FIFO. There is no DMA buffer
+      and no DMA lock to take: the state machine holds the timing and the LED
+      thread is the only writer.
+     */
+    {
+        WITH_SEMAPHORE(group.serial_led_mutex);
+
+        group.serial_led_pending = false;
+        group.prepared_send = false;
+
+        const bool rgb_order = (group.current_mode == MODE_NEOPIXELRGB);
+
+        for (uint8_t i = 0; i < HAL_PWM_GROUP_CHANNELS; i++) {
+            if (group.chan[i] == CHAN_DISABLED || group.serial_led_data[i] == nullptr) {
+                continue;
+            }
+            if (!RCOutput_pico::neopixel_send_begin(i)) {
+                continue;
+            }
+            for (uint8_t led = 0; led < group.serial_nleds; led++) {
+                const SerialLed &c = group.serial_led_data[i][led];
+                const uint32_t w = rgb_order
+                    ? RCOutput_pico::neopixel_pack_rgb(c.red, c.green, c.blue)
+                    : RCOutput_pico::neopixel_pack_grb(c.red, c.green, c.blue);
+                if (!RCOutput_pico::neopixel_send_word(i, w)) {
+                    break;
+                }
+            }
+            RCOutput_pico::neopixel_send_end(i);
+        }
+    }
+    return true;
+#else
+
 #if HAL_DSHOT_ENABLED
     if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)
         || rcout_micros() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
@@ -1946,6 +2012,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
     send_pulses_DMAR(group, group.dma_buffer_len);
 #endif // HAL_DSHOT_ENABLED
     return true;
+#endif // defined(RP2350)
 }
 #endif // HAL_SERIALLED_ENABLED
 

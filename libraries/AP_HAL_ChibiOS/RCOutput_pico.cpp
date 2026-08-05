@@ -12,16 +12,19 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * DShot600 for RP2350, driven from the PIO.
+ * PIO-driven outputs for RP2350: DShot600 on PIO2, WS2812 / NeoPixel on PIO1.
  *
- * The PIO programs are assembled from Betaflight's src/platform/PICO/dshot.pio
- * (GPLv3), by Matthew Selby, Andy Piper and qqqlab. ArduPilot has no pioasm in
- * its build, so the assembled words are embedded below rather than generated.
+ * The DShot programs are assembled from Betaflight's src/platform/PICO/dshot.pio
+ * (GPLv3), by Matthew Selby, Andy Piper and qqqlab, and the WS2812 program is
+ * the four-instruction one from the Raspberry Pi pico-examples, reached by way
+ * of Betaflight's src/platform/PICO/light_ws2811strip_pico.c (GPLv3). ArduPilot
+ * has no pioasm in its build, so the assembled words are embedded below rather
+ * than generated.
  */
 
 #include "RCOutput_pico.h"
 
-#if defined(RP2350) && HAL_DSHOT_ENABLED
+#if defined(RP2350) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)
 
 #include <AP_HAL/AP_HAL.h>
 #include <hal.h>
@@ -31,14 +34,30 @@
 #include "PIOUART.h"
 #include "RCOutput.h"
 
+using namespace ChibiOS;
+
+extern const AP_HAL::HAL& hal;
+
+/* --------------------------- shared PIO plumbing -------------------------- */
+
 // Not in PIOUART.h because the UART programs have no use for it. RP2350
 // SHIFTCTRL puts FJOIN_TX at bit 30 and FJOIN_RX at 31.
 #define PIO_SHIFTCTRL_FJOIN_TX (1U << 30)
 #define PIO_SHIFTCTRL_FJOIN_RX (1U << 31)
 
-using namespace ChibiOS;
+// GPIOBASE is marked __I in rp2350.h, so it has to be written through a raw
+// pointer. Offset from the PIO base, as in PIOUART.cpp.
+#define PIO_GPIOBASE_OFFSET 0x168U
 
-extern const AP_HAL::HAL& hal;
+// FUNCSEL on RP2350: PIO0 is 6, PIO1 is 7, PIO2 is 8. 11 is UART_AUX, which is
+// where the DShot pads were being routed - the state machines ran but nothing
+// reached the pin. PIO0 belongs to PIOUART, so only the other two appear here.
+#define PIO1_FUNCSEL 7U
+#define PIO2_FUNCSEL 8U
+
+/* --------------------- DShot: block, programs, timing --------------------- */
+
+#if HAL_DSHOT_ENABLED
 
 /*
   DShot lives on PIO2. PIOUART only ever uses PIO0 and PIO1, so there is no
@@ -46,17 +65,9 @@ extern const AP_HAL::HAL& hal;
   sets GPIOBASE=16 on its blocks to reach GPIO16-47, which would put motor pins
   below GPIO16 out of range; here we leave it at 0 for a GPIO0-31 window.
  */
-#define DSHOT_PIO       PIO2
-#define DSHOT_PIO_RESET RESETS_ALLREG_PIO2
-
-// GPIOBASE is marked __I in rp2350.h, so it has to be written through a raw
-// pointer. Offset from the PIO base, as in PIOUART.cpp.
-#define PIO_GPIOBASE_OFFSET 0x168U
-
-// FUNCSEL for PIO2 on RP2350: PIO0 is 6, PIO1 is 7, PIO2 is 8. 11 is UART_AUX,
-// which is where these pads were being routed - the state machines ran but
-// nothing reached the pin.
-#define DSHOT_PIO_FUNCSEL 8U
+#define DSHOT_PIO         PIO2
+#define DSHOT_PIO_RESET   RESETS_ALLREG_PIO2
+#define DSHOT_PIO_FUNCSEL PIO2_FUNCSEL
 
 /*
   Both programs load at offset 0, one at a time.
@@ -169,6 +180,83 @@ static const uint16_t k_dshot600_bidir_pgm[] = {
 static_assert((RP_CLK_SYS_FREQ % DSHOT600_BIDIR_PIO_HZ) == 0,
               "bidirectional DShot needs a system clock that is a multiple of 75MHz");
 
+// 18 PIO cycles per sample at 75MHz against a 1/(5/4 * 600000) telemetry bit
+#define SAMPLES_TO_BITS ((18.0f / 75.0f) / (1.0f / 0.75f))
+
+#define TELEM_WORDS   4     // 4 x 32 samples
+#define TELEM_MAX_EDGES 24  // 21 data bits plus the return to idle
+
+#endif // HAL_DSHOT_ENABLED
+
+/* -------------------- NeoPixel: block, program, timing -------------------- */
+
+#if HAL_SERIALLED_ENABLED
+
+/*
+  NeoPixel lives on PIO1, and the block is forced rather than preferred.
+
+  PIOUART only ever instantiates onto PIO0 and DShot owns PIO2 above, so PIO1
+  is the one left. That is fortunate rather than incidental: an LED pin below
+  GPIO16 needs GPIOBASE 0, which the PIOUART blocks cannot give because they
+  are shifted to 16 to reach GPIO16-47, and the DShot block has neither a spare
+  state machine nor room for the program - the bidirectional program alone is
+  29 of the 32 instruction slots against the 4 this one needs.
+ */
+#define NEOP_PIO         PIO1
+#define NEOP_PIO_RESET   RESETS_ALLREG_PIO1
+#define NEOP_PIO_FUNCSEL PIO1_FUNCSEL
+
+/*
+  ws2812.pio, side-set on the LED pin:
+
+    .side_set 1
+    .wrap_target
+    bitloop:
+        out    x, 1        side 0 [T3 - 1]
+        jmp    !x, do_zero side 1 [T1 - 1]
+    do_one:
+        jmp    bitloop     side 1 [T2 - 1]
+    do_zero:
+        nop                side 0 [T2 - 1]
+    .wrap
+
+  T1 3, T2 3, T3 4 - ten PIO cycles per bit, which is what sets the clock
+  below. A one is high for T1+T2 and low for T3; a zero is high for T1 and low
+  for T2+T3.
+ */
+static const uint16_t k_ws2812_pgm[] = {
+    0x6321,   // 0: out    x, 1     side 0 [3]
+    0x1223,   // 1: jmp    !x, 3    side 1 [2]
+    0x1200,   // 2: jmp    0        side 1 [2]
+    0xa242,   // 3: nop             side 0 [2]
+};
+
+#define WS2812_WRAP_TARGET 0U
+#define WS2812_WRAP        3U
+
+// ten PIO cycles a bit at the 800 kHz WS2812 carrier
+#define WS2812_CYCLES_PER_BIT 10U
+#define WS2812_CARRIER_HZ     800000U
+#define WS2812_PIO_HZ         (WS2812_CARRIER_HZ * WS2812_CYCLES_PER_BIT)
+
+// bits shifted per LED, and so the autopull threshold
+#define WS2812_BITS_PER_LED 24U
+
+/*
+  A WS2812 latches its shift register when the line has been low for long
+  enough. The datasheet asks for 50 us; parts in the wild want more, and the
+  cost of being generous is invisible at LED update rates.
+ */
+#define WS2812_RESET_US 300U
+
+// one LED is 24 bits at 800 kHz, so 30 us. Bound the wait well above that.
+#define WS2812_SEND_TIMEOUT_US 20000U
+
+#endif // HAL_SERIALLED_ENABLED
+
+/* ------------------------------ class storage ----------------------------- */
+
+#if HAL_DSHOT_ENABLED
 bool     RCOutput_pico::_initialised;
 bool     RCOutput_pico::_bidir;
 uint32_t RCOutput_pico::_chan_mask;
@@ -176,7 +264,18 @@ uint8_t  RCOutput_pico::_gpio[RCOutput_pico::MAX_CHANNELS];
 uint8_t  RCOutput_pico::_len_transition[4];
 uint8_t  RCOutput_pico::_stall_count[RCOutput_pico::MAX_CHANNELS];
 uint32_t RCOutput_pico::_stall_restarts[RCOutput_pico::MAX_CHANNELS];
+#endif // HAL_DSHOT_ENABLED
 
+#if HAL_SERIALLED_ENABLED
+bool     RCOutput_pico::_neop_initialised;
+uint32_t RCOutput_pico::_neop_chan_mask;
+uint8_t  RCOutput_pico::_neop_gpio[RCOutput_pico::MAX_CHANNELS];
+uint32_t RCOutput_pico::_neop_last_send_us[RCOutput_pico::MAX_CHANNELS];
+#endif // HAL_SERIALLED_ENABLED
+
+/* --------------------------- DShot implementation ------------------------- */
+
+#if HAL_DSHOT_ENABLED
 /*
   Load one of the two programs at offset 0, stopping every state machine first.
   Called again when the direction changes, which is why the instruction memory
@@ -416,13 +515,6 @@ void RCOutput_pico::restart_sm(uint8_t chan, uint16_t frame)
   ----------------------------------------------------------------------------
  */
 
-
-// 18 PIO cycles per sample at 75MHz against a 1/(5/4 * 600000) telemetry bit
-#define SAMPLES_TO_BITS ((18.0f / 75.0f) / (1.0f / 0.75f))
-
-#define TELEM_WORDS   4     // 4 x 32 samples
-#define TELEM_MAX_EDGES 24  // 21 data bits plus the return to idle
-
 void RCOutput_pico::set_transitions(float bits_per_sample)
 {
     uint8_t length = 0;
@@ -551,4 +643,168 @@ bool RCOutput_pico::read_telemetry(uint8_t chan, uint16_t &encoded)
     return true;
 }
 
-#endif // defined(RP2350) && HAL_DSHOT_ENABLED
+#endif // HAL_DSHOT_ENABLED
+
+/* -------------------------- NeoPixel implementation ----------------------- */
+
+#if HAL_SERIALLED_ENABLED
+
+bool RCOutput_pico::neopixel_init(void)
+{
+    if (_neop_initialised) {
+        return true;
+    }
+
+    PIO_TypeDef *pio = NEOP_PIO;
+
+    rp_peripheral_unreset(NEOP_PIO_RESET);
+
+    pio->CTRL = 0U;   // stop all state machines before touching instr memory
+
+    /*
+      GPIO0-31 window. This is the reset value, but PIO1 is only unclaimed on
+      boards that leave PIOUART off it, so say it rather than inherit it.
+     */
+    (*reinterpret_cast<volatile uint32_t *>(reinterpret_cast<uintptr_t>(pio) + PIO_GPIOBASE_OFFSET)) = 0U;
+
+    for (uint8_t i = 0; i < ARRAY_SIZE(k_ws2812_pgm); i++) {
+        pio->INSTR_MEM[i] = k_ws2812_pgm[i];
+    }
+
+    _neop_initialised = true;
+    return true;
+}
+
+/*
+  Configure one state machine for one LED pin.
+
+  The pin is driven through side-set rather than OUT, which is why SIDESET_BASE
+  and SET_BASE both point at it: side-set carries the waveform and SET is only
+  used to establish the pin direction before the machine starts.
+ */
+void RCOutput_pico::neopixel_start_sm(uint8_t idx, uint8_t gpio)
+{
+    PIO_TypeDef *pio = NEOP_PIO;
+    const uint8_t sm = idx;
+
+    pio->CTRL &= ~(1U << (PIO_CTRL_SM_ENABLE_LSB + sm));
+
+    // CLKDIV is 16.8 fixed point. At 225 MHz this is exactly 28 + 32/256, but
+    // compute it so a board on another clock still lands on the right carrier.
+    const uint32_t div256 = (uint32_t)(((uint64_t)RP_CLK_SYS_FREQ * 256U) / WS2812_PIO_HZ);
+    pio->SM[sm].CLKDIV = ((div256 >> 8) << PIO_CLKDIV_INT_LSB)
+                       | ((div256 & 0xFFU) << PIO_CLKDIV_FRAC_LSB);
+
+    pio->SM[sm].EXECCTRL = (WS2812_WRAP        << PIO_EXECCTRL_WRAP_TOP_LSB)
+                         | (WS2812_WRAP_TARGET << PIO_EXECCTRL_WRAP_BOT_LSB);
+
+    /*
+      Shift left, so the frame goes out most significant bit first and the 24
+      colour bits belong in bits 31..8 of the word. OUT_SHIFTDIR cleared is
+      left; the bit means "shift right" when set.
+
+      Autopull at 24 bits keeps the bit loop fed with no pull in the program,
+      and joining the RX half onto TX gives an eight word FIFO, which covers a
+      chain of eight with no refill at all.
+     */
+    pio->SM[sm].SHIFTCTRL = PIO_SHIFTCTRL_AUTOPULL
+                          | PIO_SHIFTCTRL_FJOIN_TX
+                          | (WS2812_BITS_PER_LED << PIO_SHIFTCTRL_PULL_THRESH_LSB);
+
+    // GPIOBASE is 0 on this block, so PINCTRL fields are absolute GPIO numbers.
+    pio->SM[sm].PINCTRL = ((uint32_t)gpio << PIO_PINCTRL_SET_BASE_LSB)
+                        | (1U             << PIO_PINCTRL_SET_COUNT_LSB)
+                        | ((uint32_t)gpio << PIO_PINCTRL_SIDESET_BASE_LSB)
+                        | (1U             << PIO_PINCTRL_SIDESET_COUNT_LSB);
+
+    /*
+      Hand the pad to the PIO. A WS2812 line is push-pull output only, so it
+      wants no pull of its own; the pull-down is there so the chain sees a
+      quiet line rather than a floating one before the machine starts.
+     */
+    palSetLineMode(PAL_LINE(IOPORT1, gpio),
+                   PAL_RP_IOCTRL_FUNCSEL(NEOP_PIO_FUNCSEL) |
+                   PAL_RP_PAD_IE |
+                   PAL_RP_PAD_SCHMITT |
+                   PAL_RP_PAD_DRIVE4 |
+                   PAL_RP_PAD_PDE);
+
+    // drive the pin, idle low, and start at the top of the program
+    pio->SM[sm].INSTR = 0xe081U;   // set pindirs, 1
+    pio->SM[sm].INSTR = 0xe000U;   // set pins, 0
+
+    pio->CTRL |= (1U << (PIO_CTRL_CLKDIV_RESTART_LSB + sm))
+              |  (1U << (PIO_CTRL_SM_RESTART_LSB + sm));
+    pio->CTRL |= (1U << (PIO_CTRL_SM_ENABLE_LSB + sm));
+}
+
+bool RCOutput_pico::neopixel_add_channel(uint8_t idx, uint8_t gpio)
+{
+    if (!_neop_initialised || idx >= MAX_CHANNELS) {
+        return false;
+    }
+    _neop_gpio[idx] = gpio;
+    _neop_chan_mask |= (1U << idx);
+    _neop_last_send_us[idx] = AP_HAL::micros();
+    neopixel_start_sm(idx, gpio);
+    return true;
+}
+
+bool RCOutput_pico::neopixel_send_begin(uint8_t idx)
+{
+    if (!_neop_initialised || idx >= MAX_CHANNELS || !(_neop_chan_mask & (1U << idx))) {
+        return false;
+    }
+
+    /*
+      Refuse rather than truncate if the previous frame has not had its reset
+      gap. Sending inside the gap does not fail cleanly - the chain treats the
+      new frame as a continuation of the old one and the colours walk along the
+      strip.
+
+      The compare is signed on purpose. neopixel_send_end() stamps a time in
+      the future, because words can still be queued in the FIFO when it
+      returns, and an unsigned difference against a future stamp wraps to about
+      4e9 - which passes a "have we waited long enough" test every time and
+      disables the guard completely. Signed, a future stamp reads negative and
+      waits.
+     */
+    if ((int32_t)(AP_HAL::micros() - _neop_last_send_us[idx]) < (int32_t)WS2812_RESET_US) {
+        return false;
+    }
+    return true;
+}
+
+bool RCOutput_pico::neopixel_send_word(uint8_t idx, uint32_t word)
+{
+    PIO_TypeDef *pio = NEOP_PIO;
+    const uint8_t sm = idx;
+    const uint32_t start_us = AP_HAL::micros();
+
+    while (pio->FSTAT & (1U << (PIO_FSTAT_TXFULL_LSB + sm))) {
+        // FIFO full: a chain longer than the FIFO has to wait for the wire.
+        if (AP_HAL::micros() - start_us > WS2812_SEND_TIMEOUT_US) {
+            return false;
+        }
+        hal.scheduler->delay_microseconds(20);
+    }
+    pio->TXF[sm] = word;
+    return true;
+}
+
+void RCOutput_pico::neopixel_send_end(uint8_t idx)
+{
+    if (idx >= MAX_CHANNELS) {
+        return;
+    }
+    /*
+      The reset gap has to be measured from the end of the frame on the wire,
+      not from the last FIFO write - up to eight words can still be queued.
+     */
+    _neop_last_send_us[idx] = AP_HAL::micros()
+                            + (WS2812_BITS_PER_LED * 8U * 1000000UL) / WS2812_CARRIER_HZ;
+}
+
+#endif // HAL_SERIALLED_ENABLED
+
+#endif // defined(RP2350) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)

@@ -6,12 +6,17 @@ users see it; this file is for whoever is working on the port. See
 
 ## Where things stand
 
-The board flies, and now flies on bidirectional DShot600. Six flights on PWM,
-then three more on bdshot (logs 51-53), all in Stabilize, longest about 35 s.
+The board flies, and now flies under position control. Six flights on PWM,
+three on bdshot in Stabilize (logs 51-53, longest about 35 s), and now Loiter
+plus a partial AUTOTUNE run in log62 - 247 s armed, four times anything before
+it. A GPS fix and an external compass have both arrived since log53, so the
+whole position stack is live for the first time.
+
 The hwdef is complete, the pinout is verified against the schematic, and the
-timing architecture holds up in the air: the rate thread sits on 2 kHz with a
-worst-case dt of 1.3 ms in flight, and no XIP park has ever been seen while
-armed across the three bdshot flights.
+timing architecture holds up over a much longer flight than it had been asked
+for: across the full 247 s armed window of log62 the rate thread held 2 kHz
+with `RTDT.dtMax` never exceeding 1.3 ms against a 500 us period, no accel
+clipping, and no XIP park visible in the timing.
 
 | Area | State |
 |-----------------------|--------------------------------------------------|
@@ -23,27 +28,26 @@ armed across the three bdshot flights.
 | microSD logging | Works, but drops ~70% of messages - see below |
 | Parameter storage | Working; needs both the sector-bound and write-verify fixes |
 | RC input | CRSF/ELRS on SERIAL3, 333 Hz link, 199 Hz telemetry |
-| GPS | Detected (ublox at 230400) but has never got a fix |
+| GPS | Fix acquired; log62 7-9 sats, HDop 1.1, HAcc 0.69 m |
 | Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
-| Battery current | Scale 50 (20 mV/A ESC); offset and load check outstanding |
+| Battery current | Broken - reads die temperature, not load; see below |
 | Motor outputs | 4x DShot600 via PIO; has also flown on PWM at 490 Hz |
 | DShot | Bidirectional DShot600 at 2 kHz, flown; eRPM scale verified |
 | DShot params | `SERVO_DSHOT_RATE` 1, `FSTRATE_DIV` 2, `SERVO_DSHOT_ESC` 0 - see below |
 | eRPM error rate | Not measurable: `ESC.Err` is hardcoded 0 here, see below |
 | Harmonic notch | `INS_HNTCH_MODE` 3 flown, per-motor, -34 dB in the motor band |
-| Compass | None fitted; EKF runs in constant-position mode |
-| Rate loop in flight | 2 kHz held, dtMax 1.3 ms, no scheduler overruns |
-| Tune | Flyable starting tune, see below; not autotuned yet |
+| Compass | External on I2C1, `COMPASS_EXTERNAL` 1, `ORIENT` 101 |
+| Position modes | Loiter flown, 105 s in log62; EKF fusing GPS |
+| Rate loop in flight | 2 kHz held over 247 s, dtMax 1.3 ms, no overruns |
+| Tune | Hand tune below; AUTOTUNE started, roll only, unsaved |
 | 9V rail (VID) | Stuck on; relay does not switch it, see below |
 
-One thing is known-wrong and it is not a board fault:
-
-The GPS is detected and talks (the driver reads its firmware version) but has
-never reported a satellite: `NSats` 0 and `HDop` 99.99 in every flight log so
-far. Note ArduPilot still marks a no-fix GPS *healthy* - `min_status_for_gps_
-healthy()` returns `NONE`, which only excludes "no GPS at all" - so this does
-not show up as a failing sensor.
+Retracted: this section used to record that the GPS was detected but had never
+reported a satellite, `NSats` 0 and `HDop` 99.99 in every log. That is no
+longer true and was never a port fault. log62 has 7-9 satellites, HDop
+1.07-1.31 and `GPA.HAcc` 0.69 m, with `EKF3 IMU0 is using GPS` at 38.9 s and
+the origin set at 17.3 s. Antenna or siting, as suspected.
 
 The fitted IMU is an ICM42688P, not the ICM-56686 the schematic shows:
 `INS_ACC_ID` 3408130 has top byte `0x34` = 52. So the standard Invensensev3
@@ -545,7 +549,27 @@ remove 34 dB of motor-band content from the gyro the rate loop sees, which is
 worth having on its own terms. Bidirectional DShot supplies the eRPM, so the
 throttle-based fallback (`INS_HNTCH_MODE` 1) is no longer needed.
 
-## DShot
+### AUTOTUNE, first attempt
+
+Started in log62 and did not finish. It spent all 193 s of the run on roll -
+Rate D Up, Rate D Down, Rate P Up, Angle P Down - and was still in Angle P Up
+when the flight ended. Pitch and yaw were never reached.
+
+Nothing was saved. There is no `AUTOTUNE_SUCCESS` event and no `Saved gains`
+message, and the only parameters written after takeoff are `STAT_*` and
+`MOT_THST_HOVER`. The flying gains are still the hand-derived ones above.
+
+What it did produce is a direction. `ATUN` on the roll axis converged toward
+`RP` 0.075 and `RD` 0.00105, against the hand tune's 0.060 and 0.00080, with
+`SP` left at 4.5. So autotune wants somewhat more rate P and slightly more rate
+D than the hand tune - worth knowing, but do not hand-enter those: they are a
+partial result from a run that never validated itself.
+
+The run was slow because of pilot input, not because of the vehicle. There are
+over fifty `AutoTune: pilot overrides active` messages across the 193 s, each
+one suspending the test. Roll alone should not need three minutes. Budget a
+longer flight, hold position hands-off between twitches, and expect to need
+pitch and yaw after it.
 
 **Working.** Motors arm and spin on bidirectional DShot600 and the eRPM
 telemetry decodes. Bring-up took six separate fixes, listed at the end of this
@@ -631,6 +655,67 @@ places where shared ArduPilot code assumed an STM32.
    - so enabling `BDMASK` stopped the motors arming rather than merely failing
    to produce telemetry. It now reads `is_bidir_dshot_enabled()`, the same
    source the PIO program selection and the telemetry read path use.
+
+## NeoPixel, and how the PIO blocks are divided up
+
+The onboard WS2812 on GPIO2 (net `RGB_LED`, through R82) is driven by
+the NeoPixel half of `RCOutput_pico.cpp` from **PIO1**, and the block choice is
+forced rather than preferred:
+
+| block | owner | SMs | instructions | GPIOBASE |
+|-------|--------------------------------|-----|--------------|----------|
+| PIO0 | PIOUART0 (SM0-1), PIOUART1 (SM2-3) | 4/4 | UART programs | 16 |
+| PIO1 | NeoPixel (SM0) | 1/4 | 4/32 | 0 |
+| PIO2 | DShot | 4/4 | 13 or 29 of 32 | 0 |
+
+PIO1 was free because `SERIAL_ORDER` only instantiates PIOUART0 and PIOUART1,
+and the driver table in `PIOUART.cpp` puts both of those on PIO0. The two PIO1
+entries, PIOUART2 and PIOUART3, are never built on this board.
+
+Sharing PIO2 with DShot was never an option, for two independent reasons. All
+four state machines are in use, one per motor. And the bidirectional program is
+29 of the 32 instruction slots, against the 4 the WS2812 program needs. Either
+one alone rules it out.
+
+The GPIOBASE column is the other half of it. A WS2812 pin below GPIO16 needs a
+GPIO0-31 window, which the PIOUART blocks cannot offer - they are shifted to 16
+so PIOUART0 can reach GPIO42/43. So even a free state machine on PIO0 would not
+have been usable for this pin.
+
+The program is the four-instruction ws2812 from pico-examples, by way of
+Betaflight's `light_ws2811strip_pico.c`, with T1/T2/T3 of 3/3/4 giving ten PIO
+cycles per bit. At the 800 kHz carrier that wants an 8 MHz PIO clock, so CLKDIV
+is 225/8 = 28.125, which lands exactly on the 16.8 fixed point format as
+28 + 32/256. Nothing here needs a fractional-divider apology the way the
+bidirectional DShot decode does.
+
+Two things differ deliberately from Betaflight:
+
+- **No DMA.** Betaflight allocates a DMA channel per strip. This port feeds the
+  TX FIFO directly, as the DShot driver does, for the reason recorded in the DMA
+  note below - `dmaChannelAllocI()` with a specific id has no fallback, and that
+  is what silently killed the GPS. Joining the RX half onto TX gives an eight
+  word FIFO, so a chain of eight needs no refill at all and a longer one blocks
+  the LED thread for about 30 us per LED beyond that.
+- **Streamed, not buffered.** The frame is pushed a word at a time
+  (`send_begin`/`send_word`/`send_end`) rather than packed into an array first.
+  `AP_SERIALLED_MAX_LEDS` is 128, so a buffer would have put 512 bytes on the
+  LED thread stack, and stack headroom on this board is already something
+  `MAIN_STACK` has had to be raised for.
+
+The pin is declared `PWM(5)` in the hwdef purely to get a channel index and a
+rate group; slice 1 never drives it, exactly as slices 3 and 4 never drive the
+motor pins under DShot. It lands in its own group, so NeoPixel mode on output 5
+puts no rate constraint on PWM 1-4.
+
+ProfiLED is refused at `set_group_mode` rather than silently treated as a
+NeoPixel. It needs a second program, a 25-bit frame and a separate clock pin,
+none of which exist here.
+
+Untested on hardware as of this writing: it builds and links, but nothing has
+watched the LED light up. The first check is that `SERVO5_FUNCTION` is 120 and
+`NTF_LED_TYPES` has the NeoPixel bit, since without the latter AP_Notify never
+calls into `AP_SerialLED` at all.
 
 ## DShot parameters: the two that cost a day
 
@@ -801,6 +886,14 @@ a flat write rate means the writer cannot drain it. The arithmetic on log53:
 134076 written plus 308115 dropped is 442191 messages over 69.5 s, about
 6360 msg/s or 331 KB/s wanted against 100 KB/s delivered.
 
+log62 confirms all of it on a *lighter* bitmask. It flew `LOG_BITMASK` 180223 -
+bit 0 but not bit 18, so no `IMU_FAST` - and still dropped 1,870,476 messages
+over the 300 s session, about 6200 msg/s. `DSF.FMn` sat between 815 and 991
+bytes in every period after the first, and `DSF.FMx` never left 5042-5065,
+which pins the write buffer at about 5 KB against the 80 KB `LOG_FILE_BUFSIZE`
+asks for. Dropping the IMU batch bit does not get under the ceiling; the buffer
+is still perpetually almost full and the allocation is still short.
+
 An earlier note here claimed 19 MB at 1 kHz `RATE` without drops. That is
 475 KB/s, 4.7x what any of these three flights achieved on the same
 `LOG_BITMASK` 442367. Either it was a different card or `DSF.Dp` was never
@@ -868,11 +961,174 @@ use 21.0 (3.5 V/cell) low and 19.8 (3.3 V/cell) critical. Sag compensation
 (`BATT_FS_VOLTSRC` 1) is the better answer but is useless until the current
 scale above is fixed.
 
+This is now the most likely thing to cut a flight short. log62 is still on 21.6
+low and 21.0 critical, and its minimum pack voltage was 21.79 V - 0.19 V of
+margin, on a 247 s flight that pulled 570 mAh. The next longer flight hits it.
+Change it before flying again, not after.
+
+Sag compensation stays off regardless, because the current channel does not
+work at all - see the next section.
+
+## The current sense is not measuring current
+
+`BAT.Curr` reads about 7 A whatever the vehicle is doing, including with the
+motors stopped. This is not a scale or an offset problem and no parameter
+value repairs it. Stop treating it as a calibration task.
+
+### What log62 shows
+
+Correlation of `BAT.Curr` against every plausible driver, over the armed
+window:
+
+| driver | r |
+|------------------|----------------|
+| `MCU.MTemp` | +0.575 |
+| `BARO.Temp` | +0.390 |
+| `BAT.Volt` | +0.322 |
+| `RCOU.C1`-`C4` | -0.27 to -0.36 |
+| `ESC.RPMmean` | -0.085 |
+| `CTUN.ThO` | -0.085 |
+
+No correlation with load at all, and the sign against motor output is
+negative - backwards for a current sensor.
+
+Correlation on its own would prove little here, since die temperature, pack
+voltage and elapsed time all drift monotonically through a flight and will
+correlate with each other. What settles it is two windows where the throttle
+is pinned and the reading moves anyway:
+
+- **Motors off, 40.7 to 50.7 s.** `CTUN.ThO` is 0.000 throughout, and the
+  reading ramps 6.97 to 7.47 A while `MCU.MTemp` ramps 32.76 to 33.69 degC.
+- **Constant hover, 51.7 to 68.7 s.** `ThO` is flat at about 0.12, and the
+  reading *decays* 8.35 to 7.42 A while `MTemp` falls 33.4 to 32.3 degC - the
+  board cooling in prop wash.
+
+A real sensor at flat throttle on a sagging pack drifts slightly up. It never
+falls 12% in 17 s. The channel tracks die temperature.
+
+Two further facts. It reads 5.4 to 7.4 A with the motors physically stopped.
+And ArduPilot's internal resistance estimator, which is fed from this channel,
+produces 0.002 to 0.137 ohm - a 68x spread, which is what regressing a real
+voltage sag against a fake current gives you.
+
+An offset cannot rescue it either. Setting `BATT_AMP_OFFSET` to the motors-off
+level (about 0.11 V) leaves hover at 1.84 A, roughly 41 W on a 6S quad turning
+11500 RPM. So the gain is wrong too, or there is no signal to scale.
+
+### The schematic is correct - do not chase the front end
+
+Retracted: an earlier reading of this, taken from the prose in this file rather
+than from the schematic, held that the 82.5k pulldown put too much source
+impedance in front of the ADC, and that inter-channel charge sharing might be
+bleeding the voltage channel into this one. Both are wrong. The page 3 circuit
+is:
+
+```
+ESC connector (CUR) -- BAT_CURRENT --[ 120R 1% ]-- CURRENT_SENSE -- GPIO47/ADC7
+                                                        |
+                                          C34 100nF ----+---- R51 82.5k 1%
+                                                        |
+                                                       GND
+```
+
+That is a textbook ADC front end:
+
+- 120R with 100nF is a 13.3 kHz low-pass, correct anti-aliasing for this
+  signal.
+- C34 is a charge reservoir about 10000x the RP2350 sample-and-hold
+  capacitance, so the converter settles trivially and cross-channel charge
+  sharing cannot survive it.
+- With the ESC driving, source impedance at the pin is 120 || 82.5k, about
+  120 ohm. Ideal.
+- 82.5k/(82.5k+120) is 0.9985, hence the 1:1 in the README.
+
+The 82.5k is a pulldown in *parallel* with the ESC output, not in series with
+it. It only becomes the source impedance when nothing is driving the line,
+which is the fault being diagnosed rather than a defect in the design. There
+is nothing to raise with the board designers on impedance grounds.
+
+Also stale, and previously recorded here as the leading suspicion: that the pad
+was never configured for analog use. `adcRPGpioInit()` in the ChibiOS RP ADC
+LLD sets FUNCSEL 31 and clears PUE, PDE and IE, and `rp2350_board_init()` calls
+it for every pin in `HAL_RP_ADC_GPIOS`, which the generated header gives as
+40, 46, 47. The pad is configured. The comment in `board_rp2350.c` records that
+the list *used* to be hardcoded to Laurel's GPIO40/41/42, which is where that
+suspicion came from; it has been fixed.
+
+### What is left
+
+With 82.5k *and* 100nF to ground, an undriven node must sit at 0 V, and the
+capacitor means it cannot be a fast sampling artifact. Holding a steady
+0.1456 V requires something to inject **1.76 uA** continuously. There are only
+two candidates:
+
+1. **The ESC is driving it**, and its sense output idles near 0.145 V with
+   essentially no gain - shunt not connected, sense amp unpopulated, or an ESC
+   variant with no current sense at all.
+2. **Nothing is driving it and the ADC pad is leaking** 1.76 uA into the 82.5k.
+
+### The CUR/TEL wiring hypothesis
+
+The ESC connector runs `CUR`, `TEL`, `DS1`, `DS2`, `DS3`, `DS4`, with `CUR` and
+`TEL` on adjacent pins at the same pitch. A one-pin error is easy to make, and
+an ESC harness whose own pin order differs from this board's would do it
+without any mistake at the soldering iron.
+
+It cannot be a shifted connector: all four DShot lines work and bidirectional
+eRPM decodes at +0.983 to +0.994 per-channel correlation against `RCOU`. Only a
+discrete swap of those two wires is possible.
+
+Whether it explains the reading depends on how the ESC drives its telemetry
+pin, and the data already rules out half the cases:
+
+- **Push-pull, idling high** (typical BLHeli_32 / AM32 UART TX): the ADC would
+  sit near 3.3 V, which at `BATT_AMP_PERVLT` 50 reads about 165 A. The observed
+  7.3 A rules this out.
+- **High-Z except during a burst**: the 82.5k pulls the node to 0 V and what is
+  left is pad leakage. Consistent with everything above - and note this is a
+  *mechanism* for case 1/2, not a competing explanation. "Nothing is driving
+  the node" and "the thing wired to it drives only occasionally" are the same
+  electrical situation.
+
+If it is the swap, the real current output is landing on the FC `TEL` pin,
+which routes to GPIO5 and can only reach UART1 RX - a port the GPS owns. That
+would mean a static mid-level DC on a digital input pad, and it would mean
+current sense is recoverable by swapping two wires with no board change.
+
+### Tests, cheapest first
+
+1. **Read `RSSI_ADC` on GPIO40.** That is the AN1 spare pad. If it also sits
+   near 0.1 V and tracks die temperature, the leakage floor is a property of
+   the chip or board and case 2 is confirmed without touching the ESC.
+2. **Make the ESC transmit telemetry**, on the bench with props off. This is
+   the sharp one, because it looks for a positive result rather than an
+   absence: if that pin is really `TEL`, the current reading goes noisy or
+   jumps the moment telemetry starts. A DC analog level cannot do that. Note
+   the `SERVO_DSHOT_ESC` warning in the DShot section before setting it.
+3. **Scope the pad.** A 115200 baud burst against a flat analog level is
+   unmistakable, and answers it in seconds if a scope is to hand.
+4. **Unplug the ESC current lead and meter the pad.** With this circuit an
+   undriven node must read about 0 V. If it still sits at 0.145 V, the leakage
+   is in the MCU pad.
+5. **Confirm what the ESC actually outputs on that pin**, and its mV/A.
+   `BATT_AMP_PERVLT` 50 assumes 20 mV/A. If the output can exceed 3.3 V, see
+   the protection note below.
+
+### One thing worth asking the designers
+
+Not a defect, but a question for the next revision. The 120R series has no
+clamp diode, so the circuit assumes the ESC never drives that pin above 3.3 V.
+If an ESC drives it from a 5 V rail, the pad's ESD diode has to absorb
+(5 - 3.6)/120, about 12 mA, which is above what those clamps are typically
+rated to carry continuously. That matters twice over: it is a robustness
+question on the next spin, and a pad stressed that way is one way to arrive at
+case 2's leaky input. Establish what the ESC outputs before raising it.
+
 ## Before the next flight
 
 The DShot path, the SRAM relocations, the timer commits and the harmonic notch
-have all now flown (logs 51-53). What remains unflown is anything touching
-position: there is still no GPS fix and no compass.
+have all now flown (logs 51-53), and position control has flown too (log62:
+Loiter, GPS fix, external compass, 247 s armed).
 
 1. Build a flight image. `AP_RP2350_PC_SAMPLER_ENABLED` and
    `AP_RP2350_DEBUG_REPORT_ENABLED` must both be 0 in `hwdef.dat`; they are
@@ -883,20 +1139,19 @@ position: there is still no GPS fix and no compass.
    has still not been read directly.
 3. Reboot shortly before arming, until the 71 minute wrap has been soaked.
 4. Set `BATT_LOW_VOLT` off 21.6 V - it fired a Land mid-discharge on flight 17
-   and is *still* 21.6 as of log53, with `BATT_CRT_VOLT` at 21.0. Use 21.0 low
-   and 19.8 critical for 6S. It has not bitten on the short bdshot flights
-   (minimum 23.03 V, 368 mAh out) but it is live for a longer one.
-5. Stabilize only. No GPS fix and no compass, so no position modes, no RTL and
-   no failsafe-to-home.
+   and is *still* 21.6 as of log62, with `BATT_CRT_VOLT` at 21.0. Use 21.0 low
+   and 19.8 critical for 6S. log62 got within 0.19 V of it. Do this one first.
+5. Position modes are available now, but nothing beyond Loiter has been flown.
+   RTL, Auto and the GPS failsafe paths are all still untested on this board -
+   fly them deliberately before relying on one to recover the vehicle.
 
 ## Next steps
 
-1. Set `BATT_AMP_OFFSET` and verify the current scale against a known load -
-   compare logged mAh with what the charger puts back. `HAL_BATT_CURR_SCALE` is
-   now 50, but re-read the idle voltage on `BATT_CURR_PIN` first: the 0.61 V
-   measured before was taken through a pad whose input buffer and pulls were
-   never configured for analog use, so it may not be the sensor's real
-   quiescent point.
+1. Find out why the current channel reads die temperature instead of current,
+   per the section above. Work the test list there in order; it is a wiring or
+   sensor question, not a calibration one. Only once a reading responds to load
+   is there any point setting `BATT_AMP_OFFSET` or checking the scale against
+   what the charger puts back.
 2. Fix the battery failsafe thresholds, per above.
 3. Make the bidirectional telemetry error rate measurable, by counting the
    `read_telemetry()` false returns in the RP2350 branch. `ESC.Err` is a
@@ -906,11 +1161,13 @@ position: there is still no GPS fix and no compass.
    retry after a failed verify. Harmless either way for correctness, but a
    retry every time means the underlying QSPI defect is still there and double
    the flash wear. One counter on the `memcmp` mismatch answers it.
-5. Run AUTOTUNE, one axis at a time. The tune is stable enough to start from
-   and this is the point at which the 8:1 thrust-to-weight gets measured
-   instead of guessed at.
-6. Find out why the GPS never gets a fix. It is detected and communicating, so
-   this is antenna, siting or configuration rather than the port.
+5. Finish AUTOTUNE. Roll got most of the way in log62 without saving; pitch and
+   yaw are untouched. See the autotune section - the run needs a longer flight
+   and less stick than it got.
+6. Chase the post-landing `DCM Roll/Pitch inconsistent 51 deg` seen at the end
+   of log62, alongside `GPS Glitch or Compass error`. Both are after disarm, so
+   neither affected the flight, but a 51 deg DCM/EKF disagreement on the ground
+   blocks the next arm and is not explained.
 7. Attack core0's flash share, starting with the veneers - see the veneer
    section in `PROFILING.md`. Core1 is done and needs nothing further.
 8. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
