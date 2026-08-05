@@ -51,7 +51,7 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Param: _RATE_FLTT
     // @DisplayName: Wheel rate control target frequency in Hz
     // @Description: Wheel rate control target frequency in Hz
-    // @Range: 1 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -59,7 +59,7 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Param: _RATE_FLTE
     // @DisplayName: Wheel rate control error frequency in Hz
     // @Description: Wheel rate control error frequency in Hz
-    // @Range: 1 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -67,7 +67,7 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Param: _RATE_FLTD
     // @DisplayName: Wheel rate control derivative frequency in Hz
     // @Description: Wheel rate control derivative frequency in Hz
-    // @Range: 1 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -138,7 +138,7 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Param: 2_RATE_FLTT
     // @DisplayName: Wheel rate control target frequency in Hz
     // @Description: Wheel rate control target frequency in Hz
-    // @Range: 1 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -146,7 +146,7 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Param: 2_RATE_FLTE
     // @DisplayName: Wheel rate control error frequency in Hz
     // @Description: Wheel rate control error frequency in Hz
-    // @Range: 1 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -154,7 +154,7 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
     // @Param: 2_RATE_FLTD
     // @DisplayName: Wheel rate control derivative frequency in Hz
     // @Description: Wheel rate control derivative frequency in Hz
-    // @Range: 1 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
