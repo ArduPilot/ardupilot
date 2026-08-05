@@ -72,7 +72,7 @@ const AP_Param::GroupInfo AP_Gripper::var_info[] = {
     // @DisplayName: Gripper Autoclose time
     // @Description: Time in seconds that gripper close the gripper after opening; 0 to disable
     // @User: Advanced
-    // @Range: 0.25 255
+    // @Range: 0 255
     // @Units: s
     AP_GROUPINFO("AUTOCLOSE",  7, AP_Gripper, config.autoclose_time, GRIPPER_AUTOCLOSE_DEFAULT),
 
