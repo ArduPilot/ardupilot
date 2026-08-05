@@ -275,7 +275,7 @@ const AP_Param::GroupInfo AC_CustomControl_PID::var_info[] = {
     // @Param: RAT_YAW_FLTD
     // @DisplayName: Yaw axis rate controller derivative frequency in Hz
     // @Description: Yaw axis rate controller derivative frequency in Hz
-    // @Range: 5 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
