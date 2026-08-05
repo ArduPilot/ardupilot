@@ -124,7 +124,7 @@ const AP_Param::GroupInfo AP_MotorsUGV::var_info[] = {
     // @DisplayName: Motor reversal delay
     // @Description: For reversible motors that need a delay before they can change direction. When greater than zero the throttle will go to zero for this amount of time before outputting the new throttle when the demanded motor direction changes.
     // @Units: s
-    // @Range: 0.1 1.0
+    // @Range: 0 1.0
     // @Increment: 0.1
     // @User: Standard
     AP_GROUPINFO("REV_DELAY", 15, AP_MotorsUGV, _reverse_delay, 0),
