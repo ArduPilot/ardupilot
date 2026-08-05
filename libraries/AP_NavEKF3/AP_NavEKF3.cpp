@@ -1536,6 +1536,12 @@ bool NavEKF3::configuredToUseGPSForPosXY(void) const
     return  (sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS);
 }
 
+bool NavEKF3::configuredForExtNavPosNoVel(void) const
+{
+    return (sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV) &&
+           (sources.getVelXYSource() == AP_NavEKF_Source::SourceXY::NONE);
+}
+
 // write the raw optical flow measurements
 // rawFlowQuality is a measured of quality between 0 and 255, with 255 being the best quality
 // rawFlowRates are the optical flow rates in rad/sec about the X and Y sensor axes.

@@ -137,15 +137,26 @@ void ModeTakeoff::update()
 
     const float altitude_cm = plane.current_loc.alt - start_loc.alt;
 
-    if (plane.g.takeoff_nogps && plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF &&
-        altitude_cm >= level_alt*100) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Above TKOFF lvl alt & nogps => fbwa");
-        plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
-        plane.set_mode(Mode::FLY_BY_WIRE_A, ModeReason::MISSION_END);
-        return;
-    }
+    if (plane.g.takeoff_nogps && plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF) {
+        // External navigation can still yield a valid inertial solution even when GPS is disabled.
+        const bool have_inertial_nav = plane.ahrs.have_inertial_nav();
+        if (!have_inertial_nav && altitude_cm >= level_alt * 100) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Above TKOFF lvl alt & nogps => fbwa");
+            plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
+            plane.set_mode(Mode::FLY_BY_WIRE_A, ModeReason::MISSION_END);
+            return;
+        }
 
-    if (!plane.g.takeoff_nogps && plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF &&
+        if (have_inertial_nav &&
+            (altitude_cm >= level_alt * 100 ||
+             start_loc.get_distance(plane.current_loc) >= dist)) {
+            const float direction = start_loc.get_bearing_to(plane.current_loc) * 0.01;
+            plane.next_WP_loc = start_loc;
+            plane.next_WP_loc.offset_bearing(direction, dist);
+            plane.next_WP_loc.alt += alt * 100.0;
+            plane.set_flight_stage(AP_FixedWing::FlightStage::NORMAL);
+        }
+    } else if (!plane.g.takeoff_nogps && plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF &&
         (altitude_cm >= level_alt*100 ||
          start_loc.get_distance(plane.current_loc) >= dist)) {
         // reset the target loiter waypoint using current yaw which should be close to correct starting heading
@@ -188,4 +199,3 @@ void ModeTakeoff::navigate()
     // Zero indicates to use WP_LOITER_RAD
     plane.update_loiter(0);
 }
-

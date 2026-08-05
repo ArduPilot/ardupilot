@@ -247,6 +247,7 @@ void NavEKF3_core::setAidingMode()
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::NONE &&
         !motorsArmed &&
         onGround &&
+        false && // SENTINEL-EAGLE CHANGE
         PV_AidingMode != AID_NONE)
     {
         PV_AidingMode = AID_NONE;

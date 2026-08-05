@@ -1887,6 +1887,8 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 {
     EKFType ret = fallback_active_EKF_type();
 
+    bool extnav_pos_only = false;
+
     switch (ekf_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
@@ -1918,7 +1920,15 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         if (!_ekf3_started) {
             return fallback_active_EKF_type();
         }
-        if (always_use_EKF()) {
+        extnav_pos_only = EKF3.configuredForExtNavPosNoVel();
+#if HAL_GCS_ENABLED
+        static bool extnav_notice_sent;
+        if (extnav_pos_only && !extnav_notice_sent) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AHRS: EXTNAV pos-only mode active");
+            extnav_notice_sent = true;
+        }
+#endif
+        if (always_use_EKF() || extnav_pos_only) {
             uint16_t ekf3_faults;
             EKF3.getFilterFaults(ekf3_faults);
             if (ekf3_faults == 0) {
@@ -1980,7 +1990,12 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
 
         // Handle fallback for the case where the DCM or EKF is unable to provide attitude or height data.
         const bool can_use_dcm = dcm.yaw_source_available() || fly_forward;
-        const bool can_use_ekf = filt_state.flags.attitude && filt_state.flags.vert_vel && filt_state.flags.vert_pos;
+        bool can_use_ekf = filt_state.flags.attitude && filt_state.flags.vert_vel && filt_state.flags.vert_pos;
+#if HAL_NAVEKF3_AVAILABLE
+        if (extnav_pos_only) {
+            can_use_ekf = true;
+        }
+#endif
         if (!can_use_dcm && can_use_ekf) {
             // no choice - continue to use EKF
             return ret;
@@ -2015,7 +2030,8 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
         }
 
         // Handle complete loss of navigation
-        if (hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
+        if (!extnav_pos_only &&
+            hal.util->get_soft_armed() && filt_state.flags.const_pos_mode) {
             /*
                Provided the EKF has been configured to use GPS, ie should_use_gps is true, then the
                key difference to the case handled above is only the absence of a GPS fix which means
@@ -2025,8 +2041,11 @@ AP_AHRS::EKFType AP_AHRS::_active_EKF_type(void) const
             return EKFType::DCM;
         }
 
-        if (!filt_state.flags.horiz_vel ||
-            (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel)) {
+        const bool allow_extnav_pos_only = extnav_pos_only;
+
+        if (!allow_extnav_pos_only &&
+            (!filt_state.flags.horiz_vel ||
+             (!filt_state.flags.horiz_pos_abs && !filt_state.flags.horiz_pos_rel))) {
             if ((!AP::compass().use_for_yaw()) &&
                 AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D &&
                 AP::gps().ground_speed() < 2) {
@@ -2219,8 +2238,16 @@ bool AP_AHRS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         return false;
     }
 
+    bool mismatch = ekf_type() != active_EKF_type();
+#if HAL_NAVEKF3_AVAILABLE
+    if (mismatch &&
+        ekf_type() == EKFType::THREE &&
+        EKF3.configuredForExtNavPosNoVel()) {
+        mismatch = false;
+    }
+#endif
     // ensure we're using the configured backend, but bypass in compass-less cases:
-    if (ekf_type() != active_EKF_type() && AP::compass().use_for_yaw()) {
+    if (mismatch && AP::compass().use_for_yaw()) {
         hal.util->snprintf(failure_msg, failure_msg_len, "not using configured AHRS type");
         return false;
     }
