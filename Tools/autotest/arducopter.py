@@ -6,6 +6,7 @@ AP_FLAKE8_CLEAN
 
 from __future__ import annotations
 
+import bisect
 import copy
 import math
 import os
@@ -14282,6 +14283,142 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not ok:
             raise NotAchievedException("check_replay (%s) failed" % current_log_filepath)
 
+    def ReplaySnapshotLog(self):
+        '''check LOG_REPLAY=2 logs from arming and warm-starts Replay'''
+        util.build_SITL('tool/Replay', clean=False, configure=False)
+        self.set_parameters({
+            "LOG_REPLAY": 2,
+            "LOG_DISARMED": 0,
+            "LOG_FILE_BUFSIZE": 200,  # replay wants a large write buffer
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+            # arming is slow in wall time (log open plus snapshot write);
+            # prevent auto-disarm before takeoff at high speedup
+            "DISARM_DELAY": 0,
+            # the replay stream saturates simulated logging IO at high
+            # speedup and blocks get dropped, corrupting the comparison
+            "SIM_SPEEDUP": 8,
+            # wind, so the wind states move and a state left out of the
+            # snapshot shows up in the replay comparison
+            "SIM_WIND_SPD": 5,
+            "SIM_WIND_DIR": 225,
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm(require_absolute=True)
+        self.takeoffAndMoveAway()
+        self.do_RTL()
+        main_log = self.current_onboard_log_filepath()
+        self.reboot_sitl()  # close and flush the flight's log
+
+        # the log must carry the snapshot and the from-arm replay stream
+        if self.dfreader_for_path(main_log).recv_match(type='RSNH') is None:
+            raise NotAchievedException("Log missing EKF snapshot")
+        if self.dfreader_for_path(main_log).recv_match(type='RFRH') is None:
+            raise NotAchievedException("Log missing replay data")
+
+        # the warm start announcement lands in the replay output log as
+        # a MSG record
+        self.run_replay(main_log)
+        replay_log = self.current_onboard_log_filepath()
+        dfreader = self.dfreader_for_path(replay_log)
+        if not any('warm start from snapshot' in m.Message
+                   for m in iter(lambda: dfreader.recv_match(type='MSG'), None)):
+            raise NotAchievedException("Replay did not warm-start from snapshot")
+        # compare all replayed EKF output (C>=100) against the original
+        # run. Limits are absolute per field; 'rel' allows 50% (for
+        # covariances, which span orders of magnitude); 'disc' fields may
+        # differ on up to 2% of samples where a transition lands one
+        # sample apart
+        limits = {
+            'XKF1': {'Roll': 1.5, 'Pitch': 1.5, 'Yaw': 5.0,
+                     'VN': 0.5, 'VE': 0.5, 'VD': 0.5,
+                     'PN': 1.0, 'PE': 1.0, 'PD': 1.0,
+                     'GX': 0.2, 'GY': 0.2, 'GZ': 0.2},
+            'XKF2': {'AX': 20, 'AY': 20, 'AZ': 20, 'VWN': 0.5, 'VWE': 0.5,
+                     'MN': 50, 'ME': 50, 'MD': 50,
+                     'MX': 50, 'MY': 50, 'MZ': 50},
+            'XKF3': {'IVN': 0.5, 'IVE': 0.5, 'IVD': 0.5,
+                     'IPN': 0.5, 'IPE': 0.5, 'IPD': 0.5,
+                     'IMX': 50, 'IMY': 50, 'IMZ': 50, 'IYAW': 5.0},
+            'XKF4': {'SV': 0.5, 'SP': 0.5, 'SH': 0.5, 'SM': 0.5,
+                     'FS': 'disc', 'TS': 'disc', 'GPS': 'disc',
+                     'PI': 'disc'},
+            'XKQ': {'Q1': 0.05, 'Q2': 0.05, 'Q3': 0.05, 'Q4': 0.05},
+            'XKV1': {'V%02u' % i: 'rel' for i in range(12)},
+            'XKV2': {'V%02u' % i: 'rel' for i in range(12, 24)},
+            'XKFS': {f: 'disc' for f in ('MI', 'BI', 'GI', 'AI', 'SS')},
+        }
+        orig = {}
+        repl = {}
+        dfreader = self.dfreader_for_path(replay_log)
+        while True:
+            m = dfreader.recv_match(type=list(limits.keys()))
+            if m is None:
+                break
+            d = orig if m.C < 100 else repl
+            d.setdefault((m.get_type(), m.C % 100), []).append(m)
+        cores_orig = set(c for t, c in orig if t == 'XKF1')
+        cores_repl = set(c for t, c in repl if t == 'XKF1')
+        if not cores_orig or cores_repl != cores_orig:
+            raise NotAchievedException(
+                "Replayed cores %s do not match original cores %s" %
+                (sorted(cores_repl), sorted(cores_orig)))
+        t0 = min(m.TimeUS for m in orig[('XKF1', min(cores_orig))])
+        for (mtype, core), oms in sorted(orig.items()):
+            rms = sorted(repl.get((mtype, core), []), key=lambda m: m.TimeUS)
+            rtimes = [m.TimeUS for m in rms]
+            oms = [m for m in oms if m.TimeUS - t0 >= 5000000]  # settle
+            matched = 0
+            worst = {}
+            flips = {}
+            for mo in oms:
+                i = bisect.bisect_left(rtimes, mo.TimeUS)
+                cands = [j for j in (i - 1, i) if 0 <= j < len(rtimes)]
+                if not cands:
+                    continue
+                j = min(cands, key=lambda j: abs(rtimes[j] - mo.TimeUS))
+                if abs(rtimes[j] - mo.TimeUS) > 500000:
+                    continue
+                mr = rms[j]
+                matched += 1
+                for field, limit in limits[mtype].items():
+                    v1 = getattr(mo, field)
+                    v2 = getattr(mr, field)
+                    if limit == 'disc':
+                        if v1 != v2:
+                            flips[field] = flips.get(field, 0) + 1
+                        continue
+                    err = abs(v1 - v2)
+                    if err != err:  # NaN
+                        raise NotAchievedException(
+                            "%s core %u %s is NaN" % (mtype, core, field))
+                    if field == 'Yaw':
+                        err = min(err, 360 - err)
+                    if limit == 'rel':
+                        if err > max(0.01, 0.5 * max(abs(v1), abs(v2))):
+                            flips[field] = flips.get(field, 0) + 1
+                        continue
+                    worst[field] = max(worst.get(field, 0), err)
+                    if worst[field] > limit:
+                        raise NotAchievedException(
+                            "%s core %u %s mismatch %.3f exceeds %.3f" %
+                            (mtype, core, field, worst[field], limit))
+            if matched < min(50, len(oms) // 2):
+                raise NotAchievedException(
+                    "%s core %u: only %u matched replay samples" %
+                    (mtype, core, matched))
+            for field, count in flips.items():
+                if count > matched // 50:
+                    raise NotAchievedException(
+                        "%s core %u %s differs on %u of %u samples" %
+                        (mtype, core, field, count, matched))
+            if worst:
+                self.progress("%s core %u: %u samples, worst %s" %
+                              (mtype, core, matched,
+                               " ".join("%s=%.3f" % (f, worst[f])
+                                        for f in sorted(worst))))
+
     def DefaultIntervalsFromFiles(self):
         '''Test setting default mavlink message intervals from files'''
         ex = None
@@ -19292,6 +19429,7 @@ return update, 1000
             self.PerfInfo,
             self.ModeAllowsEntryWhenNoPilotInput,
             self.Replay,
+            self.ReplaySnapshotLog,
             self.FETtecESC,
             self.ProximitySensors,
             self.GroundEffectCompensation_touchDownExpected,
