@@ -455,7 +455,7 @@ const AP_Param::Info Tracker::var_info[] = {
     // @Param: CMD_TOTAL
     // @DisplayName: Number of loaded mission items
     // @Description: Set to 1 if HOME location has been loaded by the ground station. Do not change this manually.
-    // @Range: 1 255
+    // @Range: 0 255
     // @User: Advanced
     GSCALAR(command_total,          "CMD_TOTAL",      0),
 
