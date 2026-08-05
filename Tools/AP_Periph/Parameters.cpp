@@ -329,7 +329,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Param: RNGFND2_PORT
     // @DisplayName: Rangefinder Serial Port
     // @Description: This is the serial port number where SERIALx_PROTOCOL will be set to Rangefinder.
-    // @Range: 0 10
+    // @Range: -1 10
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
