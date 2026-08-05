@@ -66,8 +66,8 @@ AP_ADSB *AP_ADSB::_singleton;
 const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: TYPE
     // @DisplayName: ADSB Type
-    // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
-    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP,4:Sagetech MX Series
+    // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled. Select MAVLink to process incoming ADSB_VEHICLE messages (e.g. from a companion computer) with no ADS-B hardware attached.
+    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP,4:Sagetech MX Series,5:MAVLink
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    AP_ADSB_TYPE_DEFAULT, AP_PARAM_FLAG_ENABLE),
@@ -232,8 +232,20 @@ void AP_ADSB::init(void)
     }
 
     if (detected_num_instances == 0) {
-        _init_failed = true;
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB: Unable to initialize ADSB driver");
+        // A MAVLink source needs no hardware backend: incoming ADSB_VEHICLE
+        // messages are handled directly by handle_message(). Only fail init if
+        // there is no source at all (no backend and no MAVLink type selected).
+        bool have_mavlink_source = false;
+        for (uint8_t i=0; i<ADSB_MAX_INSTANCES; i++) {
+            if (get_type(i) == Type::MAVLink) {
+                have_mavlink_source = true;
+                break;
+            }
+        }
+        if (!have_mavlink_source) {
+            _init_failed = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB: Unable to initialize ADSB driver");
+        }
     }
 }
 
@@ -252,7 +264,7 @@ bool AP_ADSB::check_startup()
     }
 
     if (all_backends_disabled) {
-        // nothing to do
+        // nothing to do if no backend is configured (ADSB_TYPE all None)
         return false;
     }
     if (in_state.vehicle_list == nullptr)  {
@@ -299,6 +311,12 @@ void AP_ADSB::detect_instance(uint8_t instance)
             _backend[instance] = NEW_NOTHROW AP_ADSB_Sagetech_MXS(*this, instance);
         }
 #endif
+        break;
+
+    case Type::MAVLink:
+        // No hardware backend: incoming ADSB_VEHICLE MAVLink messages are handled
+        // directly by AP_ADSB. The vehicle_list is still allocated because
+        // ADSB_TYPE != None, so check_startup() enables ADSB-in processing.
         break;
     }
 
@@ -354,7 +372,6 @@ void AP_ADSB::update(void)
     loc.horizontal_pos_accuracy_is_valid = gps.horizontal_accuracy(loc.horizontal_pos_accuracy);
     loc.vertical_pos_accuracy_is_valid = gps.vertical_accuracy(loc.vertical_pos_accuracy);
     loc.horizontal_vel_accuracy_is_valid = gps.speed_accuracy(loc.horizontal_vel_accuracy);
-
 
     loc.vel_ned = gps.velocity();
 
@@ -436,6 +453,32 @@ void AP_ADSB::update(const AP_ADSB::Loc &loc)
         }
     }
 
+    /*
+    static uint32_t last_debug_ms;
+    if (now - last_debug_ms >= 2000) {
+        last_debug_ms = now;
+        Location current_loc;
+        const bool have_pos = AP::ahrs().get_location(current_loc);
+        for (uint16_t i = 0; i < in_state.vehicle_count; i++) {
+            const adsb_vehicle_t &v = in_state.vehicle_list[i];
+            if (have_pos) {
+                Location vloc;
+                vloc.lat = v.info.lat;
+                vloc.lng = v.info.lon;
+                vloc.alt = v.info.altitude / 10;
+                vloc.relative_alt = false;
+                const float hdist = current_loc.get_distance(vloc);
+                const float vdist = (v.info.altitude * 0.001f) - (current_loc.alt * 0.01f);
+                if (hdist < 2000) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ADSB[%u] %s h=%.0f v=%.0f",
+                                i, v.info.callsign, hdist, vdist);
+                }
+            } else {
+                GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "ADSB[%u] %s (no pos)", i, v.info.callsign);
+            }
+        }
+    }
+    */
 }
 
 /*
@@ -561,7 +604,7 @@ void AP_ADSB::handle_adsb_vehicle(const adsb_vehicle_t &vehicle)
     } else if (in_state.vehicle_count < in_state.list_size_allocated) {
 
         // not found and there's room, add it to the end of the list
-        set_vehicle(in_state.vehicle_count, vehicle);
+            set_vehicle(in_state.vehicle_count, vehicle);
         in_state.vehicle_count++;
 
     } else {
