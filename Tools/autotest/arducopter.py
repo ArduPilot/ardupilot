@@ -13346,6 +13346,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not good:
             raise NotAchievedException("Did not see good alt")
 
+    def RangeFinderSITLPowerDown(self):
+        '''Test rangefinder power down by altitude using SITL rangefinder'''
+        pwrrng = 10  # power down above this altitude in metres
+
+        self.set_parameters({
+            "RNGFND1_TYPE": 100,  # SITL
+            "RNGFND1_MAX": 50, # Make sure the it will not unhealty due to max range limit
+            "RNGFND1_PWRRNG": pwrrng,
+        })
+        self.reboot_sitl()
+
+        rf_bit = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION
+
+        low_alt = pwrrng - 3   # below threshold
+        high_alt = pwrrng + 5  # above threshold
+
+        self.takeoff(low_alt, mode='GUIDED')
+
+        self.progress("Verify rangefinder healthy below power-down threshold")
+        self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
+        self.assert_rangefinder_distance_between(low_alt - 2, low_alt + 2)
+
+        self.progress(f"Climbing above power-down threshold ({pwrrng}m)")
+        self.fly_guided_move_local(0, 0, high_alt)
+
+        self.progress("Verify rangefinder powered down above threshold")
+        self.wait_sensor_state(rf_bit, present=True, enabled=True, healthy=False)
+
+        self.progress("Descending below power-down threshold")
+        self.fly_guided_move_local(0, 0, low_alt)
+
+        self.progress("Verify rangefinder recovers below threshold")
+        self.wait_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
+        self.assert_rangefinder_distance_between(low_alt - 2, low_alt + 2)
+
+        self.land_and_disarm()
+
     def ShipTakeoff(self):
         '''Fly Simulated Ship Takeoff'''
         # test ship takeoff
@@ -15750,6 +15788,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.RangeFinderDriversMaxAlt_AinsteinLRD1_v19,
              self.RangeFinderDriversLongRange,
              self.RangeFinderSITLLongRange,
+             self.RangeFinderSITLPowerDown,
              self.MaxBotixI2CXL,
              self.MAVProximity,
              self.ParameterValidation,
