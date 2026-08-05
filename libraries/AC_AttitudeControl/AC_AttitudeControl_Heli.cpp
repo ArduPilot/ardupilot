@@ -268,7 +268,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_YAW_FLTE
     // @DisplayName: Yaw axis rate controller error frequency in Hz
     // @Description: Yaw axis rate controller error frequency in Hz
-    // @Range: 5 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
