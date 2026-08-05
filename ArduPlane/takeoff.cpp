@@ -48,12 +48,13 @@ bool Plane::auto_takeoff_check(void)
        takeoff_state.waiting_for_rudder_neutral = false;
     }  
 
-    // Check for bad GPS
-    bool nogps = gps.status() < AP_GPS::GPS_OK_FIX_3D;
-    if (!g.takeoff_nogps && nogps) {
-        // no auto takeoff without GPS lock
+    const bool gps_ok = gps.status() >= AP_GPS::GPS_OK_FIX_3D;
+    const bool have_inertial_nav = ahrs.have_inertial_nav();
+    if (!gps_ok && !have_inertial_nav) {
+        // no auto takeoff without a valid GPS fix or inertial navigation
         return false;
     }
+    const float takeoff_groundspeed = gps_ok ? gps.ground_speed() : ahrs.groundspeed();
 
     bool do_takeoff_attitude_check = !(flight_option_enabled(FlightOptions::DISABLE_TOFF_ATTITUDE_CHK));
 #if HAL_QUADPLANE_ENABLED
@@ -116,9 +117,9 @@ bool Plane::auto_takeoff_check(void)
     }
 
     // Check ground speed and time delay
-    if ((((!nogps && gps.ground_speed() > g.takeoff_throttle_min_speed) || is_zero(g.takeoff_throttle_min_speed))) &&
+    if (((takeoff_groundspeed > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - takeoff_state.last_tkoff_arm_time) >= wait_time_ms)) {
-        gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
+        gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. speed = %.1f", (double)takeoff_groundspeed);
         takeoff_state.launchTimerStarted = false;
         takeoff_state.last_tkoff_arm_time = 0;
         takeoff_state.start_time_ms = now;
