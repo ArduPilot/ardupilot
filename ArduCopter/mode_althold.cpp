@@ -28,9 +28,6 @@ void ModeAltHold::run()
     // set vertical speed and acceleration limits
     pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // get pilot desired lean angles
     float target_roll_rad, target_pitch_rad;
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
