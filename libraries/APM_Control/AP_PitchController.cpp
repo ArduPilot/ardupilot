@@ -88,7 +88,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Param: _RATE_D
     // @DisplayName: Pitch axis rate controller D gain
     // @Description: Pitch axis rate controller D gain.  Compensates for short-term change in desired pitch rate vs actual pitch rate
-    // @Range: 0.001 0.03
+    // @Range: 0 0.03
     // @Increment: 0.001
     // @User: Standard
 
@@ -110,7 +110,7 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
     // @Param: _RATE_FLTE
     // @DisplayName: Pitch axis rate controller error frequency in Hz
     // @Description: Pitch axis rate controller error frequency in Hz
-    // @Range: 2 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
