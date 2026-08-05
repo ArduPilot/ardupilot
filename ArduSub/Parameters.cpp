@@ -75,12 +75,14 @@ const AP_Param::Info Sub::var_info[] = {
     // @User: Standard
     GSCALAR(failsafe_gcs_timeout, "FS_GCS_TIMEOUT", FS_GCS_TIMEOUT_S),
 
+#if AP_LEAKDETECTOR_ENABLED
     // @Param: FS_LEAK_ENABLE
     // @DisplayName: Leak Failsafe Enable
     // @Description: Controls what action to take if a leak is detected.
     // @Values: 0:Disabled,1:Warn only,2:Enter surface mode
     // @User: Standard
     GSCALAR(failsafe_leak, "FS_LEAK_ENABLE", FS_LEAK_WARN_ONLY),
+#endif
 
     // @Param: FS_PRESS_ENABLE
     // @DisplayName: Internal Pressure Failsafe Enable
@@ -616,10 +618,12 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_GPS/AP_GPS.cpp
     GOBJECT(gps, "GPS", AP_GPS),
 
+#if AP_LEAKDETECTOR_ENABLED
     // Leak detector
     // @Group: LEAK
     // @Path: ../libraries/AP_LeakDetector/AP_LeakDetector.cpp
     GOBJECT(leak_detector, "LEAK", AP_LeakDetector),
+#endif
 
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
@@ -897,7 +901,7 @@ void Sub::convert_old_parameters()
     SRV_Channels::upgrade_parameters();
 }
 
-#if LEAKDETECTOR_MAX_INSTANCES > 0
+#if AP_LEAKDETECTOR_ENABLED
 // PARAMETER_CONVERSION - Added: Dec-2025
 // Deals with leak detector getting misconfigured when updating from Sub 4.1
 void Sub::update_leak_pins()

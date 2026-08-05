@@ -141,7 +141,9 @@ private:
     RC_Channel *channel_forward;
     RC_Channel *channel_lateral;
 
+#if AP_LEAKDETECTOR_ENABLED
     AP_LeakDetector leak_detector;
+#endif
 
     struct {
         bool enabled;
@@ -543,7 +545,9 @@ private:
 #endif
     bool verify_nav_delay(const AP_Mission::Mission_Command& cmd);
 
+#if AP_LEAKDETECTOR_ENABLED
     void failsafe_leak_check();
+#endif
     void failsafe_internal_pressure_check();
     void failsafe_internal_temperature_check();
 
@@ -560,7 +564,7 @@ private:
 
     void convert_old_parameters(void);
 
-#if LEAKDETECTOR_MAX_INSTANCES > 0
+#if AP_LEAKDETECTOR_ENABLED
     void update_leak_pins();
 #endif
 #if AP_RELAY_ENABLED
