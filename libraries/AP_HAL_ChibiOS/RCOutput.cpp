@@ -1013,21 +1013,10 @@ void RCOutput::print_group_setup_error(pwm_group &group, const char* error_strin
 
   This is used for both DShot and serial output
  */
+#if !defined(RP2350)
 bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length,
                                rcout_timer_t pulse_time_us, bool at_least_freq)
 {
-#if defined(RP2350)
-    /*
-      This sets up a timer-driven DMAR burst, which RP2350 has no equivalent
-      of. DShot is driven from the PIO instead, see RCOutput_pico.cpp. The
-      other two callers - serial LED output and serial ESC passthrough - are
-      not supported on this chip either, so failing here is the honest answer
-      rather than leaving them half-configured.
-     */
-    (void)group; (void)bitrate; (void)bit_width; (void)active_high;
-    (void)buffer_length; (void)pulse_time_us; (void)at_least_freq;
-    return false;
-#else
 #if HAL_DSHOT_ENABLED
     // for dshot we setup for DMAR based output
 #if !AP_HAL_SHARED_DMA_ENABLED
@@ -1143,8 +1132,8 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
 #else
     return false;
 #endif // HAL_DSHOT_ENABLED
-#endif // defined(RP2350)
 }
+#endif // !defined(RP2350) - RP2350 version is in RCOutput_pico.cpp
 
 /*
   setup output mode for a group, using group.current_mode. Used to restore output
@@ -1344,13 +1333,17 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
         bool needs_up_dma = mode_requires_dma(thismode);
 #if defined(RP2350)
         /*
-          DShot comes out of the PIO on this chip, not a timer DMAR burst, so
-          the group's UP DMA has nothing to do with it - requiring one here
-          downgraded every DShot request to plain PWM before set_group_mode()
-          could reach the PIO path. Serial LED and ESC passthrough do still
-          need a DMA and are still refused.
+          DShot and serial LED both come out of the PIO on this chip rather
+          than a timer DMAR burst, so the group's UP DMA has nothing to do
+          with either - requiring one here downgrades the request to plain PWM
+          before set_group_mode() can reach the PIO path. Serial ESC
+          passthrough does still need a DMA and is still refused.
+
+          mode_requires_dma() itself is deliberately left alone: set_freq_group()
+          uses it to skip the PWM clock setup, which is still the right thing
+          to do for a mode the PIO clocks itself.
          */
-        if (is_dshot_protocol(thismode)) {
+        if (is_dshot_protocol(thismode) || is_led_protocol(thismode)) {
             needs_up_dma = false;
         }
 #endif
@@ -1942,47 +1935,13 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
   called from led thread
  */
 #if HAL_SERIALLED_ENABLED
+#if !defined(RP2350)
 bool RCOutput::serial_led_send(pwm_group &group)
 {
     if (!group.serial_led_pending || !is_led_protocol(group.current_mode)) {
         return true;
     }
 
-#if defined(RP2350)
-    /*
-      Pack straight from the LED data into the PIO FIFO. There is no DMA buffer
-      and no DMA lock to take: the state machine holds the timing and the LED
-      thread is the only writer.
-     */
-    {
-        WITH_SEMAPHORE(group.serial_led_mutex);
-
-        group.serial_led_pending = false;
-        group.prepared_send = false;
-
-        const bool rgb_order = (group.current_mode == MODE_NEOPIXELRGB);
-
-        for (uint8_t i = 0; i < HAL_PWM_GROUP_CHANNELS; i++) {
-            if (group.chan[i] == CHAN_DISABLED || group.serial_led_data[i] == nullptr) {
-                continue;
-            }
-            if (!RCOutput_pico::neopixel_send_begin(i)) {
-                continue;
-            }
-            for (uint8_t led = 0; led < group.serial_nleds; led++) {
-                const SerialLed &c = group.serial_led_data[i][led];
-                const uint32_t w = rgb_order
-                    ? RCOutput_pico::neopixel_pack_rgb(c.red, c.green, c.blue)
-                    : RCOutput_pico::neopixel_pack_grb(c.red, c.green, c.blue);
-                if (!RCOutput_pico::neopixel_send_word(i, w)) {
-                    break;
-                }
-            }
-            RCOutput_pico::neopixel_send_end(i);
-        }
-    }
-    return true;
-#else
 
 #if HAL_DSHOT_ENABLED
     if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)
@@ -2012,8 +1971,8 @@ bool RCOutput::serial_led_send(pwm_group &group)
     send_pulses_DMAR(group, group.dma_buffer_len);
 #endif // HAL_DSHOT_ENABLED
     return true;
-#endif // defined(RP2350)
 }
+#endif // !defined(RP2350) - RP2350 version is in RCOutput_pico.cpp
 #endif // HAL_SERIALLED_ENABLED
 
 /*
@@ -2021,6 +1980,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
   been encoded into the group dma_buffer with interleaving for the 4
   channels in the group
  */
+#if !defined(RP2350)
 void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 {
 #if HAL_DSHOT_ENABLED
@@ -2037,22 +1997,6 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
       datasheet. Many thanks to the betaflight developers for coming
       up with this great method.
      */
-#if defined(RP2350)
-    /*
-      Nothing further to do: writing the packets above already handed them to
-      the state machines, which clock them out on their own. Everything below
-      is the timer/DMAR burst that RP2350 does not have.
-
-      Straight back to IDLE, not SEND_COMPLETE. On a timer the DMA completion
-      walks the state on and dma_unlock() eventually returns it to IDLE; here
-      there is no completion event to do that, and is_dshot_send_allowed()
-      rejects SEND_COMPLETE - so the group would send exactly one frame at boot
-      and then be refused for good. The frame is on its way out of the state
-      machine by the time we return, so the group really is idle.
-     */
-    group.dshot_state = DshotState::IDLE;
-    return;
-#else
 
 #ifdef HAL_GPIO_LINE_GPIO54
     TOGGLE_PIN_DEBUG(54);
@@ -2103,9 +2047,9 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     dmaStreamEnable(group.dma);
     // record when the transaction was started
     group.last_dmar_send_us = rcout_micros();
-#endif // defined(RP2350)
 #endif // HAL_DSHOT_ENABLED
 }
+#endif // !defined(RP2350) - RP2350 version is in RCOutput_pico.cpp
 
 /*
   unlock DMA channel after a dshot send completes and no return value is expected

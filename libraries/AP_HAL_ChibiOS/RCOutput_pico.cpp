@@ -24,7 +24,7 @@
 
 #include "RCOutput_pico.h"
 
-#if defined(RP2350) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)
+#if defined(RP2350)
 
 #include <AP_HAL/AP_HAL.h>
 #include <hal.h>
@@ -807,4 +807,90 @@ void RCOutput_pico::neopixel_send_end(uint8_t idx)
 
 #endif // HAL_SERIALLED_ENABLED
 
-#endif // defined(RP2350) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)
+/* ------------------- RCOutput methods, RP2350 definitions ----------------- */
+
+/*
+  These are RCOutput's own methods, not this file's PIO drivers. RCOutput.cpp
+  guards its versions with #if !defined(RP2350) and these stand in, the same
+  arrangement RCOutput_iofirmware.cpp uses for IOMCU_FW. It keeps whole-function
+  platform differences out of the shared file rather than wrapping a hundred
+  lines of STM32 timer code in #if/#else.
+ */
+
+bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high,
+                               const uint16_t buffer_length, rcout_timer_t pulse_time_us, bool at_least_freq)
+{
+    /*
+      This sets up a timer-driven DMAR burst, which RP2350 has no equivalent
+      of. DShot is driven from the PIO instead, see RCOutput_pico.cpp. The
+      other two callers - serial LED output and serial ESC passthrough - are
+      not supported on this chip either, so failing here is the honest answer
+      rather than leaving them half-configured.
+     */
+    (void)group; (void)bitrate; (void)bit_width; (void)active_high;
+    (void)buffer_length; (void)pulse_time_us; (void)at_least_freq;
+    return false;
+}
+
+void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
+{
+    (void)buffer_length;
+    /*
+      Nothing further to do: writing the packets above already handed them to
+      the state machines, which clock them out on their own. Everything below
+      is the timer/DMAR burst that RP2350 does not have.
+
+      Straight back to IDLE, not SEND_COMPLETE. On a timer the DMA completion
+      walks the state on and dma_unlock() eventually returns it to IDLE; here
+      there is no completion event to do that, and is_dshot_send_allowed()
+      rejects SEND_COMPLETE - so the group would send exactly one frame at boot
+      and then be refused for good. The frame is on its way out of the state
+      machine by the time we return, so the group really is idle.
+     */
+    group.dshot_state = DshotState::IDLE;
+    return;
+}
+
+#if HAL_SERIALLED_ENABLED
+bool RCOutput::serial_led_send(pwm_group &group)
+{
+    if (!group.serial_led_pending || !is_led_protocol(group.current_mode)) {
+        return true;
+    }
+    /*
+      Pack straight from the LED data into the PIO FIFO. There is no DMA buffer
+      and no DMA lock to take: the state machine holds the timing and the LED
+      thread is the only writer.
+     */
+    {
+        WITH_SEMAPHORE(group.serial_led_mutex);
+
+        group.serial_led_pending = false;
+        group.prepared_send = false;
+
+        const bool rgb_order = (group.current_mode == MODE_NEOPIXELRGB);
+
+        for (uint8_t i = 0; i < HAL_PWM_GROUP_CHANNELS; i++) {
+            if (group.chan[i] == CHAN_DISABLED || group.serial_led_data[i] == nullptr) {
+                continue;
+            }
+            if (!RCOutput_pico::neopixel_send_begin(i)) {
+                continue;
+            }
+            for (uint8_t led = 0; led < group.serial_nleds; led++) {
+                const SerialLed &c = group.serial_led_data[i][led];
+                const uint32_t w = rgb_order
+                    ? RCOutput_pico::neopixel_pack_rgb(c.red, c.green, c.blue)
+                    : RCOutput_pico::neopixel_pack_grb(c.red, c.green, c.blue);
+                if (!RCOutput_pico::neopixel_send_word(i, w)) {
+                    break;
+                }
+            }
+            RCOutput_pico::neopixel_send_end(i);
+        }
+    }
+    return true;
+}
+#endif // HAL_SERIALLED_ENABLED
+
+#endif // defined(RP2350)
