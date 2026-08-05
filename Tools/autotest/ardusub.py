@@ -103,6 +103,14 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def default_frame(self):
         return 'vectored'
 
+    def parameters_with_known_out_of_range_values(self):
+        ret = super().parameters_with_known_out_of_range_values()
+        ret.update({
+            "ATC_ACC_Y_MAX": "Sub ships 1100, documented 0 to 720",
+            "ATC_THR_MIX_MAN": "Sub ships 0.1, documented 0.5 to 0.9",
+        })
+        return ret
+
     def WaterDepth(self):
         """Check WATER_DEPTH MAVLink message support for ArduSub"""
 
