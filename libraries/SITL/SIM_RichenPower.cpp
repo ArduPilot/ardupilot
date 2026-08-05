@@ -42,7 +42,7 @@ const AP_Param::GroupInfo RichenPower::var_info[] = {
     // @Param: CTRL
     // @DisplayName: Pin RichenPower is connectred to
     // @Description: The pin number that the RichenPower spinner servo is connected to. (start at 1)
-    // @Range: 0 15
+    // @Range: -1 15
     // @User: Advanced
     AP_GROUPINFO("CTRL", 2, RichenPower, _ctrl_pin, -1),
 
