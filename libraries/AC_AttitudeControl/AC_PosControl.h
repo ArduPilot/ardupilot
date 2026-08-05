@@ -151,6 +151,9 @@ public:
     ///     Kinematically consistent target position and desired velocity and accelerations should be provided before calling this function
     void update_xy_controller();
 
+    /// handle_ekf_xy_reset_as_offset - moves an EKF XY reset into the position offset for absolute-position controllers
+    void handle_ekf_xy_reset_as_offset();
+
     ///
     /// Vertical position controller
     ///

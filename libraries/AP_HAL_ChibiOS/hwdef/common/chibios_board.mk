@@ -19,7 +19,7 @@ endif
 
 # C++ specific options here (added to USE_OPT).
 ifeq ($(USE_CPPOPT),)
-  USE_CPPOPT = -fno-rtti -std=gnu++11
+  USE_CPPOPT = -fno-rtti -std=gnu++17
 endif
 
 # Assembly specific options here (added to USE_OPT).

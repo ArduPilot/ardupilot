@@ -1497,7 +1497,18 @@ void AC_PosControl::init_ekf_xy_reset()
     _ekf_xy_reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
 }
 
-/// handle_ekf_xy_reset - check for ekf position reset and adjust loiter or brake target position
+/// handle_ekf_xy_reset_as_offset - moves an EKF XY reset into the position offset for absolute-position controllers
+void AC_PosControl::handle_ekf_xy_reset_as_offset()
+{
+    Vector2f pos_shift;
+    const uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
+    if (reset_ms != _ekf_xy_reset_ms) {
+        _pos_offset.xy() += (pos_shift * 100.0f).topostype();
+        _ekf_xy_reset_ms = reset_ms;
+    }
+}
+
+/// handle_ekf_xy_reset - check for ekf position reset and adjust relative-mode target position
 void AC_PosControl::handle_ekf_xy_reset()
 {
     // check for position shift
@@ -1505,8 +1516,8 @@ void AC_PosControl::handle_ekf_xy_reset()
     uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
     if (reset_ms != _ekf_xy_reset_ms) {
 
-        // ToDo: move EKF steps into the offsets for modes setting absolute position and velocity
-        // for this we need some sort of switch to select what type of EKF handling we want to use
+        // Absolute-position controllers consume EKF XY resets as offsets before
+        // calling update_xy_controller.
 
         // To zero real position shift during relative position modes like Loiter, PosHold, Guided velocity and accleration control.
         _pos_target.xy() = (_inav.get_position_xy_cm() + _p_pos_xy.get_error()).topostype();

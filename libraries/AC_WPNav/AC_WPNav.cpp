@@ -606,6 +606,8 @@ bool AC_WPNav::update_wpnav()
         _last_wp_speed_down_cms = _wp_speed_down_cms;
     }
 
+    _pos_control.handle_ekf_xy_reset_as_offset();
+
     // advance the target if necessary
     bool ret = true;
     if (!advance_wp_target_along_track(_pos_control.get_dt())) {

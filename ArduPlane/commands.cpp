@@ -135,14 +135,14 @@ bool Plane::update_home()
     if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
         Location loc;
         if (ahrs.get_location(loc)) {
-            // we take the altitude directly from the GPS as we are
-            // about to reset the baro calibration. We can't use AHRS
-            // altitude or we can end up perpetuating a bias in
-            // altitude, as AHRS alt depends on home alt, which means
-            // we would have a circular dependency
-            loc.set_alt_cm(gps.location().alt,
-                           Location::AltFrame::ABSOLUTE);
-            ret = AP::ahrs().set_home(loc);
+            if (ahrs.home_alt_should_use_gps_on_datum_reset()) {
+                // For GPS-height estimators and DCM, keep the existing
+                // raw GPS altitude path to avoid home-dependent altitude
+                // feedback when the baro datum is reset below.
+                loc.set_alt_cm(gps.location().alt,
+                               Location::AltFrame::ABSOLUTE);
+            }
+            ret = ahrs.set_home(loc);
         }
     }
 

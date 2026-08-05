@@ -79,7 +79,17 @@ void operator delete(void *p)
     if (p) free(p);
 }
 
+void operator delete(void *p, size_t size)
+{
+    if (p) free(p);
+}
+
 void operator delete[](void * ptr)
+{
+    if (ptr) free(ptr);
+}
+
+void operator delete[](void *ptr, size_t size)
 {
     if (ptr) free(ptr);
 }

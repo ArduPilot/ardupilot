@@ -100,7 +100,7 @@ void NavEKF3_core::Log_Write_XKFS(uint64_t time_us) const
         baro_index     : selected_baro,
         gps_index      : selected_gps,
         airspeed_index : getActiveAirspeed(),
-        source_set     : frontend->sources.getPosVelYawSourceSet(),
+        source_set     : core_index,
         gps_good_to_align : gpsGoodToAlign,
         wait_for_gps_checks : waitingForGpsChecks,
         mag_fusion: (uint8_t) magFusionSel
@@ -132,8 +132,8 @@ void NavEKF3_core::Log_Write_XKF3(uint64_t time_us) const
         innovMZ : (int16_t)(magInnov.z),
         innovYaw : (int16_t)(100*degrees(yawInnov)),
         innovVT : (int16_t)(100*tasInnov),
-        rerr : frontend->coreRelativeErrors[core_index],
-        errorScore : frontend->coreErrorScores[core_index]
+        rerr : 0,
+        errorScore : errorScore()
     };
     AP::logger().WriteBlock(&pkt3, sizeof(pkt3));
 }
@@ -310,11 +310,12 @@ void NavEKF3_core::Log_Write_BodyOdom(uint64_t time_us)
 
 void NavEKF3_core::Log_Write_State_Variances(uint64_t time_us)
 {
-    if (core_index != frontend->primary) {
-        // log only primary instance for now
-        return;
-    }
-
+    // Log every core, not just the primary: lane selection (see
+    // has_acceptable_posxy_variance()/lane_pos_var_threshold() in
+    // AP_NavEKF3_Control.cpp) gates on a non-primary lane's own P[7][7]/P[8][8],
+    // so without this a demoted lane's state goes dark for as long as it stays
+    // demoted - exactly the window needed to diagnose why it wasn't promoted
+    // back. Each core throttles independently via its own lastEkfStateVarLogTime_ms.
     if (AP::dal().millis() - lastEkfStateVarLogTime_ms > 490) {
         lastEkfStateVarLogTime_ms = AP::dal().millis();
         const struct log_XKV pktv1{

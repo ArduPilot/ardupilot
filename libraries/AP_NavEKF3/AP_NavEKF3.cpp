@@ -10,7 +10,136 @@
 
 #include "AP_DAL/AP_DAL.h"
 
+#include <algorithm>
 #include <new>
+
+// A lane must continuously pass its variance gates for at least this many milliseconds before automatic selection.
+static constexpr uint32_t PRIMARY_LANE_VARIANCE_STABILITY_TIME_MS = 5000;
+
+enum class LaneBlockReason : uint8_t {
+    RECOVERED = 0,
+    UNHEALTHY = 1,
+    TILT_UNALIGNED = 2,
+    YAW_UNALIGNED = 3,
+    LOST_YAW_AIDING = 4,
+    YAW_VARIANCE_HIGH = 5,
+    LOST_POS_AIDING = 6,
+    POS_VARIANCE_HIGH = 7,
+};
+
+static LaneBlockReason lane_block_reason_id(const NavEKF3_core &candidate);
+
+static bool core_is_primary_eligible(const NavEKF3_core &candidate)
+{
+    return lane_block_reason_id(candidate) == LaneBlockReason::RECOVERED;
+}
+
+static LaneBlockReason lane_block_reason_id(const NavEKF3_core &candidate)
+{
+    if (!candidate.healthy()) {
+        return LaneBlockReason::UNHEALTHY;
+    }
+    if (!candidate.have_aligned_tilt()) {
+        return LaneBlockReason::TILT_UNALIGNED;
+    }
+    if (!candidate.have_aligned_yaw()) {
+        return LaneBlockReason::YAW_UNALIGNED;
+    }
+    if (!candidate.has_required_yaw_aiding()) {
+        return LaneBlockReason::LOST_YAW_AIDING;
+    }
+    if (!candidate.has_acceptable_yaw_variance()) {
+        return LaneBlockReason::YAW_VARIANCE_HIGH;
+    }
+    if (!candidate.has_required_posxy_aiding()) {
+        return LaneBlockReason::LOST_POS_AIDING;
+    }
+    if (!candidate.has_acceptable_posxy_variance()) {
+        return LaneBlockReason::POS_VARIANCE_HIGH;
+    }
+    return LaneBlockReason::RECOVERED;
+}
+
+static const char *lane_block_reason(const NavEKF3_core &candidate)
+{
+    switch (lane_block_reason_id(candidate)) {
+    case LaneBlockReason::UNHEALTHY:
+        return "unhealthy";
+    case LaneBlockReason::TILT_UNALIGNED:
+        return "tilt unaligned";
+    case LaneBlockReason::YAW_UNALIGNED:
+        return "yaw unaligned";
+    case LaneBlockReason::LOST_YAW_AIDING:
+        return NavEKF3_core::yaw_aiding_failure_reason_string(candidate.yaw_aiding_failure_reason());
+    case LaneBlockReason::YAW_VARIANCE_HIGH:
+        return "yaw variance high";
+    case LaneBlockReason::LOST_POS_AIDING:
+        return NavEKF3_core::posxy_aiding_failure_reason_string(candidate.posxy_aiding_failure_reason());
+    case LaneBlockReason::POS_VARIANCE_HIGH:
+        return "pos variance high";
+    case LaneBlockReason::RECOVERED:
+        return "recovered";
+    }
+    return "recovered";
+}
+
+static void send_lane_switch_reason(
+    const uint8_t old_primary,
+    const uint8_t new_primary,
+    const NavEKF3_core &old_core,
+    const NavEKF3_core &new_core,
+    const bool forced_switch)
+{
+    const char *reason = forced_switch ?
+        "requested lane accepted" :
+        (core_is_primary_eligible(old_core) ? "lower lane stable" : lane_block_reason(old_core));
+    GCS_SEND_TEXT(
+        MAV_SEVERITY_CRITICAL,
+        "EKF3 lane switch %u->%u: %s",
+        (unsigned)old_primary,
+        (unsigned)new_primary,
+        reason);
+}
+
+std::optional<uint8_t> NavEKF3::requested_forced_primary_core(void) const
+{
+    const int8_t forced_primary = _primary_core.get();
+    if (forced_primary < 0) {
+        return std::nullopt;
+    }
+    return uint8_t(forced_primary);
+}
+
+uint8_t NavEKF3::desired_primary_core(void) const
+{
+    if (!core || num_cores == 0) {
+        return 0;
+    }
+
+    if (const auto forced_primary = requested_forced_primary_core()) {
+        return *forced_primary < num_cores ? *forced_primary : primary;
+    }
+
+    const uint32_t now_ms = AP::dal().millis();
+    for (uint8_t core_index = 0; core_index < num_cores; core_index++) {
+        const auto &yaw_stable_since_ms = coreYawVarAcceptSince_ms[core_index];
+        const auto &pos_stable_since_ms = corePosVarAcceptSince_ms[core_index];
+        const bool has_stable_yaw_variance =
+            yaw_stable_since_ms.has_value() && now_ms - *yaw_stable_since_ms >= PRIMARY_LANE_VARIANCE_STABILITY_TIME_MS;
+        const bool has_stable_posxy_variance =
+            pos_stable_since_ms.has_value() && now_ms - *pos_stable_since_ms >= PRIMARY_LANE_VARIANCE_STABILITY_TIME_MS;
+        // Source sets are preference ordered, so the lowest eligible lane always
+        // wins. A lane other than the current primary must also hold acceptable
+        // variances for the full stability window before it can be selected,
+        // which damps switching on sources that flap.
+        if (core_is_primary_eligible(core[core_index]) &&
+            (core_index == primary || (has_stable_yaw_variance && has_stable_posxy_variance))) {
+            return core_index;
+        }
+    }
+
+    return primary;
+}
 
 /*
   parameter defaults for different types of vehicle. The
@@ -124,7 +253,7 @@
 #endif // APM_BUILD_DIRECTORY
 
 #ifndef EK3_PRIMARY_DEFAULT
-#define EK3_PRIMARY_DEFAULT 0
+#define EK3_PRIMARY_DEFAULT -1
 #endif
 
 // This allows boards to default to using a specified number of IMUs and EKF lanes
@@ -713,8 +842,8 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: PRIMARY
     // @DisplayName: Primary core number
-    // @Description: The core number (index in IMU mask) that will be used as the primary EKF core on startup. While disarmed the EKF will force the use of this core. A value of 0 corresponds to the first IMU in EK3_IMU_MASK.
-    // @Range: 0 2
+    // @Description: Sets how the primary EKF lane is chosen. A value of -1 selects the first healthy lane automatically. Values of 0, 1, or 2 force use of that exact EKF core number (index in IMU mask) and disable automatic lane switching.
+    // @Range: -1 2
     // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PRIMARY", 8, NavEKF3, _primary_core, EK3_PRIMARY_DEFAULT),
@@ -797,6 +926,8 @@ bool NavEKF3::InitialiseFilter(void)
         for (uint8_t i=0; i<MAX_EKF_CORES; i++) {
             coreSetupRequired[i] = false;
             coreImuIndex[i] = 0;
+            coreYawVarAcceptSince_ms[i].reset();
+            corePosVarAcceptSince_ms[i].reset();
         }
         num_cores = 0;
 
@@ -849,14 +980,7 @@ bool NavEKF3::InitialiseFilter(void)
         return false;
     }
 
-    // set relative error scores for all cores to 0
-    resetCoreErrors();
-
-    // Set the primary initially to be users selected primary
-    primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
-
-    // invalidate shared origin
-    common_origin_valid = false;
+    primary = desired_primary_core();
 
     // initialise the cores. We return success only if all cores
     // initialise successfully
@@ -865,41 +989,11 @@ bool NavEKF3::InitialiseFilter(void)
         ret &= core[i].InitialiseFilterBootstrap();
     }
 
-    // set last time the cores were primary to 0
-    memset(coreLastTimePrimary_us, 0, sizeof(coreLastTimePrimary_us));
-
     // zero the structs used capture reset events
     memset(&yaw_reset_data, 0, sizeof(yaw_reset_data));
     memset((void *)&pos_reset_data, 0, sizeof(pos_reset_data));
     memset(&pos_down_reset_data, 0, sizeof(pos_down_reset_data));
-
     return ret;
-}
-
-/*
-  return true if a new core index has a better score than the current
-  core
- */
-bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core) const
-{
-    const NavEKF3_core &oldCore = core[current_core];
-    const NavEKF3_core &newCore = core[new_core];
-    if (!newCore.healthy()) {
-        // never consider a new core that isn't healthy
-        return false;
-    }
-    if (newCore.have_aligned_tilt() != oldCore.have_aligned_tilt()) {
-        // tilt alignment is most critical, if one is tilt aligned and
-        // the other isn't then use the tilt aligned lane
-        return newCore.have_aligned_tilt();
-    }
-    if (newCore.have_aligned_yaw() != oldCore.have_aligned_yaw()) {
-        // yaw alignment is next most critical, if one is yaw aligned
-        // and the other isn't then use the yaw aligned lane
-        return newCore.have_aligned_yaw();
-    }
-    // if both cores are aligned then look at relative error scores
-    return coreRelativeErrors[new_core] < coreRelativeErrors[current_core];
 }
 
 /* 
@@ -929,6 +1023,38 @@ void NavEKF3::UpdateFilter(void)
         core[i].UpdateFilter(allow_state_prediction);
     }
 
+    const uint32_t now_ms = AP::dal().millis();
+    for (uint8_t i = 0; i < num_cores; i++) {
+        if (core[i].has_acceptable_yaw_variance()) {
+            if (!coreYawVarAcceptSince_ms[i].has_value()) {
+                coreYawVarAcceptSince_ms[i] = now_ms;
+            }
+        } else {
+            coreYawVarAcceptSince_ms[i].reset();
+        }
+
+        if (core[i].has_acceptable_posxy_variance()) {
+            if (!corePosVarAcceptSince_ms[i].has_value()) {
+                corePosVarAcceptSince_ms[i] = now_ms;
+            }
+        } else {
+            corePosVarAcceptSince_ms[i].reset();
+        }
+
+        // A position reset re-seeds the position covariance, so a small P right
+        // after a reset is no evidence of a stable estimate (GPS resets seed P
+        // well below lane_pos_var_threshold while the position may have jumped
+        // onto a bad fix). Restart the stability window so a freshly-reset lane
+        // must prove itself for the full window before it can be switched to.
+        Vector2f posResetDelta;
+        const uint32_t lastPosResetTime_ms = core[i].getLastPosNorthEastReset(posResetDelta);
+        if (lastPosResetTime_ms != 0 &&
+            corePosVarAcceptSince_ms[i].has_value() &&
+            lastPosResetTime_ms >= *corePosVarAcceptSince_ms[i]) {
+            corePosVarAcceptSince_ms[i].reset();
+        }
+    }
+
     // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
     // Don't start running the check until the primary core has started returned healthy for at least 10 seconds to avoid switching
     // due to initial alignment fluctuations and race conditions
@@ -942,77 +1068,98 @@ void NavEKF3::UpdateFilter(void)
 
     const bool armed  = dal.get_armed();
 
-    // core selection is only available after the vehicle is armed, else forced to lane 0 if its healthy
-    if (runCoreSelection && armed) {
-        // update this instance's error scores for all active cores and get the primary core's error score
-        float primaryErrorScore = updateCoreErrorScores();
+    uint8_t newPrimaryIndex = primary;
+    if (requested_forced_primary_core().has_value() || (runCoreSelection && armed) || !armed) {
+        newPrimaryIndex = desired_primary_core();
+    }
 
-        // update the accumulated relative error scores for all active cores
-        updateCoreRelativeErrors();
+    if (newPrimaryIndex != primary) {
+        const uint8_t oldPrimaryIndex = primary;
+        alignLaneSwitchPositionIfNeeded(newPrimaryIndex, primary);
+        updateLaneSwitchYawResetData(newPrimaryIndex, primary);
+        updateLaneSwitchPosResetData(newPrimaryIndex, primary);
+        updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
+        primary = newPrimaryIndex;
+        lastLaneSwitch_ms = now_ms;
+        send_lane_switch_reason(
+            oldPrimaryIndex,
+            newPrimaryIndex,
+            core[oldPrimaryIndex],
+            core[newPrimaryIndex],
+            requested_forced_primary_core() == newPrimaryIndex);
+    }
 
-        bool betterCore = false;
-        bool altCoreAvailable = false;
-        uint8_t newPrimaryIndex = primary;
+    if (requested_forced_primary_core().has_value()) {
+        last_auto_primary_bad_lane.reset();
+        last_auto_primary_bad_reason.reset();
 
-        // loop through all available cores to find if an alternative core is available
-        for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
-            if (coreIndex != primary) {
-                float altCoreError = coreRelativeErrors[coreIndex];
-
-                // an alternative core is available for selection based on 2 conditions -
-                // 1. healthy and states have been updated on this time step
-                // 2. has relative error less than primary core error
-                // 3. not been the primary core for at least 10 seconds
-                altCoreAvailable = coreBetterScore(coreIndex, newPrimaryIndex) &&
-                    imuSampleTime_us - coreLastTimePrimary_us[coreIndex] > 1E7;
-
-                if (altCoreAvailable) {
-                    // if this core has a significantly lower relative error to the active primary, we consider it as a 
-                    // better core and would like to switch to it even if the current primary is healthy
-                    betterCore = altCoreError <= -BETTER_THRESH; // a better core if its relative error is below a substantial level than the primary's
-                    // handle the case where the secondary core is faster to complete yaw alignment which can happen
-                    // in flight when oeprating without a magnetomer
-                    const NavEKF3_core &newCore = core[coreIndex];
-                    const NavEKF3_core &oldCore = core[primary];
-                    betterCore |= newCore.have_aligned_yaw() && !oldCore.have_aligned_yaw();
-                    newPrimaryIndex = coreIndex;
-                }
+        const uint8_t forced_primary_index = requested_forced_primary_core().value();
+        if (forced_primary_index >= num_cores) {
+            if (last_forced_primary_invalid_lane != forced_primary_index) {
+                GCS_SEND_TEXT(
+                    MAV_SEVERITY_WARNING,
+                    "EKF3 lane req %u invalid",
+                    (unsigned)forced_primary_index);
+                last_forced_primary_invalid_lane = forced_primary_index;
+            }
+            last_forced_primary_bad_lane.reset();
+            last_forced_primary_bad_reason.reset();
+        } else if (!core_is_primary_eligible(core[primary])) {
+            const uint8_t bad_reason = uint8_t(lane_block_reason_id(core[primary]));
+            if (last_forced_primary_bad_lane != primary ||
+                last_forced_primary_bad_reason != bad_reason) {
+                GCS_SEND_TEXT(
+                    MAV_SEVERITY_WARNING,
+                    "EKF3 lane %u forced: %s",
+                    (unsigned)primary,
+                    lane_block_reason(core[primary]));
+                last_forced_primary_bad_lane = primary;
+                last_forced_primary_bad_reason = bad_reason;
+            }
+            last_forced_primary_invalid_lane.reset();
+        } else {
+            last_forced_primary_invalid_lane.reset();
+            if (last_forced_primary_bad_lane.has_value()) {
+                GCS_SEND_TEXT(
+                    MAV_SEVERITY_INFO,
+                    "EKF3 lane %u forced recovered",
+                    (unsigned)primary);
+                last_forced_primary_bad_lane.reset();
+                last_forced_primary_bad_reason.reset();
             }
         }
-        altCoreAvailable = newPrimaryIndex != primary;
+    } else {
+        last_forced_primary_invalid_lane.reset();
+        last_forced_primary_bad_lane.reset();
+        last_forced_primary_bad_reason.reset();
 
-        // Switch cores if another core is available and the active primary core meets one of the following conditions - 
-        // 1. has a bad error score
-        // 2. is unhealthy
-        // 3. is healthy, but a better core is available
-        // also update the yaw and position reset data to capture changes due to the lane switch
-        if (altCoreAvailable && (primaryErrorScore > 1.0f || !core[primary].healthy() || betterCore)) {
-            updateLaneSwitchYawResetData(newPrimaryIndex, primary);
-            updateLaneSwitchPosResetData(newPrimaryIndex, primary);
-            updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
-            resetCoreErrors();
-            coreLastTimePrimary_us[primary] = imuSampleTime_us;
-            primary = newPrimaryIndex;
-            lastLaneSwitch_ms = dal.millis();
-            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 lane switch %u", primary);
-        }       
+        const bool any_lane_eligible = std::any_of(core, core + num_cores, core_is_primary_eligible);
+
+        if (!any_lane_eligible) {
+            const uint8_t bad_lane = primary;
+            const uint8_t bad_reason = uint8_t(lane_block_reason_id(core[bad_lane]));
+            if (last_auto_primary_bad_lane != bad_lane ||
+                last_auto_primary_bad_reason != bad_reason) {
+                GCS_SEND_TEXT(
+                    MAV_SEVERITY_WARNING,
+                    "EKF3 lanes bad: %u %s",
+                    (unsigned)bad_lane,
+                    lane_block_reason(core[bad_lane]));
+                last_auto_primary_bad_lane = bad_lane;
+                last_auto_primary_bad_reason = bad_reason;
+            }
+        } else if (last_auto_primary_bad_lane.has_value()) {
+            GCS_SEND_TEXT(
+                MAV_SEVERITY_INFO,
+                "EKF3 lanes recovered");
+            last_auto_primary_bad_lane.reset();
+            last_auto_primary_bad_reason.reset();
+        }
     }
 
-    const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
-    if (primary != user_primary && core[user_primary].healthy() && !armed) {
-        // when on the ground and disarmed force the selected primary
-        // core. This avoids us ending with with a lottery for which
-        // IMU is used in each flight. Otherwise the alignment of the
-        // timing of the core selection updates with the timing of GPS
-        // updates can lead to a core other than the first one being
-        // used as primary for some flights. As different IMUs may
-        // have quite different noise characteristics this leads to
-        // inconsistent performance
-        primary = user_primary;
+    if (sources.get_active_source_set() != uint8_t(get_active_source_set())) {
+        sources.setPosVelYawSourceSet(get_active_source_set());
     }
-
-    // align position of inactive sources to ahrs
-    sources.align_inactive_sources();
 }
 
 /*
@@ -1025,36 +1172,33 @@ void NavEKF3::checkLaneSwitch(void)
 {
     dal.log_event3(AP_DAL::Event::checkLaneSwitch);
 
-    uint32_t now = dal.millis();
+    if (requested_forced_primary_core().has_value()) {
+        return;
+    }
+
+    uint32_t now = AP::dal().millis();
     if (lastLaneSwitch_ms != 0 && now - lastLaneSwitch_ms < 5000) {
         // don't switch twice in 5 seconds
         return;
     }
 
-    float primaryErrorScore = core[primary].errorScore();
-    float lowestErrorScore = primaryErrorScore;
-    uint8_t newPrimaryIndex = primary;
-    for (uint8_t coreIndex=0; coreIndex<num_cores; coreIndex++) {
-        if (coreIndex != primary) {
-            const NavEKF3_core &newCore = core[coreIndex];
-            // an alternative core is available for selection only if healthy and if states have been updated on this time step
-            bool altCoreAvailable = newCore.healthy() && newCore.have_aligned_yaw() && newCore.have_aligned_tilt();
-            float altErrorScore = newCore.errorScore();
-            if (altCoreAvailable && altErrorScore < lowestErrorScore && altErrorScore < 0.9) {
-                newPrimaryIndex = coreIndex;
-                lowestErrorScore = altErrorScore;
-            }
-        }
-    }
+    const uint8_t newPrimaryIndex = desired_primary_core();
 
     // update the yaw and position reset data to capture changes due to the lane switch
     if (newPrimaryIndex != primary) {
+        const uint8_t oldPrimaryIndex = primary;
+        alignLaneSwitchPositionIfNeeded(newPrimaryIndex, primary);
         updateLaneSwitchYawResetData(newPrimaryIndex, primary);
         updateLaneSwitchPosResetData(newPrimaryIndex, primary);
         updateLaneSwitchPosDownResetData(newPrimaryIndex, primary);
         primary = newPrimaryIndex;
         lastLaneSwitch_ms = now;
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 lane switch %u", primary);
+        send_lane_switch_reason(
+            oldPrimaryIndex,
+            newPrimaryIndex,
+            core[oldPrimaryIndex],
+            core[newPrimaryIndex],
+            false);
     }
 }
 
@@ -1067,52 +1211,14 @@ void NavEKF3::requestYawReset(void)
     }
 }
 
-/*
-  Update this instance error score value for all active cores
-*/
-float NavEKF3::updateCoreErrorScores()
+// set position, velocity and yaw sources
+void NavEKF3::setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelection source_set)
 {
-    for (uint8_t i = 0; i < num_cores; i++) {
-        coreErrorScores[i] = core[i].errorScore();
-    }
-    return coreErrorScores[primary];
-}
-
-/*
-  Update the relative error for all alternate available cores with respect to primary core's error.
-  A positive relative error for a core means it has been more erroneous than the existing primary.
-  A negative relative error indicates a core which can be switched to.
-*/
-void NavEKF3::updateCoreRelativeErrors()
-{
-    float error = 0;
-    for (uint8_t i = 0; i < num_cores; i++) {
-        if (i != primary) {
-            error = coreErrorScores[i] - coreErrorScores[primary];
-            // reduce error for a core only if its better than the primary lane by at least the Relative Error Threshold, this should prevent unnecessary lane changes
-            if (error > 0 || error < -MAX(_err_thresh, 0.05)) {
-                coreRelativeErrors[i] += error;
-                coreRelativeErrors[i] = constrain_ftype(coreRelativeErrors[i], -CORE_ERR_LIM, CORE_ERR_LIM);
-            }
-        }
-    }
-}
-
-// Reset the relative error values
-void NavEKF3::resetCoreErrors(void)
-{
-    for (uint8_t i = 0; i < num_cores; i++) {
-        coreRelativeErrors[i] = 0;
-    }
-}
-
-// set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
-{
+    const uint8_t source_set_idx = uint8_t(source_set);
     if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
         dal.log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
     }
-    sources.setPosVelYawSourceSet((AP_NavEKF_Source::SourceSetSelection)source_set_idx);
+    sources.setPosVelYawSourceSet(source_set);
 }
 
 // Check basic filter health metrics and return a consolidated health status
@@ -1135,7 +1241,7 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
     // check if using compass (i.e. EK3_SRCn_YAW) with deprecated MAG_CAL values (5 was EXTERNAL_YAW, 6 was EXTERNAL_YAW_FALLBACK)
     const int8_t magCalParamVal = _magCal.get();
-    const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource();
+    const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource(uint8_t(get_active_source_set()));
     if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS)) {
         // yaw source is configured to use compass but MAG_CAL valid is deprecated
         dal.snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
@@ -1147,6 +1253,11 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
         return false;
     }
     for (uint8_t i = 0; i < num_cores; i++) {
+        Location origin;
+        if (!core[i].getOriginLLH(origin)) {
+            dal.snprintf(failure_msg, failure_msg_len, "EKF3 core %d has no origin", (int)i);
+            return false;
+        }
         if (!core[i].healthy()) {
             const char *failure = core[i].prearm_failure_reason();
             if (failure != nullptr) {
@@ -1156,7 +1267,9 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
             }
             return false;
         }
-        // run per-core pre-arm checks
+        if (!core[i].configured_sources_ready(failure_msg, failure_msg_len)) {
+            return false;
+        }
         if (!core[i].pre_arm_check(requires_position, failure_msg, failure_msg_len)) {
             return false;
         }
@@ -1262,9 +1375,9 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
 }
 
 // returns active source set used by EKF3
-uint8_t NavEKF3::get_active_source_set() const
+AP_NavEKF_Source::SourceSetSelection NavEKF3::get_active_source_set() const
 {
-    return sources.get_active_source_set();
+    return AP_NavEKF_Source::SourceSetSelection(primary);
 }
 
 // reset body axis gyro bias estimates
@@ -1388,10 +1501,6 @@ bool NavEKF3::getOriginLLH(Location &loc) const
     if (!core) {
         return false;
     }
-    if (common_origin_valid) {
-        loc = common_EKF_origin;
-        return true;
-    }
     return core[primary].getOriginLLH(loc);
 }
 
@@ -1406,14 +1515,13 @@ bool NavEKF3::setOriginLLH(const Location &loc)
     if (!core) {
         return false;
     }
-    if (common_origin_valid) {
-        // we don't allow setting the EKF origin if it has already been set
-        // this is to prevent causing upsets from a shifting origin.
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3: origin already set");
-        return false;
-    }
     bool ret = false;
     for (uint8_t i=0; i<num_cores; i++) {
+        // Explicit set-origin requests seed lanes that do not derive their
+        // horizontal origin from GPS.
+        if (!core[i].accepts_external_origin()) {
+            continue;
+        }
         ret |= core[i].setOriginLLH(loc);
     }
     // return true if any core accepts the new origin
@@ -1546,14 +1654,20 @@ bool NavEKF3::using_extnav_for_yaw() const
 // check if configured to use GPS for horizontal position estimation
 bool NavEKF3::configuredToUseGPSForPosXY(void) const
 {
-    // 0 = use 3D velocity, 1 = use 2D velocity, 2 = use no velocity, 3 = do not use GPS
-    return  (sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS);
+    return sources.getPosXYSource(uint8_t(get_active_source_set())) == AP_NavEKF_Source::SourceXY::GPS;
+}
+
+// check if configured to use GPS for vertical position estimation
+bool NavEKF3::configuredToUseGPSForPosZ(void) const
+{
+    return sources.getPosZSource(uint8_t(get_active_source_set())) == AP_NavEKF_Source::SourceZ::GPS;
 }
 
 bool NavEKF3::configuredForExtNavPosNoVel(void) const
 {
-    return (sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV) &&
-           (sources.getVelXYSource() == AP_NavEKF_Source::SourceXY::NONE);
+    const uint8_t source_set_idx = uint8_t(get_active_source_set());
+    return (sources.getPosXYSource(source_set_idx) == AP_NavEKF_Source::SourceXY::EXTNAV) &&
+           (sources.getVelXYSource(source_set_idx) == AP_NavEKF_Source::SourceXY::NONE);
 }
 
 // write the raw optical flow measurements
@@ -1617,7 +1731,9 @@ void NavEKF3::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, delay_ms, resetTime_ms);
+            if (sources.ext_nav_enabled(i)) {
+                core[i].writeExtNavData(pos, quat, posErr, angErr, timeStamp_ms, delay_ms, resetTime_ms);
+            }
         }
     }
 }
@@ -1634,7 +1750,10 @@ void NavEKF3::writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeSt
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
+            if (sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV, i) ||
+                sources.useVelZSource(AP_NavEKF_Source::SourceZ::EXTNAV, i)) {
+                core[i].writeExtNavVelData(vel, err, timeStamp_ms, delay_ms);
+            }
         }
     }
 }
@@ -1657,7 +1776,9 @@ void NavEKF3::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Ve
 
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            core[i].writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, delay_ms, posOffset);
+            if (sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV, i)) {
+                core[i].writeBodyFrameOdom(quality, delPos, delAng, delTime, timeStamp_ms, delay_ms, posOffset);
+            }
         }
     }
 }
@@ -2001,6 +2122,22 @@ void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_prim
     yaw_reset_data.last_primary_change = imuSampleTime_us / 1000;
     yaw_reset_data.core_changed = true;
 
+}
+
+void NavEKF3::alignLaneSwitchPositionIfNeeded(uint8_t new_primary, uint8_t old_primary)
+{
+    if (!core[old_primary].has_absolute_horizontal_position_source() ||
+        !core[new_primary].has_imu_only_horizontal_position_source()) {
+        return;
+    }
+
+    if (core[new_primary].align_horizontal_position_to(core[old_primary])) {
+        GCS_SEND_TEXT(
+            MAV_SEVERITY_INFO,
+            "EKF3 lane %u copied pos from %u",
+            (unsigned)new_primary,
+            (unsigned)old_primary);
+    }
 }
 
 // update the position reset data to capture changes due to a lane switch

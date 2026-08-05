@@ -2,6 +2,7 @@
 #include "AC_Loiter.h"
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AC_Avoidance/AC_Avoid.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 

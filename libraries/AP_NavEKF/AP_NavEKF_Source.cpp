@@ -184,6 +184,15 @@ bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source) const
     return false;
 }
 
+bool AP_NavEKF_Source::useVelXYSource(SourceXY velxy_source, uint8_t source_set_idx) const
+{
+    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
+        return false;
+    }
+
+    return velxy_source == _source_set[source_set_idx].velxy;
+}
+
 bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source) const
 {
     if (velz_source == _source_set[active_source_set].velz) {
@@ -201,6 +210,15 @@ bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source) const
 
     // if we got this far source should not be used
     return false;
+}
+
+bool AP_NavEKF_Source::useVelZSource(SourceZ velz_source, uint8_t source_set_idx) const
+{
+    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
+        return false;
+    }
+
+    return velz_source == _source_set[source_set_idx].velz;
 }
 
 // true if a velocity source is configured
@@ -223,72 +241,65 @@ bool AP_NavEKF_Source::haveVelZSource() const
     return false;
 }
 
-// get yaw source
-AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource() const
+bool AP_NavEKF_Source::haveVelZSource(uint8_t source_set_idx) const
 {
-    // check for special case of disabled compasses
-    if ((_source_set[active_source_set].yaw == SourceYaw::COMPASS) && (AP::dal().compass().get_num_enabled() == 0)) {
+    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
+        return false;
+    }
+
+    return _source_set[source_set_idx].velz != SourceZ::NONE;
+}
+
+AP_NavEKF_Source::SourceYaw AP_NavEKF_Source::getYawSource(uint8_t source_set_idx) const
+{
+    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
         return SourceYaw::NONE;
     }
 
-    return _source_set[active_source_set].yaw;
+    // check for special case of disabled compasses
+    if ((_source_set[source_set_idx].yaw == SourceYaw::COMPASS) && (AP::dal().compass().get_num_enabled() == 0)) {
+        return SourceYaw::NONE;
+    }
+
+    return _source_set[source_set_idx].yaw;
 }
 
-// get pos Z source
-AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource() const
+AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getPosZSource(uint8_t source_set_idx) const
 {
+    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
+        return SourceZ::NONE;
+    }
 #ifdef HAL_BARO_ALLOW_INIT_NO_BARO
     // check for special case of missing baro
-    if ((_source_set[active_source_set].posz == SourceZ::BARO) && (AP::dal().baro().num_instances() == 0)) {
+    if ((_source_set[source_set_idx].posz == SourceZ::BARO) && (AP::dal().baro().num_instances() == 0)) {
         return SourceZ::NONE;
     }
 #endif
-    return _source_set[active_source_set].posz;
+    return _source_set[source_set_idx].posz;
 }
 
-// align position of inactive sources to ahrs
-void AP_NavEKF_Source::align_inactive_sources()
+AP_NavEKF_Source::SourceXY AP_NavEKF_Source::getPosXYSource(uint8_t source_set_idx) const
 {
-    // align visual odometry
-#if HAL_VISUALODOM_ENABLED
-
-    auto *visual_odom = AP::dal().visualodom();
-    if (!visual_odom || !visual_odom->enabled()) {
-        return;
+    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
+        return SourceXY::NONE;
     }
+    return _source_set[source_set_idx].posxy;
+}
 
-    // consider aligning ExtNav XY position:
-    bool align_posxy = false;
-    if ((getPosXYSource() == SourceXY::GPS) ||
-        (getPosXYSource() == SourceXY::BEACON) ||
-        ((getVelXYSource() == SourceXY::OPTFLOW) && option_is_set(SourceOptions::ALIGN_EXTNAV_POS_WHEN_USING_OPTFLOW))) {
-        // align ExtNav position if active source is GPS, Beacon or (optionally) Optflow
-        for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if (_source_set[i].posxy == SourceXY::EXTNAV) {
-                // ExtNav could potentially be used, so align it
-                align_posxy = true;
-                break;
-            }
-        }
+AP_NavEKF_Source::SourceXY AP_NavEKF_Source::getVelXYSource(uint8_t source_set_idx) const
+{
+    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
+        return SourceXY::NONE;
     }
+    return _source_set[source_set_idx].velxy;
+}
 
-    // consider aligning Z position:
-    bool align_posz = false;
-    if ((getPosZSource() == SourceZ::BARO) ||
-        (getPosZSource() == SourceZ::RANGEFINDER) ||
-        (getPosZSource() == SourceZ::GPS) ||
-        (getPosZSource() == SourceZ::BEACON)) {
-        // ExtNav is not the active source; we do not want to align active source!
-        for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-            if (_source_set[i].posz == SourceZ::EXTNAV) {
-                // ExtNav could potentially be used, so align it
-                align_posz = true;
-                break;
-            }
-        }
+AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getVelZSource(uint8_t source_set_idx) const
+{
+    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
+        return SourceZ::NONE;
     }
-    visual_odom->align_position_to_ahrs(align_posxy, align_posz);
-#endif
+    return _source_set[source_set_idx].velz;
 }
 
 // sensor specific helper functions
@@ -335,9 +346,8 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
     bool optflow_required = false;
     bool wheelencoder_required = false;
 
-    // check source params are valid
+    // check source params are valid and require hardware for any configured source set
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-
         if (requires_position) {
             // check posxy
             switch ((SourceXY)_source_set[i].posxy.get()) {
@@ -519,28 +529,28 @@ bool AP_NavEKF_Source::pre_arm_check(bool requires_position, char *failure_msg, 
     return true;
 }
 
-// return true if ext nav is enabled on any source
 bool AP_NavEKF_Source::ext_nav_enabled(void) const
 {
     for (uint8_t i=0; i<AP_NAKEKF_SOURCE_SET_MAX; i++) {
-        const auto &src = _source_set[i];
-        if (src.posxy == SourceXY::EXTNAV) {
-            return true;
-        }
-        if (src.posz == SourceZ::EXTNAV) {
-            return true;
-        }
-        if (src.velxy == SourceXY::EXTNAV) {
-            return true;
-        }
-        if (src.velz == SourceZ::EXTNAV) {
-            return true;
-        }
-        if (src.yaw == SourceYaw::EXTNAV) {
+        if (ext_nav_enabled(i)) {
             return true;
         }
     }
     return false;
+}
+
+bool AP_NavEKF_Source::ext_nav_enabled(uint8_t source_set_idx) const
+{
+    if (source_set_idx >= AP_NAKEKF_SOURCE_SET_MAX) {
+        return false;
+    }
+
+    const auto &src = _source_set[source_set_idx];
+    return src.posxy == SourceXY::EXTNAV ||
+           src.posz == SourceZ::EXTNAV ||
+           src.velxy == SourceXY::EXTNAV ||
+           src.velz == SourceZ::EXTNAV ||
+           src.yaw == SourceYaw::EXTNAV;
 }
 
 // return true if wheel encoder is enabled on any source

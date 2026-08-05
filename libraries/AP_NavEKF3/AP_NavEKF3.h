@@ -19,6 +19,8 @@
  */
 #pragma once
 
+#include <optional>
+
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Param/AP_Param.h>
@@ -100,8 +102,8 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getAccelBias(int8_t instance, Vector3f &accelBias) const;
 
-    //returns index of the active source set used
-    uint8_t get_active_source_set() const;
+    // returns the active source set used
+    AP_NavEKF_Source::SourceSetSelection get_active_source_set() const;
 
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
@@ -334,8 +336,8 @@ public:
      */
     void requestYawReset(void);
 
-    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void setPosVelYawSourceSet(uint8_t source_set_idx);
+    // set position, velocity and yaw sources
+    void setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelection source_set);
 
     // write EKF information to on-board logs
     void Log_Write();
@@ -348,6 +350,10 @@ public:
 
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
+
+    // check if configured to use GPS for vertical position estimation
+    bool configuredToUseGPSForPosZ(void) const;
+
     bool configuredForExtNavPosNoVel(void) const;
     
     // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
@@ -372,6 +378,11 @@ private:
     uint8_t num_cores; // number of allocated cores
     uint8_t primary;   // current primary core
     NavEKF3_core *core = nullptr;
+    std::optional<uint8_t> last_forced_primary_invalid_lane;
+    std::optional<uint8_t> last_forced_primary_bad_lane;
+    std::optional<uint8_t> last_forced_primary_bad_reason;
+    std::optional<uint8_t> last_auto_primary_bad_lane;
+    std::optional<uint8_t> last_auto_primary_bad_reason;
 
     uint32_t _frameTimeUsec;        // time per IMU frame
     uint8_t  _framesPerPrediction;  // expected number of IMU frames per prediction
@@ -448,7 +459,7 @@ private:
     AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
     AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
-    AP_Int8 _primary_core;          // initial core number
+    AP_Int8 _primary_core;          // -1 selects the first healthy lane, otherwise force the exact core number
     AP_Enum<LogLevel> _log_level;   // log verbosity level
     AP_Float _gpsVAccThreshold;     // vertical accuracy threshold to use GPS as an altitude source
     AP_Int32 _options;              // bit mask of processing options
@@ -529,19 +540,14 @@ private:
     } pos_down_reset_data;
 
 #define MAX_EKF_CORES     3 // maximum allowed EKF Cores to be instantiated
-#define CORE_ERR_LIM      1 // -LIM to LIM relative error range for a core
-#define BETTER_THRESH   0.5 // a lane should have this much relative error difference to be considered for overriding a healthy primary core
+    static_assert(MAX_EKF_CORES == AP_NAKEKF_SOURCE_SET_MAX,
+                  "EKF cores and source sets must have a one-to-one mapping");
     
     bool runCoreSelection;                          // true when the primary core has stabilised and the core selection logic can be started
     bool coreSetupRequired[MAX_EKF_CORES];          // true when this core index needs to be setup
     uint8_t coreImuIndex[MAX_EKF_CORES];            // IMU index used by this core
-    float coreRelativeErrors[MAX_EKF_CORES];        // relative errors of cores with respect to primary
-    float coreErrorScores[MAX_EKF_CORES];           // the instance error values used to update relative core error
-    uint64_t coreLastTimePrimary_us[MAX_EKF_CORES]; // last time we were using this core as primary
-
-    // origin set by one of the cores
-    Location common_EKF_origin;
-    bool common_origin_valid;
+    std::optional<uint32_t> coreYawVarAcceptSince_ms[MAX_EKF_CORES]; // when this core last began continuously meeting the yaw variance gate
+    std::optional<uint32_t> corePosVarAcceptSince_ms[MAX_EKF_CORES]; // when this core last began continuously meeting the pos variance gate
     
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
@@ -557,19 +563,10 @@ private:
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
     void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
+    void alignLaneSwitchPositionIfNeeded(uint8_t new_primary, uint8_t old_primary);
 
-    // Update instance error scores for all available cores 
-    float updateCoreErrorScores(void);
-
-    // Update relative error scores for all alternate available cores
-    void updateCoreRelativeErrors(void);
-
-    // Reset error scores for all available cores
-    void resetCoreErrors(void);
-
-    // return true if a new core has a better score than an existing core, including
-    // checks for alignment
-    bool coreBetterScore(uint8_t new_core, uint8_t current_core) const;
+    std::optional<uint8_t> requested_forced_primary_core(void) const;
+    uint8_t desired_primary_core(void) const;
 
     // position, velocity and yaw source control
     AP_NavEKF_Source sources;

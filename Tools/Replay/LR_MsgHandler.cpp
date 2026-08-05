@@ -131,7 +131,8 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
         ekf3.checkLaneSwitch();
         break;
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
-        ekf3.setPosVelYawSourceSet(uint8_t(msg.event)-uint8_t(AP_DAL::Event::setSourceSet0));
+        ekf3.setPosVelYawSourceSet(AP_NavEKF_Source::SourceSetSelection(
+            uint8_t(msg.event) - uint8_t(AP_DAL::Event::setSourceSet0)));
         break;
     }
 

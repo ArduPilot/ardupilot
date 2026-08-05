@@ -3414,22 +3414,87 @@ void AP_AHRS::request_yaw_reset(void)
     }
 }
 
-// set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void AP_AHRS::set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx)
+bool AP_AHRS::set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection)
 {
-#if HAL_NAVEKF3_AVAILABLE
-    EKF3.setPosVelYawSourceSet((uint8_t)source_set_idx);
-#endif
+    // Source sets are permanently mapped one-to-one to EKF3 lanes.
+    // Runtime lane selection is controlled through EK3_PRIMARY instead.
+    return false;
 }
 
 //returns active source set used, 0=primary, 1=secondary, 2=tertiary
 uint8_t AP_AHRS::get_posvelyaw_source_set() const
 {
 #if HAL_NAVEKF3_AVAILABLE
-    return EKF3.get_active_source_set();
+    return uint8_t(EKF3.get_active_source_set());
 #else
     return 0;
 #endif   
+}
+
+bool AP_AHRS::configured_to_use_gps_for_posxy() const
+{
+    switch (active_EKF_type()) {
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return true;
+#endif
+
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        return EKF2.configuredToUseGPSForPosXY();
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.configuredToUseGPSForPosXY();
+#endif
+
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+        return true;
+#endif
+
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return false;
+#endif
+    }
+
+    return true;
+}
+
+bool AP_AHRS::home_alt_should_use_gps_on_datum_reset() const
+{
+    switch (active_EKF_type()) {
+#if AP_AHRS_DCM_ENABLED
+    case EKFType::DCM:
+        return true;
+#endif
+
+#if HAL_NAVEKF2_AVAILABLE
+    case EKFType::TWO:
+        // EKF2 resetHeightDatum() still aligns the origin to GPS height
+        // whenever GPS is good, regardless of EK2_ALT_SOURCE.
+        return true;
+#endif
+
+#if HAL_NAVEKF3_AVAILABLE
+    case EKFType::THREE:
+        return EKF3.configuredToUseGPSForPosZ();
+#endif
+
+#if AP_AHRS_SIM_ENABLED
+    case EKFType::SIM:
+        return true;
+#endif
+
+#if AP_AHRS_EXTERNAL_ENABLED
+    case EKFType::EXTERNAL:
+        return false;
+#endif
+    }
+
+    return true;
 }
 
 void AP_AHRS::Log_Write()

@@ -6,6 +6,25 @@
 
 #include "AP_DAL/AP_DAL.h"
 
+static const int32_t GPS_POSXY_AIDING_MAX_AGE_MS = 400;
+// Maximum measurement ages accepted while checking configured sources before arming.
+static constexpr uint32_t GPS_PREARM_MAX_AGE_MS = 500;
+static constexpr uint32_t EXTNAV_VEL_PREARM_MAX_AGE_MS = 250;
+static constexpr uint32_t BARO_PREARM_MAX_AGE_MS = 500;
+
+static bool lane_source_is_recent(
+    uint32_t current_time_ms,
+    uint32_t last_update_time_ms,
+    int32_t max_age_ms)
+{
+    if (last_update_time_ms == 0) {
+        return false;
+    }
+
+    const int32_t age_ms = int32_t(current_time_ms) - int32_t(last_update_time_ms);
+    return age_ms >= 0 && age_ms < max_age_ms;
+}
+
 // Control filter mode transitions
 void NavEKF3_core::controlFilterModes()
 {
@@ -213,17 +232,17 @@ void NavEKF3_core::updateStateIndexLim()
 // set the default yaw source
 void NavEKF3_core::setYawSource()
 {
-    AP_NavEKF_Source::SourceYaw yaw_source = frontend->sources.getYawSource();
+    AP_NavEKF_Source::SourceYaw yaw_source_new = this->yaw_source();
     if (wasLearningCompass_ms > 0) {
         // can't use compass while it is being calibrated
-        if (yaw_source == AP_NavEKF_Source::SourceYaw::COMPASS) {
-            yaw_source = AP_NavEKF_Source::SourceYaw::NONE;
-        } else if (yaw_source == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
-            yaw_source = AP_NavEKF_Source::SourceYaw::GPS;
+        if (yaw_source_new == AP_NavEKF_Source::SourceYaw::COMPASS) {
+            yaw_source_new = AP_NavEKF_Source::SourceYaw::NONE;
+        } else if (yaw_source_new == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) {
+            yaw_source_new = AP_NavEKF_Source::SourceYaw::GPS;
         }
     }
-    if (yaw_source != yaw_source_last) {
-        yaw_source_last = yaw_source;
+    if (yaw_source_new != yaw_source_last) {
+        yaw_source_last = yaw_source_new;
         yaw_source_reset = true;
     }
 }
@@ -547,7 +566,7 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
         return false;
     }
 
-    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
+    if (!uses_velxy_source(AP_NavEKF_Source::SourceXY::OPTFLOW)) {
         return false;
     }
 
@@ -560,8 +579,8 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
 bool NavEKF3_core::readyToUseBodyOdm(void) const
 {
 #if EK3_FEATURE_BODY_ODOM
-    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) &&
-        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
+    if (!uses_velxy_source(AP_NavEKF_Source::SourceXY::EXTNAV) &&
+        !uses_velxy_source(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER)) {
         // exit immediately if sources not configured to fuse external nav or wheel encoders
         return false;
     }
@@ -585,7 +604,7 @@ bool NavEKF3_core::readyToUseBodyOdm(void) const
 // return true if the filter to be ready to use gps
 bool NavEKF3_core::readyToUseGPS(void) const
 {
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS) {
+    if (!uses_posxy_source(AP_NavEKF_Source::SourceXY::GPS)) {
         return false;
     }
 
@@ -596,7 +615,7 @@ bool NavEKF3_core::readyToUseGPS(void) const
 bool NavEKF3_core::readyToUseRangeBeacon(void) const
 {
 #if EK3_FEATURE_BEACON_FUSION
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::BEACON) {
+    if (!uses_posxy_source(AP_NavEKF_Source::SourceXY::BEACON)) {
         return false;
     }
 
@@ -610,14 +629,419 @@ bool NavEKF3_core::readyToUseRangeBeacon(void) const
 bool NavEKF3_core::readyToUseExtNav(void) const
 {
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::EXTNAV) {
+    if (!uses_posxy_source(AP_NavEKF_Source::SourceXY::EXTNAV)) {
         return false;
     }
 
-    return tiltAlignComplete && extNavDataToFuse;
+    return tiltAlignComplete && extNavPosRecent();
 #else
     return false;
 #endif // EK3_FEATURE_EXTERNAL_NAV
+}
+
+bool NavEKF3_core::extNavPosRecent(void) const
+{
+#if EK3_FEATURE_EXTERNAL_NAV
+    return lane_source_is_recent(
+        imuSampleTime_ms,
+        lastExtNavPosReceived_ms,
+        3000);
+#else
+    return false;
+#endif // EK3_FEATURE_EXTERNAL_NAV
+}
+
+bool NavEKF3_core::has_required_posxy_aiding(void) const
+{
+    return posxy_aiding_failure_reason() == PosXYAidingFailureReason::NONE;
+}
+
+NavEKF3_core::PosXYAidingFailureReason NavEKF3_core::posxy_aiding_failure_reason(void) const
+{
+    switch (posxy_source()) {
+    case AP_NavEKF_Source::SourceXY::NONE:
+        return PosXYAidingFailureReason::NONE;
+    case AP_NavEKF_Source::SourceXY::GPS:
+        if (!validOrigin) {
+            return PosXYAidingFailureReason::GPS_NO_ORIGIN;
+        }
+        if (!(delAngBiasLearned || assume_zero_sideslip())) {
+            return PosXYAidingFailureReason::GPS_BIAS_LEARNING;
+        }
+        if (!gpsGoodToAlign) {
+            return PosXYAidingFailureReason::GPS_QUALITY_LOW;
+        }
+        if (!lane_source_is_recent(
+                imuSampleTime_ms,
+                lastTimeGpsReceived_ms,
+                GPS_POSXY_AIDING_MAX_AGE_MS)) {
+            return PosXYAidingFailureReason::GPS_STALE;
+        }
+        return PosXYAidingFailureReason::NONE;
+    case AP_NavEKF_Source::SourceXY::BEACON:
+        return readyToUseRangeBeacon() ?
+            PosXYAidingFailureReason::NONE :
+            PosXYAidingFailureReason::RANGE_BEACON_UNAVAILABLE;
+    case AP_NavEKF_Source::SourceXY::EXTNAV:
+        return extNavPosRecent() ? PosXYAidingFailureReason::NONE : PosXYAidingFailureReason::EXTNAV_STALE;
+    case AP_NavEKF_Source::SourceXY::OPTFLOW:
+#if EK3_FEATURE_OPTFLOW_FUSION
+        return readyToUseOptFlow() ? PosXYAidingFailureReason::NONE : PosXYAidingFailureReason::OPTFLOW_UNAVAILABLE;
+#else
+        return PosXYAidingFailureReason::OPTFLOW_UNAVAILABLE;
+#endif
+    case AP_NavEKF_Source::SourceXY::WHEEL_ENCODER:
+        return PosXYAidingFailureReason::NONE;
+    }
+
+    return PosXYAidingFailureReason::NONE;
+}
+
+const char *NavEKF3_core::posxy_aiding_failure_reason_string(PosXYAidingFailureReason reason)
+{
+    switch (reason) {
+    case PosXYAidingFailureReason::NONE:
+        return "pos aiding unavailable";
+    case PosXYAidingFailureReason::GPS_NO_ORIGIN:
+        return "gps no origin";
+    case PosXYAidingFailureReason::GPS_BIAS_LEARNING:
+        return "gps bias learning";
+    case PosXYAidingFailureReason::GPS_QUALITY_LOW:
+        return "gps quality low";
+    case PosXYAidingFailureReason::GPS_STALE:
+        return "gps stale";
+    case PosXYAidingFailureReason::RANGE_BEACON_UNAVAILABLE:
+        return "range beacon unavailable";
+    case PosXYAidingFailureReason::EXTNAV_STALE:
+        return "extnav stale";
+    case PosXYAidingFailureReason::OPTFLOW_UNAVAILABLE:
+        return "optflow unavailable";
+    }
+
+    return "pos aiding unavailable";
+}
+
+NavEKF3_core::YawAidingFailureReason NavEKF3_core::yaw_aiding_failure_reason(void) const
+{
+    switch (yaw_source()) {
+    case AP_NavEKF_Source::SourceYaw::NONE:
+        return YawAidingFailureReason::NONE;
+    case AP_NavEKF_Source::SourceYaw::COMPASS:
+        if (magTimeout) {
+            return YawAidingFailureReason::COMPASS_STALE;
+        }
+        if (!use_compass()) {
+            return YawAidingFailureReason::COMPASS_UNAVAILABLE;
+        }
+        return YawAidingFailureReason::NONE;
+    case AP_NavEKF_Source::SourceYaw::GPS:
+        return using_noncompass_for_yaw() ? YawAidingFailureReason::NONE : YawAidingFailureReason::GPS_YAW_STALE;
+    case AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK:
+        if (using_noncompass_for_yaw()) {
+            return YawAidingFailureReason::NONE;
+        }
+        if (!gps_yaw_mag_fallback_active) {
+            return YawAidingFailureReason::GPS_YAW_STALE;
+        }
+        if (magTimeout) {
+            return YawAidingFailureReason::COMPASS_STALE;
+        }
+        if (!use_compass()) {
+            return YawAidingFailureReason::COMPASS_UNAVAILABLE;
+        }
+        return YawAidingFailureReason::NONE;
+    case AP_NavEKF_Source::SourceYaw::EXTNAV:
+        return using_extnav_for_yaw() ? YawAidingFailureReason::NONE : YawAidingFailureReason::EXTNAV_YAW_STALE;
+    case AP_NavEKF_Source::SourceYaw::GSF:
+        return using_noncompass_for_yaw() ? YawAidingFailureReason::NONE : YawAidingFailureReason::GSF_YAW_UNAVAILABLE;
+    }
+
+    return YawAidingFailureReason::NONE;
+}
+
+bool NavEKF3_core::has_required_yaw_aiding(void) const
+{
+    return yaw_aiding_failure_reason() == YawAidingFailureReason::NONE;
+}
+
+const char *NavEKF3_core::yaw_aiding_failure_reason_string(YawAidingFailureReason reason)
+{
+    switch (reason) {
+    case YawAidingFailureReason::NONE:
+        return "yaw unavailable";
+    case YawAidingFailureReason::COMPASS_UNAVAILABLE:
+        return "compass unavailable";
+    case YawAidingFailureReason::COMPASS_STALE:
+        return "compass stale";
+    case YawAidingFailureReason::GPS_YAW_STALE:
+        return "gps yaw stale";
+    case YawAidingFailureReason::EXTNAV_YAW_STALE:
+        return "extnav yaw stale";
+    case YawAidingFailureReason::GSF_YAW_UNAVAILABLE:
+        return "gsf yaw unavailable";
+    }
+
+    return "yaw unavailable";
+}
+
+bool NavEKF3_core::has_acceptable_yaw_variance(void) const
+{
+    bool compass_yaw_variance_ok = !magTimeout &&
+               yawTestRatio < 1.0f &&
+               magTestRatio.x < 1.0f &&
+               magTestRatio.y < 1.0f &&
+               magTestRatio.z < 1.0f;
+
+    switch (yaw_source()) {
+    case AP_NavEKF_Source::SourceYaw::NONE:
+        return true;
+    case AP_NavEKF_Source::SourceYaw::COMPASS:
+        return compass_yaw_variance_ok;
+    case AP_NavEKF_Source::SourceYaw::GPS:
+        return true;
+    case AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK:
+        return !gps_yaw_mag_fallback_active || compass_yaw_variance_ok;
+    case AP_NavEKF_Source::SourceYaw::EXTNAV:
+        return true;
+    case AP_NavEKF_Source::SourceYaw::GSF:
+        return true;
+    }
+
+    return true;
+}
+
+bool NavEKF3_core::has_acceptable_posxy_variance(void) const
+{
+    if (PV_AidingMode == AID_NONE) {
+        return true;
+    }
+    return get_pos_variance_NE() < lane_pos_var_threshold();
+}
+
+float NavEKF3_core::get_pos_variance_NE(void) const
+{
+    return P[7][7] + P[8][8];
+}
+
+// Scale the eligibility threshold with this lane's own altitude above its EKF
+// origin, matching how a vision-based ext-nav source's position error grows
+// with height (see header for derivation). Uses this core's own position
+// state, not a shared/global altitude, so each lane is judged against its own
+// height estimate. Never goes below the base value, so low-altitude and
+// non-altitude-dependent aiding sources keep the originally calibrated margin.
+float NavEKF3_core::lane_pos_var_threshold(void) const
+{
+    const float alt_m = MAX(-stateStruct.position.z, 0.0f);
+    const float scale = sq(alt_m / LANE_POS_VAR_THRESHOLD_REF_ALT_M);
+    return MAX(LANE_POS_VAR_THRESHOLD_BASE, LANE_POS_VAR_THRESHOLD_BASE * scale);
+}
+
+bool NavEKF3_core::configured_sources_ready(char *failure_msg, uint8_t failure_msg_len) const
+{
+    const auto __fail = [&](const char *field_name) -> bool {
+        dal.snprintf(failure_msg, failure_msg_len, "EKF3 core %d %s not ready", (int)core_index, field_name);
+        return false;
+    };
+    const auto __gps_recent_for_prearm = [&]() -> bool {
+        return lane_source_is_recent(imuSampleTime_ms, lastTimeGpsReceived_ms, GPS_PREARM_MAX_AGE_MS);
+    };
+    const auto __extnav_recent_for_prearm = [&]() -> bool {
+        return extNavPosRecent();
+    };
+    const auto __gps_ready_for_prearm = [&]() -> bool {
+        return validOrigin &&
+               tiltAlignComplete &&
+               yawAlignComplete &&
+               (delAngBiasLearned || assume_zero_sideslip()) &&
+               gpsGoodToAlign &&
+               __gps_recent_for_prearm();
+    };
+    const auto __extnav_posxy_ready_for_prearm = [&]() -> bool {
+        return tiltAlignComplete && __extnav_recent_for_prearm();
+    };
+    const auto __extnav_vel_ready_for_prearm = [&]() -> bool {
+#if EK3_FEATURE_EXTERNAL_NAV
+        return (imuSampleTime_ms - extNavVelMeasTime_ms) < EXTNAV_VEL_PREARM_MAX_AGE_MS && useExtNavVel;
+#else
+        return false;
+#endif
+    };
+    // All current GPS source checks require yaw alignment. Add a require_yaw
+    // argument if a source that can be ready without yaw alignment is added.
+    const auto __fail_gps_source = [&](const char *field_name, const bool require_vz) -> bool {
+        const bool bias_ok = delAngBiasLearned || assume_zero_sideslip();
+        const char *reason = "gps unavailable";
+        if (!validOrigin) {
+            reason = "gps no origin";
+        } else if (!tiltAlignComplete) {
+            reason = "tilt unaligned";
+        } else if (!yawAlignComplete) {
+            reason = "yaw unaligned";
+        } else if (!bias_ok) {
+            reason = "gps bias learning";
+        } else if (!gpsGoodToAlign) {
+            reason = "gps quality low";
+        } else if (!__gps_recent_for_prearm()) {
+            reason = "gps stale";
+        } else if (require_vz && !gpsDataNew.have_vz) {
+            reason = "gps vertical velocity unavailable";
+        }
+        dal.snprintf(
+            failure_msg,
+            failure_msg_len,
+            "EKF3 core %d %s GPS: %s",
+            (int)core_index,
+            field_name,
+            reason);
+        return false;
+    };
+    const auto __fail_posxy_extnav = [&]() -> bool {
+        dal.snprintf(
+            failure_msg,
+            failure_msg_len,
+            "EKF3 core %d POSXY EXTNAV: %s",
+            (int)core_index,
+            tiltAlignComplete ? "stale" : "tilt unaligned");
+        return false;
+    };
+
+    switch (posxy_source()) {
+    case AP_NavEKF_Source::SourceXY::GPS:
+        if (!__gps_ready_for_prearm()) {
+            return __fail_gps_source("POSXY", false);
+        }
+        break;
+    case AP_NavEKF_Source::SourceXY::BEACON:
+        if (!readyToUseRangeBeacon()) {
+            return __fail("POSXY");
+        }
+        break;
+    case AP_NavEKF_Source::SourceXY::EXTNAV:
+        if (!__extnav_posxy_ready_for_prearm()) {
+            return __fail_posxy_extnav();
+        }
+        break;
+    case AP_NavEKF_Source::SourceXY::NONE:
+    case AP_NavEKF_Source::SourceXY::OPTFLOW:
+    case AP_NavEKF_Source::SourceXY::WHEEL_ENCODER:
+        break;
+    }
+
+    switch (velxy_source()) {
+    case AP_NavEKF_Source::SourceXY::GPS:
+        if (!__gps_ready_for_prearm()) {
+            return __fail_gps_source("VELXY", false);
+        }
+        break;
+    case AP_NavEKF_Source::SourceXY::OPTFLOW:
+#if EK3_FEATURE_OPTFLOW_FUSION
+        if (!readyToUseOptFlow()) {
+            return __fail("VELXY");
+        }
+#else
+        return __fail("VELXY");
+#endif
+        break;
+    case AP_NavEKF_Source::SourceXY::EXTNAV:
+        if (!(__extnav_vel_ready_for_prearm() || readyToUseBodyOdm())) {
+            return __fail("VELXY");
+        }
+        break;
+    case AP_NavEKF_Source::SourceXY::WHEEL_ENCODER:
+        if (!readyToUseBodyOdm()) {
+            return __fail("VELXY");
+        }
+        break;
+    case AP_NavEKF_Source::SourceXY::NONE:
+    case AP_NavEKF_Source::SourceXY::BEACON:
+        break;
+    }
+
+    switch (posz_source()) {
+    case AP_NavEKF_Source::SourceZ::BARO:
+        if (!(dal.baro().healthy(selected_baro) &&
+              (imuSampleTime_ms - lastBaroReceived_ms < BARO_PREARM_MAX_AGE_MS))) {
+            return __fail("POSZ");
+        }
+        break;
+    case AP_NavEKF_Source::SourceZ::RANGEFINDER:
+        if (!rangeDataToFuse) {
+            return __fail("POSZ");
+        }
+        break;
+    case AP_NavEKF_Source::SourceZ::GPS:
+        if (!__gps_ready_for_prearm()) {
+            return __fail_gps_source("POSZ", false);
+        }
+        break;
+    case AP_NavEKF_Source::SourceZ::BEACON:
+#if EK3_FEATURE_BEACON_FUSION
+        if (!(tiltAlignComplete && yawAlignComplete && delAngBiasLearned &&
+              rngBcn.alignmentCompleted && rngBcn.dataToFuse)) {
+            return __fail("POSZ");
+        }
+#else
+        return __fail("POSZ");
+#endif
+        break;
+    case AP_NavEKF_Source::SourceZ::EXTNAV:
+        if (!(tiltAlignComplete && extNavPosRecent())) {
+            return __fail("POSZ");
+        }
+        break;
+    case AP_NavEKF_Source::SourceZ::NONE:
+        break;
+    }
+
+    switch (velz_source()) {
+    case AP_NavEKF_Source::SourceZ::GPS:
+        if (!__gps_ready_for_prearm() || !gpsDataNew.have_vz) {
+            return __fail_gps_source("VELZ", true);
+        }
+        break;
+    case AP_NavEKF_Source::SourceZ::EXTNAV:
+        if (!(__extnav_vel_ready_for_prearm() || readyToUseBodyOdm())) {
+            return __fail("VELZ");
+        }
+        break;
+    case AP_NavEKF_Source::SourceZ::NONE:
+    case AP_NavEKF_Source::SourceZ::BARO:
+    case AP_NavEKF_Source::SourceZ::RANGEFINDER:
+    case AP_NavEKF_Source::SourceZ::BEACON:
+        break;
+    }
+
+    switch (yaw_source()) {
+    case AP_NavEKF_Source::SourceYaw::NONE:
+        break;
+    case AP_NavEKF_Source::SourceYaw::COMPASS:
+        if (!have_aligned_yaw()) {
+            return __fail("YAW");
+        }
+        break;
+    case AP_NavEKF_Source::SourceYaw::GPS:
+        if (!using_noncompass_for_yaw()) {
+            return __fail("YAW");
+        }
+        break;
+    case AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK:
+        if (!have_aligned_yaw()) {
+            return __fail("YAW");
+        }
+        break;
+    case AP_NavEKF_Source::SourceYaw::EXTNAV:
+        if (!using_extnav_for_yaw()) {
+            return __fail("YAW");
+        }
+        break;
+    case AP_NavEKF_Source::SourceYaw::GSF:
+        if (!using_noncompass_for_yaw()) {
+            return __fail("YAW");
+        }
+        break;
+    }
+
+    return true;
 }
 
 // return true if we should use the compass
@@ -678,6 +1102,11 @@ bool NavEKF3_core::setOriginLLH(const Location &loc)
     return setOrigin(loc);
 }
 
+bool NavEKF3_core::accepts_external_origin(void) const
+{
+    return !uses_posxy_source(AP_NavEKF_Source::SourceXY::GPS);
+}
+
 // populates the Earth magnetic field table using the given location
 void NavEKF3_core::setEarthFieldFromLocation(const Location &loc)
 {
@@ -685,7 +1114,7 @@ void NavEKF3_core::setEarthFieldFromLocation(const Location &loc)
     if (compass.have_scale_factor(magSelectIndex) &&
         compass.auto_declination_enabled()) {
         getEarthFieldTable(loc);
-        if (frontend->_mag_ef_limit > 0) {
+    if (frontend->_mag_ef_limit > 0) {
             // initialise earth field from tables
             stateStruct.earth_magfield = table_earth_field_ga;
         }
@@ -714,13 +1143,6 @@ bool NavEKF3_core::setOrigin(const Location &loc)
     }
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u origin set",(unsigned)imu_index);
-
-    if (!frontend->common_origin_valid) {
-        frontend->common_origin_valid = true;
-        // put origin in frontend as well to ensure it stays in sync between lanes
-        public_origin = EKF_origin;
-    }
-
 
     return true;
 }
@@ -771,7 +1193,7 @@ void  NavEKF3_core::updateFilterStatus(void)
     bool filterHealthy = healthy() && tiltAlignComplete && (yawAlignComplete || (!use_compass() && (PV_AidingMode != AID_ABSOLUTE)));
 
     // If GPS height usage is specified, height is considered to be inaccurate until the GPS passes all checks
-    bool hgtNotAccurate = (frontend->sources.getPosZSource() == AP_NavEKF_Source::SourceZ::GPS) && !validOrigin;
+    bool hgtNotAccurate = uses_posz_source(AP_NavEKF_Source::SourceZ::GPS) && !validOrigin;
 
     // set individual flags
     status.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
@@ -787,8 +1209,12 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.takeoff_detected = takeOffDetected; // takeoff for optical flow navigation has been detected
     status.flags.takeoff = dal.get_takeoff_expected(); // The EKF has been told to expect takeoff is in a ground effect mitigation mode and has started the EKF-GSF yaw estimator
     status.flags.touchdown = dal.get_touchdown_expected(); // The EKF has been told to detect touchdown and is in a ground effect mitigation mode
-    status.flags.using_gps = ((imuSampleTime_ms - lastGpsPosPassTime_ms) < 4000) && (PV_AidingMode == AID_ABSOLUTE);
-    status.flags.gps_glitching = !gpsAccuracyGood && (PV_AidingMode == AID_ABSOLUTE) && (frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
+    status.flags.using_gps = uses_posxy_source(AP_NavEKF_Source::SourceXY::GPS) &&
+                             ((imuSampleTime_ms - lastGpsPosPassTime_ms) < 4000) &&
+                             (PV_AidingMode == AID_ABSOLUTE);
+    status.flags.gps_glitching = !gpsAccuracyGood &&
+                                 (PV_AidingMode == AID_ABSOLUTE) &&
+                                 uses_posxy_source(AP_NavEKF_Source::SourceXY::GPS); // GPS glitching is affecting navigation accuracy
     status.flags.gps_quality_good = gpsGoodToAlign;
     // for reporting purposes we report rejecting airspeed after 3s of not fusing when we want to fuse the data
     status.flags.rejecting_airspeed = lastTasFailTime_ms != 0 &&
@@ -808,8 +1234,8 @@ void NavEKF3_core::runYawEstimatorPrediction()
     }
 
     // ensure GPS is used for horizontal position and velocity
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
-        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
+    if (!uses_posxy_source(AP_NavEKF_Source::SourceXY::GPS) ||
+        !uses_velxy_source(AP_NavEKF_Source::SourceXY::GPS)) {
         return;
     }
 
@@ -829,8 +1255,8 @@ void NavEKF3_core::runYawEstimatorCorrection()
         return;
     }
     // ensure GPS is used for horizontal position and velocity
-    if (frontend->sources.getPosXYSource() != AP_NavEKF_Source::SourceXY::GPS ||
-        !frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS)) {
+    if (!uses_posxy_source(AP_NavEKF_Source::SourceXY::GPS) ||
+        !uses_velxy_source(AP_NavEKF_Source::SourceXY::GPS)) {
         return;
     }
 

@@ -10,11 +10,146 @@
 // constructor
 NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend, AP_DAL &_dal) :
     dal(_dal),
-    frontend(_frontend),
-    public_origin(frontend->common_EKF_origin)
+    frontend(_frontend)
 {
     firstInitTime_ms = 0;
     lastInitFailReport_ms = 0;
+}
+
+bool NavEKF3_core::uses_posxy_source(AP_NavEKF_Source::SourceXY source) const
+{
+    return frontend->sources.getPosXYSource(core_index) == source;
+}
+
+bool NavEKF3_core::uses_velxy_source(AP_NavEKF_Source::SourceXY source) const
+{
+    return frontend->sources.useVelXYSource(source, core_index);
+}
+
+bool NavEKF3_core::uses_posz_source(AP_NavEKF_Source::SourceZ source) const
+{
+    return frontend->sources.getPosZSource(core_index) == source;
+}
+
+bool NavEKF3_core::uses_velz_source(AP_NavEKF_Source::SourceZ source) const
+{
+    return frontend->sources.useVelZSource(source, core_index);
+}
+
+bool NavEKF3_core::has_velz_source(void) const
+{
+    return frontend->sources.haveVelZSource(core_index);
+}
+
+bool NavEKF3_core::uses_gps_yaw_source(void) const
+{
+    return yaw_source() == AP_NavEKF_Source::SourceYaw::GPS ||
+           yaw_source() == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK;
+}
+
+bool NavEKF3_core::uses_any_gps_source(void) const
+{
+    return uses_posxy_source(AP_NavEKF_Source::SourceXY::GPS) ||
+           uses_velxy_source(AP_NavEKF_Source::SourceXY::GPS) ||
+           uses_posz_source(AP_NavEKF_Source::SourceZ::GPS) ||
+           uses_velz_source(AP_NavEKF_Source::SourceZ::GPS) ||
+           uses_gps_yaw_source() ||
+           yaw_source() == AP_NavEKF_Source::SourceYaw::GSF;
+}
+
+AP_NavEKF_Source::SourceXY NavEKF3_core::posxy_source(void) const
+{
+    return frontend->sources.getPosXYSource(core_index);
+}
+
+AP_NavEKF_Source::SourceXY NavEKF3_core::velxy_source(void) const
+{
+    return frontend->sources.getVelXYSource(core_index);
+}
+
+AP_NavEKF_Source::SourceZ NavEKF3_core::posz_source(void) const
+{
+    return frontend->sources.getPosZSource(core_index);
+}
+
+AP_NavEKF_Source::SourceZ NavEKF3_core::velz_source(void) const
+{
+    return frontend->sources.getVelZSource(core_index);
+}
+
+AP_NavEKF_Source::SourceYaw NavEKF3_core::yaw_source(void) const
+{
+    return frontend->sources.getYawSource(core_index);
+}
+
+bool NavEKF3_core::has_absolute_horizontal_position_source(void) const
+{
+    switch (posxy_source()) {
+    case AP_NavEKF_Source::SourceXY::GPS:
+    case AP_NavEKF_Source::SourceXY::BEACON:
+    case AP_NavEKF_Source::SourceXY::EXTNAV:
+        return true;
+    case AP_NavEKF_Source::SourceXY::NONE:
+    case AP_NavEKF_Source::SourceXY::OPTFLOW:
+    case AP_NavEKF_Source::SourceXY::WHEEL_ENCODER:
+        return false;
+    }
+    return false;
+}
+
+bool NavEKF3_core::has_imu_only_horizontal_position_source(void) const
+{
+    return posxy_source() == AP_NavEKF_Source::SourceXY::NONE &&
+           velxy_source() == AP_NavEKF_Source::SourceXY::NONE;
+}
+
+bool NavEKF3_core::align_horizontal_position_to(const NavEKF3_core &source_core)
+{
+    if (!source_core.validOrigin) {
+        return false;
+    }
+
+    Location source_loc = source_core.EKF_origin;
+    source_loc.offset(source_core.outputDataNew.position.x + source_core.posOffsetNED.x,
+                      source_core.outputDataNew.position.y + source_core.posOffsetNED.y);
+    // Initialise with source's EKF_origin (not the vehicle's current location) so that
+    // EKF_origin, outputPosFrameOffsetNE, and therefore ORGN remain identical to the
+    // source lane across the switch.
+    if (!validOrigin && !setOriginLLH(source_core.EKF_origin)) {
+        return false;
+    }
+    // Align the lane-local origin with the source so that getLLH() and getPosNE() stay in
+    // the same reference frame as the source lane (ORGN must not jump on a lane switch).
+    EKF_origin = source_core.EKF_origin;
+
+    const Vector2F pos_ne = EKF_origin.get_distance_NE_ftype(source_loc);
+    ResetPositionNE(pos_ne.x - posOffsetNED.x, pos_ne.y - posOffsetNED.y);
+
+    // ResetPositionNE shifts both stateStruct and outputDataNew by the same delta, so the
+    // output-predictor lag (outputDataNew − stateStruct ≈ velocity × maxDelay) is preserved.
+    // For an IMU-only lane this lag is the drifted velocity integrated over the buffer depth
+    // (~260 ms), which appears as a 1–4 m position jump in getPosNE()/getLLH() right after
+    // the switch. Subtract it from the entire output buffer now.
+    const ftype lag_x = outputDataNew.position.x - stateStruct.position.x;
+    const ftype lag_y = outputDataNew.position.y - stateStruct.position.y;
+    for (uint8_t i = 0; i < imu_buffer_length; i++) {
+        storedOutput[i].position.x -= lag_x;
+        storedOutput[i].position.y -= lag_y;
+    }
+    outputDataNew.position.x -= lag_x;
+    outputDataNew.position.y -= lag_y;
+    outputDataDelayed.position.x -= lag_x;
+    outputDataDelayed.position.y -= lag_y;
+    // The PI integral was tracking the old lag; zero it so it doesn't push outputDataNew
+    // away from the freshly aligned position on the next EKF cycle.
+    posErrintegral.x = 0.0f;
+    posErrintegral.y = 0.0f;
+
+    outputPosFrameOffsetNE = source_core.outputPosFrameOffsetNE;
+    lastKnownPositionNE.x = stateStruct.position.x;
+    lastKnownPositionNE.y = stateStruct.position.y;
+
+    return true;
 }
 
 // setup this core backend
@@ -47,7 +182,7 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
                                   ))));
 
     // GPS sensing can have large delays and should not be included if disabled
-    if (frontend->sources.usingGPS()) {
+    if (uses_any_gps_source()) {
         // Wait for the configuration of all GPS units to be confirmed. Until this has occurred the GPS driver cannot provide a correct time delay
         float gps_delay_sec = 0;
         if (!dal.gps().get_lag(selected_gps, gps_delay_sec)) {
@@ -120,7 +255,8 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         return false;
     }
 #if EK3_FEATURE_BODY_ODOM
-    if(frontend->sources.ext_nav_enabled() && !storedBodyOdm.init(obs_buffer_length)) {
+    if(frontend->sources.ext_nav_enabled() && uses_velxy_source(AP_NavEKF_Source::SourceXY::EXTNAV) &&
+       !storedBodyOdm.init(obs_buffer_length)) {
         return false;
     }
     if(frontend->sources.wheel_encoder_enabled() && !storedWheelOdm.init(imu_buffer_length)) {
@@ -144,13 +280,19 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
     }
 #endif
 #if EK3_FEATURE_EXTERNAL_NAV
-    if (frontend->sources.ext_nav_enabled() && !storedExtNav.init(extnav_buffer_length)) {
+    const bool use_extnav = frontend->sources.ext_nav_enabled() &&
+        (uses_posxy_source(AP_NavEKF_Source::SourceXY::EXTNAV) ||
+         uses_posz_source(AP_NavEKF_Source::SourceZ::EXTNAV) ||
+         uses_velxy_source(AP_NavEKF_Source::SourceXY::EXTNAV) ||
+         uses_velz_source(AP_NavEKF_Source::SourceZ::EXTNAV) ||
+         yaw_source() == AP_NavEKF_Source::SourceYaw::EXTNAV);
+    if (use_extnav && !storedExtNav.init(extnav_buffer_length)) {
         return false;
     }
-    if (frontend->sources.ext_nav_enabled() && !storedExtNavVel.init(extnav_buffer_length)) {
+    if (use_extnav && !storedExtNavVel.init(extnav_buffer_length)) {
         return false;
     }
-    if(frontend->sources.ext_nav_enabled() && !storedExtNavYawAng.init(extnav_buffer_length)) {
+    if (use_extnav && !storedExtNavYawAng.init(extnav_buffer_length)) {
         return false;
     }
 #endif // EK3_FEATURE_EXTERNAL_NAV
@@ -220,6 +362,8 @@ void NavEKF3_core::InitialiseVariables()
     timeTasReceived_ms = 0;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
     lastPosReset_ms = 0;
+    posResetVetoStart_ms = 0;
+    posResetVetoLast_ms = 0;
     lastVelReset_ms = 0;
     lastPosResetD_ms = 0;
     lastRngMeasTime_ms = 0;
@@ -354,6 +498,7 @@ void NavEKF3_core::InitialiseVariables()
     ekfGpsRefHgt = 0.0;
     velOffsetNED.zero();
     posOffsetNED.zero();
+    outputPosFrameOffsetNE.zero();
     ZERO_FARRAY(velPosObs);
 
     // range beacon fusion variables
@@ -384,9 +529,13 @@ void NavEKF3_core::InitialiseVariables()
     // external nav data fusion
     extNavDataDelayed = {};
     extNavMeasTime_ms = 0;
+    lastExtNavPosReceived_ms = 0;
     extNavLastPosResetTime_ms = 0;
     extNavDataToFuse = false;
     extNavUsedForPos = false;
+    extNavPosAvailableLast = false;
+    extNavPosResetOnRecoveryPending = false;
+    extNavRepositionMessageSentThisCycle = false;
     extNavVelDelayed = {};
     extNavVelToFuse = false;
     useExtNavVel = false;
@@ -472,10 +621,9 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     // update sensor selection (for affinity)
     update_sensor_selection();
 
-    const bool using_extnav_pos = frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV;
-    // If we are a plane and don't have GPS lock then don't initialise unless using external navigation for position
+    // If we are a plane and don't have GPS lock then don't initialise GPS-dependent lanes.
     if (assume_zero_sideslip() &&
-        !using_extnav_pos &&
+        uses_any_gps_source() &&
         dal.gps().status(preferred_gps) < AP_DAL_GPS::GPS_OK_FIX_3D) {
         dal.snprintf(prearm_fail_string,
                      sizeof(prearm_fail_string),
@@ -547,8 +695,8 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     ResetHeight();
 
     // initialise sources
-    posxy_source_last = frontend->sources.getPosXYSource();
-    yaw_source_last = frontend->sources.getYawSource();
+    posxy_source_last = posxy_source();
+    yaw_source_last = yaw_source();
 
     // define Earth rotation vector in the NED navigation frame
     calcEarthRateNED(earthRateNED, dal.get_home().lat);
@@ -721,6 +869,15 @@ void NavEKF3_core::UpdateFilter(bool predict)
         dal.millis() - last_filter_ok_ms > 5000 &&
         !dal.get_armed()) {
         // we've been unhealthy for 5 seconds after being healthy, reset the filter
+        // Note: this is the only path that can clear validOrigin after startup
+        // (via InitialiseVariables), and it is disarmed-only - so lane origins
+        // are immutable for the whole armed period. If this fires on the ground
+        // away from the takeoff point without a reboot, a GPS lane re-seeds its
+        // origin at the current location and lane origins diverge. A subsequent
+        // lane switch then carries that divergence as a position-offset that the
+        // controller slews out. Accepted: this reset is already loud (warning
+        // above) and re-fanning origins across lanes was deliberately removed
+        // (see "don't propagate gps origin").
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u forced reset",(unsigned)imu_index);
         last_filter_ok_ms = 0;
         statesInitialised = false;
@@ -2224,14 +2381,16 @@ void NavEKF3_core::verifyTiltErrorVariance()
 #endif
 
 /*
-  move the EKF origin to the current position at 1Hz. The public_origin doesn't move.
+  move the lane-local EKF origin to the current position at 1Hz.
   By moving the EKF origin we keep the distortion due to spherical
   shape of the earth to a minimum.
  */
 void NavEKF3_core::moveEKFOrigin(void)
 {
-    // only move origin when we have a origin and we're using GPS
-    if (!frontend->common_origin_valid || !filterStatus.flags.using_gps) {
+    // only move origin on lanes whose horizontal position source is GPS
+    if (!uses_posxy_source(AP_NavEKF_Source::SourceXY::GPS) ||
+        !validOrigin ||
+        !filterStatus.flags.using_gps) {
         return;
     }
 
@@ -2240,6 +2399,7 @@ void NavEKF3_core::moveEKFOrigin(void)
     loc.offset(stateStruct.position.x, stateStruct.position.y);
     const Vector2F diffNE = loc.get_distance_NE_ftype(EKF_origin);
     EKF_origin = loc;
+    outputPosFrameOffsetNE -= diffNE;
 
     // now fix all output states
     stateStruct.position.xy() += diffNE;

@@ -1644,8 +1644,11 @@ bool RC_Channel::do_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos ch
             source_set = AP_NavEKF_Source::SourceSetSelection::TERTIARY;
             break;
         }
-        AP::ahrs().set_posvelyaw_source_set(source_set);
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using EKF Source Set %u", uint8_t(source_set)+1);
+        if (AP::ahrs().set_posvelyaw_source_set(source_set)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using EKF Source Set %u", uint8_t(source_set)+1);
+        } else {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF source switching disabled; use EK3_PRIMARY");
+        }
         break;
     }
 

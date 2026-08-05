@@ -144,6 +144,63 @@ public:
     // Check basic filter health metrics and return a consolidated health status
     bool healthy(void) const;
 
+    enum class PosXYAidingFailureReason : uint8_t {
+        NONE,
+        GPS_NO_ORIGIN,
+        GPS_BIAS_LEARNING,
+        GPS_QUALITY_LOW,
+        GPS_STALE,
+        RANGE_BEACON_UNAVAILABLE,
+        EXTNAV_STALE,
+        OPTFLOW_UNAVAILABLE,
+    };
+
+    // return true if the configured horizontal aiding source for this lane is currently available
+    bool has_required_posxy_aiding(void) const;
+
+    // return the reason the configured horizontal aiding source for this lane is unavailable
+    PosXYAidingFailureReason posxy_aiding_failure_reason(void) const;
+    static const char *posxy_aiding_failure_reason_string(PosXYAidingFailureReason reason);
+
+    enum class YawAidingFailureReason : uint8_t {
+        NONE,
+        COMPASS_UNAVAILABLE,
+        COMPASS_STALE,
+        GPS_YAW_STALE,
+        EXTNAV_YAW_STALE,
+        GSF_YAW_UNAVAILABLE,
+    };
+
+    // return the reason the configured yaw aiding source for this lane is unavailable
+    YawAidingFailureReason yaw_aiding_failure_reason(void) const;
+    static const char *yaw_aiding_failure_reason_string(YawAidingFailureReason reason);
+
+    // return true if the configured yaw aiding source for this lane is currently available
+    bool has_required_yaw_aiding(void) const;
+
+    // return true if the yaw innovation tests are within the normal acceptance limit
+    bool has_acceptable_yaw_variance(void) const;
+
+    // return true if the horizontal position innovation test is within the normal acceptance limit
+    bool has_acceptable_posxy_variance(void) const;
+
+    // P[7][7]+P[8][8]: NE position state variance (m²), used by lane-selection logic
+    float get_pos_variance_NE(void) const;
+
+    // Maximum NE position state variance above which a lane is
+    // considered ineligible as primary. Our ext-nav has variance that depends
+    // on altitude, so this gets appropriately scaled.
+    static constexpr float LANE_POS_VAR_THRESHOLD_BASE = 5.0f;
+    static constexpr float LANE_POS_VAR_THRESHOLD_REF_ALT_M = 120.0f;
+    float lane_pos_var_threshold(void) const;
+
+    // return true if all configured sources for this lane are ready for use during pre-arm checks
+    bool configured_sources_ready(char *failure_msg, uint8_t failure_msg_len) const;
+
+    bool has_absolute_horizontal_position_source(void) const;
+    bool has_imu_only_horizontal_position_source(void) const;
+    bool align_horizontal_position_to(const NavEKF3_core &source_core);
+
     // Return a consolidated error score where higher numbers are less healthy
     // Intended to be used by the front-end to determine which is the primary EKF
     float errorScore(void) const;
@@ -229,6 +286,7 @@ public:
     // All NED positions calculated by the filter will be relative to this location
     // returns false if the origin has already been set
     bool setOriginLLH(const Location &loc);
+    bool accepts_external_origin(void) const;
 
     // Set the EKF's NE horizontal position states and their corresponding variances from a supplied WGS-84 location and uncertainty
     // The altitude element of the location is not used.
@@ -884,6 +942,7 @@ private:
 
     // return true if the filter to be ready to use external nav data
     bool readyToUseExtNav(void) const;
+    bool extNavPosRecent(void) const;
 
     // return true if we should use the range finder sensor
     bool useRngFinder(void) const;
@@ -1052,8 +1111,6 @@ private:
     void SelectDragFusion();
     void SampleDragData(const imu_elements &imu);
 
-    bool getGPSLLH(Location &loc) const;
-
     // Variables
     bool statesInitialised;         // boolean true when filter states have been initialised
     bool magHealth;                 // boolean true if magnetometer has passed innovation consistency check
@@ -1150,8 +1207,7 @@ private:
     bool needEarthBodyVarReset;     // we need to reset mag earth variances at next CovariancePrediction
     bool inhibitDelAngBiasStates;   // true when IMU delta angle bias states are inactive
     bool gpsIsInUse;                // bool true when GPS data is being used to correct states estimates
-    Location EKF_origin;     // LLH origin of the NED axis system, internal only
-    Location &public_origin; // LLH origin of the NED axis system, public functions
+    Location EKF_origin;     // LLH origin of the NED axis system, lane-local only
     bool validOrigin;               // true when the EKF origin is valid
     ftype gpsSpdAccuracy;           // estimated speed accuracy in m/s returned by the GPS receiver
     ftype gpsPosAccuracy;           // estimated position accuracy in m returned by the GPS receiver
@@ -1206,6 +1262,8 @@ private:
     bool lastMagOffsetsValid;       // True when lastMagOffsets has been initialized
     Vector2F posResetNE;            // Change in North/East position due to last in-flight reset in metres. Returned by getLastPosNorthEastReset
     uint32_t lastPosReset_ms;       // System time at which the last position reset occurred. Returned by getLastPosNorthEastReset
+    uint32_t posResetVetoStart_ms;  // Time the hold-off of a position reset onto an un-vetted GPS fix started. 0 when inactive
+    uint32_t posResetVetoLast_ms;   // Last time the un-vetted GPS reset hold-off was evaluated, used to restart the window after gaps
     Vector2F velResetNE;            // Change in North/East velocity due to last in-flight reset in metres/sec. Returned by getLastVelNorthEastReset
     uint32_t lastVelReset_ms;       // System time at which the last velocity reset occurred. Returned by getLastVelNorthEastReset
     ftype posResetD;                // Change in Down position due to last in-flight reset in metres. Returned by getLastPosDowntReset
@@ -1232,6 +1290,7 @@ private:
     Vector3F outputTrackError;      // attitude (rad), velocity (m/s) and position (m) tracking error magnitudes from the output observer
     Vector3F velOffsetNED;          // This adds to the earth frame velocity estimate at the IMU to give the velocity at the body origin (m/s)
     Vector3F posOffsetNED;          // This adds to the earth frame position estimate at the IMU to give the position at the body origin (m)
+    Vector2F outputPosFrameOffsetNE;// NE offset that keeps controller-facing position continuous across GPS origin moves (m)
     uint32_t firstInitTime_ms;      // First time the initialise function was called (msec)
     uint32_t lastInitFailReport_ms; // Last time the buffer initialisation failure report was sent (msec)
     ftype tiltErrorVariance;        // variance of the angular uncertainty measured perpendicular to the vertical (rad^2)
@@ -1477,9 +1536,13 @@ private:
     EKF_obs_buffer_t<ext_nav_elements> storedExtNav; // external navigation data buffer
     ext_nav_elements extNavDataDelayed; // External nav at the fusion time horizon
     uint32_t extNavMeasTime_ms;         // time external measurements were accepted for input to the data buffer (msec)
+    uint32_t lastExtNavPosReceived_ms;  // time the last EXTNAV position measurement was accepted
     uint32_t extNavLastPosResetTime_ms; // last time the external nav systen performed a position reset (msec)
     bool extNavDataToFuse;              // true when there is new external nav data to fuse
     bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
+    bool extNavPosAvailableLast;        // true when EXTNAV position data was available on the previous fusion step
+    bool extNavPosResetOnRecoveryPending; // true when EXTNAV was lost and a one-shot reset should happen on recovery
+    bool extNavRepositionMessageSentThisCycle; // true when an EXTNAV reposition message was already emitted on this fusion step
     EKF_obs_buffer_t<ext_nav_vel_elements> storedExtNavVel;    // external navigation velocity data buffer
     ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
     uint32_t extNavVelMeasTime_ms;      // time external navigation velocity measurements were accepted for input to the data buffer (msec)
@@ -1612,6 +1675,20 @@ private:
     void update_mag_selection(void);
     void update_baro_selection(void);
     void update_airspeed_selection(void);
+
+    // source selection for this lane/core
+    bool uses_posxy_source(AP_NavEKF_Source::SourceXY source) const;
+    bool uses_velxy_source(AP_NavEKF_Source::SourceXY source) const;
+    bool uses_posz_source(AP_NavEKF_Source::SourceZ source) const;
+    bool uses_velz_source(AP_NavEKF_Source::SourceZ source) const;
+    bool has_velz_source(void) const;
+    bool uses_gps_yaw_source(void) const;
+    bool uses_any_gps_source(void) const;
+    AP_NavEKF_Source::SourceXY posxy_source(void) const;
+    AP_NavEKF_Source::SourceXY velxy_source(void) const;
+    AP_NavEKF_Source::SourceZ posz_source(void) const;
+    AP_NavEKF_Source::SourceZ velz_source(void) const;
+    AP_NavEKF_Source::SourceYaw yaw_source(void) const;
 
     // selected and preferred sensor instances. We separate selected
     // from preferred so that calcGpsGoodToAlign() can ensure the

@@ -546,6 +546,18 @@ void NavEKF3_core::readGpsData()
 {
     // check for new GPS data
     const auto &gps = dal.gps();
+    const bool lane_uses_gps_data = uses_any_gps_source();
+
+    if (!lane_uses_gps_data) {
+        gpsCheckStatus.bad_fix = false;
+        gpsNoiseScaler = 1.0f;
+        gpsGoodToAlign = false;
+        gpsAccuracyGood = false;
+        gpsAccuracyGoodForAltitude = false;
+        gpsIsInUse = false;
+        useGpsVertVel = false;
+        return;
+    }
 
     // limit update rate to avoid overflowing the FIFO buffer
     if (gps.last_message_time_ms(selected_gps) - lastTimeGpsReceived_ms <= frontend->sensorIntervalMin_ms) {
@@ -632,7 +644,7 @@ void NavEKF3_core::readGpsData()
     }
 
     // Check if GPS can output vertical velocity, vertical velocity use is permitted and set GPS fusion mode accordingly
-    if (gpsDataNew.have_vz && frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS)) {
+    if (gpsDataNew.have_vz && uses_velz_source(AP_NavEKF_Source::SourceZ::GPS)) {
         useGpsVertVel = true;
     } else {
         useGpsVertVel = false;
@@ -668,14 +680,17 @@ void NavEKF3_core::readGpsData()
     // Read the GPS location in WGS-84 lat,long,height coordinates
     const Location &gpsloc = gps.location(selected_gps);
 
-    // Set the EKF origin and magnetic field declination if not previously set and GPS checks have passed
-    if (gpsGoodToAlign && !validOrigin) {
+    // Set the lane-local EKF origin from GPS when this lane uses GPS for
+    // horizontal position and GPS checks have passed. Other lanes get their
+    // origin only from an explicit set-origin request.
+    if (uses_posxy_source(AP_NavEKF_Source::SourceXY::GPS) &&
+        gpsGoodToAlign &&
+        !validOrigin) {
         Location gpsloc_fieldelevation = gpsloc; 
         // if flying, correct for height change from takeoff so that the origin is at field elevation
         if (inFlight) {
             gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
         }
-
         if (!setOrigin(gpsloc_fieldelevation)) {
             // set an error as an attempt was made to set the origin more than once
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
@@ -719,6 +734,10 @@ void NavEKF3_core::readGpsData()
 // check for new valid GPS yaw data
 void NavEKF3_core::readGpsYawData()
 {
+    if (!uses_gps_yaw_source()) {
+        return;
+    }
+
     const auto &gps = dal.gps();
 
     // if the GPS has yaw data then fuse it as an Euler yaw angle
@@ -798,7 +817,6 @@ void NavEKF3_core::calcFiltBaroOffset()
 void NavEKF3_core::correctEkfOriginHeight()
 {
     // Estimate the WGS-84 height of the EKF's origin using a Bayes filter
-
     // calculate the variance of our a-priori estimate of the ekf origin height
     ftype deltaTime = constrain_ftype(0.001f * (imuDataDelayed.time_ms - lastOriginHgtTime_ms), 0.0, 1.0);
     if (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
@@ -1068,6 +1086,7 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
         return;
     } else {
         extNavMeasTime_ms = timeStamp_ms;
+        lastExtNavPosReceived_ms = imuSampleTime_ms;
     }
 
     ext_nav_elements extNavDataNew {};
@@ -1086,8 +1105,9 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
     timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter update rate
     timeStamp_ms -= localFilterTimeStep_ms/2;
-    // Prevent time delay exceeding age of oldest IMU data in the buffer
-    timeStamp_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
+    // Prevent the time stamp falling outside the oldest and newest IMU data in the buffer.
+    // A future sample is treated as current and remains buffered until the fusion horizon catches up.
+    timeStamp_ms = MIN(MAX(timeStamp_ms, imuDataDelayed.time_ms), imuSampleTime_ms);
     extNavDataNew.time_ms = timeStamp_ms;
 
     // store position data to buffer
@@ -1126,8 +1146,9 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
     timeStamp_ms = timeStamp_ms - delay_ms;
     // Correct for the average intersampling delay due to the filter updaterate
     timeStamp_ms -= localFilterTimeStep_ms/2;
-    // Prevent time delay exceeding age of oldest IMU data in the buffer
-    timeStamp_ms = MAX(timeStamp_ms,imuDataDelayed.time_ms);
+    // Prevent the time stamp falling outside the oldest and newest IMU data in the buffer.
+    // A future sample is treated as current and remains buffered until the fusion horizon catches up.
+    timeStamp_ms = MIN(MAX(timeStamp_ms, imuDataDelayed.time_ms), imuSampleTime_ms);
 
     ext_nav_vel_elements extNavVelNew;
     extNavVelNew.time_ms = timeStamp_ms;

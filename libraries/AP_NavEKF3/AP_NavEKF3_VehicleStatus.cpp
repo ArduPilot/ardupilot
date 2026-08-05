@@ -353,10 +353,10 @@ void NavEKF3_core::detectFlight()
         // trigger on ground speed
         const ftype gndSpdThresholdSq = sq(5.0f);
 #if EK3_FEATURE_EXTERNAL_NAV
-        if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV) && extNavVelToFuse) {
+        if (uses_velxy_source(AP_NavEKF_Source::SourceXY::EXTNAV) && extNavVelToFuse) {
             gndSpdSq = sq(extNavVelDelayed.vel.x) + sq(extNavVelDelayed.vel.y);
             gndSpdErrSq = sq(constrain_ftype(extNavVelDelayed.err, 0.05f, 5.0f));
-        } else if ((frontend->sources.getPosXYSource() == AP_NavEKF_Source::SourceXY::EXTNAV) &&
+        } else if (uses_posxy_source(AP_NavEKF_Source::SourceXY::EXTNAV) &&
                    extNavDataToFuse &&
                    PV_AidingMode == AID_ABSOLUTE) {
             gndSpdSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);

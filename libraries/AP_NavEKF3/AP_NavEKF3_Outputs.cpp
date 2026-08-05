@@ -5,6 +5,21 @@
 #include <AP_DAL/AP_DAL.h>
 #include <GCS_MAVLink/GCS.h>
 
+static bool posxy_source_has_absolute_measurement(const AP_NavEKF_Source::SourceXY source)
+{
+    switch (source) {
+    case AP_NavEKF_Source::SourceXY::GPS:
+    case AP_NavEKF_Source::SourceXY::BEACON:
+    case AP_NavEKF_Source::SourceXY::EXTNAV:
+        return true;
+    case AP_NavEKF_Source::SourceXY::NONE:
+    case AP_NavEKF_Source::SourceXY::OPTFLOW:
+    case AP_NavEKF_Source::SourceXY::WHEEL_ENCODER:
+        return false;
+    }
+    return false;
+}
+
 // Check basic filter health metrics and return a consolidated health status
 bool NavEKF3_core::healthy(void) const
 {
@@ -39,17 +54,26 @@ bool NavEKF3_core::healthy(void) const
 */
 bool NavEKF3_core::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
-    if (requires_position) {
+    if (requires_position && onGround && PV_AidingMode == AID_ABSOLUTE) {
         // additional checks when position is required, used by pre-arm checks
-        const float max_vel_innovation = 2.0;
-        const float hvel_innovation = sqrtf(sq(innovVelPos[0])+sq(innovVelPos[1]));
-        if (onGround && PV_AidingMode == AID_ABSOLUTE &&
-            frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS) &&
-            hvel_innovation > max_vel_innovation) {
-            // more than 2 m/s horizontal velocity innovation on the ground
+        if (posxy_source_has_absolute_measurement(posxy_source()) &&
+            !has_acceptable_posxy_variance()) {
+            const float pos_variance = get_pos_variance_NE();
             dal.snprintf(failure_msg, failure_msg_len,
-                         "EKF3[%u] vel error %.1f", unsigned(core_index)+1, hvel_innovation);
+                         "EKF3[%u] pos variance %.1f",
+                         unsigned(core_index)+1, (double)pos_variance);
             return false;
+        }
+
+        if (uses_velxy_source(AP_NavEKF_Source::SourceXY::GPS)) {
+            const float MAX_VEL_INNOVATION = 2.0;
+            const float hvel_innovation = sqrtf(sq(innovVelPos[0])+sq(innovVelPos[1]));
+            if (hvel_innovation > MAX_VEL_INNOVATION) {
+                // more than 2 m/s horizontal velocity innovation on the ground
+                dal.snprintf(failure_msg, failure_msg_len,
+                             "EKF3[%u] vel error %.1f", unsigned(core_index)+1, hvel_innovation);
+                return false;
+            }
         }
     }
 
@@ -91,7 +115,7 @@ float NavEKF3_core::errorScore() const
 bool NavEKF3_core::getHeightControlLimit(float &height) const
 {
     // only ask for limiting if we are doing optical flow navigation
-    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
+    if (uses_velxy_source(AP_NavEKF_Source::SourceXY::OPTFLOW) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
         // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
 #if AP_RANGEFINDER_ENABLED
         const auto *_rng = dal.rangefinder();
@@ -104,7 +128,7 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
         return false;
 #endif
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
-        if (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+        if (!uses_posz_source(AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
             height -= terrainState;
         }
         return true;
@@ -251,36 +275,20 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
     if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
-        // correct for the IMU offset (EKF calculations are at the IMU)
-        posNE = (outputDataNew.position.xy() + posOffsetNED.xy() + public_origin.get_distance_NE_ftype(EKF_origin)).tofloat();
+        // Correct for the IMU offset and restore a stable controller-facing
+        // frame across GPS lane-local origin moves.
+        posNE = (outputDataNew.position.xy() + posOffsetNED.xy() + outputPosFrameOffsetNE).tofloat();
         return true;
 
     } else {
-        // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
-        if(validOrigin) {
-            auto &gps = dal.gps();
-            if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
-                // If the origin has been set and we have GPS, then return the GPS position relative to the origin
-                const Location &gpsloc = gps.location(selected_gps);
-                posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
-                return false;
-#if EK3_FEATURE_BEACON_FUSION
-            } else if (rngBcn.alignmentStarted) {
-                // If we are attempting alignment using range beacon data, then report the position
-                posNE.x = rngBcn.receiverPos.x;
-                posNE.y = rngBcn.receiverPos.y;
-                return false;
-#endif
-            } else {
-                // If no GPS fix is available, all we can do is provide the last known position
-                posNE = outputDataNew.position.xy().tofloat();
-                return false;
-            }
-        } else {
-            // If the origin has not been set, then we have no means of providing a relative position
+        // In constant position mode, report the drifting EKF state in the same
+        // controller-facing frame used while aided.
+        if (!validOrigin) {
             posNE.zero();
             return false;
         }
+        posNE = (outputDataNew.position.xy() + outputPosFrameOffsetNE).tofloat();
+        return false;
     }
     return false;
 }
@@ -296,19 +304,11 @@ bool NavEKF3_core::getPosD_local(float &posD) const
 
 }
 
-// Write the last calculated D position of the body frame origin relative to the public origin
+// Write the last calculated D position of the body frame origin relative to the lane-local origin
 // Return true if the estimate is valid
 bool NavEKF3_core::getPosD(float &posD) const
 {
-    bool ret = getPosD_local(posD);
-
-    // adjust posD for difference between our origin and the public_origin
-    Location local_origin;
-    if (getOriginLLH(local_origin)) {
-        posD += (public_origin.alt - local_origin.alt) * 0.01;
-    }
-
-    return ret;
+    return getPosD_local(posD);
 }
 
 // return the estimated height of body frame origin above ground level
@@ -319,16 +319,16 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
     return !hgtTimeout && gndOffsetValid && healthy();
 }
 
-// Return the last calculated latitude, longitude and height in WGS-84
-// If a calculated location isn't available, return a raw GPS measurement
-// The status will return true if a calculation or raw measurement is available
+// Return the last calculated latitude, longitude and height in WGS-84.
+// The status will return true only if a lane-local calculated location is available.
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF3_core::getLLH(Location &loc) const
 {
     Location origin;
     if (getOriginLLH(origin)) {
         float posD;
-        if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
+        const bool have_vert = getPosD_local(posD);
+        if (have_vert && PV_AidingMode != AID_NONE) {
             // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
             loc.set_alt_cm(origin.alt - posD*100.0, Location::AltFrame::ABSOLUTE);
             if (filterStatus.flags.horiz_pos_abs || filterStatus.flags.horiz_pos_rel) {
@@ -339,45 +339,48 @@ bool NavEKF3_core::getLLH(Location &loc) const
                            outputDataNew.position.y + posOffsetNED.y);
                 return true;
             } else {
-                // We have been be doing inertial dead reckoning for too long so use raw GPS if available
-                if (getGPSLLH(loc)) {
-                    return true;
-                } else {
-                    // Return the EKF estimate but mark it as invalid
-                    loc.lat = EKF_origin.lat;
-                    loc.lng = EKF_origin.lng;
-                    loc.offset(outputDataNew.position.x + posOffsetNED.x,
-                               outputDataNew.position.y + posOffsetNED.y);
-                    return false;
-                }
-            }
-        } else {
-            // Return a raw GPS reading if available and the last recorded positon if not
-            if (getGPSLLH(loc)) {
-                return true;
-            } else {
+                // Return the lane-local EKF estimate but mark it as invalid.
                 loc.lat = EKF_origin.lat;
                 loc.lng = EKF_origin.lng;
-                loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
-                           lastKnownPositionNE.y + posOffsetNED.y);
-                loc.alt = EKF_origin.alt - lastKnownPositionD*100.0;
+                loc.offset(outputDataNew.position.x + posOffsetNED.x,
+                           outputDataNew.position.y + posOffsetNED.y);
                 return false;
             }
+        } else {
+            // Report the lane-local drifting state rather than freezing at the last known point.
+            loc.lat = EKF_origin.lat;
+            loc.lng = EKF_origin.lng;
+            loc.offset(outputDataNew.position.x + posOffsetNED.x,
+                       outputDataNew.position.y + posOffsetNED.y);
+            if (have_vert) {
+                loc.set_alt_cm(origin.alt - posD*100.0, Location::AltFrame::ABSOLUTE);
+            } else {
+                loc.alt = EKF_origin.alt - lastKnownPositionD*100.0;
+            }
+            // Contract deviation from upstream, deliberate: return true while
+            // dead-reckoning in AID_NONE (IMU-only) mode, where upstream returns
+            // false. This mode is the last-resort path entered when all aiding
+            // sources are lost, and the lane was aligned to the source lane's
+            // position before the switch, so the drift starts from a good fix.
+            // Returning false would make AP_AHRS::_get_location() silently swap
+            // consumers to the DCM fallback - but DCM's position is GPS-driven
+            // and GPS is unavailable in exactly this scenario, so the swap would
+            // trade a continuous best-available estimate for an equally invalid
+            // source plus a mid-flight discontinuity (which on Plane feeds
+            // L1/TECS navigation directly).
+            //
+            // Accepted consequence: consumers that trust this bool as "position
+            // is trustworthy" (fence breach checks, geotagging, terrain lookups,
+            // GCS position display) treat an unboundedly drifting estimate as
+            // valid. Safety gates are unaffected: position_ok() and the EKF
+            // failsafe read the nav_filter_status flags, which correctly report
+            // dead-reckoning here (horiz_pos_abs=0, horiz_pos_rel=0,
+            // const_pos_mode=1).
+            return have_vert && PV_AidingMode == AID_NONE;
         }
     } else {
-        // The EKF is not navigating so use raw GPS if available
-        return getGPSLLH(loc);
+        return false;
     }
-}
-
-bool NavEKF3_core::getGPSLLH(Location &loc) const
-{
-    const auto &gps = dal.gps();
-    if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
-        loc = gps.location(selected_gps);
-        return true;
-    }
-    return false;
 }
 
 // return the horizontal speed limit in m/s set by optical flow sensor limits
@@ -406,7 +409,15 @@ void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
 bool NavEKF3_core::getOriginLLH(Location &loc) const
 {
     if (validOrigin) {
-        loc = public_origin;
+        loc = EKF_origin;
+        // getPosNE() reports positions in the frame from before any
+        // moveEKFOrigin() moves (outputPosFrameOffsetNE accumulates them), so
+        // un-move the reported origin by the same amount. Without this,
+        // Location->NE conversions done against the reported origin (waypoints,
+        // guided targets, RTL) are displaced from getPosNE() positions by the
+        // accumulated origin movement. Invariant: getOriginLLH() + getPosNE()
+        // == getLLH() == true position.
+        loc.offset(-outputPosFrameOffsetNE.x, -outputPosFrameOffsetNE.y);
         // report internally corrected reference height if enabled
         if ((frontend->_originHgtMode & (1<<2)) == 0) {
             loc.alt = (int32_t)(100.0f * (float)ekfGpsRefHgt);

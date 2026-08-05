@@ -3620,6 +3620,7 @@ function ahrs:get_vel_innovations_and_variances_for_source(source) end
 ---| '0' # PRIMARY
 ---| '1' # SECONDARY
 ---| '2' # TERTIARY
+---@return boolean
 function ahrs:set_posvelyaw_source_set(source_set_idx) end
 
 -- desc

@@ -20,11 +20,10 @@
 // Control reset of yaw and magnetic field states
 void NavEKF3_core::controlMagYawReset()
 {
-
     // Vehicles that can use a zero sideslip assumption (Planes) are a special case
     // They can use the GPS velocity to recover from bad initial compass data
     // This allows recovery for heading alignment errors due to compass faults
-    if (assume_zero_sideslip() && (!finalInflightYawInit || !yawAlignComplete) && inFlight) {
+    if (uses_any_gps_source() && assume_zero_sideslip() && (!finalInflightYawInit || !yawAlignComplete) && inFlight) {
         gpsYawResetRequest = true;
         return;
     } else {
@@ -252,6 +251,11 @@ void NavEKF3_core::SelectMagFusion()
          yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS &&
          yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK &&
          yaw_source_last != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
+
+        if (!uses_any_gps_source()) {
+            yaw_source_reset = false;
+            return;
+        }
 
         if ((!yawAlignComplete || yaw_source_reset) && ((yaw_source_last != AP_NavEKF_Source::SourceYaw::GSF) || (EKFGSF_yaw_valid_count >= GSF_YAW_VALID_HISTORY_THRESHOLD))) {
             realignYawGPS(false);

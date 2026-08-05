@@ -704,7 +704,14 @@ bool AP_Arming::gps_checks(bool report)
         }
 
         // check AHRS and GPS are within 10m of each other
-        if (gps.num_sensors() > 0) {
+        // when GPS is the active horizontal position source.
+        // Note: configured_to_use_gps_for_posxy() resolves through the PRIMARY lane's
+        // source set, so with lane separation this check is skipped entirely whenever
+        // the ext-nav lane is primary at arm time - a bad ext-nav position is then
+        // never cross-checked against GPS before arming. Known and accepted for now:
+        // extending the check to "any configured lane uses GPS" would reintroduce a
+        // GPS dependency on ext-nav-primary arming that we don't want.
+        if (AP::ahrs().configured_to_use_gps_for_posxy() && gps.num_sensors() > 0) {
             const Location gps_loc = gps.location();
             Location ahrs_loc;
             if (AP::ahrs().get_location(ahrs_loc)) {
