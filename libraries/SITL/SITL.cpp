@@ -40,6 +40,7 @@
 #include "SIM_StratoBlimp.h"
 #include "SIM_Glider.h"
 #include "SIM_FlightAxis.h"
+#include "SIM_Frame.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -1617,6 +1618,10 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     // @Path: ./SIM_AIS.cpp
     AP_SUBGROUPPTR(ais_ptr, "AIS_", 7, SIM::ModelParm, AIS),
 #endif  // AP_SIM_AIS_ENABLED
+
+    // @Group: FRM_
+    // @Path: ./SIM_Frame.cpp
+    AP_SUBGROUPPTR(simframe_ptr, "FRM_", 8, SIM::ModelParm, Frame),
 
     AP_GROUPEND
 };
