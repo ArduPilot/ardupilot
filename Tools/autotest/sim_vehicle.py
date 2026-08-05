@@ -293,6 +293,7 @@ def kill_tasks():
             'runsim.py',
             'AntennaTracker.elf',
             'scrimmage',
+            'last_letter_ardupilot',
             'ardurover',
             'arduplane',
             'arducopter'
