@@ -107,14 +107,14 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
 
     // @Param: W_DIST_Z
     // @DisplayName: Distance Warn Z
-    // @Description: Closest allowed projected distance before BEHAVIOUR_W is undertaken
+    // @Description: Closest allowed projected distance before W_ACTION is undertaken
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("W_DIST_Z",    10, AP_Avoidance, _warn_distance_d_m, AP_AVOIDANCE_WARN_DISTANCE_Z_DEFAULT),
 
     // @Param: F_DIST_Z
     // @DisplayName: Distance Fail Z
-    // @Description: Closest allowed projected distance before BEHAVIOUR_F is undertaken
+    // @Description: Closest allowed projected distance before F_ACTION is undertaken
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("F_DIST_Z",    11, AP_Avoidance, _fail_distance_d_m, AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT),
@@ -125,6 +125,52 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("F_ALT_MIN",    12, AP_Avoidance, _fail_altitude_min_m, 0),
+
+#if AP_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)   // DAA standoff params are Plane-only (consumed only by AP_OAScripting); keep them off Copter/Rover/etc.
+    // @Param: WCLR_XY
+    // @DisplayName: Well Clear horizontal
+    // @Description: The ASTM/F3442M-23 Well Clear horizontal distance for crude aircraft is 2000'"
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("WCLR_XY",    13, AP_Avoidance, _well_clear_xy, 609.6),
+
+    // @Param: WCLR_Z
+    // @DisplayName: Well Clear vertical
+    // @Description: The ASTM/F3442M-23 Well Clear vertical distance for crude aircraft is 250'"
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("WCLR_Z",    14, AP_Avoidance, _well_clear_z, 76.2),
+
+    // @Param: NMAC_XY
+    // @DisplayName: Near Miss Horizontal
+    // @Description: Zero for N/A. The FAA Near Miss horizontal distance for crude aircraft is 500'. CAR does not define NMAC so use the FAA Number."
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("NMAC_XY",    15, AP_Avoidance, _near_miss_xy, 152.4),
+
+    // @Param: NMAC_Z
+    // @DisplayName: Near Miss Vertical
+    // @Description: Zero for N/A. The FAA Well Clear horizontal distance for crude aircraft is 500'. CAR does not define NMAC so use the TCAS MOPS RTCA DO-396 number."
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("NMAC_Z",    16, AP_Avoidance, _near_miss_z, 30.48),
+
+    // @Param: UAV_XY
+    // @DisplayName: UAV horizontal avoidance radius
+    // @Description: Horizontal keep-out radius used for ADS-B drones/UAVs (emitter type UAV). This is the drone equivalent of the crude-aircraft Well Clear AVD_WCLR_XY, and is normally smaller since drone-to-drone separation needs are lower.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("UAV_XY",    17, AP_Avoidance, _uav_xy, 150),
+
+    // @Param: UAV_Z
+    // @DisplayName: UAV vertical avoidance gate
+    // @Description: Vertical separation gate used for ADS-B drones/UAVs (emitter type UAV). Obstacles more than this far above or below are ignored. This is the drone equivalent of the crude-aircraft Well Clear AVD_WCLR_Z, and is normally small because drones are vertically thin.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("UAV_Z",    18, AP_Avoidance, _uav_z, 25),
+
+
+#endif
 
     AP_GROUPEND
 };
@@ -198,7 +244,8 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const MAV_COLLISION_SRC src,
                                 const uint32_t src_id,
                                 const Location &loc,
-                                const Vector3f &vel_ned_ms)
+                                const Vector3f &vel_ned_ms,
+                                const uint8_t  emitter_type)
 {
     if (! check_startup()) {
         return;
@@ -238,6 +285,7 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
         _obstacles[index].src_id = src_id;
     }
 
+    _obstacles[index].emitter_type = emitter_type;
     _obstacles[index]._location = loc;
     _obstacles[index]._velocity_ned_ms = vel_ned_ms;
     _obstacles[index].timestamp_ms = obstacle_timestamp_ms;
@@ -249,14 +297,15 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const Location &loc,
                                 const float cog,
                                 const float speed_ne_ms,
-                                const float speed_d_ms)
+                                const float speed_d_ms,
+                                const uint8_t emitter_type)
 {
     Vector3f vel_ned_ms;
     vel_ned_ms[0] = speed_ne_ms * cosf(radians(cog));
     vel_ned_ms[1] = speed_ne_ms * sinf(radians(cog));
     vel_ned_ms[2] = speed_d_ms;
     // debug("cog=%f speed_ne_ms=%f veln=%f vele=%f", cog, speed_ne_ms, vel_ned_ms[0], vel[1]);
-    return add_obstacle(obstacle_timestamp_ms, src, src_id, loc, vel_ned_ms);
+    return add_obstacle(obstacle_timestamp_ms, src, src_id, loc, vel_ned_ms, emitter_type);
 }
 
 uint32_t AP_Avoidance::src_id_for_adsb_vehicle(const AP_ADSB::adsb_vehicle_t &vehicle) const
@@ -275,9 +324,10 @@ void AP_Avoidance::get_adsb_samples()
                    MAV_COLLISION_SRC_ADSB,
                    src_id,
                    loc,
-                   vehicle.info.heading * 0.01,
+                   vehicle.info.heading * 0.01,         // convert cm-up to m-down
                    vehicle.info.hor_velocity * 0.01,
-                   -vehicle.info.ver_velocity * 0.01); // convert cm-up to m-down
+                   -vehicle.info.ver_velocity * 0.01,
+                   vehicle.info.emitter_type); 
     }
 }
 
@@ -613,8 +663,288 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
                  MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT,
                  msg.sysid,
                  loc,
-                 vel_ned_ms);
+                 vel_ned_ms,
+                 static_cast<uint8_t>(ADSB_EMITTER_TYPE_UAV));
 }
+
+#if AP_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)   // DAA methods are consumed only by the Plane-gated AP_OAScripting; keep them off other vehicles
+// get the avoidance radius in meters of a given obstacle type
+// the definition of "Well Clear" (2000ft = 609.6m) is from ASTM F3442M-23 
+// TODO should be parameterized but it would be a LOT of parameters
+float AP_Avoidance::get_obstacle_radius_m(uint8_t emitter_type) const
+{
+    switch(emitter_type)
+    { 
+    case static_cast<uint8_t>(ADSB_EMITTER_NO_INFO):
+    case static_cast<uint8_t>(ADSB_EMITTER_LIGHT):
+    case static_cast<uint8_t>(ADSB_EMITTER_SMALL):
+    case static_cast<uint8_t>(ADSB_EMITTER_LARGE):
+    case static_cast<uint8_t>(ADSB_EMITTER_HIGH_VORTEX_LARGE):
+    case static_cast<uint8_t>(ADSB_EMITTER_HEAVY):
+    case static_cast<uint8_t>(ADSB_EMITTER_HIGHLY_MANUV):
+        return _well_clear_xy;                           // well clear = 2000ft
+    case static_cast<uint8_t>(ADSB_EMITTER_ROTOCRAFT):
+        return _well_clear_xy;                                    // helicopters also 2000ft
+    // 8 Unassigned
+    case static_cast<uint8_t>(ADSB_EMITTER_GLIDER):
+    case static_cast<uint8_t>(ADSB_EMITTER_LIGHTER_AIR):
+    case static_cast<uint8_t>(ADSB_EMITTER_PARACHUTE):
+    case static_cast<uint8_t>(ADSB_EMITTER_ULTRA_LIGHT):
+        return _well_clear_xy;                                    // also use well clear for these
+    // 13 Unassigned
+    case static_cast<uint8_t>(ADSB_EMITTER_UAV):         // drone/UAV horizontal radius (AVD_UAV_XY)
+        return _uav_xy;
+    case static_cast<uint8_t>(ADSB_EMITTER_SPACE):
+        return 9600;                                     // lets give rockets a wide berth, 5nm
+
+    // Surface types
+    case static_cast<uint8_t>(ADSB_EMITTER_EMERGENCY_SURFACE):
+    case static_cast<uint8_t>(ADSB_EMITTER_SERVICE_SURFACE):
+        return 150;
+    // Obstacle types
+    case static_cast<uint8_t>(ADSB_EMITTER_POINT_OBSTACLE):
+    case static_cast<uint8_t>(ADSB_EMITTER_CLUSTER_OBSTACLE):
+    case static_cast<uint8_t>(ADSB_EMITTER_LINE_OBSTACLE):
+        return 50.0;
+
+        // Special cases for debug/test emitters used with MAVProxy/genobstacles
+    case 99:        // "Unknown"
+        return 25;
+    case 100:       // generic "GA" = test airplane 2000ft
+        return _well_clear_xy;
+    case 101:       // generic "drone" = test drone
+        return 50;
+    case 102:       // weather (cloud on the MavProxy map)
+        return 173;
+    case 103:       // migratory bird (goose)!
+        return 100;
+    case 104:       // predatory bird (eagle)
+        return 200; 
+    default: 
+        return 100;
+    }
+}
+
+// get the avoidance height in meters of a given obstacle type
+// the definition of "Well Clear" (2000ft = 609.6m) is from ASTM F3442M-23 
+// TODO should be parameterized but it would be a LOT of parameters
+float AP_Avoidance::get_obstacle_height_m(uint8_t emitter_type) const
+{
+    switch(emitter_type)
+    { 
+    case static_cast<uint8_t>(ADSB_EMITTER_NO_INFO):
+    case static_cast<uint8_t>(ADSB_EMITTER_LIGHT):
+    case static_cast<uint8_t>(ADSB_EMITTER_SMALL):
+    case static_cast<uint8_t>(ADSB_EMITTER_LARGE):
+    case static_cast<uint8_t>(ADSB_EMITTER_HIGH_VORTEX_LARGE):
+    case static_cast<uint8_t>(ADSB_EMITTER_HEAVY):
+    case static_cast<uint8_t>(ADSB_EMITTER_HIGHLY_MANUV):
+        return _well_clear_z;                           // well clear = 2000ft
+    case static_cast<uint8_t>(ADSB_EMITTER_ROTOCRAFT):
+        return _well_clear_z;                                    // helicopters also 2000ft
+    // 8 Unassigned
+    case static_cast<uint8_t>(ADSB_EMITTER_GLIDER):
+    case static_cast<uint8_t>(ADSB_EMITTER_LIGHTER_AIR):
+    case static_cast<uint8_t>(ADSB_EMITTER_PARACHUTE):
+    case static_cast<uint8_t>(ADSB_EMITTER_ULTRA_LIGHT):
+        return _well_clear_z;                                    // also use well clear for these
+    // 13 Unassigned
+    case static_cast<uint8_t>(ADSB_EMITTER_UAV):         // drone/UAV vertical gate (AVD_UAV_Z)
+        return _uav_z;
+    case static_cast<uint8_t>(ADSB_EMITTER_SPACE):
+        return 9600;                                     // lets give rockets a wide berth, 5nm
+
+    // Surface types - lets make this unlimited
+    case static_cast<uint8_t>(ADSB_EMITTER_EMERGENCY_SURFACE):
+    case static_cast<uint8_t>(ADSB_EMITTER_SERVICE_SURFACE):
+        return FLT_MAX;
+    // Obstacle types - also unlimited
+    case static_cast<uint8_t>(ADSB_EMITTER_POINT_OBSTACLE):
+    case static_cast<uint8_t>(ADSB_EMITTER_CLUSTER_OBSTACLE):
+    case static_cast<uint8_t>(ADSB_EMITTER_LINE_OBSTACLE):
+        return FLT_MAX;
+
+    // Special cases for debug/test emitters used with MAVProxy/genobstacles
+    case 100:       // generic "GA" = test airplane 250ft according to ASTM F3442M-23
+        return _well_clear_z;
+    // for most of these it's the same as the radius, except for aircraft and weather
+    case 99:        // "Unknown"
+    case 101:       // generic "drone" = test drone
+    case 103:       // migratory bird (goose)!
+    case 104:       // predatory bird (eagle)
+        return get_obstacle_radius_m(emitter_type);
+    case 102:       // weather (cloud on the MavProxy map) - unlimited
+        return FLT_MAX;
+    default:        // Default to infinite height if we don't have a specific height
+        return FLT_MAX;
+    }
+}
+
+bool AP_Avoidance::is_adsb_uav(uint8_t emitter_type)
+{
+    switch (static_cast<ADSB_EMITTER>(emitter_type) )
+    {
+    case ADSB_EMITTER_UAV:              // Drones
+        return true;
+    default:
+        return false;
+    }
+    return false;
+}
+
+bool AP_Avoidance::is_adsb_aircraft(uint8_t emitter_type)
+{
+    switch (static_cast<ADSB_EMITTER>(emitter_type) )
+    {
+    case ADSB_EMITTER_LIGHT:
+    case ADSB_EMITTER_SMALL:
+    case ADSB_EMITTER_LARGE:
+    case ADSB_EMITTER_HIGH_VORTEX_LARGE:
+    case ADSB_EMITTER_HEAVY:
+    case ADSB_EMITTER_HIGHLY_MANUV:
+    case ADSB_EMITTER_ROTOCRAFT:        // Helicopter
+    // 8 Unassigned
+    case ADSB_EMITTER_GLIDER:
+    case ADSB_EMITTER_LIGHTER_AIR:
+    case ADSB_EMITTER_ULTRA_LIGHT:
+    // 13 Unassigned
+    case ADSB_EMITTER_SPACE:            // Call this aircraft for now
+    // 16 Unassigned
+        return true;
+
+    case ADSB_EMITTER_NO_INFO:
+    case ADSB_EMITTER_PARACHUTE:
+    case ADSB_EMITTER_UAV:              // Drones
+
+    // Surface types
+    case ADSB_EMITTER_EMERGENCY_SURFACE:
+    case ADSB_EMITTER_SERVICE_SURFACE:
+
+    // Stationary Obstacle types
+    case ADSB_EMITTER_POINT_OBSTACLE:
+    case ADSB_EMITTER_CLUSTER_OBSTACLE:
+    case ADSB_EMITTER_LINE_OBSTACLE:
+        return false;
+
+    default:
+        return false;
+    }
+
+    return false;
+}
+
+// For AP_AOScripting to check for obstacles and return the closest one
+// as it is looping through all obstacles, also finds the closest aircraft it finds as well
+// we do this because crude aircraft need special treatment when avoiding obstacles
+float AP_Avoidance::distance_to_obstacle(const Vector3f &start_NED_m, const Vector3f &end_NED_m, 
+                                            // return values
+                                            Obstacle &avoid_obstacle,
+                                            Obstacle &closest_aircraft
+                                        ) const
+{
+    float distance_new_m = FLT_MAX;
+    float aircraft_distance_m = FLT_MAX;
+
+    for(uint8_t i = 0; i < _obstacle_count; i++) {
+        const Obstacle obstacle         = _obstacles[i];
+        const Location obstacle_loc     = _obstacles[i]._location;
+        Vector3f obstacle_NED_m;
+
+        Vector2f start_NE_m(start_NED_m.x, start_NED_m.y);
+        Vector2f end_NE_m(end_NED_m.x, end_NED_m.y);
+        Vector2f obstacle_NE_m;
+        if (obstacle_loc.get_vector_xy_from_origin_NE_m(obstacle_NE_m)
+                && obstacle_loc.get_vector_from_origin_NEU_m(obstacle_NED_m)) {
+            
+            // until we get the new NED functions
+            obstacle_NED_m.z = -obstacle_NED_m.z;
+
+            // TIM: This is fairly simplistic for now, needs to deal with altitude
+            // as per the Lua version in obstacle_avoidance_margin() in Tridge's script
+
+            // float m = Vector3f::closest_distance_between_line_and_point(start_NED_cm, end_NED_cm, obstacle_NED_cm) * 0.01f;
+
+            // this needs to account for the moving obstacle as done in closest_approach_ne_m
+
+            // effective distance is distance between line segment and obstacle minus obstacle's radius
+            float distance_m = Vector2f::closest_distance_between_line_and_point(start_NE_m, end_NE_m, obstacle_NE_m);
+            distance_m = distance_m - get_obstacle_radius_m(obstacle.emitter_type);
+
+            // height difference is the minimum difference in the height between the line and the obstacle
+            float height_difference_m = MIN(fabsf(start_NED_m.z - obstacle_NED_m.z), fabsf(end_NED_m.z - obstacle_NED_m.z));
+
+            if (distance_m < distance_new_m && height_difference_m < get_obstacle_height_m(obstacle.emitter_type)) {
+                // we are within the horizontal distance - next check the vertical distance
+                distance_new_m  = distance_m;
+                avoid_obstacle  = obstacle;
+            }
+
+            const uint8_t emitter_type = obstacle.emitter_type;
+            if (is_adsb_aircraft(emitter_type) 
+                    && distance_m < aircraft_distance_m 
+                    && height_difference_m < get_obstacle_height_m(obstacle.emitter_type)) {
+                closest_aircraft = obstacle;
+            }
+        }
+    }
+
+//    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB distance %.0f", distance_new_m);
+
+    return distance_new_m;
+}
+
+// For AP_AOScripting to check for crude aircraft and return the closest one
+float AP_Avoidance::distance_to_aircraft(const Vector3f &vehicle_NED_m, const float lookahead_m, const float vertical_lookahead_m,
+                                            // return values
+                                            Obstacle &avoid_obstacle
+                                        ) const
+{
+    float distance_new_msq  = lookahead_m * lookahead_m;
+    //float distance_new_m    = lookahead_m;
+
+    for(uint8_t i = 0; i < _obstacle_count; i++) {
+        const Obstacle obstacle         = _obstacles[i];
+        // const uint32_t src_id           = _obstacles[i].src_id;
+        const Location obstacle_loc     = _obstacles[i]._location;
+        Vector3f obstacle_NED_m;
+       
+        Vector2f vehicle_NE_m(vehicle_NED_m.x, vehicle_NED_m.y);
+        Vector2f obstacle_NE_m;
+        // only obstacles with src_id > 256 and < 20000 are ADS-B aircraft. This is a bit dodgy and relies on MAV_SYSID being < 256 which will break in the future
+        //if (obstacle_loc.get_vector_xy_from_origin_NE_m(obstacle_NE_m) && src_id > 256 && src_id < 20000) {
+
+        // this needs to account for the moving obstacle as done in closest_approach_ne_m
+
+        if(is_adsb_aircraft(obstacle.emitter_type)  
+                && obstacle_loc.get_vector_xy_from_origin_NE_m(obstacle_NE_m)
+                && obstacle_loc.get_vector_from_origin_NEU_m(obstacle_NED_m)) {
+
+            // until we get the new NED functions
+            obstacle_NED_m.z = -obstacle_NED_m.z;
+
+            float distance_msq = (vehicle_NE_m - obstacle_NE_m).length_squared();
+
+            // height difference is the difference in the height between the vehicle and the obstacle
+            float height_difference_m = fabsf(vehicle_NED_m.z - obstacle_NED_m.z);
+
+            // this finds the nearest aircraft iff it is within the caller-supplied vertical
+            // gate (metres). The caller passes the full vertical separation (e.g. AVD_WCLR_Z +
+            // margin from the scripting layer), mirroring the full horizontal lookahead, so the
+            // gate policy lives with the caller rather than the per-emitter get_obstacle_height_m() table.
+            if (distance_msq < distance_new_msq && height_difference_m < vertical_lookahead_m) {
+                distance_new_msq    = distance_msq;
+                avoid_obstacle      = obstacle;
+            }
+        }
+    }
+
+//    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"aircraft distance %.0f", safe_sqrt(distance_new_msq));
+
+    // we need to do one square root here at the end. But by using squared above we avoid lots of them
+    return safe_sqrt(distance_new_msq);
+}
+#endif // AP_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+
 
 // get unit vector away from the nearest obstacle
 bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &vec_neu_unit) const
