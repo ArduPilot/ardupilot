@@ -4,7 +4,8 @@
 # RPI_UAVFC is a revision of the Laurel carrier with a completely different
 # pinout to the original: the IMU moves to GPIO32-35, the microSD to GPIO28-31,
 # the motor outputs to GPIO6-9, and the barometer to its own I2C bus on
-# GPIO24/25.  Pin assignments here follow the vendor GPIO assignment sheet.
+# GPIO24/25. Pin assignments here follow the R2 Rev C schematic, which is the
+# authority where it disagrees with the vendor GPIO assignment sheet.
 # Do not cross-reference the original Laurel hwdef for pin numbers; only the
 # clock, QMI and SMP configuration is shared.
 
@@ -143,8 +144,8 @@ PA17 PIOUART1_RX INPUT FLOATING
 # and DSHOT4 is GPIO6, so the ArduPilot channel numbers run the opposite way
 # to the GPIO numbers.  PWM 1-2 land on slice 4 and PWM 3-4 on slice 3, so
 # each rate group is still a single slice.
-# The sheet labels these DSHOT1-4, but bidirectional DShot is not yet
-# supported by the RP2350 port; they run as plain PWM for now.
+# The sheet labels these DSHOT1-4. The RP2350 PIO driver supports DShot600,
+# including bidirectional eRPM telemetry; plain PWM remains available.
 PA9 PWM4_B TIM4 PWM(1) GPIO(50)
 PA8 PWM4_A TIM4 PWM(2) GPIO(51)
 PA7 PWM3_B TIM3 PWM(3) GPIO(52)
@@ -274,10 +275,12 @@ define HAL_BATT_CURR_PIN 7
 # Measured 21.99 V against a 23.1 V bench supply with the v1 value of 10.52,
 # which puts the divider on the usual 11.1 ratio.
 define HAL_BATT_VOLT_SCALE 11.1
-# The current sense is on the ESC, not the board: R49 120R series into an 82.5k
-# pulldown, so the ADC sees the ESC output 1:1 and the scale is just 1000/(mV
-# per amp). 50 suits a 20 mV/A ESC. Set BATT_AMP_OFFSET to the idle voltage on
-# BATT_CURR_PIN as well; these sensors do not sit at 0 V with no load.
+# The current sense is on the ESC, not the board: R49 120R series, with 100nF
+# and 82.5k to ground, makes a driven input effectively 1:1. The nominal scale
+# of 50 suits a 20 mV/A ESC, but the tested vehicle's input does not correlate
+# with load and cannot be repaired with an offset. Treat current, consumed mAh,
+# resistance estimation and sag compensation as invalid until the ESC output
+# and wiring have been verified electrically.
 define HAL_BATT_CURR_SCALE 50
 define BOARD_RSSI_ANA_PIN 0
 
@@ -370,10 +373,11 @@ define CH_CFG_SMP_MODE TRUE
 # SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).
 define RP_CORE1_START TRUE
 # CPU clock: 225 MHz (900 MHz VCO / POSTDIV1=4 / POSTDIV2=1), a 1.5x overclock
-# of the 150 MHz spec.  A 1500 MHz VCO cannot divide to 225, so the VCO drops
-# to 900 MHz (FBDIV 75) and POSTDIV 4x1 gives 225 MHz.  The on-chip VREG is set
-# to 1.15 V (VSEL=0x0c) before the PLL switch in rp2350_vreg_init(); 1.15 V
-# supports ~312 MHz, leaving comfortable margin at 225 MHz.
+# of the RP2350 datasheet's 150 MHz clk_sys/clk_peri limit. A 1500 MHz VCO
+# cannot divide to 225, so the VCO drops to 900 MHz (FBDIV 75) and POSTDIV 4x1
+# gives 225 MHz. The on-chip VREG is set to 1.15 V (VSEL=0x0c) before the PLL
+# switch in rp2350_vreg_init(). Hardware flight tests cover this sample, but
+# the datasheet does not qualify 225 MHz across process, voltage and temperature.
 define RP_PLL_SYS_VCO_FREQ 900000000
 define RP_PLL_SYS_POSTDIV1 4
 define RP_PLL_SYS_POSTDIV2 1

@@ -31,7 +31,7 @@ clipping, and no XIP park visible in the timing.
 | GPS | Fix acquired; log62 7-9 sats, HDop 1.1, HAcc 0.69 m |
 | Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
-| Battery current | Broken - reads die temperature, not load; see below |
+| Battery current | Broken - temperature-dependent and does not track load; see below |
 | Motor outputs | 4x DShot600 via PIO; has also flown on PWM at 490 Hz |
 | DShot | Bidirectional DShot600 at 2 kHz, flown; eRPM scale verified |
 | DShot params | `SERVO_DSHOT_RATE` 1, `FSTRATE_DIV` 2, `SERVO_DSHOT_ESC` 0 - see below |
@@ -138,11 +138,12 @@ three places:
 - ESC channel order. The connector is wired descending: DSHOT1 is GPIO9 and
   DSHOT4 is GPIO6. The sheet lists them ascending.
 - Regulator enables. GPIO18 is the 9V rail and GPIO19 the 5V rail, the
-  opposite of the sheet. Each drives an MP4334 EN pin with a pull-down. These
-  were recorded here as active HIGH, against the sheet's "ENn" naming; flight
-  behaviour contradicts that - software holds both pins low from boot and the
-  9V rail is on. Treat them as active LOW until someone meters the EN pin.
-  See the RP2350 initial-level section below.
+  opposite of the sheet. Each directly drives an MP4334 EN pin with a 27k
+  pull-down, so the schematic makes both active HIGH. An early software test
+  appeared to leave the 9V rail on while commanding the GPIO low, but neither
+  the GPIO nor the regulator EN pin was metered. Treat runtime control as
+  unverified rather than inferring the opposite polarity. See the RP2350
+  initial-level section below.
 - Sensor part numbers. The IMU is an ICM-56686 and the baro a DPS368, not the
   ICM42688P and DPS310 the sheet names.
 
@@ -160,10 +161,12 @@ validated on hardware. See `../Laurel/BASELINE.md` for how it was derived and
 `../Laurel/xip-cache-and-pgo.md` for the XIP cache analysis behind it.
 
 Core clock is 225 MHz at 1.15 V, down from an original 375 MHz / 1.30 V
-overclock. The overclock existed only to hide XIP flash latency: both cores
-fetch through a shared 16 KB XIP cache, and core0's EKF plus core1's rate loop
-were thrashing it. Moving core1's hot path into SRAM freed the cache for core0
-and let the clock come back down.
+overclock. It remains above the RP2350 datasheet's 150 MHz clk_sys/clk_peri
+limit and is validated only by tests on the bring-up sample, not across process,
+voltage and temperature. The original overclock existed only to hide XIP flash
+latency: both cores fetch through a shared 16 KB XIP cache, and core0's EKF plus
+core1's rate loop were thrashing it. Moving core1's hot path into SRAM freed the
+cache for core0 and let the clock come back down.
 
 Work is split as main loop 200 Hz on core0 (nav, EKF inline, GCS, logging) and
 a 2 kHz rate thread pinned to core1, fed by a 4 kHz gyro backend. Core affinity
@@ -472,28 +475,25 @@ takes the STM32 default of HIGH - every non-PWM GPIO pin on all three RP2350
 boards states its level explicitly today, so nothing changed underneath them,
 but a new board that omits it will get HIGH rather than LOW.
 
-That has a consequence for the pin data below: the 9V rail is *on* in that
-state, and no relay command has been observed to change it. If software holds
-the pin low and the rail is on, then low enables the rail - the enables are
-effectively active LOW, not active HIGH as recorded in the provenance section,
-and the vendor sheet's `ENn` naming was right after all. `RELAY2_INVERTED`
-would then need to be 1 for the relay sense to match reality.
+The 9V rail was observed on in that state, and no relay command was observed to
+change it. That observation does not establish active-low polarity: the
+schematic connects GPIO18 directly to the MP4334 EN input with a pull-down, an
+active-HIGH circuit. The GPIO and U6 EN pin were not metered during the test,
+so the actual logic level is unknown.
 
-Not yet resolved: with the pin driven, setting `RELAY2` on should take it high
-and switch the rail off, and that has not been seen. Note the initial-level
-fix does not change this - `AP_Relay::init()` drives the pin to
-`RELAY2_DEFAULT` immediately afterwards either way, so the 9V rail still comes
-up on. Either the GCS is addressing a different instance, or the pad is not
-actually driving and the external pull-down is what holds EN low.
+Not yet resolved: changing `RELAY2` should change GPIO18 and U6 EN, and that has
+not been seen. Note the initial-level fix does not settle this because
+`AP_Relay::init()` drives the pin to `RELAY2_DEFAULT` immediately afterwards.
+Either the GCS addressed a different instance, the stored relay parameters
+overrode the expected state, the pad was not actually driving, or the rail was
+being powered by another path.
 
-The cheap discriminator needs no tools - set `RELAY2_DEFAULT` 1 and reboot. If
-the 9V rail goes off, the pad drives correctly and this is purely a
-polarity/sense problem, fixed with `RELAY2_INVERTED` 1. If it stays on, the
-pad is not driving and this is another FUNCSEL/OE fault of the kind that has
-already bitten the UART and PIO2. Check `RELAY3`/5V at the same time, and note
-`MAV_CMD_DO_SET_RELAY` is 0-indexed, so RELAY2 is instance 1 - a GCS that
-numbers its relays from 1 will be one out, and instance 0 is rejected outright
-because `RELAY1_FUNCTION` is 0.
+The decisive test is to meter GPIO18 and U6 EN while changing `RELAY2`, then
+meter the 9V output. Do not change `RELAY2_INVERTED` based only on the output
+rail. Check `RELAY3`/5V at the same time, and note `MAV_CMD_DO_SET_RELAY` is
+0-indexed, so RELAY2 is instance 1 - a GCS that numbers its relays from 1 will
+be one out, and instance 0 is rejected outright because `RELAY1_FUNCTION` is
+0.
 
 The 5V rail is the one the fix visibly changes: `PA19 BEC_5V_EN OUTPUT HIGH`
 now really is high for the window between board init and `AP_Relay::init()`,
@@ -1007,7 +1007,8 @@ LOG_DISARMED 2
 Bit 0 gives `RATE`/`PID` at 1 kHz; bit 18 moves `IMU` from ~7 Hz to loop rate.
 Keep `INS_LOG_BAT_MASK` 3 and `INS_LOG_BAT_OPT` 4 - the pre/post-filter batch
 samples are the only way to see the spectrum above the loop rate. Expect
-around 19 MB for a 40 s flight; the card keeps up.
+around 19 MB for a 40 s flight, but the tested card does not keep up; expect
+ordinary messages to be dropped as described above.
 
 ## Battery failsafe
 
@@ -1019,8 +1020,9 @@ scale above is fixed.
 
 This is now the most likely thing to cut a flight short. log62 is still on 21.6
 low and 21.0 critical, and its minimum pack voltage was 21.79 V - 0.19 V of
-margin, on a 247 s flight that pulled 570 mAh. The next longer flight hits it.
-Change it before flying again, not after.
+margin. Its reported 570 mAh consumption is invalid because the current input
+does not measure load. The next longer flight is likely to hit the voltage
+threshold. Change it before flying again, not after.
 
 Sag compensation stays off regardless, because the current channel does not
 work at all - see the next section.
@@ -1113,15 +1115,20 @@ suspicion came from; it has been fixed.
 
 ### What is left
 
-With 82.5k *and* 100nF to ground, an undriven node must sit at 0 V, and the
-capacitor means it cannot be a fast sampling artifact. Holding a steady
-0.1456 V requires something to inject **1.76 uA** continuously. There are only
-two candidates:
+With 82.5k *and* 100nF to ground, an ideal undriven node would sit at 0 V, and
+the capacitor means this is not a fast sampling artifact. The RP2350 datasheet
+allows up to 1 uA pin input leakage, which can develop 82.5 mV across the
+pulldown and account for about 4.1 A at the nominal 50 A/V scale. The observed
+0.1456 V requires **1.76 uA** in total, so specified pad leakage can explain a
+substantial part but not necessarily all of it. The remaining candidates are:
 
 1. **The ESC is driving it**, and its sense output idles near 0.145 V with
    essentially no gain - shunt not connected, sense amp unpopulated, or an ESC
    variant with no current sense at all.
-2. **Nothing is driving it and the ADC pad is leaking** 1.76 uA into the 82.5k.
+2. **Nothing is driving it and the ADC pad or board is leaking** into the
+   82.5k. The required current is above the datasheet's pin-leakage maximum on
+   its own, so board contamination, a damaged pad or another current path
+   would also be needed if the full 0.1456 V remains with the ESC disconnected.
 
 ### The CUR/TEL wiring hypothesis
 
