@@ -3,6 +3,8 @@
 #include "MsgHandler.h"
 #include "Replay.h"
 
+#include <AP_DAL/AP_DAL.h>
+
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -130,6 +132,12 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
         msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RBOH(formats[f.type], ekf2, ekf3);
     } else if (streq(name, "RTER")) {
         msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RTER(formats[f.type], ekf2, ekf3);
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    } else if (streq(name, "RSNH")) {
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RSNH(formats[f.type], ekf2, ekf3);
+    } else if (streq(name, "RSND")) {
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RSND(formats[f.type], ekf2, ekf3);
+#endif
 	} else {
         // debug("  No parser for (%s)\n", name);
     }
