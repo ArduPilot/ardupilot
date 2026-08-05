@@ -405,8 +405,8 @@ public:
     // Returns the throttle level to maintain altitude (excluding takeoff boost).
     float get_non_takeoff_throttle() const;
 
-    // Updates simple/super-simple heading reference based on current yaw and mode.
-    void update_simple_mode();
+    // Rotates roll/pitch pilot input if simple or super simple mode is active.
+    void apply_simple_mode(float &roll, float &pitch) const;
 
     // Requests a mode change with the specified reason; returns true if accepted.
     bool set_mode(Mode::Number mode, ModeReason reason);
