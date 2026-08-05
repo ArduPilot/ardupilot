@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Param: _RATE_D
     // @DisplayName: Roll axis rate controller D gain
     // @Description: Roll axis rate controller D gain.  Compensates for short-term change in desired roll rate vs actual roll rate
-    // @Range: 0.001 0.03
+    // @Range: 0 0.03
     // @Increment: 0.001
     // @User: Standard
 
@@ -93,7 +93,7 @@ const AP_Param::GroupInfo AP_RollController::var_info[] = {
     // @Param: _RATE_FLTE
     // @DisplayName: Roll axis rate controller error frequency in Hz
     // @Description: Roll axis rate controller error frequency in Hz
-    // @Range: 2 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
