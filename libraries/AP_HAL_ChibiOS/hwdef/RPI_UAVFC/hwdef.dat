@@ -150,6 +150,13 @@ PA8 PWM4_A TIM4 PWM(2) GPIO(51)
 PA7 PWM3_B TIM3 PWM(3) GPIO(52)
 PA6 PWM3_A TIM3 PWM(4) GPIO(53)
 
+# GPIO2 drives the WS2812 LED connector J2 (net RGB_LED, through R82).  No LED
+# is fitted on the board; J2 is a 3-pin JST-SH header, pin 3 data, pin 1 +5V,
+# pin 2 ground.  Declared as a PWM channel only so it gets a channel index and
+# a rate group - the waveform comes out of the PIO, not slice 1, exactly as
+# DShot does on the motor pins above.  SERVO5_FUNCTION 120 drives it.
+PA2 PWM1_A TIM1 PWM(5) GPIO(54)
+
 # Status indicators
 # GPIO0 = blue LED, GPIO1 = green LED.  The sheet's "n" suffix marks these
 # active-LOW (writing 0 illuminates the LED), matching the HAL_GPIO_LED_ON=0
@@ -306,7 +313,7 @@ define HAL_USE_MAC                         FALSE
 define HAL_USE_MMC_SPI                     TRUE
 define HAL_USE_PWM                         TRUE
 define HAL_DSHOT_ENABLED                   1
-define HAL_SERIALLED_ENABLED               0
+define HAL_SERIALLED_ENABLED               1
 define HAL_SERIAL_ESC_COMM_ENABLED         0
 define HAL_USE_RTC                         FALSE
 define HAL_USE_SDC                         FALSE
@@ -388,8 +395,6 @@ define RP_QMI_CLKDIV 3
 define RP_QMI_RXDELAY 2
 
 # Board-specific notes:
-# - GPIO2 is the onboard single-wire RGB LED; RP2350 serial LED output is not
-#   supported by this port, so the pin is left unbound.
 # - GPIO27 is the IMU CLKIN net; not driven or configured by this port.
 # - GPIO5 (ESC_TELEMETRY) can only reach UART1 RX, which the GPS already owns,
 #   so it needs a third PIO UART and is left unbound for now.

@@ -23,6 +23,7 @@ QMI flash timing and SMP configuration are shared between the two.
  - 2 hardware UARTs plus 2 PIO UARTs
  - 2 I2C buses (internal barometer, external GPS/compass)
  - 4 PWM motor outputs
+ - onboard WS2812 RGB LED (PIO driven, PWM output 5)
  - USB CDC serial
 
 ## UART Mapping
@@ -56,10 +57,11 @@ currently supported.
 
 ## PWM Output
 
-Four PWM outputs on GPIO6-9, in two groups:
+Four PWM motor outputs on GPIO6-9, plus the onboard RGB LED, in three groups:
 
  - PWM 1-2 in group1 (PWM slice 4, GPIO9 and GPIO8)
  - PWM 3-4 in group2 (PWM slice 3, GPIO7 and GPIO6)
+ - PWM 5   in group3 (PWM slice 1, GPIO2) - onboard WS2812, see RGB LED below
 
 The ESC connector is wired in descending order - DSHOT1 is GPIO9 and DSHOT4 is
 GPIO6 - so the ArduPilot channel numbers run opposite to the GPIO numbers.
@@ -115,6 +117,20 @@ the board will report tens of amps at rest.
 Analog RSSI uses :ref:`RSSI_PIN<RSSI_PIN>` 0, wired to the AN1 spare pad on
 GPIO40.
 
+## RGB LED
+
+The board carries a single WS2812 on GPIO2, presented as PWM output 5. It is
+driven from the RP2350 PIO rather than a timer, and `SERVO5_FUNCTION` defaults
+to 120 (NeoPixel) because the pin is an onboard LED rather than a usable output
+pad.
+
+To use it as a notify LED, add NeoPixel to :ref:`NTF_LED_TYPES<NTF_LED_TYPES>`.
+Further WS2812s chained off it are driven by raising
+:ref:`NTF_LED_LEN<NTF_LED_LEN>`.
+
+Output 5 shares no rate group with the motors, so putting it in NeoPixel mode
+does not constrain PWM 1-4.
+
 ## Compass
 
 There is no builtin compass. An external compass can be attached to the I2C1
@@ -158,12 +174,12 @@ with any ArduPilot ground station using the `*.apj` firmware files.
 | Feature | Status |
 |---------|--------|
 | DShot rate | DShot600 only; other rates raise a configuration error at boot |
-| BLHeli passthrough / SerialLED | Not supported on RP2350 |
+| BLHeli passthrough | Not supported on RP2350 |
 | CAN / DroneCAN | Not supported by RP2350 hardware |
 | Hardware OSD | No SPI OSD device on this revision; use MSP DisplayPort |
 | SBUS pad (GPIO41) | Needs an inverted UART; not currently supported |
 | Serial ESC telemetry (GPIO5) | Can only reach UART1 RX, which the GPS owns; use bidirectional DShot instead |
-| RGB LED (GPIO2) | Serial LED output not supported on RP2350 |
+| ProfiLED | Not supported on RP2350; NeoPixel only |
 | Battery current scaling | ESC-dependent; set `BATT_AMP_PERVLT` and `BATT_AMP_OFFSET` yourself |
 | IMU rotation | `ROTATION_PITCH_180` in the hwdef; set `AHRS_ORIENTATION` for your mounting |
 | ESC calibration | Throttle-high procedure only; `ESC_CALIBRATION` 2 or 3 boot-loops the board |

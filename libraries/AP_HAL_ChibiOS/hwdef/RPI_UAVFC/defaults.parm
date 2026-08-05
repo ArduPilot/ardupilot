@@ -45,6 +45,12 @@ SCHED_OPTIONS 1
 # GPS_DRV_OPTIONS 4
 # SERIAL2_BAUD 115
 
+# Servo 5 is GPIO2, which reaches only the WS2812 LED connector J2 and is not a
+# usable output pad, so its function is a board property rather than a user
+# choice. 120 = NeoPixel. NTF_LED_TYPES and NTF_LED_LEN are left to the user -
+# the latter depends on how many LEDs are on the strip they plug in.
+SERVO5_FUNCTION 120
+
 # Deliberately not set here, as board defaults should not carry user choices:
 #   AHRS_ORIENTATION - depends on how the board is mounted, not on the board.
 #   FRAME_CLASS / FRAME_TYPE - motor order on this revision is unconfirmed.
