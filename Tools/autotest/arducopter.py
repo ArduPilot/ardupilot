@@ -2464,7 +2464,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.progress("Push time up")
                 break
             # make sure we don't RTL:
-            if not self.mode_is(using_mode):
+            if not self.mode_is(using_mode, poll=False):
                 raise NotAchievedException("Changed mode away from %s" % using_mode)
             distance = self.distance_to_home(use_cached_home=True)
             inner_radius = fence_radius - fence_margin
@@ -2555,7 +2555,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Waiting for fence breach")
         tstart = self.get_sim_time()
-        while not self.mode_is("RTL"):
+        while not self.mode_is("RTL", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not breach fence")
 
@@ -3030,7 +3030,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("Circle and Polygon fences in ([0-9]+[.])?[0-9]?m", regex=True)
         self.progress("Waiting for fence breach")
         tstart = self.get_sim_time()
-        while not self.mode_is("RTL"):
+        while not self.mode_is("RTL", poll=False):
             if self.get_sim_time_cached() - tstart > 30:
                 raise NotAchievedException("Did not breach fence")
 
@@ -5760,7 +5760,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # ensure vehicle remain in Loiter for 15 seconds
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 15:
-            if not self.mode_is('LOITER'):
+            if not self.mode_is('LOITER', poll=False):
                 raise NotAchievedException("Expected to stay in loiter for >15 seconds")
 
         # re-enable vicon
@@ -5773,7 +5773,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # ensure vehicle remain in Loiter for 15 seconds
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 15:
-            if not self.mode_is('LOITER'):
+            if not self.mode_is('LOITER', poll=False):
                 raise NotAchievedException("Expected to stay in loiter for >15 seconds")
 
         # RTL and check vehicle arrives within 10m of home
@@ -5841,7 +5841,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         last_mission_current_msg = 0
         last_seq = None
-        while self.armed(): # we RTL at end of mission
+        while self.armed(poll=False): # we RTL at end of mission
             now = self.get_sim_time_cached()
             if now - tstart > 200:
                 raise AutoTestTimeoutException("Did not disarm as expected")
@@ -6599,7 +6599,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1600)
         count_stop = -1
         tstart = self.get_sim_time()
-        while self.armed(): # we RTL at end of mission
+        while self.armed(poll=False): # we RTL at end of mission
             now = self.get_sim_time_cached()
             if now - tstart > 240:
                 raise AutoTestTimeoutException("Did not disarm as expected")
@@ -6639,7 +6639,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # should not take off for about least 77 seconds
         tstart = self.get_sim_time()
         took_off = False
-        while self.armed():
+        while self.armed(poll=False):
             now = self.get_sim_time_cached()
             if now - tstart > 200:
                 # timeout
@@ -16262,7 +16262,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time_cached() - tstart > 60:
                 break
-            if self.armed():
+            if self.armed(poll=False):
                 raise NotAchievedException("Armed after reboot with switch high")
             armmsg = self.statustext_in_collections('Arm: ')
             if armmsg is not None:

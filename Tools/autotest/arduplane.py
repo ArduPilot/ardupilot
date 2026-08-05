@@ -695,11 +695,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
         )
 
-        # fly for a bit to get into non-aiding state
-        self.progress("waiting 20 seconds")
-        tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + 20:
-            self.wait_heartbeat()
+        self.delay_sim_time(20, "fly for a bit to get into non-aiding state")
 
         self.progress("getting base position")
         gpi = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
@@ -718,10 +714,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED
         )
 
-        self.progress("waiting 3 seconds")
-        tstart = self.get_sim_time()
-        while self.get_sim_time() < tstart + 3:
-            self.wait_heartbeat()
+        self.delay_sim_time(3, "let new position get processed")
 
         gpi2 = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         loc2 = mavutil.location(gpi2.lat*1e-7, gpi2.lon*1e-7, 0, 0)
@@ -1172,15 +1165,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if x is not None:
             raise PreconditionFailedException("Receiving CAMERA_FEEDBACK?!")
         self.set_rc(12, 2000)
-        tstart = self.get_sim_time()
-        while self.get_sim_time_cached() - tstart < 10:
-            x = self.mav.messages.get("CAMERA_FEEDBACK", None)
-            if x is not None:
-                break
-            self.wait_heartbeat()
+        x = self.assert_receive_message('CAMERA_FEEDBACK', timeout=10)
         self.set_rc(12, 1000)
-        if x is None:
-            raise NotAchievedException("No CAMERA_FEEDBACK message received")
 
         self.wait_ready_to_arm()
 
@@ -4264,7 +4250,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Waiting for RTL")
             tstart = self.get_sim_time()
             mode = "RTL"
-            while not self.mode_is(mode, drain_mav=False):
+            while not self.mode_is(mode, drain_mav=False, poll=False):
                 self.mav.messages['HEARTBEAT'].custom_mode
                 self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                     self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4299,7 +4285,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
         mode = "RTL"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4338,7 +4324,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
         mode = "RTL"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4605,7 +4591,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for GUIDED")
         tstart = self.get_sim_time()
         mode = "GUIDED"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4671,7 +4657,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
         mode = "RTL"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
@@ -4708,7 +4694,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
         mode = "RTL"
-        while not self.mode_is(mode, drain_mav=False):
+        while not self.mode_is(mode, drain_mav=False, poll=False):
             self.mav.messages['HEARTBEAT'].custom_mode
             self.progress("mav.flightmode=%s Want=%s Alt=%f" % (
                 self.mav.flightmode, mode, self.get_altitude(relative=True)))
