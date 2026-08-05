@@ -1012,6 +1012,7 @@ private:
     enum class Options : uint16_t {
         DISABLE_DCM_FALLBACK_FW=(1U<<0),
         DISABLE_DCM_FALLBACK_VTOL=(1U<<1),
+        LOG_WRITE_STATE_ALWAYS=(1U<<2),
     };
     AP_Int16 _options;
     

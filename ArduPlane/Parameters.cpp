@@ -203,6 +203,12 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Advanced
     GSCALAR(takeoff_flap_percent,     "TKOFF_FLAP_PCNT", 0),
 
+    // @Param: TKOFF_NOGPS
+    // @DisplayName: Takeoff no GPS
+    // @Description: Allow takeoff without GPS
+    // @User: Advanced
+    GSCALAR(takeoff_nogps,     "TKOFF_NOGPS", 0),
+
     // @Param: LEVEL_ROLL_LIMIT
     // @DisplayName: Level flight roll limit
     // @Description: This controls the maximum bank angle in degrees during flight modes where level flight is desired, such as in the final stages of landing, and during auto takeoff. This should be a small angle (such as 5 degrees) to prevent a wing hitting the runway during takeoff or landing. Setting this to zero will completely disable heading hold on auto takeoff while below 5 meters and during the flare portion of a final landing approach.

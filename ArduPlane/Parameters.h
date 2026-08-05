@@ -356,6 +356,7 @@ public:
         k_param_acro_yaw_rate,
         k_param_takeoff_throttle_max_t,
         k_param_autotune_options,
+        k_param_takeoff_nogps,
 
         k_param_eagle_f0 = 300,
         k_param_eagle_f1,
@@ -470,6 +471,7 @@ public:
     AP_Float takeoff_rotate_speed;
     AP_Int8 takeoff_throttle_slewrate;
     AP_Float takeoff_pitch_limit_reduction_sec;
+    AP_Int8 takeoff_nogps;
     AP_Int8 level_roll_limit;
 #if AP_TERRAIN_AVAILABLE
     AP_Int32 terrain_follow;

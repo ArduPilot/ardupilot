@@ -49,7 +49,8 @@ bool Plane::auto_takeoff_check(void)
     }  
 
     // Check for bad GPS
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+    bool nogps = gps.status() < AP_GPS::GPS_OK_FIX_3D;
+    if (!g.takeoff_nogps && nogps) {
         // no auto takeoff without GPS lock
         return false;
     }
@@ -115,7 +116,7 @@ bool Plane::auto_takeoff_check(void)
     }
 
     // Check ground speed and time delay
-    if (((gps.ground_speed() > g.takeoff_throttle_min_speed || is_zero(g.takeoff_throttle_min_speed))) &&
+    if ((((!nogps && gps.ground_speed() > g.takeoff_throttle_min_speed) || is_zero(g.takeoff_throttle_min_speed))) &&
         ((now - takeoff_state.last_tkoff_arm_time) >= wait_time_ms)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Triggered AUTO. GPS speed = %.1f", (double)gps.ground_speed());
         takeoff_state.launchTimerStarted = false;
