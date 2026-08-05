@@ -102,8 +102,8 @@ volatile uint32_t c1_heartbeat = 0U;
 /* c1_fault_info[8]: GDB "p c1_fault_info" — [0]CFSR [1]HFSR [2]MMFAR [3]SFSR [4]SFAR [5]PSP [6]MSP [7]VTOR */
 volatile uint32_t c1_fault_info[8];
 
-/* Core1 vector table in SRAM9 (0x20081000, 256-byte aligned). Non-striped bank
- * avoids IBUSERR when Core0 hits the same bank during Core1's vector fetch. */
+/* Core1 vector table in SRAM9 (0x20081000, 256-byte aligned). The dedicated
+ * non-striped bank isolates vector fetches from main-SRAM contention. */
 #define c1_vtable ((volatile uint32_t *)0x20081000U)
 
 /* XIP lockout handler (IRQ26/SIO_BELL, .ramtext): de-asserts doorbell, saves/disables

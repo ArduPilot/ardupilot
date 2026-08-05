@@ -56,5 +56,6 @@ SERVO5_FUNCTION 120
 #   FRAME_CLASS / FRAME_TYPE - motor order on this revision is unconfirmed.
 #   COMPASS_ENABLE - an external compass is supported on the I2C1 GPS connector.
 #   INS_HNTCH_* - harmonic notch setup is per-airframe tuning.
-#   BATT_VOLT_MULT / BATT_AMP_PERVLT - dividers need measuring on this revision.
+#   BATT_VOLT_MULT - the board default is measured in the hwdef.
+#   BATT_AMP_PERVLT - nominal value only; tested current input does not track load.
 #   FS_THR_VALUE - needs re-measuring against this board's idle PWM.

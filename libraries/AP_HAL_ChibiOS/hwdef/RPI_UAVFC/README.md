@@ -14,10 +14,12 @@ QMI flash timing and SMP configuration are shared between the two.
 
 ## Features
 
- - MCU - RP2350B dual-core Cortex-M33 running at 225 MHz
+ - MCU - RP2350B dual-core Cortex-M33 running at 225 MHz (overclocked from the
+   datasheet limit of 150 MHz)
  - 520 KB SRAM
  - 4 MB boot/XIP flash (QSPI, dedicated `QSPI_SS` chip-select)
- - TDK ICM-56686 IMU on SPI0 (same silicon as the ICM-45686)
+ - IMU on SPI0; tested samples carry an ICM42688P, while the R2 Rev C
+   schematic specifies an ICM-56686 that still needs driver validation
  - DPS368 barometer on the internal I2C0 bus (address 0x76)
  - microSD card slot (SPI mode) for logging
  - 2 hardware UARTs plus 2 PIO UARTs
@@ -89,7 +91,9 @@ ESC telemetry path.
 
 ## Battery Monitoring
 
-The board has internal voltage and current sense on the RP2350B ADC pins.
+The board routes voltage and current sense to RP2350B ADC pins. Battery voltage
+has been validated. The current input is mapped correctly but is not yet usable
+on the tested hardware; see below.
 
 The default battery parameters are:
 
@@ -102,16 +106,15 @@ The default battery parameters are:
 The voltage multiplier was checked against a bench supply and matches the usual
 11.1 divider ratio.
 
-The current sense is on the ESC, not the board - the board just brings it in
-through a 120R series resistor to an 82.5k pulldown, so the ADC sees the ESC
-output 1:1. The default suits a 20 mV/A ESC; for anything else,
-`BATT_AMP_PERVLT` is 1000 divided by the millivolts per amp. A Betaflight
-current scale is in units of 0.1 mV/A, so a scale of 200 is 20 mV/A and gives
-50.
+The current sense is on the ESC, not the board. The board brings it in through
+a 120R series resistor, with 100 nF and 82.5k to ground, so a driven input is
+effectively 1:1. The nominal default of 50 A/V assumes a 20 mV/A ESC output.
 
-Most of these sensors idle at a non-zero voltage. Read `BATT_CURR_PIN` with the
-battery connected and nothing drawing, put that figure in `BATT_AMP_OFFSET`, or
-the board will report tens of amps at rest.
+On the tested vehicle, however, the input reports a large temperature-dependent
+offset and does not correlate with motor load. Scaling and offset parameters do
+not repair it. Do not use reported current, consumed capacity, internal
+resistance or voltage sag compensation until the ESC output and wiring have
+been verified electrically. Battery-voltage monitoring remains valid.
 
 ## Analog RSSI input
 
@@ -167,15 +170,22 @@ compiled-in default for that port.
 ## VTX power control
 
 The 9 V rail feeding the VID connector is switched by GPIO18, and the 5 V
-peripheral rail by GPIO19. Both drive an MP4334 EN pin with a pull-down, so
-they are active HIGH. The 5 V rail is enabled at boot; the 9 V rail is held off
-until the power tree has been validated on this hardware.
+peripheral rail by GPIO19. Both drive an MP4334 EN pin with a pull-down, so the
+schematic defines them as active HIGH. They are exposed as RELAY2 and RELAY3.
+Runtime switching has not yet been verified at the regulator EN pins, and the
+9 V rail remained on during the initial relay test, so do not rely on software
+power switching until it has been checked with a meter.
 
 ## Logging
 
 Logs are written to the microSD card on SPI1 (`LOG_BACKEND_TYPE` = 1, set
 `@READONLY` so a stale stored value cannot silently disable logging). There is
 no blackbox flash on this board, so the card is the only logging medium.
+
+The tested card sustains about 100 KB/s. High-rate tuning configurations have
+dropped roughly 70% of ordinary log messages, so use `ISBH`/`ISBD` batch data
+for spectral analysis and check `DSF.Dp` before trusting requested message
+rates.
 
 Parameter storage uses a 32 KB region of the boot XIP flash at 0x10010000. The
 flash is divided one region per 64 KB erase block - bootloader in block 0,
@@ -192,6 +202,7 @@ with any ArduPilot ground station using the `*.apj` firmware files.
 
 | Feature | Status |
 |---------|--------|
+| System clock | 225 MHz overclock; flight-tested on the bring-up sample, outside the 150 MHz datasheet limit |
 | DShot rate | DShot600 only; other rates raise a configuration error at boot |
 | BLHeli passthrough | Not supported on RP2350 |
 | CAN / DroneCAN | Not supported by RP2350 hardware |
@@ -199,7 +210,7 @@ with any ArduPilot ground station using the `*.apj` firmware files.
 | SBUS pad (GPIO41) | Needs an inverted UART; not currently supported |
 | Serial ESC telemetry (GPIO5) | Can only reach UART1 RX, which the GPS owns; use bidirectional DShot instead |
 | ProfiLED | Not supported on RP2350; NeoPixel only |
-| Battery current scaling | ESC-dependent; set `BATT_AMP_PERVLT` and `BATT_AMP_OFFSET` yourself |
+| Battery current | Not usable on the tested vehicle; input does not track load |
 | IMU rotation | `ROTATION_PITCH_180` in the hwdef; set `AHRS_ORIENTATION` for your mounting |
 | ESC calibration | Throttle-high procedure only; `ESC_CALIBRATION` 2 or 3 boot-loops the board |
 | Compass | None on the board; attach one on I2C1 or the EKF stays in constant-position mode |

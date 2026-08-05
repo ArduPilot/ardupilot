@@ -354,9 +354,9 @@ void RCOutput_pico::start_sm(uint8_t chan, uint8_t gpio)
     /*
       Both shift directions are left, which is the cleared state of
       OUT_SHIFTDIR and IN_SHIFTDIR - the bits mean "shift right" when set. Left
-      is what DShot wants: the frame goes out most significant bit first, and
-      the program discards the top 16 bits of the word before the bit loop, so
-      the frame is written into the high half.
+      is what DShot wants: the frame goes out most significant bit first. The
+      frame is written into the low half; discarding the initial empty high
+      half shifts the frame into position for the bit loop.
      */
     uint32_t shiftctrl = 0U;
     if (_bidir) {
