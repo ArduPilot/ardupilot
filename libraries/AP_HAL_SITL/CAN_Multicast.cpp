@@ -2,6 +2,7 @@
   multicast UDP transport for SITL CAN
  */
 #include "CAN_Multicast.h"
+#include "SITL_Multicast.h"
 
 #if HAL_NUM_CAN_IFACES
 
@@ -40,6 +41,7 @@ bool CAN_Multicast::init(uint8_t instance)
     char address[] = MCAST_ADDRESS_BASE;
 
     address[strlen(address)-1] = '0' + instance;
+    sock.set_multicast_interface_address(sitl_multicast_interface_address());
     return sock.connect(address, MCAST_PORT);
 }
 

@@ -7,6 +7,7 @@
 #include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
 #include "Scheduler.h"
+#include "SITL_Multicast.h"
 
 #include <stdio.h>
 #include <signal.h>
@@ -143,6 +144,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
  */
 void SimMCast::multicast_open(void)
 {
+    sock.set_multicast_interface_address(sitl_multicast_interface_address());
     if (!sock.connect(SITL_MCAST_IP, SITL_MCAST_PORT)) {
         fprintf(stderr, "multicast socket failed - %s\n", strerror(errno));
         exit(1);
