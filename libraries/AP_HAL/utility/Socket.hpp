@@ -41,6 +41,17 @@ public:
     bool set_cloexec() const;
     void set_broadcast(void) const;
 
+    /*
+      set the address of the local interface to send and receive
+      multicast on.  Must be called before connect().  The default of
+      zero (INADDR_ANY) leaves the choice of interface to the routing
+      table, which is what you want unless you have a reason to pin the
+      traffic to one interface.  Address is in network byte order.
+     */
+    void set_multicast_interface_address(uint32_t addr) {
+        multicast_interface_address = addr;
+    }
+
     ssize_t send(const void *pkt, size_t size) const;
     ssize_t sendto(const void *buf, size_t size, const char *address, uint16_t port);
     ssize_t sendto(const void *buf, size_t size, uint32_t address, uint16_t port);
@@ -105,6 +116,10 @@ private:
 
     // fd_in is used for multicast UDP
     int fd_in = -1;
+
+    // address of the local interface to multicast on, network byte
+    // order; zero (INADDR_ANY) leaves the choice to the routing table
+    uint32_t multicast_interface_address;
 
     bool connected;
 
