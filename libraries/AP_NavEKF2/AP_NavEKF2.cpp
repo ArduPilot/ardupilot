@@ -996,16 +996,21 @@ void NavEKF2::resetGyroBias(void)
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
 // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+// origin_alt_tolerance_m < 0 disables the origin-vs-GPS altitude check.
 // Returns true if the height datum reset has been performed
-// If using a range finder for height no reset is performed and it returns false
-bool NavEKF2::resetHeightDatum(void)
+// If using a non-baro/GPS height source no reset is performed and it returns false
+bool NavEKF2::resetHeightDatum(float origin_alt_tolerance_m)
 {
-    AP::dal().log_event2(AP_DAL::Event::resetHeightDatum);
+    if (origin_alt_tolerance_m < 0) {
+        AP::dal().log_event2(AP_DAL::Event::resetHeightDatum);
+    } else {
+        AP::dal().log_resetHeightDatum2(origin_alt_tolerance_m);
+    }
 
     bool status = true;
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            if (!core[i].resetHeightDatum()) {
+            if (!core[i].resetHeightDatum(origin_alt_tolerance_m)) {
                 status = false;
             }
         }

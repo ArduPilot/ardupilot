@@ -732,8 +732,8 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: GND_EFF_DZ
     // @DisplayName: Baro height ground effect dead zone
-    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when taking off or landing when a vehicle with lift rotors is operating in ground effect ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present.
-    // @Range: 0.0 10.0
+    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when taking off or landing when a vehicle with lift rotors is operating in ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present. When set to a negative value the absolute value is used as the baro observation noise floor in metres during ground effect. Negative values result in the baro being more heavily de-weighted without fully inhibiting it so the EKF retains a weak altitude anchor. For example -8 is appropriate for a small copter with up to 8m of prop wash baro error.
+    // @Range: -10.0 10.0
     // @Increment: 0.5
     // @User: Advanced
     AP_GROUPINFO("GND_EFF_DZ", 7, NavEKF3, _baroGndEffectDeadZone, 4.0f),
@@ -1341,17 +1341,18 @@ void NavEKF3::resetGyroBias(void)
 
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
-// Adjusts the EKF origin height so that the EKF height + origin height is the same as before
-// Returns true if the height datum reset has been performed
-// If using a range finder for height no reset is performed and it returns false
-bool NavEKF3::resetHeightDatum(void)
+// Resets the EKF height datum and clears baro temperature drift.
+// origin_alt_tolerance_m: see NavEKF3::resetHeightDatum declaration.
+// Returns true if the height datum reset was performed.
+// If using a range finder for height no reset is performed and it returns false.
+bool NavEKF3::resetHeightDatum(float origin_alt_tolerance_m)
 {
-    dal.log_event3(AP_DAL::Event::resetHeightDatum);
+    dal.log_resetHeightDatum3(origin_alt_tolerance_m);
 
     bool status = true;
     if (core) {
         for (uint8_t i=0; i<num_cores; i++) {
-            if (!core[i].resetHeightDatum()) {
+            if (!core[i].resetHeightDatum(origin_alt_tolerance_m)) {
                 status = false;
             }
         }
