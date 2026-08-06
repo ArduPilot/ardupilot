@@ -54,6 +54,16 @@ bool AP_TemperatureSensor_Backend::healthy(void) const
     return (_state.last_time_ms > 0) && (AP_HAL::millis() - _state.last_time_ms < 5000);
 }
 
+void AP_TemperatureSensor_Backend::set_bus_id(uint32_t id)
+{
+    if (_params.bus_id == int32_t(id)) {
+        // nothing to do, avoids a storage write for backends which call
+        // this on every reading
+        return;
+    }
+    _params.bus_id.set_and_save(int32_t(id));
+}
+
 #if HAL_LOGGING_ENABLED
 void AP_TemperatureSensor_Backend::Log_Write_TEMP() const
 {

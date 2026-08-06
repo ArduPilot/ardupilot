@@ -18,6 +18,7 @@
 #if AP_TEMPERATURE_SENSOR_ANALOG_ENABLED
 
 #include "AP_TemperatureSensor_Analog.h"
+#include <AP_HAL/Device.h>
 
 
 extern const AP_HAL::HAL &hal;
@@ -83,8 +84,19 @@ void AP_TemperatureSensor_Analog::update()
     // _pin < 0 is checked explicitly as some HALs accept any pin in set_pin()
     if ((_analog_source == nullptr) || (_pin < 0) || !_analog_source->set_pin(_pin)) {
         // Invalid pln
+        set_bus_id(0);
         return;
     }
+
+    // there is no bus to probe, so the pin is the closest thing we have to a
+    // unique address for this instance. Updated on every call, as the reading
+    // follows TEMPn_PIN changes without a reboot
+    set_bus_id(AP_HAL::Device::make_bus_id(
+        AP_HAL::Device::BUS_TYPE_UNKNOWN,
+        0,
+        uint8_t(_pin),
+        uint8_t(AP_TemperatureSensor_Params::Type::ANALOG)
+    ));
 
     // Use ratiometric voltage, measured voltage is relative to supply
     const float voltage = _analog_source->voltage_average_ratiometric();
