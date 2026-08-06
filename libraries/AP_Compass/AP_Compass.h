@@ -238,11 +238,6 @@ public:
 
     bool auto_declination_enabled() const { return _auto_declination != 0; }
 
-    // set overall board orientation
-    void set_board_orientation(enum Rotation orientation) {
-        _board_orientation = orientation;
-    }
-
     // get overall board orientation
     enum Rotation get_board_orientation(void) const {
         return _board_orientation;
