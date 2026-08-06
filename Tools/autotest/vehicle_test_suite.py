@@ -14909,6 +14909,13 @@ switch value'''
 
     def AHRSTrimPreflightCal(self):
         '''AHRS trim preflight calibration'''
+        # AP_InertialSensor::calibrate_trim() rejects a trim calibration
+        # made within 5s of the last one - and last_accel_cal_ms is zero
+        # until a calibration is done, so it also rejects one made in the
+        # first 5s of uptime.  That rejection is silent as far as the GCS
+        # is concerned (TEMPORARILY_REJECTED, no statustext), so without
+        # this wait we simply time out waiting for "Trim OK":
+        self.delay_sim_time(5, reason="trim calibration to be accepted")
         self.ahrstrim_preflight_cal()
 
     def AHRSTrimTests(self):
