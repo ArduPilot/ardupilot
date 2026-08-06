@@ -90,4 +90,30 @@ protected:
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
+
+    // --- State Variables untuk Sliding Mode Control (SMC) ---
+    // 1. Penyimpan Nilai Integral Error (s = e + lambda*int_e)
+    float _smc_int_roll  = 0.0f;
+    float _smc_int_pitch = 0.0f;
+    float _smc_int_yaw   = 0.0f;
+
+    // 2. Penyimpan State Filter IIR Orde-1 (Menyaring Noise Gyro/Joystick)
+    float _smc_pref_dot_roll  = 0.0f;
+    float _smc_pref_dot_pitch = 0.0f;
+    float _smc_pref_dot_yaw   = 0.0f;
+
+    float _smc_target_roll  = 0.0f;
+    float _smc_target_pitch = 0.0f;
+    float _smc_target_yaw   = 0.0f;
+
+    float _smc_error_roll = 0.0f, _smc_error_pitch = 0.0f, _smc_error_yaw = 0.0f;
+
+    float _smc_out_roll_prev = 0.0f;
+    float _smc_out_pitch_prev = 0.0f;
+    float _smc_out_yaw_prev = 0.0f;
+
+    // SMC derivative state
+    float _smc_prev_target_roll  = 0.0f;
+    float _smc_prev_target_pitch = 0.0f;
+    float _smc_prev_target_yaw   = 0.0f;
 };
