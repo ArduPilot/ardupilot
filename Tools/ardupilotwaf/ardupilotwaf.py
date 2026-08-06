@@ -127,6 +127,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_ExternalControl',
     'AP_JSON',
     'AP_Beacon',
+    'AP_SwarmMesh',
     'AP_Arming',
     'AP_RCMapper',
     'AP_MultiHeap',

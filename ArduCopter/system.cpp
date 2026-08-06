@@ -171,6 +171,11 @@ void Copter::init_ardupilot()
     custom_control.init();
 #endif
 
+#if AP_SWARMMESH_ENABLED
+    // init Peer-to-Peer network
+    g2.swarmmesh.init();
+#endif
+
     // set landed flags
     set_land_complete(true);
     set_land_complete_maybe(true);
