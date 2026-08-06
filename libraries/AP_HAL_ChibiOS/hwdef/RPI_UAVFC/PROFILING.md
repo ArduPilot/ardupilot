@@ -23,9 +23,14 @@ a ~5.1 kHz ISR per core and 24 KB of BSS, and cannot see itself: it samples the
 interrupted PC, so its own cost never appears in its own output.
 
 Without `HAL_ENABLE_THREAD_STATISTICS` the `Perf` line loses `core1load`
-entirely - `Scheduler::get_core1_load_pct()` reads
-`ch1.idlethread.stats.cumulative`, which only exists with `CH_DBG_STATISTICS`.
-Core0 load comes from `AP_Scheduler` and survives either way.
+entirely - `Scheduler::get_core1_load_pct()` reads the cumulative time of
+core1's idle thread, which only exists with `CH_DBG_STATISTICS`. Core0 load
+comes from `AP_Scheduler` and survives either way.
+
+RT 7 does not hang the idle thread off the instance, so
+`Scheduler::core1_idle_cumulative()` walks the registry once for the sole
+`IDLEPRIO` thread owned by `ch1`. A flat zero core1 load means that lookup
+failed, not that core1 is busy.
 
 ## What is compiled in
 
