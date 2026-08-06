@@ -9417,7 +9417,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.AutoLandMode,
             self.RCDisableAirspeedUse,
             self.AHRS_ORIENTATION,
-            self.AHRSTrim,
             self.AHRS2Logging,
             self.AHRS2NoSecondaryEstimate,
             self.LandingDrift,
@@ -9533,7 +9532,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.EK3HeightDatumResetFlushesBuffers,
             self.PPPPeriph,
             self.steplessAHRSSwitch,
-        ] + self.FlyEachFrameTests() + self.FlyEachFrameRCInputTests()
+        ] + self.FlyEachFrameTests() + self.FlyEachFrameRCInputTests() + self.AHRSTrimTests()
 
     def UTMGlobalPositionWaypoint(self):
         '''test UTM_GLOBAL_POSITION waypoint fields in AUTO and GUIDED'''
