@@ -1058,7 +1058,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm(timeout=240)
 
-    def fly_home_land_and_disarm(self, timeout=120):
+    def fly_home_land_and_disarm(self, timeout=240):
+        # timeout covers flying the whole approach, not just a state
+        # change: we jump to waypoint 8 from wherever the test left the
+        # vehicle and then fly the rest of the mission.  120s was only
+        # just enough - a passing run from 2.2km out used 115.8s of it -
+        # so a run which flew a little further, or started a little
+        # higher, failed with "Did not get wanted current waypoint"
+        # while still sequencing waypoints normally.
         filename = "flaps.txt"
         self.progress("Using %s to fly home" % filename)
         n = self.load_generic_mission(filename)
