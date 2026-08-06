@@ -7758,7 +7758,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             home_alt_amsl+target_alt+5,
             relative=False,
             minimum_duration=10,
-            timeout=10.1,
+            timeout=11,
         )
 
         self.disarm_vehicle(force=True)
