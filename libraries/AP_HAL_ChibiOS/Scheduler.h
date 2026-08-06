@@ -63,14 +63,17 @@
 #endif
 
 #ifndef TIMER_THD_WA_SIZE
-// Increased from 1536: live threads.txt showed timer at 84% (288 B free).
+#if defined(RP2350)
+// RP2350 debug builds run the timer thread at 84% of the 1536 byte default.
 #define TIMER_THD_WA_SIZE   3072
+#else
+#define TIMER_THD_WA_SIZE   1536
+#endif
 #endif
 
 #ifndef RCOUT_THD_WA_SIZE
 #if defined(RP2350)
-// RP2350/Pico2 debug builds exercise deeper RCOutput paths and need a larger working area.
-// Bumped 1024 → 1536 → 2048 → 4096 → 8192 → 10240: threads.new3.txt showed 8280/8448 used (98.0%) with 8192 allocation.
+// RP2350 debug builds reached 98% of an 8192 byte working area here.
 #define RCOUT_THD_WA_SIZE    14336
 #else
 #define RCOUT_THD_WA_SIZE    512
@@ -79,8 +82,7 @@
 
 #ifndef RCIN_THD_WA_SIZE
 #if defined(RP2350)
-// RP2350/Pico2 RC-in protocol parsing and timing checks exceed the default stack budget in debug builds.
-// Bumped 2048 → 3072 → 4096 → 8192 → 12288 → 16384: threads.new3.txt showed 12416/12544 used (99.0%) with 12288 allocation.
+// RP2350 debug builds reached 99% of a 12288 byte working area here.
 #define RCIN_THD_WA_SIZE    22528
 #else
 #define RCIN_THD_WA_SIZE    1024
@@ -96,9 +98,12 @@
 #endif
 
 #ifndef MONITOR_THD_WA_SIZE
-// Bumped 1024 → 1536 → 2048 → 4096 → 8192: threads.new2.txt showed
-// 4120/4352 used (94.7%) with the 4096 allocation.
+#if defined(RP2350)
+// RP2350 debug builds reached 94.7% of a 4096 byte working area here.
 #define MONITOR_THD_WA_SIZE 8192
+#else
+#define MONITOR_THD_WA_SIZE 1024
+#endif
 #endif
 
 // MEMCHECK_ENABLED checks the bottom 1kB of RAM on H7 to ensure it is
@@ -200,6 +205,10 @@ private:
 #if CH_DBG_STATISTICS == TRUE
     rttime_t  _core1_last_cumulative;
     uint64_t  _core1_last_us;
+#endif
+#if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
+    // accumulated idle time of core1's idle thread
+    static rttime_t core1_idle_cumulative(void);
 #endif
 
 #if CH_CFG_USE_SEMAPHORES == TRUE

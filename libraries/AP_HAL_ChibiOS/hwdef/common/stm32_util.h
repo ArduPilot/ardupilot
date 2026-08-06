@@ -226,19 +226,6 @@ extern uint32_t chibios_rand_generate(void);
 void stm32_flash_protect_flash(bool bootloader, bool protect);
 void stm32_flash_unprotect_flash(void);
 
-#if defined(RP2350)
-typedef uint64_t port_stkalign_t;
-typedef port_stkalign_t stkalign_t;
-#endif
-
-// this is what stm32 now calls it:
-//typedef port_stkline_t  stkline_t;          /**< Stack alignment type.      */
-
-#if defined(STM32_HW)
-// old name first, new name second.
-typedef stkline_t stkalign_t;
-#endif
-
 // allow stack view code to show free ISR stack
 extern stkalign_t __main_stack_base__;
 extern stkalign_t __main_stack_end__;

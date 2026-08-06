@@ -35,7 +35,7 @@
 #include "hwdef.h"
 
 #define _CHIBIOS_RT_CONF_
-#define _CHIBIOS_RT_CONF_VER_8_0_
+#define _CHIBIOS_RT_CONF_VER_7_0_
 #define _CHIBIOS_HAL_CONF_VER_9_1_
 /*===========================================================================*/
 /**
@@ -62,7 +62,7 @@
         #define CH_CFG_USE_MEMCHECKS TRUE
         #define CH_CFG_HARDENING_LEVEL 0
         #define CH_CFG_SAFETY_CHECK_HOOK false
-        #define _CHIBIOS_RT_CONF_VER_8_0_
+        #define _CHIBIOS_RT_CONF_VER_7_0_
 
 
 

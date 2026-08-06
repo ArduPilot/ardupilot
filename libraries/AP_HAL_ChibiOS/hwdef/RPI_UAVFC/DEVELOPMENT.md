@@ -6,29 +6,35 @@ users see it; this file is for whoever is working on the port. See
 
 ## Where things stand
 
-The board flies, and now flies under position control. Six flights on PWM,
-three on bdshot in Stabilize (logs 51-53, longest about 35 s), and now Loiter
-plus a partial AUTOTUNE run in log62 - 247 s armed, four times anything before
-it. A GPS fix and an external compass have both arrived since log53, so the
-whole position stack is live for the first time.
+The board flies, and now flies acro. Six flights on PWM, three on bdshot in
+Stabilize (logs 51-53, longest about 35 s), Loiter plus a partial AUTOTUNE in
+log62, and now log69 - 153 s of ACRO at the full `ACRO_RP_RATE` 800 deg/s,
+inverted, followed by 28 s of Loiter. log70 is a 119 s Loiter flight from the
+same session.
 
 The hwdef is complete, the pinout is verified against the schematic, and the
-timing architecture holds up over a much longer flight than it had been asked
-for: across the full 247 s armed window of log62 the rate thread held 2 kHz
-with `RTDT.dtMax` never exceeding 1.3 ms against a 500 us period, no accel
-clipping, and no XIP park visible in the timing.
+timing architecture is no longer the limiting factor in anything. Across the
+whole 280 s of log69, including 807 deg/s rolls, +/-177 deg roll attitude and
+2.75 g, **no `RTDT` record exceeds 1.4 ms** against a 500 us period, and the
+main loop held `MaxT` 5042-5086 us against a 5000 us budget with `NLon` 0. No
+accel clipping in either flight despite `VIBE.VibeY` peaking at 33.9 m/s/s.
+
+What the two flights did surface is that the SD logging ceiling is CPU
+starvation on core0, not the card. See the SD section below - the previous
+"~100 KB/s card ceiling" conclusion is retracted.
 
 | Area | State |
 |-----------------------|--------------------------------------------------|
 | Pinout | Verified against R2 Rev C schematic |
 | Build | `./waf configure --board RPI_UAVFC && ./waf copter` |
 | Bootloader | Built, board ID 1215 |
+| ChibiOS | ArduPilot fork, kernel RT 7.0.6 - see below, do not bump it |
 | IMU | Working; fitted part is ICM42688P, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
-| microSD logging | Works, but drops ~70% of messages - see below |
+| microSD logging | Throughput is core0-CPU-bound, 18-91 KB/s - see below |
 | Parameter storage | Working; needs both the sector-bound and write-verify fixes |
 | RC input | CRSF/ELRS on SERIAL3, 333 Hz link, 199 Hz telemetry |
-| GPS | Fix acquired; log62 7-9 sats, HDop 1.1, HAcc 0.69 m |
+| GPS | log69 8-13 sats HDop 1.1-2.2; log70 11-16 sats HDop 0.8-1.3 |
 | Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
 | Battery current | Broken - temperature-dependent and does not track load; see below |
@@ -36,10 +42,13 @@ clipping, and no XIP park visible in the timing.
 | DShot | Bidirectional DShot600 at 2 kHz, flown; eRPM scale verified |
 | DShot params | `SERVO_DSHOT_RATE` 1, `FSTRATE_DIV` 2, `SERVO_DSHOT_ESC` 0 - see below |
 | eRPM error rate | Not measurable: `ESC.Err` is hardcoded 0 here, see below |
-| Harmonic notch | `INS_HNTCH_MODE` 3 flown, per-motor, -34 dB in the motor band |
+| Harmonic notch | Per-motor, -34 dB; tracked 72-353 Hz through acro |
 | Compass | External on I2C1, `COMPASS_EXTERNAL` 1, `ORIENT` 101 |
-| Position modes | Loiter flown, 105 s in log62; EKF fusing GPS |
-| Rate loop in flight | 2 kHz held over 247 s, dtMax 1.3 ms, no overruns |
+| Position modes | Loiter flown, 119 s in log70; EKF fusing GPS |
+| Acro | log69, 153 s at 800 deg/s, inverted, EKF `FS` 0 throughout |
+| Rate loop in flight | 2 kHz held; dtMax never above 1.4 ms in any flight |
+| Yaw trim | 17% diagonal RPM split; explained, not a fault - see below |
+| DCM backup AHRS | Drifts 25-65 deg in flight; blocks re-arm - see below |
 | Tune | Hand tune below; AUTOTUNE started, roll only, unsaved |
 | Serial LED (J2) | Mode correct, LED not yet lit; see below |
 | 9V rail (VID) | Stuck on; relay does not switch it, see below |
@@ -278,9 +287,14 @@ Three switches, all off in this hwdef. Turn them on to measure, off to fly.
 
 Statistics instrument every critical section and context switch. Turning them
 off also removes `core1load` from the `Perf` line - `Scheduler::get_core1_load_pct()`
-reads `ch1.idlethread.stats.cumulative`, which only exists with
+reads the cumulative time of core1's idle thread, which only exists with
 `CH_DBG_STATISTICS`. There is no way to keep the core1 load figure without
 paying for the statistics.
+
+RT 7 has no `os_instance_t::idlethread`, so `Scheduler::core1_idle_cumulative()`
+finds that thread once by walking the registry for the sole `IDLEPRIO` thread
+owned by `ch1`, and caches it. If core1 load ever reads a flat zero, that lookup
+found nothing - check the registry is enabled before suspecting the statistics.
 
 Two traps here, both of which cost an afternoon:
 
@@ -297,6 +311,67 @@ ChibiOS is built by a single waf task that shells out to `make`, and its
 signature comes from its declared inputs (`hwdef.h`, `ldscript.ld` and so on),
 not from anything under `modules/ChibiOS`. Touching a ChibiOS source does
 nothing. Delete `build/<board>/modules/ChibiOS` to force it.
+
+Two more traps in the same area:
+
+- `waf configure` runs `git submodule update`, so it will quietly move
+  `modules/ChibiOS` back to the recorded gitlink if that is a fast-forward from
+  where you left it. A measurement taken straight after a configure may not be
+  measuring the tree you think. Pass `--no-submodule-update` when comparing
+  submodule states, and check `git -C modules/ChibiOS log --oneline -1`
+  afterwards.
+- The build dir remembers which board it was configured for. Deleting
+  `build/<board>` while another board is configured gives "Missing
+  configuration file .../common.ld, reconfigure the project!" - reconfigure,
+  the tree is fine.
+
+### The ChibiOS branch stays on RT 7.0.6
+
+`modules/ChibiOS` tracks the ArduPilot fork of stable_21.11.x, kernel RT 7.0.6,
+and the RP2350 work sits on top of that. Upstream's RP2350 support was written
+against RT 8.0.0, so the obvious way to bring it in - take upstream's tree - also
+bumps the kernel under every ArduPilot board in the world. That was tried and
+undone. Do not redo it without reading this.
+
+Nothing in the RP HAL or the ARMv8-M-ML-ALT core port needs RT 8. Most of the
+8.0.0 delta is renaming (`stkalign_t` to `stkline_t`, `THD_WORKING_AREA` to
+`THD_STACK`, `F_LOCK` to `FACTORY_LOCK`), and the new
+`os/common/ports/ARM-common/include/chtypes.h` is the old file with one typedef
+renamed. What the port actually needs from RT is three things, all added to
+files the port owns rather than to shared code:
+
+- `PORT_WORKING_AREA` in the ALT port's `chcore.h`. RT 7 asks the port for it;
+  RT 8 builds the working area itself.
+- `PORT_CORE0_BSS_SECTION` / `PORT_CORE1_BSS_SECTION` in the ALT SMP header,
+  aliased to the `PORT_MEM_LOCAL_COHERENT_BSSn` names. RT 8 spells these
+  differently, and without the aliases `ch0`/`ch1` and both idle stacks fall
+  silently out of the scratch banks into main SRAM. It still builds and still
+  boots, so check the symbols, not the build:
+  `arm-none-eabi-objdump -t build/Pico2/bin/arducopter | grep -E '\bch0$|\bch1$'`
+  must show `.ram4_clear.core0` and `.ram5_clear.core1`.
+- `mpu_v8m.h`, placed beside the existing `mpu_v7m.h` in
+  `os/hal/ports/common/ARMCMx/` rather than in a parallel include tree.
+
+Costs of the bump, measured: every STM32 board grew about 3.6 KB of flash and
+moved about 3.3 KB from `.data` to `.bss`. With the kernel back at 7.0.6,
+SPRacingH7 is byte-identical to the pre-rebase build and MatekH743, CubeOrange
+and MatekF405 are symbol-identical.
+
+The ArduPilot side pays for this in four places, all in the RP2350 paths:
+`thread_descriptor_t` is filled in by hand rather than through
+`__THD_DECL_DATA`, `chCoreGetStatusX()` keeps its RT 7 signature, the
+`stkalign_t`/`stkline_t` shim in `stm32_util.h` is gone, and core1 load
+reporting looks up the idle thread through the registry.
+
+Two shared files are still touched, and both are deliberate:
+`os/rt/src/chinstances.c` carries the RP2350 per-core idle-loop hook under
+`#if defined(RP2350) && (CH_CFG_SMP_MODE == TRUE)` - its `#else` branch is
+byte-for-byte the fork base, so STM32 codegen is untouched - and
+`os/hal/include/hal_usb.h` gains one config default that the RP USB LLD tests.
+
+If you revert a shared ChibiOS file, audit the fork commits that touched it
+rather than trusting the build. Reverting `chinstances.c` compiled and linked
+cleanly while leaving `rp2350_idle_loops.S` built but never called.
 
 ## Upstream bugs found during bring-up
 
@@ -355,6 +430,23 @@ transition - but it is not what caused the boot loop, because the write never
 reaches the storage layer at all.
 
 ## Gotchas worth knowing
+
+RP2350 code in shared files needs an `#if defined(RP2350)` that covers all of
+it, and only an STM32 build will tell you it does not. Two cases had gone
+unnoticed in `Tools/AP_Bootloader/bl_protocol.cpp` until an STM32 bootloader
+was built: `__set_MSPLIM()`/`__set_PSPLIM()` sat one line below the closing
+`#endif`, and the `WATCHDOG->SCRATCH[]` reset handshake guarded only its inner
+`SCRATCH[3]` writes. Stack limit registers are ARMv8-M and `WATCHDOG` is an
+RP2350 block, so no STM32 bootloader would build at all. Build one STM32 board
+and one STM32 bootloader before pushing anything that touches shared code.
+
+A related one on the RP side: `RCOutput_pico.cpp` guarded on `defined(RP2350)`
+while its own header also required `HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED`,
+so the body compiled where the class was never declared. It also borrows its PIO
+register bit-field constants from `PIOUART.h`, and those live behind
+`HAL_HAVE_PIO_UARTS`, which no bootloader hwdef sets. Both guards now carry
+`HAL_USE_PWM` as well. If a file borrows constants from another module's header,
+check what that header is gated on.
 
 Anything relocated to SRAM must appear in exactly ONE registry. The linker
 claims `.text` sections first-come-first-served, so a symbol listed in two
@@ -514,6 +606,61 @@ and the chip are actually mounted; the composition is correct, not redundant.
 Verify orientation from the gyro, not the compass (there isn't one): nose up
 gives positive pitch, right side down positive roll, and yaw clockwise seen
 from above positive.
+
+## DCM drifts in flight and blocks the next arm
+
+DCM is 15-65 degrees wrong by the end of every flight. It is fine on the
+ground - `ErrRP` 0.0019 in log70 at t=37.7 s, pitch -3.24 against the EKF's
+-3.40 - and starts diverging within a second of arming, before there is any
+vibration to blame (`VIBE` was 0.007 m/s/s at t=40.5 s when `ErrRP` had already
+reached 0.64).
+
+| | worst in-flight error | prearm reports afterwards |
+|--------|-----------------------------|-------------------------------------|
+| log62 | not measured | 51 deg |
+| log70 | pitch +24.5, roll -13.5 | 24 -> 16 -> 11 deg over 60 s |
+| log69 | roll -64.8, pitch +24.6 | 58 -> 41 -> 29 -> 20 deg over 90 s |
+
+The EKF is the correct one throughout: the vehicle held position within 1 m in
+log70 with roll and pitch tracking demand to 0.3 deg, `XKF4.FS` was 0 in both
+flights, and both IMU health flags stayed set.
+
+**Copter never flies on DCM, so this is not a safety fallback issue.** The
+fallback block in `AP_AHRS::_active_EKF_type()` is gated on
+`_vehicle_class == FIXED_WING || GROUND`; Copter is neither, so none of the
+GPS-loss or `const_pos_mode` paths apply. The only residual route is
+`ekf3_estimates.filter_faults != 0`, which leaves `ret` at
+`fallback_active_EKF_type()` = DCM - a hard-fault path, and `FS` has been 0 in
+every flight so far.
+
+What it does cost is the next arm. The DCM roll/pitch consistency check at
+`AP_AHRS.cpp:1829` is gated on `!always_use_EKF() || (total_ekf_cores == 1)`.
+Copter sets `FLAG_ALWAYS_USE_EKF` so the first clause is false, but this board
+has one EKF core (`EK3_IMU_MASK` 1, "alloc 1 cores"), so the check is live. The
+threshold is `ATTITUDE_CHECK_THRESH_ROLL_PITCH_RAD` = 10 deg, and log69 was
+still at 20 deg when the log ended - a lockout of over 95 s. There is no way to
+switch the check off short of `ARMING_CHECK`, because a single IMU means no
+second lane. The yaw half is gated on `!always_use_EKF()` so it never fires,
+which is why only "Roll/Pitch inconsistent" ever appears.
+
+Mechanism, hypothesis not diagnosis. The timing points at `use_fast_gains()`,
+which is just `!hal.util->get_soft_armed()`: pre-arm DCM's P gain is 8x, which
+force-slaves it to the accelerometer and hides whatever the error is, and
+arming removes that. The magnitude points at the GPS term - `_error_rp` pegs at
+exactly 1.0 whenever `GA_b . GA_e < 0` (`AP_AHRS_DCM.cpp:981-983`), more than
+90 degrees apart, which a 25 degree attitude error alone cannot produce. The
+earth reference is
+`GA_e = (0,0,-1) + (velocity - _last_velocity) * AHRS_GPS_GAIN / (_ra_deltat * g)`
+at line 923-928, so a `_ra_deltat` that reads short would inflate the GPS
+acceleration term and tip `GA_e` past 90 degrees. GPS `SAcc` is 0.16-0.80 m/s,
+so there is real velocity noise for a wrong scale factor to amplify.
+
+Cheapest discriminating test: one flight with `AHRS_GPS_GAIN` 0. That drops the
+GPS term entirely and `GA_e` becomes pure (0,0,-1). If `ErrRP` returns to near
+zero and DCM stops drifting it is the GPS/`_ra_deltat` path; if not, look at
+the accel path. Note DCM degrading through 150 s of inverted 800 deg/s flight
+is close to expected on its own - it is log70's 25 deg after ordinary +/-30 deg
+Loiter that is harder to excuse.
 
 ## The tune
 
@@ -880,6 +1027,56 @@ Do not read the actual/demand ratio across these two flights. It moved 1.00 to
 the trap recorded in the tune section. The absolute 11-12 Hz residual is
 0.72 deg/s against 0.88 - essentially unchanged.
 
+## The 17% diagonal RPM split is yaw trim, not a DShot fault
+
+Mean ESC RPM splits cleanly by rotation pair and reproduces across flights:
+
+| | M1 | M2 | M3 | M4 | {M3,M4} / {M1,M2} |
+|-------|-------|-------|-------|-------|-------------------|
+| log70 | 10753 | 9881 | 13041 | 11356 | 1.18 |
+| log69 | 11950 | 10336 | 14148 | 11935 | 1.17 |
+
+It looks alarming and it is not. Recording the reasoning because the obvious
+suspicion - that the PIO is sending one diagonal hot - is wrong, and it would
+be easy to re-open.
+
+**At equal commands the motors are equal.** In log69 at t=2.61-2.79 s all four
+outputs sit on the `MOT_SPIN_MIN` floor within 3 PWM of each other
+(`RCOU` 1080/1082/1083/1081) and the ESCs report 4377/4342/4385/4428 RPM, a 2%
+spread, with one sample at 0.6%. A per-channel scale error anywhere in mixer ->
+PIO -> ESC -> motor would show at every RPM. It does not.
+
+**The split is in the command, not just the telemetry.** `RCOU` is the mixer's
+output, computed long before anything reaches `RCOutput_pico`, and it carries
+the same split in the same direction (log70 1250/1227/1318/1266). That
+direction is the tell: a PIO sending channel 3 hot would over-spin it, and the
+controller would compensate by commanding it *down*. High command and high RPM
+together is what a faithful output chain being asked for more looks like.
+
+**The size matches the logged yaw output exactly.** In log69's acro window
+`RATE.AOut` is 0.1400 and `RATE.YOut` is -0.0128, and the quad X yaw mixer
+factors are +/-1. With `MOT_THST_EXPO` 0.49, hover thrust is
+`0.51*0.140 + 0.49*0.140^2` = 0.0810, so the diagonals sit at 0.0938 and
+0.0682 - a predicted thrust ratio of 1.375. Measured, summing RPM^2 per
+diagonal: 342.6e6 / 249.6e6 = **1.3725**. Agreement to 0.2%. log70 predicts
+1.52 against a measured 1.40, cruder because that window has more throttle
+variation.
+
+So the yaw controller is using 1.3% of its authority. It shows up as a 17% RPM
+split only because this airframe hovers at about 8% thrust, which makes the
+yaw term about 16% of hover thrust, and RPM goes as the square root. On an
+ordinary 2:1 quad hovering at 50% thrust the same trim would be a ~1%
+difference and invisible.
+
+Physically that is under a degree of consistent in-plane motor mount twist
+(order of magnitude - it scales with prop geometry). The other candidate is
+prop pitch mismatch between the CW and CCW sets, which is easier to get wrong
+than usual on a props-out build because the assignment is inverted from the
+normal convention. If it ever needs settling, swap the two prop sets between
+diagonals and re-fly: `PIDY.I` is -0.0115 in log70 and -0.0122 in log69, so a
+sign flip would be unambiguous. It costs nothing and is not growing between
+flights, so this is a note rather than a task.
+
 ## Flash writes stop motor output for up to 17 ms
 
 Measured with a counter on the interval between `dshot_send_groups()` calls:
@@ -924,75 +1121,166 @@ subtraction rather than the helper, whose static_asserts enforce matching types.
 Until someone soaks the board past 71 minutes of uptime arming and disarming,
 reboot before flying.
 
-## The SD card drops about 70% of log messages
+## The SD write path is CPU-starved, not card-limited
 
-Measured on all three bdshot flights, from `DSF`:
+Retracted: this section used to conclude that "the sink is saturated, not
+contended" and that the card had a ~100 KB/s ceiling. That is wrong. The card
+delivers 91 KB/s when core0 is idle enough and 18 KB/s when it is not, in the
+same flight, on the same file. The ceiling is core0 CPU, and the earlier
+logs only ever sampled one load condition.
 
-| | log51 | log52 | log53 |
-|--------------------|---------------|---------------|---------------|
-| dropped / written | 218885/102083 | 519262/233903 | 308115/134076 |
-| loss | 68% | 69% | 70% |
-| `RATE` actual rate | 320 Hz | 319 Hz | 315 Hz |
-| throughput | 101 KB/s | 101 KB/s | 99 KB/s |
+log69 settles it, because ACRO and LOITER run at very different core0 loads
+inside one flight:
 
-The sink is saturated, not contended. `DSF.Bytes` is a steady ~100 KB per
-period in every flight and `DSF.FMn` - minimum free buffer space - sits at
-about 900 bytes *every* period. A buffer that is perpetually almost full with
-a flat write rate means the writer cannot drain it. The arithmetic on log53:
-134076 written plus 308115 dropped is 442191 messages over 69.5 s, about
-6360 msg/s or 331 KB/s wanted against 100 KB/s delivered.
+| Phase | `PM.Load` | `DSF.Bytes` per second | samples |
+|--------------------------|-----------|------------------------|---------|
+| ACRO, 7.5-152 s | 56-60% | 72538-91659 | 41 |
+| LOITER, 174 s | 79% | 17922 | 1 |
+| disarmed, 185-262 s | 68-70% | 46996-54795 | 10 |
 
-log62 confirms all of it on a *lighter* bitmask. It flew `LOG_BITMASK` 180223 -
-bit 0 but not bit 18, so no `IMU_FAST` - and still dropped 1,870,476 messages
-over the 300 s session, about 6200 msg/s. `DSF.FMn` sat between 815 and 991
-bytes in every period after the first, and `DSF.FMx` never left 5042-5065,
-which pins the write buffer at about 5 KB against the 80 KB `LOG_FILE_BUFSIZE`
-asks for. Dropping the IMU batch bit does not get under the ceiling; the buffer
-is still perpetually almost full and the allocation is still short.
+log70 agrees on its own numbers - 20-28 KB/s armed at 78-81% load, 42-59 KB/s
+disarmed at 66-71%, and 81-91 KB/s after the RC link dropped at t=323 s and
+load fell to 62-64%. That last step is the cleanest single data point: nothing
+changed but the RC processing going away, load fell 4.9 points, and throughput
+went up 68%.
 
-An earlier note here claimed 19 MB at 1 kHz `RATE` without drops. That is
-475 KB/s, 4.7x what any of these three flights achieved on the same
-`LOG_BITMASK` 442367. Either it was a different card or `DSF.Dp` was never
-read. Treat it as unverified rather than as a baseline.
+Delivered fraction follows: ACRO writes about 1480 msg/s against 4874 dropped
+(23% through), LOITER 330 against 7896 (4%). Only one `DSF` record survived
+the entire 28 s LOITER segment, which is itself the evidence.
 
-Two things it is *not*. Moving the SD off the rate-loop core was tried in
-log53 - `HAL_CORE_SPI1` from 1 to 0 - and changed nothing: 70% against 68%
-and 69%, and `RATE` still at 315 Hz. Core contention was the wrong
-explanation. The move is kept anyway, since it takes SD work off the core
-running the 2 kHz loop and log53 had no in-flight `dtMax` outlier at all, but
-it is not the fix.
+### Why: round trips, not bandwidth
 
-Nor is it the de-overclock. The PL022 is fed by `clk_peri`, which
-`rp_clocks.h` ties to `RP_PLL_SYS_CLK`, and `SPIDevice.cpp` fixes `SSPCPSR` at
-2 and varies `SCR` only. For the 25 MHz sdcard entry that gives `SCR` 4 and
-22.50 MHz at 225 MHz, against `SCR` 7 and 23.44 MHz at the old 375 MHz - a 4%
-difference. It was 28.13 MHz before the SPI clock fix, which was 12.5% over
-the SPI-mode limit, so that fix cost 20%. Neither figure explains 4.7x. At
-22.50 MHz the raw bus is 2.81 MB/s and 100 KB/s is 3.6% utilisation, so the
-cost is per-transaction overhead in the FATFS and SD path, not the bit clock.
-If that path is CPU-bound then 375 to 225 MHz is a 40% core reduction and does
-contribute, but it cannot be the whole gap.
+`PM.SPIC` counts SPI transactions, so this is measurable. Across log69's acro
+window `SPIC` runs at 4807/s *for every bus combined*, while the card takes
+79 KB/s = 154 sectors/s. Even if every transaction on the board were the SD
+card that is 31 per sector, and the IMU on SPI0 at 4 kHz must account for most
+of the 4807, which bounds the SD share at roughly 5-8 per sector. So
+`mmc_wait_idle` is *not* spinning on a busy card, and bus utilisation is about
+2.8%. The path is idle nearly all the time.
 
-Separately, the write buffer is far smaller than configured.
-`LOG_FILE_BUFSIZE` is 80, but `DSF.FMx` - the largest free space ever seen -
-never exceeds about 5.1 KB, so the allocation is around 5 KB.
-`AP_Logger_File::Init()` steps the request down 10% at a time until
-`ByteBuffer::set_size()` succeeds, and that needs one contiguous `calloc`.
-`PM.Mem` reports about 71.6 KB free in flight, so the memory exists later and
-the failure is at init - ordering or fragmentation. Init prints
-`AP_Logger: reduced buffer N/M` and `AP_Logger_File: buffer size=N` through
-`DEV_PRINTF`, which reaches the USB console but never the log, so one boot
-with the console attached gives the real number. Worth fixing, but with the
-sink saturated a larger buffer absorbs bursts rather than raising sustained
-throughput.
+What costs is that each of those transactions is a full thread round trip.
+`mmcSequentialWrite()` in `hal_mmc_spi.c` frames every 512-byte block in
+software - `spiSend(2)` prologue, `spiSend(512)` data, `spiIgnore(2)` CRC,
+`spiReceive(1)` response, then `mmc_wait_idle()` - so a 4 KB chunk is about 40
+SPI transactions of which 8 carry data. Every one goes through
+`SPIDevice::do_transfer()`: CS assert, `osalSysLock`, `bouncebuffer_setup`, two
+RP DMA channels programmed, `osalThreadSuspendTimeoutS`, DMA ISR, thread
+resume, `bouncebuffer_finish`, CS restore. A 1-byte poll is 0.36 us of wire
+time wrapped in a thread suspend and resume.
+
+`log_io` runs at priority 59 (see `STAK`) against `APM_MAIN_PRIORITY` 180, so
+every one of those resumes waits for the main loop to yield. Dividing measured
+throughput by 40 round trips per 4 KB gives an effective cost per round trip of
+about 1.3 ms at 58% load and 5.7 ms at 79%. Wire time for the whole 4 KB is
+only 1.46 ms, so essentially all of it is scheduling latency.
+
+This is exactly what the ST SDMMC path avoids: there a multi-block write is one
+DMA of N x 512 with the busy state signalled by the peripheral, so the io
+thread is scheduled once per 4 KB instead of forty times. There is no
+equivalent to port, because RP2350 has no SD host controller at all - see
+below.
+
+### What is already in place, and is not the problem
+
+- The ArduPilot MMC-SPI work is present in the submodule: `hal_mmc: correct
+  MMC driver, add support for SPI hooks and read/write timeouts`, `mmc_spi:
+  added bus acquire hooks`, `fatfs_bindings: add support for op retries`.
+  These are what `spiSendHook`/`spiReceiveHook`/`spiAcquireBusHook` in
+  `sdcard.cpp` plug into.
+- FatFs already streams whole chunks: `hwdef/common/ffconf.h` has
+  `FF_FS_TINY 0`, so it does direct multi-sector transfers rather than
+  windowing each sector, and `AP_FATFS_MIN_IO_SIZE` is 4096. A logger chunk
+  therefore reaches `blkWrite(&MMCD1, sector, buf, 8)` and becomes one CMD25.
+- SPI is not board-wide polled; only Durandal sets `HAL_SPI_USE_POLLED`.
+- It is not the de-overclock. `SPIDevice.cpp` fixes `SSPCPSR` at 2 and varies
+  `SCR` only, giving 22.50 MHz at 225 MHz against 23.44 MHz at the old
+  375 MHz - 4%. Raw bus is 2.81 MB/s, so there is 20-100x of headroom above
+  what is being achieved.
+- Moving the SD off the rate core was tried in log53 (`HAL_CORE_SPI1` 1 to 0)
+  and changed nothing. Note that test ran in Stabilize, where core0 was never
+  loaded, so it did not test the mechanism above. It is worth re-running now
+  that the mechanism is understood.
+
+### Plan: collapse the round trips
+
+Agreed approach, in order.
+
+**(a) One full-duplex exchange per block.** Prebuild
+`[0xFF][0xFC][512 data][2 CRC][1 resp slot]` - 517 bytes - in a staging buffer
+and issue a single `spiExchange`, then read the response token out of the RX
+side. `spi_lld_exchange()` already does that in one DMA pair. Takes 40 round
+trips per 4 KB down to 8. Costs one 512-byte SRAM to SRAM memcpy per block,
+about 1 us against 180 us of wire time, so the copy does not matter. Order of
+magnitude, this should take loaded throughput from 18 KB/s to around 90 KB/s -
+above the current *unloaded* best.
+
+**(b) ISR-driven multi-block state machine.** The real ST equivalent, if (a)
+is not enough. `mmc_write()` posts the whole 8-block job and the SPI DMA
+completion callback advances to the next block without involving the thread,
+so `log_io` is scheduled once per 4 KB. The obstacle is that `do_transfer()`
+unconditionally does `osalThreadSuspendTimeoutS`; it needs a completion-callback
+path alongside. For the inter-block busy wait, note the card holds DO low
+continuously while busy with CS asserted, so the ISR can read the MISO pad
+(PA28) directly instead of clocking bytes.
+
+**(c) PIO.** A state machine that frames blocks and handles busy autonomously,
+so the whole chunk goes out on one kick. Only if (a) and (b) fall short.
+
+Two things ruled out while planning this. **DMA chaining** would be the elegant
+way to do (a) with no memcpy, but the ChibiOS RP DMA driver does not expose it
+and `rp_dma.h` explicitly forces `CHAIN_TO` to self citing errata RP2350-E5 -
+read that erratum before building on it. And **4-bit SDIO over PIO**, which is
+the usual RP2xxx route to multi-MB/s, is not available on this board: the hwdef
+routes only `PA30 SPI1_SCK`, `PA31 SPI1_MOSI`, `PA28 SPI1_MISO`,
+`PA29 SDCARD_CS`, so DAT1/DAT2 are not wired. Worth raising for the next spin -
+DAT1/DAT2 on GPIOs contiguous with DAT0 so one PIO instruction can shift four
+bits, plus pull-ups on DAT0-3 and CMD.
+
+### The write buffer is still short
+
+`LOG_FILE_BUFSIZE` is 80 but `DSF.FMx` never exceeds about 5.1 KB in any
+flight, so the allocation is around 5 KB. `AP_Logger_File::Init()` steps the
+request down 10% at a time until `ByteBuffer::set_size()` succeeds, and that
+needs one contiguous `calloc`. `PM.Mem` reports about 69 KB free in flight, so
+the memory exists later and the failure is at init - ordering or fragmentation.
+Init prints `AP_Logger: reduced buffer N/M` and `AP_Logger_File: buffer size=N`
+through `DEV_PRINTF`, which reaches the USB console but never the log, so one
+boot with the console attached gives the real number.
+
+This matters more than the earlier note credited. `io_timer()` writes at most
+`_writebuf_chunk` (4096) but takes `nbytes = MIN(nbytes, size)` where `size` is
+the contiguous run from `_writebuf.readptr()`. On a ~5 KB ring that run is
+frequently well under 4096, so writes fragment into sub-chunk pieces - more
+round trips per byte, which multiplies straight into (a).
+
+### RP2350 has no SD host controller
+
+Worth stating plainly so nobody goes looking. RP2350 in any variant has no
+SDIO/SDMMC block; the peripheral set is 2x UART, 2x SPI (PL022), 2x I2C, PWM,
+USB 1.1, ADC, 3x PIO, HSTX. RP2350B differs from RP2350A only in package and
+pin count. ChibiOS reflects it: there is no `SDCv1`/`SDMMCv1` under
+`ports/RP/LLD/`, and this board builds with `HAL_USE_SDC FALSE` and
+`HAL_USE_MMC_SPI TRUE`. The only two routes to a card are SPI mode via the
+PL022, which is what is in use, and 4-bit SDIO bit-banged in PIO, which this
+board is not wired for.
+
+One card-choice caveat while on SPI: SPI mode is mandatory for SDSC and SDHC
+but optional for SDXC, and some large cards implement it poorly. Benchmark on a
+32 GB SDHC card rather than a 128 GB+ SDXC one.
 
 ## Logging setup for tuning work
 
-Note the bitmask below asks for about 331 KB/s and the card delivers about
-100, so roughly 70% of it is dropped - see the section above. `RATE` lands
-near 320 Hz rather than 1 kHz. It is still the right setting for tuning work,
-but the sample rate is not what it claims and anything spectral should come
-from the `ISBH`/`ISBD` batch samples, which are logged whole.
+Note the bitmask below asks for about 330 KB/s and the card delivers 18-91
+depending on core0 load - see the section above. In a position-controlled
+flight expect roughly 95% of it to be dropped and `RATE` to land near 48 Hz
+rather than 1 kHz; in acro, closer to 23% through. It is still the right
+setting for tuning work, but the sample rate is not what it claims and anything
+spectral should come from the `ISBH`/`ISBD` batch samples.
+
+Those mostly survive: log69 has 648 `ISBD` across 21 blocks against 672
+expected, so 96% arrive and a few blocks are incomplete. `ISBH.smp_cnt` is
+1024, so a block is 32 `ISBD` records with `seqno` 0-31 - check for a full set
+before trusting an FFT of any one block.
 
 The stock `LOG_BITMASK` logs `RATE` at **10 Hz**, which aliases anything
 interesting into nonsense - a 14 Hz oscillation reads as a random walk of
@@ -1018,11 +1306,14 @@ use 21.0 (3.5 V/cell) low and 19.8 (3.3 V/cell) critical. Sag compensation
 (`BATT_FS_VOLTSRC` 1) is the better answer but is useless until the current
 scale above is fixed.
 
-This is now the most likely thing to cut a flight short. log62 is still on 21.6
-low and 21.0 critical, and its minimum pack voltage was 21.79 V - 0.19 V of
-margin. Its reported 570 mAh consumption is invalid because the current input
-does not measure load. The next longer flight is likely to hit the voltage
-threshold. Change it before flying again, not after.
+This is now the most likely thing to cut a flight short, and it has been
+ignored twice. Still 21.6 low and 21.0 critical as of log70. Minimum pack
+voltage by flight: log62 21.79 V (0.19 V of margin), log69 **21.81 V**
+(0.21 V), log70 23.07 V. log69 also tripped `BATT_ARM_VOLT` 22.1 on the
+post-flight prearm, so the pack really was getting low - but at 3.64 V/cell it
+was not flat, the threshold is simply set for the wrong chemistry state.
+Reported consumption is invalid in all three because the current input does not
+measure load. Change it before flying again, not after.
 
 Sag compensation stays off regardless, because the current channel does not
 work at all - see the next section.
@@ -1190,56 +1481,71 @@ case 2's leaky input. Establish what the ESC outputs before raising it.
 ## Before the next flight
 
 The DShot path, the SRAM relocations, the timer commits and the harmonic notch
-have all now flown (logs 51-53), and position control has flown too (log62:
-Loiter, GPS fix, external compass, 247 s armed).
+have all now flown (logs 51-53); position control has flown (log70: Loiter,
+119 s armed); and full-rate acro has flown (log69: 153 s at 800 deg/s,
+inverted, 2.75 g).
 
 1. Build a flight image. `AP_RP2350_PC_SAMPLER_ENABLED` and
    `AP_RP2350_DEBUG_REPORT_ENABLED` must both be 0 in `hwdef.dat`; they are
    committed as 0, so only an uncommitted edit can turn them on. Check
    `git diff` on `hwdef.dat` is empty before flying.
-2. Confirm `rp2350_xip_park_count` stops advancing once armed, per the flash
+2. Set `BATT_LOW_VOLT` off 21.6 V. It fired a Land mid-discharge on flight 17
+   and is *still* 21.6 with `BATT_CRT_VOLT` 21.0 as of log70. Use 21.0 low and
+   19.8 critical for 6S. log62 came within 0.19 V, log69 within 0.21 V. Do this
+   one first; it has now been deferred twice.
+3. Confirm `rp2350_xip_park_count` stops advancing once armed, per the flash
    section above. The timing evidence says no in-flight park, but the counter
-   has still not been read directly.
-3. Reboot shortly before arming, until the 71 minute wrap has been soaked.
-4. Set `BATT_LOW_VOLT` off 21.6 V - it fired a Land mid-discharge on flight 17
-   and is *still* 21.6 as of log62, with `BATT_CRT_VOLT` at 21.0. Use 21.0 low
-   and 19.8 critical for 6S. log62 got within 0.19 V of it. Do this one first.
+   has still not been read directly. log69 has one unexplained 54.9 ms `PM.MaxT`
+   in the window containing the arm transition, most likely the new log file
+   being created plus the 1388-record parameter dump, since `LOG_DISARMED` 2
+   starts a fresh log at arm. The `RTDT` record covering it was dropped, so
+   whether core1 was parked is unknown - this is the natural test case.
+4. Reboot shortly before arming, until the 71 minute wrap has been soaked.
 5. Position modes are available now, but nothing beyond Loiter has been flown.
    RTL, Auto and the GPS failsafe paths are all still untested on this board -
    fly them deliberately before relying on one to recover the vehicle.
+6. Expect a re-arm delay of 1-2 minutes after an aggressive flight while the
+   DCM consistency check decays below 10 deg. Not a fault; see the DCM section.
 
 ## Next steps
 
-1. Find out why the current channel reads die temperature instead of current,
+1. **Collapse the SD write into one exchange per block**, option (a) in the SD
+   section. Prebuild the framed 517-byte block and issue a single
+   `spiExchange`, checking the response token from the RX buffer. This is the
+   agreed next piece of work. Measure it the same way it was diagnosed: `PM.Load`
+   against `DSF.Bytes` across an acro segment and a Loiter segment in one
+   flight, which is what made the mechanism visible in the first place.
+2. Fix the battery failsafe thresholds, per above. Deferred twice now.
+3. Find out why the current channel reads die temperature instead of current,
    per the section above. Work the test list there in order; it is a wiring or
    sensor question, not a calibration one. Only once a reading responds to load
    is there any point setting `BATT_AMP_OFFSET` or checking the scale against
    what the charger puts back.
-2. Fix the battery failsafe thresholds, per above.
-3. Make the bidirectional telemetry error rate measurable, by counting the
+4. Read the `AP_Logger_File: buffer size=` line off the USB console and fix the
+   5 KB write buffer. Independent of item 1 and it multiplies into it, because a
+   short ring fragments every write below the 4 KB chunk.
+5. Make the bidirectional telemetry error rate measurable, by counting the
    `read_telemetry()` false returns in the RP2350 branch. `ESC.Err` is a
    hardcoded 0 on this port, so the notch is now being driven by telemetry
    whose frame loss nobody can see.
-4. Establish whether flash page programs now succeed first time or only on the
+6. Establish whether flash page programs now succeed first time or only on the
    retry after a failed verify. Harmless either way for correctness, but a
    retry every time means the underlying QSPI defect is still there and double
    the flash wear. One counter on the `memcmp` mismatch answers it.
-5. Finish AUTOTUNE. Roll got most of the way in log62 without saving; pitch and
+7. Finish AUTOTUNE. Roll got most of the way in log62 without saving; pitch and
    yaw are untouched. See the autotune section - the run needs a longer flight
    and less stick than it got.
-6. Chase the post-landing `DCM Roll/Pitch inconsistent 51 deg` seen at the end
-   of log62, alongside `GPS Glitch or Compass error`. Both are after disarm, so
-   neither affected the flight, but a 51 deg DCM/EKF disagreement on the ground
-   blocks the next arm and is not explained.
-7. Attack core0's flash share, starting with the veneers - see the veneer
-   section in `PROFILING.md`. Core1 is done and needs nothing further.
-8. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
-9. Re-check the QMI flash timing if this revision fits a different flash part.
-   `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
-10. Re-measure glat before acting on it, per the retraction above.
-11. Find the ~100 KB/s ceiling in the SD write path. The bit clock is only
-    3.6% utilised, so it is per-transaction overhead -
-    `HAL_LOGGER_WRITE_CHUNK_SIZE`, the FATFS IO size and the per-write CS
-    handling are where to look. Read the `AP_Logger_File: buffer size=` line
-    off the USB console first, since the write buffer is also allocating about
-    5 KB against the 80 KB requested.
+8. Try `AHRS_GPS_GAIN` 0 for one flight to discriminate the DCM drift, per the
+   DCM section. Low priority: nothing flies on DCM, the only cost is the re-arm
+   delay.
+9. Attack core0's flash share, starting with the veneers - see the veneer
+   section in `PROFILING.md`. Core1 is done and needs nothing further. Note
+   core0 load is now known to gate SD throughput, so this is worth more than it
+   looked.
+10. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
+11. Re-check the QMI flash timing if this revision fits a different flash part.
+    `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
+12. Re-measure glat before acting on it, per the retraction above.
+13. For the next board spin: route microSD DAT1/DAT2, ideally on GPIOs
+    contiguous with DAT0, plus pull-ups on DAT0-3 and CMD. That is the only
+    route to SDIO-class throughput on RP2350, which has no SD host controller.
