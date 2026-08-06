@@ -16295,6 +16295,16 @@ switch value'''
 
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''
+        # stop the SITL for the duration of the replay.  Replay writes
+        # its output into the same logs/ directory the SITL logs into,
+        # and these tests run with LOG_DISARMED set, so with the SITL
+        # left running there are two writers in there and no way to tell
+        # afterwards which of the new logs is Replay's: "the latest log"
+        # can just as easily be the one the SITL is still appending to.
+        self.mav.close()
+        self.stop_SITL()
+
+        logs_before = set(self.log_list())
         util.run_cmd(
             ['build/sitl/tool/Replay', filepath],
             directory=util.topdir(),
@@ -16302,7 +16312,21 @@ switch value'''
             show=True,
             output=True,
         )
-        return self.current_onboard_log_filepath()
+        # with the SITL stopped Replay is the only writer, so its output
+        # is simply the log which appeared while it ran.  Work this out
+        # before restarting the SITL, which opens a log of its own:
+        new_logs = sorted(set(self.log_list()) - logs_before)
+
+        self.start_SITL(wipe=False)
+        self.mav.do_connect()
+        self.wait_heartbeat(drain_mav=True)
+        self.set_streamrate(self.sitl_streamrate())
+
+        if len(new_logs) != 1:
+            raise NotAchievedException(
+                "Expected exactly one new log from Replay, got (%s)" % str(new_logs))
+
+        return new_logs[0]
 
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''

@@ -14256,9 +14256,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_log_has_no_dropped_blocks(current_log_filepath)
 
         self.zero_throttle()
-        self.run_replay(current_log_filepath)
-
-        replay_log_filepath = self.current_onboard_log_filepath()
+        replay_log_filepath = self.run_replay(current_log_filepath)
 
         self.context_pop()
 
