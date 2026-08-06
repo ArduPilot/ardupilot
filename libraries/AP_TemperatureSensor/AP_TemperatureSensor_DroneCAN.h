@@ -30,6 +30,8 @@ public:
 
     static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
 
+    void init() override;
+
     // Don't do anything in update, but still need to override the pure virtual method.
     void update(void) override {};
 

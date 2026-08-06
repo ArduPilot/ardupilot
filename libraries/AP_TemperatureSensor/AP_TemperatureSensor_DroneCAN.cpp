@@ -19,6 +19,7 @@
 
 #include "AP_TemperatureSensor_DroneCAN.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/Device.h>
 #include <AP_Math/AP_Math.h>
 
 AP_TemperatureSensor_DroneCAN* AP_TemperatureSensor_DroneCAN::_drivers[];
@@ -54,6 +55,17 @@ AP_TemperatureSensor_DroneCAN::AP_TemperatureSensor_DroneCAN(AP_TemperatureSenso
     WITH_SEMAPHORE(_driver_sem);
     _drivers[_driver_instance] = this;
     _driver_instance++;
+}
+
+void AP_TemperatureSensor_DroneCAN::init()
+{
+    // _ID is loaded from EEPROM before init(); use low 8 bits as the address field
+    set_bus_id(AP_HAL::Device::make_bus_id(
+        AP_HAL::Device::BUS_TYPE_UAVCAN,
+        0,
+        uint8_t(_ID.get()),
+        uint8_t(DevType::DRONECAN)
+    ));
 }
 
 // Subscript to incoming temperature messages
