@@ -121,6 +121,9 @@ void AP_TemperatureSensor_MAX31865::init()
 
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
+    _dev->set_device_type(uint8_t(_params.type));
+    set_bus_id(_dev->get_bus_id());
+
     /* Request 5Hz update */
     _dev->register_periodic_callback(200 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_TemperatureSensor_MAX31865::thread_tick, void));

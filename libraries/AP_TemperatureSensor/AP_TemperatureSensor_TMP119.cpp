@@ -73,6 +73,9 @@ void AP_TemperatureSensor_TMP119::init()
     // lower retries for run
     _dev->set_retries(3);
 
+    _dev->set_device_type(uint8_t(AP_TemperatureSensor_Params::Type::TMP119));
+    set_bus_id(_dev->get_bus_id());
+
     // poll the temperature register at 20Hz
     _dev->register_periodic_callback(50 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_TemperatureSensor_TMP119::_timer, void));
