@@ -64,7 +64,7 @@
 #include "afs_rover.h"
 #endif
 #include "Parameters.h"
-#include "PWMForwarder.h"
+#include "ExtraController.h"
 #include "GCS_Mavlink.h"
 #include "GCS_Rover.h"
 #include "AP_Rally.h"
@@ -82,6 +82,7 @@ public:
     friend class ParametersG2;
     friend class AP_Rally_Rover;
     friend class AP_Arming_Rover;
+    friend class ExtraController;
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     friend class AP_AdvancedFailsafe_Rover;
 #endif
@@ -129,8 +130,9 @@ private:
     // mapping between input channels
     RCMapper rcmap;
 
-    // external PWM input to SERVO output forwarding
-    PWMForwarder pwm_forwarder;
+    // independent PWM backup controller
+    ExtraController extra_controller;
+    bool extra_controller_armed{};
 
     // primary control channels
     RC_Channel *channel_steer;
@@ -447,6 +449,9 @@ public:
     bool mavlink_motor_test_check(const GCS_MAVLINK &gcs_chan, bool check_rc, AP_MotorsUGV::motor_test_order motor_instance, uint8_t throttle_type, int16_t throttle_value);
     MAV_RESULT mavlink_motor_test_start(const GCS_MAVLINK &gcs_chan, AP_MotorsUGV::motor_test_order motor_instance, uint8_t throttle_type, int16_t throttle_value, float timeout_sec);
     void motor_test_stop();
+
+    // arm or disarm the independent extra controller
+    bool arm_extra_controller(bool is_armed, bool force) override;
 
     // frame type
     uint8_t get_frame_type() const { return g2.frame_type.get(); }

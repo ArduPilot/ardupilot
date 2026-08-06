@@ -185,7 +185,7 @@ userdata Quaternion operator *
 userdata Quaternion method get_euler_roll float
 userdata Quaternion method get_euler_pitch float
 userdata Quaternion method get_euler_yaw float
-userdata Quaternion method from_euler void float'skip_check float'skip_check float'skip_check 
+userdata Quaternion method from_euler void float'skip_check float'skip_check float'skip_check
 userdata Quaternion method inverse Quaternion
 userdata Quaternion method earth_to_body void Vector3f
 userdata Quaternion method to_axis_angle void Vector3f
@@ -315,6 +315,7 @@ singleton AP_Vehicle depends (!defined(HAL_BUILD_AP_PERIPH))
 singleton AP_Vehicle rename vehicle
 singleton AP_Vehicle scheduler-semaphore
 singleton AP_Vehicle method set_mode boolean uint8_t'skip_check ModeReason::SCRIPTING'literal
+singleton AP_Vehicle method arm_extra_controller boolean boolean boolean
 singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_control_mode_reason uint8_t
 singleton AP_Vehicle method get_likely_flying boolean
@@ -368,9 +369,6 @@ include SRV_Channel/SRV_Channel.h
 singleton SRV_Channels depends (!defined(HAL_BUILD_AP_PERIPH) || defined(HAL_PERIPH_ENABLE_RC_OUT))
 singleton SRV_Channels rename SRV_Channels
 singleton SRV_Channels method find_channel boolean SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint8_t'Null
-singleton SRV_Channels method channel_function SRV_Channel::Aux_servo_function_t'enum uint8_t 0 NUM_SERVO_CHANNELS-1
-singleton SRV_Channels method channel_function rename get_channel_function
-singleton SRV_Channels method set_channel_function boolean uint8_t 0 NUM_SERVO_CHANNELS-1 SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 boolean
 singleton SRV_Channels method set_output_pwm void SRV_Channel::Aux_servo_function_t'enum SRV_Channel::k_none SRV_Channel::k_nr_aux_servo_functions-1 uint16_t'skip_check
 singleton SRV_Channels method set_output_pwm_chan void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'skip_check
 singleton SRV_Channels method set_output_pwm_chan_timeout void uint8_t 0 NUM_SERVO_CHANNELS-1 uint16_t'skip_check uint16_t'skip_check
@@ -916,7 +914,7 @@ singleton AP_EFI depends (AP_EFI_SCRIPTING_ENABLED == 1)
 singleton AP_EFI rename efi
 singleton AP_EFI method get_backend AP_EFI_Backend uint8_t'skip_check
 singleton AP_EFI method get_state void EFI_State'Ref
-singleton AP_EFI method get_last_update_ms uint32_t 
+singleton AP_EFI method get_last_update_ms uint32_t
 
 -- ----END EFI Library----
 

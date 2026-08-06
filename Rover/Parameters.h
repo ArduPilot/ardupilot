@@ -57,7 +57,7 @@ public:
         k_param_battery_curr_pin,
 
         k_param_precland = 24,
-        k_param_pwm_forwarder,
+        k_param_extra_controller,
 
         // braking
         k_param_braking_percent_old = 30,   // unused

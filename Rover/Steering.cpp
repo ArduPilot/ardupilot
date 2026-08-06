@@ -13,6 +13,7 @@ void Rover::set_servos(void)
         float speed = 0.0f;
         g2.attitude_control.get_forward_speed(speed);
 
-        g2.motors.output(arming.is_armed(), speed, G_Dt);
+        g2.motors.output(arming.is_armed() || extra_controller_armed,
+                         speed, G_Dt);
     }
 }

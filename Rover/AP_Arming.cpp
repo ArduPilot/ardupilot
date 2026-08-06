@@ -111,7 +111,7 @@ bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
 
 void AP_Arming_Rover::update_soft_armed()
 {
-    hal.util->set_soft_armed(is_armed() &&
+    hal.util->set_soft_armed((is_armed() || rover.extra_controller_armed) &&
                              hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
 #if HAL_LOGGING_ENABLED
     AP::logger().set_vehicle_armed(hal.util->get_soft_armed());
@@ -123,6 +123,9 @@ void AP_Arming_Rover::update_soft_armed()
  */
 bool AP_Arming_Rover::arm(AP_Arming::Method method, const bool do_arming_checks)
 {
+    // Main arming always has priority over the independent extra controller.
+    rover.arm_extra_controller(false, false);
+
     if (!AP_Arming::arm(method, do_arming_checks)) {
         AP_Notify::events.arming_failed = true;
         return false;

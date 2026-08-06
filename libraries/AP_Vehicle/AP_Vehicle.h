@@ -117,6 +117,9 @@ public:
     virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
     virtual uint8_t get_mode() const = 0;
 
+    // optional independent backup controller; implemented by Rover
+    virtual bool arm_extra_controller(bool is_armed, bool force) { return false; }
+
     ModeReason get_control_mode_reason() const {
         return control_mode_reason;
     }

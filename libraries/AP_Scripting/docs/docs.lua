@@ -2568,18 +2568,6 @@ function SRV_Channels:get_output_pwm_chan(chan) end
 ---@param pwm integer -- pwm value
 function SRV_Channels:set_output_pwm(function_num, pwm) end
 
--- Change the function assigned to a servo output channel at runtime
----@param chan integer -- servo channel number (zero indexed; 0 is SERVO1)
----@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
----@param save boolean -- true to save to storage, false for a temporary runtime change
----@return boolean -- true if the function was changed or was already assigned
-function SRV_Channels:set_channel_function(chan, function_num, save) end
-
--- Return the function currently assigned to a servo output channel
----@param chan integer -- servo channel number (zero indexed; 0 is SERVO1)
----@return integer -- servo function (See SERVOx_FUNCTION parameters)
-function SRV_Channels:get_channel_function(chan) end
-
 -- Returns first servo output number (zero indexed) of an output assigned output_function (See SERVOx_FUNCTION parameters ). 0 = SERVO1_FUNCTION ect. Nil if none is assigned.
 ---@param function_num integer -- servo function (See SERVOx_FUNCTION parameters)
 ---@return integer|nil -- output channel number if available
@@ -2786,6 +2774,12 @@ function vehicle:get_control_mode_reason() end
 --  Returns current vehicle mode by mode_number.
 ---@return integer -- mode number. Values for each vehcile type can be found here: https://mavlink.io/en/messages/ardupilotmega.html#PLANE_MODE
 function vehicle:get_mode() end
+
+-- Arm or disarm the Rover independent extra controller
+---@param is_armed boolean -- true to arm extra control, false to disarm it
+---@param force boolean -- when arming, true allows disarming the main controller first
+---@return boolean -- resulting extraArm state
+function vehicle:arm_extra_controller(is_armed, force) end
 
 -- Attempts to change vehicle mode to mode_number. Returns true if successful, false if mode change is not successful.
 ---@param mode_number integer -- mode number values for each vehcile type can be found here: https://mavlink.io/en/messages/ardupilotmega.html#PLANE_MODE

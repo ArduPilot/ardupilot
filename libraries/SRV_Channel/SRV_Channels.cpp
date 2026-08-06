@@ -570,8 +570,8 @@ bool SRV_Channels::is_GPIO(uint8_t channel)
 {
     const auto function = channel_function(channel);
     if (function == SRV_Channel::k_GPIO ||
-        function == SRV_Channel::k_external_pwm_in1 ||
-        function == SRV_Channel::k_external_pwm_in2) {
+        function == SRV_Channel::k_extra_throttle ||
+        function == SRV_Channel::k_extra_steering) {
         return true;
     }
     if (_singleton != nullptr && (_singleton->gpio_mask & (1U<<channel)) != 0) {
