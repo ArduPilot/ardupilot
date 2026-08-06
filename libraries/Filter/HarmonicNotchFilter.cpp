@@ -546,6 +546,9 @@ void HarmonicNotchFilterParams::save_params()
     _harmonics.save();
     _reference.save();
     _freq_min_ratio.save();
+    // force the tracking mode into storage, otherwise the tuned notch is left
+    // relying on the parameter default and changes source if that default moves
+    _tracking_mode.save(true);
 }
 
 

@@ -786,7 +786,8 @@ void AP_GyroFFT::stop_notch_tune()
     }
 
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-    if (!_ins->setup_throttle_gyro_harmonic_notch(harmonic, (float)_fft_min_hz.get(), _avg_throttle_out, harmonics)) {
+    uint8_t notch_idx = 0;
+    if (!_ins->setup_throttle_gyro_harmonic_notch(harmonic, (float)_fft_min_hz.get(), _avg_throttle_out, harmonics, &notch_idx)) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FFT: Unable to set throttle notch with %.1fHz/%.2f",
             harmonic, _avg_throttle_out);
         AP_Notify::events.autotune_failed = true;
@@ -794,7 +795,9 @@ void AP_GyroFFT::stop_notch_tune()
         _throttle_ref.set(_avg_throttle_out);
         _freq_hover_hz.set(harmonic);
     } else {
-        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FFT: Notch frequency %.1fHz and ref %.2f selected", harmonic, _avg_throttle_out);
+        // name the notch, it is not necessarily the first one
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "FFT: Notch %u freq %.1fHz ref %.2f selected",
+            unsigned(notch_idx + 1), harmonic, _avg_throttle_out);
         AP_Notify::events.autotune_complete = true;
     }
 #endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
