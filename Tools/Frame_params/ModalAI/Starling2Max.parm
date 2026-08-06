@@ -2,7 +2,7 @@
 # https://www.modalai.com/products/starling-2-max?variant=48172375310640
 
 # IMU orientation is ROLL_180
-AHRS_ORIENTATION 8
+BRD_ORIENTATION 8
 
 # Mag orientation is ROLL_180
 COMPASS_ORIENT 8
