@@ -14804,112 +14804,131 @@ switch value'''
         self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
         self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
 
-    def ahrstrim_attitude_correctness(self):
-        self.wait_ready_to_arm()
+    # the simulated ExternalAHRS backends whose trimmed attitude is
+    # checked, one AHRSTrimAttitude test each:
+    ahrstrim_external_ahrs_configs = [
+        {
+            "name": "VectorNav",
+            "device": "VectorNav",
+            "eahrs_type": 1,
+        },
+        {
+            "name": "MicroStrain5",
+            "device": "MicroStrain5",
+            "eahrs_type": 2,
+        },
+        {
+            "name": "InertialLabs",
+            "device": "ILabs",
+            "eahrs_type": 5,
+        },
+        {
+            "name": "MicroStrain7",
+            "device": "MicroStrain7",
+            "eahrs_type": 7,
+        },
+        {
+            "name": "Aeron",
+            "device": "Aeron-PLX3",
+            "eahrs_type": 10,
+        },
+    ]
+
+    # the non-ExternalAHRS AHRS_EKF_TYPE values checked, one
+    # AHRSTrimAttitude test each:
+    ahrstrim_ahrs_ekf_types = (0, 2, 3)
+
+    # (roll, pitch) trims in degrees applied to each backend in turn:
+    ahrstrim_trims = ((0, 0), (9, 0), (2, -6), (10, 10))
+
+    # each backend is checked at each of these home headings:
+    ahrstrim_headings = (0, 90)
+
+    def ahrstrim_customise_home_heading(self, heading):
+        '''restart SITL sitting on the given heading'''
         HOME = self.sitl_start_location()
-        for heading in 0, 90:
+        self.customise_SITL_commandline([
+            "--home", "%s,%s,%s,%s" % (HOME.lat, HOME.lng, HOME.alt, heading)
+        ])
+
+    def ahrstrim_check_trims(self, ahrs_type):
+        '''check attitude is reported level for each trim in turn'''
+        for (r, p) in self.ahrstrim_trims:
+            self.set_parameters({
+                'AHRS_TRIM_X': math.radians(r),
+                'AHRS_TRIM_Y': math.radians(p),
+                "SIM_BRD_TRIM_X": math.radians(r),
+                "SIM_BRD_TRIM_Y": math.radians(p),
+            })
+            self.reboot_sitl()
+            self.ahrstrim_attitude_correctness_test_attitude(ahrs_type)
+
+    def AHRSTrimAttitudeExternalAHRS(self, config):
+        '''AHRS trim attitude correctness for an ExternalAHRS backend'''
+        self.wait_ready_to_arm()
+        for heading in self.ahrstrim_headings:
+            self.start_subtest("Heading %u" % heading)
+            self.ahrstrim_customise_home_heading(heading)
+            self.context_push()
             self.customise_SITL_commandline([
-                "--home", "%s,%s,%s,%s" % (HOME.lat, HOME.lng, HOME.alt, heading)
+                "--serial4=sim:%s" % config["device"],
             ])
+            self.set_parameters({
+                "EAHRS_TYPE": config["eahrs_type"],
+                "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
+                "SERIAL4_BAUD": 230400,
+                "GPS1_TYPE": 21,  # External AHRS
+                "AHRS_EKF_TYPE": 11,  # ExternalAHRS
+                "INS_GYR_CAL": 1,
+                "EAHRS_SENSORS": 0xD,  # GPS|BARO|COMPASS (exclude IMU)
+            })
+            self.reboot_sitl()
+            self.delay_sim_time(5, reason="AHRS to initialise")
+            self.progress("Running accelcal")
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                p5=4,
+                timeout=5,
+            )
+            self.wait_prearm_sys_status_healthy(timeout=120)
+            self.ahrstrim_check_trims(11)
+            self.context_pop()
 
-            # Test all simulated ExternalAHRS backends
-            external_ahrs_configs = [
-                {
-                    "name": "VectorNav",
-                    "device": "VectorNav",
-                    "eahrs_type": 1,
-                },
-                {
-                    "name": "MicroStrain5",
-                    "device": "MicroStrain5",
-                    "eahrs_type": 2,
-                },
-                {
-                    "name": "InertialLabs",
-                    "device": "ILabs",
-                    "eahrs_type": 5,
-                },
-                {
-                    "name": "MicroStrain7",
-                    "device": "MicroStrain7",
-                    "eahrs_type": 7,
-                },
-                {
-                    "name": "Aeron",
-                    "device": "Aeron-PLX3",
-                    "eahrs_type": 10,
-                },
-            ]
+    def AHRSTrimAttitude(self, ahrs_type):
+        '''AHRS trim attitude correctness for an AHRS_EKF_TYPE'''
+        self.wait_ready_to_arm()
+        for heading in self.ahrstrim_headings:
+            self.start_subtest("Heading %u" % heading)
+            self.ahrstrim_customise_home_heading(heading)
+            self.context_push()
+            self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
+            self.reboot_sitl()
+            self.wait_prearm_sys_status_healthy(timeout=120)
+            self.ahrstrim_check_trims(ahrs_type)
+            self.context_pop()
 
-            self.start_subtest("ExternalAHRS backend attitude")
-            for config in external_ahrs_configs:
-                self.start_subsubtest("Testing ExternalAHRS backend: %s" % config["name"])
-                self.context_push()
-
-                self.customise_SITL_commandline([
-                    "--serial4=sim:%s" % config["device"],
-                ])
-                self.set_parameters({
-                    "EAHRS_TYPE": config["eahrs_type"],
-                    "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
-                    "SERIAL4_BAUD": 230400,
-                    "GPS1_TYPE": 21,  # External AHRS
-                    "AHRS_EKF_TYPE": 11,  # ExternalAHRS
-                    "INS_GYR_CAL": 1,
-                    "EAHRS_SENSORS": 0xD,  # GPS|BARO|COMPASS (exclude IMU)
-                })
-                self.reboot_sitl()
-                self.delay_sim_time(5, reason="AHRS to initialise")
-                self.progress("Running accelcal")
-                self.run_cmd(
-                    mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
-                    p5=4,
-                    timeout=5,
-                )
-                self.wait_prearm_sys_status_healthy(timeout=120)
-
-                for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
-                    self.set_parameters({
-                        'AHRS_TRIM_X': math.radians(r),
-                        'AHRS_TRIM_Y': math.radians(p),
-                        "SIM_BRD_TRIM_X": math.radians(r),
-                        "SIM_BRD_TRIM_Y": math.radians(p),
-                    })
-                    self.reboot_sitl()
-                    self.ahrstrim_attitude_correctness_test_attitude(11)
-                self.context_pop()
-                # no reboot here: the restored parameters take effect at
-                # the next boot, which the following backend's
-                # customise_SITL_commandline (or the non-ExternalAHRS
-                # section's reboot) performs anyway
-
-            self.start_subtest("Testing non-ExternalAHRS backends")
-            for ahrs_type in [0, 2, 3]:
-                self.start_subsubtest("Testing AHRS_TYPE=%u" % ahrs_type)
-                self.context_push()
-                self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
-                self.reboot_sitl()
-
-                self.wait_prearm_sys_status_healthy(timeout=120)
-                for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
-                    self.set_parameters({
-                        'AHRS_TRIM_X': math.radians(r),
-                        'AHRS_TRIM_Y': math.radians(p),
-                        "SIM_BRD_TRIM_X": math.radians(r),
-                        "SIM_BRD_TRIM_Y": math.radians(p),
-                    })
-                    self.reboot_sitl()
-                    self.ahrstrim_attitude_correctness_test_attitude(ahrs_type)
-
-                self.context_pop()
-
-    def AHRSTrim(self):
-        '''AHRS trim testing'''
-        self.start_subtest("Attitude Correctness")
-        self.ahrstrim_attitude_correctness()
-        self.delay_sim_time(5, reason="attitude trim test interval")
-        self.start_subtest("Preflight Calibration")
+    def AHRSTrimPreflightCal(self):
+        '''AHRS trim preflight calibration'''
         self.ahrstrim_preflight_cal()
+
+    def AHRSTrimTests(self):
+        '''a test per AHRS backend, plus the preflight-calibration test.
+        Each backend used to be a sub-subtest of one long AHRSTrim, which
+        serialised them all behind one test and let the first backend to
+        fail hide every backend after it.'''
+        ret = []
+        for config in self.ahrstrim_external_ahrs_configs:
+            test = Test(self.AHRSTrimAttitudeExternalAHRS, kwargs={"config": config})
+            test.name = "AHRSTrimAttitude_%s" % config["name"]
+            test.description = "%s (%s)" % (test.description, config["name"])
+            ret.append(test)
+        for ahrs_type in self.ahrstrim_ahrs_ekf_types:
+            test = Test(self.AHRSTrimAttitude, kwargs={"ahrs_type": ahrs_type})
+            test.name = "AHRSTrimAttitude_EKFType%u" % ahrs_type
+            test.description = "%s (AHRS_EKF_TYPE=%u)" % (test.description, ahrs_type)
+            ret.append(test)
+        ret.append(Test(self.AHRSTrimPreflightCal))
+        return ret
 
     def Button(self):
         '''Test Buttons'''
