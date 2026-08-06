@@ -385,6 +385,105 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''Check extended sys state works'''
         self.EXTENDED_SYS_STATE_SLT()
 
+    def QRTLGradualAltDescent(self):
+        '''check gradual descent to RTL_ALTITUDE in QRTL'''
+        qrtl_alt = 20
+        rtl_altitude = 60
+        self.set_parameters({
+            "Q_RTL_ALT": qrtl_alt,
+            "RTL_ALTITUDE": rtl_altitude,
+            # decelerate gently, so the airbrake stage starts a long way
+            # out.  That is where the approach altitude profile hands back
+            # to the generic waypoint target, and any step in the target
+            # altitude at that handover shows up clearly
+            "Q_TRANS_DECEL": 0.6,
+        })
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, 100),
+        ])
+
+        self.wait_current_waypoint(2)
+
+        # get well away from home, cruising at the mission altitude, so
+        # QRTL's approach-phase ramp still has a long way to run
+        self.wait_distance_to_home(900, 1000, timeout=180)
+
+        entry_alt = self.get_altitude(relative=True)
+        self.progress("Entering QRTL at altitude %.1fm" % entry_alt)
+        self.change_mode('QRTL')
+
+        # entry_alt (~100m) is well above RTL_ALTITUDE (60m).  Track the
+        # altitude the fixed wing controller is actually chasing,
+        # reconstructed from NAV_CONTROLLER_OUTPUT.alt_error, which is
+        # (target - current) for as long as the fixed wing controller owns
+        # altitude.  That covers the approach and the airbrake stage, up to
+        # the handover to the VTOL position controller at QPOS_POSITION1,
+        # after which alt_error means something else entirely.
+        #
+        # The target must ease down from entry_alt towards RTL_ALTITUDE
+        # rather than snapping down while still ~900m short of home, must
+        # not step at any point (in particular at the approach to airbrake
+        # handover), and must actually make progress downwards - simply
+        # holding entry_alt for ever is not a gradual descent.
+        max_step_rate = 5           # m/s, target may not chase faster than this
+        max_step_fixed = 2          # m, allowed on top of max_step_rate * dt
+        min_progress = 20           # m, target must come down at least this far
+        alt = entry_alt
+        prev_target = None
+        prev_t = None
+        target = None
+        reached_position1 = False
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 300:
+            m = self.mav.recv_match(
+                type=['NAV_CONTROLLER_OUTPUT', 'GLOBAL_POSITION_INT', 'STATUSTEXT'],
+                blocking=True,
+                timeout=5)
+            if m is None:
+                raise NotAchievedException("Timed out waiting for messages")
+            m_type = m.get_type()
+            if m_type == 'STATUSTEXT':
+                if 'VTOL position1' in m.text:
+                    # the VTOL position controller now owns altitude
+                    reached_position1 = True
+                    break
+                continue
+            if m_type == 'GLOBAL_POSITION_INT':
+                alt = m.relative_alt * 0.001
+                continue
+
+            now = self.get_sim_time_cached()
+            target = alt + m.alt_error
+            if prev_target is not None:
+                dt = now - prev_t
+                step = abs(target - prev_target)
+                max_step = max_step_fixed + max_step_rate * dt
+                self.progress("QRTL descent: alt=%.1f target=%.1f step=%.1f" %
+                              (alt, target, step))
+                if step > max_step:
+                    raise NotAchievedException(
+                        "QRTL target altitude stepped by %.1fm in %.2fs "
+                        "(max %.1fm), expected a continuous descent" %
+                        (step, dt, max_step))
+            prev_target = target
+            prev_t = now
+
+        if not reached_position1:
+            raise NotAchievedException("Did not reach QPOS_POSITION1")
+        if target is None:
+            raise NotAchievedException("Never saw a target altitude")
+        if target > entry_alt - min_progress:
+            raise NotAchievedException(
+                "QRTL target altitude only came down from %.1fm to %.1fm, "
+                "expected at least %.1fm of descent" %
+                (entry_alt, target, min_progress))
+
+        # let it continue home, transition and land normally
+        self.wait_altitude(-5, 1, relative=True, timeout=240)
+        self.wait_disarmed(timeout=60)
+
     def QAUTOTUNE(self):
         '''test Plane QAutoTune mode'''
 
@@ -3408,6 +3507,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownload,
             self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
+            self.QRTLGradualAltDescent,
             self.Mission,
             self.Weathervane,
             self.QAssist,
