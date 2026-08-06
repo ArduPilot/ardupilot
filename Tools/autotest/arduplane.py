@@ -7741,6 +7741,113 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_text("Flare", check_context=True, timeout=400)
         self.wait_text("Auto disarmed", check_context=True, timeout=200)
 
+    def GliderTECSRate(self):
+        '''test externally-commanded TECS descent rate during LOITER_TO_ALT'''
+
+        # (AMSL altitude to descend through, descent rate to then demand).
+        # The glider's minimum sink rate rises steeply with altitude, because
+        # holding the same EAS in thin air means a much higher true airspeed:
+        # near 13km it cannot sink slower than about 27m/s however it is flown.
+        # Each demand therefore has to sit above the minimum sink for the
+        # altitude it is made at, which is why the schedule steps down as the
+        # glider descends, and why it does not start until well below release.
+        rate_schedule = [
+            (9000, 20),
+            (6500, 14),
+            (4000, 9),
+            (2000, 5),
+        ]
+
+        self.customise_SITL_commandline([], model="glider", wipe=True)
+
+        self.set_parameters({
+            "LOG_DISARMED": 1,
+            "SCR_ENABLE": 1,
+            # pull-up recovery from the balloon release, as in GliderPullup
+            "PUP_ENABLE": 1,
+            "SERVO6_FUNCTION": 0,  # balloon lift
+            "SERVO10_FUNCTION": 156,  # lift release
+            "EK3_IMU_MASK": 1,  # lane switches just make the log harder to read
+            "AHRS_OPTIONS": 4,  # don't disable airspeed based on EKF checks
+            "ARSPD_OPTIONS": 0,  # don't disable airspeed
+            "ARSPD_WIND_GATE": 0,
+            # a realistic balloon ascent to 15km takes about 45 minutes of
+            # simulated time, which dominates the runtime of this test
+            "SIM_GLD_BLN_RATE": 50,
+            # give the descent rate controller the pitch authority to cover a
+            # wide range of demanded sink rates
+            "TECS_SINK_MAX": 30,
+            "TECS_PITCH_MIN": -30,
+            "PTCH_LIM_MIN_DEG": -30,
+        })
+
+        self.set_servo(6, 1000)
+
+        self.install_example_script_context("tecs_descent_rate.lua")
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_text("TDR: loaded TECS descent rate control", check_context=True)
+
+        # Start on a rate that is not in the schedule, so that every rate the
+        # loop below demands produces a fresh statustext to synchronise on.
+        # Nothing is asserted about it directly, but it must be FASTER than the
+        # first scheduled rate: the controller settles promptly when the demand
+        # is reduced but overshoots and converges slowly when it is raised, and
+        # an unsettled first step then spoils the rest of the schedule.
+        initial_rate = 25
+        self.set_parameters({
+            "TDR_ENABLE": 1,
+            "TDR_RATE": initial_rate,
+        })
+
+        self.load_mission_from_filepath(
+            os.path.join(testdir, "ArduPlane_Tests", "GliderTECSRate", "glider-tecs-rate-mission.txt"))
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+
+        self.progress("Start balloon lift")
+        self.set_servo(6, 2000)
+        self.arm_vehicle()
+
+        # climb under the balloon, release, then pull up out of the resulting
+        # dive; the mission then advances to LOITER_TO_ALT where the script
+        # takes over the descent rate
+        self.wait_text("Reached altitude", check_context=True, timeout=1000)
+        self.wait_text("Pullup level", check_context=True, timeout=400)
+        self.wait_text("TDR: descent rate %.1f m/s" % initial_rate,
+                       check_context=True, timeout=300)
+
+        for alt, rate in rate_schedule:
+            self.wait_altitude(-1000, alt, relative=False, timeout=600)
+            self.set_parameter("TDR_RATE", rate)
+            self.wait_text("TDR: descent rate %.1f m/s" % rate, check_context=True)
+            # let the controller settle before measuring, so that we assert on
+            # steady-state tracking rather than on the transient
+            self.delay_sim_time(20, "settle at the new descent rate")
+            # Confirm the glider both achieves and holds the demanded rate.
+            # Every rate here is comfortably above the minimum sink for the
+            # altitude it is demanded at, so tracking is good and the tolerance
+            # can be tight. Note this deliberately does not use
+            # wait_descent_rate(), whose getter takes the absolute value and so
+            # would accept an equally fast climb.
+            self.wait_and_maintain(
+                value_name="DescentRate",
+                target=rate,
+                current_value_getter=lambda: self.get_speed_vector().z,  # NED, positive down
+                accuracy=max(1.0, 0.10 * rate),
+                timeout=200,
+                minimum_duration=10,
+            )
+
+        # releasing the override must hand height control back to TECS, which
+        # then flies the rest of the LOITER_TO_ALT normally
+        self.progress("Releasing descent rate override")
+        self.set_parameter("TDR_ENABLE", 0)
+        self.wait_text("TDR: descent rate control off", check_context=True)
+        self.wait_text("Loiter to alt complete", check_context=True, timeout=600)
+
+        self.disarm_vehicle(force=True)
+
     def BadRollChannelDefined(self):
         '''ensure we don't die with a  bad Roll channel defined'''
         self.set_parameter("RCMAP_ROLL", 17)
@@ -8931,6 +9038,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.ForceArm,
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
             self.GliderPullup,
+            self.GliderTECSRate,
             self.BadRollChannelDefined,
             self.VolzMission,
             self.mavlink_AIRSPEED,

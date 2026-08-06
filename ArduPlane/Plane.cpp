@@ -994,6 +994,17 @@ bool Plane::set_land_descent_rate(float descent_rate_ms)
     return false;
 }
 
+#if AP_TECS_DESCENT_RATE_ENABLED
+bool Plane::set_tecs_descent_rate_override(float descent_rate, uint32_t timeout_ms)
+{
+    if (timeout_ms != 0 && !control_mode->does_auto_throttle()) {
+        // TECS is not controlling height, but always allow a cancel through
+        return false;
+    }
+    return TECS_controller.set_descent_rate_override(descent_rate, timeout_ms);
+}
+#endif  // AP_TECS_DESCENT_RATE_ENABLED
+
 // Allow for scripting to have control over the crosstracking when exiting and resuming missions or guided flight
 // It's up to the Lua script to ensure the provided location makes sense
 bool Plane::set_crosstrack_start(const Location &new_start_location)

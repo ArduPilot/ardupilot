@@ -281,6 +281,7 @@ BUILD_OPTIONS = [
     Feature('Plane', 'AP_TX_TUNING', 'AP_TUNING_ENABLED', 'Enable TX-based tuning parameter adjustments', 0, None),
     Feature('Plane', 'PLANE_GUIDED_SLEW', 'AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', 'Enable Offboard-guided slew commands', 0, None),  # NOQA: E501
     Feature('Plane', 'PLANE_GLIDER_PULLUP', 'AP_PLANE_GLIDER_PULLUP_ENABLED', 'Enable Glider pullup support', 0, None),
+    Feature('Plane', 'TECS_DESCENT_RATE', 'AP_TECS_DESCENT_RATE_ENABLED', 'Enable TECS descent rate override', 0, 'SCRIPTING'),  # NOQA: E501
     Feature('Plane', 'QUICKTUNE', 'AP_QUICKTUNE_ENABLED', 'Enable VTOL quicktune', 0, None),
     Feature('Plane', 'AUTOLAND_MODE', 'MODE_AUTOLAND_ENABLED', 'Enable Fixed Wing Autolanding mode', 0, None),
     Feature('Plane', 'PLANE_SYSTEMID', 'AP_PLANE_SYSTEMID_ENABLED', 'Enable systemID support', 0, 'QUADPLANE,Logging'),  # NOQA: E501
