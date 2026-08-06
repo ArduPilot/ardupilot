@@ -24,7 +24,7 @@
 
 #include "RCOutput_pico.h"
 
-#if defined(RP2350)
+#if defined(RP2350) && (HAL_USE_PWM == TRUE) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)
 
 #include <AP_HAL/AP_HAL.h>
 #include <hal.h>
@@ -893,4 +893,4 @@ bool RCOutput::serial_led_send(pwm_group &group)
 }
 #endif // HAL_SERIALLED_ENABLED
 
-#endif // defined(RP2350)
+#endif // defined(RP2350) && (HAL_USE_PWM == TRUE) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)
