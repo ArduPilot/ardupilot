@@ -35,6 +35,7 @@ import traceback
 from datetime import datetime
 from inspect import currentframe
 from inspect import getframeinfo
+from inspect import signature
 from pathlib import Path
 from typing import Dict
 from typing import List
@@ -2578,8 +2579,12 @@ class TestSuite(abc.ABC):
             if time.time() - tstart > timeout:
                 raise AutoTestTimeoutException("Did not detect reboot")
             try:
+                # any request we send while the autopilot is restarting
+                # is lost along with the old connection, so poll often
+                # rather than waiting a long time for a reply which will
+                # never come:
                 current_bootcount = self.get_parameter('STAT_BOOTCNT',
-                                                       timeout=1,
+                                                       timeout=0.1,
                                                        attempts=1,
                                                        verbose=True,
                                                        timeout_in_wallclock=True)
@@ -9509,20 +9514,40 @@ Also, ignores heartbeats not from our target system'''
         except OSError:
             pass
 
+    def mavlink_connection_supports_reconnect_delay(self):
+        '''returns True if pymavlink lets us choose how long it waits
+        between connection attempts.  This probe exists only so that
+        autotest keeps working (just more slowly) against an older
+        pymavlink.
+        '''
+        return 'reconnect_delay' in signature(mavutil.mavlink_connection).parameters
+
     def get_mavlink_connection_going(self):
         # get a mavlink connection going
         try:
-            retries = 20
+            # SITL's listening socket is only gone for the few
+            # milliseconds it takes the process to re-exec itself on
+            # reboot, so retry rapidly rather than at pymavlink's
+            # default of once a second.  retries is a count of
+            # attempts, so scale it to keep the same overall budget.
+            # The fallback here is for older pymavlinks.
+            extra_connection_args = {}
+            reconnect_delay = 1
+            if self.mavlink_connection_supports_reconnect_delay():
+                reconnect_delay = 0.05
+                extra_connection_args["reconnect_delay"] = reconnect_delay
+            timeout = 20
             if self.gdb:
-                retries = 20000
+                timeout = 20000
             self.mav = mavutil.mavlink_connection(
                 self.autotest_connection_string_to_ardupilot(),
-                retries=retries,
+                retries=int(timeout/reconnect_delay),
                 robust_parsing=True,
                 source_system=250,
                 source_component=250,
                 autoreconnect=True,
                 dialect="all",  # if we don't pass this in we end up with the wrong mavlink version...
+                **extra_connection_args,
             )
         except Exception as msg:
             self.progress("Failed to start mavlink connection on %s: %s" %
