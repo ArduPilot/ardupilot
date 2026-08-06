@@ -864,7 +864,7 @@ bool AP_Logger_File::write_lastlog_file(uint16_t log_num)
     char *fname = _lastlog_file_name();
 
     EXPECT_DELAY_MS(3000);
-    int fd = AP::FS().open(fname, O_WRONLY|O_CREAT);
+    int fd = AP::FS().open(fname, O_WRONLY|O_CREAT|O_TRUNC);
     free(fname);
     if (fd == -1) {
         return false;
