@@ -944,9 +944,26 @@ bool AP_InertialSensor::has_fft_notch() const
 }
 #endif
 
+/*
+  take the orientation the board is mounted in from BRD_ORIENTATION.
+  Boards with no AP_BoardConfig - AP_Periph - keep ROTATION_NONE.
+ */
+void AP_InertialSensor::update_board_orientation()
+{
+    AP_BoardConfig *board = AP::boardConfig();
+    if (board == nullptr) {
+        return;
+    }
+    _board_orientation = board->get_orientation();
+}
+
 void
 AP_InertialSensor::init(uint16_t loop_rate)
 {
+    // the gyro calibration performed below needs to know how the board
+    // is mounted:
+    update_board_orientation();
+
     // remember the sample rate
     _loop_rate = loop_rate;
     _loop_delta_t = 1.0f / loop_rate;
@@ -1925,6 +1942,9 @@ void AP_InertialSensor::set_primary(uint8_t instance)
  */
 void AP_InertialSensor::update(void)
 {
+    // allow the board orientation to be changed at runtime
+    update_board_orientation();
+
     // during initialisation update() may be called without
     // wait_for_sample(), and a wait is implied
     wait_for_sample();
