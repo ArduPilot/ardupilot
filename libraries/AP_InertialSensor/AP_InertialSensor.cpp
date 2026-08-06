@@ -407,8 +407,8 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // @Param: _GYR_CAL
     // @DisplayName: Gyro Calibration scheme
-    // @Description: Conrols when automatic gyro calibration is performed
-    // @Values: 0:Never, 1:Start-up only
+    // @Description: Conrols when automatic gyro calibration is performed. A start-up calibration blocks the boot process until it has completed. When set to 2 the boot process instead continues while the calibration runs in the background, and arming is refused until the calibration has finished.
+    // @Values: 0:Never, 1:Start-up only, 2:Start-up only in background
     // @User: Advanced
     AP_GROUPINFO("_GYR_CAL", 24, AP_InertialSensor, _gyro_cal_timing, 1),
 
@@ -999,8 +999,21 @@ AP_InertialSensor::init(uint16_t loop_rate)
     }
 
     // calibrate gyros unless gyro calibration has been disabled
-    if (gyro_calibration_timing() != GYRO_CAL_NEVER && _gyro_count > 0) {
-        init_gyro();
+    if (_gyro_count > 0) {
+        switch (gyro_calibration_timing()) {
+        case GYRO_CAL_NEVER:
+            break;
+        case GYRO_CAL_STARTUP_ONLY:
+            // the boot process waits here until the calibration has
+            // finished
+            init_gyro();
+            break;
+        case GYRO_CAL_STARTUP_BACKGROUND:
+            // the calibration is not waited for here; it runs from
+            // update() while the rest of the vehicle boots
+            gyro_cal_start();
+            break;
+        }
     }
 
     _sample_period_usec = 1000*1000UL / _loop_rate;
@@ -1429,13 +1442,13 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, Vector3f &
 void
 AP_InertialSensor::init_gyro()
 {
-    if (!gyro_cal_start()) {
+    // if a calibration is already running - for example one started
+    // when the vehicle booted - then use the result of that one rather
+    // than starting again
+    if (gyro_cal == nullptr && !gyro_cal_start()) {
         return;
     }
     gyro_cal_run_blocking();
-
-    // save calibration
-    _save_gyro_calibration();
 }
 
 // output GCS startup messages
@@ -1968,6 +1981,19 @@ void AP_InertialSensor::gyro_cal_finish()
     // stop flashing leds
     AP_Notify::flags.initialising = false;
     AP_Notify::flags.gyro_calibrated = true;
+
+    // save calibration
+    _save_gyro_calibration();
+
+#if AP_AHRS_ENABLED
+    // the offsets have just step-changed the data the estimators are
+    // being fed, so tell them to reset their own gyro drift estimates.
+    // Example sketches calibrate the gyros without an AHRS to tell.
+    AP_AHRS *ahrs = AP_AHRS::get_singleton();
+    if (ahrs != nullptr) {
+        ahrs->reset_gyro_drift();
+    }
+#endif
 }
 
 /*
@@ -2669,14 +2695,12 @@ bool AP_InertialSensor::get_first_usable_accel_cal_sample_avg(uint8_t sample_num
 #if HAL_GCS_ENABLED
 bool AP_InertialSensor::calibrate_gyros()
 {
+    // the caller is waiting for an answer, so run the calibration
+    // through to completion rather than letting it run in the
+    // background
     init_gyro();
-    if (!gyro_calibrated_ok_all()) {
-        return false;
-    }
-#if AP_AHRS_ENABLED
-    AP::ahrs().reset_gyro_drift();
-#endif
-    return true;
+
+    return gyro_calibrated_ok_all();
 }
 
 /*

@@ -110,7 +110,8 @@ public:
 
     enum Gyro_Calibration_Timing {
         GYRO_CAL_NEVER = 0,
-        GYRO_CAL_STARTUP_ONLY = 1
+        GYRO_CAL_STARTUP_ONLY = 1,
+        GYRO_CAL_STARTUP_BACKGROUND = 2,
     };
 
     /// Perform startup initialisation.
@@ -137,6 +138,9 @@ public:
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
     bool calibrating() const;
+
+    /// gyro_calibrating - returns true if a gyro calibration is running
+    bool gyro_calibrating() const { return _calibrating_gyro; }
 
     /// calibrating - returns true if a temperature calibration is running
     bool temperature_cal_running() const;
