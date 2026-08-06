@@ -418,16 +418,401 @@ void AC_AttitudeControl_Sub::update_throttle_rpy_mix()
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
 
-void AC_AttitudeControl_Sub::rate_controller_run()
-{
-    // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
+
+
+// void AC_AttitudeControl_Sub::rate_controller_run()
+// {
+//     update_throttle_rpy_mix();
+
+//     Vector3f gyro_latest = _ahrs.get_gyro_latest();
+//     Vector3f target_rate = _ang_vel_body;
+//     Vector3f error = target_rate - gyro_latest;
+
+//     // --- PARAMETER FISIKA BOXFISH (Matriks Total: Rigid + Added Mass) ---
+//     const float Ixx = 0.4527f;
+//     const float Iyy = 0.9375f;
+//     const float Izz = 0.8761f;
+//     const float D_roll = 1.36f;   // Koefisien quadratic drag K_p|p|
+//     // ------------------------------------------------------------------
+
+//     // =========================================================
+//     // INTEGRAL SLIDING MODE CONTROL (SUMBU ROLL)
+//     // =========================================================
+    
+//     // 1. Ekstraksi Tuning dari UI
+//     float c_roll       = _pid_rate_roll.kP();     // Slope Integral (c)
+//     float rho_roll     = _pid_rate_roll.kD();     // Switching Gain (rho)
+//     float phi_roll     = _pid_rate_roll.imax() + 1e-6f; // Boundary layer (epsilon)
+//     // float lambda_roll  = _pid_rate_roll.kI();     // Opsional: Gain tambahan
+
+// // 2. Filter Target Akselerasi (p_ref_dot)
+//     // Menggunakan target_rate (bukan gyro aktual) sehingga bersih dari noise
+//     float p_ref_dot = 0.0f;
+//     if (is_positive(_dt)) {
+//         // Panggil struct info langsung dari objek PID untuk mendapat target sebelumnya
+//         p_ref_dot = (target_rate.x - _pid_rate_roll.get_pid_info().target) / _dt;
+        
+//         // Gunakan filter LPF bawaan ArduSub untuk target
+//         p_ref_dot = _pid_rate_roll.get_filt_T_alpha(_dt) * p_ref_dot; 
+//     }
+//     // 3. Kalkulasi Integral Error dengan Anti-Windup
+//     _smc_int_roll += error.x * _dt;
+//     // Anti-windup mekanis (opsional, disesuaikan dengan limit aktuator)
+//     _smc_int_roll = constrain_float(_smc_int_roll, -1.0f, 1.0f);
+
+//     // 4. Hitung Integral Sliding Surface: s = e + c * int(e)
+//     float s_roll = error.x + (c_roll * _smc_int_roll);
+
+//     // 5. Hitung Equivalent Control (u_eq) dengan dinamika Boxfish
+//     // u_eq = Ixx*(p_ref_dot + c*e) + (Izz - Iyy)*q*r + Dp*p*|p|
+//     float coriolis_roll = (Izz - Iyy) * gyro_latest.y * gyro_latest.z;
+//     float drag_roll = D_roll * gyro_latest.x * fabsf(gyro_latest.x);
+    
+//     float u_eq_roll = Ixx * (p_ref_dot + (c_roll * error.x)) + coriolis_roll + drag_roll;
+
+//     // 6. Hitung Robust Control (v)
+//     float v_roll = rho_roll * (s_roll / (fabsf(s_roll) + phi_roll));
+
+//     // 7. Sinyal Kendali Total
+//     float roll_out = u_eq_roll + v_roll;
+
+//     // Batasi output total (Saturasi Aktuator) untuk mencegah overflow ke mixer
+//     roll_out = constrain_float(roll_out, -1.0f, 1.0f);
+
+//     // =========================================================
+//     // INJEKSI DATA KE LOG UNTUK ANALISIS MAVEXPLORER
+//     // =========================================================
+//     AP_PIDInfo& roll_info = const_cast<AP_PIDInfo&>(_pid_rate_roll.get_pid_info());
+//     roll_info.target = target_rate.x;
+//     roll_info.actual = gyro_latest.x;
+//     roll_info.error  = error.x;
+//     roll_info.P      = u_eq_roll;   // Terbaca sebagai u_eq
+//     roll_info.D      = v_roll;      // Terbaca sebagai v (switching)
+//     roll_info.I      = s_roll;      // Terbaca sebagai sliding surface (s)
+    
+//     float pitch_out = _pid_rate_pitch.update_all(_ang_vel_body.y, gyro_latest.y, _dt, _motors.limit.pitch);
+//     float yaw_out   = _pid_rate_yaw.update_all(_ang_vel_body.z, gyro_latest.z, _dt, _motors.limit.yaw);
+
+//     // =========================================================
+//     // MENGIRIM SINYAL FINAL KE MIXER MOTOR
+//     // =========================================================
+//     _motors.set_roll(roll_out);     // <--- Menggunakan SMC hasil racikan lu
+//     _motors.set_pitch(pitch_out);   // <--- Menggunakan PID ArduSub
+//     _motors.set_yaw(yaw_out);       // <--- Menggunakan PID ArduSub
+
+//     control_monitor_update();
+// }
+
+// void AC_AttitudeControl_Sub::rate_controller_run()
+// {
+//     update_throttle_rpy_mix();
+//     Vector3f gyro_latest = _ahrs.get_gyro_latest();
+//     Vector3f target_rate = _ang_vel_body;
+//     Vector3f error = target_rate - gyro_latest;
+
+//     // 1. PARAMETER FISIKA UDIN (Rigid + Added Mass)
+//     const float Ixx = 0.492558f;  // Rigid + Added Mass (0.408)
+//     const float Iyy = 0.758506f;  // Rigid + Added Mass (0.863)
+//     const float Izz = 0.919455f;  // Rigid + Added Mass (0.725)
+
+//     const float D_roll  = 1.36f; 
+//     const float D_pitch = 2.13f; 
+//     const float D_yaw   = 0.62f;
+
+//     const float MAX_T_RLL = 15.0f; // Normalisasi Torsi ke PWM
+//     const float MAX_T_PIT = 15.0f;
+//     const float MAX_T_YAW = 10.0f;
+
+//     // 2. EKSTRAKSI PARAMETER (MAPPING: P=c0, I=alpha, D=lb, IMAX=epsilon)
+//     // ROLL
+//     float c0_r   = _pid_rate_roll.kP();
+//     float alph_r = _pid_rate_roll.kI();
+//     float lb_r   = _pid_rate_roll.kD();
+//     float eps_r  = _pid_rate_roll.imax() + 1e-6f;
+
+//     // PITCH
+//     float c0_p   = _pid_rate_pitch.kP();
+//     float alph_p = _pid_rate_pitch.kI();
+//     float lb_p   = _pid_rate_pitch.kD();
+//     float eps_p  = _pid_rate_pitch.imax() + 1e-6f;
+
+//     // YAW
+//     float c0_y   = _pid_rate_yaw.kP();
+//     float alph_y = _pid_rate_yaw.kI();
+//     float lb_y   = _pid_rate_yaw.kD();
+//     float eps_y  = _pid_rate_yaw.imax() + 1e-6f;
+
+//     // 3. TURUNAN TARGET & INTEGRAL ERROR
+//     float p_ref_dot = 0.0f, q_ref_dot = 0.0f, r_ref_dot = 0.0f;
+//     if (is_positive(_dt)) {
+//         p_ref_dot = _pid_rate_roll.get_filt_T_alpha(_dt) * ((target_rate.x - _pid_rate_roll.get_pid_info().target) / _dt);
+//         q_ref_dot = _pid_rate_pitch.get_filt_T_alpha(_dt) * ((target_rate.y - _pid_rate_pitch.get_pid_info().target) / _dt);
+//         r_ref_dot = _pid_rate_yaw.get_filt_T_alpha(_dt) * ((target_rate.z - _pid_rate_yaw.get_pid_info().target) / _dt);
+//     }
+
+//     _smc_int_roll  = constrain_float(_smc_int_roll  + error.x * _dt, -1.0f, 1.0f);
+//     _smc_int_pitch = constrain_float(_smc_int_pitch + error.y * _dt, -1.0f, 1.0f);
+//     _smc_int_yaw   = constrain_float(_smc_int_yaw   + error.z * _dt, -1.0f, 1.0f);
+
+//     // 4. SLIDING SURFACE (sigma) & SWITCHING GAIN (rho)
+//     float sig_r = error.x + (c0_r * _smc_int_roll);
+//     float sig_p = error.y + (c0_p * _smc_int_pitch);
+//     float sig_y = error.z + (c0_y * _smc_int_yaw);
+
+//     float rho_r = (alph_r / 1.4142f) + lb_r;
+//     float rho_p = (alph_p / 1.4142f) + lb_p;
+//     float rho_y = (alph_y / 1.4142f) + lb_y;
+
+//     // 5. EQUIVALENT CONTROL (u_eq) - FISIKA & CORIOLIS
+//     float p = gyro_latest.x, q = gyro_latest.y, r = gyro_latest.z;
+
+//     float u_eq_r = Ixx * (p_ref_dot + (c0_r * error.x)) + (Izz - Iyy)*q*r + D_roll*p*fabsf(p);
+//     float u_eq_p = Iyy * (q_ref_dot + (c0_p * error.y)) + (Ixx - Izz)*p*r + D_pitch*q*fabsf(q);
+//     float u_eq_y = Izz * (r_ref_dot + (c0_y * error.z)) + (Iyy - Ixx)*p*q + D_yaw*r*fabsf(r);
+
+//     // 6. SATURATION FUNCTION
+//     float v_r = -rho_r * (sig_r / (fabsf(sig_r) + eps_r));
+//     float v_p = -rho_p * (sig_p / (fabsf(sig_p) + eps_p));
+//     float v_y = -rho_y * (sig_y / (fabsf(sig_y) + eps_y));
+
+//     // 7. OUTPUT NORMALIZATION & LOGGING
+//     float r_out = constrain_float((u_eq_r - v_r) / MAX_T_RLL, -1.0f, 1.0f);
+//     float p_out = constrain_float((u_eq_p - v_p) / MAX_T_PIT, -1.0f, 1.0f);
+//     float y_out = constrain_float((u_eq_y - v_y) / MAX_T_YAW, -1.0f, 1.0f);
+
+//     _pid_rate_roll.set_pid_info_custom(target_rate.x, p, error.x, u_eq_r/MAX_T_RLL, -v_r/MAX_T_RLL, sig_r);
+//     _pid_rate_pitch.set_pid_info_custom(target_rate.y, q, error.y, u_eq_p/MAX_T_PIT, -v_p/MAX_T_PIT, sig_p);
+//     _pid_rate_yaw.set_pid_info_custom(target_rate.z, r, error.z, u_eq_y/MAX_T_YAW, -v_y/MAX_T_YAW, sig_y);
+
+//     _motors.set_roll(r_out);
+//     _motors.set_pitch(p_out);
+//     _motors.set_yaw(y_out);
+
+//     control_monitor_update();
+// }
+
+// void AC_AttitudeControl_Sub::rate_controller_run()
+// {
+//     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
+//     update_throttle_rpy_mix();
+
+//     Vector3f gyro_latest = _ahrs.get_gyro_latest();
+//     _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, gyro_latest.y, _dt, _motors.limit.pitch));
+//     _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, gyro_latest.z, _dt, _motors.limit.yaw));
+
+//     control_monitor_update();
+// }
+
+// run lowest level body-frame rate controller and send outputs to the motors
+// (HIJACKED FOR SLIDING MODE CONTROL)
+void AC_AttitudeControl_Sub::rate_controller_run(){
+    // Update throttle mix bawaan (Slew Rate Limit)
     update_throttle_rpy_mix();
-
+    
     Vector3f gyro_latest = _ahrs.get_gyro_latest();
-    _motors.set_roll(get_rate_roll_pid().update_all(_ang_vel_body.x, gyro_latest.x, _dt, _motors.limit.roll));
-    _motors.set_pitch(get_rate_pitch_pid().update_all(_ang_vel_body.y, gyro_latest.y, _dt, _motors.limit.pitch));
-    _motors.set_yaw(get_rate_yaw_pid().update_all(_ang_vel_body.z, gyro_latest.z, _dt, _motors.limit.yaw));
+    // Vector3f target_rate = _ang_vel_body;
+    // Vector3f error = target_rate - gyro_latest;
+    Vector3f target_rate;
+    if (is_positive(_dt)) {
+        float alpha_r = _pid_rate_roll.get_filt_T_alpha(_dt);
+        float alpha_p = _pid_rate_pitch.get_filt_T_alpha(_dt);
+        float alpha_y = _pid_rate_yaw.get_filt_T_alpha(_dt);
 
+        _smc_target_roll  += alpha_r * (_ang_vel_body.x - _smc_target_roll);
+        _smc_target_pitch += alpha_p * (_ang_vel_body.y - _smc_target_pitch);
+        _smc_target_yaw   += alpha_y * (_ang_vel_body.z - _smc_target_yaw);
+    }
+    target_rate.x = _smc_target_roll;
+    target_rate.y = _smc_target_pitch;
+    target_rate.z = _smc_target_yaw;
+
+    if (is_positive(_dt)) {
+        float alpha_E_r = _pid_rate_roll.get_filt_E_alpha(_dt);
+        float alpha_E_p = _pid_rate_pitch.get_filt_E_alpha(_dt);
+        float alpha_E_y = _pid_rate_yaw.get_filt_E_alpha(_dt);
+        
+        float raw_err_r = target_rate.x - gyro_latest.x;
+        float raw_err_p = target_rate.y - gyro_latest.y;
+        float raw_err_y = target_rate.z - gyro_latest.z;
+        
+        _smc_error_roll  += alpha_E_r * (raw_err_r - _smc_error_roll);
+        _smc_error_pitch += alpha_E_p * (raw_err_p - _smc_error_pitch);
+        _smc_error_yaw   += alpha_E_y * (raw_err_y - _smc_error_yaw);
+    }
+    
+    Vector3f error;
+    error.x = _smc_error_roll;
+    error.y = _smc_error_pitch;
+    error.z = _smc_error_yaw;
+
+    // 1. PARAMETER FISIKA ROV (Rigid Body + Added Mass)
+    const float Ixx = 0.492558f + 0.16f; 
+    const float Iyy = 0.758506f + 0.3f; 
+    const float Izz = 0.919455f + 0.3f;
+    // const float Ixy = 0.002052f;
+    // const float Ixz = 0.019287f;
+    // const float Iyz = 0.000148f;
+
+
+    // Linear Damping
+    const float D_lin_roll  = 0.0f; 
+    const float D_lin_pitch = 0.0f; 
+    const float D_lin_yaw   = 0.8f;
+
+    // Quadratic Damping
+    const float D_roll  = 0.4f; 
+    const float D_pitch = 1.19f; 
+    const float D_yaw   = 0.482f;
+    // // Linear Damping
+    // const float D_lin_roll  = 0.6f; 
+    // const float D_lin_pitch = 1.0f; 
+    // const float D_lin_yaw   = 0.4f;
+
+    // // Quadratic Damping
+    // const float D_roll  = 8.0f; 
+    // const float D_pitch = 8.0f; 
+    // const float D_yaw   = 8.0f;
+
+    const float MAX_T_RLL = 10.0f; // Normalisasi Torsi -> PWM
+    const float MAX_T_PIT = 10.0;
+    const float MAX_T_YAW = 8.0;
+    // const float D_roll  = 1.36f; 
+    // const float D_pitch = 2.13f; 
+    // const float D_yaw   = 1.0f;
+
+
+
+    // 2. MAPPING PARAMETER DARI QGROUNDCONTROL (Bajak Sistem PID)
+    // ROLL (P = Lambda, I = K Gain, D = Eta/Boundary, IMAX = Epsilon)
+    float c0_r   = _pid_rate_roll.kP();
+    float alph_r = _pid_rate_roll.kI();
+    float lb_r   = _pid_rate_roll.kD();
+    float eps_r  = _pid_rate_roll.imax() + 1e-6f; // Cegah divide-by-zero
+
+    // PITCH
+    float c0_p   = _pid_rate_pitch.kP();
+    float alph_p = _pid_rate_pitch.kI();
+    float lb_p   = _pid_rate_pitch.kD();
+    float eps_p  = _pid_rate_pitch.imax() + 1e-6f;
+
+    // YAW
+    float c0_y   = _pid_rate_yaw.kP();
+    float alph_y = _pid_rate_yaw.kI();
+    float lb_y   = _pid_rate_yaw.kD();
+    float eps_y  = _pid_rate_yaw.imax() + 1e-6f;
+
+    // 3. KALKULASI TURUNAN (LPF) & INTEGRASI (ANTI-WINDUP)
+    // if (is_positive(_dt)) {
+    //     // Ambil koefisien Low-Pass Filter dari settingan QGC (FLTT)
+    //     float alpha_T_r = _pid_rate_roll.get_filt_T_alpha(_dt);
+    //     float alpha_T_p = _pid_rate_pitch.get_filt_T_alpha(_dt);
+    //     float alpha_T_y = _pid_rate_yaw.get_filt_T_alpha(_dt);
+
+    //     // Hitung Raw Derivative (Target Rate Dot)
+    //     float raw_dot_r = (target_rate.x - _pid_rate_roll.get_pid_info().target) / _dt;
+    //     float raw_dot_p = (target_rate.y - _pid_rate_pitch.get_pid_info().target) / _dt;
+    //     float raw_dot_y = (target_rate.z - _pid_rate_yaw.get_pid_info().target) / _dt;
+
+    //     // Terapkan IIR Low-Pass Filter Orde 1
+    //     _smc_pref_dot_roll  += alpha_T_r * (raw_dot_r - _smc_pref_dot_roll);
+    //     _smc_pref_dot_pitch += alpha_T_p * (raw_dot_p - _smc_pref_dot_pitch);
+    //     _smc_pref_dot_yaw   += alpha_T_y * (raw_dot_y - _smc_pref_dot_yaw);
+    // }
+
+    if (is_positive(_dt)) {
+        float alpha_D_r = _pid_rate_roll.get_filt_D_alpha(_dt);
+        float alpha_D_p = _pid_rate_pitch.get_filt_D_alpha(_dt);
+        float alpha_D_y = _pid_rate_yaw.get_filt_D_alpha(_dt);
+
+        // Gunakan state sendiri, bukan dari PID internal (Finite difference)
+        float raw_dot_r = (target_rate.x - _smc_prev_target_roll)  / _dt;
+        float raw_dot_p = (target_rate.y - _smc_prev_target_pitch) / _dt;
+        float raw_dot_y = (target_rate.z - _smc_prev_target_yaw)   / _dt;
+
+        // Update prev untuk cycle berikutnya
+        _smc_prev_target_roll  = target_rate.x;
+        _smc_prev_target_pitch = target_rate.y;
+        _smc_prev_target_yaw   = target_rate.z;
+
+        // IIR filter
+        _smc_pref_dot_roll  += alpha_D_r * (raw_dot_r - _smc_pref_dot_roll);
+        _smc_pref_dot_pitch += alpha_D_p * (raw_dot_p - _smc_pref_dot_pitch);
+        _smc_pref_dot_yaw   += alpha_D_y * (raw_dot_y - _smc_pref_dot_yaw);
+    }
+    
+    // Integral Anti-Windup: Hanya akumulasi error jika motor TIDAK sedang mentok (limit = false)
+    if (!_motors.limit.roll)  _smc_int_roll  = constrain_float(_smc_int_roll  + error.x * _dt, -1.0f, 1.0f);
+    if (!_motors.limit.pitch) _smc_int_pitch = constrain_float(_smc_int_pitch + error.y * _dt, -1.0f, 1.0f);
+    if (!_motors.limit.yaw)   _smc_int_yaw   = constrain_float(_smc_int_yaw   + error.z * _dt, -1.0f, 1.0f);
+
+    // 4. SLIDING SURFACE (sigma) & SWITCHING GAIN (rho)
+    float sig_r = error.x + (c0_r * _smc_int_roll);
+    float sig_p = error.y + (c0_p * _smc_int_pitch);
+    float sig_y = error.z + (c0_y * _smc_int_yaw);
+
+    // Kalkulasi Gain Total
+    float rho_r = (alph_r / 1.4142f) + lb_r;
+    float rho_p = (alph_p / 1.4142f) + lb_p;
+    float rho_y = (alph_y / 1.4142f) + lb_y;
+
+    // 5. EQUIVALENT CONTROL (u_eq) FULL 6-DOF COUPLED DYNAMICS
+    float p = gyro_latest.x, q = gyro_latest.y, r = gyro_latest.z;
+
+    // Hitung target akselerasi ideal dari Sliding Surface (a*)
+    float a_r = _smc_pref_dot_roll  + (c0_r * error.x);
+    float a_p = _smc_pref_dot_pitch + (c0_p * error.y);
+    float a_y = _smc_pref_dot_yaw   + (c0_y * error.z);
+
+    // Kalkulasi Damping Total (Linear + Quadratic)
+    float damp_r = (D_lin_roll * p)  + (D_roll * p * fabsf(p));
+    float damp_p = (D_lin_pitch * q) + (D_pitch * q * fabsf(q));
+    float damp_y = (D_lin_yaw * r)   + (D_yaw * r * fabsf(r));
+
+    // Kalkulasi Full u_eq (Inertia + Cross-Inertia + Coriolis + Cross-Coriolis + Damping)
+    float u_eq_r = (Ixx*a_r) + (Izz - Iyy)*q*r + damp_r;
+    float u_eq_p = (Iyy*a_p) + (Ixx - Izz)*p*r + damp_p;
+    float u_eq_y = (Izz*a_y) + (Iyy - Ixx)*p*q + damp_y;
+    // float u_eq_r = (Ixx*a_r + Ixy*a_p + Ixz*a_y) + (Izz - Iyy)*q*r + Iyz*(q*q - r*r) + Ixz*p*q - Ixy*p*r + damp_r;
+    // float u_eq_p = (Ixy*a_r + Iyy*a_p + Iyz*a_y) + (Ixx - Izz)*p*r + Ixz*(r*r - p*p) + Ixy*q*r - Iyz*p*q + damp_p;
+    // float u_eq_y = (Ixz*a_r + Iyz*a_p + Izz*a_y) + (Iyy - Ixx)*p*q + Ixy*(p*p - q*q) + Iyz*p*r - Ixz*q*r + damp_y;
+
+    // 6. SWITCHING CONTROL (u_sw) -> Saturation (avoid Chattering)
+    float u_sw_r = rho_r * (sig_r / (fabsf(sig_r) + eps_r));
+    float u_sw_p = rho_p * (sig_p / (fabsf(sig_p) + eps_p));
+    float u_sw_y = rho_y * (sig_y / (fabsf(sig_y) + eps_y));
+
+    // 7. OUTPUT NORMALIZATION (u_eq + u_sw) -> Bounding -1 ke 1
+    float r_out = constrain_float((u_eq_r + u_sw_r) / MAX_T_RLL, -1.0f, 1.0f);
+    float p_out = constrain_float((u_eq_p + u_sw_p) / MAX_T_PIT, -1.0f, 1.0f);
+    float y_out = constrain_float((u_eq_y + u_sw_y) / MAX_T_YAW, -1.0f, 1.0f);
+
+    // 8. Custom logging (By-Pass Data untuk File .BIN pixhawk)
+    // ==========================================================
+    // Default Format: (Target, Actual, Error, Nilai P, Nilai D, Nilai I)
+    // Isi dengan: (Target, Actual, Error, u_eq, u_sw, sigma)
+    _pid_rate_roll.set_pid_info_custom(target_rate.x, p, error.x, u_eq_r/MAX_T_RLL, u_sw_r/MAX_T_RLL, sig_r);
+    _pid_rate_pitch.set_pid_info_custom(target_rate.y, q, error.y, u_eq_p/MAX_T_PIT, u_sw_p/MAX_T_PIT, sig_p);
+    _pid_rate_yaw.set_pid_info_custom(target_rate.z, r, error.z, u_eq_y/MAX_T_YAW, u_sw_y/MAX_T_YAW, sig_y);
+
+    // 9. Kirim SINYAL KE MOTOR MIXER
+
+    const float MAX_SLEW = 0.5f; // maksimal perubahan per cycle, tune ini
+    r_out = constrain_float(r_out, _smc_out_roll_prev  - MAX_SLEW * _dt * 400,
+                                    _smc_out_roll_prev  + MAX_SLEW * _dt * 400);
+    p_out = constrain_float(p_out, _smc_out_pitch_prev - MAX_SLEW * _dt * 400,
+                                    _smc_out_pitch_prev + MAX_SLEW * _dt * 400);
+    y_out = constrain_float(y_out, _smc_out_yaw_prev   - MAX_SLEW * _dt * 400,
+                                    _smc_out_yaw_prev   + MAX_SLEW * _dt * 400);
+
+    _smc_out_roll_prev  = r_out;
+    _smc_out_pitch_prev = p_out;
+    _smc_out_yaw_prev   = y_out;
+
+    _motors.set_roll(r_out);
+    _motors.set_pitch(p_out);
+    _motors.set_yaw(y_out);
+
+    // Cek Failsafe
     control_monitor_update();
 }
 
