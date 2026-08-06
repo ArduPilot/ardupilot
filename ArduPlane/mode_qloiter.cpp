@@ -5,6 +5,13 @@
 
 bool ModeQLoiter::_enter()
 {
+    // entering from fixed-wing flight: the VTOL attitude controller's
+    // target is stale, frozen since VTOL was last active, and the loiter
+    // controller initializes its acceleration target from it.  Drive the
+    // target level before initializing.
+    entry_leveling = AP_HAL::millis() - quadplane.last_att_control_ms > 100;
+    entry_leveling_start_ms = AP_HAL::millis();
+
     // initialise loiter
     loiter_nav->clear_pilot_desired_acceleration();
     loiter_nav->init_target();
@@ -92,6 +99,30 @@ void ModeQLoiter::run()
     }
     if (!quadplane.motors->armed()) {
         plane.mode_qloiter._enter();
+    }
+
+    if (entry_leveling) {
+        // attitude target angle below which the target is considered level for
+        // handing over to the loiter controller. This bounds the acceleration
+        // the loiter controller initializes with to a trivial ~0.5 m/s^2
+        constexpr float level_angle_rad = 0.05;
+        constexpr uint32_t level_timeout_ms = 3000;
+        const Vector3f &att_target = attitude_control->get_att_target_euler_rad();
+        if ((fabsf(att_target.x) > level_angle_rad || fabsf(att_target.y) > level_angle_rad) &&
+            now - entry_leveling_start_ms < level_timeout_ms) {
+            // drive the attitude target level
+            quadplane.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+            attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(0, 0, 0);
+            quadplane.set_climb_rate_ms(0);
+            quadplane.run_z_controller();
+            plane.stabilize_roll();
+            plane.stabilize_pitch();
+            return;
+        }
+        entry_leveling = false;
+        // initialise the loiter controller from the driven level target
+        loiter_nav->clear_pilot_desired_acceleration();
+        loiter_nav->init_target();
     }
 
     if (quadplane.should_relax()) {
