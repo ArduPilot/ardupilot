@@ -432,7 +432,7 @@ size_t mem_available(void)
     chHeapStatus(NULL, &totalp, NULL);
 
     // we also need to add in memory that is not yet allocated to the heap
-    totalp += _chCoreGetStatusX();
+    totalp += chCoreGetStatusX();
 
     // now our own heaps
     for (i=1; i<NUM_MEMORY_REGIONS; i++) {
@@ -499,7 +499,15 @@ thread_t *thread_create_alloc_affinity(size_t size, const char *name, tprio_t pr
 
     void *wend = (uint8_t *)wbase + size;
     __thd_stackfill((uint8_t *)wbase, (uint8_t *)wend);
-    thread_descriptor_t td = __THD_DECL_DATA(name, wbase, wend, prio, pf, arg, oip);
+    thread_descriptor_t td = {
+        .name     = name,
+        .wbase    = (stkalign_t *)wbase,
+        .wend     = (stkalign_t *)wend,
+        .prio     = prio,
+        .funcp    = pf,
+        .arg      = arg,
+        .instance = oip,
+    };
 
     chSysLock();
     thread_t *tp = chThdCreateSuspendedI(&td);

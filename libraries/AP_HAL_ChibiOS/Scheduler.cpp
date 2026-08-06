@@ -199,13 +199,15 @@ void Scheduler::init()
         __thd_stackfill((uint8_t *)THD_WORKING_AREA_BASE(_rcout_thread_wa),
                         (uint8_t *)THD_WORKING_AREA_END(_rcout_thread_wa));
 #endif
-        thread_descriptor_t td = __THD_DECL_DATA("rcout",
-                                                 THD_WORKING_AREA_BASE(_rcout_thread_wa),
-                                                 THD_WORKING_AREA_END(_rcout_thread_wa),
-                                                 APM_RCOUT_PRIORITY,
-                                                 _rcout_thread,
-                                                 this,
-                                                 &ch1);
+        thread_descriptor_t td = {
+            .name     = "rcout",
+            .wbase    = THD_WORKING_AREA_BASE(_rcout_thread_wa),
+            .wend     = THD_WORKING_AREA_END(_rcout_thread_wa),
+            .prio     = APM_RCOUT_PRIORITY,
+            .funcp    = _rcout_thread,
+            .arg      = this,
+            .instance = &ch1,
+        };
         chSysLock();
         _rcout_thread_ctx = chThdCreateSuspendedI(&td);
         chSchWakeupS(_rcout_thread_ctx, MSG_OK);
@@ -881,7 +883,7 @@ bool Scheduler::thread_create_pinned_to_core(AP_HAL::MemberProc proc, const char
         }
         _core1_thread_ctx = thread_ctx;
 #if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
-        _core1_last_cumulative = ch1.idlethread.stats.cumulative;
+        _core1_last_cumulative = core1_idle_cumulative();
         _core1_last_us = AP_HAL::micros64();
 #endif
         return true;
@@ -889,6 +891,30 @@ bool Scheduler::thread_create_pinned_to_core(AP_HAL::MemberProc proc, const char
 #endif
     return thread_create(proc, name, stack_size, base, priority);
 }
+
+#if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
+/*
+  ch1's idle thread is created inside chInstanceObjectInit() and is not
+  reachable from the instance, so find it once through the registry: it is
+  the only IDLEPRIO thread owned by ch1.
+ */
+rttime_t Scheduler::core1_idle_cumulative(void)
+{
+    static thread_t *idle_tp;
+    if (idle_tp == nullptr) {
+        for (thread_t *tp = chRegFirstThread(); tp != nullptr; tp = chRegNextThread(tp)) {
+            if (tp->owner == &ch1 && tp->hdr.pqueue.prio == IDLEPRIO) {
+                idle_tp = tp;
+                break;
+            }
+        }
+        if (idle_tp == nullptr) {
+            return 0;
+        }
+    }
+    return idle_tp->stats.cumulative;
+}
+#endif
 
 float Scheduler::get_core1_load_pct()
 {
@@ -901,7 +927,7 @@ float Scheduler::get_core1_load_pct()
     }
     // Measure idle time on ch1 and invert: load = 100% - idle%.
     // This automatically includes all threads pinned to Core1.
-    const rttime_t cur_idle = ch1.idlethread.stats.cumulative;
+    const rttime_t cur_idle = core1_idle_cumulative();
     const uint64_t cur_us = AP_HAL::micros64();
     const uint64_t elapsed = cur_us - _core1_last_us;
     if (elapsed == 0) {
