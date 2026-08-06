@@ -542,12 +542,49 @@ private:
     // take the orientation the board is mounted in from BRD_ORIENTATION
     void update_board_orientation();
 
-    // gyro initialisation
-    void _init_gyro();
-
     // return a gyro reading in sensor frame with the backend's
     // calibration corrections removed
     Vector3f uncorrected_gyro(uint8_t instance) const;
+
+    // state of a gyro calibration in progress.  Readings are averaged
+    // over a series of windows, and the calibration completes when the
+    // averages from two successive windows agree closely enough.  This
+    // is allocated only while a calibration is running.
+    struct GyroCal {
+        enum class Stage : uint8_t {
+            SETTLE = 0,   // discarding readings while the sensors settle
+            ACCUMULATE,   // accumulating readings into the current window
+        } stage;
+
+        uint32_t start_ms;          // time the calibration started
+        uint32_t window_start_ms;   // time the current window started
+        uint16_t window_count;      // readings accumulated this window
+
+        uint8_t num_gyros;
+        uint8_t num_converged;
+
+        Vector3f accel_start;       // accel reading at start of window
+        Vector3f window_sum[INS_MAX_INSTANCES];
+        Vector3f last_average[INS_MAX_INSTANCES];
+        Vector3f best_avg[INS_MAX_INSTANCES];
+        Vector3f new_gyro_offset[INS_MAX_INSTANCES];
+        float best_diff[INS_MAX_INSTANCES];
+        bool converged[INS_MAX_INSTANCES];
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+        float start_temperature[INS_MAX_INSTANCES];
+#endif
+    };
+    GyroCal *gyro_cal;
+
+    // gyro calibration state machine
+    bool gyro_cal_start();
+    void gyro_cal_start_window(uint32_t now_ms);
+    void gyro_cal_end_window(uint32_t now_ms);
+    void gyro_cal_update();
+    void gyro_cal_finish();
+
+    // drive a running gyro calibration to completion, blocking the caller
+    void gyro_cal_run_blocking();
 
     // Calibration routines borrowed from Rolfe Schmidt
     // blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/

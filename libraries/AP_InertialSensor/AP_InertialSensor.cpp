@@ -93,6 +93,20 @@ extern const AP_HAL::HAL& hal;
 
 #define GYRO_INIT_MAX_DIFF_DPS 0.1f
 
+// readings are discarded for this long at the start of a gyro
+// calibration, to avoid sensor start-up oddities:
+#define GYRO_CAL_SETTLE_MS 25
+
+// gyro readings are averaged over windows of this length.  A window is
+// also required to hold a minimum number of readings, in case the
+// caller is supplying data very slowly:
+#define GYRO_CAL_WINDOW_MS 250
+#define GYRO_CAL_MIN_WINDOW_SAMPLES 5
+
+// we try to get a good calibration estimate for this long.  If the
+// gyros are stable we should get it in 1 second:
+#define GYRO_CAL_TIMEOUT_MS 30000
+
 #ifndef HAL_INS_TRIM_LIMIT_DEG
 #define HAL_INS_TRIM_LIMIT_DEG 10
 #endif
@@ -1415,7 +1429,10 @@ bool AP_InertialSensor::_calculate_trim(const Vector3f &accel_sample, Vector3f &
 void
 AP_InertialSensor::init_gyro()
 {
-    _init_gyro();
+    if (!gyro_cal_start()) {
+        return;
+    }
+    gyro_cal_run_blocking();
 
     // save calibration
     _save_gyro_calibration();
@@ -1762,21 +1779,26 @@ Vector3f AP_InertialSensor::uncorrected_gyro(uint8_t instance) const
     return gyro;
 }
 
-void
-AP_InertialSensor::_init_gyro()
+/*
+  start a gyro calibration.  Returns false if one could not be started,
+  either because a calibration is already running or because the state
+  for one could not be allocated.
+ */
+bool AP_InertialSensor::gyro_cal_start()
 {
-    uint8_t num_gyros = MIN(get_gyro_count(), INS_MAX_INSTANCES);
-    Vector3f last_average[INS_MAX_INSTANCES], best_avg[INS_MAX_INSTANCES];
-    Vector3f new_gyro_offset[INS_MAX_INSTANCES];
-    float best_diff[INS_MAX_INSTANCES];
-    bool converged[INS_MAX_INSTANCES];
-#if HAL_INS_TEMPERATURE_CAL_ENABLE
-    float start_temperature[INS_MAX_INSTANCES] {};
-#endif
-
     // exit immediately if calibration is already in progress
     if (calibrating()) {
-        return;
+        return false;
+    }
+
+    gyro_cal = NEW_NOTHROW GyroCal{};
+    if (gyro_cal == nullptr) {
+        return false;
+    }
+    gyro_cal->num_gyros = MIN(get_gyro_count(), INS_MAX_INSTANCES);
+    gyro_cal->start_ms = AP_HAL::millis();
+    for (uint8_t k=0; k<gyro_cal->num_gyros; k++) {
+        gyro_cal->best_diff[k] = -1.f;
     }
 
     // record we are calibrating
@@ -1788,117 +1810,157 @@ AP_InertialSensor::_init_gyro()
     // cold start
     DEV_PRINTF("Init Gyro");
 
+    return true;
+}
+
+/*
+  begin accumulating gyro readings into a new averaging window
+ */
+void AP_InertialSensor::gyro_cal_start_window(uint32_t now_ms)
+{
+    gyro_cal->window_start_ms = now_ms;
+    gyro_cal->window_count = 0;
+    for (uint8_t k=0; k<gyro_cal->num_gyros; k++) {
+        gyro_cal->window_sum[k].zero();
+    }
+    gyro_cal->accel_start = get_accel(0);
+}
+
+/*
+  take the average of the readings accumulated over a window and see
+  whether it agrees closely enough with the average from the previous
+  window for the gyros to be considered converged
+ */
+void AP_InertialSensor::gyro_cal_end_window(uint32_t now_ms)
+{
+    const uint8_t num_gyros = gyro_cal->num_gyros;
+
+    DEV_PRINTF("*");
+
+    const Vector3f accel_diff = get_accel(0) - gyro_cal->accel_start;
+
+    Vector3f gyro_avg[INS_MAX_INSTANCES];
     for (uint8_t k=0; k<num_gyros; k++) {
-        new_gyro_offset[k].zero();
-        best_diff[k] = -1.f;
-        last_average[k].zero();
-        converged[k] = false;
+        gyro_avg[k] = gyro_cal->window_sum[k] / gyro_cal->window_count;
     }
 
-    for(int8_t c = 0; c < 5; c++) {
-        hal.scheduler->delay(5);
-        update();
+    // start accumulating the next window
+    gyro_cal_start_window(now_ms);
+
+    if (accel_diff.length() > 0.2f) {
+        // the accelerometers changed during the gyro sum. Skip
+        // this sample. This copes with doing gyro cal on a
+        // steadily moving platform. The value 0.2 corresponds
+        // with around 5 degrees/second of rotation.
+        return;
     }
 
+    for (uint8_t k=0; k<num_gyros; k++) {
+        const Vector3f gyro_diff = gyro_cal->last_average[k] - gyro_avg[k];
+        const float diff_norm = gyro_diff.length();
+        if (gyro_cal->best_diff[k] < 0) {
+            gyro_cal->best_diff[k] = diff_norm;
+            gyro_cal->best_avg[k] = gyro_avg[k];
+        } else if (diff_norm < radians(GYRO_INIT_MAX_DIFF_DPS)) {
+            // we want the average to be within 0.1 bit, which is 0.04 degrees/s
+            gyro_cal->last_average[k] = (gyro_avg[k] * 0.5f) + (gyro_cal->last_average[k] * 0.5f);
+            if (!gyro_cal->converged[k] ||
+                gyro_cal->last_average[k].length() < gyro_cal->new_gyro_offset[k].length()) {
+                gyro_cal->new_gyro_offset[k] = gyro_cal->last_average[k];
+            }
+            if (!gyro_cal->converged[k]) {
+                gyro_cal->converged[k] = true;
+                gyro_cal->num_converged++;
+            }
+        } else if (diff_norm < gyro_cal->best_diff[k]) {
+            gyro_cal->best_diff[k] = diff_norm;
+            gyro_cal->best_avg[k] = (gyro_avg[k] * 0.5f) + (gyro_cal->last_average[k] * 0.5f);
+        }
+        gyro_cal->last_average[k] = gyro_avg[k];
+    }
+}
+
+/*
+  feed a new set of gyro readings into a running gyro calibration.
+  Must be called once for each new set of readings.
+ */
+void AP_InertialSensor::gyro_cal_update()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+
+    switch (gyro_cal->stage) {
+    case GyroCal::Stage::SETTLE:
+        // discard readings for a short time to avoid sensor start-up
+        // oddities
+        if (now_ms - gyro_cal->start_ms < GYRO_CAL_SETTLE_MS) {
+            return;
+        }
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-    // get start temperature. gyro cal usually happens when the board
-    // has just been powered on, so the temperature may be changing
-    // rapidly. We use the average between start and end temperature
-    // as the calibration temperature to minimise errors
-    for (uint8_t k=0; k<num_gyros; k++) {
-        start_temperature[k] = get_temperature(k);
-    }
+        // get start temperature. gyro cal usually happens when the board
+        // has just been powered on, so the temperature may be changing
+        // rapidly. We use the average between start and end temperature
+        // as the calibration temperature to minimise errors
+        for (uint8_t k=0; k<gyro_cal->num_gyros; k++) {
+            gyro_cal->start_temperature[k] = get_temperature(k);
+        }
 #endif
+        gyro_cal_start_window(now_ms);
+        gyro_cal->stage = GyroCal::Stage::ACCUMULATE;
+        FALLTHROUGH;
 
-    // the strategy is to average 50 points over 0.5 seconds, then do it
+    case GyroCal::Stage::ACCUMULATE:
+        for (uint8_t k=0; k<gyro_cal->num_gyros; k++) {
+            gyro_cal->window_sum[k] += uncorrected_gyro(k);
+        }
+        gyro_cal->window_count++;
+        break;
+    }
+
+    // the strategy is to average readings over a window, then do it
     // again and see if the 2nd average is within a small margin of
     // the first
-
-    uint8_t num_converged = 0;
-
-    // we try to get a good calibration estimate for up to 30 seconds
-    // if the gyros are stable, we should get it in 1 second
-    for (int16_t j = 0; j <= 30*4 && num_converged < num_gyros; j++) {
-        Vector3f gyro_sum[INS_MAX_INSTANCES], gyro_avg[INS_MAX_INSTANCES], gyro_diff[INS_MAX_INSTANCES];
-        Vector3f accel_start;
-        float diff_norm[INS_MAX_INSTANCES];
-        uint8_t i;
-
-        EXPECT_DELAY_MS(1000);
-
-        memset(diff_norm, 0, sizeof(diff_norm));
-
-        DEV_PRINTF("*");
-
-        for (uint8_t k=0; k<num_gyros; k++) {
-            gyro_sum[k].zero();
-        }
-        accel_start = get_accel(0);
-        for (i=0; i<50; i++) {
-            update();
-            for (uint8_t k=0; k<num_gyros; k++) {
-                gyro_sum[k] += uncorrected_gyro(k);
-            }
-            hal.scheduler->delay(5);
-        }
-
-        Vector3f accel_diff = get_accel(0) - accel_start;
-        if (accel_diff.length() > 0.2f) {
-            // the accelerometers changed during the gyro sum. Skip
-            // this sample. This copes with doing gyro cal on a
-            // steadily moving platform. The value 0.2 corresponds
-            // with around 5 degrees/second of rotation.
-            continue;
-        }
-
-        for (uint8_t k=0; k<num_gyros; k++) {
-            gyro_avg[k] = gyro_sum[k] / i;
-            gyro_diff[k] = last_average[k] - gyro_avg[k];
-            diff_norm[k] = gyro_diff[k].length();
-        }
-
-        for (uint8_t k=0; k<num_gyros; k++) {
-            if (best_diff[k] < 0) {
-                best_diff[k] = diff_norm[k];
-                best_avg[k] = gyro_avg[k];
-            } else if (gyro_diff[k].length() < radians(GYRO_INIT_MAX_DIFF_DPS)) {
-                // we want the average to be within 0.1 bit, which is 0.04 degrees/s
-                last_average[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
-                if (!converged[k] || last_average[k].length() < new_gyro_offset[k].length()) {
-                    new_gyro_offset[k] = last_average[k];
-                }
-                if (!converged[k]) {
-                    converged[k] = true;
-                    num_converged++;
-                }
-            } else if (diff_norm[k] < best_diff[k]) {
-                best_diff[k] = diff_norm[k];
-                best_avg[k] = (gyro_avg[k] * 0.5f) + (last_average[k] * 0.5f);
-            }
-            last_average[k] = gyro_avg[k];
-        }
+    if (now_ms - gyro_cal->window_start_ms < GYRO_CAL_WINDOW_MS ||
+        gyro_cal->window_count < GYRO_CAL_MIN_WINDOW_SAMPLES) {
+        return;
     }
 
+    gyro_cal_end_window(now_ms);
+
+    if (gyro_cal->num_converged >= gyro_cal->num_gyros ||
+        now_ms - gyro_cal->start_ms >= GYRO_CAL_TIMEOUT_MS) {
+        gyro_cal_finish();
+    }
+}
+
+/*
+  apply the results of a gyro calibration which has either converged or
+  run out of time
+ */
+void AP_InertialSensor::gyro_cal_finish()
+{
     // we've kept the user waiting long enough - use the best pair we
     // found so far
     DEV_PRINTF("\n");
-    for (uint8_t k=0; k<num_gyros; k++) {
-        if (!converged[k]) {
+    for (uint8_t k=0; k<gyro_cal->num_gyros; k++) {
+        if (!gyro_cal->converged[k]) {
             DEV_PRINTF("gyro[%u] did not converge: diff=%f dps (expected < %f)\n",
                                 (unsigned)k,
-                                (double)degrees(best_diff[k]),
+                                (double)degrees(gyro_cal->best_diff[k]),
                                 (double)GYRO_INIT_MAX_DIFF_DPS);
-            _gyro_offset(k).set(best_avg[k]);
+            _gyro_offset(k).set(gyro_cal->best_avg[k]);
             // flag calibration as failed for this gyro
             _gyro_cal_ok[k] = false;
         } else {
             _gyro_cal_ok[k] = true;
-            _gyro_offset(k).set(new_gyro_offset[k]);
+            _gyro_offset(k).set(gyro_cal->new_gyro_offset[k]);
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
-            caltemp_gyro(k).set(0.5 * (get_temperature(k) + start_temperature[k]));
+            caltemp_gyro(k).set(0.5 * (get_temperature(k) + gyro_cal->start_temperature[k]));
 #endif
         }
     }
+
+    delete gyro_cal;
+    gyro_cal = nullptr;
 
     // record calibration complete
     _calibrating_gyro = false;
@@ -1906,6 +1968,19 @@ AP_InertialSensor::_init_gyro()
     // stop flashing leds
     AP_Notify::flags.initialising = false;
     AP_Notify::flags.gyro_calibrated = true;
+}
+
+/*
+  drive a running gyro calibration through to completion, blocking the
+  calling thread until it has finished
+ */
+void AP_InertialSensor::gyro_cal_run_blocking()
+{
+    while (gyro_cal != nullptr) {
+        EXPECT_DELAY_MS(1000);
+        update();
+        hal.scheduler->delay(5);
+    }
 }
 
 // save parameters to eeprom
@@ -2047,8 +2122,12 @@ void AP_InertialSensor::update(void)
             }
         }
 
+    if (gyro_cal != nullptr) {
+        gyro_cal_update();
+    }
+
     _last_update_usec = AP_HAL::micros();
-    
+
     _have_sample = false;
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
