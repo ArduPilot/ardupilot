@@ -150,8 +150,18 @@ public:
 #endif
 
 #if AP_CPU_IDLE_STATS_ENABLED
+    // bitmask of readers of idle-thread CPU load stats; each reader
+    // observes its own measurement window
+    enum class IdleStats : uint8_t {
+        TO_FILE = 1U << 0,   // reported via @SYS/threads.txt (reset on read)
+        TO_LOG  = 1U << 1,   // reported via the PM2 log message (reset on log)
+    };
+    static bool idle_stats_enabled(IdleStats opt) {
+        return _singleton && (uint8_t(_singleton->state.idle_stats.get()) & uint8_t(opt)) != 0;
+    }
+    // true if idle load measurement should run from boot (any reader enabled)
     static bool use_idle_stats(void) {
-        return _singleton?_singleton->state.idle_stats.get():0;
+        return _singleton && _singleton->state.idle_stats.get() != 0;
     }
 #endif
 
