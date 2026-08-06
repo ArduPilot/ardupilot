@@ -2417,6 +2417,24 @@ class TestSuite(abc.ABC):
     def vehicleinfo_key(self):
         return self.log_name()
 
+    def tests_for_each_frame(self, function):
+        '''return a Test for each of this vehicle's internal frames, each
+        one calling function(frame=<frame>).  Tests are named
+        "<function>_<frame>", so an individual frame can be run, skipped
+        via disabled_tests() or blacklisted from parallel running by
+        name.  Frames which are external simulations are omitted; they
+        need a simulator we do not have here.'''
+        frames = vehicleinfo.VehicleInfo().options[self.vehicleinfo_key()]["frames"]
+        ret = []
+        for frame in sorted(frames.keys()):
+            if frames[frame].get("external", False):
+                continue
+            test = Test(function, kwargs={"frame": frame})
+            test.name = "%s_%s" % (function.__name__, frame)
+            test.description = "%s (frame %s)" % (function.__doc__, frame)
+            ret.append(test)
+        return ret
+
     def repeatedly_apply_parameter_filepath(self, filepath):
         if False:
             return self.repeatedly_apply_parameter_filepath_mavproxy(filepath)
