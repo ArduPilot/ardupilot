@@ -177,7 +177,8 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         timeouts : timeoutStatus,
         solution : solutionStatus.value,
         gps : gpsCheckStatus.value,
-        primary : frontend->getPrimaryCoreIndex()
+        primary : frontend->getPrimaryCoreIndex(),
+        aiding_mode : (uint8_t)PV_AidingMode
     };
     AP::logger().WriteBlock(&pkt4, sizeof(pkt4));
 }
