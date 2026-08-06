@@ -10601,7 +10601,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.EXTENDED_SYS_STATE,
             self.PID_TUNING_axes,
             self.CustomController,
-        ] + self.FlyEachFrameTests() + self.FlyEachFrameRCInputTests())
+        ] + self.FlyEachFrameTests() + self.FlyEachFrameRCInputTests() + self.AHRSTrimTests())
         return ret
 
     def UTMGlobalPositionWaypoint(self):
@@ -10850,7 +10850,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.AirspeedDrivers,
             self.IMUTempCal,
             self.AutoLandMode,
-            self.AHRSTrim,
             self.TakeoffAuto1,
             self.TakeoffTakeoff4,
             self.TakeoffTakeoff5,
