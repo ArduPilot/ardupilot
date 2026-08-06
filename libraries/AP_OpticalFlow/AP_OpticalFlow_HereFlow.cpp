@@ -73,7 +73,10 @@ void AP_OpticalFlow_HereFlow::_push_state(void)
     //setup scaling based on parameters
     float flowScaleFactorX = 1.0f + 0.001f * flowScaler.x;
     float flowScaleFactorY = 1.0f + 0.001f * flowScaler.y;
-    float integralToRate = 1.0f / integral_time;
+    // FLOW_HF_RATEF corrects a node that reports integration_interval at the wrong
+    // rate; applied here it scales flow and gyro together so the EKF's gyro
+    // compensation stays valid (FLOW_*SCALER cannot, it scales flow only).
+    float integralToRate = _hereflowRateScale() / integral_time;
     //Convert to Raw Flow measurement to Flow Rate measurement
     state.flowRate = Vector2f{
         flow_integral.x * flowScaleFactorX,

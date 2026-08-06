@@ -57,6 +57,13 @@ protected:
     // get the flow scaling parameters
     Vector2f _flowScaler(void) const { return Vector2f(frontend._flowScalerX, frontend._flowScalerY); }
 
+    // output-rate correction for HereFlow nodes that report a wrong integration_interval
+    float _hereflowRateScale(void) const
+    {
+        const float s = frontend._hereflow_rate_scale;
+        return is_positive(s) ? s : 1.0f;
+    }
+
     // get the yaw angle in radians
     float _yawAngleRad(void) const { return cd_to_rad(float(frontend._yawAngle_cd)); }
 

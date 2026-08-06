@@ -146,6 +146,7 @@ private:
     AP_Int8  _address;              // address on the bus (allows selecting between 8 possible I2C addresses for px4flow)
     AP_Float  _height_override;              // height of the sensor above the ground. Only used in rover
     AP_Int16 _options;              // options parameter
+    AP_Float _hereflow_rate_scale;  // HereFlow output-rate correction (flow and gyro), 1.0 = none
 
     // method called by backend to update frontend state:
     void update_state(const OpticalFlow_state &state);
