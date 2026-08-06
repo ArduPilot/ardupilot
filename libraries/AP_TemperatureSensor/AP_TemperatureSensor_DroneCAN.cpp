@@ -19,6 +19,7 @@
 
 #include "AP_TemperatureSensor_DroneCAN.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_HAL/Device.h>
 #include <AP_Math/AP_Math.h>
 
 AP_TemperatureSensor_DroneCAN* AP_TemperatureSensor_DroneCAN::_drivers[];
@@ -71,6 +72,12 @@ void AP_TemperatureSensor_DroneCAN::handle_temperature(AP_DroneCAN *ap_dronecan,
     for (uint8_t i = 0; i < _driver_instance; i++) {
         if ((_drivers[i] != nullptr) && (_drivers[i]->_ID.get() == msg.device_id)) {
             // Driver loaded and looking for this ID, set temp
+            _drivers[i]->set_bus_id(AP_HAL::Device::make_bus_id(
+                AP_HAL::Device::BUS_TYPE_UAVCAN,
+                ap_dronecan->get_driver_index(),
+                transfer.source_node_id,
+                uint8_t(AP_TemperatureSensor_Params::Type::DRONECAN)
+            ));
             _drivers[i]->set_temperature(KELVIN_TO_C(msg.temperature));
         }
     }
