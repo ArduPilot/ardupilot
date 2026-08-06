@@ -391,11 +391,28 @@ def pexpect_close(p):
         ex = e
         pass
     if ex is None:
-        # give the process some time to go away
-        for i in range(20):
+        # give the process some time to go away.  SITL exits within a
+        # couple of milliseconds, so poll finely:
+        for i in range(100):
             if not p.isalive():
+                # the child is gone; pexpect's close() otherwise sleeps
+                # for delayafterclose waiting for it:
+                p.ptyproc.delayafterclose = 0
+                p.ptyproc.delayafterterminate = 0
                 break
-            time.sleep(0.05)
+            # MAVProxy's SIGTERM handler only sets a flag; its main
+            # thread is blocked reading stdin via readline, and that
+            # read is restarted once the handler returns (PEP 475), so
+            # the flag goes unnoticed until some input arrives.  Feed it
+            # a newline to release the read.  We do this each time
+            # around the loop as the first newline can arrive before the
+            # signal has been handled.  Other children do not read
+            # stdin, so this is harmless to them:
+            try:
+                p.send("\n")
+            except Exception:  # noqa: BLE001
+                pass
+            time.sleep(0.01)
     try:
         p.close()
     except Exception:  # noqa: BLE001
