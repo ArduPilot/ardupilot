@@ -880,7 +880,9 @@ void NavEKF3_core::readAirSpdData()
         }
         // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
         tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
-    } else if (assume_zero_sideslip()) {
+        return;
+    }
+    if (assume_zero_sideslip()) {
         // synthetic airspeed is only valid for 'fly forward' vehicles that
         // do not sideslip; fusing it on a multicopter corrupts the attitude
         // and velocity states when dead reckoning (see issue #33451)
@@ -892,9 +894,7 @@ void NavEKF3_core::readAirSpdData()
                 tasDataToFuse = true;
                 tasDataDelayed.allowFusion = true;
                 tasDataDelayed.time_ms = imuDataDelayed.time_ms;
-            } else {
-                tasDataToFuse = false;
-                tasDataDelayed.allowFusion = false;
+                return;
             }
         } else if (lastAspdEstIsValid && !windStateIsObservable) {
             // this uses the last airspeed estimated before dead reckoning started and
@@ -906,15 +906,12 @@ void NavEKF3_core::readAirSpdData()
                 tasDataToFuse = true;
                 tasDataDelayed.allowFusion = true;
                 tasDataDelayed.time_ms = imuDataDelayed.time_ms;
-            } else {
-                tasDataToFuse = false;
-                tasDataDelayed.allowFusion = false;
+                return;
             }
         }
-    } else {
-        tasDataToFuse = false;
-        tasDataDelayed.allowFusion = false;
     }
+    tasDataToFuse = false;
+    tasDataDelayed.allowFusion = false;
 }
 
 #if EK3_FEATURE_BEACON_FUSION
