@@ -19,7 +19,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if defined(RP2350) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)
+#if defined(RP2350) && (HAL_USE_PWM == TRUE) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)
 
 namespace ChibiOS {
 
@@ -150,4 +150,4 @@ private:
 
 } // namespace ChibiOS
 
-#endif // defined(RP2350) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)
+#endif // defined(RP2350) && (HAL_USE_PWM == TRUE) && (HAL_DSHOT_ENABLED || HAL_SERIALLED_ENABLED)
