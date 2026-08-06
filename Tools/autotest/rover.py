@@ -6713,15 +6713,35 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
 
         self.progress('rebuilding rover with ppp enabled')
-        import shutil
-        shutil.copy('build/sitl/bin/ardurover', 'build/sitl/bin/ardurover.noppp')
+        # snapshot the rover we are about to overwrite; context_pop()
+        # restores it (stopping SITL around the restore if that is the
+        # binary being run):
+        self.context_backup_file('build/sitl/bin/ardurover')
+
+        # stop the SITL for the duration of the build.  The build blocks
+        # this process for a long time, and a SITL left running with
+        # nobody reading its MAVLink stream fills its serial0 output
+        # queue and wedges in the outqueue-full loop in
+        # SITL_State::wait_clock(), which stops simulated time - and so
+        # heartbeats - until we start reading again.
+        self.mav.close()
+        self.stop_SITL()
+
         # --enable-math-check-indexes matches the CI rover build
         # configuration, so in CI this rebuild is a ccache hit against
         # the pre-built PPP rover from the build job
         util.build_SITL('bin/ardurover', clean=False, configure=True,
                         extra_configure_args=['--enable-PPP', '--enable-math-check-indexes', '--debug'])
 
-        self.reboot_sitl()
+        # under the parallel test runner each test runs against a private
+        # copy of the binary; make sure that copy is the rover we just
+        # built, or we start the pre-rebuild one back up:
+        self.refresh_test_binary()
+
+        self.start_SITL(wipe=False)
+        self.mav.do_connect()
+        self.wait_heartbeat(drain_mav=True)
+        self.set_streamrate(self.sitl_streamrate())
 
         self.progress("Starting PPP daemon")
         pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
@@ -6745,12 +6765,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.TestWebServer("http://192.168.14.13:8081")
 
         self.context_pop()
+        # this pop restores the non-PPP rover backed up above
         self.context_pop()
-
-        # restore rover without ppp enabled for next test
-        os.unlink('build/sitl/bin/ardurover')
-        shutil.copy('build/sitl/bin/ardurover.noppp', 'build/sitl/bin/ardurover')
-        self.reboot_sitl()
 
     def FenceFullAndPartialTransfer(self, target_system=1, target_component=1):
         '''ensure starting a fence transfer then a partial transfer behaves

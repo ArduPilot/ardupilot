@@ -14063,7 +14063,15 @@ switch value'''
         '''make a pristine per-instance copy of the binary.  Some tests
         overwrite the binary they run against; giving each test a fresh
         private copy means they can't corrupt the master binary or the
-        binary used by another parallel worker.'''
+        binary used by another parallel worker.
+
+        Tests which rebuild the binary (via util.build_SITL) call this
+        afterwards to pick the rebuilt binary up; that must work in a
+        serial run too, where there is no private copy and self.binary
+        is the build output itself.'''
+        if getattr(self, "master_binary", None) is None:
+            # not running under the parallel test runner
+            return
         # unlink rather than overwrite in-place: the destination may still
         # be mapped by a SITL we (or a previous test run) haven't reaped
         # yet, and overwriting a running executable raises ETXTBSY:
