@@ -611,6 +611,9 @@ private:
     Priority _get_priority(StateIndex state_id) { return _state[state_id].priority; }
     //Method to detect compass beyond initialisation stage
     void _detect_runtime(void);
+
+    // take the orientation the board is mounted in from BRD_ORIENTATION
+    void update_board_orientation();
     // This method reorganises devid list to match
     // priority list, only call before detection at boot
 #if COMPASS_MAX_INSTANCES > 1
