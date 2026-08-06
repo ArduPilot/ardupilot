@@ -3,6 +3,7 @@
 #include "AP_BoardConfig_config.h"
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
+#include <AP_Math/rotations.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AC_PID/AC_PI.h>
 #include <AP_Radio/AP_Radio_config.h>
@@ -217,6 +218,10 @@ public:
     // should be toggled
     bool safety_button_handle_pressed(uint8_t press_count);
 
+    // the orientation the board is mounted in.  Sensor drivers call
+    // this to find the rotation they should apply to their readings
+    enum Rotation get_orientation();
+
 #if HAL_HAVE_IMU_HEATER
     void set_imu_temp(float current_temp_c);
 
@@ -296,6 +301,18 @@ private:
     static void throw_error(const char *err_str, const char *fmt, va_list arg) NORETURN;
 
     static bool _in_error_loop;
+
+    // board mounting orientation, and the value of it sensor drivers
+    // are currently using:
+    AP_Int8 _orientation;
+    struct {
+        enum Rotation orientation;
+        uint32_t last_update_ms;
+    } orientation_state;
+
+    // convert the orientation from the AHRS_ORIENTATION parameter it
+    // used to be held in
+    void convert_orientation_parameter();
 
 #if HAL_HAVE_IMU_HEATER
     struct {
