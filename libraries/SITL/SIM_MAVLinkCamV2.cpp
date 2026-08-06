@@ -36,7 +36,9 @@ void MAVLinkCamV2::handle_message(const mavlink_message_t &msg)
     }
     mavlink_command_long_t cmd;
     mavlink_msg_command_long_decode(&msg, &cmd);
-    if (cmd.target_system    != camera_vehicle_sysid() ||
+    // use the header-aware getter: the payload byte is zero for a target
+    // over 255
+    if (mavlink_msg_command_long_get_target_system(&msg) != camera_vehicle_sysid() ||
         cmd.target_component != _camera_compid) {
         return;
     }
@@ -110,7 +112,7 @@ void MAVLinkCamV2::send_camera_heartbeat()
     camera_send_mavlink_message(msg);
 }
 
-void MAVLinkCamV2::send_camera_information(uint8_t target_sysid, uint8_t target_compid)
+void MAVLinkCamV2::send_camera_information(uint32_t target_sysid, uint8_t target_compid)
 {
     mavlink_camera_information_t info {};
     info.time_boot_ms     = AP_HAL::millis();
@@ -144,20 +146,19 @@ void MAVLinkCamV2::send_camera_settings()
     camera_send_mavlink_message(msg);
 }
 
-void MAVLinkCamV2::send_camera_command_ack(uint8_t target_sysid, uint8_t target_compid,
+void MAVLinkCamV2::send_camera_command_ack(uint32_t target_sysid, uint8_t target_compid,
                                             MAV_CMD cmd, MAV_RESULT result)
 {
-    mavlink_command_ack_t ack {};
-    ack.command          = (uint16_t)cmd;
-    ack.result           = (uint8_t)result;
-    ack.progress         = 255;
-    ack.target_system    = target_sysid;
-    ack.target_component = target_compid;
-
+    // pack rather than encode so a target over 255 goes in the extended
+    // header rather than being truncated in the payload
     mavlink_message_t msg;
-    mavlink_msg_command_ack_encode_status(
+    mavlink_msg_command_ack_pack_status(
         camera_vehicle_sysid(), _camera_compid,
-        &camera_mav_status(), &msg, &ack);
+        &camera_mav_status(), &msg,
+        (uint16_t)cmd, (uint8_t)result,
+        255,                // progress
+        0,                  // result_param2
+        target_sysid, target_compid);
     camera_send_mavlink_message(msg);
 }
 

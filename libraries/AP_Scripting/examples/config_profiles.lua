@@ -718,7 +718,10 @@ local function handle_param_setting()
       end
 
       if gcs_allow_set == false then -- we are in change of param setting
-         local param_value, _, _, param_id, _ = string.unpack("<fBBc16B", string.sub(msg, 13, 36))
+         -- newer firmware passes a structure with a 4 byte sysid (299
+         -- bytes); older firmware uses a 1 byte sysid (291 bytes)
+         local payload_ofs = (#msg >= 299) and 16 or 13
+         local param_value, _, _, param_id, _ = string.unpack("<fBBc16B", string.sub(msg, payload_ofs, payload_ofs + 23))
          param_id = string.gsub(param_id, string.char(0), "")
 
          handle_param_set(param_id, param_value)

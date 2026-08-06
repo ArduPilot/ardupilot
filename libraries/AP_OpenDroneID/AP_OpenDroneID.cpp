@@ -135,8 +135,10 @@ void AP_OpenDroneID::set_basic_id() {
     }
     if (id_len > 0) {
         // prepare basic id pkt
-        uint8_t val = gcs().sysid_this_mav();
-        pkt_basic_id.target_system = val;
+        // this packet is sent as a raw struct, so has no extended header
+        // for a target sysid over 255
+        const uint32_t val = gcs().sysid_this_mav();
+        pkt_basic_id.target_system = val>255?0:val;
         pkt_basic_id.target_component = MAV_COMP_ID_ODID_TXRX_1;
         pkt_basic_id.id_type = atoi(id_type);
         pkt_basic_id.ua_type = atoi(ua_type);

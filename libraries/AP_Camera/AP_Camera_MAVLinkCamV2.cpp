@@ -29,13 +29,13 @@ bool AP_Camera_MAVLinkCamV2::trigger_pic()
 
     // prepare and send message
     mavlink_command_long_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = _sysid>255?0:_sysid;  // targets > 255 travel in the extended header
     pkt.target_component = _compid;
     pkt.command = MAV_CMD_IMAGE_START_CAPTURE;
     pkt.param3 = 1;             // number of images to take
     pkt.param4 = image_index+1; // starting sequence number
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid, _compid);
 
     return true;
 }
@@ -51,7 +51,7 @@ bool AP_Camera_MAVLinkCamV2::record_video(bool start_recording)
 
     // prepare and send message
     mavlink_command_long_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = _sysid>255?0:_sysid;  // targets > 255 travel in the extended header
     pkt.target_component = _compid;
 
     if (start_recording) {
@@ -63,7 +63,7 @@ bool AP_Camera_MAVLinkCamV2::record_video(bool start_recording)
         // param1 = 0, video stream id. 0 for all streams
     }
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid, _compid);
 
     return true;
 }
@@ -78,7 +78,7 @@ bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 
     // prepare and send message
     mavlink_command_long_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = _sysid>255?0:_sysid;  // targets > 255 travel in the extended header
     pkt.target_component = _compid;
     pkt.command = MAV_CMD_SET_CAMERA_ZOOM;
     switch (zoom_type) {
@@ -91,7 +91,7 @@ bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
     }
     pkt.param2 = zoom_value;            // Zoom Value
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid, _compid);
 
     return true;
 }
@@ -107,7 +107,7 @@ SetFocusResult AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float foc
 
     // prepare and send message
     mavlink_command_long_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = _sysid>255?0:_sysid;  // targets > 255 travel in the extended header
     pkt.target_component = _compid;
     pkt.command = MAV_CMD_SET_CAMERA_FOCUS;
     switch (focus_type) {
@@ -126,7 +126,7 @@ SetFocusResult AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float foc
     }
     pkt.param2 = focus_value;
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid, _compid);
 
     return SetFocusResult::ACCEPTED;
 }
@@ -242,12 +242,12 @@ void AP_Camera_MAVLinkCamV2::request_camera_information() const
         0,  // param6
         0,  // param7
         MAV_CMD_REQUEST_MESSAGE,
-        _sysid,
+        uint8_t(_sysid>255?0:_sysid),  // targets > 255 travel in the extended header
         _compid,
         0  // confirmation
     };
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid, _compid);
 }
 
 #endif // AP_CAMERA_MAVLINKCAMV2_ENABLED

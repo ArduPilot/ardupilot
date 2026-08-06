@@ -183,12 +183,12 @@ void AP_Mount_MAVLink::request_gimbal_device_information() const
         0,  // param6
         0,  // param7
         MAV_CMD_REQUEST_MESSAGE,
-        _sysid,
+        uint8_t(_sysid>255?0:_sysid),  // targets > 255 travel in the extended header
         _compid,
         0  // confirmation
     };
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid, _compid);
 }
 
 // start sending ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE to gimbal
@@ -219,11 +219,11 @@ void AP_Mount_MAVLink::send_target_retracted()
         0,  // angular velocity y
         0,    // angular velocity z
         GIMBAL_DEVICE_FLAGS_RETRACT,  // flags
-        _sysid,
+        uint8_t(_sysid>255?0:_sysid),  // targets > 255 travel in the extended header
         _compid
     };
 
-    _link->send_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt, _sysid, _compid);
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
@@ -243,11 +243,11 @@ void AP_Mount_MAVLink::send_target_rates(const MountRateTarget &rate_rads)
         pitch_rads,  // angular velocity y
         yaw_rads,    // angular velocity z
         flags,
-        _sysid,
+        uint8_t(_sysid>255?0:_sysid),  // targets > 255 travel in the extended header
         _compid
     };
 
-    _link->send_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt, _sysid, _compid);
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
@@ -276,11 +276,11 @@ void AP_Mount_MAVLink::send_target_angles(const MountAngleTarget &angle_rad)
         NAN,  // angular velocity y
         NAN,  // angular velocity z
         flags,
-        _sysid,
+        uint8_t(_sysid>255?0:_sysid),  // targets > 255 travel in the extended header
         _compid
     };
 
-    _link->send_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt, _sysid, _compid);
 }
 
 // Send MAV_CMD_DO_SET_ROI_LOCATION  to gimbal
@@ -291,7 +291,7 @@ void AP_Mount_MAVLink::send_target_location(const Location &roi_loc)
     }
 
     mavlink_command_int_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = _sysid>255?0:_sysid;  // targets > 255 travel in the extended header
     pkt.target_component = _compid;
 
     if (roi_loc.initialised()) {
@@ -304,7 +304,7 @@ void AP_Mount_MAVLink::send_target_location(const Location &roi_loc)
         pkt.command = MAV_CMD_DO_SET_ROI_NONE;
     }
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_INT, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_INT, (const char*)&pkt, _sysid, _compid);
 }
 
 #endif // HAL_MOUNT_MAVLINK_ENABLED

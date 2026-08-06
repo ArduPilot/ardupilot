@@ -842,6 +842,11 @@ void Rover::load_parameters(void)
     };
     AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[0], ARRAY_SIZE(ff_and_filt_conversion_info));
 
+#if AP_FOLLOW_ENABLED
+    // convert Follow parameters
+    g2.follow.convert_params();
+#endif
+
     // configure safety switch to allow stopping the motors while armed
 #if HAL_HAVE_SAFETY_SWITCH
     AP_Param::set_default_by_name("BRD_SAFETYOPTION", AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|
