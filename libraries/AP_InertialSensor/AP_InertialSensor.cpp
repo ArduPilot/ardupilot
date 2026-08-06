@@ -407,8 +407,8 @@ const AP_Param::GroupInfo AP_InertialSensor::var_info[] = {
 
     // @Param: _GYR_CAL
     // @DisplayName: Gyro Calibration scheme
-    // @Description: Conrols when automatic gyro calibration is performed. A start-up calibration blocks the boot process until it has completed. When set to 2 the boot process instead continues while the calibration runs in the background, and arming is refused until the calibration has finished.
-    // @Values: 0:Never, 1:Start-up only, 2:Start-up only in background
+    // @Description: Conrols when automatic gyro calibration is performed. A start-up calibration blocks the boot process until it has completed. When set to 2 the boot process instead continues while the calibration runs in the background, and arming is refused until the calibration has finished. When set to 3 the calibration is further deferred until the IMUs have warmed up to the temperature at which the vehicle may be armed, which gives a more accurate calibration on boards with an IMU heater. Boards without a heater, or with no minimum arming temperature configured, have no temperature to wait for and calibrate at start-up.
+    // @Values: 0:Never, 1:Start-up only, 2:Start-up only in background, 3:When IMU reaches temperature
     // @User: Advanced
     AP_GROUPINFO("_GYR_CAL", 24, AP_InertialSensor, _gyro_cal_timing, 1),
 
@@ -998,7 +998,9 @@ AP_InertialSensor::init(uint16_t loop_rate)
         _start_backends();
     }
 
-    // calibrate gyros unless gyro calibration has been disabled
+    // calibrate gyros unless gyro calibration has been disabled.
+    // INS_GYR_CAL is read here and not again, so that changing it can
+    // not start a calibration on a vehicle which is already flying
     if (_gyro_count > 0) {
         switch (gyro_calibration_timing()) {
         case GYRO_CAL_NEVER:
@@ -1012,6 +1014,11 @@ AP_InertialSensor::init(uint16_t loop_rate)
             // the calibration is not waited for here; it runs from
             // update() while the rest of the vehicle boots
             gyro_cal_start();
+            break;
+        case GYRO_CAL_AT_TEMPERATURE:
+            // the calibration waits for the IMUs to warm up;
+            // gyro_cal_check_start() starts it from update()
+            gyro_cal_deferred = true;
             break;
         }
     }
@@ -1793,6 +1800,57 @@ Vector3f AP_InertialSensor::uncorrected_gyro(uint8_t instance) const
 }
 
 /*
+  return true if the IMUs have reached the temperature at which the
+  vehicle would be allowed to arm.  Returns true if there is no board
+  heater or no minimum arming temperature has been configured, as there
+  is then no temperature to wait for.
+ */
+bool AP_InertialSensor::imu_up_to_temperature() const
+{
+#if HAL_HAVE_IMU_HEATER
+    const AP_BoardConfig *board = AP::boardConfig();
+    if (board == nullptr) {
+        return true;
+    }
+    float temperature;
+    int8_t min_temperature;
+    if (!board->get_board_heater_temperature(temperature) ||
+        !board->get_board_heater_arming_temperature(min_temperature)) {
+        return true;
+    }
+    return temperature >= min_temperature;
+#else
+    return true;
+#endif
+}
+
+/*
+  start a calibration which init() deferred until the IMUs reach
+  temperature, if they have now done so.  Called from update().
+ */
+void AP_InertialSensor::gyro_cal_check_start()
+{
+    if (!gyro_cal_deferred) {
+        return;
+    }
+
+    if (hal.util->get_soft_armed()) {
+        // the calibration would otherwise be able to start in flight,
+        // where the gyros are not still and the resulting offsets would
+        // be meaningless
+        return;
+    }
+
+    if (!imu_up_to_temperature()) {
+        return;
+    }
+
+    if (gyro_cal_start()) {
+        gyro_cal_deferred = false;
+    }
+}
+
+/*
   start a gyro calibration.  Returns false if one could not be started,
   either because a calibration is already running or because the state
   for one could not be allocated.
@@ -2148,6 +2206,7 @@ void AP_InertialSensor::update(void)
             }
         }
 
+    gyro_cal_check_start();
     if (gyro_cal != nullptr) {
         gyro_cal_update();
     }

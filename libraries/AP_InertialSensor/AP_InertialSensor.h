@@ -112,6 +112,7 @@ public:
         GYRO_CAL_NEVER = 0,
         GYRO_CAL_STARTUP_ONLY = 1,
         GYRO_CAL_STARTUP_BACKGROUND = 2,
+        GYRO_CAL_AT_TEMPERATURE = 3,
     };
 
     /// Perform startup initialisation.
@@ -141,6 +142,10 @@ public:
 
     /// gyro_calibrating - returns true if a gyro calibration is running
     bool gyro_calibrating() const { return _calibrating_gyro; }
+
+    /// true if the automatic gyro calibration is waiting for the IMUs
+    /// to reach temperature
+    bool gyro_cal_waiting_for_temperature() const { return gyro_cal_deferred; }
 
     /// calibrating - returns true if a temperature calibration is running
     bool temperature_cal_running() const;
@@ -580,7 +585,15 @@ private:
     };
     GyroCal *gyro_cal;
 
+    // true if the automatic gyro calibration is waiting for the IMUs
+    // to reach temperature
+    bool gyro_cal_deferred;
+
+    // true if the IMUs have warmed up enough for a calibration
+    bool imu_up_to_temperature() const;
+
     // gyro calibration state machine
+    void gyro_cal_check_start();
     bool gyro_cal_start();
     void gyro_cal_start_window(uint32_t now_ms);
     void gyro_cal_end_window(uint32_t now_ms);
