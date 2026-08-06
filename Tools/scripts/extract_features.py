@@ -232,6 +232,7 @@ class ExtractFeatures(BuildScriptBase):
             ('EK3_FEATURE_OPTFLOW_FUSION', r'NavEKF3_core::FuseOptFlow'),
             ('EK3_FEATURE_OPTFLOW_SRTM', r'NavEKF3_core::writeTerrainData'),
             ('AP_AHRS_EKF_RESET_ENABLED', r'AP_AHRS::reset_configured_backend'),
+            ('EK3_FEATURE_REPLAY_SNAPSHOT', r'NavEKF3_core::serialiseSnapshot'),
 
             ('AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED', r'RC_Channel::lookuptable',),
             ('AP_SCRIPTING_ENABLED', r'AP_Scripting::init',),
