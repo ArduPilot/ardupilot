@@ -139,6 +139,9 @@ void Shared_DMA::lock_core(void)
         if (locks[stream_id2].deallocate) {
             locks[stream_id2].deallocate(locks[stream_id2].obj);
         } else {
+            // a stream slot claims an owner but has no valid
+            // deallocation functor registered. This should never
+            // happen; avoid a HardFault if it does.
             INTERNAL_ERROR(AP_InternalError::error_t::dma_fail);
         }
         locks[stream_id2].obj = nullptr;
@@ -160,6 +163,7 @@ void Shared_DMA::lock_core(void)
             locks[stream_id2].obj = this;
         }
     }
+}
 #ifdef STM32_DMA_STREAM_ID_ANY
     else if (stream_id1 == STM32_DMA_STREAM_ID_ANY ||
              stream_id2 == STM32_DMA_STREAM_ID_ANY) {
