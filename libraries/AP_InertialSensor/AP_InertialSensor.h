@@ -545,6 +545,10 @@ private:
     // gyro initialisation
     void _init_gyro();
 
+    // return a gyro reading in sensor frame with the backend's
+    // calibration corrections removed
+    Vector3f uncorrected_gyro(uint8_t instance) const;
+
     // Calibration routines borrowed from Rolfe Schmidt
     // blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/
     // original sketch available at http://rolfeschmidt.com/mathtools/skimetrics/adxl_gn_calibration.pde

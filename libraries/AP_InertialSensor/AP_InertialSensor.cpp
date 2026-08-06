@@ -1735,6 +1735,33 @@ bool AP_InertialSensor::use_accel(uint8_t instance) const
     return (get_accel_health(instance) && _use(instance));
 }
 
+/*
+  return a gyro reading with the calibration corrections applied by the
+  backend removed, in sensor frame.  This is the quantity a gyro
+  calibration measures; the average of it is the gyro offset.
+ */
+Vector3f AP_InertialSensor::uncorrected_gyro(uint8_t instance) const
+{
+    Vector3f gyro = get_gyro(instance);
+
+    // undo the rotation into body frame:
+    gyro.rotate_inverse(_board_orientation);
+
+    // undo the offset the backend subtracted:
+    gyro += _gyro_offset(instance);
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    // undo the temperature correction the backend applied.  The
+    // correction is additive, so applying it to a zero vector yields
+    // the negation of the amount which was applied to the reading:
+    Vector3f correction;
+    tcal(instance).correct_gyro(get_temperature(instance), caltemp_gyro(instance), correction);
+    gyro -= correction;
+#endif
+
+    return gyro;
+}
+
 void
 AP_InertialSensor::_init_gyro()
 {
@@ -1761,12 +1788,7 @@ AP_InertialSensor::_init_gyro()
     // cold start
     DEV_PRINTF("Init Gyro");
 
-    // the gyro backend leaves the board rotation off while _calibrating_gyro
-    // is set, so the samples below are already in board frame
-
-    // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
-        _gyro_offset(k).set(Vector3f());
         new_gyro_offset[k].zero();
         best_diff[k] = -1.f;
         last_average[k].zero();
@@ -1815,7 +1837,7 @@ AP_InertialSensor::_init_gyro()
         for (i=0; i<50; i++) {
             update();
             for (uint8_t k=0; k<num_gyros; k++) {
-                gyro_sum[k] += get_gyro(k);
+                gyro_sum[k] += uncorrected_gyro(k);
             }
             hal.scheduler->delay(5);
         }
