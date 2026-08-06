@@ -8,6 +8,7 @@
 #include "UARTDriver.h"
 #include "Scheduler.h"
 #include "CANSocketIface.h"
+#include "SITL_Multicast.h"
 
 #include <stdio.h>
 #include <signal.h>
