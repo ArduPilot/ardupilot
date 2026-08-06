@@ -210,7 +210,7 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, HarmonicNotchFilterParam
 template <class T>
 void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint32_t harmonics, uint8_t composite_notches)
 {
-    _composite_notches = MIN(composite_notches, 3);
+    _composite_notches = composite_notches;
     _num_harmonics = __builtin_popcount(harmonics);
     _num_filters = MIN(_num_harmonics * num_notches * _composite_notches, HAL_HNF_MAX_FILTERS);
     _harmonics = harmonics;
