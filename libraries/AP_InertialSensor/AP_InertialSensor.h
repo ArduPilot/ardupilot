@@ -543,6 +543,9 @@ private:
     void _start_backends();
     AP_InertialSensor_Backend *_find_backend(int16_t backend_id, uint8_t instance);
 
+    // take the orientation the board is mounted in from BRD_ORIENTATION
+    void update_board_orientation();
+
     // gyro initialisation
     void _init_gyro();
 
@@ -708,7 +711,7 @@ private:
     // control enable of detected sensors
     AP_Int8     _enable_mask;
     
-    // board orientation from AHRS
+    // board orientation, from BRD_ORIENTATION
     enum Rotation _board_orientation;
 
     // per-sensor orientation to allow for board type defaults at runtime
