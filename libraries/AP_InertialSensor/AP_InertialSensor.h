@@ -269,10 +269,6 @@ public:
 #endif
 
     // set overall board orientation
-    void set_board_orientation(enum Rotation orientation) {
-        _board_orientation = orientation;
-    }
-
     // return the selected loop rate at which samples are made avilable
     uint16_t get_loop_rate_hz(void) const { return _loop_rate; }
 
