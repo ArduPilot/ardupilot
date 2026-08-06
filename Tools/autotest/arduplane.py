@@ -9040,7 +9040,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.FlyEachFrameRCInput,
             self.AutoLandMode,
             self.RCDisableAirspeedUse,
-            self.AHRS_ORIENTATION,
+            self.BRD_ORIENTATION,
             self.AHRSTrim,
             self.AHRS2Logging,
             self.AHRS2NoSecondaryEstimate,
