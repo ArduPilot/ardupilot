@@ -374,11 +374,63 @@ fixed case again rejected the stale mapping before RCOutput, and the valid case
 reached serial DMA with a non-null handle (`0x3002C9C8`). A fresh generated
 KakuteF4 platform also reached `Copter::init_ardupilot()`.
 
+## CubeOrange boot and MAVLink
+
+CubeOrange originally stopped before `Copter::init_ardupilot()` with
+`Config Error: Failed to update IO firmware`. The application hwdef declares
+`IOMCU_UART USART6`, but the generated platform had no USART6 peer. After 32
+register-read timeouts the FMU entered the IO bootloader uploader, failed to
+synchronize, and called the fatal configuration-error loop. USART2 was already
+the correct first hardware UART in `SERIAL_ORDER`; it never transmitted because
+GCS initialization had not been reached.
+
+`AP_IOMCU` now provides the normal IO register protocol as a USART child. The
+generator reads the board's `io_firmware.bin` ROMFS entry, applies the hwdef
+`AP_IOMCU_FW_FLASH_SIZE` (or its normal 0xF000 default), and computes the same
+CRC32 including erased-flash padding as the FMU. This makes the model generic
+for other IOMCU boards and leaves the bootloader uploader available as a real
+failure path rather than bypassing the check in firmware.
+
+The next CubeOrange gate was `HAL_VALIDATE_BOARD`. Its hwdef requires two
+MS5611s and three different InvenSense IMUs. Shared models now cover MS5611 on
+SPI and I2C, legacy InvenSense with a hwdef-derived WHOAMI, and banked
+InvenSense-v2 with FIFO samples. The generator also creates an active-low SPI
+multiplexer per bus because Renode's STM32 SPI controller accepts only one
+child. Multiple hwdef sensor alternatives at one physical bus/CS location are
+collapsed to the first declaration; devices on distinct chip selects are all
+instantiated. WHOAMI values are taken from `HAL_VALIDATE_BOARD`, which handles
+CubeOrange's internal `icm20948` device name that is physically an ICM20649.
+
+A fresh CubeOrange run produced a decoded MAVLink heartbeat on SERIAL1/USART2
+(system 1). Its 322752-byte `crashlog.img` remained entirely 0xFF. The file is
+created eagerly from the ELF linker region as persistent erased flash, so its
+existence alone is not evidence of a crash. MatekH743 was then rerun as a
+regression and also produced a decoded system-1 heartbeat with the generated
+SPI multiplexers and dual-bus MS5611 model.
+
+CubeOrange parameter writes initially worked only until reboot. The RAMTRON
+model deliberately ignored `FinishTransmission()` when connected directly to
+Renode's STM32 SPI controller because the controller called it at hardware
+TSIZE boundaries rather than chip-select deassertion. With the generated SPI
+multiplexer those intermediate callbacks are suppressed and the only forwarded
+finish is the real CS edge, so ignoring it left WREN/write transactions open and
+`fram.img` erased. Ending and saving the FRAM transaction on that forwarded
+finish fixed the problem. A MAVLink test set `FRAME_CLASS` from 0 to 1, observed
+1 after a firmware reboot, then stopped and restarted Renode with the same state
+directory and observed 1 again.
+
 ## Log
 
+- 2026-08-07: fixed generated CubeOrange startup without adding board-specific
+  files. Added a hwdef/ROMFS-derived IOMCU peer, MS5611 and InvenSense-v2
+  models, exact validation WHOAMI selection, and per-bus SPI chip-select
+  multiplexers. CubeOrange and MatekH743 both emitted decoded MAVLink
+  heartbeats; CubeOrange's erased crash-log image remained untouched. Fixed
+  RAMTRON transaction completion through the mux and verified a `FRAME_CLASS`
+  update across both firmware reboot and a separate Renode process.
 - 2026-08-07: replaced the KakuteF4 and BlitzWingH743 board REPL/RESC/parameter
   copies with run-time generation from the production application and
-  bootloader hwdef compiler. All 230 STM32F405/STM32H743 targets with both
+  bootloader hwdef compiler. All 232 STM32F405/STM32H743 targets with both
   hwdefs generate; actual peripheral coverage remains incremental. Fresh F405
   and H743 builds booted through the generated platforms, and the PR #33933
   fixed/valid controls passed.

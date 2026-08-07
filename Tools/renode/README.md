@@ -30,6 +30,13 @@ fresh-board residual ("Check frame class and type"). MAVLink works over
 the USART6 pty: heartbeat, statustexts, parameter reads, and the
 vehicle's own save-notify broadcasts.
 
+A stock CubeOrange ArduCopter image also boots and emits MAVLink. Its generated
+platform includes the FMU's USART6 IOMCU peer, both MS5611 barometers, the
+ICM20602, ICM20948, and ICM20649 IMUs, and SPI FRAM. The IOMCU firmware CRC and
+the exact IMU WHOAMI values come from the compiled hwdef/ROMFS output. This is
+important for CubeOrange because the `icm20948` SPI name is validated as an
+ICM20649. No CubeOrange-specific REPL, RESC, or parameter file is needed.
+
 The parameter-set round trip is verified end to end: MAV_SYSID set over
 MAVLink, handled, saved to the emulated flash, and the save-notify ACK
 received back (note the parameter is MAV_SYSID on master, not the old
@@ -104,12 +111,13 @@ see Running below.
   double-proven by resurrecting a frozen machine live (writing CCR1=1 from
   the monitor woke the whole system). Fixed with one line in the board resc:
   a `SetHookBeforePeripheralWrite` on the tick timer nudging value 0 to 1.
-- **Stock `STM32SPI` never calls `FinishTransmission`**, so an SPI device
-  model gets no transaction framing from the controller: its first transfer
-  parses, every later one is misread as a continuation. The chip-select
-  GPIO is the only usable framing - SPI sensor models must implement
-  IGPIOReceiver and reset their byte counter on CS deassert (wired in the
-  overlay: `4 -> icm20689@0 | exti@4`).
+- **Stock `STM32SPI` accepts only one child and never calls
+  `FinishTransmission`**, while real boards put several devices on one bus.
+  Generated platforms therefore put an active-low `AP_SPIMultiplexer` between
+  each SPI controller and its hwdef devices. Chip-select GPIOs select a mux
+  address, and CS deassertion frames the child transaction. When hwdef lists
+  alternative sensor drivers at the same physical bus/CS location, only the
+  first declaration is instantiated.
 - The stock `STM32F4_I2C` cannot run ChibiOS I2Cv1 at all (no DMA request
   output; SR2.BUSY never set so the EV5/EV6/EV8_2 decodes fail; ADDR
   cleared on any SR2 read instead of the SR1-then-SR2 sequence, and the
@@ -240,14 +248,22 @@ exact alternative directory. Depending on the hwdef, this contains:
   `STORAGE_FLASH_PAGE`, used for parameters, missions, and other AP_HAL
   storage on flash-backed boards.
 - `fram.img`: the SPI RAMTRON/FRAM contents on boards with
-  `HAL_WITH_RAMTRON` and a `SPIDEV ramtron` entry.
+  `HAL_WITH_RAMTRON` and a `SPIDEV ramtron` entry. Writes are committed on the
+  real chip-select deassertion forwarded by the generated SPI multiplexer.
 - `crashlog.img`: the linker-defined CrashCatcher flash region, when present.
+
+`crashlog.img` is created eagerly as erased flash backing; its presence does
+not mean that the firmware crashed. An untouched image contains only `0xFF`.
 
 Existing images are reused and are never silently resized. Move or remove a
 board's state directory to return it to erased/factory state. The SD image is a
 normal host image suitable for `mtools` or loopback mounting while Renode is
 stopped. Do not mount the same filesystem read-write on the host while the
 firmware is running.
+
+CubeOrange FRAM persistence was checked end to end by setting `FRAME_CLASS=1`,
+issuing a firmware reboot, stopping Renode, and starting a new `run.py` process
+with the same state directory. Both rebooted instances reported the saved value.
 
 Virtual time is paced at wall-clock speed by default. Renode sleeps only when
 the emulation gets ahead, so a workload that cannot sustain real time is not
