@@ -615,6 +615,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.change_mode('AUTO')
         self.wait_current_waypoint(2, timeout=120)
+        # the four RTL legs below spend something like 230m of the
+        # distance home between them - the 7.5m/s leg alone covers
+        # ~120m with its acceleration - and the vehicle stops when it
+        # gets there; a run which starts closer than that reports the
+        # stop rather than the reason for it:
+        #     Failed to attain groundspeed between 7.4 and 7.6, reached 0.027
+        # Check we have the room before relying on it.  MISSION_CURRENT
+        # saying we are on our way to the second waypoint is not the same
+        # as being out there.
+        self.wait_distance_to_home(400, 1000, timeout=180)
         for speed in 1, 5.5, 1.5, 7.5:
             self.set_parameter("RTL_SPEED", speed)
             self.change_mode('RTL')
