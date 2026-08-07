@@ -631,6 +631,7 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
     if (updated_ins) {
         cached.sensors.ins_data.accel = state.accel;
         cached.sensors.ins_data.gyro = state.gyro;
+        cached.sensors.ins_data.TempCalibration = AP_ExternalAHRS::TempCal::IsTempCalibrated;
         cached.sensors.ins_ms = now_ms;
         AP::ins().handle_external(cached.sensors.ins_data);
     }
