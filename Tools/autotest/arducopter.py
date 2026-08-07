@@ -7798,8 +7798,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def get_mount_roll_pitch_yaw_deg(self):
         '''return mount (aka gimbal) roll, pitch and yaw angles in degrees - in body frame'''
-        # wait for gimbal attitude message
-        m = self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=5)
+        # wait for gimbal attitude message.  This is wall-clock, waiting
+        # on a streamed message, so it has to survive this process
+        # sharing a machine with however many tests --parallel is running
+        m = self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=30)
         return self.eulers_in_degrees_from_GIMBAL_DEVICE_ATTITUDE_STATUS(m)
 
     def eulers_in_degrees_from_GIMBAL_DEVICE_ATTITUDE_STATUS(self, m):
@@ -7919,8 +7921,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def mount_test_body(self, pitch_rc_neutral=1500, do_rate_tests=True, constrain_sysid_target=True, neutral_tol_deg=0):
         '''Test Camera/Antenna Mount - assumes a camera is set up and ready to go'''
         if True:
-            # make sure we're getting gimbal device attitude status
-            self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=5, very_verbose=True)
+            # make sure we're getting gimbal device attitude status.
+            # Five seconds of wall clock was not enough at --parallel=85:
+            #     Did not get GIMBAL_DEVICE_ATTITUDE_STATUS after 5.023743391036987 seconds
+            self.assert_receive_message('GIMBAL_DEVICE_ATTITUDE_STATUS', timeout=30, very_verbose=True)
 
             # change mount to neutral mode (point forward, not stabilising)
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
