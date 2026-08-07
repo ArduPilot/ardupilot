@@ -307,6 +307,12 @@
 #define AP_RP2350_PC_SAMPLER_ENABLED 0
 #endif
 
+// RP2350 SPI peripheral teardown counters. Off by default: a profiling aid,
+// for sizing how often acquire_bus() stops and restarts a bus.
+#ifndef AP_RP2350_SPI_CYCLE_STATS_ENABLED
+#define AP_RP2350_SPI_CYCLE_STATS_ENABLED 0
+#endif
+
 #ifndef AP_STATS_ENABLED
 #define AP_STATS_ENABLED 1
 #endif
