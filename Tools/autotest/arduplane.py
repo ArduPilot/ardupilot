@@ -4939,6 +4939,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.run_auxfunc(64, 0, run_cmd=run_cmd)
         self.wait_statustext("RevThrottle: DISABLE", check_context=True)
         self.run_auxfunc(65, 2, run_cmd=run_cmd)  # 65 == GPS_DISABLE
+        # ... and put it back.  Aux function state is not a parameter, so
+        # context_pop() does not restore it, and the suite no longer
+        # restarts the SITL between tests - so without this every test
+        # which follows on this worker inherits a vehicle with no GPS,
+        # and an EKF which never starts:
+        #     AHRS2Logging (...) (Failed to get EKF.flags=831)      [EKF_UNINITIALIZED]
+        #     AHRS_ORIENTATION (...) (GPS status bits did not become good)
+        self.run_auxfunc(65, 0, run_cmd=run_cmd)
+        self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
 
         self.start_subtest("Bad auxfunc")
         self.run_auxfunc(
