@@ -125,7 +125,17 @@ def build_unit_tests(**kwargs):
 def run_unit_test(test):
     """Run unit test file."""
     print("Running (%s)" % test)
-    subprocess.check_call([test])
+    env = os.environ.copy()
+    # these are ignored by tests which were not built with --asan.
+    #  - the ASAN runtime supplies its own operator new to binaries which
+    #    do not otherwise pull in AP_Common/c++.cpp, so fill allocations
+    #    with zero to match the calloc we use there
+    #  - ArduPilot does not free its singletons, so leak checking finds
+    #    much which is not a bug
+    asan_options = "malloc_fill_byte=0:detect_leaks=0"
+    existing = env.get("ASAN_OPTIONS")
+    env["ASAN_OPTIONS"] = (existing + ":" + asan_options) if existing else asan_options
+    subprocess.check_call([test], env=env)
 
 
 def run_unit_tests():
