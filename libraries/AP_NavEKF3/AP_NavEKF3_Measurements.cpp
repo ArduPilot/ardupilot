@@ -307,9 +307,17 @@ void NavEKF3_core::readMagData()
     }
 
     // If we are a vehicle with a sideslip constraint to aid yaw estimation and we have timed out on our last avialable
-    // magnetometer, then declare the magnetometers as failed for this flight
+    // magnetometer, then declare the magnetometers as failed for this flight.
+    // Do so only on lane with GPS, because it can take over yaw-aiding
+    // (to be more precise, those can take over: GPS yaw, GPS_COMPASS_FALLBACK, or the
+    // EKF-GSF yaw estimator, all of which require a configured GPS source).
+    // On a lane with no GPS source at all, there is no
+    // other yaw-aiding path in this codebase, so we don't permanently disable compass,
+    // instead we hope that in some later EKF computation cycle
+    // it will start to be properly integrated with IMU data.
     const uint8_t maxCount = compass.get_count();
-    if (allMagSensorsFailed || (magTimeout && assume_zero_sideslip() && magSelectIndex >= maxCount-1 && inFlight)) {
+    if (allMagSensorsFailed ||
+        (magTimeout && assume_zero_sideslip() && magSelectIndex >= maxCount-1 && inFlight && uses_any_gps_source())) {
         allMagSensorsFailed = true;
         return;
     }
