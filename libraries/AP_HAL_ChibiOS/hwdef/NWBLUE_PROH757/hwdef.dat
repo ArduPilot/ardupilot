@@ -1,0 +1,181 @@
+# NWBLUE_PROH757 - flight controller built on the CubePilot CubeNode H757 module
+# Carrier board: 30x30 multirotor flight controller
+# Module-fixed pins live in ../CubeNode/hwdef.inc
+
+include ../CubeNode/hwdef.inc
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_NWBLUE_PROH757
+
+# the H757 has 128k sectors; 2 sectors for BL
+FLASH_BOOTLOADER_LOAD_KB 128
+FLASH_RESERVE_START_KB 128
+
+# storage in flash
+STORAGE_FLASH_PAGE 14
+define HAL_STORAGE_SIZE 32768
+
+# enable ADC for voltage / current monitoring
+define HAL_USE_ADC TRUE
+
+# this carrier does not break out CAN2 or Ethernet from the module.
+# Drop the module's inherited Ethernet PHY pins and PHY config so AP_Networking
+# is not compiled in for an interface this carrier cannot use.
+undef ETH1 BOARD_PHY_ID BOARD_PHY_RMII
+
+# === UARTs (carrier wiring) ===
+
+# UART4 - RC connector (J11)
+PA0 UART4_TX UART4
+PB8 UART4_RX UART4
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_RCIN
+
+# USART1 - ESC telemetry RX (J10 ESC connector)
+PB7 USART1_RX USART1 NODMA
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_ESCTelemetry
+
+# USART2 - VTX camera/telem RX (J9 VTX connector pin 5)
+# RX-only spare - override the MAVLink2 in-code default so the port is None.
+PA3 USART2_RX USART2
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
+
+# USART6 - VTX TX/RX (J9 VTX connector pins 3,4 - SmartAudio/MSP)
+PC6 USART6_TX USART6
+PC7 USART6_RX USART6
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_MSP_DisplayPort
+
+# UART7 - TELEM1 (J4, TX/RX only - RevB drops the RTS/CTS pins)
+PE7 UART7_RX UART7
+PE8 UART7_TX UART7
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_MAVLink2
+
+# UART8 - GPS connector (J8)
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8
+define DEFAULT_SERIAL8_PROTOCOL SerialProtocol_GPS
+
+SERIAL_ORDER OTG1 USART1 USART2 EMPTY UART4 EMPTY USART6 UART7 UART8
+
+# Default serial protocols based on the carrier connector intent
+
+# === OSD ===
+# No analog (MAX7456) OSD on this carrier - default to MSP DisplayPort,
+# which the firmware drives over SERIAL6 (USART6 on the VTX connector J9).
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 5
+
+# === I2C ===
+
+# I2C3 - on-board magnetometer (IIS2MDC)
+PA8 I2C3_SCL I2C3
+PC9 I2C3_SDA I2C3
+
+# I2C4 - external (GPS connector J8 pins 5,6 for GPS module compass)
+PD12 I2C4_SCL I2C4
+PD13 I2C4_SDA I2C4
+
+I2C_ORDER I2C4 I2C3
+
+# I2C bus 1 (I2C3) is internal-only - on-board IIS2MDC mag.
+# I2C bus 0 (I2C4) is external (GPS connector J8).
+define HAL_I2C_INTERNAL_MASK 2
+
+# === SPI bus 3 - on-carrier barometer DPS368 ===
+# (SPI3 SCK/MISO/MOSI and on-module IMU CS provided by CubeNode/hwdef.inc)
+PF14 BARO_CS CS
+
+SPIDEV dps368 SPI3 DEVID5 BARO_CS MODE3 5*MHZ 5*MHZ
+
+# === Compass / Baro drivers ===
+# on-board magnetometer (IIS2MDC on I2C3 = internal bus 1, I2C address 0x1E)
+COMPASS IIS2MDC I2C:1:0x1E false ROTATION_NONE
+
+# allow external compasses on I2C4 (GPS connector)
+define AP_COMPASS_PROBING_ENABLED 1
+
+# on-carrier barometer (DPS368, SPI3)
+BARO DPS280 SPI:dps368
+
+
+# === IMU ===
+IMU Invensensev3 SPI:icm45686 ROTATION_ROLL_180
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# === ADC inputs ===
+# Current and 3V3 sense arrive on the module's PC2_C / PC3_C direct-analog pads.
+# PC3 has an ADC3 mapping, PC2 does not, so the current sense uses ADC1 ch12 -
+# the PC2_C to PC2 analog switch is closed at reset, so the pad still reaches it.
+PF3 BATT_VOLTAGE_SENS         ADC3 SCALE(1)   # VSYS divider
+PC2 BATT_CURRENT_SENS         ADC1 SCALE(1)   # from ESC connector J10
+PC3 SCALED1_V3V3              ADC3 SCALE(1)   # 3V3 rail health
+PF4 VDD_5V_SENS               ADC3 SCALE(2)   # 5V rail health
+PF5 FMU_SERVORAIL_VCC_SENS    ADC3 SCALE(4)   # VREG (10V/12V) rail health
+
+define BOARD_CONFIG_BOARD_VOLTAGE_MIN 4.2f
+
+# === LEDs ===
+# RGB notify LED (LED1): cathodes on PA5 (blue), PF12 (red), PF13 (green)
+# Status LED (LED2 LTST-C190KFKT): single amber on PC0
+# All LEDs are active-low (anodes tied to +3.3V)
+PA5  LED_BLUE  OUTPUT HIGH GPIO(0)
+PF12 LED_RED   OUTPUT HIGH GPIO(1)
+PF13 LED_GREEN OUTPUT HIGH GPIO(2)
+PC0  LED_STATUS OUTPUT HIGH GPIO(3)
+
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN    1
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN  2
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN   0
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED    1
+
+# === Buzzer (active alarm on PC8) ===
+PC8 TIM8_CH3 TIM8 GPIO(77) ALARM
+
+# === Power-good monitor inputs (passive, GPIO only) ===
+PA6 VDD_5V_PGOOD INPUT
+PA9 VUSB_PGOOD   INPUT
+PF11 VDD_10V_PGOOD INPUT   # VREG rail (10V, or 12V with SB1 bridged)
+
+# === SDMMC2 - microSD card ===
+PB14 SDMMC2_D0 SDMMC2
+PB15 SDMMC2_D1 SDMMC2
+PB3  SDMMC2_D2 SDMMC2
+PB4  SDMMC2_D3 SDMMC2
+PD6  SDMMC2_CK SDMMC2
+PD7  SDMMC2_CMD SDMMC2
+define FATFS_HAL_DEVICE SDCD2
+
+# Enable FATFS file I/O (logging, terrain, scripts).
+# chibios_hwdef.py auto-sets HAL_USE_FATFS / HAL_OS_POSIX_IO from the SDMMC2
+# pins, but HAL_OS_FATFS_IO must be opted into explicitly per-board.
+define HAL_OS_FATFS_IO 1
+
+# === PWM outputs (FMU_CH1..CH9) ===
+# CH1-4 (motors) on TIM1, CH5-6 on TIM4, CH7-8 on TIM3, CH9 on TIM2
+PE9  TIM1_CH1 TIM1 PWM(1) GPIO(50) BIDIR
+PE11 TIM1_CH2 TIM1 PWM(2) GPIO(51)
+PE13 TIM1_CH3 TIM1 PWM(3) GPIO(52) BIDIR
+PE14 TIM1_CH4 TIM1 PWM(4) GPIO(53)
+PD14 TIM4_CH3 TIM4 PWM(5) GPIO(54) BIDIR
+PD15 TIM4_CH4 TIM4 PWM(6) GPIO(55)
+PB0  TIM3_CH3 TIM3 PWM(7) GPIO(56) BIDIR
+PB1  TIM3_CH4 TIM3 PWM(8) GPIO(57)
+PB10 TIM2_CH3 TIM2 PWM(9) GPIO(58)
+
+# === CAN ===
+# Enable CAN driver 1 by default so DroneCAN peripherals (GPS, compass,
+# ESCs, etc.) work out of the box without the user having to set
+# CAN_P1_DRIVER manually.
+define HAL_CAN_DRIVER_DEFAULT 1
+
+# === Notify LEDs ===
+# Enable on-board LEDs + standard external I2C/NeoPixel LED probing
+# (bits 0,1,2,6,7,8 = 455) plus DroneCAN RGB LEDs (bit 5 = 32).
+define DEFAULT_NTF_LED_TYPES 487
+
+# === Battery monitor defaults ===
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN  5
+define HAL_BATT_CURR_PIN  12
+define HAL_BATT_VOLT_SCALE 21.0
+define HAL_BATT_CURR_SCALE 24.0
+
