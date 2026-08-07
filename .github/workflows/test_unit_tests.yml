@@ -121,9 +121,15 @@ jobs:
         ]
         config: [
             unit-tests,
+            unit-tests-asan,
             examples,
             sitl
         ]
+        exclude:
+          # boards.py only adds the sanitizer link flag when building
+          # with clang, so an ASAN build with GCC fails to link
+          - toolchain: base
+            config: unit-tests-asan
     steps:
       # git checkout the PR
       - uses: actions/checkout@v7
