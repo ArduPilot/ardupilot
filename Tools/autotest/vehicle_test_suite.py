@@ -14950,10 +14950,6 @@ switch value'''
             # blacklisting them keeps the parallel run green.  Revisit if the
             # underlying causes are addressed:
 
-            # passes standalone at instance 0, fails at a non-zero instance;
-            # cause not yet understood:
-            "WindMessageSpeed",
-
             # asserts that not one log message was dropped, and the
             # thing which writes them runs in wall-clock time - the test
             # already drops SIM_SPEEDUP to 1 because of it.  That is not
