@@ -21,6 +21,7 @@
  *
  */
 
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include "AP_AHRS_config.h"
 
 #if AP_AHRS_DCM_ENABLED
