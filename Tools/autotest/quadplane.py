@@ -1621,6 +1621,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # to test aux function method, use aux fn for save
         self.run_auxfunc(300, 2)
         self.wait_text("Tuning: saved", check_context=True)
+        # and put the switch back: aux function state survives
+        # context_pop(), and this test does not reboot afterwards
+        self.run_auxfunc(300, 0)
         self.change_mode("QLAND")
 
         self.wait_disarmed(timeout=120)
@@ -2694,6 +2697,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         alt_change = initial_altitude - recovery_altitude
 
         self.progress("Recovery AltChange %.1fm" % alt_change)
+
+        # stop asking for inverted flight.  Aux function state is not a
+        # parameter, so context_pop() does not clear it, and this test
+        # does not reboot - without this the next test on this worker
+        # starts with inverted flight still commanded.
+        self.run_auxfunc(43, 0)
 
         max_alt_change = 3
         if alt_change > max_alt_change:
