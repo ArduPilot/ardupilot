@@ -7336,41 +7336,43 @@ return update()
         self.reboot_sitl()
         self.wait_statustext('Tests OK')
 
-    def DriveEachFrame(self):
-        '''drive each frame (except BalanceBot) in a mission to ensure basic functionality'''
+    # frames DriveFrame cannot drive, and why.  These become
+    # disabled_tests() entries, so they are reported as skips with their
+    # reason rather than silently stepped over mid-test:
+    drive_each_frame_known_broken = {
+        "balancebot": "needs special stay-upright code",
+    }
+
+    def DriveEachFrameTests(self):
+        '''a test per internal frame, each driving a basic mission'''
+        return self.tests_for_each_frame(self.DriveFrame)
+
+    def DriveFrame(self, frame):
+        '''drive a frame in a mission to ensure basic functionality'''
+        # every frame drives the same mission, so they live in one
+        # directory rather than one per per-frame test name:
+        self.set_current_test_name("DriveFrame")
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
-        known_broken_frames = {
-            "balancebot": "needs special stay-upright code",
-        }
-        for frame in sorted(vinfo_options["frames"].keys()):
-            self.start_subtest("Testing frame (%s)" % str(frame))
-            if frame in known_broken_frames:
-                self.progress("Actually, no I'm not - it is known-broken (%s)" %
-                              (known_broken_frames[frame]))
-                continue
-            frame_bits = vinfo_options["frames"][frame]
-            print("frame_bits: %s" % str(frame_bits))
-            if frame_bits.get("external", False):
-                self.progress("Actually, no I'm not - it is an external simulation")
-                continue
-            model = frame_bits.get("model", frame)
-            self.customise_SITL_commandline(
-                [],
-                model=model,
-                wipe=True,
-            )
-            mission_file = "basic.txt"
-            self.wait_ready_to_arm()
-            self.set_parameters({
-                "MIS_DONE_BEHAVE": 3,
-                "SIM_WIND_SPD": 10,
-            })
-            self.arm_vehicle()
-            self.drive_mission(mission_file, strict=False, ignore_MANUAL_mode_change=True)
-            self.wait_mode('MANUAL')
+        frame_bits = vinfo_options["frames"][frame]
+        self.progress("frame_bits: %s" % str(frame_bits))
+        model = frame_bits.get("model", frame)
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            wipe=True,
+        )
+        mission_file = "basic.txt"
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "MIS_DONE_BEHAVE": 3,
+            "SIM_WIND_SPD": 10,
+        })
+        self.arm_vehicle()
+        self.drive_mission(mission_file, strict=False, ignore_MANUAL_mode_change=True)
+        self.wait_mode('MANUAL')
 
-            self.wait_distance_to_home(0, 5, timeout=1)
+        self.wait_distance_to_home(0, 5, timeout=1)
 
     def start_driving_simple_relhome_mission(self, items):
         '''uploads items, changes mode to AUTO, waits ready to arm and starts mission'''
@@ -7624,19 +7626,22 @@ return update()
             self.EnterModeOnSafetySwitch,
             self.ThrottleFailsafe,
             self.CrashCheck,
-            self.DriveEachFrame,
             self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
             self.GPSAntennaPositionOffset,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
         ])
+        ret.extend(self.DriveEachFrameTests())
         return ret
 
     def disabled_tests(self):
-        return {
+        ret = {
             "SlewRate": "got timing report failure on CI",
             "PolyFenceObjectAvoidanceBendyRuler": "unreliable",
         }
+        for (frame, reason) in self.drive_each_frame_known_broken.items():
+            ret["DriveFrame_%s" % frame] = reason
+        return ret
 
     def rc_defaults(self):
         ret = super(AutoTestRover, self).rc_defaults()
