@@ -1517,6 +1517,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.load_rally_using_mavproxy("rover-test-rally.txt")
         self.assert_parameter_value('RALLY_TOTAL', 2)
 
+        # the file's rally points are fixed coordinates chosen relative
+        # to the SITL startup location, but RTL returns to whichever of
+        # home and the rally points is closest - and home is wherever
+        # the vehicle happened to be.  Re-place them relative to us so
+        # the rally point is the closer of the two once we have driven
+        # away, whatever a previous test did with the vehicle:
+        here = self.get_location()
+        rally_locs = [
+            self.offset_location_ne(here, 19.8, 33.0),
+            self.offset_location_ne(here, 99.1, -114.7),
+        ]
+        self.upload_rally_points_from_locations(rally_locs)
+
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
@@ -1528,8 +1541,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.change_mode("RTL")
 
-        # location copied in from rover-test-rally.txt:
-        loc = Location(40.071553, -105.229401, 1583, AltFrame.ABSOLUTE)
+        loc = rally_locs[0]
 
         self.wait_location(loc, accuracy=accuracy, minimum_duration=10, timeout=45)
         self.disarm_vehicle()
@@ -4882,8 +4894,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "FENCE_ACTION": 0,
         })
         fence_middle = self.offset_location_ne(here, 0, 30)
-        # FIXME: this might be nowhere near "here"!
-        expected_stopping_point = Location.latlon_only(40.0713376, -105.2295738)
+        # the fences above are placed relative to "here", so the point we
+        # stop at is too: just short of the exclusion fence 20m to our
+        # east.  This used to be a fixed location, which only worked
+        # while "here" happened to be the startup location.
+        expected_stopping_point = self.offset_location_ne(here, -1.05, 15.05)
         self.drive_somewhere_stop_at_boundary(
             fence_middle,
             expected_stopping_point,
@@ -6284,6 +6299,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "PLND_ORIENT": 0,
         })
 
+        # the loop below reboots, which returns the vehicle to the SITL
+        # startup location; take our reference from there rather than
+        # from wherever a previous test left us, or the target ends up
+        # that much further away than the drive to it allows for:
+        self.reboot_sitl()
         start = self.get_location()
         target = self.offset_location_ne(start, 50, 0)
         self.progress("Setting target to %f %f" % (start.lat, start.lng))
