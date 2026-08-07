@@ -5271,9 +5271,19 @@ class TestSuite(abc.ABC):
         self.wait_ready_to_arm()
         self.arm_vehicle(force=True)
         # we might be relying on a thread to actually create the log
-        # file when doing forced-arming; give the file time to appear:
-        self.delay_sim_time(10, reason="log file to appear after forced arm")
+        # file when doing forced-arming; give the file time to appear.
+        # That thread gets the file onto disk in wall-clock time, so
+        # wait in wall-clock time: ten *simulated* seconds is a small
+        # fraction of a second of real time at speedup, and on a machine
+        # busy running --parallel tests the thread may well not have been
+        # scheduled at all within it.
+        tstart = time.time()
         post_arming_list = self.log_list()
+        while len(post_arming_list) <= len(pre_arming_list):
+            if time.time() - tstart > 30:
+                break
+            self.delay_sim_time(1, reason="log file to appear after forced arm")
+            post_arming_list = self.log_list()
         self.disarm_vehicle()
         if len(post_arming_list) <= len(pre_arming_list):
             raise NotAchievedException("Did not get a log on forced arm")
