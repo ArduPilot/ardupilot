@@ -6708,10 +6708,15 @@ class TestSuite(abc.ABC):
         """Load a mission from a file to flight controller."""
         self.progress("Loading mission (%s)" % filename)
         path = os.path.join(testdir, filepath, filename)
-        tstart = self.get_sim_time()
+        # wall clock, not simulated: everything inside this loop is
+        # MAVProxy's work, and the de-dupe wait below is three seconds of
+        # wall clock - which at speedup is far more simulated time than a
+        # simulated-time budget of ten seconds ever allowed, so a single
+        # retry could never fit inside it:
+        #     Failed to load mission rover-gripper-mission.txt using MAVProxy
+        tstart = time.time()
         while True:
-            t2 = self.get_sim_time()
-            if t2 - tstart > 10:
+            if time.time() - tstart > 60:
                 raise AutoTestTimeoutException(
                     "Failed to load mission %s using MAVProxy" % filename)
             # the following hack is to get around MAVProxy statustext deduping:
