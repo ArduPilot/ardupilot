@@ -842,8 +842,11 @@ def expect_setup_callback(e, callback):
                 return ret
             except pexpect.TIMEOUT:
                 e.expect_user_callback(e)
-        print("Timed out looking for %s" % pattern)
-        raise pexpect.TIMEOUT(timeout)
+        # put the pattern in the exception, not just the timeout value.
+        # str() of this is all the failure summary gets to show, and
+        # "(60)" tells you nothing about what we were waiting for.
+        raise pexpect.TIMEOUT("Timed out after %ss looking for %s" %
+                              (timeout, pattern))
 
     e.expect_user_callback = callback
     e.expect_saved = e.expect

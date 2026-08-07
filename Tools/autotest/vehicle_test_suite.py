@@ -14724,6 +14724,11 @@ switch value'''
             mavproxy.send("sitl_accelcal\n")
             mavproxy.send("accelcal\n")
             mavproxy.expect("Calibrated")
+            # this is a wall-clock budget for MAVProxy to print a line,
+            # not a simulated-time one, so it has to survive this test
+            # sharing a machine with however many others -parallel is
+            # running.  Two seconds did not.
+            timeout = 20
             for wanted in [
                     "level",
                     "on its LEFT side",
@@ -14732,7 +14737,6 @@ switch value'''
                     "nose UP",
                     "on its BACK",
             ]:
-                timeout = 2
                 mavproxy.expect("Place vehicle %s and press any key." % wanted, timeout=timeout)
                 mavproxy.expect("sitl_accelcal: sending attitude, please wait..", timeout=timeout)
                 mavproxy.expect("sitl_accelcal: attitude detected, please press any key..", timeout=timeout)
