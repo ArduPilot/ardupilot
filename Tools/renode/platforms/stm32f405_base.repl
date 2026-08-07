@@ -1,0 +1,244 @@
+// STM32F405 base platform for running ArduPilot under Renode.
+//
+// Vendored from Renode 1.16.1 platforms/cpus/stm32f4.repl (MIT), then
+// edited for the F405 as ArduPilot uses it. A generated per-board
+// overlay (see Tools/renode/gen_board.py) adds board-specific devices;
+// this file holds only what is common to every F405 board. Renode repl
+// overlays may only add, never redeclare, so anything that varies per
+// board is deliberately absent here.
+//
+// Edits from stock, and why:
+//  - sram resized to the real 128K (stock had a 256K superset)
+//  - ccm added at 0x10000000: hwdef RAM_MAP makes it a 64K heap region,
+//    ArduPilot faults without it
+//  - usart6 added (stock stops at uart5)
+//  - iwdg swapped for the AP_STM32_IWDG stub: the stock model really
+//    fires, which turns every pause-at-a-breakpoint into a reset
+//  - timer frequencies set to the real bus clocks (stock says 10MHz,
+//    which makes every ChibiOS delay 8.4x too long): APB1 timers 84MHz,
+//    APB2 timers 168MHz
+//  - systickFrequency set to HCLK (boards normally use a general-purpose
+//    timer for the ChibiOS tick, but keep SysTick honest)
+//  - ethernet, fsmcBank1, gpio J/K dropped (not on the F405)
+//  - network ApplySVD removed; the resc applies a vendored SVD instead
+//  - SYSCFG and DBGMCU tagged so accesses log instead of faulting
+//  - OTG_FS region tagged with AHBIDL set so the ChibiOS USB driver's
+//    GRSTCTL polls fall through
+
+sram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x20000
+
+ccm: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x10000
+
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x100000
+
+flash_controller: MTD.STM32F4_FlashController @ {
+        sysbus 0x40023C00;
+        sysbus new Bus.BusMultiRegistration { address: 0x1FFFC000; size: 0x100; region: "optionBytes" }
+    }
+    flash: flash
+
+// frequency is the APB bus clock the BRR divides (APB2 84MHz for
+// USART1/6, APB1 42MHz for the rest): the model computes the baud rate
+// from it for the IDLE-line timing ArduPilot's RX DMA harvest relies on
+usart1: UART.STM32_UART @ sysbus <0x40011000, +0x100>
+    -> nvic@37
+    frequency: 84000000
+
+usart2: UART.STM32_UART @ sysbus <0x40004400, +0x100>
+    -> nvic@38
+    frequency: 42000000
+
+usart3: UART.STM32_UART @ sysbus <0x40004800, +0x100>
+    -> nvic@39
+    frequency: 42000000
+
+uart4: UART.STM32_UART @ sysbus <0x40004C00, +0x100>
+    -> nvic@52
+    frequency: 42000000
+
+uart5: UART.STM32_UART @ sysbus <0x40005000, +0x100>
+    -> nvic@53
+    frequency: 42000000
+
+usart6: UART.STM32_UART @ sysbus <0x40011400, +0x100>
+    -> nvic@71
+    frequency: 84000000
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 168000000
+    IRQ -> cpu@0
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4f"
+    nvic: nvic
+
+pwr: Miscellaneous.STM32_PWR @ sysbus 0x40007000
+
+crc: CRC.STM32_CRC @ sysbus 0x40023000
+    series: STM32Series.F4
+
+exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40013C00
+    numberOfOutputLines: 24
+    [0-4] -> nvic@[6-10]
+    [5-9] -> nvicInput23@[0-4]
+    [10-15] -> nvicInput40@[0-5]
+    [16, 17, 18, 22] -> nvic@[1, 41, 42, 3]
+
+nvicInput23: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 5
+    -> nvic@23
+
+nvicInput40: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic@40
+
+gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x40020000, +0x400>
+    modeResetValue: 0xA8000000
+    outputSpeedResetValue: 0x0C000000
+    pullUpPullDownResetValue: 0x64000000
+    numberOfAFs: 16
+    invertedAFPins: [[5, 3], [7, 1, 3]]
+    [0-15] -> exti@[0-15]
+
+gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x40020400, +0x400>
+    modeResetValue: 0x00000280
+    outputSpeedResetValue: 0x000000C0
+    pullUpPullDownResetValue: 0x00000100
+    numberOfAFs: 16
+    invertedAFPins: [[0, 1, 3], [1, 1, 3], [13, 1], [14, 1, 3], [15, 1, 3]]
+    [0-15] -> exti@[0-15]
+
+gpioPortC: GPIOPort.STM32_GPIOPort @ sysbus <0x40020800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> exti@[0-15]
+
+gpioPortD: GPIOPort.STM32_GPIOPort @ sysbus <0x40020C00, +0x400>
+    numberOfAFs: 16
+    [0-15] -> exti@[0-15]
+
+gpioPortE: GPIOPort.STM32_GPIOPort @ sysbus <0x40021000, +0x400>
+    numberOfAFs: 16
+    invertedAFPins: [[8, 1], [10, 1], [12, 1]]
+    [0-15] -> exti@[0-15]
+
+gpioPortF: GPIOPort.STM32_GPIOPort @ sysbus <0x40021400, +0x400>
+    numberOfAFs: 16
+    [0-15] -> exti@[0-15]
+
+gpioPortG: GPIOPort.STM32_GPIOPort @ sysbus <0x40021800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> exti@[0-15]
+
+gpioPortH: GPIOPort.STM32_GPIOPort @ sysbus <0x40021c00, +0x400>
+    numberOfAFs: 16
+    invertedAFPins: [[13, 3], [14, 3], [15, 3]]
+    [0-15] -> exti@[0-15]
+
+gpioPortI: GPIOPort.STM32_GPIOPort @ sysbus <0x40022000, +0x400>
+    numberOfAFs: 16
+    [0-15] -> exti@[0-15]
+
+rom1: Memory.MappedMemory @ sysbus 0x1FFF0000
+    size: 0xC000
+
+rom2: Memory.MappedMemory @ sysbus 0x1FFFC400
+    size: 0x3C00
+
+spi1: SPI.STM32SPI @ sysbus 0x40013000
+    IRQ->nvic@35
+
+spi2: SPI.STM32SPI @ sysbus 0x40003800
+    IRQ->nvic@36
+
+spi3: SPI.STM32SPI @ sysbus 0x40003C00
+    IRQ->nvic@51
+
+// forked from the stock STM32F4_I2C: ChibiOS I2Cv1 is DMA-only on F4
+// and the stock model has no DMA request output at all
+i2c1: I2C.AP_STM32F4_I2C @ sysbus 0x40005400
+    EventInterrupt -> nvic@31
+    ErrorInterrupt -> nvic@32
+
+i2c2: I2C.AP_STM32F4_I2C @ sysbus 0x40005800
+    EventInterrupt -> nvic@33
+    ErrorInterrupt -> nvic@34
+
+i2c3: I2C.AP_STM32F4_I2C @ sysbus 0x40005C00
+    EventInterrupt -> nvic@72
+    ErrorInterrupt -> nvic@73
+
+dma1: DMA.STM32DMA @ sysbus 0x40026000
+    [0-7] -> nvic@[11-17,47]
+
+dma2: DMA.STM32DMA @ sysbus 0x40026400
+    [0-7] -> nvic@[56-60,68-70]
+
+rng: Miscellaneous.STM32F4_RNG @ sysbus 0x50060800
+    -> nvic@80
+
+iwdg: Miscellaneous.AP_STM32_IWDG @ sysbus 0x40003000
+
+// installs a real ICSR.RETTOBASE on the stock NVIC (see the .cs for
+// why ChibiOS is dead without it); the bus address is a formality
+nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
+    nvic: nvic
+
+// CYCCNT for ChibiOS polled delays (chSysPolledDelayX spins on it)
+dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
+    frequency: 168000000
+
+rtc: Timers.STM32F4_RTC @ sysbus 0x40002800
+    AlarmIRQ -> nvic@41
+
+rcc: Miscellaneous.STM32F4_RCC @ sysbus 0x40023800
+    rtcPeripheral: rtc
+
+timer2: Timers.STM32_Timer @ sysbus 0x40000000
+    -> nvic@28
+    frequency: 84000000
+    initialLimit: 0xFFFFFFFF
+
+timer3: Timers.STM32_Timer @ sysbus 0x40000400
+    -> nvic@29
+    frequency: 84000000
+    initialLimit: 0xFFFF
+
+timer4: Timers.STM32_Timer @ sysbus 0x40000800
+    -> nvic@30
+    frequency: 84000000
+    initialLimit: 0xFFFF
+
+timer5: Timers.STM32_Timer @ sysbus 0x40000C00
+    -> nvic@50
+    frequency: 84000000
+    initialLimit: 0xFFFFFFFF
+
+timer8: Timers.STM32_Timer @ sysbus 0x40010400
+    BreakInterrupt -> nvic@43
+    UpdateInterrupt -> nvic@44
+    [TriggerInterrupt, CommutationInterrupt] -> nvic@[45, 45]
+    CaptureCompareInterrupt -> nvic@46
+    frequency: 168000000
+    initialLimit: 0xFFFF
+
+bitbandPeripherals: Miscellaneous.BitBanding @ sysbus <0x42000000, +0x2000000>
+    peripheralBase: 0x40000000
+
+bitbandSram: Miscellaneous.BitBanding @ sysbus <0x22000000, +0x200000>
+    peripheralBase: 0x20000000
+
+sysbus:
+    init:
+        Tag <0x40013800, 0x40013BFF> "SYSCFG"
+        Tag <0xE0042000, 0xE00420FF> "DBGMCU"
+        // OTG_FS: only GRSTCTL reads AHBIDL (bit 31) set so the ChibiOS
+        // core-reset polls in usb_lld fall through (CSRST reads clear).
+        // Everything else - GINTSTS in particular - must read zero: a
+        // set bit there is a pending interrupt and the OTG ISR storms.
+        Tag <0x50000000, 0x5000000F> "OTG_FS"
+        Tag <0x50000010, 0x50000013> "OTG_FS_GRSTCTL" 0x80000000
+        Tag <0x50000014, 0x5003FFFF> "OTG_FS"

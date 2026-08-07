@@ -81,6 +81,7 @@ Make.dep
 Thumbs.db
 autotest.lck
 build
+/renode/
 cmake_install.cmake
 cscope.in.out
 cscope.out
