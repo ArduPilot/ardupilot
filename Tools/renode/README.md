@@ -63,7 +63,9 @@ A stock Pixhawk6X ArduCopter image boots from its alternate 0x24000000 AXI SRAM
 layout, mounts its microSD through SDMMC2, detects the Holybro FMUv6 sensor
 variant, and reaches the main vehicle loop. Its generated platform includes
 both FDCAN controllers, the LAN8742A-compatible RMII Ethernet PHY, the IOMCU,
-SPI FRAM, ICM42688/ICM42670/ICM20649 IMUs, and two BMP388 barometers.
+SPI FRAM, ICM42688/ICM42670/ICM20649 IMUs, and two BMP388 barometers. An
+ArduPlane image with networking enabled responds to host-side ARP and ICMP over
+a TAP and exchanges MAVLink through an emulated UDP server.
 
 CAN1 and CAN2 can be connected to the same UDP multicast transport used
 by ArduPilot SITL, DroneCAN tools, and the AM32 Renode harness. The bridge
@@ -137,6 +139,11 @@ every pause-at-a-breakpoint into a reboot).
   use.
 - `peripherals/common/AP_CANMcast.cs` — bidirectional classic CAN/CAN FD
   bridge using the ArduPilot `mcast:N` UDP framing.
+- `peripherals/stm32/AP_STM32H7_Ethernet.cs` — preserves the receive-buffer
+  address that STM32H7 hardware leaves in RDES0 when the DWC DMA writes receive
+  status, and maps STM32's no-source-replacement setting onto the model's MAC0
+  replacement setting. This allows ChibiOS to reuse descriptors without the
+  model rejecting its valid source-address configuration.
 - `peripherals/stm32/AP_STM32F_SDMMC_DmaPump.cs` — restores the F4/F7 SDIO and
   SDMMC DMA request/enable ordering expected by ChibiOS, using each board's
   compiled DMA stream assignment.
@@ -163,11 +170,12 @@ see Running below.
   double-proven by resurrecting a frozen machine live (writing CCR1=1 from
   the monitor woke the whole system). Fixed with one line in the board resc:
   a `SetHookBeforePeripheralWrite` on the tick timer nudging value 0 to 1.
-- **Stock `STM32SPI` accepts only one child and never calls
-  `FinishTransmission`**, while real boards put several devices on one bus.
-  Generated platforms therefore put an active-low `AP_SPIMultiplexer` between
-  each SPI controller and its hwdef devices. Chip-select GPIOs select a mux
-  address, and CS deassertion frames the child transaction. When hwdef lists
+- **Stock `STM32SPI` accepts only one child**, while real boards put several
+  devices on one bus. Generated platforms therefore put an active-low
+  `AP_SPIMultiplexer` between each SPI controller and its hwdef devices.
+  Chip-select GPIOs select a mux address. H7 finite transfers explicitly frame
+  sensor transactions; buses containing SPI FRAM retain CS-deassertion framing
+  because RAMTRON commands span several controller transfers. When hwdef lists
   alternative sensor drivers at the same physical bus/CS location, only the
   first declaration is instantiated.
 - The stock `STM32F4_I2C` cannot run ChibiOS I2Cv1 at all (no DMA request
@@ -198,6 +206,14 @@ see Running below.
   completed stream enable bit as the hardware does. This is required for both
   CubeBlack SDIO and Pixhawk4 SDMMC to finish mounting and enter the vehicle
   loop.
+- The generic Synopsys DWC QoS model replaces every word of an RX descriptor
+  with write-back status. STM32H7 preserves RDES0, and ChibiOS initializes its
+  buffer address only once before later returning descriptors by rewriting
+  RDES3. Without `AP_STM32H7_Ethernet.cs`, the first frame consumes a valid
+  buffer and subsequent TAP traffic leaves the DMA in receive-buffer-
+  unavailable state. The model also logs valid STM32 SARC=0 transmissions as
+  reserved; the helper selects MAC0 replacement using the same address already
+  programmed by the firmware.
 
 ## Bring-up traps found so far
 
@@ -420,6 +436,12 @@ host connection and requires administrator policy. The TAP can instead be
 left on an isolated bridge for controlled testing. Bridging exposes the
 emulated autopilot directly to the local network, so use the same firewall
 and network-port precautions as for physical flight-controller hardware.
+
+On a directly addressed TAP, verify the link with `ping <NET_IPADDR>` before
+testing the configured UDP or TCP port. Initial gyro calibration can take
+roughly 20 seconds in a paced Pixhawk6X run; serial MAVLink should continue
+during calibration, and Ethernet should respond after the firmware reports its
+address.
 
 ### STM32H743 BLHeli/Shared_DMA reproduction
 

@@ -9,7 +9,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 {
     public class AP_SPIMultiplexer : SPIMultiplexer
     {
-        public AP_SPIMultiplexer(IMachine machine) : base(machine)
+        public AP_SPIMultiplexer(IMachine machine, bool frameOnTransfer = false) :
+            base(machine, suppressExplicitFinishTransmission: !frameOnTransfer)
         {
             for(var index = 0; index < MaximumChipSelects; index++)
             {

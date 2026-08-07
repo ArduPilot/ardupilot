@@ -108,7 +108,7 @@ FAMILIES = {
         },
         'sd_buses': {'SDMMC1': 'sdmmc', 'SDMMC2': 'sdmmc2'},
         'can_buses': {'CAN1': 'fdcan1', 'CAN2': 'fdcan2'},
-        'timers': {1, 2, 3, 4, 5, 8, 12, 15},
+        'timers': {1, 2, 3, 4, 5, 8, 12, 13, 14, 15},
         'uart_irq': {
             'USART1': 26, 'USART2': 27, 'USART3': 28, 'USART6': 29,
             'UART4': 30, 'UART5': 31, 'UART7': 32, 'UART8': 33,
@@ -131,7 +131,7 @@ FAMILIES = {
         },
         'sd_buses': {'SDMMC1': 'sdmmc', 'SDMMC2': 'sdmmc2'},
         'can_buses': {'CAN1': 'fdcan1', 'CAN2': 'fdcan2'},
-        'timers': {1, 2, 3, 4, 5, 8, 12, 15},
+        'timers': {1, 2, 3, 4, 5, 8, 12, 13, 14, 15},
         'uart_irq': {
             'USART1': 26, 'USART2': 27, 'USART3': 28, 'USART6': 29,
             'UART4': 30, 'UART5': 31, 'UART7': 32, 'UART8': 33,
@@ -617,8 +617,10 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
         children = children_by_bus[bus]
         declarations += [
             '%s: Miscellaneous.AP_SPIMultiplexer @ %s' % (mux, bus.lower()),
-            '',
         ]
+        if all(child[1] != 'Miscellaneous.AP_RAMTRON' for child in children):
+            declarations.append('    frameOnTransfer: true')
+        declarations.append('')
         for address, (name, model, _, cs, properties) in enumerate(children):
             declarations += [
                 '%s: %s @ %s %d' % (name, model, mux, address),
@@ -957,6 +959,10 @@ def _platform(root, board, app, outdir, fram_path, warnings):
             '    systemClockFrequency: 50000000',
             '    dmaBusWidth: BusWidth.Bits32',
             '    -> nvic@61',
+            '',
+            'ethernetFixup: Miscellaneous.AP_STM32H7_Ethernet @ sysbus 0x%08X' %
+            alloc(4),
+            '    ethernet: ethernet',
             '',
             'ethernetPhy: Network.EthernetPhysicalLayer @ ethernet 0',
             '    BasicControl: 0x3100',

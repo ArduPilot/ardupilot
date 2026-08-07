@@ -12,6 +12,7 @@ $platform?=$repo/Tools/renode/platforms/stm32h743_base.repl
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_PWR.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_RCC.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_Ethernet.cs
 include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
 include $repo/Tools/renode/peripherals/common/AP_DWT.cs
 include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs

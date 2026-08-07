@@ -279,6 +279,16 @@ timer12: Timers.STM32_Timer @ sysbus 0x40001800
     frequency: 240000000
     -> nvic@43
 
+timer13: Timers.STM32_Timer @ sysbus 0x40001C00
+    initialLimit: 0xffff
+    frequency: 240000000
+    -> nvic@44
+
+timer14: Timers.STM32_Timer @ sysbus 0x40002000
+    initialLimit: 0xffff
+    frequency: 240000000
+    -> nvic@45
+
 timer5: Timers.STM32_Timer @ sysbus 0x40000C00
     initialLimit: 0xffffffff
     frequency: 240000000
@@ -408,6 +418,12 @@ timer8:
 timer12:
     0 -> gpioPortB#14@02 | gpioPortH#06@02
     1 -> gpioPortB#15@02 | gpioPortH#09@02
+
+timer13:
+    0 -> gpioPortA#06@09 | gpioPortF#08@09
+
+timer14:
+    0 -> gpioPortA#07@09 | gpioPortF#09@09
 
 timer15:
     0 -> gpioPortA#01@04 | gpioPortA#02@04 | gpioPortE#04@04 | gpioPortE#05@04
