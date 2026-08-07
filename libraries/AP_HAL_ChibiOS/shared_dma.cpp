@@ -17,6 +17,7 @@
 
 #include <hal.h>
 #include "shared_dma.h"
+#include <AP_InternalError/AP_InternalError.h>
 
 /*
   code to handle sharing of DMA channels between peripherals
@@ -117,25 +118,42 @@ bool Shared_DMA::lock_stream_nonblocking(uint8_t stream_id)
 }
 
 
-// lock the DMA channels
 void Shared_DMA::lock_core(void)
 {
     // see if another driver has DMA allocated. If so, call their
     // deallocation function
     if (stream_id1 < SHARED_DMA_MAX_STREAM_ID &&
         locks[stream_id1].obj && locks[stream_id1].obj != this) {
-        locks[stream_id1].deallocate(locks[stream_id1].obj);
+        if (locks[stream_id1].deallocate) {
+            locks[stream_id1].deallocate(locks[stream_id1].obj);
+        } else {
+            // a stream slot claims an owner but has no valid
+            // deallocation functor registered. This should never
+            // happen; avoid a HardFault if it does.
+            INTERNAL_ERROR(AP_InternalError::error_t::dma_fail);
+        }
         locks[stream_id1].obj = nullptr;
     }
     if (stream_id2 < SHARED_DMA_MAX_STREAM_ID &&
         locks[stream_id2].obj && locks[stream_id2].obj != this) {
-        locks[stream_id2].deallocate(locks[stream_id2].obj);
+        if (locks[stream_id2].deallocate) {
+            locks[stream_id2].deallocate(locks[stream_id2].obj);
+        } else {
+            // a stream slot claims an owner but has no valid
+            // deallocation functor registered. This should never
+            // happen; avoid a HardFault if it does.
+            INTERNAL_ERROR(AP_InternalError::error_t::dma_fail);
+        }
         locks[stream_id2].obj = nullptr;
     }
     if ((stream_id1 < SHARED_DMA_MAX_STREAM_ID && locks[stream_id1].obj == nullptr) ||
         (stream_id2 < SHARED_DMA_MAX_STREAM_ID && locks[stream_id2].obj == nullptr)) {
         // allocate the DMA channels and put our deallocation function in place
-        allocate(this);
+        if (allocate) {
+            allocate(this);
+        } else {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
         if (stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
             locks[stream_id1].deallocate = deallocate;
             locks[stream_id1].obj = this;
@@ -145,6 +163,7 @@ void Shared_DMA::lock_core(void)
             locks[stream_id2].obj = this;
         }
     }
+}
 #ifdef STM32_DMA_STREAM_ID_ANY
     else if (stream_id1 == STM32_DMA_STREAM_ID_ANY ||
              stream_id2 == STM32_DMA_STREAM_ID_ANY) {
