@@ -400,6 +400,10 @@ void AP_Periph_FW::handle_begin_firmware_update(CanardInstance* canard_instance,
     if (comms->server_node_id == 0) {
         comms->server_node_id = transfer->source_node_id;
     }
+    // the decoder bounds path.len to the DSDL maximum; this buffer is sized to
+    // hold it with room for the NUL terminator the bootloader relies on
+    static_assert(sizeof(comms->path) == sizeof(uavcan_protocol_file_Path::path.data)+1,
+                  "comms->path must hold the max DroneCAN path plus a NUL");
     memcpy(comms->path, req.image_file_remote_path.path.data, req.image_file_remote_path.path.len);
     comms->my_node_id = canardGetLocalNodeID(canard_instance);
 
