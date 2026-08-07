@@ -15,6 +15,7 @@ find_package(rosidl_default_generators REQUIRED)
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/GlobalPosition.msg"
   "msg/Rc.msg"
+  "msg/GroundTruth.msg"
   "msg/Status.msg"
   "msg/Airspeed.msg"
   "srv/ArmMotors.srv"
