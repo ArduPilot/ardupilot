@@ -98,13 +98,21 @@ static const struct SPIDriverInfo {
 
 #if defined(RP2350) && AP_RP2350_SPI_CYCLE_STATS_ENABLED
 /*
-  Temporary instrumentation for sizing the per-transaction peripheral
-  teardown. acquire_bus() stops and restarts the SPI peripheral whenever CS is
-  not already held, which frees and reallocates both DMA channels. Read these
-  over SWD; strip before proposing anything upstream.
+  Counts and times the peripheral teardown in apply_config(). Off by default;
+  this is what measured the config cache and is worth keeping for the next
+  change in this area.
  */
 volatile uint32_t spi_stopstart_count[ARRAY_SIZE(spi_devices)];
 volatile uint32_t spi_stopstart_us[ARRAY_SIZE(spi_devices)];
+#endif
+
+#if defined(RP2350)
+/*
+  Count of peripheral starts abandoned because the DMA channels could not be
+  allocated. Non-zero means transfers on that bus would have been armed against
+  a peripheral that never came up.
+ */
+volatile uint32_t spi_start_fail_count[ARRAY_SIZE(spi_devices)];
 #endif
 
 // device list comes from hwdef.dat
@@ -496,6 +504,28 @@ void SPIBus::start_peripheral(void)
 
     /* start driver and setup transfer parameters */
     spiStart(spi_devices[bus].driver, &spicfg);
+
+#if defined(RP2350)
+    /*
+      spi_lld_start() can only report DMA allocation failure through
+      osalDbgAssert, which is compiled out in flight builds, so a failure
+      leaves the driver with null channels and the peripheral still in reset.
+      Recording that as started is worse than failing: every later transfer is
+      armed against nothing and times out in do_transfer(), which raises
+      spi_fail and, because the SD layer retries on error, turns one failure
+      into a burst.
+
+      spiStart() has already moved the driver to SPI_READY, and it only
+      allocates from SPI_STOP, so put it back or no later attempt would ever
+      retry the allocation.
+     */
+    SPIDriver *drv = spi_devices[bus].driver;
+    if (drv->dmarx == nullptr || drv->dmatx == nullptr) {
+        drv->state = SPI_STOP;
+        spi_start_fail_count[bus < ARRAY_SIZE(spi_start_fail_count) ? bus : 0]++;
+        return;
+    }
+#endif
 #if HAL_SPI_SCK_SAVE_RESTORE
     // restore sck pin mode from stop_peripheral()
     palSetLineMode(spi_devices[bus].sck_line, sck_mode);
