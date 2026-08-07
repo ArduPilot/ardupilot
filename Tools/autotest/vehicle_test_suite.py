@@ -14105,6 +14105,24 @@ switch value'''
             pass
         shutil.copy2(self.master_binary, self.binary)
         os.chmod(self.binary, 0o755)
+        self.test_binary_signature = self.binary_signature()
+
+    def binary_signature(self):
+        '''enough of the binary's identity to notice a test replacing it'''
+        try:
+            st = os.stat(self.binary)
+        except OSError:
+            return None
+        return (st.st_mtime_ns, st.st_size, st.st_ino)
+
+    def test_binary_modified(self):
+        '''True if the binary we run has been replaced since we copied it.
+        A few tests overwrite the binary they run against - by rebuilding
+        it, or by restoring one snapshotted with context_backup_file() -
+        and the next test must not inherit that.'''
+        if getattr(self, "test_binary_signature", None) is None:
+            return True
+        return self.binary_signature() != self.test_binary_signature
 
     def test_runner_thread_main(self, instance):
         self.instance = instance
@@ -14144,9 +14162,14 @@ switch value'''
                 except queue.Empty:
                     self.progress("Queue is empty")
                     break
-                if not first:
-                    # give this test a pristine binary and a fresh SITL;
-                    # the previous test may have overwritten the binary:
+                if not first and (self.reset_after_every_test or
+                                  self.test_binary_modified()):
+                    # A fresh SITL is only needed when the test which just
+                    # ran replaced the binary, or when the user asked for
+                    # everything to be reset between tests: a wiped cold
+                    # start costs a second or so per test and then the EKF
+                    # has to settle again.  Otherwise carry the SITL over,
+                    # as the serial runner does.
                     self.stop_SITL()
                     self.refresh_test_binary()
                     self.start_SITL(wipe=True)
