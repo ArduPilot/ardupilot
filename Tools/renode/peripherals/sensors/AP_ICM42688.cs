@@ -20,8 +20,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
     // the parser after an aborted or endless-mode transfer.
     public class AP_ICM42688 : ISPIPeripheral, IGPIOReceiver
     {
-        public AP_ICM42688(IMachine machine)
+        public AP_ICM42688(IMachine machine, byte whoAmI = DefaultWhoAmI)
         {
+            this.whoAmI = whoAmI;
             fifo = new Queue<byte>();
             registers = new byte[BankCount, RegisterCount];
             sampleTimer = new LimitTimer(machine.ClockSource, 1000000, this, "icm42688 odr",
@@ -40,7 +41,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             currentRegister = 0;
             reading = false;
             timestamp = 0;
-            registers[0, WhoAmI] = WhoAmIValue;
+            registers[0, WhoAmI] = whoAmI;
         }
 
         public byte Transmit(byte value)
@@ -156,6 +157,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly Queue<byte> fifo;
         private readonly byte[,] registers;
         private readonly LimitTimer sampleTimer;
+        private readonly byte whoAmI;
         private int transferByte;
         private byte currentBank;
         private byte currentRegister;
@@ -181,7 +183,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte ReadFlag = 0x80;
         private const byte RegisterMask = 0x7F;
         private const byte BankMask = 0x07;
-        private const byte WhoAmIValue = 0x47;
+        private const byte DefaultWhoAmI = 0x47;
         private const byte DataReady = 0x08;
         private const byte FifoFlush = 0x02;
         private const byte FifoSensorsEnabled = 0x07;

@@ -18,11 +18,13 @@ include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs
 include $repo/Tools/renode/peripherals/common/AP_IOMCU.cs
 include $repo/Tools/renode/peripherals/common/AP_SPIMultiplexer.cs
 include $repo/Tools/renode/peripherals/common/AP_UARTPacer.cs
+include $repo/Tools/renode/peripherals/common/AP_CANMcast.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32DMA_Fixup.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32F7_USART_Idle.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_UpdateDMA.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_SDMMC.cs
 include $repo/Tools/renode/peripherals/sensors/AP_BMP280.cs
+include $repo/Tools/renode/peripherals/sensors/AP_BMP388.cs
 include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
 include $repo/Tools/renode/peripherals/sensors/AP_ICM20689.cs
 include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
