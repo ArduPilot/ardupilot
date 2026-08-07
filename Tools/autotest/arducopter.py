@@ -18162,7 +18162,15 @@ RTL_ALT_M 111
         f2.write("RTL_ALT_M 750\n")
         f2.close()
 
-        self.customise_SITL_commandline([], defaults_filepath=[f1.name, f2.name])
+        # wipe: a defaults file only supplies parameters which are not
+        # already saved, so with the eeprom left alone anything an
+        # earlier test stored wins over the file we are testing -
+        # set_autodisarm_delay() saves DISARM_DELAY, and this test then
+        # reads back the stored value rather than the one from f1:
+        #     DefaultsCommaList (...) (parameter DISARM_DELAY want=20.000000 got=10.000000)
+        self.customise_SITL_commandline([],
+                                        defaults_filepath=[f1.name, f2.name],
+                                        wipe=True)
 
         # f2 overrides RTL_ALT_M; DISARM_DELAY comes only from f1
         self.assert_parameter_value("RTL_ALT_M", 750)
