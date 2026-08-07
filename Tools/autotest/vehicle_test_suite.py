@@ -15643,8 +15643,95 @@ switch value'''
             "pitmode": 0, "freq": 5769, "deviceIsReady": 1,
         })
 
+    def wait_msp_rc(self, msp, want, epsilon=2, timeout=10):
+        '''poll MSP_RC until the reported channels match want, a 4-tuple of
+        microseconds in MSP's AERT order with None meaning "don't care";
+        polling rather than reading one frame drains frames buffered before
+        the RC override took effect. Returns the matching tuple'''
+        MSP_RC = 105
+        last = {}
+
+        def collect(cmd, data):
+            if cmd == MSP_RC and len(data) >= 8:
+                last['rc'] = struct.unpack("<HHHH", bytes(data[:8]))
+        msp.callback = collect
+        tstart = self.get_sim_time()
+        try:
+            while True:
+                # pace the requests; an unanswered poll loop running flat out
+                # fills the socket buffer and fails the write before the timeout
+                self.drain_mav()
+                time.sleep(0.05)
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("MSP_RC never matched %s (last %s)" % (str(want), str(last.get('rc'))))
+                msp.send_command(MSP_RC)
+                msp.update()
+                rc = last.get('rc')
+                if rc is not None and all(w is None or abs(rc[i] - w) <= epsilon for (i, w) in enumerate(want)):
+                    return rc
+        finally:
+            msp.callback = None
+
+    def check_msp_rc(self, msp):
+        '''check the RC channel values the FC reports over MSP_RC. This is what
+        a betaflight-style VTX (e.g. HDZero) reads to detect the stick gestures
+        that open its menus, so the axes must span the 1000-2000us range
+        betaflight uses, independently of this vehicle's RC trims'''
+        # ArduPilot's roll/pitch/throttle/yaw are RC1/2/3/4; MSP's order is AERT
+        (A, E, R, T) = (0, 1, 2, 3)
+
+        self.progress("Checking centred sticks report mid-stick")
+        self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
+        self.wait_msp_rc(msp, (1500, 1500, 1500, 1500))
+
+        # a gesture keyed on a low or centred throttle only works if the
+        # throttle axis spans the same range as every other channel
+        self.progress("Checking the throttle axis spans 1000-2000")
+        for pwm in [1000, 1250, 1500, 1750, 2000]:
+            want = [None] * 4
+            want[T] = pwm
+            self.set_rc(3, pwm)
+            self.wait_msp_rc(msp, tuple(want))
+
+        self.progress("Checking the roll axis spans 1000-2000")
+        for pwm in [1000, 1500, 2000]:
+            want = [None] * 4
+            want[A] = pwm
+            self.set_rc(1, pwm)
+            self.wait_msp_rc(msp, tuple(want))
+        self.set_rc(1, 1500)
+
+        # pitch is deliberately inverted on the wire: ArduPilot's pitch channel
+        # and betaflight's elevator run in opposite directions
+        self.progress("Checking the pitch axis is inverted")
+        for (pwm, elevator) in [(1000, 2000), (1500, 1500), (2000, 1000)]:
+            want = [None] * 4
+            want[E] = elevator
+            self.set_rc(2, pwm)
+            self.wait_msp_rc(msp, tuple(want))
+        self.set_rc(2, 1500)
+
+        self.progress("Checking the yaw axis spans 1000-2000")
+        for pwm in [1000, 1500, 2000]:
+            want = [None] * 4
+            want[R] = pwm
+            self.set_rc(4, pwm)
+            self.wait_msp_rc(msp, tuple(want))
+        self.set_rc(4, 1500)
+
+        # the reported values describe stick position, so moving a trim must not
+        # move them; a VTX has no way to learn this vehicle's trims
+        self.progress("Checking the reported values do not depend on the RC trims")
+        for trim in [1000, 1500, 1900]:
+            self.set_parameters({"RC2_TRIM": trim, "RC3_TRIM": trim})
+            for (pwm, elevator) in [(1000, 2000), (1500, 1500), (2000, 1000)]:
+                self.set_rc_from_map({2: pwm, 3: pwm})
+                self.wait_msp_rc(msp, (None, elevator, None, pwm))
+
+        self.set_rc_default()
+
     def MSPVTXConfig(self):
-        '''test changing VTX band/channel/frequency via MSP_SET_VTX_CONFIG'''
+        '''test the VTX config and RC channels a VTX reads over an MSP link'''
         self.set_parameters({
             "SERIAL5_PROTOCOL": 32,  # MSP
             "VTX_ENABLE": 1,
@@ -15656,6 +15743,11 @@ switch value'''
         self.wait_ready_to_arm()
         msp = self.msp_connect(port)
         self.check_msp_set_vtx_config(msp)
+        # note: not also checked on the DisplayPort link, which does not answer
+        # requests in SITL; the OSD saturates that port's transmit buffer and
+        # SITL's tx_pending() is hardcoded false, so msp_serial_send_frame()
+        # discards every reply
+        self.check_msp_rc(msp)
         self.reboot_sitl()
 
     def MSPDisplayPortVTXConfig(self):
