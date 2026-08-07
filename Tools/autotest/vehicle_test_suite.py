@@ -3555,10 +3555,19 @@ class TestSuite(abc.ABC):
         self.progress("##################################################################################")
 
     def try_symlink_tlog(self):
-        self.buildlog = self.buildlogs_path(self.log_name() + "-test.tlog")
+        # the buildlogs directory is shared by every parallel worker, so
+        # this needs the instance in it; without that the workers all
+        # link the same path, clobbering each other's tlog and racing
+        # each other between the exists() and the unlink() below:
+        name = self.log_name()
+        if self.instance != 0:
+            name += "-I%u" % self.instance
+        self.buildlog = self.buildlogs_path(name + "-test.tlog")
         self.progress("buildlog=%s" % self.buildlog)
-        if os.path.exists(self.buildlog):
+        try:
             os.unlink(self.buildlog)
+        except FileNotFoundError:
+            pass
         try:
             os.link(self.logfile, self.buildlog)
         except OSError as error:
