@@ -1277,6 +1277,14 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def SurfaceSensorless(self):
         """Test surface mode with sensorless thrust"""
+        # this drives the throttle down and waits to arrive at 9.5m, so
+        # it has to start above that.  The vehicle is wherever the
+        # previous test left it, which can be a long way below:
+        #     Failed to attain Altitude want -9.5, reached -52.093
+        # with the depth not moving at all - it was already far past the
+        # altitude it was descending towards.  Reboot back to the
+        # surface first, as several tests in this file already do.
+        self.reboot_sitl()
         # set GCS failsafe to SURFACE
         self.wait_ready_to_arm()
         self.arm_vehicle()
