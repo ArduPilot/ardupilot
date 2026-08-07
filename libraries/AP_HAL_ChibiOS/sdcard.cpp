@@ -15,6 +15,7 @@
  */
 
 #include <hal.h>
+#include <string.h>
 #include "SPIDevice.h"
 #include "sdcard.h"
 #include "bouncebuffer.h"
@@ -122,6 +123,16 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
         MMCD1.buffer = (uint8_t*)malloc_axi_sram(MMC_BUFFER_SIZE);
     }
 
+    /*
+      staging buffer letting mmcSequentialWrite() clock a whole block in one
+      exchange instead of four. Optional - if this allocation fails the driver
+      falls back to the portable multi-transfer path.
+     */
+    static uint8_t *mmc_write_frame;
+    if (mmc_write_frame == nullptr) {
+        mmc_write_frame = (uint8_t*)malloc_axi_sram(MMC_WRITE_FRAME_SIZE);
+    }
+
     if (sdcard_running) {
         sdcard_stop();
     }
@@ -139,6 +150,7 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
     device->set_slowdown(sd_slowdown);
 
     mmcObjectInit(&MMCD1, MMCD1.buffer);
+    MMCD1.wbuffer = mmc_write_frame;
 
     mmcconfig.spip = (static_cast<ChibiOS::SPIDevice*>(device))->get_driver();
     mmcconfig.hscfg = &highspeed;
@@ -411,6 +423,19 @@ __RAMFUNC__ void spiReceiveHook(SPIDriver *spip, size_t n, void *rxbuf)
 {
     if (sdcard_running) {
         device->transfer(nullptr, 0, (uint8_t *)rxbuf, n);
+    }
+}
+
+__RAMFUNC__ void spiExchangeHook(SPIDriver *spip, size_t n, const void *txbuf, void *rxbuf)
+{
+    if (sdcard_running) {
+        // always take the in-place path: the two pointer overload stages
+        // through a variable length array on the caller's stack, which for a
+        // block write would be half a kilobyte on the logging thread.
+        if (txbuf != rxbuf) {
+            memcpy(rxbuf, txbuf, n);
+        }
+        device->transfer_fullduplex((uint8_t *)rxbuf, n);
     }
 }
 
