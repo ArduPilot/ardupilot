@@ -6424,7 +6424,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode('MANUAL')
         self.arm_vehicle()
         self.set_rc(3, 2000)   # full throttle forward
-        self.wait_distance(10, accuracy=2, timeout=60)
+        # a band rather than a point: wait_distance() wants the distance
+        # travelled to *be* 10m give or take a couple, and at full
+        # throttle the vehicle covers ten times that between samples, so
+        # it steps straight over the window and never satisfies it -
+        #     Failed to attain Distance want 10.0, reached 1286.83703094656
+        # home is where we started, so this is the distance travelled.
+        self.poll_home_position()
+        self.wait_distance_between('HOME_POSITION', 'GLOBAL_POSITION_INT',
+                                   10, 100, timeout=60)
         self.set_rc(3, 1500)   # stop
         # hold station and confirm the beacon-derived position stays locked to
         # the true position (GLOBAL_POSITION_INT vs SIMSTATE) while stationary:
