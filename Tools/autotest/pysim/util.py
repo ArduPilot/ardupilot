@@ -727,6 +727,7 @@ def start_SITL(binary,
         return pexpect.spawn("true", ["true"],
                              logfile=pexpect_logfile,
                              encoding='ascii',
+                             codec_errors='replace',
                              timeout=5)
     else:
         print("Running: %s" % cmd_as_shell(cmd))
@@ -744,7 +745,8 @@ def start_SITL(binary,
             # non-empty even when no errors are detected.
             our_opts = 'log_path=%s:symbolize=1:verbosity=0' % log_base
             spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
-        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd, env=spawn_env)
+        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii',
+                              codec_errors='replace', timeout=5, cwd=cwd, env=spawn_env)
         pexpect_autoclose(child)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
@@ -812,7 +814,12 @@ def start_MAVProxy_SITL(atype,
     print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii', timeout=pexpect_timeout, env=env)
+    # the vehicle's boot banner includes a statustext carrying the
+    # firmware hash, which is not ASCII.  Replace what we cannot decode
+    # rather than throwing UnicodeDecodeError out of an unrelated expect:
+    #     AccelCal (...) ('ascii' codec can't decode byte 0xef in position 611: ...)
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii',
+                        codec_errors='replace', timeout=pexpect_timeout, env=env)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
@@ -825,7 +832,8 @@ def start_PPP_daemon(ips, sockaddr):
     cmd = cmd.split()
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii', timeout=30)
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii',
+                        codec_errors='replace', timeout=30)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
