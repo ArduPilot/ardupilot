@@ -6467,11 +6467,14 @@ class TestSuite(abc.ABC):
         tstart = time.time()  # timeout in wallclock
         while True:
             m = mav.recv_match(type=type, blocking=True, timeout=0.05, condition=condition)
-            if instance is not None:
-                if getattr(m, m._instance_field) != instance:
-                    continue
             if m is not None:
-                break
+                if instance is None or getattr(m, m._instance_field) == instance:
+                    break
+                # right message, wrong instance.  Keep waiting - but fall
+                # through to the timeout check rather than going straight
+                # back around, or a steady stream of some other instance
+                # keeps us here for ever.
+                m = None
             elapsed_time = time.time() - tstart
             if elapsed_time > timeout:
                 raise NotAchievedException("Did not get %s after %s seconds" %
