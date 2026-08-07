@@ -17744,6 +17744,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "AUTO_OPTIONS": 3,
         })
 
+        # this checks yaw behaviour by watching the vehicle turn away
+        # from where it started, so it needs to start somewhere other
+        # than north - the SITL start heading is 270.  The vehicle is
+        # left wherever the previous test put it, which can be pointing
+        # very nearly north:
+        #     MissionRTLYawBehaviour (...) (Bad original heading 1)
+        self.reboot_sitl()
+
         self.start_subtest("behaviour with WP_YAW_BEHAVE set to next-waypoint-except-RTL")
         self.upload_simple_relhome_mission([
             #                                      N   E  U
