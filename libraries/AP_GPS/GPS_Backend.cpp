@@ -322,7 +322,7 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(float reported_heading_deg, const
 }
 
 bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state, const float reported_heading_deg, const float reported_distance, const float reported_D) {
-    constexpr float minimum_antenna_seperation = 0.05; // meters
+    constexpr float minimum_antenna_separation = AP_GPS_MB_MIN_ANTENNA_SEPARATION_M;
     constexpr float permitted_error_length_pct = 0.2;  // percentage
 #if HAL_LOGGING_ENABLED || AP_AHRS_ENABLED
     float min_D = 0.0f;
@@ -351,16 +351,16 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
         const float offset_dist = offset.length();
         const float min_dist = MIN(offset_dist, reported_distance);
 
-        if (offset_dist < minimum_antenna_seperation) {
+        if (offset_dist < minimum_antenna_separation) {
             // offsets have to be sufficiently large to get a meaningful angle off of them
             Debug("Insufficent antenna offset (%f, %f, %f)", (double)offset.x, (double)offset.y, (double)offset.z);
             goto bad_yaw;
         }
 
-        if (reported_distance < minimum_antenna_seperation) {
+        if (reported_distance < minimum_antenna_separation) {
             // if the reported distance is less then the minimum separation it's not sufficiently robust
             Debug("Reported baseline distance (%f) was less then the minimum antenna separation (%f)",
-                  (double)reported_distance, (double)minimum_antenna_seperation);
+                  (double)reported_distance, (double)minimum_antenna_separation);
             goto bad_yaw;
         }
 
@@ -370,6 +370,21 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
             Debug("Offset=%.2f vs reported-distance=%.2f (max-delta=%.2f)",
                   offset_dist, reported_distance, (double)(min_dist * permitted_error_length_pct));
             goto bad_yaw;
+        }
+
+        {
+            // the reported heading is the bearing of the baseline in the horizontal
+            // plane, so its noise scales inversely with the horizontal separation of
+            // the antennas. A baseline close to vertical carries no usable yaw
+            // information regardless of the antenna separation, whether because of
+            // a vertical antenna installation or because vehicle attitude has
+            // rotated the baseline close to vertical
+            const float reported_horizontal_sq = sq(reported_distance) - sq(reported_D);
+            if (reported_horizontal_sq < sq(minimum_antenna_separation)) {
+                Debug("Insufficient horizontal separation %.2f of reported baseline (dist=%.2f, D=%.2f)",
+                      (double)safe_sqrt(reported_horizontal_sq), (double)reported_distance, (double)reported_D);
+                goto bad_yaw;
+            }
         }
 
 #if AP_AHRS_ENABLED
@@ -404,16 +419,21 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
 
         {
             // at this point the offsets are looking okay, go ahead and actually calculate a useful heading
+            // the bearing of the offset is only exact when the vehicle is level; the
+            // offset is exported in mb_yaw_offset so consumers with an attitude
+            // estimate can correct the yaw for vehicle roll and pitch
             const float rotation_offset_rad = Vector2f(-offset.x, -offset.y).angle();
             interim_state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
             interim_state.have_gps_yaw = true;
             interim_state.gps_yaw_time_ms = AP_HAL::millis();
+            interim_state.mb_yaw_offset = offset;
         }
         goto good_yaw;
     }
 
 bad_yaw:
     interim_state.have_gps_yaw = false;
+    interim_state.mb_yaw_offset.zero();
 
 good_yaw:
 

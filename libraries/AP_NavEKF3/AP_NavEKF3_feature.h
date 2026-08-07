@@ -9,6 +9,7 @@
 #include <AP_Beacon/AP_Beacon_config.h>
 #include <AP_AHRS/AP_AHRS_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
+#include <AP_GPS/AP_GPS_config.h>
 
 // define for when to include all features
 #define EK3_FEATURE_ALL APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) || APM_BUILD_TYPE(APM_BUILD_Replay)
@@ -55,4 +56,14 @@
 // IMU-aided AGL Kalman filter decoupled from the main filter's vertical position state
 #ifndef EK3_FEATURE_OPTFLOW_AGL_KF
 #define EK3_FEATURE_OPTFLOW_AGL_KF EK3_FEATURE_OPTFLOW_FUSION
+#endif
+
+// moving baseline GPS yaw corrected for vehicle attitude, on 2M boards. Requires
+// the moving-baseline GPS path, whose exported antenna offset the correction consumes
+#ifndef EK3_FEATURE_MOVING_BASELINE
+#define EK3_FEATURE_MOVING_BASELINE ((EK3_FEATURE_ALL || HAL_PROGRAM_SIZE_LIMIT_KB > 1024) && (GPS_MOVING_BASELINE))
+#endif
+
+#if EK3_FEATURE_MOVING_BASELINE && !(GPS_MOVING_BASELINE)
+#error "EK3_FEATURE_MOVING_BASELINE requires GPS_MOVING_BASELINE"
 #endif
