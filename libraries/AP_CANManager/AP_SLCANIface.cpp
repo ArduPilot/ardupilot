@@ -30,8 +30,6 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define LOG_TAG "SLCAN"
-
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo SLCAN::CANIface::var_info[] = {
@@ -268,9 +266,7 @@ bool SLCAN::CANIface::init_passthrough(uint8_t i)
     _can_iface = hal.can[i];
     _iface_num = _slcan_can_port - 1;
     _prev_ser_port = -1;
-#if HAL_CANMANAGER_ENABLED
-    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Setting SLCAN Passthrough for CAN%d\n", _slcan_can_port - 1);
-#endif
+
     return true;
 }
 
@@ -557,15 +553,6 @@ bool SLCAN::CANIface::set_event_handle(AP_HAL::BinarySemaphore *sem_handle)
     return false;
 }
 
-uint16_t SLCAN::CANIface::getNumFilters() const
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->getNumFilters();
-    }
-    return 0;
-}
-
 uint32_t SLCAN::CANIface::getErrorCount() const
 {
     // When in passthrough mode methods is handled through can iface
@@ -590,15 +577,6 @@ bool SLCAN::CANIface::is_busoff() const
         return _can_iface->is_busoff();
     }
     return false;
-}
-
-bool SLCAN::CANIface::configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs)
-{
-    // When in passthrough mode methods is handled through can iface
-    if (_can_iface) {
-        return _can_iface->configureFilters(filter_configs, num_configs);
-    }
-    return true;
 }
 
 void SLCAN::CANIface::flush_tx()

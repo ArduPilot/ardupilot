@@ -68,31 +68,37 @@ public:
 
     bool send_relay_status(const class GCS_MAVLINK &link) const;
 
+    // Set the state of all relays that are configured as the specified function type
     void set(AP_Relay_Params::FUNCTION function, bool value);
 
     // see if the relay is enabled
     bool enabled(AP_Relay_Params::FUNCTION function) const;
+
+    // Get the pin number of the instance (if assigned to a pin)
+    bool get_pin_by_instance(uint8_t instance, uint8_t &pin) const;
 
 private:
     static AP_Relay *singleton;
 
     AP_Relay_Params _params[AP_RELAY_NUM_RELAYS];
 
-    // Return true is function is valid
+    // Return true if function is valid
     bool function_valid(AP_Relay_Params::FUNCTION function) const;
 
+    // Set the state of the specified instance, if it is a valid relay
     void set(uint8_t instance, bool value);
 
     void set_defaults();
     void convert_params();
 
-    void set_pin_by_instance(uint8_t instance, bool value);
+    // Internal helper: set the instance state, accounting for configured inversion
+    void set_instance_state(uint8_t instance, bool value);
 
-    // Set relay state from pin number
-    void set_pin(const int16_t pin, const bool value);
+    // Internal helper: directly set the state of the specified pin
+    void set_pin_state(const int16_t pin, const bool value);
 
-    // Get relay state from pin number
-    bool get_pin(const int16_t pin) const;
+    // Get the state of the specified pin
+    bool get_pin_state(const int16_t pin) const;
 
 #if AP_RELAY_DRONECAN_ENABLED
     // Virtual DroneCAN pins
@@ -108,10 +114,10 @@ private:
         bool populate_next_command(uint8_t &index, uavcan_equipment_hardpoint_Command &msg) const;
 
         // Set DroneCAN relay state from pin number
-        void set_pin(const int16_t pin, const bool value);
+        void set_pin_state(const int16_t pin, const bool value);
 
         // Get relay state from pin number
-        bool get_pin(const int16_t pin) const;
+        bool get_pin_state(const int16_t pin) const;
 
     private:
 

@@ -93,7 +93,7 @@ public:
     // sensor-specific helper functions
 
     // true if any source is GPS
-    bool usingGPS() const;
+    bool usingGPS(uint8_t core_index) const;
 
     // true if source parameters have been configured (used for parameter conversion)
     bool configured();

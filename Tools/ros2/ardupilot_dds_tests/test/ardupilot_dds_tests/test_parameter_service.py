@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+# flake8: noqa
+
 """
 Bring up ArduPilot SITL and check that the get/set_parameters services are up and running.
 
@@ -41,6 +43,8 @@ from rclpy.qos import QoSHistoryPolicy
 from rcl_interfaces.srv import GetParameters
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.msg import Parameter
+
+WAIT_FOR_START_TIMEOUT = 5.0
 
 # Enums for parameter type
 PARAMETER_NOT_SET = 0
@@ -73,7 +77,7 @@ class ParameterClient(rclpy.node.Node):
 
         self.set_cli = self.create_client(SetParameters, 'ap/set_parameters')
         while not self.set_cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('SetParameters service not availabel, waiting again...')
+            self.get_logger().info('SetParameters service not available, waiting again...')
 
         # Add a spin thread
         self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
@@ -171,16 +175,16 @@ def test_dds_udp_parameter_services(launch_context, launch_sitl_copter_dds_udp):
     sitl = actions["sitl"].action
 
     # Wait for process to start.
-    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=2)
-    process_tools.wait_for_start_sync(launch_context, sitl, timeout=2)
+    process_tools.wait_for_start_sync(launch_context, micro_ros_agent, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
+    process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
     rclpy.init()
     try:
         node = ParameterClient()
         node.start_client()
-        parameter_name = "LOIT_SPEED"
-        param_change_value = 1250
+        parameter_name = "LOIT_SPEED_MS"
+        param_change_value = 12.50
         param_type = PARAMETER_DOUBLE
         node.send_get_param_req(parameter_name)
         get_param_received_flag = node.get_param_event_object.wait(timeout=10.0)

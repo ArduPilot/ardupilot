@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# flake8: noqa
+
 '''
 add a set of up to 10 public keys to an ArduPilot bootloader bin file
 '''
@@ -9,7 +12,7 @@ import base64
 
 # get command line arguments
 from argparse import ArgumentParser
-parser = ArgumentParser(description='make_secure_bl')
+parser = ArgumentParser(description='This program is used to apply signing keys to a signed bootloader.')
 parser.add_argument("--omit-ardupilot-keys", action='store_true', default=False, help="omit ArduPilot signing keys")
 parser.add_argument("bootloader", type=str, default=None, help="bootloader")
 parser.add_argument("keys", nargs='*', type=str, default=[], help="keys")
@@ -67,4 +70,4 @@ for kfile in keys:
     desc += key
     desc_len += key_len
 img = img[:offset] + desc + img[offset+desc_len:]
-open(sys.argv[1], 'wb').write(img)
+open(args.bootloader, 'wb').write(img)

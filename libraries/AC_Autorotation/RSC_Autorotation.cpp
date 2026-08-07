@@ -56,7 +56,7 @@ RSC_Autorotation::RSC_Autorotation(void)
 // to force the state to be immediately deactivated, then the force_state bool is used
 void RSC_Autorotation::set_active(bool active, bool force_state)
 {
-    if (enable.get() != 1) {
+    if (!enabled()) {
         return;
     }
 

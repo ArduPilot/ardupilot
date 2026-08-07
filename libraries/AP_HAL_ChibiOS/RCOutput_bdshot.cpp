@@ -367,7 +367,7 @@ void RCOutput::bdshot_receive_pulses_DMAR(pwm_group* group)
     dmaStreamSetMode(ic_dma,
                     STM32_DMA_CR_CHSEL(group->dma_ch[curr_ch].channel) |
                     STM32_DMA_CR_DIR_P2M |
-                    STM32_DMA_CR_PSIZE_WORD |
+                    STM32_DMA_CR_PSIZE_WORD |   // transactions are read in word (dmar_uint_t) size
                     STM32_DMA_CR_MSIZE_WORD |
                     STM32_DMA_CR_MINC | STM32_DMA_CR_PL(3) |
                     STM32_DMA_CR_TEIE | STM32_DMA_CR_TCIE);
@@ -515,7 +515,8 @@ __RAMFUNC__ void RCOutput::bdshot_finish_dshot_gcr_transaction(virtual_timer_t* 
     group->bdshot.dma_tx_size = MIN(uint16_t(GCR_TELEMETRY_BIT_LEN),
         GCR_TELEMETRY_BIT_LEN - dmaStreamGetTransactionSize(dma));
 
-    stm32_cacheBufferInvalidate(group->dma_buffer, group->bdshot.dma_tx_size);
+    // flush / invalidate all the data we are going to read
+    stm32_cacheBufferInvalidate(group->dma_buffer, ((sizeof(dmar_uint_t) * group->bdshot.dma_tx_size)+31)&~31);
     memcpy(group->bdshot.dma_buffer_copy, group->dma_buffer, sizeof(dmar_uint_t) * group->bdshot.dma_tx_size);
 
 #ifdef HAL_TIM_UP_SHARED

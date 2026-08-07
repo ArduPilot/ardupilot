@@ -1,6 +1,6 @@
 #include "AP_Periph.h"
 
-#ifdef HAL_PERIPH_ENABLE_MAG
+#if AP_PERIPH_MAG_ENABLED
 
 /*
   magnetometer support
@@ -97,4 +97,4 @@ void AP_Periph_FW::can_mag_update(void)
 #endif // AP_PERIPH_MAG_HIRES
 }
 
-#endif // HAL_PERIPH_ENABLE_MAG
+#endif // AP_PERIPH_MAG_ENABLED

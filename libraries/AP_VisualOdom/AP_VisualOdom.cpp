@@ -122,7 +122,7 @@ AP_VisualOdom::AP_VisualOdom()
     AP_Param::setup_object_defaults(this, var_info);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (_singleton != nullptr) {
-        AP_HAL::panic("must be singleton");
+        AP_HAL::panic("AP_VisualOdom must be singleton");
     }
 #endif
     _singleton = this;

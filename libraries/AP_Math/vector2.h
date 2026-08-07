@@ -104,7 +104,7 @@ struct Vector2
     // returns 0 if the vectors are parallel, and M_PI if they are antiparallel
     T angle(const Vector2<T> &v2) const;
 
-    // computes the angle of this vector in radians, from 0 to 2pi,
+    // computes the angle of this vector in radians, from -M_PI to M_PI,
     // from a unit vector(1,0); a (1,1) vector's angle is +M_PI/4
     T angle(void) const;
 

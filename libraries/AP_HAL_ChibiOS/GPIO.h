@@ -42,6 +42,8 @@ public:
     /* Alternative interface: */
     AP_HAL::DigitalSource* channel(uint16_t n) override;
 
+    // only override and implement if necessary ChibiOS declarations are available
+#if PAL_USE_CALLBACKS == TRUE
     /* Interrupt interface - fast, for RCOutput and SPI radios */
     bool    attach_interrupt(uint8_t interrupt_num,
                              AP_HAL::Proc p,
@@ -51,6 +53,7 @@ public:
     bool    attach_interrupt(uint8_t pin,
                              irq_handler_fn_t fn,
                              INTERRUPT_TRIGGER_TYPE mode) override;
+#endif // PAL_USE_CALLBACKS == TRUE
 
     /* return true if USB cable is connected */
     bool    usb_connected(void) override;

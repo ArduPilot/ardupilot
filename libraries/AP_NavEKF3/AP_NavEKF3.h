@@ -71,12 +71,12 @@ public:
     // Write the last calculated NE position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosNE(Vector2f &posNE) const;
+    bool getPosNE(Vector2p &posNE) const;
 
     // Write the last calculated D position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosD(float &posD) const;
+    bool getPosD(postype_t &posD) const;
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
@@ -85,9 +85,9 @@ public:
     // returns false if estimate is unavailable
     bool getAirSpdVec(Vector3f &vel) const;
 
-    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
-    // returns false if the data is unavilable
-    bool getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
+    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed for a given sensor instance
+    // returns false if the data is unavailable
+    bool getAirSpdHealthData(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
     // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
@@ -265,6 +265,12 @@ public:
     */
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
+    /*
+     * Write terrain altitude (derived from SRTM) in meters above the origin
+     * only used by optical flow when out of rangefinder range
+     */
+    void writeTerrainData(float alt_m);
+
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
     // cannot be used as a height reference. Use to prevent range finder operation otherwise
@@ -330,6 +336,9 @@ public:
      */
     void checkLaneSwitch(void);
 
+    // switch to a new lane
+    void switchLane(uint8_t new_lane_index);
+
     /*
       Request a reset of the EKF yaw. This is called when the vehicle code is about to
       trigger an EKF failsafe, and it would like to avoid that.
@@ -348,6 +357,9 @@ public:
     // are we using (aka fusing) external nav for yaw?
     bool using_extnav_for_yaw() const;
 
+    // are we using a gps
+    bool using_gps() const;
+
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
 
@@ -356,6 +368,9 @@ public:
 
     bool configuredForExtNavPosNoVel(void) const;
     
+    // check if configured to use GPS for position estimation
+    bool configuredToUseGPSForPos(void) const;
+
     // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed, float uncertainty);
 
@@ -465,9 +480,14 @@ private:
     AP_Int32 _options;              // bit mask of processing options
 
     // enum for processing options
-    enum class Options {
-        JammingExpected     = (1<<0),
+    enum class Option {
+        JammingExpected         = (1<<0),
+        ManualLaneSwitch_DEPRECATED = (1<<1), // deprecated, no effect: superseded by forcing an exact lane via EK3_PRIMARY
+        OptflowMayUseTerrainAlt = (1<<2),
     };
+    bool option_is_enabled(Option option) const {
+        return (_options & (uint32_t)option) != 0;
+    }
 
 // Possible values for _flowUse
 #define FLOW_USE_NONE    0
@@ -539,7 +559,6 @@ private:
         float core_delta;             // the amount of D position change between cores when a change happened
     } pos_down_reset_data;
 
-#define MAX_EKF_CORES     3 // maximum allowed EKF Cores to be instantiated
     static_assert(MAX_EKF_CORES == AP_NAKEKF_SOURCE_SET_MAX,
                   "EKF cores and source sets must have a one-to-one mapping");
     

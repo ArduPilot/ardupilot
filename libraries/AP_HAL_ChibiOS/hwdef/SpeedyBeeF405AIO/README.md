@@ -1,6 +1,6 @@
 # SpeedyBee F405 AIO 40A Bluejay
 
-https://www.speedybee.com/speedybee-f405-aio-40a-bluejay-25-5x25-5-3-6s-flight-controller
+[SpeedyBee](https://www.speedybee.com/speedybee-f405-aio-40a-bluejay-25-5x25-5-3-6s-flight-controller)
 
 The SpeedyBee F405 AIO is a flight controller produced by [SpeedyBee](https://www.speedybee.com/).
 
@@ -14,7 +14,7 @@ The SpeedyBee F405 AIO is a flight controller produced by [SpeedyBee](https://ww
 - 8MBytes for logging
 - 5V Power Out: 2.0A max
 - Dimensions: 33x33mm
-- Mounting Holes: Standard 25.5/25.5mm square to center of holes 
+- Mounting Holes: Standard 25.5/25.5mm square to center of holes
 - Weight: 13.6g
 
 - Built-in 40A BlueJay 4in1 ESC
@@ -46,16 +46,17 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 USART6 supports RX and TX DMA.
 
 ## RC Input
- 
-RC input is configured on UART6. It supports all RC protocols except PPM, FPort, and SBUS. See:ref:`[Radio Control Systems<common-rc-systems>` for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
-*  FPort requires an external bi-directional inverter and connects to TX 6 with :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` set to "7".
-*  CRSF requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
-*  SRXL2 requires a connection to TX6 and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` set to "4".
 
-* SBUS can be directly connected to the SBUS pin which ties through an inverter to the RX2 pin.  :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` must be set to "23" and :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>`  must be changed to something else than "23"
+RC input is configured on UART6. It supports all RC protocols except PPM, FPort, and SBUS. See:ref:`[Radio Control Systems<common-rc-systems>` for details for a specific RC system. :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>` is set to “23”, by default, to enable this.
+
+- FPort requires an external bi-directional inverter and connects to TX 6 with :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` set to "7".
+- CRSF requires a TX6 connection, in addition to RX6, and automatically provides telemetry.
+- SRXL2 requires a connection to TX6 and automatically provides telemetry. Set :ref:`SERIAL6_OPTIONS<SERIAL6_OPTIONS>` set to "4".
+
+- SBUS can be directly connected to the SBUS pin which ties through an inverter to the RX2 pin.  :ref:`SERIAL2_PROTOCOL<SERIAL2_PROTOCOL>` must be set to "23" and :ref:`SERIAL6_PROTOCOL<SERIAL6_PROTOCOL>`  must be changed to something else than "23"
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [Radio Control Systems](https://ardupilot.org/plane/docs/common-rc-systems.html#common-rc-systems) for details.
-  
+
 ## OSD Support
 
 The SpeedyBee F405 AIO supports OSD using :ref:`OSD_TYPE<OSD_TYPE>` =  1 (MAX7456 driver). The defaults are also setup to allow DJI Goggle OSD support on UART3. Both the internal analog OSD and the DisplayPort OSD can be used simultaneously by setting :ref:`OSD_TYPE2<OSD_TYPE2>`= 5
@@ -81,11 +82,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_VOLT_MULT around 11
- - BATT_CURR_PIN 12
- - BATT_AMP_PERVLT 39.4
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_VOLT_MULT around 11
+- BATT_CURR_PIN 12
+- BATT_AMP_PERVLT 39.4
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

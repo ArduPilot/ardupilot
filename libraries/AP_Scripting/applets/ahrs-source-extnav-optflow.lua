@@ -184,7 +184,7 @@ function update()
   -- get rangefinder distance
   local rngfnd_distance_m = 0
   if rangefinder:has_data_orient(rangefinder_rotation) then
-    rngfnd_distance_m = rangefinder:distance_cm_orient(rangefinder_rotation) * 0.01
+    rngfnd_distance_m = rangefinder:distance_orient(rangefinder_rotation)
   end
   local rngfnd_over_threshold = (rngfnd_distance_m == 0) or (rngfnd_distance_m > ESRC_RNGFND_MAX:get())
 

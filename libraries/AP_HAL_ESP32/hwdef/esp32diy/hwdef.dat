@@ -1,0 +1,72 @@
+# esp32-diy board
+
+define HAL_ESP32_BOARD_NAME "esp32-diy"
+
+define HAL_INS_DEFAULT HAL_INS_ICM20XXX_I2C
+define HAL_INS_ICM20XXX_I2C_BUS 0
+define HAL_INS_ICM20XXX_I2C_ADDR (0x68)
+
+define HAL_LOGGING_STACK_SIZE 4096
+
+define HAL_COMPASS_ICM20948_I2C_ADDR (0x68)
+define HAL_COMPASS_AK09916_I2C_BUS 0
+define HAL_COMPASS_AK09916_I2C_ADDR (0x0C)
+define HAL_COMPASS_MAX_SENSORS 3
+define AP_COMPASS_ICM20948_ENABLED 1
+
+# one IMU:
+IMU Invensensev2 I2C:0:0x68 ROTATION_ROLL_180
+
+# one Compass:
+COMPASS AK09916:probe_ICM20948_I2C 0 ROTATION_ROLL_180_YAW_270
+
+# one Baro:
+BARO BMP280 I2C:0:0x77
+
+define HAL_ESP32_WIFI 1 # To define tcp wifi
+
+# TODO RCOUT config
+ESP32_RCOUT GPIO_NUM_15
+ESP32_RCOUT GPIO_NUM_2
+ESP32_RCOUT GPIO_NUM_0
+ESP32_RCOUT GPIO_NUM_4
+
+# i2c Buses
+#             Port       SDA         SCL          SPEED    INTERNAL SOFT
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_5  GPIO_NUM_18  400*KHZ  true     true
+ESP32_I2CBUS  I2C_NUM_1  GPIO_NUM_22 GPIO_NUM_23  400*KHZ  false    false
+
+# GPIO36
+define HAL_BATT_VOLT_PIN (0)
+define HAL_BATT_VOLT_SCALE (18.1)
+# GPIO 32
+define HAL_BATT_CURR_PIN (4)
+define HAL_BATT_CURR_SCALE (36)
+
+# ADC is available on lots of pints on the esp32, but adc2 can't co-exist with wifi we choose to allow ADC on :
+# #define AP_HAL_ANALOGIN_ENABLED 0
+
+# the pin number, the gain/multiplier associated with it, the ardupilot name for the pin in parameter/s.
+#                 Pin                 Gain ArduPilotPin
+ESP32_ADC_PIN ADC1_GPIO36_CHANNEL 11   1
+ESP32_ADC_PIN ADC1_GPIO32_CHANNEL 11   2
+
+define HAL_ESP32_RCIN GPIO_NUM_17
+
+#             PORT        RXPIN        TXPIN
+ESP32_SERIAL  UART_NUM_0  GPIO_NUM_3   GPIO_NUM_1
+ESP32_SERIAL  UART_NUM_1  GPIO_NUM_39  GPIO_NUM_33
+ESP32_SERIAL  UART_NUM_2  GPIO_NUM_34  GPIO_NUM_25
+
+define AP_FILESYSTEM_ESP32_ENABLED 1
+define HAL_ESP32_SDCARD 1
+define LOGGER_MAVLINK_SUPPORT 1
+
+define HAL_LOGGING_BACKENDS_DEFAULT 2
+
+#           Host      DMACh MOSI        MISO        SCLK        CS
+ESP32_SDSPI VSPI_HOST 1     GPIO_NUM_19 GPIO_NUM_35 GPIO_NUM_12 GPIO_NUM_21
+
+define HAL_LOGGING_BACKENDS_DEFAULT 2
+
+define HAL_ESP32_RMT_RX_PIN_NUMBER 4

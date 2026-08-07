@@ -13,10 +13,10 @@ class AP_Baro_ICP101XX : public AP_Baro_Backend
 public:
     void update() override;
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
     
 private:
-    AP_Baro_ICP101XX(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev);
+    AP_Baro_ICP101XX(AP_Baro &baro, AP_HAL::Device &dev);
 
     bool init();
     bool send_cmd16(uint16_t cmd);
@@ -38,7 +38,7 @@ private:
 
     uint8_t instance;
 
-    AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev;
+    AP_HAL::Device *dev;
 
     // time last read command was sent
     uint32_t last_measure_us;

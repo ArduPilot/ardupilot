@@ -68,14 +68,14 @@ The output power rails **FMU PWM OUT** and **I/O PWM OUT** do not power the flig
 You must supply power to one of **POWER** or **USB** or the board will be unpowered.
 :::
 
-**Normal Operation Maximum Ratings**
+### Normal Operation Maximum Ratings
 
 Under these conditions all power sources will be used in this order to power the system:
 
 1. POWER input (5V to 5.5V)
 2. USB input (4.75V to 5.25V)
 
-**Absolute Maximum Ratings**
+### Absolute Maximum Ratings
 
 Under these conditions, all power sources cause permanent damage to the flight controller.
 

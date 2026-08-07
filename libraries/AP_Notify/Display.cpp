@@ -30,8 +30,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 
-#include <utility>
-
 extern const AP_HAL::HAL& hal;
 
 // Bit Map
@@ -327,6 +325,20 @@ static_assert(ARRAY_SIZE(_font) == 1280, "_font is correct size");
 static_assert(ARRAY_SIZE(_font) == 475, "_font is correct size");
 #endif
 
+Display_Backend *Display::probe_i2c_display(uint8_t bus, probe_i2c_display_probefn_t probe)
+{
+
+    const auto dev_ptr = hal.i2c_mgr->get_device_ptr(bus, NOTIFY_DISPLAY_I2C_ADDR);
+    if (dev_ptr == nullptr) {
+        return nullptr;
+    }
+    Display_Backend *ret = probe(*dev_ptr);
+    if (ret == nullptr) {
+        delete dev_ptr;
+    }
+    return ret;
+}
+
 bool Display::init(void)
 {
     // exit immediately if already initialised
@@ -338,11 +350,11 @@ bool Display::init(void)
     FOREACH_I2C(i) {
         switch (pNotify->_display_type) {
         case DISPLAY_SSD1306: {
-            _driver = Display_SSD1306_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
+            _driver = probe_i2c_display(i, Display_SSD1306_I2C::probe);
             break;
         }
         case DISPLAY_SH1106: {
-            _driver = Display_SH1106_I2C::probe(std::move(hal.i2c_mgr->get_device(i, NOTIFY_DISPLAY_I2C_ADDR)));
+            _driver = probe_i2c_display(i, Display_SH1106_I2C::probe);
             break;
         }
         case DISPLAY_SITL: {

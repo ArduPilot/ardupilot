@@ -43,6 +43,8 @@ public:
 
     uint32_t get_uart_output_full_queue_count() const;
 
+    HALSITL::SITL_State * get_sitl_state() { return _sitl_state; }
+
 private:
     HALSITL::SITL_State *_sitl_state;
 

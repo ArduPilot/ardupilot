@@ -1,6 +1,8 @@
-#include "SIM_LP5562.h"
+#include "SIM_config.h"
 
 #if AP_SIM_LP5562_ENABLED
+
+#include "SIM_LP5562.h"
 
 using namespace SITL;
 

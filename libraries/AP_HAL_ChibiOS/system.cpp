@@ -330,16 +330,14 @@ void panic(const char *errormsg, ...)
     INTERNAL_ERROR(AP_InternalError::error_t::panic);
     va_list ap;
 
-    va_start(ap, errormsg);
-    vprintf(errormsg, ap);
-    va_end(ap);
-
-    hal.scheduler->delay_microseconds(10000);
+    uint16_t delay_ms = 10000;
     while (1) {
         va_start(ap, errormsg);
         vprintf(errormsg, ap);
         va_end(ap);
-        hal.scheduler->delay(500);
+        printf("\n");
+        hal.scheduler->delay(delay_ms);
+        delay_ms = 500;
     }
 #else
     // we don't support variable args in bootlaoder

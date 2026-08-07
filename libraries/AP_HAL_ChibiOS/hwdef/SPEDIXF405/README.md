@@ -4,18 +4,18 @@ The SPEDIX F405 is a flight controller based on the STM32F405 MCU.
 
 ## Features
 
-* MCU - STM32F405 32-bit processor running at 168 MHz
-* IMU - ICM42688
-* Barometer - SPL06
-* OSD - AT7456E
-* Onboard Flash: 4MByte
-* 6x UARTs
-* 9x PWM Outputs (8 Motor Output, 1 LED)
-* Battery input voltage: 2S-6S
-* Dual Camera inputs
-* BEC 3.3V 0.5A
-* BEC 5V 3A
-* BEC 9V 3A for video
+- MCU - STM32F405 32-bit processor running at 168 MHz
+- IMU - ICM42688
+- Barometer - SPL06
+- OSD - AT7456E
+- Onboard Flash: 4MByte
+- 6x UARTs
+- 9x PWM Outputs (8 Motor Output, 1 LED)
+- Battery input voltage: 2S-6S
+- Dual Camera inputs
+- BEC 3.3V 0.5A
+- BEC 5V 3A
+- BEC 9V 3A for video
 
 ## Pinout
 
@@ -23,13 +23,13 @@ The SPEDIX F405 is a flight controller based on the STM32F405 MCU.
 
 ## UART Mapping
 
-* SERIAL0 -> USB
-* SERIAL1 -> UART1 (MSP DisplayPort, DMA-enabled)
-* SERIAL2 -> UART2 (SBUS/Spare)
-* SERIAL3 -> UART3 (RCin, DMA-enabled)
-* SERIAL4 -> UART4 (GPS)
-* SERIAL5 -> UART5 (ESC Telemetry)
-* SERIAL6 -> UART6 (Spare)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (MSP DisplayPort, DMA-enabled)
+- SERIAL2 -> UART2 (SBUS/Spare)
+- SERIAL3 -> UART3 (RCin, DMA-enabled)
+- SERIAL4 -> UART4 (GPS)
+- SERIAL5 -> UART5 (ESC Telemetry)
+- SERIAL6 -> UART6 (Spare)
 
 ## RC Input
 
@@ -54,10 +54,10 @@ M9 on a separate pad for LED strip (default configuration) or another PWM output
 
 The PWM is in 4 groups:
 
-* PWM 1-4 in group1
-* PWM 5-6 in group2
-* PWM 7-8 in group3
-* PWM 9 in group4
+- PWM 1-4 in group1
+- PWM 5-6 in group2
+- PWM 7-8 in group3
+- PWM 9 in group4
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -70,11 +70,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - :ref:BATT_MONITOR<BATT_MONITOR> = 4
- - :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 12
- - :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
- - :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11.0
- - :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 50
+- :ref:BATT_MONITOR<BATT_MONITOR> = 4
+- :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 12
+- :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
+- :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11.0
+- :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 50
 
 ## Compass
 

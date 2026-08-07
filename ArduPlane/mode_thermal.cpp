@@ -60,8 +60,8 @@ void ModeThermal::update_soaring()
         AP_Mission::Mission_Command prev_nav_cmd;
 
         if (!(plane.mission.get_next_nav_cmd(plane.mission.get_prev_nav_cmd_with_wp_index(), prev_nav_cmd) &&
-            prev_nav_cmd.content.location.get_vector_xy_from_origin_NE(prev_wp) &&
-            current_nav_cmd.content.location.get_vector_xy_from_origin_NE(next_wp))) {
+            prev_nav_cmd.content.location.get_vector_xy_from_origin_NE_cm(prev_wp) &&
+            current_nav_cmd.content.location.get_vector_xy_from_origin_NE_cm(next_wp))) {
             prev_wp.zero();
             next_wp.zero();
         }

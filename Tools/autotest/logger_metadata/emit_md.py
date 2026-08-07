@@ -1,6 +1,11 @@
+'''
+AP_FLAKE8_CLEAN
+'''
+
 import os
 import time
 import emitter
+
 
 class MDEmitter(emitter.Emitter):
     def preface(self):
@@ -50,6 +55,7 @@ DO NOT EDIT
 [toc exclude="Onboard Message Log Messages"]
 
 """
+
     def postface(self):
         return ""
 
@@ -73,7 +79,7 @@ DO NOT EDIT
                     fdesc = docco.fields[f]["description"]
                 else:
                     fdesc = ""
-                if "units" in docco.fields[f] and docco.fields[f]["units"]!="":
+                if "units" in docco.fields[f] and docco.fields[f]["units"] != "":
                     ftypeunits = docco.fields[f]["units"]
                 elif "fmt" in docco.fields[f] and "char" in docco.fields[f]["fmt"]:
                     ftypeunits = docco.fields[f]["fmt"]

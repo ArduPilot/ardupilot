@@ -3,8 +3,6 @@
  * Init and run calls for velocity flight mode
  */
 
-#include <AP_Vehicle/AP_MultiCopter.h>
-
 // Runs the main velocity controller
 void ModeVelocity::run()
 {

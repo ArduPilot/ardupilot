@@ -9,6 +9,12 @@ void Sub::enable_motor_output()
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
 void Sub::motors_output()
 {
+    // Sub has no pre-takeoff RPM gate that asserts the spool-up block,
+    // so clear it every cycle before motors.output() runs output_logic().
+    // Without this the block set during ground-idle ramp would never clear
+    // and the spool would stay in GROUND_IDLE.
+    motors.set_spoolup_block(false);
+    
     // Motor detection mode controls the thrusters directly
     if (control_mode == Mode::Number::MOTOR_DETECT){
         return;
@@ -127,7 +133,7 @@ bool Sub::handle_do_motor_test(mavlink_command_int_t command) {
 
     if (is_equal(throttle_type, (float)MOTOR_TEST_THROTTLE_PERCENT)) {
         throttle = constrain_float(throttle, 0.0f, 100.0f);
-        throttle = channel_throttle->get_radio_min() + throttle / 100.0f * (channel_throttle->get_radio_max() - channel_throttle->get_radio_min());
+        throttle = channel_throttle->get_radio_min() + throttle * 0.01f * (channel_throttle->get_radio_max() - channel_throttle->get_radio_min());
         return motors.output_test_num(motor_number, throttle); // true if motor output is set
     }
 
@@ -144,28 +150,30 @@ void Sub::translate_wpnav_rp(float &lateral_out, float &forward_out)
 
     // constrain target forward/lateral values
     // The outputs of wp_nav.get_roll and get_pitch should already be constrained to these values
-    lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
-    forward = constrain_int16(forward, -aparm.angle_max, aparm.angle_max);
+    const float angle_max_cd = attitude_control.lean_angle_max_cd();
+    lateral = constrain_int16(lateral, -angle_max_cd, angle_max_cd);
+    forward = constrain_int16(forward, -angle_max_cd, angle_max_cd);
 
     // Normalize
-    lateral_out = (float)lateral/(float)aparm.angle_max;
-    forward_out = (float)forward/(float)aparm.angle_max;
+    lateral_out = (float)lateral/(float)angle_max_cd;
+    forward_out = (float)forward/(float)angle_max_cd;
 }
 
 // translate wpnav roll/pitch outputs to lateral/forward
 void Sub::translate_circle_nav_rp(float &lateral_out, float &forward_out)
 {
     // get roll and pitch targets in centidegrees
-    int32_t lateral = circle_nav.get_roll();
-    int32_t forward = -circle_nav.get_pitch(); // output is reversed
+    int32_t lateral = circle_nav.get_roll_cd();
+    int32_t forward = -circle_nav.get_pitch_cd(); // output is reversed
 
     // constrain target forward/lateral values
-    lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
-    forward = constrain_int16(forward, -aparm.angle_max, aparm.angle_max);
+    const float angle_max_cd = attitude_control.lean_angle_max_cd();
+    lateral = constrain_int16(lateral, -angle_max_cd, angle_max_cd);
+    forward = constrain_int16(forward, -angle_max_cd, angle_max_cd);
 
     // Normalize
-    lateral_out = (float)lateral/(float)aparm.angle_max;
-    forward_out = (float)forward/(float)aparm.angle_max;
+    lateral_out = (float)lateral/(float)angle_max_cd;
+    forward_out = (float)forward/(float)angle_max_cd;
 }
 
 // translate pos_control roll/pitch outputs to lateral/forward
@@ -176,10 +184,11 @@ void Sub::translate_pos_control_rp(float &lateral_out, float &forward_out)
     int32_t forward = -pos_control.get_pitch_cd(); // output is reversed
 
     // constrain target forward/lateral values
-    lateral = constrain_int16(lateral, -aparm.angle_max, aparm.angle_max);
-    forward = constrain_int16(forward, -aparm.angle_max, aparm.angle_max);
+    const float angle_max_cd = attitude_control.lean_angle_max_cd();
+    lateral = constrain_int16(lateral, -angle_max_cd, angle_max_cd);
+    forward = constrain_int16(forward, -angle_max_cd, angle_max_cd);
 
     // Normalize
-    lateral_out = (float)lateral/(float)aparm.angle_max;
-    forward_out = (float)forward/(float)aparm.angle_max;
+    lateral_out = (float)lateral/(float)angle_max_cd;
+    forward_out = (float)forward/(float)angle_max_cd;
 }

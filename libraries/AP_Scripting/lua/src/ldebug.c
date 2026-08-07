@@ -134,10 +134,11 @@ static const char *upvalname (Proto *p, int uv) {
 
 static const char *findvararg (CallInfo *ci, int n, StkId *pos) {
   int nparams = clLvalue(ci->func)->p->numparams;
-  if (n >= cast_int(ci->u.l.base - ci->func) - nparams)
+  int nvararg = cast_int(ci->u.l.base - ci->func) - nparams;
+  if (n <= -nvararg)
     return NULL;  /* no such vararg */
   else {
-    *pos = ci->func + nparams + n;
+    *pos = ci->func + nparams - n;
     return "(*vararg)";  /* generic name for any vararg */
   }
 }
@@ -149,7 +150,7 @@ static const char *findlocal (lua_State *L, CallInfo *ci, int n,
   StkId base;
   if (isLua(ci)) {
     if (n < 0)  /* access to vararg values? */
-      return findvararg(ci, -n, pos);
+      return findvararg(ci, n, pos);
     else {
       base = ci->u.l.base;
       name = luaF_getlocalname(ci_func(ci)->p, n, currentpc(ci));

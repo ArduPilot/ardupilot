@@ -8,7 +8,7 @@
  */
 void Plane::set_control_channels(void)
 {
-    // the library gaurantees that these are non-nullptr:
+    // the library guarantees that these are non-nullptr:
     if (g.rudder_only) {
         // in rudder only mode the roll and rudder channels are the
         // same.
@@ -116,60 +116,6 @@ void Plane::init_rc_out_aux()
     SRV_Channels::setup_failsafe_trim_all_non_motors();
 }
 
-/*
-  check for pilot input on rudder stick for arming/disarming
-*/
-void Plane::rudder_arm_disarm_check()
-{
-    const int16_t rudder_in = channel_rudder->get_control_in();
-    if (rudder_in == 0) {
-        // remember if we've seen neutral rudder, used for VTOL auto-takeoff
-        seen_neutral_rudder = true;
-    }
-	if (!arming.is_armed()) {
-		// when not armed, full right rudder starts arming counter
-        if (rudder_in > 4000) {
-			uint32_t now = millis();
-
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
-
-				if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-			} else {
-				//time to arm!
-				arming.arm(AP_Arming::Method::RUDDER);
-                rudder_arm_timer = 0;
-                seen_neutral_rudder = false;
-                takeoff_state.rudder_takeoff_warn_ms = now;
-            }
-		} else {
-			// not at full right rudder
-			rudder_arm_timer = 0;
-		}
-	} else {
-		// full left rudder starts disarming counter
-        if (rudder_in < -4000) {
-			uint32_t now = millis();
-
-			if (rudder_arm_timer == 0 ||
-				now - rudder_arm_timer < 3000) {
-				if (rudder_arm_timer == 0) {
-                    rudder_arm_timer = now;
-                }
-			} else {
-				//time to disarm!
-				arming.disarm(AP_Arming::Method::RUDDER);
-				rudder_arm_timer = 0;
-			}
-		} else {
-			// not at full left rudder
-			rudder_arm_timer = 0;
-		}
-    }
-}
-
 void Plane::read_radio()
 {
     if (!rc().read_input()) {
@@ -199,14 +145,12 @@ void Plane::read_radio()
         && channel_throttle->get_control_in() > 50
         && stickmixing) {
         float nudge = (channel_throttle->get_control_in() - 50) * 0.02f;
-        if (ahrs.using_airspeed_sensor()) {
+        if (TECS_controller.use_airspeed()) {
             airspeed_nudge_cm = (aparm.airspeed_max - aparm.airspeed_cruise) * nudge * 100;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;
         }
     }
-
-    rudder_arm_disarm_check();
 
 #if HAL_QUADPLANE_ENABLED
     // potentially swap inputs for tailsitters
@@ -285,8 +229,9 @@ void Plane::control_failsafe()
 
     const bool allow_failsafe_bypass = !arming.is_armed() && !is_flying() && (rc().enabled_protocols() != 0);
     const bool has_had_input = rc().has_had_rc_receiver() || rc().has_had_rc_override();
-    if ((ThrFailsafe(g.throttle_fs_enabled.get()) != ThrFailsafe::Enabled) || (allow_failsafe_bypass && !has_had_input)) {
-        // If not flying and disarmed don't trigger failsafe until RC has been received for the fist time
+    if ((g.throttle_fs_enabled != ThrFailsafe::Enabled && !failsafe.rc_failsafe) || (allow_failsafe_bypass && !has_had_input)) {
+        // If throttle fs not enabled and not in failsafe, or 
+        // not flying and disarmed, don't trigger failsafe check until RC has been received for the first time  
         return;
     }
 
@@ -387,7 +332,7 @@ void Plane::trim_radio()
  */
 bool Plane::rc_throttle_value_ok(void) const
 {
-    if (ThrFailsafe(g.throttle_fs_enabled.get()) == ThrFailsafe::Disabled) {
+    if (g.throttle_fs_enabled == ThrFailsafe::Disabled) {
         return true;
     }
     if (channel_throttle->get_reverse()) {
@@ -405,8 +350,8 @@ bool Plane::rc_failsafe_active(void) const
     if (!rc_throttle_value_ok()) {
         return true;
     }
-    if (millis() - failsafe.last_valid_rc_ms > 1000) {
-        // we haven't had a valid RC frame for 1 seconds
+    if (millis() - failsafe.last_valid_rc_ms > rc().get_fs_timeout_ms()) {
+        // we haven't had a valid RC frame for RC_FS_TIMEOUT seconds
         return true;
     }
     return false;

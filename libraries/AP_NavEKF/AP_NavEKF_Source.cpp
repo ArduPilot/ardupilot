@@ -303,13 +303,13 @@ AP_NavEKF_Source::SourceZ AP_NavEKF_Source::getVelZSource(uint8_t source_set_idx
 }
 
 // sensor specific helper functions
-bool AP_NavEKF_Source::usingGPS() const
+bool AP_NavEKF_Source::usingGPS(uint8_t core_index) const
 {
-    return getPosXYSource() == SourceXY::GPS ||
-           getPosZSource() == SourceZ::GPS ||
-           getVelXYSource() == SourceXY::GPS ||
-           getVelZSource() == SourceZ::GPS ||
-           getYawSource() == SourceYaw::GSF;
+    return getPosXYSource(core_index) == SourceXY::GPS ||
+           getPosZSource(core_index) == SourceZ::GPS ||
+           getVelXYSource(core_index) == SourceXY::GPS ||
+           getVelZSource(core_index) == SourceZ::GPS ||
+           getYawSource(core_index) == SourceYaw::GSF;
 }
 
 // true if some parameters have been configured (used during parameter conversion)

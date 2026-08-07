@@ -1,5 +1,6 @@
-#!/usr/bin/env python
 # encoding: utf-8
+
+# flake8: noqa
 
 def build(bld):
     if not bld.env.BOOTLOADER:
@@ -10,9 +11,11 @@ def build(bld):
     else:
         flashiface_lib = []
 
+    _build_dynamic_sources(bld)
+
     bld.ap_stlib(
         name= 'AP_Bootloader_libs',
-        use='dronecan',
+        use=['dronecan'],
         dynamic_source='modules/DroneCAN/libcanard/dsdlc_generated/src/**.c',
         ap_vehicle='AP_Bootloader',
         ap_libraries= flashiface_lib + [
@@ -27,10 +30,26 @@ def build(bld):
     # build external libcanard library
     bld.stlib(source='../../modules/DroneCAN/libcanard/canard.c',
               name='libcanard',
-              use='dronecan',
+              use=['dronecan'],
               target='libcanard')
 
     bld.ap_program(
         use=['AP_Bootloader_libs', 'libcanard', 'dronecan'],
         program_groups='bootloader'
     )
+
+def _build_dynamic_sources(bld):
+    def write_version_header(tsk):
+        bld = tsk.generator.bld
+        return bld.write_version_header(tsk.outputs[0].abspath())
+
+    bld(
+        name='ap_version',
+        target='ap_version.h',
+        vars=['AP_VERSION_ITEMS'],
+        rule=write_version_header,
+    )
+
+    bld.env.prepend_value('INCLUDES', [
+        bld.bldnode.abspath(),
+    ])

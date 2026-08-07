@@ -406,17 +406,16 @@ bool AP_Compass_BMM350::init()
 
     /* Register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_BMM350);
-    if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
+    if (!register_compass(_dev->get_bus_id())) {
         return false;
     }
-    set_dev_id(_compass_instance, _dev->get_bus_id());
 
     // printf("BMM350: Found at address 0x%x as compass %u\n", _dev->get_bus_address(), _compass_instance);
 
-    set_rotation(_compass_instance, _rotation);
+    set_rotation(_rotation);
 
     if (_force_external) {
-        set_external(_compass_instance, true);
+        set_external(true);
     }
     
     // Call timer() at 100Hz
@@ -453,13 +452,7 @@ void AP_Compass_BMM350::timer()
     float magx = (float)magx_raw * BMM350_XY_SCALE;
     float magy = (float)magy_raw * BMM350_XY_SCALE;
     float magz = (float)magz_raw * BMM350_Z_SCALE;
-    float temp = (float)temp_raw * BMM350_TEMP_SCALE;
-
-    if (temp > 0.0f) {
-        temp -= 25.49f;
-    } else if (temp < 0.0f) {
-        temp += 25.49f;
-    }
+    float temp = ((float)temp_raw * BMM350_TEMP_SCALE) - 25.49f;
 
     // Apply compensation
     temp = ((1 + _mag_comp.sensit_coef.temp) * temp) + _mag_comp.offset_coef.temp;
@@ -481,12 +474,12 @@ void AP_Compass_BMM350::timer()
 
     // Store in field vector and convert uT to milligauss
     Vector3f field { cr_ax_comp_x * 10.0f, cr_ax_comp_y * 10.0f, cr_ax_comp_z * 10.0f };
-    accumulate_sample(field, _compass_instance);
+    accumulate_sample(field);
 }
 
 void AP_Compass_BMM350::read()
 {
-    drain_accumulated_samples(_compass_instance);
+    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_BMM350_ENABLED

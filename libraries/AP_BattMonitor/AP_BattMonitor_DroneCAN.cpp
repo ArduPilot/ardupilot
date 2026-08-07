@@ -13,8 +13,6 @@
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#define LOG_TAG "BattMon"
-
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
@@ -22,11 +20,11 @@ const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
     // @Param: CURR_MULT
     // @DisplayName: Scales reported power monitor current
     // @Description: Multiplier applied to all current related reports to allow for adjustment if no UAVCAN param access or current splitting applications
-    // @Range: .1 10
+    // @Range: 0.1 10
     // @User: Advanced
     AP_GROUPINFO("CURR_MULT", 30, AP_BattMonitor_DroneCAN, _curr_mult, 1.0),
 
-    // Param indexes must be between 30 and 35 to avoid conflict with other battery monitor param tables loaded by pointer
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };
@@ -42,23 +40,14 @@ AP_BattMonitor_DroneCAN::AP_BattMonitor_DroneCAN(AP_BattMonitor &mon, AP_BattMon
     _state.healthy = false;
 }
 
-void AP_BattMonitor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_BattMonitor_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_battery_info_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("battinfo_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_battery_info_aux_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("battinfo_aux_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_mppt_stream_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("mppt_stream_sub");
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_battery_info_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_battery_info_aux_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_mppt_stream_trampoline, driver_index) != nullptr)
+    ;
 }
 
 /*
@@ -83,8 +72,16 @@ AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneC
             continue;
         }
         AP_BattMonitor_DroneCAN* driver = (AP_BattMonitor_DroneCAN*)batt.drivers[i];
-        if (driver->_ap_dronecan == ap_dronecan && driver->_node_id == node_id && match_battery_id(i, battery_id)) {
-            return driver;
+        if (driver->_ap_dronecan == ap_dronecan && match_battery_id(i, battery_id)) {
+            if (driver->_node_id == node_id) {
+                return driver;
+            } else if (!driver->_interim_state.healthy && driver->option_is_set(AP_BattMonitor_Params::Options::AllowDynamicNodeUpdate)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Battery %u: Node change from %d to %d for Id %d",
+                    (unsigned)i+1, driver->_node_id, node_id, battery_id);
+                driver->_node_id = node_id;
+                driver->init();
+                return driver;
+            }
         }
     }
     // find empty uavcan driver
@@ -101,11 +98,6 @@ AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneC
             batmon->_node_id = node_id;
             batmon->_instance = i;
             batmon->init();
-            AP::can().log_text(AP_CANManager::LOG_INFO,
-                            LOG_TAG,
-                            "Registered BattMonitor Node %d on Bus %d\n",
-                            node_id,
-                            ap_dronecan->get_driver_index());
             return batmon;
         }
     }
@@ -206,9 +198,9 @@ void AP_BattMonitor_DroneCAN::handle_mppt_stream(const mppt_Stream &msg)
 
         // Boot/Power-up event
         if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Boot)) {
-            mppt_set_powered_state(true);
+            set_powered_state(true);
         } else if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Boot)) {
-            mppt_set_powered_state(false);
+            set_powered_state(false);
         }
     }
 
@@ -371,25 +363,25 @@ void AP_BattMonitor_DroneCAN::mppt_check_powered_state()
 {
     if ((_mppt.powered_state_remote_ms != 0) && (AP_HAL::millis() - _mppt.powered_state_remote_ms >= 1000)) {
         // there's already a set attempt that didnt' respond. Retry at 1Hz
-        mppt_set_powered_state(_mppt.powered_state);
+        set_powered_state(_mppt.powered_state);
     }
 
     // check if vehicle armed state has changed
     const bool vehicle_armed = hal.util->get_soft_armed();
     if ((!_mppt.vehicle_armed_last && vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Arm)) {
         // arm event
-        mppt_set_powered_state(true);
+        set_powered_state(true);
     } else if ((_mppt.vehicle_armed_last && !vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Disarm)) {
         // disarm event
-        mppt_set_powered_state(false);
+        set_powered_state(false);
     }
     _mppt.vehicle_armed_last = vehicle_armed;
 }
 
-// request MPPT board to power on or off
+// request MPPT or BMS board to power on or off
 // power_on should be true to power on the MPPT, false to power off
 // force should be true to force sending the state change request to the MPPT
-void AP_BattMonitor_DroneCAN::mppt_set_powered_state(bool power_on)
+void AP_BattMonitor_DroneCAN::set_powered_state(bool power_on)
 {
     if (_ap_dronecan == nullptr || !_mppt.is_detected) {
         return;

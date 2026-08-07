@@ -348,7 +348,7 @@ void WiFiUdpDriver::_wifi_thread2(void *arg)
     while (true) {
         struct timeval tv = {
             .tv_sec = 0,
-            .tv_usec = 100*1000, // 10 times a sec, we try to write-all even if we read nothing , at just 1000, it floggs the APM_WIFI2 task cpu usage unecessarily, slowing APM_WIFI1 response
+            .tv_usec = 100*1000, // 10 times a sec, we try to write-all even if we read nothing , at just 1000, it floggs the APM_WIFI2 task cpu usage unnecessarily, slowing APM_WIFI1 response
         };
         fd_set rfds;
         FD_ZERO(&rfds);

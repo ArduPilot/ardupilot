@@ -6,9 +6,6 @@
 #include <AP_RangeFinder/AP_RangeFinder_Backend.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
-const struct AP_Param::GroupInfo        GCS_MAVLINK_Parameters::var_info[] = {
-    AP_GROUPEND
-};
 GCS_Dummy _gcs;
 
 void setup();
@@ -24,6 +21,7 @@ void setup()
     // print welcome message
     hal.console->printf("Range Finder library test\n");
 
+#if AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
     // setup for analog pin 13
     AP_Param::set_object_value(&sonar, sonar.var_info, "_TYPE", (uint8_t)RangeFinder::Type::PLI2C);
     AP_Param::set_object_value(&sonar, sonar.var_info, "_PIN", -1.0f);
@@ -33,6 +31,9 @@ void setup()
     hal.scheduler->delay(2000);
     sonar.init(ROTATION_PITCH_270);
     hal.console->printf("RangeFinder: %d devices detected\n", sonar.num_sensors());
+#else
+    hal.console->printf("RangeFinder: need PLII2c support compiled in\n");
+#endif  // AP_RANGEFINDER_PULSEDLIGHTLRF_ENABLED
 }
 
 void loop()
@@ -50,11 +51,11 @@ void loop()
         if (!sensor->has_data()) {
             continue;
         }
-        hal.console->printf("All: device_%u type %d status %d distance_cm %d\n",
+        hal.console->printf("All: device_%u type=%d status=%d distance=%f\n",
                             i,
                             (int)sensor->type(),
                             (int)sensor->status(),
-                            sensor->distance_cm());
+                            sensor->distance());
         had_data = true;
     }
     if (!had_data) {

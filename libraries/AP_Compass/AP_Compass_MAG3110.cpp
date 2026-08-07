@@ -119,14 +119,13 @@ bool AP_Compass_MAG3110::init(enum Rotation rotation)
     
     /* register the compass instance in the frontend */
     _dev->set_device_type(DEVTYPE_MAG3110);
-    if (!register_compass(_dev->get_bus_id(), _compass_instance)) {
+    if (!register_compass(_dev->get_bus_id())) {
         return false;
     }
-    set_dev_id(_compass_instance, _dev->get_bus_id());
 
-    set_rotation(_compass_instance, rotation);
+    set_rotation(rotation);
 
-    set_external(_compass_instance, true);
+    set_external(true);
 
     // read at 75Hz
     _dev->register_periodic_callback(13333, FUNCTOR_BIND_MEMBER(&AP_Compass_MAG3110::_update, void)); 
@@ -208,7 +207,7 @@ void AP_Compass_MAG3110::_update()
 
     Vector3f raw_field = Vector3f((float)_mag_x, (float)_mag_y, (float)_mag_z) * MAG_SCALE;
 
-    accumulate_sample(raw_field, _compass_instance);
+    accumulate_sample(raw_field);
 }
 
 
@@ -219,7 +218,7 @@ void AP_Compass_MAG3110::read()
         return;
     }
 
-    drain_accumulated_samples(_compass_instance);
+    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_MAG3110_ENABLED

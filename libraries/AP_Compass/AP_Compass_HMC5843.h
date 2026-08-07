@@ -63,8 +63,6 @@ private:
     int16_t _mag_y;
     int16_t _mag_z;
 
-    uint8_t _compass_instance;
-
     enum Rotation _rotation;
     
     bool _initialised:1;

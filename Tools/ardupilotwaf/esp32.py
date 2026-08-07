@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 """
 Waf tool for ESP32 build
 """
@@ -13,9 +15,15 @@ from collections import OrderedDict
 import os
 import shutil
 import sys
+import traceback
 import re
 import pickle
 import subprocess
+
+import hal_common
+
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ESP32/hwdef/scripts'))
+import esp32_hwdef  # noqa:501
 
 def configure(cfg):
     mcu_esp32s3 = True if (cfg.variant[0:7] == "esp32s3") else False
@@ -50,13 +58,52 @@ def configure(cfg):
     print("USING EXPRESSIF IDF:"+str(env.IDF))
 
     try:
-        env.DEFAULT_PARAMETERS = os.environ['DEFAULT_PARAMETERS']
-    except:
-        env.DEFAULT_PARAMETERS = cfg.srcnode.abspath()+"/libraries/AP_HAL_ESP32/boards/defaults.parm"
-    print("USING DEFAULT_PARAMETERS:"+str(env.DEFAULT_PARAMETERS))
+        hwdef_obj = generate_hwdef_h(env)
+    except Exception:
+        traceback.print_exc()
+        cfg.fatal("Failed to process hwdef.dat")
+    hal_common.process_hwdef_results(cfg, hwdef_obj)
 
-    #env.append_value('GIT_SUBMODULES', 'esp_idf')
+def generate_hwdef_h(env):
+    '''run esp32_hwdef.py'''
+    hwdef_dir = os.path.join(env.SRCROOT, 'libraries/AP_HAL_ESP32/hwdef')
 
+    if len(env.HWDEF) == 0:
+        env.HWDEF = os.path.join(hwdef_dir, env.BOARD, 'hwdef.dat')
+    hwdef_out = env.BUILDROOT
+    if not os.path.exists(hwdef_out):
+        os.mkdir(hwdef_out)
+    hwdef = [env.HWDEF]
+    if env.HWDEF_EXTRA:
+        hwdef.append(env.HWDEF_EXTRA)
+
+    hwdef_obj = esp32_hwdef.ESP32HWDef(
+        outdir=hwdef_out,
+        hwdef=hwdef,
+        quiet=False,
+    )
+    hwdef_obj.run()
+
+    return hwdef_obj
+
+# delete the output sdkconfig file when the input defaults changes. we take the
+# stamp as the output so we can compute the path to the sdkconfig, yet it
+# doesn't have to exist when we're done.
+class clean_sdkconfig(Task.Task):
+    def keyword(self):
+        return "delete sdkconfig generated from"
+
+    def run(self):
+        prefix = ".clean-stamp-"
+        for out in self.outputs:
+            if not out.name.startswith(prefix):
+                raise ValueError("not a stamp file: "+out)
+            dest = out.parent.abspath()+"/"+out.name[len(prefix):]
+            if os.path.exists(dest):
+                os.unlink(dest)
+
+            # waf needs the output to exist after the task, so touch it
+            open(out.abspath(), "w").close()
 
 def pre_build(self):
     """Configure esp-idf as lib target"""
@@ -74,7 +121,20 @@ def pre_build(self):
             )
 
     esp_idf_showinc = esp_idf.build('showinc', target='esp-idf_build/includes.list')
+
+    # task to delete the sdkconfig (thereby causing it to be regenerated) when
+    # the .defaults changes. it uses a stamp to find the sdkconfig. changing
+    # the sdkconfig WILL NOT cause it to be deleted as it's not an input. this
+    # is by design so the user can tweak it for testing purposes.
+    clean_sdkconfig_task = esp_idf_showinc.create_task("clean_sdkconfig",
+        src=self.srcnode.find_or_declare(self.env.AP_HAL_ESP32+"/sdkconfig.defaults"),
+        tgt=self.bldnode.find_or_declare("esp-idf_build/.clean-stamp-sdkconfig"))
+
     esp_idf_showinc.post()
+
+    # ensure the sdkconfig will be deleted before the cmake configure occurs
+    # that regenerates it
+    esp_idf_showinc.cmake_config_task.set_run_after(clean_sdkconfig_task)
 
     from waflib import Task
     class load_generated_includes(Task.Task):
@@ -90,7 +150,6 @@ def pre_build(self):
     tsk.set_inputs(self.path.find_resource('esp-idf_build/includes.list'))
     self.add_to_group(tsk)
 
-
 @feature('esp32_ap_program')
 @after_method('process_source')
 def esp32_firmware(self):
@@ -102,81 +161,7 @@ def esp32_firmware(self):
 
     build.cmake_build_task.set_run_after(self.link_task)
 
-    # tool that can update the default params in a .bin or .apj
-    #self.default_params_task = self.create_task('set_default_parameters',
-    #                                          src='esp-idf_build/ardupilot.bin')
-    #self.default_params_task.set_run_after(self.generate_bin_task)
-
     # optional upload is last
     if self.bld.options.upload:
         flasher = esp_idf.build('flash')
         flasher.post()
-
-
-class set_default_parameters(Task.Task):
-    color='CYAN'
-    always_run = True
-    def keyword(self):
-        return "setting default params"
-    def run(self):
-
-        # TODO: disabled this task outright as apjtool appears to destroy checksums and/or the esp32 partition table
-        # TIP:  if u do try this, afterwards, be sure to 'rm -rf build/esp32buzz/idf-plane/*.bin' and re-run waf
-        return
-
-        # (752) esp_image: Checksum failed. Calculated 0xd3 read 0xa3
-        # (752) boot: OTA app partition slot 0 is not bootable
-        # (753) esp_image: image at 0x200000 has invalid magic byte
-        # (759) boot_comm: mismatch chip ID, expected 0, found 65535
-        # (766) boot_comm: can't run on lower chip revision, expected 1, found 255
-        # (773) esp_image: image at 0x200000 has invalid SPI mode 255
-        # (779) esp_image: image at 0x200000 has invalid SPI size 15
-        # (786) boot: OTA app partition slot 1 is not bootable
-        # (792) boot: No bootable app partitions in the partition table
-
-
-        # skip task if nothing to do.
-        if not self.env.DEFAULT_PARAMETERS:
-            return
-
-        default_parameters = self.env.get_flat('DEFAULT_PARAMETERS').replace("'", "")
-        #print("apj defaults file:"+str(default_parameters))
-
-        _bin = str(self.inputs[0])
-
-        # paranoia check  before and after apj_tool to see if file hash has changed...
-        cmd = "shasum -b {0}".format( _bin )
-        result = subprocess.check_output(cmd, shell=True)
-        prehash = str(result).split(' ')[0][2:]
-
-        cmd = "{1} {2} --set-file {3}".format(self.env.SRCROOT, self.env.APJ_TOOL, _bin, default_parameters )
-        print(cmd)
-        result = subprocess.check_output(cmd, shell=True)
-        if not isinstance(result, str):
-            result = result.decode()
-        for i in str(result).split('\n'):
-            print("\t"+i)
-
-        # paranoia check  before and after apj_tool to see if file hash has changed...
-        cmd = "shasum -b {0}".format( _bin )
-        result = subprocess.check_output(cmd, shell=True)
-        posthash = str(result).split(' ')[0][2:]
-
-        # display --show output, helpful.
-        cmd = "{1} {2} --show ".format(self.env.SRCROOT, self.env.APJ_TOOL, _bin )
-        print(cmd)
-        result = subprocess.check_output(cmd, shell=True)
-        if not isinstance(result, str):
-            result = result.decode()
-        for i in str(result).split('\n'):
-            print("\t"+i)
-
-        # were embedded params updated in .bin?
-        if prehash == posthash:
-            print("Embedded params in .bin unchanged (probably already up-to-date)")
-        else:
-            print("Embedded params in .bin UPDATED")
-
-
-
-

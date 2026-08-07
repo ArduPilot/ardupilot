@@ -1,0 +1,22 @@
+FRAME_CLASS      2          # Boat
+
+SERVO1_FUNCTION  73         # Throttle Left (Boat throttle channel)
+SERVO2_FUNCTION  74         # Throttle Right (Boat throttle channel)
+SERVO3_FUNCTION  0          
+SERVO4_FUNCTION  0          
+
+AHRS_EKF_TYPE    10         
+ARMING_SKIPCHK   -1
+MOT_THST_EXPO    0        
+MOT_THST_HOVER   0.5 
+
+
+WP_RADIUS            2         
+THR_MIN              0.1      
+THR_MAX              0.5     
+NAV_SPEED            0.5        
+
+LOITER_RADIUS        2         
+
+SCHED_LOOP_RATE  300        
+INS_GYR_CAL      0       

@@ -14,24 +14,12 @@
  */
 #include "Display_SH1106_I2C.h"
 
-#include <utility>
-
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/Device.h>
 
-// constructor
-Display_SH1106_I2C::Display_SH1106_I2C(AP_HAL::OwnPtr<AP_HAL::Device> dev) :
-    _dev(std::move(dev))
+Display_Backend *Display_SH1106_I2C::probe(AP_HAL::Device &_dev)
 {
-}
-
-Display_SH1106_I2C::~Display_SH1106_I2C()
-{
-}
-
-Display_SH1106_I2C *Display_SH1106_I2C::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev)
-{
-    Display_SH1106_I2C *driver = NEW_NOTHROW Display_SH1106_I2C(std::move(dev));
+    Display_SH1106_I2C *driver = NEW_NOTHROW Display_SH1106_I2C(_dev);
     if (!driver || !driver->hw_init()) {
         delete driver;
         return nullptr;
@@ -67,21 +55,14 @@ bool Display_SH1106_I2C::hw_init()
 
     memset(_displaybuffer, 0, SH1106_COLUMNS * SH1106_ROWS_PER_PAGE);
 
-    // take i2c bus semaphore
-    if (!_dev) {
-        return false;
-    }
-    _dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(dev.get_semaphore());
 
     // init display
-    bool success = _dev->transfer((uint8_t *)&init_seq, sizeof(init_seq), nullptr, 0);
-
-    // give back i2c semaphore
-    _dev->get_semaphore()->give();
+    bool success = dev.transfer((uint8_t *)&init_seq, sizeof(init_seq), nullptr, 0);
 
     if (success) {
         _need_hw_update = true;
-        _dev->register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&Display_SH1106_I2C::_timer, void));
+        dev.register_periodic_callback(20000, FUNCTOR_BIND_MEMBER(&Display_SH1106_I2C::_timer, void));
     }
 
     return success;
@@ -114,12 +95,12 @@ void Display_SH1106_I2C::_timer()
     // write buffer to display
     for (uint8_t i = 0; i < (SH1106_ROWS / SH1106_ROWS_PER_PAGE); i++) {
         command.page = 0xB0 | (i & 0x0F);
-        _dev->transfer((uint8_t *)&command, sizeof(command), nullptr, 0);
+        dev.transfer((uint8_t *)&command, sizeof(command), nullptr, 0);
 
         memcpy(&display_buffer.db[0], &_displaybuffer[i * SH1106_COLUMNS], SH1106_COLUMNS/2);
-        _dev->transfer((uint8_t *)&display_buffer, SH1106_COLUMNS/2 + 1, nullptr, 0);
+        dev.transfer((uint8_t *)&display_buffer, SH1106_COLUMNS/2 + 1, nullptr, 0);
         memcpy(&display_buffer.db[0], &_displaybuffer[i * SH1106_COLUMNS + SH1106_COLUMNS/2 ], SH1106_COLUMNS/2);
-        _dev->transfer((uint8_t *)&display_buffer, SH1106_COLUMNS/2 + 1, nullptr, 0);
+        dev.transfer((uint8_t *)&display_buffer, SH1106_COLUMNS/2 + 1, nullptr, 0);
     }
 }
 

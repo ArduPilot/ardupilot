@@ -150,10 +150,6 @@ public:
     //Initialises publisher and Server Record for specified uavcan driver
     bool init(uint8_t own_unique_id[], uint8_t own_unique_id_len, uint8_t node_id);
 
-    /* Subscribe to the messages to be handled for maintaining and allocating
-    Node ID list */
-    static void subscribe_msgs(AP_DroneCAN* ap_dronecan);
-
     //report the server state, along with failure message if any
     bool prearm_check(char* fail_msg, uint8_t fail_msg_len) const;
 

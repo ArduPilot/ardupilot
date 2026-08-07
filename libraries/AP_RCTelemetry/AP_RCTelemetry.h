@@ -70,7 +70,7 @@ public:
     // MAV_SYS_STATUS_* values from mavlink. If a bit is set then it
     // indicates that the sensor or subsystem is present but not
     // functioning correctly
-    uint32_t sensor_status_flags() const;
+    uint32_t unhealthy_sensors() const;
     uint16_t get_avg_packet_rate() const {
         return _scheduler.avg_packet_rate;
     }

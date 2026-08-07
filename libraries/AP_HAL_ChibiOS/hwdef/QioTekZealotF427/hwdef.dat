@@ -4,12 +4,11 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F427xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1021
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_QioTekZealotF427
 
 FLASH_SIZE_KB 2048
 
-env OPTIMIZE -O2
 
 # crystal frequency
 OSCILLATOR_HZ 24000000
@@ -117,11 +116,11 @@ IMU Invensensev3 SPI:icm42605 ROTATION_PITCH_180_YAW_270
 
 # one baro, check both addressess
 BARO DPS280 SPI:dps310
-BARO MS56XX I2C:0:0x76
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x76
+BARO MS5611 I2C:0:0x77
 
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 # enable FAT filesystem support
 define HAL_OS_FATFS_IO 1
@@ -137,7 +136,7 @@ PB11 I2C2_SDA I2C2
 # look for I2C compass
 COMPASS IST8310 I2C:0:0x0E false ROTATION_ROLL_180_YAW_270
 COMPASS QMC5883L I2C:0:0x0D false ROTATION_ROLL_180_YAW_270
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 1
 
 # PWM out pins

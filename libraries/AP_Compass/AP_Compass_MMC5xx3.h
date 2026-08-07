@@ -20,7 +20,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/Device.h>
 #include <AP_Math/AP_Math.h>
 
 #include "AP_Compass.h"
@@ -64,7 +64,6 @@ private:
     void timer();
     void accumulate_field(Vector3f &field);
 
-    uint8_t compass_instance;
     bool force_external;
     Vector3f offset;
     uint16_t measure_count;

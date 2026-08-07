@@ -189,6 +189,19 @@ bool AP_GPS_Blended::calc_weights()
     } else if (_blend_health_counter > 0) {
         _blend_health_counter--;
     }
+
+    // we are never healthy if we do not have any weights:
+    bool non_zero_weight_found = false;
+    for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
+        if (_blend_weights[i] > 0) {
+            non_zero_weight_found = true;
+            break;
+        }
+    }
+    if (!non_zero_weight_found) {
+        return false;
+    }
+
     // stop blending if unhealthy
     return _blend_health_counter < 50;
 }
@@ -323,7 +336,7 @@ void AP_GPS_Blended::calc_state(void)
 
     // Add the sum of weighted offsets to the reference location to obtain the blended location
     state.location.offset(blended_NE_offset_m.x, blended_NE_offset_m.y);
-    state.location.alt += (int)blended_alt_offset_cm;
+    state.location.offset_up_cm(blended_alt_offset_cm);
 
     // Calculate ground speed and course from blended velocity vector
     state.ground_speed = state.velocity.xy().length();
@@ -382,6 +395,13 @@ void AP_GPS_Blended::calc_state(void)
         gps.Write_GPS(GPS_BLENDED_INSTANCE);
     }
 #endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // sanity checks
+    if (state.status > AP_GPS::NO_FIX && !state.location.initialised()) {
+        AP_HAL::panic("status is >NO_FIX but location is zero");
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 }
 
 bool AP_GPS_Blended::get_lag(float &lag_sec) const

@@ -4,17 +4,17 @@ The BETAFPV F405 AIO is a flight controller produced by [BETAFPV](https://betafp
 
 ## Features
 
- - MCU: STM32F405RGT6, 168MHz
- - Gyro: ICM42688-P
- - 16Mb Onboard Flash
- - BEC output: 5V, 2A@4V
- - Barometer: DPS310
- - OSD: AT7456E
- - 5 UARTS: (UART1, UART3, UART4, UART5, UART6)
- - 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
- - Integrated 4-in-1 BlueJay ESC
+- MCU: STM32F405RGT6, 168MHz
+- Gyro: ICM42688-P
+- 16Mb Onboard Flash
+- BEC output: 5V, 2A@4V
+- Barometer: DPS310
+- OSD: AT7456E
+- 5 UARTS: (UART1, UART3, UART4, UART5, UART6)
+- 5 PWM outputs (4 motor outputs used internally for integrated 4-in-1 ESC and 1 integrated LED)
+- Integrated 4-in-1 BlueJay ESC
 
-This version supports a compass via the TX3 (SCL) and RX3 (SDA) pins, but requires a hardware mod - see https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r
+This version supports a compass via the TX3 (SCL) and RX3 (SDA) pins, but requires a hardware mod - see [BETAFPV store](https://betafpv.com/products/f4-2-3s-20a-aio-fc-v1?_pos=1&_sid=a0000be76&_ss=r)
 
 ## Pinout
 
@@ -46,9 +46,9 @@ The BETAFPV F405 AIO has 4 PWM outputs internally connected to its 4-in-1 ESC. T
 
 The PWM are in in two groups:
 
- - PWM 1-2 in group1
- - PWM 3-4 in group2
- - PWM 5 in group3
+- PWM 1-2 in group1
+- PWM 3-4 in group2
+- PWM 5 in group3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -61,11 +61,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 12
- - BATT_VOLT_MULT 10.9
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT 50
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 12
+- BATT_VOLT_MULT 10.9
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT 50
 
 These are set by default in the firmware and shouldn't need to be adjusted
 

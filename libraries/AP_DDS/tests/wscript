@@ -6,5 +6,5 @@ def build(bld):
 
     bld.ap_find_tests(
         use='ap',
-        DOUBLE_PRECISION_SOURCES = ['test_ap_dds_external_odom.cpp']
+        DOUBLE_PRECISION_SOURCES=['test_ap_dds_external_odom.cpp']
     )

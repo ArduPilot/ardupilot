@@ -1,0 +1,15 @@
+{
+  // Configuration for markdownlint-cli2
+  // Ignore vendored/external directories
+  "ignores": [
+    "libraries/AP_GyroFFT/CMSIS_5/**",
+    "libraries/AP_ADSB/sagetech-sdk/**",
+    "modules/**"
+  ],
+  "config": {
+    // Disable rules that are currently violated in the codebase
+    // These can be re-enabled incrementally as files are fixed
+    "MD013": false,  // Line length
+    "MD029": false   // Ordered list item prefix
+  }
+}

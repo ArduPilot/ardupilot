@@ -19,15 +19,11 @@
 
 #pragma once
 
+#include "SIM_config.h"
+
+#if AP_SIM_PS_LIGHTWARE_ENABLED
+
 #include "SIM_SerialProximitySensor.h"
-
-#ifndef HAL_SIM_PS_LIGHTWARE_ENABLED
-#define HAL_SIM_PS_LIGHTWARE_ENABLED HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
-#endif
-
-#if HAL_SIM_PS_LIGHTWARE_ENABLED
-
-#include <stdio.h>
 
 namespace SITL {
 
@@ -36,10 +32,8 @@ public:
 
     using SerialProximitySensor::SerialProximitySensor;
 
-private:
-
 };
 
 };
 
-#endif  // HAL_SIM_PS_LIGHTWARE_ENABLED
+#endif  // AP_SIM_PS_LIGHTWARE_ENABLED

@@ -20,7 +20,6 @@
 
 #if AP_BARO_DPS280_ENABLED
 
-#include <utility>
 #include <stdio.h>
 #include <AP_Math/definitions.h>
 
@@ -43,20 +42,17 @@ extern const AP_HAL::HAL &hal;
 
 #define TEMPERATURE_LIMIT_C 120
 
-AP_Baro_DPS280::AP_Baro_DPS280(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_DPS280::AP_Baro_DPS280(AP_Baro &baro, AP_HAL::Device &_dev)
     : AP_Baro_Backend(baro)
-    , dev(std::move(_dev))
+    , dev(&_dev)
 {
 }
 
 AP_Baro_Backend *AP_Baro_DPS280::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev, bool _is_dps310)
+                                       AP_HAL::Device &_dev,
+                                       bool _is_dps310)
 {
-    if (!_dev) {
-        return nullptr;
-    }
-
-    AP_Baro_DPS280 *sensor = NEW_NOTHROW AP_Baro_DPS280(baro, std::move(_dev));
+    AP_Baro_DPS280 *sensor = NEW_NOTHROW AP_Baro_DPS280(baro, _dev);
     if (sensor) {
         sensor->is_dps310 = _is_dps310;
     }
@@ -67,11 +63,10 @@ AP_Baro_Backend *AP_Baro_DPS280::probe(AP_Baro &baro,
     return sensor;
 }
 
-AP_Baro_Backend *AP_Baro_DPS310::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> _dev)
+AP_Baro_Backend *AP_Baro_DPS310::probe(AP_Baro &baro, AP_HAL::Device &_dev)
 {
     // same as DPS280 but with is_dps310 set for temperature fix
-    return AP_Baro_DPS280::probe(baro, std::move(_dev), true);
+    return AP_Baro_DPS280::probe(baro, _dev, true);
 }
 
 /*

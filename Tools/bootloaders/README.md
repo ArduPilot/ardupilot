@@ -3,10 +3,7 @@
 The main ArduPilot for STM32 boards is based on ChibiOS, and the
 source code is in Tools/AP_Bootloader
 
-The old (now unusued) bootloader was based on libopencm3, and a copy
-of that is here:
-
-  https://github.com/ArduPilot/Bootloader
+The [old bootloader](https://github.com/ArduPilot/Bootloader) (now unused) was based on libopencm3.
 
 ## Bootloader images
 
@@ -39,11 +36,10 @@ skyviperf412_bl.bin:
    Setup for code start at 0x0800C000
    2 sectors reserved for storage, plus bootloader
 
-# Bootloader in ROMFS
+## Bootloader in ROMFS
 
 When building a ChibiOS based build, if there is a corresponding
 bootloader in Tools/bootloaders for the board then that bootloader
 will be included as a compressed file in ROMFS. You can then ask
 ArduPilot to update the bootloader using the MAVLink command
 MAV_CMD_FLASH_BOOTLOADER command using a param5 magic value of 290876
-

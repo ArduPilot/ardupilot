@@ -116,14 +116,22 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
 {
     // only ask for limiting if we are doing optical flow navigation
     if (uses_velxy_source(AP_NavEKF_Source::SourceXY::OPTFLOW) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
-        // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
+
+        // If we are using optical flow nav with terrain alt from SRTM then there is no limit
+#if EK3_FEATURE_OPTFLOW_SRTM
+        if (terrain_srtm_alt_valid) {
+            return false;
+        }
+#endif
+
+        // if using rangefinder, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
 #if AP_RANGEFINDER_ENABLED
         const auto *_rng = dal.rangefinder();
         if (_rng == nullptr) {
             // we really, really shouldn't be here.
             return false;
         }
-        height = MAX(float(_rng->max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
+        height = MAX(float(_rng->max_distance_orient(ROTATION_PITCH_270)) * 0.7f - 1.0f, 1.0f);
 #else
         return false;
 #endif
@@ -270,14 +278,14 @@ float NavEKF3_core::getPosDownDerivative(void) const
 
 // Write the last estimated NE position of the body frame origin relative to the reference point (m).
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosNE(Vector2f &posNE) const
+bool NavEKF3_core::getPosNE(Vector2p &posNE) const
 {
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
     if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
         // Correct for the IMU offset and restore a stable controller-facing
         // frame across GPS lane-local origin moves.
-        posNE = (outputDataNew.position.xy() + posOffsetNED.xy() + outputPosFrameOffsetNE).tofloat();
+        posNE = (outputDataNew.position.xy() + posOffsetNED.xy() + outputPosFrameOffsetNE).topostype();
         return true;
 
     } else {
@@ -287,7 +295,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
             posNE.zero();
             return false;
         }
-        posNE = (outputDataNew.position.xy() + outputPosFrameOffsetNE).tofloat();
+        posNE = (outputDataNew.position.xy() + outputPosFrameOffsetNE).topostype();
         return false;
     }
     return false;
@@ -295,7 +303,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
 
 // Write the last calculated D position of the body frame origin relative to the EKF local origin
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosD_local(float &posD) const
+bool NavEKF3_core::getPosD_local(postype_t &posD) const
 {
     posD = outputDataNew.position.z + posOffsetNED.z;
 
@@ -306,7 +314,7 @@ bool NavEKF3_core::getPosD_local(float &posD) const
 
 // Write the last calculated D position of the body frame origin relative to the lane-local origin
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosD(float &posD) const
+bool NavEKF3_core::getPosD(postype_t &posD) const
 {
     return getPosD_local(posD);
 }
@@ -326,7 +334,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
 {
     Location origin;
     if (getOriginLLH(origin)) {
-        float posD;
+        postype_t posD;
         const bool have_vert = getPosD_local(posD);
         if (have_vert && PV_AidingMode != AID_NONE) {
             // Altitude returned is an absolute altitude relative to the WGS-84 spherioid

@@ -1,0 +1,172 @@
+# AeroCogito H7DIGITAL hardware definition for ArduPilot
+
+MCU STM32H7xx STM32H743xx
+
+# Board identification
+APJ_BOARD_ID AP_HW_AeroCogito-H7Digital
+
+# Clock and optimization
+OSCILLATOR_HZ 16000000         # 16MHz external crystal/oscillator
+STM32_ST_USE_TIMER 5           # Use TIM5 for system timer
+env OPTIMIZE -O2
+
+# Flash memory layout
+FLASH_SIZE_KB 2048
+FLASH_RESERVE_START_KB 128      # Reserve first 128KB for bootloader
+
+# Storage configuration
+define HAL_STORAGE_SIZE 32768
+STORAGE_FLASH_PAGE 14           # Use last 2 pages (14-15) for parameter storage
+
+# --------------------------------------------------------------
+# INTERFACE ORDERING
+# --------------------------------------------------------------
+SERIAL_ORDER OTG1 UART5 USART2 UART8 UART4 USART3 UART7
+I2C_ORDER I2C1 I2C4
+
+# --------------------------------------------------------------
+# USB INTERFACE
+# --------------------------------------------------------------
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# --------------------------------------------------------------
+# MOTOR OUTPUTS (TIM1 & TIM4) AND SERVO OUTPUTS (TIM3)
+# --------------------------------------------------------------
+# Main motor outputs (1-8)
+PE9  TIM1_CH1 TIM1 PWM(1) GPIO(50) BIDIR # Motor 1
+PE11 TIM1_CH2 TIM1 PWM(2) GPIO(51)       # Motor 2
+PE13 TIM1_CH3 TIM1 PWM(3) GPIO(52) BIDIR # Motor 3
+PE14 TIM1_CH4 TIM1 PWM(4) GPIO(53)       # Motor 4
+PD12 TIM4_CH1 TIM4 PWM(5) GPIO(54) BIDIR # Motor 5
+PD13 TIM4_CH2 TIM4 PWM(6) GPIO(55)       # Motor 6
+PD14 TIM4_CH3 TIM4 PWM(7) GPIO(56) BIDIR # Motor 7
+PD15 TIM4_CH4 TIM4 PWM(8) GPIO(57)       # Motor 8
+
+# Servo outputs (9-10)
+PC6  TIM3_CH1 TIM3 PWM(9)  GPIO(58) # Servo 1
+PC7  TIM3_CH2 TIM3 PWM(10) GPIO(59) # Servo 2
+
+# --------------------------------------------------------------
+# SPI1 - ICM42688 IMU
+# --------------------------------------------------------------
+PA5 SPI1_SCK  SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+
+PB0 GYRO_CS   CS              # ICM42688 chip select
+PB1 GYRO_EXTI INPUT           # ICM42688 interrupt pin
+
+# --------------------------------------------------------------
+# I2C BUSES
+# --------------------------------------------------------------
+# I2C1: Internal sensors (barometer)
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+BARO DPS310 I2C:0:0x76       # DPS368 barometer on I2C1, but defined as DPS310
+
+# I2C4: External devices (magnetometer, etc.)
+PB6 I2C4_SCL I2C4
+PB7 I2C4_SDA I2C4
+
+# --------------------------------------------------------------
+# SD CARD (SDMMC1)
+# --------------------------------------------------------------
+PC12 SDMMC1_CK  SDMMC1        # Clock
+PD2  SDMMC1_CMD SDMMC1        # Command
+PC8  SDMMC1_D0  SDMMC1        # Data 0
+PC9  SDMMC1_D1  SDMMC1        # Data 1
+PC10 SDMMC1_D2  SDMMC1        # Data 2
+PC11 SDMMC1_D3  SDMMC1        # Data 3
+
+# --------------------------------------------------------------
+# STATUS LEDS
+# --------------------------------------------------------------
+PD8  LED0 OUTPUT GPIO(90)     # LED A Blue  (primary status)
+PB15 LED1 OUTPUT GPIO(91)     # LED B Green (secondary status)
+PB14 LED2 OUTPUT GPIO(92)     # LED C Amber (tertiary status)
+
+define HAL_GPIO_A_LED_PIN 90
+define HAL_GPIO_B_LED_PIN 91
+define HAL_GPIO_C_LED_PIN 92
+define HAL_GPIO_LED_ON 1
+define AP_NOTIFY_GPIO_LED_3_ENABLED 1
+
+# --------------------------------------------------------------
+# ANALOG INPUTS
+# --------------------------------------------------------------
+PA0 BATT_VOLTAGE_SENS ADC1 SCALE(1)  # Battery voltage measurement
+PA1 BATT_CURRENT_SENS ADC1 SCALE(1)  # Battery current measurement
+
+# --------------------------------------------------------------
+# POWER MANAGEMENT
+# --------------------------------------------------------------
+PE2 BEC_EN OUTPUT HIGH GPIO(80)      # 10V BEC enable (VTX power)
+define RELAY2_PIN_DEFAULT 80
+define RELAY2_DEFAULT 1              # Relay2 defaults to ON
+
+# --------------------------------------------------------------
+# UART ASSIGNMENTS
+# --------------------------------------------------------------
+# UART5: Companion computer (MAVLink)
+PB12 UART5_RX UART5
+PB13 UART5_TX UART5
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL1_BAUD 115
+
+# USART2: Video transmitter (MSP DisplayPort)
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MSP_DisplayPort
+
+# USART3: ESC telemetry (receive only)
+PD9 USART3_RX USART3 NODMA
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_ESCTelemetry
+define DEFAULT_SERIAL5_BAUD 115
+
+# UART4: RC receiver input
+PD1 UART4_TX UART4
+PD0 UART4_RX UART4
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_RCIN
+
+# UART7: DJI VTX SBUS (receive only)
+PE7 UART7_RX UART7
+
+# UART8: External GPS
+PE0 UART8_RX UART8
+PE1 UART8_TX UART8
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_GPS
+
+# --------------------------------------------------------------
+# SPI DEVICE CONFIGURATION
+# --------------------------------------------------------------
+SPIDEV 42688 SPI1 DEVID1 GYRO_CS MODE3 2*MHZ 16*MHZ
+IMU Invensensev3 SPI:42688 ROTATION_ROLL_180_YAW_90
+
+# --------------------------------------------------------------
+# FEATURE CONFIGURATION
+# --------------------------------------------------------------
+# Filesystem support
+define HAL_OS_FATFS_IO 1
+
+# OSD configuration
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 5   # MSP DisplayPort
+
+# Sensor configuration
+define ALLOW_ARM_NO_COMPASS     # Allow arming without compass
+define ALLOW_ARM_NO_GPS         # Allow arming without GPS
+define AP_COMPASS_PROBING_ENABLED 1
+
+# ESC telemetry support
+define HAL_WITH_ESC_TELEM 1
+
+# Battery monitoring defaults
+define HAL_BATT_VOLT_PIN 16        # PA0 (ADC1 channel 16)
+define HAL_BATT_CURR_PIN 17        # PA1 (ADC1 channel 17)
+define HAL_BATT_VOLT_SCALE 11.0    # Voltage divider scaling
+define HAL_BATT_CURR_SCALE 18.0    # Current sensor scaling
+define HAL_BATT_MONITOR_DEFAULT 4  # Enable voltage and current monitoring
+
+# build ABIN for flash-from-bootloader support
+env BUILD_ABIN True

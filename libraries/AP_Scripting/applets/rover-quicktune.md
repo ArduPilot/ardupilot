@@ -16,7 +16,8 @@ ATC_SPEED_D
 CRUISE_SPEED
 CRUISE_THROTTLE
 
-# How To Use
+## How To Use
+
 Install this script in the autopilot's SD card's APM/scripts directory
 Set SCR_ENABLE to 1 and reboot the autopilot
 Set RTUN_ENABLE to 1 (default)
@@ -49,7 +50,7 @@ By default the gains will be tuned in this order:
 
 The script will also adjust filter settings:
 
- - ATC_STR_RAT_FLTD and FLTT will be set to half of the INS_GYRO_FILTER value
+- ATC_STR_RAT_FLTD and FLTT will be set to half of the INS_GYRO_FILTER value
 
 Once tuning is complete "RTUN: tuning done" will be displayed
 Save the tune by raising the RC switch to the high position
@@ -62,7 +63,7 @@ If the pilot gives steering or throttle input during tuning then tuning is pause
 
 If the vehicle is not able to turn correctly to enter or track the circle, the ``PSC`` parameters may be to be increased. For example ``PSC_VEL_P`` to 20 for very slow (<0.4m/s) vehicles.
 
-# Parameters
+## Parameters
 
 The script has the following parameters to configure its behaviour
 

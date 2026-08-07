@@ -198,7 +198,7 @@ void AP_MotorsHeli_Swash::add_servo_raw(uint8_t num, float roll, float pitch, fl
     _collectiveFactor[num] = collective;
 
     // Setup output function
-    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(_motor_num[num]);
+    SRV_Channel::Function function = SRV_Channels::get_motor_function(_motor_num[num]);
     SRV_Channels::set_aux_channel_default(function, _motor_num[num]);
 
     // outputs are defined on a -500 to 500 range for swash servos
@@ -272,7 +272,7 @@ void AP_MotorsHeli_Swash::output()
 void AP_MotorsHeli_Swash::rc_write(uint8_t chan, float swash_in)
 {
     uint16_t pwm = (uint16_t)(1500 + 500 * swash_in);
-    SRV_Channel::Aux_servo_function_t function = SRV_Channels::get_motor_function(chan);
+    SRV_Channel::Function function = SRV_Channels::get_motor_function(chan);
     SRV_Channels::set_output_pwm_trimmed(function, pwm);
 }
 

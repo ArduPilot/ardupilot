@@ -1,0 +1,52 @@
+# hwdef-bl.dat for AeroCogito H7DIGITAL Bootloader
+
+MCU STM32H7xx STM32H743xx
+APJ_BOARD_ID AP_HW_AeroCogito-H7Digital
+FLASH_SIZE_KB 2048
+
+# Bootloader memory layout
+FLASH_RESERVE_START_KB 0        # Bootloader starts at flash beginning
+FLASH_BOOTLOADER_LOAD_KB 128    # Main firmware starts at 128KB offset
+
+# Clock configuration
+OSCILLATOR_HZ 16000000          # 16MHz external crystal/oscillator
+STM32_ST_USE_TIMER 2            # Use TIM2 for system timer in bootloader
+
+# USB DFU interface
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# Status LED (green) - active high during bootloader
+PB15 LED_BOOTLOADER OUTPUT HIGH
+define HAL_LED_ON 1
+
+# Power management - disable 10V BEC during bootloader
+PE2 BEC_EN OUTPUT LOW
+
+# Serial interfaces available in bootloader
+SERIAL_ORDER OTG1
+
+# SPI chip select pins - ensure they stay high during bootloader
+PB0 GYRO_CS CS
+
+# SD Card support
+PC12 SDMMC1_CK  SDMMC1        # Clock
+PD2  SDMMC1_CMD SDMMC1        # Command
+PC8  SDMMC1_D0  SDMMC1        # Data 0
+PC9  SDMMC1_D1  SDMMC1        # Data 1
+PC10 SDMMC1_D2  SDMMC1        # Data 2
+PC11 SDMMC1_D3  SDMMC1        # Data 3
+
+# FATFS support:
+define CH_CFG_USE_MEMCORE 1
+define CH_CFG_USE_HEAP 1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES 1
+define CH_CFG_USE_DYNAMIC 1
+define CH_CFG_USE_WAITEXIT 1
+define CH_CFG_USE_REGISTRY 1
+
+# Firmware flashing from SD card enabled
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1
+define FATFS_HAL_DEVICE SDCD1
+define HAL_OS_FATFS_IO 1

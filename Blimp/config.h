@@ -43,11 +43,6 @@
 # define FS_RADIO_RC_OVERRIDE_TIMEOUT_MS  1000    // RC Radio failsafe triggers after 1 second while using RC_override from ground station
 #endif
 
-// Radio failsafe
-#ifndef FS_RADIO_TIMEOUT_MS
-#define FS_RADIO_TIMEOUT_MS            500     // RC Radio Failsafe triggers after 500 milliseconds with No RC Input
-#endif
-
 // missing terrain data failsafe
 #ifndef FS_TERRAIN_TIMEOUT_MS
 #define FS_TERRAIN_TIMEOUT_MS          5000     // 5 seconds of missing terrain data will trigger failsafe (RTL)
@@ -65,10 +60,6 @@
 #endif
 #ifndef FS_EKF_THRESHOLD_DEFAULT
 # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
-#endif
-
-#ifndef EKF_ORIGIN_MAX_DIST_M
-# define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

@@ -20,12 +20,14 @@
 
 using namespace SITL;
 
-uint32_t RF_JRE::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_JRE::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
     uint16_t status = 0;
-    if (alt_cm > 50000) {
+    if (alt_m > 500) {
         status |= 0x2;  // NTRK, whatever that means...
     }
+
+    const uint16_t alt_cm = alt_m * 100;
 
     buffer[0] = 'R';
     buffer[1] = 'A';

@@ -30,9 +30,9 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
     // only accept distances for the configured orientation
     if (packet.orientation == orientation()) {
         state.last_reading_ms = AP_HAL::millis();
-        distance_cm = packet.current_distance;
-        _max_distance_cm = packet.max_distance;
-        _min_distance_cm = packet.min_distance;
+        distance = packet.current_distance * 0.01;
+        _max_distance = packet.max_distance * 0.01;
+        _min_distance = packet.min_distance * 0.01;
         sensor_type = (MAV_DISTANCE_SENSOR)packet.type;
         signal_quality = packet.signal_quality;
         if (signal_quality == 0) {
@@ -45,28 +45,31 @@ void AP_RangeFinder_MAVLink::handle_msg(const mavlink_message_t &msg)
     }
 }
 
-int16_t AP_RangeFinder_MAVLink::max_distance_cm() const
+float AP_RangeFinder_MAVLink::max_distance() const
 {
-    if (_max_distance_cm == 0 && _min_distance_cm == 0) {
+    const auto baseclass_max_distance = AP_RangeFinder_Backend::max_distance();
+
+    if (is_zero(_max_distance) && is_zero(_min_distance)) {
         // we assume if both of these are zero that we ignore both
-        return params.max_distance_cm;
+        return baseclass_max_distance;
     }
 
-    if (params.max_distance_cm < _max_distance_cm) {
-        return params.max_distance_cm;
-    }
-    return _max_distance_cm;
+    // return the smaller of the base class's distance and what we
+    // receive from the network:
+    return MIN(baseclass_max_distance, _max_distance);
 }
-int16_t AP_RangeFinder_MAVLink::min_distance_cm() const
+float AP_RangeFinder_MAVLink::min_distance() const
 {
-    if (_max_distance_cm == 0 && _min_distance_cm == 0) {
+    const auto baseclass_min_distance = AP_RangeFinder_Backend::min_distance();
+
+    if (is_zero(_max_distance) && is_zero(_min_distance)) {
         // we assume if both of these are zero that we ignore both
-        return params.min_distance_cm;
+        return baseclass_min_distance;
     }
-    if (params.min_distance_cm > _min_distance_cm) {
-        return params.min_distance_cm;
-    }
-    return _min_distance_cm;
+
+    // return the larger of the base class's distance and what we
+    // receive from the network:
+    return MAX(baseclass_min_distance, _min_distance);
 }
 
 /*
@@ -81,7 +84,7 @@ void AP_RangeFinder_MAVLink::update(void)
         state.distance_m = 0.0f;
         state.signal_quality_pct = RangeFinder::SIGNAL_QUALITY_UNKNOWN;
     } else {
-        state.distance_m = distance_cm * 0.01f;
+        state.distance_m = distance;
         state.signal_quality_pct = signal_quality;
         update_status();
     }

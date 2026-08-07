@@ -222,13 +222,13 @@ INSTANTIATE_TEST_CASE_P(GeneralVectors,
  */
 static TestParam hardcoded_vectors[] = {
     /* a + 2 * m_a + .5 * m_c for T_4 */
-    {{.25f * M_GOLDEN, -.25f * (13.0f * M_GOLDEN + 1.0f), - 1.25f}, 17},
+    {{0.25f * M_GOLDEN, -0.25f * (13.0f * M_GOLDEN + 1.0f), - 1.25f}, 17},
     /* 3 * m_a + 2 * m_b 0 * m_c for T_4 */
     {{M_GOLDEN, -4.0f * M_GOLDEN -1.0f, 1.0f}, -1, {16, 18, -1}},
     /* 2 * m_c + (1 / 3) * m_b + .1 * c for T_13 */
-    {{-.2667f, .1667f * M_GOLDEN, 2.2667f * M_GOLDEN + .1667f}, 55},
+    {{-0.2667f, 0.1667f * M_GOLDEN, 2.2667f * M_GOLDEN + 0.1667f}, 55},
     /* .25 * m_a + 5 * b + 2 * m_b for T_8 */
-    {{-.875f, 6.125f * M_GOLDEN, -1.125f * M_GOLDEN - 6.125f}, 34},
+    {{-0.875f, 6.125f * M_GOLDEN, -1.125f * M_GOLDEN - 6.125f}, 34},
 };
 INSTANTIATE_TEST_CASE_P(HardcodedVectors,
                         GeodesicGridTest,

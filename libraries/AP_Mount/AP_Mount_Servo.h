@@ -3,13 +3,14 @@
  */
 #pragma once
 
-#include "AP_Mount_Backend.h"
+#include "AP_Mount_config.h"
 
 #if HAL_MOUNT_SERVO_ENABLED
 
+#include "AP_Mount_Backend.h"
+
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
-#include <SRV_Channel/SRV_Channel.h>
 
 class AP_Mount_Servo : public AP_Mount_Backend
 {
@@ -20,8 +21,7 @@ public:
         requires_stabilization(requires_stab),
         _roll_idx(SRV_Channel::k_none),
         _tilt_idx(SRV_Channel::k_none),
-        _pan_idx(SRV_Channel::k_none),
-        _open_idx(SRV_Channel::k_none)
+        _pan_idx(SRV_Channel::k_none)
     {
     }
 
@@ -45,10 +45,18 @@ protected:
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
+    // servo only natively supports angles:
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_ONLY;
+    };
+
 private:
 
+    // called by the backend to set the servo angles:
+    void send_target_angles(const MountAngleTarget& angle_rad) override;
+
     // update body-frame angle outputs from earth-frame targets
-    void update_angle_outputs(const MountTarget& angle_rad);
+    void update_angle_outputs(const MountAngleTarget& angle_rad);
 
     ///  moves servo with the given function id to the specified angle.  all angles are in body-frame and degrees * 10
     void move_servo(uint8_t rc, int16_t angle, int16_t angle_min, int16_t angle_max);
@@ -57,10 +65,9 @@ private:
     const bool requires_stabilization;
 
     // SRV_Channel - different id numbers are used depending upon the instance number
-    SRV_Channel::Aux_servo_function_t    _roll_idx;  // SRV_Channel mount roll function index
-    SRV_Channel::Aux_servo_function_t    _tilt_idx;  // SRV_Channel mount tilt function index
-    SRV_Channel::Aux_servo_function_t    _pan_idx;   // SRV_Channel mount pan  function index
-    SRV_Channel::Aux_servo_function_t    _open_idx;  // SRV_Channel mount open function index
+    SRV_Channel::Function    _roll_idx;  // SRV_Channel mount roll function index
+    SRV_Channel::Function    _tilt_idx;  // SRV_Channel mount tilt function index
+    SRV_Channel::Function    _pan_idx;   // SRV_Channel mount pan  function index
 
     Vector3f _angle_bf_output_rad;  // final body frame output angle in radians
 };

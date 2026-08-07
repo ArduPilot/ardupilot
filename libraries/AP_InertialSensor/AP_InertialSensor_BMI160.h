@@ -23,9 +23,7 @@
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-#define BMI160_DEFAULT_ROTATION ROTATION_ROLL_180
-#else
+#ifndef BMI160_DEFAULT_ROTATION
 #define BMI160_DEFAULT_ROTATION ROTATION_NONE
 #endif
 

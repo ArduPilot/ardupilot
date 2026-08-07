@@ -91,31 +91,6 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 }
 
 
-#if ENABLE_HEAP
-/*
-  realloc implementation thanks to wolfssl, used by ExpandingString
- */
-void *Util::std_realloc(void *addr, uint32_t size)
-{
-    if (size == 0) {
-        free(addr);
-        return nullptr;
-    }
-    if (addr == nullptr) {
-        return calloc(1, size);
-    }
-    void *new_mem = calloc(1, size);
-    if (new_mem != nullptr) {
-        //memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
-        memcpy(new_mem, addr, size );
-        free(addr);
-    }
-    return new_mem;
-}
-
-#endif // ENABLE_HEAP
-
-
 /*
   get safety switch state
  */
@@ -171,7 +146,7 @@ uint64_t Util::get_hw_rtc() const
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
 
-#if defined(HAL_NO_GCS) || defined(HAL_BOOTLOADER_BUILD)
+#if !HAL_GCS_ENABLED
 #define Debug(fmt, args ...)  do { hal.console->printf(fmt, ## args); } while (0)
 #else
 #include <GCS_MAVLink/GCS.h>
@@ -186,7 +161,7 @@ Util::FlashBootloader Util::flash_bootloader()
 #endif // !HAL_NO_FLASH_SUPPORT && !HAL_NO_ROMFS_SUPPORT
 
 /*
-  display system identifer - board type and serial number
+  display system identifier - board type and serial number
  */
 
 
@@ -209,7 +184,7 @@ bool Util::get_system_id(char buf[50])
     //board_name[13] = 0;
     board_mac[19] = 0;
 
-    // tack strings togehter
+    // tack strings together
     snprintf(buf, 40, "%s %s", board_name, board_mac);
     // and null terminate that too..
     buf[39] = 0;

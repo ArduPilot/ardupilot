@@ -1,3 +1,0 @@
-#defaults for all ESP32 boards unless overwridden elsewhere
-LOG_DISARMED 1
-SERIAL0_PROTOCOL 0

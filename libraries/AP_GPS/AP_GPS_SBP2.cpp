@@ -54,7 +54,7 @@ do {                                            \
 #if SBP_INFOREPORTING
  # define Info(fmt, args ...)                                               \
 do {                                                                        \
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt "\n", ## args); \
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, fmt, ## args); \
 } while(0) 
 #else
  # define Info(fmt, args ...)
@@ -221,13 +221,6 @@ AP_GPS_SBP2::_sbp_process_message() {
         default:
             break;
     }
-
-#if HAL_LOGGING_ENABLED
-    // send all messages we receive to log, even if it's an unsupported message,
-    // so we can do additional post-processing from logs.
-    // The log mask will be used to adjust or suppress logging
-    logging_log_raw_sbp(parser_state.msg_type, parser_state.sender_id, parser_state.msg_len, parser_state.msg_buff);
-#endif
 }
 
 int32_t 
@@ -466,55 +459,6 @@ AP_GPS_SBP2::logging_log_full_update()
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 };
-
-void
-AP_GPS_SBP2::logging_log_raw_sbp(uint16_t msg_type,
-        uint16_t sender_id,
-        uint8_t msg_len,
-        uint8_t *msg_buff) {
-    if (!should_log()) {
-      return;
-    }
-
-    //MASK OUT MESSAGES WE DON'T WANT TO LOG
-    if (( ((uint16_t) gps._sbp_logmask) & msg_type) == 0) {
-        return;
-    }
-
-    uint64_t time_us = AP_HAL::micros64();
-    uint8_t pages = 1;
-
-    if (msg_len > 48) {
-        pages += (msg_len - 48) / 104 + 1;
-    }
-
-    struct log_SbpRAWH pkt = {
-        LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWH),
-        time_us         : time_us,
-        msg_type        : msg_type,
-        sender_id       : sender_id,
-        index           : 1,
-        pages           : pages,
-        msg_len         : msg_len,
-    };
-    memcpy(pkt.data, msg_buff, MIN(msg_len, 48));
-    AP::logger().WriteBlock(&pkt, sizeof(pkt));
-
-    for (uint8_t i = 0; i < pages - 1; i++) {
-        struct log_SbpRAWM pkt2 = {
-            LOG_PACKET_HEADER_INIT(LOG_MSG_SBPRAWM),
-            time_us         : time_us,
-            msg_type        : msg_type,
-            sender_id       : sender_id,
-            index           : uint8_t(i + 2),
-            pages           : pages,
-            msg_len         : msg_len,
-        };
-        memcpy(pkt2.data, &msg_buff[48 + i * 104], MIN(msg_len - (48 + i * 104), 104));
-        AP::logger().WriteBlock(&pkt2, sizeof(pkt2));
-    }
-};
-
 void
 AP_GPS_SBP2::logging_ext_event() {
     if (!should_log()) {

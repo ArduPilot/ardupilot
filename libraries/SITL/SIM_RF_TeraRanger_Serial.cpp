@@ -18,14 +18,14 @@
 
 using namespace SITL;
 
-uint32_t RF_TeraRanger_Serial::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_TeraRanger_Serial::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
-    uint16_t alt_mm = alt_cm * 10;
+    const uint16_t alt_mm = alt_m * 1000;
     buffer[0] = 0x54; //header byte
     buffer[1] = alt_mm >> 8; //MSB mm
     buffer[2] = alt_mm & 0xff; //LSB mm
 
-    if (alt_cm > 3000) {
+    if (alt_m > 30) {
        buffer[3] = 0xC4; //full strength, out of range, no overtemp
     }
     else {

@@ -83,6 +83,14 @@ int apfs_rename(const char *oldpath, const char *newpath);
   only redefine posix functions for C code (eg. lua).
   for C++ use the AP_Filsystem APIs
 */
+
+// on some platforms, some functions are implemented with macros. undefine
+// those which have caused macro redefinition warnings in the past.
+#undef clearerr
+#undef ferror
+#undef feof
+#undef getc
+
 #define fopen(p,m) apfs_fopen(p,m)
 #define fprintf(stream, format, args...) apfs_fprintf(stream, format, ##args)
 #define fflush(s) apfs_fflush(s)
@@ -95,7 +103,6 @@ int apfs_rename(const char *oldpath, const char *newpath);
 #define ferror(stream) apfs_ferror(stream)
 #define fclose(stream) apfs_fclose(stream)
 #define tmpfile() apfs_tmpfile()
-#undef getc
 #define getc(stream) apfs_getc(stream)
 #define ungetc(c, stream) apfs_ungetc(c, stream)
 #define feof(stream) apfs_ferror(stream)

@@ -62,6 +62,9 @@ public:
     // output_min - sets servos to neutral point with motors stopped
     void output_min() override;
 
+    // set_desired_spool_state - set desired spool state with safety constraints
+    void set_desired_spool_state(DesiredSpoolState spool) override;
+
     //
     // heli specific methods
     //
@@ -121,6 +124,9 @@ public:
     // helper for vehicle code to request autorotation states in the RSC.
     void set_autorotation_active(bool tf) { _main_rotor.autorotation.set_active(tf, false); }
 
+    // true if we are using a manual collective flight mode
+    void set_using_manual_collective_mode(bool using_manual_collective_mode) { _main_rotor.set_using_manual_collective_mode(using_manual_collective_mode); }
+
     // helper to force the RSC autorotation state to deactivated
     void force_deactivate_autorotation(void) { _main_rotor.autorotation.set_active(false, true); }
 
@@ -130,10 +136,16 @@ public:
     // true if bailing out autorotation
     bool autorotation_bailout(void) const { return _main_rotor.autorotation.bailing_out(); }
 
+    // true if the autorotation functionality within the rsc has been enabled
+    bool rsc_autorotation_enabled(void) const { return _main_rotor.autorotation.enabled(); }
+
     // set land complete flag
     void set_land_complete(bool landed) { _heliflags.land_complete = landed; }
-	
-	//return zero lift collective position
+
+    // function to calculate and set the normalised collective position given a desired blade pitch angle (deg)
+    void set_coll_from_ang(float col_ang_deg);
+
+    //return zero lift collective position
     float get_coll_mid() const { return _collective_zero_thrust_pct; }
 
     // enum for heli optional features

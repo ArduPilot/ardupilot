@@ -4,13 +4,13 @@ The RadiolinkF405 is a flight controller produced by [RadioLink](https://www.rad
 
 ## Features
 
- - STM32F405 microcontroller
- - ICM42688 IMU
- - SPL06 barometer
- - W25N01G flash
- - AT7456E OSD
- - 5 UARTs
- - 7 PWM outputs
+- STM32F405 microcontroller
+- ICM42688 IMU
+- SPL06 barometer
+- W25N01G flash
+- AT7456E OSD
+- 5 UARTs
+- 7 PWM outputs
 
 ## Pinout
 
@@ -22,18 +22,18 @@ The RadiolinkF405 is a flight controller produced by [RadioLink](https://www.rad
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (DJI-VTX)
- - SERIAL2 -> UART2 (RCIN, DMA-enabled) 
- - SERIAL3 -> UART3 (ESC Telemetry)
- - SERIAL4 -> UART4 (User)
- - SERIAL5 -> UART5 (GPS)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (DJI-VTX)
+- SERIAL2 -> UART2 (RCIN, DMA-enabled)
+- SERIAL3 -> UART3 (ESC Telemetry)
+- SERIAL4 -> UART4 (User)
+- SERIAL5 -> UART5 (GPS)
 
 ## RC Input
 
 RC input is configured on the R2 (UART2_RX) pin for most RC unidirectional protocols except SBUS which should be applied at the SBUS pin. PPM is not supported.
 For CRSF/ELRS/SRXL2 connection of the receiver to T2 will also be required. See :ref:`common-rc-systems` for more info
-  
+
 ## OSD Support
 
 The RadiolinkF405 supports analog OSD using its internal MAX7456. Simultaneous HD OSD operation is enabled by defaullt also.
@@ -50,9 +50,9 @@ M1 to M4 on the motor connector, M5 M6 for servo or another PWM output, LED pads
 
 The PWM is in 3 groups:
 
- - PWM 1-4 in group1
- - PWM 5-6 in group2
- - PWM 7   in group3 (LED)
+- PWM 1-4 in group1
+- PWM 5-6 in group2
+- PWM 7   in group3 (LED)
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -70,11 +70,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
- - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 12
- - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
- - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.0
- - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 25
+- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
+- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 12
+- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
+- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.0
+- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 25
 
 ## Compass
 

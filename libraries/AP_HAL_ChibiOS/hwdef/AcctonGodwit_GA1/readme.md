@@ -79,9 +79,10 @@ Visit [Accton-IoT Godwit](https://www.accton-iot.com/godwit/) for more informati
 ## PWM Output
 
 PWM M1-M8 (IO Main PWM), A1-A8(FMU PWM). All these 16 support normal PWM output formats. FMU PWM A1-A6 can support DShot and B-Directional DShot. A1-A8(FMU PWM) are grouped as:
- - Group 1: A1, A2, A3, A4
- - Group 2: A5, A6
- - Group 3: A7, A8
+
+- Group 1: A1, A2, A3, A4
+- Group 2: A5, A6
+- Group 3: A7, A8
 
 The motor and servo system should be connected to these ports according to the order outlined in the fuselage reference for your carrier.
 
@@ -128,7 +129,7 @@ This universal controller features a CAN PMU module that supports 3 to 14s lithi
 
 When running Ardupilot, the universal controller operates as a plug-and-play device, requiring no further configuration.
 
-This universal controller does not provide power to the servos. To power them, an external BEC must be connected to the positive and negative terminals of any A1–A8 or M1–M8 port.
+This universal controller does not provide power to the servos. To power them, an external BEC must be connected to the positive and negative terminals of any A1-A8 or M1-M8 port.
 
 ![G-A1 Power](power.png "G-A1 Power")
 

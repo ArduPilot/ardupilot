@@ -58,14 +58,24 @@ protected:
     Vector2f _flowScaler(void) const { return Vector2f(frontend._flowScalerX, frontend._flowScalerY); }
 
     // get the yaw angle in radians
-    float _yawAngleRad(void) const { return radians(float(frontend._yawAngle_cd) * 0.01f); }
+    float _yawAngleRad(void) const { return cd_to_rad(float(frontend._yawAngle_cd)); }
 
     // apply yaw angle to a vector
     void _applyYaw(Vector2f &v);
 
     // get ADDR parameter value
     uint8_t get_address(void) const { return frontend._address; }
-    
+
+    // options parameter values
+    enum class Option : uint16_t {
+        Stabilised = (1 << 0U)      // sensor is stabilised (e.g. mounted on a gimbal)
+    };
+
+    // returns true if an option is enabled
+    bool option_is_enabled(Option option) const {
+        return ((uint8_t)frontend._options.get() & (uint16_t)option) != 0;
+    }
+
     // semaphore for access to shared frontend data
     HAL_Semaphore _sem;
 };

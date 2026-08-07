@@ -4,12 +4,12 @@ The Skystars H7 is a flight controller produced by [Skystars](http://www.skystar
 
 ## Features
 
- - STM32H743 microcontroller
- - BMI270 IMU
- - BMP280 barometer
- - AT7456E OSD
- - 6 UARTs
- - 9 PWM outputs
+- STM32H743 microcontroller
+- BMI270 IMU
+- BMP280 barometer
+- AT7456E OSD
+- 6 UARTs
+- 9 PWM outputs
 
 ## Pinout
 
@@ -20,14 +20,14 @@ The Skystars H7 is a flight controller produced by [Skystars](http://www.skystar
 The UARTs are marked RX and TX in the above pinouts. The RX pin is the
 receive pin for UARTn. The TX pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (Telem1)
- - SERIAL2 -> UART2 (Telem2)
- - SERIAL3 -> UART3 (GPS)
- - SERIAL4 -> UART4
- - SERIAL5 -> not available
- - SERIAL6 -> UART6
- - SERIAL7 -> UART7
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (Telem1)
+- SERIAL2 -> UART2 (Telem2)
+- SERIAL3 -> UART3 (GPS)
+- SERIAL4 -> UART4
+- SERIAL5 -> not available
+- SERIAL6 -> UART6
+- SERIAL7 -> UART7
 
 ## RC Input
 
@@ -36,7 +36,6 @@ protocols. For protocols requiring half-duplex serial to transmit
 telemetry (such as FPort) you should set BRD_ALT_CONFIG=1 and setup
 SERIAL6 as an RC input serial port, with half-duplex, pin-swap
 and inversion enabled.
-
 
 ## OSD Support
 
@@ -50,11 +49,11 @@ PWM output.
 
 The PWM is in 5 groups:
 
- - PWM 1, 2 in group1
- - PWM 3, 4 in group2
- - PWM 5, 6 in group3
- - PWM 7, 8 in group4
- - PWM 9 in group5
+- PWM 1, 2 in group1
+- PWM 3, 4 in group2
+- PWM 5, 6 in group3
+- PWM 7, 8 in group4
+- PWM 9 in group5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -68,15 +67,16 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 10.1
- - BATT_AMP_PERVLT 17.0
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 10.1
+- BATT_AMP_PERVLT 17.0
 
 ## Compass
 
 The Skystars H7 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
+
 ## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the

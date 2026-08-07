@@ -71,7 +71,7 @@ void setup()
 
             char cmd[20] {};
             strncpy(cmd, arg, eq-arg);
-            const float value = atof(eq+1);
+            const float value = strtof(eq+1, nullptr);
             if (strcmp(cmd,"yaw_headroom") == 0) {
                 if (motors_matrix != nullptr) {
                     motors_matrix->set_yaw_headroom(value);
@@ -261,7 +261,7 @@ void setup()
         }
 
         // motor initialisation
-        motors->set_dt(1.0/400.0);
+        motors->set_dt_s(1.0/400.0);
         motors->set_update_rate(490);
         motors->output_min();
 
@@ -298,7 +298,7 @@ void setup()
     }
 
     // motor initialisation
-    motors->set_dt(1.0/400.0);
+    motors->set_dt_s(1.0/400.0);
     motors->set_update_rate(490);
 
     char frame_and_type_string[30];

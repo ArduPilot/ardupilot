@@ -4,12 +4,12 @@ The Skystars H7 is a flight controller produced by [Skystars](http://www.skystar
 
 ## Features
 
- - STM32H743 microcontroller
- - BMI270 IMU x2
- - BMP280 barometer
- - AT7456E OSD
- - 8 UARTs
- - 9 PWM outputs
+- STM32H743 microcontroller
+- BMI270 IMU x2
+- BMP280 barometer
+- AT7456E OSD
+- 8 UARTs
+- 9 PWM outputs
 
 ## Pinout
 
@@ -20,15 +20,15 @@ The Skystars H7 is a flight controller produced by [Skystars](http://www.skystar
 The UARTs are marked RX and TX in the above pinouts. The RX pin is the
 receive pin for UARTn. The TX pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (RX, DMA-enabled)
- - SERIAL2 -> UART2 (DMA-enabled)
- - SERIAL3 -> UART3 (ESC Telem)
- - SERIAL4 -> UART4 (GPS, DMA-enabled)
- - SERIAL5 -> UART5 (VTX)
- - SERIAL6 -> UART6 (DJI FPV, DMA-enabled)
- - SERIAL7 -> UART7 (DMA-enabled)
- - SERIAL8 -> UART8
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (RX, DMA-enabled)
+- SERIAL2 -> UART2 (DMA-enabled)
+- SERIAL3 -> UART3 (ESC Telem)
+- SERIAL4 -> UART4 (GPS, DMA-enabled)
+- SERIAL5 -> UART5 (VTX)
+- SERIAL6 -> UART6 (DJI FPV, DMA-enabled)
+- SERIAL7 -> UART7 (DMA-enabled)
+- SERIAL8 -> UART8
 
 ## RC Input
 
@@ -49,10 +49,10 @@ PWM output.
 
 The PWM is in 5 groups:
 
- - PWM 1, 2 in group1
- - PWM 3, 4 in group2
- - PWM 5-8  in group3
- - PWM 9    in group4
+- PWM 1, 2 in group1
+- PWM 3, 4 in group2
+- PWM 5-8  in group3
+- PWM 9    in group4
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -66,11 +66,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 10.1
- - BATT_AMP_PERVLT 17.0
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 10.1
+- BATT_AMP_PERVLT 17.0
 
 ## Compass
 

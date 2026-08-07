@@ -20,7 +20,7 @@
 
 #include "SIM_config.h"
 
-#if HAL_SIM_ADSB_ENABLED
+#if AP_SIM_ADSB_ENABLED
 
 #include <AP_HAL/utility/Socket_native.h>
 
@@ -91,4 +91,4 @@ private:
 
 }  // namespace SITL
 
-#endif  // HAL_SIM_ADSB_ENABLED
+#endif  // AP_SIM_ADSB_ENABLED

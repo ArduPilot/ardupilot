@@ -1,9 +1,9 @@
 -- This script displays the vehicle lean angles and rotation rates at 1hz
 
 function update() -- this is the loop which periodically runs
-  roll = math.deg(ahrs:get_roll())
-  pitch = math.deg(ahrs:get_pitch())
-  yaw = math.deg(ahrs:get_yaw())
+  roll = math.deg(ahrs:get_roll_rad())
+  pitch = math.deg(ahrs:get_pitch_rad())
+  yaw = math.deg(ahrs:get_yaw_rad())
   rates = ahrs:get_gyro()
   if rates then
     roll_rate = math.deg(rates:x())

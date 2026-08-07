@@ -56,7 +56,7 @@ uint32_t AP_DEVO_Telem::gpsDdToDmsFormat(int32_t ddm)
     int32_t deg = (int32_t)(ddm * 1e-7);
     float mm = (ddm * 1.0e-7 - deg) * 60.0f;
 
-    mm = ((float)deg * 100.0f + mm) /100.0f;
+    mm = ((float)deg * 100.0f + mm) *0.01f;
 
     if ((mm < -180.0f) || (mm > 180.0f)) {
         mm = 0.0f;

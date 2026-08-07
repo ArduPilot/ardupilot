@@ -9,12 +9,7 @@
 
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
-
-#ifndef HAL_SOARING_ENABLED
-#define HAL_SOARING_ENABLED 1
-#endif
-
+#include "AP_Soaring_config.h"
 #if HAL_SOARING_ENABLED
 
 #include <AP_Param/AP_Param.h>
@@ -23,10 +18,10 @@
 #include "Variometer.h"
 #include "SpeedToFly.h"
 
-#define INITIAL_THERMAL_RADIUS 80.0
-#define INITIAL_STRENGTH_COVARIANCE 0.0049
-#define INITIAL_RADIUS_COVARIANCE 400.0
-#define INITIAL_POSITION_COVARIANCE 400.0
+static constexpr float INITIAL_THERMAL_RADIUS = 80.0;
+static constexpr float INITIAL_STRENGTH_COVARIANCE = 0.0049;
+static constexpr float INITIAL_RADIUS_COVARIANCE = 400.0;
+static constexpr float INITIAL_POSITION_COVARIANCE = 400.0;
 
 
 class SoaringController {
@@ -52,6 +47,11 @@ class SoaringController {
 
     // store time of last update
     uint64_t _prev_update_time;
+
+    // store time of last NVT publish
+#if HAL_SOARING_NVF_EKF_ENABLED
+    uint32_t _prev_nvf_pub_time_ms;
+#endif // #if HAL_SOARING_NVF_EKF_ENABLED
 
     bool _throttle_suppressed;
 

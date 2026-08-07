@@ -53,8 +53,8 @@ struct PACKED log_GPS {
 
 // @LoggerMessage: GPA
 // @Description: GPS accuracy information
-// @Field: I: GPS instance number
 // @Field: TimeUS: Time since system startup
+// @Field: I: GPS instance number
 // @Field: VDop: vertical dilution of precision
 // @Field: HAcc: horizontal position accuracy
 // @Field: VAcc: vertical position accuracy

@@ -126,7 +126,7 @@ CameraSensor_Mt9v117::CameraSensor_Mt9v117(const char *device_path,
         _configure_sensor_qvga();
         break;
     default:
-        AP_HAL::panic("mt9v117: unsupported resolution\n");
+        AP_HAL::panic("mt9v117: unsupported resolution");
         break;
     }
 
@@ -409,7 +409,7 @@ void CameraSensor_Mt9v117::_init_sensor()
 
     id = _read_reg16(CHIP_ID);
     if (id != MT9V117_CHIP_ID) {
-        AP_HAL::panic("Mt9v117: bad chip id 0x%04x\n", id);
+        AP_HAL::panic("Mt9v117: bad chip id 0x%04x", id);
     }
     _soft_reset();
     _apply_patch();

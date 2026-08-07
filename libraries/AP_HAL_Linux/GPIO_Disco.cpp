@@ -1,6 +1,6 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
+#if HAL_LINUX_GPIO_DISCO_ENABLED
 
 #include "GPIO_Disco.h"
 
@@ -14,4 +14,4 @@ const uint8_t Linux::GPIO_Sysfs::n_pins = _DISCO_GPIO_MAX;
 static_assert(ARRAY_SIZE(Linux::GPIO_Sysfs::pin_table) == _DISCO_GPIO_MAX,
               "GPIO pin_table must have the same size of entries in enum gpio_disco");
 
-#endif
+#endif  // HAL_LINUX_GPIO_DISCO_ENABLED

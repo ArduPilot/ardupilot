@@ -15,17 +15,19 @@
  * Author: Oliver Walters / Currawong Engineering Pty Ltd
  */
 
-
 #pragma once
+
+#include "AP_PiccoloCAN_config.h"
+
+#if AP_PICCOLOCAN_ENABLED
 
 #include <AP_Math/AP_Math.h>
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
+#include "AP_PiccoloCAN_config.h"
 #include "AP_PiccoloCAN_Device.h"
 #include "piccolo_protocol/ESCPackets.h"
-
-#if HAL_PICCOLO_CAN_ENABLE
 
 #define PICCOLO_CAN_MAX_NUM_ESC 16
 #define PICCOLO_CAN_MAX_GROUP_ESC (PICCOLO_CAN_MAX_NUM_ESC / 4)
@@ -73,4 +75,4 @@ public:
     } settings;
 };
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED

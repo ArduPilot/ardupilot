@@ -107,34 +107,88 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
   Vector3f rot_T{0,0,0};
 
 #if HAL_LOGGING_ENABLED
+  // @LoggerMessage: SFT
+  // @Description: Simulated Blimp Fin Thrust
+  // @Field: TimeUS: Time since system startup
+  // @Field: f0: Fin 0 tangential thrust
+  // @Field: f1: Fin 1 tangential thrust
+  // @Field: f2: Fin 2 tangential thrust
+  // @Field: f3: Fin 3 tangential thrust
   AP::logger().WriteStreaming("SFT", "TimeUS,f0,f1,f2,f3",
                               "Qffff",
                               AP_HAL::micros64(),
                               fin[0].T, fin[1].T, fin[2].T, fin[3].T);
+  // @LoggerMessage: SFN
+  // @Description: Simulated Blimp Fin Forces
+  // @Field: TimeUS: Time since system startup
+  // @Field: n0: Fin 0 normal force
+  // @Field: n1: Fin 1 normal force
+  // @Field: n2: Fin 2 normal force
+  // @Field: n3: Fin 3 normal force
   AP::logger().WriteStreaming("SFN", "TimeUS,n0,n1,n2,n3",
                               "Qffff",
                               AP_HAL::micros64(),
                               fin[0].N, fin[1].N, fin[2].N, fin[3].N);
+  // @LoggerMessage: SBA1
+  // @Description: Simulated Blimp Body-Frame accelerations
+  // @Field: TimeUS: Time since system startup
+  // @Field: ax: x-axis acceleration
+  // @Field: ay: y-axis acceleration
+  // @Field: az: z-axis acceleration
   AP::logger().WriteStreaming("SBA1", "TimeUS,ax,ay,az",
                               "Qfff",
                               AP_HAL::micros64(),
                               body_acc.x, body_acc.y, body_acc.z);
+  // @LoggerMessage: SFA1
+  // @Description: Simulated Blimp Fin Angles
+  // @Field: TimeUS: Time since system startup
+  // @Field: f0: fin 0 angle
+  // @Field: f1: fin 1 angle
+  // @Field: f2: fin 2 angle
+  // @Field: f3: fin 3 angle
   AP::logger().WriteStreaming("SFA1", "TimeUS,f0,f1,f2,f3",
                               "Qffff",
                               AP_HAL::micros64(),
                               fin[0].angle, fin[1].angle, fin[2].angle, fin[3].angle);
+  // @LoggerMessage: SFAN
+  // @Description: Simulated Blimp Servo Angles
+  // @Field: TimeUS: Time since system startup
+  // @Field: f0: fin 0 servo angle
+  // @Field: f1: fin 1 servo angle
+  // @Field: f2: fin 2 servo angle
+  // @Field: f3: fin 3 servo angle
   AP::logger().WriteStreaming("SFAN", "TimeUS,f0,f1,f2,f3",
                               "Qffff",
                               AP_HAL::micros64(),
                               fin[0].servo_angle, fin[1].servo_angle, fin[2].servo_angle, fin[3].servo_angle);
+  // @LoggerMessage: SSAN
+  // @Description: Simulated Blimp Servo Inputs
+  // @Field: TimeUS: Time since system startup
+  // @Field: f0: fin 0 servo angle input
+  // @Field: f1: fin 1 servo angle input
+  // @Field: f2: fin 2 servo angle input
+  // @Field: f3: fin 3 servo angle input
   AP::logger().WriteStreaming("SSAN", "TimeUS,f0,f1,f2,f3",
                               "QHHHH",
                               AP_HAL::micros64(),
                               input.servos[0], input.servos[1], input.servos[2], input.servos[3]);
+  // @LoggerMessage: SFV1
+  // @Description: Simulated Blimp Fin Velocities
+  // @Field: TimeUS: Time since system startup
+  // @Field: f0: fin 0 velocity
+  // @Field: f1: fin 1 velocity
+  // @Field: f2: fin 2 velocity
+  // @Field: f3: fin 3 velocity
   AP::logger().WriteStreaming("SFV1", "TimeUS,f0,f1,f2,f3",
                               "Qffff",
                               AP_HAL::micros64(),
                               fin[0].vel, fin[1].vel, fin[2].vel, fin[3].vel);
+  // @LoggerMessage: SRT1
+  // @Description: Simulated Blimp Rotational forces
+  // @Field: TimeUS: Time since system startup
+  // @Field: rtx: zero
+  // @Field: rty: zero
+  // @Field: rtz: zero
   AP::logger().WriteStreaming("SRT1", "TimeUS,rtx,rty,rtz",
                               "Qfff",
                               AP_HAL::micros64(),
@@ -143,6 +197,12 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
 
 #if 0 //"Wobble" attempt
   rot_T.y = fin[0].Fz * radius + fin[1].Fz * radius;
+  // @LoggerMessage: SRT2
+  // @Description: Transformed Simulated Blimp Rotational forces
+  // @Field: TimeUS: Time since system startup
+  // @Field: rtx: x-axis wobble rotational force
+  // @Field: rty: y-axis wobble rotational force
+  // @Field: rtz: z-axis wobble rotational force
   AP::logger().WriteStreaming("SRT2", "TimeUS,rtx,rty,rtz",
                               "Qfff",
                               AP_HAL::micros64(),
@@ -153,22 +213,52 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
   Vector3f ang_ef = dcm * ang;
   rot_T.x -= mass*GRAVITY_MSS*sinf(M_PI-ang_ef.x)/cog.z;
   rot_T.y -= mass*GRAVITY_MSS*sinf(M_PI-ang_ef.y)/cog.z;
+  // @LoggerMessage: SRT3
+  // @Description: Simulated Blimp Torques
+  // @Field: TimeUS: Time since system startup
+  // @Field: rtx: torque around x axis
+  // @Field: rty: torque around y axis
+  // @Field: rtz: torque around z axis
   AP::logger().WriteStreaming("SRT3", "TimeUS,rtx,rty,rtz",
                               "Qfff",
                               AP_HAL::micros64(),
                               rot_T.x, rot_T.y, rot_T.z);
+  // @LoggerMessage: SAN1
+  // @Description: Simulated Blimp Angles
+  // @Field: TimeUS: Time since system startup
+  // @Field: anx: x angle
+  // @Field: any: y angle
+  // @Field: anz: z angle
   AP::logger().WriteStreaming("SAN1", "TimeUS,anx,any,anz",
                               "Qfff",
                               AP_HAL::micros64(),
                               ang.x, ang.y, ang.z);
+  // @LoggerMessage: SAN2
+  // @Description: Simulated Blimp Angles
+  // @Field: TimeUS: Time since system startup
+  // @Field: anx: x earth-frame angle
+  // @Field: any: y earth-frame angle
+  // @Field: anz: z earth-frame angle
   AP::logger().WriteStreaming("SAN2", "TimeUS,anx,any,anz",
                               "Qfff",
                               AP_HAL::micros64(),
                               ang_ef.x, ang_ef.y, ang_ef.z);
+  // @LoggerMessage: SAF1
+  // @Description: Simulated Blimp Sin-Angles
+  // @Field: TimeUS: Time since system startup
+  // @Field: afx: sin(x angle)
+  // @Field: afy: sin(y angle)
+  // @Field: afz: sin(z angle)
   AP::logger().WriteStreaming("SAF1", "TimeUS,afx,afy,afz",
                               "Qfff",
                               AP_HAL::micros64(),
                               sinf(ang.x), sinf(ang.y), sinf(ang.z));
+  // @LoggerMessage: SMGC
+  // @Description: Simulated Blimp Mass and COG
+  // @Field: TimeUS: Time since system startup
+  // @Field: m: mass
+  // @Field: g: gravity
+  // @Field: cz: centre-of-gravity, z-axis
   AP::logger().WriteStreaming("SMGC", "TimeUS,m,g,cz",
                               "Qfff",
                               AP_HAL::micros64(),
@@ -204,6 +294,12 @@ void Blimp::update(const struct sitl_input &input)
   }
 
 #if 0
+  // @LoggerMessage: SBLM
+  // @Description: Simulated Blimp Rotational Accelerations
+  // @Field: TimeUS: Time since system startup
+  // @Field: RAx: acceleration around X axis
+  // @Field: RAy: acceleration around Y axis
+  // @Field: RAz: acceleration around Z axis
   AP::logger().WriteStreaming("SBLM", "TimeUS,RAx,RAy,RAz",
                                 "Qfff",
                                 AP_HAL::micros64(),

@@ -476,12 +476,12 @@ fi
 
 ######## Calculate offset
 diff=$(( ( $(date -ud "$jpgdate $jpgtime" +'%s') - $(date -ud "$logdate $logtime" +'%s') ) )) #get differance in seconds (integer)
-difftot=$(echo "scale=2; ($diff+($jpgtimems - $logtimems))" | bc -l) # return floting point
+difftot=$(echo "scale=2; ($diff+($jpgtimems - $logtimems))" | bc -l) # return floating point
 ######## Calculate time since last trigger command
 differr=$(( ( $(date -ud "$logdate $logtime" +'%s') - $(date -ud "$logdateprev $logtimeprev" +'%s') ) )) #get differance in seconds (integer)
-difftoterr=$(echo "scale=2; ($differr+($logtimems - $logtimemsprev))" | bc -l) # return floting point
+difftoterr=$(echo "scale=2; ($differr+($logtimems - $logtimemsprev))" | bc -l) # return floating point
 difftotoff=$(echo "scale=2; ($difftot - $typical_offset)" | bc -l) 
-difftoterroff=$(echo "scale=2; ($differr - $typical_offset)" | bc -l) # return floting point 
+difftoterroff=$(echo "scale=2; ($differr - $typical_offset)" | bc -l) # return floating point 
  if [ "$typical_offset" == "notset" ]
  then
 	 typical_offset=$difftot
@@ -623,12 +623,12 @@ fi
 
 ######## Calculate offset
 diff=$(( ( $(date -ud "$jpgdate $jpgtime" +'%s') - $(date -ud "$logdate $logtime" +'%s') ) )) #get differance in seconds (integer)
-difftot=$(echo "scale=2; ($diff+($jpgtimems - $logtimems))" | bc -l) # return floting point
+difftot=$(echo "scale=2; ($diff+($jpgtimems - $logtimems))" | bc -l) # return floating point
 ######## Calculate time since last trigger command
 differr=$(( ( $(date -ud "$logdate $logtime" +'%s') - $(date -ud "$logdateprev $logtimeprev" +'%s') ) )) #get differance in seconds (integer)
-difftoterr=$(echo "scale=2; ($differr+($logtimems - $logtimemsprev))" | bc -l) # return floting point
+difftoterr=$(echo "scale=2; ($differr+($logtimems - $logtimemsprev))" | bc -l) # return floating point
 difftotoff=$(echo "scale=2; ($difftot - $typical_offset)" | bc -l) 
-difftoterroff=$(echo "scale=2; ($differr - $typical_offset)" | bc -l) # return floting point 
+difftoterroff=$(echo "scale=2; ($differr - $typical_offset)" | bc -l) # return floating point 
  if [ "$typical_offset" == "notset" ] ; then
 	typical_offset=$difftot
     echo "INFO: Expected time offset between camera and log is ""$typical_offset""s (positive = camera is ahead)" | tee -a geotag.log

@@ -139,7 +139,7 @@ void NotchFilter<T>::reset()
 template <class T>
 float NotchFilter<T>::logging_frequency() const
 {
-    return initialised ? _center_freq_hz : AP::logger().quiet_nanf();
+    return initialised ? _center_freq_hz : AP_Logger::quiet_nanf();
 }
 #endif
 

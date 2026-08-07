@@ -1,0 +1,6 @@
+include ../f103-periph/hwdef-bl.inc
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MFE_AirSpeed_CAN
+undef PA4
+PA10 LED_BOOTLOADER OUTPUT LOW

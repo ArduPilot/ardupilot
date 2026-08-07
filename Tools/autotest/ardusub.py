@@ -7,19 +7,13 @@ Parameters are in-code defaults plus default_params/sub.parm
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
 import os
-import sys
 
-from pymavlink import mavutil
+from pymavlink import mavutil, mavextra
 
 import vehicle_test_suite
 from vehicle_test_suite import NotAchievedException
-from vehicle_test_suite import AutoTestTimeoutException
-from vehicle_test_suite import PreconditionFailedException
-
-if sys.version_info[0] < 3:
-    ConnectionResetError = AutoTestTimeoutException
+from math import degrees
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -95,6 +89,45 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def default_frame(self):
         return 'vectored'
 
+    def WaterDepth(self):
+        """Check WATER_DEPTH MAVLink message support for ArduSub"""
+
+        self.context_push()
+
+        # Setup rangefinders
+        self.customise_SITL_commandline([
+            "--serial7=sim:nmea", # NMEA Rangefinder
+        ])
+
+        self.set_parameters({
+            "RNGFND1_TYPE" : 17,     # NMEA must attach uart to SITL
+            "RNGFND1_ORIENT" : 25,   # Set to downward facing
+            "RNGFND1_MIN": 0.10,
+            "RNGFND1_MAX": 30.00,
+            "SERIAL7_PROTOCOL" : 9,  # Rangefinder on serial7
+            "SERIAL7_BAUD" : 9600,   # Rangefinder specific baudrate
+        })
+
+        self.reboot_sitl()
+        self.set_rc_default()
+        self.wait_ready_to_arm()
+
+        self.set_message_rate_hz('WATER_DEPTH', 2)
+
+        self.progress("Arming vehicle for WATER_DEPTH test")
+        self.arm_vehicle()
+
+        # wait for at least one WATER_DEPTH message
+        self.progress("Waiting for WATER_DEPTH message")
+        self.assert_receive_message('WATER_DEPTH', timeout=20)
+
+        # assert the message rate is correct
+        self.progress("Checking WATER_DEPTH message rate")
+        self.assert_message_rate_hz('WATER_DEPTH', 2)
+
+        self.disarm_vehicle()
+        self.context_pop()
+
     def is_sub(self):
         return True
 
@@ -110,10 +143,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 altitude range
         """
         tstart = self.get_sim_time_cached()
-        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        previous_altitude = self.assert_receive_message('VFR_HUD').alt
         self.progress('Altitude to be watched: %f' % (previous_altitude))
         while True:
-            m = self.mav.recv_match(type='VFR_HUD', blocking=True)
+            m = self.assert_receive_message('VFR_HUD')
             if self.get_sim_time_cached() - tstart > timeout:
                 self.progress('Altitude hold done: %f' % (previous_altitude))
                 return
@@ -128,9 +161,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.change_mode('ALT_HOLD')
 
-        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
-        if msg is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        msg = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         pwm = 1300
         if msg.relative_alt/1000.0 < -6.0:
             # need to go up, not down!
@@ -187,65 +218,92 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def RngfndQuality(self):
         """Check lua Range Finder quality information flow"""
-        self.context_push()
         self.context_collect('STATUSTEXT')
 
-        ex = None
-        try:
-            self.set_parameters({
-                "SCR_ENABLE": 1,
-                "RNGFND1_TYPE": 36,
-                "RNGFND1_ORIENT": 25,
-                "RNGFND1_MIN_CM": 10,
-                "RNGFND1_MAX_CM": 5000,
-            })
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RNGFND1_TYPE": 36,
+            "RNGFND1_ORIENT": 25,
+            "RNGFND1_MIN": 0.10,
+            "RNGFND1_MAX": 50.00,
+        })
 
-            self.install_example_script_context("rangefinder_quality_test.lua")
+        self.install_example_script_context("rangefinder_quality_test.lua")
 
-            # These string must match those sent by the lua test script.
-            complete_str = "#complete#"
-            failure_str = "!!failure!!"
+        # These string must match those sent by the lua test script.
+        complete_str = "#complete#"
+        failure_str = "!!failure!!"
 
-            self.reboot_sitl()
-
-            self.wait_statustext(complete_str, timeout=20, check_context=True)
-            found_failure = self.statustext_in_collections(failure_str)
-
-            if found_failure is not None:
-                raise NotAchievedException("RngfndQuality test failed: " + found_failure.text)
-
-        except Exception as e:
-            self.print_exception_caught(e)
-            ex = e
-
-        self.context_pop()
-
-        # restart SITL RF driver
         self.reboot_sitl()
 
-        if ex:
-            raise ex
+        self.wait_statustext(complete_str, timeout=20, check_context=True)
+        found_failure = self.statustext_in_collections(failure_str)
+
+        if found_failure is not None:
+            raise NotAchievedException("RngfndQuality test failed: " + found_failure.text)
 
     def watch_distance_maintained(self, delta=0.3, timeout=5.0):
         """Watch and wait for the rangefinder reading to be maintained"""
         tstart = self.get_sim_time_cached()
-        previous_distance = self.mav.recv_match(type='RANGEFINDER', blocking=True).distance
+        self.context_push()
+        self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
+        previous_distance = self.assert_receive_message('RANGEFINDER').distance
+        previous_distance_ds = self.assert_receive_message('DISTANCE_SENSOR').current_distance * 0.01  # cm -> m
         self.progress('Distance to be watched: %.2f' % previous_distance)
         while True:
-            m = self.mav.recv_match(type='RANGEFINDER', blocking=True)
             if self.get_sim_time_cached() - tstart > timeout:
                 self.progress('Distance hold done: %f' % previous_distance)
+                self.context_pop()
                 return
+            m = self.assert_receive_message('RANGEFINDER')
             if abs(m.distance - previous_distance) > delta:
                 raise NotAchievedException(
                     "Distance not maintained: want %.2f (+/- %.2f) got=%.2f" %
                     (previous_distance, delta, m.distance))
+            m = self.assert_receive_message('DISTANCE_SENSOR')
+            if abs(m.current_distance*0.01 - previous_distance_ds) > delta:
+                raise NotAchievedException(
+                    "Distance not maintained: want %.2f (+/- %.2f) got=%.2f" %
+                    (previous_distance, delta, m.distance))
+
+    def GCSFailsafe(self):
+        '''Test GCSFailsafe'''
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.context_push()
+        self.setGCSfailsafe(4)
+        self.set_heartbeat_rate(0)
+        self.wait_mode("SURFACE")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.progress("GSC Failsafe OK")
+        self.disarm_vehicle()
+        self.context_pop()
+
+    # Tests actions and logic behind the radio failsafe
+    def ThrottleFailsafe(self):
+        '''Test RC and RC Failsafe'''
+        # disable GCS and enable RC
+        self.context_push()
+        self.set_parameter('FS_GCS_ENABLE', 0)
+        self.set_parameter('RC_PROTOCOLS', 1)
+        self.set_heartbeat_rate(0)
+        # Trigger an RC failure with the failsafe disabled. Verify no action taken.
+        self.start_subtest("Radio failsafe disabled test: FS_THR_ENABLE=0 should take no failsafe action")
+        self.set_parameter('FS_THR_ENABLE', 0)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_ready_to_arm()
+        # Switch RC failsafe action to SURFACE, should take action since we are in RC failsafe
+        self.set_parameter('FS_THR_ENABLE', 2)
+        self.wait_mode("SURFACE")
+        self.context_pop()
+        self.progress("Completed Radio failsafe disabled test")
 
     def Surftrak(self):
         """Test SURFTRAK mode"""
 
-        if self.get_parameter('RNGFND1_MAX_CM') != 3000.0:
-            raise PreconditionFailedException("RNGFND1_MAX_CM is not %g" % 3000.0)
+        self.assert_parameter_value('RNGFND1_MAX', 30)
 
         # Something closer to Bar30 noise
         self.context_push()
@@ -284,6 +342,14 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_statustext('rangefinder target is', check_context=True)
         self.watch_distance_maintained()
 
+        # Disarm, allowing the vehicle to drift up
+        self.disarm_vehicle()
+        self.delay_sim_time(5)
+
+        # Re-arm. The vehicle should get a new rangefinder target and maintain distance
+        self.arm_vehicle()
+        self.watch_distance_maintained()
+
         self.disarm_vehicle()
         self.context_pop()
 
@@ -292,8 +358,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "RNGFND1_TYPE": 36,
             "RNGFND1_ORIENT": 25,
-            "RNGFND1_MIN_CM": 10,
-            "RNGFND1_MAX_CM": 3000,
+            "RNGFND1_MIN": 0.10,
+            "RNGFND1_MAX": 30.00,
             "SCR_USER1": 2,                 # Configuration bundle
             "SCR_USER2": sea_floor_depth,   # Depth in meters
             "SCR_USER3": 101,               # Output log records
@@ -455,7 +521,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
         self.delay_sim_time(3)
         # start the test itself, go through some modes and check if anything changes
-        previous_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        previous_altitude = self.assert_receive_message('VFR_HUD').alt
         self.change_mode('ALT_HOLD')
         self.delay_sim_time(2)
         self.change_mode('POSHOLD')
@@ -474,7 +540,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
         self.change_mode('MANUAL')
         self.disarm_vehicle()
-        final_altitude = self.mav.recv_match(type='VFR_HUD', blocking=True).alt
+        final_altitude = self.assert_receive_message('VFR_HUD').alt
         if abs(previous_altitude - final_altitude) > delta:
             raise NotAchievedException(
                 "Changing modes affected depth with no throttle input!, started at {}, ended at {}"
@@ -496,9 +562,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.delay_sim_time(2)
 
         # Save starting point
-        msg = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=5)
-        if msg is None:
-            raise NotAchievedException("Did not get GLOBAL_POSITION_INT")
+        self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
         start_pos = self.mav.location()
         # Hold in perfect conditions
         self.progress("Testing position hold in perfect conditions")
@@ -612,8 +676,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        startpos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                       blocking=True)
+        startpos = self.assert_receive_message('GLOBAL_POSITION_INT')
 
         lat = 5
         lon = 5
@@ -643,8 +706,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time_cached() - tstart > 200:
                 raise NotAchievedException("Did not move far enough")
-            pos = self.mav.recv_match(type='GLOBAL_POSITION_INT',
-                                      blocking=True)
+            pos = self.assert_receive_message('GLOBAL_POSITION_INT')
             delta = self.get_distance_int(startpos, pos)
             self.progress("delta=%f (want >10)" % delta)
             if delta > 10:
@@ -714,6 +776,70 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
                 self.wait_groundspeed(speed-0.2, speed+0.2, minimum_duration=2, timeout=60)
         self.disarm_vehicle()
+
+    def GPSForYaw(self):
+        '''Consume heading of NMEA GPS and propagate to ATTITUDE'''
+
+        # load parameters with gps for yaw and 10 degrees offset
+        self.load_default_params_file("sub-gps-for-yaw-nmea.parm")
+        self.reboot_sitl()
+        # wait for the vehicle to be ready
+        self.wait_ready_to_arm()
+        # make sure we are getting both GPS_RAW_INT and SIMSTATE
+        simstate_m = self.assert_receive_message("SIMSTATE")
+        real_yaw_deg = degrees(simstate_m.yaw)
+        expected_yaw_deg = mavextra.wrap_180(real_yaw_deg + 30) # offset in the param file, in degrees
+        # wait for GPS_RAW_INT to have a good fix
+        self.wait_gps_fix_type_gte(3, message_type="GPS_RAW_INT", verbose=True)
+
+        att_m = self.assert_receive_message("ATTITUDE")
+        achieved_yaw_deg = mavextra.wrap_180(degrees(att_m.yaw))
+
+        # ensure new reading propagated to ATTITUDE
+        try:
+            self.wait_heading(expected_yaw_deg)
+        except NotAchievedException as e:
+            raise NotAchievedException(
+                "Expected to get yaw consumed and at ATTITUDE (want %f got %f)" % (expected_yaw_deg, achieved_yaw_deg)
+            ) from e
+
+    def VisoForYaw(self):
+        ''' Test propagation of yaw from VisualOdom to EKF'''
+        yaw_offset_deg = 50
+        # Configure SITL to use Vicon
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+
+        # Configure EKF to use Vicon for yaw
+        self.set_parameters({
+            "VISO_TYPE": 1, # Vicon
+            "SERIAL5_PROTOCOL": 1,
+            "SIM_VICON_TMASK": 1,  # Send POSITION_ESTIMATE
+            "EK3_SRC1_YAW": 6, # Tell EKF to use Vicon for yaw
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('STABILIZE')
+        # Look east
+        self.set_rc(Joystick.Yaw, 1600)
+        self.wait_heading(90)
+        self.set_rc(Joystick.Yaw, 1500)
+        self.wait_yaw_speed(0, minimum_duration=1)
+
+        prev_yaw_deg = self.get_heading()
+        # Change to manual to prevent the vehicle from trying to correct yaw
+        self.change_mode('MANUAL')
+        self.set_parameters({
+            'EK3_GYRO_P_NSE': 1.0, # Increased gyro noise makes EKF more sensitive to Vicon yaw
+        })
+        self.set_parameter('SIM_VICON_YAWERR', yaw_offset_deg)
+        self.wait_heading(prev_yaw_deg + yaw_offset_deg, timeout=120)
+        self.set_parameter('SIM_VICON_YAWERR', 0)
+        self.wait_heading(prev_yaw_deg, timeout=120)
+
+        self.disarm_vehicle()
+        self.progress("VisualOdom for Yaw OK")
 
     def _MAV_CMD_CONDITION_YAW(self, run_cmd):
         self.arm_vehicle()
@@ -788,8 +914,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def TerrainMission(self):
         """Mission using surface tracking"""
 
-        if self.get_parameter('RNGFND1_MAX_CM') != 3000.0:
-            raise PreconditionFailedException("RNGFND1_MAX_CM is not %g" % 3000.0)
+        self.assert_parameter_value('RNGFND1_MAX', 30)
 
         filename = "terrain_mission.txt"
         self.progress("Executing mission %s" % filename)
@@ -853,7 +978,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # This should set the EKF origin, write an ORGN msg to df and a GPS_GLOBAL_ORIGIN msg to MAVLink
         self.mav.mav.set_gps_global_origin_send(1, int(47.607584 * 1e7), int(-122.343911 * 1e7), 0)
-        self.delay_sim_time(1)
+        self.delay_sim_time(2)
 
         if not self.current_onboard_log_contains_message('ORGN'):
             raise NotAchievedException("Did not find expected ORGN message")
@@ -868,15 +993,15 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def BackupOrigin(self):
-        """Test ORIGIN_LAT and ORIGIN_LON parameters"""
+        """Test AHRS_ORIGIN_LAT and AHRS_ORIGIN_LON parameters"""
 
         self.context_push()
         self.set_parameters({
-            'GPS1_TYPE': 0,              # Disable GPS
+            'GPS1_TYPE': 0,             # Disable GPS
             'EK3_SRC1_POSXY': 0,        # Make sure EK3_SRC parameters do not refer to GPS
             'EK3_SRC1_VELXY': 0,        # Make sure EK3_SRC parameters do not refer to GPS
-            'ORIGIN_LAT': 47.607584,
-            'ORIGIN_LON': -122.343911,
+            'AHRS_ORIGIN_LAT': 47.607584,
+            'AHRS_ORIGIN_LON': -122.343911,
         })
         self.reboot_sitl()
         self.context_collect('STATUSTEXT')
@@ -884,18 +1009,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # Wait for the EKF to be happy in constant position mode
         self.wait_ready_to_arm_const_pos()
 
-        if self.current_onboard_log_contains_message('ORGN'):
-            raise NotAchievedException("Found unexpected ORGN message")
+        self.wait_statustext('AHRS: using recorded origin', check_context=True)
 
-        # This should set the origin and write a record to ORGN
-        self.arm_vehicle()
-
-        self.wait_statustext('Using backup location', check_context=True)
-
+        # check that origin has been logged
         if not self.current_onboard_log_contains_message('ORGN'):
             raise NotAchievedException("Did not find expected ORGN message")
 
-        self.disarm_vehicle()
         self.context_pop()
 
     def assert_mag_fusion_selection(self, expect_sel):
@@ -947,12 +1066,262 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
 
+    def INA3221(self):
+        '''test INA3221 driver'''
+        self.set_parameters({
+            "BATT2_MONITOR": 30,
+            "BATT3_MONITOR": 30,
+            "BATT4_MONITOR": 30,
+        })
+        self.reboot_sitl()
+        self.set_parameters({
+            "BATT2_I2C_ADDR": 0x42, # address defined in libraries/SITL/SIM_I2C.cpp
+            "BATT2_I2C_BUS": 1,
+            "BATT2_CHANNEL": 1,
+
+            "BATT3_I2C_ADDR": 0x42,
+            "BATT3_I2C_BUS": 1,
+            "BATT3_CHANNEL": 2,
+
+            "BATT4_I2C_ADDR": 0x42,
+            "BATT4_I2C_BUS": 1,
+            "BATT4_CHANNEL": 3,
+        })
+        self.reboot_sitl()
+
+        seen_1 = False
+        seen_3 = False
+        tstart = self.get_sim_time()
+        while not (seen_1 and seen_3):
+            m = self.assert_receive_message('BATTERY_STATUS')
+            if self.get_sim_time() - tstart > 10:
+                # expected to take under 1 simulated second, but don't hang if
+                # e.g. the driver gets stuck
+                raise NotAchievedException("INA3221 status timeout")
+            if m.id == 1:
+                self.assert_message_field_values(m, {
+                    # values close to chip limits
+                    "voltages[0]": int(25 * 1000), # millivolts
+                    "current_battery": int(160 * 100), # centi-amps
+                }, epsilon=10) # allow rounding
+                seen_1 = True
+            # id 2 is the first simulated battery current/voltage
+            if m.id == 3:
+                self.assert_message_field_values(m, {
+                    # values different from above to test channel switching
+                    "voltages[0]": int(3.14159 * 1000), # millivolts
+                    "current_battery": int(2.71828 * 100), # centi-amps
+                }, epsilon=10) # allow rounding
+                seen_3 = True
+
+    def wait_for_stop(self):
+        """Watch the sub slow down and stop"""
+        tstart = self.get_sim_time_cached()
+        lstart = self.mav.location()
+
+        dmax = 0
+        dprev = 0
+
+        while True:
+            self.delay_sim_time(1)
+
+            dcurr = self.get_distance(lstart, self.mav.location())
+
+            if dcurr - dmax < -0.2:
+                raise NotAchievedException("Bounced back from %.2fm to %.2fm" % (dmax, dcurr))
+            if dcurr > dmax:
+                dmax = dcurr
+
+            if abs(dcurr - dprev) < 0.1:
+                self.progress("Stopping distance %.2fm, less than %.2fs" % (dcurr, self.get_sim_time_cached() - tstart))
+                return
+
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Took to long to stop")
+
+            dprev = dcurr
+
+    def PosHoldBounceBack(self):
+        """Test for bounce back in POSHOLD mode"""
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # dive a little
+        self.set_rc(Joystick.Throttle, 1300)
+        self.delay_sim_time(3)
+        self.set_rc(Joystick.Throttle, 1500)
+        self.delay_sim_time(2)
+
+        # hold position
+        self.change_mode('POSHOLD')
+
+        for pilot_speed in range(50, 251, 100):
+            # set max speed
+            self.set_parameter('PILOT_SPEED', pilot_speed)
+
+            # try different stick values, resulting speed is ~ max_speed * effort * gain
+            for pwm in range(1700, 1901, 100):
+                self.progress('PILOT_SPEED %d, forward pwm %d' % (pilot_speed, pwm))
+                self.set_rc(Joystick.Forward, pwm)
+                self.delay_sim_time(3)
+                self.set_rc(Joystick.Forward, 1500)
+                self.wait_for_stop()
+
+        self.disarm_vehicle()
+
+    def SHT3X(self):
+        '''test for the SHT3X temperature/hygro driver'''
+        self.set_parameters({
+            'TEMP1_TYPE': 8,
+            'TEMP1_ADDR': 0x44,
+            'TEMP_LOG': 1,
+        })
+        self.reboot_sitl()
+        self.context_push()
+        self.set_parameter('LOG_DISARMED', 1)
+        self.delay_sim_time(10)
+        self.context_pop()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='TEMP')
+            if m is None:
+                break
+            self.progress(m)
+            if m.Temp > 15 or m.Temp < 30:
+                # success!
+                break
+        if m is None:
+            raise NotAchievedException("Did not get good TEMP message")
+
+    def MAV_mgs(self):
+        '''test individual GCS backends timestamps'''
+        self.reboot_sitl()
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.delay_sim_time(10, reason='add delay on connecting "telemetry')
+
+        self.progress("Connecting to telemetry port")
+        mav2 = mavutil.mavlink_connection(
+            "tcp:localhost:5763",
+            robust_parsing=True,
+            source_system=self.mav.source_system,
+            source_component=self.mav.source_component,
+        )
+        tstart = self.get_sim_time()
+        while True:
+            tnow = self.get_sim_time()
+            self.drain_mav()
+            if tnow - tstart > 20:
+                break
+            if tnow - tstart > 1:
+                mav2.mav.heartbeat_send(
+                    mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                    mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                    0,
+                    0,
+                    0,
+                )
+        self.delay_sim_time(20, reason="allow for checking not receiving hb any more on chan=2")
+        dfreader = self.dfreader_for_current_onboard_log()
+
+        chan0_count = 0
+        chan0_last_timestamp_us = 0
+        chan0_last_mgs = 0
+        chan2_count = 0
+        chan2_last_timestamp_us = 0
+        chan2_last_mgs = 0
+        att_ts_us = 0
+        while True:
+            m = dfreader.recv_match(type=['MAV', 'ATT'])
+            if m is None:
+                raise NotAchievedException("Did not find everything wanted in log")
+            if chan2_count > 10:
+                self.progress("Received 10 heartbeats on chan==2")
+                break
+            if m.get_type() == 'ATT':
+                att_ts_us = m.TimeUS
+                continue
+            if m.mgs == 0:
+                # no heartbeat received yet
+                continue
+            if m.chan == 0:
+                if chan0_count == 0:
+                    if att_ts_us > 5000000:
+                        raise NotAchievedException(f"Late arrival on chan=0 {att_ts_us=}")
+                chan0_count += 1
+                if chan0_count > 3:
+                    if att_ts_us - chan0_last_timestamp_us > 2000000:
+                        raise NotAchievedException(f"Unexpected interval on chan=0 {att_ts_us=} {chan0_last_timestamp_us=}")
+                    if m.mgs - chan0_last_mgs > 2000:
+                        raise NotAchievedException(f"Unexpected interval on chan==0 mgs {m.mgs=} {chan0_last_mgs=}")
+                chan0_last_mgs = m.mgs
+                chan0_last_timestamp_us = att_ts_us
+            elif m.chan == 2:
+                if chan2_count == 0:
+                    if att_ts_us < 10000000:
+                        raise NotAchievedException(f"Early heartbeat on chan==2 {att_ts_us=}")
+                chan2_count += 1
+                if chan2_count > 1:
+                    if att_ts_us - chan2_last_timestamp_us > 2000000:
+                        raise NotAchievedException("Unexpected interval on chan=0")
+                    if m.mgs - chan2_last_mgs > 2000:
+                        raise NotAchievedException(f"Unexpected interval on chan==0 mgs {m.mgs=} {chan2_last_mgs=}")
+                chan2_last_mgs = m.mgs
+                chan2_last_timestamp_us = att_ts_us
+
+        self.progress("Waiting for heartbeats to stop on chan==2")
+        chan0_last_timestamp_us = 0
+        chan2_last_timestamp_us = 0
+        while True:
+            m = dfreader.recv_match(type=['MAV', 'ATT'])
+            if m is None:
+                raise NotAchievedException("heartbeats did not stop on chan==2")
+
+            if m.get_type() == 'ATT':
+                att_ts_us = m.TimeUS
+                continue
+            if m.chan == 0:
+                chan0_last_timestamp_us = att_ts_us
+                if chan0_last_timestamp_us - chan2_last_timestamp_us > 5000000:
+                    self.progress("chan==2 heartbeats have stopped")
+                    break
+            elif m.chan == 2:
+                chan2_last_timestamp_us = att_ts_us
+
+    def SurfaceSensorless(self):
+        """Test surface mode with sensorless thrust"""
+        # set GCS failsafe to SURFACE
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode("STABILIZE")
+        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+
+        self.set_rc(Joystick.Throttle, 1100)
+        self.wait_altitude(altitude_min=-10, altitude_max=-9, relative=False, timeout=60)
+        self.set_rc(Joystick.Throttle, 1500)
+
+        self.context_push()
+        self.setGCSfailsafe(4)
+        self.set_parameter("SIM_BARO_DISABLE", 1)
+        self.set_heartbeat_rate(0)
+        self.wait_mode("SURFACE")
+        self.progress("Surface mode engaged")
+        self.wait_altitude(altitude_min=-1, altitude_max=0, relative=False, timeout=60)
+        self.progress("Vehicle resurfaced")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.progress("Baro-less Surface mode OK")
+        self.disarm_vehicle()
+        self.context_pop()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
 
         ret.extend([
             self.DiveManual,
+            self.GCSFailsafe,
+            self.ThrottleFailsafe,
             self.AltitudeHold,
             self.Surftrak,
             self.SimTerrainSurftrak,
@@ -960,6 +1329,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.RngfndQuality,
             self.PositionHold,
             self.ModeChanges,
+            self.MAV_mgs,
             self.DiveMission,
             self.GripperMission,
             self.DoubleCircle,
@@ -978,6 +1348,13 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.SetGlobalOrigin,
             self.BackupOrigin,
             self.FuseMag,
+            self.INA3221,
+            self.PosHoldBounceBack,
+            self.SHT3X,
+            self.SurfaceSensorless,
+            self.GPSForYaw,
+            self.WaterDepth,
+            self.VisoForYaw,
         ])
 
         return ret

@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F7xx STM32F767xx
 
-# board ID for firmware load
-APJ_BOARD_ID 143
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKF765_WING
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -190,7 +190,7 @@ SPIDEV osd      SPI2 DEVID4 MAX7456_CS  MODE0 10*MHZ 10*MHZ
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 1
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
@@ -203,7 +203,7 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 1
 # board variants
 BARO BMP280 I2C:0:0x76
 BARO DPS310 I2C:0:0x76
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x77
 
 define HAL_OS_FATFS_IO 1
 

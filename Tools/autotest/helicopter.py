@@ -4,8 +4,6 @@ Fly Helicopter in SITL
 AP_FLAKE8_CLEAN
 '''
 
-from __future__ import print_function
-
 from arducopter import AutoTestCopter
 
 import vehicle_test_suite
@@ -41,6 +39,12 @@ class AutoTestHelicopter(AutoTestCopter):
     def is_heli(self):
         return True
 
+    def subgroupvarptr_activation_params(self):
+        ret = super(AutoTestHelicopter, self).subgroupvarptr_activation_params()
+        # AC_CustomControl is disabled on heli (AC_CUSTOMCONTROL_MULTI_ENABLED is false)
+        ret.pop("CC_TYPE", None)
+        return ret
+
     def rc_defaults(self):
         ret = super(AutoTestHelicopter, self).rc_defaults()
         ret[8] = 1000
@@ -58,7 +62,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Skipping loiter-requires-position for heli; rotor runup issues")
 
     def get_collective_out(self):
-        servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
         chan_pwm = (servo.servo1_raw + servo.servo2_raw + servo.servo3_raw)/3.0
         return chan_pwm
 
@@ -70,7 +74,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+        servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
         coll = servo.servo1_raw
         coll = coll + 50
         self.set_parameter("H_RSC_RUNUP_TIME", TARGET_RUNUP_TIME)
@@ -80,7 +84,10 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Collective threshold PWM %u" % coll)
         tstart = self.get_sim_time()
         self.progress("Wait that collective PWM pass threshold value")
-        servo = self.mav.recv_match(condition='SERVO_OUTPUT_RAW.servo1_raw>%u' % coll, blocking=True)
+        servo = self.assert_receive_message(
+            "SERVO_OUTPUT_RAW",
+            condition=f'SERVO_OUTPUT_RAW.servo1_raw>{coll}'
+        )
         runup_time = self.get_sim_time() - tstart
         self.progress("Collective is now at PWM %u" % servo.servo1_raw)
         self.mav.wait_heartbeat()
@@ -219,13 +226,69 @@ class AutoTestHelicopter(AutoTestCopter):
         self.takeoff(10)
         self.do_RTL()
 
+    def GovernorNotEngagedManualThrottle(self):
+        '''check runup complete and land-complete clear in manual throttle modes when governor never engages'''
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=self.model_defaults_filepath('heli-gas'),
+            model="heli-gas",
+            wipe=True,
+        )
+        # AutoThrottle RSC mode with the rotor speed sensor removed;
+        # without RPM feedback the governor can never engage:
+        self.set_parameters({
+            "H_RSC_MODE": 4,
+            "RPM1_TYPE": 0,
+        })
+        self.reboot_sitl()
+
+        self.context_collect('STATUSTEXT')
+        self.context_set_message_rate_hz(id=mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, rate_hz=1)
+
+        self.change_mode('ALT_HOLD')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.progress("Raising rotor speed")
+        self.set_rc(8, 2000)
+
+        # wait beyond the rotor ramp and runup timers:
+        runup_time = (self.get_parameter("H_RSC_RAMP_TIME") +
+                      self.get_parameter("H_RSC_RUNUP_TIME"))
+        self.delay_sim_time(runup_time + 10, reason="rotor ramp and runup timers to expire")
+
+        # in a non-manual-throttle mode runup must not be declared
+        # complete until the governor engages:
+        if self.statustext_in_collections("Runup Complete") is not None:
+            raise NotAchievedException(
+                "Runup completed without governor engaged in non-manual throttle mode")
+
+        self.progress("Switching to a manual throttle mode")
+        self.change_mode('STABILIZE')
+        self.wait_statustext("Governor Failed to Engage when Runup Completed", check_context=True, timeout=30)
+
+        self.progress("Take off and check land-complete is cleared")
+        self.assert_extended_sys_state(
+            vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+            landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+        )
+        self.set_rc(3, 1700)
+        self.wait_altitude(5, 30, relative=True, timeout=60)
+        self.hover()
+        self.wait_extended_sys_state(
+            vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+            landed_state=mavutil.mavlink.MAV_LANDED_STATE_IN_AIR,
+            timeout=10,
+        )
+
+        self.do_RTL()
+
     def hover(self):
         self.progress("Setting hover collective")
         self.set_rc(3, 1500)
 
     def PosHoldTakeOff(self):
         """ensure vehicle stays put until it is ready to fly"""
-        self.set_parameter("PILOT_TKOFF_ALT", 700)
+        self.set_parameter("PILOT_TKO_ALT_M", 7.0)
         self.change_mode('POSHOLD')
         self.zero_throttle()
         self.set_rc(8, 1000)
@@ -309,6 +372,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_parameters({
             "AROT_ENABLE": 1,
             "H_RSC_AROT_ENBL": 1,
+            "H_COL_LAND_MIN" : -2.0
         })
         bail_out_time = self.get_parameter('H_RSC_AROT_RUNUP')
         self.change_mode('POSHOLD')
@@ -333,13 +397,12 @@ class AutoTestHelicopter(AutoTestCopter):
         # Change to the autorotation flight mode
         self.progress("Triggering autorotate mode")
         self.change_mode('AUTOROTATE')
-        self.delay_sim_time(2)
 
         # Disengage the interlock to remove power
         self.set_rc(8, 1000)
 
         # Ensure we have progressed through the mode's state machine
-        self.wait_statustext("SS Glide Phase", check_context=True)
+        self.wait_statustext("Glide Phase", check_context=True)
 
         self.progress("Testing bailout from autorotation")
         self.set_rc(8, 2000)
@@ -359,6 +422,43 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(3, 1000)
 
         self.wait_disarmed()
+        self.context_pop()
+
+    def AutorotationPreArm(self):
+        """Check autorotation pre-arms are working"""
+        self.context_push()
+        self.start_subtest("Check pass when autorotation mode not enabled")
+        self.set_parameters({
+            "AROT_ENABLE": 0,
+            "RPM1_TYPE": 0
+        })
+        self.reboot_sitl()
+        try:
+            self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
+            raise NotAchievedException("Received AROT prearm when not AROT not enabled")
+        except AutoTestTimeoutException:
+            # We want to hit the timeout on wait_statustext()
+            pass
+
+        self.start_subtest("Check pre-arm fails when autorotation mode enabled")
+        self.set_parameter("AROT_ENABLE", 1)
+        self.wait_statustext("PreArm: AROT: RPM1 not enabled", timeout=50)
+        self.set_parameter("RPM1_TYPE", 10) # reboot required to take effect
+        self.reboot_sitl()
+
+        self.start_subtest("Check pre-arm fails with bad HS_Sensor config")
+        self.context_push()
+        self.set_parameter("AROT_HS_SENSOR", -1)
+        self.wait_statustext("PreArm: AROT: RPM instance <0", timeout=50)
+        self.context_pop()
+
+        self.start_subtest("Check pre-arm fails with bad RSC config")
+        self.wait_statustext("PreArm: AROT: H_RSC_AROT_* not configured", timeout=50)
+
+        self.start_subtest("Check pre-arms clear with all issues corrected")
+        self.set_parameter("H_RSC_AROT_ENBL", 1)
+        self.wait_ready_to_arm()
+
         self.context_pop()
 
     def ManAutorotation(self, timeout=600):
@@ -473,19 +573,19 @@ class AutoTestHelicopter(AutoTestCopter):
 
         # We test the bailout behavior of two different configs
         # First we test config with a regular throttle curve
-        self.progress("testing autorotation with throttle curve config")
+        self.start_subtest("testing autorotation with throttle curve config")
         self.context_push()
         TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=0, cool_down=0)
 
         # Now we test a config that would be used with an ESC with internal governor and an autorotation window
-        self.progress("testing autorotation with ESC autorotation window config")
+        self.start_subtest("testing autorotation with ESC autorotation window config")
         TestAutorotationConfig(self, rsc_idle=0.0, arot_ramp_time=0.0, arot_idle=20.0, cool_down=0)
 
         # Check rsc output behavior when using the cool down feature
-        self.progress("testing autorotation with cool down enabled and zero autorotation idle")
+        self.start_subtest("testing autorotation with cool down enabled and zero autorotation idle")
         TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=0, cool_down=5.0)
 
-        self.progress("testing that H_RSC_AROT_IDLE is used over RSC_IDLE when cool down is enabled")
+        self.start_subtest("testing that H_RSC_AROT_IDLE is used over RSC_IDLE when cool down is enabled")
         TestAutorotationConfig(self, rsc_idle=5.0, arot_ramp_time=2.0, arot_idle=10, cool_down=5.0)
 
         self.context_pop()
@@ -708,6 +808,48 @@ class AutoTestHelicopter(AutoTestCopter):
         self.change_mode('LOITER')
         self.fly_mission_points(self.scurve_nasty_up_mission())
 
+    def MountFailsafeAction(self):
+        """Fly Mount Failsafe action"""
+        self.context_push()
+
+        self.progress("Setting up servo mount")
+        roll_servo = 12
+        pitch_servo = 11
+        yaw_servo = 10
+        open_servo = 9
+        roll_limit = 50
+        self.set_parameters({
+            "MNT1_TYPE": 1,
+            "SERVO%u_MIN" % roll_servo: 1000,
+            "SERVO%u_MAX" % roll_servo: 2000,
+            "SERVO%u_FUNCTION" % yaw_servo: 6,  # yaw
+            "SERVO%u_FUNCTION" % pitch_servo: 7,  # roll
+            "SERVO%u_FUNCTION" % roll_servo: 8,  # pitch
+            "SERVO%u_FUNCTION" % open_servo: 9,  # mount open
+            "MNT1_OPTIONS": 2,  # retract
+            "MNT1_DEFLT_MODE": 3,  # RC targeting
+            "MNT1_ROLL_MIN": -roll_limit,
+            "MNT1_ROLL_MAX": roll_limit,
+        })
+
+        self.reboot_sitl()
+
+        retract_roll = 25.0
+        self.set_parameter("MNT1_NEUTRAL_X", retract_roll)
+        self.progress("Killing RC")
+        self.set_parameter("SIM_RC_FAIL", 2)
+        self.delay_sim_time(10)
+        want_servo_channel_value = int(1500 + 500*retract_roll/roll_limit)
+        self.wait_servo_channel_value(roll_servo, want_servo_channel_value, epsilon=1)
+
+        self.progress("Resurrecting RC")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_servo_channel_value(roll_servo, 1500)
+
+        self.context_pop()
+
+        self.reboot_sitl()
+
     def set_rc_default(self):
         super(AutoTestHelicopter, self).set_rc_default()
         self.progress("Lowering rotor speed")
@@ -725,6 +867,7 @@ class AutoTestHelicopter(AutoTestCopter):
 
         self.wait_waypoint(1, num_wp-1)
         self.wait_disarmed()
+        self.set_rc(3, 1000)
         self.set_rc(8, 1000)    # Lower rotor speed
 
     # FIXME move this & plane's version to common
@@ -851,7 +994,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 2:
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1050:
                 raise NotAchievedException("Turbine Start activated while disarmed")
         self.set_rc(6, 1000)
@@ -864,7 +1007,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
 
@@ -882,7 +1025,7 @@ class AutoTestHelicopter(AutoTestCopter):
         while True:
             if self.get_sim_time() - tstart > 5:
                 raise AutoTestTimeoutException("Turbine Start did not activate")
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1800:
                 break
 
@@ -895,7 +1038,7 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(6, 2000)
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 5:
-            servo = self.mav.recv_match(type='SERVO_OUTPUT_RAW', blocking=True)
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
             if servo.servo8_raw > 1660:
                 raise NotAchievedException("Turbine Start activated with interlock enabled")
         self.set_rc(6, 1000)
@@ -1103,6 +1246,53 @@ class AutoTestHelicopter(AutoTestCopter):
         self.progress("Killing rotor speed")
         self.set_rc(8, 1000)
 
+    def assert_not_stick_armed(self, timeout=10):
+        '''raise if the vehicle stick-arms within timeout seconds'''
+        arming_channel = self.get_stick_arming_channel()
+        self.set_output_to_max(arming_channel)
+        tstart = self.get_sim_time()
+        try:
+            while self.get_sim_time_cached() - tstart < timeout:
+                self.wait_heartbeat()
+                if self.armed():
+                    raise NotAchievedException("Stick-armed when it should not have")
+        finally:
+            self.set_output_to_trim(arming_channel)
+
+    def StickArmingRequiresZeroThrottle(self):
+        '''check that stick (rudder) arming requires the collective at zero'''
+
+        '''
+        Reproduces https://github.com/ArduPilot/ardupilot/issues/33386 :
+        a heli could be stick-armed with the collective/throttle stick
+        raised off the bottom stop, a change in behaviour from 4.6 and
+        prior.  Stick arming must require zero throttle.
+        '''
+
+        # test in stabilize mode with rotor interlock disabled
+        self.change_mode('STABILIZE')
+        self.set_rc(8, 1000)
+
+        # check arming is possible with collective at zero
+        self.start_subtest("Stick arming succeeds with collective at zero")
+        self.set_parameter("RC_OPTIONS", 32) # enable Arming check throttle for 0 input
+        self.zero_throttle()
+        self.wait_ready_to_arm()
+        self.arm_motors_with_rc_input()
+        self.disarm_vehicle()
+
+        # check arming fails with collective raised
+        self.start_subtest("Stick arming is refused with collective raised")
+        self.set_rc(3, 1300)
+        self.assert_not_stick_armed()
+
+        # check arming succeeds with RC_OPTIONS arming check disabled
+        self.start_subtest("Stick arming succeeds with collective raised")
+        self.set_parameter("RC_OPTIONS", 0)
+        self.set_rc(3, 1300)
+        self.arm_motors_with_rc_input()
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = vehicle_test_suite.TestSuite.tests(self)
@@ -1112,9 +1302,11 @@ class AutoTestHelicopter(AutoTestCopter):
             self.PosHoldTakeOff,
             self.StabilizeTakeOff,
             self.SplineWaypoint,
+            self.AutorotationPreArm,
             self.Autorotation,
             self.ManAutorotation,
             self.governortest,
+            self.GovernorNotEngagedManualThrottle,
             self.FlyEachFrame,
             self.AirspeedDrivers,
             self.TurbineStart,
@@ -1122,6 +1314,8 @@ class AutoTestHelicopter(AutoTestCopter):
             self.NastyMission,
             self.PIDNotches,
             self.AutoTune,
+            self.MountFailsafeAction,
+            self.StickArmingRequiresZeroThrottle,
         ])
         return ret
 

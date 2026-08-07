@@ -16,5 +16,5 @@
   this version of the code
   This should be incremented on significant filtering changes
  */
-#define AP_FILTER_VERSION 2
+#define AP_FILTER_VERSION 3
 

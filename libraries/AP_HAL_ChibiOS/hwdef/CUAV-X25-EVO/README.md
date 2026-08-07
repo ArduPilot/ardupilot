@@ -96,6 +96,6 @@ The CUAV-X25-EVO has two independent CAN buses. CAN1 has three ports and CAN2 ha
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "CUAV-X25-EVO".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "CUAV-X25-EVO".
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of \*.apj firmware files with any ArduPilot compatible ground station.

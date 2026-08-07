@@ -150,7 +150,7 @@ bool ModeAuto::_pre_arm_checks(size_t buflen, char *buffer) const
 {
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled()) {
-        if (plane.quadplane.option_is_set(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO) &&
+        if (plane.quadplane.option_is_set(QuadPlane::Option::ONLY_ARM_IN_QMODE_OR_AUTO) &&
                 !plane.quadplane.is_vtol_takeoff(plane.mission.get_current_nav_cmd().id)) {
             hal.util->snprintf(buffer, buflen, "not in VTOL takeoff");
             return false;

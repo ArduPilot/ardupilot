@@ -36,10 +36,6 @@ protected:
     // maximum time between readings before we change state to NoData:
     virtual uint32_t read_timeout_ms() const { return 200; }
 
-    virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const override {
-        return MAV_DISTANCE_SENSOR_RADAR;
-    }
-
     // return true if the CAN ID is correct
     bool is_correct_id(uint32_t can_id) const;
 

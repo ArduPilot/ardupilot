@@ -1,5 +1,6 @@
 local GLOBAL_POSITION_INT = {}
 GLOBAL_POSITION_INT.id = 33
+GLOBAL_POSITION_INT.crc_extra = 104
 GLOBAL_POSITION_INT.fields = {
              { "time_boot_ms", "<I4" },
              { "lat", "<i4" },

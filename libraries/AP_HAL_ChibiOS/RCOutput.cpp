@@ -40,9 +40,7 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Common/ExpandingString.h>
-#ifndef HAL_NO_UARTDRIVER
 #include <GCS_MAVLink/GCS.h>
-#endif
 
 #if AP_SIM_ENABLED
 #include <AP_HAL/SIMState.h>
@@ -555,19 +553,19 @@ void RCOutput::set_dshot_rate(uint8_t dshot_rate, uint16_t loop_rate_hz)
     }
 
     uint16_t drate = dshot_rate * loop_rate_hz;
-    _dshot_rate = dshot_rate;
     // BLHeli32 uses a 16 bit counter for input calibration which at 48Mhz will wrap
     // at 732Hz so never allow rates below 800hz
     while (drate < 800) {
-        _dshot_rate++;
-        drate = _dshot_rate * loop_rate_hz;
+        dshot_rate++;
+        drate = dshot_rate * loop_rate_hz;
     }
-    // prevent stupidly high rates, ideally should also prevent high rates
+    // prevent stupidly high rate multiples, ideally should also prevent high rates
     // with slower dshot variants
-    if (drate > 4000) {
-        _dshot_rate = 4000 / loop_rate_hz;
-        drate = _dshot_rate * loop_rate_hz;
+    while (dshot_rate > 1 && drate > MAX(4096, loop_rate_hz)) {
+        dshot_rate--;
+        drate = dshot_rate * loop_rate_hz;
     }
+    _dshot_rate = dshot_rate;
     _dshot_period_us = 1000000UL / drate;
 #if HAL_WITH_IO_MCU
     if (iomcu_dshot) {
@@ -827,8 +825,14 @@ void RCOutput::push_local(void)
                     if (period_us > widest_pulse) {
                         widest_pulse = period_us;
                     }
-                    const uint8_t i = &group - pwm_group_list;
-                    need_trigger |= (1U<<i);
+                    // For oneshot, skip the trigger if this channel's new
+                    // width is 0 so the timer
+                    // completes the in-flight pulse naturally and stays low.
+                    // DShot always needs its DMA trigger.
+                    if (period_us > 0 || is_dshot_protocol(group.current_mode)) {
+                        const uint8_t i = &group - pwm_group_list;
+                        need_trigger |= (1U<<i);
+                    }
                 }
             }
         }
@@ -837,17 +841,27 @@ void RCOutput::push_local(void)
     if (widest_pulse > 2300) {
         widest_pulse = 2300;
     }
-    trigger_widest_pulse = widest_pulse + 50;
 
     trigger_groupmask = need_trigger;
 
     if (trigger_groupmask) {
         trigger_groups();
     }
+
+    // set trigger_widest_pulse trigger_groups() so the wait inside
+    // trigger_groups() gets the previous pulse's width, not this ones
+    trigger_widest_pulse = widest_pulse + 50;
 }
 
 uint16_t RCOutput::read(uint8_t chan)
 {
+#if AP_SIM_ENABLED
+    // FIXME: if on_hardware_output_enable_mask then read from hardware etc
+    if (chan < ARRAY_SIZE(hal.simstate->pwm_output)) {
+        return hal.simstate->pwm_output[chan];
+    }
+    return 0;
+#endif  // AP_SIM_ENABLED
     if (chan >= max_channels) {
         return 0;
     }
@@ -865,6 +879,13 @@ void RCOutput::read(uint16_t* period_us, uint8_t len)
     if (len > max_channels) {
         len = max_channels;
     }
+#if AP_SIM_ENABLED
+    // FIXME: if on_hardware_output_enable_mask then read from hardware etc
+    for (uint8_t i=0; i<MIN(len, ARRAY_SIZE(hal.simstate->pwm_output)); i++) {
+        period_us[i] = hal.simstate->pwm_output[i];
+    }
+    return;
+#endif  // AP_SIM_ENABLED
 #if HAL_WITH_IO_MCU
     for (uint8_t i=0; i<MIN(len, chan_offset); i++) {
         period_us[i] = iomcu.read_channel(i);
@@ -911,7 +932,7 @@ bool RCOutput::mode_requires_dma(enum output_mode mode) const
 
 void RCOutput::print_group_setup_error(pwm_group &group, const char* error_string)
 {
-#ifndef HAL_NO_UARTDRIVER
+#if AP_HAVE_GCS_SEND_TEXT
     uint8_t min_chan = UINT8_MAX;
     uint8_t max_chan = 0;
     for (uint8_t j = 0; j < 4; j++) {
@@ -929,7 +950,7 @@ void RCOutput::print_group_setup_error(pwm_group &group, const char* error_strin
     } else {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Chan %i to %i, %s: %s",min_chan+1,max_chan+1,get_output_mode_string(group.current_mode),error_string);
     }
-#endif
+#endif  // AP_HAVE_GCS_SEND_TEXT
 }
 
 /*
@@ -1350,6 +1371,9 @@ void RCOutput::cork(void)
  */
 void RCOutput::push(void)
 {
+    if (!corked) {
+        INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+    }
     corked = false;
     memcpy(period, period_corked, sizeof(period));
     push_local();
@@ -1407,7 +1431,11 @@ void RCOutput::trigger_groups()
     osalSysUnlock();
 #if !defined(HAL_NO_RCOUT_THREAD) || HAL_DSHOT_ENABLED
     // trigger a PWM send
-    if (!in_soft_serial() && hal.scheduler->in_main_thread() && rcout_thread_ctx) {
+    if (!in_soft_serial() &&
+        // we always trigger an output if we are in the main thread
+        // we also always trigger an output if we are in the rate thread and thus
+        // force_trigger has been set
+        (hal.scheduler->in_main_thread() || force_trigger) && rcout_thread_ctx) {
         chEvtSignal(rcout_thread_ctx, EVT_PWM_SEND);
     }
 #endif
@@ -1797,7 +1825,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     dmaSetRequestSource(group.dma, group.dma_up_channel);
 #endif
     dmaStreamSetPeripheral(group.dma, &(group.pwm_drv->tim->DMAR));
-    stm32_cacheBufferFlush(group.dma_buffer, buffer_length);
+    stm32_cacheBufferFlush(group.dma_buffer, (buffer_length+31)&~31);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
     dmaStreamSetTransactionSize(group.dma, buffer_length / sizeof(dmar_uint_t));
 #if STM32_DMA_ADVANCED

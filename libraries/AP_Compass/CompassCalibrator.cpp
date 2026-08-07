@@ -73,8 +73,6 @@
 #define FIELD_RADIUS_MIN 150
 #define FIELD_RADIUS_MAX 950
 
-extern const AP_HAL::HAL& hal;
-
 ////////////////////////////////////////////////////////////
 ///////////////////// PUBLIC INTERFACE /////////////////////
 ////////////////////////////////////////////////////////////
@@ -860,9 +858,9 @@ void CompassCalibrator::AttitudeSample::set_from_ahrs(void)
     const Matrix3f &dcm = AP::ahrs().get_DCM_rotation_body_to_ned();
     float roll_rad, pitch_rad, yaw_rad;
     dcm.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
-    roll = constrain_int16(127 * (roll_rad / M_PI), -127, 127);
-    pitch = constrain_int16(127 * (pitch_rad / M_PI_2), -127, 127);
-    yaw = constrain_int16(127 * (yaw_rad / M_PI), -127, 127);
+    roll = constrain_int16(127 * (roll_rad / M_PI), -INT8_MAX, INT8_MAX);
+    pitch = constrain_int16(127 * (pitch_rad / M_PI_2), -INT8_MAX, INT8_MAX);
+    yaw = constrain_int16(127 * (yaw_rad / M_PI), -INT8_MAX, INT8_MAX);
 }
 
 Matrix3f CompassCalibrator::AttitudeSample::get_rotmat(void) const

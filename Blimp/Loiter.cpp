@@ -34,7 +34,7 @@ void Loiter::run(Vector3f& target_pos, float& target_yaw, Vector4b axes_disabled
                                 scaler_xz, scaler_yyaw, scaler_xz_n, scaler_yyaw_n);
 #endif
 
-    float yaw_ef = blimp.ahrs.get_yaw();
+    float yaw_ef = blimp.ahrs.get_yaw_rad();
     Vector3f err_xyz = target_pos - blimp.pos_ned;
     float err_yaw = wrap_PI(target_yaw - yaw_ef);
 
@@ -96,7 +96,7 @@ void Loiter::run(Vector3f& target_pos, float& target_yaw, Vector4b axes_disabled
         blimp.pid_vel_z.set_integrator(0);
         blimp.pid_vel_yaw.set_integrator(0);
         target_pos = blimp.pos_ned;
-        target_yaw = blimp.ahrs.get_yaw();
+        target_yaw = blimp.ahrs.get_yaw_rad();
     }
 
     if (zero.x) {

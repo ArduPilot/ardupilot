@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
 import subprocess
 import os.path as p
 import sys
+
+# also update `cfg.check_python_version` in `./wscript`
+MIN_VER = (3, 8, 0)
+
+# check before we start loading code and e.g. encounter SyntaxErrors. this means
+# this file should remain compatible with any Python 3 (at least syntax-wise).
+if sys.version_info[:3] < MIN_VER:
+    min_txt = ".".join(str(v) for v in MIN_VER)
+    current_txt = ".".join(str(v) for v in sys.version_info[:3])
+    print("ERROR: Python minimum supported version is",
+          min_txt, "but you have", current_txt, file=sys.stderr)
+    sys.exit(1)
 
 d = p.dirname(p.realpath(__file__))
 waf_light = p.join(d, 'modules', 'waf', 'waf-light')

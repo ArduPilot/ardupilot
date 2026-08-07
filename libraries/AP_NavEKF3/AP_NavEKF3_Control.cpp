@@ -262,13 +262,14 @@ void NavEKF3_core::setAidingMode()
     checkGyroCalStatus();
 
     // Handle the special case where we are on ground and disarmed without a yaw measurement
-    // and navigating. This can occur if not using a magnetometer and yaw was aligned using GPS
-    // during the previous flight.
+    // and in AID_ABSOLUTE mode. This can occur if not using a magnetometer and yaw was aligned
+    // using GPS during the previous flight. AID_RELATIVE is excluded because optical flow and
+    // body odometry are body-frame sensors that do not require yaw alignment.
     if (yaw_source_last == AP_NavEKF_Source::SourceYaw::NONE &&
         !motorsArmed &&
         onGround &&
         false && // SENTINEL-EAGLE CHANGE
-        PV_AidingMode != AID_NONE)
+        PV_AidingMode == AID_ABSOLUTE)
     {
         PV_AidingMode = AID_NONE;
         yawAlignComplete = false;
@@ -497,9 +498,11 @@ void NavEKF3_core::setAidingMode()
                     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u initial vel NED = %3.1f,%3.1f,%3.1f (m/s)",(unsigned)imu_index,(double)extNavVelDelayed.vel.x,(double)extNavVelDelayed.vel.y,(double)extNavVelDelayed.vel.z);
                 }
                 // handle height reset as special case
-                hgtMea = -extNavDataDelayed.pos.z;
-                posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
-                ResetHeight();
+                if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::EXTNAV) {
+                    hgtMea = -extNavDataDelayed.pos.z;
+                    posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                    ResetHeight();
+                }
 #endif // EK3_FEATURE_EXTERNAL_NAV
             }
 
@@ -1084,6 +1087,12 @@ bool NavEKF3_core::using_extnav_for_yaw() const
     return false;
 }
 
+// are we using a gps
+bool NavEKF3_core::using_gps() const
+{
+    return frontend->sources.usingGPS(core_index);
+}
+
 /*
   should we assume zero sideslip?
  */
@@ -1099,6 +1108,13 @@ bool NavEKF3_core::assume_zero_sideslip(void) const
 // returns false if the origin is already set
 bool NavEKF3_core::setOriginLLH(const Location &loc)
 {
+    // reject external origin setting until the filter has finished
+    // bootstrap initialisation.  InitialiseVariables() resets
+    // validOrigin, so an origin set before that point is lost.
+    // Callers (e.g. AHRS use_recorded_origin_maybe) will retry.
+    if (!statesInitialised) {
+        return false;
+    }
     return setOrigin(loc);
 }
 
@@ -1199,7 +1215,14 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.attitude = !stateStruct.quat.is_nan() && filterHealthy;   // attitude valid (we need a better check)
     status.flags.horiz_vel = someHorizRefData && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
-    status.flags.horiz_pos_rel = ((doingFlowNav && gndOffsetValid) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthy;   // relative horizontal position estimate valid
+
+#if EK3_FEATURE_OPTFLOW_SRTM
+    const bool optflow_gnd_offset = gndOffsetValid || terrain_srtm_alt_valid;
+#else
+    const bool optflow_gnd_offset = gndOffsetValid;
+#endif
+    status.flags.horiz_pos_rel = ((doingFlowNav && optflow_gnd_offset) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthy;   // relative horizontal position estimate valid
+
     status.flags.horiz_pos_abs = doingNormalGpsNav && filterHealthy; // absolute horizontal position estimate valid
     status.flags.vert_pos = !hgtTimeout && filterHealthy && !hgtNotAccurate; // vertical position estimate valid
     status.flags.terrain_alt = gndOffsetValid && filterHealthy;		// terrain height estimate valid

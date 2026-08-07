@@ -4,8 +4,8 @@
 
 MCU STM32F4xx STM32F405xx
 
-# board ID for firmware load
-APJ_BOARD_ID 133
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_OMNIBUSNANOV6
 
 # crystal frequency
 OSCILLATOR_HZ 8000000
@@ -120,7 +120,7 @@ BARO BMP280 SPI:bmp280
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
 define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 
 STORAGE_FLASH_PAGE 1

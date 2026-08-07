@@ -19,8 +19,9 @@
 
 #if AP_RANGEFINDER_TRI2C_ENABLED
 
-#include <utility>
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>
+
 #include <AP_Math/crc.h>
 
 extern const AP_HAL::HAL& hal;
@@ -32,59 +33,23 @@ extern const AP_HAL::HAL& hal;
 
 #define TR_OUT_OF_RANGE_ADD_CM 100 //cm
 
-AP_RangeFinder_TeraRangerI2C::AP_RangeFinder_TeraRangerI2C(RangeFinder::RangeFinder_State &_state,
-                                                           AP_RangeFinder_Params &_params,
-                                                           AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
-    : AP_RangeFinder_Backend(_state, _params)
-    , dev(std::move(i2c_dev))
-{
-}
-
-/*
-   detect if a TeraRanger rangefinder is connected. We'll detect by
-   trying to take a reading on I2C. If we get a result the sensor is
-   there.
-*/
-AP_RangeFinder_Backend *AP_RangeFinder_TeraRangerI2C::detect(RangeFinder::RangeFinder_State &_state,
-																AP_RangeFinder_Params &_params,
-                                                             AP_HAL::OwnPtr<AP_HAL::I2CDevice> i2c_dev)
-{
-    if (!i2c_dev) {
-        return nullptr;
-    }
-
-    AP_RangeFinder_TeraRangerI2C *sensor = NEW_NOTHROW AP_RangeFinder_TeraRangerI2C(_state, _params, std::move(i2c_dev));
-    if (!sensor) {
-        return nullptr;
-    }
-
-    if (!sensor->init()) {
-        delete sensor;
-        return nullptr;
-    }
-
-    return sensor;
-}
-
 /*
   initialise sensor
  */
 bool AP_RangeFinder_TeraRangerI2C::init(void)
 {
-    dev->get_semaphore()->take_blocking();
+    WITH_SEMAPHORE(dev.get_semaphore());
 
-    dev->set_retries(10);
+    dev.set_retries(10);
 
     // check WHOAMI
     uint8_t whoami;
-    if (!dev->read_registers(TR_WHOAMI, &whoami, 1) ||
+    if (!dev.read_registers(TR_WHOAMI, &whoami, 1) ||
         whoami != TR_WHOAMI_VALUE) {
-        dev->get_semaphore()->give();
         return false;
     }
 
     if (!measure()) {
-        dev->get_semaphore()->give();
         return false;
     }
 
@@ -93,15 +58,15 @@ bool AP_RangeFinder_TeraRangerI2C::init(void)
 
     uint16_t _distance_cm;
     if (!collect_raw(_distance_cm)) {
-        dev->get_semaphore()->give();
         return false;
     }
 
-    dev->get_semaphore()->give();
+    // ask for a new reading for the timer to collect:
+    measure();
 
-    dev->set_retries(1);
+    dev.set_retries(1);
 
-    dev->register_periodic_callback(10000,
+    dev.register_periodic_callback(10000,
                                     FUNCTOR_BIND_MEMBER(&AP_RangeFinder_TeraRangerI2C::timer, void));
 
     return true;
@@ -111,7 +76,7 @@ bool AP_RangeFinder_TeraRangerI2C::init(void)
 bool AP_RangeFinder_TeraRangerI2C::measure()
 {
     uint8_t cmd = TR_MEASURE;
-    return dev->transfer(&cmd, 1, nullptr, 0);
+    return dev.transfer(&cmd, 1, nullptr, 0);
 }
 
 // collect_raw() - return last value measured by sensor
@@ -120,7 +85,7 @@ bool AP_RangeFinder_TeraRangerI2C::collect_raw(uint16_t &raw_distance)
     uint8_t d[3];
 
     // Take range reading
-    if (!dev->transfer(nullptr, 0, d, sizeof(d))) {
+    if (!dev.transfer(nullptr, 0, d, sizeof(d))) {
         return false;
     }
 
@@ -139,14 +104,14 @@ bool AP_RangeFinder_TeraRangerI2C::process_raw_measure(uint16_t raw_distance, ui
     // Check for error codes
     if (raw_distance == 0xFFFF) {
         // Too far away
-        output_distance_cm = max_distance_cm() + TR_OUT_OF_RANGE_ADD_CM;
+        output_distance_cm = max_distance()*100 + TR_OUT_OF_RANGE_ADD_CM;
     } else if (raw_distance == 0x0000) {
         // Too close
         output_distance_cm = 0;
     } else if (raw_distance == 0x0001) {
         // Unable to measure
         // This can also include the sensor pointing to the horizon when used as a proximity sensor
-        output_distance_cm = max_distance_cm() + TR_OUT_OF_RANGE_ADD_CM;
+        output_distance_cm = max_distance()*100 + TR_OUT_OF_RANGE_ADD_CM;
     } else {
         output_distance_cm = raw_distance/10; // Conversion to centimeters
     }

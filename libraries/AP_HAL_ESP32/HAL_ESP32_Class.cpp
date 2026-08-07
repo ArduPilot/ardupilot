@@ -59,8 +59,12 @@ static Empty::DSP dspDriver;
 #endif
 
 static ESP32::I2CDeviceManager i2cDeviceManager;
+#if defined(HAL_ESP32_SPI_BUSES)
 static ESP32::SPIDeviceManager spiDeviceManager;
-#ifndef HAL_DISABLE_ADC_DRIVER
+#else
+static Empty::SPIDeviceManager spiDeviceManager;
+#endif
+#if AP_HAL_ANALOGIN_ENABLED
 static ESP32::AnalogIn analogIn;
 #else
 static Empty::AnalogIn analogIn;
@@ -125,6 +129,10 @@ HAL_ESP32::HAL_ESP32() :
 
 void HAL_ESP32::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
+#if AP_SIM_ENABLED
+    AP::sitl()->init();
+#endif  // AP_SIM_ENABLED
+
     ((ESP32::Scheduler *)hal.scheduler)->set_callbacks(callbacks);
     hal.scheduler->init();
 }

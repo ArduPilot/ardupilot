@@ -52,8 +52,6 @@ extern const AP_HAL::HAL& hal;
  # define Debug(fmt, args ...)
 #endif
 
-#define LOG_TAG "GPS"
-
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define NATIVE_TIME_OFFSET (AP_HAL::micros64() - AP_HAL::micros64())
 #else
@@ -89,36 +87,19 @@ AP_GPS_DroneCAN::~AP_GPS_DroneCAN()
 #endif
 }
 
-void AP_GPS_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
+bool AP_GPS_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
-    if (ap_dronecan == nullptr) {
-        return;
-    }
+    const auto driver_index = ap_dronecan->get_driver_index();
 
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_fix2_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("status_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_aux_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("status_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_heading_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("status_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_status_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("status_sub");
-    }
+    return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_fix2_msg_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_aux_msg_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_heading_msg_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_status_msg_trampoline, driver_index) != nullptr)
 #if GPS_MOVING_BASELINE
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_moving_baseline_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("moving_baseline_sub");
-    }
-
-    if (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_relposheading_msg_trampoline, ap_dronecan->get_driver_index()) == nullptr) {
-        AP_BoardConfig::allocation_error("relposheading_sub");
-    }
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_moving_baseline_msg_trampoline, driver_index) != nullptr)
+        && (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_relposheading_msg_trampoline, driver_index) != nullptr)
 #endif
+    ;
 }
 
 AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
@@ -183,21 +164,9 @@ AP_GPS_Backend* AP_GPS_DroneCAN::probe(AP_GPS &_gps, AP_GPS::GPS_State &_state)
         default:
             return NULL;
     }
-    if (backend == nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR,
-                            LOG_TAG,
-                            "Failed to register DroneCAN GPS Node %d on Bus %d\n",
-                            _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_dronecan->get_driver_index());
-    } else {
+    if (backend != nullptr) {
         _detected_modules[found_match].driver = backend;
         backend->_detected_module = found_match;
-        AP::can().log_text(AP_CANManager::LOG_INFO,
-                            LOG_TAG,
-                            "Registered DroneCAN GPS Node %d on Bus %d as instance %d\n",
-                            _detected_modules[found_match].node_id,
-                            _detected_modules[found_match].ap_dronecan->get_driver_index(),
-                            _state.instance);
         snprintf(backend->_name, ARRAY_SIZE(backend->_name), "DroneCAN%u-%u", _detected_modules[found_match].ap_dronecan->get_driver_index()+1, _detected_modules[found_match].node_id);
         _detected_modules[found_match].instance = _state.instance;
         for (uint8_t i=0; i < GPS_MAX_RECEIVERS; i++) {
@@ -436,15 +405,14 @@ void AP_GPS_DroneCAN::handle_fix2_msg(const uavcan_equipment_gnss_Fix2& msg, uin
                 interim_state.have_speed_accuracy = false;
             }
         }
-
-        interim_state.num_sats = msg.sats_used;
     } else {
         interim_state.have_vertical_velocity = false;
         interim_state.have_vertical_accuracy = false;
         interim_state.have_horizontal_accuracy = false;
         interim_state.have_speed_accuracy = false;
-        interim_state.num_sats = 0;
     }
+
+    interim_state.num_sats = msg.sats_used;
 
     if (!seen_aux) {
         // if we haven't seen an Aux message then populate vdop and
@@ -567,7 +535,11 @@ void AP_GPS_DroneCAN::handle_moving_baseline_msg(const ardupilot_gnss_MovingBase
 {
     WITH_SEMAPHORE(sem);
     if (role != AP_GPS::GPS_ROLE_MB_BASE) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for DroneCAN GPS, %d should be Base", node_id);
+        const uint32_t now_ms = AP_HAL::millis();
+        if (now_ms - last_base_warning_ms > 5000) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Incorrect Role set for DroneCAN GPS, %d should be Base", node_id);
+            last_base_warning_ms = now_ms;
+        }
         return;
     }
 

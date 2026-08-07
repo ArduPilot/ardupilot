@@ -43,7 +43,7 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_IIS2MDC::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_IIS2MDC::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
         bool force_external,
         enum Rotation rotation)
 {
@@ -98,16 +98,14 @@ bool AP_Compass_IIS2MDC::init()
     // register compass instance
     _dev->set_device_type(DEVTYPE_IIS2MDC);
 
-    if (!register_compass(_dev->get_bus_id(), _instance)) {
+    if (!register_compass(_dev->get_bus_id())) {
         return false;
     }
 
-    set_dev_id(_instance, _dev->get_bus_id());
-
-    set_rotation(_instance, _rotation);
+    set_rotation(_rotation);
 
     if (_force_external) {
-        set_external(_instance, true);
+        set_external(true);
     }
 
     // Enable 100HZ
@@ -160,12 +158,12 @@ void AP_Compass_IIS2MDC::timer()
 
     Vector3f field{ x * range_scale, y * range_scale, z * range_scale };
 
-    accumulate_sample(field, _instance);
+    accumulate_sample(field);
 }
 
 void AP_Compass_IIS2MDC::read()
 {
-    drain_accumulated_samples(_instance);
+    drain_accumulated_samples();
 }
 
 #endif //AP_COMPASS_IIS2MDC_ENABLED

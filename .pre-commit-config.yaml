@@ -16,7 +16,7 @@ exclude: |
 
 repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
-      rev: v4.4.0
+      rev: v6.0.0
       hooks:
         #-   id: trailing-whitespace
         #-   id: end-of-file-fixer
@@ -42,7 +42,7 @@ repos:
         -   id: check-yaml
 
   -   repo: https://github.com/psf/black
-      rev: 23.7.0
+      rev: 25.1.0
       hooks:
         - id: black
           files: |
@@ -50,6 +50,49 @@ repos:
               libraries\/AP_DDS\/(wscript|.*\.py)$ |
               Tools/ros2/.*\.py
             )$
+
+  -   repo: https://github.com/pycqa/flake8
+      rev: 7.3.0
+      hooks:
+      -   id: flake8
+  
+  -   repo: local
+      hooks:
+      -   id: ament-pep257
+          name: Run ament_pep257 on Tools/ros2
+          entry: bash -c 'ament_pep257 Tools/ros2 > /dev/null'
+          language: python
+          additional_dependencies:
+          -   ament-lint-pep257
+          -   tomli;python_version<'3.11'
+          pass_filenames: false
+          files: ^Tools/ros2/
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell # See pyproject.toml for args
+        types_or: [python]
+        args:
+          - --ignore-words-list=afile,bodgy,chek,commitish,edn,empy,finis,fram,mot,ned,parm,releas,parms,rin,ser,sitl,siz
+        additional_dependencies:
+          - tomli
+
+  - repo: local
+    hooks:
+    -   id: check-copyright
+        name: check copyright notice in files
+        entry: Tools/gittools/pre_commit_copyright.py
+        language: python
+        files: |
+            (?x)^(
+              Tools/ros2/.*\.py
+            )$
+        args: [
+            --ignore=Tools/ros2/ardupilot_dds_tests/setup.py,
+            --ignore=Tools/ros2/ardupilot_dds_tests/test/test_pep257.py,
+            --ignore=Tools/ros2/ardupilot_dds_tests/test/test_copyright.py,
+        ]
 
 # # Use to sort python imports by name and put system import first.
 #   -   repo: https://github.com/pycqa/isort

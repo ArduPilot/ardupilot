@@ -12,6 +12,9 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# flake8: noqa
+
 """
 Waf tool for Ardupilot libraries. The function bld.ap_library() creates the
 necessary task generators for creating the objects of a library for a vehicle.
@@ -54,7 +57,8 @@ def _vehicle_index(vehicle):
 # note that AP_NavEKF3_core.h is needed for AP_NavEKF3_feature.h
 _vehicle_macros = ['APM_BUILD_DIRECTORY', 'AP_BUILD_TARGET_NAME',
                    'APM_BUILD_TYPE', 'APM_BUILD_COPTER_OR_HELI',
-                   'AP_NavEKF3_core.h', 'lua_generated_bindings.h']
+                   'AP_NavEKF3_core.h', 'lua_generated_bindings.h',
+                   'AP_InertialSensor_rate_config.h']
 _macros_re = re.compile(r'\b(%s)\b' % '|'.join(_vehicle_macros))
 
 # some cpp files are not available at the time we run this check so need to be
@@ -174,6 +178,7 @@ class ap_library_check_headers(Task.Task):
         'libraries/AP_Scripting/lua_generated_bindings.h',
         'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
         'libraries/AP_LandingGear/AP_LandingGear_config.h',
+        'libraries/AP_InertialSensor/AP_InertialSensor_rate_config.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 
@@ -194,9 +199,7 @@ class ap_library_check_headers(Task.Task):
         bld = self.generator.bld
         # force scan() to be called
         bld.imp_sigs[self.uid()] = None
-        s = super(ap_library_check_headers, self).signature()
-        bld.ap_persistent_task_sigs[self.uid()] = s
-        return s
+        return super(ap_library_check_headers, self).signature()
 
     def scan(self):
         r = []

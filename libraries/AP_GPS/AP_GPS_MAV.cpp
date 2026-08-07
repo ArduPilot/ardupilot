@@ -143,51 +143,8 @@ void AP_GPS_MAV::handle_msg(const mavlink_message_t &msg)
             state.last_gps_time_ms = now_ms;
             _new_data = true;
             break;
-            }
+        }
 
-#if AP_MAVLINK_MSG_HIL_GPS_ENABLED
-        case MAVLINK_MSG_ID_HIL_GPS: {
-            mavlink_hil_gps_t packet;
-            mavlink_msg_hil_gps_decode(&msg, &packet);
-
-            // check if target instance belongs to incoming gps data.
-            if (state.instance != packet.id) {
-                return;
-            }
-
-            state.time_week = 0;
-            state.time_week_ms  = packet.time_usec/1000;
-            state.status = (AP_GPS::GPS_Status)packet.fix_type;
-
-            Location loc = {};
-            loc.lat = packet.lat;
-            loc.lng = packet.lon;
-            loc.alt = packet.alt * 0.1f;
-            state.location = loc;
-            state.hdop = MIN(packet.eph, GPS_UNKNOWN_DOP);
-            state.vdop = MIN(packet.epv, GPS_UNKNOWN_DOP);
-            if (packet.vel < 65535) {
-                state.ground_speed = packet.vel * 0.01f;
-            }
-            Vector3f vel(packet.vn*0.01f, packet.ve*0.01f, packet.vd*0.01f);
-            state.velocity = vel;
-            if (packet.vd != 0) {
-                state.have_vertical_velocity = true;
-            }
-            if (packet.cog < 36000) {
-                state.ground_course = packet.cog * 0.01f;
-            }
-            state.have_speed_accuracy = false;
-            state.have_horizontal_accuracy = false;
-            state.have_vertical_accuracy = false;
-            if (packet.satellites_visible < 255) {
-                state.num_sats = packet.satellites_visible;
-            }
-            state.last_gps_time_ms = AP_HAL::millis();
-            _new_data = true;
-            break;
-            }
-#endif  // AP_MAVLINK_MSG_HIL_GPS_ENABLED
         default:
             // ignore all other messages
             break;

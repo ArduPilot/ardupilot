@@ -134,6 +134,14 @@ int main(void)
         try_boot = false;
         led_set(LED_BAD_FW);
     }
+#ifndef BOOTLOADER_DEV_LIST
+    else if (timeout == HAL_BOOTLOADER_TIMEOUT) {
+        // fast boot for good firmware if we haven't been told to stay
+        // in bootloader
+        try_boot = true;
+        timeout = 1000;
+    }
+#endif   // ifndef(BOOTLOADER_DEV_LIST)
 #if AP_BOOTLOADER_NETWORK_ENABLED
     if (ok == check_fw_result_t::CHECK_FW_OK) {
         const auto *app_descriptor = get_app_descriptor();
@@ -147,14 +155,7 @@ int main(void)
     }
 #endif
 #endif  // AP_CHECK_FIRMWARE_ENABLED
-#ifndef BOOTLOADER_DEV_LIST
-    else if (timeout == HAL_BOOTLOADER_TIMEOUT) {
-        // fast boot for good firmware if we haven't been told to stay
-        // in bootloader
-        try_boot = true;
-        timeout = 1000;
-    }
-#endif
+
     if (was_watchdog && m != RTC_BOOT_FWOK) {
         // we've had a watchdog within 30s of booting main CAN
         // firmware. We will stay in bootloader to allow the user to

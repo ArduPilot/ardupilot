@@ -151,7 +151,6 @@ typedef void (*mavlink_data_callback_t)(const struct qurt_rpc_msg *msg, void* p)
 
 static mavlink_data_callback_t mav_cb[MAX_MAVLINK_INSTANCES];
 static void *mav_cb_ptr[MAX_MAVLINK_INSTANCES];
-static uint32_t expected_seq;
 
 void register_mavlink_data_callback(uint8_t instance, mavlink_data_callback_t func, void *p)
 {
@@ -172,10 +171,6 @@ int slpi_link_client_receive(const uint8_t *data, int data_len_in_bytes)
     if (msg->data_length + QURT_RPC_MSG_HEADER_LEN != data_len_in_bytes) {
         return 0;
     }
-    if (msg->seq != expected_seq) {
-        HAP_PRINTF("Bad sequence %u %u", msg->seq, expected_seq);
-    }
-    expected_seq = msg->seq + 1;
 
     switch (msg->msg_id) {
     case QURT_MSG_ID_MAVLINK_MSG: {

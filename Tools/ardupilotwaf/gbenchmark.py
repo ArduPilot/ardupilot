@@ -1,5 +1,7 @@
 # encoding: utf-8
 
+# flake8: noqa
+
 """
 gbenchmark is a Waf tool for benchmark builds in Ardupilot
 """

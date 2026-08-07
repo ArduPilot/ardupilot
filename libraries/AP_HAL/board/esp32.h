@@ -1,25 +1,23 @@
 #pragma once
 
+#include <hwdef.h>
 
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_DIY
-#include "esp32diy.h" // Charles
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_BUZZ
-#include "esp32buzz.h" //Buzz
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_ICARUS
-#include "esp32icarus.h" //Alex
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_EMPTY
-#include "esp32empty.h" //wiktor-m
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_TOMTE76
-#include "esp32tomte76.h" //tomte76 on discord
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_NICK
-#include "esp32nick.h" //Nick K. on discord
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3DEVKIT
-#include "esp32s3devkit.h" //Nick K. on discord
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_ESP32_S3EMPTY
-#include "esp32s3empty.h"
-#else
-#error "Invalid CONFIG_HAL_BOARD_SUBTYPE for esp32"
+#ifndef HAL_BOARD_STATE_DIRECTORY
+#define HAL_BOARD_STATE_DIRECTORY "/SDCARD/APM"
 #endif
+
+#ifndef HAL_BOARD_LOG_DIRECTORY
+#define HAL_BOARD_LOG_DIRECTORY HAL_BOARD_STATE_DIRECTORY "/LOGS"
+#endif
+
+#ifndef HAL_BOARD_TERRAIN_DIRECTORY
+#define HAL_BOARD_TERRAIN_DIRECTORY HAL_BOARD_STATE_DIRECTORY "/TERRAIN"
+#endif
+
+#ifndef HAL_BOARD_STORAGE_DIRECTORY
+#define HAL_BOARD_STORAGE_DIRECTORY HAL_BOARD_STATE_DIRECTORY "/STORAGE"
+#endif
+
 
 #define HAL_BOARD_NAME "ESP32"
 #define HAL_CPU_CLASS HAL_CPU_CLASS_150
@@ -35,6 +33,10 @@
 #define O_CLOEXEC 0
 #define HAL_STORAGE_SIZE (16384)
 
+#ifndef HAL_PROGRAM_SIZE_LIMIT_KB
+#define HAL_PROGRAM_SIZE_LIMIT_KB 2048
+#endif
+
 #ifdef __cplusplus
 // allow for static semaphores
 #include <AP_HAL_ESP32/Semaphores.h>
@@ -42,15 +44,27 @@
 #define HAL_BinarySemaphore ESP32::BinarySemaphore
 #endif
 
+#ifndef HAL_HAVE_HARDWARE_DOUBLE
+#define HAL_HAVE_HARDWARE_DOUBLE 0
+#endif
+
+#ifndef HAL_WITH_EKF_DOUBLE
+#define HAL_WITH_EKF_DOUBLE HAL_HAVE_HARDWARE_DOUBLE
+#endif
+
 #define HAL_NUM_CAN_IFACES 0
 #define HAL_MEM_CLASS HAL_MEM_CLASS_192
 
 // disable uncommon stuff that we'd otherwise get 
-#define HAL_EXTERNAL_AHRS_ENABLED 0
+#define AP_EXTERNAL_AHRS_ENABLED 0
 #define HAL_GENERATOR_ENABLED 0
 
 #define __LITTLE_ENDIAN  1234
 #define __BYTE_ORDER     __LITTLE_ENDIAN
+
+// ArduPilot uses __RAMFUNC__ to place functions in fast instruction RAM
+#define __RAMFUNC__ IRAM_ATTR
+
 
 // whenver u get ... error: "xxxxxxx" is not defined, evaluates to 0 [-Werror=undef]  just define it below as 0
 #define CONFIG_SPIRAM_ALLOW_BSS_SEG_EXTERNAL_MEMORY 0
@@ -63,7 +77,6 @@
 #define CONFIG_SYSVIEW_ENABLE 0
 #define CONFIG_SPI_FLASH_DANGEROUS_WRITE_ALLOWED 0
 #define CONFIG_SPI_FLASH_ENABLE_COUNTERS 0
-#define USE_LIBC_REALLOC 0
 #define CONFIG_LWIP_DHCP_RESTORE_LAST_IP 0
 #define CONFIG_LWIP_STATS 0
 #define CONFIG_LWIP_PPP_SUPPORT 0
@@ -91,7 +104,7 @@
 // disble temp cal of gyros by default
 #define HAL_INS_TEMPERATURE_CAL_ENABLE 0
 
-//turn off a bunch of advanced plane scheduler table things. see ArduPlane.cpp
+//turn off a bunch of advanced plane scheduler table things. see Plane.cpp
 #define AP_ADVANCEDFAILSAFE_ENABLED 0
 #define AP_ICENGINE_ENABLED 0
 #define AP_OPTICALFLOW_ENABLED 0
@@ -119,3 +132,7 @@
 
 // remove once ESP32 isn't so chronically slow
 #define AP_SCHEDULER_OVERTIME_MARGIN_US 50000UL
+
+#ifndef AP_NOTIFY_BUZZER_ENABLED
+#define AP_NOTIFY_BUZZER_ENABLED 1
+#endif

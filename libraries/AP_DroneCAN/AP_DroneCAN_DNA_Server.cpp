@@ -39,8 +39,6 @@ extern const AP_HAL::HAL& hal;
 #define MAX_NODE_ID    125
 #define NODERECORD_LOC(node_id) ((node_id * sizeof(NodeRecord)) + NODERECORD_MAGIC_LEN)
 
-#define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
-
 // database is currently shared by all DNA servers
 AP_DroneCAN_DNA_Server::Database AP_DroneCAN_DNA_Server::db;
 
@@ -442,16 +440,6 @@ void AP_DroneCAN_DNA_Server::handle_allocation(const CanardRxTransfer& transfer,
         rcvd_unique_id_offset = 0;
     } else if (rcvd_unique_id_offset == 0) {
         return; // not first part but we are expecting one, ignore
-    }
-
-    if (rcvd_unique_id_offset) {
-        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %lu  -- Accepting Followup part! %u\n",
-                     (unsigned long)now,
-                     unsigned((now - last_alloc_msg_ms)));
-    } else {
-        debug_dronecan(AP_CANManager::LOG_DEBUG, "TIME: %lu  -- Accepting First part! %u\n",
-                     (unsigned long)now,
-                     unsigned((now - last_alloc_msg_ms)));
     }
 
     last_alloc_msg_ms = now;

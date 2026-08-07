@@ -62,7 +62,7 @@ Vector3f AC_CustomControl_Empty::update(void)
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "empty custom controller working");
 
     // return what arducopter main controller outputted
-    return Vector3f(_motors->get_roll(), _motors->get_pitch(), _motors->get_yaw());
+    return Vector3f{_motors->get_roll(), _motors->get_pitch(), _motors->get_yaw()};
 }
 
 // reset controller to avoid build up on the ground

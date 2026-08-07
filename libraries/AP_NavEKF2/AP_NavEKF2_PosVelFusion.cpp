@@ -297,7 +297,7 @@ bool NavEKF2_core::resetHeightDatum(void)
             // altitude. This ensures the reported AMSL alt from
             // getLLH() is equal to GPS altitude, while also ensuring
             // that the relative alt is zero
-            EKF_origin.alt = dal.gps().location().alt;
+            EKF_origin.copy_alt_from(dal.gps().location());
         }
         ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     }
@@ -979,7 +979,7 @@ void NavEKF2_core::selectHeightForFusion()
         activeHgtSource = HGT_SOURCE_RNG;
     } else if ((frontend->_useRngSwHgt > 0) && ((frontend->_altSource == 0) || (frontend->_altSource == 2)) && _rng && rangeFinderDataIsFresh) {
         // determine if we are above or below the height switch region
-        ftype rangeMaxUse = 1e-4f * (float)_rng->max_distance_cm_orient(ROTATION_PITCH_270) * (ftype)frontend->_useRngSwHgt;
+        const ftype rangeMaxUse = 1e-2f * _rng->max_distance_orient(ROTATION_PITCH_270) * (ftype)frontend->_useRngSwHgt;
         bool aboveUpperSwHgt = (terrainState - stateStruct.position.z) > rangeMaxUse;
         bool belowLowerSwHgt = (terrainState - stateStruct.position.z) < 0.7f * rangeMaxUse;
 

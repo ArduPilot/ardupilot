@@ -1,3 +1,7 @@
+#include "SIM_config.h"
+
+#if AP_SIM_MS5525_ENABLED
+
 #include "SIM_MS5XXX.h"
 
 #include <AP_Common/Bitmask.h>
@@ -43,3 +47,5 @@ private:
 };
 
 } // namespace SITL
+
+#endif  // AP_SIM_MS5525_ENABLED

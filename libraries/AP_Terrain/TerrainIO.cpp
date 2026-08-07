@@ -25,6 +25,7 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <stdio.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -61,7 +62,7 @@ void AP_Terrain::check_disk_write(void)
  */
 void AP_Terrain::schedule_disk_io(void)
 {
-    if (enable == 0 || !allocate()) {
+    if (enable == 0 || !allocate() || diskless()) {
         return;
     }
 
@@ -135,6 +136,9 @@ All file operations are done by the IO thread.
  */
 void AP_Terrain::open_file(void)
 {
+    if (diskless()) {
+        return;
+    }
     struct grid_block &block = disk_block.block;
     if (fd != -1 && 
         block.lat_degrees == file_lat_degrees &&
@@ -257,7 +261,7 @@ void AP_Terrain::seek_offset(void)
 void AP_Terrain::write_block(void)
 {
     seek_offset();
-    if (io_failure) {
+    if (io_failure || diskless()) {
         return;
     }
 
@@ -290,7 +294,7 @@ void AP_Terrain::write_block(void)
 void AP_Terrain::read_block(void)
 {
     seek_offset();
-    if (io_failure) {
+    if (io_failure || diskless()) {
         return;
     }
     int32_t lat = disk_block.block.lat;
@@ -330,6 +334,19 @@ void AP_Terrain::read_block(void)
                (int)ret,
                (unsigned long long)disk_block.block.bitmap);
 #endif
+        if (disk_block.block.version_minor < TERRAIN_VERSION_MINOR_MIN) {
+            /*
+              this triggers a pre-arm warning to prompt the user to
+              download new terrain data
+             */
+#if HAL_GCS_ENABLED
+            if (!found_old_data && hal.util->get_soft_armed()) {
+                // in-flight warning for GCS operator
+                gcs().send_text(MAV_SEVERITY_WARNING, "terrain data expired, possible errors");
+            }
+#endif
+            found_old_data = true;
+        }
     }
     disk_io_state = DiskIoDoneRead;
 }

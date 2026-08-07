@@ -10,7 +10,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @DisplayName: Mount Type
     // @Description: Mount Type
     // @SortValues: AlphabeticalZeroAtTop
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy, 7:BrushlessPWM, 8:Siyi, 9:Scripting, 10:Xacti, 11:Viewpro, 12:Topotek, 13:CADDX
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:MAVLink (Gremsy/AVT), 7:BrushlessPWM, 8:Siyi, 9:Scripting, 10:Xacti, 11:Viewpro, 12:Topotek, 13:CADDX, 14:XFRobot
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_Mount_Params, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -140,7 +140,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @Description: Servo mount roll angle output leads the vehicle angle by this amount of time based on current roll rate. Increase until the servo is responsive but does not overshoot
     // @Units: s
     // @Range: 0.0 0.2
-    // @Increment: .005
+    // @Increment: 0.005
     // @User: Standard
     AP_GROUPINFO("_LEAD_RLL", 12, AP_Mount_Params, roll_stb_lead, 0.0f),
 
@@ -149,7 +149,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @Description: Servo mount pitch angle output leads the vehicle angle by this amount of time based on current pitch rate. Increase until the servo is responsive but does not overshoot
     // @Units: s
     // @Range: 0.0 0.2
-    // @Increment: .005
+    // @Increment: 0.005
     // @User: Standard
     AP_GROUPINFO("_LEAD_PTCH", 13, AP_Mount_Params, pitch_stb_lead, 0.0f),
 
@@ -168,8 +168,8 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: Mount options
-    // @Description: Mount options bitmask
-    // @Bitmask: 0:RC lock state from previous mode
+    // @Description: Mount options bitmask, note bit 2 only impacts RC targetting mode
+    // @Bitmask: 0:RC lock state from previous mode, 1:Return to neutral angles on RC failsafe, 2:Force FPV (bf) lock on roll and pitch
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 16, AP_Mount_Params, options, 0),
 

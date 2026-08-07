@@ -65,9 +65,9 @@ public:
         // 60 reserved for future function
         k_servo_1_inc           = 61,           ///< increase servo output
         k_servo_1_dec           = 62,           ///< decrease servo output
-        k_servo_1_min           = 63,           ///< center servo
-        k_servo_1_max           = 64,           ///< set servo output to minimum (SERVOn_MIN)
-        k_servo_1_center        = 65,           ///< set servo output to maximum (SERVOn_MAX)
+        k_servo_1_min           = 63,           ///< set servo output to minimum (SERVOn_MIN)
+        k_servo_1_max           = 64,           ///< set servo output to maximum (SERVOn_MAX)
+        k_servo_1_center        = 65,           ///< center servo
 
         k_servo_2_inc           = 66,
         k_servo_2_dec           = 67,
@@ -82,7 +82,7 @@ public:
         k_servo_3_center        = 75,
 
         k_servo_1_min_momentary = 76,          ///< set servo output to minimum (SERVOn_MIN) until released
-        k_servo_1_max_momentary = 77,          ///< set servo output to minimum (SERVOn_MAX) until released
+        k_servo_1_max_momentary = 77,          ///< set servo output to maximum (SERVOn_MAX) until released
         k_servo_1_min_toggle    = 78,          ///< toggle servo output btwn trim (SERVOn_TRIM) and min (SERVOn_MIN)
         k_servo_1_max_toggle    = 79,          ///< toggle servo output btwn trim (SERVOn_TRIM) and max (SERVOn_MAX)
 
@@ -118,7 +118,36 @@ public:
         k_script_3              = 110,
         k_script_4              = 111,
 
-        // 112+ reserved for future functions
+        k_servo_4_min            = 112,
+        k_servo_4_max            = 113,
+        k_servo_4_center         = 114,
+        k_servo_4_inc            = 115,
+        k_servo_4_dec            = 116,
+        k_servo_4_min_momentary  = 117,
+        k_servo_4_max_momentary  = 118,
+        k_servo_4_min_toggle     = 119,
+        k_servo_4_max_toggle     = 120,
+
+        k_servo_5_min            = 121,
+        k_servo_5_max            = 122,
+        k_servo_5_center         = 123,
+        k_servo_5_inc            = 124,
+        k_servo_5_dec            = 125,
+        k_servo_5_min_momentary  = 126,
+        k_servo_5_max_momentary  = 127,
+        k_servo_5_min_toggle     = 128,
+        k_servo_5_max_toggle     = 129,
+
+        k_servo_6_min            = 130,
+        k_servo_6_max            = 131,
+        k_servo_6_center         = 132,
+        k_servo_6_inc            = 133,
+        k_servo_6_dec            = 134,
+        k_servo_6_min_momentary  = 135,
+        k_servo_6_max_momentary  = 136,
+        k_servo_6_min_toggle     = 137,
+        k_servo_6_max_toggle     = 138,
+
         k_nr_btn_functions         ///< This must be the last enum value (only add new values _before_ this one)
     } button_function_t;
 

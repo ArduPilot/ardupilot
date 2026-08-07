@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
-APJ_BOARD_ID 1013
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_MATEKH743
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
@@ -47,3 +47,27 @@ PE11 IMU2_CS CS
 PD4 EXT_CS1 CS
 PE2 EXT_CS2 CS
 PC13 IMU3_CS CS
+
+# support flashing from SD card:
+
+# FATFS support:
+define CH_CFG_USE_MEMCORE 1
+define CH_CFG_USE_HEAP 1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES 1
+define CH_CFG_USE_DYNAMIC 1
+define CH_CFG_USE_WAITEXIT 1
+define CH_CFG_USE_REGISTRY 1
+
+# microSD support
+PC8 SDMMC1_D0 SDMMC1
+PC9 SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2 SDMMC1_CMD SDMMC1
+
+# enable FAT filesystem support (needs a microSD defined via SDMMC)
+define HAL_OS_FATFS_IO 1
+
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1

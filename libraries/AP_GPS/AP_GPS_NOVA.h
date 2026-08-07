@@ -15,7 +15,7 @@
 
 //  Novatel/Tersus/ComNav GPS driver for ArduPilot.
 //  Code by Michael Oborne
-//  Derived from http://www.novatel.com/assets/Documents/Manuals/om-20000129.pdf
+//  Derived from https://hexagondownloads.blob.core.windows.net/public/Novatel/assets/Documents/Manuals/om-20000129/om-20000129.pdf
 
 #pragma once
 
@@ -89,6 +89,7 @@ private:
         uint16_t recvswver;
     };    
 
+    static const uint8_t NOVA_PSRDOP = 174;
     struct PACKED psrdop
     {
         float gdop;
@@ -101,6 +102,7 @@ private:
         // extra data for individual prns
     };
 
+    static const uint8_t NOVA_BESTPOS = 42;
     struct PACKED bestpos
     {
         uint32_t solstat;      ///< Solution status
@@ -127,6 +129,7 @@ private:
         uint8_t gpsglosigmask;
     };
 
+    static const uint8_t NOVA_BESTVEL = 99;
     struct PACKED bestvel
     {
         uint32_t solstat;

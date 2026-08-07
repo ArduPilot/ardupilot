@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+from __future__ import annotations
 
 # useful script to test the build of all example code
 # This helps when doing large merges
@@ -17,8 +19,10 @@ import util  # NOQA
 
 
 class BuildExamples():
-    def __init__(self, targets=[], clean=False):
+    def __init__(self, targets: list | None = None, clean=False):
         print("init")
+        if targets is None:
+            targets = []
         self.targets = targets
         self.clean = clean
 

@@ -50,7 +50,7 @@ protected:
     void backup_gains_and_initialise() override;
 
     // load gains
-    void load_gain_set(AxisType s_axis, float rate_p, float rate_i, float rate_d, float rate_ff, float angle_p, float max_accel, float rate_fltt, float rate_flte, float smax, float max_rate);
+    void load_gain_set(AxisType s_axis, float rate_p, float rate_i, float rate_d, float rate_ff, float angle_p, float max_accel_radss, float rate_fltt, float rate_flte, float smax, float max_rate_rads);
 
     // switch to use original gains
     void load_orig_gains() override;
@@ -70,7 +70,7 @@ protected:
     // reset the update gain variables for heli
     void reset_update_gain_variables() override;
 
-    // initializes test
+    // Prepares all tuning state variables and target values for a new test.
     void test_init() override;
 
     // runs test
@@ -98,15 +98,15 @@ protected:
     void updating_max_gains_all(AxisType test_axis) override;
 
     // set gains post tune for the tune type
-    void set_gains_post_tune(AxisType test_axis) override;
+    void set_tuning_gains_with_backoff(AxisType test_axis) override;
 
-    // reverse direction for twitch test
-    bool twitch_reverse_direction() override { return positive_direction; }
+    // reverse the direction of the next test
+    bool reverse_test_direction() override { return positive_direction; }
 
 #if HAL_LOGGING_ENABLED
     // methods to log autotune summary data
     void Log_AutoTune() override;
-    void Log_Write_AutoTune(AxisType _axis, uint8_t tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
+    void Log_Write_AutoTune(AxisType _axis, TuneType tune_step, float dwell_freq, float meas_gain, float meas_phase, float new_gain_rff, float new_gain_rp, float new_gain_rd, float new_gain_sp, float max_accel);
 
     // methods to log autotune time history results for command, angular rate, and attitude.
     void Log_AutoTuneDetails() override;
@@ -210,7 +210,7 @@ private:
     bool exceeded_freq_range(float frequency);
 
     // report gain formatting helper
-    void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float rate_ff, float angle_P, float max_accel) const;
+    void report_axis_gains(const char* axis_string, float rate_P, float rate_I, float rate_D, float rate_ff, float angle_P, float max_accel_radss) const;
 
     // define input type as Dwell or Sweep.  Used through entire class
     AC_AutoTune_FreqResp::InputType input_type;
@@ -259,7 +259,6 @@ private:
     sweep_info curr_test_mtr;
     sweep_info curr_test_tgt;
 
-    Vector3f start_angles;                          // aircraft attitude at the start of test
     uint32_t settle_time;                           // time in ms for allowing aircraft to stabilize before initiating test
 
     // variables from dwell test
@@ -290,14 +289,14 @@ private:
     const float sweep_time_ms = 23000;
 
     // parameters
-    AP_Int8  axis_bitmask;        // axes to be tuned
+    AP_Int8  axis_bitmask;      // axes to be tuned
     AP_Int8  seq_bitmask;       // tuning sequence bitmask
     AP_Float min_sweep_freq;    // minimum sweep frequency
     AP_Float max_sweep_freq;    // maximum sweep frequency
     AP_Float max_resp_gain;     // maximum response gain
     AP_Float vel_hold_gain;     // gain for velocity hold
-    AP_Float accel_max;         // maximum autotune angular acceleration
-    AP_Float rate_max;          // maximum autotune angular rate
+    AP_Float accel_max_degss;   // maximum autotune angular acceleration
+    AP_Float rate_max_degs;          // maximum autotune angular rate
 
     // freqresp object for the frequency response tests
     AC_AutoTune_FreqResp freqresp_mtr; // frequency response of output to motor mixer input

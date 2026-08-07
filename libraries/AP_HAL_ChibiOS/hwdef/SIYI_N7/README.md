@@ -1,37 +1,37 @@
 # SIYI N7 Flight Controller
 
 The SIYI N7 flight controller is sold by a range of
-resellers, linked from https://siyi.biz
+resellers, linked from [SIYI](https://siyi.biz)
 
 ## Features
 
- - STM32H743 microcontroller
- - ICM20689 and BMI088 IMUs
- - internal heater for IMU temperature control
- - internal vibration isolation for IMUs
- - MS5611 SPI barometer
- - builtin IST8310 compass
- - microSD card slot
- - 4 UARTs plus USB
- - 13 PWM outputs
- - I2C and CAN ports
- - RCIN port
- - external safety Switch
- - voltage monitoring for servo rail and Vcc
- - power input port for external power bricks
+- STM32H743 microcontroller
+- ICM20689 and BMI088 IMUs
+- internal heater for IMU temperature control
+- internal vibration isolation for IMUs
+- MS5611 SPI barometer
+- builtin IST8310 compass
+- microSD card slot
+- 4 UARTs plus USB
+- 13 PWM outputs
+- I2C and CAN ports
+- RCIN port
+- external safety Switch
+- voltage monitoring for servo rail and Vcc
+- power input port for external power bricks
 
 ## Pinout
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (Telem1)
- - SERIAL2 -> unused
- - SERIAL3 -> UART1 (GPS)
- - SERIAL4 -> UART4 (GPS2, Telem4/I2C)
- - SERIAL5 -> unused
- - SERIAL6 -> UART7 (debug port)
- - SERIAL7 -> USB2 (virtual port on same connector)
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (Telem1)
+- SERIAL2 -> unused
+- SERIAL3 -> UART1 (GPS)
+- SERIAL4 -> UART4 (GPS2, Telem4/I2C)
+- SERIAL5 -> unused
+- SERIAL6 -> UART7 (debug port)
+- SERIAL7 -> USB2 (virtual port on same connector)
 
 The Telem1 port has RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
@@ -41,294 +41,81 @@ Unless noted otherwise all connectors are JST GH
 
 ### TELEM1 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>CTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>RTS</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
-
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | CTS | +3.3V |
+| 5 (blk) | RTS | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### GPS1 port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SCL I2C1</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SDA I2C1</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>Button</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>7 (blk)</td>
-   <td>button LED</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td>8 (blk)</td>
-   <td>3.3V</td>
-   <td>3.3</td>
-   </tr>
-   <tr>
-   <td>9 (blk)</td>
-   <td>buzzer</td>
-   <td>GND</td>
-   </tr>
-   <tr>
-   <td> (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
-
-
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | SCL I2C1 | +3.3V |
+| 5 (blk) | SDA I2C1 | +3.3V |
+| 6 (blk) | Button | GND |
+| 7 (blk) | button LED | GND |
+| 8 (blk) | 3.3V | 3.3 |
+| 9 (blk) | buzzer | GND |
+| (blk) | GND | GND |
 
 ### GPS2, Telem4/I2C port
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>TX (OUT)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>RX (IN)</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>SCL I2C2</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>5 (blk)</td>
-   <td>SDA I2C2</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | TX (OUT) | +3.3V |
+| 3 (blk) | RX (IN) | +3.3V |
+| 4 (blk) | SCL I2C2 | +3.3V |
+| 5 (blk) | SDA I2C2 | +3.3V |
+| 6 (blk) | GND | GND |
 
 ### I2C
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>SCL</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>SDA</td>
-   <td>+3.3 (pullups)</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
-
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | SCL | +3.3 (pullups) |
+| 3 (blk) | SDA | +3.3 (pullups) |
+| 4 (blk) | GND | GND |
 
 ### CAN1
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>CAN_H</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>CAN_L</td>
-   <td>+12V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
-
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | CAN_H | +12V |
+| 3 (blk) | CAN_L | +12V |
+| 4 (blk) | GND | GND |
 
 ### POWER1
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin</th>
-   <th>Signal</th>
-   <th>Volt</th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>CURRENT</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>VOLTAGE</td>
-   <td>up to +3.3V</td>
-   </tr>
-   <td>5 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   <td>6 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
-
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (red) | VCC | +5V |
+| 3 (blk) | CURRENT | up to +3.3V |
+| 4 (blk) | VOLTAGE | up to +3.3V |
+| 5 (blk) | GND | GND |
+| 6 (blk) | GND | GND |
 
 ### USB
 
-   <table border="1" class="docutils">
-   <tbody>
-   <tr>
-   <th>Pin </th>
-   <th>Signal </th>
-   <th>Volt </th>
-   </tr>
-   <tr>
-   <td>1 (red)</td>
-   <td>VCC</td>
-   <td>+5V</td>
-   </tr>
-   <tr>
-   <td>2 (blk)</td>
-   <td>D_minus</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>3 (blk)</td>
-   <td>D_plus</td>
-   <td>+3.3V</td>
-   </tr>
-   <tr>
-   <td>4 (blk)</td>
-   <td>GND</td>
-   <td>GND</td>
-   </tr>
-   </tbody>
-   </table>
+   | Pin | Signal | Volt |
+| --- | --- | --- |
+| 1 (red) | VCC | +5V |
+| 2 (blk) | D_minus | +3.3V |
+| 3 (blk) | D_plus | +3.3V |
+| 4 (blk) | GND | GND |
 
 ## RC Input
- 
+
 RC input is configured on the RCIN pin, at one end of the servo rail,
 marked RCIN in the above diagram. This pin supports all RC
 protocols.
@@ -349,14 +136,14 @@ signal on the bottom row.
 
 The 8 main PWM outputs are in 3 groups:
 
- - PWM 1 and 2 in group1
- - PWM 3 and 4 in group2
- - PWM 5, 6, 7 and 8 in group3
+- PWM 1 and 2 in group1
+- PWM 3 and 4 in group2
+- PWM 5, 6, 7 and 8 in group3
 
 The 4 auxiliary PWM outputs are in 2 groups:
 
- - PWM 1, 2, 3 and 4 in group4
- - PWM 5 in group5
+- PWM 1, 2, 3 and 4 in group4
+- PWM 5 in group5
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -378,18 +165,18 @@ The 5 AUX PWM ports can be used as GPIOs (relays, buttons, RPM etc).
 
 The numbering of the GPIOs for PIN variables in ArduPilot is:
 
- - PWM1 50
- - PWM2 51
- - PWM3 52
- - PWM4 53
- - PWM5 54
+- PWM1 50
+- PWM2 51
+- PWM3 52
+- PWM4 53
+- PWM5 54
 
 ## Analog inputs
 
 The SIYI N7 has 7 analog inputs
 
- - ADC Pin16 -> Battery Voltage
- - ADC Pin17 -> Battery Current Sensor
+- ADC Pin16 -> Battery Voltage
+- ADC Pin17 -> Battery Current Sensor
 
 ## IMU Heater
 

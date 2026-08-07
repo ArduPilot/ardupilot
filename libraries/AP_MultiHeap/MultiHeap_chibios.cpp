@@ -5,7 +5,7 @@
 #include "AP_MultiHeap.h"
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if ENABLE_HEAP && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
 #include <ch.h>
 #include <hal.h>
@@ -44,4 +44,4 @@ void MultiHeap::heap_free(void *ptr)
     return chHeapFree(ptr);
 }
 
-#endif // ENABLE_HEAP && CONFIG_HAL_BOARD
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS

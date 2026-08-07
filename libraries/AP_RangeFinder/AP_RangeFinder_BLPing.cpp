@@ -68,7 +68,7 @@ bool AP_RangeFinder_BLPing::get_reading(float &reading_m)
         }
         if (protocol.parse_byte(b) == PingProtocol::MessageId::DISTANCE_SIMPLE) {
             averageStruct.count++;
-            averageStruct.sum_cm += protocol.get_distance_mm()/10.0f;
+            averageStruct.sum_cm += protocol.get_distance_mm()*0.1f;
         }
     }
 

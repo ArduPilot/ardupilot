@@ -92,7 +92,7 @@ local now_altitude = millis():tofloat() * 0.001
 -- target.alt = new target altitude in meters
 -- set_vehicle_target_altitude() Parameters
 -- target.frame = Altitude frame MAV_FRAME, it's very important to get this right!
--- target.alt = altitude in meters to acheive
+-- target.alt = altitude in meters to achieve
 -- target.accel = z acceleration to altitude (1000.0 = max)
 local function set_vehicle_target_altitude(target)
    local acceleration = target.accel or 1000.0 -- default to maximum z acceleration

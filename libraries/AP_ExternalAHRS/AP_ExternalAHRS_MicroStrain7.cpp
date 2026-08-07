@@ -28,7 +28,7 @@
     ./Tools/autotest/sim_vehicle.py -v Plane -A "--serial3=sim:MicroStrain7" --console --map -DG
  */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include "AP_ExternalAHRS_config.h"
 
@@ -286,7 +286,7 @@ bool AP_ExternalAHRS_MicroStrain7::pre_arm_check(char *failure_msg, uint8_t fail
         return false;
     }
     static_assert(NUM_GNSS_INSTANCES == 2, "This check only works if there are two GPS types.");
-    if (gnss_data[0].fix_type < GPS_FIX_TYPE_3D_FIX && gnss_data[1].fix_type < GPS_FIX_TYPE_3D_FIX) {
+    if (gnss_data[0].fix_type < AP_GPS_FixType::FIX_3D && gnss_data[1].fix_type < AP_GPS_FixType::FIX_3D) {
         hal.util->snprintf(failure_msg, failure_msg_len, LOG_FMT, get_name(), "missing 3D GPS fix on either GPS");
         return false;
     }

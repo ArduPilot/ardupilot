@@ -22,7 +22,7 @@ public:
     friend class AP_MotorsHeli_Dual;
     friend class AP_MotorsHeli_Quad;
 
-    AP_MotorsHeli_RSC(SRV_Channel::Aux_servo_function_t aux_fn,
+    AP_MotorsHeli_RSC(SRV_Channel::Function aux_fn,
                       uint8_t default_channel,
                       uint8_t inst) :
         _instance(inst),
@@ -82,6 +82,9 @@ public:
     // true if we are considered to be autorotating or bailing out of an autorotation
     bool        in_autorotation(void) const;
 
+    // true if we are using a manual collective flight mode
+    void        set_using_manual_collective_mode(bool using_manual_collective_mode) { _using_manual_collective_mode = using_manual_collective_mode; }
+
     // turbine start initialize sequence
     void        set_turbine_start(bool turbine_start) {_turbine_start = turbine_start; }
 
@@ -117,7 +120,7 @@ private:
     const uint8_t   _instance;
 
     // channel setup for aux function
-    const SRV_Channel::Aux_servo_function_t _aux_fn;
+    const SRV_Channel::Function _aux_fn;
     const uint8_t _default_channel;
 
     // internal variables
@@ -141,6 +144,7 @@ private:
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
     float           _governor_torque_reference;   // governor reference for load calculations
     float           _idle_throttle;               // current idle throttle setting
+    bool            _using_manual_collective_mode; // flag to determine if we are using a manual collective flight mode
 
     RotorControlState _rsc_state;
 

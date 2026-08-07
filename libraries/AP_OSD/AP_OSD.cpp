@@ -457,7 +457,7 @@ void AP_OSD::update_stats()
             home_loc = ahrs.get_home();
         }
         ahrs.get_relative_position_D_home(alt);
-        have_airspeed_estimate = ahrs.airspeed_estimate(aspd_mps);
+        have_airspeed_estimate = ahrs.airspeed_EAS(aspd_mps);
     }
     float speed = v.length();
     if (speed < 0.178) {

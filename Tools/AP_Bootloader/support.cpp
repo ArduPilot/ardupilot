@@ -38,8 +38,6 @@ static uint8_t last_uart;
 #define BOOTLOADER_BAUDRATE 115200
 #endif
 
-// #pragma GCC optimize("O0")
-
 static bool cin_data(uint8_t *data, uint8_t len, unsigned timeout_ms)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(uarts); i++) {
@@ -72,7 +70,7 @@ int cin_word(uint32_t *wp, unsigned timeout_ms)
 }
 
 
-void cout(uint8_t *data, uint32_t len)
+void cout(const uint8_t *data, uint32_t len)
 {
     chnWriteTimeout(uarts[last_uart], data, len, chTimeMS2I(100));
 }
@@ -497,7 +495,7 @@ static SerialConfig forward_sercfg;
 static uint32_t otg2_serial_deadline_ms;
 bool update_otg2_serial_forward()
 {
-    // get baudrate set on SDU2 and set it on HAL_FORWARD_OTG2_SERIAL if changed
+    // get baudrate set on SDU2 and set it on BOOTLOADER_FORWARD_OTG2_SERIAL if changed
     if (forward_sercfg.speed != BOOTLOADER_FORWARD_OTG2_SERIAL_BAUDRATE) {
         forward_sercfg.speed = BOOTLOADER_FORWARD_OTG2_SERIAL_BAUDRATE;
 #if defined(BOOTLOADER_FORWARD_OTG2_SERIAL_SWAP) && BOOTLOADER_FORWARD_OTG2_SERIAL_SWAP
@@ -505,11 +503,11 @@ bool update_otg2_serial_forward()
 #endif
         sdStart(&BOOTLOADER_FORWARD_OTG2_SERIAL, &forward_sercfg);
     }
-    // check how many bytes are available to read from HAL_FORWARD_OTG2_SERIAL
+    // check how many bytes are available to read from BOOTLOADER_FORWARD_OTG2_SERIAL
     uint8_t data[SERIAL_BUFFERS_SIZE]; // read upto SERIAL_BUFFERS_SIZE at a time
     int n = chnReadTimeout(&SDU2, data, SERIAL_BUFFERS_SIZE, TIME_IMMEDIATE);
     if (n > 0) {
-        // do a blocking write to HAL_FORWARD_OTG2_SERIAL
+        // do a blocking write to BOOTLOADER_FORWARD_OTG2_SERIAL
         chnWriteTimeout(&BOOTLOADER_FORWARD_OTG2_SERIAL, data, n, TIME_IMMEDIATE);
         otg2_serial_deadline_ms = AP_HAL::millis() + 1000;
     }

@@ -277,13 +277,13 @@ int st24_decode(uint8_t byte, uint8_t *rssi, uint8_t *rx_count, uint16_t *channe
 						channels[chan_index] = ((uint16_t)d->channel[i] << 4);
 						channels[chan_index] |= ((uint16_t)(0xF0 & d->channel[i + 1]) >> 4);
 						/* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-						channels[chan_index] = (uint16_t)(channels[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+						channels[chan_index] = (uint16_t)(channels[chan_index] * ST24_SCALE_FACTOR + 0.5f) + ST24_SCALE_OFFSET;
 						chan_index++;
 
 						channels[chan_index] = ((uint16_t)d->channel[i + 2]);
 						channels[chan_index] |= (((uint16_t)(0x0F & d->channel[i + 1])) << 8);
 						/* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-						channels[chan_index] = (uint16_t)(channels[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+						channels[chan_index] = (uint16_t)(channels[chan_index] * ST24_SCALE_FACTOR + 0.5f) + ST24_SCALE_OFFSET;
 						chan_index++;
 					}
 				}
@@ -305,13 +305,13 @@ int st24_decode(uint8_t byte, uint8_t *rssi, uint8_t *rx_count, uint16_t *channe
 						channels[chan_index] = ((uint16_t)d->channel[i] << 4);
 						channels[chan_index] |= ((uint16_t)(0xF0 & d->channel[i + 1]) >> 4);
 						/* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-						channels[chan_index] = (uint16_t)(channels[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+						channels[chan_index] = (uint16_t)(channels[chan_index] * ST24_SCALE_FACTOR + 0.5f) + ST24_SCALE_OFFSET;
 						chan_index++;
 
 						channels[chan_index] = ((uint16_t)d->channel[i + 2]);
 						channels[chan_index] |= (((uint16_t)(0x0F & d->channel[i + 1])) << 8);
 						/* convert values to 1000-2000 ppm encoding in a not too sloppy fashion */
-						channels[chan_index] = (uint16_t)(channels[chan_index] * ST24_SCALE_FACTOR + .5f) + ST24_SCALE_OFFSET;
+						channels[chan_index] = (uint16_t)(channels[chan_index] * ST24_SCALE_FACTOR + 0.5f) + ST24_SCALE_OFFSET;
 						chan_index++;
 					}
 				}

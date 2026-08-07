@@ -19,15 +19,29 @@
 
 #include <AP_HAL/AP_HAL.h>
 
-AP_Compass_MSP::AP_Compass_MSP(uint8_t _msp_instance)
+AP_Compass_Backend *AP_Compass_MSP::probe(uint8_t _msp_instance)
 {
-    msp_instance = _msp_instance;
+    auto *ret = NEW_NOTHROW AP_Compass_MSP(_msp_instance);
+    if (ret == nullptr) {
+        return nullptr;
+    }
+    if (!ret->init()) {
+        delete ret;
+        return nullptr;
+    }
+    return ret;
+}
 
-    auto devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_MSP, 0, _msp_instance, 0);
-    register_compass(devid, instance);
+bool AP_Compass_MSP::init()
+{
+    auto devid = AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_MSP, 0, msp_instance, 0);
+    if (!register_compass(devid)) {
+        return false;
+    }
 
-    set_dev_id(instance, devid);
-    set_external(instance, true);
+    set_external(true);
+
+    return true;
 }
 
 void AP_Compass_MSP::handle_msp(const MSP::msp_compass_data_message_t &pkt)
@@ -41,7 +55,7 @@ void AP_Compass_MSP::handle_msp(const MSP::msp_compass_data_message_t &pkt)
 
 void AP_Compass_MSP::read(void)
 {
-    drain_accumulated_samples(instance);
+    drain_accumulated_samples();
 }
 
 #endif // AP_COMPASS_MSP_ENABLED

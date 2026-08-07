@@ -135,6 +135,14 @@ enum LoggingParameters {
 #define FS_PILOT_INPUT_WARN_ONLY   1
 #define FS_PILOT_INPUT_DISARM      2
 
+// for THR_ARM_POS parameter
+#define WITHIN_THR_TRIM 1
+
+// Radio failsafe definitions (FS_THR parameter)
+#define FS_THR_DISABLED                            0
+#define FS_THR_WARN                                1
+#define FS_THR_SURFACE                             2
+
 // Amount of time to attempt recovery of valid rangefinder data before
 // initiating terrain failsafe action
 #define FS_TERRAIN_RECOVER_TIMEOUT_MS 10000
