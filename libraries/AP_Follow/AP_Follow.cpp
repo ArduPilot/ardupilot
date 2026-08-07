@@ -346,6 +346,16 @@ void AP_Follow::update_estimates()
         _estimate_valid = false;
         return;
     }
+
+    // the location getters must succeed whenever have_target() is true, so confirm the
+    // estimate can be expressed as a location in the frame FOLL_ALT_TYPE asks for
+    Location loc;
+    if (!AP::ahrs().get_location_from_origin_offset_NED(loc, _ofs_estimate_pos_ned_m) ||
+        !loc.change_alt_frame(_alt_type)) {
+        _estimate_valid = false;
+        return;
+    }
+
     const Vector3p dist_vec_ned_m = _target_pos_ned_m - current_position_ned_m;
     // If _dist_max_m is not positive, we don't check the distance
     if (is_positive(_dist_max_m.get()) && (dist_vec_ned_m.length() > _dist_max_m)) {
