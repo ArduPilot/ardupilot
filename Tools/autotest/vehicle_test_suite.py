@@ -6605,6 +6605,11 @@ class TestSuite(abc.ABC):
             if m is not None:
                 if instance is None or getattr(m, m._instance_field) == instance:
                     break
+                # right message, wrong instance.  Keep waiting - but fall
+                # through to the timeout check rather than going straight
+                # back around, or a steady stream of some other instance
+                # keeps us here for ever.
+                m = None
             elapsed_time = time.time() - tstart
             if elapsed_time > timeout:
                 raise NotAchievedException("Did not get %s after %s seconds" %
