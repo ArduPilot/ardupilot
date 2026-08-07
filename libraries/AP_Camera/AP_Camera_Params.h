@@ -19,6 +19,7 @@ public:
     AP_Int16 servo_on_pwm;      // PWM value to move servo to when shutter is activated
     AP_Int16 servo_off_pwm;     // PWM value to move servo to when shutter is deactivated
     AP_Float trigg_dist;        // distance between trigger points (meters)
+    AP_Int8 trigg_dist_3d;      // enable 3D distance calculation for trigg_dist
     AP_Int8 relay_on;           // relay value to trigger camera
     AP_Float interval_min;      // minimum time (in seconds) between shots required by camera
     AP_Int8 options;            // whether to start recording when armed and stop when disarmed
