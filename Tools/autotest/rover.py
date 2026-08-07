@@ -6514,8 +6514,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
+        # the headings below are absolute, so the bearing to the target
+        # must stay north however far the vehicle wanders getting onto
+        # it - it may start this test moving, and driving a few hundred
+        # metres off the line to a target 2km away costs more than the
+        # 5 degrees wait_heading() allows.  20km away it costs under one.
         here = self.get_location()
-        target_loc = self.offset_location_ne(here, 2000, 0)
+        target_loc = self.offset_location_ne(here, 20000, 0)
         self.send_guided_mission_item(target_loc)
 
         self.wait_groundspeed(3, 100, minimum_duration=5)
