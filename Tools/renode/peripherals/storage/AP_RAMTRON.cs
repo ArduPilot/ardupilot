@@ -87,9 +87,9 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
         public void FinishTransmission()
         {
-            // ChibiOS can keep chip select asserted across multiple hardware
-            // transfers. STM32 SPI models call this at each TSIZE boundary,
-            // so only the GPIO chip-select edge may end a FRAM transaction.
+            // AP_SPIMultiplexer suppresses the STM32 model's TSIZE-boundary
+            // callbacks and forwards only the real GPIO CS-deassert edge.
+            EndTransaction();
         }
 
         public void OnGPIO(int number, bool value)

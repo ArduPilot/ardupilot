@@ -32,8 +32,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
     // every later one is misparsed as a continuation.
     public class AP_ICM20689 : ISPIPeripheral, IGPIOReceiver
     {
-        public AP_ICM20689(IMachine machine)
+        public AP_ICM20689(IMachine machine, byte whoAmI = 0x98)
         {
+            this.whoAmI = whoAmI;
             fifo = new Queue<byte>();
             registers = new byte[128];
             sampleTimer = new LimitTimer(machine.ClockSource, 1000000, this, "icm20689 odr",
@@ -50,7 +51,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             transferByte = 0;
             reading = false;
             currentReg = 0;
-            registers[WHOAMI] = 0x98;
+            registers[WHOAMI] = whoAmI;
             registers[PRODUCT_ID] = 0x01;
         }
 
@@ -166,6 +167,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly Queue<byte> fifo;
         private readonly byte[] registers;
         private readonly LimitTimer sampleTimer;
+        private readonly byte whoAmI;
         private int transferByte;
         private bool reading;
         private byte currentReg;

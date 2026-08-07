@@ -10,6 +10,7 @@ hwdef.dat; this generator only translates those results into Renode wiring.
 '''
 
 import argparse
+import ast
 import contextlib
 import io
 import json
@@ -62,12 +63,24 @@ FAMILIES = {
 
 IMU_MODELS = {
     'Invensense': 'Sensors.AP_ICM20689',
+    'Invensensev2': 'Sensors.AP_InvensenseV2',
     'Invensensev3': 'Sensors.AP_ICM42688',
+}
+
+WHOAMI_VALUES = {
+    'MPU_WHOAMI_MPU60X0': 0x68,
+    'MPU_WHOAMI_MPU9250': 0x71,
+    'MPU_WHOAMI_ICM20608': 0xAF,
+    'MPU_WHOAMI_ICM20602': 0x12,
+    'MPU_WHOAMI_ICM20689': 0x98,
+    'INV2_WHOAMI_ICM20948': 0xEA,
+    'INV2_WHOAMI_ICM20649': 0xE1,
 }
 
 BARO_MODELS = {
     'BMP280': 'Sensors.AP_BMP280',
     'DPS310': 'Sensors.AP_DPS310',
+    'MS5611': 'Sensors.AP_MS5611',
     'SPL06': 'Sensors.AP_DPS310',
 }
 
@@ -160,11 +173,78 @@ def _defines(path):
     return found
 
 
+def _constant_integer(expression):
+    '''Evaluate an integer-only hwdef expression without executing code.'''
+    operators = {
+        ast.Add: lambda left, right: left + right,
+        ast.Sub: lambda left, right: left - right,
+        ast.Mult: lambda left, right: left * right,
+        ast.FloorDiv: lambda left, right: left // right,
+        ast.LShift: lambda left, right: left << right,
+        ast.RShift: lambda left, right: left >> right,
+        ast.BitOr: lambda left, right: left | right,
+        ast.BitAnd: lambda left, right: left & right,
+    }
+
+    def evaluate(node):
+        if isinstance(node, ast.Constant) and isinstance(node.value, int):
+            return node.value
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+            value = evaluate(node.operand)
+            return value if isinstance(node.op, ast.UAdd) else -value
+        if isinstance(node, ast.BinOp) and type(node.op) in operators:
+            return operators[type(node.op)](evaluate(node.left), evaluate(node.right))
+        raise ValueError('not a constant integer expression: %s' % expression)
+
+    return evaluate(ast.parse(expression, mode='eval').body)
+
+
+def _crc32_small(data, padded_size):
+    '''Match AP_Math crc32_small(), including erased IO flash padding.'''
+    if len(data) > padded_size:
+        raise ValueError('IO firmware is larger than AP_IOMCU_FW_FLASH_SIZE')
+    crc = 0
+    for value in data + b'\xff' * (padded_size - len(data)):
+        crc ^= value
+        for _ in range(8):
+            crc = (crc >> 1) ^ (0xEDB88320 if crc & 1 else 0)
+    return crc
+
+
 def _dma_stream(value):
     match = re.fullmatch(r'STM32_DMA_STREAM_ID\((\d+),(\d+)\)', value.replace(' ', ''))
     if match is None:
         return None
     return int(match.group(1)), int(match.group(2))
+
+
+def _imu_whoami(device_name, defines):
+    '''Find the board-validation WHOAMI for a named SPI sensor, if present.'''
+    validation = defines.get('HAL_VALIDATE_BOARD', '')
+    match = re.search(
+        r'spi_check_register(?:_inv2)?\(\s*"%s"\s*,[^,]+,\s*([A-Za-z0-9_xX]+)' %
+        re.escape(device_name), validation)
+    if match is not None:
+        value = match.group(1)
+        if value in WHOAMI_VALUES:
+            return WHOAMI_VALUES[value]
+        try:
+            return int(value, 0)
+        except ValueError:
+            pass
+    names = {
+        'icm20602': 0x12,
+        'icm20608': 0xAF,
+        'icm20689': 0x98,
+        'icm20948': 0xEA,
+        'icm20649': 0xE1,
+        'mpu6000': 0x68,
+        'mpu9250': 0x71,
+    }
+    for part, value in names.items():
+        if part in device_name.lower():
+            return value
+    return None
 
 
 def _dmamux_requests(root):
@@ -192,65 +272,101 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
     spi_devices = {dev[0]: dev for dev in config.spidev}
     declarations = []
     chip_selects = {}
+    spi_children = []
 
+    imu_locations = set()
     for index, imu in enumerate(config.imu_list):
-        if len(imu) < 2 or imu[0] not in IMU_MODELS:
+        if len(imu) < 2:
             warnings.append('unmodelled IMU: %s' % ' '.join(imu))
             continue
-        device_name = _spi_device_name(imu[1])
-        device = spi_devices.get(device_name)
-        if device is None:
+        device_names = []
+        for argument in imu[1:]:
+            device_name = _spi_device_name(argument)
+            if device_name in spi_devices and device_name not in device_names:
+                device_names.append(device_name)
+        if not device_names:
             warnings.append('cannot resolve IMU SPI device: %s' % ' '.join(imu))
             continue
-        bus, cs_label = device[1], device[3]
-        if bus not in family['spis']:
-            warnings.append('%s is not present in the current MCU base' % bus)
+        locations = []
+        resolved_devices = []
+        for device_name in device_names:
+            device = spi_devices[device_name]
+            bus, cs_label = device[1], device[3]
+            if bus not in family['spis']:
+                warnings.append('%s is not present in the current MCU base' % bus)
+                break
+            cs = config.bylabel.get(cs_label)
+            if cs is None:
+                warnings.append('cannot resolve chip select %s' % cs_label)
+                break
+            locations.append((bus, cs.port, cs.pin))
+            resolved_devices.append((device_name, bus, cs))
+        if len(resolved_devices) != len(device_names):
             continue
-        cs = config.bylabel.get(cs_label)
-        if cs is None:
-            warnings.append('cannot resolve chip select %s' % cs_label)
+        if any(location in imu_locations for location in locations):
             continue
+        imu_locations.update(locations)
+        if imu[0] not in IMU_MODELS:
+            warnings.append('unmodelled IMU: %s' % ' '.join(imu))
+            continue
+        device_name, bus, cs = resolved_devices[0]
         name = 'imu%d' % index
-        declarations += [
-            '%s: %s @ %s' % (name, IMU_MODELS[imu[0]], bus.lower()),
-            '',
-        ]
-        chip_selects.setdefault((cs.port, cs.pin), []).append(name)
-        # One healthy IMU is sufficient to reach the scheduler. Additional
-        # instances can be added when their exact models are implemented.
-        break
+        properties = []
+        whoami = _imu_whoami(device_name, defines)
+        if whoami is not None and imu[0] in ('Invensense', 'Invensensev2'):
+            properties.append('    whoAmI: 0x%02X' % whoami)
+        spi_children.append(
+            (name, IMU_MODELS[imu[0]], bus, cs, properties))
 
     i2c_order = config.get_config('I2C_ORDER', required=False, aslist=True) or []
-    used_addresses = set()
+    baro_locations = set()
     for index, baro in enumerate(config.baro_list):
+        if not baro.devlist:
+            warnings.append('unsupported barometer bus: %s' % baro.driver)
+            continue
+        device = baro.devlist[0]
+        i2c_declaration = None
+        cs = None
+        if hasattr(device, 'busnum') and hasattr(device, 'busaddr'):
+            if not 0 <= device.busnum < len(i2c_order):
+                warnings.append('invalid I2C index for barometer %s' % baro.driver)
+                continue
+            bus = i2c_order[device.busnum]
+            if bus not in family['i2cs']:
+                warnings.append('%s is not present in the current MCU base' % bus)
+                continue
+            location = (bus, device.busaddr)
+            i2c_declaration = 'baro%d: %%s @ %s 0x%02X' % (
+                index, bus.lower(), device.busaddr)
+        elif hasattr(device, 'name'):
+            spi_device = spi_devices.get(device.name)
+            if spi_device is None:
+                warnings.append('cannot resolve barometer SPI device: %s' % device.name)
+                continue
+            bus, cs_label = spi_device[1], spi_device[3]
+            if bus not in family['spis']:
+                warnings.append('%s is not present in the current MCU base' % bus)
+                continue
+            cs = config.bylabel.get(cs_label)
+            if cs is None:
+                warnings.append('cannot resolve chip select %s' % cs_label)
+                continue
+            location = (bus, cs.port, cs.pin)
+        else:
+            warnings.append('unsupported barometer bus: %s' % baro.driver)
+            continue
+        if location in baro_locations:
+            continue
+        baro_locations.add(location)
         model = BARO_MODELS.get(baro.driver)
         if model is None:
             warnings.append('unmodelled barometer: %s' % baro.driver)
             continue
-        devices = [d for d in baro.devlist
-                   if hasattr(d, 'busnum') and hasattr(d, 'busaddr')]
-        if not devices:
-            warnings.append('unsupported barometer bus: %s' % baro.driver)
-            continue
-        device = devices[0]
-        if not 0 <= device.busnum < len(i2c_order):
-            warnings.append('invalid I2C index for barometer %s' % baro.driver)
-            continue
-        bus = i2c_order[device.busnum]
-        if bus not in family['i2cs']:
-            warnings.append('%s is not present in the current MCU base' % bus)
-            continue
-        key = (bus, device.busaddr)
-        if key in used_addresses:
-            continue
-        used_addresses.add(key)
-        declarations += [
-            'baro%d: %s @ %s 0x%02X' %
-            (index, model, bus.lower(), device.busaddr),
-            '',
-        ]
-        # A single barometer is enough for ArduPilot's initialization gate.
-        break
+        name = 'baro%d' % index
+        if cs is not None:
+            spi_children.append((name, model, bus, cs, []))
+        else:
+            declarations += [i2c_declaration % model, '']
 
     has_fram = defines.get('HAL_WITH_RAMTRON', '0') != '0'
     if has_fram:
@@ -268,14 +384,57 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
                 warnings.append('cannot resolve RAMTRON chip select %s' % cs_label)
                 has_fram = False
             else:
-                declarations += [
-                    'fram: Miscellaneous.AP_RAMTRON @ %s' % bus.lower(),
-                    '    fileName: %s' % json.dumps(str(fram_path)),
-                    '',
-                ]
-                chip_selects.setdefault((cs.port, cs.pin), []).append('fram')
+                spi_children.append((
+                    'fram', 'Miscellaneous.AP_RAMTRON', bus, cs,
+                    ['    fileName: %s' % json.dumps(str(fram_path))]))
+
+    children_by_bus = {}
+    for child in spi_children:
+        children_by_bus.setdefault(child[2], []).append(child)
+    for bus in sorted(children_by_bus):
+        mux = '%sMux' % bus.lower()
+        children = children_by_bus[bus]
+        declarations += [
+            '%s: Miscellaneous.AP_SPIMultiplexer @ %s' % (mux, bus.lower()),
+            '',
+        ]
+        for address, (name, model, _, cs, properties) in enumerate(children):
+            declarations += [
+                '%s: %s @ %s %d' % (name, model, mux, address),
+            ] + properties + ['']
+            chip_selects.setdefault((cs.port, cs.pin), []).append(
+                '%s@%d' % (mux, address))
 
     return declarations, chip_selects, has_fram
+
+
+def _iomcu_device(root, app, family, defines, warnings):
+    uart = app.get_config('IOMCU_UART', required=False, default=None)
+    if uart is None:
+        return [], None
+    if uart not in family['uarts']:
+        warnings.append('%s IOMCU UART is not present in the current MCU base' % uart)
+        return [], None
+    firmware = app.romfs.get('io_firmware.bin')
+    if firmware is None:
+        warnings.append('IOMCU_UART is set without ROMFS io_firmware.bin')
+        return [], None
+    firmware_path = Path(firmware)
+    if not firmware_path.is_absolute():
+        firmware_path = root / firmware_path
+    try:
+        data = firmware_path.read_bytes()
+        flash_size = _constant_integer(
+            defines.get('AP_IOMCU_FW_FLASH_SIZE', '0xF000'))
+        firmware_crc = _crc32_small(data, flash_size)
+    except (OSError, SyntaxError, ValueError, ZeroDivisionError) as error:
+        warnings.append('cannot configure IOMCU firmware CRC: %s' % error)
+        return [], None
+    return [
+        'iomcu: Miscellaneous.AP_IOMCU @ %s' % uart.lower(),
+        '    firmwareCrc: 0x%08X' % firmware_crc,
+        '',
+    ], uart
 
 
 def _gpio_routes(family_name, chip_selects):
@@ -284,7 +443,7 @@ def _gpio_routes(family_name, chip_selects):
     for port in ports:
         lines += ['gpioPort%s:' % port]
         for pin in range(16):
-            targets = ['%s@0' % name for name in chip_selects.get((port, pin), [])]
+            targets = list(chip_selects.get((port, pin), []))
             if family_name == 'f405':
                 targets.append('exti@%d' % pin)
             else:
@@ -436,6 +595,8 @@ def _platform(root, board, app, outdir, fram_path, warnings):
     sensor_lines, chip_selects, has_fram = _sensor_devices(
         app, family, defines, fram_path, warnings)
     lines += sensor_lines
+    iomcu_lines, iomcu_uart = _iomcu_device(root, app, family, defines, warnings)
+    lines += iomcu_lines
 
     address = 0x60000010
 
@@ -458,7 +619,7 @@ def _platform(root, board, app, outdir, fram_path, warnings):
     else:
         lines += _h743_dma_wiring(root, defines, family, alloc, warnings)
     lines += _gpio_routes(family['name'], chip_selects)
-    return '\n'.join(lines).rstrip() + '\n', has_fram
+    return '\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart
 
 
 def _serial_device(app, family, serial_index):
@@ -482,7 +643,7 @@ def _serial_device(app, family, serial_index):
 
 
 def _script(root, board, app, bootloader, platform, serial_index, uart_port,
-            warnings):
+            iomcu_uart, warnings):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     app_base = 0x08000000 + reserve_kb * 1024
@@ -558,6 +719,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         'has_sdcard': has_sd,
         'serial_index': serial_index,
         'serial': serial,
+        'iomcu_uart': iomcu_uart,
         'family': family['name'],
     }
 
@@ -583,11 +745,12 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     warnings = []
     repl = outdir / ('%s.repl' % board)
     resc = outdir / ('%s.resc' % board)
-    platform, has_fram = _platform(
+    platform, has_fram, iomcu_uart = _platform(
         root, board, app, outdir, state_dir / 'fram.img', warnings)
     repl.write_text(platform)
     script, metadata = _script(
-        root, board, app, bootloader, repl, serial_index, uart_port, warnings)
+        root, board, app, bootloader, repl, serial_index, uart_port,
+        iomcu_uart, warnings)
     resc.write_text(script)
     metadata.update({
         'repl': repl,
