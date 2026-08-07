@@ -6114,7 +6114,8 @@ class TestSuite(abc.ABC):
         while True:
             t2 = self.get_sim_time()
             if t2 - tstart > 10:
-                raise AutoTestTimeoutException("Failed to do waypoint thing")
+                raise AutoTestTimeoutException(
+                    "Failed to load mission %s using MAVProxy" % filename)
             # the following hack is to get around MAVProxy statustext deduping:
             while time.time() - self.last_wp_load < 3:
                 self.progress("Waiting for MAVProxy de-dupe timer to expire")
@@ -6124,7 +6125,26 @@ class TestSuite(abc.ABC):
             mavproxy.expect('Loaded ([0-9]+) waypoints from')
             load_count = mavproxy.match.group(1)
             self.last_wp_load = time.time()
-            mavproxy.expect("Flight plan received")
+            # "Flight plan received" comes from the vehicle only once the
+            # upload has completed.  If it does not complete the vehicle
+            # says so instead, and waiting out the timeout for a message
+            # which is never coming both costs a minute and reports the
+            # wait rather than the upload:
+            #     Timed out after 60s looking for Flight plan received
+            # while the log says
+            #     Got MISSION_ACK: TYPE_MISSION: OPERATION_CANCELLED
+            #     AP: Mission upload timeout
+            # Listen for those too and go round again; the loop above
+            # bounds how long we keep trying.
+            got = mavproxy.expect([
+                "Flight plan received",
+                "Mission upload timeout",
+                "Got MISSION_ACK: TYPE_MISSION: OPERATION_CANCELLED",
+            ])
+            if got != 0:
+                self.progress("Mission upload did not complete (%s); retrying" %
+                              str(mavproxy.after))
+                continue
             mavproxy.send('wp list\n')
             mavproxy.expect('Requesting ([0-9]+) waypoints')
             request_count = mavproxy.match.group(1)
