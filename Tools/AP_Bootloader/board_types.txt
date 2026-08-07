@@ -351,6 +351,7 @@ AP_HW_MUPilot                        1222
 AP_HW_HWH7                           1223
 AP_HW_BrahmaH7                       1224
 AP_HW_TUSTIN_MACH                    1225
+AP_HW_FlyFishRCF405                  1226
 
 AP_HW_ATLAS_CONTROL                  1227
 AP_HW_MatekH7A3_Wing                 1228
