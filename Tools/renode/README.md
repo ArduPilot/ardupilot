@@ -37,6 +37,19 @@ the exact IMU WHOAMI values come from the compiled hwdef/ROMFS output. This is
 important for CubeOrange because the `icm20948` SPI name is validated as an
 ICM20649. No CubeOrange-specific REPL, RESC, or parameter file is needed.
 
+A stock Pixhawk6X ArduCopter image boots from its alternate 0x24000000 AXI SRAM
+layout, mounts its microSD through SDMMC2, detects the Holybro FMUv6 sensor
+variant, and reaches the main vehicle loop. Its generated platform includes
+both FDCAN controllers, the LAN8742A-compatible RMII Ethernet PHY, the IOMCU,
+SPI FRAM, ICM42688/ICM42670/ICM20649 IMUs, and two BMP388 barometers.
+
+H743 CAN1 and CAN2 can be connected to the same UDP multicast transport used
+by ArduPilot SITL, DroneCAN tools, and the AM32 Renode harness. The bridge
+supports classic CAN and CAN FD and maps the two interfaces independently to
+`mcast:0` and `mcast:1`. H743 boards with an `ETH1` hwdef receive the
+Renode Synopsys DWC QoS MAC and PHY; `run.py` can attach that MAC to a host
+TAP for an isolated network or an existing host LAN bridge.
+
 The parameter-set round trip is verified end to end: MAV_SYSID set over
 MAVLink, handled, saved to the emulated flash, and the save-notify ACK
 received back (note the parameter is MAV_SYSID on master, not the old
@@ -94,6 +107,11 @@ every pause-at-a-breakpoint into a reboot).
   loads persistent storage sectors 2/3 (fresh STM32 flash must read 0xFF),
   `PerformanceInMips 125`, 1ms global quantum.
 - `data/STM32F405.svd.gz` — vendored so headless CI never touches the network.
+- `peripherals/common/AP_CANMcast.cs` — bidirectional classic CAN/CAN FD
+  bridge using the ArduPilot `mcast:N` UDP framing.
+- `platforms/stm32h743_base.repl` — shared H743 MCU platform, including
+  FDCAN1/2 and both SDMMC controller locations. Generated overlays select
+  SDMMC1 or SDMMC2 from the board hwdef.
 
 Generated board descriptions remain below `build/<board>/renode/`. Persistent
 emulated media instead defaults to `renode/<board>/` at the repository root;
@@ -278,6 +296,83 @@ or automated regression tests.
 Works against a stock Renode 1.16.1, but the performance patches in
 `patches/` are worth ~4x - see the performance notes for the build
 recipe.
+
+### CAN
+
+Pass `--can` to connect generated CAN1 and CAN2 peripherals to separate
+ArduPilot multicast buses:
+
+```sh
+./waf configure --board CubeOrange
+./waf copter
+Tools/renode/run.py CubeOrange --can
+```
+
+Configure two ArduPilot CAN drivers through MAVProxy, then reboot:
+
+```text
+param set CAN_P1_DRIVER 1
+param set CAN_D1_PROTOCOL 1
+param set CAN_P2_DRIVER 2
+param set CAN_D2_PROTOCOL 1
+reboot
+```
+
+CAN1 is then available to DroneCAN tooling as `mcast:0`, and CAN2 as
+`mcast:1`. The bus numbers follow the multicast convention rather than the
+one-based ArduPilot peripheral names. The bridge is closed unless `--can` is
+passed, so an ordinary Renode run cannot collide with another multicast CAN
+simulation on the host.
+
+### Ethernet
+
+Pixhawk6X is the reference Ethernet target. Enable networking and DHCP on the
+firmware, then reboot:
+
+```text
+param set NET_ENABLE 1
+reboot
+param set NET_DHCP 1
+reboot
+```
+
+`NET_DHCP` and the address parameters are hidden until networking has been
+enabled and rebooted once. A static configuration instead uses
+`NET_DHCP=0`, `NET_IPADDR0` through `NET_IPADDR3`, `NET_NETMASK`, and
+`NET_GWADDR0` through `NET_GWADDR3`.
+
+For example, expose MAVLink as a UDP server after networking is active:
+
+```text
+param set NET_P1_TYPE 2
+reboot
+param set NET_P1_PROTOCOL 2
+param set NET_P1_PORT 14550
+reboot
+```
+
+The second reboot is required because the remaining `NET_P1_*` parameters
+are hidden until the port type is enabled. Other network port types and
+protocols work normally; Renode does not override ArduPilot parameters.
+
+`--ethernet-tap` attaches the emulated MAC to a named host TAP. For access
+to the physical LAN, create a persistent TAP owned by the current user and
+enslave it to an existing Linux bridge that already contains the LAN
+interface:
+
+```sh
+sudo ip tuntap add dev tap-renode mode tap user "$USER"
+sudo ip link set tap-renode master br0
+sudo ip link set tap-renode up
+Tools/renode/run.py Pixhawk6X --ethernet-tap tap-renode
+```
+
+Creating or reconfiguring the host bridge is intentionally outside
+`run.py`: moving a live Ethernet interface into a bridge can interrupt the
+host connection and requires administrator policy. The TAP can instead be
+left on an isolated bridge for controlled testing. Bridging exposes the
+emulated autopilot directly to the local network, so use the same firewall
+and network-port precautions as for physical flight-controller hardware.
 
 ### STM32H743 BLHeli/Shared_DMA reproduction
 

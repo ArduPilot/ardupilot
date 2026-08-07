@@ -27,7 +27,7 @@ FAMILIES = {
         'spis': {'SPI1', 'SPI2', 'SPI3'},
         'i2cs': {'I2C1', 'I2C2', 'I2C3'},
         'uarts': {'USART1', 'USART2', 'USART3', 'UART4', 'UART5', 'USART6'},
-        'sd_buses': set(),
+        'sd_buses': {},
         'timers': {2, 3, 4, 5, 8},
         'uart_irq': {
             'USART1': 37, 'USART2': 38, 'USART3': 39,
@@ -46,7 +46,8 @@ FAMILIES = {
             'USART1', 'USART2', 'USART3', 'UART4', 'UART5',
             'USART6', 'UART7', 'UART8', 'LPUART1',
         },
-        'sd_buses': {'SDMMC1'},
+        'sd_buses': {'SDMMC1': 'sdmmc', 'SDMMC2': 'sdmmc2'},
+        'can_buses': {'CAN1': 'fdcan1', 'CAN2': 'fdcan2'},
         'timers': {1, 2, 3, 4, 5, 8, 12, 15},
         'uart_irq': {
             'USART1': 26, 'USART2': 27, 'USART3': 28, 'USART6': 29,
@@ -79,6 +80,7 @@ WHOAMI_VALUES = {
 
 BARO_MODELS = {
     'BMP280': 'Sensors.AP_BMP280',
+    'BMP388': 'Sensors.AP_BMP388',
     'DPS310': 'Sensors.AP_DPS310',
     'MS5611': 'Sensors.AP_MS5611',
     'SPL06': 'Sensors.AP_DPS310',
@@ -238,6 +240,8 @@ def _imu_whoami(device_name, defines):
         'icm20689': 0x98,
         'icm20948': 0xEA,
         'icm20649': 0xE1,
+        'icm42670': 0x67,
+        'icm42688': 0x47,
         'mpu6000': 0x68,
         'mpu9250': 0x71,
     }
@@ -303,17 +307,17 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
             resolved_devices.append((device_name, bus, cs))
         if len(resolved_devices) != len(device_names):
             continue
-        if any(location in imu_locations for location in locations):
-            continue
-        imu_locations.update(locations)
         if imu[0] not in IMU_MODELS:
             warnings.append('unmodelled IMU: %s' % ' '.join(imu))
             continue
+        if any(location in imu_locations for location in locations):
+            continue
+        imu_locations.update(locations)
         device_name, bus, cs = resolved_devices[0]
         name = 'imu%d' % index
         properties = []
         whoami = _imu_whoami(device_name, defines)
-        if whoami is not None and imu[0] in ('Invensense', 'Invensensev2'):
+        if whoami is not None:
             properties.append('    whoAmI: 0x%02X' % whoami)
         spi_children.append(
             (name, IMU_MODELS[imu[0]], bus, cs, properties))
@@ -587,6 +591,8 @@ def _platform(root, board, app, outdir, fram_path, warnings):
     lines = [
         '// GENERATED from libraries/AP_HAL_ChibiOS/hwdef/%s/hwdef.dat.' % board,
         '// Edit the hwdef or Tools/renode/gen_board.py, not this file.',
+        '// Primary application RAM is 0x%08X (%u KiB).' %
+        (app.get_ram_map()[0][0], app.get_ram_map()[0][1]),
         '',
         'using "%s"' % base,
         '',
@@ -600,11 +606,48 @@ def _platform(root, board, app, outdir, fram_path, warnings):
 
     address = 0x60000010
 
-    def alloc():
+    def alloc(size=4):
         nonlocal address
         value = address
-        address += 4
+        address += size
         return value
+
+    can_buses = []
+    for bus, peripheral in family.get('can_buses', {}).items():
+        if bus not in app.bytype:
+            continue
+        can_buses.append((bus, peripheral))
+        lines += [
+            '%sMcast: CAN.AP_CANMcast @ sysbus 0x%08X' %
+            (bus.lower(), alloc(0x100)),
+            '',
+        ]
+
+    has_ethernet = family['name'] == 'h743' and 'ETH1' in app.bytype
+    if has_ethernet:
+        lines += [
+            'ethernet: Network.SynopsysDWCEthernetQualityOfService @ {',
+            '    sysbus 0x40028000;',
+            '    sysbus new Bus.BusMultiRegistration { address: 0x40028C00; '
+            'size: 0x200; region: "mtl" };',
+            '    sysbus new Bus.BusMultiRegistration { address: 0x40029000; '
+            'size: 0x200; region: "dma" }',
+            '    }',
+            '    systemClockFrequency: 50000000',
+            '    dmaBusWidth: BusWidth.Bits32',
+            '    -> nvic@61',
+            '',
+            'ethernetPhy: Network.EthernetPhysicalLayer @ ethernet 0',
+            '    BasicControl: 0x3100',
+            '    BasicStatus: 0x782D',
+            '    Id1: 0x0007',
+            '    Id2: 0xC130',
+            '    AutoNegotiationAdvertisement: 0x01E1',
+            '    AutoNegotiationLinkPartnerBasePageAbility: 0x0001',
+            '    AutoNegotiationExpansion: 0x0064',
+            '    AutoNegotiationNextPageTransmit: 0x2001',
+            '',
+        ]
 
     lines += [
         'dma1Fix: Miscellaneous.AP_STM32DMA_Fixup @ sysbus 0x%08X' % alloc(),
@@ -629,7 +672,8 @@ def _platform(root, board, app, outdir, fram_path, warnings):
                 '',
             ]
     lines += _gpio_routes(family['name'], chip_selects)
-    return '\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart
+    return ('\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart,
+            can_buses, has_ethernet)
 
 
 def _serial_device(app, family, serial_index):
@@ -653,7 +697,7 @@ def _serial_device(app, family, serial_index):
 
 
 def _script(root, board, app, bootloader, platform, serial_index, uart_port,
-            iomcu_uart, warnings):
+            iomcu_uart, can_buses, has_ethernet, warnings):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     app_base = 0x08000000 + reserve_kb * 1024
@@ -666,8 +710,13 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     tick = app.get_config('STM32_ST_USE_TIMER', required=False, default=None)
     sd_buses = {name for name in app.bytype
                 if name.startswith('SDMMC') or name == 'SDIO'}
-    has_sd = bool(sd_buses & family['sd_buses'])
-    for bus in sorted(sd_buses - family['sd_buses']):
+    supported_sd_buses = set(family['sd_buses'])
+    present_sd_buses = sorted(sd_buses & supported_sd_buses)
+    has_sd = bool(present_sd_buses)
+    sd_bus = present_sd_buses[0] if has_sd else None
+    if len(present_sd_buses) > 1:
+        warnings.append('multiple SDMMC buses are not supported concurrently')
+    for bus in sorted(sd_buses - supported_sd_buses):
         warnings.append('%s is not present in the current MCU base' % bus)
     common = root / 'Tools' / 'renode' / 'scripts' / family['script']
     lines = [
@@ -691,10 +740,24 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             'connector Connect sysbus.%s serial' % serial_target,
             '',
         ]
+    for bus, peripheral in can_buses:
+        hub = '%sHub' % bus.lower()
+        lines += [
+            'emulation CreateCANHub "%s"' % hub,
+            'connector Connect sysbus.%s %s' % (peripheral, hub),
+            'connector Connect sysbus.%sMcast %s' % (bus.lower(), hub),
+            '',
+        ]
+    if has_ethernet:
+        lines += [
+            'sysbus.ethernet ActivePhy RMII',
+            '',
+        ]
     if has_sd:
         lines += [
             '$sdcard?=@none',
-            'machine SdCardFromFile $sdcard sysbus.sdmmc 0x10000000 True "sdcard"',
+            'machine SdCardFromFile $sdcard sysbus.%s 0x10000000 True "sdcard"' %
+            family['sd_buses'][sd_bus],
             '',
         ]
     if tick is not None and int(tick) in family['timers']:
@@ -724,7 +787,9 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
                    {'dma1', 'dma2', 'nvic'})
     lines += ['logLevel 3 sysbus.%s' % name for name in noisy]
     if has_sd:
-        lines.append('logLevel 3 sysbus.sdmmc')
+        lines.append('logLevel 3 sysbus.%s' % family['sd_buses'][sd_bus])
+    if has_ethernet:
+        lines.append('logLevel 3 sysbus.ethernet')
     lines.append('')
     return '\n'.join(lines), {
         'app_base': app_base,
@@ -734,6 +799,9 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         'serial': serial,
         'iomcu_uart': iomcu_uart,
         'family': family['name'],
+        'can_buses': [bus for bus, _ in can_buses],
+        'has_ethernet': has_ethernet,
+        'primary_ram_base': app.get_ram_map()[0][0],
     }
 
 
@@ -758,12 +826,12 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     warnings = []
     repl = outdir / ('%s.repl' % board)
     resc = outdir / ('%s.resc' % board)
-    platform, has_fram, iomcu_uart = _platform(
+    platform, has_fram, iomcu_uart, can_buses, has_ethernet = _platform(
         root, board, app, outdir, state_dir / 'fram.img', warnings)
     repl.write_text(platform)
     script, metadata = _script(
         root, board, app, bootloader, repl, serial_index, uart_port,
-        iomcu_uart, warnings)
+        iomcu_uart, can_buses, has_ethernet, warnings)
     resc.write_text(script)
     metadata.update({
         'repl': repl,

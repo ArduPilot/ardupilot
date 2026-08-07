@@ -416,6 +416,9 @@ timer15:
 sdmmc: SD.AP_STM32H7_SDMMC @ sysbus 0x52007000
     IRQ -> nvic@49
 
+sdmmc2: SD.AP_STM32H7_SDMMC @ sysbus 0x48022400
+    IRQ -> nvic@124
+
 sysbus:
     init:
         Tag <0x58027000, 0x580273FF> "RAMECC3"
@@ -434,7 +437,6 @@ sysbus:
         Tag <0x50003000, 0x50003FFF> "WWDG1"
         Tag <0x48023000, 0x480233FF> "RAMECC2"
         Tag <0x48022800, 0x48022BFF> "Delay_Block_SDMMC2"
-        Tag <0x48022400, 0x480227FF> "SDMMC2"
         Tag <0x48021400, 0x480217FF> "HASH"
         Tag <0x48020000, 0x480203FF> "DCMI"
         Tag <0x40080000, 0x4008000F> "USB2_OTG_FS"

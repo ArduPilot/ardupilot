@@ -453,6 +453,10 @@ def main():
                         help='TCP port for the selected UART (default: 5762)')
     parser.add_argument('--unthrottled', action='store_true',
                         help='run as fast as possible instead of pacing at real time')
+    parser.add_argument('--can', action='store_true',
+                        help='bridge CAN1 and CAN2 to mcast:0 and mcast:1')
+    parser.add_argument('--ethernet-tap', metavar='INTERFACE',
+                        help='connect the emulated Ethernet MAC to this host TAP')
     parser.add_argument('--port', type=int,
                         help='telnet monitor on this port instead of the interactive console')
     parser.add_argument('--exec', dest='extra', action='append', default=[],
@@ -502,6 +506,10 @@ def main():
         sys.exit('failed to generate Renode board: %s' % error)
     for warning in generated['warnings']:
         print('warning: %s' % warning, file=sys.stderr)
+    if args.can and not generated['can_buses']:
+        sys.exit('%s has no generated CAN peripherals' % args.board)
+    if args.ethernet_tap and not generated['has_ethernet']:
+        sys.exit('%s has no generated Ethernet peripheral' % args.board)
 
     # Persistent flash images begin erased, are loaded after the ELF, and are
     # saved by AP_PersistentMemory when the machine pauses or exits. Regions
@@ -540,6 +548,17 @@ def main():
     commands = ['$repo=@%s' % root,
                 '$elf=@%s' % elf] + pre_vars + [
                 'include @%s' % generated['resc']] + initial_loads
+    if args.can:
+        for index, bus in enumerate(generated['can_buses']):
+            commands.append('sysbus.%sMcast Bus %u' % (bus.lower(), index))
+    if args.ethernet_tap:
+        commands += [
+            'emulation CreateSwitch "ethernetSwitch"',
+            'connector Connect sysbus.ethernet ethernetSwitch',
+            'emulation CreateTap %s "ethernetTap" false' %
+            json.dumps(args.ethernet_tap),
+            'connector Connect host.ethernetTap ethernetSwitch',
+        ]
     if persistence_repl is not None:
         commands.append('machine LoadPlatformDescription @%s' % persistence_repl)
     if args.unthrottled:
@@ -603,6 +622,12 @@ def main():
         print('serial:  SERIAL%s/%s on tcp:localhost:%u' %
               (generated['serial_index'], generated['serial'], args.uart_port))
     print('time:    %s' % ('unthrottled' if args.unthrottled else 'paced at 1x'))
+    if args.can:
+        print('CAN:     %s' % ', '.join(
+            '%s=mcast:%u' % (bus, index)
+            for index, bus in enumerate(generated['can_buses'])))
+    if args.ethernet_tap:
+        print('ethernet: host TAP %s' % args.ethernet_tap)
     if args.reproduce_pr33933:
         print('PR33933: expecting %s behavior' % args.reproduce_pr33933)
     cmd = [renode, '--disable-xwt'] + monitor + ['-e', '; '.join(commands)]
