@@ -1,0 +1,49 @@
+// STM32F767 platform built on Renode's F746 model. The peripheral maps are
+// compatible; these declarations add the F767 memory and serial/SPI blocks
+// used by ArduPilot flight-controller hwdefs.
+
+using "platforms/cpus/stm32f746.repl"
+
+usbOtgFs: Miscellaneous.AP_STM32_OTG_Stub @ sysbus 0x50000000
+
+sramExtension: Memory.MappedMemory @ sysbus 0x20060000
+    size: 0x20000
+
+uart4: UART.STM32F7_USART @ sysbus 0x40004C00
+    frequency: 108000000
+    IRQ -> nvic@52
+
+uart5: UART.STM32F7_USART @ sysbus 0x40005000
+    frequency: 108000000
+    IRQ -> nvic@53
+
+uart7: UART.STM32F7_USART @ sysbus 0x40007800
+    frequency: 108000000
+    IRQ -> nvic@82
+
+uart8: UART.STM32F7_USART @ sysbus 0x40007C00
+    frequency: 108000000
+    IRQ -> nvic@83
+
+spi4: SPI.STM32SPI @ sysbus 0x40013400
+    IRQ -> nvic@84
+
+spi5: SPI.STM32SPI @ sysbus 0x40015000
+    IRQ -> nvic@85
+
+spi6: SPI.STM32SPI @ sysbus 0x40015400
+    IRQ -> nvic@86
+
+can2: CAN.STMCAN @ sysbus <0x40006800, +0x400>
+    [0-3] -> nvic@[63, 64, 65, 66]
+
+sdmmc2: SD.STM32FSDMMC @ sysbus 0x40011C00
+    IRQ -> nvic@103
+
+iwdg: Miscellaneous.AP_STM32_IWDG @ sysbus 0x40003000
+
+nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
+    nvic: nvic
+
+dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
+    frequency: 216000000

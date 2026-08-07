@@ -1,9 +1,10 @@
 # ArduPilot under Renode
 
 Runs unmodified ArduPilot STM32 firmware in the [Renode](https://renode.io)
-emulator. STM32F405 and STM32H743 boards are assembled from their normal
-`hwdef.dat` and `hwdef-bl.dat`, following the target-generation pattern used by
-the AM32 Renode harness. This is a decision log as much as a README.
+emulator. STM32F405, F427, F767 (the F765-class flight-controller targets),
+H743, and H757 boards are assembled from their normal `hwdef.dat` and
+`hwdef-bl.dat`, following the target-generation pattern used by the AM32
+Renode harness. This is a decision log as much as a README.
 
 ## Status
 
@@ -16,10 +17,31 @@ timer, and SDMMC presence. The bootloader is not emulated yet; compiling its
 hwdef makes its MCU and load offset available now rather than introducing a
 second copy of that information.
 
-`Tools/renode/run.py --list` shows the F405/H743 hwdef targets accepted by the
-generator. Acceptance means the board configuration can be translated; actual
-boot progress still depends on whether the shared MCU base and sensor models
-cover that board's peripherals.
+`Tools/renode/run.py --list` shows the flight-controller hwdef targets accepted
+by the generator. AP_Periph targets are deliberately excluded for later work.
+The current generation audit covers 281 targets with no translation errors:
+
+| MCU hwdef | Targets | Shared platform |
+|---|---:|---|
+| STM32F405xx | 75 | `stm32f405_base.repl` |
+| STM32F427xx | 25 | `stm32f427_base.repl` |
+| STM32F767xx | 25 | `stm32f767_base.repl` |
+| STM32H743xx | 147 | `stm32h743_base.repl` |
+| STM32H757xx | 9 | H743-compatible platform with the hwdef RAM map |
+
+Acceptance means the expanded board configuration translates to generated
+REPL/RESC. Representative platform loads, firmware builds, and boots are tested
+separately. CubeBlack/F427 and Pixhawk4/F767 mount their SD media and emit an
+ArduCopter MAVLink heartbeat; CubeOrangePlus/H757 also emits a heartbeat.
+Existing F405, H743, and Pixhawk6X boot results are described below.
+
+The sensor translation covers the flight-controller hwdefs in those five
+families. SPI and I2C probes include the Invensense generations, ADIS1647x,
+ADIS16607, BMI055/088/160/270, LSM9DS0, LSM6DSV, and SCHA63T IMUs, plus
+BMP085/280/388/581, DPS280/310, ICP201XX, LPS2XH, MS5611, and SPL06
+barometers. Identity, configuration, stationary sample/FIFO behavior, chip
+select framing, and alternative drivers at a shared physical location are
+modeled; these are boot/test sensor models, not physical-motion simulation.
 
 A stock `build/KakuteF4/bin/arducopter` ELF boots to the **main vehicle
 loop**: parameter load from emulated flash storage, BMP280 barometer
@@ -43,10 +65,10 @@ variant, and reaches the main vehicle loop. Its generated platform includes
 both FDCAN controllers, the LAN8742A-compatible RMII Ethernet PHY, the IOMCU,
 SPI FRAM, ICM42688/ICM42670/ICM20649 IMUs, and two BMP388 barometers.
 
-H743 CAN1 and CAN2 can be connected to the same UDP multicast transport used
+CAN1 and CAN2 can be connected to the same UDP multicast transport used
 by ArduPilot SITL, DroneCAN tools, and the AM32 Renode harness. The bridge
 supports classic CAN and CAN FD and maps the two interfaces independently to
-`mcast:0` and `mcast:1`. H743 boards with an `ETH1` hwdef receive the
+`mcast:0` and `mcast:1`. H743/H757 boards with an `ETH1` hwdef receive the
 Renode Synopsys DWC QoS MAC and PHY; `run.py` can attach that MAC to a host
 TAP for an isolated network or an existing host LAN bridge.
 
@@ -107,11 +129,23 @@ every pause-at-a-breakpoint into a reboot).
   loads persistent storage sectors 2/3 (fresh STM32 flash must read 0xFF),
   `PerformanceInMips 125`, 1ms global quantum.
 - `data/STM32F405.svd.gz` — vendored so headless CI never touches the network.
+- `platforms/stm32f427_base.repl` — extends the F405 platform with the second
+  flash MiB, the upper SRAM bank, UART7/8, SPI4/5/6, and timer12.
+- `platforms/stm32f767_base.repl` and `scripts/ardupilot_f767.resc` — F767
+  memory, serial/SPI/I2C, bxCAN, SDMMC1/2, DMA, UART-IDLE, IOMCU, and OTG reset
+  support. The Renode F746 base currently obtains its STM32F7x6 SVD on first
+  use.
 - `peripherals/common/AP_CANMcast.cs` — bidirectional classic CAN/CAN FD
   bridge using the ArduPilot `mcast:N` UDP framing.
+- `peripherals/stm32/AP_STM32F_SDMMC_DmaPump.cs` — restores the F4/F7 SDIO and
+  SDMMC DMA request/enable ordering expected by ChibiOS, using each board's
+  compiled DMA stream assignment.
+- `peripherals/sensors/` — identity, register, stationary-sample, and FIFO
+  models for the IMU and barometer families listed in Status.
 - `platforms/stm32h743_base.repl` — shared H743 MCU platform, including
-  FDCAN1/2 and both SDMMC controller locations. Generated overlays select
-  SDMMC1 or SDMMC2 from the board hwdef.
+  FDCAN1/2 and both SDMMC controller locations. H757 uses the same peripheral
+  map while retaining its different application RAM layout from `hwdef.dat`.
+  Generated overlays select SDMMC1 or SDMMC2 from the board hwdef.
 
 Generated board descriptions remain below `build/<board>/renode/`. Persistent
 emulated media instead defaults to `renode/<board>/` at the repository root;
@@ -151,6 +185,19 @@ see Running below.
   H743 UART endpoints use `AP_UARTPacer.cs` to supply host bytes over time.
   `AP_STM32F7_USART_Idle.cs` then raises IDLE only after a real input gap,
   instead of treating every DMA read of RDR as an idle line.
+- Renode's STM32F7x6 SVD gives OTG `GRSTCTL` the wrong reset value for the
+  ChibiOS reset loop (`0x20000000` instead of AHB-idle). The F767 platform maps
+  `AP_STM32_OTG_Stub.cs` over the disconnected USB block; it reports AHB idle
+  and self-clearing reset/flush requests so boot can continue. MAVLink testing
+  still uses the selected hardware UART.
+- The stock F4/F7 `STM32FSDMMC` emits read-DMA edges before ChibiOS has enabled
+  the board-selected stream, while `STM32DMA` performs writes immediately when
+  that stream is enabled, before CMD24 arms the card write path. The generated
+  `AP_STM32F_SDMMC_DmaPump.cs` wiring replays read requests and defers only
+  SDMMC-bound write enables until the data command is ready. It also clears the
+  completed stream enable bit as the hardware does. This is required for both
+  CubeBlack SDIO and Pixhawk4 SDMMC to finish mounting and enter the vehicle
+  loop.
 
 ## Bring-up traps found so far
 
@@ -400,8 +447,10 @@ and test results.
 
 ## Next
 
-- Expand the shared F405/H743 MCU bases and sensor translation table as other
-  generated boards expose missing peripherals.
+- Turn the all-board generation audit into CI and add representative automated
+  heartbeat checks for each MCU/sensor group.
+- Replace the remaining generic stationary sensor identities with richer data
+  paths where a firmware test needs live samples.
 - Add bootloader-in-the-loop execution, using the already compiled
   `hwdef-bl.dat` output.
 - Add an AM32-style result-producing CI runner for boot and firmware regression

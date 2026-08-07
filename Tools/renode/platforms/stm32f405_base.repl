@@ -157,6 +157,16 @@ spi2: SPI.STM32SPI @ sysbus 0x40003800
 spi3: SPI.STM32SPI @ sysbus 0x40003C00
     IRQ->nvic@51
 
+can1: CAN.STMCAN @ sysbus <0x40006400, +0x400>
+    [0-3] -> nvic@[19-22]
+
+can2: CAN.STMCAN @ sysbus <0x40006800, +0x400>
+    [0-3] -> nvic@[63, 64, 65, 66]
+
+sdmmc: SD.STM32FSDMMC @ sysbus 0x40012C00
+    IRQ -> nvic@49
+    DMAReceive -> dma2@3
+
 // forked from the stock STM32F4_I2C: ChibiOS I2Cv1 is DMA-only on F4
 // and the stock model has no DMA request output at all
 i2c1: I2C.AP_STM32F4_I2C @ sysbus 0x40005400
@@ -196,6 +206,14 @@ rtc: Timers.STM32F4_RTC @ sysbus 0x40002800
 
 rcc: Miscellaneous.STM32F4_RCC @ sysbus 0x40023800
     rtcPeripheral: rtc
+
+timer1: Timers.STM32_Timer @ sysbus 0x40010000
+    BreakInterrupt -> nvic@24
+    UpdateInterrupt -> nvic@25
+    [TriggerInterrupt, CommutationInterrupt] -> nvic@[26, 26]
+    CaptureCompareInterrupt -> nvic@27
+    frequency: 168000000
+    initialLimit: 0xFFFF
 
 timer2: Timers.STM32_Timer @ sysbus 0x40000000
     -> nvic@28

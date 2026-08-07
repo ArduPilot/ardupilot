@@ -42,6 +42,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             reading = false;
             timestamp = 0;
             registers[0, WhoAmI] = whoAmI;
+            registers[0, Icm45686WhoAmI] = whoAmI;
         }
 
         public byte Transmit(byte value)
@@ -178,6 +179,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte FifoCountHigh = 0x2F;
         private const byte FifoData = 0x30;
         private const byte WhoAmI = 0x75;
+        private const byte Icm45686WhoAmI = 0x72;
         private const byte BankSelect = 0x76;
 
         private const byte ReadFlag = 0x80;

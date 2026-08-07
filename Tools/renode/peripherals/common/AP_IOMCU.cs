@@ -6,11 +6,13 @@
 using System;
 using System.Collections.Generic;
 using Antmicro.Migrant;
+using Antmicro.Renode.Peripherals;
+using Antmicro.Renode.Peripherals.Bus;
 using Antmicro.Renode.Peripherals.UART;
 
 namespace Antmicro.Renode.Peripherals.Miscellaneous
 {
-    public class AP_IOMCU : IUART
+    public class AP_IOMCU : IUART, IDoubleWordPeripheral, IKnownSize
     {
         public AP_IOMCU(uint firmwareCrc)
         {
@@ -53,6 +55,20 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             ProcessRequest(code, count, request[2], request[3]);
             request.Clear();
         }
+
+        // AP_IOMCU is mapped in the synthetic Renode peripheral window only
+        // to give the UART connector a registered endpoint. The FMU exchanges
+        // data with it exclusively through IUART.
+        public uint ReadDoubleWord(long offset)
+        {
+            return 0;
+        }
+
+        public void WriteDoubleWord(long offset, uint value)
+        {
+        }
+
+        public long Size => 4;
 
         public uint BaudRate => 1500000;
         public Parity ParityBit => Parity.None;
