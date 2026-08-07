@@ -494,6 +494,9 @@ bool AP_Follow::get_target_heading_rate_degs(float &heading_rate_degs)
 // Handles incoming MAVLink messages to update the target's position, velocity, and heading.
 void AP_Follow::handle_msg(const mavlink_message_t &msg)
 {
+    // the LUA accessors read this state from the scripting thread
+    WITH_SEMAPHORE(_follow_sem);
+
     // FOLL_SYSID no longer matches the system that supplied the data we hold. Forget the old
     // target's message type and update time. This must run before the switch below, which
     // consults _using_follow_target to decide whether GLOBAL_POSITION_INT is still wanted.
