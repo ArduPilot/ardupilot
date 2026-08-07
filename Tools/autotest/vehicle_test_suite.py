@@ -14725,7 +14725,23 @@ switch value'''
             self.mavproxy_load_module(mavproxy, "relay")
             mavproxy.send("sitl_accelcal\n")
             mavproxy.send("accelcal\n")
-            mavproxy.expect("Calibrated")
+            # MAVProxy says "Calibrated" only for a COMMAND_ACK of
+            # ACCEPTED; each other result has its own words.  Listen for
+            # those too - otherwise a calibration the vehicle refused to
+            # start looks exactly like one which is still thinking about
+            # it, and we sit here until the timeout blaming that:
+            #     AccelCal (...) (Timed out after 60s looking for Calibrated)
+            got = mavproxy.expect([
+                "Calibrated",
+                "Calibration failed",
+                "Calibration unsupported",
+                "Calibration temporarily rejected",
+                r"Calibration response \(\d+\)",
+            ])
+            if got != 0:
+                raise NotAchievedException(
+                    "Accelerometer calibration was not accepted (%s)" %
+                    str(mavproxy.after))
             # this is a wall-clock budget for MAVProxy to print a line,
             # not a simulated-time one, so it has to survive this test
             # sharing a machine with however many others -parallel is
