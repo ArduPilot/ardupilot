@@ -158,6 +158,12 @@ public:
 
     bool acquire_bus(bool acquire, bool skip_cs);
 
+    /*
+      stop this device's bus peripheral through the SPIBus, so the bus's
+      started flag tracks the hardware. Callers must hold the bus semaphore.
+     */
+    void stop_bus_peripheral(void) { bus.stop_peripheral(); }
+
     SPIDriver * get_driver();
 
     void get_crashdump_config(bool high_speed, uint32_t &config1,
