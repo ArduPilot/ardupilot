@@ -93,9 +93,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 switch(register)
                 {
                 case FifoCountLow:
-                    return (byte)(fifo.Count / SampleSize);
+                    return (byte)(fifo.Count / CurrentSampleSize);
                 case FifoCountHigh:
-                    return (byte)((fifo.Count / SampleSize) >> 8);
+                    return (byte)((fifo.Count / CurrentSampleSize) >> 8);
                 case FifoData:
                     return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
                 case InterruptStatus:
@@ -131,10 +131,17 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private void OnSampleTick()
         {
+            var sampleSize = CurrentSampleSize;
             if((registers[0, FifoConfig1] & FifoSensorsEnabled) != FifoSensorsEnabled ||
                (registers[0, PowerManagement] & SensorsLowNoise) != SensorsLowNoise ||
-               fifo.Count + SampleSize > FifoCapacity)
+               fifo.Count + sampleSize > FifoCapacity)
             {
+                return;
+            }
+
+            if(HighResolutionEnabled)
+            {
+                PushHighResolutionSample();
                 return;
             }
 
@@ -149,11 +156,38 @@ namespace Antmicro.Renode.Peripherals.Sensors
             PushWord((short)timestamp++);
         }
 
+        private void PushHighResolutionSample()
+        {
+            fifo.Enqueue(FifoHighResolutionHeader);
+            // 20-bit values are split into a high byte, middle byte and a
+            // trailing nibble. A value of 0x08000 is a stationary +1g Z
+            // acceleration with the driver's 16g high-resolution scale.
+            fifo.Enqueue(0);
+            fifo.Enqueue(0);
+            fifo.Enqueue(0);
+            fifo.Enqueue(0);
+            fifo.Enqueue(0);
+            fifo.Enqueue(8);
+            for(var index = 0; index < 6; index++)
+            {
+                fifo.Enqueue(0);
+            }
+            PushWord(0);
+            PushWord((short)timestamp++);
+            fifo.Enqueue(0);
+            fifo.Enqueue(0);
+            fifo.Enqueue(0);
+        }
+
         private void PushWord(short value)
         {
             fifo.Enqueue((byte)(value & 0xFF));
             fifo.Enqueue((byte)((value >> 8) & 0xFF));
         }
+
+        private bool HighResolutionEnabled =>
+            (registers[0, FifoConfig1] & FifoHighResolutionEnable) != 0;
+        private int CurrentSampleSize => HighResolutionEnabled ? HighResolutionSampleSize : SampleSize;
 
         private readonly Queue<byte> fifo;
         private readonly byte[,] registers;
@@ -169,6 +203,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const int RegisterCount = 128;
         private const int SamplePeriodUs = 1000;
         private const int SampleSize = 16;
+        private const int HighResolutionSampleSize = 20;
         private const int FifoCapacity = 2048;
 
         private const byte SignalPathReset = 0x4B;
@@ -189,7 +224,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte DataReady = 0x08;
         private const byte FifoFlush = 0x02;
         private const byte FifoSensorsEnabled = 0x07;
+        private const byte FifoHighResolutionEnable = 0x10;
         private const byte SensorsLowNoise = 0x0F;
         private const byte FifoHeader = 0x68;
+        private const byte FifoHighResolutionHeader = 0x78;
     }
 }
