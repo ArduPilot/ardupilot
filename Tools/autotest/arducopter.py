@@ -18114,8 +18114,12 @@ RTL_ALT_M 123
 RTL_ALT_FINAL_M 129
 """)
         defaults_filepath.close()
+        # wipe: a defaults file only supplies parameters which are not
+        # already saved, so without this whatever an earlier test stored
+        # for DISARM_DELAY wins over the @READONLY value being tested:
+        #     ReadOnlyDefaults (...) (parameter DISARM_DELAY want=77.000000 got=10.000000)
         self.customise_SITL_commandline([
-        ], defaults_filepath=defaults_filepath.name)
+        ], defaults_filepath=defaults_filepath.name, wipe=True)
 
         self.context_collect('STATUSTEXT')
         self.send_set_parameter_direct("DISARM_DELAY", 88)

@@ -3335,7 +3335,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         defaults_file.write("SERVO17_FUNCTION %d\n" % k_motor1)
         defaults_file.close()
 
-        self.customise_SITL_commandline([], defaults_filepath=defaults_file.name)
+        # wipe: a defaults file only supplies parameters which are not
+        # already saved, so anything an earlier test stored for
+        # SERVO17_FUNCTION would win over the default under test
+        self.customise_SITL_commandline([], defaults_filepath=defaults_file.name, wipe=True)
         self.assert_parameter_values({"SERVO17_FUNCTION": k_motor1})
 
         data, _ = self.ftp_burst_read("@PARAM/param.pck?withdefaults=1")
