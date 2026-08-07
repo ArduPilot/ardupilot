@@ -2267,7 +2267,9 @@ class TestSuite(abc.ABC):
 
     def __del__(self):
         if self.rc_thread is not None:
-            self.progress("Joining RC thread in __del__")
+            # no statustext; we are being torn down and the vehicle may
+            # be long gone
+            self.progress("Joining RC thread in __del__", send_statustext=False)
             self.rc_thread_should_quit = True
             self.rc_thread.join()
             self.rc_thread = None
@@ -10996,7 +10998,18 @@ Also, ignores heartbeats not from our target system'''
         # chunk_seq is a uint8, so nothing past the 256th chunk can be
         # sent; the full text has already gone to our own output
         while len(text) and seq <= 255:
-            self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)
+            try:
+                self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)  # noqa:E501
+            except OSError as e:
+                # the vehicle has gone away.  pymavlink answers a reset
+                # connection by trying to reconnect, and throws if it
+                # cannot; this text is a copy of something we have
+                # already printed, so it is not worth taking the run
+                # down for.  progress() checks self.mav.port, but that
+                # is still there after the peer has gone.
+                self.progress("Could not send statustext (%s)" % str(e),
+                              send_statustext=False)
+                return
             text = text[50:]
             seq += 1
         self.statustext_id += 1
