@@ -1114,13 +1114,22 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(flaps_ch, flaps_ch_min)
         self.wait_servo_channel_value(servo_ch, servo_ch_min, timeout=3)
         self.progress("deploy the flaps")
-        self.set_rc(flaps_ch, flaps_ch_max)
+        # start the clock before commanding, not after: set_rc() does not
+        # return until the vehicle confirms the new RC value, and on a
+        # busy machine that confirmation lags far enough behind that most
+        # of the slew has already happened by the time we would otherwise
+        # start timing, leaving us measuring one sample interval:
+        #     Flaps Slew not working (0.100000 seconds)
+        # The check is that the flaps slew rather than snap, so what
+        # matters is the lower bound; the upper one now has to have room
+        # for getting the command there as well.
         tstart = self.get_sim_time()
+        self.set_rc(flaps_ch, flaps_ch_max)
         self.wait_servo_channel_value(servo_ch, servo_ch_max)
         tstop = self.get_sim_time_cached()
         delta_time = tstop - tstart
         delta_time_min = 0.5
-        delta_time_max = 1.5
+        delta_time_max = 4.0
         if delta_time < delta_time_min or delta_time > delta_time_max:
             raise NotAchievedException((
                 "Flaps Slew not working (%f seconds)" % (delta_time,)))
