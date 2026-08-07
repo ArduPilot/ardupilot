@@ -5012,7 +5012,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_distance_to_home(3, 7, timeout=300)
         self.disarm_vehicle()
 
-    def test_scripting_simple_loop(self):
+    def ScriptingSimpleLoop(self):
+        '''Scripting simple loop'''
         self.start_subtest("Scripting simple loop")
 
         self.context_push()
@@ -5043,7 +5044,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if count < 3:
             raise NotAchievedException("Expected at least three hellos")
 
-    def test_scripting_internal_test(self):
+    def ScriptingInternalTest(self):
+        '''Scripting internal test'''
         self.start_subtest("Scripting internal test")
 
         self.context_push()
@@ -5088,7 +5090,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_hello_world(self):
+    def ScriptingHelloWorld(self):
+        '''Scripting hello world'''
         self.start_subtest("Scripting hello world")
 
         self.context_push()
@@ -5126,7 +5129,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_auxfunc(self):
+    def ScriptingAuxFunc(self):
+        '''Scripting aux functions'''
         self.start_subtest("Scripting aufunc triggering")
 
         self.context_push()
@@ -5146,7 +5150,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_print_home_and_origin(self):
+    def ScriptingPrintHomeAndOrigin(self):
+        '''Scripting print home and origin'''
         self.start_subtest("Scripting print home and origin")
 
         self.context_push()
@@ -5161,7 +5166,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_set_home_to_vehicle_location(self):
+    def ScriptingSetHomeToVehicleLocation(self):
+        '''Scripting set home to vehicle location'''
         self.start_subtest("Scripting set home to vehicle location")
 
         self.context_push()
@@ -5174,7 +5180,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_serial_loopback(self):
+    def ScriptingSerialLoopback(self):
+        '''Scripting serial loopback'''
         self.start_subtest("Scripting serial loopback test")
 
         self.context_push()
@@ -5196,7 +5203,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_callback_time(self):
+    def ScriptingCallbackTime(self):
+        '''Scripting callback time'''
         self.start_subtest("Scripting callback time")
 
         self.context_collect('STATUSTEXT')
@@ -5205,17 +5213,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
 
         self.wait_statustext('Timing test passed', check_context=True, timeout=600)
-
-    def Scripting(self):
-        '''Scripting test'''
-        self.test_scripting_set_home_to_vehicle_location()
-        self.test_scripting_print_home_and_origin()
-        self.test_scripting_hello_world()
-        self.test_scripting_simple_loop()
-        self.test_scripting_internal_test()
-        self.test_scripting_auxfunc()
-        self.test_scripting_serial_loopback()
-        self.test_scripting_callback_time()
 
     def test_mission_frame(self, frame, target_system=1, target_component=1):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
@@ -7608,7 +7605,14 @@ return update()
             self.PolyFenceObjectAvoidanceBendyRulerEasierGuided,
             self.PolyFenceObjectAvoidanceBendyRulerEasierAuto,
             self.SlewRate,
-            self.Scripting,
+            self.ScriptingSetHomeToVehicleLocation,
+            self.ScriptingPrintHomeAndOrigin,
+            self.ScriptingHelloWorld,
+            self.ScriptingSimpleLoop,
+            self.ScriptingInternalTest,
+            self.ScriptingAuxFunc,
+            self.ScriptingSerialLoopback,
+            self.ScriptingCallbackTime,
             self.ScriptingSteeringAndThrottle,
             self.MissionFrames,
             self.SetpointGlobalPos,
