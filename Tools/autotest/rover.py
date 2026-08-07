@@ -6890,7 +6890,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_get().sitl_commandline_customised = True
 
         self.progress("Starting PPP daemon")
-        pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
+        # SERIAL5's TCP port moves with the instance, so ask for the one
+        # this vehicle is actually listening on.  Hard-coding 5765 sends
+        # pppd at nothing when the instance is not zero, and it exits:
+        #     End Of File (EOF) ... command: /usr/bin/sudo ... socket 127.0.0.1:5765
+        pppd = util.start_PPP_daemon(
+            "192.168.14.15:192.168.14.13",
+            '127.0.0.1:%u' % self.adjust_ardupilot_port(5765))
 
         self.context_push()
         self.context_collect('STATUSTEXT')
