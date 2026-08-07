@@ -455,7 +455,9 @@ bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &ve
     }
 
     vel_ned = _ofs_estimate_vel_ned_ms;
-    return true;
+
+    // give the caller the frame FOLL_ALT_TYPE asks for
+    return loc.change_alt_frame(_alt_type);
 }
 
 // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
