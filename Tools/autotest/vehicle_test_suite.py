@@ -31,6 +31,7 @@ import tempfile
 import threading
 import time
 import traceback
+import zlib
 
 from datetime import datetime
 from inspect import currentframe
@@ -16056,6 +16057,9 @@ switch value'''
         mavproxy = self.start_mavproxy()
         ex = None
         try:
+            # let the parameter download finish first; it ends by terminating
+            # the FTP session, which would take any listing with it
+            mavproxy.expect("Saved .* parameters to")
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
             mavproxy.send("ftp list\n")
@@ -16158,17 +16162,7 @@ switch value'''
         '''burst-read a file via raw FTP, return (data, eof_nack)
         where data is the received file content'''
 
-        # reset sessions
-        op = FTP_OP(
-            seq=0, session=0, opcode=mavftp_op.OP_ResetSessions,
-            size=0, req_opcode=0, burst_complete=0,
-            offset=0, payload=None,
-        )
-        self.ftp_send(op)
-        reply = self.ftp_recv(timeout=5)
-        if reply is None:
-            raise NotAchievedException("No reply to ResetSessions")
-        seq = reply.seq
+        seq = self.ftp_reset_sessions()
 
         # open file read-only
         path_bytes = bytearray(path.encode('utf-8')) + bytearray([0])
@@ -16226,16 +16220,7 @@ switch value'''
         '''write bytes to a remote path via MAVLink FTP (CreateFile + WriteFile)'''
         data = bytearray(data)
 
-        # ResetSessions
-        op = FTP_OP(
-            seq=0, session=0, opcode=mavftp_op.OP_ResetSessions,
-            size=0, req_opcode=0, burst_complete=0, offset=0, payload=None,
-        )
-        self.ftp_send(op)
-        reply = self.ftp_recv(timeout=5)
-        if reply is None:
-            raise NotAchievedException("No reply to ResetSessions")
-        seq = reply.seq
+        seq = self.ftp_reset_sessions()
 
         # CreateFile (open write-truncate)
         path_bytes = bytearray(path.encode('utf-8')) + bytearray([0])
@@ -16308,6 +16293,394 @@ switch value'''
             raise NotAchievedException("No reply to RemoveFile")
         if reply.opcode != mavftp_op.OP_Ack:
             raise NotAchievedException(f"RemoveFile failed for {path}: opcode={reply.opcode}")
+
+    def ftp_reset_sessions(self):
+        '''close any FTP sessions we may have left open; returns the sequence
+        number to use for the next request'''
+        op = FTP_OP(
+            seq=0, session=0, opcode=mavftp_op.OP_ResetSessions,
+            size=0, req_opcode=0, burst_complete=0,
+            offset=0, payload=None,
+        )
+        self.ftp_send(op)
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException("No reply to ResetSessions")
+        return reply.seq
+
+    def ftp_path_bytes(self, path):
+        '''encode a path as an FTP request payload'''
+        return bytearray(path.encode('utf-8')) + bytearray([0])
+
+    def ftp_op(self, seq, opcode, payload=None, offset=0, size=None):
+        '''send one raw FTP request and return the reply.  size defaults to
+        the payload length, and is separate so a test can claim a length the
+        payload does not have'''
+        if payload is None:
+            payload = bytearray()
+        if size is None:
+            size = len(payload)
+        self.ftp_send(FTP_OP(
+            seq=seq, session=0, opcode=opcode, size=size,
+            req_opcode=0, burst_complete=0, offset=offset,
+            payload=bytearray(payload),
+        ))
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException(f"No reply to opcode {opcode}")
+        return reply
+
+    def assert_ftp_nack(self, reply, error, label):
+        '''check a reply is a NAK carrying the expected error code'''
+        if reply.opcode != mavftp_op.OP_Nack:
+            raise NotAchievedException(f"{label}: expected Nack, got opcode={reply.opcode}")
+        if len(reply.payload) == 0:
+            raise NotAchievedException(f"{label}: Nack carried no error code")
+        if reply.payload[0] != error:
+            raise NotAchievedException(
+                f"{label}: expected error {int(error)}, got {reply.payload[0]}")
+
+    def assert_ftp_ack(self, reply, label):
+        '''check a reply is an ACK'''
+        if reply.opcode != mavftp_op.OP_Ack:
+            error = reply.payload[0] if len(reply.payload) else None
+            raise NotAchievedException(f"{label}: expected Ack, got opcode={reply.opcode} error={error}")
+
+    def ftp_unsupported_opcode_error(self, opcode):
+        '''send an FTP request carrying an opcode the autopilot does not
+        implement; returns the error code from the NAK'''
+        seq = self.ftp_reset_sessions()
+        path_bytes = bytearray(b"/\0")
+        self.ftp_send(FTP_OP(
+            seq=seq, session=0, opcode=opcode,
+            size=len(path_bytes), req_opcode=0, burst_complete=0,
+            offset=0, payload=path_bytes,
+        ))
+        reply = self.ftp_recv(timeout=5)
+        if reply is None:
+            raise NotAchievedException(f"No reply to opcode {opcode}")
+        if reply.opcode != mavftp_op.OP_Nack:
+            raise NotAchievedException(f"Expected Nack for opcode {opcode}, got opcode={reply.opcode}")
+        if len(reply.payload) == 0:
+            raise NotAchievedException(f"Nack for opcode {opcode} carried no error code")
+        return reply.payload[0]
+
+    def ftp_split_dir_page(self, payload):
+        '''split one page of an FTP directory listing into its entries.
+
+        the page must be an exact run of null-terminated strings; an empty
+        entry means the autopilot emitted a stray null, which makes a client
+        counting entries lose its place in a paged listing
+        '''
+        entries = payload.split(b'\0')
+        if len(entries) == 0 or entries[-1] != b'':
+            raise NotAchievedException(f"Listing page not null-terminated ({payload})")
+        entries.pop()  # the terminator of the final entry
+        for entry in entries:
+            if len(entry) == 0:
+                raise NotAchievedException(f"Empty entry in listing page ({payload})")
+        return [entry.decode('utf-8') for entry in entries]
+
+    def ftp_list_dir(self, path):
+        '''list a remote directory via raw MAVLink FTP, paging through the
+        listing as a GCS does.  returns (entries, page_count)'''
+        opcode = mavftp_op.OP_ListDirectory
+
+        seq = self.ftp_reset_sessions()
+
+        path_bytes = bytearray(path.encode('utf-8')) + bytearray([0])
+        entries = []
+        page_count = 0
+        while True:
+            op = FTP_OP(
+                seq=seq, session=0, opcode=opcode,
+                size=len(path_bytes), req_opcode=0, burst_complete=0,
+                # the offset is a count of entries already seen, so the
+                # autopilot knows where to resume this listing
+                offset=len(entries), payload=path_bytes,
+            )
+            self.ftp_send(op)
+            reply = self.ftp_recv(timeout=5)
+            if reply is None:
+                raise NotAchievedException(f"No reply listing {path} at offset {len(entries)}")
+            seq = reply.seq
+            if reply.opcode == mavftp_op.OP_Nack:
+                error = reply.payload[0] if len(reply.payload) else None
+                if error == FtpError.EndOfFile:
+                    break
+                raise NotAchievedException(f"Listing {path} failed with error {error}")
+            if reply.opcode != mavftp_op.OP_Ack:
+                raise NotAchievedException(f"Listing {path} got unexpected opcode {reply.opcode}")
+            entries.extend(self.ftp_split_dir_page(bytes(reply.payload)))
+            page_count += 1
+            if page_count > 100:
+                raise NotAchievedException(f"Listing {path} did not terminate")
+
+        return entries, page_count
+
+    def ftp_listing_files_and_dirs(self, entries):
+        '''pick an FTP directory listing apart into a {name: size} dict of
+        files and a set of directory names'''
+        files = {}
+        dirs = set()
+        for entry in entries:
+            if entry[0] == 'D':
+                dirs.add(entry[1:])
+                continue
+            if entry[0] != 'F':
+                raise NotAchievedException(f"Unexpected listing entry ({entry})")
+            fields = entry[1:].split("\t")
+            if len(fields) != 2:
+                raise NotAchievedException(
+                    f"Listing entry ({entry}) has {len(fields)} fields, expected 2")
+            name = fields[0]
+            if name in files:
+                raise NotAchievedException(f"Duplicate listing entry for {name}")
+            files[name] = int(fields[1])
+        return files, dirs
+
+    def create_ftp_listing_directory(self, dirname, subdirname, file_count):
+        '''populate dirname with file_count files of distinct sizes, plus a
+        subdirectory.  returns the expected {name: size} for the files'''
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        os.mkdir(os.path.join(dirname, subdirname))
+        expected = {}
+        for i in range(file_count):
+            name = "listentry_%02u.txt" % i
+            content = b"x" * (10 + i)
+            self.write_content_to_filepath(content, os.path.join(dirname, name))
+            expected[name] = len(content)
+        return expected
+
+    def MAVFTPListDirectoryEdgeCases(self):
+        '''test how FTP directory listing rejects and terminates'''
+
+        dirname = "ftp_listing_edge_test"
+        self.create_ftp_listing_directory(dirname, "subdir", 3)
+
+        try:
+            self.progress("A trailing slash names the same directory")
+            (with_slash, _) = self.ftp_list_dir(dirname + "/")
+            (without_slash, _) = self.ftp_list_dir(dirname)
+            if sorted(with_slash) != sorted(without_slash):
+                raise NotAchievedException(
+                    f"Listing of {dirname}/ differs from {dirname}: {sorted(with_slash)}")
+
+            seq = self.ftp_reset_sessions()
+
+            self.progress("A directory which is not there is not found")
+            reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory,
+                                self.ftp_path_bytes("ftp_no_such_directory"))
+            self.assert_ftp_nack(reply, FtpError.FileNotFound, "missing directory")
+
+            self.progress("An offset past the end of the listing ends it")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ListDirectory,
+                                self.ftp_path_bytes(dirname), offset=10000)
+            self.assert_ftp_nack(reply, FtpError.EndOfFile, "offset past end")
+
+            self.progress("A request with no path at all is rejected")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ListDirectory,
+                                self.ftp_path_bytes(dirname), size=0)
+            self.assert_ftp_nack(reply, FtpError.InvalidDataSize, "empty size")
+
+            self.progress("A request claiming more data than a packet holds is rejected")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ListDirectory,
+                                self.ftp_path_bytes(dirname), size=255)
+            self.assert_ftp_nack(reply, FtpError.InvalidDataSize, "oversized size")
+        finally:
+            shutil.rmtree(dirname)
+
+    def MAVFTPDuplicateRequest(self):
+        '''test a repeated FTP request is answered from the last reply'''
+
+        dirname = "ftp_duplicate_test"
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+
+        try:
+            seq = self.ftp_reset_sessions()
+            path = self.ftp_path_bytes(dirname)
+
+            first = self.ftp_op(seq, mavftp_op.OP_CreateDirectory, path)
+            self.assert_ftp_ack(first, "first CreateDirectory")
+
+            # the same request again, as a client which lost our reply would
+            # send it. the directory exists now, so running it a second time
+            # would fail - getting the ack back proves the reply was kept
+            second = self.ftp_op(seq, mavftp_op.OP_CreateDirectory, path)
+            self.assert_ftp_ack(second, "repeated CreateDirectory")
+            if second.seq != first.seq:
+                raise NotAchievedException(
+                    f"Repeated request answered with seq {second.seq}, expected {first.seq}")
+
+            # while a genuinely new request does see the directory is there
+            third = self.ftp_op(second.seq, mavftp_op.OP_CreateDirectory, path)
+            self.assert_ftp_nack(third, FtpError.FileExists, "CreateDirectory of an existing directory")
+        finally:
+            if os.path.exists(dirname):
+                shutil.rmtree(dirname)
+
+    def MAVFTPUnknownOpcodeNack(self):
+        '''test an unimplemented FTP opcode is NAKed as an unknown command'''
+
+        # a client which prefers a newer opcode needs to tell "this autopilot
+        # has never heard of that command" apart from "that command failed",
+        # or it cannot fall back to the older one
+        error = self.ftp_unsupported_opcode_error(127)
+        if error != FtpError.UnknownCommand:
+            raise NotAchievedException(f"Expected UnknownCommand, got error={error}")
+
+    def MAVFTPReadFile(self):
+        '''test the FTP read path which does not use bursts'''
+
+        path = "ftp_readfile_test.dat"
+        content = bytes((i * 3 + 1) & 0xff for i in range(600))
+        self.write_content_to_filepath(content, path)
+        read_size = 100
+
+        try:
+            seq = self.ftp_reset_sessions()
+
+            self.progress("Reading with nothing open")
+            reply = self.ftp_op(seq, mavftp_op.OP_ReadFile, size=read_size, offset=0)
+            self.assert_ftp_nack(reply, FtpError.FileNotFound, "read with no file open")
+
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_OpenFileRO, self.ftp_path_bytes(path))
+            self.assert_ftp_ack(reply, "OpenFileRO")
+
+            self.progress("Reading a whole chunk, and a short final one")
+            for offset in 0, len(content) - read_size // 2:
+                reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=read_size, offset=offset)
+                self.assert_ftp_ack(reply, f"read at {offset}")
+                if reply.offset != offset:
+                    raise NotAchievedException(f"read at {offset}: reply offset {reply.offset}")
+                expected = content[offset:offset + read_size]
+                if bytes(reply.payload) != expected:
+                    raise NotAchievedException(
+                        f"read at {offset}: got {len(reply.payload)} bytes, expected {len(expected)}")
+
+            self.progress("Reading at the end of the file")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=read_size, offset=len(content))
+            self.assert_ftp_nack(reply, FtpError.EndOfFile, "read at EOF")
+
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession)
+            self.assert_ftp_ack(reply, "TerminateSession")
+
+            self.progress("Reading a file which was opened for writing")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_CreateFile,
+                                self.ftp_path_bytes("ftp_readfile_write.dat"))
+            self.assert_ftp_ack(reply, "CreateFile")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=read_size, offset=0)
+            self.assert_ftp_nack(reply, FtpError.Fail, "read of a write-mode file")
+            self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession)
+        finally:
+            for name in path, "ftp_readfile_write.dat":
+                if os.path.exists(name):
+                    os.unlink(name)
+
+    def MAVFTPCalcFileCRC32(self):
+        '''test the FTP file checksum'''
+
+        path = "ftp_crc_test.dat"
+        content = bytes((i * 13 + 7) & 0xff for i in range(1000))
+        self.write_content_to_filepath(content, path)
+        # the autopilot runs the reflected CRC32 table from a zero seed with
+        # no final inversion, which zlib gives if we cancel its own inversions
+        expected = zlib.crc32(content, 0xffffffff) ^ 0xffffffff
+
+        try:
+            seq = self.ftp_reset_sessions()
+            reply = self.ftp_op(seq, mavftp_op.OP_CalcFileCRC32, self.ftp_path_bytes(path))
+            self.assert_ftp_ack(reply, "CalcFileCRC32")
+            if len(reply.payload) < 4:
+                raise NotAchievedException(f"CRC reply carried {len(reply.payload)} bytes")
+            crc = struct.unpack("<I", bytes(reply.payload[:4]))[0]
+            if crc != expected:
+                raise NotAchievedException(f"CRC32 0x{crc:08x}, expected 0x{expected:08x}")
+
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_CalcFileCRC32,
+                                self.ftp_path_bytes("ftp_no_such_file.dat"))
+            self.assert_ftp_nack(reply, FtpError.FileNotFound, "CRC of a missing file")
+
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_CalcFileCRC32,
+                                self.ftp_path_bytes(path), size=0)
+            self.assert_ftp_nack(reply, FtpError.InvalidDataSize, "CRC with no path")
+        finally:
+            os.unlink(path)
+
+    def MAVFTPRename(self):
+        '''test renaming a file over FTP'''
+
+        old_name = "ftp_rename_before.dat"
+        new_name = "ftp_rename_after.dat"
+        content = b"rename me\n"
+        self.write_content_to_filepath(content, old_name)
+        if os.path.exists(new_name):
+            os.unlink(new_name)
+
+        def rename_payload(source, destination):
+            return (bytearray(source.encode('utf-8')) + bytearray([0]) +
+                    bytearray(destination.encode('utf-8')) + bytearray([0]))
+
+        try:
+            seq = self.ftp_reset_sessions()
+
+            payload = rename_payload(old_name, new_name)
+            # the size counts both names and the separating null, not the
+            # trailing one
+            reply = self.ftp_op(seq, mavftp_op.OP_Rename, payload, size=len(payload) - 1)
+            self.assert_ftp_ack(reply, "Rename")
+            if os.path.exists(old_name) or not os.path.exists(new_name):
+                raise NotAchievedException("Rename did not move the file")
+            with open(new_name, "rb") as f:
+                if f.read() != content:
+                    raise NotAchievedException("Renamed file has the wrong content")
+
+            self.progress("A size which counts the trailing null is also accepted")
+            payload = rename_payload(new_name, old_name)
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_Rename, payload, size=len(payload))
+            self.assert_ftp_ack(reply, "Rename counting the trailing null")
+            if os.path.exists(new_name) or not os.path.exists(old_name):
+                raise NotAchievedException("Rename back did not move the file")
+
+            self.progress("Renaming something which is not there")
+            payload = rename_payload("ftp_no_such_file.dat", "ftp_rename_never.dat")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_Rename, payload, size=len(payload) - 1)
+            self.assert_ftp_nack(reply, FtpError.FileNotFound, "rename of a missing file")
+
+            self.progress("A rename request with no data is rejected")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_Rename, payload, size=0)
+            self.assert_ftp_nack(reply, FtpError.InvalidDataSize, "empty rename")
+        finally:
+            for name in old_name, new_name:
+                if os.path.exists(name):
+                    os.unlink(name)
+
+    def MAVFTPListDirectoryLongNames(self):
+        '''test a listing is not truncated by an entry too long to fit a packet'''
+
+        dirname = "ftp_listing_long_test"
+        expected_files = self.create_ftp_listing_directory(dirname, "subdir", 12)
+
+        # names long enough that "F<name>\t<size>\0" does not fit in a packet.
+        # several of them, so that some short-named file follows one of them
+        # in readdir order
+        for i in range(8):
+            name = ("longname_%02u_" % i).ljust(240, "x")
+            self.write_content_to_filepath(b"x" * 10, os.path.join(dirname, name))
+
+        try:
+            # a name that long cannot be encoded into a packet at all, but
+            # dropping it must not end the listing
+            (entries, _) = self.ftp_list_dir(dirname)
+            (files, _) = self.ftp_listing_files_and_dirs(entries)
+            missing = sorted(set(expected_files.keys()) - set(files.keys()))
+            if len(missing):
+                raise NotAchievedException(f"Listing missing {missing}")
+        finally:
+            shutil.rmtree(dirname)
 
     def verify_ftp_burst_eof(self, data, eof_nack, expected_size, label):
         '''verify burst read EOF NAK is correct'''
@@ -16405,17 +16778,7 @@ switch value'''
     def MAVFTPBadReadOffset(self):
         '''ask for a very large offset'''
 
-        # reset sessions
-        op = FTP_OP(
-            seq=0, session=0, opcode=mavftp_op.OP_ResetSessions,
-            size=0, req_opcode=0, burst_complete=0,
-            offset=0, payload=None,
-        )
-        self.ftp_send(op)
-        reply = self.ftp_recv(timeout=5)
-        if reply is None:
-            raise NotAchievedException("No reply to ResetSessions")
-        seq = reply.seq
+        seq = self.ftp_reset_sessions()
 
         # open file read-only
         path = "@SYS/storage.bin"
