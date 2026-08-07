@@ -12504,12 +12504,14 @@ Also, ignores heartbeats not from our target system'''
         self.context_pop()
         self.reboot_sitl()
 
-    def install_terrain_handlers_context(self):
+    def install_terrain_handlers_context(self, unserveable_requests_fatal=True):
         '''install a message handler into the current context which will
-        listen for an fulfill terrain requests from ArduPilot.  Will
-        die if the data is not available - but
-        self.terrain_in_offline_mode can be set to true in the
-        constructor to change this behaviour
+        listen for and fulfill terrain requests from ArduPilot.  A
+        request for a tile the handler cannot serve fails the test:
+        the tile should be added to Tools/autotest/tilecache/srtm.
+        Pass unserveable_requests_fatal=False to leave such requests
+        unanswered instead - a real terrain server simply does not
+        answer for data it does not have, and the vehicle copes.
         this should be called at the very top of your test context!
         '''
 
@@ -12548,9 +12550,27 @@ Also, ignores heartbeats not from our target system'''
                                       (lat2, lon2))
                         time.sleep(1)
                     if alt is None:
-                        # no data - we can't send the packet
-                        raise ValueError("No elevation data for (%f %f)" % (lat2, lon2))
+                        # no data - we can't send the packet.  Do not make
+                        # that fatal: the vehicle asks about anywhere its
+                        # mission goes, and a mission left behind by an
+                        # earlier test asks about somewhere this test has
+                        # no business having data for -
+                        #     No elevation data for (-26.590366 151.845361)
+                        # which is Kingaroy, from a mission loaded a
+                        # couple of tests earlier.  A real terrain server
+                        # simply does not answer, and the vehicle copes.
+                        self.progress("No elevation data for (%f %f); not "
+                                      "answering this request" % (lat2, lon2))
+                        data = None
+                        break
                     data.append(int(alt))
+                if data is None:
+                    if unserveable_requests_fatal:
+                        raise NotAchievedException(
+                            "Terrain handler asked for a tile it cannot "
+                            "serve (%f %f); add the tile to "
+                            "Tools/autotest/tilecache/srtm" % (lat2, lon2))
+                    continue
                 self.terrain_data_messages_sent += 1
                 self.mav.mav.terrain_data_send(m.lat,
                                                m.lon,
