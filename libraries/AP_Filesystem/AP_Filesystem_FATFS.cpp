@@ -655,7 +655,7 @@ struct dirent *AP_Filesystem_FATFS::readdir(void *dirp_void)
         errno = fatfs_to_errno((FRESULT)res);
         return nullptr;
     }
-    len = strlen(fno.fname);
+    len = MIN(strlen(fno.fname),sizeof(d->de.d_name)-1);
     strncpy_noterm(d->de.d_name,fno.fname,len);
     d->de.d_name[len] = 0;
     if (fno.fattrib & AM_DIR) {
