@@ -4791,7 +4791,33 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode("SMART_RTL")
 
         self.progress("Ensure we go via intermediate point")
-        self.wait_distance_to_location(loc, 0, 5, timeout=60)
+        # Do not ask for a sample to land inside a window.  Position
+        # samples are gated by the GPS message rate, so at the speed the
+        # vehicle is doing they are metres apart - and how many metres
+        # depends on how busy the machine is.  A 5m window was missed by
+        # a run which got no closer than 9.6m; widening it to 10m was
+        # then missed by a run at --parallel=16 which got no closer than
+        # 13.8m.  Watch the whole approach and keep the nearest sample,
+        # which uses every one of them rather than needing a lucky one.
+        closest = None
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException(
+                    "Did not get home from SMART_RTL (closest to the "
+                    "intermediate point %s m)" % str(closest))
+            d = self.get_distance(loc, self.get_location())
+            if closest is None or d < closest:
+                closest = d
+            if self.distance_to_home() < 10:
+                break
+        self.progress("Closest approach to intermediate point: %.1fm" % closest)
+        # a vehicle which cut across the square instead of retracing its
+        # path misses the corner by the best part of a hundred metres, so
+        # this stays a long way clear of what it is here to catch:
+        if closest > 25:
+            raise NotAchievedException(
+                "Did not go via the intermediate point (closest %.1fm)" % closest)
 
         self.progress("Ensure we get home")
         self.wait_distance_to_home(3, 7, timeout=30)
