@@ -8,6 +8,8 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using Antmicro.Migrant;
+using Antmicro.Migrant.Hooks;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Core.CAN;
 using Antmicro.Renode.Exceptions;
@@ -329,9 +331,21 @@ namespace Antmicro.Renode.Peripherals.CAN
             return crc;
         }
 
+        [PostDeserialization]
+        private void AfterDeserialization()
+        {
+            if(bus >= 0)
+            {
+                Open(bus);
+            }
+        }
+
         private readonly object lifecycle = new object();
+        [Transient]
         private volatile Socket txSocket;
+        [Transient]
         private volatile Socket rxSocket;
+        [Transient]
         private Thread rxThread;
         private int bus;
         private uint framesToHost;
