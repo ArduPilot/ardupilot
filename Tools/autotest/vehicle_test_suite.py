@@ -2495,7 +2495,14 @@ class TestSuite(abc.ABC):
         filepath = os.path.join(testdir, self.current_test_name_directory, filename)
         count = self.count_expected_fence_lines_in_filepath(filepath)
         mavproxy.send('fence load %s\n' % filepath)
-#        self.mavproxy.expect("Loaded %u (geo-)?fence" % count)
+        # getting the items up the link is MAVProxy's work, not the
+        # vehicle's, so wait for it in wall-clock time.  The budget in
+        # wait_parameter_value below is in simulated seconds, and at
+        # speedup those run out long before MAVProxy - sharing a
+        # machine with however many tests --parallel is running - has
+        # got around to sending them.  NB: MAVProxy counts the fence
+        # points, which is not the FENCE_TOTAL the vehicle ends up with.
+        mavproxy.expect(r"Sent all \d+ fence items")
         self.wait_parameter_value("FENCE_TOTAL", count, timeout=20)
 
     def load_fence(self, filename):
