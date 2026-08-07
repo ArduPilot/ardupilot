@@ -5645,9 +5645,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Throw the catapult.
         self.set_servo(7, 2000)
 
-        # Wait until we're midway through the climb.
-        test_alt = 50
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Wait until we're midway through the climb.  The window has to
+        # be wider than the distance the aircraft climbs between altitude
+        # samples or it steps straight over it, carries on to the 100m
+        # the mission asks for, and we report where it levelled off:
+        #     Failed to attain Altitude want 51.0, reached 99.692
+        self.wait_altitude(50, 80, relative=True)
 
         # Ensure that by then the aircraft still goes at max allowed throttle.
         target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
@@ -5692,9 +5695,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Throw the catapult.
         self.set_servo(7, 2000)
 
-        # Wait until we're midway through the climb.
-        test_alt = 50
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Wait until we're midway through the climb.  The window has to
+        # be wider than the distance the aircraft climbs between altitude
+        # samples or it steps straight over it, carries on to the 100m
+        # the mission asks for, and we report where it levelled off:
+        #     Failed to attain Altitude want 51.0, reached 99.692
+        self.wait_altitude(50, 80, relative=True)
 
         # Ensure that by then the aircraft still goes at max allowed throttle.
         target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
@@ -5747,8 +5753,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Ensure that after that the aircraft does not go full throttle anymore.
-        test_alt = 50
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # wide enough that the climb cannot step over it between samples
+        self.wait_altitude(50, 80, relative=True)
         w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
             self,
             3,  # throttle
@@ -5804,8 +5810,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
         # Ensure that after that the aircraft still goes to maximum throttle.
-        test_alt = 50
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # wide enough that the climb cannot step over it between samples
+        self.wait_altitude(50, 80, relative=True)
         target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
         self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
@@ -5845,15 +5851,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Throw the catapult.
         self.set_servo(7, 2000)
 
-        # Check whether we're at max throttle below TKOFF_LVL_ALT.
-        test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Check whether we're at max throttle below TKOFF_LVL_ALT.  As
+        # wide a window as staying below it allows: two metres is
+        # narrower than the gap between altitude samples.
+        lvl_alt = self.get_parameter("TKOFF_LVL_ALT")
+        self.wait_altitude(lvl_alt-20, lvl_alt-10, relative=True)
         target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
         self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
-        # Check whether we're still at max throttle past TKOFF_LVL_ALT.
-        test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Check whether we're still at max throttle past TKOFF_LVL_ALT,
+        # again staying ten metres clear of it.
+        lvl_alt = self.get_parameter("TKOFF_LVL_ALT")
+        self.wait_altitude(lvl_alt+10, lvl_alt+30, relative=True)
         target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
         self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
@@ -5898,15 +5907,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Throw the catapult.
         self.set_servo(7, 2000)
 
-        # Check whether we're at max throttle below TKOFF_LVL_ALT.
-        test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Check whether we're at max throttle below TKOFF_LVL_ALT.  As
+        # wide a window as staying below it allows: two metres is
+        # narrower than the gap between altitude samples.
+        lvl_alt = self.get_parameter("TKOFF_LVL_ALT")
+        self.wait_altitude(lvl_alt-20, lvl_alt-10, relative=True)
         target_throttle = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))
         self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
-        # Check whether we've receded from max throttle past TKOFF_LVL_ALT.
-        test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Check whether we've receded from max throttle past
+        # TKOFF_LVL_ALT, staying ten metres clear of it.
+        lvl_alt = self.get_parameter("TKOFF_LVL_ALT")
+        self.wait_altitude(lvl_alt+10, lvl_alt+30, relative=True)
         thr_min = 1000+10*(self.get_parameter("TKOFF_THR_MIN"))-1
         thr_max = 1000+10*(self.get_parameter("TKOFF_THR_MAX"))-10
         self.assert_servo_channel_range(3, thr_min, thr_max)
@@ -5959,9 +5971,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # altitude through to our takeoff altitude:
         expected_takeoff_throttle = 1000+10*self.get_parameter("TKOFF_THR_MAX")
 
-        # Check whether we're at max throttle below TKOFF_LVL_ALT.
-        test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Check whether we're at max throttle below TKOFF_LVL_ALT.  As
+        # wide a window as staying below it allows: two metres is
+        # narrower than the gap between altitude samples.
+        lvl_alt = self.get_parameter("TKOFF_LVL_ALT")
+        self.wait_altitude(lvl_alt-20, lvl_alt-10, relative=True)
         w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
             self,
             3,  # throttle
@@ -5971,9 +5985,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         )
         w.run()
 
-        # Check whether we're still at max throttle past TKOFF_LVL_ALT.
-        test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Check whether we're still at max throttle past TKOFF_LVL_ALT,
+        # again staying ten metres clear of it.
+        lvl_alt = self.get_parameter("TKOFF_LVL_ALT")
+        self.wait_altitude(lvl_alt+10, lvl_alt+30, relative=True)
 
         w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
             self,
@@ -6012,15 +6027,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        # Check whether we're at max throttle below TKOFF_LVL_ALT.
-        test_alt = self.get_parameter("TKOFF_LVL_ALT")-10
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Check whether we're at max throttle below TKOFF_LVL_ALT.  As
+        # wide a window as staying below it allows: two metres is
+        # narrower than the gap between altitude samples.
+        lvl_alt = self.get_parameter("TKOFF_LVL_ALT")
+        self.wait_altitude(lvl_alt-20, lvl_alt-10, relative=True)
         target_throttle = 1000+10*(self.get_parameter("THR_MAX"))
         self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
-        # Check whether we're still at max throttle past TKOFF_LVL_ALT.
-        test_alt = self.get_parameter("TKOFF_LVL_ALT")+10
-        self.wait_altitude(test_alt, test_alt+2, relative=True)
+        # Check whether we're still at max throttle past TKOFF_LVL_ALT,
+        # again staying ten metres clear of it.
+        lvl_alt = self.get_parameter("TKOFF_LVL_ALT")
+        self.wait_altitude(lvl_alt+10, lvl_alt+30, relative=True)
         target_throttle = 1000+10*(self.get_parameter("THR_MAX"))
         self.assert_servo_channel_range(3, target_throttle-10, target_throttle+10)
 
