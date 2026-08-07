@@ -14412,6 +14412,15 @@ switch value'''
             # cause not yet understood:
             "WindMessageSpeed",
 
+            # asserts that not one log message was dropped, and the
+            # thing which writes them runs in wall-clock time - the test
+            # already drops SIM_SPEEDUP to 1 because of it.  That is not
+            # enough when it is sharing the machine with 84 other SITLs:
+            #     Expected zero dropped log messages in logs/dataflash-log-erase.BIN, got 2680
+            # reproduced on two runs out of two at --parallel=85.  It
+            # costs about 70s to run it on its own.
+            "DataFlashErase",
+
             # only seen failing under heavy parallel load (passes when run
             # on its own); may just be host-load sensitive:
             "WatchdogHome",
