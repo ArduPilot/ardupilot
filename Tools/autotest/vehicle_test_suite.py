@@ -16915,9 +16915,15 @@ switch value'''
         self.stop_SITL()
 
         logs_before = set(self.log_list())
+        # run it in our own working directory, not the top of the tree:
+        # Replay writes into logs/ relative to where it runs, and
+        # log_list() reads the logs/ of this instance's directory.  Those
+        # are the same place only at instance zero, so anywhere else the
+        # log lands somewhere we never look:
+        #     Expected exactly one new log from Replay, got ([])
         util.run_cmd(
-            ['build/sitl/tool/Replay', filepath],
-            directory=util.topdir(),
+            [util.reltopdir('build/sitl/tool/Replay'), filepath],
+            directory=os.getcwd(),
             checkfail=True,
             show=True,
             output=True,

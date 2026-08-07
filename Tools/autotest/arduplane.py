@@ -146,7 +146,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             3: 1600,
             4: 1500,
         })
-        self.wait_groundspeed(12, 100)
+        # airspeed, not groundspeed: a test which sets SIM_WIND_SPD then
+        # takes off into the wind never reaches this over the ground -
+        # Replay's wind-and-airspeed bit sets 5m/s and the roll tops out
+        # around 9.8m/s of groundspeed, so the wait times out:
+        #     Replay (...) (Failed to attain groundspeed between 12 and 100, reached 9.758604049682617)
+        # while the aircraft is doing perfectly well through the air,
+        # which is what a takeoff roll actually depends on.
+        self.wait_airspeed(12, 100)
 
         # hit the gas harder now, and give it some more elevator
         self.set_rc_from_map({
