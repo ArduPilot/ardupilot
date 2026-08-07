@@ -26,6 +26,7 @@ from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
+from vehicle_test_suite import WaitWaypointTimeout
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -422,9 +423,22 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         wp_count = self.load_mission(filename, strict=strict)
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        self.context_push()
+        self.context_collect('STATUSTEXT')
         self.change_mode('AUTO')
-        self.wait_waypoint(1, wp_count-1, max_dist_to_final_wp_m=5, ignore_MANUAL_mode_change=ignore_MANUAL_mode_change)
-        self.wait_statustext("Mission Complete", timeout=600)
+        try:
+            self.wait_waypoint(1, wp_count-1, max_dist_to_final_wp_m=5,
+                               ignore_MANUAL_mode_change=ignore_MANUAL_mode_change)
+        except WaitWaypointTimeout:
+            # the vehicle can finish the mission without us ever seeing
+            # it within max_dist_to_final_wp_m of the final waypoint: a
+            # sailboat tacks its way there, so the samples we get can
+            # straddle the threshold.  Finishing the mission is what we
+            # are waiting for, so do not fail if that has happened.
+            if not self.statustext_in_collections("Mission Complete"):
+                raise
+        self.wait_statustext("Mission Complete", check_context=True, timeout=600)
+        self.context_pop()
         self.disarm_vehicle()
         self.progress("Mission OK")
 
