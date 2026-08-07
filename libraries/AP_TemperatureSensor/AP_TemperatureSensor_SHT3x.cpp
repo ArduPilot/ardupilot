@@ -67,6 +67,9 @@ void AP_TemperatureSensor_SHT3x::init()
     // lower retries for run
     _dev->set_retries(3);
 
+    _dev->set_device_type(uint8_t(DevType::SHT3x));
+    set_bus_id(_dev->get_bus_id());
+
     /* Request 20Hz update */
     _dev->register_periodic_callback(50 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_TemperatureSensor_SHT3x::_timer, void));

@@ -49,6 +49,21 @@ protected:
     void set_temperature(const float temperature);
     void update_external_libraries(const float temperature);
 
+    // set bus ID of this instance, for TEMPn_DEVID parameters
+    void set_bus_id(uint32_t id);
+
+    enum class DevType {
+        TSYS01   = 0x01,
+        MCP9600  = 0x02,
+        MAX31865 = 0x03,
+        TSYS03   = 0x04,
+        ANALOG   = 0x05,
+        DRONECAN = 0x06,
+        MLX90614 = 0x07,
+        SHT3x    = 0x08,
+        TMP119   = 0x09,
+    };
+
     AP_TemperatureSensor                            &_front;    // reference to front-end
     AP_TemperatureSensor::TemperatureSensor_State   &_state;    // reference to this instance's state (held in the front-end)
     AP_TemperatureSensor_Params                     &_params;   // reference to this instance's parameters (held in the front-end)

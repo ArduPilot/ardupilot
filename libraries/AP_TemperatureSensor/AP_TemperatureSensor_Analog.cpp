@@ -18,6 +18,7 @@
 #if AP_TEMPERATURE_SENSOR_ANALOG_ENABLED
 
 #include "AP_TemperatureSensor_Analog.h"
+#include <AP_HAL/Device.h>
 
 
 extern const AP_HAL::HAL &hal;
@@ -75,6 +76,12 @@ AP_TemperatureSensor_Analog::AP_TemperatureSensor_Analog(AP_TemperatureSensor &f
     AP_Param::setup_object_defaults(this, var_info);
     _state.var_info = var_info;
     _analog_source = hal.analogin->channel(_pin);
+    set_bus_id(AP_HAL::Device::make_bus_id(
+        AP_HAL::Device::BUS_TYPE_UNKNOWN,
+        0,
+        0,
+        uint8_t(DevType::ANALOG)
+    ));
 }
 
 // Update function called at 5Hz
