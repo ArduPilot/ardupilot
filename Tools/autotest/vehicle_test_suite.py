@@ -12368,14 +12368,91 @@ Also, ignores heartbeats not from our target system'''
         if notachieved_ex is not None:
             raise notachieved_ex
 
-    def SET_MESSAGE_INTERVAL(self):
-        '''Test MAV_CMD_SET_MESSAGE_INTERVAL'''
+    def set_message_interval_prep(self):
+        '''get CAMERA_FEEDBACK available.  Several of the
+        SET_MESSAGE_INTERVAL tests want a message which is not
+        ordinarily streamed out, and that is the one they use.'''
         self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
         self.reboot_sitl() # needed for CAM1_TYPE to take effect
-        self.start_subtest('Basic tests')
-        self.test_set_message_interval_basic()
-        self.start_subtest('Many-message tests')
-        self.test_set_message_interval_many()
+
+    def SET_MESSAGE_INTERVAL_StreamedMessage(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL on an already-streamed message'''
+        rate = round(self.measure_message_rate("VFR_HUD", 20))
+        self.progress("Initial rate: %u" % rate)
+
+        self.test_rate("Test set to %u" % (rate/2,), rate/2, rate/2, victim_message="VFR_HUD")
+        # this assumes the streamrates have not been played with:
+        self.test_rate("Resetting original rate using 0-value", 0, rate)
+        self.test_rate("Disabling using -1-value", -1, 0)
+        self.test_rate("Resetting original rate", 0, rate)
+
+    def SET_MESSAGE_INTERVAL_UnstreamedMessage(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL on a message not ordinarily streamed'''
+        self.set_message_interval_prep()
+        try:
+            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
+            if rate != 0:
+                raise PreconditionFailedException("Already getting CAMERA_FEEDBACK")
+            self.progress("try various message rates")
+            for want_rate in range(5, 14):
+                self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
+                                         want_rate)
+                self.assert_message_rate_hz('CAMERA_FEEDBACK', want_rate)
+        finally:
+            self.progress("Resetting CAMERA_FEEDBACK rate to default rate")
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, 0)
+
+    def SET_MESSAGE_INTERVAL_LoopRate(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL at the vehicle main loop rate'''
+        self.set_message_interval_prep()
+        try:
+            # have to reset the speedup as MAVProxy can't keep up otherwise
+            self.context_push()
+            self.context_set_speedup(1.0)
+            # ArduPilot currently limits message rate to 80% of main loop rate:
+            want_rate = self.get_parameter("SCHED_LOOP_RATE") * 0.8
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
+                                     want_rate)
+            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
+            self.context_pop()
+            self.progress("Want=%f got=%f" % (want_rate, rate))
+            if abs(rate - want_rate) > 2:
+                raise NotAchievedException("Did not get expected rate")
+        finally:
+            self.progress("Resetting CAMERA_FEEDBACK rate to default rate")
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, 0)
+
+    def SET_MESSAGE_INTERVAL_UnsupportedMessage(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL for a message we do not stream'''
+        self.drain_mav()
+
+        non_existant_id = 145
+        self.send_get_message_interval(non_existant_id)
+        m = self.assert_receive_message('MESSAGE_INTERVAL')
+        if m.interval_us != 0:
+            raise NotAchievedException("Supposed to get 0 back for unsupported stream")
+        m = self.assert_receive_message('COMMAND_ACK')
+        if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
+            raise NotAchievedException("Getting rate of unsupported message is a failure")
+
+    def SET_MESSAGE_INTERVAL_ManyMessages(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL on several messages at once'''
+        self.set_message_interval_prep()
+        messages = [
+            'CAMERA_FEEDBACK',
+            'RAW_IMU',
+            'ATTITUDE',
+        ]
+        try:
+            rate = 5
+            for message in messages:
+                self.set_message_rate_hz(message, rate)
+            for message in messages:
+                self.assert_message_rate_hz(message, rate)
+        finally:
+            # reset message rates to default:
+            for message in messages:
+                self.set_message_rate_hz(message, -1)
 
     def MESSAGE_INTERVAL_COMMAND_INT(self):
         '''Test MAV_CMD_SET_MESSAGE_INTERVAL works as COMMAND_INT'''
@@ -12401,30 +12478,6 @@ Also, ignores heartbeats not from our target system'''
         if count != 1:
             raise NotAchievedException(f"Did not get single AUTOPILOT_VERSION message (count={count}")
 
-    def test_set_message_interval_many(self):
-        messages = [
-            'CAMERA_FEEDBACK',
-            'RAW_IMU',
-            'ATTITUDE',
-        ]
-        ex = None
-        try:
-            rate = 5
-            for message in messages:
-                self.set_message_rate_hz(message, rate)
-            for message in messages:
-                self.assert_message_rate_hz(message, rate)
-        except Exception as e:  # noqa: BLE001
-            self.print_exception_caught(e)
-            ex = e
-
-        # reset message rates to default:
-        for message in messages:
-            self.set_message_rate_hz(message, -1)
-
-        if ex is not None:
-            raise ex
-
     def assert_message_rate_hz(self, message, want_rate, sample_period=20, ndigits=0, mav=None):
         if mav is None:
             mav = self.mav
@@ -12433,64 +12486,6 @@ Also, ignores heartbeats not from our target system'''
         self.progress("%s: Want=%f got=%f" % (message, round(want_rate, ndigits=ndigits), round(rate, ndigits=ndigits)))
         if rate != want_rate:
             raise NotAchievedException("Did not get expected rate (want=%f got=%f)" % (want_rate, rate))
-
-    def test_set_message_interval_basic(self):
-        ex = None
-        try:
-            rate = round(self.measure_message_rate("VFR_HUD", 20))
-            self.progress("Initial rate: %u" % rate)
-
-            self.test_rate("Test set to %u" % (rate/2,), rate/2, rate/2, victim_message="VFR_HUD")
-            # this assumes the streamrates have not been played with:
-            self.test_rate("Resetting original rate using 0-value", 0, rate)
-            self.test_rate("Disabling using -1-value", -1, 0)
-            self.test_rate("Resetting original rate", 0, rate)
-
-            self.progress("try getting a message which is not ordinarily streamed out")
-            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
-            if rate != 0:
-                raise PreconditionFailedException("Already getting CAMERA_FEEDBACK")
-            self.progress("try various message rates")
-            for want_rate in range(5, 14):
-                self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
-                                         want_rate)
-                self.assert_message_rate_hz('CAMERA_FEEDBACK', want_rate)
-
-            self.progress("try at the main loop rate")
-            # have to reset the speedup as MAVProxy can't keep up otherwise
-            self.context_push()
-            self.context_set_speedup(1.0)
-            # ArduPilot currently limits message rate to 80% of main loop rate:
-            want_rate = self.get_parameter("SCHED_LOOP_RATE") * 0.8
-            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
-                                     want_rate)
-            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
-            self.context_pop()
-            self.progress("Want=%f got=%f" % (want_rate, rate))
-            if abs(rate - want_rate) > 2:
-                raise NotAchievedException("Did not get expected rate")
-
-            self.drain_mav()
-
-            non_existant_id = 145
-            self.send_get_message_interval(non_existant_id)
-            m = self.assert_receive_message('MESSAGE_INTERVAL')
-            if m.interval_us != 0:
-                raise NotAchievedException("Supposed to get 0 back for unsupported stream")
-            m = self.assert_receive_message('COMMAND_ACK')
-            if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
-                raise NotAchievedException("Getting rate of unsupported message is a failure")
-
-        except Exception as e:  # noqa: BLE001
-            self.print_exception_caught(e)
-            ex = e
-
-        self.progress("Resetting CAMERA_FEEDBACK rate to default rate")
-        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, 0)
-        self.assert_message_rate_hz('CAMERA_FEEDBACK', 0)
-
-        if ex is not None:
-            raise ex
 
     def send_poll_message(self, message_id, target_sysid=None, target_compid=None, quiet=False, mav=None, p2=0):
         if mav is None:
