@@ -16482,6 +16482,27 @@ switch value'''
             expected[name] = len(content)
         return expected
 
+    def create_ftp_listing_pages(self, dirname, file_count):
+        '''create a directory whose listing needs many packets, so that it is
+        still paging while the next command runs'''
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        for i in range(file_count):
+            self.write_content_to_filepath(b"x", os.path.join(dirname, "entry_%03u.txt" % i))
+
+    def wait_for_path(self, path, present=True, timeout=20):
+        '''wait for a path to appear or disappear.  the autopilot's filesystem
+        root is our working directory under SITL, so an FTP command's effect
+        can be seen directly'''
+        tstart = time.time()
+        while time.time() - tstart < timeout:
+            if os.path.exists(path) == present:
+                return
+            time.sleep(0.1)
+        raise NotAchievedException(
+            "%s did not %s" % (path, "appear" if present else "go away"))
+
     def MAVFTPListDirectoryEdgeCases(self):
         '''test how FTP directory listing rejects and terminates'''
 
@@ -16686,6 +16707,267 @@ switch value'''
                 if os.path.exists(name):
                     os.unlink(name)
 
+    def MAVFTPFileCommandsMAVProxy(self):
+        '''test MAVProxy's FTP file management commands'''
+
+        dirname = "ftp_commands_test"
+        old_name = "%s/before.dat" % dirname
+        new_name = "%s/after.dat" % dirname
+        content = bytes((i * 5 + 9) & 0xff for i in range(400))
+        crc = zlib.crc32(content, 0xffffffff) ^ 0xffffffff
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp set debug 1\n")
+
+            mavproxy.send("ftp status\n")
+            mavproxy.expect("No transfer in progress")
+
+            self.progress("Making a directory")
+            mavproxy.send("ftp mkdir %s\n" % dirname)
+            self.wait_for_path(dirname)
+
+            self.write_content_to_filepath(content, old_name)
+
+            self.progress("Checksumming on the vehicle")
+            mavproxy.send("ftp crc %s\n" % old_name)
+            mavproxy.expect(re.escape("crc: %s 0x%08x" % (old_name, crc)))
+
+            self.progress("Renaming")
+            mavproxy.send("ftp rename %s %s\n" % (old_name, new_name))
+            self.wait_for_path(new_name)
+            self.wait_for_path(old_name, present=False)
+
+            self.progress("Removing the file, then the directory")
+            mavproxy.send("ftp rm %s\n" % new_name)
+            self.wait_for_path(new_name, present=False)
+            mavproxy.send("ftp rmdir %s\n" % dirname)
+            self.wait_for_path(dirname, present=False)
+
+            mavproxy.send("ftp cancel\n")
+            mavproxy.expect("Terminated session")
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPCrcCompareMAVProxy(self):
+        '''test MAVProxy comparing local files against the vehicle by checksum'''
+
+        local_dir = "ftp_crccmp_local"
+        remote_dir = "ftp_crccmp_remote"
+        same = bytes((i * 3) & 0xff for i in range(300))
+        local_only = bytes((i * 9 + 1) & 0xff for i in range(200))
+
+        for d in local_dir, remote_dir:
+            if os.path.exists(d):
+                shutil.rmtree(d)
+            os.mkdir(d)
+        # a.dat matches, b.dat differs, c.dat is not on the vehicle at all
+        self.write_content_to_filepath(same, "%s/a.dat" % local_dir)
+        self.write_content_to_filepath(same, "%s/a.dat" % remote_dir)
+        self.write_content_to_filepath(local_only, "%s/b.dat" % local_dir)
+        self.write_content_to_filepath(same, "%s/b.dat" % remote_dir)
+        self.write_content_to_filepath(local_only, "%s/c.dat" % local_dir)
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+
+            local_crc = zlib.crc32(same, 0xffffffff) ^ 0xffffffff
+            mavproxy.send("ftp crclocal %s/a.dat\n" % local_dir)
+            mavproxy.expect(re.escape("crclocal: %s/a.dat 0x%08x" % (local_dir, local_crc)))
+
+            # crccmp works through the list in sorted order
+            mavproxy.send("ftp crccmp %s/*.dat %s\n" % (local_dir, remote_dir))
+            mavproxy.expect(r"MATCH\s+a\.dat", timeout=60)
+            mavproxy.expect(r"DIFFER\s+b\.dat", timeout=60)
+            mavproxy.expect(r"MISSING\s+c\.dat", timeout=60)
+            mavproxy.expect("crccmp: 1 match, 1 differ, 1 missing, 0 errors", timeout=60)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        for d in local_dir, remote_dir:
+            shutil.rmtree(d)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPGapReadMAVProxy(self):
+        '''test a download over a lossy link fills its gaps with reads'''
+
+        remote_name = "ftp_gapread_source.dat"
+        local_name = "ftp_gapread_download.dat"
+        content = bytes((i * 17 + 11) & 0xff for i in range(16384))
+        self.write_content_to_filepath(content, remote_name)
+        if os.path.exists(local_name):
+            os.unlink(local_name)
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp set debug 1\n")
+
+            # a burst download which loses packets leaves holes, which are
+            # filled with single reads rather than by starting over. keep the
+            # loss modest: the client gives up if it is still short of a slow
+            # link's worth of gaps by the time its retries run out
+            mavproxy.send("ftp set pkt_loss_rx 10\n")
+            mavproxy.send("ftp get %s %s\n" % (remote_name, local_name))
+            mavproxy.expect("Gap read of", timeout=60)
+            mavproxy.send("ftp set pkt_loss_rx 0\n")
+            mavproxy.expect("Wrote %u bytes to %s" % (len(content), local_name), timeout=120)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+
+        if ex is None:
+            with open(local_name, "rb") as f:
+                data = f.read()
+            if data != content:
+                where = next((i for i in range(min(len(data), len(content)))
+                              if data[i] != content[i]), min(len(data), len(content)))
+                ex = NotAchievedException(
+                    "Gap-filled download differs at offset %u (got %u bytes, expected %u)" %
+                    (where, len(data), len(content)))
+
+        for name in remote_name, local_name:
+            if os.path.exists(name):
+                os.unlink(name)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryInterleavedPut(self):
+        '''test an upload started during a directory listing is not corrupted'''
+
+        dirname = "ftp_interleave_test"
+        local_name = "ftp_interleave_local.dat"
+        remote_name = "ftp_interleave_remote.dat"
+
+        # a listing long enough that it is still paging when the upload
+        # starts; entries are about twenty bytes and a page holds 239
+        file_count = 400
+        # distinctive content, over several write blocks
+        content = bytes((i * 7 + 3) & 0xff for i in range(8192))
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        for i in range(file_count):
+            self.write_content_to_filepath(b"x", os.path.join(dirname, "entry_%03u.txt" % i))
+        self.write_content_to_filepath(content, local_name)
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            # let the parameter download finish first; it ends by terminating
+            # the FTP session, which would take any listing with it
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+
+            # both commands in one write, so the upload is under way before
+            # the first page of the listing comes back
+            mavproxy.send("ftp list %s\nftp put %s %s\n" % (dirname, local_name, remote_name))
+            mavproxy.expect("Sent file of length", timeout=60)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+
+        if ex is None:
+            (data, _) = self.ftp_burst_read(remote_name)
+            data = bytes(data)
+            if data != content:
+                where = next((i for i in range(min(len(data), len(content)))
+                              if data[i] != content[i]), min(len(data), len(content)))
+                ex = NotAchievedException(
+                    "Uploaded file differs at offset %u (got %u bytes, expected %u)" %
+                    (where, len(data), len(content)))
+
+        shutil.rmtree(dirname)
+        os.unlink(local_name)
+        if os.path.exists(remote_name):
+            os.unlink(remote_name)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryInterleavedGet(self):
+        '''test a download started during a directory listing is not corrupted'''
+
+        dirname = "ftp_interleave_get_test"
+        remote_name = "ftp_interleave_source.dat"
+        local_name = "ftp_interleave_download.dat"
+        content = bytes((i * 11 + 5) & 0xff for i in range(8192))
+
+        self.create_ftp_listing_pages(dirname, 400)
+        self.write_content_to_filepath(content, remote_name)
+        if os.path.exists(local_name):
+            os.unlink(local_name)
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            # let the parameter download finish first; it ends by terminating
+            # the FTP session, which would take any listing with it
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+
+            # both commands in one write, so the download is under way before
+            # the first page of the listing comes back
+            mavproxy.send("ftp list %s\nftp get %s %s\n" % (dirname, remote_name, local_name))
+            mavproxy.expect("Wrote %u bytes to %s" % (len(content), local_name), timeout=60)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+
+        if ex is None:
+            with open(local_name, "rb") as f:
+                data = f.read()
+            if data != content:
+                where = next((i for i in range(min(len(data), len(content)))
+                              if data[i] != content[i]), min(len(data), len(content)))
+                ex = NotAchievedException(
+                    "Downloaded file differs at offset %u (got %u bytes, expected %u)" %
+                    (where, len(data), len(content)))
+
+        shutil.rmtree(dirname)
+        for path in remote_name, local_name:
+            if os.path.exists(path):
+                os.unlink(path)
+
+        if ex is not None:
+            raise ex
+
     def MAVFTPListDirectoryLongNames(self):
         '''test a listing is not truncated by an entry too long to fit a packet'''
 
@@ -16709,6 +16991,39 @@ switch value'''
                 raise NotAchievedException(f"Listing missing {missing}")
         finally:
             shutil.rmtree(dirname)
+
+    def MAVFTPListDirectoryTabInNameMAVProxy(self):
+        '''test MAVProxy parses a listing entry whose filename contains a tab'''
+
+        dirname = "ftp_listing_tab_test"
+        # the size is the last tab-separated field of an entry, so a name
+        # containing a tab is only ambiguous to a client which picks the
+        # fields off the front
+        name = "tab\there.txt"
+        content = b"x" * 10
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        self.write_content_to_filepath(content, os.path.join(dirname, name))
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp list %s\n" % dirname)
+            mavproxy.expect(re.escape("   %s\t%u" % (name, len(content))) + r"[\r\n]", timeout=20)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
 
     def verify_ftp_burst_eof(self, data, eof_nack, expected_size, label):
         '''verify burst read EOF NAK is correct'''
