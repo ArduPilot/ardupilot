@@ -15313,18 +15313,29 @@ switch value'''
         self.drain_mav()
 
         self.progress("Checking results")
-        accuracy_pct = 0.2
+        # An absolute tolerance, not a percentage of the value.  These
+        # are trims of a few hundredths of a radian, so 0.2% of one was
+        # asking for the calibration to land within 0.0001rad - six
+        # thousandths of a degree - and it does not:
+        #     Incorrect value 0.049701 for AHRS_TRIM_Y should be 0.050000 error 0.60%
+        # seen at 0.049701, 0.049693, 0.049757 and 0.049734 at
+        # --parallel=85, i.e. about 0.0003rad (0.017 degrees) low.  Run
+        # on its own the same calibration lands within 0.000005rad, so
+        # this is the calibration being given a worse ride on a busy
+        # machine rather than a fault in it.  Two hundredths of a degree
+        # of trim error is not what this test is here to catch.
+        accuracy_rad = 0.001  # 0.06 degrees
         for (pname, expected_v) in expected_parms.items():
             v = self.get_parameter(pname)
             if v == expected_v:
                 continue
-            error_pct = 100.0 * abs(v - expected_v) / abs(expected_v)
-            if error_pct > accuracy_pct:
+            error_rad = abs(v - expected_v)
+            if error_rad > accuracy_rad:
                 raise NotAchievedException(
-                    "Incorrect value %.6f for %s should be %.6f error %.2f%%" %
-                    (v, pname, expected_v, error_pct))
-            self.progress("Correct value %.4f for %s error %.2f%%" %
-                          (v, pname, error_pct))
+                    "Incorrect value %.6f for %s should be %.6f error %.6frad" %
+                    (v, pname, expected_v, error_rad))
+            self.progress("Correct value %.4f for %s error %.6frad" %
+                          (v, pname, error_rad))
 
     def user_takeoff(self, alt_min=30, timeout=30, max_err=5):
         '''takeoff using mavlink takeoff command'''
