@@ -85,13 +85,13 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @Param: VELX_NTF
     // @DisplayName: X axis velocity target notch filter index
     // @Description: X axis velocity target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: VELX_NEF
     // @DisplayName: X axis velocity error notch filter index
     // @Description: X axis velocity error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(pid_vel_x, "VELX_", 0, Loiter, AC_PID),
 
@@ -178,13 +178,13 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @Param: VELY_NTF
     // @DisplayName: Y axis velocity target notch filter index
     // @Description: Y axis velocity target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: VELY_NEF
     // @DisplayName: Y axis velocity error notch filter index
     // @Description: Y axis velocity error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(pid_vel_y, "VELY_", 1, Loiter, AC_PID),
 
@@ -271,13 +271,13 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @Param: VELZ_NTF
     // @DisplayName: Z axis velocity target notch filter index
     // @Description: Z axis velocity target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: VELZ_NEF
     // @DisplayName: Z axis velocity error notch filter index
     // @Description: Z axis velocity error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(pid_vel_z, "VELZ_", 2, Loiter, AC_PID),
 
@@ -364,13 +364,13 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @Param: VELYAW_NTF
     // @DisplayName: Yaw axis velocity target notch filter index
     // @Description: Yaw axis velocity target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: VELYAW_NEF
     // @DisplayName: Yaw axis velocity error notch filter index
     // @Description: Yaw axis velocity error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(pid_vel_yaw, "VELYAW_", 3, Loiter, AC_PID),
 
@@ -457,13 +457,13 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @Param: POSX_NTF
     // @DisplayName: X axis position target notch filter index
     // @Description: X axis position target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: POSX_NEF
     // @DisplayName: X axis position error notch filter index
     // @Description: X axis position error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(pid_pos_x, "POSX_", 4, Loiter, AC_PID),
 
@@ -550,13 +550,13 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @Param: POSY_NTF
     // @DisplayName: Y axis position target notch filter index
     // @Description: Y axis position target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: POSY_NEF
     // @DisplayName: Y axis position error notch filter index
     // @Description: Y axis position error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(pid_pos_y, "POSY_", 5, Loiter, AC_PID),
 
@@ -643,13 +643,13 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @Param: POSZ_NTF
     // @DisplayName: Z axis position target notch filter index
     // @Description: Z axis position target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: POSZ_NEF
     // @DisplayName: Z axis position error notch filter index
     // @Description: Z axis position error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(pid_pos_z, "POSZ_", 6, Loiter, AC_PID),
 
@@ -736,13 +736,13 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @Param: POSYAW_NTF
     // @DisplayName: Yaw axis position target notch filter index
     // @Description: Yaw axis position target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: POSYAW_NEF
     // @DisplayName: Yaw axis position error notch filter index
     // @Description: Yaw axis position error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(pid_pos_yaw, "POSYAW_", 7, Loiter, AC_PID),
 
@@ -813,7 +813,7 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @DisplayName: Deadzone for the position PIDs
     // @Description: Output 0 thrust signal when blimp is within this distance (in meters) of the target position. Warning: If this param is greater than LOIT_MAX_POS_X multiplied by LOIT_LAG then the blimp won't move at all in the X axis in Loiter mode. Same for the other axes.
     // @Units: m
-    // @Range: 0.1 1
+    // @Range: 0 1
     // @User: Standard
     AP_GROUPINFO("PID_DZ", 17, Loiter, pid_dz, 0),
 
@@ -828,7 +828,7 @@ const AP_Param::GroupInfo Loiter::var_info[] = {
     // @DisplayName: Loiter position lag
     // @Description: Number of seconds' worth of travel that the actual position can be behind the target position.
     // @Units: s
-    // @Range: 0 0.999
+    // @Range: 0 1
     // @User: Standard
     AP_GROUPINFO("POS_LAG", 19, Loiter, pos_lag, 1),
 

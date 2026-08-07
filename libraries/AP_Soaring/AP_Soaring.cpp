@@ -126,14 +126,14 @@ const AP_Param::GroupInfo SoaringController::var_info[] = {
     // @Param: MAX_DRIFT
     // @DisplayName: (Optional) Maximum drift distance to allow when thermalling.
     // @Description: The previous mode will be restored if the horizontal distance to the thermalling start location exceeds this value. -1 to disable.
-    // @Range: 0 1000
+    // @Range: -1 1000
     // @User: Advanced
     AP_GROUPINFO("MAX_DRIFT", 16, SoaringController, max_drift, -1),
 
     // @Param: MAX_RADIUS
     // @DisplayName: (Optional) Maximum distance from home
     // @Description: RTL will be entered when a thermal is exited and the plane is more than this distance from home. -1 to disable.
-    // @Range: 0 1000
+    // @Range: -1 1000
     // @User: Advanced
     AP_GROUPINFO("MAX_RADIUS", 17, SoaringController, max_radius, -1),
 

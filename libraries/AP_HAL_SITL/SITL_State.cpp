@@ -62,7 +62,8 @@ void SITL_State::_sitl_setup()
         // unloaded (zero) values; parameters present in storage then
         // overwrite the seed, while any absent ones keep it
         const Location &home = sitl_model->get_home();
-        _sitl->precland_sim.set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(sitl_model->get_home_yaw()));
+        // the home yaw is 0-360; SIM_PLD_YAW is documented as -180 to +180:
+        _sitl->precland_sim.set_default_location(home.lat * 1.0e-7f, home.lng * 1.0e-7f, static_cast<int16_t>(wrap_180(sitl_model->get_home_yaw())));
 #endif
 
         if (_use_fg_view) {

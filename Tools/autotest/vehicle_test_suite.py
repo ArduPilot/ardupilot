@@ -15,6 +15,7 @@ import fnmatch
 import glob
 import importlib.util
 import io
+import json
 import math
 import operator
 import os
@@ -2729,6 +2730,82 @@ class TestSuite(abc.ABC):
             "CC_TYPE": 2,         # AC_CustomControl: PID backend (ArduCopter)
         }
 
+    def parameters_with_known_out_of_range_values(self):
+        '''parameters whose value on a running vehicle is outside the range
+        their documentation gives, but where it is not clear whether the
+        documentation or the value is the thing which is wrong.  Each of
+        these wants a decision from someone who knows the controller in
+        question; until then they are not failures.'''
+        return {
+            # the vehicle's default gain sits outside the range documented
+            # in the shared library the parameter comes from:
+            "RLL2SRV_TCONST": "Plane ships 0.25, documented 0.4 to 1.0",
+            "PTCH2SRV_TCONST": "Plane ships 0.25, documented 0.4 to 1.0",
+            "YAW_RATE_P": "Plane ships 0.04, documented 0.08 to 0.35",
+            "PSC_POS_P": "Rover ships 0.2, documented 0.5 to 2.0",
+            "WRC_RATE_FF": "Rover ships 8, documented 0.1 to 2.0",
+            "WRC2_RATE_FF": "Rover ships 8, documented 0.1 to 2.0",
+            "ATC_ACC_Y_MAX": "Sub ships 1100, documented 0 to 720",
+            "ATC_THR_MIX_MAN": "Sub ships 0.1, documented 0.5 to 0.9",
+            "LOIT_BRK_JRK_M": "Heli ships 2.5, documented 5 to 50",
+            "Q_LOIT_BRK_JRK_M": "QuadPlane ships 2.5, documented 5 to 50",
+            "AROT_FWD_I": "Heli ships 2.0, documented 0.02 to 1.0",
+            "PHLD_BRK_ANGLE": "Heli ships 8, documented 20 to 45",
+
+            # Copter's @Group: ATC_ takes in both
+            # AC_AttitudeControl_Multi.cpp and AC_AttitudeControl_Heli.cpp,
+            # so where a parameter is documented in both files one set of
+            # documentation wins and a multirotor ends up advertising the
+            # helicopter's range.  Fixing this needs the documentation
+            # restructured, not a range widened:
+            "ATC_RAT_RLL_FF": "multirotor gets the AC_AttitudeControl_Heli range",
+            "ATC_RAT_PIT_FF": "multirotor gets the AC_AttitudeControl_Heli range",
+            "ATC_RAT_RLL_FLTE": "multirotor gets the AC_AttitudeControl_Heli range",
+            "ATC_RAT_PIT_FLTE": "multirotor gets the AC_AttitudeControl_Heli range",
+            "ATC_RAT_YAW_FLTE": "multirotor gets the AC_AttitudeControl_Heli range",
+        }
+
+    def test_parameter_values_within_documented_ranges(self, parameters):
+        '''check the value each parameter holds on the running vehicle is
+        within the @Range its documentation gives for it.  param_parse.py
+        checks the defaults it can extract from the source code, but many
+        defaults come from #defines, enumerations or are set at runtime;
+        those only show up on a live vehicle.'''
+
+        # the json metadata was emitted alongside the xml, above:
+        json_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.json")
+        metadata = {}
+        for (group, group_params) in json.load(open(json_filepath)).items():
+            if group == 'json':
+                # this group holds the metadata format version
+                continue
+            metadata.update(group_params)
+
+        fail = False
+        for (param, value) in parameters.items():
+            if param in self.parameters_with_known_out_of_range_values():
+                continue
+            if param not in metadata:
+                # missing documentation is complained about above
+                continue
+            param_range = metadata[param].get('Range', None)
+            if param_range is None:
+                continue
+            (low, high) = (float(param_range['low']), float(param_range['high']))
+            # parameters come off the wire as single-precision floats, so
+            # a value which is exactly on a limit can land just outside
+            # it; don't complain about that:
+            if math.isclose(value, low, rel_tol=1e-6, abs_tol=1e-9):
+                continue
+            if math.isclose(value, high, rel_tol=1e-6, abs_tol=1e-9):
+                continue
+            if value < low or value > high:
+                self.progress("%s value %f is outside documented range %f to %f" %
+                              (param, value, low, high))
+                fail = True
+        if fail:
+            raise NotAchievedException("Parameter values outside documented ranges")
+
     def test_parameter_documentation_get_all_parameters(self):
 
         xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
@@ -2775,6 +2852,8 @@ class TestSuite(abc.ABC):
                 fail = True
         if fail:
             raise NotAchievedException("Downloaded parameters missing in XML")
+
+        self.test_parameter_values_within_documented_ranges(parameters)
 
         # FIXME: this should be doable if we filter out e.g BRD_* and CAN_*?
 #        self.progress("Checking no extra parameters present in XML")
