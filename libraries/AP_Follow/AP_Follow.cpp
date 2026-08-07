@@ -238,17 +238,13 @@ void AP_Follow::update_estimates()
 {
     WITH_SEMAPHORE(_follow_sem);
 
-    // check for target: if no valid target, invalidate estimate
-    if (!have_target()) {
+    // if we do not hold fresh data from the configured target, invalidate the estimate.
+    // this cannot gate on have_target() because that tests _estimate_valid, which is
+    // cleared below, and the estimate could then never be rebuilt
+    if (!target_data_current()) {
         clear_dist_and_bearing_to_target();
         _estimate_valid = false;
         return;
-    }
-
-    // if sysid changed, reset the estimation state
-    if (_sysid != _sysid_used) {
-        _sysid_used = _sysid;
-        _estimate_valid = false;
     }
 
     const uint32_t now = AP_HAL::millis();
@@ -366,7 +362,7 @@ void AP_Follow::update_estimates()
 // Retrieves the estimated target position, velocity, and acceleration in the NED frame (relative to origin).
 bool AP_Follow::get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss) const
 {
-    if (!_estimate_valid) {
+    if (!have_target()) {
         return false;
     }
 
@@ -380,7 +376,7 @@ bool AP_Follow::get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &ve
 // Retrieves the estimated target position, velocity, and acceleration in the NED frame, including configured offsets.
 bool AP_Follow::get_ofs_pos_vel_accel_NED_m(Vector3p &pos_ofs_ned_m, Vector3f &vel_ofs_ned_ms, Vector3f &accel_ofs_ned_mss) const
 {
-    if (!_estimate_valid) {
+    if (!have_target()) {
         return false;
     }
 
@@ -396,7 +392,7 @@ bool AP_Follow::get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist
 {
     WITH_SEMAPHORE(_follow_sem);
     
-    if (!_estimate_valid) {
+    if (!have_target()) {
         return false;
     }
 
@@ -417,7 +413,7 @@ bool AP_Follow::get_target_dist_and_vel_NED_m(Vector3f &dist_ned, Vector3f &dist
 // Retrieves the estimated target heading and heading rate in radians.
 bool AP_Follow::get_heading_heading_rate_rad(float &heading_rad, float &heading_rate_rads) const
 {
-    if (!_estimate_valid) {
+    if (!have_target()) {
         return false;
     }
 
@@ -432,7 +428,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 {
     WITH_SEMAPHORE(_follow_sem);
 
-    if (!_estimate_valid) {
+    if (!have_target()) {
         return false;
     }
 
@@ -451,7 +447,7 @@ bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &ve
 {
     WITH_SEMAPHORE(_follow_sem);
 
-    if (!_estimate_valid) {
+    if (!have_target()) {
         return false;
     }
     if (!AP::ahrs().get_location_from_origin_offset_NED(loc, _ofs_estimate_pos_ned_m)) {
@@ -467,7 +463,7 @@ bool AP_Follow::get_target_heading_deg(float &heading_deg)
 {
     WITH_SEMAPHORE(_follow_sem);
     
-    if (!_estimate_valid) {
+    if (!have_target()) {
         return false;
     }
 
@@ -481,7 +477,7 @@ bool AP_Follow::get_target_heading_rate_degs(float &heading_rate_degs)
 {
     WITH_SEMAPHORE(_follow_sem);
     
-    if (!_estimate_valid) {
+    if (!have_target()) {
         return false;
     }
 
@@ -498,6 +494,14 @@ bool AP_Follow::get_target_heading_rate_degs(float &heading_rate_degs)
 // Handles incoming MAVLink messages to update the target's position, velocity, and heading.
 void AP_Follow::handle_msg(const mavlink_message_t &msg)
 {
+    // FOLL_SYSID no longer matches the system that supplied the data we hold. Forget which
+    // message type the old target used so the new one is re-learned. This must run before
+    // the switch below, which consults _using_follow_target to decide whether
+    // GLOBAL_POSITION_INT is still wanted.
+    if (_sysid != _sysid_used) {
+        _using_follow_target = false;
+    }
+
     // Invalidate the estimate if no position update has been received within the timeout period.
     if ((_last_location_update_ms == 0) ||
         (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_ESTIMATE_TIMEOUT_MS)) {
@@ -515,6 +519,10 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
+        // if we are using follow_target, ignore global_position_int messages
+        if (_using_follow_target) {
+            return;
+        }
         // handle standard global position messages
         updated = handle_global_position_int_message(msg);
         break;
@@ -527,10 +535,13 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
     }
 
     if (updated) {
-        // Check if estimate needs reset based on position and velocity errors
-        if (estimate_error_too_large()) {
+        // reset the estimate on a large error or a change of source system
+        if (estimate_error_too_large() || (_sysid_used != _sysid)) {
             _estimate_valid = false;
         }
+
+        // record the system that supplied this update
+        _sysid_used = _sysid;
 
 #if HAL_LOGGING_ENABLED
         // log current follow diagnostic data
@@ -544,6 +555,12 @@ bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
 {
     // exit immediately if not enabled
     if (!_enabled) {
+        return false;
+    }
+
+    // sysid 0 is the broadcast system and is never a valid target.  without this
+    // a sender broadcasting as sysid 0 would compare equal to an unset _sysid
+    if (msg.sysid == 0) {
         return false;
     }
 
@@ -626,11 +643,6 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
 
     // ignore message if latitude and longitude are exactly zero (invalid GPS fix)
     if ((packet.lat == 0 && packet.lon == 0)) {
-        return false;
-    }
-
-    if (_using_follow_target) {
-        // if we are using follow_target, ignore global_position_int messages
         return false;
     }
 
@@ -781,7 +793,7 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
     // apply jitter-corrected timestamp to this update
     _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
 
-    // we are using follow_target: set sysid to sender's sysid
+    // prefer FOLLOW_TARGET over GLOBAL_POSITION_INT from now on
     _using_follow_target = true;
 
     return true;
@@ -801,7 +813,7 @@ void AP_Follow::init_offsets_if_required()
     }
     _offsets_were_zero = true;
 
-    if (!_estimate_valid) {
+    if (!have_target()) {
         return;
     }
 
@@ -935,10 +947,22 @@ void AP_Follow::Log_Write_FOLL()
 // Accessors and Helpers
 //==============================================================================
 
-// Returns true if following is enabled and a recent target update has been received.
-bool AP_Follow::have_target(void) const
+// Returns true if the target data we hold is fresh and was supplied by the configured system.
+// This is the gate for update_estimates().  It deliberately excludes _estimate_valid so that
+// update_estimates() can rebuild the estimate after that flag has been cleared.
+bool AP_Follow::target_data_current(void) const
 {
     if (!_enabled) {
+        return false;
+    }
+
+    // no target system has been configured
+    if (_sysid == 0) {
+        return false;
+    }
+
+    // we have not yet accepted an update from the configured system
+    if (_sysid_used != _sysid) {
         return false;
     }
 
@@ -947,6 +971,15 @@ bool AP_Follow::have_target(void) const
         return false;
     }
     return true;
+}
+
+// Returns true if a usable estimate of the configured target is available.
+// Every accessor is gated on this, so a true return guarantees that each of them succeeds.
+// Lua scripts depend on that: they test follow:have_target() and then use the values the
+// getters return without checking them.
+bool AP_Follow::have_target(void) const
+{
+    return _estimate_valid && target_data_current();
 }
 
 //==============================================================================
