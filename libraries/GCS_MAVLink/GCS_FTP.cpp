@@ -196,8 +196,14 @@ int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, 
         }
 #endif
         if (with_time) {
+            // a FAT filesystem with no RTC stamps a file with its own epoch,
+            // 1980-01-01, rather than recording that it does not know when
+            // the file was written. nothing at or before that is a real
+            // modification time, so report it as unknown
+            const time_t fat_epoch = 315532800;  // 1980-01-01T00:00:00Z
+            const uint32_t mtime = st.st_mtime > fat_epoch ? (uint32_t)st.st_mtime : 0;
             // F<name>\t<size>\t<mtime>\0 - mtime in seconds since the UNIX epoch (UTC), 0 if unknown
-            return hal.util->snprintf(dest, space, "F%s\t%u\t%u%c", entry->d_name, (unsigned)st.st_size, (unsigned)st.st_mtime, (char)0);
+            return hal.util->snprintf(dest, space, "F%s\t%u\t%u%c", entry->d_name, (unsigned)st.st_size, (unsigned)mtime, (char)0);
         }
         return hal.util->snprintf(dest, space, "F%s\t%u%c", entry->d_name, (unsigned)st.st_size, (char)0);
     } else {
