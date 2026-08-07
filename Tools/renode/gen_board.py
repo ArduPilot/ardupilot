@@ -618,6 +618,16 @@ def _platform(root, board, app, outdir, fram_path, warnings):
         lines += _f405_dma_wiring(defines, family, alloc, warnings)
     else:
         lines += _h743_dma_wiring(root, defines, family, alloc, warnings)
+        serial_uarts = app.get_config('SERIAL_ORDER', required=False, aslist=True) or []
+        for peripheral in dict.fromkeys(serial_uarts):
+            if peripheral not in family['uarts']:
+                continue
+            lines += [
+                '%sHost: Miscellaneous.AP_UARTPacer @ sysbus 0x%08X' %
+                (peripheral.lower(), alloc()),
+                '    uart: %s' % peripheral.lower(),
+                '',
+            ]
     lines += _gpio_routes(family['name'], chip_selects)
     return '\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart
 
@@ -673,9 +683,12 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         '',
     ]
     if serial is not None:
+        serial_target = serial.lower()
+        if family['name'] == 'h743':
+            serial_target += 'Host'
         lines += [
             'emulation CreateServerSocketTerminal %u "serial" false' % uart_port,
-            'connector Connect sysbus.%s serial' % serial.lower(),
+            'connector Connect sysbus.%s serial' % serial_target,
             '',
         ]
     if has_sd:

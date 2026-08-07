@@ -17,6 +17,7 @@ include $repo/Tools/renode/peripherals/common/AP_DWT.cs
 include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs
 include $repo/Tools/renode/peripherals/common/AP_IOMCU.cs
 include $repo/Tools/renode/peripherals/common/AP_SPIMultiplexer.cs
+include $repo/Tools/renode/peripherals/common/AP_UARTPacer.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32DMA_Fixup.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32F7_USART_Idle.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_UpdateDMA.cs

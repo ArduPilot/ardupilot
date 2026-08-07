@@ -128,6 +128,11 @@ see Running below.
   reaches zero, corrupting ArduPilot's partial-harvest UART RX pattern
   (IDLE interrupt, disable, rewrite NDTR, re-enable). `AP_STM32DMA_Fixup.cs`
   resets the offset on NDTR writes, which is what real hardware does.
+- The host terminal can inject a complete TCP write at one virtual-time point,
+  overflowing the H7 UART's 64-byte ChibiOS RX bounce-buffer handoff. Generated
+  H743 UART endpoints use `AP_UARTPacer.cs` to supply host bytes over time.
+  `AP_STM32F7_USART_Idle.cs` then raises IDLE only after a real input gap,
+  instead of treating every DMA read of RDR as an idle line.
 
 ## Bring-up traps found so far
 

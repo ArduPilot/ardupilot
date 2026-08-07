@@ -189,10 +189,10 @@ Inbound traffic required one additional H7 model correction. Renode's
 but models ISR.IDLE and CR1.IDLEIE only as tags. ChibiOS relies on the
 IDLE interrupt to stop DMA and harvest a partially filled 64-byte bounce
 buffer, so a normal MAVLink request remained invisible until the whole
-buffer filled. `AP_STM32F7_USART_Idle` synthesizes IDLE after DMA empties
-the USART FIFO and clears it through ICR.IDLECF. The existing DMA fixup
-also resets the model's private stream offset when ChibiOS rewrites NDTR,
-matching the hardware pointer reload for each new bounce buffer.
+buffer filled. `AP_STM32F7_USART_Idle` synthesizes IDLE after an input gap
+and clears it through ICR.IDLECF. The existing DMA fixup also resets the
+model's private stream offset when ChibiOS rewrites NDTR, matching the
+hardware pointer reload for each new bounce buffer.
 
 A single live pymavlink connection proved the complete path:
 
@@ -419,8 +419,29 @@ finish fixed the problem. A MAVLink test set `FRAME_CLASS` from 0 to 1, observed
 1 after a firmware reboot, then stopped and restarted Renode with the same state
 directory and observed 1 again.
 
+MAVLink FTP exposed a host-input timing issue. MAVProxy sends a session reset
+immediately followed by the open request. The two MAVLink frames total 62 bytes
+for `@PARAM/param.pck`, but 77 bytes for
+`@PARAM/param.pck?withdefaults=1`, crossing the 64-byte RX bounce buffer.
+Renode's terminal delivered the complete TCP write at one virtual-time point;
+the long open frame was then consistently lost at the DMA-buffer handoff.
+
+Generated H743 UART endpoints now pass host input through `AP_UARTPacer`, which
+uses the UART buffer-state interface to release one byte per scheduled interval.
+The IDLE helper was corrected at the same time: an empty one-byte USART FIFO is
+not an idle line, so pending IDLE is superseded by each following byte and is
+raised only after a 2ms input gap. With these changes CubeOrange's automatic
+parameter FTP fetched 1027 values plus defaults, ten consecutive direct
+`withdefaults=1` downloads each returned 11562 bytes, and three direct packed
+parameter downloads each returned 11488 bytes.
+
 ## Log
 
+- 2026-08-07: fixed unreliable H743 MAVLink FTP input across the 64-byte UART
+  RX DMA bounce-buffer boundary. Generated UART host endpoints now pace input,
+  and synthetic USART IDLE requires a true input gap. CubeOrange fetched
+  parameters plus defaults automatically and completed 10/10 repeated direct
+  `@PARAM/param.pck?withdefaults=1` downloads.
 - 2026-08-07: fixed generated CubeOrange startup without adding board-specific
   files. Added a hwdef/ROMFS-derived IOMCU peer, MS5611 and InvenSense-v2
   models, exact validation WHOAMI selection, and per-bus SPI chip-select
