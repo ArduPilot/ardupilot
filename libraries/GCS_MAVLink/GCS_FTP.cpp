@@ -678,9 +678,11 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
 
     case FTP_OP::TruncateFile:
     default:
-        // this was bad data, just nack it
+        // we don't implement this opcode. say so specifically, so a client
+        // preferring a newer opcode can tell "never heard of it" from "that
+        // command failed" and fall back to the older one
         GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Unsupported FTP: %d", static_cast<int>(request.opcode));
-        GCS_FTP::error(reply, FTP_ERROR::Fail);
+        GCS_FTP::error(reply, FTP_ERROR::UnknownCommand);
         break;
     }
 
