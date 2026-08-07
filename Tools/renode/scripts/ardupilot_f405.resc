@@ -1,0 +1,62 @@
+:name: ArduPilot F405
+:description: boots an ArduPilot STM32F405 firmware ELF
+
+# Common to every F405 board. Include a generated per-board .resc,
+# which sets $platform/$elf and then comes here (or set them by hand
+# for bring-up).
+
+$repo?=@.
+$elf?=@none
+$platform?=@Tools/renode/platforms/stm32f405_base.repl
+
+# each .cs is compiled on its own against the ones included before it
+include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
+include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
+include $repo/Tools/renode/peripherals/common/AP_DWT.cs
+include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32F4_I2C.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32DMA_Fixup.cs
+include $repo/Tools/renode/peripherals/stm32/AP_UartRxDmaPump.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_UpdateDMA.cs
+include $repo/Tools/renode/peripherals/sensors/AP_BMP280.cs
+include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
+include $repo/Tools/renode/peripherals/sensors/AP_ICM20689.cs
+include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
+include $repo/Tools/renode/peripherals/storage/AP_RAMTRON.cs
+
+mach create "ardupilot"
+machine LoadPlatformDescription $platform
+
+# register names in access logs; vendored so headless CI never
+# touches the network
+sysbus ApplySVD $repo/Tools/renode/data/STM32F405.svd.gz
+
+sysbus LoadELF $elf
+
+# The generated board script gets this from FLASH_RESERVE_START_KB. It also
+# compiles hwdef-bl.dat and retains its load offset for future bootloader
+# execution. The bootloader itself is not loaded yet.
+$app_base?=0x08010000
+cpu VectorTableOffset $app_base
+
+# ... and again after every reset: ArduPilot reboots itself via
+# NVIC_SystemReset (MAV_CMD_PREFLIGHT_REBOOT, watchdog paths), and
+# Renode restores the default vector table at 0 on reset, where
+# nothing is mapped - the CPU would silently halt while the emulation
+# looks healthy.
+macro reset
+"""
+    cpu VectorTableOffset $app_base
+"""
+
+# NOT one instruction per 168MHz cycle: 5-wait-state flash and AHB
+# contention derate the real part, and the AM32 harness showed the
+# number is load-bearing (a too-fast core can turn one-cycle-late
+# peripheral interactions into stable wrong states). Start at 125,
+# tune against a real board's scheduler load figures.
+cpu PerformanceInMips 125
+
+emulation SetGlobalQuantum "0.001"
+# Pace virtual time against host time when the emulator is fast enough. This
+# only sleeps when virtual time is ahead; slow emulation remains unrestricted.
+emulation SetGlobalAdvanceImmediately false
