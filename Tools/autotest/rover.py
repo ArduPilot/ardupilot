@@ -943,6 +943,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameters({
             "MAV_GCS_SYSID": self.mav.source_system,
             "RC10_OPTION": 46,  # RC Override Enable
+            # Overrides normally expire RC_OVERRIDE_TIME (3s of vehicle
+            # time) after the last one arrives, and the vehicle then
+            # falls back to the TX value - which is exactly what this
+            # test raises the alarm about.  At Rover's speedup of 30
+            # those 3s are 100ms of wall clock, so a scheduling stall in
+            # this process while --parallel keeps the machine busy is
+            # enough to make us report a bug which is not there.
+            # Timeouts are orthogonal to the enable-channel behaviour
+            # under test; a negative value turns them off.
+            "RC_OVERRIDE_TIME": -1,
         })
 
         self.change_mode('MANUAL')
@@ -960,6 +970,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         steering_override = 1000
         override_ch10 = 1000
 
+        # An override does not take effect the instant we start sending
+        # them: the first RC_CHANNELS to arrive can have been generated
+        # before our first override reached the vehicle, and reads the
+        # TX value quite legitimately.  Insisting from the outset
+        # reported the bug 0.1s into the test, with chan10_raw=2000
+        # showing the enable channel had not been overridden at all -
+        # nothing resembling #33161, just an early sample.  Wait for the
+        # override to bite, then hold the vehicle to it.
+        overridden = False
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < 15:
             self.mav.mav.rc_channels_override_send(
@@ -977,12 +996,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             )
 
             m = self.assert_receive_message('RC_CHANNELS')
+            if not overridden:
+                if m.chan1_raw == steering_override:
+                    self.progress("Override has taken effect")
+                    overridden = True
+                continue
             if m.chan1_raw == steering_tx:
                 raise NotAchievedException(
                     "chan1 dropped to TX value (issue #33161 reproduced): "
                     "chan1_raw=%u chan10_raw=%u" %
                     (m.chan1_raw, m.chan10_raw)
                 )
+
+        if not overridden:
+            raise NotAchievedException("GCS override never took effect")
 
         # switch ch10 LOW to disable overrides; verify GCS overrides are now blocked
         self.set_rc(10, 1000)
