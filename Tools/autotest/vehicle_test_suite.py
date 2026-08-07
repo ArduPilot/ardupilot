@@ -6444,7 +6444,16 @@ class TestSuite(abc.ABC):
                                instance=None,
                                check_context=False):
         if timeout is None:
-            timeout = 1
+            # This is wall-clock, and it is waiting on a message which
+            # arrives at whatever rate the vehicle is streaming it - so
+            # one second is a bet that this process gets scheduled
+            # promptly, which on a machine running the suite --parallel
+            # it may not:
+            #     FenceAutoEnableDisableSwitch (...) (Did not get HOME_POSITION after 1.057077407836 seconds)
+            # Waiting longer costs nothing when the message does turn up,
+            # and nothing here relies on the wait expiring - absence is
+            # asserted with assert_not_receive_message().
+            timeout = 10
         if mav is None:
             mav = self.mav
 
