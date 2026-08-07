@@ -5220,7 +5220,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.print_exception_caught(e)
             ex = e
 
-        self.reboot_sitl()
+        # The SIGALRM above makes SITL putenv("SITL_WATCHDOG_RESET=1")
+        # and exec itself, and reboot_sitl() execs too, so that variable
+        # - and the internal error every boot then raises because of it -
+        # follows this process for as long as it lives.  Whatever runs
+        # next on this SITL cannot become armable:
+        #     PreArm: Internal errors 0x800 l:243 watchdog_rst
+        # Rebooting does not shake it off; only a new process does.
+        # customise_SITL_commandline() starts one, and tells the
+        # framework it did, so the tidy-up afterwards knows the SITL has
+        # been replaced - doing the stop/start by hand here left the
+        # next test with no vehicle at all.
+        self.customise_SITL_commandline([])
 
         if ex is not None:
             raise ex
