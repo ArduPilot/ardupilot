@@ -10973,7 +10973,17 @@ Also, ignores heartbeats not from our target system'''
                 ]
             self.progress("Setting calibration mode")
             self.wait_heartbeat()
+            # MAVProxy holds its own TCP connection to SITL, separate from
+            # the one this suite uses.  Restarting SITL underneath it
+            # leaves it on a dead socket which it does not notice until
+            # it next tries to use it - and a command sent into that
+            # window is simply lost, leaving us waiting out a timeout for
+            # a reply to something the vehicle never received.  Loading
+            # modules does not prove otherwise; that is MAVProxy talking
+            # to itself.  So stand it back up after the restart.
+            self.stop_mavproxy(mavproxy)
             self.customise_SITL_commandline(["-M", "calibration"])
+            mavproxy = self.start_mavproxy()
             self.mavproxy_load_module(mavproxy, "sitl_calibration")
             self.mavproxy_load_module(mavproxy, "calibration")
             self.mavproxy_load_module(mavproxy, "relay")
@@ -11012,6 +11022,10 @@ Also, ignores heartbeats not from our target system'''
 
             # Only care about compass prearm
             self.set_parameter("ARMING_SKIPCHK", ~(1 << 2))
+
+            # we restarted MAVProxy above, so the caller's handle is
+            # stale; hand the live one back
+            return mavproxy
 
         #################################################
         def do_test_mag_cal(mavproxy, params, compass_tnumber):
@@ -11291,7 +11305,7 @@ Also, ignores heartbeats not from our target system'''
                 else:
                     target_mask |= (1 << run)
                     ntest_compass = run + 1
-                do_prep_mag_cal_test(mavproxy, curr_params)
+                mavproxy = do_prep_mag_cal_test(mavproxy, curr_params)
                 do_test_mag_cal(mavproxy, curr_params, ntest_compass)
 
         except Exception as e:  # noqa: BLE001
@@ -14719,7 +14733,17 @@ switch value'''
                     initial_params[ins_prefix + "_" + axis] = getattr(pre_value, axis.lower())
                     initial_params[sim_prefix + "_" + axis] = getattr(post_value, axis.lower())
             self.set_parameters(initial_params)
+            # MAVProxy holds its own TCP connection to SITL, separate from
+            # the one this suite uses.  Restarting SITL underneath it
+            # leaves it on a dead socket which it does not notice until
+            # it next tries to use it - and a command sent into that
+            # window is simply lost, leaving us waiting out a timeout for
+            # a reply to something the vehicle never received.  Loading
+            # modules does not prove otherwise; that is MAVProxy talking
+            # to itself.  So stand it back up after the restart.
+            self.stop_mavproxy(mavproxy)
             self.customise_SITL_commandline(["-M", "calibration"])
+            mavproxy = self.start_mavproxy()
             self.mavproxy_load_module(mavproxy, "sitl_calibration")
             self.mavproxy_load_module(mavproxy, "calibration")
             self.mavproxy_load_module(mavproxy, "relay")
