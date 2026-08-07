@@ -7442,6 +7442,13 @@ return update()
             "SIM_GPS1_POS_Y": SIM_GPS1_POS_Y,
             "SIM_GPS1_POS_Z": SIM_GPS1_POS_Z,
         })
+        # both readings must be taken from the same place for their
+        # difference to be the antenna offset.  We are not given a
+        # starting location - a previous test can leave the vehicle
+        # anywhere - and the reboot below returns it to the startup
+        # location, so reboot here too rather than measuring from
+        # wherever we happen to have been left:
+        self.reboot_sitl()
         self.wait_ready_to_arm()
         gps_m = self.assert_receive_message("GPS_RAW_INT")
         lat = math.degrees(math.radians(gps_m.lat)*1.0e-7)
