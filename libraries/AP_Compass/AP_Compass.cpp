@@ -19,6 +19,7 @@
 #include "AP_Compass_config.h"
 
 #include "AP_Compass_SITL.h"
+#include "AP_Compass_AF9838.h"
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_BMM150.h"
@@ -531,7 +532,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DISBLMSK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC or LIS2MDL
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC or LIS2MDL,24:AF9838
     // @User: Advanced
     AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
 
@@ -1321,6 +1322,24 @@ void Compass::_probe_external_i2c_compasses(void)
         RETURN_IF_NO_SPACE;
     }
 #endif  // AP_COMPASS_MMC5XX3_ENABLED (MMC5983MA)
+
+#if AP_COMPASS_AF9838_ENABLED
+    // AF9838 on external I2C buses
+    FOREACH_I2C_EXTERNAL(i) {
+        probe_i2c_dev(DRIVER_AF9838, AP_Compass_AF9838::probe, i,
+                      HAL_COMPASS_AF9838_I2C_ADDR, true, ROTATION_NONE);
+        RETURN_IF_NO_SPACE;
+    }
+
+#if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+    // AF9838 connected externally through an internal HAL I2C bus
+    FOREACH_I2C_INTERNAL(i) {
+        probe_i2c_dev(DRIVER_AF9838, AP_Compass_AF9838::probe, i,
+                      HAL_COMPASS_AF9838_I2C_ADDR, true, ROTATION_NONE);
+        RETURN_IF_NO_SPACE;
+    }
+#endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+#endif  // AP_COMPASS_AF9838_ENABLED
 
 #if AP_COMPASS_RM3100_ENABLED
 #ifdef HAL_COMPASS_RM3100_I2C_ADDR
