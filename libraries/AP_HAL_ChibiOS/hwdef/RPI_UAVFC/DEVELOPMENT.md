@@ -31,13 +31,14 @@ starvation on core0, not the card. See the SD section below - the previous
 | ChibiOS | ArduPilot fork, kernel RT 7.0.6 - see below, do not bump it |
 | IMU | Working; fitted part is ICM42688P, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
-| microSD logging | Throughput is core0-CPU-bound, 18-91 KB/s - see below |
+| microSD logging | core0-CPU-bound, 18-91 KB/s; one-exchange write built |
+| `spi_fail` prearm | Fires once or twice at boot, blocks arming - see below |
 | Parameter storage | Working; needs both the sector-bound and write-verify fixes |
 | RC input | CRSF/ELRS on SERIAL3, 333 Hz link, 199 Hz telemetry |
 | GPS | log69 8-13 sats HDop 1.1-2.2; log70 11-16 sats HDop 0.8-1.3 |
 | Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
-| Battery current | Broken - temperature-dependent and does not track load; see below |
+| Battery current | ESC sense output has no gain, not a board fault - see below |
 | Motor outputs | 4x DShot600 via PIO; has also flown on PWM at 490 Hz |
 | DShot | Bidirectional DShot600 at 2 kHz, flown; eRPM scale verified |
 | DShot params | `SERVO_DSHOT_RATE` 1, `FSTRATE_DIV` 2, `SERVO_DSHOT_ESC` 0 - see below |
@@ -1203,7 +1204,8 @@ below.
 
 ### Plan: collapse the round trips
 
-Agreed approach, in order.
+Agreed approach, in order. (a) is implemented, see the section after this one.
+(b) and (c) remain.
 
 **(a) One full-duplex exchange per block.** Prebuild
 `[0xFF][0xFC][512 data][2 CRC][1 resp slot]` - 517 bytes - in a staging buffer
@@ -1236,6 +1238,52 @@ routes only `PA30 SPI1_SCK`, `PA31 SPI1_MOSI`, `PA28 SPI1_MISO`,
 DAT1/DAT2 on GPIOs contiguous with DAT0 so one PIO instruction can shift four
 bits, plus pull-ups on DAT0-3 and CMD.
 
+### (a) as built
+
+`mmcSequentialWrite()` stages the whole frame and clocks it in one exchange:
+
+```
+[0xFF][0xFC][512 data][2 dummy CRC][1 response slot][256 busy bytes]
+```
+
+773 bytes, 275 us of wire time. The exchange is in place, so afterwards the
+staging buffer holds what the card sent back rather than what went out: the
+data response token at offset 516, then the busy window. That makes the path
+observable over SWD with no instrumentation - read the buffer and you have the
+last block's response and how long the card stayed busy.
+
+It is opt-in. `MMCD1.wbuffer` comes out of `mmcObjectInit()` as NULL and NULL
+selects the original four-transfer path, so nothing else using `hal_mmc_spi.c`
+changes behaviour. `sdcard.cpp` allocates the buffer and the driver falls back
+on its own if that fails.
+
+Use the in-place `transfer_fullduplex(uint8_t *, uint32_t)` overload, not the
+two-pointer one: the latter stages through a `uint8_t buf[len]` variable length
+array on the caller's stack, which here would put 773 bytes on `log_io`.
+
+The busy window is the part worth tuning. `mmc_wait_idle()` polls a byte at a
+time and every poll is a thread suspend and resume, 1.3 ms at 58% core0 load
+and 5.7 ms at 79%. A clocked byte costs 0.36 us with the thread already
+blocked, so trading bytes for polls is wildly asymmetric. Measured on the bench
+with `LOG_DISARMED` 1:
+
+| busy window | blocks finishing inside the frame |
+|--------------------|-----------------------------------|
+| 8 bytes (2.8 us) | 3/14 |
+| 256 bytes (91 us) | 9/15 |
+
+The distribution is bimodal. Median busy is **3 byte periods, about 1.1 us** -
+the card buffers a multi-block write and answers almost at once - but about 40%
+of blocks run past 91 us. Growing the window further is still cheap in CPU
+terms, but chasing an unbounded tail with a fixed buffer is the wrong shape.
+That tail is what (b) is for.
+
+Throughput is not yet measured. `PM.SPIC` cannot settle it, because fewer
+transfers per block and more blocks per second move it the same way - it sat at
+8000 to 10400 a second either side of the change. The figure to take is
+`PM.Load` against `DSF.Bytes` across an acro segment and a Loiter segment, the
+same way the problem was diagnosed in the first place.
+
 ### The write buffer is still short
 
 `LOG_FILE_BUFSIZE` is 80 but `DSF.FMx` never exceeds about 5.1 KB in any
@@ -1267,6 +1315,33 @@ board is not wired for.
 One card-choice caveat while on SPI: SPI mode is mandatory for SDSC and SDHC
 but optional for SDXC, and some large cards implement it poorly. Benchmark on a
 32 GB SDHC card rather than a 128 GB+ SDXC one.
+
+## `spi_fail` at boot blocks the prearm
+
+`AP_InternalError` bit 14, 0x4000, is raised in exactly one place -
+`SPIDevice.cpp:260`, when `osalThreadSuspendTimeoutS()` returns `MSG_TIMEOUT`
+waiting for an SPI transfer, which is 20 ms plus 32 us per byte, and only when
+`hal.scheduler->in_expected_delay()` is false. The flag is sticky, so one event
+blocks arming for the rest of that boot with `Internal errors 0x4000 l:260`.
+
+It fires once or twice per boot and always early. Read live over SWD across two
+boots: count 1 and count 2, both already set before steady-state logging began,
+and neither incremented across a minute of continuous SD writing at about 9000
+SPI transfers a second. That matches the symptom - some boots arm normally,
+some do not, and a reboot changes the answer.
+
+Card init is the obvious suspect, since it runs at 400 kHz with power-up delays
+and a transfer overrunning 20 ms there is plausible. Not confirmed. Confirm it
+before chasing anything else: a timeout during init is a different problem from
+one in flight, and only the second would matter to a flying vehicle.
+
+It is not the single-exchange write path. The count does not move while that
+path is running, and the fault predates it.
+
+To read it without a GCS, `hal.util->persistent_data` holds the same values
+`AP_InternalError::error()` writes. The struct starts at `utilInstance + 4`,
+with `internal_errors` at +36 inside it, the count at +40 and the line at +42.
+Take `utilInstance` from the ELF each build - it moves.
 
 ## Logging setup for tuning work
 
@@ -1320,9 +1395,14 @@ work at all - see the next section.
 
 ## The current sense is not measuring current
 
-`BAT.Curr` reads about 7 A whatever the vehicle is doing, including with the
-motors stopped. This is not a scale or an offset problem and no parameter
+`BAT.Curr` reads a steady value whatever the vehicle is doing, including with
+the motors stopped - about 7 A in the flight logs, about 30 A on the bench with
+a 6S pack connected. This is not a scale or an offset problem and no parameter
 value repairs it. Stop treating it as a calibration task.
+
+The cause is now established: the ESC drives the pin and its output carries no
+current information. The leakage and wiring-swap explanations are both dead.
+See "Resolved" below before reading the older reasoning.
 
 ### What log62 shows
 
@@ -1404,24 +1484,77 @@ it for every pin in `HAL_RP_ADC_GPIOS`, which the generated header gives as
 the list *used* to be hardcoded to Laurel's GPIO40/41/42, which is where that
 suspicion came from; it has been fixed.
 
-### What is left
+### Resolved: the ESC drives the pin and it has no usable gain
 
-With 82.5k *and* 100nF to ground, an ideal undriven node would sit at 0 V, and
-the capacitor means this is not a fast sampling artifact. The RP2350 datasheet
-allows up to 1 uA pin input leakage, which can develop 82.5 mV across the
-pulldown and account for about 4.1 A at the nominal 50 A/V scale. The observed
-0.1456 V requires **1.76 uA** in total, so specified pad leakage can explain a
-substantial part but not necessarily all of it. The remaining candidates are:
+Case 1, settled on the bench with the debug probe attached. Measurements were
+taken by reading `ChibiOS::AnalogIn::samples[0]`, the ADC DMA landing buffer,
+over the OpenOCD telnet port with `mdw` while the board ran. That is a
+non-halting read; a GDB attach halts both cores and wedges any SPI transfer in
+flight, which then needs a `reset run` to recover. The buffer is
+`ADC_DMA_BUF_DEPTH` (8) slots of `num_grp_channels` conversions, interleaved.
+Note the group is **four** channels, not three: pins 0, 6 and 7 plus the MCU
+temperature sensor, because `HAL_WITH_MCU_MONITORING` is 1.
 
-1. **The ESC is driving it**, and its sense output idles near 0.145 V with
-   essentially no gain - shunt not connected, sense amp unpopulated, or an ESC
-   variant with no current sense at all.
-2. **Nothing is driving it and the ADC pad or board is leaking** into the
-   82.5k. The required current is above the datasheet's pin-leakage maximum on
-   its own, so board contamination, a damaged pad or another current path
-   would also be needed if the full 0.1456 V remains with the ESC disconnected.
+**Pad leakage cannot produce the level.** The pin sits at 0.60 to 0.63 V with a
+6S pack connected, which needs 7.6 uA through the 82.5k pulldown. The datasheet
+allows 1 uA. An order of magnitude short, so something low-impedance is driving
+the pin.
 
-### The CUR/TEL wiring hypothesis
+**There is no chip-wide leakage floor.** The AN1 spare pad on GPIO40 reads
+0.0365 V and holds it across reboots and thermal drift, against 0.6 V on the
+current pin. Note AN1's external network is not known to match this one's, so
+this is suggestive rather than a controlled comparison.
+
+**The pin really is wired to the ESC.** Spread within one 8-sample ADC burst is
+1 to 2 counts with the motors stopped and 4 to 33 counts with them spinning.
+That is ESC switching noise arriving on the pad, which needs a real wire.
+
+**It still does not respond to load.** Motors spinning, props off, the level
+stays at 0.61 to 0.64 V while the pack sags only 23.18 to 23.06 V. Temperature
+accounts for nearly all of the motors-off to motors-on step: 51.0 to 52.0 degC
+predicts 0.6115 V against 0.6129 V measured. The residual is about 17 mV,
+roughly 0.85 A, the same size as the switching noise now on the pad and what
+rectification of it would produce. Props-off draw is only a couple of amps, so
+the bench alone cannot exclude a weak response - log62's negative correlation
+against `RCOU` across a whole flight can, and does.
+
+**The temperature coefficient is real.** Two independent measurements agree:
+log62's motors-off window gives 0.5 A over 0.93 degC, and a bench reboot gives
+30 mV over 2.4 degC. That is 0.54 and 0.63 A/degC, about 12 mV/degC at the pin.
+AN1 did not move across the same reboot, so it is not ADC drift.
+
+So the ESC's sense output is powered, connected, temperature-dependent and
+carries no current information. Shunt not fitted, sense amp unpopulated, or an
+ESC variant with no current sense - which of those cannot be settled from the
+flight controller.
+
+The idle level is not a fixed artifact. This file previously recorded 0.1456 V,
+about 7.3 A; with a 23 V pack connected it sits near 0.60 V, about 30 A. Quote
+the conditions with any future reading.
+
+### The CUR/TEL wiring hypothesis (disproved)
+
+Retracted: there is no swap. GPIO5, the FC `TEL` pin, was probed on the bench
+with the pad's output driver disabled - `OD` 1, so the test can never contend
+with whatever is out there - and the internal pulls toggled. It reads high with
+the pull-up and low with the pull-down, so it follows a 50k pull in both
+directions and nothing is driving it. An analog sense output is low-impedance
+and would hold the pin against that pull.
+
+That holds whichever way the harness is wired. If `TEL` carries a wire, the
+ESC's current output is not on it. If `TEL` is unwired, a swap would put the
+ESC's telemetry on GPIO47 - but GPIO47 carries a steady 0.6 V with 2 counts of
+noise when the motors are stopped, which is not a UART line. The one case the
+pull test cannot separate is a telemetry TX that tri-states when idle, and that
+does not matter here: a tri-stated UART floats, an analog output does not.
+
+To repeat it, from the shipped `rp2350.h`: `PADS_BANK0` is 0x40038000 with
+GPIO n at +0x04+4n, `IO_BANK0` is 0x40028000 with GPIO n status at +8n and
+`INFROMPAD` in bit 17. GPIO5 is unclaimed by the hwdef, so poking it disturbs
+nothing. Restore the original pad register afterwards.
+
+The pin-order reasoning below is kept because it is still the right argument to
+make about any future harness.
 
 The ESC connector runs `CUR`, `TEL`, `DS1`, `DS2`, `DS3`, `DS4`, with `CUR` and
 `TEL` on adjacent pins at the same pitch. A one-pin error is easy to make, and
@@ -1451,22 +1584,25 @@ current sense is recoverable by swapping two wires with no board change.
 
 ### Tests, cheapest first
 
-1. **Read `RSSI_ADC` on GPIO40.** That is the AN1 spare pad. If it also sits
-   near 0.1 V and tracks die temperature, the leakage floor is a property of
-   the chip or board and case 2 is confirmed without touching the ESC.
-2. **Make the ESC transmit telemetry**, on the bench with props off. This is
-   the sharp one, because it looks for a positive result rather than an
-   absence: if that pin is really `TEL`, the current reading goes noisy or
-   jumps the moment telemetry starts. A DC analog level cannot do that. Note
-   the `SERVO_DSHOT_ESC` warning in the DShot section before setting it.
-3. **Scope the pad.** A 115200 baud burst against a flat analog level is
-   unmistakable, and answers it in seconds if a scope is to hand.
-4. **Unplug the ESC current lead and meter the pad.** With this circuit an
-   undriven node must read about 0 V. If it still sits at 0.145 V, the leakage
-   is in the MCU pad.
-5. **Confirm what the ESC actually outputs on that pin**, and its mV/A.
-   `BATT_AMP_PERVLT` 50 assumes 20 mV/A. If the output can exceed 3.3 V, see
-   the protection note below.
+1 to 4 have been run. Only 5 is left, and it is not a flight controller
+question.
+
+1. Done. **Read `RSSI_ADC` on GPIO40.** 0.0365 V against 0.6 V on the current
+   pin, so there is no leakage floor and case 2 is dead.
+2. Superseded. **Make the ESC transmit telemetry.** The GPIO5 pull test
+   answered the swap question directly and without arming. Still worth doing
+   if the ESC's telemetry behaviour is ever in doubt - and note the
+   `SERVO_DSHOT_ESC` warning in the DShot section before setting it.
+3. **Scope the pad.** Not needed for the swap any more, but still the fastest
+   way to see what the ESC actually puts out and the only way to see the
+   switching noise properly.
+4. Effectively answered. **Unplug the ESC current lead and meter the pad.** The
+   level needs 7.6 uA against a 1 uA leakage maximum, so the ESC is driving it.
+   Metering with the lead off would confirm it directly and is still the
+   cleanest single check if the ESC is ever off the airframe.
+5. **Confirm what the ESC actually outputs on that pin**, and its mV/A. The
+   only test left that can move the diagnosis. `BATT_AMP_PERVLT` 50 assumes
+   20 mV/A. If the output can exceed 3.3 V, see the protection note below.
 
 ### One thing worth asking the designers
 
@@ -1474,9 +1610,10 @@ Not a defect, but a question for the next revision. The 120R series has no
 clamp diode, so the circuit assumes the ESC never drives that pin above 3.3 V.
 If an ESC drives it from a 5 V rail, the pad's ESD diode has to absorb
 (5 - 3.6)/120, about 12 mA, which is above what those clamps are typically
-rated to carry continuously. That matters twice over: it is a robustness
-question on the next spin, and a pad stressed that way is one way to arrive at
-case 2's leaky input. Establish what the ESC outputs before raising it.
+rated to carry continuously. That is a robustness question for the next spin.
+It is no longer part of the current-sense diagnosis - that pad is not damaged,
+since it is being driven and AN1 reads a clean 0.0365 V - so raise it on its
+own merits once the ESC's output is known.
 
 ## Before the next flight
 
@@ -1509,18 +1646,19 @@ inverted, 2.75 g).
 
 ## Next steps
 
-1. **Collapse the SD write into one exchange per block**, option (a) in the SD
-   section. Prebuild the framed 517-byte block and issue a single
-   `spiExchange`, checking the response token from the RX buffer. This is the
-   agreed next piece of work. Measure it the same way it was diagnosed: `PM.Load`
-   against `DSF.Bytes` across an acro segment and a Loiter segment in one
-   flight, which is what made the mechanism visible in the first place.
+1. **Measure what option (a) actually bought.** The single-exchange write is
+   built and verified on the bench, but throughput has not been measured.
+   `PM.Load` against `DSF.Bytes` across an acro segment and a Loiter segment in
+   one flight, which is what made the mechanism visible in the first place.
+   Until that number exists the change is unproven, however good the transfer
+   counts look.
 2. Fix the battery failsafe thresholds, per above. Deferred twice now.
-3. Find out why the current channel reads die temperature instead of current,
-   per the section above. Work the test list there in order; it is a wiring or
-   sensor question, not a calibration one. Only once a reading responds to load
-   is there any point setting `BATT_AMP_OFFSET` or checking the scale against
-   what the charger puts back.
+3. Establish what the ESC actually outputs on its CUR pin and at what mV/A -
+   test 5 in the current-sense section, and the only one left. The board and
+   the firmware are cleared: the ESC drives the pin, the level tracks die
+   temperature rather than load, and no parameter on the flight controller will
+   repair that. Ask the ESC vendor whether the shunt and sense amp are fitted
+   on this variant before spending any more time on it.
 4. Read the `AP_Logger_File: buffer size=` line off the USB console and fix the
    5 KB write buffer. Independent of item 1 and it multiplies into it, because a
    short ring fragments every write below the 4 KB chunk.
