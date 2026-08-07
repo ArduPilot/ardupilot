@@ -17,6 +17,8 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Antmicro.Migrant;
+using Antmicro.Migrant.Hooks;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Core.Structure.Registers;
 using Antmicro.Renode.Exceptions;
@@ -37,20 +39,12 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 throw new ConstructionException("STM32DMA no longer has a streams field - revisit this fix");
             }
             var streams = (Array)streamsField.GetValue(dma);
-            var offsetField = streams.GetValue(0).GetType().GetField("dataOffset", BindingFlags.NonPublic | BindingFlags.Instance);
-            if(offsetField == null)
-            {
-                throw new ConstructionException("STM32DMA stream no longer has a dataOffset field - revisit this fix");
-            }
 
             for(var i = 0; i < streams.Length; i++)
             {
-                var stream = streams.GetValue(i);
+                var resetter = new OffsetResetter(streams.GetValue(i));
                 // SxNDTR = 0x14 + 0x18 * stream
-                dma.RegistersCollection.AddAfterWriteHook(0x14 + 0x18 * i, (long offset, uint value) =>
-                {
-                    offsetField.SetValue(stream, 0UL);
-                });
+                dma.RegistersCollection.AddAfterWriteHook(0x14 + 0x18 * i, resetter.Reset);
             }
         }
 
@@ -58,5 +52,39 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         public uint ReadDoubleWord(long offset) => 0;
         public void WriteDoubleWord(long offset, uint value) { }
         public void Reset() { }
+
+        private sealed class OffsetResetter
+        {
+            public OffsetResetter(object stream)
+            {
+                this.stream = stream;
+                ResolveOffsetField();
+            }
+
+            public void Reset(long offset, uint value)
+            {
+                offsetField.SetValue(stream, 0UL);
+            }
+
+            [PostDeserialization]
+            private void AfterDeserialization()
+            {
+                ResolveOffsetField();
+            }
+
+            private void ResolveOffsetField()
+            {
+                offsetField = stream.GetType().GetField("dataOffset", BindingFlags.NonPublic | BindingFlags.Instance);
+                if(offsetField == null)
+                {
+                    throw new ConstructionException("STM32DMA stream no longer has a dataOffset field - revisit this fix");
+                }
+            }
+
+            private readonly object stream;
+
+            [Transient]
+            private FieldInfo offsetField;
+        }
     }
 }

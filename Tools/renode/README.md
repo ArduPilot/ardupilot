@@ -255,7 +255,7 @@ also neutral: log entries cost at the producer regardless of level, and
 the logging thread busy-spins its dequeue loop on its own core (~29% of
 process samples, but not on the emulation thread's critical path).
 
-Those levers grew into a six-patch stack against renode v1.16.1,
+Those levers grew into a patch stack against renode v1.16.1,
 maintained on the renode `pr-arudpilot-am32-perf` performance branch
 shared by the ArduPilot and AM32 harnesses - install renode from that
 branch (its `perf_patches/apply.sh` applies the stack idempotently,
@@ -270,6 +270,7 @@ discipline). The stack:
 - 0004: bus access cache and the advance path
 - 0005: per-access locks and allocations fast paths
 - 0006: clock entries updated in place
+- 0007: bounded reverse history and faster instruction replay
 
 To build: clone renode at the performance branch, run
 `git submodule update --init --recursive`, `./perf_patches/apply.sh`,
@@ -282,7 +283,7 @@ with the gitignored `Tools/renode/renode` symlink.
 Measured result stack on the KakuteF4 boot benchmark: 33.6x realtime
 (stock portable, net8) -> 25.7x (platform trim) -> 8.55x (patches
 0001 only, net8) -> **5.1x realtime, boot-to-main-loop 44s wall**
-(full six-patch stack on net10.0). Simulation results stay
+(full performance stack on net10.0). Simulation results stay
 bit-identical across the stack.
 
 A documented dead end: replacing TIM4 with a model that computes CNT
@@ -359,6 +360,49 @@ or automated regression tests.
 Works against a stock Renode 1.16.1, but the performance patches in
 `patches/` are worth ~4x - see the performance notes for the build
 recipe.
+
+### GDB
+
+Build with debug information and pass `--gdb`:
+
+```sh
+./waf configure --board CubeBlack --debug
+./waf copter
+Tools/renode/run.py CubeBlack --gdb
+```
+
+Renode starts the machine when GDB attaches; no `start` command is needed in
+the monitor. Use GDB's normal interrupt, continue, stepping, and breakpoint
+commands. If no terminal emulator is available, `--no-xterm` prints the
+generated GDB attach script to run in another terminal.
+
+`--gdb` places a ChibiOS-aware GDB remote adapter in front of Renode's server.
+It reads the firmware's `ch_debug` memory signature instead of embedding a
+particular ChibiOS structure layout. Once `chSysInit()` has initialized the
+registry, `info threads`, `thread N`, and `thread apply all bt` show the guest
+threads and their saved Cortex-M contexts. Before that point GDB shows the
+single physical CPU. `--gdb-port` selects the public adapter port (3333 by
+default); `--renode-gdb-port` can override its private connection to Renode.
+
+Pass `--reverse-debug` together with `--gdb` to enable reverse execution.
+Renode then takes periodic snapshots, so GDB can use `reverse-step`,
+`reverse-stepi`, and `reverse-continue` (or `rs`, `rsi`, and `rc`).
+`--reverse-gdb-limit` limits retained history by guest instruction count and
+defaults to 1000; zero selects Renode's unlimited history. The bounded mode
+requires the ArduPilot Renode branch described in the performance section.
+It retains the snapshots inside the requested window plus one older checkpoint
+needed to replay its oldest instruction, so the effective range can exceed the
+limit by one snapshot interval.
+
+Reverse execution is single-core. `rs` steps back one source line, which can
+require multiple restore/replay cycles; use `rsi` to step back exactly one
+machine instruction. `run.py` gives GDB the original DWARF ELF
+but loads a generated `gdb-runtime.elf` with only DWARF removed into Renode,
+avoiding snapshots containing all debug metadata. Reverse-debug launches also
+use a separate 16 MiB FAT16 scratch SD image instead of serializing the normal
+256 MiB persistent card into every snapshot, and use a global error-only
+Renode log level because Renode 1.16.1 cannot restore snapshots containing
+per-peripheral log overrides.
 
 ### CAN
 

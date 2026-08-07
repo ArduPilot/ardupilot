@@ -34,15 +34,19 @@ GDB_LAUNCH = r'''#!/bin/bash
 # Waits for Renode's gdb stub to listen, then attaches.
 echo "waiting for the Renode gdb server on port $PORT ..."
 for i in $(seq 1 300); do
-    if (exec 3<>/dev/tcp/127.0.0.1/$PORT) 2>/dev/null; then
-        exec 3<&-
+    if [ -e "$READY" ]; then
         break
     fi
     sleep 0.1
 done
+if [ ! -e "$READY" ]; then
+    echo "timed out waiting for the ChibiOS GDB proxy" >&2
+    exit 1
+fi
 exec "$GDB" \
     -ex "set confirm off" \
     -ex "set pagination off" \
+    -ex "set remotetimeout 300" \
     -ex "target remote 127.0.0.1:$PORT" \
     "$ELF"
 '''
@@ -349,8 +353,8 @@ def make_erased(path, size):
     return path
 
 
-def make_fat_image(path, size):
-    '''Create a persistent FAT32 image without replacing existing state.'''
+def make_fat_image(path, size, fat_bits=32):
+    '''Create a persistent FAT image without replacing existing state.'''
     if path.exists():
         if path.stat().st_size != size:
             sys.exit('%s is %u bytes; expected %u (move it aside to reinitialize)' %
@@ -363,10 +367,10 @@ def make_fat_image(path, size):
     with open(path, 'wb') as f:
         f.truncate(size)
     try:
-        subprocess.check_call([mkfs, '-F', '32', '-n', 'ARDUPILOT', str(path)],
+        subprocess.check_call([mkfs, '-F', str(fat_bits), '-n', 'ARDUPILOT', str(path)],
                               stdout=subprocess.DEVNULL)
     except (OSError, subprocess.CalledProcessError):
-        sys.exit('failed to create FAT32 image %s' % path)
+        sys.exit('failed to create FAT%u image %s' % (fat_bits, path))
     return path
 
 
@@ -402,6 +406,27 @@ def has_debug_info(elf):
     except (OSError, subprocess.CalledProcessError):
         return None
     return '.debug_info' in out
+
+
+def make_runtime_elf(source, destination):
+    '''Copy an ELF without DWARF for Renode while GDB keeps the original.
+
+       Reverse execution serializes Renode's ELF metadata into snapshots. A
+       debug ArduPilot ELF carries tens of MiB of DWARF, so loading that copy
+       into Renode makes the first snapshot unnecessarily large and slow.
+       --strip-debug retains the normal symbol table used by Renode hooks.
+    '''
+    objcopy = shutil.which('arm-none-eabi-objcopy') or shutil.which('objcopy')
+    if objcopy is None:
+        sys.exit('objcopy is required for a GDB launch')
+    try:
+        subprocess.check_call(
+            [objcopy, '--strip-debug', str(source), str(destination)],
+            stderr=subprocess.STDOUT,
+        )
+    except (OSError, subprocess.CalledProcessError) as error:
+        sys.exit('failed to make Renode runtime ELF: %s' % error)
+    return destination
 
 
 def find_terminal():
@@ -468,7 +493,14 @@ def main():
     parser.add_argument('--gdb', action='store_true',
                         help='start a gdb server, halted at reset, and attach '
                              'gdb in a terminal window')
+    parser.add_argument('--reverse-debug', action='store_true',
+                        help='with --gdb, enable Renode reverse execution and snapshots')
+    parser.add_argument('--reverse-gdb-limit', type=int, default=1000,
+                        help='maximum reverse-debug history in guest instructions '
+                             '(default: 1000, 0: unlimited)')
     parser.add_argument('--gdb-port', type=int, default=3333)
+    parser.add_argument('--renode-gdb-port', type=int,
+                        help='internal Renode GDB port (default: --gdb-port + 1)')
     parser.add_argument('--gdb-bin', help='gdb to use (default: arm-none-eabi-gdb)')
     parser.add_argument('--no-xterm', action='store_true',
                         help='with --gdb, print the attach command instead of '
@@ -478,6 +510,11 @@ def main():
                         help='reproduce the stale BLHeli motor mapping and '
                              'observe the expected firmware behavior')
     args = parser.parse_args()
+
+    if args.reverse_debug and not args.gdb:
+        parser.error('--reverse-debug requires --gdb')
+    if args.reverse_gdb_limit < 0:
+        parser.error('--reverse-gdb-limit cannot be negative')
 
     if args.list or not args.board:
         print('\n'.join(boards))
@@ -505,7 +542,7 @@ def main():
     try:
         generated = gen_board.generate(
             root, args.board, outdir / 'generated', serial_index, args.uart_port,
-            state_dir)
+            state_dir, quiet_peripherals=not args.reverse_debug)
     except (OSError, ValueError) as error:
         sys.exit('failed to generate Renode board: %s' % error)
     for warning in generated['warnings']:
@@ -538,7 +575,16 @@ def main():
 
     pre_vars = []
     if generated['has_sdcard']:
-        img = make_fat_image(state_dir / 'sdcard.img', 256 * 1024 * 1024)
+        if args.reverse_debug:
+            # Renode serializes file-backed storage into every reverse snapshot.
+            # Keep the normal 256 MiB persistent card out of that path: a small
+            # FAT16 scratch filesystem is ample for a debugging session and
+            # reduces each CubeBlack snapshot by roughly 240 MiB.
+            img = make_fat_image(
+                outdir / 'reverse-sdcard-16m.img', 16 * 1024 * 1024,
+                fat_bits=16)
+        else:
+            img = make_fat_image(state_dir / 'sdcard.img', 256 * 1024 * 1024)
         pre_vars.append('$sdcard=@%s' % img)
 
     persistence_repl = None
@@ -548,9 +594,13 @@ def main():
 
     renode = find_renode(args.renode, root / 'Tools' / 'renode')
 
+    runtime_elf = elf
+    if args.reverse_debug:
+        runtime_elf = make_runtime_elf(elf, outdir / 'gdb-runtime.elf')
+
     monitor = ['-P', str(args.port)] if args.port else ['--console']
     commands = ['$repo=@%s' % root,
-                '$elf=@%s' % elf] + pre_vars + [
+                '$elf=@%s' % runtime_elf] + pre_vars + [
                 'include @%s' % generated['resc']] + initial_loads
     if args.can:
         for index, bus in enumerate(generated['can_buses']):
@@ -575,6 +625,7 @@ def main():
         commands += pr33933_commands(elf, args.reproduce_pr33933)
 
     gdb_proc = None
+    gdb_proxy_proc = None
     if args.gdb:
         dbg = has_debug_info(elf)
         if dbg is False:
@@ -590,12 +641,43 @@ def main():
         launcher = outdir / 'gdb.sh'
         launcher.write_text(GDB_LAUNCH.replace('$PORT', str(args.gdb_port))
                                       .replace('$GDB', gdb)
-                                      .replace('$ELF', str(elf)))
+                                      .replace('$ELF', str(elf))
+                                      .replace('$READY', str(outdir / 'gdb-proxy.ready')))
         launcher.chmod(0o755)
-        # halted at reset, so gdb gets control before any code runs:
-        # attach, set breakpoints, then type "start" in the monitor and
-        # drive execution from gdb
-        commands.append('machine StartGdbServer %d' % args.gdb_port)
+        renode_gdb_port = (args.renode_gdb_port if args.renode_gdb_port is not None
+                           else args.gdb_port + 1)
+        if not 1 <= args.gdb_port <= 65535:
+            sys.exit('--gdb-port must be between 1 and 65535')
+        if not 1 <= renode_gdb_port <= 65535:
+            sys.exit('--renode-gdb-port must be between 1 and 65535')
+        if renode_gdb_port == args.gdb_port:
+            sys.exit('--gdb-port and --renode-gdb-port must differ')
+
+        # The proxy turns ChibiOS registry entries into GDB threads and passes
+        # all other packets through to Renode. Renode starts the machine when
+        # the proxy establishes the upstream debugger connection.
+        if args.reverse_debug:
+            # Per-peripheral log levels trigger a Renode 1.16.1 logger bug
+            # when restoring snapshots. The generated script omits those
+            # overrides for GDB, so use one global level to keep output useful.
+            commands.append('logLevel 3')
+            reverse_command = 'reverseExecMode true'
+            if args.reverse_gdb_limit:
+                reverse_command += ' %u' % args.reverse_gdb_limit
+            commands.append(reverse_command)
+        commands.append('machine StartGdbServer %d' % renode_gdb_port)
+        proxy_ready = outdir / 'gdb-proxy.ready'
+        try:
+            proxy_ready.unlink()
+        except FileNotFoundError:
+            pass
+        gdb_proxy_proc = subprocess.Popen([
+            sys.executable, str(root / 'Tools' / 'renode' / 'chibios_gdb.py'),
+            '--listen', str(args.gdb_port),
+            '--upstream', str(renode_gdb_port),
+            '--elf', str(elf),
+            '--ready-file', str(proxy_ready),
+        ])
         term = None if args.no_xterm else find_terminal()
         if term is None:
             print('run this in another window to attach:\n    %s' % launcher)
@@ -604,8 +686,13 @@ def main():
                 [term, '-title', 'gdb %s' % args.board, '-e', str(launcher)])
             print('gdb attaching in %s; release builds inline heavily, so '
                   'prefer a --debug firmware' % os.path.basename(term))
-        print('machine is halted at reset: set breakpoints in gdb, then '
-              'type "start" in the monitor')
+        features = 'ChibiOS thread debugging'
+        if args.reverse_debug:
+            features += ' and reverse debugging (%s history)' % (
+                'unlimited' if args.reverse_gdb_limit == 0 else
+                '%u instructions' % args.reverse_gdb_limit
+            )
+        print('%s enabled; execution starts under GDB control' % features)
     else:
         commands.append('start')
     commands += args.extra
@@ -635,9 +722,17 @@ def main():
     if args.reproduce_pr33933:
         print('PR33933: expecting %s behavior' % args.reproduce_pr33933)
     cmd = [renode, '--disable-xwt'] + monitor + ['-e', '; '.join(commands)]
-    ret = subprocess.run(cmd, env=env).returncode
-    if gdb_proc is not None:
-        gdb_proc.terminate()
+    try:
+        ret = subprocess.run(cmd, env=env).returncode
+    finally:
+        if gdb_proc is not None:
+            gdb_proc.terminate()
+        if gdb_proxy_proc is not None:
+            gdb_proxy_proc.terminate()
+            try:
+                (outdir / 'gdb-proxy.ready').unlink()
+            except FileNotFoundError:
+                pass
     return ret
 
 

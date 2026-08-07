@@ -1027,7 +1027,8 @@ def _serial_device(app, family, serial_index):
 
 
 def _script(root, board, app, bootloader, platform, serial_index, uart_port,
-            iomcu_uart, can_buses, has_ethernet, warnings):
+            iomcu_uart, can_buses, has_ethernet, warnings,
+            quiet_peripherals=True):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     boot_kb = bootloader.get_config(
@@ -1117,20 +1118,21 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
                              '"if offset == 0x0C: value |= 0x400000"' % spi.lower())
         lines.append('')
 
-    noisy = sorted({name.lower() for name in app.spi_list
-                    if name in family['spis']} |
-                   {name.lower() for name in app.get_config(
-                       'I2C_ORDER', required=False, aslist=True) or []
-                    if name in family['i2cs']} |
-                   {name.lower() for name in app.get_config(
-                       'SERIAL_ORDER', required=False, aslist=True) or []
-                    if name in family['uarts']} |
-                   {'dma1', 'dma2', 'nvic'})
-    lines += ['logLevel 3 sysbus.%s' % name for name in noisy]
-    if has_sd:
-        lines.append('logLevel 3 sysbus.%s' % family['sd_buses'][sd_bus])
-    if has_ethernet:
-        lines.append('logLevel 3 sysbus.ethernet')
+    if quiet_peripherals:
+        noisy = sorted({name.lower() for name in app.spi_list
+                        if name in family['spis']} |
+                       {name.lower() for name in app.get_config(
+                           'I2C_ORDER', required=False, aslist=True) or []
+                        if name in family['i2cs']} |
+                       {name.lower() for name in app.get_config(
+                           'SERIAL_ORDER', required=False, aslist=True) or []
+                        if name in family['uarts']} |
+                       {'dma1', 'dma2', 'nvic'})
+        lines += ['logLevel 3 sysbus.%s' % name for name in noisy]
+        if has_sd:
+            lines.append('logLevel 3 sysbus.%s' % family['sd_buses'][sd_bus])
+        if has_ethernet:
+            lines.append('logLevel 3 sysbus.ethernet')
     lines.append('')
     return '\n'.join(lines), {
         'app_base': app_base,
@@ -1147,7 +1149,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
 
 
 def generate(root, board, outdir, serial_index=None, uart_port=5762,
-             state_dir=None):
+             state_dir=None, quiet_peripherals=True):
     '''Generate the board REPL/RESC and return paths plus run metadata.'''
     root = root.resolve()
     outdir = outdir.resolve()
@@ -1172,7 +1174,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     repl.write_text(platform)
     script, metadata = _script(
         root, board, app, bootloader, repl, serial_index, uart_port,
-        iomcu_uart, can_buses, has_ethernet, warnings)
+        iomcu_uart, can_buses, has_ethernet, warnings, quiet_peripherals)
     resc.write_text(script)
     metadata.update({
         'repl': repl,
