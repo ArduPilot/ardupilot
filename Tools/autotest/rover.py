@@ -7227,7 +7227,11 @@ return update()
         # snapshot the rover we are about to overwrite; context_pop()
         # restores it (stopping SITL around the restore if that is the
         # binary being run):
-        self.context_backup_file('build/sitl/bin/ardurover')
+        # absolute: this test can be running from an instance
+        # directory (the parallel runner's, or -I's), where a path
+        # relative to the top of the tree finds nothing:
+        #     [Errno 2] No such file or directory: 'build/sitl/bin/ardurover'
+        self.context_backup_file(util.reltopdir('build/sitl/bin/ardurover'))
 
         # stop the SITL for the duration of the build.  The build blocks
         # this process for a long time, and a SITL left running with
