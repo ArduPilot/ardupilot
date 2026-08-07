@@ -6719,7 +6719,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         here = original_loc
         target_loc = self.offset_location_ne(here, 2000, 0)
         self.send_guided_mission_item(target_loc)
-        self.wait_distance_to_home(20, 100)
+        # wait_distance_to_home()'s default budget is ten seconds, and
+        # getting clear of home from a standing start takes about six of
+        # them here - not enough margin, and CI has been caught short:
+        #     Failed to attain Distance to home want 20.0, reached 14.362229127113773
+        # Waiting longer costs nothing when the vehicle does get going.
+        self.wait_distance_to_home(20, 100, timeout=60)
 
         speeds = 3, 7, 12, 4
 
