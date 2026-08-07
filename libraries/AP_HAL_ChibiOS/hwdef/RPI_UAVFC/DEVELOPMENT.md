@@ -32,7 +32,7 @@ starvation on core0, not the card. See the SD section below - the previous
 | IMU | Working; fitted part is ICM42688P, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
 | microSD logging | core0-CPU-bound, 18-91 KB/s; one-exchange write built |
-| `spi_fail` prearm | Boot-time, blocks arming; possibly fixed - see below |
+| `spi_fail` prearm | Fixed: SD init was leaving the SPI1 bus stopped - see below |
 | SPI teardown | Was cycling the peripheral per transaction; 3.8% recovered |
 | Parameter storage | Working; needs both the sector-bound and write-verify fixes |
 | RC input | CRSF/ELRS on SERIAL3, 333 Hz link, 199 Hz telemetry |
@@ -88,11 +88,26 @@ branch of `mjs1441/betaflight` to model any such work on.
 To confirm which part is fitted, read `INS_ACC1_ID` and take the top byte
 (divide by 65536): `0x34` (52) is ICM42688, `0x3B` (59) is ICM45686.
 
-### ICM-56686 notes for whoever writes the driver
+### ICM-56686: driver written, datasheet checked
 
-Deferred until a datasheet is available. Everything below is second-hand, read
-off the Betaflight driver rather than a TDK document, so treat the datasheet as
-authoritative where it disagrees.
+Supported since `AP_InertialSensor: add ICM-56686 support`. DS-000563 rev 1.0
+confirmed almost all of the Betaflight-derived notes below, with one exception
+recorded in place. Two things the notes did not have:
+
+- the difference from the ICM-45686 is a uniform **+4 shift** of the register
+  block from `PWR_MGMT0` upwards. `WHO_AM_I` at 0x72 and the IREG window at
+  0x7C are common to both, so the driver maps addresses at runtime through
+  `reg456()` rather than duplicating the map.
+- device ID is **0x08**, against 0xE9 for the ICM-45686, at the same address.
+
+The FIFO is structurally identical - same header bits, same 20 byte high
+resolution packet - so ArduPilot's existing parser and accumulator are reused
+unchanged. `SREG_CTRL` is the one register the 456xy path does not already
+write: it resets to 0x0A, meaning 20 bit sensor registers and big endian, and
+the endianness applies to FIFO data too, so it must be cleared before the first
+sample is read.
+
+The notes below are kept for the register-level detail.
 
 | | ICM-45686 (ArduPilot) | ICM-56686 (Betaflight) |
 |-------------------|-----------------------|------------------------|
@@ -108,10 +123,11 @@ the ICM-56686. The maps are not interchangeable.
 
 Two traps worth knowing before writing any of it:
 
-- Gyro full-scale encoding differs. On the ICM-56686, `GYRO_FS_SEL` `0x0 << 4`
-  selects 4000 dps and `0x1 << 4` selects 2000 dps. ArduPilot's ICM-456xy setup
-  writes `0x0 << 4` intending 2000 dps, so carrying that across unchanged would
-  give a silent 2x gyro scale error.
+- Retracted: this said ArduPilot's ICM-456xy setup writes `0x0 << 4` intending
+  2000 dps and would give a silent 2x gyro scale error. It does not. The
+  comment at that write reads "4000dps range" and the driver sets
+  `GYRO_SCALE_4000DPS`, so both parts agree that `FS_SEL` 0 is 4000 dps.
+  DS-000563 rev 1.0 confirms the encoding. There is no trap here.
 - The chip powers up in 20-bit big-endian sample format. Betaflight explicitly
   switches it to 16-bit little-endian via `SREG_CTRL` at `IPREG_TOP1_BASE +
   0x60` (`SIFS_20BITS_EN` bit 3, `DATA_ENDIAN_SEL_BIG` bit 1).
@@ -1370,51 +1386,72 @@ file previously suspected it was firing at transaction rate. It is not. Measured
 zero over the entire session, because I2C and UART always hold channels so the
 mask never reaches zero.
 
-## `spi_fail` at boot blocks the prearm
+## `spi_fail`: the microSD bus was being left switched off (fixed)
 
-`AP_InternalError` bit 14, 0x4000, is raised in exactly one place -
-`SPIDevice.cpp:260`, when `osalThreadSuspendTimeoutS()` returns `MSG_TIMEOUT`
-waiting for an SPI transfer, which is 20 ms plus 32 us per byte, and only when
-`hal.scheduler->in_expected_delay()` is false. The flag is sticky, so one event
-blocks arming for the rest of that boot with `Internal errors 0x4000 l:260`.
+`AP_InternalError` bit 14, 0x4000, is raised in exactly one place: the
+`MSG_TIMEOUT` path in `SPIDevice::do_transfer()`, when an SPI transfer does not
+complete within 20 ms plus 32 us per byte and the scheduler is not in an
+expected delay. The flag is sticky, so a single event blocks arming for the
+rest of that boot with `Internal errors 0x4000 l:<line>`.
 
-It fires once or twice per boot and always early. Read live over SWD across two
-boots: count 1 and count 2, both already set before steady-state logging began,
-and neither incremented across a minute of continuous SD writing at about 9000
-SPI transfers a second. That matches the symptom - some boots arm normally,
-some do not, and a reboot changes the answer.
+Cause: `sdcard_init()` stopped SPID1 by calling ChibiOS `spiStop()` directly,
+to force the following `mmcConnect()` to restart it from core0 so its DMA
+interrupts landed there. The premise was wrong. `hal_mmc_spi.c` redirects
+`spiStart` to `spiStartHook`, which only sets the bus speed, so nothing ever
+restarted the peripheral. And because the stop bypassed
+`SPIBus::stop_peripheral()`, `spi_started` stayed true, so `start_peripheral()`
+early-returned from then on.
 
-Card init is the obvious suspect, since it runs at 400 kHz with power-up delays
-and a transfer overrunning 20 ms there is plausible. Not confirmed. Confirm it
-before chasing anything else: a timeout during init is a different problem from
-one in flight, and only the second would matter to a flying vehicle.
+The bus was therefore left with its DMA channels freed and the peripheral in
+reset while the software believed it was running. Every transfer was armed
+against nothing and timed out. The filesystem layer retries on error and each
+retry ran the same code, so one failure became a burst: measured at exactly 60
+timeouts per `sdcard_init()`, tracking it one for one.
 
-It is not the single-exchange write path. The count does not move while that
-path is running, and the fault predates it.
+Fixed by stopping the bus through the SPIBus, which keeps the flag and the
+hardware in step so the next `acquire_bus()` starts the peripheral again.
+Verified with per-bus counters: SPI1 timeouts went from 60 per reinit to zero
+across a minute in which `sdcard_init` still ran three times, and
+`internal_errors` stayed 0.
 
-**Possibly fixed, unconfirmed.** It was never seen on
-`rp2350-v5-dual-core-baseline-rebase`, and the only functional difference in the
-SPI path between that branch and this one is `HAL_CORE_SPI1` moving from core1
-to core0. That pointed at the per-transaction peripheral teardown above, which
-frees and reallocates DMA channels and rebinds their completion IRQ to whichever
-core calls `spi_lld_start()`. Removing the redundant cycles cut SPI1's
-init-time count from 93 to 2, and the first boot afterwards came up with
-`internal_errors` 0.
+Retracted: this file previously said the fault fired "once or twice per boot,
+always early", and that card init at 400 kHz was the likely cause. Both wrong.
+It is not boot-related at all - it scales with SD activity, because it is the
+retry path that triggers it. The earlier reading came from watching an idle
+board; with `LOG_DISARMED` 1 it runs continuously and the rate is far higher.
 
-One clean boot is not proof for a fault that fired once or twice on every
-previous boot, but it is the right kind of evidence and the mechanism fits: a
-lost DMA completion is exactly a 20 ms `osalThreadSuspendTimeoutS` timeout.
-Check `internal_errors` across five or six boots before believing it.
+Also retracted: the suspicion that `HAL_CORE_SPI1` moving from core1 to core0
+was implicated because it was the only SPI-path difference from
+`rp2350-v5-dual-core-baseline-rebase`. It was a real difference but not this
+fault. Keep `HAL_CORE_SPI1` 0.
 
-`HAL_CORE_SPI1` should stay 0. It only sets the SPI1 bus thread's core - the
-writes come from `log_io`, which follows `HAL_CORE_IO` and is on core0 either
-way - and SPI1 now measures zero teardowns in steady state, so there is nothing
-to gain from putting SD work on the rate core.
+### What the diagnosis cost, and what actually worked
 
-To read it without a GCS, `hal.util->persistent_data` holds the same values
-`AP_InternalError::error()` writes. The struct starts at `utilInstance + 4`,
-with `internal_errors` at +36 inside it, the count at +40 and the line at +42.
-Take `utilInstance` from the ELF each build - it moves.
+Two wrong fixes went in first, both plausible and both useless against this:
+
+- a bus-semaphore interlock around `sdcard_init()`, on the theory that a reinit
+  was racing an in-flight transfer. There is no race; the bus is simply left
+  off. The interlock is still there and is defensible on its own terms, since
+  `sdcard_init()` does reconfigure a shared bus, but it fixed nothing.
+- propagating DMA allocation failure out of `spi_lld_start()`, on the theory
+  that channels were exhausted. `spi_start_fail_count` reads zero, so they
+  never were. That change is still worth having: the allocations are guarded
+  only by `osalDbgAssert`, which flight builds compile out, so a real failure
+  would fall through and dereference a null channel. Same class of bug as the
+  UART RX one recorded above.
+
+What settled it was a one-shot snapshot of the hardware taken at the first
+timeout, recording the driver state, both DMA channel pointers, `SSPSR`,
+`SSPCR1`, `SSPDMACR`, `cs_forced`, the calling thread and - the field that gave
+it away - the SPIBus `spi_started` flag. `spi_started` true with null DMA
+channels and `SSPCR1` zero is only reachable if something stopped the bus
+without going through `stop_peripheral()`, which points straight at the caller.
+That contradiction was visible in the first snapshot and it still took two
+wrong turns to act on it. Read the state, not the theory.
+
+Per-bus counters mattered too: the failing bus was SPI1 throughout, and SPI0
+never recorded a single timeout. An inference from teardown rates had pointed
+at SPI0 and was simply wrong.
 
 ## Logging setup for tuning work
 
