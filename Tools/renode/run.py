@@ -322,6 +322,10 @@ def storage_region(hwdef_h):
     text = open(hwdef_h).read() if os.path.exists(hwdef_h) else ''
     if 'STM32H7' in text:
         sectors = [128 * 1024] * 16          # uniform on the H743
+    elif 'STM32F7' in text:
+        # F765/F767 flight-controller hwdefs use the 2 MiB dual-bank layout.
+        bank = [16 * 1024] * 4 + [64 * 1024] + [128 * 1024] * 7
+        sectors = bank + bank
     elif 'STM32F4' in text:
         sectors = [16 * 1024] * 4 + [64 * 1024] + [128 * 1024] * 7
     else:
@@ -437,7 +441,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('board', nargs='?',
-                        help='STM32F405/STM32H743 ChibiOS board name')
+                        help='supported ChibiOS flight-controller board name')
     parser.add_argument('--list', action='store_true', help='list available boards')
     parser.add_argument('--vehicle', default='arducopter',
                         help='vehicle firmware to run (default: arducopter)')

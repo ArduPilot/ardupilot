@@ -27,8 +27,10 @@ FAMILIES = {
         'spis': {'SPI1', 'SPI2', 'SPI3'},
         'i2cs': {'I2C1', 'I2C2', 'I2C3'},
         'uarts': {'USART1', 'USART2', 'USART3', 'UART4', 'UART5', 'USART6'},
-        'sd_buses': {},
-        'timers': {2, 3, 4, 5, 8},
+        'sd_buses': {'SDIO': 'sdmmc'},
+        'sd_fifo': {'SDIO': 0x40012C80},
+        'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
+        'timers': {1, 2, 3, 4, 5, 8},
         'uart_irq': {
             'USART1': 37, 'USART2': 38, 'USART3': 39,
             'UART4': 52, 'UART5': 53, 'USART6': 71,
@@ -36,8 +38,89 @@ FAMILIES = {
         'spi_irq': {'SPI1': 35, 'SPI2': 36, 'SPI3': 51},
         'i2c_irq': {'I2C1': (31, 32), 'I2C2': (33, 34), 'I2C3': (72, 73)},
     },
+    'STM32F427xx': {
+        'name': 'f427',
+        'base': 'stm32f427_base.repl',
+        'script': 'ardupilot_f405.resc',
+        'spis': {'SPI1', 'SPI2', 'SPI3', 'SPI4', 'SPI5', 'SPI6'},
+        'i2cs': {'I2C1', 'I2C2', 'I2C3'},
+        'uarts': {
+            'USART1', 'USART2', 'USART3', 'UART4', 'UART5',
+            'USART6', 'UART7', 'UART8',
+        },
+        'sd_buses': {'SDIO': 'sdmmc'},
+        'sd_fifo': {'SDIO': 0x40012C80},
+        'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
+        'timers': {1, 2, 3, 4, 5, 8, 12},
+        'uart_irq': {
+            'USART1': 37, 'USART2': 38, 'USART3': 39,
+            'UART4': 52, 'UART5': 53, 'USART6': 71,
+            'UART7': 82, 'UART8': 83,
+        },
+        'spi_irq': {
+            'SPI1': 35, 'SPI2': 36, 'SPI3': 51,
+            'SPI4': 84, 'SPI5': 85, 'SPI6': 86,
+        },
+        'i2c_irq': {'I2C1': (31, 32), 'I2C2': (33, 34), 'I2C3': (72, 73)},
+    },
+    'STM32F767xx': {
+        'name': 'f767',
+        'base': 'stm32f767_base.repl',
+        'script': 'ardupilot_f767.resc',
+        'spis': {'SPI1', 'SPI2', 'SPI3', 'SPI4', 'SPI5', 'SPI6'},
+        'i2cs': {'I2C1', 'I2C2', 'I2C3', 'I2C4'},
+        'uarts': {
+            'USART1', 'USART2', 'USART3', 'UART4', 'UART5',
+            'USART6', 'UART7', 'UART8',
+        },
+        'sd_buses': {
+            'SDMMC1': 'sdmmc', 'SDMMC2': 'sdmmc2', 'SDIO': 'sdmmc',
+        },
+        'sd_fifo': {
+            'SDMMC1': 0x40012C80, 'SDMMC2': 0x40011C80,
+            'SDIO': 0x40012C80,
+        },
+        'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
+        'timers': {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+        'uart_irq': {
+            'USART1': 37, 'USART2': 38, 'USART3': 39,
+            'UART4': 52, 'UART5': 53, 'USART6': 71,
+            'UART7': 82, 'UART8': 83,
+        },
+        'spi_irq': {
+            'SPI1': 35, 'SPI2': 36, 'SPI3': 51,
+            'SPI4': 84, 'SPI5': 85, 'SPI6': 86,
+        },
+        'i2c_irq': {
+            'I2C1': (31, 32), 'I2C2': (33, 34),
+            'I2C3': (72, 73), 'I2C4': (95, 96),
+        },
+    },
     'STM32H743xx': {
         'name': 'h743',
+        'base': 'stm32h743_base.repl',
+        'script': 'ardupilot_h743.resc',
+        'spis': {'SPI1', 'SPI2', 'SPI3', 'SPI4', 'SPI5', 'SPI6'},
+        'i2cs': {'I2C1', 'I2C2', 'I2C3', 'I2C4'},
+        'uarts': {
+            'USART1', 'USART2', 'USART3', 'UART4', 'UART5',
+            'USART6', 'UART7', 'UART8', 'LPUART1',
+        },
+        'sd_buses': {'SDMMC1': 'sdmmc', 'SDMMC2': 'sdmmc2'},
+        'can_buses': {'CAN1': 'fdcan1', 'CAN2': 'fdcan2'},
+        'timers': {1, 2, 3, 4, 5, 8, 12, 15},
+        'uart_irq': {
+            'USART1': 26, 'USART2': 27, 'USART3': 28, 'USART6': 29,
+            'UART4': 30, 'UART5': 31, 'UART7': 32, 'UART8': 33,
+            'LPUART1': 64,
+        },
+        'spi_irq': {
+            'SPI1': 35, 'SPI2': 36, 'SPI3': 51,
+            'SPI4': 84, 'SPI5': 85, 'SPI6': 86,
+        },
+    },
+    'STM32H757xx': {
+        'name': 'h757',
         'base': 'stm32h743_base.repl',
         'script': 'ardupilot_h743.resc',
         'spis': {'SPI1', 'SPI2', 'SPI3', 'SPI4', 'SPI5', 'SPI6'},
@@ -63,9 +146,18 @@ FAMILIES = {
 
 
 IMU_MODELS = {
+    'ADIS1647x': 'Sensors.AP_ADIS1647x',
+    'ADIS16607': 'Sensors.AP_ADIS16607',
+    'BMI055': 'Sensors.AP_RegisterIMU',
+    'BMI088': 'Sensors.AP_RegisterIMU',
+    'BMI160': 'Sensors.AP_RegisterIMU',
+    'BMI270': 'Sensors.AP_RegisterIMU',
     'Invensense': 'Sensors.AP_ICM20689',
     'Invensensev2': 'Sensors.AP_InvensenseV2',
     'Invensensev3': 'Sensors.AP_ICM42688',
+    'LSM9DS0': 'Sensors.AP_RegisterIMU',
+    'LSM6DSV': 'Sensors.AP_RegisterIMU',
+    'SCHA63T': 'Sensors.AP_SCHA63T',
 }
 
 WHOAMI_VALUES = {
@@ -79,11 +171,26 @@ WHOAMI_VALUES = {
 }
 
 BARO_MODELS = {
+    'BMP085': 'Sensors.AP_BMP085',
     'BMP280': 'Sensors.AP_BMP280',
     'BMP388': 'Sensors.AP_BMP388',
+    'BMP581': 'Sensors.AP_BMP581',
+    'DPS280': 'Sensors.AP_DPS310',
     'DPS310': 'Sensors.AP_DPS310',
+    'ICP201XX': 'Sensors.AP_ICP201XX',
+    'LPS2XH': 'Sensors.AP_LPS2XH',
     'MS5611': 'Sensors.AP_MS5611',
     'SPL06': 'Sensors.AP_DPS310',
+}
+
+SPI_BARO_IDENTITIES = {
+    'BMP280': (0x58, 0xD0),
+    'BMP388': (0x50, 0x00),
+    'BMP581': (0x50, 0x01),
+    'DPS280': (0x10, 0x0D),
+    'DPS310': (0x10, 0x0D),
+    'LPS2XH': (0xB1, 0x0F),
+    'SPL06': (0x10, 0x0D),
 }
 
 
@@ -120,6 +227,33 @@ def _resolved_mcu(path, seen=None):
     return mcu
 
 
+def _resolved_env(path, name, seen=None):
+    '''Find an inherited hwdef env value while preserving include order.'''
+    if seen is None:
+        seen = set()
+    path = path.resolve()
+    if path in seen:
+        return None
+    seen.add(path)
+    value = None
+    try:
+        lines = path.read_text().splitlines()
+    except OSError:
+        return None
+    for raw in lines:
+        line = raw.split('#', 1)[0].strip()
+        if not line:
+            continue
+        fields = shlex.split(line)
+        if fields[0] == 'include' and len(fields) == 2:
+            included = _resolved_env(path.parent / fields[1], name, seen)
+            if included is not None:
+                value = included
+        elif fields[0] == 'env' and len(fields) >= 3 and fields[1] == name:
+            value = fields[2]
+    return value
+
+
 def supported_boards(root):
     '''Board name -> MCU for boards backed by both application and BL hwdefs.'''
     found = {}
@@ -127,6 +261,8 @@ def supported_boards(root):
         app = board_dir / 'hwdef.dat'
         bootloader = board_dir / 'hwdef-bl.dat'
         if not app.is_file() or not bootloader.is_file():
+            continue
+        if _resolved_env(app, 'AP_PERIPH') == '1':
             continue
         mcu = _resolved_mcu(app)
         if mcu in FAMILIES:
@@ -242,6 +378,7 @@ def _imu_whoami(device_name, defines):
         'icm20649': 0xE1,
         'icm42670': 0x67,
         'icm42688': 0x47,
+        'icm45686': 0xE9,
         'mpu6000': 0x68,
         'mpu9250': 0x71,
     }
@@ -249,6 +386,40 @@ def _imu_whoami(device_name, defines):
         if part in device_name.lower():
             return value
     return None
+
+
+def _imu_children(imu, resolved_devices, defines, name):
+    '''Return model/device/property tuples for one resolved IMU declaration.'''
+    driver = imu[0]
+    model = IMU_MODELS[driver]
+    if driver == 'SCHA63T':
+        return [('%sPart%d' % (name, index), model, bus, cs, [])
+                for index, (_, bus, cs) in enumerate(resolved_devices)]
+    if driver in ('BMI055', 'BMI088', 'LSM9DS0'):
+        children = []
+        for index, (device_name, bus, cs) in enumerate(resolved_devices):
+            is_accel = index == 0 or device_name.lower().endswith(('_a', 'accel'))
+            if driver == 'LSM9DS0':
+                whoami = 0x49 if index else 0xD4
+            else:
+                whoami = (0xFA if driver == 'BMI055' else 0x1E) if is_accel else 0x0F
+            children.append((
+                '%s%s' % (name, 'Accel' if is_accel else 'Gyro'),
+                model, bus, cs, ['    whoAmI: 0x%02X' % whoami]))
+        return children
+
+    device_name, bus, cs = resolved_devices[0]
+    properties = []
+    fixed_whoami = {
+        'BMI160': 0xD1,
+        'BMI270': 0x24,
+        'LSM6DSV': 0x70,
+    }.get(driver)
+    whoami = fixed_whoami if fixed_whoami is not None else _imu_whoami(
+        device_name, defines)
+    if whoami is not None:
+        properties.append('    whoAmI: 0x%02X' % whoami)
+    return [(name, model, bus, cs, properties)]
 
 
 def _dmamux_requests(root):
@@ -268,7 +439,17 @@ def _safe_name(value):
 
 def _spi_device_name(expression):
     match = re.search(r'get_device\("([^"\n]+)"\)', expression)
+    if match:
+        return match.group(1)
+    match = re.fullmatch(r'SPI:([^\s]+)', expression)
     return match.group(1) if match else None
+
+
+def _i2c_device(expression):
+    match = re.fullmatch(r'GET_I2C_DEVICE\((\d+),\s*(0x[0-9A-Fa-f]+|\d+)\)', expression)
+    if match is None:
+        return None
+    return int(match.group(1)), int(match.group(2), 0)
 
 
 def _sensor_devices(config, family, defines, fram_path, warnings):
@@ -286,9 +467,43 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
         device_names = []
         for argument in imu[1:]:
             device_name = _spi_device_name(argument)
+            if device_name not in spi_devices and device_name is not None:
+                aliases = [device_name.removesuffix('_cs')]
+                device_name = next((alias for alias in aliases if alias in spi_devices),
+                                   device_name)
             if device_name in spi_devices and device_name not in device_names:
                 device_names.append(device_name)
         if not device_names:
+            i2c_devices = [device for device in map(_i2c_device, imu[1:])
+                           if device is not None]
+            if i2c_devices and imu[0] in ('BMI055', 'BMI088', 'Invensense'):
+                i2c_order = config.get_config(
+                    'I2C_ORDER', required=False, aslist=True) or []
+                resolved_i2c = []
+                for device_index, (bus_index, address) in enumerate(i2c_devices):
+                    if not 0 <= bus_index < len(i2c_order):
+                        continue
+                    bus = i2c_order[bus_index]
+                    if bus not in family['i2cs']:
+                        continue
+                    location = (bus, address)
+                    if location in imu_locations:
+                        continue
+                    imu_locations.add(location)
+                    whoami = 0x0F
+                    if device_index == 0:
+                        whoami = 0xFA if imu[0] == 'BMI055' else 0x1E
+                    if imu[0] == 'Invensense':
+                        whoami = 0x68
+                    resolved_i2c.append((bus, address, whoami))
+                for device_index, (bus, address, whoami) in enumerate(resolved_i2c):
+                    declarations += [
+                        'imu%dI2C%d: Sensors.AP_I2CRegisterIMU @ %s 0x%02X' %
+                        (index, device_index, bus.lower(), address),
+                        '    whoAmI: 0x%02X' % whoami,
+                        '',
+                    ]
+                continue
             warnings.append('cannot resolve IMU SPI device: %s' % ' '.join(imu))
             continue
         locations = []
@@ -313,14 +528,8 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
         if any(location in imu_locations for location in locations):
             continue
         imu_locations.update(locations)
-        device_name, bus, cs = resolved_devices[0]
         name = 'imu%d' % index
-        properties = []
-        whoami = _imu_whoami(device_name, defines)
-        if whoami is not None:
-            properties.append('    whoAmI: 0x%02X' % whoami)
-        spi_children.append(
-            (name, IMU_MODELS[imu[0]], bus, cs, properties))
+        spi_children += _imu_children(imu, resolved_devices, defines, name)
 
     i2c_order = config.get_config('I2C_ORDER', required=False, aslist=True) or []
     baro_locations = set()
@@ -368,7 +577,15 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
             continue
         name = 'baro%d' % index
         if cs is not None:
-            spi_children.append((name, model, bus, cs, []))
+            properties = []
+            identity = SPI_BARO_IDENTITIES.get(baro.driver)
+            if identity is not None:
+                model = 'Sensors.AP_SPIBarometer'
+                properties = [
+                    '    chipId: 0x%02X' % identity[0],
+                    '    chipIdRegister: 0x%02X' % identity[1],
+                ]
+            spi_children.append((name, model, bus, cs, properties))
         else:
             declarations += [i2c_declaration % model, '']
 
@@ -412,7 +629,7 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
     return declarations, chip_selects, has_fram
 
 
-def _iomcu_device(root, app, family, defines, warnings):
+def _iomcu_device(root, app, family, defines, address, warnings):
     uart = app.get_config('IOMCU_UART', required=False, default=None)
     if uart is None:
         return [], None
@@ -435,7 +652,7 @@ def _iomcu_device(root, app, family, defines, warnings):
         warnings.append('cannot configure IOMCU firmware CRC: %s' % error)
         return [], None
     return [
-        'iomcu: Miscellaneous.AP_IOMCU @ %s' % uart.lower(),
+        'iomcu: Miscellaneous.AP_IOMCU @ sysbus 0x%08X' % address,
         '    firmwareCrc: 0x%08X' % firmware_crc,
         '',
     ], uart
@@ -448,7 +665,7 @@ def _gpio_routes(family_name, chip_selects):
         lines += ['gpioPort%s:' % port]
         for pin in range(16):
             targets = list(chip_selects.get((port, pin), []))
-            if family_name == 'f405':
+            if family_name in ('f405', 'f427'):
                 targets.append('exti@%d' % pin)
             else:
                 targets.append('syscfg#%d@%d' % (ord(port) - ord('A'), pin))
@@ -460,6 +677,26 @@ def _gpio_routes(family_name, chip_selects):
 def _f405_dma_wiring(defines, family, alloc, warnings):
     lines = []
     rx_uarts = []
+
+    for bus, peripheral in family['sd_buses'].items():
+        value = defines.get('STM32_SDC_%s_DMA_STREAM' % bus)
+        stream = _dma_stream(value) if value else None
+        if stream is None:
+            continue
+        dma, channel = stream
+        lines += [
+            '%s:' % peripheral,
+            '    DMAReceive -> dma%d@%d' % (dma, channel),
+            '',
+            '%sDmaPump: Miscellaneous.AP_STM32F_SDMMC_DmaPump @ sysbus 0x%08X' %
+            (peripheral, alloc()),
+            '    sdmmc: %s' % peripheral,
+            '    dma: dma%d' % dma,
+            '    stream: %d' % channel,
+            '    fifoAddress: 0x%08X' % family['sd_fifo'][bus],
+            '',
+        ]
+
     for peripheral, irq in family['uart_irq'].items():
         value = defines.get('STM32_UART_%s_RX_DMA_STREAM' % peripheral)
         stream = _dma_stream(value) if value else None
@@ -508,6 +745,88 @@ def _f405_dma_wiring(defines, family, alloc, warnings):
             '    dma: dma%d' % dma,
             '    stream: %d' % channel,
             '    uart: %s' % peripheral.lower(),
+            '',
+        ]
+
+    for name, value in sorted(defines.items()):
+        match = re.fullmatch(r'STM32_TIM_TIM(\d+)_UP_DMA_STREAM', name)
+        stream = _dma_stream(value)
+        if match is None or stream is None:
+            continue
+        timer = int(match.group(1))
+        if timer not in family['timers']:
+            warnings.append('timer%d update DMA is not in the current MCU base' % timer)
+            continue
+        dma, channel = stream
+        lines += [
+            'timer%dUpdateDMA: Miscellaneous.AP_STM32_Timer_UpdateDMA @ sysbus 0x%08X' %
+            (timer, alloc()),
+            '    timer: timer%d' % timer,
+            '    UpdateDMA -> dma%d@%d' % (dma, channel),
+            '',
+        ]
+    return lines
+
+
+def _f767_dma_wiring(defines, family, alloc, warnings):
+    lines = []
+
+    for bus, peripheral in family['sd_buses'].items():
+        value = defines.get('STM32_SDC_%s_DMA_STREAM' % bus)
+        stream = _dma_stream(value) if value else None
+        if stream is None:
+            continue
+        dma, channel = stream
+        lines += [
+            '%s:' % peripheral,
+            '    DMAReceive -> dma%d@%d' % (dma, channel),
+            '',
+            '%sDmaPump: Miscellaneous.AP_STM32F_SDMMC_DmaPump @ sysbus 0x%08X' %
+            (peripheral, alloc()),
+            '    sdmmc: %s' % peripheral,
+            '    dma: dma%d' % dma,
+            '    stream: %d' % channel,
+            '    fifoAddress: 0x%08X' % family['sd_fifo'][bus],
+            '',
+        ]
+
+    for peripheral in family['uart_irq']:
+        value = defines.get('STM32_UART_%s_RX_DMA_STREAM' % peripheral)
+        stream = _dma_stream(value) if value else None
+        if stream is None:
+            continue
+        dma, channel = stream
+        lines += [
+            '%s:' % peripheral.lower(),
+            '    ReceiveDmaRequest -> dma%d@%d' % (dma, channel),
+            '',
+            '%sIdle: Miscellaneous.AP_STM32F7_USART_Idle @ sysbus 0x%08X' %
+            (peripheral.lower(), alloc()),
+            '    uart: %s' % peripheral.lower(),
+            '',
+        ]
+
+    for peripheral in family['spi_irq']:
+        value = defines.get('STM32_SPI_%s_RX_DMA_STREAM' % peripheral)
+        stream = _dma_stream(value) if value else None
+        if stream is None:
+            continue
+        dma, channel = stream
+        lines += [
+            '%s:' % peripheral.lower(),
+            '    DMARecieve -> dma%d@%d' % (dma, channel),
+            '',
+        ]
+
+    for peripheral in family['i2c_irq']:
+        value = defines.get('STM32_I2C_%s_RX_DMA_STREAM' % peripheral)
+        stream = _dma_stream(value) if value else None
+        if stream is None:
+            continue
+        dma, channel = stream
+        lines += [
+            '%s:' % peripheral.lower(),
+            '    RxDmaRequest -> dma%d@%d' % (dma, channel),
             '',
         ]
 
@@ -601,10 +920,12 @@ def _platform(root, board, app, outdir, fram_path, warnings):
     sensor_lines, chip_selects, has_fram = _sensor_devices(
         app, family, defines, fram_path, warnings)
     lines += sensor_lines
-    iomcu_lines, iomcu_uart = _iomcu_device(root, app, family, defines, warnings)
-    lines += iomcu_lines
-
     address = 0x60000010
+    iomcu_lines, iomcu_uart = _iomcu_device(
+        root, app, family, defines, address, warnings)
+    lines += iomcu_lines
+    if iomcu_uart is not None:
+        address += 4
 
     def alloc(size=4):
         nonlocal address
@@ -623,7 +944,7 @@ def _platform(root, board, app, outdir, fram_path, warnings):
             '',
         ]
 
-    has_ethernet = family['name'] == 'h743' and 'ETH1' in app.bytype
+    has_ethernet = family['name'] in ('h743', 'h757') and 'ETH1' in app.bytype
     if has_ethernet:
         lines += [
             'ethernet: Network.SynopsysDWCEthernetQualityOfService @ {',
@@ -657,10 +978,13 @@ def _platform(root, board, app, outdir, fram_path, warnings):
         '    dma: dma2',
         '',
     ]
-    if family['name'] == 'f405':
+    if family['name'] in ('f405', 'f427'):
         lines += _f405_dma_wiring(defines, family, alloc, warnings)
+    elif family['name'] == 'f767':
+        lines += _f767_dma_wiring(defines, family, alloc, warnings)
     else:
         lines += _h743_dma_wiring(root, defines, family, alloc, warnings)
+    if family['name'] in ('h743', 'h757', 'f767'):
         serial_uarts = app.get_config('SERIAL_ORDER', required=False, aslist=True) or []
         for peripheral in dict.fromkeys(serial_uarts):
             if peripheral not in family['uarts']:
@@ -700,10 +1024,14 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             iomcu_uart, can_buses, has_ethernet, warnings):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
-    app_base = 0x08000000 + reserve_kb * 1024
     boot_kb = bootloader.get_config(
         'FLASH_BOOTLOADER_LOAD_KB', required=False, default=reserve_kb, type=int)
-    if boot_kb != reserve_kb:
+    # Older F4 hwdefs omit FLASH_RESERVE_START_KB from the application file.
+    # In that case the bootloader load offset is the authoritative application
+    # base, as it is in the generated ChibiOS build configuration.
+    effective_reserve_kb = boot_kb if reserve_kb == 0 else reserve_kb
+    app_base = 0x08000000 + effective_reserve_kb * 1024
+    if boot_kb != reserve_kb and reserve_kb != 0:
         warnings.append('application starts at %uK, bootloader loads at %uK' %
                         (reserve_kb, boot_kb))
     serial_index, serial = _serial_device(app, family, serial_index)
@@ -733,11 +1061,18 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     ]
     if serial is not None:
         serial_target = serial.lower()
-        if family['name'] == 'h743':
+        if family['name'] in ('h743', 'h757', 'f767'):
             serial_target += 'Host'
         lines += [
             'emulation CreateServerSocketTerminal %u "serial" false' % uart_port,
             'connector Connect sysbus.%s serial' % serial_target,
+            '',
+        ]
+    if iomcu_uart is not None:
+        lines += [
+            'emulation CreateUARTHub "iomcuHub"',
+            'connector Connect sysbus.%s iomcuHub' % iomcu_uart.lower(),
+            'connector Connect sysbus.iomcu iomcuHub',
             '',
         ]
     for bus, peripheral in can_buses:
@@ -769,7 +1104,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     elif tick is not None:
         warnings.append('system timer%s is not in the current MCU base' % tick)
 
-    if family['name'] == 'h743':
+    if family['name'] in ('h743', 'h757'):
         for spi in app.spi_list:
             if spi in family['spis']:
                 lines.append('sysbus SetHookBeforePeripheralWrite sysbus.%s '
@@ -814,7 +1149,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
                  root / 'renode' / board).resolve()
     boards = supported_boards(root)
     if board not in boards:
-        raise ValueError('%s is not a supported STM32F405/STM32H743 board' % board)
+        raise ValueError('%s is not a supported Renode flight controller' % board)
     board_dir = _hwdef_root(root) / board
     outdir.mkdir(parents=True, exist_ok=True)
     app = _compile_hwdef(root, board_dir / 'hwdef.dat', outdir / 'hwdef')

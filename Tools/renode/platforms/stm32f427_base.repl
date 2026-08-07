@@ -1,0 +1,33 @@
+// STM32F427 extends the F405 peripheral map used by the existing harness.
+// The extra memory blocks complete the F427's 2 MiB flash and 192 KiB SRAM;
+// keeping them separate avoids redeclaring the shared base peripherals.
+
+using "Tools/renode/platforms/stm32f405_base.repl"
+
+sramExtension: Memory.MappedMemory @ sysbus 0x20020000
+    size: 0x10000
+
+flashExtension: Memory.MappedMemory @ sysbus 0x08100000
+    size: 0x100000
+
+uart7: UART.STM32_UART @ sysbus <0x40007800, +0x100>
+    -> nvic@82
+    frequency: 42000000
+
+uart8: UART.STM32_UART @ sysbus <0x40007C00, +0x100>
+    -> nvic@83
+    frequency: 42000000
+
+spi4: SPI.STM32SPI @ sysbus 0x40013400
+    IRQ -> nvic@84
+
+spi5: SPI.STM32SPI @ sysbus 0x40015000
+    IRQ -> nvic@85
+
+spi6: SPI.STM32SPI @ sysbus 0x40015400
+    IRQ -> nvic@86
+
+timer12: Timers.STM32_Timer @ sysbus 0x40001800
+    -> nvic@43
+    frequency: 84000000
+    initialLimit: 0xFFFF
