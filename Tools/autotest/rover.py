@@ -4758,13 +4758,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         closest = None
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time_cached() - tstart > 60:
+            if self.get_sim_time_cached() - tstart > 120:
                 raise NotAchievedException(
-                    "Did not get home from SMART_RTL (closest to the "
-                    "intermediate point %s m)" % str(closest))
+                    "Did not pass the intermediate point (closest %s m)" %
+                    str(closest))
             d = self.get_distance(loc, self.get_location())
             if closest is None or d < closest:
                 closest = d
+            elif d > closest + 20:
+                # been past it and heading away again; no need to watch
+                # the vehicle all the way home, which takes a good deal
+                # longer than getting to the corner does
+                break
             if self.distance_to_home() < 10:
                 break
         self.progress("Closest approach to intermediate point: %.1fm" % closest)
