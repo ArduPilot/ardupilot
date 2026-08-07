@@ -6702,16 +6702,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_push()
         self.context_collect('STATUSTEXT')
 
+        # a port of our own: every parallel worker runs this test on the
+        # same machine, and a fixed port means they either fail to bind
+        # or - worse - talk to another worker's vehicle
+        web_port = self.spare_network_port()
         self.set_parameters({
-            "WEB_BIND_PORT": 8081,
+            "WEB_BIND_PORT": web_port,
         })
 
         self.scripting_restart()
-        self.wait_text("WebServer: starting on port 8081", check_context=True)
+        self.wait_text("WebServer: starting on port %u" % web_port, check_context=True)
 
         self.wait_ready_to_arm()
 
-        self.TestWebServer("http://127.0.0.1:8081")
+        self.TestWebServer("http://127.0.0.1:%u" % web_port)
 
         self.context_pop()
         self.context_pop()
@@ -7096,6 +7100,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def ManyMAVLinkConnections(self):
         '''test testing >8 MAVLink connections'''
+        # these ports are bound by the autopilot and connected to below;
+        # they must differ between parallel workers on this machine, so
+        # offset them by instance as the SITL's own ports are
+        net_port_base = 6700 + 10 * self.instance
         self.set_parameters({
             "SERIAL3_PROTOCOL": 2,
             "SERIAL4_PROTOCOL": 2,
@@ -7110,7 +7118,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
             "NET_P1_IP3": 1,
-            "NET_P1_PORT": 6700,
+            "NET_P1_PORT": net_port_base + 0,
             "NET_P1_PROTOCOL": 2,
 
             "NET_P2_TYPE": 4,
@@ -7118,7 +7126,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "NET_P2_IP1": 0,
             "NET_P2_IP2": 0,
             "NET_P2_IP3": 1,
-            "NET_P2_PORT": 6701,
+            "NET_P2_PORT": net_port_base + 1,
             "NET_P2_PROTOCOL": 2,
 
             "NET_P3_TYPE": 4,
@@ -7126,7 +7134,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "NET_P3_IP1": 0,
             "NET_P3_IP2": 0,
             "NET_P3_IP3": 1,
-            "NET_P3_PORT": 6702,
+            "NET_P3_PORT": net_port_base + 2,
             "NET_P3_PROTOCOL": 2,
 
             "NET_P4_TYPE": 4,
@@ -7134,7 +7142,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "NET_P4_IP1": 0,
             "NET_P4_IP2": 0,
             "NET_P4_IP3": 1,
-            "NET_P4_PORT": 6703,
+            "NET_P4_PORT": net_port_base + 3,
             "NET_P4_PROTOCOL": 2,
 
             "SCR_ENABLE": 1,
@@ -7148,7 +7156,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.wait_statustext("hello, world")
         conns = {}
-        for port in 5761, 5762, 5763, 5764, 5765, 5766, 5767, 6700, 6701, 6702, 6703:
+        ports = [self.adjust_ardupilot_port(p) for p in (5761, 5762, 5763, 5764, 5765, 5766, 5767)]
+        ports += [net_port_base + n for n in range(4)]
+        for port in ports:
             cstring = f"tcp:localhost:{port}"
             self.progress(f"Connecting to {cstring}")
             c = mavutil.mavlink_connection(

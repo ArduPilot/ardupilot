@@ -13921,12 +13921,9 @@ switch value'''
         their own - serially, at instance 0 (base ports, repo-root working
         directory) - before the rest of the tests are run in parallel.'''
         return [
-            # bind fixed network ports / use sudo:
-            "NetworkingWebServer",
+            # uses pppd (sudo), a fixed PPP-over-TCP port and fixed
+            # addresses for the PPP interfaces themselves:
             "NetworkingWebServerPPP",
-            "ManyMAVLinkConnections",
-
-            # uses pppd (sudo) and a fixed PPP-over-TCP port:
             "PPPPeriph",
 
             # rebuilds the Replay tool; this mutates the shared build
