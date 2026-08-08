@@ -11,7 +11,7 @@ static uint32_t auto_disarm_begin;
 void Copter::auto_disarm_check()
 {
     uint32_t tnow_ms = millis();
-    uint32_t disarm_delay_ms = 1000*constrain_int16(g.disarm_delay, 0, INT8_MAX);
+    uint32_t disarm_delay_ms = 1000*constrain_int8(g.disarm_delay, 0, INT8_MAX);
 
     // Reset timer and exit if disarmed, auto-disarm disabled, or in THROW mode.
     if (!motors->armed() || disarm_delay_ms == 0 || flightmode->mode_number() == Mode::Number::THROW) {
