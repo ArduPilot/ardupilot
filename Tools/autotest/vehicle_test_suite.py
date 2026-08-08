@@ -9668,7 +9668,9 @@ Also, ignores heartbeats not from our target system'''
         path = None
         try:
             path = self.current_onboard_log_filepath()
-        except IndexError:
+        except (FileNotFoundError, ValueError):
+            # no log yet, or we can't understand LASTLOG.TXT; either way
+            # don't mask the exception we are in the middle of reporting
             pass
         self.progress("Most recent logfile: %s" % (path, ), send_statustext=send_statustext)
 
@@ -13405,11 +13407,23 @@ switch value'''
         return sorted(logs.keys())[-1]
 
     def current_onboard_log_filepath(self):
-        '''return filepath to currently open dataflash log.  We assume that's
-        the latest log...'''
-        logs = self.log_list()
-        latest = logs[-1]
-        return latest
+        '''return filepath to currently open dataflash log.'''
+        logs_dirpath = pathlib.Path("logs")
+        lastlog_filepath = logs_dirpath / "LASTLOG.TXT"
+
+        with lastlog_filepath.open(newline="") as f:
+            content = f.read()
+
+        m = re.match(r"([0-9]+)(D?)\r\n\Z", content)
+        if m is None:
+            raise ValueError("Unable to parse %s (%r)" %
+                             (lastlog_filepath, content))
+
+        (num, discard_marker) = m.groups()
+        if discard_marker:
+            self.progress("Vehicle has marked log %s for discard" % num)
+
+        return str(logs_dirpath / ("%08u.BIN" % int(num)))
 
     def dfreader_for_path(self, path):
         '''return a DFReader for path.  The reader holds an open filehandle
