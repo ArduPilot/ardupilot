@@ -1174,6 +1174,7 @@ private:
     float apply_throttle_limits(float throttle_in);
     void set_throttle(void);
     void set_takeoff_expected(void);
+    float get_auto_flap_speed() const;
     void set_servos_flaps(void);
     void dspoiler_update(void);
     void airbrake_update(void);
