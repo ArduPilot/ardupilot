@@ -439,9 +439,10 @@ bool ModeAuto::auto_terrain_recover_start()
         sub.auto_mode = Auto_TerrainRecover;
         break;
 
-        // Not connected or no data
-    default:
-        return false; // Rangefinder is not connected, or has stopped responding
+    case RangeFinder::Status::NotConnected:
+    case RangeFinder::Status::NoData:
+    case RangeFinder::Status::PoweredDown:
+        return false;
     }
 
     // Initialize recovery timeout time
@@ -526,8 +527,9 @@ void ModeAuto::auto_terrain_recover_run()
         }
         break;
 
-        // Not connected, or no data
-    default:
+    case RangeFinder::Status::NotConnected:
+    case RangeFinder::Status::NoData:
+    case RangeFinder::Status::PoweredDown:
         // Terrain failsafe recovery has failed, terrain data is not available
         // and rangefinder is not connected, or has stopped responding
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");

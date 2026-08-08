@@ -110,6 +110,10 @@ protected:
     // backend-specific temperature reading.  Override in backends that have their
     // own temperature source (e.g. NMEA depth sounders reporting MTW).
     virtual bool _get_temp(float &temp) const { return false; }
+
+    // return true if rangefinder should be powered down
+    bool should_power_down() const;
+
 };
 
 #endif  // AP_RANGEFINDER_ENABLED
