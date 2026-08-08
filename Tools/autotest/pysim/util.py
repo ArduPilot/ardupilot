@@ -504,7 +504,10 @@ class PSpawnStdPrettyPrinter(object):
         print("%s: %s" % (self.prefix, line), file=self.output)
 
     def flush(self):
-        pass
+        # when we are writing to a file rather than a terminal this is
+        # the only thing which gets the last line of a SITL which is
+        # about to die onto disk.  pexpect flushes us after each write.
+        self.output.flush()
 
 
 def start_SITL(binary,
@@ -530,8 +533,15 @@ def start_SITL(binary,
                enable_fgview=False,
                supplementary=False,
                stdout_prefix=None,
+               stdout_file=None,
                asan=False,
+               instance=0,
+               sitl_rcin_port=None,
                ):
+
+    if model is None and not supplementary:
+        raise ValueError("model must not be None")
+
     """Launch a SITL instance."""
 
     if defaults_filepath is None:
@@ -634,6 +644,11 @@ def start_SITL(binary,
         filepath.close()
         defaults.append(str(filepath.name))
 
+    cmd.extend(['-I', str(instance)])
+
+    if sitl_rcin_port is not None:
+        cmd.extend(["--rc-in-port", str(sitl_rcin_port)])
+
     if not supplementary:
         if wipe:
             cmd.append('-w')
@@ -668,7 +683,11 @@ def start_SITL(binary,
     pexpect_logfile_prefix = stdout_prefix
     if pexpect_logfile_prefix is None:
         pexpect_logfile_prefix = os.path.basename(binary)
-    pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
+    if stdout_file is None:
+        pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
+    else:
+        pexpect_logfile = PSpawnStdPrettyPrinter(output=stdout_file,
+                                                 prefix=pexpect_logfile_prefix)
 
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
@@ -708,6 +727,7 @@ def start_SITL(binary,
         return pexpect.spawn("true", ["true"],
                              logfile=pexpect_logfile,
                              encoding='ascii',
+                             codec_errors='replace',
                              timeout=5)
     else:
         print("Running: %s" % cmd_as_shell(cmd))
@@ -725,7 +745,8 @@ def start_SITL(binary,
             # non-empty even when no errors are detected.
             our_opts = 'log_path=%s:symbolize=1:verbosity=0' % log_base
             spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
-        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd, env=spawn_env)
+        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii',
+                              codec_errors='replace', timeout=5, cwd=cwd, env=spawn_env)
         pexpect_autoclose(child)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
@@ -793,7 +814,12 @@ def start_MAVProxy_SITL(atype,
     print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii', timeout=pexpect_timeout, env=env)
+    # the vehicle's boot banner includes a statustext carrying the
+    # firmware hash, which is not ASCII.  Replace what we cannot decode
+    # rather than throwing UnicodeDecodeError out of an unrelated expect:
+    #     AccelCal (...) ('ascii' codec can't decode byte 0xef in position 611: ...)
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii',
+                        codec_errors='replace', timeout=pexpect_timeout, env=env)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
@@ -806,7 +832,8 @@ def start_PPP_daemon(ips, sockaddr):
     cmd = cmd.split()
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii', timeout=30)
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii',
+                        codec_errors='replace', timeout=30)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
@@ -823,8 +850,11 @@ def expect_setup_callback(e, callback):
                 return ret
             except pexpect.TIMEOUT:
                 e.expect_user_callback(e)
-        print("Timed out looking for %s" % pattern)
-        raise pexpect.TIMEOUT(timeout)
+        # put the pattern in the exception, not just the timeout value.
+        # str() of this is all the failure summary gets to show, and
+        # "(60)" tells you nothing about what we were waiting for.
+        raise pexpect.TIMEOUT("Timed out after %ss looking for %s" %
+                              (timeout, pattern))
 
     e.expect_user_callback = callback
     e.expect_saved = e.expect

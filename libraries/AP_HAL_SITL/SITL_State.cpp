@@ -8,6 +8,7 @@
 #include "UARTDriver.h"
 #include "Scheduler.h"
 #include "CANSocketIface.h"
+#include "SITL_Multicast.h"
 
 #include <stdio.h>
 #include <signal.h>
@@ -470,6 +471,18 @@ void SITL_State::multicast_state_open(void)
     // try to setup for broadcast, this may fail if insufficient privileges
     int one = 1;
     setsockopt(mc_out_fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
+
+    const uint32_t mc_if_addr = sitl_multicast_interface_address();
+    if (mc_if_addr != 0) {
+        // send on a specific interface rather than letting the routing
+        // table choose; see sitl_multicast_interface_address()
+        struct in_addr ifaddr {};
+        ifaddr.s_addr = mc_if_addr;
+        if (setsockopt(mc_out_fd, IPPROTO_IP, IP_MULTICAST_IF, &ifaddr, sizeof(ifaddr)) == -1) {
+            fprintf(stderr, "failed to set multicast interface - %s\n", strerror(errno));
+            exit(1);
+        }
+    }
 
     ret = connect(mc_out_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {

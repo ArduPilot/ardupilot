@@ -1484,13 +1484,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(10, reason="RC failsafe passthrough to settle")
 
     # Tests all actions and logic behind the GCS failsafe
-    def GCSFailsafe(self, side=60, timeout=360):
-        '''Test GCS Failsafe'''
-        # Test double-SmartRTL; ensure we do SmarRTL twice rather than
+    def gcs_failsafe_init(self):
+        '''configure the common GCS failsafe parameters shared by the
+        individual GCSFailsafe* tests'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            # ensure a known-clean FS_OPTIONS baseline; the individual
+            # tests that need option bits (or to continue) set them
+            # themselves.  Without this a non-zero default would make the
+            # failsafe "continue" rather than take its configured action.
+            "FS_OPTIONS": 0,
+        })
+
+    def GCSFailsafeSmartRTLTwice(self):
+        '''Test GCS failsafe performs SmartRTL twice rather than landing'''
+        # Test double-SmartRTL; ensure we do SmartRTL twice rather than
         # landing (tests fix for actual bug)
-        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
+        self.gcs_failsafe_init()
         self.context_push()
-        self.start_subtest("GCS failsafe SmartRTL twice")
         self.setGCSfailsafe(3)
         self.set_parameter('FS_OPTIONS', 8)
         self.takeoffAndMoveAway()
@@ -1520,13 +1531,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed()
 
-        self.end_subtest("GCS failsafe SmartRTL twice")
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
         self.context_pop()
 
+    def GCSFailsafeDisabled(self):
+        '''Test GCS failsafe disabled (FS_GCS_ENABLE=0) takes no action'''
         # Trigger telemetry loss with failsafe disabled. Verify no action taken.
-        self.start_subtest("GCS failsafe disabled test: FS_GCS_ENABLE=0 should take no failsafe action")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(0)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1535,27 +1547,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_heartbeat_rate(self.speedup)
         self.delay_sim_time(5, reason="GCS link to restore")
         self.wait_mode("ALT_HOLD")
-        self.end_subtest("Completed GCS failsafe disabled test")
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
 
+    def GCSFailsafeRecoveryRTL(self):
+        '''Test GCS failsafe RTL recovery: FS_GCS_ENABLE=1 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify
         # failsafe triggers to RTL. Restore telemetry, verify failsafe
         # clears, and change modes.
-        self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(1)
         self.set_parameter('FS_OPTIONS', 0)
+        self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
         self.wait_mode("RTL")
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
         self.change_mode("LOITER")
-        self.end_subtest("Completed GCS failsafe recovery test")
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
 
-        # Trigger telemetry loss with failsafe enabled. Verify
-        # failsafe triggers to RTL. Restore telemetry, verify failsafe
-        # clears, and change modes.
-        self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1 & FS_OPTIONS=0 & FS_GCS_TIMEOUT=10")
+    def GCSFailsafeRecoveryRTLWithTimeout(self):
+        '''Test GCS failsafe RTL recovery honours an increased FS_GCS_TIMEOUT'''
+        # Trigger telemetry loss with failsafe enabled and a doubled
+        # FS_GCS_TIMEOUT.  Verify failsafe triggers to RTL only after the
+        # longer timeout, then restore telemetry and verify it clears.
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(1)
         self.set_parameter('FS_OPTIONS', 0)
+        self.takeoffAndMoveAway()
+        self.change_mode("LOITER")
         old_gcs_timeout = self.get_parameter("FS_GCS_TIMEOUT")
         new_gcs_timeout = old_gcs_timeout * 2
         self.set_parameter("FS_GCS_TIMEOUT", new_gcs_timeout)
@@ -1567,21 +1588,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
         self.change_mode("LOITER")
         self.set_parameter('FS_GCS_TIMEOUT', old_gcs_timeout)
-        self.end_subtest("Completed GCS failsafe recovery test")
+        self.change_mode("RTL")
+        self.wait_rtl_complete()
 
+    def GCSFailsafeRTLComplete(self):
+        '''Test GCS failsafe triggers RTL which completes: FS_GCS_ENABLE=1 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and RTL completes
-        self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(1)
         self.set_parameter('FS_OPTIONS', 0)
+        self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
         self.wait_mode("RTL")
         self.wait_rtl_complete()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe RTL with no options test")
 
+    def GCSFailsafeLand(self):
+        '''Test GCS failsafe LAND action: FS_GCS_ENABLE=5 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and land completes
-        self.start_subtest("GCS failsafe LAND with no options test: FS_GCS_ENABLE=5 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(5)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1589,10 +1615,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_landed_and_disarmed()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe land with no options test")
 
+    def GCSFailsafeSmartRTL(self):
+        '''Test GCS failsafe SmartRTL->RTL action: FS_GCS_ENABLE=3 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and SmartRTL completes
-        self.start_subtest("GCS failsafe SmartRTL->RTL with no options test: FS_GCS_ENABLE=3 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(3)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1600,10 +1627,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe SmartRTL->RTL with no options test")
 
+    def GCSFailsafeSmartRTLLand(self):
+        '''Test GCS failsafe SmartRTL->Land action: FS_GCS_ENABLE=4 & FS_OPTIONS=0'''
         # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and SmartRTL completes
-        self.start_subtest("GCS failsafe SmartRTL->Land with no options test: FS_GCS_ENABLE=4 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(4)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1611,10 +1639,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe SmartRTL->Land with no options test")
 
+    def GCSFailsafeInvalidValue(self):
+        '''Test GCS failsafe with an invalid value defaults to RTL: FS_GCS_ENABLE=99 & FS_OPTIONS=0'''
         # Trigger telemetry loss with an invalid failsafe value. Verify failsafe triggers and RTL completes
-        self.start_subtest("GCS failsafe invalid value with no options test: FS_GCS_ENABLE=99 & FS_OPTIONS=0")
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(99)
         self.takeoffAndMoveAway()
         self.set_heartbeat_rate(0)
@@ -1622,10 +1651,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_rtl_complete()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe invalid value with no options test")
 
+    def GCSFailsafeOptions(self):
+        '''Test GCS failsafe FS_OPTIONS continue bits: FS_GCS_ENABLE=1 & FS_OPTIONS=64/2/16'''
         # Trigger telemetry loss with failsafe enabled to test FS_OPTIONS settings
-        self.start_subtest("GCS failsafe with option bit tests: FS_GCS_ENABLE=1 & FS_OPTIONS=64/2/16")
+        self.gcs_failsafe_init()
         num_wp = self.load_mission("copter_mission.txt", strict=False)
         if not num_wp:
             raise NotAchievedException("load copter_mission failed")
@@ -1662,11 +1692,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_landed_and_disarmed()
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe with option bits")
 
         self.setGCSfailsafe(0)
         self.set_parameter('FS_OPTIONS', 0)
-        self.progress("All GCS failsafe tests complete")
 
     def TerrainFailsafe(self):
         '''test that auto mode triggers terrain failsafe if waypoint alt frame is terrain and terrain database is disabled'''
@@ -13446,19 +13474,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             for name in param_names:
                 sp[name] = param_value
             self.set_parameters(sp)
-            self.delay_sim_time(1, reason="sensor state to update in log")
-            mlog = self.dfreader_for_current_onboard_log()
+            # The sensor health change takes time to be detected (up to the
+            # baro/compass health timeouts) and the ERR message is flushed to
+            # the onboard log asynchronously.  Poll the log until the expected
+            # ERR appears rather than reading it once after a fixed delay,
+            # which races against detection/flush and makes this test flaky.
+            tstart = self.get_sim_time()
             success = False
-            while True:
-                m = mlog.recv_match(type='ERR')
-                print("Got (%s)" % str(m))
-                if m is None:
-                    break
-                if m.Subsys == expected_subsys and m.ECode == expected_ecode:  # baro / ecode
-                    success = True
-                    break
-            if not success:
-                raise NotAchievedException("Did not find %s log message" % desc)
+            while not success:
+                if self.get_sim_time_cached() - tstart > 5:
+                    raise NotAchievedException("Did not find %s log message" % desc)
+                self.delay_sim_time(1, reason="sensor state to update in log")
+                mlog = self.dfreader_for_current_onboard_log()
+                while True:
+                    m = mlog.recv_match(type='ERR')
+                    if m is None:
+                        break
+                    if m.Subsys == expected_subsys and m.ECode == expected_ecode:  # baro / ecode
+                        success = True
+                        break
 
     def AltEstimation(self):
         '''Test that Alt Estimation is mandatory for ALT_HOLD'''
@@ -14255,9 +14289,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_log_has_no_dropped_blocks(current_log_filepath)
 
         self.zero_throttle()
-        self.run_replay(current_log_filepath)
-
-        replay_log_filepath = self.current_onboard_log_filepath()
+        replay_log_filepath = self.run_replay(current_log_filepath)
 
         self.context_pop()
 
@@ -14272,7 +14304,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def DefaultIntervalsFromFiles(self):
         '''Test setting default mavlink message intervals from files'''
         ex = None
-        intervals_filepath = util.reltopdir("message-intervals-chan0.txt")
+        # the autopilot reads this file relative to its working directory;
+        # under parallel testing that is the per-instance directory (which is
+        # also this process's cwd), so use a cwd-relative path rather than an
+        # absolute repo-root one:
+        intervals_filepath = "message-intervals-chan0.txt"
         self.progress("Using filepath (%s)" % intervals_filepath)
         try:
             with open(intervals_filepath, "w") as f:
@@ -15649,7 +15685,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.RecordThenPlayMission,
              self.ThrottleFailsafe,
              self.ThrottleFailsafePassthrough,
-             self.GCSFailsafe,
+             self.GCSFailsafeSmartRTLTwice,
+             self.GCSFailsafeDisabled,
+             self.GCSFailsafeRecoveryRTL,
+             self.GCSFailsafeRecoveryRTLWithTimeout,
+             self.GCSFailsafeRTLComplete,
+             self.GCSFailsafeLand,
+             self.GCSFailsafeSmartRTL,
+             self.GCSFailsafeSmartRTLLand,
+             self.GCSFailsafeInvalidValue,
+             self.GCSFailsafeOptions,
              self.TerrainFailsafe,
              self.CustomController,
              self.WPArcs,
@@ -18830,6 +18875,7 @@ RTL_ALT_M 111
                 binary_path,
                 cwd=periph_rundir,
                 stdout_prefix="periph",
+                stdout_file=self.sitl_stdout_file(),
                 gdb=self.gdb,
                 valgrind=self.valgrind,
                 customisations=[
@@ -18838,6 +18884,8 @@ RTL_ALT_M 111
                     '--serial1', 'tcp:2',
                     '--serial2', 'tcp:3',
                 ],
+                # AP_Periph is a supplementary program (no vehicle model):
+                supplementary=True,
                 speedup=self.speedup
             )
             self.expect_list_add(periph_exp)

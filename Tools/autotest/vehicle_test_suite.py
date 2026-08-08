@@ -16,6 +16,7 @@ import glob
 import importlib.util
 import io
 import math
+import multiprocessing
 import operator
 import os
 import pathlib
@@ -2039,6 +2040,8 @@ class LocationInt(object):
 
 class Test(object):
     '''a test definition - information about a test'''
+    __slots__ = ('name', 'description', 'function', 'kwargs', 'attempts', 'speedup', 'instance')
+
     def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None):
         if kwargs is None:
             kwargs = {}
@@ -2050,6 +2053,7 @@ class Test(object):
         self.kwargs = kwargs
         self.attempts = attempts
         self.speedup = speedup
+        self.instance = 0
 
 
 class Result(object):
@@ -2133,6 +2137,7 @@ class TestSuite(abc.ABC):
                  enable_fgview=False,
                  move_logs_on_test_failure: bool = False,
                  asan=False,
+                 instance=0,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2206,6 +2211,7 @@ class TestSuite(abc.ABC):
         if self.force_ahrs_type is not None:
             self.force_ahrs_type = int(self.force_ahrs_type)
         self.logs_dir = logs_dir
+        self._sitl_stdout_file = None
         self.timesync_number = 137
         self.last_progress_sent_as_statustext = None
         self.last_heartbeat_time_ms = None
@@ -2239,6 +2245,10 @@ class TestSuite(abc.ABC):
         self.dronecan_tests = dronecan_tests
         self.statustext_id = 1
         self.message_hooks = []  # functions or MessageHook instances
+        # instance number; 0 for serial/non-parallel runs (repo-root working
+        # directory).  Parallel workers override this; a serial run can set it
+        # via autotest.py's -I option to get its own working directory + ports.
+        self.instance = instance
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -2305,19 +2315,83 @@ class TestSuite(abc.ABC):
             bits.append(path)
         return os.path.join(*bits)
 
+    def sitl_stdout_filepath(self):
+        """Path of the file the SITL binaries' stdout/stderr is captured to."""
+        name = "%s-SITL" % self.log_name()
+        if self.instance != 0:
+            name += "-%u" % self.instance
+        return self.buildlogs_path(name + ".txt")
+
+    def sitl_stdout_file(self):
+        """Filehandle the SITL binaries' stdout/stderr is captured to.
+
+        SITL says a great deal that is of no interest at all unless
+        something has gone wrong, and with --parallel there are several
+        of them saying it at once into the same terminal.  Send it to a
+        file instead; a failing test gets the part of it which belongs
+        to that test replayed into its own log (see run_one_test_attempt).
+        """
+        if self._sitl_stdout_file is None:
+            path = self.sitl_stdout_filepath()
+            # truncate; we hold this handle open for the whole run, so
+            # this happens once rather than once per SITL start
+            self._sitl_stdout_file = open(path, "w")
+            self.progress("SITL output being captured to (%s)" % path)
+        return self._sitl_stdout_file
+
+    def sitl_stdout_offset(self):
+        """How far into the SITL capture file we have got."""
+        try:
+            handle = self.sitl_stdout_file()
+            handle.flush()
+            return handle.tell()
+        except OSError:
+            return None
+
+    def progress_sitl_output_since(self, offset, max_lines=200):
+        """Replay captured SITL output into the log of the running test.
+
+        Called when a test fails: the terminal is spared SITL's output
+        for the tests which pass, but the test which did not pass still
+        gets to show what SITL was saying while it ran.
+        """
+        if offset is None:
+            return
+        try:
+            self.sitl_stdout_file().flush()
+            with open(self.sitl_stdout_filepath()) as handle:
+                handle.seek(offset)
+                lines = handle.read().splitlines()
+        except OSError as e:  # noqa: BLE001
+            self.progress("Could not read back SITL output: %s" % str(e))
+            return
+        if len(lines) == 0:
+            return
+        dropped = 0
+        if len(lines) > max_lines:
+            dropped = len(lines) - max_lines
+            lines = lines[-max_lines:]
+        self.progress("SITL output during this test (%s):" %
+                      self.sitl_stdout_filepath())
+        if dropped:
+            self.progress("  ... %u earlier lines not shown ..." % dropped)
+        for line in lines:
+            self.progress("  %s" % line)
+        self.progress("SITL output ends")
+
     def sitl_streamrate(self):
         """Allow subclasses to override SITL streamrate."""
         return 10
 
     def adjust_ardupilot_port(self, port):
         '''adjust port in case we do not wish to use the default range (5760 and 5501 etc)'''
-        return port
+        return port + self.instance * 10
 
     def spare_network_port(self, offset=0):
         '''returns a network port which should be able to be bound'''
         if offset > 2:
             raise ValueError("offset too large")
-        return 8000 + offset
+        return 8000 + (3 * self.instance) + offset
 
     def autotest_connection_string_to_ardupilot(self):
         return "tcp:127.0.0.1:%u" % self.adjust_ardupilot_port(5760)
@@ -2325,7 +2399,7 @@ class TestSuite(abc.ABC):
     def sitl_rcin_port(self, offset=0):
         if offset > 2:
             raise ValueError("offset too large")
-        return 5501 + offset
+        return 5501 + (3 * self.instance) + offset
 
     def mavproxy_options(self):
         """Returns options to be passed to MAVProxy."""
@@ -2343,6 +2417,24 @@ class TestSuite(abc.ABC):
 
     def vehicleinfo_key(self):
         return self.log_name()
+
+    def tests_for_each_frame(self, function):
+        '''return a Test for each of this vehicle's internal frames, each
+        one calling function(frame=<frame>).  Tests are named
+        "<function>_<frame>", so an individual frame can be run, skipped
+        via disabled_tests() or blacklisted from parallel running by
+        name.  Frames which are external simulations are omitted; they
+        need a simulator we do not have here.'''
+        frames = vehicleinfo.VehicleInfo().options[self.vehicleinfo_key()]["frames"]
+        ret = []
+        for frame in sorted(frames.keys()):
+            if frames[frame].get("external", False):
+                continue
+            test = Test(function, kwargs={"frame": frame})
+            test.name = "%s_%s" % (function.__name__, frame)
+            test.description = "%s (frame %s)" % (function.__doc__, frame)
+            ret.append(test)
+        return ret
 
     def repeatedly_apply_parameter_filepath(self, filepath):
         if False:
@@ -2404,7 +2496,14 @@ class TestSuite(abc.ABC):
         filepath = os.path.join(testdir, self.current_test_name_directory, filename)
         count = self.count_expected_fence_lines_in_filepath(filepath)
         mavproxy.send('fence load %s\n' % filepath)
-#        self.mavproxy.expect("Loaded %u (geo-)?fence" % count)
+        # getting the items up the link is MAVProxy's work, not the
+        # vehicle's, so wait for it in wall-clock time.  The budget in
+        # wait_parameter_value below is in simulated seconds, and at
+        # speedup those run out long before MAVProxy - sharing a
+        # machine with however many tests --parallel is running - has
+        # got around to sending them.  NB: MAVProxy counts the fence
+        # points, which is not the FENCE_TOTAL the vehicle ends up with.
+        mavproxy.expect(r"Sent all \d+ fence items")
         self.wait_parameter_value("FENCE_TOTAL", count, timeout=20)
 
     def load_fence(self, filename):
@@ -3468,10 +3567,19 @@ class TestSuite(abc.ABC):
         self.progress("##################################################################################")
 
     def try_symlink_tlog(self):
-        self.buildlog = self.buildlogs_path(self.log_name() + "-test.tlog")
+        # the buildlogs directory is shared by every parallel worker, so
+        # this needs the instance in it; without that the workers all
+        # link the same path, clobbering each other's tlog and racing
+        # each other between the exists() and the unlink() below:
+        name = self.log_name()
+        if self.instance != 0:
+            name += "-I%u" % self.instance
+        self.buildlog = self.buildlogs_path(name + "-test.tlog")
         self.progress("buildlog=%s" % self.buildlog)
-        if os.path.exists(self.buildlog):
+        try:
             os.unlink(self.buildlog)
+        except FileNotFoundError:
+            pass
         try:
             os.link(self.logfile, self.buildlog)
         except OSError as error:
@@ -4398,6 +4506,127 @@ class TestSuite(abc.ABC):
         if len(new_content) == 0:
             raise NotAchievedException(f"Unexpected length {len(new_content)=}")
 
+    def TestLogDownloadAfterPrune(self):
+        '''check the log list is sane after the oldest logs are removed'''
+        # When the autopilot removes its oldest logs to free space
+        # (Prep_MinSpace), or this test framework moves logs away after
+        # a failed test, the logs on disk no longer start at log 1.
+        # AP_Logger_File::get_num_logs() must count the logs actually
+        # present rather than assuming 1..last-log-number all exist; if
+        # it over-counts then the log list contains phantom
+        # zero-size/zero-time-utc entries for logs which do not exist.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.reboot_sitl()
+
+        self.progress("Creating some logs")
+        for i in range(0, 4):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1, reason="log data to accumulate")
+            self.disarm_vehicle()
+
+        log_list = self.log_list()
+        if len(log_list) < 4:
+            raise NotAchievedException("Expected at least 4 logs, got (%s)" % str(log_list))
+
+        self.progress("Removing the oldest two logs, as Prep_MinSpace would")
+        for log in log_list[0:2]:
+            os.unlink(log)
+        remaining_count = len(self.log_list())
+
+        # reboot so the autopilot rediscovers its log state from the disk
+        # contents, as it would after the in-flight pruning of a
+        # power-cycled vehicle:
+        self.reboot_sitl()
+
+        self.progress("Checking the log list matches the logs on disk")
+        logs = self.download_full_log_list()
+        if len(logs) != remaining_count:
+            raise NotAchievedException(
+                "Log list count does not match logs on disk (want=%u got=%u)" %
+                (remaining_count, len(logs)))
+
+    def TestLogDownloadLogGap(self):
+        '''check the log list after a log is removed from the middle of the sequence'''
+        # The autopilot never creates a hole in the middle of the log
+        # sequence itself - this is a user deleting a single log from
+        # the SD card.  The log list maps entries linearly from the
+        # oldest log present, so the expected behaviour is that the
+        # hole appears as a single zero-size/zero-time-utc entry while
+        # the logs either side of it remain listed at their usual
+        # positions with their usual sizes.
+        if self.is_tracker():
+            # tracker starts armed, which is annoying
+            return
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.set_parameter("LOG_DISARMED", 0)
+        self.reboot_sitl()
+
+        self.progress("Creating some logs")
+        for i in range(0, 4):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1, reason="log data to accumulate")
+            self.disarm_vehicle()
+
+        log_list = self.log_list()
+        if len(log_list) < 4:
+            raise NotAchievedException("Expected at least 4 logs, got (%s)" % str(log_list))
+
+        def log_num_from_filepath(filepath):
+            return int(os.path.basename(filepath)[:-4])
+
+        victim = log_list[-3]  # neither the oldest nor the most recent
+        self.progress("Removing %s from the middle of the log sequence" % victim)
+        os.unlink(victim)
+
+        oldest_num = log_num_from_filepath(log_list[0])
+        last_num = log_num_from_filepath(log_list[-1])
+        expected_count = last_num - oldest_num + 1  # the hole is counted
+        expected_gap_id = log_num_from_filepath(victim) - oldest_num + 1
+
+        # reboot so the autopilot rediscovers its log state from the
+        # disk contents:
+        self.reboot_sitl()
+
+        # can't use download_full_log_list here; it (correctly) balks
+        # at the zero-size/zero-time-utc entry the hole leaves behind:
+        tstart = self.get_sim_time()
+        self.mav.mav.log_request_list_send(self.sysid_thismav(),
+                                           1,  # target component
+                                           0,
+                                           0xffff)
+        logs = {}
+        while True:
+            if self.get_sim_time_cached() - tstart > 5:
+                raise NotAchievedException("Did not download list")
+            m = self.mav.recv_match(type='LOG_ENTRY', blocking=True, timeout=1)
+            if m is None:
+                continue
+            self.progress("Received (%s)" % str(m))
+            logs[m.id] = m
+            if m.id == m.last_log_num:
+                break
+        self.assert_not_receiving_message('LOG_ENTRY', timeout=2)
+
+        if sorted(logs.keys()) != list(range(1, expected_count + 1)):
+            raise NotAchievedException(
+                "Expected entries 1..%u got (%s)" % (expected_count, sorted(logs.keys())))
+        for m in logs.values():
+            if m.id == expected_gap_id:
+                if m.size != 0 or m.time_utc != 0:
+                    raise NotAchievedException(
+                        "Expected zero-size/zero-time entry for the hole, got (%s)" % str(m))
+                continue
+            if m.size == 0:
+                raise NotAchievedException("Zero-sized entry for a log which exists (%s)" % str(m))
+            if m.time_utc < 1000:
+                raise NotAchievedException("Bad timestamp on a log which exists (%s)" % str(m))
+
     #################################################
     # SIM UTILITIES
     #################################################
@@ -4708,6 +4937,8 @@ class TestSuite(abc.ABC):
 
     def log_list(self):
         '''return a list of log files present in POSIX-style logging dir'''
+        # each parallel instance runs in its own working directory, so
+        # the logs are always in a plain "logs/" relative to our cwd:
         ret = sorted(glob.glob("logs/00*.BIN"))
         self.progress("log list: %s" % str(ret))
         return ret
@@ -5045,9 +5276,19 @@ class TestSuite(abc.ABC):
         self.wait_ready_to_arm()
         self.arm_vehicle(force=True)
         # we might be relying on a thread to actually create the log
-        # file when doing forced-arming; give the file time to appear:
-        self.delay_sim_time(10, reason="log file to appear after forced arm")
+        # file when doing forced-arming; give the file time to appear.
+        # That thread gets the file onto disk in wall-clock time, so
+        # wait in wall-clock time: ten *simulated* seconds is a small
+        # fraction of a second of real time at speedup, and on a machine
+        # busy running --parallel tests the thread may well not have been
+        # scheduled at all within it.
+        tstart = time.time()
         post_arming_list = self.log_list()
+        while len(post_arming_list) <= len(pre_arming_list):
+            if time.time() - tstart > 30:
+                break
+            self.delay_sim_time(1, reason="log file to appear after forced arm")
+            post_arming_list = self.log_list()
         self.disarm_vehicle()
         if len(post_arming_list) <= len(pre_arming_list):
             raise NotAchievedException("Did not get a log on forced arm")
@@ -5119,6 +5360,14 @@ class TestSuite(abc.ABC):
 
     def TestLogDownloadMAVProxy(self):
         """Download latest log."""
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.progress("Creating some logs")
+        for i in range(0, 4):
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.delay_sim_time(1, reason="log data to accumulate")
+            self.disarm_vehicle()
+
         filename = "MAVProxy-downloaded-log.BIN"
         mavproxy = self.start_mavproxy()
         self.mavproxy_load_module(mavproxy, 'log')
@@ -5130,6 +5379,59 @@ class TestSuite(abc.ABC):
         mavproxy.expect("Finished downloading", timeout=120)
         self.mavproxy_unload_module(mavproxy, 'log')
         self.stop_mavproxy(mavproxy)
+
+        # again with the oldest logs removed, as AP_Logger's
+        # Prep_MinSpace would remove them: the log list must match the
+        # logs actually present rather than assuming logs
+        # 1..last-log-number all exist, and downloading the latest log
+        # must fetch the newest log on disk:
+        # ensure no log is created (and left open, growing) at the
+        # reboot so the logs on disk are static for the checks below:
+        self.set_parameter("LOG_DISARMED", 0)
+        log_list = self.log_list()
+        if len(log_list) < 3:
+            raise NotAchievedException("Expected at least 3 logs, got (%s)" % str(log_list))
+        self.progress("Removing the oldest two logs")
+        for log in log_list[0:2]:
+            os.unlink(log)
+        # reboot so the autopilot rediscovers its log state from the
+        # disk contents:
+        self.reboot_sitl()
+        expected_count = len(self.log_list())
+
+        filename = "MAVProxy-downloaded-log-pruned.BIN"
+        mavproxy = self.start_mavproxy()
+        self.mavproxy_load_module(mavproxy, 'log')
+        mavproxy.send("log list\n")
+        mavproxy.expect(r"\bLog (\d+) .* lastLog \1 ")
+        lastlog = int(mavproxy.match.group(1))
+        if lastlog != expected_count:
+            raise NotAchievedException(
+                "Log list does not match logs on disk (want=%u got=%u)" %
+                (expected_count, lastlog))
+        mavproxy.send("set shownoise 0\n")
+        mavproxy.send("log download latest %s\n" % filename)
+        mavproxy.expect("Finished downloading", timeout=120)
+        self.mavproxy_unload_module(mavproxy, 'log')
+        self.stop_mavproxy(mavproxy)
+
+        self.progress("Comparing downloaded log to newest log on disk")
+        newest = self.log_list()[-1]
+        tstart = time.time()
+        while True:
+            if time.time() - tstart > 30:
+                raise NotAchievedException(
+                    "Downloaded log did not match newest log on disk (%s)" % newest)
+            try:
+                with open(filename, 'rb') as f:
+                    downloaded = f.read()
+                with open(newest, 'rb') as f:
+                    ondisk = f.read()
+                if downloaded == ondisk:
+                    break
+            except FileNotFoundError:
+                pass
+            time.sleep(1)
 
     def TestLogDownloadMAVProxyNetwork(self):
         """Download latest log over network port"""
@@ -9616,7 +9918,9 @@ Also, ignores heartbeats not from our target system'''
 
     def remove_ardupilot_terrain_cache(self):
         '''removes the terrain files ArduPilot keeps in its onboiard storage'''
-        util.run_cmd('rm -f %s' % util.reltopdir("terrain/*.DAT"))
+        # terrain is cached relative to the SITL working directory, which
+        # for a parallel/-I instance is its own directory:
+        util.run_cmd('rm -f terrain/*.DAT')
 
     def check_logs(self, name, bin_logs=None):
         '''called to move relevant log files from our working directory to the
@@ -9717,6 +10021,8 @@ Also, ignores heartbeats not from our target system'''
 
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile, suppress_stdout=suppress_stdout)
 
+        sitl_stdout_offset = self.sitl_stdout_offset()
+
         start_message_hooks = copy.copy(self.message_hooks)
 
         prettyname = "%s (%s)" % (name, desc)
@@ -9763,6 +10069,9 @@ Also, ignores heartbeats not from our target system'''
             passed = False
 
         result = Result(test)
+        result.fcu_firmware_version = self.fcu_firmware_version
+        result.fcu_firmware_hash = self.fcu_firmware_hash
+        result.githash = self.githash
         result.time_elapsed = self.test_timings[desc]
 
         ardupilot_alive = False
@@ -9867,6 +10176,7 @@ Also, ignores heartbeats not from our target system'''
             else:
                 self.progress('FAILED: "%s": %s (see %s)' %
                               (prettyname, repr(ex), test_output_filename))
+            self.progress_sitl_output_since(sitl_stdout_offset)
             result.exception = ex
             result.debug_filename = test_output_filename
             if interact:
@@ -9880,8 +10190,19 @@ Also, ignores heartbeats not from our target system'''
             self.reset_SITL_commandline()
 
         if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
-            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
-            self.set_current_waypoint(0, check_afterwards=False)
+            try:
+                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+                self.set_current_waypoint(0, check_afterwards=False)
+            except Exception as ex:
+                self.progress("Exception clearing mission")
+                self.print_exception_caught(ex)
+                try:
+                    self.wait_heartbeat()
+                except AutoTestTimeoutException:
+                    self.progress("No heartbeat received")
+                self.dump_process_status(result)
+                passed = False
+                self.reset_SITL_commandline()
 
         tee.close()
 
@@ -9959,6 +10280,9 @@ Also, ignores heartbeats not from our target system'''
             "asan": self.asan,
             "wipe": True,
             "enable_fgview": self.enable_fgview,
+            "sitl_rcin_port": self.sitl_rcin_port(),
+            "instance": self.instance,
+            "stdout_file": self.sitl_stdout_file(),
         }
         start_sitl_args.update(**sitl_args)
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:
@@ -9970,6 +10294,8 @@ Also, ignores heartbeats not from our target system'''
         self.expect_list_add(self.sitl)
         self.sup_prog = []
         count = 0
+        # supplementary binaries don't get rcin port:
+        del start_sitl_args["sitl_rcin_port"]
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
             start_sitl_args["customisations"] = [sup_binary['customisation']]
@@ -10020,6 +10346,7 @@ Also, ignores heartbeats not from our target system'''
             "callgrind": self.callgrind,
             "asan": self.asan,
             "wipe": True,
+            "stdout_file": self.sitl_stdout_file(),
         }
         for i in range(len(self.sup_binaries)):
             if instance is not None and instance != i:
@@ -10681,7 +11008,17 @@ Also, ignores heartbeats not from our target system'''
                 ]
             self.progress("Setting calibration mode")
             self.wait_heartbeat()
+            # MAVProxy holds its own TCP connection to SITL, separate from
+            # the one this suite uses.  Restarting SITL underneath it
+            # leaves it on a dead socket which it does not notice until
+            # it next tries to use it - and a command sent into that
+            # window is simply lost, leaving us waiting out a timeout for
+            # a reply to something the vehicle never received.  Loading
+            # modules does not prove otherwise; that is MAVProxy talking
+            # to itself.  So stand it back up after the restart.
+            self.stop_mavproxy(mavproxy)
             self.customise_SITL_commandline(["-M", "calibration"])
+            mavproxy = self.start_mavproxy()
             self.mavproxy_load_module(mavproxy, "sitl_calibration")
             self.mavproxy_load_module(mavproxy, "calibration")
             self.mavproxy_load_module(mavproxy, "relay")
@@ -10720,6 +11057,10 @@ Also, ignores heartbeats not from our target system'''
 
             # Only care about compass prearm
             self.set_parameter("ARMING_SKIPCHK", ~(1 << 2))
+
+            # we restarted MAVProxy above, so the caller's handle is
+            # stale; hand the live one back
+            return mavproxy
 
         #################################################
         def do_test_mag_cal(mavproxy, params, compass_tnumber):
@@ -10999,7 +11340,7 @@ Also, ignores heartbeats not from our target system'''
                 else:
                     target_mask |= (1 << run)
                     ntest_compass = run + 1
-                do_prep_mag_cal_test(mavproxy, curr_params)
+                mavproxy = do_prep_mag_cal_test(mavproxy, curr_params)
                 do_test_mag_cal(mavproxy, curr_params, ntest_compass)
 
         except Exception as e:  # noqa: BLE001
@@ -12083,14 +12424,91 @@ Also, ignores heartbeats not from our target system'''
         if notachieved_ex is not None:
             raise notachieved_ex
 
-    def SET_MESSAGE_INTERVAL(self):
-        '''Test MAV_CMD_SET_MESSAGE_INTERVAL'''
+    def set_message_interval_prep(self):
+        '''get CAMERA_FEEDBACK available.  Several of the
+        SET_MESSAGE_INTERVAL tests want a message which is not
+        ordinarily streamed out, and that is the one they use.'''
         self.set_parameter("CAM1_TYPE", 1) # Camera with servo trigger
         self.reboot_sitl() # needed for CAM1_TYPE to take effect
-        self.start_subtest('Basic tests')
-        self.test_set_message_interval_basic()
-        self.start_subtest('Many-message tests')
-        self.test_set_message_interval_many()
+
+    def SET_MESSAGE_INTERVAL_StreamedMessage(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL on an already-streamed message'''
+        rate = round(self.measure_message_rate("VFR_HUD", 20))
+        self.progress("Initial rate: %u" % rate)
+
+        self.test_rate("Test set to %u" % (rate/2,), rate/2, rate/2, victim_message="VFR_HUD")
+        # this assumes the streamrates have not been played with:
+        self.test_rate("Resetting original rate using 0-value", 0, rate)
+        self.test_rate("Disabling using -1-value", -1, 0)
+        self.test_rate("Resetting original rate", 0, rate)
+
+    def SET_MESSAGE_INTERVAL_UnstreamedMessage(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL on a message not ordinarily streamed'''
+        self.set_message_interval_prep()
+        try:
+            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
+            if rate != 0:
+                raise PreconditionFailedException("Already getting CAMERA_FEEDBACK")
+            self.progress("try various message rates")
+            for want_rate in range(5, 14):
+                self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
+                                         want_rate)
+                self.assert_message_rate_hz('CAMERA_FEEDBACK', want_rate)
+        finally:
+            self.progress("Resetting CAMERA_FEEDBACK rate to default rate")
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, 0)
+
+    def SET_MESSAGE_INTERVAL_LoopRate(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL at the vehicle main loop rate'''
+        self.set_message_interval_prep()
+        try:
+            # have to reset the speedup as MAVProxy can't keep up otherwise
+            self.context_push()
+            self.context_set_speedup(1.0)
+            # ArduPilot currently limits message rate to 80% of main loop rate:
+            want_rate = self.get_parameter("SCHED_LOOP_RATE") * 0.8
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
+                                     want_rate)
+            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
+            self.context_pop()
+            self.progress("Want=%f got=%f" % (want_rate, rate))
+            if abs(rate - want_rate) > 2:
+                raise NotAchievedException("Did not get expected rate")
+        finally:
+            self.progress("Resetting CAMERA_FEEDBACK rate to default rate")
+            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, 0)
+
+    def SET_MESSAGE_INTERVAL_UnsupportedMessage(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL for a message we do not stream'''
+        self.drain_mav()
+
+        non_existant_id = 145
+        self.send_get_message_interval(non_existant_id)
+        m = self.assert_receive_message('MESSAGE_INTERVAL')
+        if m.interval_us != 0:
+            raise NotAchievedException("Supposed to get 0 back for unsupported stream")
+        m = self.assert_receive_message('COMMAND_ACK')
+        if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
+            raise NotAchievedException("Getting rate of unsupported message is a failure")
+
+    def SET_MESSAGE_INTERVAL_ManyMessages(self):
+        '''Test MAV_CMD_SET_MESSAGE_INTERVAL on several messages at once'''
+        self.set_message_interval_prep()
+        messages = [
+            'CAMERA_FEEDBACK',
+            'RAW_IMU',
+            'ATTITUDE',
+        ]
+        try:
+            rate = 5
+            for message in messages:
+                self.set_message_rate_hz(message, rate)
+            for message in messages:
+                self.assert_message_rate_hz(message, rate)
+        finally:
+            # reset message rates to default:
+            for message in messages:
+                self.set_message_rate_hz(message, -1)
 
     def MESSAGE_INTERVAL_COMMAND_INT(self):
         '''Test MAV_CMD_SET_MESSAGE_INTERVAL works as COMMAND_INT'''
@@ -12116,30 +12534,6 @@ Also, ignores heartbeats not from our target system'''
         if count != 1:
             raise NotAchievedException(f"Did not get single AUTOPILOT_VERSION message (count={count}")
 
-    def test_set_message_interval_many(self):
-        messages = [
-            'CAMERA_FEEDBACK',
-            'RAW_IMU',
-            'ATTITUDE',
-        ]
-        ex = None
-        try:
-            rate = 5
-            for message in messages:
-                self.set_message_rate_hz(message, rate)
-            for message in messages:
-                self.assert_message_rate_hz(message, rate)
-        except Exception as e:  # noqa: BLE001
-            self.print_exception_caught(e)
-            ex = e
-
-        # reset message rates to default:
-        for message in messages:
-            self.set_message_rate_hz(message, -1)
-
-        if ex is not None:
-            raise ex
-
     def assert_message_rate_hz(self, message, want_rate, sample_period=20, ndigits=0, mav=None):
         if mav is None:
             mav = self.mav
@@ -12148,64 +12542,6 @@ Also, ignores heartbeats not from our target system'''
         self.progress("%s: Want=%f got=%f" % (message, round(want_rate, ndigits=ndigits), round(rate, ndigits=ndigits)))
         if rate != want_rate:
             raise NotAchievedException("Did not get expected rate (want=%f got=%f)" % (want_rate, rate))
-
-    def test_set_message_interval_basic(self):
-        ex = None
-        try:
-            rate = round(self.measure_message_rate("VFR_HUD", 20))
-            self.progress("Initial rate: %u" % rate)
-
-            self.test_rate("Test set to %u" % (rate/2,), rate/2, rate/2, victim_message="VFR_HUD")
-            # this assumes the streamrates have not been played with:
-            self.test_rate("Resetting original rate using 0-value", 0, rate)
-            self.test_rate("Disabling using -1-value", -1, 0)
-            self.test_rate("Resetting original rate", 0, rate)
-
-            self.progress("try getting a message which is not ordinarily streamed out")
-            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
-            if rate != 0:
-                raise PreconditionFailedException("Already getting CAMERA_FEEDBACK")
-            self.progress("try various message rates")
-            for want_rate in range(5, 14):
-                self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
-                                         want_rate)
-                self.assert_message_rate_hz('CAMERA_FEEDBACK', want_rate)
-
-            self.progress("try at the main loop rate")
-            # have to reset the speedup as MAVProxy can't keep up otherwise
-            self.context_push()
-            self.context_set_speedup(1.0)
-            # ArduPilot currently limits message rate to 80% of main loop rate:
-            want_rate = self.get_parameter("SCHED_LOOP_RATE") * 0.8
-            self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK,
-                                     want_rate)
-            rate = round(self.measure_message_rate("CAMERA_FEEDBACK", 20))
-            self.context_pop()
-            self.progress("Want=%f got=%f" % (want_rate, rate))
-            if abs(rate - want_rate) > 2:
-                raise NotAchievedException("Did not get expected rate")
-
-            self.drain_mav()
-
-            non_existant_id = 145
-            self.send_get_message_interval(non_existant_id)
-            m = self.assert_receive_message('MESSAGE_INTERVAL')
-            if m.interval_us != 0:
-                raise NotAchievedException("Supposed to get 0 back for unsupported stream")
-            m = self.assert_receive_message('COMMAND_ACK')
-            if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
-                raise NotAchievedException("Getting rate of unsupported message is a failure")
-
-        except Exception as e:  # noqa: BLE001
-            self.print_exception_caught(e)
-            ex = e
-
-        self.progress("Resetting CAMERA_FEEDBACK rate to default rate")
-        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_FEEDBACK, 0)
-        self.assert_message_rate_hz('CAMERA_FEEDBACK', 0)
-
-        if ex is not None:
-            raise ex
 
     def send_poll_message(self, message_id, target_sysid=None, target_compid=None, quiet=False, mav=None, p2=0):
         if mav is None:
@@ -13405,10 +13741,15 @@ switch value'''
         return sorted(logs.keys())[-1]
 
     def current_onboard_log_filepath(self):
-        '''return filepath to currently open dataflash log.  We assume that's
-        the latest log...'''
+        '''return filepath to the currently-open dataflash log.  This is the
+        most-recently-modified log, which is not necessarily the one with the
+        highest-numbered filename: once the onboard log count reaches
+        LOG_MAX_FILES the numbering wraps, so the current log can have a lower
+        number than stale logs left on disk from earlier in the run.  Picking
+        the lexicographically-highest name then returns a stale log with none
+        of the current messages.'''
         logs = self.log_list()
-        latest = logs[-1]
+        latest = max(logs, key=lambda p: os.path.getmtime(p))
         return latest
 
     def dfreader_for_path(self, path):
@@ -13623,11 +13964,308 @@ switch value'''
         if not self.current_onboard_log_contains_message(messagetype):
             raise NotAchievedException("Current onboard log does not contain message %s" % messagetype)
 
-    def run_tests(self, tests) -> List[Result]:
+    def tests_needing_exclusive_run(self):
+        '''returns a list of test names which must not be run in parallel
+        with any other test.  These tests use a shared resource (a fixed
+        network port, sudo/pppd, the shared build directory, ...) or assume
+        they are running as the sole / instance-0 SITL.  They are run on
+        their own - serially, at instance 0 (base ports, repo-root working
+        directory) - before the rest of the tests are run in parallel.'''
+        return [
+            # uses pppd (sudo), a fixed PPP-over-TCP port and fixed
+            # addresses for the PPP interfaces themselves:
+            "NetworkingWebServerPPP",
+            "PPPPeriph",
+
+            # rebuilds the Replay tool; this mutates the shared build
+            # directory / waf board configuration, which races with other
+            # tests (and other instances) building or running:
+            "Replay",
+
+            # The following only ever fail when run in parallel; we are not
+            # 100% sure they truly need exclusive runs (vs. e.g. being
+            # sensitive to host load, or assuming instance-0 ports), but
+            # blacklisting them keeps the parallel run green.  Revisit if the
+            # underlying causes are addressed:
+
+            # passes standalone at instance 0, fails at a non-zero instance;
+            # cause not yet understood:
+            "WindMessageSpeed",
+
+            # only seen failing under heavy parallel load (passes when run
+            # on its own); may just be host-load sensitive:
+            "WatchdogHome",
+
+            # builds the AP_Periph binary (shared build directory) and uses
+            # CAN multicast; not safe to run alongside other tests:
+            "PeriphMultiUARTTunnel",
+
+            # FFT motor-noise detection; flaky under parallel load (passes
+            # in isolation at any instance):
+            "GyroFFTMotorNoiseCheck",
+        ]
+
+    def run_tests_parallel(self, tests, parallel=1) -> List[Result]:
+        '''run tests in parallel, but first run any tests which have been
+        blacklisted from parallel running on their own, serially'''
+        exclusive = self.tests_needing_exclusive_run()
+        serial_tests = [x for x in tests if x.name in exclusive]
+        parallel_tests = [x for x in tests if x.name not in exclusive]
+
+        # self.instance is the base instance number (the -I option, 0 by
+        # default).  The blacklisted tests run on their own at the base
+        # instance; the parallel pass uses the instances above it.
+        base = self.instance
+
+        results = []
+        if len(serial_tests):
+            self.progress("Running %u test(s) serially (blacklisted from parallel run)" %
+                          len(serial_tests))
+            # run the blacklisted tests on their own at the base instance
+            # (base ports / repo-root working directory when base==0): several
+            # of them assume those ports or otherwise behave like a serial run:
+            results += self.run_tests_in_processes(serial_tests, 1, base_instance=base)
+        if len(parallel_tests):
+            self.progress("Running %u test(s) %u-way parallel" %
+                          (len(parallel_tests), parallel))
+            results += self.run_tests_in_processes(parallel_tests, parallel, base_instance=base + 1)
+
+        return results
+
+    def run_tests_in_processes(self, tests, parallel, base_instance=1) -> List[Result]:
+
+        # prepare tests queue
+        self.test_queue = multiprocessing.Queue()
+        self.result_queue = multiprocessing.Queue()
+
+        for test in tests:
+            # can't pick functions, so pass a string instead:
+            test.function = test.function.__name__
+            self.test_queue.put(test)
+
+        # start processes.  The parallel pass numbers workers from 1
+        # (instance 0 is the repo-root working directory, used by serial /
+        # non-parallel runs and by the blacklist serial pass):
+        self.threads = []
+        for i in range(min([parallel, len(tests)])):
+            instance = base_instance + i
+            t = multiprocessing.Process(
+                target=self.test_runner_thread_main,
+                name='TestRunner-%u' % instance,
+                args=(
+                    (instance,)
+                )
+            )
+            if t is None:
+                raise NotAchievedException("Could not create thread %u" % instance)
+            t.start()
+            self.threads.append(t)
+
+        tests_by_name = {x.name: x for x in tests}
+        outstanding_results = set(tests_by_name.keys())
+        results = []
+        while len(results) != len(tests):
+            while True:
+                try:
+                    result = self.result_queue.get(block=False)
+                    self.progress("Received result (%s)" % str(result))
+                    results.append(result)
+                    if not hasattr(self, "fcu_firmware_version"):
+                        try:
+                            self.fcu_firmware_version = result.fcu_firmware_version
+                            self.fcu_firmware_hash = result.fcu_firmware_hash
+                            self.githash = result.githash
+                        except AttributeError:
+                            pass
+                    outstanding_results.remove(result.test.name)
+                except queue.Empty:
+                    break
+            if len(results) == len(tests):
+                break
+            # if every worker has died we will never receive the
+            # outstanding results; synthesise failures rather than hang
+            # forever.  A worker which pulls a test off the queue and then
+            # dies (e.g. SITL won't start) takes that test's result with
+            # it:
+            if not any(t.is_alive() for t in self.threads):
+                self.progress("All test runners have exited with %u result(s) outstanding" %
+                              len(outstanding_results))
+                # drain anything that arrived as the last worker exited:
+                while True:
+                    try:
+                        result = self.result_queue.get(block=False)
+                        results.append(result)
+                        outstanding_results.discard(result.test.name)
+                    except queue.Empty:
+                        break
+                for name in sorted(outstanding_results):
+                    self.progress("   Test runner died without result for %s" % name)
+                    result = Result(tests_by_name[name])
+                    result.passed = False
+                    result.reason = "Test runner exited without returning a result"
+                    results.append(result)
+                outstanding_results = set()
+                break
+            time.sleep(1)
+            self.progress("run_tests_parallel waiting for final results (want=%u) (got=%u) (queued=%u" %
+                          (len(tests), len(results), self.test_queue.qsize()))
+            if len(outstanding_results) < 5:
+                for t in outstanding_results:
+                    self.progress("   Where are you %s?" % t)
+
+        for t in self.threads:
+            t.join()
+
+        self.progress("run_tests_parallel returning success")
+
+        return results
+
+    def enter_instance_dir(self):
+        '''parallel workers and serial "-I" runs get a private working
+        directory so their SITL working files (logs/, eeprom.bin,
+        flash.dat, terrain/, scripts/) and any other cwd-relative test
+        artifacts cannot collide with other instances.  Instance 0 (the
+        default) keeps running in the directory autotest was started in, so
+        ordinary serial runs are unchanged.  These directories are wiped at
+        the start of each autotest.py run (see autotest.py).'''
+        if self.instance == 0:
+            return
+        directory = os.path.join("parallel-autotest", str(self.instance))
+        os.makedirs(directory, exist_ok=True)
+        os.chdir(directory)
+
+    def refresh_test_binary(self):
+        '''make a pristine per-instance copy of the binary.  Some tests
+        overwrite the binary they run against; giving each test a fresh
+        private copy means they can't corrupt the master binary or the
+        binary used by another parallel worker.
+
+        Tests which rebuild the binary (via util.build_SITL) call this
+        afterwards to pick the rebuilt binary up; that must work in a
+        serial run too, where there is no private copy and self.binary
+        is the build output itself.'''
+        if getattr(self, "master_binary", None) is None:
+            # not running under the parallel test runner
+            return
+        # unlink rather than overwrite in-place: the destination may still
+        # be mapped by a SITL we (or a previous test run) haven't reaped
+        # yet, and overwriting a running executable raises ETXTBSY:
+        try:
+            os.unlink(self.binary)
+        except FileNotFoundError:
+            pass
+        shutil.copy2(self.master_binary, self.binary)
+        os.chmod(self.binary, 0o755)
+        self.test_binary_signature = self.binary_signature()
+
+    def binary_signature(self):
+        '''enough of the binary's identity to notice a test replacing it'''
+        try:
+            st = os.stat(self.binary)
+        except OSError:
+            return None
+        return (st.st_mtime_ns, st.st_size, st.st_ino)
+
+    def test_binary_modified(self):
+        '''True if the binary we run has been replaced since we copied it.
+        A few tests overwrite the binary they run against - by rebuilding
+        it, or by restoring one snapshotted with context_backup_file() -
+        and the next test must not inherit that.'''
+        if getattr(self, "test_binary_signature", None) is None:
+            return True
+        return self.binary_signature() != self.test_binary_signature
+
+    def test_runner_thread_main(self, instance):
+        self.instance = instance
+        # move into this worker's private working directory; from here on
+        # all cwd-relative paths (logs/, eeprom.bin, terrain/, ...) are
+        # isolated from the other workers:
+        self.enter_instance_dir()
+
+        # each worker - and each test - runs against its own private copy
+        # of the binary, kept in the instance's working directory:
+        self.master_binary = self.binary
+        self.binary = os.path.join(os.getcwd(), os.path.basename(self.master_binary))
+        self.refresh_test_binary()
+
+        test = None
+        try:
+            self.init()
+
+            self.progress("Waiting for a heartbeat with mavlink protocol %s"
+                          % self.mav.WIRE_PROTOCOL_VERSION)
+            self.wait_heartbeat()
+            self.wait_for_initial_mode()
+            self.progress("Setting up RC parameters")
+            self.set_rc_default()
+            self.wait_for_mode_switch_poll()
+            if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
+                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+
+            self.progress("### Passing a queue with %u entries" % self.test_queue.qsize())
+
+            first = True
+            while True:
+                try:
+                    test = self.test_queue.get(block=False)
+                    # can't pickle functions, string -> function here
+                    test.function = getattr(self, test.function)
+                except queue.Empty:
+                    self.progress("Queue is empty")
+                    break
+                if not first and (self.reset_after_every_test or
+                                  self.test_binary_modified()):
+                    # A fresh SITL is only needed when the test which just
+                    # ran replaced the binary, or when the user asked for
+                    # everything to be reset between tests: a wiped cold
+                    # start costs a second or so per test and then the EKF
+                    # has to settle again.  Otherwise carry the SITL over,
+                    # as the serial runner does.
+                    self.stop_SITL()
+                    self.refresh_test_binary()
+                    self.start_SITL(wipe=True)
+                    self.set_streamrate(self.sitl_streamrate())
+                    self.apply_default_parameters()
+                first = False
+                self.drain_mav_unparsed()
+                self.progress("TestRunner-%u: running test (%s)" %
+                              (instance, test.name))
+                result = self.run_one_test(test, suppress_stdout=True)
+                del result.test.function  # can't pickle functions
+                self.result_queue.put(result)
+#                self.result_queue.put((desc, "Fred", debug_filename))
+
+        except pexpect.TIMEOUT:
+            self.progress("Failed with timeout")
+            result = Result(test)
+            result.passed = False
+            result.reason = "Failed with timeout"
+            self.result_queue.put(result)
+            if self.logs_dir:
+                if glob.glob("core*") or glob.glob("ap-*.core"):
+                    self.check_logs("FRAMEWORK")
+
+        # stop our SITL so we don't leak the process (and so we release
+        # this instance's network ports and stop holding our binary copy
+        # open) before another worker reuses this instance number:
+        if getattr(self, "sitl", None) is not None:
+            self.stop_SITL()
+
+        if self.rc_thread is not None:
+            self.progress("Joining RC thread")
+            self.rc_thread_should_quit = True
+            self.rc_thread.join()
+            self.rc_thread = None
+
+    def run_tests(self, tests):
         """Autotest vehicle in SITL."""
         if self.run_tests_called:
             raise ValueError("run_tests called twice")
         self.run_tests_called = True
+
+        # a serial run with "-I N" runs in its own working directory; the
+        # default (instance 0) is a no-op:
+        self.enter_instance_dir()
 
         result_list = []
 
@@ -14130,13 +14768,44 @@ switch value'''
                     initial_params[ins_prefix + "_" + axis] = getattr(pre_value, axis.lower())
                     initial_params[sim_prefix + "_" + axis] = getattr(post_value, axis.lower())
             self.set_parameters(initial_params)
+            # MAVProxy holds its own TCP connection to SITL, separate from
+            # the one this suite uses.  Restarting SITL underneath it
+            # leaves it on a dead socket which it does not notice until
+            # it next tries to use it - and a command sent into that
+            # window is simply lost, leaving us waiting out a timeout for
+            # a reply to something the vehicle never received.  Loading
+            # modules does not prove otherwise; that is MAVProxy talking
+            # to itself.  So stand it back up after the restart.
+            self.stop_mavproxy(mavproxy)
             self.customise_SITL_commandline(["-M", "calibration"])
+            mavproxy = self.start_mavproxy()
             self.mavproxy_load_module(mavproxy, "sitl_calibration")
             self.mavproxy_load_module(mavproxy, "calibration")
             self.mavproxy_load_module(mavproxy, "relay")
             mavproxy.send("sitl_accelcal\n")
             mavproxy.send("accelcal\n")
-            mavproxy.expect("Calibrated")
+            # MAVProxy says "Calibrated" only for a COMMAND_ACK of
+            # ACCEPTED; each other result has its own words.  Listen for
+            # those too - otherwise a calibration the vehicle refused to
+            # start looks exactly like one which is still thinking about
+            # it, and we sit here until the timeout blaming that:
+            #     AccelCal (...) (Timed out after 60s looking for Calibrated)
+            got = mavproxy.expect([
+                "Calibrated",
+                "Calibration failed",
+                "Calibration unsupported",
+                "Calibration temporarily rejected",
+                r"Calibration response \(\d+\)",
+            ])
+            if got != 0:
+                raise NotAchievedException(
+                    "Accelerometer calibration was not accepted (%s)" %
+                    str(mavproxy.after))
+            # this is a wall-clock budget for MAVProxy to print a line,
+            # not a simulated-time one, so it has to survive this test
+            # sharing a machine with however many others -parallel is
+            # running.  Two seconds did not.
+            timeout = 20
             for wanted in [
                     "level",
                     "on its LEFT side",
@@ -14145,7 +14814,6 @@ switch value'''
                     "nose UP",
                     "on its BACK",
             ]:
-                timeout = 2
                 mavproxy.expect("Place vehicle %s and press any key." % wanted, timeout=timeout)
                 mavproxy.expect("sitl_accelcal: sending attitude, please wait..", timeout=timeout)
                 mavproxy.expect("sitl_accelcal: attitude detected, please press any key..", timeout=timeout)
@@ -14246,112 +14914,138 @@ switch value'''
         self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
         self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
 
-    def ahrstrim_attitude_correctness(self):
-        self.wait_ready_to_arm()
+    # the simulated ExternalAHRS backends whose trimmed attitude is
+    # checked, one AHRSTrimAttitude test each:
+    ahrstrim_external_ahrs_configs = [
+        {
+            "name": "VectorNav",
+            "device": "VectorNav",
+            "eahrs_type": 1,
+        },
+        {
+            "name": "MicroStrain5",
+            "device": "MicroStrain5",
+            "eahrs_type": 2,
+        },
+        {
+            "name": "InertialLabs",
+            "device": "ILabs",
+            "eahrs_type": 5,
+        },
+        {
+            "name": "MicroStrain7",
+            "device": "MicroStrain7",
+            "eahrs_type": 7,
+        },
+        {
+            "name": "Aeron",
+            "device": "Aeron-PLX3",
+            "eahrs_type": 10,
+        },
+    ]
+
+    # the non-ExternalAHRS AHRS_EKF_TYPE values checked, one
+    # AHRSTrimAttitude test each:
+    ahrstrim_ahrs_ekf_types = (0, 2, 3)
+
+    # (roll, pitch) trims in degrees applied to each backend in turn:
+    ahrstrim_trims = ((0, 0), (9, 0), (2, -6), (10, 10))
+
+    # each backend is checked at each of these home headings:
+    ahrstrim_headings = (0, 90)
+
+    def ahrstrim_customise_home_heading(self, heading):
+        '''restart SITL sitting on the given heading'''
         HOME = self.sitl_start_location()
-        for heading in 0, 90:
+        self.customise_SITL_commandline([
+            "--home", "%s,%s,%s,%s" % (HOME.lat, HOME.lng, HOME.alt, heading)
+        ])
+
+    def ahrstrim_check_trims(self, ahrs_type):
+        '''check attitude is reported level for each trim in turn'''
+        for (r, p) in self.ahrstrim_trims:
+            self.set_parameters({
+                'AHRS_TRIM_X': math.radians(r),
+                'AHRS_TRIM_Y': math.radians(p),
+                "SIM_BRD_TRIM_X": math.radians(r),
+                "SIM_BRD_TRIM_Y": math.radians(p),
+            })
+            self.reboot_sitl()
+            self.ahrstrim_attitude_correctness_test_attitude(ahrs_type)
+
+    def AHRSTrimAttitudeExternalAHRS(self, config):
+        '''AHRS trim attitude correctness for an ExternalAHRS backend'''
+        self.wait_ready_to_arm()
+        for heading in self.ahrstrim_headings:
+            self.start_subtest("Heading %u" % heading)
+            self.ahrstrim_customise_home_heading(heading)
+            self.context_push()
             self.customise_SITL_commandline([
-                "--home", "%s,%s,%s,%s" % (HOME.lat, HOME.lng, HOME.alt, heading)
+                "--serial4=sim:%s" % config["device"],
             ])
+            self.set_parameters({
+                "EAHRS_TYPE": config["eahrs_type"],
+                "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
+                "SERIAL4_BAUD": 230400,
+                "GPS1_TYPE": 21,  # External AHRS
+                "AHRS_EKF_TYPE": 11,  # ExternalAHRS
+                "INS_GYR_CAL": 1,
+                "EAHRS_SENSORS": 0xD,  # GPS|BARO|COMPASS (exclude IMU)
+            })
+            self.reboot_sitl()
+            self.delay_sim_time(5, reason="AHRS to initialise")
+            self.progress("Running accelcal")
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+                p5=4,
+                timeout=5,
+            )
+            self.wait_prearm_sys_status_healthy(timeout=120)
+            self.ahrstrim_check_trims(11)
+            self.context_pop()
 
-            # Test all simulated ExternalAHRS backends
-            external_ahrs_configs = [
-                {
-                    "name": "VectorNav",
-                    "device": "VectorNav",
-                    "eahrs_type": 1,
-                },
-                {
-                    "name": "MicroStrain5",
-                    "device": "MicroStrain5",
-                    "eahrs_type": 2,
-                },
-                {
-                    "name": "InertialLabs",
-                    "device": "ILabs",
-                    "eahrs_type": 5,
-                },
-                {
-                    "name": "MicroStrain7",
-                    "device": "MicroStrain7",
-                    "eahrs_type": 7,
-                },
-                {
-                    "name": "Aeron",
-                    "device": "Aeron-PLX3",
-                    "eahrs_type": 10,
-                },
-            ]
+    def AHRSTrimAttitude(self, ahrs_type):
+        '''AHRS trim attitude correctness for an AHRS_EKF_TYPE'''
+        self.wait_ready_to_arm()
+        for heading in self.ahrstrim_headings:
+            self.start_subtest("Heading %u" % heading)
+            self.ahrstrim_customise_home_heading(heading)
+            self.context_push()
+            self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
+            self.reboot_sitl()
+            self.wait_prearm_sys_status_healthy(timeout=120)
+            self.ahrstrim_check_trims(ahrs_type)
+            self.context_pop()
 
-            self.start_subtest("ExternalAHRS backend attitude")
-            for config in external_ahrs_configs:
-                self.start_subsubtest("Testing ExternalAHRS backend: %s" % config["name"])
-                self.context_push()
-
-                self.customise_SITL_commandline([
-                    "--serial4=sim:%s" % config["device"],
-                ])
-                self.set_parameters({
-                    "EAHRS_TYPE": config["eahrs_type"],
-                    "SERIAL4_PROTOCOL": 36,  # ExternalAHRS protocol
-                    "SERIAL4_BAUD": 230400,
-                    "GPS1_TYPE": 21,  # External AHRS
-                    "AHRS_EKF_TYPE": 11,  # ExternalAHRS
-                    "INS_GYR_CAL": 1,
-                    "EAHRS_SENSORS": 0xD,  # GPS|BARO|COMPASS (exclude IMU)
-                })
-                self.reboot_sitl()
-                self.delay_sim_time(5, reason="AHRS to initialise")
-                self.progress("Running accelcal")
-                self.run_cmd(
-                    mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
-                    p5=4,
-                    timeout=5,
-                )
-                self.wait_prearm_sys_status_healthy(timeout=120)
-
-                for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
-                    self.set_parameters({
-                        'AHRS_TRIM_X': math.radians(r),
-                        'AHRS_TRIM_Y': math.radians(p),
-                        "SIM_BRD_TRIM_X": math.radians(r),
-                        "SIM_BRD_TRIM_Y": math.radians(p),
-                    })
-                    self.reboot_sitl()
-                    self.ahrstrim_attitude_correctness_test_attitude(11)
-                self.context_pop()
-                # no reboot here: the restored parameters take effect at
-                # the next boot, which the following backend's
-                # customise_SITL_commandline (or the non-ExternalAHRS
-                # section's reboot) performs anyway
-
-            self.start_subtest("Testing non-ExternalAHRS backends")
-            for ahrs_type in [0, 2, 3]:
-                self.start_subsubtest("Testing AHRS_TYPE=%u" % ahrs_type)
-                self.context_push()
-                self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
-                self.reboot_sitl()
-
-                self.wait_prearm_sys_status_healthy(timeout=120)
-                for (r, p) in [(0, 0), (9, 0), (2, -6), (10, 10)]:
-                    self.set_parameters({
-                        'AHRS_TRIM_X': math.radians(r),
-                        'AHRS_TRIM_Y': math.radians(p),
-                        "SIM_BRD_TRIM_X": math.radians(r),
-                        "SIM_BRD_TRIM_Y": math.radians(p),
-                    })
-                    self.reboot_sitl()
-                    self.ahrstrim_attitude_correctness_test_attitude(ahrs_type)
-
-                self.context_pop()
-
-    def AHRSTrim(self):
-        '''AHRS trim testing'''
-        self.start_subtest("Attitude Correctness")
-        self.ahrstrim_attitude_correctness()
-        self.delay_sim_time(5, reason="attitude trim test interval")
-        self.start_subtest("Preflight Calibration")
+    def AHRSTrimPreflightCal(self):
+        '''AHRS trim preflight calibration'''
+        # AP_InertialSensor::calibrate_trim() rejects a trim calibration
+        # made within 5s of the last one - and last_accel_cal_ms is zero
+        # until a calibration is done, so it also rejects one made in the
+        # first 5s of uptime.  That rejection is silent as far as the GCS
+        # is concerned (TEMPORARILY_REJECTED, no statustext), so without
+        # this wait we simply time out waiting for "Trim OK":
+        self.delay_sim_time(5, reason="trim calibration to be accepted")
         self.ahrstrim_preflight_cal()
+
+    def AHRSTrimTests(self):
+        '''a test per AHRS backend, plus the preflight-calibration test.
+        Each backend used to be a sub-subtest of one long AHRSTrim, which
+        serialised them all behind one test and let the first backend to
+        fail hide every backend after it.'''
+        ret = []
+        for config in self.ahrstrim_external_ahrs_configs:
+            test = Test(self.AHRSTrimAttitudeExternalAHRS, kwargs={"config": config})
+            test.name = "AHRSTrimAttitude_%s" % config["name"]
+            test.description = "%s (%s)" % (test.description, config["name"])
+            ret.append(test)
+        for ahrs_type in self.ahrstrim_ahrs_ekf_types:
+            test = Test(self.AHRSTrimAttitude, kwargs={"ahrs_type": ahrs_type})
+            test.name = "AHRSTrimAttitude_EKFType%u" % ahrs_type
+            test.description = "%s (AHRS_EKF_TYPE=%u)" % (test.description, ahrs_type)
+            ret.append(test)
+        ret.append(Test(self.AHRSTrimPreflightCal))
+        return ret
 
     def Button(self):
         '''Test Buttons'''
@@ -15755,6 +16449,16 @@ switch value'''
 
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''
+        # stop the SITL for the duration of the replay.  Replay writes
+        # its output into the same logs/ directory the SITL logs into,
+        # and these tests run with LOG_DISARMED set, so with the SITL
+        # left running there are two writers in there and no way to tell
+        # afterwards which of the new logs is Replay's: "the latest log"
+        # can just as easily be the one the SITL is still appending to.
+        self.mav.close()
+        self.stop_SITL()
+
+        logs_before = set(self.log_list())
         util.run_cmd(
             ['build/sitl/tool/Replay', filepath],
             directory=util.topdir(),
@@ -15762,7 +16466,21 @@ switch value'''
             show=True,
             output=True,
         )
-        return self.current_onboard_log_filepath()
+        # with the SITL stopped Replay is the only writer, so its output
+        # is simply the log which appeared while it ran.  Work this out
+        # before restarting the SITL, which opens a log of its own:
+        new_logs = sorted(set(self.log_list()) - logs_before)
+
+        self.start_SITL(wipe=False)
+        self.mav.do_connect()
+        self.wait_heartbeat(drain_mav=True)
+        self.set_streamrate(self.sitl_streamrate())
+
+        if len(new_logs) != 1:
+            raise NotAchievedException(
+                "Expected exactly one new log from Replay, got (%s)" % str(new_logs))
+
+        return new_logs[0]
 
     def AHRS_ORIENTATION(self):
         '''test AHRS_ORIENTATION parameter works'''
@@ -17198,7 +17916,7 @@ SERIAL5_BAUD 128
             print("Had to force-reset SITL %u times" %
                   (self.forced_post_test_sitl_reboots,))
 
-    def autotest(self, tests=None, allow_skips=True, step_name=None):
+    def autotest(self, parallel=1, tests=None, allow_skips=True, step_name=None):
         """Autotest used by ArduPilot autotest CI."""
         if tests is None:
             tests = self.tests()
@@ -17206,6 +17924,7 @@ SERIAL5_BAUD 128
         for test in tests:
             if not isinstance(test, Test):
                 test = Test(test)
+                test.instance = self.instance
             all_tests.append(test)
 
         disabled = self.disabled_tests()
@@ -17224,7 +17943,12 @@ SERIAL5_BAUD 128
                 continue
             tests.append(test)
 
-        results = self.run_tests(tests)
+        if parallel != 1:
+            # we preserve non-parallel behaviour to avoid fighting on
+            # e.g. Windows and MacOSX:
+            results = self.run_tests_parallel(tests, parallel=parallel)
+        else:
+            results = self.run_tests(tests)
 
         if len(skip_list):
             self.progress("Skipped tests:")

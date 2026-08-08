@@ -26,6 +26,7 @@ from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
+from vehicle_test_suite import WaitWaypointTimeout
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
@@ -422,9 +423,22 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         wp_count = self.load_mission(filename, strict=strict)
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        self.context_push()
+        self.context_collect('STATUSTEXT')
         self.change_mode('AUTO')
-        self.wait_waypoint(1, wp_count-1, max_dist_to_final_wp_m=5, ignore_MANUAL_mode_change=ignore_MANUAL_mode_change)
-        self.wait_statustext("Mission Complete", timeout=600)
+        try:
+            self.wait_waypoint(1, wp_count-1, max_dist_to_final_wp_m=5,
+                               ignore_MANUAL_mode_change=ignore_MANUAL_mode_change)
+        except WaitWaypointTimeout:
+            # the vehicle can finish the mission without us ever seeing
+            # it within max_dist_to_final_wp_m of the final waypoint: a
+            # sailboat tacks its way there, so the samples we get can
+            # straddle the threshold.  Finishing the mission is what we
+            # are waiting for, so do not fail if that has happened.
+            if not self.statustext_in_collections("Mission Complete"):
+                raise
+        self.wait_statustext("Mission Complete", check_context=True, timeout=600)
+        self.context_pop()
         self.disarm_vehicle()
         self.progress("Mission OK")
 
@@ -1505,6 +1519,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.load_rally_using_mavproxy("rover-test-rally.txt")
         self.assert_parameter_value('RALLY_TOTAL', 2)
 
+        # the file's rally points are fixed coordinates chosen relative
+        # to the SITL startup location, but RTL returns to whichever of
+        # home and the rally points is closest - and home is wherever
+        # the vehicle happened to be.  Re-place them relative to us so
+        # the rally point is the closer of the two once we have driven
+        # away, whatever a previous test did with the vehicle:
+        here = self.get_location()
+        rally_locs = [
+            self.offset_location_ne(here, 19.8, 33.0),
+            self.offset_location_ne(here, 99.1, -114.7),
+        ]
+        self.upload_rally_points_from_locations(rally_locs)
+
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
@@ -1516,8 +1543,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.change_mode("RTL")
 
-        # location copied in from rover-test-rally.txt:
-        loc = Location(40.071553, -105.229401, 1583, AltFrame.ABSOLUTE)
+        loc = rally_locs[0]
 
         self.wait_location(loc, accuracy=accuracy, minimum_duration=10, timeout=45)
         self.disarm_vehicle()
@@ -1934,79 +1960,90 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             raise NotAchievedException("Uploaded fence when should not be possible")
         self.progress("Fence rightfully bounced")
 
-    def GCSFailsafe(self, side=60, timeout=360):
-        """Test GCS Failsafe"""
-        try:
-            self.test_gcs_failsafe(side=side, timeout=timeout)
-        except Exception as ex:
-            self.setGCSfailsafe(0)
-            self.set_parameter('FS_ACTION', 0)
-            self.disarm_vehicle(force=True)
-            self.reboot_sitl()
-            raise ex
+    def gcs_failsafe_init(self):
+        '''common setup for the GCSFailsafe* tests.  Uses a context so the
+        parameters and the vehicle are restored on the way out, which the
+        one big test this was split from had to do by hand in an
+        except: block.'''
+        self.context_push()
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "FS_ACTION": 1,
+            "FS_THR_ENABLE": 0,  # disable radio FS as it inhibits the GCS one
+        })
 
-    def test_gcs_failsafe(self, side=60, timeout=360):
-        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
-        self.set_parameter("FS_ACTION", 1)
-        self.set_parameter("FS_THR_ENABLE", 0)  # disable radio FS as it inhibt GCS one's
+    def gcs_failsafe_go_somewhere(self):
+        '''drive away from home, so an RTL has somewhere to come back from'''
+        self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.delay_sim_time(5, reason="vehicle to move")
+        self.set_rc(3, 1500)
 
-        def go_somewhere():
-            self.change_mode("MANUAL")
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.set_rc(3, 2000)
-            self.delay_sim_time(5, reason="vehicle to move")
-            self.set_rc(3, 1500)
-        # Trigger telemetry loss with failsafe disabled. Verify no action taken.
-        self.start_subtest("GCS failsafe disabled test: FS_GCS_ENABLE=0 should take no failsafe action")
+    def GCSFailsafeDisabled(self):
+        '''test FS_GCS_ENABLE=0 takes no failsafe action'''
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(0)
-        go_somewhere()
+        self.gcs_failsafe_go_somewhere()
         self.set_heartbeat_rate(0)
         self.delay_sim_time(5, reason="GCS failsafe timeout")
         self.wait_mode("MANUAL")
         self.set_heartbeat_rate(self.speedup)
         self.delay_sim_time(5, reason="heartbeat restoration")
         self.wait_mode("MANUAL")
-        self.end_subtest("Completed GCS failsafe disabled test")
+        self.disarm_vehicle(force=True)
+        self.context_pop()
 
-        # Trigger telemetry loss with failsafe enabled. Verify
-        # failsafe triggers to RTL. Restore telemetry, verify failsafe
-        # clears, and change modes.
-        self.start_subtest("GCS failsafe recovery test: FS_GCS_ENABLE=1")
+    def GCSFailsafeRecovery(self):
+        '''test failsafe triggers RTL and clears when telemetry returns'''
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(1)
-        go_somewhere()
+        self.gcs_failsafe_go_somewhere()
         self.set_heartbeat_rate(0)
         self.wait_mode("RTL")
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
         self.change_mode("MANUAL")
-        self.end_subtest("Completed GCS failsafe recovery test")
+        self.disarm_vehicle(force=True)
+        self.context_pop()
 
-        # Trigger telemetry loss with failsafe enabled. Verify failsafe triggers and RTL completes
-        self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1")
+    def GCSFailsafeRTLComplete(self):
+        '''test failsafe RTL runs to completion with FS_GCS_ENABLE=1'''
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(1)
+        self.gcs_failsafe_go_somewhere()
         self.set_heartbeat_rate(0)
         self.wait_mode("RTL")
         self.wait_statustext("Reached destination", timeout=60)
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe RTL")
+        self.disarm_vehicle(force=True)
+        self.context_pop()
 
-        # Trigger telemetry loss with an invalid failsafe value. Verify failsafe triggers and RTL completes
-        self.start_subtest("GCS failsafe invalid value with no options test: FS_GCS_ENABLE=99")
+    def GCSFailsafeInvalidValue(self):
+        '''test an invalid FS_GCS_ENABLE still gives us an RTL'''
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(99)
-        go_somewhere()
+        self.gcs_failsafe_go_somewhere()
         self.set_heartbeat_rate(0)
         self.wait_mode("RTL")
         self.wait_statustext("Reached destination", timeout=60)
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.end_subtest("Completed GCS failsafe invalid value")
+        self.disarm_vehicle(force=True)
+        self.context_pop()
 
-        self.start_subtest("Testing continue in auto mission")
-        self.disarm_vehicle()
+    def GCSFailsafeContinueInAuto(self):
+        '''test FS_GCS_ENABLE=2 continues an auto mission'''
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(2)
+        # the mission lives in the directory named for the test this was
+        # split out of, rather than one per split-out test:
+        self.set_current_test_name("GCSFailsafe")
         self.load_mission("test_arming.txt")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
         self.change_mode("AUTO")
         self.delay_sim_time(5, reason="mission waypoints to start")
         self.set_heartbeat_rate(0)
@@ -2015,25 +2052,27 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_mode("AUTO")
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.disarm_vehicle(force=True)
+        self.context_pop()
 
-        self.start_subtest("GCS failsafe RTL with no options test: FS_GCS_ENABLE=1 and FS_GCS_TIMEOUT=10")
+    def GCSFailsafeTimeout(self):
+        '''test FS_GCS_TIMEOUT delays the failsafe'''
+        self.gcs_failsafe_init()
         self.setGCSfailsafe(1)
         old_gcs_timeout = self.get_parameter("FS_GCS_TIMEOUT")
         new_gcs_timeout = old_gcs_timeout * 2
         self.set_parameter("FS_GCS_TIMEOUT", new_gcs_timeout)
-        go_somewhere()
+        self.gcs_failsafe_go_somewhere()
         self.set_heartbeat_rate(0)
-        self.delay_sim_time(old_gcs_timeout + (new_gcs_timeout - old_gcs_timeout) / 2, reason="GCS timeout midpoint")
+        self.delay_sim_time(old_gcs_timeout + (new_gcs_timeout - old_gcs_timeout) / 2,
+                            reason="GCS timeout midpoint")
         self.assert_mode("MANUAL")
         self.wait_mode("RTL")
         self.wait_statustext("Reached destination", timeout=60)
         self.set_heartbeat_rate(self.speedup)
         self.wait_statustext("GCS Failsafe Cleared", timeout=60)
-        self.disarm_vehicle()
-        self.end_subtest("Completed GCS failsafe RTL")
-
-        self.setGCSfailsafe(0)
-        self.progress("All GCS failsafe tests complete")
+        self.disarm_vehicle(force=True)
+        self.context_pop()
 
     def test_gcs_fence_update_fencepoint(self, target_system=1, target_component=1):
         self.start_subtest("Ensuring we can move a fencepoint")
@@ -4861,8 +4900,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "FENCE_ACTION": 0,
         })
         fence_middle = self.offset_location_ne(here, 0, 30)
-        # FIXME: this might be nowhere near "here"!
-        expected_stopping_point = Location.latlon_only(40.0713376, -105.2295738)
+        # the fences above are placed relative to "here", so the point we
+        # stop at is too: just short of the exclusion fence 20m to our
+        # east.  This used to be a fixed location, which only worked
+        # while "here" happened to be the startup location.
+        expected_stopping_point = self.offset_location_ne(here, -1.05, 15.05)
         self.drive_somewhere_stop_at_boundary(
             fence_middle,
             expected_stopping_point,
@@ -4970,7 +5012,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_distance_to_home(3, 7, timeout=300)
         self.disarm_vehicle()
 
-    def test_scripting_simple_loop(self):
+    def ScriptingSimpleLoop(self):
+        '''Scripting simple loop'''
         self.start_subtest("Scripting simple loop")
 
         self.context_push()
@@ -5001,7 +5044,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if count < 3:
             raise NotAchievedException("Expected at least three hellos")
 
-    def test_scripting_internal_test(self):
+    def ScriptingInternalTest(self):
+        '''Scripting internal test'''
         self.start_subtest("Scripting internal test")
 
         self.context_push()
@@ -5046,7 +5090,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_hello_world(self):
+    def ScriptingHelloWorld(self):
+        '''Scripting hello world'''
         self.start_subtest("Scripting hello world")
 
         self.context_push()
@@ -5084,7 +5129,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_auxfunc(self):
+    def ScriptingAuxFunc(self):
+        '''Scripting aux functions'''
         self.start_subtest("Scripting aufunc triggering")
 
         self.context_push()
@@ -5104,7 +5150,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_print_home_and_origin(self):
+    def ScriptingPrintHomeAndOrigin(self):
+        '''Scripting print home and origin'''
         self.start_subtest("Scripting print home and origin")
 
         self.context_push()
@@ -5119,7 +5166,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_set_home_to_vehicle_location(self):
+    def ScriptingSetHomeToVehicleLocation(self):
+        '''Scripting set home to vehicle location'''
         self.start_subtest("Scripting set home to vehicle location")
 
         self.context_push()
@@ -5132,7 +5180,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_serial_loopback(self):
+    def ScriptingSerialLoopback(self):
+        '''Scripting serial loopback'''
         self.start_subtest("Scripting serial loopback test")
 
         self.context_push()
@@ -5154,7 +5203,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
-    def test_scripting_callback_time(self):
+    def ScriptingCallbackTime(self):
+        '''Scripting callback time'''
         self.start_subtest("Scripting callback time")
 
         self.context_collect('STATUSTEXT')
@@ -5163,17 +5213,6 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.reboot_sitl()
 
         self.wait_statustext('Timing test passed', check_context=True, timeout=600)
-
-    def Scripting(self):
-        '''Scripting test'''
-        self.test_scripting_set_home_to_vehicle_location()
-        self.test_scripting_print_home_and_origin()
-        self.test_scripting_hello_world()
-        self.test_scripting_simple_loop()
-        self.test_scripting_internal_test()
-        self.test_scripting_auxfunc()
-        self.test_scripting_serial_loopback()
-        self.test_scripting_callback_time()
 
     def test_mission_frame(self, frame, target_system=1, target_component=1):
         self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
@@ -6263,6 +6302,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "PLND_ORIENT": 0,
         })
 
+        # the loop below reboots, which returns the vehicle to the SITL
+        # startup location; take our reference from there rather than
+        # from wherever a previous test left us, or the target ends up
+        # that much further away than the drive to it allows for:
+        self.reboot_sitl()
         start = self.get_location()
         target = self.offset_location_ne(start, 50, 0)
         self.progress("Setting target to %f %f" % (start.lat, start.lng))
@@ -6467,8 +6511,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
+        # the headings below are absolute, so the bearing to the target
+        # must stay north however far the vehicle wanders getting onto
+        # it - it may start this test moving, and driving a few hundred
+        # metres off the line to a target 2km away costs more than the
+        # 5 degrees wait_heading() allows.  20km away it costs under one.
         here = self.get_location()
-        target_loc = self.offset_location_ne(here, 2000, 0)
+        target_loc = self.offset_location_ne(here, 20000, 0)
         self.send_guided_mission_item(target_loc)
 
         self.wait_groundspeed(3, 100, minimum_duration=5)
@@ -6682,16 +6731,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_push()
         self.context_collect('STATUSTEXT')
 
+        # a port of our own: every parallel worker runs this test on the
+        # same machine, and a fixed port means they either fail to bind
+        # or - worse - talk to another worker's vehicle
+        web_port = self.spare_network_port()
         self.set_parameters({
-            "WEB_BIND_PORT": 8081,
+            "WEB_BIND_PORT": web_port,
         })
 
         self.scripting_restart()
-        self.wait_text("WebServer: starting on port 8081", check_context=True)
+        self.wait_text("WebServer: starting on port %u" % web_port, check_context=True)
 
         self.wait_ready_to_arm()
 
-        self.TestWebServer("http://127.0.0.1:8081")
+        self.TestWebServer("http://127.0.0.1:%u" % web_port)
 
         self.context_pop()
         self.context_pop()
@@ -6713,15 +6766,35 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
 
         self.progress('rebuilding rover with ppp enabled')
-        import shutil
-        shutil.copy('build/sitl/bin/ardurover', 'build/sitl/bin/ardurover.noppp')
+        # snapshot the rover we are about to overwrite; context_pop()
+        # restores it (stopping SITL around the restore if that is the
+        # binary being run):
+        self.context_backup_file('build/sitl/bin/ardurover')
+
+        # stop the SITL for the duration of the build.  The build blocks
+        # this process for a long time, and a SITL left running with
+        # nobody reading its MAVLink stream fills its serial0 output
+        # queue and wedges in the outqueue-full loop in
+        # SITL_State::wait_clock(), which stops simulated time - and so
+        # heartbeats - until we start reading again.
+        self.mav.close()
+        self.stop_SITL()
+
         # --enable-math-check-indexes matches the CI rover build
         # configuration, so in CI this rebuild is a ccache hit against
         # the pre-built PPP rover from the build job
         util.build_SITL('bin/ardurover', clean=False, configure=True,
                         extra_configure_args=['--enable-PPP', '--enable-math-check-indexes', '--debug'])
 
-        self.reboot_sitl()
+        # under the parallel test runner each test runs against a private
+        # copy of the binary; make sure that copy is the rover we just
+        # built, or we start the pre-rebuild one back up:
+        self.refresh_test_binary()
+
+        self.start_SITL(wipe=False)
+        self.mav.do_connect()
+        self.wait_heartbeat(drain_mav=True)
+        self.set_streamrate(self.sitl_streamrate())
 
         self.progress("Starting PPP daemon")
         pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
@@ -6745,12 +6818,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.TestWebServer("http://192.168.14.13:8081")
 
         self.context_pop()
+        # this pop restores the non-PPP rover backed up above
         self.context_pop()
-
-        # restore rover without ppp enabled for next test
-        os.unlink('build/sitl/bin/ardurover')
-        shutil.copy('build/sitl/bin/ardurover.noppp', 'build/sitl/bin/ardurover')
-        self.reboot_sitl()
 
     def FenceFullAndPartialTransfer(self, target_system=1, target_component=1):
         '''ensure starting a fence transfer then a partial transfer behaves
@@ -7060,6 +7129,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def ManyMAVLinkConnections(self):
         '''test testing >8 MAVLink connections'''
+        # these ports are bound by the autopilot and connected to below;
+        # they must differ between parallel workers on this machine, so
+        # offset them by instance as the SITL's own ports are
+        net_port_base = 6700 + 10 * self.instance
         self.set_parameters({
             "SERIAL3_PROTOCOL": 2,
             "SERIAL4_PROTOCOL": 2,
@@ -7074,7 +7147,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
             "NET_P1_IP3": 1,
-            "NET_P1_PORT": 6700,
+            "NET_P1_PORT": net_port_base + 0,
             "NET_P1_PROTOCOL": 2,
 
             "NET_P2_TYPE": 4,
@@ -7082,7 +7155,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "NET_P2_IP1": 0,
             "NET_P2_IP2": 0,
             "NET_P2_IP3": 1,
-            "NET_P2_PORT": 6701,
+            "NET_P2_PORT": net_port_base + 1,
             "NET_P2_PROTOCOL": 2,
 
             "NET_P3_TYPE": 4,
@@ -7090,7 +7163,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "NET_P3_IP1": 0,
             "NET_P3_IP2": 0,
             "NET_P3_IP3": 1,
-            "NET_P3_PORT": 6702,
+            "NET_P3_PORT": net_port_base + 2,
             "NET_P3_PROTOCOL": 2,
 
             "NET_P4_TYPE": 4,
@@ -7098,7 +7171,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "NET_P4_IP1": 0,
             "NET_P4_IP2": 0,
             "NET_P4_IP3": 1,
-            "NET_P4_PORT": 6703,
+            "NET_P4_PORT": net_port_base + 3,
             "NET_P4_PROTOCOL": 2,
 
             "SCR_ENABLE": 1,
@@ -7112,7 +7185,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.wait_statustext("hello, world")
         conns = {}
-        for port in 5761, 5762, 5763, 5764, 5765, 5766, 5767, 6700, 6701, 6702, 6703:
+        ports = [self.adjust_ardupilot_port(p) for p in (5761, 5762, 5763, 5764, 5765, 5766, 5767)]
+        ports += [net_port_base + n for n in range(4)]
+        for port in ports:
             cstring = f"tcp:localhost:{port}"
             self.progress(f"Connecting to {cstring}")
             c = mavutil.mavlink_connection(
@@ -7290,41 +7365,43 @@ return update()
         self.reboot_sitl()
         self.wait_statustext('Tests OK')
 
-    def DriveEachFrame(self):
-        '''drive each frame (except BalanceBot) in a mission to ensure basic functionality'''
+    # frames DriveFrame cannot drive, and why.  These become
+    # disabled_tests() entries, so they are reported as skips with their
+    # reason rather than silently stepped over mid-test:
+    drive_each_frame_known_broken = {
+        "balancebot": "needs special stay-upright code",
+    }
+
+    def DriveEachFrameTests(self):
+        '''a test per internal frame, each driving a basic mission'''
+        return self.tests_for_each_frame(self.DriveFrame)
+
+    def DriveFrame(self, frame):
+        '''drive a frame in a mission to ensure basic functionality'''
+        # every frame drives the same mission, so they live in one
+        # directory rather than one per per-frame test name:
+        self.set_current_test_name("DriveFrame")
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
-        known_broken_frames = {
-            "balancebot": "needs special stay-upright code",
-        }
-        for frame in sorted(vinfo_options["frames"].keys()):
-            self.start_subtest("Testing frame (%s)" % str(frame))
-            if frame in known_broken_frames:
-                self.progress("Actually, no I'm not - it is known-broken (%s)" %
-                              (known_broken_frames[frame]))
-                continue
-            frame_bits = vinfo_options["frames"][frame]
-            print("frame_bits: %s" % str(frame_bits))
-            if frame_bits.get("external", False):
-                self.progress("Actually, no I'm not - it is an external simulation")
-                continue
-            model = frame_bits.get("model", frame)
-            self.customise_SITL_commandline(
-                [],
-                model=model,
-                wipe=True,
-            )
-            mission_file = "basic.txt"
-            self.wait_ready_to_arm()
-            self.set_parameters({
-                "MIS_DONE_BEHAVE": 3,
-                "SIM_WIND_SPD": 10,
-            })
-            self.arm_vehicle()
-            self.drive_mission(mission_file, strict=False, ignore_MANUAL_mode_change=True)
-            self.wait_mode('MANUAL')
+        frame_bits = vinfo_options["frames"][frame]
+        self.progress("frame_bits: %s" % str(frame_bits))
+        model = frame_bits.get("model", frame)
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            wipe=True,
+        )
+        mission_file = "basic.txt"
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "MIS_DONE_BEHAVE": 3,
+            "SIM_WIND_SPD": 10,
+        })
+        self.arm_vehicle()
+        self.drive_mission(mission_file, strict=False, ignore_MANUAL_mode_change=True)
+        self.wait_mode('MANUAL')
 
-            self.wait_distance_to_home(0, 5, timeout=1)
+        self.wait_distance_to_home(0, 5, timeout=1)
 
     def start_driving_simple_relhome_mission(self, items):
         '''uploads items, changes mode to AUTO, waits ready to arm and starts mission'''
@@ -7426,6 +7503,13 @@ return update()
             "SIM_GPS1_POS_Y": SIM_GPS1_POS_Y,
             "SIM_GPS1_POS_Z": SIM_GPS1_POS_Z,
         })
+        # both readings must be taken from the same place for their
+        # difference to be the antenna offset.  We are not given a
+        # starting location - a previous test can leave the vehicle
+        # anywhere - and the reboot below returns it to the startup
+        # location, so reboot here too rather than measuring from
+        # wherever we happen to have been left:
+        self.reboot_sitl()
         self.wait_ready_to_arm()
         gps_m = self.assert_receive_message("GPS_RAW_INT")
         lat = math.degrees(math.radians(gps_m.lat)*1.0e-7)
@@ -7481,7 +7565,11 @@ return update()
             self.CameraMission,
             self.Gripper,
             self.GripperMission,
-            self.SET_MESSAGE_INTERVAL,
+            self.SET_MESSAGE_INTERVAL_StreamedMessage,
+            self.SET_MESSAGE_INTERVAL_UnstreamedMessage,
+            self.SET_MESSAGE_INTERVAL_LoopRate,
+            self.SET_MESSAGE_INTERVAL_UnsupportedMessage,
+            self.SET_MESSAGE_INTERVAL_ManyMessages,
             self.MESSAGE_INTERVAL_COMMAND_INT,
             self.REQUEST_MESSAGE,
             self.MAV_GCS_ENFORCE,
@@ -7517,7 +7605,14 @@ return update()
             self.PolyFenceObjectAvoidanceBendyRulerEasierGuided,
             self.PolyFenceObjectAvoidanceBendyRulerEasierAuto,
             self.SlewRate,
-            self.Scripting,
+            self.ScriptingSetHomeToVehicleLocation,
+            self.ScriptingPrintHomeAndOrigin,
+            self.ScriptingHelloWorld,
+            self.ScriptingSimpleLoop,
+            self.ScriptingInternalTest,
+            self.ScriptingAuxFunc,
+            self.ScriptingSerialLoopback,
+            self.ScriptingCallbackTime,
             self.ScriptingSteeringAndThrottle,
             self.MissionFrames,
             self.SetpointGlobalPos,
@@ -7540,7 +7635,12 @@ return update()
             self.AutoDock,
             self.BeaconPosition,
             self.PrivateChannel,
-            self.GCSFailsafe,
+            self.GCSFailsafeDisabled,
+            self.GCSFailsafeRecovery,
+            self.GCSFailsafeRTLComplete,
+            self.GCSFailsafeInvalidValue,
+            self.GCSFailsafeContinueInAuto,
+            self.GCSFailsafeTimeout,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
             self.NoArmWithoutMissionItems,
@@ -7571,19 +7671,22 @@ return update()
             self.EnterModeOnSafetySwitch,
             self.ThrottleFailsafe,
             self.CrashCheck,
-            self.DriveEachFrame,
             self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
             self.GPSAntennaPositionOffset,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
         ])
+        ret.extend(self.DriveEachFrameTests())
         return ret
 
     def disabled_tests(self):
-        return {
+        ret = {
             "SlewRate": "got timing report failure on CI",
             "PolyFenceObjectAvoidanceBendyRuler": "unreliable",
         }
+        for (frame, reason) in self.drive_each_frame_known_broken.items():
+            ret["DriveFrame_%s" % frame] = reason
+        return ret
 
     def rc_defaults(self):
         ret = super(AutoTestRover, self).rc_defaults()

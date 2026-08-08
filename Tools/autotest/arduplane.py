@@ -1058,7 +1058,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm(timeout=240)
 
-    def fly_home_land_and_disarm(self, timeout=120):
+    def fly_home_land_and_disarm(self, timeout=240):
+        # timeout covers flying the whole approach, not just a state
+        # change: we jump to waypoint 8 from wherever the test left the
+        # vehicle and then fly the rest of the mission.  120s was only
+        # just enough - a passing run from 2.2km out used 115.8s of it -
+        # so a run which flew a little further, or started a little
+        # higher, failed with "Did not get wanted current waypoint"
+        # while still sequencing waypoints normally.
         filename = "flaps.txt"
         self.progress("Using %s to fly home" % filename)
         n = self.load_generic_mission(filename)
@@ -3510,9 +3517,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_log_has_no_dropped_blocks(current_log_filepath)
 
         self.zero_throttle()
-        self.run_replay(current_log_filepath)
-
-        replay_log_filepath = self.current_onboard_log_filepath()
+        replay_log_filepath = self.run_replay(current_log_filepath)
 
         self.context_pop()
 
@@ -4961,51 +4966,77 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self._MAV_CMD_DO_AUX_FUNCTION(run_cmd=self.run_cmd)
         self._MAV_CMD_DO_AUX_FUNCTION(run_cmd=self.run_cmd_int)
 
-    def FlyEachFrame(self):
-        '''Fly each supported internal frame'''
+    # frames FlyEachFrame cannot fly, and why.  These are turned into
+    # disabled_tests() entries, so they are reported as skips with their
+    # reason rather than being silently stepped over mid-test:
+    fly_each_frame_known_broken = {
+        "plane-tailsitter": "unstable in hover; unflyable in cruise",
+        "quadplane-can": "needs CAN periph",
+        "stratoblimp": "not expected to fly normally",
+        "glider": "needs balloon lift",
+    }
+
+    def FlyEachFrameTests(self):
+        '''a test per internal frame, each flying a basic mission'''
+        return self.tests_for_each_frame(self.FlyFrame)
+
+    def FlyFrame(self, frame):
+        '''Fly a supported internal frame'''
+        # every frame flies the same missions, so they live in one
+        # directory rather than one per per-frame test name:
+        self.set_current_test_name("FlyFrame")
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
-        known_broken_frames = {
-            "plane-tailsitter": "unstable in hover; unflyable in cruise",
-            "quadplane-can" : "needs CAN periph",
-            "stratoblimp" : "not expected to fly normally",
-            "glider" : "needs balloon lift",
-        }
-        for frame in sorted(vinfo_options["frames"].keys()):
-            self.start_subtest("Testing frame (%s)" % str(frame))
-            if frame in known_broken_frames:
-                self.progress("Actually, no I'm not - it is known-broken (%s)" %
-                              (known_broken_frames[frame]))
-                continue
-            frame_bits = vinfo_options["frames"][frame]
-            print("frame_bits: %s" % str(frame_bits))
-            if frame_bits.get("external", False):
-                self.progress("Actually, no I'm not - it is an external simulation")
-                continue
-            model = frame_bits.get("model", frame)
-            self.customise_SITL_commandline(
-                [],
-                model=model,
-                wipe=True,
-            )
-            mission_file = "basic.txt"
-            quadplane = self.get_parameter('Q_ENABLE')
-            if quadplane:
-                mission_file = "basic-quadplane.txt"
-            tailsitter = self.get_parameter('Q_TAILSIT_ENABLE')
-            if tailsitter:
-                # tailsitter needs extra re-boot to pick up the rotated AHRS view
-                self.reboot_sitl()
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.fly_mission(mission_file, strict=False, quadplane=quadplane, mission_timeout=400.0)
-            self.wait_disarmed()
+        frame_bits = vinfo_options["frames"][frame]
+        self.progress("frame_bits: %s" % str(frame_bits))
+        model = frame_bits.get("model", frame)
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            wipe=True,
+        )
+        mission_file = "basic.txt"
+        quadplane = self.get_parameter('Q_ENABLE')
+        if quadplane:
+            mission_file = "basic-quadplane.txt"
+        tailsitter = self.get_parameter('Q_TAILSIT_ENABLE')
+        if tailsitter:
+            # tailsitter needs extra re-boot to pick up the rotated AHRS view
+            self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.fly_mission(mission_file, strict=False, quadplane=quadplane, mission_timeout=400.0)
+        self.wait_disarmed()
 
-    def FlyEachFrameRCInput(self):
-        '''Confirm each internal frame can be controlled with RC in the
+    # frames FlyFrameRCInput cannot check, and why (see
+    # fly_each_frame_known_broken):
+    fly_each_frame_rc_input_known_broken = {
+        "plane-tailsitter": "unstable in hover; unflyable in cruise",
+        "stratoblimp": "not expected to fly normally",
+        "glider": "needs balloon lift",
+        "plane-ice": "ICE engine needs starting; different takeoff regime",
+        "quadplane-ice": "ICE engine needs starting; different takeoff regime",
+        "quadplane-can": "needs CAN periph",
+        "quadplane-copter_tailsitter": "tailsitter hover regime; nose-up attitude",
+    }
+
+    # frames whose model deliberately reverses the pilot's RC pitch/yaw
+    # input (models/plane-reverse-rc-pitch-yaw.parm); the nose responds
+    # opposite to the elevator stick.  RC roll input is never reversed.
+    rc_pitch_reversed_frames = (
+        "plane-elevrev",
+        "plane-redundant",  # reversed for the Volz serial-servo tests
+    )
+
+    def FlyEachFrameRCInputTests(self):
+        '''a test per internal frame, each checking RC input direction'''
+        return self.tests_for_each_frame(self.FlyFrameRCInput)
+
+    def FlyFrameRCInput(self, frame):
+        '''Confirm an internal frame can be controlled with RC in the
         expected direction.
 
-        FlyEachFrame flies AUTO missions, which never touch the sticks, so
+        FlyFrame flies AUTO missions, which never touch the sticks, so
         pilot-input direction (e.g. an RCn_REVERSED) is untested there.
         For every frame we check the autotest stick convention: elevator
         back (high RC2) pitches the nose up, aileron left (low RC1) banks
@@ -5014,43 +5045,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         expect the opposite pitch response.'''
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
-        known_broken_frames = {
-            "plane-tailsitter": "unstable in hover; unflyable in cruise",
-            "stratoblimp": "not expected to fly normally",
-            "glider": "needs balloon lift",
-            "plane-ice": "ICE engine needs starting; different takeoff regime",
-            "quadplane-ice": "ICE engine needs starting; different takeoff regime",
-            "quadplane-can": "needs CAN periph",
-            "quadplane-copter_tailsitter": "tailsitter hover regime; nose-up attitude",
-        }
-        # frames whose model deliberately reverses the pilot's RC pitch/yaw
-        # input (models/plane-reverse-rc-pitch-yaw.parm); the nose responds
-        # opposite to the elevator stick.  RC roll input is never reversed.
-        rc_pitch_reversed_frames = (
-            "plane-elevrev",
-            "plane-redundant",  # reversed for the Volz serial-servo tests
-        )
-        for frame in sorted(vinfo_options["frames"].keys()):
-            self.start_subtest("Testing frame (%s)" % str(frame))
-            if frame in known_broken_frames:
-                self.progress("Skipping known-broken frame (%s)" %
-                              (known_broken_frames[frame]))
-                continue
-            frame_bits = vinfo_options["frames"][frame]
-            if frame_bits.get("external", False):
-                self.progress("Skipping external simulation")
-                continue
-            model = frame_bits.get("model", frame)
-            self.customise_SITL_commandline([], model=model, wipe=True)
-            rc_reversed = frame in rc_pitch_reversed_frames
-            if self.get_parameter('Q_ENABLE'):
-                self.check_rc_input_direction_vtol(rc_pitch_reversed=rc_reversed)
-            else:
-                self.check_rc_input_direction_fixedwing(rc_pitch_reversed=rc_reversed)
-        # we deliberately do not land each frame (some aerobatic frames do
-        # not land cleanly, and the direction check does not need it) -
-        # customise_SITL_commandline restarts SITL for the next frame.  Do
-        # a final reset so the harness sees a disarmed vehicle at the end:
+        frame_bits = vinfo_options["frames"][frame]
+        model = frame_bits.get("model", frame)
+        self.customise_SITL_commandline([], model=model, wipe=True)
+        rc_reversed = frame in self.rc_pitch_reversed_frames
+        if self.get_parameter('Q_ENABLE'):
+            self.check_rc_input_direction_vtol(rc_pitch_reversed=rc_reversed)
+        else:
+            self.check_rc_input_direction_fixedwing(rc_pitch_reversed=rc_reversed)
+        # we deliberately do not land (some aerobatic frames do not land
+        # cleanly, and the direction check does not need it); reset so the
+        # harness sees a disarmed vehicle at the end:
         self.reset_SITL_commandline()
 
     def check_rc_input_direction_fixedwing(self, rc_pitch_reversed=False):
@@ -7498,7 +7503,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         higher_home = copy.copy(home)
         higher_home.alt += 40
         self.set_home(higher_home)
-        self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=10, timeout=10.1)
+        self.wait_altitude(
+            home.alt+target_alt-5,
+            home.alt+target_alt+5,
+            relative=False,
+            minimum_duration=10,
+            timeout=11,
+        )
 
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
@@ -7806,6 +7817,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def DO_CHANGE_ALTITUDE(self):
         '''test DO_CHANGE_ALTITUDE mavlink command'''
+        # the terrain-frame subtest below needs terrain data; without
+        # this the vehicle has none, reports its height above a terrain
+        # altitude of zero, and the check sees an amsl-like altitude:
+        self.install_terrain_handlers_context()
+
         takeoff_alt = 30
         self.takeoff(alt=takeoff_alt, mode='TAKEOFF')
         self.wait_altitude(takeoff_alt-1, takeoff_alt+1, minimum_duration=10, relative=True, timeout=60)
@@ -8851,12 +8867,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.IMUTempCal,
             self.MAV_CMD_DO_AUX_FUNCTION,
             self.SmartBattery,
-            self.FlyEachFrame,
-            self.FlyEachFrameRCInput,
             self.AutoLandMode,
             self.RCDisableAirspeedUse,
             self.AHRS_ORIENTATION,
-            self.AHRSTrim,
             self.AHRS2Logging,
             self.AHRS2NoSecondaryEstimate,
             self.LandingDrift,
@@ -8956,7 +8969,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.EK3HeightDatumResetFlushesBuffers,
             self.PPPPeriph,
             self.steplessAHRSSwitch,
-        ]
+        ] + self.FlyEachFrameTests() + self.FlyEachFrameRCInputTests() + self.AHRSTrimTests()
 
     def UTMGlobalPositionWaypoint(self):
         '''test UTM_GLOBAL_POSITION waypoint fields in AUTO and GUIDED'''
@@ -9153,13 +9166,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         ]
 
     def disabled_tests(self):
-        return {
+        ret = {
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "TerrainRally": "Passes vacuously due to helper alt-frame bugs. See https://github.com/ArduPilot/ardupilot/issues/33740",  # noqa
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SoaringClimbRate": "very bad sink rate",
         }
+        for (frame, reason) in self.fly_each_frame_known_broken.items():
+            ret["FlyFrame_%s" % frame] = reason
+        for (frame, reason) in self.fly_each_frame_rc_input_known_broken.items():
+            ret["FlyFrameRCInput_%s" % frame] = reason
+        return ret
 
 
 class AutoTestPlaneTests1a(AutoTestPlane):
