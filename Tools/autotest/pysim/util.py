@@ -531,6 +531,7 @@ def start_SITL(binary,
                supplementary=False,
                stdout_prefix=None,
                asan=False,
+               env: dict | None = None,  # extra environment variables
                ):
     """Launch a SITL instance."""
 
@@ -715,8 +716,12 @@ def start_SITL(binary,
         first = cmd[0]
         rest = cmd[1:]
         spawn_env = None
-        if asan:
+        if env is not None:
             spawn_env = dict(os.environ)
+            spawn_env.update(env)
+        if asan:
+            if spawn_env is None:
+                spawn_env = dict(os.environ)
             log_base = asan_log_filepath(binary=binary, model=model)
             existing = spawn_env.get('ASAN_OPTIONS', '')
             # Append our options after any inherited ones so that our
