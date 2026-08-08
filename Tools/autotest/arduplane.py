@@ -7686,6 +7686,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.install_example_script_context('simple_loop.lua')
         self.set_parameters({
             'SCR_ENABLE': 1,
+            # we never arm, so without this the vehicle is not logging
+            # at all: current_onboard_log_filepath() then hands back a
+            # log some earlier test left behind, which will never
+            # contain our record however long we wait for it.
+            'LOG_DISARMED': 1,
         })
         self.reboot_sitl()
         self.wait_ready_to_arm()
@@ -7705,6 +7710,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.install_example_script_context('simple_loop.lua')
         self.set_parameters({
             'SCR_ENABLE': 1,
+            # we never arm, so without this the vehicle is not logging
+            # at all: current_onboard_log_filepath() then hands back a
+            # log some earlier test left behind, which will never
+            # contain our record however long we wait for it.
+            'LOG_DISARMED': 1,
         })
         self.reboot_sitl()
         self.wait_ready_to_arm()
@@ -7724,6 +7734,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.install_example_script_context('simple_named_string.lua')
         self.set_parameters({
             'SCR_ENABLE': 1,
+            # we never arm; see LoggedNamedValueFloat
+            'LOG_DISARMED': 1,
         })
         self.reboot_sitl()
         self.wait_ready_to_arm()
