@@ -59,3 +59,6 @@ SERVO5_FUNCTION 120
 #   BATT_VOLT_MULT - the board default is measured in the hwdef.
 #   BATT_AMP_PERVLT - nominal value only; tested current input does not track load.
 #   FS_THR_VALUE - needs re-measuring against this board's idle PWM.
+
+RELAY2_FUNCTION 1
+RELAY3_FUNCTION 1
