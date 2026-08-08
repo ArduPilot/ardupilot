@@ -20,10 +20,69 @@ import sys
 from pathlib import Path
 
 FAMILIES = {
+    'STM32F103xB': {
+        'name': 'f103',
+        'base': 'stm32f103_base.repl',
+        'script': 'ardupilot_f103.resc',
+        'spis': {'SPI1', 'SPI2'},
+        'i2cs': {'I2C1', 'I2C2'},
+        'uarts': {'USART1', 'USART2', 'USART3', 'UART4', 'UART5'},
+        'sd_buses': {},
+        'can_buses': {'CAN': 'can1'},
+        'timers': {1, 2, 3, 4},
+        'uart_irq': {
+            'USART1': 37, 'USART2': 38, 'USART3': 39,
+            'UART4': 52, 'UART5': 53,
+        },
+        'spi_irq': {'SPI1': 35, 'SPI2': 36},
+        'i2c_irq': {'I2C1': (31, 32), 'I2C2': (33, 34)},
+    },
+    'STM32G474xx': {
+        'name': 'g474',
+        'base': 'stm32g474_base.repl',
+        'script': 'ardupilot_g474.resc',
+        'spis': {'SPI1', 'SPI2', 'SPI3', 'SPI4'},
+        'i2cs': {'I2C1', 'I2C2', 'I2C3', 'I2C4'},
+        'uarts': {
+            'USART1', 'USART2', 'USART3', 'UART4', 'UART5', 'LPUART1',
+        },
+        'sd_buses': {},
+        'can_buses': {'CAN1': 'fdcan1', 'CAN2': 'fdcan2'},
+        'timers': {1, 2, 3, 4, 5, 6, 7, 8, 15, 16, 17, 20},
+        'uart_irq': {
+            'USART1': 37, 'USART2': 38, 'USART3': 39,
+            'UART4': 52, 'UART5': 53, 'LPUART1': 91,
+        },
+        'spi_irq': {'SPI1': 35, 'SPI2': 36, 'SPI3': 51, 'SPI4': 84},
+        'i2c_irq': {
+            'I2C1': (31, 32), 'I2C2': (33, 34),
+            'I2C3': (92, 93), 'I2C4': (82, 83),
+        },
+    },
     'STM32F405xx': {
         'name': 'f405',
         'base': 'stm32f405_base.repl',
         'script': 'ardupilot_f405.resc',
+        'adcs': {'ADC1': 'adc1'},
+        'spis': {'SPI1', 'SPI2', 'SPI3'},
+        'i2cs': {'I2C1', 'I2C2', 'I2C3'},
+        'uarts': {'USART1', 'USART2', 'USART3', 'UART4', 'UART5', 'USART6'},
+        'sd_buses': {'SDIO': 'sdmmc'},
+        'sd_fifo': {'SDIO': 0x40012C80},
+        'can_buses': {'CAN1': 'can1', 'CAN2': 'can2'},
+        'timers': {1, 2, 3, 4, 5, 8},
+        'uart_irq': {
+            'USART1': 37, 'USART2': 38, 'USART3': 39,
+            'UART4': 52, 'UART5': 53, 'USART6': 71,
+        },
+        'spi_irq': {'SPI1': 35, 'SPI2': 36, 'SPI3': 51},
+        'i2c_irq': {'I2C1': (31, 32), 'I2C2': (33, 34), 'I2C3': (72, 73)},
+    },
+    'STM32F407xx': {
+        'name': 'f407',
+        'base': 'stm32f405_base.repl',
+        'script': 'ardupilot_f405.resc',
+        'adcs': {'ADC1': 'adc1'},
         'spis': {'SPI1', 'SPI2', 'SPI3'},
         'i2cs': {'I2C1', 'I2C2', 'I2C3'},
         'uarts': {'USART1', 'USART2', 'USART3', 'UART4', 'UART5', 'USART6'},
@@ -42,6 +101,7 @@ FAMILIES = {
         'name': 'f427',
         'base': 'stm32f427_base.repl',
         'script': 'ardupilot_f405.resc',
+        'adcs': {'ADC1': 'adc1'},
         'spis': {'SPI1', 'SPI2', 'SPI3', 'SPI4', 'SPI5', 'SPI6'},
         'i2cs': {'I2C1', 'I2C2', 'I2C3'},
         'uarts': {
@@ -100,6 +160,9 @@ FAMILIES = {
         'name': 'h743',
         'base': 'stm32h743_base.repl',
         'script': 'ardupilot_h743.resc',
+        'adcs': {'ADC1': 'adcM1S2'},
+        'adc_existing': True,
+        'adc_sample_shift': 4,
         'spis': {'SPI1', 'SPI2', 'SPI3', 'SPI4', 'SPI5', 'SPI6'},
         'i2cs': {'I2C1', 'I2C2', 'I2C3', 'I2C4'},
         'uarts': {
@@ -123,6 +186,9 @@ FAMILIES = {
         'name': 'h757',
         'base': 'stm32h743_base.repl',
         'script': 'ardupilot_h743.resc',
+        'adcs': {'ADC1': 'adcM1S2'},
+        'adc_existing': True,
+        'adc_sample_shift': 4,
         'spis': {'SPI1', 'SPI2', 'SPI3', 'SPI4', 'SPI5', 'SPI6'},
         'i2cs': {'I2C1', 'I2C2', 'I2C3', 'I2C4'},
         'uarts': {
@@ -142,8 +208,77 @@ FAMILIES = {
             'SPI4': 84, 'SPI5': 85, 'SPI6': 86,
         },
     },
+    'STM32L431xx': {
+        'name': 'l4',
+        'base': 'stm32l4_base.repl',
+        'script': 'ardupilot_l4.resc',
+        'adcs': {'ADC1': 'adc1'},
+        'adc_existing': True,
+        'spis': {'SPI1', 'SPI2', 'SPI3'},
+        'i2cs': {'I2C1', 'I2C2', 'I2C3', 'I2C4'},
+        'uarts': {'USART1', 'USART2', 'USART3', 'UART4', 'LPUART1'},
+        'sd_buses': {},
+        'can_buses': {'CAN1': 'can1'},
+        'timers': {1, 2, 3, 4, 5, 6, 7, 8, 15, 16, 17},
+        'uart_irq': {
+            'USART1': 37, 'USART2': 38, 'USART3': 39,
+            'UART4': 52, 'LPUART1': 70,
+        },
+        'spi_irq': {'SPI1': 35, 'SPI2': 36, 'SPI3': 51},
+        'i2c_irq': {
+            'I2C1': (31, 32), 'I2C2': (33, 34),
+            'I2C3': (72, 73), 'I2C4': (83, 84),
+        },
+    },
+    'STM32F303xC': {
+        'name': 'f303',
+        'base': 'stm32f303_base.repl',
+        'script': 'ardupilot_f303.resc',
+        'spis': {'SPI1', 'SPI2', 'SPI3'},
+        'i2cs': {'I2C1', 'I2C2', 'I2C3'},
+        'uarts': {'USART1', 'USART2', 'USART3', 'UART4', 'UART5'},
+        'sd_buses': {},
+        'can_buses': {'CAN': 'can1'},
+        'timers': {1, 2, 3, 4, 6, 7, 8, 15, 16, 17, 20},
+        'uart_irq': {
+            'USART1': 37, 'USART2': 38, 'USART3': 39,
+            'UART4': 52, 'UART5': 53,
+        },
+        'spi_irq': {'SPI1': 35, 'SPI2': 36, 'SPI3': 51},
+        'i2c_irq': {
+            'I2C1': (31, 32), 'I2C2': (33, 34),
+            'I2C3': (72, 73),
+        },
+    },
 }
 
+# The F732 peripherals used by AP_Periph are register-compatible with the
+# existing F767 platform model.
+FAMILIES['STM32F732xx'] = FAMILIES['STM32F767xx']
+# F412 AP_Periph boards use the subset of F4 peripherals already modelled by
+# the F405 platform.
+FAMILIES['STM32F412Rx'] = dict(
+    FAMILIES['STM32F405xx'], base='stm32f412_base.repl')
+# G441 and G491 use the G4 peripheral instances exercised by the G474 model.
+FAMILIES['STM32G441xx'] = FAMILIES['STM32G474xx']
+FAMILIES['STM32G491xx'] = FAMILIES['STM32G474xx']
+# F105 connectivity-line parts retain the F1 register layout while adding
+# memory and peripherals.
+FAMILIES['STM32F105xC'] = dict(
+    FAMILIES['STM32F103xB'], name='f105', base='stm32f105_base.repl',
+    spis={'SPI1', 'SPI2', 'SPI3'},
+    spi_irq={'SPI1': 35, 'SPI2': 36, 'SPI3': 51})
+# The CKS F407 and H723 targets use the peripheral subsets modelled by their
+# corresponding STM32 family platforms.
+FAMILIES['CKS32F407xx'] = FAMILIES['STM32F407xx']
+FAMILIES['STM32H723xx'] = FAMILIES['STM32H743xx']
+# The AP_Periph L4 targets use the same peripheral instances, with the L496
+# additionally exposing UART5.
+FAMILIES['STM32L476xx'] = FAMILIES['STM32L431xx']
+FAMILIES['STM32L496xx'] = dict(
+    FAMILIES['STM32L431xx'],
+    uarts=FAMILIES['STM32L431xx']['uarts'] | {'UART5'},
+    uart_irq=dict(FAMILIES['STM32L431xx']['uart_irq'], UART5=53))
 
 IMU_MODELS = {
     'ADIS1647x': 'Sensors.AP_ADIS1647x',
@@ -171,6 +306,7 @@ WHOAMI_VALUES = {
 }
 
 BARO_MODELS = {
+    'AUAV': 'Sensors.AP_Baro_AUAV',
     'BMP085': 'Sensors.AP_BMP085',
     'BMP280': 'Sensors.AP_BMP280',
     'BMP388': 'Sensors.AP_BMP388',
@@ -255,19 +391,24 @@ def _resolved_env(path, name, seen=None):
 
 
 def supported_boards(root):
-    '''Board name -> MCU for boards backed by both application and BL hwdefs.'''
+    '''Board name -> MCU for targets with enough hwdef data to run directly.'''
     found = {}
     for board_dir in sorted(_hwdef_root(root).iterdir()):
         app = board_dir / 'hwdef.dat'
         bootloader = board_dir / 'hwdef-bl.dat'
-        if not app.is_file() or not bootloader.is_file():
+        if not app.is_file():
             continue
-        if _resolved_env(app, 'AP_PERIPH') == '1':
+        is_periph = _resolved_env(app, 'AP_PERIPH') == '1'
+        if not bootloader.is_file() and not is_periph:
             continue
         mcu = _resolved_mcu(app)
         if mcu in FAMILIES:
             found[board_dir.name] = mcu
     return found
+
+
+def is_periph_board(root, board):
+    return _resolved_env(_hwdef_root(root) / board / 'hwdef.dat', 'AP_PERIPH') == '1'
 
 
 def _load_compiler(root):
@@ -307,8 +448,21 @@ def _defines(path):
     for line in path.read_text().splitlines():
         fields = line.split('//', 1)[0].split(None, 2)
         if len(fields) == 3 and fields[0] == '#define':
-            found[fields[1]] = fields[2].strip()
+            # Board-specific definitions precede the guarded AP_Periph
+            # fallbacks in generated hwdef.h.  The latter are only active
+            # when the former do not exist, so retain the first definition.
+            found.setdefault(fields[1], fields[2].strip())
     return found
+
+
+def _define_enabled(defines, name):
+    value = defines.get(name)
+    if value is None:
+        return False
+    try:
+        return _constant_integer(value) != 0
+    except ValueError:
+        return value not in ('FALSE', 'false')
 
 
 def _constant_integer(expression):
@@ -335,6 +489,60 @@ def _constant_integer(expression):
         raise ValueError('not a constant integer expression: %s' % expression)
 
     return evaluate(ast.parse(expression, mode='eval').body)
+
+
+def _constant_number(expression):
+    '''Evaluate the simple floating-point expressions emitted by hwdef.'''
+    operators = {
+        ast.Add: lambda left, right: left + right,
+        ast.Sub: lambda left, right: left - right,
+        ast.Mult: lambda left, right: left * right,
+        ast.Div: lambda left, right: left / right,
+    }
+
+    def evaluate(node):
+        if (isinstance(node, ast.Constant) and
+                isinstance(node.value, (int, float))):
+            return node.value
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+            value = evaluate(node.operand)
+            return value if isinstance(node.op, ast.UAdd) else -value
+        if isinstance(node, ast.BinOp) and type(node.op) in operators:
+            return operators[type(node.op)](evaluate(node.left), evaluate(node.right))
+        raise ValueError('not a constant numeric expression: %s' % expression)
+
+    cleaned = re.sub(r'(?<=\d)[fFuUlL]+\b', '', expression)
+    return float(evaluate(ast.parse(cleaned, mode='eval').body))
+
+
+def _analog_pins(path):
+    '''Return logical analog pin -> (ADC channel, volts/count).'''
+    pins = {}
+    in_macro = False
+    for line in path.read_text().splitlines():
+        if line.startswith('#define HAL_ANALOG_PINS'):
+            in_macro = True
+            continue
+        if not in_macro:
+            continue
+        match = re.match(
+            r'\s*\{\s*(\d+)\s*,\s*(\d+)\s*,\s*([^}]+)\}', line)
+        if match is None:
+            break
+        channel, logical_pin, scale = match.groups()
+        pins[int(logical_pin)] = (int(channel), _constant_number(scale.strip()))
+    return pins
+
+
+def _default_parameters(path):
+    parameters = {}
+    if not path.is_file():
+        return parameters
+    for line in path.read_text().splitlines():
+        fields = line.split('#', 1)[0].split()
+        if len(fields) >= 2:
+            parameters[fields[0]] = fields[1]
+    return parameters
 
 
 def _crc32_small(data, padded_size):
@@ -433,16 +641,27 @@ def _dmamux_requests(root):
     return requests
 
 
+def _g474_dmamux_requests(root):
+    path = (root / 'modules' / 'ChibiOS' / 'os' / 'hal' / 'ports' /
+            'STM32' / 'STM32G4xx' / 'stm32_dmamux.h')
+    requests = {}
+    for line in path.read_text().splitlines():
+        match = re.match(r'#define\s+(STM32_DMAMUX1_\w+)\s+(\d+)', line)
+        if match:
+            requests[match.group(1)] = int(match.group(2))
+    return requests
+
+
 def _safe_name(value):
     return re.sub(r'[^a-zA-Z0-9_]', '_', value)
 
 
-def _spi_device_name(expression):
-    match = re.search(r'get_device\("([^"\n]+)"\)', expression)
-    if match:
-        return match.group(1)
+def _spi_device_names(expression):
+    matches = re.findall(r'get_device\("([^"\n]+)"\)', expression)
+    if matches:
+        return matches
     match = re.fullmatch(r'SPI:([^\s]+)', expression)
-    return match.group(1) if match else None
+    return [match.group(1)] if match else []
 
 
 def _i2c_device(expression):
@@ -466,13 +685,14 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
             continue
         device_names = []
         for argument in imu[1:]:
-            device_name = _spi_device_name(argument)
-            if device_name not in spi_devices and device_name is not None:
-                aliases = [device_name.removesuffix('_cs')]
-                device_name = next((alias for alias in aliases if alias in spi_devices),
-                                   device_name)
-            if device_name in spi_devices and device_name not in device_names:
-                device_names.append(device_name)
+            for device_name in _spi_device_names(argument):
+                if device_name not in spi_devices:
+                    aliases = [device_name.removesuffix('_cs')]
+                    device_name = next(
+                        (alias for alias in aliases if alias in spi_devices),
+                        device_name)
+                if device_name in spi_devices and device_name not in device_names:
+                    device_names.append(device_name)
         if not device_names:
             i2c_devices = [device for device in map(_i2c_device, imu[1:])
                            if device is not None]
@@ -667,7 +887,7 @@ def _gpio_routes(family_name, chip_selects):
         lines += ['gpioPort%s:' % port]
         for pin in range(16):
             targets = list(chip_selects.get((port, pin), []))
-            if family_name in ('f405', 'f427'):
+            if family_name in ('f103', 'f105', 'f405', 'f407', 'f427'):
                 targets.append('exti@%d' % pin)
             else:
                 targets.append('syscfg#%d@%d' % (ord(port) - ord('A'), pin))
@@ -679,6 +899,24 @@ def _gpio_routes(family_name, chip_selects):
 def _f405_dma_wiring(defines, family, alloc, warnings):
     lines = []
     rx_uarts = []
+
+    if _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
+        for peripheral, model in family.get('adcs', {}).items():
+            value = defines.get('STM32_ADC_%s_DMA_STREAM' % peripheral)
+            stream = _dma_stream(value) if value else None
+            if stream is None:
+                continue
+            dma, channel = stream
+            lines += [
+                '%s:' % model,
+                '    DMARequest -> dma%d@%d' % (dma, channel),
+                '',
+                '%sCircularDma: Miscellaneous.AP_STM32DMA_Circular @ '
+                'sysbus 0x%08X' % (model, alloc()),
+                '    dma: dma%d' % dma,
+                '    stream: %d' % channel,
+                '',
+            ]
 
     for bus, peripheral in family['sd_buses'].items():
         value = defines.get('STM32_SDC_%s_DMA_STREAM' % bus)
@@ -856,6 +1094,28 @@ def _h743_dma_wiring(root, defines, family, alloc, warnings):
     lines = []
     requests = _dmamux_requests(root)
 
+    for peripheral, model in family.get('adcs', {}).items():
+        channel = defines.get('STM32_ADC_%s_DMA_CHAN' % peripheral)
+        request = requests.get(channel)
+        if request is None:
+            continue
+        lines += [
+            '%s:' % model,
+            '    DMARequest -> dmamux1@%d' % request,
+            '',
+        ]
+        stream = _dma_stream(defines.get(
+            'STM32_ADC_%s_DMA_STREAM' % peripheral, ''))
+        if stream is not None:
+            dma, dma_stream = stream
+            lines += [
+                '%sCircularDma: Miscellaneous.AP_STM32DMA_Circular @ '
+                'sysbus 0x%08X' % (model, alloc()),
+                '    dma: dma%d' % dma,
+                '    stream: %d' % dma_stream,
+                '',
+            ]
+
     for peripheral, irq in family['uart_irq'].items():
         channel = defines.get('STM32_UART_%s_RX_DMA_CHAN' % peripheral)
         request = requests.get(channel)
@@ -906,7 +1166,119 @@ def _h743_dma_wiring(root, defines, family, alloc, warnings):
     return lines
 
 
-def _platform(root, board, app, outdir, fram_path, warnings):
+def _g474_dma_wiring(root, defines, family, alloc, warnings):
+    lines = []
+    requests = _g474_dmamux_requests(root)
+
+    for peripheral in sorted(family['i2cs']):
+        if 'STM32_I2C_%s_DMA_CHANNEL' % peripheral not in defines:
+            continue
+        rx_request = requests.get('STM32_DMAMUX1_%s_RX' % peripheral)
+        tx_request = requests.get('STM32_DMAMUX1_%s_TX' % peripheral)
+        if rx_request is None or tx_request is None:
+            warnings.append('cannot resolve %s DMAMUX requests' % peripheral)
+            continue
+        lines += [
+            '%s:' % peripheral.lower(),
+            '    RxDmaRequest -> dmamux1@%d' % rx_request,
+            '    TxDmaRequest -> dmamux1@%d' % tx_request,
+            '',
+        ]
+
+    for peripheral, irq in family['uart_irq'].items():
+        channel = defines.get('STM32_UART_%s_RX_DMA_CHAN' % peripheral)
+        request = requests.get(channel)
+        if request is None:
+            continue
+        lines += [
+            '%s:' % peripheral.lower(),
+            '    IRQ -> nvic@%d' % irq,
+            '    ReceiveDmaRequest -> dmamux1@%d' % request,
+            '',
+            '%sIdle: Miscellaneous.AP_STM32F7_USART_Idle @ sysbus 0x%08X' %
+            (peripheral.lower(), alloc()),
+            '    uart: %s' % peripheral.lower(),
+            '',
+        ]
+
+    for peripheral, irq in family['spi_irq'].items():
+        channel = defines.get('STM32_SPI_%s_RX_DMA_CHAN' % peripheral)
+        request = requests.get(channel)
+        if request is None:
+            continue
+        lines += [
+            '%s:' % peripheral.lower(),
+            '    IRQ -> nvic@%d' % irq,
+            '    DMARecieve -> dmamux1@%d' % request,
+            '',
+        ]
+
+    return lines
+
+
+def _l4_dma_wiring(defines, family, alloc, warnings):
+    lines = []
+
+    for peripheral, model in family.get('adcs', {}).items():
+        value = defines.get('STM32_ADC_%s_DMA_STREAM' % peripheral)
+        stream = _dma_stream(value) if value else None
+        if stream is None:
+            continue
+        dma, channel = stream
+        lines += [
+            '%s:' % model,
+            '    DMARequest -> dma%d@%d' % (dma, channel),
+            '',
+        ]
+
+    for peripheral in sorted(family['i2cs']):
+        rx_value = defines.get('STM32_I2C_%s_RX_DMA_STREAM' % peripheral)
+        tx_value = defines.get('STM32_I2C_%s_TX_DMA_STREAM' % peripheral)
+        rx_stream = _dma_stream(rx_value) if rx_value else None
+        tx_stream = _dma_stream(tx_value) if tx_value else None
+        if rx_stream is None or tx_stream is None:
+            continue
+        rx_dma, rx_channel = rx_stream
+        tx_dma, tx_channel = tx_stream
+        lines += [
+            '%s:' % peripheral.lower(),
+            '    RxDmaRequest -> dma%d@%d' % (rx_dma, rx_channel),
+            '    TxDmaRequest -> dma%d@%d' % (tx_dma, tx_channel),
+            '',
+        ]
+
+    for peripheral in family['uart_irq']:
+        value = defines.get('STM32_UART_%s_RX_DMA_STREAM' % peripheral)
+        stream = _dma_stream(value) if value else None
+        if stream is None:
+            continue
+        dma, channel = stream
+        lines += [
+            '%s:' % peripheral.lower(),
+            '    ReceiveDmaRequest -> dma%d@%d' % (dma, channel),
+            '',
+            '%sIdle: Miscellaneous.AP_STM32F7_USART_Idle @ sysbus 0x%08X' %
+            (peripheral.lower(), alloc()),
+            '    uart: %s' % peripheral.lower(),
+            '',
+        ]
+
+    for peripheral in family['spi_irq']:
+        value = defines.get('STM32_SPI_%s_RX_DMA_STREAM' % peripheral)
+        stream = _dma_stream(value) if value else None
+        if stream is None:
+            continue
+        dma, channel = stream
+        lines += [
+            '%s:' % peripheral.lower(),
+            '    DMARecieve -> dma%d@%d' % (dma, channel),
+            '',
+        ]
+
+    return lines
+
+
+def _platform(root, board, app, outdir, fram_path, is_periph, warnings):
     family = FAMILIES[app.mcu_type]
     base = root / 'Tools' / 'renode' / 'platforms' / family['base']
     lines = [
@@ -918,7 +1290,10 @@ def _platform(root, board, app, outdir, fram_path, warnings):
         'using "%s"' % base,
         '',
     ]
-    defines = _defines(outdir / 'hwdef' / 'hwdef.h')
+    hwdef_h = outdir / 'hwdef' / 'hwdef.h'
+    defines = _defines(hwdef_h)
+    defaults = _default_parameters(
+        outdir / 'hwdef' / 'processed_defaults.parm')
     sensor_lines, chip_selects, has_fram = _sensor_devices(
         app, family, defines, fram_path, warnings)
     lines += sensor_lines
@@ -934,6 +1309,176 @@ def _platform(root, board, app, outdir, fram_path, warnings):
         value = address
         address += size
         return value
+
+    def periph_uart(port_name, port_value):
+        index = _constant_integer(port_value)
+        if index < 0:
+            return None
+        serial_order = app.get_config(
+            'SERIAL_ORDER', required=False, aslist=True) or []
+        if not 0 <= index < len(serial_order):
+            warnings.append('%s selects missing SERIAL%d' % (port_name, index))
+            return None
+        uart = serial_order[index]
+        if uart not in family['uarts']:
+            warnings.append('%s selects unsupported %s' % (port_name, uart))
+            return None
+        return uart
+
+    gps_uart = None
+    if is_periph and _define_enabled(defines, 'AP_PERIPH_GPS_ENABLED'):
+        if 'GPS_PORT' in defaults:
+            gps_uart = periph_uart('GPS_PORT', defaults['GPS_PORT'])
+        elif 'HAL_PERIPH_GPS_PORT_DEFAULT' in defines:
+            gps_uart = periph_uart(
+                'GPS_PORT', defines['HAL_PERIPH_GPS_PORT_DEFAULT'])
+        else:
+            serial_order = app.get_config(
+                'SERIAL_ORDER', required=False, aslist=True) or []
+            gps_uart = next((uart for uart in reversed(serial_order)
+                             if uart in family['uarts']), None)
+        if gps_uart is not None:
+            lines += [
+                'gps: Sensors.AP_UBlox @ sysbus 0x%08X' % alloc(),
+                '',
+            ]
+
+    airspeed_bus = None
+    if is_periph and _define_enabled(defines, 'AP_PERIPH_AIRSPEED_ENABLED'):
+        i2c_order = app.get_config(
+            'I2C_ORDER', required=False, aslist=True) or []
+        airspeed_index = _constant_integer(defaults.get(
+            'ARSPD_BUS', defines.get('HAL_AIRSPEED_BUS_DEFAULT', '0')))
+        airspeed_type = _constant_integer(defaults.get(
+            'ARSPD_TYPE', defines.get('HAL_AIRSPEED_TYPE_DEFAULT', '1')))
+        if not 0 <= airspeed_index < len(i2c_order):
+            warnings.append('airspeed bus %d is not present in I2C_ORDER' %
+                            airspeed_index)
+        elif i2c_order[airspeed_index] not in family['i2cs']:
+            warnings.append('airspeed bus selects unsupported %s' %
+                            i2c_order[airspeed_index])
+        elif airspeed_type in (1, 7, 9, 10, 11, 12):
+            airspeed_bus = i2c_order[airspeed_index]
+            lines += [
+                'airspeed: Sensors.AP_Airspeed @ %s 0x28' %
+                airspeed_bus.lower(),
+                '',
+            ]
+        elif airspeed_type == 15:
+            airspeed_bus = i2c_order[airspeed_index]
+            lines += [
+                'airspeed: Sensors.AP_Airspeed_ASP5033 @ %s 0x6C' %
+                airspeed_bus.lower(),
+                '',
+            ]
+        elif airspeed_type in (17, 18, 19):
+            airspeed_bus = i2c_order[airspeed_index]
+            lines += [
+                'airspeed: Sensors.AP_Airspeed_AUAV @ %s 0x26' %
+                airspeed_bus.lower(),
+                '',
+            ]
+        elif airspeed_type == 0:
+            pass
+        else:
+            warnings.append('unmodelled airspeed type %d' % airspeed_type)
+
+    rangefinder_uart = None
+    rangefinder_type = None
+    if is_periph and _define_enabled(defines, 'AP_PERIPH_RANGEFINDER_ENABLED'):
+        rangefinder_uart = periph_uart(
+            'RNGFND_PORT', defaults.get(
+                'RNGFND_PORT', defines.get(
+                    'AP_PERIPH_RANGEFINDER_PORT_DEFAULT', '3')))
+        rangefinder_type = _constant_integer(
+            defaults.get('RNGFND1_TYPE', '0'))
+        if rangefinder_uart is not None:
+            model = ('Sensors.AP_LightWare' if rangefinder_type == 8 else
+                     'Sensors.AP_Benewake')
+            lines += [
+                'rangefinder: %s @ sysbus 0x%08X' % (model, alloc()),
+                '',
+            ]
+
+    battery_samples = []
+    if is_periph and _define_enabled(defines, 'AP_PERIPH_BATTERY_ENABLED'):
+        analog_pins = _analog_pins(hwdef_h)
+        battery_inputs = []
+        adc_disabled = any(
+            name in defines and not _define_enabled(defines, name)
+            for name in ('HAL_USE_ADC', 'STM32_ADC_USE_ADC1'))
+        if not adc_disabled:
+            max_instances = _constant_integer(defines.get(
+                'AP_BATT_MONITOR_MAX_INSTANCES', '1'))
+            if any(name.startswith('HAL_BATT2_') for name in defines):
+                max_instances = max(2, max_instances)
+            for index in range(max_instances):
+                instance = '' if index == 0 else str(index + 1)
+                parameter = 'BATT%s_' % instance
+                compile_default = 'HAL_BATT%s_' % instance
+                battery_type = _constant_integer(defaults.get(
+                    parameter + 'MONITOR', defines.get(
+                        compile_default + 'MONITOR_DEFAULT', '0')))
+                for kind, types, pin_suffix, scale_suffix, fallback_pin, \
+                        fallback_scale, desired in (
+                            ('voltage', (3, 4, 25), 'VOLT_PIN', 'VOLT_SCALE',
+                             '4', '10.1', 24.0),
+                            ('current', (4, 31), 'CURR_PIN', 'CURR_SCALE',
+                             '3', '17.0', 10.0)):
+                    runtime_pin = parameter + pin_suffix
+                    compile_pin = compile_default + pin_suffix
+                    enabled = (battery_type in types or runtime_pin in defaults or
+                               compile_pin in defines)
+                    if not enabled:
+                        continue
+                    pin_value = defaults.get(
+                        runtime_pin, defines.get(compile_pin, fallback_pin))
+                    runtime_scale = parameter + (
+                        'VOLT_MULT' if kind == 'voltage' else 'AMP_PERVLT')
+                    compile_scale = compile_default + scale_suffix
+                    scale_value = defaults.get(
+                        runtime_scale, defines.get(compile_scale, fallback_scale))
+                    offset = 0.0
+                    if kind == 'current':
+                        offset = _constant_number(defaults.get(
+                            parameter + 'AMP_OFFSET', defines.get(
+                                'AP_BATT%s_CURR_AMP_OFFSET_DEFAULT' % instance,
+                                '0')))
+                    battery_inputs.append((
+                        kind + instance, pin_value, scale_value, desired, offset))
+
+        adcs = family.get('adcs', {})
+        if battery_inputs and 'ADC1' not in adcs:
+            warnings.append('battery ADC is not modelled for %s' % app.mcu_type)
+        elif battery_inputs:
+            if not family.get('adc_existing'):
+                lines += [
+                    '%s: Analog.AP_STM32_ADC @ sysbus 0x%08X' %
+                    (adcs['ADC1'], family.get('adc_base', 0x40012000)),
+                    '    IRQ -> nvic@%d' % family.get('adc_irq', 18),
+                    '',
+                ]
+            for name, pin_value, scale_value, desired, offset in battery_inputs:
+                logical_pin = _constant_integer(pin_value)
+                if logical_pin < 0:
+                    continue
+                analog = analog_pins.get(logical_pin)
+                if analog is None:
+                    warnings.append('battery %s selects unmapped analog pin %d' %
+                                    (name, logical_pin))
+                    continue
+                channel, volts_per_count = analog
+                multiplier = _constant_number(scale_value)
+                sensor_voltage = desired / multiplier + offset
+                if name.startswith('voltage'):
+                    sensor_voltage = min(sensor_voltage, 2.5)
+                raw = round(sensor_voltage / volts_per_count)
+                if not 0 <= raw <= 4095:
+                    warnings.append('simulated battery %s is outside ADC range' %
+                                    name)
+                    raw = min(4095, max(0, raw))
+                raw <<= family.get('adc_sample_shift', 0)
+                battery_samples.append((name, adcs['ADC1'], channel, raw))
 
     can_buses = []
     for bus, peripheral in family.get('can_buses', {}).items():
@@ -976,21 +1521,26 @@ def _platform(root, board, app, outdir, fram_path, warnings):
             '',
         ]
 
-    lines += [
-        'dma1Fix: Miscellaneous.AP_STM32DMA_Fixup @ sysbus 0x%08X' % alloc(),
-        '    dma: dma1',
-        '',
-        'dma2Fix: Miscellaneous.AP_STM32DMA_Fixup @ sysbus 0x%08X' % alloc(),
-        '    dma: dma2',
-        '',
-    ]
-    if family['name'] in ('f405', 'f427'):
+    if family['name'] not in ('f103', 'f105', 'f303', 'g474', 'l4'):
+        lines += [
+            'dma1Fix: Miscellaneous.AP_STM32DMA_Fixup @ sysbus 0x%08X' % alloc(),
+            '    dma: dma1',
+            '',
+            'dma2Fix: Miscellaneous.AP_STM32DMA_Fixup @ sysbus 0x%08X' % alloc(),
+            '    dma: dma2',
+            '',
+        ]
+    if family['name'] in ('f405', 'f407', 'f427'):
         lines += _f405_dma_wiring(defines, family, alloc, warnings)
     elif family['name'] == 'f767':
         lines += _f767_dma_wiring(defines, family, alloc, warnings)
-    else:
+    elif family['name'] == 'g474':
+        lines += _g474_dma_wiring(root, defines, family, alloc, warnings)
+    elif family['name'] in ('f103', 'f105', 'f303', 'l4'):
+        lines += _l4_dma_wiring(defines, family, alloc, warnings)
+    elif family['name'] in ('h743', 'h757'):
         lines += _h743_dma_wiring(root, defines, family, alloc, warnings)
-    if family['name'] in ('h743', 'h757', 'f767'):
+    if family['name'] in ('h743', 'h757', 'f303', 'f767', 'g474', 'l4'):
         serial_uarts = app.get_config('SERIAL_ORDER', required=False, aslist=True) or []
         for peripheral in dict.fromkeys(serial_uarts):
             if peripheral not in family['uarts']:
@@ -1003,11 +1553,13 @@ def _platform(root, board, app, outdir, fram_path, warnings):
             ]
     lines += _gpio_routes(family['name'], chip_selects)
     return ('\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart,
-            can_buses, has_ethernet)
+            can_buses, has_ethernet, gps_uart, airspeed_bus, battery_samples,
+            rangefinder_uart, rangefinder_type)
 
 
-def _serial_device(app, family, serial_index):
+def _serial_device(app, family, serial_index, excluded=None):
     order = app.get_config('SERIAL_ORDER', required=False, aslist=True) or []
+    excluded = set(excluded or ())
     requested_index = serial_index
     if serial_index is not None:
         if not 0 <= serial_index < len(order):
@@ -1015,7 +1567,8 @@ def _serial_device(app, family, serial_index):
         device = order[serial_index]
     else:
         serial_index = next((index for index, entry in enumerate(order)
-                             if entry in family['uarts']), None)
+                             if (entry in family['uarts'] and
+                                 entry not in excluded)), None)
         device = order[serial_index] if serial_index is not None else None
     if device is None and requested_index is None:
         return None, None
@@ -1027,7 +1580,8 @@ def _serial_device(app, family, serial_index):
 
 
 def _script(root, board, app, bootloader, platform, serial_index, uart_port,
-            iomcu_uart, can_buses, has_ethernet, warnings,
+            iomcu_uart, can_buses, has_ethernet, gps_uart, airspeed_bus,
+            battery_samples, rangefinder_uart, rangefinder_type, warnings,
             quiet_peripherals=True):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
@@ -1041,7 +1595,9 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     if boot_kb != reserve_kb and reserve_kb != 0:
         warnings.append('application starts at %uK, bootloader loads at %uK' %
                         (reserve_kb, boot_kb))
-    serial_index, serial = _serial_device(app, family, serial_index)
+    serial_index, serial = _serial_device(
+        app, family, serial_index,
+        excluded=(gps_uart, rangefinder_uart, iomcu_uart))
     tick = app.get_config('STM32_ST_USE_TIMER', required=False, default=None)
     sd_buses = {name for name in app.bytype
                 if name.startswith('SDMMC') or name == 'SDIO'}
@@ -1066,9 +1622,15 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         'include @%s' % common,
         '',
     ]
+    for name, adc, channel, raw in battery_samples:
+        lines += [
+            '# simulated battery %s input' % name,
+            'sysbus.%s FeedSample %u %u -1' % (adc, raw, channel),
+            '',
+        ]
     if serial is not None:
         serial_target = serial.lower()
-        if family['name'] in ('h743', 'h757', 'f767'):
+        if family['name'] in ('h743', 'h757', 'f303', 'f767', 'g474', 'l4'):
             serial_target += 'Host'
         lines += [
             'emulation CreateServerSocketTerminal %u "serial" false' % uart_port,
@@ -1080,6 +1642,26 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             'emulation CreateUARTHub "iomcuHub"',
             'connector Connect sysbus.%s iomcuHub' % iomcu_uart.lower(),
             'connector Connect sysbus.iomcu iomcuHub',
+            '',
+        ]
+    if gps_uart is not None:
+        gps_target = gps_uart.lower()
+        if family['name'] in ('h743', 'h757', 'f303', 'f767', 'g474', 'l4'):
+            gps_target += 'Host'
+        lines += [
+            'emulation CreateUARTHub "gpsHub"',
+            'connector Connect sysbus.%s gpsHub' % gps_target,
+            'connector Connect sysbus.gps gpsHub',
+            '',
+        ]
+    if rangefinder_uart is not None:
+        rangefinder_target = rangefinder_uart.lower()
+        if family['name'] in ('h743', 'h757', 'f303', 'f767', 'g474', 'l4'):
+            rangefinder_target += 'Host'
+        lines += [
+            'emulation CreateUARTHub "rangefinderHub"',
+            'connector Connect sysbus.%s rangefinderHub' % rangefinder_target,
+            'connector Connect sysbus.rangefinder rangefinderHub',
             '',
         ]
     for bus, peripheral in can_buses:
@@ -1095,6 +1677,17 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             'sysbus.ethernet ActivePhy RMII',
             '',
         ]
+    for index in range(1, 5):
+        label = 'GPIO_CAN_I2C%d_SEL' % index
+        pin = app.bylabel.get(label)
+        if pin is not None:
+            lines += [
+                '# select I2C rather than CAN on the shared connector',
+                ('sysbus SetHookAfterPeripheralRead sysbus.gpioPort%s '
+                 '"if offset == 0x10: value &= ~(1 << %u)"') %
+                (pin.port, pin.pin),
+                '',
+            ]
     if has_sd:
         lines += [
             '$sdcard?=@none',
@@ -1127,6 +1720,8 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
                        {name.lower() for name in app.get_config(
                            'SERIAL_ORDER', required=False, aslist=True) or []
                         if name in family['uarts']} |
+                       (set(family.get('adcs', {}).values())
+                        if battery_samples else set()) |
                        {'dma1', 'dma2', 'nvic'})
         lines += ['logLevel 3 sysbus.%s' % name for name in noisy]
         if has_sd:
@@ -1145,6 +1740,12 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         'can_buses': [bus for bus, _ in can_buses],
         'has_ethernet': has_ethernet,
         'primary_ram_base': app.get_ram_map()[0][0],
+        'airspeed_bus': airspeed_bus,
+        'battery_channels': {
+            name: channel for name, _, channel, _ in battery_samples
+        },
+        'rangefinder_uart': rangefinder_uart,
+        'rangefinder_type': rangefinder_type,
     }
 
 
@@ -1157,24 +1758,31 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
                  root / 'renode' / board).resolve()
     boards = supported_boards(root)
     if board not in boards:
-        raise ValueError('%s is not a supported Renode flight controller' % board)
+        raise ValueError('%s is not a supported Renode target' % board)
     board_dir = _hwdef_root(root) / board
+    is_periph = _resolved_env(board_dir / 'hwdef.dat', 'AP_PERIPH') == '1'
     outdir.mkdir(parents=True, exist_ok=True)
     app = _compile_hwdef(root, board_dir / 'hwdef.dat', outdir / 'hwdef')
-    bootloader = _compile_hwdef(
-        root, board_dir / 'hwdef-bl.dat', outdir / 'hwdef-bl', bootloader=True)
+    bootloader_hwdef = board_dir / 'hwdef-bl.dat'
+    bootloader = (_compile_hwdef(
+        root, bootloader_hwdef, outdir / 'hwdef-bl', bootloader=True)
+        if bootloader_hwdef.is_file() else app)
     if app.mcu_type != boards[board] or bootloader.mcu_type != app.mcu_type:
         raise ValueError('application and bootloader MCU definitions disagree')
 
     warnings = []
     repl = outdir / ('%s.repl' % board)
     resc = outdir / ('%s.resc' % board)
-    platform, has_fram, iomcu_uart, can_buses, has_ethernet = _platform(
-        root, board, app, outdir, state_dir / 'fram.img', warnings)
+    (platform, has_fram, iomcu_uart, can_buses, has_ethernet, gps_uart,
+     airspeed_bus, battery_samples, rangefinder_uart,
+     rangefinder_type) = _platform(
+        root, board, app, outdir, state_dir / 'fram.img', is_periph, warnings)
     repl.write_text(platform)
     script, metadata = _script(
         root, board, app, bootloader, repl, serial_index, uart_port,
-        iomcu_uart, can_buses, has_ethernet, warnings, quiet_peripherals)
+        iomcu_uart, can_buses, has_ethernet, gps_uart, airspeed_bus,
+        battery_samples, rangefinder_uart, rangefinder_type, warnings,
+        quiet_peripherals)
     resc.write_text(script)
     metadata.update({
         'repl': repl,
@@ -1183,6 +1791,8 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         'hwdef_h': outdir / 'hwdef' / 'hwdef.h',
         'has_fram': has_fram,
         'fram_size': 32 * 1024 if has_fram else 0,
+        'gps_uart': gps_uart,
+        'is_periph': is_periph,
     })
     return metadata
 

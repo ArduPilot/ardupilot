@@ -28,6 +28,10 @@ include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
 include $repo/Tools/renode/peripherals/sensors/AP_InvensenseV2.cs
 include $repo/Tools/renode/peripherals/sensors/AP_MS5611.cs
 include $repo/Tools/renode/peripherals/sensors/AP_RegisterIMU.cs
+include $repo/Tools/renode/peripherals/sensors/AP_UBlox.cs
+include $repo/Tools/renode/peripherals/sensors/AP_Airspeed.cs
+include $repo/Tools/renode/peripherals/sensors/AP_Benewake.cs
+include $repo/Tools/renode/peripherals/sensors/AP_LightWare.cs
 include $repo/Tools/renode/peripherals/storage/AP_RAMTRON.cs
 
 mach create "ardupilot"

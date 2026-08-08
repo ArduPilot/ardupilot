@@ -326,6 +326,16 @@ def storage_region(hwdef_h):
     text = open(hwdef_h).read() if os.path.exists(hwdef_h) else ''
     if 'STM32H7' in text:
         sectors = [128 * 1024] * 16          # uniform on the H743
+    elif 'STM32G4' in text:
+        sectors = [2 * 1024] * 256           # uniform on the G474
+    elif 'STM32L4' in text:
+        sectors = [2 * 1024] * 512           # uniform on L431/L476/L496
+    elif 'STM32F103' in text:
+        sectors = [1 * 1024] * 128           # uniform on medium-density F103
+    elif 'STM32F105' in text:
+        sectors = [2 * 1024] * 128           # uniform on connectivity-line F105
+    elif 'STM32F3' in text:
+        sectors = [2 * 1024] * 128           # uniform on the F303xC
     elif 'STM32F7' in text:
         # F765/F767 flight-controller hwdefs use the 2 MiB dual-bank layout.
         bank = [16 * 1024] * 4 + [64 * 1024] + [128 * 1024] * 7
@@ -466,10 +476,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('board', nargs='?',
-                        help='supported ChibiOS flight-controller board name')
+                        help='supported ChibiOS board name')
     parser.add_argument('--list', action='store_true', help='list available boards')
-    parser.add_argument('--vehicle', default='arducopter',
-                        help='vehicle firmware to run (default: arducopter)')
+    parser.add_argument('--vehicle',
+                        help='firmware to run (default: AP_Periph for peripheral '
+                             'targets, arducopter otherwise)')
     parser.add_argument('--elf', help='firmware ELF (default: build/<board>/bin/<vehicle>)')
     parser.add_argument('--renode', help='renode executable to use')
     parser.add_argument('--state-dir',
@@ -522,6 +533,9 @@ def main():
     if args.board not in boards:
         sys.exit("unknown board '%s' (have: %s)" % (args.board, ', '.join(boards)))
 
+    if args.vehicle is None:
+        args.vehicle = ('AP_Periph' if gen_board.is_periph_board(root, args.board)
+                        else 'arducopter')
     elf = Path(args.elf) if args.elf else root / 'build' / args.board / 'bin' / args.vehicle
     if not elf.exists():
         target = {'arducopter': 'copter', 'arduplane': 'plane', 'ardurover': 'rover',
@@ -547,7 +561,8 @@ def main():
         sys.exit('failed to generate Renode board: %s' % error)
     for warning in generated['warnings']:
         print('warning: %s' % warning, file=sys.stderr)
-    if args.can and not generated['can_buses']:
+    enable_can = args.can or generated['is_periph']
+    if enable_can and not generated['can_buses']:
         sys.exit('%s has no generated CAN peripherals' % args.board)
     if args.ethernet_tap and not generated['has_ethernet']:
         sys.exit('%s has no generated Ethernet peripheral' % args.board)
@@ -602,7 +617,7 @@ def main():
     commands = ['$repo=@%s' % root,
                 '$elf=@%s' % runtime_elf] + pre_vars + [
                 'include @%s' % generated['resc']] + initial_loads
-    if args.can:
+    if enable_can:
         for index, bus in enumerate(generated['can_buses']):
             commands.append('sysbus.%sMcast Bus %u' % (bus.lower(), index))
     if args.ethernet_tap:
@@ -713,10 +728,12 @@ def main():
         print('serial:  SERIAL%s/%s on tcp:localhost:%u' %
               (generated['serial_index'], generated['serial'], args.uart_port))
     print('time:    %s' % ('unthrottled' if args.unthrottled else 'paced at 1x'))
-    if args.can:
+    if enable_can:
         print('CAN:     %s' % ', '.join(
             '%s=mcast:%u' % (bus, index)
             for index, bus in enumerate(generated['can_buses'])))
+    if generated['gps_uart'] is not None:
+        print('GPS:     simulated u-blox on %s' % generated['gps_uart'])
     if args.ethernet_tap:
         print('ethernet: host TAP %s' % args.ethernet_tap)
     if args.reproduce_pr33933:

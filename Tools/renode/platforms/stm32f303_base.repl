@@ -1,0 +1,240 @@
+// STM32F303 base platform for AP_Periph targets.
+
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x80000
+
+sram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x10000
+
+ccm: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x2000
+
+systemData: Memory.MappedMemory @ sysbus 0x1FFFF000
+    size: 0x1000
+    init:
+        WriteDoubleWord 0x7AC 0x33465053
+        WriteDoubleWord 0x7B0 0x52454E4F
+        WriteDoubleWord 0x7B4 0x44454633
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 72000000
+    IRQ -> cpu@0
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4f"
+    nvic: nvic
+
+exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40010400
+    numberOfOutputLines: 40
+    [0-4] -> nvic@[6-10]
+    [5-9] -> nvicInput23@[0-4]
+    [10-15] -> nvicInput40@[0-5]
+
+nvicInput23: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 5
+    -> nvic@23
+
+nvicInput40: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic@40
+
+syscfg: Miscellaneous.STM32_SYSCFG @ sysbus 0x40010000
+    [0-15] -> exti@[0-15]
+
+gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x48000000, +0x400>
+    modeResetValue: 0xA8000000
+    pullUpPullDownResetValue: 0x64000000
+    numberOfAFs: 16
+    [0-15] -> syscfg#0@[0-15]
+
+gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x48000400, +0x400>
+    modeResetValue: 0x00000280
+    pullUpPullDownResetValue: 0x00000100
+    numberOfAFs: 16
+    [0-15] -> syscfg#1@[0-15]
+
+gpioPortC: GPIOPort.STM32_GPIOPort @ sysbus <0x48000800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#2@[0-15]
+
+gpioPortD: GPIOPort.STM32_GPIOPort @ sysbus <0x48000C00, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#3@[0-15]
+
+gpioPortE: GPIOPort.STM32_GPIOPort @ sysbus <0x48001000, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#4@[0-15]
+
+gpioPortF: GPIOPort.STM32_GPIOPort @ sysbus <0x48001400, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#5@[0-15]
+
+usart1: UART.STM32F7_USART @ sysbus 0x40013800
+    frequency: 72000000
+    IRQ -> nvic@37
+
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    frequency: 72000000
+    IRQ -> nvic@38
+
+usart3: UART.STM32F7_USART @ sysbus 0x40004800
+    frequency: 72000000
+    IRQ -> nvic@39
+
+uart4: UART.STM32F7_USART @ sysbus 0x40004C00
+    frequency: 72000000
+    IRQ -> nvic@52
+
+uart5: UART.STM32F7_USART @ sysbus 0x40005000
+    frequency: 72000000
+    IRQ -> nvic@53
+
+spi1: SPI.STM32SPI @ sysbus 0x40013000
+    IRQ -> nvic@35
+
+spi2: SPI.STM32SPI @ sysbus 0x40003800
+    IRQ -> nvic@36
+
+spi3: SPI.STM32SPI @ sysbus 0x40003C00
+    IRQ -> nvic@51
+
+i2c1: I2C.AP_STM32_I2C @ sysbus 0x40005400
+    EventInterrupt -> nvic@31
+    ErrorInterrupt -> nvic@32
+
+i2c2: I2C.AP_STM32_I2C @ sysbus 0x40005800
+    EventInterrupt -> nvic@33
+    ErrorInterrupt -> nvic@34
+
+i2c3: I2C.AP_STM32_I2C @ sysbus 0x40007800
+    EventInterrupt -> nvic@72
+    ErrorInterrupt -> nvic@73
+
+dma1: DMA.AP_STM32G4_DMA @ sysbus 0x40020000
+    numberOfChannels: 7
+    [0-6] -> nvic@[11-17]
+
+dma2: DMA.AP_STM32G4_DMA @ sysbus 0x40020400
+    numberOfChannels: 5
+    [0-4] -> nvic@[56-60]
+
+timer1: Timers.STM32_Timer @ sysbus 0x40012C00
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    [BreakInterrupt, UpdateInterrupt, TriggerInterrupt, CommutationInterrupt] -> nvic@[24-26, 26]
+    CaptureCompareInterrupt -> nvic@27
+
+timer2: Timers.STM32_Timer @ sysbus 0x40000000
+    frequency: 72000000
+    initialLimit: 0xFFFFFFFF
+    -> nvic@28
+
+timer3: Timers.STM32_Timer @ sysbus 0x40000400
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@29
+
+timer4: Timers.STM32_Timer @ sysbus 0x40000800
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@30
+
+timer6: Timers.STM32_Timer @ sysbus 0x40001000
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@54
+
+timer7: Timers.STM32_Timer @ sysbus 0x40001400
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@55
+
+timer8: Timers.STM32_Timer @ sysbus 0x40013400
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    [BreakInterrupt, UpdateInterrupt, TriggerInterrupt, CommutationInterrupt] -> nvic@[43-45, 45]
+    CaptureCompareInterrupt -> nvic@46
+
+timer15: Timers.STM32_Timer @ sysbus 0x40014000
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@24
+
+timer16: Timers.STM32_Timer @ sysbus 0x40014400
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@25
+
+timer17: Timers.STM32_Timer @ sysbus 0x40014800
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@26
+
+timer20: Timers.STM32_Timer @ sysbus 0x40015000
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    [BreakInterrupt, UpdateInterrupt, TriggerInterrupt, CommutationInterrupt] -> nvic@[77-79, 79]
+    CaptureCompareInterrupt -> nvic@80
+
+can1: CAN.STMCAN @ sysbus <0x40006400, +0x400>
+    [0-3] -> nvic@[19-22]
+
+iwdg: Miscellaneous.AP_STM32_IWDG @ sysbus 0x40003000
+
+nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
+    nvic: nvic
+
+dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
+    frequency: 72000000
+
+rcc: Python.PythonPeripheral @ sysbus 0x40021000
+    size: 0x400
+    initable: true
+    script: '''
+if request.IsInit:
+    registers = {}
+
+if request.IsWrite:
+    registers[request.Offset] = request.Value
+elif request.IsRead:
+    value = registers.get(request.Offset, 0)
+    if request.Offset == 0x0:
+        value |= ((value >> 0) & 1) << 1
+        value |= ((value >> 16) & 1) << 17
+        value |= ((value >> 24) & 1) << 25
+    elif request.Offset == 0x4:
+        value = (value & ~0xC) | ((value & 0x3) << 2)
+    request.Value = value
+'''
+
+rtc: Memory.MappedMemory @ sysbus 0x40002800
+    size: 0x400
+
+pwr: Memory.MappedMemory @ sysbus 0x40007000
+    size: 0x400
+
+flashController: Python.PythonPeripheral @ sysbus 0x40022000
+    size: 0x400
+    initable: true
+    script: '''
+if request.IsInit:
+    registers = {}
+
+if request.IsWrite:
+    if request.Offset == 0xC:
+        registers[request.Offset] = 0
+    else:
+        registers[request.Offset] = request.Value
+elif request.IsRead:
+    request.Value = registers.get(request.Offset, 0)
+'''
+
+crc: CRC.STM32_CRC @ sysbus 0x40023000
+    series: STM32Series.F4
+
+sysbus:
+    init:
+        Tag <0x40005C00, 0x40005FFF> "USB FS"
+        Tag <0x50000000, 0x500003FF> "ADC1/2"
+        Tag <0xE0042000, 0xE00423FF> "DBGMCU"

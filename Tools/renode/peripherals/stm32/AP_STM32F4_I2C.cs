@@ -19,11 +19,12 @@
 // the addressed slave. When NDTR hits zero the DMA completion ISR
 // issues STOP, which stops the pump.
 //
-// Master transmit needs no request line: the stock DMA drains
-// memory-to-peripheral transfers synchronously when the stream is
-// enabled, so the bytes arrive as back-to-back DR writes; the last one
-// leaves BTF|TXE set for the EV8_2 decode once the DMA-complete
-// handler re-enables ITEVTEN.
+// The stock stream DMA drains memory-to-peripheral transfers when the
+// stream is enabled. The F1 channel DMA instead uses TxDmaRequest,
+// asserted after the write address is accepted. In both cases the
+// bytes arrive as back-to-back DR writes; the last one leaves BTF|TXE
+// set for the EV8_2 decode once the DMA-complete handler re-enables
+// ITEVTEN.
 //
 using System;
 using System.Collections.Generic;
@@ -46,6 +47,7 @@ namespace Antmicro.Renode.Peripherals.I2C
             EventInterrupt = new GPIO();
             ErrorInterrupt = new GPIO();
             RxDmaRequest = new GPIO();
+            TxDmaRequest = new GPIO();
             CreateRegisters();
             Reset();
         }
@@ -94,12 +96,14 @@ namespace Antmicro.Renode.Peripherals.I2C
             EventInterrupt.Unset();
             ErrorInterrupt.Unset();
             RxDmaRequest.Unset();
+            TxDmaRequest.Unset();
             registers.Reset();
         }
 
         public GPIO EventInterrupt { get; }
         public GPIO ErrorInterrupt { get; }
         public GPIO RxDmaRequest { get; }
+        public GPIO TxDmaRequest { get; }
 
         public long Size => 0x400;
 
@@ -276,6 +280,11 @@ namespace Antmicro.Renode.Peripherals.I2C
                         dataToTransfer = new List<byte>();
                         // EV6_MASTER_TRA_MODE_SELECTED wants ADDR|TXE
                         dataRegisterEmpty.Value = true;
+                        if(dmaEnable.Value)
+                        {
+                            machine.LocalTimeSource.ExecuteInNearestSyncedState(
+                                _ => TxDmaRequest.Blink());
+                        }
                     }
                 }
                 else

@@ -1,0 +1,12 @@
+// STM32F105 connectivity-line memory and SPI extension.
+
+using "Tools/renode/platforms/stm32f103_base.repl"
+
+flashExtension: Memory.MappedMemory @ sysbus 0x08020000
+    size: 0x20000
+
+sramExtension: Memory.MappedMemory @ sysbus 0x20005000
+    size: 0xB000
+
+spi3: SPI.STM32SPI @ sysbus 0x40003C00
+    IRQ -> nvic@51

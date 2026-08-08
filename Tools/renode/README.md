@@ -1,10 +1,10 @@
 # ArduPilot under Renode
 
 Runs unmodified ArduPilot STM32 firmware in the [Renode](https://renode.io)
-emulator. STM32F405, F427, F767 (the F765-class flight-controller targets),
-H743, and H757 boards are assembled from their normal `hwdef.dat` and
-`hwdef-bl.dat`, following the target-generation pattern used by the AM32
-Renode harness. This is a decision log as much as a README.
+emulator. Supported STM32 F1, F3, F4, F7, G4, H7, and L4 boards are assembled
+from their normal `hwdef.dat` and `hwdef-bl.dat`, following the
+target-generation pattern used by the AM32 Renode harness. This is a decision
+log as much as a README.
 
 ## Status
 
@@ -17,17 +17,22 @@ timer, and SDMMC presence. The bootloader is not emulated yet; compiling its
 hwdef makes its MCU and load offset available now rather than introducing a
 second copy of that information.
 
-`Tools/renode/run.py --list` shows the flight-controller hwdef targets accepted
-by the generator. AP_Periph targets are deliberately excluded for later work.
-The current generation audit covers 281 targets with no translation errors:
+`Tools/renode/run.py --list` shows the hwdef targets accepted by the generator.
+Support is MCU-family driven rather than maintained as a board allowlist. The
+current generation audit covers 397 targets, including all 109 STM32
+AP_Periph hwdefs. AP_Periph can run without a separate bootloader hwdef because
+Renode loads its application ELF directly. The AP_Periph targets by exact MCU
+class are:
 
 | MCU hwdef | Targets | Shared platform |
 |---|---:|---|
-| STM32F405xx | 75 | `stm32f405_base.repl` |
-| STM32F427xx | 25 | `stm32f427_base.repl` |
-| STM32F767xx | 25 | `stm32f767_base.repl` |
-| STM32H743xx | 147 | `stm32h743_base.repl` |
-| STM32H757xx | 9 | H743-compatible platform with the hwdef RAM map |
+| STM32F103xB / F105xC | 10 / 1 | F1 / connectivity-line F1 |
+| STM32F303xC | 10 | `stm32f303_base.repl` |
+| STM32F405xx / F407xx / CKS32F407xx / F412Rx / F427xx | 6 / 2 / 1 / 12 / 3 | F4 platforms |
+| STM32F732xx | 1 | F767-compatible platform |
+| STM32G441xx / G474xx / G491xx | 1 / 10 / 5 | G4 platform |
+| STM32H723xx / H743xx / H757xx | 1 / 5 / 4 | H7 platform |
+| STM32L431xx / L476xx / L496xx | 35 / 1 / 1 | `stm32l4_base.repl` |
 
 Acceptance means the expanded board configuration translates to generated
 REPL/RESC. Representative platform loads, firmware builds, and boots are tested
@@ -35,7 +40,22 @@ separately. CubeBlack/F427 and Pixhawk4/F767 mount their SD media and emit an
 ArduCopter MAVLink heartbeat; CubeOrangePlus/H757 also emits a heartbeat.
 Existing F405, H743, and Pixhawk6X boot results are described below.
 
-The sensor translation covers the flight-controller hwdefs in those five
+A stock HolybroG4_GPS AP_Periph image boots on the G474 platform, obtains a
+dynamic DroneCAN node ID, and emits a stationary 3D GNSS Fix2 from its modeled
+u-blox receiver on both CAN interfaces. The generator reads
+`HAL_PERIPH_GPS_PORT_DEFAULT` and `SERIAL_ORDER` from the expanded hwdef, so the
+receiver attaches to USART3 without a board-specific serial override. CAN1 and
+CAN2 connect to `mcast:0` and `mcast:1` by default for AP_Periph runs.
+
+Other AP_Periph devices are selected from the same expanded hwdef and processed
+defaults. Supported airspeed types attach to the selected I2C bus, serial
+rangefinders attach to their configured UART, and analog battery voltage and
+current inputs receive deterministic 24 V / 10 A ADC samples. L4 and H7 use an
+ADC-v3 model with the board's generated DMA assignment; second-battery analog
+pins are populated when present. Non-analog battery backends do not create a
+spurious ADC.
+
+The sensor translation covers flight-controller hwdefs in the supported
 families. SPI and I2C probes include the Invensense generations, ADIS1647x,
 ADIS16607, BMI055/088/160/270, LSM9DS0, LSM6DSV, and SCHA63T IMUs, plus
 BMP085/280/388/581, DPS280/310, ICP201XX, LPS2XH, MS5611, and SPL06
@@ -153,6 +173,18 @@ every pause-at-a-breakpoint into a reboot).
   FDCAN1/2 and both SDMMC controller locations. H757 uses the same peripheral
   map while retaining its different application RAM layout from `hwdef.dat`.
   Generated overlays select SDMMC1 or SDMMC2 from the board hwdef.
+- `platforms/stm32g474_base.repl` and `scripts/ardupilot_g474.resc` — G474
+  memory, DMA/DMAMUX, UART, flash storage, and fixed-message-RAM FDCAN support
+  used by HolybroG4_GPS. `peripherals/sensors/AP_UBlox.cs` supplies its
+  deterministic serial GNSS input.
+- `platforms/stm32l4_base.repl`, `platforms/stm32f303_base.repl`, and their
+  scripts — L431/L476/L496 and F303 AP_Periph memory and peripheral platforms.
+- `platforms/stm32f103_base.repl` and `scripts/ardupilot_f103.resc` — shared
+  F103/F105 platform with channel DMA, I2Cv1, and internal-flash storage.
+- `peripherals/sensors/AP_Airspeed.cs` — deterministic MS4525, ASP5033, and
+  AUAV differential-pressure models plus the AUAV barometer variant.
+- `peripherals/stm32/AP_STM32_ADC_v3.cs` — L4/H7 ADC sequencing and DMA requests
+  for generated analog battery inputs.
 
 Generated board descriptions remain below `build/<board>/renode/`. Persistent
 emulated media instead defaults to `renode/<board>/` at the repository root;
@@ -361,6 +393,16 @@ Works against a stock Renode 1.16.1, but the performance patches in
 `patches/` are worth ~4x - see the performance notes for the build
 recipe.
 
+For AP_Periph targets, `run.py` selects the AP_Periph ELF, opens each CAN
+multicast bus, and attaches supported hwdef-selected sensors automatically.
+For example:
+
+```sh
+./waf configure --board HolybroG4_GPS
+./waf AP_Periph
+Tools/renode/run.py HolybroG4_GPS
+```
+
 ### GDB
 
 Build with debug information and pass `--gdb`:
@@ -428,8 +470,8 @@ reboot
 CAN1 is then available to DroneCAN tooling as `mcast:0`, and CAN2 as
 `mcast:1`. The bus numbers follow the multicast convention rather than the
 one-based ArduPilot peripheral names. The bridge is closed unless `--can` is
-passed, so an ordinary Renode run cannot collide with another multicast CAN
-simulation on the host.
+passed. AP_Periph targets are the exception: their CAN buses open by default
+because CAN is their primary transport.
 
 ### Ethernet
 
