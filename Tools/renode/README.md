@@ -148,7 +148,7 @@ every pause-at-a-breakpoint into a reboot).
 - `scripts/ardupilot_f405.resc` — common boot script: loads the custom .cs,
   `VectorTableOffset 0x08010000` **plus a `macro reset` re-asserting it**
   (Renode restores VTOR=0 on NVIC_SystemReset; nothing is mapped there),
-  loads persistent storage sectors 2/3 (fresh STM32 flash must read 0xFF),
+  loads persistent internal flash (fresh STM32 flash must read 0xFF),
   `PerformanceInMips 125`, 1ms global quantum.
 - `data/STM32F405.svd.gz` — vendored so headless CI never touches the network.
 - `platforms/stm32f427_base.repl` — extends the F405 platform with the second
@@ -363,16 +363,19 @@ exact alternative directory. Depending on the hwdef, this contains:
 
 - `sdcard.img`: a newly created 256 MiB FAT32 microSD image, attached to
   Renode in persistent mode.
-- `storage.img`: the two STM32 flash sectors selected by
-  `STORAGE_FLASH_PAGE`, used for parameters, missions, and other AP_HAL
-  storage on flash-backed boards.
+- `flash.img`: the complete internal MCU flash, sized from `BOARD_FLASH_SIZE`
+  (2 MiB on Pixhawk6X). The current firmware's file-backed flash contents are
+  overlaid into the image on every launch, while parameters, missions, crash
+  dumps, and other firmware-written flash data persist.
 - `fram.img`: the SPI RAMTRON/FRAM contents on boards with
   `HAL_WITH_RAMTRON` and a `SPIDEV ramtron` entry. Writes are committed on the
   real chip-select deassertion forwarded by the generated SPI multiplexer.
-- `crashlog.img`: the linker-defined CrashCatcher flash region, when present.
 
-`crashlog.img` is created eagerly as erased flash backing; its presence does
-not mean that the firmware crashed. An untouched image contains only `0xFF`.
+When creating `flash.img` for the first time, `run.py` imports existing
+`storage.img` and `crashlog.img` state at their flash addresses and leaves the
+old files in place as backups. A legacy crash-log image is aligned to the end
+of flash, so it remains at the address used by the firmware build that created
+it even when the current linker's crash-log boundary has moved.
 
 Existing images are reused and are never silently resized. Move or remove a
 board's state directory to return it to erased/factory state. The SD image is a
