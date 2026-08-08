@@ -1,0 +1,478 @@
+// STM32H743 base platform for running ArduPilot under Renode.
+//
+// Vendored from the shared renode performance branch's
+// platforms/cpus/stm32h743.repl (MIT), then edited for ArduPilot H743
+// boards. Edits from stock, and why:
+//  - systickFrequency 96MHz -> 480MHz, timers 250MHz -> 240MHz, UART
+//    kernel clocks 200MHz -> 120MHz: the ArduPilot clock tree
+//  - unused timers/lptimers/ethernet/ltdc/dma2d/qspi/fmc-memories
+//    dropped (every STM32_Timer costs five clock entries on the hot
+//    clock-source path - the F405 harness perf lesson)
+//  - watchdog swapped for the AP_STM32_IWDG stub (never fires)
+//  - stock STM32H7_RCC replaced by AP_STM32H7_RCC and the PWR Tag hacks
+//    by AP_STM32H7_PWR: ChibiOS stm32_clock_init polls ACTVOSRDY/VOSRDY
+//    and needs ENR/CCIPR/DxCFGR readback the stock model lacks
+//  - AP_NVIC_RettobaseFix + AP_DWT carried from the F405 harness
+//    (architecture-level ChibiOS blockers)
+//  - SPI1/SPI2 declared (IMU/OSD buses) with their fixed DMAMUX request
+//    numbers; UART ReceiveDmaRequest lines wired likewise. On the H7 the
+//    peripheral->request mapping is silicon-fixed and the request->stream
+//    routing is programmed by firmware through the DMAMUX model, so all
+//    DMA wiring is family-level (unlike the F4 harness)
+//
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m7"
+    numberOfMPURegions: 16
+    nvic: nvic
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    systickFrequency: 96_000_000
+    priorityMask: 0xF0
+    -> cpu@0
+
+exti: IRQControllers.STM32H7_EXTI @ sysbus 0x58000000
+    [0-4] -> nvic@[6-10]
+    [5-9] -> nvicInput23@[0-4]
+    [10-15] -> nvicInput40@[0-5]
+    [16-19] -> nvic@[1, 41, 2, 3]
+    [20, 21] -> nvicInput137@[0-1]
+    [22-24] -> nvic@[31, 33, 72]
+    [26-29] -> nvic@[37-39, 71]
+    [30-33] -> nvic@[52, 53, 82, 83]
+    [34-35] -> nvicInput142@[0-1]
+    [36-40] -> nvic@[35, 36, 51, 84, 85]
+    41 -> nvicInput86@0
+    [42-44] -> nvic@[119, 76, 100]
+    [47, 48, 50, 52, 53] -> nvic@[93, 138-141]
+    54 -> nvic@115
+    [55-60] -> nvicInput149@[0-5]
+    [61-64] -> nvic@[5, 95, 96, 142]
+    65 -> nvicInput86@1
+    [66-73] -> nvic@[129-136]
+    [74-76] -> nvic@[128, 127, 146]
+    [85, 86] -> nvic@[94, 61]
+
+nvicInput23: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 5
+    -> nvic@23
+
+nvicInput40: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic@40
+
+nvicInput86: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@86
+
+nvicInput137: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@137
+
+nvicInput142: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@142
+
+nvicInput149: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic@149
+
+// May be reserved
+
+flashController: MTD.STM32H7_FlashController @ sysbus 0x52002000
+    flash1: flashBank1
+    flash2: flashBank2
+    -> nvic@4
+
+flashBank1: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x100000
+
+// May be reserved
+
+adc3: Analog.STM32F0_ADC @ sysbus 0x58026000
+    referenceVoltage: 3.3
+    externalEventFrequency: 1000
+    -> exti@75
+
+bdma: DMA.STM32LDMA @ sysbus 0x58025400
+    [0-7] -> exti@[66-73]
+
+gpioPortK: GPIOPort.STM32_GPIOPort @ sysbus <0x58022800, +0x400>
+    numberOfAFs: 16
+    invertedAFPins: [[0, 1], [1, 3]]
+    [0-7] -> syscfg#10@[0-7]
+
+gpioPortJ: GPIOPort.STM32_GPIOPort @ sysbus <0x58022400, +0x400>
+    numberOfAFs: 16
+    invertedAFPins: [[7, 3], [8, 1], [9, 3], [10, 1], [11, 3]]
+    [0-15] -> syscfg#9@[0-15]
+
+gpioPortI: GPIOPort.STM32_GPIOPort @ sysbus <0x58022000, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#8@[0-15]
+
+gpioPortH: GPIOPort.STM32_GPIOPort @ sysbus <0x58021C00, +0x400>
+    numberOfAFs: 16
+    invertedAFPins: [[13, 3], [14, 3], [15, 3]]
+    [0-15] -> syscfg#7@[0-15]
+
+gpioPortG: GPIOPort.STM32_GPIOPort @ sysbus <0x58021800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#6@[0-15]
+
+gpioPortF: GPIOPort.STM32_GPIOPort @ sysbus <0x58021400, +0x400>
+    numberOfAFs: 16
+    invertedAFPins: [[8, 1], [9, 1]]
+
+    [0-15] -> syscfg#5@[0-15]
+
+gpioPortE: GPIOPort.STM32_GPIOPort @ sysbus <0x58021000, +0x400>
+    numberOfAFs: 16
+    invertedAFPins: [[4, 4], [8, 1], [10, 1], [12, 1]]
+    [0-15] -> syscfg#4@[0-15]
+
+gpioPortD: GPIOPort.STM32_GPIOPort @ sysbus <0x58020C00, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#3@[0-15]
+
+gpioPortC: GPIOPort.STM32_GPIOPort @ sysbus <0x58020800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#2@[0-15]
+
+gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x58020400, +0x400>
+    numberOfAFs: 16
+    invertedAFPins: [[0, 1, 3], [1, 1, 3], [6, 1], [7, 1], [13, 1], [14, 1, 3], [15, 1, 3]]
+
+    [0-15] -> syscfg#1@[0-15]
+
+gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x58020000, +0x400>
+    numberOfAFs: 16
+    invertedAFPins: [[5, 3], [7, 1, 3]]
+    [0-15] -> syscfg#0@[0-15]
+
+rtc: Timers.STM32F4_RTC @ sysbus 0x58004000
+    AlarmIRQ -> exti@17
+    WakeupIRQ -> exti@19
+
+spi1: SPI.STM32H7_SPI @ sysbus 0x40013000
+    IRQ -> nvic@35
+    DMARecieve -> dmamux1@37
+
+spi2: SPI.STM32H7_SPI @ sysbus 0x40003800
+    IRQ -> nvic@36
+    DMARecieve -> dmamux1@39
+
+spi3: SPI.STM32H7_SPI @ sysbus 0x40003C00
+    IRQ -> nvic@51
+
+spi4: SPI.STM32H7_SPI @ sysbus 0x40013400
+    IRQ -> nvic@84
+    DMARecieve -> dmamux1@83
+
+spi5: SPI.STM32H7_SPI @ sysbus 0x40015000
+    IRQ -> nvic@85
+
+spi6: SPI.STM32H7_SPI @ sysbus 0x58001400
+    IRQ -> nvic@86
+
+i2c4: I2C.STM32F7_I2C @ sysbus 0x58001C00
+    EventInterrupt -> exti@62
+    ErrorInterrupt -> exti@63
+
+lpuart1: UART.STM32F7_USART @ sysbus 0x58000C00
+    frequency: 125000000
+    IRQ -> exti@64
+
+syscfg: Miscellaneous.STM32_SYSCFG @ sysbus 0x58000400
+    [0-15] -> exti@[0-15]
+
+adcM1S2: Analog.AP_STM32_ADC_v3 @ sysbus 0x40022000
+    IRQ -> nvic@18
+
+rng: Miscellaneous.STM32F4_RNG @ sysbus 0x48021800
+    -> nvic@80
+
+dma2: DMA.STM32DMA @ sysbus 0x40020400
+    [0-7] -> nvic@[56-60, 68-70]
+
+dma1: DMA.STM32DMA @ sysbus 0x40020000
+    [0-7] -> nvic@[11-17, 47]
+
+dmamux1: Miscellaneous.STM32_DMAMUX @ sysbus 0x40020800
+    numberOfOutputRequestChannels: 16
+    numberOfRequestGeneratorChannels: 8
+    [0-7] -> dma1@[0-7]
+    [8-15] -> dma2@[0-7]
+
+timer15: Timers.STM32_Timer @ sysbus 0x40014000
+    initialLimit: 0xffff
+    frequency: 240000000
+    -> nvic@116
+
+usart6: UART.STM32F7_USART @ sysbus 0x40011400
+    frequency: 120000000
+    IRQ -> exti@29
+
+usart1: UART.STM32F7_USART @ sysbus 0x40011000
+    frequency: 120000000
+    IRQ -> exti@26
+    ReceiveDmaRequest -> dmamux1@41
+
+timer8: Timers.STM32_Timer @ sysbus 0x40010400
+    initialLimit: 0xffff
+    frequency: 240000000
+    BreakInterrupt -> nvic@43
+    UpdateInterrupt -> nvic@44
+    [TriggerInterrupt, CommutationInterrupt] -> nvic@[45, 45]
+    CaptureCompareInterrupt -> nvic@46
+
+timer1: Timers.STM32_Timer @ sysbus 0x40010000
+    initialLimit: 0xffff
+    frequency: 240000000
+    BreakInterrupt -> nvic@24
+    UpdateInterrupt -> nvic@25
+    [TriggerInterrupt, CommutationInterrupt] -> nvic@[26, 26]
+    CaptureCompareInterrupt -> nvic@27
+
+uart8: UART.STM32F7_USART @ sysbus 0x40007C00
+    frequency: 125000000
+    IRQ -> exti@33
+
+uart7: UART.STM32F7_USART @ sysbus 0x40007800
+    frequency: 125000000
+    IRQ -> exti@32
+
+i2c3: I2C.STM32F7_I2C @ sysbus 0x40005C00
+    EventInterrupt -> exti@24
+    ErrorInterrupt -> nvic@73
+
+i2c2: I2C.STM32F7_I2C @ sysbus 0x40005800
+    EventInterrupt -> exti@23
+    ErrorInterrupt -> nvic@34
+
+i2c1: I2C.STM32F7_I2C @ sysbus 0x40005400
+    EventInterrupt -> exti@22
+    ErrorInterrupt -> nvic@32
+
+uart5: UART.STM32F7_USART @ sysbus 0x40005000
+    frequency: 125000000
+    IRQ -> exti@31
+
+uart4: UART.STM32F7_USART @ sysbus 0x40004C00
+    frequency: 120000000
+    IRQ -> exti@30
+    ReceiveDmaRequest -> dmamux1@63
+
+usart3: UART.STM32F7_USART @ sysbus 0x40004800
+    frequency: 120000000
+    IRQ -> exti@28
+    ReceiveDmaRequest -> dmamux1@45
+
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    frequency: 120000000
+    IRQ -> exti@27
+    ReceiveDmaRequest -> dmamux1@43
+
+timer12: Timers.STM32_Timer @ sysbus 0x40001800
+    initialLimit: 0xffff
+    frequency: 240000000
+    -> nvic@43
+
+timer13: Timers.STM32_Timer @ sysbus 0x40001C00
+    initialLimit: 0xffff
+    frequency: 240000000
+    -> nvic@44
+
+timer14: Timers.STM32_Timer @ sysbus 0x40002000
+    initialLimit: 0xffff
+    frequency: 240000000
+    -> nvic@45
+
+timer5: Timers.STM32_Timer @ sysbus 0x40000C00
+    initialLimit: 0xffffffff
+    frequency: 240000000
+    -> nvic@50
+
+timer4: Timers.STM32_Timer @ sysbus 0x40000800
+    initialLimit: 0xffff
+    frequency: 240000000
+    -> nvic@30
+
+timer3: Timers.STM32_Timer @ sysbus 0x40000400
+    initialLimit: 0xffff
+    frequency: 240000000
+    -> nvic@29
+
+timer2: Timers.STM32_Timer @ sysbus 0x40000000
+    initialLimit: 0xffffffff
+    frequency: 240000000
+    -> nvic@28
+
+fdcan1: CAN.MCAN @ sysbus 0x4000A000
+    Line0 -> nvic@19
+    Line1 -> nvic@21
+    Calibration -> nvic@63
+    messageRAM: canMessageRAM
+
+fdcan2: CAN.MCAN @ sysbus 0x4000A400
+    Line0 -> nvic@20
+    Line1 -> nvic@22
+    Calibration -> nvic@63
+    messageRAM: canMessageRAM
+
+canMessageRAM: Memory.ArrayMemory @ sysbus <0x4000AC00, +0x2800>
+    size: 0x2800
+
+backupSram: Memory.MappedMemory @ sysbus 0x38800000
+    size: 0x1000
+
+sram4: Memory.MappedMemory @ sysbus 0x38000000
+    size: 0x10000
+
+sram3: Memory.MappedMemory @ sysbus 0x30040000
+    size: 0x8000
+
+sram2: Memory.MappedMemory @ sysbus 0x30020000
+    size: 0x20000
+
+sram1: Memory.MappedMemory @ sysbus 0x30000000
+    size: 0x20000
+
+axiSram: Memory.MappedMemory @ sysbus 0x24000000
+    size: 0x80000
+
+dtcm: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x20000
+
+system_flash_ro: Memory.MappedMemory @ sysbus 0x1FF00000
+    size: 0x20000
+    init:
+        // This is readonly FLASH_SIZE field which is located inside system flash
+        WriteWord 0x1E880 0x800
+
+flashBank2: Memory.MappedMemory @ sysbus 0x08100000
+    size: 0x100000
+
+itcm: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x10000
+
+rcc: Miscellaneous.AP_STM32H7_RCC @ sysbus 0x58024400
+
+pwr: Miscellaneous.AP_STM32H7_PWR @ sysbus 0x58024800
+
+// installs a real ICSR.RETTOBASE on the stock NVIC (ChibiOS drops every
+// preemptive context switch without it); bus address is a formality
+nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
+    nvic: nvic
+
+// CYCCNT for ChibiOS polled delays
+dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
+    frequency: 480000000
+
+crc: CRC.STM32_CRC @ sysbus 0x58024C00
+    series: STM32Series.F0
+    configurablePoly: true
+
+watchdog: Miscellaneous.AP_STM32_IWDG @ sysbus 0x58004800
+
+hsem: Miscellaneous.STM32H7_HardwareSemaphore @ sysbus 0x58026400
+
+// Alternate function mapping connections. For more details see `stm32l071.repl`.
+timer1:
+    0 -> gpioPortA#07@01 | gpioPortA#08@01 | gpioPortB#13@01 | gpioPortE#08@01 | gpioPortE#09@01 | gpioPortK#00@01 | gpioPortK#01@01
+    1 -> gpioPortA#09@01 | gpioPortB#00@01 | gpioPortB#14@01 | gpioPortE#10@01 | gpioPortE#11@01 | gpioPortJ#10@01 | gpioPortJ#11@01
+    2 -> gpioPortA#10@01 | gpioPortB#01@01 | gpioPortB#15@01 | gpioPortE#12@01 | gpioPortE#13@01 | gpioPortJ#08@01 | gpioPortJ#09@01
+    3 -> gpioPortA#11@01 | gpioPortE#14@01
+
+timer2:
+    0 -> gpioPortA#00@01 | gpioPortA#05@01 | gpioPortA#15@01
+    1 -> gpioPortA#01@01 | gpioPortB#03@01
+    2 -> gpioPortA#02@01 | gpioPortB#10@01
+    3 -> gpioPortA#03@01 | gpioPortB#11@01
+
+timer3:
+    0 -> gpioPortA#06@02 | gpioPortB#04@02 | gpioPortC#06@02
+    1 -> gpioPortA#07@02 | gpioPortB#05@02 | gpioPortC#07@02
+    2 -> gpioPortB#00@02 | gpioPortC#08@02
+    3 -> gpioPortB#01@02 | gpioPortC#09@02
+
+timer4:
+    0 -> gpioPortB#06@02 | gpioPortD#12@02
+    1 -> gpioPortB#07@02 | gpioPortD#13@02
+    2 -> gpioPortB#08@02 | gpioPortD#14@02
+    3 -> gpioPortB#09@02 | gpioPortD#15@02
+
+timer5:
+    0 -> gpioPortA#00@02 | gpioPortH#10@02
+    1 -> gpioPortA#01@02 | gpioPortH#11@02
+    2 -> gpioPortA#02@02 | gpioPortH#12@02
+    3 -> gpioPortA#03@02 | gpioPortI#00@02
+
+timer8:
+    0 -> gpioPortA#05@03 | gpioPortA#07@03 | gpioPortC#06@03 | gpioPortI#05@03 | gpioPortJ#08@03 | gpioPortJ#09@03
+    1 -> gpioPortB#00@03 | gpioPortB#14@03 | gpioPortC#07@03 | gpioPortI#06@03 | gpioPortJ#06@03 | gpioPortJ#07@03 | gpioPortJ#10@03 | gpioPortJ#11@03
+    2 -> gpioPortB#01@03 | gpioPortB#15@03 | gpioPortC#08@03 | gpioPortI#07@03 | gpioPortK#00@03 | gpioPortK#01@03
+    3 -> gpioPortC#09@03 | gpioPortI#02@03
+
+timer12:
+    0 -> gpioPortB#14@02 | gpioPortH#06@02
+    1 -> gpioPortB#15@02 | gpioPortH#09@02
+
+timer13:
+    0 -> gpioPortA#06@09 | gpioPortF#08@09
+
+timer14:
+    0 -> gpioPortA#07@09 | gpioPortF#09@09
+
+timer15:
+    0 -> gpioPortA#01@04 | gpioPortA#02@04 | gpioPortE#04@04 | gpioPortE#05@04
+    1 -> gpioPortA#03@04 | gpioPortE#06@04
+
+sdmmc: SD.AP_STM32H7_SDMMC @ sysbus 0x52007000
+    IRQ -> nvic@49
+
+sdmmc2: SD.AP_STM32H7_SDMMC @ sysbus 0x48022400
+    IRQ -> nvic@124
+
+sysbus:
+    init:
+        Tag <0x58027000, 0x580273FF> "RAMECC3"
+        Tag <0x58025800, 0x58025BFF> "DMAMUX2"
+        Tag <0x58005400, 0x580057FF> "SAI4"
+        Tag <0x58003C00, 0x58003FFF> "VREF"
+        Tag <0x58003800, 0x58003BFF> "COMP1_-_COMP2"
+        Tag <0x58001400, 0x580017FF> "SPI6"
+        Tag <0x52009000, 0x520093FF> "RAMECC1"
+        Tag <0x52008000, 0x52008FFF> "Delay_Block_SDMMC1"
+        Tag <0x52006000, 0x52006FFF> "Delay_Block_QUADSPI"
+        Tag <0x52004000, 0x52004FFF> "FMC_control_registers"
+        Tag <0x52003000, 0x52003FFF> "JPEG"
+        Tag <0x52000000, 0x52000FFF> "MDMA"
+        Tag <0x51000000, 0x510FFFFF> "GPV_matrix_(AXIM)"
+        Tag <0x50003000, 0x50003FFF> "WWDG1"
+        Tag <0x48023000, 0x480233FF> "RAMECC2"
+        Tag <0x48022800, 0x48022BFF> "Delay_Block_SDMMC2"
+        Tag <0x48021400, 0x480217FF> "HASH"
+        Tag <0x48020000, 0x480203FF> "DCMI"
+        Tag <0x40080000, 0x4008000F> "USB2_OTG_FS"
+        Tag <0x40080010, 0x40080013> "USB2_OTG_FS_GRSTCTL" 0x80000000
+        Tag <0x40080014, 0x400BFFFF> "USB2_OTG_FS"
+        Tag <0x40040000, 0x4004000F> "USB1_OTG_HS"
+        Tag <0x40040010, 0x40040013> "USB1_OTG_HS_GRSTCTL" 0x80000000
+        Tag <0x40040014, 0x4007FFFF> "USB1_OTG_HS"
+        Tag <0x40017400, 0x400177FF> "HRTIM"
+        Tag <0x40017000, 0x400173FF> "DFSDM1"
+        Tag <0x40016000, 0x400163FF> "SAI3"
+        Tag <0x40015C00, 0x40015FFF> "SAI2"
+        Tag <0x40015800, 0x40015BFF> "SAI1"
+        Tag <0x40015000, 0x400153FF> "SPI5"
+        Tag <0x40013000, 0x400133FF> "SPI1_/_I2S1"
+        Tag <0x4000A800, 0x4000ABFF> "CAN_CCU"
+        Tag <0x40009400, 0x400097FF> "MDIOS"
+        Tag <0x40009000, 0x400093FF> "OPAMP"
+        Tag <0x40008800, 0x40008BFF> "SWPMI"
+        Tag <0x40008400, 0x400087FF> "CRS"
+        Tag <0x40007400, 0x400077FF> "DAC1"
+        Tag <0x40006C00, 0x40006FFF> "HDMI-CEC"
+        Tag <0x40004000, 0x400043FF> "SPDIFRX1"
+        Tag <0x40003C00, 0x40003FFF> "SPI3_/_I2S3"
+        Tag <0x40003800, 0x40003BFF> "SPI2_/_I2S2"

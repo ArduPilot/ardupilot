@@ -1,0 +1,229 @@
+// STM32G474 base platform for ArduPilot AP_Periph targets.
+
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x80000
+
+sram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x18000
+
+ccm: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x8000
+
+systemData: Memory.MappedMemory @ sysbus 0x1FFF7400
+    size: 0x400
+    init:
+        // Stable UID used for the AP_Periph DroneCAN node identity.
+        WriteDoubleWord 0x190 0x47475053
+        WriteDoubleWord 0x194 0x52454E4F
+        WriteDoubleWord 0x198 0x44454734
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 160000000
+    IRQ -> cpu@0
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m4f"
+    nvic: nvic
+
+exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40010400
+    numberOfOutputLines: 34
+    [0-4] -> nvic@[6-10]
+    [5-9] -> nvicInput23@[0-4]
+    [10-15] -> nvicInput40@[0-5]
+
+nvicInput23: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 5
+    -> nvic@23
+
+nvicInput40: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic@40
+
+syscfg: Miscellaneous.STM32_SYSCFG @ sysbus 0x40010000
+    [0-15] -> exti@[0-15]
+
+gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x48000000, +0x400>
+    modeResetValue: 0xABFFFFFF
+    pullUpPullDownResetValue: 0x64000000
+    numberOfAFs: 16
+    [0-15] -> syscfg#0@[0-15]
+
+gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x48000400, +0x400>
+    modeResetValue: 0xFFFFFEBF
+    pullUpPullDownResetValue: 0x00000100
+    numberOfAFs: 16
+    [0-15] -> syscfg#1@[0-15]
+
+gpioPortC: GPIOPort.STM32_GPIOPort @ sysbus <0x48000800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#2@[0-15]
+
+gpioPortD: GPIOPort.STM32_GPIOPort @ sysbus <0x48000C00, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#3@[0-15]
+
+gpioPortE: GPIOPort.STM32_GPIOPort @ sysbus <0x48001000, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#4@[0-15]
+
+gpioPortF: GPIOPort.STM32_GPIOPort @ sysbus <0x48001400, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#5@[0-15]
+
+gpioPortG: GPIOPort.STM32_GPIOPort @ sysbus <0x48001800, +0x400>
+    numberOfAFs: 16
+    [0-15] -> syscfg#6@[0-15]
+
+usart1: UART.STM32F7_USART @ sysbus 0x40013800
+    frequency: 160000000
+    IRQ -> nvic@37
+
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    frequency: 160000000
+    IRQ -> nvic@38
+
+usart3: UART.STM32F7_USART @ sysbus 0x40004800
+    frequency: 160000000
+    IRQ -> nvic@39
+
+uart4: UART.STM32F7_USART @ sysbus 0x40004C00
+    frequency: 160000000
+    IRQ -> nvic@52
+
+uart5: UART.STM32F7_USART @ sysbus 0x40005000
+    frequency: 160000000
+    IRQ -> nvic@53
+
+lpuart1: UART.STM32F7_USART @ sysbus 0x40008000
+    frequency: 160000000
+    IRQ -> nvic@91
+
+spi1: SPI.STM32SPI @ sysbus 0x40013000
+    IRQ -> nvic@35
+
+spi2: SPI.STM32SPI @ sysbus 0x40003800
+    IRQ -> nvic@36
+
+spi3: SPI.STM32SPI @ sysbus 0x40003C00
+    IRQ -> nvic@51
+
+spi4: SPI.STM32SPI @ sysbus 0x40013C00
+    IRQ -> nvic@84
+
+i2c1: I2C.AP_STM32_I2C @ sysbus 0x40005400
+    EventInterrupt -> nvic@31
+    ErrorInterrupt -> nvic@32
+
+i2c2: I2C.AP_STM32_I2C @ sysbus 0x40005800
+    EventInterrupt -> nvic@33
+    ErrorInterrupt -> nvic@34
+
+i2c3: I2C.AP_STM32_I2C @ sysbus 0x40007800
+    EventInterrupt -> nvic@92
+    ErrorInterrupt -> nvic@93
+
+i2c4: I2C.AP_STM32_I2C @ sysbus 0x40008400
+    EventInterrupt -> nvic@82
+    ErrorInterrupt -> nvic@83
+
+dma1: DMA.AP_STM32G4_DMA @ sysbus 0x40020000
+    numberOfChannels: 8
+    [0-7] -> nvic@[11-17, 96]
+
+dma2: DMA.AP_STM32G4_DMA @ sysbus 0x40020400
+    numberOfChannels: 8
+    [0-7] -> nvic@[56-60, 97-99]
+
+dmamux1: Miscellaneous.STM32_DMAMUX @ sysbus 0x40020800
+    numberOfOutputRequestChannels: 16
+    numberOfRequestGeneratorChannels: 4
+    [0-7] -> dma1@[1-8]
+    [8-15] -> dma2@[1-8]
+
+timer1: Timers.STM32_Timer @ sysbus 0x40012C00
+    frequency: 160000000
+    initialLimit: 0xFFFF
+    [BreakInterrupt, UpdateInterrupt, TriggerInterrupt, CommutationInterrupt] -> nvic@[24-26, 26]
+    CaptureCompareInterrupt -> nvic@27
+
+timer2: Timers.STM32_Timer @ sysbus 0x40000000
+    frequency: 160000000
+    initialLimit: 0xFFFFFFFF
+    -> nvic@28
+
+timer3: Timers.STM32_Timer @ sysbus 0x40000400
+    frequency: 160000000
+    initialLimit: 0xFFFF
+    -> nvic@29
+
+timer4: Timers.STM32_Timer @ sysbus 0x40000800
+    frequency: 160000000
+    initialLimit: 0xFFFF
+    -> nvic@30
+
+fdcan1: CAN.AP_STM32G4_MCAN @ sysbus 0x40006400
+    Line0 -> nvic@21
+    Line1 -> nvic@22
+    messageRAM: canMessageRAM
+    messageRAMOffset: 0x0
+
+fdcan2: CAN.AP_STM32G4_MCAN @ sysbus 0x40006800
+    Line0 -> nvic@86
+    Line1 -> nvic@87
+    messageRAM: canMessageRAM
+    messageRAMOffset: 0x350
+
+canMessageRAM: Memory.ArrayMemory @ sysbus <0x4000A400, +0x800>
+    size: 0x800
+
+iwdg: Miscellaneous.AP_STM32_IWDG @ sysbus 0x40003000
+
+nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
+    nvic: nvic
+
+dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
+    frequency: 160000000
+
+rcc: Python.PythonPeripheral @ sysbus 0x40021000
+    size: 0x400
+    initable: true
+    script: '''
+if request.IsInit:
+    registers = {}
+
+if request.IsWrite:
+    registers[request.Offset] = request.Value
+elif request.IsRead:
+    value = registers.get(request.Offset, 0)
+    if request.Offset == 0x0:
+        # Clock ready flags follow their corresponding enable flags.
+        value |= ((value >> 8) & 1) << 10
+        value |= ((value >> 16) & 1) << 17
+        value |= ((value >> 24) & 1) << 25
+        value |= ((value >> 26) & 1) << 27
+    elif request.Offset == 0x8:
+        value = (value & ~0xC) | ((value & 0x3) << 2)
+    elif request.Offset == 0x98:
+        value |= (value & 1) << 1
+    request.Value = value
+'''
+
+pwr: Memory.MappedMemory @ sysbus 0x40007000
+    size: 0x400
+
+tamp: Memory.MappedMemory @ sysbus 0x40002400
+    size: 0x400
+
+flashController: Memory.MappedMemory @ sysbus 0x40022000
+    size: 0x400
+
+crc: CRC.STM32_CRC @ sysbus 0x40023000
+    series: STM32Series.F4
+
+sysbus:
+    init:
+        Tag <0x40002000, 0x400023FF> "FDCAN config"
+        Tag <0x40005C00, 0x40005FFF> "USB"
+        Tag <0x40015400, 0x400157FF> "SAI"
+        Tag <0xE0042000, 0xE00423FF> "DBGMCU"
