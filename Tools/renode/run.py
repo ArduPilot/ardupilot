@@ -25,6 +25,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import gen_board
@@ -693,6 +694,17 @@ def main():
             '--elf', str(elf),
             '--ready-file', str(proxy_ready),
         ])
+        proxy_deadline = time.monotonic() + 10
+        while not proxy_ready.exists():
+            returncode = gdb_proxy_proc.poll()
+            if returncode is not None:
+                if returncode != 0:
+                    sys.exit(returncode)
+                sys.exit('ChibiOS GDB proxy stopped before becoming ready')
+            if time.monotonic() >= proxy_deadline:
+                gdb_proxy_proc.terminate()
+                sys.exit('timed out starting the ChibiOS GDB proxy')
+            time.sleep(0.01)
         term = None if args.no_xterm else find_terminal()
         if term is None:
             print('run this in another window to attach:\n    %s' % launcher)

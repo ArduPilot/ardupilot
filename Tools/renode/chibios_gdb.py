@@ -12,6 +12,7 @@ particular, Renode's reverse execution packets continue to reach Renode.
 """
 
 import argparse
+import errno
 import html
 import select
 import shutil
@@ -610,7 +611,15 @@ def main():
 
     with socket.socket() as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        listener.bind(("127.0.0.1", args.listen))
+        try:
+            listener.bind(("127.0.0.1", args.listen))
+        except OSError as error:
+            if error.errno == errno.EADDRINUSE:
+                sys.exit(
+                    "ChibiOS GDB proxy port %u is already in use; "
+                    "select another with --gdb-port" % args.listen
+                )
+            raise
         listener.listen(1)
         ready_file.touch()
         try:
