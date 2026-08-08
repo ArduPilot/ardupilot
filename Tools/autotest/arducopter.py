@@ -4256,6 +4256,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if drift_m > 3:
             raise NotAchievedException("Drifted %.2fm in FlowHold" % drift_m)
 
+        self.start_subtest("FHLD.I is the integrator alone, not P+I")
+        # with FHLD_XY_I=0 the integrator is identically zero, so a non-zero
+        # FHLD.Ix/Iy means the P term has leaked into the term added on top of P
+        self.context_push()
+        self.set_parameter("FHLD_XY_I", 0)
+        tstart_us = self.get_sim_time() * 1.0e6
+        self.delay_sim_time(10, "gather FHLD log messages")
+        dfreader = self.dfreader_for_current_onboard_log()
+        max_abs_I = 0
+        max_abs_flow = 0
+        count = 0
+        while True:
+            m = dfreader.recv_match(type='FHLD')
+            if m is None:
+                break
+            if m.TimeUS < tstart_us:
+                continue
+            count += 1
+            max_abs_I = max(max_abs_I, abs(m.Ix), abs(m.Iy))
+            max_abs_flow = max(max_abs_flow, abs(m.SFx), abs(m.SFy))
+        if count == 0:
+            raise NotAchievedException("Found no FHLD log messages")
+        self.progress("%u FHLD samples, max |I| %f, max |flow| %fm/s" %
+                      (count, max_abs_I, max_abs_flow))
+        # a zero P term would make the check below pass vacuously
+        if max_abs_flow < 0.05:
+            raise NotAchievedException(
+                "Flow rate %fm/s too small to exercise the P term" %
+                max_abs_flow)
+        if max_abs_I > 0:
+            raise NotAchievedException(
+                "FHLD.I is %f with FHLD_XY_I=0; P term leaking into I term" %
+                max_abs_I)
+        self.context_pop()
+
         self.start_subtest("height estimate recovers from EKF height error")
         # FlowHold scales flow to a velocity using its own height
         # estimate, broadcast as named float HEST.  Check it currently
