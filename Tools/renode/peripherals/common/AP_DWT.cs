@@ -16,7 +16,7 @@ using Antmicro.Renode.Peripherals.Bus;
 namespace Antmicro.Renode.Peripherals.Miscellaneous
 {
     [AllowedTranslations(AllowedTranslation.ByteToDoubleWord | AllowedTranslation.WordToDoubleWord)]
-    public class AP_DWT : IDoubleWordPeripheral, IKnownSize
+    public class AP_DWT : IDoubleWordPeripheral, IKnownSize, IHasFrequency
     {
         public AP_DWT(IMachine machine, uint frequency = 168000000)
         {
@@ -25,6 +25,21 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         }
 
         public long Size => 0x1000;
+
+        public ulong Frequency
+        {
+            get { return frequency; }
+            set
+            {
+                if(value == 0)
+                {
+                    throw new ArgumentException("DWT frequency must be greater than zero");
+                }
+                var current = CycleCount() + cyccntOffset;
+                frequency = value;
+                cyccntOffset = current - CycleCount();
+            }
+        }
 
         public void Reset()
         {
@@ -61,14 +76,14 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private uint CycleCount()
         {
             var us = (ulong)machine.ElapsedVirtualTime.TimeElapsed.TotalMicroseconds;
-            return (uint)(us * (frequency / 1000000));
+            return (uint)(us * frequency / 1000000);
         }
 
         private const long CTRL = 0x0;
         private const long CYCCNT = 0x4;
 
         private readonly IMachine machine;
-        private readonly uint frequency;
+        private ulong frequency;
         private uint control;
         private uint cyccntOffset;
     }

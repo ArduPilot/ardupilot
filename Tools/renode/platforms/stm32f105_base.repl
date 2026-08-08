@@ -10,3 +10,6 @@ sramExtension: Memory.MappedMemory @ sysbus 0x20005000
 
 spi3: SPI.STM32SPI @ sysbus 0x40003C00
     IRQ -> nvic@51
+
+rcc:
+    isF105: true

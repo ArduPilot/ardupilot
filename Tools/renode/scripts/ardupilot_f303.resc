@@ -6,6 +6,7 @@ $elf?=@none
 $platform?=@Tools/renode/platforms/stm32f303_base.repl
 
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32F1F3_RCC.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32G4_DMA.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_I2C.cs
 include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
@@ -21,6 +22,7 @@ include $repo/Tools/renode/peripherals/sensors/AP_Benewake.cs
 include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
 include $repo/Tools/renode/peripherals/sensors/AP_LightWare.cs
 include $repo/Tools/renode/peripherals/sensors/AP_AdditionalBarometers.cs
+include $repo/Tools/renode/peripherals/sensors/AP_MS5611.cs
 include $repo/Tools/renode/peripherals/sensors/AP_RegisterIMU.cs
 
 mach create "ardupilot"

@@ -534,10 +534,21 @@ def main():
                              '(default: first hardware UART)')
     parser.add_argument('--uart-port', type=int, default=5762,
                         help='TCP port for the selected UART (default: 5762)')
+    parser.add_argument('--sigrok', action='store_true',
+                        help='stream the MAVLink UART and first SPI bus to sigrok')
+    parser.add_argument('--sigrok-port', type=int, default=4242,
+                        help='TCP port for sigrok capture (default: 4242)')
+    parser.add_argument('--sigrok-sample-rate', type=int, default=10000000,
+                        help='sigrok sample rate in Hz (default: 10000000)')
+    parser.add_argument('--sigrok-channels',
+                        help='comma-separated wildcard patterns selecting '
+                             'sigrok peripherals and pins')
     parser.add_argument('--unthrottled', action='store_true',
                         help='run as fast as possible instead of pacing at real time')
     parser.add_argument('--can', action='store_true',
                         help='bridge CAN1 and CAN2 to mcast:0 and mcast:1')
+    parser.add_argument('--can-base', type=int, default=0,
+                        help='first CAN multicast bus number (default: 0)')
     parser.add_argument('--ethernet-tap', metavar='INTERFACE',
                         help='connect the emulated Ethernet MAC to this host TAP')
     parser.add_argument('--port', type=int,
@@ -569,6 +580,32 @@ def main():
         parser.error('--reverse-debug requires --gdb')
     if args.reverse_gdb_limit < 0:
         parser.error('--reverse-gdb-limit cannot be negative')
+    if args.can_base < 0:
+        parser.error('--can-base cannot be negative')
+    if args.sigrok_channels is not None and not args.sigrok:
+        parser.error('--sigrok-channels requires --sigrok')
+    sigrok_channels = None
+    if args.sigrok_channels is not None:
+        sigrok_channels = [pattern.strip()
+                           for pattern in args.sigrok_channels.split(',')]
+        if any(not pattern for pattern in sigrok_channels):
+            parser.error('--sigrok-channels contains an empty pattern')
+    if args.sigrok:
+        if not 1 <= args.sigrok_port <= 65535:
+            parser.error('--sigrok-port must be between 1 and 65535')
+        if not 1 <= args.sigrok_sample_rate <= 1000000000:
+            parser.error('--sigrok-sample-rate must be between 1 and 1000000000')
+        conflicting_ports = [args.uart_port]
+        if args.port is not None:
+            conflicting_ports.append(args.port)
+        if args.gdb:
+            conflicting_ports += [
+                args.gdb_port,
+                (args.renode_gdb_port if args.renode_gdb_port is not None else
+                 args.gdb_port + 1),
+            ]
+        if args.sigrok_port in conflicting_ports:
+            parser.error('--sigrok-port conflicts with another Renode TCP port')
 
     if args.list or not args.board:
         print('\n'.join(boards))
@@ -599,7 +636,8 @@ def main():
     try:
         generated = gen_board.generate(
             root, args.board, outdir / 'generated', serial_index, args.uart_port,
-            state_dir, quiet_peripherals=not args.reverse_debug)
+            state_dir, quiet_peripherals=not args.reverse_debug,
+            sigrok=args.sigrok, sigrok_channels=sigrok_channels)
     except (OSError, ValueError) as error:
         sys.exit('failed to generate Renode board: %s' % error)
     for warning in generated['warnings']:
@@ -607,6 +645,10 @@ def main():
     enable_can = args.can or generated['is_periph']
     if enable_can and not generated['can_buses']:
         sys.exit('%s has no generated CAN peripherals' % args.board)
+    if enable_can and args.can_base + len(generated['can_buses']) > 10:
+        sys.exit('%s needs CAN multicast buses %u..%u; maximum bus is 9' %
+                 (args.board, args.can_base,
+                  args.can_base + len(generated['can_buses']) - 1))
     if args.ethernet_tap and not generated['has_ethernet']:
         sys.exit('%s has no generated Ethernet peripheral' % args.board)
 
@@ -678,9 +720,15 @@ def main():
     commands = ['$repo=@%s' % root,
                 '$elf=@%s' % runtime_elf] + pre_vars + [
                 'include @%s' % generated['resc']] + initial_loads
+    if args.sigrok:
+        commands += [
+            'sysbus.sigrok SampleRate %u' % args.sigrok_sample_rate,
+            'sysbus.sigrok Port %u' % args.sigrok_port,
+        ]
     if enable_can:
         for index, bus in enumerate(generated['can_buses']):
-            commands.append('sysbus.%sMcast Bus %u' % (bus.lower(), index))
+            commands.append('sysbus.%sMcast Bus %u' %
+                            (bus.lower(), args.can_base + index))
     if args.ethernet_tap:
         commands += [
             'emulation CreateSwitch "ethernetSwitch"',
@@ -802,12 +850,18 @@ def main():
     print('time:    %s' % ('unthrottled' if args.unthrottled else 'paced at 1x'))
     if enable_can:
         print('CAN:     %s' % ', '.join(
-            '%s=mcast:%u' % (bus, index)
+            '%s=mcast:%u' % (bus, args.can_base + index)
             for index, bus in enumerate(generated['can_buses'])))
     if generated['gps_uart'] is not None:
         print('GPS:     simulated u-blox on %s' % generated['gps_uart'])
     if args.ethernet_tap:
         print('ethernet: host TAP %s' % args.ethernet_tap)
+    if args.sigrok:
+        print('sigrok:  %u Hz on tcp:localhost:%u' %
+              (args.sigrok_sample_rate, args.sigrok_port))
+        print('signals: %s' % ', '.join(generated['sigrok_signals']))
+        print('PulseView device: renode-la:conn=tcp/127.0.0.1/%u' %
+              args.sigrok_port)
     if args.reproduce_pr33933:
         print('PR33933: expecting %s behavior' % args.reproduce_pr33933)
     cmd = [renode, '--disable-xwt'] + monitor + ['-e', '; '.join(commands)]

@@ -34,11 +34,10 @@ ccm: Memory.MappedMemory @ sysbus 0x10000000
 flash: Memory.MappedMemory @ sysbus 0x08000000
     size: 0x100000
 
-flash_controller: MTD.STM32F4_FlashController @ {
+flash_controller: MTD.AP_STM32F4_FlashController @ {
         sysbus 0x40023C00;
         sysbus new Bus.BusMultiRegistration { address: 0x1FFFC000; size: 0x100; region: "optionBytes" }
     }
-    flash: flash
 
 // frequency is the APB bus clock the BRR divides (APB2 84MHz for
 // USART1/6, APB1 42MHz for the rest): the model computes the baud rate
@@ -96,13 +95,16 @@ nvicInput40: Miscellaneous.CombinedInput @ none
     numberOfInputs: 6
     -> nvic@40
 
+syscfg: Miscellaneous.STM32_SYSCFG @ sysbus 0x40013800
+    [0-15] -> exti@[0-15]
+
 gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x40020000, +0x400>
     modeResetValue: 0xA8000000
     outputSpeedResetValue: 0x0C000000
     pullUpPullDownResetValue: 0x64000000
     numberOfAFs: 16
     invertedAFPins: [[5, 3], [7, 1, 3]]
-    [0-15] -> exti@[0-15]
+    [0-15] -> syscfg#0@[0-15]
 
 gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x40020400, +0x400>
     modeResetValue: 0x00000280
@@ -110,37 +112,37 @@ gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x40020400, +0x400>
     pullUpPullDownResetValue: 0x00000100
     numberOfAFs: 16
     invertedAFPins: [[0, 1, 3], [1, 1, 3], [13, 1], [14, 1, 3], [15, 1, 3]]
-    [0-15] -> exti@[0-15]
+    [0-15] -> syscfg#1@[0-15]
 
 gpioPortC: GPIOPort.STM32_GPIOPort @ sysbus <0x40020800, +0x400>
     numberOfAFs: 16
-    [0-15] -> exti@[0-15]
+    [0-15] -> syscfg#2@[0-15]
 
 gpioPortD: GPIOPort.STM32_GPIOPort @ sysbus <0x40020C00, +0x400>
     numberOfAFs: 16
-    [0-15] -> exti@[0-15]
+    [0-15] -> syscfg#3@[0-15]
 
 gpioPortE: GPIOPort.STM32_GPIOPort @ sysbus <0x40021000, +0x400>
     numberOfAFs: 16
     invertedAFPins: [[8, 1], [10, 1], [12, 1]]
-    [0-15] -> exti@[0-15]
+    [0-15] -> syscfg#4@[0-15]
 
 gpioPortF: GPIOPort.STM32_GPIOPort @ sysbus <0x40021400, +0x400>
     numberOfAFs: 16
-    [0-15] -> exti@[0-15]
+    [0-15] -> syscfg#5@[0-15]
 
 gpioPortG: GPIOPort.STM32_GPIOPort @ sysbus <0x40021800, +0x400>
     numberOfAFs: 16
-    [0-15] -> exti@[0-15]
+    [0-15] -> syscfg#6@[0-15]
 
 gpioPortH: GPIOPort.STM32_GPIOPort @ sysbus <0x40021c00, +0x400>
     numberOfAFs: 16
     invertedAFPins: [[13, 3], [14, 3], [15, 3]]
-    [0-15] -> exti@[0-15]
+    [0-15] -> syscfg#7@[0-15]
 
 gpioPortI: GPIOPort.STM32_GPIOPort @ sysbus <0x40022000, +0x400>
     numberOfAFs: 16
-    [0-15] -> exti@[0-15]
+    [0-15] -> syscfg#8@[0-15]
 
 rom1: Memory.MappedMemory @ sysbus 0x1FFF0000
     size: 0xC000
@@ -204,8 +206,22 @@ dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
 rtc: Timers.STM32F4_RTC @ sysbus 0x40002800
     AlarmIRQ -> nvic@41
 
-rcc: Miscellaneous.STM32F4_RCC @ sysbus 0x40023800
+rcc: Miscellaneous.AP_STM32F4_RCC @ sysbus 0x40023800
     rtcPeripheral: rtc
+    nvic: nvic
+    dwt: dwt
+    usart1: usart1
+    usart2: usart2
+    usart3: usart3
+    uart4: uart4
+    uart5: uart5
+    usart6: usart6
+    timer1: timer1
+    timer2: timer2
+    timer3: timer3
+    timer4: timer4
+    timer5: timer5
+    timer8: timer8
 
 timer1: Timers.STM32_Timer @ sysbus 0x40010000
     BreakInterrupt -> nvic@24

@@ -11,6 +11,8 @@ $platform?=@Tools/renode/platforms/stm32f405_base.repl
 
 # each .cs is compiled on its own against the ones included before it
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32F4_FlashController.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32F4_RCC.cs
 include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
 include $repo/Tools/renode/peripherals/common/AP_DWT.cs
 include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs

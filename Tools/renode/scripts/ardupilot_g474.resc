@@ -6,6 +6,8 @@ $elf?=@none
 $platform?=@Tools/renode/platforms/stm32g474_base.repl
 
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32L4G4_RCC.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32_ADC_v3.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32G4_DMA.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32G4_MCAN.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_I2C.cs
@@ -18,7 +20,10 @@ include $repo/Tools/renode/peripherals/common/AP_UARTPacer.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32F7_USART_Idle.cs
 include $repo/Tools/renode/peripherals/sensors/AP_UBlox.cs
 include $repo/Tools/renode/peripherals/sensors/AP_Airspeed.cs
+include $repo/Tools/renode/peripherals/sensors/AP_Benewake.cs
+include $repo/Tools/renode/peripherals/sensors/AP_BMP388.cs
 include $repo/Tools/renode/peripherals/sensors/AP_AdditionalBarometers.cs
+include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
 include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
 include $repo/Tools/renode/peripherals/sensors/AP_RegisterIMU.cs
 

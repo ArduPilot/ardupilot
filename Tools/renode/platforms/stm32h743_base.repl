@@ -3,8 +3,9 @@
 // Vendored from the shared renode performance branch's
 // platforms/cpus/stm32h743.repl (MIT), then edited for ArduPilot H743
 // boards. Edits from stock, and why:
-//  - systickFrequency 96MHz -> 480MHz, timers 250MHz -> 240MHz, UART
-//    kernel clocks 200MHz -> 120MHz: the ArduPilot clock tree
+//  - RCC drives SysTick, DWT, timer and UART input clocks from the clock-tree
+//    registers ChibiOS programs; constructor frequencies below are only reset
+//    placeholders
 //  - unused timers/lptimers/ethernet/ltdc/dma2d/qspi/fmc-memories
 //    dropped (every STM32_Timer costs five clock entries on the hot
 //    clock-source path - the F405 harness perf lesson)
@@ -356,6 +357,27 @@ itcm: Memory.MappedMemory @ sysbus 0x00000000
     size: 0x10000
 
 rcc: Miscellaneous.AP_STM32H7_RCC @ sysbus 0x58024400
+    nvic: nvic
+    dwt: dwt
+    usart1: usart1
+    usart2: usart2
+    usart3: usart3
+    uart4: uart4
+    uart5: uart5
+    usart6: usart6
+    uart7: uart7
+    uart8: uart8
+    lpuart1: lpuart1
+    timer1: timer1
+    timer2: timer2
+    timer3: timer3
+    timer4: timer4
+    timer5: timer5
+    timer8: timer8
+    timer12: timer12
+    timer13: timer13
+    timer14: timer14
+    timer15: timer15
 
 pwr: Miscellaneous.AP_STM32H7_PWR @ sysbus 0x58024800
 
@@ -433,6 +455,25 @@ sdmmc: SD.AP_STM32H7_SDMMC @ sysbus 0x52007000
 sdmmc2: SD.AP_STM32H7_SDMMC @ sysbus 0x48022400
     IRQ -> nvic@124
 
+usb2Otg: Python.PythonPeripheral @ sysbus 0x40080000
+    size: 0x40000
+    initable: true
+    script: '''
+if request.IsInit:
+    registers = {}
+
+if request.IsWrite:
+    value = request.Value
+    if request.Offset == 0x10:
+        value &= ~1
+    registers[request.Offset] = value
+elif request.IsRead:
+    value = registers.get(request.Offset, 0)
+    if request.Offset == 0x10:
+        value |= 1 << 31
+    request.Value = value
+'''
+
 sysbus:
     init:
         Tag <0x58027000, 0x580273FF> "RAMECC3"
@@ -453,9 +494,6 @@ sysbus:
         Tag <0x48022800, 0x48022BFF> "Delay_Block_SDMMC2"
         Tag <0x48021400, 0x480217FF> "HASH"
         Tag <0x48020000, 0x480203FF> "DCMI"
-        Tag <0x40080000, 0x4008000F> "USB2_OTG_FS"
-        Tag <0x40080010, 0x40080013> "USB2_OTG_FS_GRSTCTL" 0x80000000
-        Tag <0x40080014, 0x400BFFFF> "USB2_OTG_FS"
         Tag <0x40040000, 0x4004000F> "USB1_OTG_HS"
         Tag <0x40040010, 0x40040013> "USB1_OTG_HS_GRSTCTL" 0x80000000
         Tag <0x40040014, 0x4007FFFF> "USB1_OTG_HS"

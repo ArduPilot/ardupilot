@@ -1,4 +1,4 @@
-// Minimal STM32 ADC-v3 model for the L4 and H7 AP_Periph analog inputs.
+// Minimal STM32 ADC-v3 model for the L4, G4 and H7 AP_Periph analog inputs.
 using System.Collections.Generic;
 
 using Antmicro.Renode.Core;
@@ -44,6 +44,23 @@ namespace Antmicro.Renode.Peripherals.Analog
                 SetRegister(offset, Register(offset) & ~value);
                 UpdateInterrupt();
                 return;
+            case SecondAdcControl:
+                // H7 places ADC2 in the next 0x100-byte bank. ChibiOS
+                // initializes and calibrates it even when only ADC3 is used.
+                if((value & Calibration) != 0)
+                {
+                    value &= ~Calibration;
+                }
+                if((value & Disable) != 0)
+                {
+                    value &= ~(Disable | Enable | Start);
+                }
+                if((value & Enable) != 0)
+                {
+                    SetRegister(SecondAdcInterruptStatus,
+                        Register(SecondAdcInterruptStatus) | Ready);
+                }
+                break;
             case Control:
                 if((value & Calibration) != 0)
                 {
@@ -162,6 +179,8 @@ namespace Antmicro.Renode.Peripherals.Analog
         private const long InterruptStatus = 0x00;
         private const long InterruptEnable = 0x04;
         private const long Control = 0x08;
+        private const long SecondAdcInterruptStatus = 0x100;
+        private const long SecondAdcControl = 0x108;
         private const long Configuration = 0x0C;
         private const long Sequence = 0x30;
         private const long Data = 0x40;

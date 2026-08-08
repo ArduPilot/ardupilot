@@ -188,25 +188,26 @@ nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
 dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
     frequency: 72000000
 
-rcc: Python.PythonPeripheral @ sysbus 0x40021000
-    size: 0x400
-    initable: true
-    script: '''
-if request.IsInit:
-    registers = {}
-
-if request.IsWrite:
-    registers[request.Offset] = request.Value
-elif request.IsRead:
-    value = registers.get(request.Offset, 0)
-    if request.Offset == 0x0:
-        value |= ((value >> 0) & 1) << 1
-        value |= ((value >> 16) & 1) << 17
-        value |= ((value >> 24) & 1) << 25
-    elif request.Offset == 0x4:
-        value = (value & ~0xC) | ((value & 0x3) << 2)
-    request.Value = value
-'''
+rcc: Miscellaneous.AP_STM32F1F3_RCC @ sysbus 0x40021000
+    nvic: nvic
+    dwt: dwt
+    usart1: usart1
+    usart2: usart2
+    usart3: usart3
+    uart4: uart4
+    uart5: uart5
+    timer1: timer1
+    timer2: timer2
+    timer3: timer3
+    timer4: timer4
+    timer6: timer6
+    timer7: timer7
+    timer8: timer8
+    timer15: timer15
+    timer16: timer16
+    timer17: timer17
+    timer20: timer20
+    isF3: true
 
 rtc: Memory.MappedMemory @ sysbus 0x40002800
     size: 0x400

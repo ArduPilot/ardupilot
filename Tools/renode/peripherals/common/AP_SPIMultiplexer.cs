@@ -7,7 +7,7 @@ using Antmicro.Renode.Peripherals.SPI;
 
 namespace Antmicro.Renode.Peripherals.Miscellaneous
 {
-    public class AP_SPIMultiplexer : SPIMultiplexer
+    public class AP_SPIMultiplexer : SPIMultiplexer, ISPIPeripheral
     {
         public AP_SPIMultiplexer(IMachine machine, bool frameOnTransfer = false) :
             base(machine, suppressExplicitFinishTransmission: !frameOnTransfer)
@@ -17,6 +17,23 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 SetActiveLow(index);
             }
         }
+
+        public new byte Transmit(byte data)
+        {
+            var received = base.Transmit(data);
+            if(Analyzer != null)
+            {
+                Analyzer.ObserveSPI(data, received);
+            }
+            return received;
+        }
+
+        public new void FinishTransmission()
+        {
+            base.FinishTransmission();
+        }
+
+        public IAPSigrok Analyzer { get; set; }
 
         private const int MaximumChipSelects = 32;
     }

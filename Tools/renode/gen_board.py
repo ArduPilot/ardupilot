@@ -12,6 +12,7 @@ hwdef.dat; this generator only translates those results into Renode wiring.
 import argparse
 import ast
 import contextlib
+import fnmatch
 import io
 import json
 import re
@@ -41,13 +42,17 @@ FAMILIES = {
         'name': 'g474',
         'base': 'stm32g474_base.repl',
         'script': 'ardupilot_g474.resc',
+        'adcs': {'ADC1': 'adc1'},
+        'adc_existing': True,
         'spis': {'SPI1', 'SPI2', 'SPI3', 'SPI4'},
         'i2cs': {'I2C1', 'I2C2', 'I2C3', 'I2C4'},
         'uarts': {
             'USART1', 'USART2', 'USART3', 'UART4', 'UART5', 'LPUART1',
         },
         'sd_buses': {},
-        'can_buses': {'CAN1': 'fdcan1', 'CAN2': 'fdcan2'},
+        'can_buses': {
+            'CAN1': 'fdcan1', 'CAN2': 'fdcan2', 'CAN3': 'fdcan3',
+        },
         'timers': {1, 2, 3, 4, 5, 6, 7, 8, 15, 16, 17, 20},
         'uart_irq': {
             'USART1': 37, 'USART2': 38, 'USART3': 39,
@@ -671,7 +676,8 @@ def _i2c_device(expression):
     return int(match.group(1)), int(match.group(2), 0)
 
 
-def _sensor_devices(config, family, defines, fram_path, warnings):
+def _sensor_devices(config, family, defines, fram_path, warnings,
+                    sigrok_bus=None):
     '''Return (REPL declarations, CS pin -> peripheral names).'''
     spi_devices = {dev[0]: dev for dev in config.spidev}
     declarations = []
@@ -832,6 +838,8 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
     children_by_bus = {}
     for child in spi_children:
         children_by_bus.setdefault(child[2], []).append(child)
+    if sigrok_bus is not None:
+        children_by_bus.setdefault(sigrok_bus, [])
     for bus in sorted(children_by_bus):
         mux = '%sMux' % bus.lower()
         children = children_by_bus[bus]
@@ -840,6 +848,8 @@ def _sensor_devices(config, family, defines, fram_path, warnings):
         ]
         if all(child[1] != 'Miscellaneous.AP_RAMTRON' for child in children):
             declarations.append('    frameOnTransfer: true')
+        if bus == sigrok_bus:
+            declarations.append('    Analyzer: sigrok')
         declarations.append('')
         for address, (name, model, _, cs, properties) in enumerate(children):
             declarations += [
@@ -880,15 +890,36 @@ def _iomcu_device(root, app, family, defines, address, warnings):
     ], uart
 
 
-def _gpio_routes(family_name, chip_selects):
+def _hwdef_gpios(app):
+    gpios = {}
+    pins = list(app.bylabel.values())
+    for alternate in app.altmap.values():
+        pins.extend(alternate.values())
+    for pin in pins:
+        gpio = pin.extra_value('GPIO', type=int)
+        if gpio is not None:
+            gpios[gpio] = pin
+    return sorted(gpios.items())
+
+
+def _gpio_routes(family_name, chip_selects, sigrok_pins=None,
+                 hwdef_gpios=None):
+    sigrok_pins = sigrok_pins or {}
+    hwdef_gpios = hwdef_gpios or []
     lines = []
-    ports = sorted({port for port, _ in chip_selects})
+    ports = sorted({port for port, _ in chip_selects} |
+                   {port for port, _ in sigrok_pins} |
+                   {pin.port for _, pin in hwdef_gpios})
     for port in ports:
         lines += ['gpioPort%s:' % port]
         for pin in range(16):
             targets = list(chip_selects.get((port, pin), []))
-            if family_name in ('f103', 'f105', 'f405', 'f407', 'f427'):
-                targets.append('exti@%d' % pin)
+            channel = sigrok_pins.get((port, pin))
+            if channel is not None:
+                targets.append('sigrok@%u' % channel)
+            if family_name in ('f103', 'f105'):
+                targets.append('afio#%d@%d' %
+                               (ord(port) - ord('A'), pin))
             else:
                 targets.append('syscfg#%d@%d' % (ord(port) - ord('A'), pin))
             lines.append('    %d -> %s' % (pin, ' | '.join(targets)))
@@ -1170,6 +1201,17 @@ def _g474_dma_wiring(root, defines, family, alloc, warnings):
     lines = []
     requests = _g474_dmamux_requests(root)
 
+    for peripheral, model in family.get('adcs', {}).items():
+        channel = defines.get('STM32_ADC_%s_DMA_CHAN' % peripheral)
+        request = requests.get(channel)
+        if request is None:
+            continue
+        lines += [
+            '%s:' % model,
+            '    DMARequest -> dmamux1@%d' % request,
+            '',
+        ]
+
     for peripheral in sorted(family['i2cs']):
         if 'STM32_I2C_%s_DMA_CHANNEL' % peripheral not in defines:
             continue
@@ -1278,7 +1320,104 @@ def _l4_dma_wiring(defines, family, alloc, warnings):
     return lines
 
 
-def _platform(root, board, app, outdir, fram_path, is_periph, warnings):
+def _pin_name(pin, fallback):
+    if pin is None:
+        return fallback
+    return '%s/%s' % (pin.portpin, pin.label)
+
+
+def _sigrok_match_name(name):
+    return re.sub(r'USART(?=\d)', 'UART', name.upper())
+
+
+def _select_sigrok_signals(signals, patterns):
+    if patterns is None:
+        return list(range(len(signals)))
+    selected = []
+    for index, signal in enumerate(signals):
+        aliases = [_sigrok_match_name(alias) for alias in signal['aliases']]
+        if any(fnmatch.fnmatchcase(alias, _sigrok_match_name(pattern))
+               for pattern in patterns for alias in aliases):
+            selected.append(index)
+    if not selected:
+        raise ValueError(
+            'sigrok channel patterns matched no channels (available: %s)' %
+            ', '.join(signal['name'] for signal in signals))
+    return selected
+
+
+def _sigrok_signal(pin, fallback, *aliases):
+    name = _pin_name(pin, fallback)
+    names = {name, fallback}
+    names.update(aliases)
+    if pin is not None:
+        names.update((pin.portpin, pin.label))
+    return {'name': name, 'aliases': names}
+
+
+def _sigrok_gpio_signal(gpio, pin):
+    signal = _sigrok_signal(pin, pin.label, 'GPIO%u' % gpio)
+    signal['name'] += '/GPIO%u' % gpio
+    return signal
+
+
+def _spi_frequency(expression):
+    units = {'GHZ': 1000000000, 'MHZ': 1000000, 'KHZ': 1000, 'HZ': 1}
+    cleaned = expression.upper()
+    for unit, multiplier in units.items():
+        cleaned = re.sub(r'\b%s\b' % unit, str(multiplier), cleaned)
+    frequency = round(_constant_number(cleaned))
+    if frequency <= 0:
+        raise ValueError('invalid SPI frequency %s' % expression)
+    return frequency
+
+
+def _sigrok_spi_capture(app, family):
+    bus = next((entry for entry in app.spi_list
+                if entry in family['spis']), None)
+    if bus is None:
+        raise ValueError('sigrok capture needs a supported SPI bus')
+
+    pins = app.bytype.get(bus, [])
+
+    def signal(suffix):
+        pin = next((entry for entry in pins
+                    if entry.label.endswith(suffix)), None)
+        if pin is None:
+            raise ValueError('cannot resolve %s%s pin' % (bus, suffix))
+        return pin
+
+    devices = [device for device in app.spidev if device[1] == bus]
+    mode = 0
+    frequency = 1000000
+    if devices:
+        match = re.fullmatch(r'MODE([0-3])', devices[0][4].upper())
+        if match is not None:
+            mode = int(match.group(1))
+        frequency = _spi_frequency(devices[0][5])
+
+    chip_selects = []
+    seen = set()
+    for device in devices:
+        pin = app.bylabel.get(device[3])
+        if pin is None or (pin.port, pin.pin) in seen:
+            continue
+        seen.add((pin.port, pin.pin))
+        chip_selects.append(pin)
+
+    return {
+        'bus': bus,
+        'clock': signal('_SCK'),
+        'mosi': signal('_MOSI'),
+        'miso': signal('_MISO'),
+        'chip_selects': chip_selects,
+        'mode': mode,
+        'frequency': frequency,
+    }
+
+
+def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
+              sigrok=False):
     family = FAMILIES[app.mcu_type]
     base = root / 'Tools' / 'renode' / 'platforms' / family['base']
     lines = [
@@ -1290,14 +1429,42 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings):
         'using "%s"' % base,
         '',
     ]
+    if family['name'] in (
+            'f103', 'f105', 'f303', 'f405', 'f407', 'f427', 'f767',
+            'h743', 'h757', 'l4', 'g474'):
+        lines += [
+            'rcc:',
+            '    hseFrequency: %u' % app.get_config(
+                'OSCILLATOR_HZ', type=int),
+            '',
+        ]
     hwdef_h = outdir / 'hwdef' / 'hwdef.h'
     defines = _defines(hwdef_h)
     defaults = _default_parameters(
         outdir / 'hwdef' / 'processed_defaults.parm')
-    sensor_lines, chip_selects, has_fram = _sensor_devices(
-        app, family, defines, fram_path, warnings)
-    lines += sensor_lines
+    sigrok_capture = _sigrok_spi_capture(app, family) if sigrok else None
+    gpio_pins = _hwdef_gpios(app)
     address = 0x60000010
+    if sigrok_capture is not None:
+        lines += [
+            'sigrok: Miscellaneous.AP_Sigrok @ sysbus 0x%08X' % address,
+            '',
+        ]
+        address += 0x100
+    if gpio_pins:
+        lines += [
+            'gpioStimulus: Miscellaneous.AP_GPIOStimulus @ sysbus 0x%08X' %
+            address,
+        ]
+        for gpio, pin in gpio_pins:
+            lines.append('    %u -> gpioPort%s@%u' %
+                         (gpio, pin.port, pin.pin))
+        lines.append('')
+        address += 4
+    sensor_lines, chip_selects, has_fram = _sensor_devices(
+        app, family, defines, fram_path, warnings,
+        sigrok_capture['bus'] if sigrok_capture else None)
+    lines += sensor_lines
     iomcu_lines, iomcu_uart = _iomcu_device(
         root, app, family, defines, address, warnings)
     lines += iomcu_lines
@@ -1451,13 +1618,6 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings):
         if battery_inputs and 'ADC1' not in adcs:
             warnings.append('battery ADC is not modelled for %s' % app.mcu_type)
         elif battery_inputs:
-            if not family.get('adc_existing'):
-                lines += [
-                    '%s: Analog.AP_STM32_ADC @ sysbus 0x%08X' %
-                    (adcs['ADC1'], family.get('adc_base', 0x40012000)),
-                    '    IRQ -> nvic@%d' % family.get('adc_irq', 18),
-                    '',
-                ]
             for name, pin_value, scale_value, desired, offset in battery_inputs:
                 logical_pin = _constant_integer(pin_value)
                 if logical_pin < 0:
@@ -1480,10 +1640,35 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings):
                 raw <<= family.get('adc_sample_shift', 0)
                 battery_samples.append((name, adcs['ADC1'], channel, raw))
 
+    # ChibiOS can initialize ADC1 for board-specific analog consumers even
+    # when none of the generic battery parameters select an input.  Keep the
+    # converter present so ADC startup and DMA cannot spin on an SVD stub.
+    adcs = family.get('adcs', {})
+    if 'ADC1' in adcs and not family.get('adc_existing'):
+        lines += [
+            '%s: Analog.AP_STM32_ADC @ sysbus 0x%08X' %
+            (adcs['ADC1'], family.get('adc_base', 0x40012000)),
+            '    IRQ -> nvic@%d' % family.get('adc_irq', 18),
+            '',
+        ]
+
+    configured_can = family.get('can_buses', {})
+    can_order = app.get_config('CAN_ORDER', required=False, aslist=True) or []
+    if can_order:
+        ordered_can = []
+        for entry in can_order:
+            bus = str(entry).upper()
+            if not bus.startswith('CAN'):
+                bus = 'CAN%s' % bus
+            if bus in configured_can and bus in app.bytype:
+                ordered_can.append((bus, configured_can[bus]))
+    else:
+        ordered_can = [(bus, peripheral)
+                       for bus, peripheral in configured_can.items()
+                       if bus in app.bytype]
+
     can_buses = []
-    for bus, peripheral in family.get('can_buses', {}).items():
-        if bus not in app.bytype:
-            continue
+    for bus, peripheral in ordered_can:
         can_buses.append((bus, peripheral))
         lines += [
             '%sMcast: CAN.AP_CANMcast @ sysbus 0x%08X' %
@@ -1493,6 +1678,8 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings):
 
     has_ethernet = family['name'] in ('h743', 'h757') and 'ETH1' in app.bytype
     if has_ethernet:
+        phy_address = _constant_number(
+            defines.get('BOARD_PHY_ADDRESS', '0'))
         lines += [
             'ethernet: Network.SynopsysDWCEthernetQualityOfService @ {',
             '    sysbus 0x40028000;',
@@ -1509,7 +1696,8 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings):
             alloc(4),
             '    ethernet: ethernet',
             '',
-            'ethernetPhy: Network.EthernetPhysicalLayer @ ethernet 0',
+            'ethernetPhy: Network.EthernetPhysicalLayer @ ethernet %u' %
+            phy_address,
             '    BasicControl: 0x3100',
             '    BasicStatus: 0x782D',
             '    Id1: 0x0007',
@@ -1551,10 +1739,34 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings):
                 '    uart: %s' % peripheral.lower(),
                 '',
             ]
-    lines += _gpio_routes(family['name'], chip_selects)
+    sigrok_pins = {}
+    if sigrok_capture is not None:
+        sigrok_pins = {
+            (pin.port, pin.pin): channel
+            for channel, pin in enumerate(
+                sigrok_capture['chip_selects'], start=5)
+        }
+        used_pins = {
+            (pin.port, pin.pin) for pin in (
+                [sigrok_capture['clock'], sigrok_capture['mosi'],
+                 sigrok_capture['miso']] +
+                sigrok_capture['chip_selects'])
+        }
+        sigrok_capture['gpio_pins'] = [
+            (gpio, pin) for gpio, pin in gpio_pins
+            if (pin.port, pin.pin) not in used_pins
+        ]
+        first_gpio_channel = 5 + len(sigrok_capture['chip_selects'])
+        sigrok_pins.update({
+            (pin.port, pin.pin): channel
+            for channel, (_, pin) in enumerate(
+                sigrok_capture['gpio_pins'], start=first_gpio_channel)
+        })
+    lines += _gpio_routes(
+        family['name'], chip_selects, sigrok_pins, gpio_pins)
     return ('\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart,
             can_buses, has_ethernet, gps_uart, airspeed_bus, battery_samples,
-            rangefinder_uart, rangefinder_type)
+            rangefinder_uart, rangefinder_type, gpio_pins, sigrok_capture)
 
 
 def _serial_device(app, family, serial_index, excluded=None):
@@ -1582,7 +1794,8 @@ def _serial_device(app, family, serial_index, excluded=None):
 def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             iomcu_uart, can_buses, has_ethernet, gps_uart, airspeed_bus,
             battery_samples, rangefinder_uart, rangefinder_type, warnings,
-            quiet_peripherals=True):
+            gpio_pins, sigrok_capture=None, quiet_peripherals=True,
+            sigrok_channels=None):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     boot_kb = bootloader.get_config(
@@ -1619,9 +1832,15 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         '$elf?=@none',
         '$platform=@%s' % platform,
         '$app_base=0x%08X' % app_base,
-        'include @%s' % common,
-        '',
+        'include $repo/Tools/renode/peripherals/common/AP_SigrokInterface.cs',
     ]
+    if gpio_pins:
+        lines.append(
+            'include $repo/Tools/renode/peripherals/common/AP_GPIOStimulus.cs')
+    if sigrok_capture is not None:
+        lines.append(
+            'include $repo/Tools/renode/peripherals/common/AP_Sigrok.cs')
+    lines += ['include @%s' % common, '']
     for name, adc, channel, raw in battery_samples:
         lines += [
             '# simulated battery %s input' % name,
@@ -1632,11 +1851,59 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         serial_target = serial.lower()
         if family['name'] in ('h743', 'h757', 'f303', 'f767', 'g474', 'l4'):
             serial_target += 'Host'
+        terminal_target = serial_target
+        if sigrok_capture is not None:
+            uart_pins = app.bytype.get(serial, [])
+
+            def uart_signal(suffix):
+                pin = next((entry for entry in uart_pins
+                            if entry.label.endswith(suffix)), None)
+                return _sigrok_signal(pin, serial + suffix, serial)
+
+            spi = sigrok_capture['bus']
+            sigrok_signal_info = [
+                uart_signal('_TX'),
+                uart_signal('_RX'),
+                _sigrok_signal(sigrok_capture['clock'], spi + '_SCK', spi),
+                _sigrok_signal(sigrok_capture['mosi'], spi + '_MOSI', spi),
+                _sigrok_signal(sigrok_capture['miso'], spi + '_MISO', spi),
+            ] + [
+                _sigrok_signal(pin, pin.label, spi)
+                for pin in sigrok_capture['chip_selects']
+            ] + [
+                _sigrok_gpio_signal(gpio, pin)
+                for gpio, pin in sigrok_capture['gpio_pins']
+            ]
+            selected_signals = _select_sigrok_signals(
+                sigrok_signal_info, sigrok_channels)
+            configured_signals = [signal['name']
+                                  for signal in sigrok_signal_info]
+            sigrok_signals = [configured_signals[index]
+                              for index in selected_signals]
+            lines += [
+                'sysbus.sigrok DeviceName %s' %
+                json.dumps('ArduPilot %s' % board),
+                'sysbus.sigrok SpiMode %u' % sigrok_capture['mode'],
+                'sysbus.sigrok SpiFrequency %u' %
+                sigrok_capture['frequency'],
+                'sysbus.sigrok ChipSelectCount %u' %
+                len(sigrok_capture['chip_selects']),
+                'sysbus.sigrok ConfigureSignals %s' %
+                json.dumps('|'.join(configured_signals)),
+                'sysbus.sigrok SelectSignals %s' %
+                json.dumps(','.join(str(index)
+                                    for index in selected_signals)),
+                'sysbus.sigrok AttachUART sysbus.%s' % serial_target,
+                '',
+            ]
+            terminal_target = 'sigrok'
         lines += [
             'emulation CreateServerSocketTerminal %u "serial" false' % uart_port,
-            'connector Connect sysbus.%s serial' % serial_target,
+            'connector Connect sysbus.%s serial' % terminal_target,
             '',
         ]
+    elif sigrok_capture is not None:
+        raise ValueError('sigrok capture needs a selected hardware UART')
     if iomcu_uart is not None:
         lines += [
             'emulation CreateUARTHub "iomcuHub"',
@@ -1746,11 +2013,17 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         },
         'rangefinder_uart': rangefinder_uart,
         'rangefinder_type': rangefinder_type,
+        'sigrok_signals': sigrok_signals if sigrok_capture is not None else [],
+        'sigrok_spi': (sigrok_capture['bus']
+                       if sigrok_capture is not None else None),
+        'sigrok_spi_frequency': (sigrok_capture['frequency']
+                                 if sigrok_capture is not None else None),
     }
 
 
 def generate(root, board, outdir, serial_index=None, uart_port=5762,
-             state_dir=None, quiet_peripherals=True):
+             state_dir=None, quiet_peripherals=True, sigrok=False,
+             sigrok_channels=None):
     '''Generate the board REPL/RESC and return paths plus run metadata.'''
     root = root.resolve()
     outdir = outdir.resolve()
@@ -1775,14 +2048,15 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     resc = outdir / ('%s.resc' % board)
     (platform, has_fram, iomcu_uart, can_buses, has_ethernet, gps_uart,
      airspeed_bus, battery_samples, rangefinder_uart,
-     rangefinder_type) = _platform(
-        root, board, app, outdir, state_dir / 'fram.img', is_periph, warnings)
+     rangefinder_type, gpio_pins, sigrok_capture) = _platform(
+        root, board, app, outdir, state_dir / 'fram.img', is_periph, warnings,
+        sigrok)
     repl.write_text(platform)
     script, metadata = _script(
         root, board, app, bootloader, repl, serial_index, uart_port,
         iomcu_uart, can_buses, has_ethernet, gps_uart, airspeed_bus,
         battery_samples, rangefinder_uart, rangefinder_type, warnings,
-        quiet_peripherals)
+        gpio_pins, sigrok_capture, quiet_peripherals, sigrok_channels)
     resc.write_text(script)
     metadata.update({
         'repl': repl,
@@ -1792,6 +2066,9 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         'has_fram': has_fram,
         'fram_size': 32 * 1024 if has_fram else 0,
         'gps_uart': gps_uart,
+        'gpio_pins': {
+            gpio: pin.portpin for gpio, pin in gpio_pins
+        },
         'is_periph': is_periph,
     })
     return metadata
@@ -1807,6 +2084,9 @@ def main():
                         help='persistent state directory (default: renode/<board>)')
     parser.add_argument('--serial', type=int, help='SERIAL_ORDER index to expose')
     parser.add_argument('--uart-port', type=int, default=5762)
+    parser.add_argument('--sigrok', action='store_true')
+    parser.add_argument('--sigrok-channels',
+                        help='comma-separated sigrok channel wildcard patterns')
     args = parser.parse_args()
     boards = supported_boards(root)
     if args.list:
@@ -1817,8 +2097,18 @@ def main():
     outdir = (Path(args.outdir) if args.outdir else
               root / 'build' / args.board / 'renode' / 'generated')
     try:
+        if args.sigrok_channels is not None and not args.sigrok:
+            parser.error('--sigrok-channels requires --sigrok')
+        sigrok_channels = (args.sigrok_channels.split(',')
+                           if args.sigrok_channels is not None else None)
+        if sigrok_channels is not None and any(
+                not pattern.strip() for pattern in sigrok_channels):
+            parser.error('--sigrok-channels contains an empty pattern')
+        sigrok_channels = ([pattern.strip() for pattern in sigrok_channels]
+                           if sigrok_channels is not None else None)
         result = generate(root, args.board, outdir, args.serial, args.uart_port,
-                          args.state_dir)
+                          args.state_dir, sigrok=args.sigrok,
+                          sigrok_channels=sigrok_channels)
     except (OSError, ValueError) as error:
         print('error: %s' % error, file=sys.stderr)
         return 1

@@ -159,6 +159,19 @@ every pause-at-a-breakpoint into a reboot).
   use.
 - `peripherals/common/AP_CANMcast.cs` — bidirectional classic CAN/CAN FD
   bridge using the ArduPilot `mcast:N` UDP framing.
+- `peripherals/stm32/AP_STM32*_RCC.cs` — register-driven STM32 clock trees for
+  the F1/F3, F4/F7, H7, and L4/G4 families. Firmware oscillator, PLL,
+  prescaler, and peripheral-mux writes determine UART, timer, CAN, SPI, I2C,
+  ADC, and other kernel clocks instead of relying on fixed platform values.
+  Generated board overlays supply `OSCILLATOR_HZ` from the compiled hwdef.
+- `peripherals/common/AP_Sigrok.cs` — continuous TCP logic-analyser stream for
+  the `renode-la` libsigrok driver. It reconstructs UART and SPI pin edges from
+  Renode's byte-level peripheral transactions and samples chip selects from
+  their generated GPIO routes.
+- `peripherals/common/AP_GPIOStimulus.cs` — on-demand pulse and quadrature
+  sources addressed by ArduPilot's logical `GPIO(n)` numbers. They feed the
+  physical pads selected by the hwdef and therefore traverse the normal STM32
+  SYSCFG/EXTI path used by AP_RPM and AP_WheelEncoder.
 - `peripherals/stm32/AP_STM32H7_Ethernet.cs` — preserves the receive-buffer
   address that STM32H7 hardware leaves in RDES0 when the DWC DMA writes receive
   status, and maps STM32's no-source-replacement setting onto the model's MAC0
@@ -406,6 +419,56 @@ For example:
 Tools/renode/run.py HolybroG4_GPS
 ```
 
+### Sigrok/PulseView
+
+Pass `--sigrok` to expose a continuous logic-analyser stream on TCP port 4242:
+
+```sh
+Tools/renode/run.py Pixhawk6X --sigrok
+pulseview -d renode-la:conn=tcp/127.0.0.1/4242
+```
+
+The capture contains the selected main MAVLink UART's TX and RX, then SCK,
+MOSI, MISO, every chip-select line belonging to the first SPI bus, and every
+pin with a `GPIO(n)` assignment in the compiled hwdef. This includes inactive
+`ALT(n)` pin configurations so relay assignments can be inspected after a
+runtime board configuration change. PulseView receives physical pin, hwdef
+signal, and logical GPIO names from Renode. It also tells Renode which channels
+are enabled, so disabled channels do not generate or transmit samples. The
+default sample rate is 10 MHz; use
+`--sigrok-sample-rate HZ` and `--sigrok-port PORT` to change it. UART and SPI
+wire edges are reconstructed from Renode's byte-level models, while chip-select
+and general GPIO levels come directly from the generated GPIO fan-out.
+
+Use `--sigrok-channels` to advertise only matching channels. It accepts a
+comma-separated list of case-insensitive shell wildcards matched against
+peripheral names, hwdef signal labels, logical GPIO names, and physical pin
+numbers. `UARTn` and `USARTn` are treated as equivalent. For example:
+
+```text
+Tools/renode/run.py CubeOrange --sigrok \
+    --sigrok-channels 'UART2,SPI*,PB4'
+```
+
+Every generated hwdef `GPIO(n)` is also connected to an on-demand external
+stimulus. For example, these monitor commands generate a 25 Hz RPM input on
+GPIO 1, then replace it with a 10-cycle/s quadrature wheel encoder on GPIOs 1
+and 2:
+
+```text
+sysbus.gpioStimulus StartPulse 1 25
+sysbus.gpioStimulus StartQuadrature 1 2 10 false
+sysbus.gpioStimulus StopAll
+```
+
+`Set GPIO LEVEL` injects an individual level and `Stop GPIO` stops one source.
+The firmware still owns pin mode and EXTI edge selection: AP_RPM configures its
+pin as an input with a rising-edge interrupt, while AP_WheelEncoder configures
+both inputs for both-edge interrupts. A stimulus on an output, analog, or
+alternate-function pin is retained externally and becomes visible immediately
+if firmware changes that pad to an input. No periodic Renode clock entry exists
+until `StartPulse` or `StartQuadrature` is called.
+
 ### GDB
 
 Build with debug information and pass `--gdb`:
@@ -474,7 +537,29 @@ CAN1 is then available to DroneCAN tooling as `mcast:0`, and CAN2 as
 `mcast:1`. The bus numbers follow the multicast convention rather than the
 one-based ArduPilot peripheral names. The bridge is closed unless `--can` is
 passed. AP_Periph targets are the exception: their CAN buses open by default
-because CAN is their primary transport.
+because CAN is their primary transport. `--can-base N` moves CAN1 to
+`mcast:N` and following interfaces to successive buses; the default remains
+zero. This is primarily useful for parallel automated tests.
+
+### Automated tests
+
+`test_all.py` discovers supported firmware already present under
+`build/*/bin`. Its optional wildcard matches either a board or a
+`board/vehicle` name. Quote shell wildcards so the script receives them:
+
+```sh
+Tools/renode/test_all.py --parallel 4
+Tools/renode/test_all.py 'HolybroG4*' --parallel 2
+Tools/renode/test_all.py 'CubeBlack/arducopter'
+```
+
+Flight-controller tests wait for a MAVProxy-detected heartbeat and then run
+`param ftp`, requiring a complete non-empty parameter download. AP_Periph
+tests allocate a DroneCAN node ID and issue indexed parameter GetSet requests
+until the target returns the end of its table. Each worker has private flash,
+SD, Renode configuration, TCP ports, and (for AP_Periph) multicast CAN buses.
+Use `--list` to show the builds selected by a pattern and `--timeout` to adjust
+the per-test limit.
 
 ### Ethernet
 

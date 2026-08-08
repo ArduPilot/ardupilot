@@ -2,7 +2,7 @@
 // compatible; these declarations add the F767 memory and serial/SPI blocks
 // used by ArduPilot flight-controller hwdefs.
 
-using "platforms/cpus/stm32f746.repl"
+using "Tools/renode/platforms/stm32f746_ap_base.repl"
 
 usbOtgFs: Miscellaneous.AP_STM32_OTG_Stub @ sysbus 0x50000000
 
@@ -47,3 +47,10 @@ nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
 
 dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
     frequency: 216000000
+
+rcc:
+    dwt: dwt
+    uart4: uart4
+    uart5: uart5
+    uart7: uart7
+    uart8: uart8

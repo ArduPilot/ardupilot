@@ -31,3 +31,8 @@ timer12: Timers.STM32_Timer @ sysbus 0x40001800
     -> nvic@43
     frequency: 84000000
     initialLimit: 0xFFFF
+
+rcc:
+    uart7: uart7
+    uart8: uart8
+    timer12: timer12

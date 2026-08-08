@@ -6,6 +6,7 @@ $elf?=@none
 $platform?=@Tools/renode/platforms/stm32f103_base.repl
 
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32F1F3_RCC.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32G4_DMA.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32F4_I2C.cs
 include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
