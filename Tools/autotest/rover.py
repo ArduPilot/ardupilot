@@ -3747,7 +3747,14 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION
         )
 
-        self.assert_current_waypoint(0)
+        # the clear is sent without waiting for an ack, and
+        # assert_current_waypoint() reads the sequence number pymavlink
+        # cached from the last MISSION_CURRENT - which is still the 3 we
+        # set above until the vehicle has processed the clear and told
+        # us so.  Asserting straight away asks whether that message has
+        # arrived yet, not whether the mission was cleared:
+        #     ClearMission (check mission clearing) (Incorrect current wp)
+        self.wait_current_waypoint(0, timeout=30)
 
         self.drain_mav()
 
