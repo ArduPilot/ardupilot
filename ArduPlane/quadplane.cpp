@@ -572,6 +572,13 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Bitmask: 1: Disable thrust loss detection in transtions and fixed wing modes. Thrust loss detection will only run in VTOL modes.
     AP_GROUPINFO("THRST_LOSS_OPT", 42, QuadPlane, thrust_loss.options, 0),
 
+    // @Param: RTL_PAUSE_TIME
+    // @DisplayName: Q RTL pause time.
+    // @Description: Time (in seconds) to pause in a VTOL loiter above landing point before starting final descent. Zero disables. This applies in VTOL landing in auto mode and QRTL mode.
+    // @Units: s
+    // @Range: 0 10
+    AP_GROUPINFO("RTL_PAUSE_TIME", 43, QuadPlane, qrtl_pause_time, 0),
+
     AP_GROUPEND
 };
 
@@ -2719,6 +2726,7 @@ void QuadPlane::vtol_position_controller(void)
     }
 
     case QPOS_POSITION2:
+    case QPOS_PAUSE:
     case QPOS_LAND_ABORT:
     case QPOS_LAND_DESCEND: {
         setup_target_position();
@@ -2866,6 +2874,12 @@ void QuadPlane::vtol_position_controller(void)
         } else {
             set_climb_rate_ms(0);
         }
+        break;
+    }
+
+    case QPOS_PAUSE: {
+        // Hold zero climb rate for the duration of the pause
+        set_climb_rate_ms(0);
         break;
     }
 
@@ -3613,6 +3627,9 @@ bool QuadPlane::verify_vtol_land(void)
         return true;
     }
 
+    // True if land descent should be started
+    bool start_descend = false;
+
     if (poscontrol.get_state() == QPOS_POSITION2) {
         // see if we should move onto the descend stage of landing
         const float descend_dist_threshold_m = 2.0;
@@ -3633,24 +3650,40 @@ bool QuadPlane::verify_vtol_land(void)
         
         if (reached_position &&
             (vel_ned_ms.xy() - approach_vel_ne_ms).length() < descend_speed_threshold_ms) {
-            poscontrol.set_state(QPOS_LAND_DESCEND);
-            poscontrol.pilot_correction_done = false;
             pos_control->set_lean_angle_max_cd(0);
             poscontrol.correction_ne_m.zero();
 #if AP_LANDINGGEAR_ENABLED
             plane.g2.landing_gear.deploy_for_landing();
 #endif
-            last_land_final_agl_m = plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING);
-            gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
-            if (plane.control_mode == &plane.mode_auto) {
-                // set height to mission height, so we can use the mission
-                // WP height for triggering land final if no rangefinder
-                // available
-                plane.set_next_WP(plane.mission.get_current_nav_cmd().content.location);
+            // Start loitering if loiter time is set else go directly to descent
+            if (is_positive(qrtl_pause_time.get())) {
+                poscontrol.set_state(QPOS_PAUSE);
+                gcs().send_text(MAV_SEVERITY_INFO,"Land loiter started");
             } else {
-                plane.set_next_WP(plane.next_WP_loc);
-                plane.next_WP_loc.copy_alt_from(ahrs.get_home());
+                start_descend = true;
             }
+        }
+    }
+
+    // Check if loiter time has passed
+    if ((poscontrol.get_state() == QPOS_PAUSE) &&
+        (poscontrol.time_since_state_start_ms() > (qrtl_pause_time.get() * 1000)))  {
+        start_descend = true;
+    }
+
+    // Move onto land descend state
+    if (start_descend) {
+        poscontrol.set_state(QPOS_LAND_DESCEND);
+        last_land_final_agl_m = plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING);
+        gcs().send_text(MAV_SEVERITY_INFO,"Land descend started");
+        if (plane.control_mode == &plane.mode_auto) {
+            // set height to mission height, so we can use the mission
+            // WP height for triggering land final if no rangefinder
+            // available
+            plane.set_next_WP(plane.mission.get_current_nav_cmd().content.location);
+        } else {
+            plane.set_next_WP(plane.next_WP_loc);
+            plane.next_WP_loc.copy_alt_from(ahrs.get_home());
         }
     }
 
@@ -4226,16 +4259,24 @@ void QuadPlane::update_throttle_mix(void)
 bool QuadPlane::in_vtol_land_approach(void) const
 {
     if (plane.control_mode == &plane.mode_qrtl &&
-        poscontrol.get_state() <= QPOS_POSITION2) {
+        poscontrol.get_state() <= QPOS_PAUSE) {
         return true;
     }
-    if (in_vtol_auto()) {
-        if (is_vtol_land(plane.mission.get_current_nav_cmd().id) &&
-            (poscontrol.get_state() == QPOS_APPROACH ||
-             poscontrol.get_state() == QPOS_AIRBRAKE ||
-             poscontrol.get_state() == QPOS_POSITION1 ||
-             poscontrol.get_state() == QPOS_POSITION2)) {
-            return true;
+    if (in_vtol_auto() && is_vtol_land(plane.mission.get_current_nav_cmd().id)) {
+        switch (poscontrol.get_state()) {
+            case QPOS_APPROACH:
+            case QPOS_AIRBRAKE:
+            case QPOS_POSITION1:
+            case QPOS_POSITION2:
+            case QPOS_PAUSE:
+                return true;
+
+            case QPOS_NONE:
+            case QPOS_LAND_DESCEND:
+            case QPOS_LAND_ABORT:
+            case QPOS_LAND_FINAL:
+            case QPOS_LAND_COMPLETE:
+                break;
         }
     }
     return false;
