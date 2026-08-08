@@ -179,6 +179,10 @@ class ap_library_check_headers(Task.Task):
         'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
         'libraries/AP_LandingGear/AP_LandingGear_config.h',
         'libraries/AP_InertialSensor/AP_InertialSensor_rate_config.h',
+        # AP_OAScripting binds the Plane/Copter-only AP_Avoidance (ADS-B) library
+        # into Lua; it is gated to ArduPlane via APM_BUILD_TYPE, which must live in
+        # the header so the class is not even declared on other vehicles.
+        'libraries/AC_Avoidance/AP_OAScripting.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 

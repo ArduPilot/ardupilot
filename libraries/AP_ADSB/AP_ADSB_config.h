@@ -4,6 +4,8 @@
 
 #include <GCS_MAVLink/GCS_config.h>
 
+#include "GDL90_protocol/GDL90_Message_Structs.h"
+
 #ifndef HAL_ADSB_ENABLED
 #define HAL_ADSB_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif

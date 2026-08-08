@@ -1207,6 +1207,21 @@ function Location_ud:offset(ofs_north, ofs_east) end
 ---@return number -- horizontal distance in meters
 function Location_ud:get_distance(loc) end
 
+-- Given an other Location copies the altitude and it's frame into this location
+---@param loc Location_ud -- location to use as the source altitude/frame
+function Location_ud:copy_alt_from(loc) end
+
+--get altitude (in cm) in the desired frame
+-- does not modify ret_alt_cm unless true is returned
+-- returns false on failure to get altitude in the desired frame which can only happen if the original frame or desired frame is:
+---@param frame integer -- altitude frame
+---| '0' # ABSOLUTE
+---| '1' # ABOVE_HOME
+---| '2' # ABOVE_ORIGIN
+---| '3' # ABOVE_TERRAIN
+---@return number|nil -- altitude in specified frame
+function Location_ud:get_alt_m(frame) end
+
 -- desc
 ---@class (exact) AP_EFI_Backend_ud
 local AP_EFI_Backend_ud = {}
@@ -2221,6 +2236,16 @@ function quadplane:in_vtol_land_descent() end
 ---@return boolean
 function quadplane:abort_landing() end
 
+-- Add these at the top level of docs.lua
+MAV_VTOL_STATE_UNDEFINED = 0
+MAV_VTOL_STATE_TRANSITION_TO_FW = 1
+MAV_VTOL_STATE_TRANSITION_TO_MC = 2
+MAV_VTOL_STATE_MC = 3
+MAV_VTOL_STATE_FW = 4
+
+-- Return the current VTOL state of the aircraft as a MAV_VTOL_STATE enum
+---@return integer
+function quadplane:get_mav_vtol_state() end
 
 -- desc
 LED = {}
@@ -4563,4 +4588,141 @@ function osd:get_screen() end
 -- check if display is disabled
 ---@return boolean
 function osd:display_disabled() end
+
+-- OAScripting class for ObjectAvoidance scripting interface
+OAScripting = {}
+
+-- find the threats (obstacles and fences) closest to a line (start_loc, end_loc)
+---@param start_loc Location_ud -- Location of the start of the line
+---@param end_loc Location_ud -- Location of the end of the line to check
+---@param lookahead_m number -- the furthest distance out from the line to check
+---@return number|nil distance_min_m -- distance to the closest threat found, or nil if none
+---@return OAObstacle_ud|nil obstacle -- the closest threat found
+---@return OAObstacle_ud|nil obstacle2 -- additional threat found
+---@return OAObstacle_ud|nil obstacle3 -- additional threat found
+---@return OAObstacle_ud|nil obstacle4 -- additional threat found
+function OAScripting:find_threats(start_loc, end_loc, lookahead_m) end
+
+-- find the aircraft closest to a Location
+---@param vehicle_loc Location_ud -- Location to search for aircraft
+---@param lookahead_m number -- the furthest horizontal distance out from vehicle_loc to check
+---@param vertical_lookahead_m number -- the largest altitude difference (m) to accept, i.e. the full vertical gate (e.g. AVD_WCLR_Z + margin)
+---@return number|nil distance_min_m -- distance to the closest aircraft found, or nil if none
+---@return OAObstacle_ud|nil aircraft -- the closest aircraft found
+function OAScripting:find_aircraft(vehicle_loc, lookahead_m, vertical_lookahead_m) end
+
+-- closest distance to the nearest fence boundary edge of the given fence category
+---@param loc Location_ud -- Location to measure the distance from
+---@param fence_type integer -- OBSTACLE_TYPE FENCE_* value to scope the search to that fence category; 0 or any non-fence value searches all polygon/circle fences
+---@return number|nil distance_m -- distance in m to the nearest matching fence boundary edge, or nil if none is loaded
+function OAScripting:fence_distance(loc, fence_type) end
+
+-- find the single obstacle closest to a line (start_loc, end_loc), returning its details
+---@param start_loc Location_ud -- Location of the start of the line
+---@param end_loc Location_ud -- Location of the end of the line to check
+---@param lookahead_m number -- the furthest distance out from the line to check
+---@return number|nil distance_min_m -- distance to the closest obstacle found, or nil if none
+---@return integer|nil type -- the AP_OAAvoidance::ObstacleType of the type of object found
+---@return string|nil label -- label of the obstacle for display to the user. for GA vehicles will be an ICAO code
+---@return uint32_t_ud|nil src_id -- the MAV_SYSID of the obstacle if relevant. For MAVLink this will be the MAV_SYSID of the vehicle
+---@return Location_ud|nil location -- Location of the obstacle found
+---@return Vector3f_ud|nil pos_NED_m -- position of the obstacle found in m NED from the origin
+---@return Vector3f_ud|nil velocity_ms -- velocity of the obstacle in ms NED from the origin
+function OAScripting:find_closest_obstacle(start_loc, end_loc, lookahead_m) end
+
+-- OAObstacle is a userdata object that holds obstacle information managed by OAScripting
+-- it is returned by calls to OAScripting methods, it can't be created or manipulated in Lua
+-- fields are accessed as getter/setter methods, eg obstacle:obstacle_type() to read
+---@class (exact) OAObstacle_ud
+local OAObstacle_ud = {}
+
+-- create OAObstacle object
+---@return OAObstacle_ud
+function OAObstacle() end
+
+-- get timestamp_ms field - time the obstacle was last updated in ms
+---@return integer
+function OAObstacle_ud:timestamp_ms() end
+
+-- set timestamp_ms field
+---@param value integer
+function OAObstacle_ud:timestamp_ms(value) end
+
+-- get src_id field - the MAV_SYSID of the obstacle if relevant
+---@return integer
+function OAObstacle_ud:src_id() end
+
+-- set src_id field
+---@param value integer
+function OAObstacle_ud:src_id(value) end
+
+-- get icao_code field - the ICAO code for an ADS-B aircraft
+---@return integer
+function OAObstacle_ud:icao_code() end
+
+-- set icao_code field
+---@param value integer
+function OAObstacle_ud:icao_code(value) end
+
+-- get emitter_type field - the ADSB_EMITTER_TYPE of the obstacle
+---@return integer
+function OAObstacle_ud:emitter_type() end
+
+-- set emitter_type field
+---@param value integer
+function OAObstacle_ud:emitter_type(value) end
+
+-- get obstacle_type field - the AP_OAAvoidance::ObstacleType of the obstacle
+---@return integer -- obstacle type
+---| '0'  # GENERAL
+---| '1'  # MAV_SYSID
+---| '2'  # GENERAL_AVIATION
+---| '3'  # WEATHER
+---| '4'  # BIRD_MIGRATORY
+---| '5'  # BIRD_OF_PREY
+---| '6'  # FENCE_HOME
+---| '7'  # FENCE_CIRCLE_INCLUSION
+---| '8'  # FENCE_CIRCLE_EXCLUSION
+---| '9'  # FENCE_POLYGON_INCLUSION
+---| '10' # FENCE_POLYGON_EXCLUSION
+---| '11' # FENCE_LUA
+---| '12' # PROXIMITY
+---| '13' # AIS
+function OAObstacle_ud:obstacle_type() end
+
+-- set obstacle_type field
+---@param value integer
+function OAObstacle_ud:obstacle_type(value) end
+
+-- get label field - label for display to the user. for GA vehicles this is an ICAO code
+---@return string
+function OAObstacle_ud:label() end
+
+-- get is_aircraft field - true if the obstacle is an aircraft
+---@return boolean
+function OAObstacle_ud:is_aircraft() end
+
+-- get is_drone field - true if the obstacle is a drone
+---@return boolean
+function OAObstacle_ud:is_drone() end
+
+-- get location field - the Location of this obstacle
+---@return Location_ud
+function OAObstacle_ud:location() end
+
+-- get position_NED_m field - position of this obstacle NED in meters from origin
+---@return Vector3f_ud
+function OAObstacle_ud:position_NED_m() end
+
+-- get velocity_NED_ms field - velocity of this obstacle in meters/second NED from origin
+---@return Vector3f_ud
+function OAObstacle_ud:velocity_NED_ms() end
+
+-- get radius_m field - radius of this obstacle if it's a fence, in meters
+---@return number
+function OAObstacle_ud:radius_m() end
+
+-- get margin_m field - margin of this obstacle if it's a fence, in meters
+---@return number
+function OAObstacle_ud:margin_m() end
 
