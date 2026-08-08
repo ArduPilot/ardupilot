@@ -283,6 +283,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_NETWORKING_CAPTURE_ENABLED', 'AP_Networking_Backend::capture_pbuf'),
 
             ('FORCE_APJ_DEFAULT_PARAMETERS', 'AP_Param::param_defaults_data'),
+            ('AP_PARAM_LOCKDOWN_ENABLED', 'AP_Param::_lockdown_level'),
             ('HAL_BUTTON_ENABLED', 'AP_Button::update'),
             ('HAL_LOGGING_ENABLED', 'AP_Logger::init'),
             ('AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED', 'Compass::mag_cal_fixed_yaw'),
