@@ -1,0 +1,30 @@
+# hw definition file for FlyFishRC F405 bootloader
+
+MCU STM32F4xx STM32F405xx
+
+APJ_BOARD_ID AP_HW_FlyFishRCF405
+
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 1024
+
+# bootloader must fit within 16KB
+FLASH_USE_MAX_KB 16
+
+# bootloader is installed at address 0
+FLASH_RESERVE_START_KB 0
+
+# firmware is placed starting at 48KB
+FLASH_BOOTLOADER_LOAD_KB 48
+
+STM32_VDD 330U
+
+# USB only during bootloader
+SERIAL_ORDER OTG1
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# status LEDs (active low)
+PC15 LED_BOOTLOADER OUTPUT LOW
+PC14 LED_ACTIVITY   OUTPUT LOW
+define HAL_LED_ON 0
