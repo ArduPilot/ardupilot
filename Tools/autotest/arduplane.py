@@ -7806,6 +7806,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def DO_CHANGE_ALTITUDE(self):
         '''test DO_CHANGE_ALTITUDE mavlink command'''
+        self.install_terrain_handlers_context()
+
         takeoff_alt = 30
         self.takeoff(alt=takeoff_alt, mode='TAKEOFF')
         self.wait_altitude(takeoff_alt-1, takeoff_alt+1, minimum_duration=10, relative=True, timeout=60)
