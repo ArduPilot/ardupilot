@@ -439,7 +439,8 @@
                 "periph_params_filename": [
                     "default_params/periph.parm",
                     "default_params/quadplane-periph.parm"
-                ]
+                ],
+                "periph_board": "sitl_periph_universal"
             },
             "quadplane-PPP": {
                 "waf_target": "bin/arduplane",
