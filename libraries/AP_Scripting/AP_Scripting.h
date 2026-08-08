@@ -69,6 +69,8 @@ public:
 
     // Check if command ID is blocked
     bool is_handling_command(uint16_t cmd_id);
+    bool is_hooked_message_request(uint32_t msgid);
+
 #endif
 
     static AP_Scripting * get_singleton(void) { return _singleton; }
@@ -148,6 +150,14 @@ public:
     };
     command_block_list *mavlink_command_block_list;
     HAL_Semaphore mavlink_command_block_list_sem;
+
+    struct req_message_hook_list {
+        uint32_t msgid;
+        req_message_hook_list *next;
+    };
+
+    req_message_hook_list *mavlink_req_message_hook_list;
+    HAL_Semaphore mavlink_req_message_hook_list_sem;
 
     #if AP_SCRIPTING_SERIALDEVICE_ENABLED
         AP_Scripting_SerialDevice _serialdevice;
