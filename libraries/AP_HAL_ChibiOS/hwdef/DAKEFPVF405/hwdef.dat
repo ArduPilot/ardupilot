@@ -153,6 +153,8 @@ DMA_NOSHARE TIM8_UP TIM4_UP TIM3_UP SPI1*
 DMA_PRIORITY TIM8_UP TIM4_UP TIM3_UP SPI1*
 
 IMU Invensensev3 SPI:imu1 ROTATION_PITCH_180_YAW_270
+IMU LSM6DSV      SPI:imu1 ROTATION_PITCH_180_YAW_270
+IMU BMI270       SPI:imu1 ROTATION_ROLL_180
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
