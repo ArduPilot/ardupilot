@@ -67,9 +67,14 @@ public:
      */
     void set_instance(uint8_t _instance) {
         instance = _instance;
-        if (instance < MAX_SIM_INSTANCES) {
-            instances[instance] = this;
-        }
+        // register at 0 whatever our instance number is: there is only
+        // ever one Aircraft in a SITL process, and _instance is the -I
+        // number, which separates the ports and directories of separate
+        // processes rather than indexing aircraft within one.  Indexing
+        // by it left instances[0] empty for every -I but zero, so
+        // scripts calling sim:set_pose(0, ...) - as the shipped
+        // sim_arming_pos.lua example does - silently did nothing.
+        instances[0] = this;
     }
 
     /*
