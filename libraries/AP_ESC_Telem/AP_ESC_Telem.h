@@ -111,8 +111,11 @@ public:
     // send telemetry data to mavlink
     void send_esc_telemetry_mavlink(uint8_t mav_chan);
 
-    // update at 10Hz to log telemetry
+    // update at 10Hz to handle invalidation
     void update();
+
+    // log ESC data
+    void write_log();
 
     // is rpm telemetry configured for the provided channel mask
     bool is_telemetry_active(uint32_t servo_channel_mask) const;
