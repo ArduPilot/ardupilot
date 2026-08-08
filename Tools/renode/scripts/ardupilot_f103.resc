@@ -1,0 +1,38 @@
+:name: ArduPilot STM32F103
+:description: boots an ArduPilot AP_Periph STM32F103 firmware ELF
+
+$repo?=@.
+$elf?=@none
+$platform?=@Tools/renode/platforms/stm32f103_base.repl
+
+include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32G4_DMA.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32F4_I2C.cs
+include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
+include $repo/Tools/renode/peripherals/common/AP_DWT.cs
+include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs
+include $repo/Tools/renode/peripherals/common/AP_SPIMultiplexer.cs
+include $repo/Tools/renode/peripherals/common/AP_CANMcast.cs
+include $repo/Tools/renode/peripherals/sensors/AP_AdditionalBarometers.cs
+include $repo/Tools/renode/peripherals/sensors/AP_MS5611.cs
+include $repo/Tools/renode/peripherals/sensors/AP_RegisterIMU.cs
+include $repo/Tools/renode/peripherals/sensors/AP_UBlox.cs
+include $repo/Tools/renode/peripherals/sensors/AP_Airspeed.cs
+include $repo/Tools/renode/peripherals/sensors/AP_Benewake.cs
+include $repo/Tools/renode/peripherals/sensors/AP_LightWare.cs
+
+mach create "ardupilot"
+machine LoadPlatformDescription $platform
+sysbus LoadELF $elf
+
+$app_base?=0x08006400
+cpu VectorTableOffset $app_base
+
+macro reset
+"""
+    cpu VectorTableOffset $app_base
+"""
+
+cpu PerformanceInMips 60
+emulation SetGlobalQuantum "0.001"
+emulation SetGlobalAdvanceImmediately false

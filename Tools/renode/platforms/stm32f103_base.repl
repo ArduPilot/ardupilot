@@ -1,0 +1,204 @@
+// STM32F103 medium-density base platform for AP_Periph targets.
+
+flash: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x20000
+
+sram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x5000
+
+systemData: Memory.MappedMemory @ sysbus 0x1FFFF000
+    size: 0x1000
+    init:
+        WriteDoubleWord 0x7E8 0x31334652
+        WriteDoubleWord 0x7EC 0x52454E4F
+        WriteDoubleWord 0x7F0 0x44454631
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 72000000
+    IRQ -> cpu@0
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m3"
+    nvic: nvic
+
+exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40010400
+    numberOfOutputLines: 19
+    [0-4] -> nvic@[6-10]
+    [5-9] -> nvicInput23@[0-4]
+    [10-15] -> nvicInput40@[0-5]
+
+nvicInput23: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 5
+    -> nvic@23
+
+nvicInput40: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 6
+    -> nvic@40
+
+gpioPortA: GPIOPort.STM32F1GPIOPort @ sysbus <0x40010800, +0x400>
+    [0-15] -> exti@[0-15]
+
+gpioPortB: GPIOPort.STM32F1GPIOPort @ sysbus <0x40010C00, +0x400>
+    [0-15] -> exti@[0-15]
+
+gpioPortC: GPIOPort.STM32F1GPIOPort @ sysbus <0x40011000, +0x400>
+    [0-15] -> exti@[0-15]
+
+gpioPortD: GPIOPort.STM32F1GPIOPort @ sysbus <0x40011400, +0x400>
+    [0-15] -> exti@[0-15]
+
+gpioPortE: GPIOPort.STM32F1GPIOPort @ sysbus <0x40011800, +0x400>
+    [0-15] -> exti@[0-15]
+
+gpioPortF: GPIOPort.STM32F1GPIOPort @ sysbus <0x40011C00, +0x400>
+    [0-15] -> exti@[0-15]
+
+gpioPortG: GPIOPort.STM32F1GPIOPort @ sysbus <0x40012000, +0x400>
+    [0-15] -> exti@[0-15]
+
+afio: GPIOPort.STM32F1AFIO @ sysbus 0x40010000
+    gpioPorts: [gpioPortA, gpioPortB, gpioPortC, gpioPortD, gpioPortE, gpioPortF, gpioPortG]
+
+usart1: UART.STM32_UART @ sysbus <0x40013800, +0x100>
+    frequency: 72000000
+    -> nvic@37
+
+usart2: UART.STM32_UART @ sysbus <0x40004400, +0x100>
+    frequency: 36000000
+    -> nvic@38
+
+usart3: UART.STM32_UART @ sysbus <0x40004800, +0x100>
+    frequency: 36000000
+    -> nvic@39
+
+uart4: UART.STM32_UART @ sysbus <0x40004C00, +0x100>
+    frequency: 36000000
+    -> nvic@52
+
+uart5: UART.STM32_UART @ sysbus <0x40005000, +0x100>
+    frequency: 36000000
+    -> nvic@53
+
+i2c1: I2C.AP_STM32F4_I2C @ sysbus 0x40005400
+    EventInterrupt -> nvic@31
+    ErrorInterrupt -> nvic@32
+
+i2c2: I2C.AP_STM32F4_I2C @ sysbus 0x40005800
+    EventInterrupt -> nvic@33
+    ErrorInterrupt -> nvic@34
+
+spi1: SPI.STM32SPI @ sysbus 0x40013000
+    IRQ -> nvic@35
+
+spi2: SPI.STM32SPI @ sysbus 0x40003800
+    IRQ -> nvic@36
+
+can1: CAN.STMCAN @ sysbus <0x40006400, +0x400>
+    [0-3] -> nvic@[19-22]
+
+timer1: Timers.STM32_Timer @ sysbus 0x40012C00
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    [BreakInterrupt, UpdateInterrupt, TriggerInterrupt, CommutationInterrupt] -> nvic@[24-26, 26]
+    CaptureCompareInterrupt -> nvic@27
+
+timer2: Timers.STM32_Timer @ sysbus 0x40000000
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@28
+
+timer3: Timers.STM32_Timer @ sysbus 0x40000400
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@29
+
+timer4: Timers.STM32_Timer @ sysbus 0x40000800
+    frequency: 72000000
+    initialLimit: 0xFFFF
+    -> nvic@30
+
+iwdg: Miscellaneous.AP_STM32_IWDG @ sysbus 0x40003000
+
+pwr: Memory.MappedMemory @ sysbus 0x40007000
+    size: 0x400
+
+dma1: DMA.AP_STM32G4_DMA @ sysbus 0x40020000
+    numberOfChannels: 7
+    [0-6] -> nvic@[11-17]
+
+// Present on the F105 connectivity line; harmlessly idle on F103 targets.
+dma2: DMA.AP_STM32G4_DMA @ sysbus 0x40020400
+    numberOfChannels: 5
+    [0-4] -> nvic@[56-60]
+
+adc1: Python.PythonPeripheral @ sysbus 0x40012400
+    size: 0x400
+    initable: true
+    script: '''
+if request.IsInit:
+    registers = {}
+
+if request.IsWrite:
+    value = request.Value
+    if request.Offset == 0x8:
+        value &= ~0xC
+    registers[request.Offset] = value
+elif request.IsRead:
+    request.Value = registers.get(request.Offset, 0)
+'''
+
+nvicFix: Miscellaneous.AP_NVIC_RettobaseFix @ sysbus 0x60000000
+    nvic: nvic
+
+dwt: Miscellaneous.AP_DWT @ sysbus 0xE0001000
+    frequency: 72000000
+
+rcc: Python.PythonPeripheral @ sysbus 0x40021000
+    size: 0x400
+    initable: true
+    script: '''
+if request.IsInit:
+    registers = {}
+
+if request.IsWrite:
+    registers[request.Offset] = request.Value
+elif request.IsRead:
+    value = registers.get(request.Offset, 0)
+    if request.Offset == 0x0:
+        value |= ((value >> 0) & 1) << 1
+        value |= ((value >> 16) & 1) << 17
+        value |= ((value >> 24) & 1) << 25
+    elif request.Offset == 0x4:
+        value = (value & ~0xC) | ((value & 0x3) << 2)
+    request.Value = value
+'''
+
+// FLASH_SR error flags are write-one-to-clear. AP_FlashStorage writes 0xF3
+// while formatting, which must not leave the controller permanently busy.
+flashController: Python.PythonPeripheral @ sysbus 0x40022000
+    size: 0x400
+    initable: true
+    script: '''
+if request.IsInit:
+    registers = {}
+
+if request.IsWrite:
+    if request.Offset == 0xC:
+        registers[request.Offset] = 0
+    else:
+        registers[request.Offset] = request.Value
+elif request.IsRead:
+    request.Value = registers.get(request.Offset, 0)
+'''
+
+backupRegisters: Memory.MappedMemory @ sysbus 0x40006C00
+    size: 0x400
+
+crc: CRC.STM32_CRC @ sysbus 0x40023000
+    series: STM32Series.F4
+
+sysbus:
+    init:
+        Tag <0x40002800, 0x40002BFF> "RTC"
+        Tag <0xE0042000, 0xE00423FF> "DBGMCU"

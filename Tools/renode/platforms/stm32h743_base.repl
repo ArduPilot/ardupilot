@@ -185,10 +185,8 @@ lpuart1: UART.STM32F7_USART @ sysbus 0x58000C00
 syscfg: Miscellaneous.STM32_SYSCFG @ sysbus 0x58000400
     [0-15] -> exti@[0-15]
 
-adcM1S2: Analog.STM32F0_ADC @ sysbus 0x40022000
-    referenceVoltage: 3.3
-    externalEventFrequency: 1000
-    -> nvic@18
+adcM1S2: Analog.AP_STM32_ADC_v3 @ sysbus 0x40022000
+    IRQ -> nvic@18
 
 rng: Miscellaneous.STM32F4_RNG @ sysbus 0x48021800
     -> nvic@80
@@ -458,7 +456,9 @@ sysbus:
         Tag <0x40080000, 0x4008000F> "USB2_OTG_FS"
         Tag <0x40080010, 0x40080013> "USB2_OTG_FS_GRSTCTL" 0x80000000
         Tag <0x40080014, 0x400BFFFF> "USB2_OTG_FS"
-        Tag <0x40040000, 0x4007FFFF> "USB1_OTG_HS"
+        Tag <0x40040000, 0x4004000F> "USB1_OTG_HS"
+        Tag <0x40040010, 0x40040013> "USB1_OTG_HS_GRSTCTL" 0x80000000
+        Tag <0x40040014, 0x4007FFFF> "USB1_OTG_HS"
         Tag <0x40017400, 0x400177FF> "HRTIM"
         Tag <0x40017000, 0x400173FF> "DFSDM1"
         Tag <0x40016000, 0x400163FF> "SAI3"

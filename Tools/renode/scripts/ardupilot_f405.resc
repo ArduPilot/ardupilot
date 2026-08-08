@@ -18,19 +18,26 @@ include $repo/Tools/renode/peripherals/common/AP_IOMCU.cs
 include $repo/Tools/renode/peripherals/common/AP_SPIMultiplexer.cs
 include $repo/Tools/renode/peripherals/common/AP_CANMcast.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32F4_I2C.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32_ADC.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32DMA_Fixup.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32DMA_Circular.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32F_SDMMC_DmaPump.cs
 include $repo/Tools/renode/peripherals/stm32/AP_UartRxDmaPump.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_UpdateDMA.cs
 include $repo/Tools/renode/peripherals/sensors/AP_ADIS.cs
 include $repo/Tools/renode/peripherals/sensors/AP_AdditionalBarometers.cs
 include $repo/Tools/renode/peripherals/sensors/AP_BMP280.cs
+include $repo/Tools/renode/peripherals/sensors/AP_BMP388.cs
 include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
 include $repo/Tools/renode/peripherals/sensors/AP_ICM20689.cs
 include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
 include $repo/Tools/renode/peripherals/sensors/AP_InvensenseV2.cs
 include $repo/Tools/renode/peripherals/sensors/AP_MS5611.cs
 include $repo/Tools/renode/peripherals/sensors/AP_RegisterIMU.cs
+include $repo/Tools/renode/peripherals/sensors/AP_UBlox.cs
+include $repo/Tools/renode/peripherals/sensors/AP_Airspeed.cs
+include $repo/Tools/renode/peripherals/sensors/AP_Benewake.cs
+include $repo/Tools/renode/peripherals/sensors/AP_LightWare.cs
 include $repo/Tools/renode/peripherals/storage/AP_RAMTRON.cs
 
 mach create "ardupilot"
