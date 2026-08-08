@@ -10000,10 +10000,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
 
+        # the FFT reports its finding during the hover below - before
+        # this wait begins - so collect from here rather than only
+        # seeing what arrives once we start looking
+        self.context_collect('STATUSTEXT')
+
         # do test flight:
         self.takeoff(10, mode="ALT_HOLD")
         tstart, tend, hover_throttle = self.hover_for_interval(10)
-        self.wait_statustext("Noise ", timeout=20)
+        self.wait_statustext("Noise ", timeout=20, check_context=True)
         self.set_parameter("SIM_GYR1_RND", 0) # stop noise so that we can get home
         self.do_RTL()
 
@@ -13592,11 +13597,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "EK3_SRC1_VELZ": 0,    # None
             "AHRS_EKF_TYPE": 3,
         })
+        # this message is emitted as the vehicle comes up, so it can
+        # arrive before a wait started afterwards; collect across the
+        # reboot, which empties the collection as it goes
+        self.context_collect('STATUSTEXT')
+
         self.reboot_sitl()
 
         # allow EKF to initialise: validOrigin set from GPS, filter
         # reaches steady AID_NONE state
-        self.wait_statustext("EKF3 IMU0 initialised", timeout=30)
+        self.wait_statustext("EKF3 IMU0 initialised", timeout=30, check_context=True)
 
         # capture baseline reported position
         m = self.assert_receive_message('GLOBAL_POSITION_INT')
@@ -17775,9 +17785,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'EK2_ENABLE': 1,
             'EK3_CHECK_SCALE': 1, # make EK3 slow to get origin
         })
-        self.reboot_sitl()
-
+        # collect before the reboot: the messages waited for below are
+        # emitted as the vehicle comes up, so a collection started
+        # afterwards is created too late to catch them.  reboot_sitl()
+        # empties collections as it goes, so the identical messages
+        # from before the reboot cannot satisfy those waits.
         self.context_collect('STATUSTEXT')
+
+        self.reboot_sitl()
 
         self.wait_statustext("EKF2 IMU0 origin set", timeout=60, check_context=True)
         self.wait_statustext("EKF2 IMU0 is using GPS", timeout=60, check_context=True)
@@ -17882,9 +17897,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'AHRS_EKF_TYPE': 11,     # configured EXTERNAL: origin pre-arm check active
             'INS_GYR_CAL': 1,
         })
-        self.reboot_sitl()
-
+        # collect before the reboot: the messages waited for below are
+        # emitted as the vehicle comes up, so a collection started
+        # afterwards is created too late to catch them.  reboot_sitl()
+        # empties collections as it goes, so the identical messages
+        # from before the reboot cannot satisfy those waits.
         self.context_collect('STATUSTEXT')
+
+        self.reboot_sitl()
 
         # EKF3 obtains an origin from the SITL GPS:
         self.wait_statustext("EKF3 IMU0 origin set", timeout=60, check_context=True)

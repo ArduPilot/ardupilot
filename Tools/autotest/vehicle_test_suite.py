@@ -2497,6 +2497,8 @@ class TestSuite(abc.ABC):
             else:
                 self.stop_SITL()
                 self.start_SITL(wipe=False)
+            # as below: the vehicle which sent these has gone
+            self.context_clear_collections()
         else:
             # receiving an ACK from the process turns out to be really
             # quite difficult.  So just send it and hope for the best.
@@ -2510,6 +2512,9 @@ class TestSuite(abc.ABC):
                 p2=1,
                 p6=p6,
             )
+            # anything collected up to here came from the vehicle we
+            # have just asked to go away:
+            self.context_clear_collections()
             do_context = True
         if do_context:
             self.context_push()
@@ -6977,6 +6982,17 @@ class TestSuite(abc.ABC):
         if msg_type in context.collections:
             return
         context.collections[msg_type] = []
+
+    def context_clear_collections(self):
+        '''empty every message collection, leaving them collecting.  Called
+        when the vehicle reboots: what the old vehicle said is not
+        evidence about the new one.  Without this a test cannot collect
+        across a reboot at all - and it has to, because the messages a
+        vehicle emits as it boots are sent before any collection
+        started after the reboot exists to catch them.'''
+        for context in self.contexts:
+            for msg_type in context.collections:
+                context.collections[msg_type] = []
 
     def context_collection(self, msg_type):
         '''return messages in collection'''
