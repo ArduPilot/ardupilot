@@ -8755,11 +8755,7 @@ return update()
         m = self.assert_received_message_field_values('NAMED_VALUE_FLOAT', {
             "name": "Lua Float",
         })
-        dfreader = self.dfreader_for_current_onboard_log()
-
-        m = dfreader.recv_match(type='NVF')
-        if m is None:
-            raise NotAchievedException("Did not find NVF message")
+        m = self.wait_message_in_current_onboard_log('NVF')
         self.progress(f"Received NVF with value {m.Value}")
 
     def LoggedNamedValueInt(self):
@@ -8779,11 +8775,7 @@ return update()
         m = self.assert_received_message_field_values('NAMED_VALUE_INT', {
             "name": "Lua Int",
         })
-        dfreader = self.dfreader_for_current_onboard_log()
-
-        m = dfreader.recv_match(type='NVI')
-        if m is None:
-            raise NotAchievedException("Did not find NVI message")
+        m = self.wait_message_in_current_onboard_log('NVI')
         self.progress(f"Received NVI with value {m.Value}")
 
     def LoggedNamedValueString(self):
@@ -8800,11 +8792,7 @@ return update()
             "name": "Lua String",
             "value": "Lua String Value",
         })
-        dfreader = self.dfreader_for_current_onboard_log()
-
-        m = dfreader.recv_match(type='NVS')
-        if m is None:
-            raise NotAchievedException("Did not find NVS message")
+        m = self.wait_message_in_current_onboard_log('NVS')
         self.progress(f"Received NVS with value {m.Value}")
         if m.Name != 'Lua String':
             raise NotAchievedException("Unexpected name in NVS")
