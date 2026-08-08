@@ -48,7 +48,6 @@ extern const AP_HAL::HAL& hal;
 #pragma GCC diagnostic ignored "-Warray-bounds"
 #pragma GCC diagnostic ignored "-Wcast-align"
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #pragma GCC diagnostic ignored "-Wparentheses"
 #pragma GCC diagnostic ignored "-Wsign-compare"
@@ -16154,7 +16153,7 @@ VL53LX_Error VL53LX::VL53LX_get_spad_rate_data(
   VL53LX_Error status = VL53LX_ERROR_NONE;
   int               i = 0;
 
-  uint8_t  VL53LX_p_003[512];
+  uint8_t  VL53LX_p_003[512]{};
   uint8_t *pdata = &VL53LX_p_003[0];
 
   if (status == VL53LX_ERROR_NONE) {
