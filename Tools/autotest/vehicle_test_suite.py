@@ -7701,6 +7701,14 @@ class TestSuite(abc.ABC):
             raise NotAchievedException("Far from startup location: %s" % data)
         self.progress("Close to startup location: %s" % data)
 
+    def max_distance_from_startup_location_at_end_of_test(self):
+        '''how far a test may leave the vehicle from where the simulation
+        started it, or None not to care.  Only ArduCopter requires its
+        tests to start at the startup location; the others legitimately
+        finish wherever they got to - a rover which fails safe part-way
+        through a mission stops there, 215m out.'''
+        return None
+
     def assert_simstate_location_is_at_startup_location(self, dist_max=1):
         simstate_loc = self.sim_location()
         start_loc = self.sitl_start_location()
@@ -9814,6 +9822,30 @@ Also, ignores heartbeats not from our target system'''
             else:
                 self.progress("Test failed but ArduPilot process alive; rebooting")
                 self.reboot_sitl() # that'll learn it
+
+        # a test which wanders off and stops somewhere else hands the
+        # next test a displaced vehicle.  ArduCopter's tests require the
+        # vehicle to start where the simulation puts it, and nothing
+        # enforced that between them: the assertion in reboot_sitl()
+        # fires only if a test happens to reboot, and it checks the
+        # position rather than restoring it.  Ask the simulator where
+        # the vehicle really is rather than believing the vehicle.
+        startup_location_dist_max = self.max_distance_from_startup_location_at_end_of_test()
+        if (passed and
+                ardupilot_alive and
+                not reset_needed and
+                startup_location_dist_max is not None):
+            try:
+                self.assert_simstate_location_is_at_startup_location(
+                    dist_max=startup_location_dist_max)
+            except Exception as e:  # noqa: BLE001
+                self.print_exception_caught(e, send_statustext=False)
+                if ex is None:
+                    ex = e
+                passed = False
+                # whatever happens, do not pass the displacement on:
+                self.progress("Resetting SITL to recover the startup location")
+                self.reset_SITL_commandline()
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")

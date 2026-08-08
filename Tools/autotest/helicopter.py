@@ -22,6 +22,15 @@ class AutoTestHelicopter(AutoTestCopter):
 
     sitl_start_loc = mavutil.location(40.072842, -105.230575, 1586, 0)     # Sparkfun AVC Location
 
+    def max_distance_from_startup_location_at_end_of_test(self):
+        # this class inherits ArduCopter's tests but not its
+        # discipline of leaving the vehicle where it started: a heli
+        # which takes off and lands drifts further than a multirotor
+        # (CI measured 2.5m and 3.1m for the takeoff tests), and the
+        # autorotation tests deliberately end well away from the
+        # startup location (110m).
+        return None
+
     def vehicleinfo_key(self):
         return 'Helicopter'
 
