@@ -19,6 +19,7 @@ from pymavlink import mavutil
 import vehicle_test_suite
 
 from pysim import util
+from vehicle_test_suite import AltFrame
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
@@ -1299,6 +1300,89 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.progress("Baro-less Surface mode OK")
         self.disarm_vehicle()
 
+    def thruster_output_channels(self):
+        """Return the servo output channels driving thrusters on the current frame"""
+        motor_functions = range(33, 41)  # SRV_Channel::k_motor1 .. k_motor8
+        return [chan for chan in range(1, 9)
+                if self.get_parameter(f"SERVO{chan}_FUNCTION") in motor_functions]
+
+    def watch_thrusters_unsaturated(self, duration=10, margin=50):
+        """Raise if any thruster output sits against the PWM rails
+
+        Keyword Arguments:
+            duration {float} -- Time in simulation seconds to watch for (default: {10})
+            margin {int} -- Distance in us from a rail that still counts as saturated (default: {50})
+        """
+        pwm_min = self.get_parameter("MOT_PWM_MIN")
+        pwm_max = self.get_parameter("MOT_PWM_MAX")
+        channels = self.thruster_output_channels()
+        tstart = self.get_sim_time_cached()
+        while self.get_sim_time_cached() - tstart < duration:
+            m = self.assert_receive_message('SERVO_OUTPUT_RAW')
+            for chan in channels:
+                pwm = getattr(m, f"servo{chan}_raw")
+                if pwm < pwm_min + margin or pwm > pwm_max - margin:
+                    raise NotAchievedException(
+                        f"Thruster {chan} saturated while surfaced: pwm={pwm}")
+        self.progress("Thrusters remained unsaturated")
+
+    def SurfacedZEasing(self):
+        """Check that autonomous modes stop driving upwards once surfaced"""
+        # SURFACE_DEPTH must be deeper than half the SITL frame height, otherwise the
+        # simulated vehicle loses all buoyancy and cannot hold station there at all
+        surface_depth_cm = -50
+        surface_depth_m = surface_depth_cm * 0.01
+
+        self.set_parameters({
+            "SURFACE_DEPTH": surface_depth_cm,
+            "SURFACE_MAX_THR": 0.1,
+            "SIM_BUOYANCY": 0,
+            "SIM_BARO_RND": 0,
+        })
+
+        # dive well clear of the surface, then ask GUIDED for a depth it cannot reach
+        self.dive(-10)
+        self.change_mode('GUIDED')
+        target = self.get_location()
+        target.set_alt_m(5, AltFrame.ABOVE_HOME)
+        self.send_do_reposition(target)
+
+        # the vehicle must settle at SURFACE_DEPTH instead of climbing out of the water
+        self.wait_altitude(altitude_min=surface_depth_m - 1.0, altitude_max=surface_depth_m + 0.1,
+                           relative=False, minimum_duration=10, timeout=180)
+        self.watch_thrusters_unsaturated()
+        self.progress("GUIDED eased at the surface")
+
+        # repeat in AUTO, with a mission waypoint at the surface
+        self.dive(-10)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+        self.wait_altitude(altitude_min=surface_depth_m - 1.0, altitude_max=surface_depth_m + 0.1,
+                           relative=False, minimum_duration=10, timeout=180)
+        self.watch_thrusters_unsaturated()
+        self.progress("AUTO eased at the surface")
+
+        # a surface command (NAV_LAND) ascends towards zero depth, but the eased controller
+        # holds the vehicle at SURFACE_DEPTH.  wp_nav only reports the waypoint reached within
+        # WP_RADIUS_M, so check the command still completes when that gap is wider than the radius
+        deep_surface_depth_m = -(self.get_parameter("WP_RADIUS_M") + 1.0)
+        self.set_parameter("SURFACE_DEPTH", deep_surface_depth_m * 100)
+        self.dive(-10)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, -10),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, -10),
+        ])
+        self.change_mode('AUTO')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
+        self.wait_current_waypoint(2, timeout=240)
+        self.progress("surface command completed with the depth controller eased")
+
+        self.change_mode('MANUAL')
+        self.disarm_vehicle()
+
     def UTMGlobalPositionWaypoint(self):
         '''test UTM_GLOBAL_POSITION waypoint fields in AUTO'''
         self.upload_simple_relhome_mission([
@@ -1709,6 +1793,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.PosHoldBounceBack,
             self.SHT3X,
             self.SurfaceSensorless,
+            self.SurfacedZEasing,
             self.GPSForYaw,
             self.WaterDepth,
             self.VisoForYaw,

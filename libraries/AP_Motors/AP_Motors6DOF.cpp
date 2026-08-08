@@ -282,6 +282,18 @@ float AP_Motors6DOF::get_current_limit_max_throttle()
     return 1.0f;
 }
 
+// clamp upwards thrust to the limit set by set_max_throttle(). The limit flag is
+// raised so that the vertical controller's integrators do not wind up against a
+// ceiling they cannot observe.
+float AP_Motors6DOF::apply_max_throttle(float throttle_thrust)
+{
+    if (throttle_thrust > _max_throttle) {
+        limit.throttle_upper = true;
+        return _max_throttle;
+    }
+    return throttle_thrust;
+}
+
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 // TODO pull code that is common to output_armed_not_stabilizing into helper functions
@@ -323,6 +335,8 @@ void AP_Motors6DOF::output_armed_stabilizing()
             throttle_thrust = _throttle_thrust_max;
             limit.throttle_upper = true;
         }
+
+        throttle_thrust = apply_max_throttle(throttle_thrust);
 
         // calculate roll, pitch and yaw for each motor
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -427,6 +441,8 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored()
         limit.throttle_upper = true;
     }
 
+    throttle_thrust = apply_max_throttle(throttle_thrust);
+
     // calculate roll, pitch and yaw for each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
@@ -510,7 +526,7 @@ void AP_Motors6DOF::output_armed_stabilizing_vectored_6dof()
         limit.throttle_upper = true;
     }
 
-    throttle_thrust = constrain_float(throttle_thrust, -1.0f, _max_throttle);
+    throttle_thrust = apply_max_throttle(throttle_thrust);
 
     // calculate roll, pitch and Throttle for each motor (only used by vertical thrusters)
     rpt_max = 1; //Initialized to 1 so that normalization will only occur if value is saturated

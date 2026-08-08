@@ -148,7 +148,7 @@ void ModeAuto::auto_wp_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    position_control->D_update_controller();
+    update_depth_controller();
 
     ////////////////////////////
     // update attitude output //
@@ -246,7 +246,7 @@ void ModeAuto::auto_circle_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    position_control->D_update_controller();
+    update_depth_controller();
 
     // roll & pitch from waypoint controller, yaw rate from pilot
     attitude_control->input_euler_angle_roll_pitch_yaw_cd(channel_roll->get_control_in(), channel_pitch->get_control_in(), sub.circle_nav.get_yaw_cd(), true);
@@ -332,7 +332,7 @@ void ModeAuto::auto_loiter_run()
 
     // WP_Nav has set the vertical position control targets
     // run the vertical position controller and set output throttle
-    position_control->D_update_controller();
+    update_depth_controller();
 
     // get pilot desired lean angles
     float target_roll, target_pitch;
@@ -564,7 +564,7 @@ void ModeAuto::auto_terrain_recover_run()
     /////////////////////
     // update z target //
     position_control->D_set_pos_target_from_climb_rate_cms(target_climb_rate);
-    position_control->D_update_controller();
+    update_depth_controller();
 
     ////////////////////////////
     // update angular targets //

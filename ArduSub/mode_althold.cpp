@@ -106,11 +106,7 @@ void ModeAlthold::run_post()
 }
 
 void ModeAlthold::control_depth() {
-    // return 0.2f when at the surface to p
-    // scale linearly between 0.2f and 1.0f as we approach the surface
-    float distance_to_surface = (g.surface_depth - position_control->get_pos_estimate_U_m() * 100.0f) * 0.01f;
-    distance_to_surface = constrain_float(distance_to_surface, 0.0f, 1.0f);
-    motors.set_max_throttle(g.surface_max_throttle + (1.0f - g.surface_max_throttle) * distance_to_surface);
+    set_surface_throttle_limit();
 
     float target_climb_rate_cms = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
     target_climb_rate_cms = constrain_float(target_climb_rate_cms, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
