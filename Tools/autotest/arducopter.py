@@ -8551,6 +8551,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def MountTopotekNetwork(self):
         '''test Topotek gimbal connected via a network port rather than a serial port'''
+        # this port must differ between concurrently-running instances
+        # or they bind each other's gimbal: eight instances sharing
+        # 15005 leaves seven without a gimbal to talk to, and they fail
+        # with "Never received complete CAMERA_INFORMATION"
+        port = self.adjust_ardupilot_port(15005)
         self.set_parameters({
             "MNT1_TYPE": 12,      # Topotek
             "CAM1_TYPE": 4,       # Mount
@@ -8561,11 +8566,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
             "NET_P1_IP3": 1,
-            "NET_P1_PORT": 15005,
+            "NET_P1_PORT": port,
         })
         # the simulated gimbal listens on a TCP socket rather than
         # being attached to one of the autopilot's serial ports:
-        self.customise_SITL_commandline(["--net-device=topotek:15005"])
+        self.customise_SITL_commandline(["--net-device=topotek:%u" % port])
         # the gimbal sends its replies out of the interface named in the
         # address field of our requests, so this only works if the
         # driver tells the gimbal we are talking to it over the network
