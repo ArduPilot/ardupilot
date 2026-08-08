@@ -1089,6 +1089,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_parameter("RC_OVERRIDE_TIME", 0)
         self.wait_rc_channel_value(ch, 1000)
         self.set_parameter("RC_OVERRIDE_TIME", old)
+        # an override is only live for RC_OVERRIDE_TIME seconds after it
+        # arrives, and the two parameter round-trips above can eat more
+        # than that in simulated time - one run came back to find the
+        # override long expired, and sat watching chan2 stay at 1000.
+        # Send a fresh one, which is what re-enabling overrides has to
+        # act upon anyway.
+        self.progress("Sending override message %u" % ch_override_value)
+        self.mav.mav.rc_channels_override_send(
+            1, # target system
+            1, # targe component
+            *channels
+        )
         self.wait_rc_channel_value(ch, ch_override_value)
 
         ch_override_value = 1720
@@ -6497,7 +6509,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         here = self.get_location()
         target_loc = self.offset_location_ne(here, 2000, 0)
         self.send_guided_mission_item(target_loc)
-        self.wait_distance_to_home(20, 100)
+        # the vehicle starts pointing away from the target, so it turns
+        # before it makes any ground: wait_distance_to_home()'s default
+        # ten seconds is enough only if that turn is quick, and one run
+        # spent them reaching 14.4m of the wanted 20m
+        self.wait_distance_to_home(20, 100, timeout=60)
 
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
         self.wait_mode('RTL')
