@@ -260,6 +260,7 @@ void Sub::failsafe_internal_temperature_check()
     }
 }
 
+#if AP_LEAKDETECTOR_ENABLED
 // Check if we are leaking and perform appropriate action
 void Sub::failsafe_leak_check()
 {
@@ -300,6 +301,7 @@ void Sub::failsafe_leak_check()
         set_mode(Mode::Number::SURFACE, ModeReason::LEAK_FAILSAFE);
     }
 }
+#endif // AP_LEAKDETECTOR_ENABLED
 
 // failsafe_gcs_check - check for ground station failsafe
 void Sub::failsafe_gcs_check()

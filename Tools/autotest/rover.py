@@ -204,6 +204,31 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.progress("Loiter or Hold as throttle failsafe OK")
 
+    def LeakFailsafe(self):
+        """Trigger the leak failsafe"""
+        pin = 8  # not used by the default SITL pin mask
+        dry_mask = int(self.get_parameter("SIM_PIN_MASK"))
+        self.set_parameters({
+            "LEAK1_PIN": pin,      # SITL has no analog pins, so this is a digital detector
+            "LEAK1_LOGIC": 0,      # detector reads low when dry
+            "FS_LEAK_ENABLE": 2,   # hold
+            "FS_THR_ENABLE": 0,    # a radio failsafe would mask the leak failsafe
+        })
+        self.reboot_sitl()  # LEAK1_PIN is applied at startup
+        self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.progress("Wetting the leak detector")
+        self.set_parameter("SIM_PIN_MASK", dry_mask | (1 << pin))
+        self.wait_statustext("Leak Failsafe", timeout=10)
+        self.wait_mode("HOLD", timeout=10)
+
+        self.progress("Drying the leak detector")
+        self.set_parameter("SIM_PIN_MASK", dry_mask)
+        self.wait_statustext("Leak Failsafe Cleared", timeout=10)
+        self.disarm_vehicle()
+
     def CrashCheck(self):
         """Test crash detection with FS_CRASH_CHECK 1 (hold) and 2 (hold+disarm)"""
         self.set_parameters({
@@ -7541,6 +7566,7 @@ return update()
             self.BeaconPosition,
             self.PrivateChannel,
             self.GCSFailsafe,
+            self.LeakFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
             self.NoArmWithoutMissionItems,

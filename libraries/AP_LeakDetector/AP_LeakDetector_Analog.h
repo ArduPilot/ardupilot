@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_LeakDetector_config.h"
+
+#if AP_LEAKDETECTOR_ANALOG_ENABLED
+
 #include "AP_LeakDetector_Backend.h"
 #include <AP_HAL/AP_HAL.h>
 
@@ -11,3 +15,4 @@ public:
 private:
     AP_HAL::AnalogSource *source;
 };
+#endif // AP_LEAKDETECTOR_ANALOG_ENABLED

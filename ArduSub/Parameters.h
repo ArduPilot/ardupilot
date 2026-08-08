@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 
 #include <AP_Arming/AP_Arming.h>
+#include <AP_LeakDetector/AP_LeakDetector_config.h>
 #include "actuators.h"
 // Global parameter class.
 //
@@ -265,7 +266,9 @@ public:
     AP_Float        surftrak_depth;             // surftrak will try to keep sub below this depth
 #endif
 
+#if AP_LEAKDETECTOR_ENABLED
     AP_Int8         failsafe_leak;              // leak detection failsafe behavior
+#endif
     AP_Int8         failsafe_gcs;               // ground station failsafe behavior
     AP_Int8         failsafe_pressure;
     AP_Int8         failsafe_temperature;
@@ -446,7 +449,9 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIGATOR
     { "BATT_MONITOR",        4},
     { "BATT_CAPACITY",       0},
+#if AP_LEAKDETECTOR_ENABLED
     { "LEAK1_PIN",           27},
+#endif
     { "SCHED_LOOP_RATE",     200},
     { "SERVO13_FUNCTION",    181},   // k_lights1
     { "SERVO14_FUNCTION",    182},   // k_lights2

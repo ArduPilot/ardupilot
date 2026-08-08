@@ -409,6 +409,7 @@ BUILD_OPTIONS = [
 
     Feature('Sensors', 'AIRSPEED', 'AP_AIRSPEED_ENABLED', 'Enable Airspeed Sensors', 1, None),    # Default to enabled to not annoy Plane users   # NOQA: E501
     Feature('Sensors', 'BEACON', 'AP_BEACON_ENABLED', 'Enable Beacon', 0, None),
+    Feature('Sensors', 'LEAKDETECTOR', 'AP_LEAKDETECTOR_ENABLED', 'Enable Leak Detector', 1, None),    # Default to enabled as only Sub and Rover build it   # NOQA: E501
     Feature('Sensors', 'GPS_MOVING_BASELINE', 'GPS_MOVING_BASELINE', 'Enable GPS Moving Baseline', 0, None),
     Feature('Sensors', 'IMU_ON_UART', 'AP_SERIALMANAGER_IMUOUT_ENABLED', 'Enable Send raw IMU data on a serial port', 0, None), # NOQA: E501
 

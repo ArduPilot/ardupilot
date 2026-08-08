@@ -84,7 +84,13 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
             // continue with mission in auto mode
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failsafe - Continuing Auto Mode");
         } else {
-            switch ((FailsafeAction)g.fs_action.get()) {
+            int8_t action = g.fs_action;
+#if AP_LEAKDETECTOR_ENABLED
+            if (failsafe_type == FAILSAFE_EVENT_LEAK) {
+                action = g.fs_leak_enabled;
+            }
+#endif
+            switch ((FailsafeAction)action) {
             case FailsafeAction::None:
                 break;
             case FailsafeAction::SmartRTL:
@@ -117,6 +123,24 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
         }
     }
 }
+
+#if AP_LEAKDETECTOR_ENABLED
+
+// Check if we are leaking and perform appropriate action
+void Rover::failsafe_leak_check()
+{
+    if (!g.fs_leak_enabled) {
+        return;
+    }
+
+    g2.leak_detector.update();
+
+    const bool status = g2.leak_detector.get_status();
+    AP_Notify::flags.leak_detected = status;
+
+    failsafe_trigger(FAILSAFE_EVENT_LEAK, "Leak", status);
+}
+#endif  // AP_LEAKDETECTOR_ENABLED
 
 void Rover::handle_battery_failsafe(const char* type_str, const int8_t action)
 {

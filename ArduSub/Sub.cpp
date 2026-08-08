@@ -288,9 +288,11 @@ void Sub::loop_rate_logging()
 // three_hz_loop - 3.3hz loop
 void Sub::three_hz_loop()
 {
+#if AP_LEAKDETECTOR_ENABLED
     leak_detector.update();
 
     failsafe_leak_check();
+#endif
 
     failsafe_internal_pressure_check();
 

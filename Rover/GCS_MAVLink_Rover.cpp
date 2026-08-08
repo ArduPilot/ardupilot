@@ -558,6 +558,21 @@ void GCS_MAVLINK_Rover::handle_message(const mavlink_message_t &msg)
         handle_set_position_target_global_int(msg);
         break;
 
+#if AP_LEAKDETECTOR_ENABLED
+    // Remote leak sensor support (e.g. in a second hull), via MAVLink status messages.
+    case MAVLINK_MSG_ID_SYS_STATUS: {
+        mavlink_sys_status_t packet;
+        mavlink_msg_sys_status_decode(&msg, &packet);
+        if ((msg.sysid == gcs().sysid_this_mav()) &&
+            (packet.onboard_control_sensors_present & MAV_SYS_STATUS_EXTENSION_USED) &&
+            (packet.onboard_control_sensors_enabled_extended & MAV_SYS_STATUS_SENSOR_LEAK) &&
+            !(packet.onboard_control_sensors_health_extended & MAV_SYS_STATUS_SENSOR_LEAK)) {
+            rover.g2.leak_detector.set_detect();
+        }
+        break;
+    }
+#endif  // AP_LEAKDETECTOR_ENABLED
+
     default:
         GCS_MAVLINK::handle_message(msg);
         break;

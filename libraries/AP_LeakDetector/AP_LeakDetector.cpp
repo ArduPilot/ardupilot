@@ -1,6 +1,12 @@
+#include "AP_LeakDetector_config.h"
+
+#if AP_LEAKDETECTOR_ENABLED
+
 #include "AP_LeakDetector.h"
+#include "AP_LeakDetector_Backend.h"
 #include "AP_LeakDetector_Analog.h"
 #include "AP_LeakDetector_Digital.h"
+#include <AP_HAL/AP_HAL.h>
 
 extern const AP_HAL::HAL &hal;
 
@@ -83,13 +89,16 @@ void AP_LeakDetector::init()
         if (_pin[i] < 0) {
             continue;
         }
+        _state[i].instance = i;
+#if AP_LEAKDETECTOR_ANALOG_ENABLED
         if (hal.analogin->valid_analog_pin(_pin[i])) {
-                _state[i].instance = i;
-                _drivers[i] = NEW_NOTHROW AP_LeakDetector_Analog(*this, _state[i]);
-        } else {
-                _state[i].instance = i;
-                _drivers[i] = NEW_NOTHROW AP_LeakDetector_Digital(*this, _state[i]);
+            _drivers[i] = NEW_NOTHROW AP_LeakDetector_Analog(*this, _state[i]);
+            continue;
         }
+#endif
+#if AP_LEAKDETECTOR_DIGITAL_ENABLED
+        _drivers[i] = NEW_NOTHROW AP_LeakDetector_Digital(*this, _state[i]);
+#endif
     }
 }
 
@@ -123,3 +132,4 @@ int8_t AP_LeakDetector::get_pin(uint8_t instance) const
     }
     return _pin[instance];
 }
+#endif  // AP_LEAKDETECTOR_ENABLED

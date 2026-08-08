@@ -128,7 +128,9 @@ void Sub::init_ardupilot()
         ahrs.set_alt_measurement_noise(0.1f);
     }
 
+#if AP_LEAKDETECTOR_ENABLED
     leak_detector.init();
+#endif
 
     last_pilot_heading_rad = ahrs.get_yaw_rad();
 
@@ -164,7 +166,7 @@ void Sub::init_ardupilot()
 
     g2.actuators.initialize_actuators();
 
-#if LEAKDETECTOR_MAX_INSTANCES > 0
+#if AP_LEAKDETECTOR_ENABLED
     update_leak_pins();
 #endif
 #if AP_RELAY_ENABLED
