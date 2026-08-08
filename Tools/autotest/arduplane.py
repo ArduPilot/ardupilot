@@ -3559,6 +3559,38 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         return current_log_filepath
 
+    def ExternalAHRSWindEstimate(self):
+        '''check ExternalAHRS supplies a wind estimate via the wind triangle'''
+        # the external AHRS drivers parse their serial stream on a
+        # real-time thread which cannot keep up at the default plane
+        # speedup on a loaded machine; see fly_external_AHRS:
+        self.context_set_speedup(20)
+        self.customise_SITL_commandline(["--serial4=sim:VectorNav"])
+        self.set_parameters({
+            "EAHRS_TYPE": 1,
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 230400,
+            "GPS1_TYPE": 21,
+            "AHRS_EKF_TYPE": 11,
+            "INS_GYR_CAL": 1,
+            "SIM_WIND_SPD": 5,
+            "SIM_WIND_DIR": 45,
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(5, reason="external AHRS to initialise")
+        self.progress("Running accelcal")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,
+            timeout=5,
+        )
+        self.wait_ready_to_arm()
+        self.takeoff(70)  # default wind sim wind is a sqrt function up to 60m
+        self.change_mode('LOITER')
+        # the wind triangle relies on heading changes, which LOITER provides:
+        self.wait_and_maintain_wind_estimate(5, 45, speed_tolerance=2, timeout=180)
+        self.fly_home_land_and_disarm()
+
     def VectorNavEAHRS(self):
         '''Test VectorNav EAHRS support'''
         self.fly_external_AHRS("VectorNav", 1)
@@ -8834,6 +8866,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def tests1b(self):
         return [
             self.TerrainLoiter,
+            self.ExternalAHRSWindEstimate,
             self.VectorNavEAHRS,
             self.MicroStrainEAHRS5,
             self.MicroStrainEAHRS7,

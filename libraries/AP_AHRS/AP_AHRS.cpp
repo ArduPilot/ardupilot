@@ -838,20 +838,20 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(idx, airspeed_ret);
+        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         airspeed_estimate_type = AirspeedEstimateType::SIM;
-        return sim.airspeed_EAS(airspeed_ret);
+        return sim.airspeed_EAS(sim_estimates.have_velocity_source, airspeed_ret);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
 #if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(idx, airspeed_ret);
+        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
 #else
         return false;
 #endif
@@ -868,7 +868,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
     case EKFType::EXTERNAL:
 #if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(idx, airspeed_ret);
+        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
 #else
         return false;
 #endif
@@ -896,7 +896,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
 #if AP_AHRS_DCM_ENABLED
     // fallback to DCM
     airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-    return dcm.airspeed_EAS(idx, airspeed_ret);
+    return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
 #endif
 
     return false;
@@ -907,7 +907,7 @@ bool AP_AHRS::_airspeed_TAS(float &airspeed_ret) const
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.airspeed_TAS(airspeed_ret);
+        return dcm.airspeed_TAS(dcm_estimates.have_velocity_source, airspeed_ret);
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
