@@ -3,6 +3,7 @@
 """
 script to build the latest binaries for each vehicle type, ready to upload
 Peter Barker, August 2017
+Amilcar Lucas, October 2025 - added parameter metadata XML generation
 based on build_binaries.sh by Andrew Tridgell, March 2013
 
 AP_FLAKE8_CLEAN
@@ -11,6 +12,7 @@ AP_FLAKE8_CLEAN
 from __future__ import annotations
 
 import datetime
+import lzma
 import optparse
 import os
 import pathlib
@@ -549,6 +551,9 @@ is bob we will attempt to checkout bob-AVR'''
                 # record some history about this build
                 self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
 
+        # Generate parameter metadata for this vehicle
+        self.generate_parameter_metadata_for_vehicle(tag, vehicle, vehicle_binaries_subdir)
+
         self.checkout(vehicle, "latest")
 
     def _get_exception_stacktrace(self, e):
@@ -670,6 +675,124 @@ is bob we will attempt to checkout bob-AVR'''
     def buildlogs_dirpath(self):
         return os.getenv("BUILDLOGS",
                          os.path.join(os.getcwd(), "..", "buildlogs"))
+
+    def create_pdef_xml_file(self, vehicle_type: str, dst_dir: str, git_tag: str) -> bool:
+        '''generate parameter metadata XML file for a specific vehicle and version'''
+        self.progress(f"Generating apm.pdef.xml for {vehicle_type} {git_tag}")
+
+        try:
+            param_parse_path = os.path.join(topdir(), 'Tools', 'autotest',
+                                            'param_metadata', 'param_parse.py')
+
+            if not os.path.exists(param_parse_path):
+                self.progress(f"param_parse.py not found at {param_parse_path}")
+                return False
+
+            # Get current git SHA to embed in the metadata
+            git_sha = self.run_git(["rev-parse", "HEAD"]).rstrip()
+
+            # Older branches may have an older param_parse.py that does not support
+            # newer options. Probe support and only pass compatible arguments.
+            help_output = self.run_program(
+                'PARAM-PARSE-HELP',
+                ['python3', param_parse_path, '--help'],
+                show_output=False,
+                force_success=True
+            )
+            supports_git_sha = '--git-sha' in help_output
+            supports_git_tag = '--git-tag' in help_output
+            supports_compress = '--compress' in help_output
+
+            # Remove any stale output file before generating
+            apm_pdef_path = os.path.join(topdir(), 'apm.pdef.xml')
+            apm_pdef_xz_path = apm_pdef_path + '.xz'
+            for stale in (apm_pdef_path, apm_pdef_xz_path):
+                if os.path.exists(stale):
+                    os.remove(stale)
+
+            cmd = [
+                'python3', param_parse_path,
+                '--vehicle', vehicle_type,
+                '--format', 'xml',
+            ]
+            if supports_git_sha:
+                cmd.extend(['--git-sha', git_sha])
+            if supports_git_tag:
+                cmd.extend(['--git-tag', git_tag])
+            if supports_compress:
+                cmd.append('--compress')
+
+            self.run_program('PARAM-PARSE', cmd, show_output=True)
+
+            # If the parser did not produce a compressed file, create it here.
+            if not os.path.exists(apm_pdef_xz_path):
+                if not os.path.exists(apm_pdef_path):
+                    self.progress("apm.pdef.xml was not generated")
+                    return False
+                with open(apm_pdef_path, 'rb') as f_in:
+                    with lzma.open(apm_pdef_xz_path, 'wb', preset=9 | lzma.PRESET_EXTREME) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+
+            # Check if the compressed output file was created
+            if not os.path.exists(apm_pdef_xz_path):
+                self.progress("apm.pdef.xml.xz was not generated")
+                return False
+
+            # Create destination directory including __METADATA__ subdirectory
+            metadata_dir = os.path.join(dst_dir, '__METADATA__')
+            self.mkpath(metadata_dir)
+
+            # Copy compressed file to destination
+            dst_file = os.path.join(metadata_dir, 'apm.pdef.xml.xz')
+            shutil.copy(apm_pdef_xz_path, dst_file)
+            self.progress(f"Created {dst_file}")
+            return True
+
+        except (subprocess.CalledProcessError, IOError, FileNotFoundError, shutil.Error) as e:
+            self.print_exception_caught(e)
+            self.progress(f"Failed to generate pdef.xml for {git_tag}")
+            return False
+
+    def generate_parameter_metadata_for_vehicle(self, tag: str, vehicle_type: str, vehicle_binaries_subdir: str):
+        '''generate parameter metadata XML file for a specific vehicle and version'''
+
+        self.progress(f"Generating parameter metadata for {vehicle_type} {tag}")
+
+        # Get the current version from git describe
+        try:
+            # Restrict to version-like tags so aliases such as "*-stable"/"*-beta"
+            # are not selected as release versions.
+            tag_pattern = f"{vehicle_type}-[0-9]*.[0-9]*.[0-9]*"
+            version_output = self.run_program(
+                'GIT-DESCRIBE',
+                ['git', 'describe', '--tags', '--abbrev=0', '--match', tag_pattern],
+                show_output=False
+            ).strip()
+
+            # Parse version from tag (e.g., "ArduCopter-4.5.0" -> "4.5.0").
+            # Require the part after the first '-' to start with N.N.N.
+            parts = version_output.split('-', 1)
+            if len(parts) != 2 or re.match(r'^\d+\.\d+\.\d+([-.][A-Za-z0-9]+)*$', parts[1]) is None:
+                self.progress(f"Could not parse version from tag: {version_output}")
+                return
+
+            git_tag = version_output
+            version = parts[1]
+
+        except (subprocess.CalledProcessError, ValueError, IndexError) as e:
+            self.print_exception_caught(e)
+            self.progress(f"Failed to get version for {vehicle_type}")
+            return
+
+        # Create destination directory using the same structure as binaries
+        dst_dir = os.path.join(self.binaries, vehicle_binaries_subdir, tag)
+
+        # Generate the metadata file
+        if not self.create_pdef_xml_file(vehicle_type, dst_dir, git_tag):
+            self.progress(f"Failed to create pdef.xml for {vehicle_type} {version}")
+            return
+
+        self.progress(f"Parameter metadata generation complete for {vehicle_type} {version}")
 
     def run(self):
         self.validate()

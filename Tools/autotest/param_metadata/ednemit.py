@@ -21,13 +21,20 @@ class EDNEmit(Emit):
         self.explict_remap = [["displayname", "display-name"]]
         self.vehicle_name = None
 
+    def output_fname(self):
+        return "parameters.edn"
+
     def close(self):
         if self.vehicle_name is not None:
             self.output += ":vehicle \"" + self.vehicle_name + "\" "
         else:
             raise Exception('Vehicle name never found')
+        if self.git_sha is not None:
+            self.output += ":firmware-sha \"" + self.git_sha + "\" "
+        if self.git_tag is not None:
+            self.output += ":firmware-tag \"" + self.git_tag + "\" "
         self.output += "}"
-        f = open("parameters.edn", mode='w')
+        f = open(self.output_fname(), mode='w')
         f.write(self.output)
         f.close()
 
