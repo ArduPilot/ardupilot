@@ -14934,6 +14934,21 @@ switch value'''
     def dfreader_for_current_onboard_log(self):
         return self.dfreader_for_path(self.current_onboard_log_filepath())
 
+    def wait_message_in_current_onboard_log(self, msg_type, timeout=30):
+        '''return the first msg_type in the vehicle's current log, waiting for
+        it to turn up.  Having seen something over MAVLink does not mean
+        it has reached the log: that is written through a buffer, and
+        looking just the once is a coin toss - one run found NVI and
+        missed NVF and NVS, sent by the same script.'''
+        tstart = self.get_sim_time()
+        while True:
+            m = self.dfreader_for_current_onboard_log().recv_match(type=msg_type)
+            if m is not None:
+                return m
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not find %s message" % msg_type)
+            self.delay_sim_time(1, reason="log to reach the disk")
+
     def assert_log_has_no_dropped_blocks(self, path):
         '''check the DSF.Dp (dropped-block) counter in a dataflash log is
         zero throughout.  A non-zero count means the logging backend could
