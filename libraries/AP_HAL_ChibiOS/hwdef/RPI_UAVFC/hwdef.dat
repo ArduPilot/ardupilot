@@ -183,15 +183,17 @@ define HAL_BUZZER_NOMINAL_FREQ_HZ 4000
 
 # Regulator enables.  Each drives the EN pin of an MP4334 buck directly, with
 # a pull-down holding the rail off when the pin is low or floating, so both are
-# active HIGH.  Note GPIO18 is the 9V rail and GPIO19 the 5V rail - the vendor
-# GPIO sheet lists these the other way round and marks them active-low; the
-# schematic is the authority.
+# active HIGH.  Note GPIO18 is the 9V rail and GPIO19 the 5V rail 
 # 5V is enabled at boot for peripherals; the 9V rail (VID connector) is held
 # off until the power tree is validated on this revision.
-PA18 BEC_9V_EN OUTPUT LOW GPIO(81)
-PA19 BEC_5V_EN OUTPUT HIGH GPIO(82)
+# some issues with production rev mean these are not relay controlled as yet
+PA18 BEC_5V_EN OUTPUT HIGH GPIO(81)
+PA19 BEC_9V_EN OUTPUT HIGH GPIO(82)
+
 define RELAY2_PIN_DEFAULT 81
 define RELAY3_PIN_DEFAULT 82
+define RELAY2_DEFAULT 1
+define RELAY3_DEFAULT 1
 
 # Analog inputs on RP2350B-only ADC pins.
 #   GPIO46 = ADC6 battery voltage, GPIO47 = ADC7 battery current,
@@ -422,3 +424,6 @@ IMU Invensensev3 SPI:imu1 ROTATION_PITCH_180
 # The fitted part is a DPS368; it shares the DPS280/DPS310 register map and
 # reports the same product ID (0x10), so the DPS310 backend drives it.
 BARO DPS310 I2C:0:0x76
+
+# allow more notches
+define HAL_HNF_MAX_FILTERS 64

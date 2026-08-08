@@ -44,7 +44,11 @@ struct gpio_entry {
     AP_HAL::GPIO::irq_handler_fn_t fn; // callback for GPIO interface
     thread_reference_t thd_wait;
     bool is_input;
-    uint8_t mode;
+    // must hold a full PAL mode word. On RP2350 PAL_MODE_OUTPUT_PUSHPULL is
+    // 0x40800005 - the output enable is bit 23 and the pad input enable bit 30 -
+    // so a uint8_t here truncated every mode to a bare FUNCSEL_SIO and left the
+    // pad high impedance, which also made every PAL_MODE_INPUT* compare equal.
+    iomode_t mode;
     uint16_t isr_quota;
     uint8_t isr_disabled_ticks;
     AP_HAL::GPIO::INTERRUPT_TRIGGER_TYPE isr_mode;
