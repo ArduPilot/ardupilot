@@ -363,7 +363,7 @@ private:
         bool auto_armed;                     //  5 stops auto missions from beginning until throttle is raised
         bool unused_log_started;             //  6
         bool land_complete;                  //  7 true if we have detected a landing
-        bool new_radio_frame;                //  8 Set true if we have new PWM data to act on from the Radio
+        bool unused_new_radio_frame;         //  8
         bool unused_usb_connected;           //  9
         bool unused_receiver_present;        // 10
         bool compass_mot;                    // 11 true if we are currently performing compassmot calibration
@@ -722,7 +722,6 @@ private:
     void three_hz_loop();
     void one_hz_loop();
     void init_simple_bearing();
-    void update_simple_mode(void);
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
     void update_altitude();

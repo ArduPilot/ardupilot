@@ -8,9 +8,6 @@
 // should be called at 100hz or more
 void ModeStabilize::run()
 {
-    // apply simple mode transform to pilot inputs
-    update_simple_mode();
-
     // convert pilot input to lean angles
     float target_roll_rad, target_pitch_rad;
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->lean_angle_max_rad());
