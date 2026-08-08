@@ -12367,16 +12367,75 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ex = None
         try:
             self.set_parameter("SERIAL5_PROTOCOL", 1)
-            self.set_parameter("RNGFND1_TYPE", 10)
+            self.set_parameters({
+                "RNGFND1_TYPE": 10,
+                "RNGFND1_ADDR": 1,
+                "RNGFND2_TYPE": 10,
+                "RNGFND2_ADDR": 2,
+            })
+            self.reboot_sitl()
+
+            # we are interacting with the autopilot, reduce chance of
+            # hitting timeouts on supplied data:
+            self.context_set_speedup(1)
+            self.context_set_message_rate_hz("DISTANCE_SENSOR", 10)
+
+            self.start_subtest("Two MAVLink rangefinders with different IDs")
+            self.context_collect("DISTANCE_SENSOR")
+            for input_id, output_id, distance_cm in [(1, 0, 20), (2, 1, 30)]:
+                # First allow the previously selected backend to time out, then
+                # collect output while keeping only this backend healthy.
+                for _ in range(10):
+                    self.mav.mav.distance_sensor_send(
+                        0,  # time_boot_ms
+                        10, # min_distance
+                        50, # max_distance
+                        distance_cm, # current_distance
+                        mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, # type
+                        input_id, # id
+                        mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, # orientation
+                        255 # covariance
+                    )
+                    self.delay_sim_time(0.1, reason="rangefinder timeout")
+                self.context_clear_collection("DISTANCE_SENSOR")
+                for _ in range(10):
+                    self.mav.mav.distance_sensor_send(
+                        0,  # time_boot_ms
+                        10, # min_distance
+                        50, # max_distance
+                        distance_cm, # current_distance
+                        mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER, # type
+                        input_id, # id
+                        mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270, # orientation
+                        255 # covariance
+                    )
+                    self.delay_sim_time(0.1, reason="collect rangefinder output")
+                messages = self.context_collection("DISTANCE_SENSOR")
+                if not messages:
+                    raise NotAchievedException("Did not receive DISTANCE_SENSOR output")
+                for message in messages:
+                    if message.id != output_id:
+                        raise NotAchievedException(
+                            "MAVLink rangefinder ID matched wrong backend "
+                            "(input=%u want=%u got=%u)" %
+                            (input_id, output_id, message.id))
+                    if abs(message.current_distance - distance_cm) > 1:
+                        raise NotAchievedException(
+                            "MAVLink rangefinder distance mismatch "
+                            "(want=%u got=%u)" %
+                            (distance_cm, message.current_distance))
+
+            self.context_stop_collecting("DISTANCE_SENSOR")
+            self.set_parameters({
+                "RNGFND1_ADDR": 0,
+                "RNGFND2_TYPE": 0,
+            })
             self.reboot_sitl()
             self.set_parameter("RNGFND1_MAX", 327.67)
 
             self.progress("Should be unhealthy while we don't send messages")
             self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_LASER_POSITION, True, True, False)
 
-            # we are interacting with the autopilot, reduce chance of
-            # hitting timeouts on supplied data:
-            self.context_set_speedup(1)
             self.progress("Should be healthy while we're sending good messages")
             tstart = self.get_sim_time()
             while True:
