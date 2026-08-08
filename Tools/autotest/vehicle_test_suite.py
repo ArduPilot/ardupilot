@@ -11125,8 +11125,61 @@ Also, ignores heartbeats not from our target system'''
                 result.exception = ex
 
         if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
-            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
-            self.set_current_waypoint(0, check_afterwards=False)
+            try:
+                # rewind BEFORE clearing, and only while there is a
+                # mission to rewind through.  AP_Mission::set_current_cmd()
+                # is what clears the vehicle's in-landing-sequence flag,
+                # and it cannot do that once the mission has gone: the
+                # call fails, the flag survives, and the next test
+                # cannot arm - "PreArm: In landing sequence", together
+                # with "PreArm: Auto missing takeoff waypoint" because
+                # the takeoff sits behind the current item.  That hit
+                # four QuadPlane tests across three runs.
+                #
+                # Do not check it took: even with a mission loaded the
+                # vehicle need not report item 0 as current afterwards -
+                # it may decline, or move straight on - and waiting for
+                # that confirmation failed fourteen QuadPlane tests with
+                # "Did not get wanted current waypoint".
+                #
+                # Do wait for the vehicle to have processed it, though.
+                # Sending the clear immediately behind the rewind lets
+                # the vehicle handle the clear first, leaving the flag
+                # exactly as set - the failures came straight back when
+                # the confirmation which had been serving as a barrier
+                # was removed.  A round-trip on the link is enough,
+                # since the autopilot handles our messages in order.
+                if self.get_mission_count() > 0:
+                    self.set_current_waypoint(0, check_afterwards=False)
+                    self.do_timesync_roundtrip(quiet=True)
+                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+                if not self.is_blimp():
+                    # a genuine MISSION_CLEAR_ALL, which clear_mission
+                    # does not send: only AP_Mission::clear() resets
+                    # the current-nav-command index, and neither the
+                    # zero-item upload clear_mission sends nor the
+                    # rewind above (rejected on an emptied mission)
+                    # does that.  Left in place, Plane resumes from
+                    # the stale index on entering AUTO, several items
+                    # into whatever mission the next test uploads -
+                    # failing its takeoff prearm check.
+                    self.mav.mav.mission_clear_all_send(
+                        1, 1, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+                    self.assert_received_message_field_values('MISSION_ACK', {
+                        "target_system": self.mav.mav.srcSystem,
+                        "target_component": self.mav.mav.srcComponent,
+                        "type": mavutil.mavlink.MAV_MISSION_ACCEPTED,
+                    })
+            except Exception as ex:
+                self.progress("Exception clearing mission")
+                self.print_exception_caught(ex)
+                try:
+                    self.wait_heartbeat()
+                except AutoTestTimeoutException:
+                    self.progress("No heartbeat received")
+                self.dump_process_status(result)
+                passed = False
+                self.reset_SITL_commandline()
 
         # report the result only once everything which can still fail
         # the test has run: the leak check above can flip a test to
