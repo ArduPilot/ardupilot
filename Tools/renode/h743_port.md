@@ -402,11 +402,10 @@ instantiated. WHOAMI values are taken from `HAL_VALIDATE_BOARD`, which handles
 CubeOrange's internal `icm20948` device name that is physically an ICM20649.
 
 A fresh CubeOrange run produced a decoded MAVLink heartbeat on SERIAL1/USART2
-(system 1). Its 322752-byte `crashlog.img` remained entirely 0xFF. The file is
-created eagerly from the ELF linker region as persistent erased flash, so its
-existence alone is not evidence of a crash. MatekH743 was then rerun as a
-regression and also produced a decoded system-1 heartbeat with the generated
-SPI multiplexers and dual-bus MS5611 model.
+(system 1). The crash-log portion of its persistent flash remained entirely
+0xFF. MatekH743 was then rerun as a regression and also produced a decoded
+system-1 heartbeat with the generated SPI multiplexers and dual-bus MS5611
+model.
 
 CubeOrange parameter writes initially worked only until reboot. The RAMTRON
 model deliberately ignored `FinishTransmission()` when connected directly to
@@ -437,6 +436,10 @@ parameter downloads each returned 11488 bytes.
 
 ## Log
 
+- 2026-08-08: replaced build-layout-dependent storage and crash-log backing
+  files with one `BOARD_FLASH_SIZE`-sized image of the complete internal flash.
+  Existing region images migrate into it once, and the selected firmware's
+  file-backed bytes are overlaid without clearing persistent `.crash_log` data.
 - 2026-08-07: fixed unreliable H743 MAVLink FTP input across the 64-byte UART
   RX DMA bounce-buffer boundary. Generated UART host endpoints now pace input,
   and synthetic USART IDLE requires a true input gap. CubeOrange fetched
@@ -446,7 +449,7 @@ parameter downloads each returned 11488 bytes.
   files. Added a hwdef/ROMFS-derived IOMCU peer, MS5611 and InvenSense-v2
   models, exact validation WHOAMI selection, and per-bus SPI chip-select
   multiplexers. CubeOrange and MatekH743 both emitted decoded MAVLink
-  heartbeats; CubeOrange's erased crash-log image remained untouched. Fixed
+  heartbeats; CubeOrange's erased crash-log region remained untouched. Fixed
   RAMTRON transaction completion through the mux and verified a `FRAME_CLASS`
   update across both firmware reboot and a separate Renode process.
 - 2026-08-07: replaced the KakuteF4 and BlitzWingH743 board REPL/RESC/parameter
@@ -458,7 +461,7 @@ parameter downloads each returned 11488 bytes.
 - 2026-08-07: board state moved out of the generated build tree and made
   persistent across Renode processes. `run.py` defaults to
   `renode/<board>/`, creates 256 MiB FAT32 SD images, writes mapped STM32
-  storage/crash sectors back on pause and exit, and generates an SPI
+  flash regions back on pause and exit, and generates an SPI
   RAMTRON model from `HAL_WITH_RAMTRON` plus `SPIDEV ramtron`. A real
   CUAV-Nora ArduPlane build initialized the generated FRAM and wrote its
   parameter header; MatekH743 wrote its storage backup into the host SD
@@ -471,10 +474,9 @@ parameter downloads each returned 11488 bytes.
   stage 3.5). BlitzWingH743 plane builds; reference backtrace extracted
   from the reporter's dump with gdb_crashdump.sh.
 - 2026-08-06: stage 1 to `sdcard_retry` (above). run.py grew `--vehicle`
-  and derives the erased-flash images from the build: storage sectors
-  from hwdef.h `STORAGE_FLASH_PAGE` plus the family sector map, and the
-  crash-log region from the ELF's `__crash_log_base__/__crash_log_end__`
-  (0x081D4D20..0x08200000 for this build, matching the linker map).
+  and originally derived separate erased storage and crash-log images from
+  the hwdef and ELF. These were later replaced by a fixed-size image of the
+  complete internal flash so linker layout changes do not invalidate state.
 - 2026-08-06: stage 1 complete. SDMMC IDMA pumps at the deferred data
   boundary, CMD17 returns the image-backed card to TRAN, FAT32 mounts,
   and the stock ELF reaches `Plane::init_ardupilot()`. run.py now

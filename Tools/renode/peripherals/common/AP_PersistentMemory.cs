@@ -1,7 +1,6 @@
 // Persist a region of emulated address space when the machine pauses or is
-// disposed. This is used for STM32 flash-backed AP_HAL storage and crash logs:
-// Renode's STM32 flash controllers modify MappedMemory, which has no backing
-// file of its own.
+// disposed. This backs the complete internal STM32 flash: Renode's STM32 flash
+// controllers modify MappedMemory, which has no backing file of its own.
 //
 using System;
 using System.IO;
