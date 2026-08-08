@@ -7068,6 +7068,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FS_LONG_ACTN": 3,
         })
         for command in self.run_cmd, self.run_cmd_int:
+            # We release the parachute sitting on the ground, which the
+            # vehicle permits only while it has never flown:
+            # parachute_manual_release() skips its "Too low" check on
+            # last_flying_ms being zero, and that is sticky for the life
+            # of the boot.  Any test which flew before us leaves it set
+            # and the release is refused with MAV_RESULT_FAILED - so
+            # start from a fresh boot rather than only leaving one
+            # behind for the iteration which follows.
+            self.reboot_sitl()
             self.wait_servo_channel_value(9, 1100)
             self.wait_ready_to_arm()
             self.arm_vehicle()
@@ -7077,7 +7086,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             )
             self.wait_servo_channel_value(9, 1300)
             self.disarm_vehicle()
-            self.reboot_sitl()
 
     def _MAV_CMD_DO_GO_AROUND(self, command):
         self.load_mission("mission.txt")
