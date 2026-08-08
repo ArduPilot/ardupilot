@@ -207,7 +207,7 @@ void NavEKF3_core::InitialiseVariables()
     lastHgtPassTime_ms = 0;
     lastTasPassTime_ms = 0;
     lastSynthYawTime_ms = 0;
-    lastTimeGpsReceived_ms = 0;
+    lastTimeGpsReceived_ms[selected_gps] = {};
     timeAtLastAuxEKF_ms = imuSampleTime_ms;
     flowValidMeaTime_ms = imuSampleTime_ms;
     rngValidMeaTime_ms = imuSampleTime_ms;
