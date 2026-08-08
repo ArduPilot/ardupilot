@@ -112,19 +112,17 @@ const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("LEN_WIDTH",   6, AP_ADSB, out_state.cfg.lengthWidth, UAVIONIX_ADSB_OUT_CFG_AIRCRAFT_SIZE_L15M_W23M),
 
-    // @Param: OFFSET_LAT
-    // @DisplayName: GPS antenna lateral offset
-    // @Description: GPS antenna lateral offset. This describes the physical location offset from center of the GPS antenna on the aircraft.
-	// @Values: 0:NoData,1:Left2m,2:Left4m,3:Left6m,4:Center,5:Right2m,6:Right4m,7:Right6m
+    // @Param: POS_X
+    // @DisplayName: GPS antenna X offset (body-frame)
+    // @Description: GPS antenna X offset in the body-frame (forward is positive). Replaces OFFSET_LAT. This describes the physical location offset from the center of the GPS antenna on the aircraft.
     // @User: Advanced
-    AP_GROUPINFO("OFFSET_LAT",   7, AP_ADSB, out_state.cfg.gpsOffsetLat, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_RIGHT_0M),
+    AP_GROUPINFO("POS_X",   7, AP_ADSB, out_state.cfg.pos_x, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LAT_RIGHT_0M),
 
-    // @Param: OFFSET_LON
-    // @DisplayName: GPS antenna longitudinal offset
-    // @Description: GPS antenna longitudinal offset. This is usually set to 1, Applied By Sensor
-    // @Values: 0:NO_DATA,1:AppliedBySensor
+    // @Param: POS_Y
+    // @DisplayName: GPS antenna Y offset (body-frame)
+    // @Description: GPS antenna Y offset in the body-frame (right is positive). Replaces OFFSET_LON. This is usually set to 1, Applied By Sensor
     // @User: Advanced
-    AP_GROUPINFO("OFFSET_LON",   8, AP_ADSB, out_state.cfg.gpsOffsetLon, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LON_APPLIED_BY_SENSOR),
+    AP_GROUPINFO("POS_Y",   8, AP_ADSB, out_state.cfg.pos_y, UAVIONIX_ADSB_OUT_CFG_GPS_OFFSET_LON_APPLIED_BY_SENSOR),
 
     // @Param: RF_SELECT
     // @DisplayName: Transceiver RF selection
@@ -675,8 +673,8 @@ void AP_ADSB::handle_out_cfg(const mavlink_uavionix_adsb_out_cfg_t &packet)
 
     out_state.cfg.emitterType.set(packet.emitterType);
     out_state.cfg.lengthWidth.set(packet.aircraftSize);
-    out_state.cfg.gpsOffsetLat.set(packet.gpsOffsetLat);
-    out_state.cfg.gpsOffsetLon.set(packet.gpsOffsetLon);
+    out_state.cfg.pos_x.set(packet.gpsOffsetLat);
+    out_state.cfg.pos_y.set(packet.gpsOffsetLon);
     out_state.cfg.rfSelect.set(packet.rfSelect);
     out_state.cfg.stall_speed_cm = packet.stallSpeed;
 
