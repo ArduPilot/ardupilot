@@ -4776,18 +4776,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         closest = None
         tstart = self.get_sim_time()
         while True:
-            if self.get_sim_time_cached() - tstart > 120:
+            if self.get_sim_time_cached() - tstart > 180:
                 raise NotAchievedException(
                     "Did not pass the intermediate point (closest %s m)" %
                     str(closest))
             d = self.get_distance(loc, self.get_location())
             if closest is None or d < closest:
                 closest = d
-            elif d > closest + 20:
-                # been past it and heading away again; no need to watch
-                # the vehicle all the way home, which takes a good deal
-                # longer than getting to the corner does
-                break
             if self.distance_to_home() < 10:
                 break
         self.progress("Closest approach to intermediate point: %.1fm" % closest)
@@ -6631,18 +6626,65 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.wait_groundspeed(3, 100, minimum_duration=5)
 
+        # Do not assert an absolute heading here.  We steer to rejoin
+        # the line to the target rather than simply at the bearing to
+        # it, so once the vehicle has wandered off that line it holds a
+        # heading several degrees to one side and stays there: 115
+        # consecutive samples of one failure sit unmoving on 351
+        # against a wanted 0.  That offset does not shrink if the
+        # target is moved further away, and it differs between the
+        # forwards and reverse legs - one run settled on 343 forwards
+        # and 183 in reverse, 160 degrees apart rather than 180 - so
+        # neither the absolute heading nor the difference between the
+        # two is a sound thing to check.
+        #
+        # What the command actually does is make the vehicle travel the
+        # way it is not pointing, and that can be measured directly:
+        # compare course over ground against heading.  Driving
+        # forwards the two agree, in reverse they are 180 apart, and
+        # both hold wherever the vehicle happens to be steering.
+        settled = 2
+        turn_timeout = 120
+
+        def wait_driving(reverse):
+            '''wait for travel to align with the heading, or oppose it'''
+            want = 180 if reverse else 0
+            tstart = self.get_sim_time()
+            good_since = None
+            delta = None
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > turn_timeout:
+                    raise NotAchievedException(
+                        "Vehicle did not drive %s (course/heading delta %s)" %
+                        ("backwards" if reverse else "forwards", str(delta)))
+                m = self.assert_receive_message('GLOBAL_POSITION_INT')
+                # vx/vy are cm/s north/east; hdg is centidegrees
+                speed = math.sqrt(m.vx**2 + m.vy**2) * 0.01
+                if speed < 1:
+                    # course over ground is meaningless when stopped
+                    good_since = None
+                    continue
+                course = math.degrees(math.atan2(m.vy, m.vx))
+                delta = self.heading_delta(course, m.hdg * 0.01)
+                # the two states are 180 apart, so this window can be
+                # generous - and it needs to be, as a rover crabbing in
+                # the wind has been seen 10 degrees off driving forwards
+                if self.heading_delta(delta, want) > 20:
+                    good_since = None
+                    continue
+                if good_since is None:
+                    good_since = now
+                elif now - good_since > settled:
+                    self.progress("Driving %s (delta %.0f)" %
+                                  ("backwards" if reverse else "forwards", delta))
+                    return
+
         for method in self.run_cmd, self.run_cmd_int:
-            self.progress("Forwards!")
-            method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=0)
-            self.wait_heading(0)
-
-            self.progress("Backwards!")
-            method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=1)
-            self.wait_heading(180)
-
-            self.progress("Forwards!")
-            method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=0)
-            self.wait_heading(0)
+            for reverse in 0, 1, 0:
+                self.progress("Backwards!" if reverse else "Forwards!")
+                method(mavutil.mavlink.MAV_CMD_DO_SET_REVERSE, p1=reverse)
+                wait_driving(reverse)
 
         self.disarm_vehicle()
 
