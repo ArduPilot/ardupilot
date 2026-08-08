@@ -17817,7 +17817,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Test common origin between EKF2 and EKF3"""
         # start on EKF2
         self.set_parameters({
-            'AHRS_EKF_TYPE': 2,
             'EK2_ENABLE': 1,
             'EK3_CHECK_SCALE': 1, # make EK3 slow to get origin
         })
@@ -17832,6 +17831,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_statustext("EKF2 IMU0 origin set", timeout=60, check_context=True)
         self.wait_statustext("EKF2 IMU0 is using GPS", timeout=60, check_context=True)
+
+        # "AHRS: ... active" is emitted only when the active backend
+        # changes, so ask for EKF2 here rather than before the reboot:
+        # a vehicle which boots already configured for it comes up with
+        # it active and says nothing, and the wait would be left
+        # matching the message from before the reboot.
+        self.set_parameter('AHRS_EKF_TYPE', 2)
         self.wait_statustext("EKF2 active", timeout=60, check_context=True)
 
         # get EKF2 origin
