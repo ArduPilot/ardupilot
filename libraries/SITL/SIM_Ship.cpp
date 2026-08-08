@@ -28,6 +28,9 @@
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL_SITL/SITL_State.h>
+#include <AP_HAL_SITL/HAL_SITL_Class.h>
+
+extern const HAL_SITL& hal_sitl;
 #include <AP_Terrain/AP_Terrain.h>
 
 using namespace SITL;
@@ -173,8 +176,12 @@ void ShipSim::update(void)
         home.offset(ofs.x, ofs.y);
         home.alt -= ofs.z*100;
 
+        target_port += 10 * hal_sitl.get_instance();
+
         initialised = true;
-        ::printf("ShipSim home %f %f\n", home.lat*1.0e-7, home.lng*1.0e-7);
+        ::printf("ShipSim home %f %f reporting to %s:%u\n",
+                 home.lat*1.0e-7, home.lng*1.0e-7,
+                 target_address, (unsigned)target_port);
         ship.sim = this;
         last_update_us = now_us;
         last_report_ms = AP_HAL::millis();
