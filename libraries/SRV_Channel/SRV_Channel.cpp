@@ -171,6 +171,14 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("FUNCTION",  5, SRV_Channel, function, 0),
 
+    // @Param: FSPWM
+    // @DisplayName: Servo failsafe PWM position
+    // @Description: PWM value this output is driven to when a selected failsafe is active (see FS_SERVO_MASK). 0 disables the failsafe position for this channel, leaving its normal output. Use this to set a safe pose on loss of link (e.g. centre a servo, or cut a throttle channel). Applies to any output including motors, so use with care on multirotors where the failsafe flight mode already controls the motors.
+    // @Units: PWM
+    // @Range: 0 2200
+    // @User: Standard
+    AP_GROUPINFO("FSPWM",  6, SRV_Channel, servo_fs_pwm, 0),
+
     AP_GROUPEND
 };
 

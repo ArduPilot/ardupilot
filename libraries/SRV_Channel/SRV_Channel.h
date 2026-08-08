@@ -326,6 +326,9 @@ private:
     // reversal, following convention that 1 means reversed, 0 means normal
     AP_Int8 reversed;
     AP_Enum16<Function> function;
+    // per-channel failsafe position: PWM this channel is driven to when a
+    // selected failsafe is active. 0 = disabled (leave normal output).
+    AP_Int16 servo_fs_pwm;
 
     // a pending output value as PWM
     uint16_t output_pwm;
@@ -601,6 +604,14 @@ public:
     // get E - stop
     static bool get_emergency_stop() { return emergency_stop;}
 
+    // set whether a servo failsafe is currently active. When true, any
+    // channel with a non-zero SERVOn_FSPWM is driven to that PWM. The vehicle
+    // decides which failsafe(s) qualify and sets this each loop.
+    static void set_failsafe_active(bool state) { failsafe_active = state; }
+
+    // get servo-failsafe active state
+    static bool get_failsafe_active() { return failsafe_active; }
+
     // singleton for Lua
     static SRV_Channels *get_singleton(void) {
         return _singleton;
@@ -712,6 +723,7 @@ private:
     }
 
     static bool emergency_stop;
+    static bool failsafe_active;
 
     // linked list for slew rate handling
     struct slew_list {
