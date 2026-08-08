@@ -630,7 +630,8 @@ protected:
         GPSL5HealthOverride = (1U << 5),
         AlwaysRTCMDecode = (1U << 6),
         DisableRTCMDecode = (1U << 7),
-        ForceUBXConfigV2 = (1U << 8U)
+        ForceUBXConfigV2 = (1U << 8U),
+        FuseEARHSHeading = (1U << 9U)
     };
 
     // check if an option is set
