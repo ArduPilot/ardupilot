@@ -38,9 +38,12 @@ void Rover::set_control_channels(void)
     // sailboat rc input init
     g2.sailboat.init_rc_in();
 
-    // Allow to reconfigure output when not armed
+    // update output ranges even if armed so a SERVOx_FUNCTION change
+    // while armed takes effect immediately
+    g2.motors.setup_servo_output();
+
+    // Allow to reconfigure safety output when not armed
     if (!arming.is_armed()) {
-        g2.motors.setup_servo_output();
         // For a rover safety is TRIM throttle
         g2.motors.setup_safety_output();
     }
