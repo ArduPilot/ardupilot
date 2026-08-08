@@ -1,7 +1,7 @@
 ROOT = $(dir $(lastword $(MAKEFILE_LIST)))
 
 WAF_BINARY = $(realpath $(ROOT)/modules/waf/waf-light)
-WAF = python $(WAF_BINARY) $(WAF_FLAGS)
+WAF = python3 $(WAF_BINARY) $(WAF_FLAGS)
 
 EXPLICIT_COMMANDS = check check-all clean list_boards
 
