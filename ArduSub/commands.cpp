@@ -19,11 +19,10 @@ bool Sub::set_home_to_current_location(bool lock)
     Location temp_loc;
     if (ahrs.get_location(temp_loc)) {
 
-        // Make home always at the water's surface.
-        // This allows disarming and arming again at depth.
-        // This also ensures that mission items with relative altitude frame, are always
-        // relative to the water's surface, whether in a high elevation lake, or at sea level.
-        temp_loc.offset_up_m(-barometer.get_altitude());
+       // Home is set to wherever the vehicle currently is — no longer
+        // artificially forced to the water's surface. Users who want
+        // surface-relative behavior should use rel-home targets/frames
+        // (see discussion in #33827).
         return set_home(temp_loc, lock);
     }
     return false;
