@@ -10233,6 +10233,18 @@ Also, ignores heartbeats not from our target system'''
 
         if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
             self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+            if not self.is_blimp():
+                # clear_mission() uploads zero items, which leaves the
+                # current-nav-command index pointing into the old mission;
+                # Plane then resumes from it several items into the next
+                # test's mission.  Only MISSION_CLEAR_ALL resets it.
+                self.mav.mav.mission_clear_all_send(
+                    1, 1, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+                self.assert_received_message_field_values('MISSION_ACK', {
+                    "target_system": self.mav.mav.srcSystem,
+                    "target_component": self.mav.mav.srcComponent,
+                    "type": mavutil.mavlink.MAV_MISSION_ACCEPTED,
+                })
             self.set_current_waypoint(0, check_afterwards=False)
 
         # report the result only once everything which can still fail
