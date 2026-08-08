@@ -20,6 +20,7 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
+#include <AP_HAL/WSPIDevice.h>
 #include "lfs.h"
 
 class AP_Filesystem_FlashMemory_LittleFS : public AP_Filesystem_Backend
@@ -90,10 +91,15 @@ private:
 
     FileDescriptor* open_files[MAX_OPEN_FILES];
 
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    // WSPI device for QUADSPI/OCTOSPI-connected flash
+    AP_HAL::OwnPtr<AP_HAL::WSPIDevice> wspi_dev;
+#else
     // SPI device that handles the raw flash memory
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
+#endif
 
-    // Semaphore to protect access to the SPI device
+    // Semaphore to protect access to the SPI/WSPI device
     AP_HAL::Semaphore *dev_sem;
 
     // Flag to denote that the underlying flash chip uses 32-bit addresses
@@ -110,12 +116,36 @@ private:
     bool write_enable() WARN_IF_UNUSED;
     bool is_busy();
     bool mount_filesystem();
-    void send_command_addr(uint8_t command, uint32_t addr);
-    void send_command_page(uint8_t command, uint32_t page);
     bool wait_until_device_is_ready() WARN_IF_UNUSED;
-    void write_status_register(uint8_t reg, uint8_t bits);
     void format_handler(void);
     void mark_dead();
+
+#if AP_FILESYSTEM_LITTLEFS_FLASH_IS_NAND
+    // General NAND chip operations. These are the only functions that know
+    // whether the chip sits on a SPI or a WSPI bus; the SPI/WSPI ifdef lives
+    // inside each. Everything that calls them is transport-agnostic.
+    // Caller holds dev_sem.
+    bool nand_reset();
+    bool nand_read_id(uint32_t &id);
+    bool nand_read_status(uint8_t &status);
+    bool nand_set_reg(uint8_t reg, uint8_t value);
+    // fire-and-forget commands; failure is reconfirmed by the status register
+    void nand_page_read(uint32_t row_addr);
+    bool nand_read_cache(uint16_t col_addr, uint8_t *buf, uint32_t len);
+    bool nand_program_load(uint16_t col_addr, const uint8_t *buf, uint32_t len);
+    void nand_program_execute(uint32_t row_addr);
+    void nand_block_erase(uint32_t row_addr);
+#endif
+
+#if AP_FILESYSTEM_LITTLEFS_USE_WSPI
+    // WSPI transport primitive: command with no address or data phase
+    bool wspi_command(uint8_t cmd);
+#else
+    // SPI transport primitive: command + 16-bit page/column address
+    void send_command_page(uint8_t command, uint32_t page);
+#endif
+    // command + address, transport-aware (WSPI 24-bit, SPI 24- or 32-bit)
+    void send_command_addr(uint8_t command, uint32_t addr);
 };
 
 #endif  // #if AP_FILESYSTEM_LITTLEFS_ENABLED
