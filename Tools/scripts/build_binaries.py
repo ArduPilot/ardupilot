@@ -12,6 +12,7 @@ AP_FLAKE8_CLEAN
 from __future__ import annotations
 
 import datetime
+import lzma
 import optparse
 import os
 import pathlib
@@ -690,6 +691,18 @@ is bob we will attempt to checkout bob-AVR'''
             # Get current git SHA to embed in the metadata
             git_sha = self.run_git(["rev-parse", "HEAD"]).rstrip()
 
+            # Older branches may have an older param_parse.py that does not support
+            # newer options. Probe support and only pass compatible arguments.
+            help_output = self.run_program(
+                'PARAM-PARSE-HELP',
+                ['python3', param_parse_path, '--help'],
+                show_output=False,
+                force_success=True
+            )
+            supports_git_sha = '--git-sha' in help_output
+            supports_git_tag = '--git-tag' in help_output
+            supports_compress = '--compress' in help_output
+
             # Remove any stale output file before generating
             apm_pdef_path = os.path.join(topdir(), 'apm.pdef.xml')
             apm_pdef_xz_path = apm_pdef_path + '.xz'
@@ -697,16 +710,28 @@ is bob we will attempt to checkout bob-AVR'''
                 if os.path.exists(stale):
                     os.remove(stale)
 
-            self.run_program(
-                'PARAM-PARSE',
-                ['python3', param_parse_path,
-                 '--vehicle', vehicle_type,
-                 '--format', 'xml',
-                 '--git-sha', git_sha,
-                 '--git-tag', git_tag,
-                 '--compress'],
-                show_output=True
-            )
+            cmd = [
+                'python3', param_parse_path,
+                '--vehicle', vehicle_type,
+                '--format', 'xml',
+            ]
+            if supports_git_sha:
+                cmd.extend(['--git-sha', git_sha])
+            if supports_git_tag:
+                cmd.extend(['--git-tag', git_tag])
+            if supports_compress:
+                cmd.append('--compress')
+
+            self.run_program('PARAM-PARSE', cmd, show_output=True)
+
+            # If the parser did not produce a compressed file, create it here.
+            if not os.path.exists(apm_pdef_xz_path):
+                if not os.path.exists(apm_pdef_path):
+                    self.progress("apm.pdef.xml was not generated")
+                    return False
+                with open(apm_pdef_path, 'rb') as f_in:
+                    with lzma.open(apm_pdef_xz_path, 'wb', preset=9 | lzma.PRESET_EXTREME) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
 
             # Check if the compressed output file was created
             if not os.path.exists(apm_pdef_xz_path):
@@ -735,21 +760,19 @@ is bob we will attempt to checkout bob-AVR'''
 
         # Get the current version from git describe
         try:
-            # Get the most recent tag for this vehicle
-            tag_pattern = f"{vehicle_type}-*"
+            # Restrict to version-like tags so aliases such as "*-stable"/"*-beta"
+            # are not selected as release versions.
+            tag_pattern = f"{vehicle_type}-[0-9]*.[0-9]*.[0-9]*"
             version_output = self.run_program(
                 'GIT-DESCRIBE',
                 ['git', 'describe', '--tags', '--abbrev=0', '--match', tag_pattern],
                 show_output=False
             ).strip()
 
-            # Parse version from tag (e.g., "ArduCopter-4.5.0" -> "4.5.0")
-            if '-' not in version_output:
-                self.progress(f"Unexpected tag format: {version_output}")
-                return
-
+            # Parse version from tag (e.g., "ArduCopter-4.5.0" -> "4.5.0").
+            # Require the part after the first '-' to start with N.N.N.
             parts = version_output.split('-', 1)
-            if len(parts) != 2:
+            if len(parts) != 2 or re.match(r'^\d+\.\d+\.\d+([-.][A-Za-z0-9]+)*$', parts[1]) is None:
                 self.progress(f"Could not parse version from tag: {version_output}")
                 return
 

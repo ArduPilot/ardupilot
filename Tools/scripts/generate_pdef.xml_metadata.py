@@ -54,11 +54,16 @@ def create_one_pdef_xml_file(vehicle_type: str, dst_dir: str, git_tag: str):
     subprocess.run(['git', 'checkout', git_tag], check=True)
     # subprocess.run(['git', 'pull'], check=True)
     git_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-    subprocess.run(['Tools/autotest/param_metadata/param_parse.py',
-                    '--vehicle', vehicle_type,
-                    '--format', 'xml',
-                    '--git-sha', git_sha,
-                    '--git-tag', git_tag], check=True)
+    parser_path = 'Tools/autotest/param_metadata/param_parse.py'
+    help_output = subprocess.check_output(['python3', parser_path, '--help'], text=True, stderr=subprocess.STDOUT)
+    cmd = [parser_path,
+           '--vehicle', vehicle_type,
+           '--format', 'xml']
+    if '--git-sha' in help_output:
+        cmd.extend(['--git-sha', git_sha])
+    if '--git-tag' in help_output:
+        cmd.extend(['--git-tag', git_tag])
+    subprocess.run(cmd, check=True)
     # Return to the old working directory
     os.chdir(old_cwd)
 
