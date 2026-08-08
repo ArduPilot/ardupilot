@@ -140,6 +140,10 @@ public:
     // See roi_at_center() for flag logic.
     bool roi_at_center() const { return (_options.get() & CircleOptions::ROI_AT_CENTER) != 0; }
 
+    // Returns true if the vehicle yaw should align with the direction of travel (tangent)
+    // rather than facing the circle center.
+    bool face_direction_of_travel() const { return (_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0; }
+
     // Sets rangefinder terrain offset (in centimeters) above EKF origin.
     // See set_rangefinder_terrain_U_m() for full details.
     void set_rangefinder_terrain_U_cm(bool use, bool healthy, float terrain_u_cm) { _rangefinder_available = use; _rangefinder_healthy = healthy; _rangefinder_terrain_u_m = terrain_u_cm * 0.01;}

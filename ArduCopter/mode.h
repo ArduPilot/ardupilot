@@ -673,7 +673,6 @@ private:
     void wp_run();
     void land_run();
     void rtl_run();
-    void circle_run();
     void nav_guided_run();
     void loiter_run();
     void loiter_to_alt_run();
@@ -809,7 +808,10 @@ private:
         float down;   // desired speed downwards in m/s. 0 if unset
     } desired_speed_override_ms;
 
-    float circle_last_num_complete;
+    float circle_turns_signed;  // signed number of turns for the active LOITER_TURNS orbit (sign selects direction)
+    float circle_radius_m;      // commanded LOITER_TURNS radius (0 = panorama; circle_nav's get_radius_m() falls back to the parameter so cannot express zero)
+    uint32_t circle_panorama_start_ms;  // system time a radius-0 LOITER_TURNS yaw spin started (0 = not a panorama)
+    float circle_panorama_spin_time_ms; // latched duration of the radius-0 LOITER_TURNS yaw spin
 };
 #endif  // MODE_AUTO_ENABLED
 
