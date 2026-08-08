@@ -1,0 +1,9 @@
+# Request
+uint8 camera_id          # 0 = all cameras, 1,2,3... = specific camera
+uint32 interval_msec # 100 = 10Hz, 50 = 20Hz, 33 = 30Hz
+int16 total_images      # -1 = capture forever, N = capture N images
+---
+# Response
+bool success
+string message
+uint16 sequence_start    # Starting sequence number
