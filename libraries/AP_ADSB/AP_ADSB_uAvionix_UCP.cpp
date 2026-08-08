@@ -43,6 +43,8 @@ extern const AP_HAL::HAL &hal;
 
 #define AP_ADSB_UAVIONIX_DETECT_GROUNDSTATE                     0
 #define AP_ADSB_UAVIONIX_EMERGENCY_STATUS_ON_LOST_LINK          0
+#define AP_ADSB_UAVIONIX_UCP_SET_CONFIG_RETIRES                 5
+#define AP_ADSB_UAVIONIX_UCP_SET_CONFIG_DEBUG                   0
 
 // detect if any port is configured as uAvionix_UCP
 bool AP_ADSB_uAvionix_UCP::detect()
@@ -99,6 +101,19 @@ void AP_ADSB_uAvionix_UCP::update()
         }
     }
 
+#if HAL_ADSB_UCP_SET_CONFIG
+    if (transponder_config_set.icao_backup != _frontend.out_state.cfg.ICAO_id_param.get()) {
+        // allow for in-flight changes to the ICAO ID
+        transponder_config_set.icao_backup = _frontend.out_state.cfg.ICAO_id_param.get();
+        run_state.request_Transponder_Config_tries = 0;
+    }
+    if ((run_state.request_Transponder_Config_tries < AP_ADSB_UAVIONIX_UCP_SET_CONFIG_RETIRES) &&
+        (now_ms > 20000 || (_frontend.out_state.cfg.maxAircraftSpeed_knots > 0)) && // this boot delay is needed to give time for set_max_speed() and set_stall_speed_cm() to get populated before we try to set the config or else it will detect it as different and re-set the config
+        (now_ms - transponder_config_set.last_send_ms >= 1000)) {
+        transponder_config_set.last_send_ms = now_ms;
+        update_Transponder_Config();
+    }
+#else
     if (run_state.last_packet_Transponder_Config_ms == 0 && run_state.request_Transponder_Config_tries < 5) {
         if (now_ms - run_state.last_packet_Request_Transponder_Config_ms >= 1000)
         {
@@ -106,6 +121,7 @@ void AP_ADSB_uAvionix_UCP::update()
             run_state.request_Transponder_Config_tries++;
         }
     }
+#endif
 
    if (now_ms - run_state.last_packet_Transponder_Control_ms >= 1000) {
         run_state.last_packet_Transponder_Control_ms = now_ms;
@@ -192,6 +208,10 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
                 (unsigned)rx.decoded.identification.primary.fwBuildVersion,
                 (unsigned)rx.decoded.identification.primary.serialNumber,
                 primaryFwPartNumber);
+
+#if HAL_ADSB_UCP_SET_CONFIG
+            run_state.request_Transponder_Config_tries = 0;
+#endif
         }
         break;
 
@@ -269,6 +289,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
 
             _frontend.out_state.tx_status.squawk = rx.decoded.transponder_status.squawkCode;
 
+#if !HAL_ADSB_UCP_SET_CONFIG
             if (run_state.last_packet_Transponder_Status_ms == 0 && run_state.last_packet_Transponder_Config_ms == 0) {
                 // If this is the first time we've seen a status message,
                 // and we haven't initialized the control message from the config message,
@@ -280,6 +301,7 @@ void AP_ADSB_uAvionix_UCP::handle_msg(const GDL90_RX_MESSAGE &msg)
                 _frontend.out_state.ctrl.squawkCode = rx.decoded.transponder_status.squawkCode;
                 _frontend.out_state.ctrl.x_bit = rx.decoded.transponder_status.x_bit;
             }
+#endif
             run_state.last_packet_Transponder_Status_ms = AP_HAL::millis();
 #if AP_MAVLINK_MSG_UAVIONIX_ADSB_OUT_STATUS_ENABLED
             GCS_SEND_MESSAGE(MSG_UAVIONIX_ADSB_OUT_STATUS);
@@ -389,6 +411,178 @@ const char* AP_ADSB_uAvionix_UCP::get_hardware_name(const uint8_t hwId)
     } // switch hwId
     return "Unknown HW";
 }
+
+#if HAL_ADSB_UCP_SET_CONFIG
+// get the transponder config amd compare it with what we want it to be and set it if it's different
+void AP_ADSB_uAvionix_UCP::update_Transponder_Config()
+{
+    run_state.request_Transponder_Config_tries++;
+    if (run_state.request_Transponder_Config_tries >= AP_ADSB_UAVIONIX_UCP_SET_CONFIG_RETIRES) {
+        // we've retried too many times, stop trying
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB: %s config timeout", get_hardware_name(rx.decoded.identification.primary.hwId));
+        return;
+    }
+
+    const GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 desired_config_msg = populate_Transponder_Config();
+
+    if (rx.decoded.transponder_config.messageId == 0 || !compare_Transponder_Config(rx.decoded.transponder_config, desired_config_msg)) {
+        // we've either never received a config so we blindly send in case we only have 1-way comms or it's wrong and we're trying to set it.
+        gdl90Transmit((GDL90_TX_MESSAGE&)desired_config_msg, sizeof(desired_config_msg));
+        request_msg(GDL90_ID_TRANSPONDER_CONFIG);
+
+    } else {
+        run_state.request_Transponder_Config_tries = AP_ADSB_UAVIONIX_UCP_SET_CONFIG_RETIRES; // no more retires, we're done!
+        GCS_SEND_TEXT(MAV_SEVERITY_DEBUG,"ADSB: %s Ready", get_hardware_name(rx.decoded.identification.primary.hwId));
+    }
+}
+
+bool AP_ADSB_uAvionix_UCP::compare_Transponder_Config(const GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 &msg1, const GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 &msg2)
+{
+#if AP_ADSB_UAVIONIX_UCP_SET_CONFIG_DEBUG
+    if (msg1.version           != msg2.version)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch version: %d, %d", (int)msg1.version, (int)msg2.version);
+    if (msg1.icaoAddress[0]    != msg2.icaoAddress[0])
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch icaoAddress[0]: %d, %d", (int)msg1.icaoAddress[0], (int)msg2.icaoAddress[0]);
+    if (msg1.icaoAddress[1]    != msg2.icaoAddress[1])
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch icaoAddress[1]: %d, %d", (int)msg1.icaoAddress[1], (int)msg2.icaoAddress[1]);
+    if (msg1.icaoAddress[2]    != msg2.icaoAddress[2])
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch icaoAddress[2]: %d, %d", (int)msg1.icaoAddress[2], (int)msg2.icaoAddress[2]);
+    if (msg1.maxSpeed          != msg2.maxSpeed)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch maxSpeed: %d, %d", (int)msg1.maxSpeed, (int)msg2.maxSpeed);
+    if (msg1.baroAltSource     != msg2.baroAltSource)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch baroAltSource: %d, %d", (int)msg1.baroAltSource, (int)msg2.baroAltSource);
+    if (msg1.SDA               != msg2.SDA)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch SDA: %d, %d", (int)msg1.SDA, (int)msg2.SDA);
+    if (msg1.SIL               != msg2.SIL)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch SIL: %d, %d", (int)msg1.SIL, (int)msg2.SIL);
+    if (msg1.lengthWidth       != msg2.lengthWidth)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch lengthWidth: %d, %d", (int)msg1.lengthWidth, (int)msg2.lengthWidth);
+    if (msg1.es1090InCapable   != msg2.es1090InCapable)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch es1090InCapable: %d, %d", (int)msg1.es1090InCapable, (int)msg2.es1090InCapable);
+    if (msg1.uatInCapable      != msg2.uatInCapable)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch uatInCapable: %d, %d", (int)msg1.uatInCapable, (int)msg2.uatInCapable);
+    if (msg1.longitudinalOffset!= msg2.longitudinalOffset)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch longitudinalOffset: %d, %d", (int)msg1.longitudinalOffset, (int)msg2.longitudinalOffset);
+    if (msg1.lateralOffset     != msg2.lateralOffset)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch lateralOffset: %d, %d", (int)msg1.lateralOffset, (int)msg2.lateralOffset);
+    if (msg1.stallSpeed_cmps   != msg2.stallSpeed_cmps)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch stallSpeed_cmps: %d, %d", (int)msg1.stallSpeed_cmps, (int)msg2.stallSpeed_cmps);
+    if (msg1.emitterType       != msg2.emitterType)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch emitterType: %d, %d", (int)msg1.emitterType, (int)msg2.emitterType);
+    if (msg1.baudRate          != msg2.baudRate)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch baudRate: %d, %d", (int)msg1.baudRate, (int)msg2.baudRate);
+    if (msg1.modeAEnabled      != msg2.modeAEnabled)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch modeAEnabled: %d, %d", (int)msg1.modeAEnabled, (int)msg2.modeAEnabled);
+    if (msg1.modeCEnabled      != msg2.modeCEnabled)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch modeCEnabled: %d, %d", (int)msg1.modeCEnabled, (int)msg2.modeCEnabled);
+    if (msg1.modeSEnabled      != msg2.modeSEnabled)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch modeSEnabled: %d, %d", (int)msg1.modeSEnabled, (int)msg2.modeSEnabled);
+    if (msg1.es1090TxEnabled   != msg2.es1090TxEnabled)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch es1090TxEnabled: %d, %d", (int)msg1.es1090TxEnabled, (int)msg2.es1090TxEnabled);
+    if (msg1.defaultSquawk     != msg2.defaultSquawk)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch defaultSquawk: %d, %d", (int)msg1.defaultSquawk, (int)msg2.defaultSquawk);
+    if (msg1.baro100           != msg2.baro100)
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch baro100: %d, %d", (int)msg1.baro100, (int)msg2.baro100);
+#endif // AP_ADSB_UAVIONIX_UCP_SET_CONFIG_DEBUG
+
+    // Don't compare the whole struct because we only care about certain values in it
+
+    if (msg1.version           != msg2.version ||
+        msg1.icaoAddress[0]    != msg2.icaoAddress[0] ||
+        msg1.icaoAddress[1]    != msg2.icaoAddress[1] ||
+        msg1.icaoAddress[2]    != msg2.icaoAddress[2] ||
+        msg1.maxSpeed          != msg2.maxSpeed ||
+        msg1.baroAltSource     != msg2.baroAltSource ||
+        // msg1.SDA               != msg2.SDA ||        // These could be fixed in HW from the factory
+        // msg1.SIL               != msg2.SIL ||        // These could be fixed in HW from the factory
+        msg1.lengthWidth       != msg2.lengthWidth ||
+        msg1.es1090InCapable   != msg2.es1090InCapable ||
+        msg1.uatInCapable      != msg2.uatInCapable ||
+        msg1.longitudinalOffset!= msg2.longitudinalOffset ||
+        msg1.lateralOffset     != msg2.lateralOffset ||
+        msg1.stallSpeed_cmps   != msg2.stallSpeed_cmps ||
+        msg1.emitterType       != msg2.emitterType ||
+        msg1.baudRate          != msg2.baudRate ||
+        msg1.modeAEnabled      != msg2.modeAEnabled ||
+        msg1.modeCEnabled      != msg2.modeCEnabled ||
+        msg1.modeSEnabled      != msg2.modeSEnabled ||
+        msg1.es1090TxEnabled   != msg2.es1090TxEnabled ||
+        msg1.defaultSquawk     != msg2.defaultSquawk ||
+        msg1.baro100           != msg2.baro100)
+    {
+        return false;
+    }
+
+    if (memcmp(msg1.registration, msg2.registration, sizeof(msg2.registration)) != 0) {
+        // Aircraft Registration string mismatch. Make sure to use memcmp and not strncmp for this since it might not be null terminated
+#if AP_ADSB_UAVIONIX_UCP_SET_CONFIG_DEBUG
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL,"ADSB: mismatch callsign %s, %s", msg1.registration, msg2.registration);
+#endif
+        return false;
+    }
+
+    return true;
+}
+
+GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 AP_ADSB_uAvionix_UCP::populate_Transponder_Config() const
+{
+    GDL90_TRANSPONDER_CONFIG_MSG_V4_V5 msg {};
+
+    msg.messageId = GDL90_ID_TRANSPONDER_CONFIG;
+    msg.version = 5;
+
+    uint32_t icao_id = _frontend.out_state.cfg.ICAO_id_param.get();
+    msg.icaoAddress[0] = (icao_id >> 16) & 0xFF;
+    msg.icaoAddress[1] = (icao_id >> 8) & 0xFF;
+    msg.icaoAddress[2] = (icao_id & 0x0FF);
+
+    msg.maxSpeed = AP_ADSB::convert_maxknots_to_enum(_frontend.out_state.cfg.maxAircraftSpeed_knots);
+    msg.baroAltSource = GDL90_BARO_DATA_SOURCE_INTERNAL;
+    msg.SDA = rx.decoded.transponder_config.SDA ? rx.decoded.transponder_config.SDA: ADSB_SDA_10_NEG5;
+    msg.SIL = rx.decoded.transponder_config.SIL ? rx.decoded.transponder_config.SIL : ADSB_SIL_10_NEG7;
+    msg.lengthWidth = (ADSB_AIRCRAFT_LENGTH_WIDTH)_frontend.out_state.cfg.lengthWidth.get();
+    msg.es1090InCapable = (_frontend.out_state.cfg.rf_capable.get() & ADSB_BITBASK_RF_CAPABILITIES_1090ES_IN) != 0 ? ADSB_1090ES_IN_CAPABLE : ADSB_NOT_1090ES_IN_CAPABLE;
+    msg.uatInCapable = (_frontend.out_state.cfg.rf_capable.get() & ADSB_BITBASK_RF_CAPABILITIES_UAT_IN) != 0 ? ADSB_UAT_IN_CAPABLE : ADSB_NOT_UAT_IN_CAPABLE;
+    msg.testMode =  0;
+    msg.longitudinalOffset = (ADSB_GPS_LONGITUDINAL_OFFSET)_frontend.out_state.cfg.gpsOffsetLon.get();
+    msg.lateralOffset = (ADSB_GPS_LATERAL_OFFSET)_frontend.out_state.cfg.gpsOffsetLat.get();
+
+    memcpy(msg.registration, _frontend.out_state.cfg.callsign, sizeof(msg.registration));
+
+    msg.stallSpeed_cmps = (_frontend.out_state.cfg.stall_speed_cm > 0) ? _frontend.out_state.cfg.stall_speed_cm : 1000;
+    msg.emitterType = (ADSB_EMITTER)_frontend.out_state.cfg.emitterType.get();
+    msg.baudRate = PING_COM_57600_BAUD;
+    msg.modeAEnabled = 0;
+    msg.modeCEnabled = 0;
+    msg.modeSEnabled = 0;
+    msg.es1090TxEnabled = 0;
+    msg.defaultSquawk = _frontend.out_state.cfg.squawk_octal;
+    msg.baro100 = 0; // 0 = 25 foot, 1 == 100 foot
+
+    // CONFIG_VALIDITY_BITMASK
+    msg.valdityBitmask.icaoValid = 1;
+    msg.valdityBitmask.silValid = 0;
+    msg.valdityBitmask.sdaValid = 0;
+    msg.valdityBitmask.baroAltSourceValid = 1;
+    msg.valdityBitmask.aircraftMaxSpeedValid = 1;
+    msg.valdityBitmask.adsbInCapValid = 1;
+    msg.valdityBitmask.aircraftLenWidthValid = 1;
+    msg.valdityBitmask.aircraftLatOffsetValid = 1;
+    msg.valdityBitmask.aircraftLongOffsetValid = 1;
+    msg.valdityBitmask.aircraftRegValid = 1;
+    msg.valdityBitmask.aircraftStallSpeedValid = 1;
+    msg.valdityBitmask.aircraftEmitterCatValid = 1;
+    msg.valdityBitmask.default1090ExTxModeValid = 1;
+    msg.valdityBitmask.defaultModeSReplyModeValid = 1;
+    msg.valdityBitmask.defaultModeCReplyModeValid = 1;
+    msg.valdityBitmask.defaultModeAReplyModeValid = 1;
+    msg.valdityBitmask.defaultModeASquawkValid = 1;
+    msg.valdityBitmask.baro100Valid = 1;
+    msg.valdityBitmask.serialBaudRateValid = 1;
+
+    return msg;
+}
+#endif // AP_ADSB_UAVIONIX_UCP_SET_CONFIG
 
 void AP_ADSB_uAvionix_UCP::send_Transponder_Control()
 {
@@ -519,7 +713,7 @@ bool AP_ADSB_uAvionix_UCP::request_msg(const GDL90_MESSAGE_ID msg_id)
 }
 
 
-uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(GDL90_TX_MESSAGE &message, const uint16_t length)
+uint16_t AP_ADSB_uAvionix_UCP::gdl90Transmit(const GDL90_TX_MESSAGE &message, const uint16_t length)
 {
     uint8_t gdl90FrameBuffer[GDL90_TX_MAX_FRAME_LENGTH] {};
 
