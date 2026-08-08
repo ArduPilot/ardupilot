@@ -79,6 +79,19 @@ void Copter::motors_output(bool full_push)
         ap.in_arming_delay = false;
     }
 
+    // drive the per-servo failsafe positions (SERVOn_FSPWM) when any failsafe
+    // selected by FS_SERVO_MASK is active. Evaluated here each output cycle so
+    // it is applied by SRV_Channels::calc_pwm() below.
+    uint16_t fs_bits = 0;
+    if (failsafe.radio)          { fs_bits |= (1U<<0); }
+    if (battery.has_failsafed()) { fs_bits |= (1U<<1); }
+    if (failsafe.gcs)            { fs_bits |= (1U<<2); }
+    if (failsafe.ekf)            { fs_bits |= (1U<<3); }
+    if (failsafe.terrain)        { fs_bits |= (1U<<4); }
+    if (failsafe.adsb)           { fs_bits |= (1U<<5); }
+    if (failsafe.deadreckon)     { fs_bits |= (1U<<6); }
+    SRV_Channels::set_failsafe_active((fs_bits & uint16_t(g2.fs_servo_mask.get())) != 0);
+
     // output any servo channels
     SRV_Channels::calc_pwm();
 
