@@ -73,11 +73,16 @@ const AP_Param::Info TestVehicle::var_info[] {
     GSCALAR(b,         "AA", 0),
     GSCALAR(b,         "CC", 0),
     GSCALAR(b,         "BB", 0),
+    AP_VAREND
 };
 
 TEST(FindByName, Bob)
 {
     for (const auto &x : TestVehicle::var_info) {
+        if (x.type == AP_PARAM_NONE) {
+            // end of the table
+            break;
+        }
         enum ap_var_type ptype = (ap_var_type)-1;
         AP_Param::ParamToken token = AP_Param::ParamToken {};
         AP_Param *p = AP_Param::find_by_name(x.name, &ptype, &token);
