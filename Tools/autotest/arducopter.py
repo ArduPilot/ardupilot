@@ -94,6 +94,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
+    def max_distance_from_startup_location_at_end_of_test(self):
+        # Copter's tests start from the point the simulation puts the
+        # vehicle, so each of them has to leave it there.  Two metres
+        # sits in the gap the measurements show: a copter which takes
+        # off and lands comes back to within about 1.3m of where it
+        # started - Landing measured 1.24m and 1.10m on consecutive
+        # runs - while the tests which genuinely fly away and stay away
+        # start at 2.38m and run to 400m.
+        return 2
+
     def mavproxy_options(self):
         ret = super(AutoTestCopter, self).mavproxy_options()
         if self.frame != 'heli':
@@ -680,6 +690,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_waypoint(0, num_wp-1, timeout=500)
         self.progress("test: MISSION COMPLETE: passed!")
         self.land_and_disarm()
+
+        # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
 
     def WPArcs(self):
         '''Test WP Arc functionality'''
@@ -1668,6 +1681,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter('FS_OPTIONS', 0)
         self.progress("All GCS failsafe tests complete")
 
+        # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
+
     def TerrainFailsafe(self):
         '''test that auto mode triggers terrain failsafe if waypoint alt frame is terrain and terrain database is disabled'''
         # allow arming and takeoff in Auto mode
@@ -1852,6 +1868,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_landed_and_disarmed()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         self.clear_battery_failsafe()
+
+        # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
 
     def BatteryFailsafeCriticalLanding(self):
         '''Battery failsafe critical landing not interrupted by RC failure'''
@@ -10182,6 +10201,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_disarmed()
 
+        # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
+
     def PrecisionLoiterCompanion(self):
         """Use Companion PrecLand backend precision messages to loiter."""
 
@@ -13457,6 +13479,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # ship will have moved on, so we land on the water which isn't moving
         self.wait_groundspeed(0, 2)
 
+        # we are not at the home location - reboot so the next test starts there
+        self.set_parameter("SIM_SHIP_ENABLE", 0)
+        self.reboot_sitl()
+
     def ParameterValidation(self):
         '''Test parameters are checked for validity'''
         # wait 10 seconds for initialisation
@@ -13557,6 +13583,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if self.mode_is("ALT_HOLD"):
             raise NotAchievedException("Changed to ALT_HOLD with no altitude estimate")
         self.disarm_vehicle(force=True)
+
+        # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
 
     def DeadReckoningInWind(self):
         '''ensure copter dead-reckoning on drag does not destabilise the EKF in wind'''
@@ -14627,6 +14656,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("height achieved - controlling position", check_context=True)
         self.wait_mode('AUTO')
         self.wait_disarmed(timeout=240)
+
+        # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
 
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
@@ -16624,6 +16656,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.land_and_disarm()
 
+        # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
+
     def start_flying_simple_relhome_mission(self, items):
         '''uploads items, changes mode to auto, waits ready to arm and arms
         vehicle.  If the first item it a takeoff you can expect the
@@ -18428,6 +18463,9 @@ RTL_ALT_M 111
         self.wait_statustext('AutoTrim cancelled', check_context=True)
         self.do_land()
         self.set_rc(9, 1000)
+
+        # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
 
     def RTLStoppingDistanceSpeed(self):
         '''test stopping distance unaffected by RTL speed'''
