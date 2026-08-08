@@ -803,6 +803,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     WITH_SEMAPHORE(_sem);
 
     if (has_been_killed(instance)) {
+        _imu._gyro_healthy[instance] = false;
         return;
     }
 
@@ -813,6 +814,11 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
         _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];
 #endif
         _imu._new_gyro_data[instance] = false;
+    } else {
+        // no fresh sample this cycle. _publish_gyro() sets the flag true, so
+        // between them it is assigned exactly once per cycle and never holds
+        // a transient false for a reader on another thread.
+        _imu._gyro_healthy[instance] = false;
     }
 
     update_gyro_filters(instance);
@@ -866,11 +872,15 @@ void AP_InertialSensor_Backend::update_accel(uint8_t instance) /* front end */
     WITH_SEMAPHORE(_sem);
 
     if (has_been_killed(instance)) {
+        _imu._accel_healthy[instance] = false;
         return;
     }
     if (_imu._new_accel_data[instance]) {
         _publish_accel(instance, _imu._accel_filtered[instance]);
         _imu._new_accel_data[instance] = false;
+    } else {
+        // assigned once per cycle, as for the gyro above
+        _imu._accel_healthy[instance] = false;
     }
 
     update_accel_filters(instance);
