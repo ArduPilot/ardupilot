@@ -738,14 +738,23 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t 
         return INVALID_ERPM;
     }
 
+    // 0xff marks the sixteen quintets GCR never emits. Using 0 for those made a
+    // corrupt quintet decode to nibble 0, indistinguishable from the legitimate
+    // 0 at index 25, leaving only the four bit checksum to catch it
     static const uint32_t decode[32] = {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 11, 0, 13, 14, 15,
-        0, 0, 2, 3, 0, 5, 6, 7, 0, 0, 8, 1, 0, 4, 12, 0 };
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 9, 10, 11, 0xff, 13, 14, 15,
+        0xff, 0xff, 2, 3, 0xff, 5, 6, 7, 0xff, 0, 8, 1, 0xff, 4, 12, 0xff };
 
-    uint32_t decodedValue = decode[value & 0x1fU];
-    decodedValue |= decode[(value >> 5U) & 0x1fU] << 4U;
-    decodedValue |= decode[(value >> 10U) & 0x1fU] << 8U;
-    decodedValue |= decode[(value >> 15U) & 0x1fU] << 12U;
+    const uint32_t n0 = decode[value & 0x1fU];
+    const uint32_t n1 = decode[(value >> 5U) & 0x1fU];
+    const uint32_t n2 = decode[(value >> 10U) & 0x1fU];
+    const uint32_t n3 = decode[(value >> 15U) & 0x1fU];
+
+    if ((n0 | n1 | n2 | n3) > 0x0fU) {
+        return INVALID_ERPM;
+    }
+
+    uint32_t decodedValue = n0 | (n1 << 4U) | (n2 << 8U) | (n3 << 12U);
 
     uint32_t csum = decodedValue;
     csum = csum ^ (csum >> 8U); // xor bytes
