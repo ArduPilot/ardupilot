@@ -7130,10 +7130,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if abs(30 - m.relative_alt * 0.001) > 15:
                 raise NotAchievedException("Bad altitude while flying inverted")
 
+        self.wait_current_waypoint(4)  # inverted flight
+
+        # only hold the vehicle to its altitude once it is actually
+        # flying the inverted leg.  Installed any earlier this polices
+        # the transit from waypoint 2, where the vehicle is still
+        # settling onto its altitude and is entitled to be outside the
+        # band - one run raised "Bad altitude while flying inverted"
+        # while 224m short of waypoint 4, with waypoint 2 still current.
         self.context_push()
         self.install_message_hook_context(check_altitude)
 
-        self.wait_current_waypoint(4)  # inverted flight
         self.wait_message_field_values("NAV_CONTROLLER_OUTPUT", {
             "nav_roll": 180,
             "nav_pitch": 9,
