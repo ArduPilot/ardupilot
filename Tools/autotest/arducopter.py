@@ -11586,6 +11586,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.set_rc(3, 1000)  # Restore the throttle stick since takeoff raised it.
 
+    def wait_efi_fuel_consumed(self, min_fuel_consumed, timeout=60):
+        '''wait until EFI_STATUS reports at least min_fuel_consumed'''
+        self.progress("Waiting for %f fuel to have been consumed" % min_fuel_consumed)
+        tstart = self.get_sim_time()
+        while True:
+            m = self.assert_receive_message('EFI_STATUS', verbose=True)
+            if m.fuel_consumed >= min_fuel_consumed:
+                return m
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(
+                    "Insufficient fuel consumed (want>=%f got=%f)" %
+                    (min_fuel_consumed, m.fuel_consumed))
+
     def LoweheiserAuto(self):
         '''Ensure the Loweheiser generator works as expected in auto-starter mode.'''
 
@@ -11856,9 +11869,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(gen_ctrl_ch, 2000)
         self.takeoff(10, mode='GUIDED')
 
-        first_efi_status = self.assert_receive_message('EFI_STATUS', verbose=True)
-        if first_efi_status.fuel_consumed < 100:  # takes about this much to get going
-            raise NotAchievedException("Unexpected fuel consumed value after takeoff (%f)" % first_efi_status.fuel_consumed)
+        # the generator has been running since before takeoff; make
+        # sure fuel is being consumed.  This is a wait rather than an
+        # instantaneous check as exactly how much has been consumed by
+        # now depends on incidental harness timing:
+        self.wait_efi_fuel_consumed(100)
 
         self.fly_guided_move_local(100, 100, 20)
 
@@ -12228,9 +12243,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_generator_speed_and_state(8000, 30000, mavutil.mavlink.MAV_GENERATOR_STATUS_FLAG_GENERATING)
         self.takeoff(10, mode='GUIDED')
 
-        first_efi_status = self.assert_receive_message('EFI_STATUS', verbose=True)
-        if first_efi_status.fuel_consumed < 100:  # takes about this much to get going
-            raise NotAchievedException("Unexpected fuel consumed value after takeoff (%f)" % first_efi_status.fuel_consumed)
+        # the generator has been running since before takeoff; make
+        # sure fuel is being consumed.  This is a wait rather than an
+        # instantaneous check as exactly how much has been consumed by
+        # now depends on incidental harness timing:
+        self.wait_efi_fuel_consumed(100)
 
         self.fly_guided_move_local(100, 100, 20)
 
