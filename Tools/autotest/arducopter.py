@@ -16089,6 +16089,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ).run()
         self.run_auxfunc(39, 0)  # disable precision loiter
 
+        # remove the accelerometer bias before landing: left in place,
+        # the land detector's filtered earth-frame acceleration sits
+        # exactly at LAND_DETECTOR_ACCEL_MAX (both are 1m/s/s), so
+        # whether landing is ever detected - and thus whether we ever
+        # disarm - hinges on noise:
+        self.set_parameters({
+            "SIM_ACC1_BIAS_X": 0,
+            "SIM_ACC2_BIAS_X": 0,
+            "SIM_ACC3_BIAS_X": 0,
+        })
+
         self.change_mode('LAND')
         self.wait_disarmed()
 
