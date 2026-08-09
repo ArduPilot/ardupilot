@@ -25,6 +25,9 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "driver/rtc_io.h"
+#if HAL_SERIALLED_ENABLED
+#include "driver/rmt.h"
+#endif
 
 #include <stdio.h>
 
@@ -612,3 +615,146 @@ void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
 {
     //RIP (not the pointer)
 }
+
+#if HAL_SERIALLED_ENABLED
+
+#ifndef HAL_ESP32_SERIALLED_RMT_CHANNEL
+#define HAL_ESP32_SERIALLED_RMT_CHANNEL RMT_CHANNEL_1
+#endif
+
+namespace {
+static constexpr uint8_t WS2812_BITS_PER_LED = 24;
+static constexpr uint16_t WS2812_T0H_TICKS = 14; // 0.35us at 40MHz RMT clock
+static constexpr uint16_t WS2812_T0L_TICKS = 36; // 0.90us
+static constexpr uint16_t WS2812_T1H_TICKS = 28; // 0.70us
+static constexpr uint16_t WS2812_T1L_TICKS = 24; // 0.60us
+
+void ws2812_set_bit(rmt_item32_t &item, bool bit)
+{
+    item.level0 = 1;
+    item.duration0 = bit ? WS2812_T1H_TICKS : WS2812_T0H_TICKS;
+    item.level1 = 0;
+    item.duration1 = bit ? WS2812_T1L_TICKS : WS2812_T0L_TICKS;
+}
+
+void ws2812_set_byte(rmt_item32_t *items, uint16_t &index, uint8_t value)
+{
+    for (int8_t bit=7; bit>=0; bit--) {
+        ws2812_set_bit(items[index++], value & (1U << bit));
+    }
+}
+}
+
+bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint32_t clock_mask)
+{
+    (void)clock_mask;
+
+#ifndef HAL_ESP32_SERIALLED_PIN
+    return false;
+#else
+    if (chan != 0 || num_leds == 0 || num_leds > SERIAL_LED_MAX_LEDS) {
+        return false;
+    }
+    if (mode != MODE_NEOPIXEL && mode != MODE_NEOPIXELRGB) {
+        return false;
+    }
+
+    _serial_led.num_leds = num_leds;
+    _serial_led.mode = mode;
+    for (uint8_t i=0; i<SERIAL_LED_MAX_LEDS; i++) {
+        _serial_led.data[i][0] = 0;
+        _serial_led.data[i][1] = 0;
+        _serial_led.data[i][2] = 0;
+    }
+
+    if (!_serial_led_configured) {
+        rmt_config_t config {};
+        config.rmt_mode = RMT_MODE_TX;
+        config.channel = HAL_ESP32_SERIALLED_RMT_CHANNEL;
+        config.gpio_num = (gpio_num_t)HAL_ESP32_SERIALLED_PIN;
+        config.clk_div = 2; // 80MHz APB / 2 = 40MHz
+        config.mem_block_num = 1;
+        config.flags = 0;
+        config.tx_config.loop_en = false;
+        config.tx_config.carrier_en = false;
+        config.tx_config.idle_output_en = true;
+        config.tx_config.idle_level = RMT_IDLE_LEVEL_LOW;
+
+        if (rmt_config(&config) != ESP_OK) {
+            return false;
+        }
+
+        const esp_err_t install_result = rmt_driver_install(config.channel, 0, 0);
+        if (install_result != ESP_OK && install_result != ESP_ERR_INVALID_STATE) {
+            return false;
+        }
+
+        _serial_led_configured = true;
+    }
+
+    return true;
+#endif
+}
+
+bool RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    if (chan != 0 || !_serial_led_configured || _serial_led.num_leds == 0) {
+        return false;
+    }
+
+    if (led == -1) {
+        for (uint8_t i=0; i<_serial_led.num_leds; i++) {
+            _serial_led.data[i][0] = red;
+            _serial_led.data[i][1] = green;
+            _serial_led.data[i][2] = blue;
+        }
+        return true;
+    }
+
+    if (led < 0 || led >= _serial_led.num_leds) {
+        return false;
+    }
+
+    _serial_led.data[led][0] = red;
+    _serial_led.data[led][1] = green;
+    _serial_led.data[led][2] = blue;
+    return true;
+}
+
+bool RCOutput::serial_led_send(const uint16_t chan)
+{
+    if (chan != 0 || !_serial_led_configured || _serial_led.num_leds == 0) {
+        return false;
+    }
+
+    rmt_item32_t items[SERIAL_LED_MAX_LEDS * WS2812_BITS_PER_LED] {};
+    uint16_t index = 0;
+
+    for (uint8_t i=0; i<_serial_led.num_leds; i++) {
+        const uint8_t red = _serial_led.data[i][0];
+        const uint8_t green = _serial_led.data[i][1];
+        const uint8_t blue = _serial_led.data[i][2];
+
+        if (_serial_led.mode == MODE_NEOPIXEL) {
+            ws2812_set_byte(items, index, green);
+            ws2812_set_byte(items, index, red);
+            ws2812_set_byte(items, index, blue);
+        } else {
+            ws2812_set_byte(items, index, red);
+            ws2812_set_byte(items, index, green);
+            ws2812_set_byte(items, index, blue);
+        }
+    }
+
+    if (rmt_write_items(HAL_ESP32_SERIALLED_RMT_CHANNEL, items, index, true) != ESP_OK) {
+        return false;
+    }
+    if (rmt_wait_tx_done(HAL_ESP32_SERIALLED_RMT_CHANNEL, pdMS_TO_TICKS(100)) != ESP_OK) {
+        return false;
+    }
+
+    hal.scheduler->delay_microseconds(80);
+    return true;
+}
+
+#endif // HAL_SERIALLED_ENABLED
