@@ -17,6 +17,7 @@ idf_build_process(esp32s3
     # targets and file generation
     COMPONENTS freertos
                fatfs
+               wear_levelling
                nvs_flash
                esptool_py
                app_update
@@ -104,6 +105,7 @@ add_custom_target(showinc ALL
 target_link_libraries(${elf_file}
                 idf::freertos
                 idf::fatfs
+                idf::wear_levelling
                 idf::nvs_flash
                 idf::spi_flash
                 idf::app_update

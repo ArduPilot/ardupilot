@@ -6,6 +6,7 @@ LOG_BACKEND_TYPE 2 # mavlink logging
 ARMING_SKIPCHK 1024 # disable logging check (in the event log rx is not up)
 LOG_DISARMED 1
 SCHED_LOOP_RATE 150 # flash won't go faster :(
+SCR_ENABLE 1 # enable Lua scripting
 
 # mavlink RC control
 FS_THR_ENABLE 0 # not wanted for mavlink control
