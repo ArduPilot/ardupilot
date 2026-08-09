@@ -2100,48 +2100,63 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                                 level,
                                                 maintain=1,
                                                 tolerance=0.05,
-                                                timeout=30,
+                                                timeout=60,
                                                 condition=None,
                                                 dfreader_start_timestamp=None,
                                                 verbose=False):
-        '''wait for EKF's accel bias to reach a level and maintain it'''
+        '''wait for a dataflash message field to reach a level and maintain
+        it.  Re-reads the log until the data appears or timeout (sim
+        seconds) expires: a single read-to-EOF is not sound, as the
+        low-priority scheduler tasks which write these messages starve
+        while SITL sprints to catch the wall clock back up after
+        blocking in accept(), leaving multi-second holes in the log.
+        Polling both waits out such a hole and - because our mavlink
+        round-trips throttle the sprint - actively ends it.'''
 
-        if verbose:
-            self.progress("current onboard log filepath: %s" % self.current_onboard_log_filepath())
-        dfreader = self.dfreader_for_current_onboard_log()
-
-        achieve_start = None
-        current_value = None
+        tstart = self.get_sim_time()
         while True:
-            m = dfreader.recv_match(type=mtype, condition=condition)
-            if m is None:
+            if verbose:
+                self.progress("current onboard log filepath: %s" % self.current_onboard_log_filepath())
+            dfreader = self.dfreader_for_current_onboard_log()
+
+            achieve_start = None
+            current_value = None
+            while True:
+                m = dfreader.recv_match(type=mtype, condition=condition)
+                if m is None:
+                    break
+                if dfreader_start_timestamp is not None:
+                    if m.TimeUS < dfreader_start_timestamp:
+                        continue
+                if verbose:
+                    print("m=%s" % str(m))
+                current_value = getattr(m, field)
+
+                if abs(current_value - level) > tolerance:
+                    if achieve_start is not None:
+                        self.progress("Achieve stop at %u" % m.TimeUS)
+                        achieve_start = None
+                    continue
+
+                dfreader_now = m.TimeUS
+                if achieve_start is None:
+                    self.progress("Achieve start at %u (got=%f want=%f)" %
+                                  (dfreader_now, current_value, level))
+                    if maintain is None:
+                        return
+                    achieve_start = m.TimeUS
+                    continue
+
+                # we're achieving....
+                if dfreader_now - achieve_start > maintain*1e6:
+                    return dfreader_now
+
+            # hit the end of the log without seeing what we want;
+            # wait for more of it to reach the filesystem:
+            if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("%s.%s did not maintain %f" %
                                            (mtype, field, level))
-            if dfreader_start_timestamp is not None:
-                if m.TimeUS < dfreader_start_timestamp:
-                    continue
-            if verbose:
-                print("m=%s" % str(m))
-            current_value = getattr(m, field)
-
-            if abs(current_value - level) > tolerance:
-                if achieve_start is not None:
-                    self.progress("Achieve stop at %u" % m.TimeUS)
-                    achieve_start = None
-                continue
-
-            dfreader_now = m.TimeUS
-            if achieve_start is None:
-                self.progress("Achieve start at %u (got=%f want=%f)" %
-                              (dfreader_now, current_value, level))
-                if maintain is None:
-                    return
-                achieve_start = m.TimeUS
-                continue
-
-            # we're achieving....
-            if dfreader_now - achieve_start > maintain*1e6:
-                return dfreader_now
+            self.delay_sim_time(1, reason=f"{mtype}.{field} to reach the onboard log")
 
     # Tests any EK3 accel bias is subtracted from the correct IMU data
     def EK3AccelBias(self):
