@@ -1221,13 +1221,24 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         chan2_last_timestamp_us = 0
         chan2_last_mgs = 0
         att_ts_us = 0
+        gcs_sysid_set_ts_us = None
         while True:
-            m = dfreader.recv_match(type=['MAV', 'ATT'])
+            m = dfreader.recv_match(type=['MAV', 'ATT', 'PARM'])
             if m is None:
                 raise NotAchievedException("Did not find everything wanted in log")
             if chan2_count > 10:
                 self.progress("Received 10 heartbeats on chan==2")
                 break
+            if m.get_type() == 'PARM':
+                # the moment MAV_GCS_SYSID took effect; heartbeats from
+                # us only count towards mgs from here on.  Measuring
+                # chan 0's latching relative to this rather than to
+                # boot keeps the check independent of how much
+                # simulated time the reboot-detection polling burnt,
+                # which at high speedup can be many seconds.
+                if m.Name == 'MAV_GCS_SYSID' and int(m.Value) == self.mav.source_system:
+                    gcs_sysid_set_ts_us = m.TimeUS
+                continue
             if m.get_type() == 'ATT':
                 att_ts_us = m.TimeUS
                 continue
@@ -1236,8 +1247,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 continue
             if m.chan == 0:
                 if chan0_count == 0:
-                    if att_ts_us > 5000000:
-                        raise NotAchievedException(f"Late arrival on chan=0 {att_ts_us=}")
+                    if gcs_sysid_set_ts_us is None:
+                        raise NotAchievedException(f"mgs nonzero on chan=0 before MAV_GCS_SYSID was set {att_ts_us=}")
+                    if att_ts_us - gcs_sysid_set_ts_us > 5000000:
+                        raise NotAchievedException(f"Late arrival on chan=0 {att_ts_us=} {gcs_sysid_set_ts_us=}")
                 chan0_count += 1
                 if chan0_count > 3:
                     if att_ts_us - chan0_last_timestamp_us > 2000000:
