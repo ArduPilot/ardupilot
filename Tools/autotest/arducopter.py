@@ -10500,6 +10500,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def check_avoidance_corners(self):
         self.takeoff(10, mode="LOITER")
         here = self.mav.location()
+        # the vehicle starts a test at home but with whatever heading
+        # the previous test left it; face west like the other corner
+        # legs explicitly face their travel direction:
+        self.reach_heading_manual(270)
         self.set_rc(2, 1400)
         west_loc = mavutil.location(-35.363007,
                                     149.164911,
