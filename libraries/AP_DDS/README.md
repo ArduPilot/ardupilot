@@ -174,6 +174,7 @@ Published topics:
  * /ap/pose/filtered [geometry_msgs/msg/PoseStamped] 1 publisher
  * /ap/rc [ardupilot_msgs/msg/Rc] 1 publisher
  * /ap/status [ardupilot_msgs/msg/Status] 1 publisher
+ * /ap/sim/groundtruth [ardupilot_msgs/msg/GroundTruth] 1 publisher
  * /ap/tf_static [tf2_msgs/msg/TFMessage] 1 publisher
  * /ap/time [builtin_interfaces/msg/Time] 1 publisher
  * /ap/twist/filtered [geometry_msgs/msg/TwistStamped] 1 publisher

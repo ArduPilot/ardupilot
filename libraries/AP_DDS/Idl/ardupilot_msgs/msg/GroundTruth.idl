@@ -1,0 +1,39 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from ardupilot_msgs/msg/GroundTruth.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/Quaternion.idl"
+#include "geometry_msgs/msg/Vector3.idl"
+#include "std_msgs/msg/Header.idl"
+
+module ardupilot_msgs {
+  module msg {
+    struct GroundTruth {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "Geographical position")
+      double latitude;
+
+      double longitude;
+
+      double altitude;
+
+      @verbatim (language="comment", text=
+        "Local ENU position (meters)")
+      geometry_msgs::msg::Vector3 position;
+
+      @verbatim (language="comment", text=
+        "Orientation (ENU)")
+      geometry_msgs::msg::Quaternion orientation;
+
+      @verbatim (language="comment", text=
+        "Linear velocity (ENU, m/s)")
+      geometry_msgs::msg::Vector3 linear_velocity;
+
+      @verbatim (language="comment", text=
+        "Angular velocity ( body frame, rad/s)")
+      geometry_msgs::msg::Vector3 angular_velocity;
+    };
+  };
+};
