@@ -2422,6 +2422,30 @@ class TestSuite(abc.ABC):
     def autotest_connection_string_to_ardupilot(self):
         return "tcp:127.0.0.1:%u" % self.adjust_ardupilot_port(5760)
 
+    def periph_tunnel_instance_number(self):
+        '''SITL instance number for PeriphMultiUARTTunnel's peripheral.
+
+        A vehicle's SERIAL1/SERIAL2 are tcp:2/tcp:3 within its own
+        10-wide block at 5760+10*instance, so a peripheral at a fixed
+        low instance binds exactly the ports some worker's vehicle
+        wants.  An offset alone is not enough either: base 50 meant
+        worker W's peripheral and worker W+50's vehicle shared a block,
+        which MAX_AUTOTEST_INSTANCE (85) permits.  Base 100 clears the
+        whole vehicle family and still lands below the spare-port range
+        at the highest supported instance.'''
+        return 100 + self.instance
+
+    def periph_tunnel_mcast_port(self):
+        '''multicast port PeriphMultiUARTTunnel's peripheral talks on.
+
+        Not 14550+instance: sim_vehicle.py hands out 14550+10*instance
+        for its own MAVLink outputs, and nothing stops a developer
+        running one while a sweep is going - the autotest lock does not
+        cover it.  18000 is clear of that family, of
+        periph_serial4_udp_port() below it and of the multicast state
+        ports above.'''
+        return 18000 + self.periph_tunnel_instance_number()
+
     def sitl_rcin_port(self, offset=0):
         if offset > 2:
             raise ValueError("offset too large")
