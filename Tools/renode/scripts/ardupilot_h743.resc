@@ -65,7 +65,11 @@ macro reset
 # 480MHz Cortex-M7, derated for flash wait states and bus contention.
 cpu PerformanceInMips 300
 
-emulation SetGlobalQuantum "0.001"
+# A 1ms synchronization quantum adds significant host scheduling overhead to
+# the fully loaded H7 flight-controller workload. Peripheral timers still
+# bound CPU execution at their next event, so a 10ms global quantum retains
+# their timing precision while reducing cross-thread synchronization.
+emulation SetGlobalQuantum "0.01"
 # Pace virtual time against host time when the emulator is fast enough. This
 # only sleeps when virtual time is ahead; slow emulation remains unrestricted.
 emulation SetGlobalAdvanceImmediately false
