@@ -19503,6 +19503,18 @@ RTL_ALT_M 111
             periph_rundir = util.reltopdir('run-periph')
             if not os.path.exists(periph_rundir):
                 os.mkdir(periph_rundir)
+            # the peripheral must not collide with anything else
+            # running on this machine.  Parallel autotest workers run
+            # their vehicles on low instance numbers - and a vehicle's
+            # SERIAL1/SERIAL2 are tcp:2/tcp:3, exactly the ports a
+            # peripheral at a fixed low instance would bind.  Offset
+            # our instance well clear of them.  The simulated CAN bus
+            # is UDP multicast, shared machine-wide by default, so give
+            # it a port of its own too or other workers' traffic
+            # appears on our bus.
+            periph_instance = 50 + self.instance
+            periph_port_base = 5760 + 10 * periph_instance
+            mcast_device = "mcast:239.255.145.50:%u" % (14550 + periph_instance,)
             periph_exp = util.start_SITL(
                 binary_path,
                 cwd=periph_rundir,
@@ -19511,8 +19523,8 @@ RTL_ALT_M 111
                 gdb=self.gdb,
                 valgrind=self.valgrind,
                 customisations=[
-                    '-I', str(1),
-                    '--serial0', 'mcast:',
+                    '-I', str(periph_instance),
+                    '--serial0', mcast_device,
                     '--serial1', 'tcp:2',
                     '--serial2', 'tcp:3',
                 ],
@@ -19524,7 +19536,9 @@ RTL_ALT_M 111
 
             self.progress("Reconfiguring for multicast")
             self.customise_SITL_commandline([
-                "--serial5=mcast:",
+                # the peripheral gets its own multicast address so
+                # concurrent instances do not talk to each other:
+                "--serial5=%s" % mcast_device,
                 # do not outrun the tunnel peripheral:
                 "--sim-periph-lockstep",
             ],
@@ -19555,7 +19569,7 @@ RTL_ALT_M 111
             self.progress("Connect to the serial port on the peripheral, which should be talking mavlink")
             self.drain_mav()
             mav2 = mavutil.mavlink_connection(
-                "tcp:localhost:5772",
+                "tcp:localhost:%u" % (periph_port_base + 2,),
                 robust_parsing=True,
                 source_system=9,
                 source_component=9,
@@ -19566,7 +19580,7 @@ RTL_ALT_M 111
             self.progress("Connect to the other serial port on the peripheral, which should also be talking mavlink")
             self.drain_mav()
             mav3 = mavutil.mavlink_connection(
-                "tcp:localhost:5773",
+                "tcp:localhost:%u" % (periph_port_base + 3,),
                 robust_parsing=True,
                 source_system=10,
                 source_component=10,
