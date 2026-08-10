@@ -7742,6 +7742,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_mount_mode(mount_mode)
         tstart = self.get_sim_time()
         success_start = 0
+        previous_mount_pitch = None
 
         while True:
             now = self.get_sim_time_cached()
@@ -7757,6 +7758,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             # self.progress("despitch=%f roll=%f pitch=%f yaw=%f" % (despitch, mount_roll, mount_pitch, mount_yaw))
             if abs(despitch - mount_pitch) > despitch_tolerance:
+                if (hold == 0 and
+                        previous_mount_pitch is not None and
+                        (previous_mount_pitch - despitch) * (mount_pitch - despitch) < 0):
+                    # the mount slewed through the wanted angle between
+                    # two samples.  The RC-rate tests watch for angles a
+                    # +/-1 degree window at a time while the mount moves
+                    # at 10deg/s - a 0.2s window which our sampling can
+                    # stride straight over when the machine is loaded,
+                    # after which the mount sails on to its limit and
+                    # every later check fails.  Passing through the
+                    # angle is reaching it.
+                    self.progress("Mount pitch %f crossed %f (was %f)" %
+                                  (mount_pitch, despitch, previous_mount_pitch))
+                    return
+                previous_mount_pitch = mount_pitch
                 self.progress("Mount pitch incorrect: got=%f want=%f (+/- %f)" %
                               (mount_pitch, despitch, despitch_tolerance))
                 success_start = 0
