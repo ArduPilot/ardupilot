@@ -5097,7 +5097,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                       target_system=target_system,
                                       target_component=target_component)
         # FIXME: we don't get within WP_RADIUS of our target?!
-        self.wait_location(target_loc, timeout=300, accuracy=15)
+        self.wait_location(target_loc, timeout=300, accuracy=15, height_accuracy=None)
         self.do_RTL(timeout=300)
         self.disarm_vehicle()
 
@@ -5125,7 +5125,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                       target_system=target_system,
                                       target_component=target_component)
         # FIXME: we don't get within WP_RADIUS of our target?!
-        self.wait_location(target_loc, timeout=300, accuracy=15)
+        self.wait_location(target_loc, timeout=300, accuracy=15, height_accuracy=None)
         self.do_RTL(timeout=300)
         self.disarm_vehicle()
 
@@ -5151,8 +5151,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         target_loc = Location(40.071260, -105.227000, 1584, AltFrame.ABSOLUTE)
-        # target_loc is copied from the mission file
-        self.wait_location(target_loc, timeout=300)
+        # lat/lng are copied from the mission file; the altitude is
+        # not - the file says 100m relative, which a rover ignores, and
+        # the 1584 here was a hand-picked stand-in for ground level.
+        # Do not check it: it sits exactly one metre - the default
+        # height_accuracy - above where the rover actually is, so
+        # reaching the target was a coin-toss on estimator noise.
+        # Losing the toss cost the vehicle a complete tour of the
+        # mission: drive out, straddle the threshold at the waypoint,
+        # RTL home, "Mission Complete".
+        self.wait_location(target_loc, timeout=300, height_accuracy=None)
         # mission has RTL as last item
         self.wait_distance_to_home(3, 7, timeout=300)
         self.disarm_vehicle()
