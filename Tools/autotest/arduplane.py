@@ -8855,6 +8855,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Set a roll offset
         self.set_parameter("SIM_AHRS_OFF_RLL", 60)
 
+        # rotate onto a fresh onboard log so the roll-error scan below
+        # sees only this test's flying - tests can share a boot, and
+        # hence an onboard log, with earlier tests.  LOG_FILE_DSRMROT
+        # is reverted before the flight so the landing disarm does not
+        # rotate the flight's log away before we scan it
+        self.context_push()
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        self.context_pop()
+
         # Takeoff in TAKEOFF mode
         self.takeoff(alt=50, mode="TAKEOFF")
 
