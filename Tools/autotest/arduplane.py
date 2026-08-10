@@ -7529,6 +7529,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def CompassLearnInFlight(self):
         '''check we can learn compass offsets in flight'''
+        # learning completes only when the EKF's GSF yaw estimator is
+        # converged.  Flying done by earlier tests in the same boot can
+        # leave the EKF in a state where the GSF hovers above the
+        # convergence threshold for the length of this test - so reboot
+        # to run from a known state
+        self.reboot_sitl()
         self.context_push()
         self.set_parameters({
             "COMPASS_OFS_X": 1100,
