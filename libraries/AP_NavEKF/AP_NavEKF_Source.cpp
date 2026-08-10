@@ -134,10 +134,10 @@ const AP_Param::GroupInfo AP_NavEKF_Source::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: EKF Source Options
-    // @Description: EKF Source Options
-    // @Bitmask: 0:FuseAllVelocities, 1:AlignExtNavPosWhenUsingOptFlow
+    // @Description: EKF Source Options. Bit 1 (AlignExtNavPosWhenUsingOptFlow) is deprecated and has no effect.
+    // @Bitmask: 0:FuseAllVelocities
     // @User: Advanced
-    AP_GROUPINFO("_OPTIONS", 16, AP_NavEKF_Source, _options, (int16_t)SourceOptions::FUSE_ALL_VELOCITIES),
+    AP_GROUPINFO("_OPTIONS", 16, AP_NavEKF_Source, _options, 0),
 
     AP_GROUPEND
 };
