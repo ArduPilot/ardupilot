@@ -1828,6 +1828,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if distance > max_distance:
             raise NotAchievedException(f"Did not land within {max_distance}m of ship {distance=}")
 
+        # we are not at the home location - reboot so the next test starts there
+        self.set_parameter("SIM_SHIP_ENABLE", 0)
+        self.reboot_sitl()
+
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''
         self.set_parameter("RC9_OPTION", 106)
