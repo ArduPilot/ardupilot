@@ -68,7 +68,7 @@ public:
     bool enabled() const { return _enabled; }
 
     // set which target to follow
-    void set_target_sysid(uint8_t sysid) { _sysid.set(sysid); }
+    void set_target_sysid(uint32_t sysid) { _sysid.set(sysid); }
 
     // Resets the follow mode offsets to zero if they were automatically initialized. Should be called when exiting Follow mode.
     void clear_offsets_if_required();
@@ -82,6 +82,9 @@ public:
 
     // Projects the target’s position, velocity, and heading forward using the latest updates, smoothing with input shaping if necessary 
     void update_estimates();
+
+    // convert parameters, called from the vehicle's load_parameters()
+    void convert_params();
 
     // Retrieves the estimated target position, velocity, and acceleration in the NED frame relative to the origin (units: meters and meters/second).
     bool get_target_pos_vel_accel_NED_m(Vector3p &pos_ned_m, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss) const;
@@ -115,7 +118,6 @@ public:
     // Accessor Methods
     //==========================================================================
 
-    // get target sysid as a 32 bit number to allow for future expansion of MAV_SYSID
     uint32_t get_target_sysid() const { return (uint32_t)_sysid.get(); }
 
     // get position controller.  this controller is not used within this library but it is convenient to hold it here
@@ -194,7 +196,7 @@ private:
     //==========================================================================
 
     AP_Int8     _enabled;           // 1 = Follow mode is enabled; 0 = disabled
-    AP_Int16    _sysid;             // MAVLink system ID of the target (0 = auto-select first sender)
+    AP_Int32    _sysid;             // MAVLink system ID of the target (0 = auto-select first sender)
     AP_Float    _dist_max_m;        // Maximum allowed distance to target in meters; if exceeded, estimation is rejected
     AP_Int8     _offset_type;       // Offset frame type: 0 = NED, 1 = relative to lead vehicle heading
     AP_Vector3f _offset_m;          // Offset from lead vehicle (meters), in NED or FRD frame depending on _offset_type
@@ -237,7 +239,7 @@ private:
     Vector3f    _ofs_estimate_accel_ned_mss;    // Estimated acceleration with offsets applied (NED frame)
 
     bool        _automatic_sysid;               // True if target sysid was automatically selected
-    int16_t     _sysid_used;                    // Currently active sysid used for updates
+    int64_t     _sysid_used;                    // Currently active sysid used for updates, -1 when none
     float       _dist_to_target_m;              // Horizontal distance to target, for reporting (meters)
     float       _bearing_to_target_deg;         // Bearing to target from vehicle (degrees, 0 = North)
     bool        _offsets_were_zero;             // True if initial offset was zero before being initialized

@@ -30,7 +30,7 @@ protected:
 
 private:
 
-    void request_datastream_position(uint8_t sysid, uint8_t compid);
-    void request_datastream_airpressure(uint8_t sysid, uint8_t compid);
+    void request_datastream_position(uint32_t sysid, uint8_t compid);
+    void request_datastream_airpressure(uint32_t sysid, uint8_t compid);
 
 };

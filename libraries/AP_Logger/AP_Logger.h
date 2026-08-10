@@ -277,8 +277,11 @@ public:
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
     void Write_EntireMission();
+    // target_system must come from the message header, not the packet;
+    // the payload byte is zero when the target is in the extended header
     void Write_Command(const mavlink_command_int_t &packet,
-                       uint8_t source_system,
+                       uint32_t target_system,
+                       uint32_t source_system,
                        uint8_t source_component,
                        MAV_RESULT result,
                        bool was_command_long=false);

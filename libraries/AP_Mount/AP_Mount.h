@@ -208,8 +208,8 @@ public:
     void clear_roi_target(uint8_t instance);
 
     // point at system ID sysid
-    void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
-    void set_target_sysid(uint8_t instance, uint8_t sysid);
+    void set_target_sysid(uint32_t sysid) { set_target_sysid(_primary, sysid); }
+    void set_target_sysid(uint8_t instance, uint32_t sysid);
 
     // handling of set_roi_sysid message
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);

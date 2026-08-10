@@ -54,7 +54,7 @@ protected:
     // available to combined classes (e.g. gimbal+camera) for sending messages
     // and accessing transport state
     void send_mavlink_message(const mavlink_message_t &msg);
-    uint8_t vehicle_sysid()  const { return _vehicle_system_id; }
+    uint32_t vehicle_sysid() const { return _vehicle_system_id; }
     uint8_t vehicle_compid() const { return _vehicle_component_id; }
     mavlink_status_t &gimbal_mav_status() { return mav.status; }
 
@@ -68,13 +68,13 @@ private:
     void send_heartbeat();
     void send_gimbal_device_information();
     void send_attitude_status();
-    void send_command_ack(uint8_t target_sysid, uint8_t target_compid,
+    void send_command_ack(uint32_t target_sysid, uint8_t target_compid,
                           MAV_CMD command, MAV_RESULT result);
 
     uint8_t _compid {MAV_COMP_ID_GIMBAL};
 
     bool     _seen_autopilot_heartbeat;
-    uint8_t  _vehicle_system_id;
+    uint32_t _vehicle_system_id;
     uint8_t  _vehicle_component_id;
 
     uint32_t _last_heartbeat_ms;

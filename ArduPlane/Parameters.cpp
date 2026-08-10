@@ -1478,6 +1478,11 @@ void Plane::load_parameters(void)
 
     g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
 
+#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+    // convert Follow parameters
+    g2.follow.convert_params();
+#endif
+
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
     g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);
 
