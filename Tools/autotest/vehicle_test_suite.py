@@ -10439,6 +10439,7 @@ Also, ignores heartbeats not from our target system'''
             # ArduPilot can still move the current waypoint from 0,
             # even if we are not in AUTO mode, so cehck_afterwards=False:
             self.set_current_waypoint(0, check_afterwards=False)
+            self.assert_home_altitude_sane()
             self.drain_mav()
             self.drain_all_pexpects()
             if test.speedup is not None:
@@ -13353,6 +13354,29 @@ Also, ignores heartbeats not from our target system'''
 
         self.context_pop()
         self.reboot_sitl()
+
+    def assert_home_altitude_sane(self, tolerance=15):
+        '''between tests home should be at the startup location; a home
+        whose altitude has wandered poisons every relative altitude the
+        next test sees.  Measured corrupted 47m below the terrain in a
+        fresh post-reset boot under --parallel=32 load, and then locked
+        in place by the next test arming: MAV_CMD_DO_INVERTED_FLIGHT
+        died of "Bad altitude while flying inverted" 400m from
+        anything inverted.  Reboot to give the vehicle another chance
+        to set it correctly.'''
+        try:
+            m = self.poll_message('HOME_POSITION', timeout=2, quiet=True)
+        except (AutoTestTimeoutException, NotAchievedException):
+            # no home yet - nothing to poison
+            return
+        want_alt = self.sitl_start_location().alt
+        got_alt = m.altitude / 1000.0
+        if abs(want_alt - got_alt) <= tolerance:
+            return
+        self.progress(
+            "Home altitude insane (want=%f got=%f); rebooting to restore it" %
+            (want_alt, got_alt))
+        self.reboot_sitl(mark_context=False)
 
     def install_terrain_handlers_context(self, unserveable_requests_fatal=True):
         '''install a message handler into the current context which will
