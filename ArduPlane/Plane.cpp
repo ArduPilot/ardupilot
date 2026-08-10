@@ -1034,12 +1034,13 @@ bool Plane::start_takeoff(const float alt_m) {
 #endif
 
 // correct AHRS pitch for PTCH_TRIM_DEG in non-VTOL modes, and return VTOL view in VTOL
-void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
+void Plane::get_osd_attitude_rad(float &roll, float &pitch, float &yaw) const
 {
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.show_vtol_view()) {
-        pitch = quadplane.ahrs_view->pitch;
-        roll = quadplane.ahrs_view->roll;
+        pitch = quadplane.ahrs_view->get_pitch_rad();
+        roll = quadplane.ahrs_view->get_roll_rad();
+        yaw = quadplane.ahrs_view->get_yaw_rad();
         return;
     }
 #endif
@@ -1048,6 +1049,7 @@ void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
     if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH))) {  // correct for PTCH_TRIM_DEG
         pitch -= g.pitch_trim * DEG_TO_RAD;
     }
+    yaw = ahrs.get_yaw_rad();
 }
 
 /*
