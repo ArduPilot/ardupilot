@@ -6551,12 +6551,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.wait_current_waypoint(2)
 
-        for (loc, expected_radius, _) in tests:
+        for (loc, expected_radius, turn) in tests:
+            # the vehicle only orbits turn*360 degrees before the
+            # mission advances, so we must be satisfied with seeing a
+            # little less than that:
             self.wait_circling_point_with_radius(
                 loc,
                 expected_radius,
                 epsilon=20.0,
                 timeout=240,
+                want_angle=min(180, turn*360 - 30),
             )
             self.set_current_waypoint(self.current_waypoint()+1)
 
