@@ -691,7 +691,8 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_attiandrng(void)
 
     float roll;
     float pitch;
-    AP::vehicle()->get_osd_roll_pitch_rad(roll,pitch);
+    float yaw;
+    AP::vehicle()->get_osd_attitude_rad(roll, pitch, yaw);
     // roll from [-18000;18000] centidegrees to unsigned 0.2 degree increments [0;1800] (just in case, limit to 2047 (0x7FF) since the value is stored on 11 bits)
     uint32_t attiandrng = ((uint16_t)roundf((roll * RAD_TO_DEG * 100 + 18000) * 0.05f) & ATTIANDRNG_ROLL_LIMIT);
     // pitch from [-9000;9000] centidegrees to unsigned 0.2 degree increments [0;900] (just in case, limit to 1023 (0x3FF) since the value is stored on 10 bits)
