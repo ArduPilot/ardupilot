@@ -15078,7 +15078,12 @@ switch value'''
             # directory / waf board configuration, which races with other
             # tests (and other instances) building or running.  TODO:
             # build the Replay tool alongside the vehicle binaries
-            # before any test runs:
+            # before any test runs.  Note that passing --out is not
+            # sufficient by itself: waf configure also writes .lock-waf
+            # into the source tree even when launched from elsewhere
+            # with --top/--out, repointing the shared tree's default
+            # build - the PeriphMultiUARTTunnel build below already
+            # uses --out and still does this:
             "Replay",
 
             # The following only ever fail when run in parallel; we are not
@@ -15100,12 +15105,16 @@ switch value'''
             # on its own); may just be host-load sensitive:
             "WatchdogHome",
 
-            # builds the AP_Periph binary; its waf configure repoints the
-            # shared build directory's lockfile, which races with anything
-            # else building.  Its other exclusion reasons - fixed ports,
-            # shared CAN multicast group - have been fixed already.  TODO:
-            # build AP_Periph before any test runs and this can leave
-            # this list:
+            # builds the AP_Periph binary; it already passes --out for
+            # a separate build directory, but waf configure also writes
+            # .lock-waf into the source tree - measured: it does so even
+            # when waf is launched from a different directory with
+            # --top/--out - repointing the shared tree's default build,
+            # which races with anything else building.  TODO: set
+            # WAFLOCK in the build's environment (waf's stock
+            # multi-variant mechanism - the lockfile name comes from it)
+            # so it uses its own lockfile, or build AP_Periph before any
+            # test runs, and this can leave this list:
             "PeriphMultiUARTTunnel",
 
             # FFT motor-noise detection; flaky under parallel load (passes
