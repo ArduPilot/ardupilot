@@ -7680,7 +7680,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # a test failure reverts it - a leaked COMPASS_LEARN=3 stops
         # the EKFs using the compass, breaking all subsequent tests
         self.send_set_parameter("COMPASS_LEARN", 3, add_to_context=True)  # 3 is in-flight learning
-        self.wait_parameter_value("COMPASS_LEARN", 0)
+        # learning completes only when the EKF's GSF yaw estimator is
+        # converged, and straight-and-level flight gives the GSF no yaw
+        # observability - its variance slowly grows.  Bank into a
+        # gentle turn to give it the accelerations it needs
+        self.set_rc(1, 1600)
+        try:
+            self.wait_parameter_value("COMPASS_LEARN", 0, timeout=30)
+        finally:
+            self.set_rc(1, 1500)
         self.assert_parameter_value("COMPASS_OFS_X", old_compass_ofs_x, epsilon=30)
         self.fly_home_land_and_disarm()
         self.reboot_sitl()
