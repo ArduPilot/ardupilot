@@ -28,7 +28,7 @@ The CoreWing F405 Wing V2 is a fixed-wing and QuadPlane/VTOL flight controller p
   - 11 servo/motor outputs on pin headers, labeled S1 to S11
   - Additional pad labeled `LED` mapped as PWM12
   - PWM1-PWM10 support PWM/DShot
-  - PWM11-PWM12 support normal PWM only
+  - PWM11-PWM12 support normal PWM only in ArduPilot
   - SBUS/PPM input
   - Dedicated serial RC input for CRSF/ELRS/TBS Crossfire
   - 6 UARTs plus USB; UART1 is internally tied to the wireless module
@@ -41,7 +41,13 @@ The CoreWing F405 Wing V2 is a fixed-wing and QuadPlane/VTOL flight controller p
 
 ## Pinout
 
-![CoreWingF405WingV2](CoreWingF405WingV2.jpg)
+### Front
+
+![CoreWingF405WingV2 Front](CoreWingF405WingV2_Front.jpg)
+
+### Back
+
+![CoreWingF405WingV2 Back](CoreWingF405WingV2_Back.jpg)
 
 ## Wiring Diagram
 
@@ -84,11 +90,10 @@ For more information, see [Radio Control Systems](https://ardupilot.org/plane/do
 
 The board provides 12 PWM output channels.
 
-PWM outputs 1 to 11 are available on pin headers, labeled S1 to S11. An additional pad labeled LED is mapped as PWM12.
+PWM outputs 1 to 11 are available on pin headers, labeled S1 to S11. The additional pad labeled `LED` is mapped as PWM12.
 
-PWM outputs 1 to 10 support PWM and DShot. PWM outputs 11 and 12 support normal PWM only.
-
-The LED-labeled pad is not configured as a serial LED / NeoPixel output in ArduPilot. It shares the same non-DMA timer group as PWM11 and is used as a normal PWM output only.
+PWM outputs 1 to 10 support PWM and DShot. PWM outputs 11 and 12 support normal
+PWM only in ArduPilot.
 
 The PWM outputs are in 5 groups:
 
@@ -99,6 +104,17 @@ The PWM outputs are in 5 groups:
 - PWM 11,12 in group5
 
 Channels within the same group need to use the same output rate and protocol. If any DShot-capable output in a group uses DShot then all DShot-capable outputs in that group need to use DShot.
+
+### LED / PWM12 Pad
+
+The pad labeled `LED` is mapped as PWM12.
+
+With INAV firmware, this pad can be used for serial LED output. With the current
+ArduPilot DMA allocation, the DMA stream required for TIM1 serial LED output is
+allocated to USART6. Therefore, the `LED` pad can only be used as a normal PWM12
+output in ArduPilot.
+
+PWM11 (S11) and PWM12 share TIM1 and therefore belong to the same output group.
 
 ## GPIOs
 
