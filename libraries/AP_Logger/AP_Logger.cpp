@@ -99,6 +99,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
 
     // @Param: _FILE_BUFSIZE
