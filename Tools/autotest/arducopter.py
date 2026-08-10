@@ -17759,7 +17759,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.context_set_speedup(1)
 
-        # Push west; avoidance should hold vehicle near inner boundary of original fence.
+        # Push forward (west at the default spawn heading); avoidance
+        # should hold vehicle near inner boundary of original fence.
         self.set_rc(2, 1300)
         inner_radius = fence_radius - fence_margin
         self.wait_distance_to_home(
@@ -17769,20 +17770,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             minimum_duration=20,
         )
 
-        # Move home West. The fence boundary follows home, so avoidance must
-        # allow the vehicle to advance to the new boundary. A correct
-        # implementation queries AP::ahrs().get_home() for the circle centre;
-        # a broken one uses the stale EKF-origin offset and keeps the vehicle
-        # pinned to the old boundary (8m short of the new inner_radius).
-        new_home = self.offset_location_ne(
-            self.home_position_as_location(), 0, -10,
+        # Move home 10m further along the direction of travel. The fence
+        # boundary follows home, so avoidance must allow the vehicle to
+        # advance to the new boundary. A correct implementation queries
+        # AP::ahrs().get_home() for the circle centre; a broken one uses
+        # the stale EKF-origin offset and keeps the vehicle pinned to the
+        # old boundary (8m short of the new inner_radius).
+        home = self.home_position_as_location()
+        travel_bearing = self.get_bearing(home, self.get_location())
+        new_home = self.offset_location_heading_distance(
+            home, travel_bearing, 10,
         )
         self.set_home(new_home)
         self.poll_home_position()
 
         # distance_to_home now measures from the new home.  With correct
-        # avoidance the vehicle advances West until it reaches inner_radius
-        # from the new home and stabilises there.
+        # avoidance the vehicle continues along its direction of travel
+        # until it reaches inner_radius from the new home and stabilises
+        # there.
         self.wait_distance_to_home(
             inner_radius - 1,
             fence_radius + 1,
