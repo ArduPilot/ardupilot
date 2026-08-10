@@ -1692,7 +1692,9 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
-        angle = atan2f(v.y, v.x) - ahrs.get_yaw_rad();
+        float roll_rad, pitch_rad, yaw_rad;
+        AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+        angle = wrap_2PI(atan2f(v.y, v.x) - yaw_rad);
     }
     draw_speed(x + 1, y, angle, length);
 }
@@ -1704,8 +1706,9 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     WITH_SEMAPHORE(ahrs.get_semaphore());
     float roll;
     float pitch;
+    float yaw;
     bool inverted = false;
-    AP::vehicle()->get_osd_roll_pitch_rad(roll,pitch);
+    AP::vehicle()->get_osd_attitude_rad(roll, pitch, yaw);
     pitch *= -1;
     // Are we inverted? then flash horizon line
     if (abs(roll) >= radians(90)) {
@@ -1787,7 +1790,9 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     if (ahrs.get_location(loc) && ahrs.home_is_set()) {
         const Location &home_loc = ahrs.get_home();
         float distance = home_loc.get_distance(loc);
-        int32_t angle_cd = loc.get_bearing_to(home_loc) - ahrs.yaw_sensor;
+        float roll_rad, pitch_rad, yaw_rad;
+        AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+        int32_t angle_cd = loc.get_bearing_to(home_loc) - rad_to_cd(yaw_rad);
         if (distance < 2.0f) {
             //avoid fast rotating arrow at small distances
             angle_cd = 0;
@@ -1802,8 +1807,9 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t yaw = ahrs.get_yaw_deg();
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    uint16_t yaw = degrees(wrap_2PI(yaw_rad));
     backend->write(x, y, false, "%3d%c", yaw, SYMBOL(SYM_DEGR));
 }
 
@@ -1924,8 +1930,9 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
         SYM_HEADING_DIVIDED_LINE,
         SYM_HEADING_LINE,
     };
-    AP_AHRS &ahrs = AP::ahrs();
-    int32_t yaw = ahrs.yaw_sensor;
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    int32_t yaw = rad_to_cd(wrap_2PI(yaw_rad));
     int32_t interval = 36000 / total_sectors;
     int8_t center_sector = ((yaw + interval / 2) / interval) % total_sectors;
     for (int8_t i = -4; i <= 4; i++) {
@@ -1950,7 +1957,9 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
         if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
             angle = M_PI;
         }
-        angle = angle + atan2f(v.y, v.x) - ahrs.get_yaw_rad();
+        float roll_rad, pitch_rad, yaw_rad;
+        AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+        angle = wrap_2PI(angle + atan2f(v.y, v.x) - yaw_rad);
     } 
     draw_speed(x + 1, y, angle, length);
 
@@ -2222,7 +2231,9 @@ void AP_OSD_Screen::draw_gps_longitude(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
 {
-    const float roll_deg = AP::ahrs().get_roll_deg();
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    const float roll_deg = degrees(roll_rad);
     char r;
     if (roll_deg > 0.5) {
         r = SYMBOL(SYM_ROLLR);
@@ -2236,7 +2247,9 @@ void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
 {
-    const float pitch_deg = AP::ahrs().get_pitch_deg();
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    const float pitch_deg = degrees(pitch_rad);
     char p;
     if (pitch_deg > 0.5) {
         p = SYMBOL(SYM_PTCHUP);
@@ -2265,8 +2278,9 @@ void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_waypoint(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    int32_t angle_cd = osd->nav_info.wp_bearing - ahrs.yaw_sensor;
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    int32_t angle_cd = osd->nav_info.wp_bearing - rad_to_cd(yaw_rad);
     if (osd->nav_info.wp_distance < 2.0f) {
         //avoid fast rotating arrow at small distances
         angle_cd = 0;
