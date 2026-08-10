@@ -15066,13 +15066,19 @@ switch value'''
         directory) - before the rest of the tests are run in parallel.'''
         return [
             # uses pppd (sudo), a fixed PPP-over-TCP port and fixed
-            # addresses for the PPP interfaces themselves:
+            # addresses for the PPP interfaces themselves.  TODO:
+            # concurrent pppd instances coexist happily; derive the
+            # port and the interface address pair from the instance
+            # number (the pppd serial port is already
+            # instance-relative) and these can leave this list:
             "NetworkingWebServerPPP",
             "PPPPeriph",
 
             # rebuilds the Replay tool; this mutates the shared build
             # directory / waf board configuration, which races with other
-            # tests (and other instances) building or running:
+            # tests (and other instances) building or running.  TODO:
+            # build the Replay tool alongside the vehicle binaries
+            # before any test runs:
             "Replay",
 
             # The following only ever fail when run in parallel; we are not
@@ -15094,8 +15100,12 @@ switch value'''
             # on its own); may just be host-load sensitive:
             "WatchdogHome",
 
-            # builds the AP_Periph binary (shared build directory) and uses
-            # CAN multicast; not safe to run alongside other tests:
+            # builds the AP_Periph binary; its waf configure repoints the
+            # shared build directory's lockfile, which races with anything
+            # else building.  Its other exclusion reasons - fixed ports,
+            # shared CAN multicast group - have been fixed already.  TODO:
+            # build AP_Periph before any test runs and this can leave
+            # this list:
             "PeriphMultiUARTTunnel",
 
             # FFT motor-noise detection; flaky under parallel load (passes
