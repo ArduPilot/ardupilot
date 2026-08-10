@@ -5,6 +5,9 @@
 #include <AP_gtest.h>
 
 #include <AP_RCProtocol/AP_RCProtocol_FDM.h>
+
+#if AP_RCPROTOCOL_FDM_ENABLED
+
 #include <RC_Channel/RC_Channel.h>
 #include <SITL/SITL.h>
 
@@ -97,5 +100,7 @@ TEST(AP_RCProtocolFDM, AppliesSITLRCFailureModes)
     EXPECT_EQ(backend.read(3), 2000);
     EXPECT_FALSE(frontend.failsafe_active());
 }
+
+#endif  // AP_RCPROTOCOL_FDM_ENABLED
 
 AP_GTEST_MAIN()
