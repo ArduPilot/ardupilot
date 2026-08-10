@@ -713,8 +713,6 @@ void AnalogIn::timer_tick_adc(uint8_t index)
     }
 
     for (uint8_t i=0; i<num_grp_channels; i++) {
-        // get_analog_pin(index, i) is invariant across the inner loop below; hoist
-        // it out so it is evaluated once per channel instead of once per (channel,source).
         const uint8_t apin = get_analog_pin(index, i);
         Debug("adc%u chan %u value=%f\n",
               (unsigned)index+1,
