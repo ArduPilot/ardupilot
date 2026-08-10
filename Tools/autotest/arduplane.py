@@ -9063,6 +9063,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # rule out.  Reboot so the SITL aircraft is reliably on the
         # ground at the start of the test.
         self.reboot_sitl()
+        # this test never arms, so its boot only produces an onboard
+        # log if disarmed logging is enabled.  LOG_DISARMED=1 is only a
+        # suite *default*, and predecessors which restart SITL with
+        # their own defaults can leave it 0 - in which case this boot
+        # has no log and the scan below silently reads the previous
+        # boot's log
+        self.set_parameter("LOG_DISARMED", 1)
         self.wait_ready_to_arm()
 
         # suspend periodic resets so baro drift can accumulate
@@ -9091,6 +9098,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         dfreader = self.dfreader_for_current_onboard_log()
         last_pd = None
         reset_us = None
+        seen_test_window = False
         peak_excursion = 0.0
         while True:
             m = dfreader.recv_match(type='XKF1', condition='XKF1.C==0')
@@ -9098,6 +9106,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 break
             if m.TimeUS < drift_start_us:
                 continue
+            seen_test_window = True
             if reset_us is None:
                 if last_pd is not None and abs(m.PD - last_pd) > 0.5:
                     reset_us = m.TimeUS
@@ -9108,6 +9117,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if m.TimeUS - reset_us > 2.0e6:
                 break
             peak_excursion = max(peak_excursion, abs(m.PD))
+
+        if not seen_test_window:
+            raise NotAchievedException(
+                "Onboard log contains no data from this test's "
+                "timeframe - scanned a previous boot's log?")
 
         if reset_us is None:
             raise NotAchievedException(
