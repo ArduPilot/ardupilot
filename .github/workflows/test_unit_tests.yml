@@ -21,6 +21,7 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -37,6 +38,7 @@ on:
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -67,6 +69,7 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -83,6 +86,7 @@ on:
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
