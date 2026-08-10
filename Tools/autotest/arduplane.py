@@ -7551,7 +7551,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "COMPASS_OFS_X": 1100,
         })
-        self.send_set_parameter("COMPASS_LEARN", 3)  # 3 is in-flight learning
+        # the autopilot zeroes COMPASS_LEARN itself when learning
+        # completes, so a verified parameter-set could race with that
+        # and re-trigger learning; send it unverified, but tracked so
+        # a test failure reverts it - a leaked COMPASS_LEARN=3 stops
+        # the EKFs using the compass, breaking all subsequent tests
+        self.send_set_parameter("COMPASS_LEARN", 3, add_to_context=True)  # 3 is in-flight learning
         self.wait_parameter_value("COMPASS_LEARN", 0)
         self.assert_parameter_value("COMPASS_OFS_X", old_compass_ofs_x, epsilon=30)
         self.fly_home_land_and_disarm()

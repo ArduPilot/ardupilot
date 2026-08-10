@@ -6665,9 +6665,13 @@ class TestSuite(abc.ABC):
     def send_set_parameter_mavproxy(self, name, value):
         self.mavproxy.send("param set %s %s\n" % (name, str(value)))
 
-    def send_set_parameter(self, name, value, verbose=False):
+    def send_set_parameter(self, name, value, verbose=False, add_to_context=False):
         if verbose:
             self.progress("Send set param for (%s) (%f)" % (name, value))
+        if add_to_context:
+            context_param_name_list = [p[0] for p in self.context_get().parameters]
+            if name.upper() not in context_param_name_list:
+                self.context_get().parameters.append((name, self.get_parameter(name)))
         return self.send_set_parameter_direct(name, value)
 
     def set_parameter(self, name, value, **kwargs):
