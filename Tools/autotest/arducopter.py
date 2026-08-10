@@ -4103,17 +4103,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
-    def configure_EKFs_to_use_optical_flow_instead_of_GPS(self):
-        '''configure EKF to use optical flow instead of GPS'''
+    def parameters_for_EKFs_to_use_optical_flow_instead_of_GPS(self):
+        '''returns a dictionary of parameter name/values used to make EKF use optical flow instead of GPS'''
         ahrs_ekf_type = self.get_parameter("AHRS_EKF_TYPE")
         if ahrs_ekf_type == 2:
-            self.set_parameter("EK2_GPS_TYPE", 3)
+            return {
+                "EK2_GPS_TYPE": 3,
+            }
         if ahrs_ekf_type == 3:
-            self.set_parameters({
+            return {
                 "EK3_SRC1_POSXY": 0,
                 "EK3_SRC1_VELXY": 5,
                 "EK3_SRC1_VELZ": 0,
-            })
+            }
+        return {}
+
+    def configure_EKFs_to_use_optical_flow_instead_of_GPS(self):
+        '''configure EKF to use optical flow instead of GPS'''
+        self.set_parameters(self.parameters_for_EKFs_to_use_optical_flow_instead_of_GPS())
 
     def OpticalFlowLocation(self):
         '''test optical flow doesn't supply location'''
@@ -18911,7 +18918,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def AHRSOriginRecorded(self):
         """Test AHRS option to record and reuse origin"""
-        self.context_push()
 
         # The firmware writes these itself once the origin is known, so
         # register them now, while they are still as the session started;
@@ -18941,10 +18947,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_parameter_value('AHRS_ORIGIN_ALT', 584, epsilon=10)
 
         # enable optical flow and rangefinder
-        self.set_parameter("SIM_FLOW_ENABLE", 1)
-        self.set_parameter("FLOW_TYPE", 10)
-        self.set_analog_rangefinder_parameters()
-        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        p = {
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+        }
+        p.update(self.analog_rangefinder_parameters())
+        p.update(self.parameters_for_EKFs_to_use_optical_flow_instead_of_GPS())
+        self.set_parameters(p)
         self.reboot_sitl()
 
         # wait for origin to be set
@@ -18956,9 +18965,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.takeoff(10, mode="LOITER")
         self.do_RTL()
-
-        # restore params to original values
-        self.context_pop()
 
     def ReadOnlyDefaults(self):
         '''test that defaults marked "readonly" can't be set'''
