@@ -7939,24 +7939,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.context_pop()
 
+    def wait_mount_pitch_past(self, despitch, descending, timeout=10):
+        '''wait for the mount pitch to reach or pass despitch in the
+        given direction.  The rate tests move the mount continuously;
+        watching for it inside a window is a race against how often we
+        sample - at high effective speedup the mount can cover its
+        whole range between two samples - but passing a threshold is
+        not.'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(
+                    "Mount pitch did not pass %f" % despitch)
+            _, mount_pitch, _, _ = self.get_mount_roll_pitch_yaw_deg()
+            if ((descending and mount_pitch <= despitch) or
+                    (not descending and mount_pitch >= despitch)):
+                self.progress("Mount pitch %f passed %f" %
+                              (mount_pitch, despitch))
+                return
+
     def test_mount_rc_targetting_rate_control(self, pitch_rc_neutral=1500):
         if True:
             self.progress("Testing RC rate control")
             self.set_parameter('MNT1_RC_RATE', 10)
             self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            # Note that we don't constrain the desired angle in the following so that we don't
-            # timeout due to fetching Mount pitch limit params.
             self.set_rc(12, 1300)
-            self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
-            self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
-            self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
-            self.test_mount_pitch(-20, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
+            self.wait_mount_pitch_past(-5, descending=True)
+            self.wait_mount_pitch_past(-10, descending=True)
+            self.wait_mount_pitch_past(-15, descending=True)
+            self.wait_mount_pitch_past(-20, descending=True)
             self.set_rc(12, 1700)
-            self.test_mount_pitch(-15, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
-            self.test_mount_pitch(-10, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
-            self.test_mount_pitch(-5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
-            self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
-            self.test_mount_pitch(5, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING, constrained=False)
+            self.wait_mount_pitch_past(-15, descending=False)
+            self.wait_mount_pitch_past(-10, descending=False)
+            self.wait_mount_pitch_past(-5, descending=False)
+            self.wait_mount_pitch_past(0, descending=False)
+            self.wait_mount_pitch_past(5, descending=False)
 
             self.progress("Reverting to angle mode")
             self.set_parameter('MNT1_RC_RATE', 0)
