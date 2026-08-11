@@ -5104,7 +5104,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_parameter("EK2_GPS_TYPE", 3)
         if ahrs_ekf_type == 3:
             self.set_parameters({
-                "EK3_OPTIONS": 24, # SetLatLngFusion and SetLatLngOffset option activated
+                "EK3_OPTIONS": 48, # SetLatLngFusion and SetLatLngOffset option activated
             })
         self.reboot_sitl()
 
