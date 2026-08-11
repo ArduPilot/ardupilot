@@ -531,9 +531,11 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             break;
 #endif
 
+#if MODE_ALTHOLD_ENABLED
         case AUX_FUNC::ALTHOLD:
             do_aux_function_change_mode(Mode::Number::ALT_HOLD, ch_flag);
             break;
+#endif
 
 #if MODE_ACRO_ENABLED
         case AUX_FUNC::ACRO:

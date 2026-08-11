@@ -13,7 +13,22 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  simulator connection for ardupilot version of last_letter
+  simulator connection for the last_letter_lib flight dynamics library
+
+  last_letter_lib speaks the standard JSON backend protocol, so all the wire
+  handling is inherited from SITL::JSON. The only thing added here is launching
+  the simulator process, which lives outside the ArduPilot tree:
+
+      sim_vehicle.py -v ArduPlane --model last_letter:<aircraft>
+
+  The aircraft name after the colon is passed to the child; it defaults to
+  "ardupilot_plane". The binary is looked up on PATH as "last_letter_ardupilot",
+  overridable with the LAST_LETTER_SITL_BIN environment variable.
+
+  Optional features are selected with the SITL --config string, which
+  sim_vehicle.py forwards through -A:
+
+      sim_vehicle.py -v ArduPlane --model last_letter:<aircraft> -A "--config log"
 */
 
 #pragma once
@@ -22,58 +37,46 @@
 
 #if AP_SIM_LAST_LETTER_ENABLED
 
-#include <AP_HAL/utility/Socket_native.h>
-
-#include "SIM_Aircraft.h"
+#include "SIM_JSON.h"
 
 namespace SITL {
 
 /*
   a last_letter simulator
  */
-class last_letter : public Aircraft {
+class last_letter : public JSON {
 public:
     last_letter(const char *frame_str);
-
-    /* update model by one time step */
-    void update(const struct sitl_input &input) override;
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
         return NEW_NOTHROW last_letter(frame_str);
     }
 
+    /*
+      the UDP port is only known once this is called, so it is recorded here
+      rather than in the constructor
+     */
+    void set_interface_ports(const char* address, const int port_in, const int port_out) override;
+
+    /*
+      parse the SITL --config string
+     */
+    void set_config(const char *config) override;
+
+    /*
+      fork the last_letter_ardupilot binary
+     */
+    void launch_external_sim(void) override;
+
 private:
-    static const uint16_t fdm_port = 5002;
+    char model_name[64];
 
-    /*
-      packet sent to last_letter
-     */
-    struct servo_packet {
-        uint16_t servos[16];
-    };
+    // The port the child must bind, from set_interface_ports().
+    uint16_t sim_port;
 
-    /*
-      reply packet sent from last_letter to ArduPilot
-     */
-    struct fdm_packet {
-        uint64_t timestamp_us; // simulation time in microseconds
-        double latitude, longitude;
-        double altitude;
-        double heading;
-        double speedN, speedE, speedD;
-        double xAccel, yAccel, zAccel;
-        double rollRate, pitchRate, yawRate;
-        double roll, pitch, yaw;
-        double airspeed;
-    };
-
-    void recv_fdm(const struct sitl_input &input);
-    void send_servos(const struct sitl_input &input);
-    void start_last_letter(void);
-
-    uint64_t last_timestamp_us;
-    SocketAPM_native sock;
+    // --config log
+    bool want_log;
 };
 
 } // namespace SITL

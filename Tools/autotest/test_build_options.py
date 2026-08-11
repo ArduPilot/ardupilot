@@ -218,6 +218,11 @@ class TestBuildOptions(object):
                     'AP_RANGEFINDER_NRA24_CAN_ENABLED',
                     'AP_RANGEFINDER_HEXSOONRADAR_ENABLED',
                 ])
+                if target.lower() == 'sub':
+                    # ArduSub has its own ModeAlthold, which is unrelated
+                    # to Copter's MODE_ALTHOLD_ENABLED build option.
+                    feature_define_whitelist.add('MODE_ALTHOLD_ENABLED')
+
                 if define in compiled_in_feature_defines:
                     error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
                     if define in feature_define_whitelist:
@@ -291,6 +296,7 @@ class TestBuildOptions(object):
             'AP_GPS_DEBUG_LOGGING_ENABLED',  # must have a backend compiled in to be present
         ])
         if target.lower() != "copter":
+            feature_define_whitelist.add('MODE_ALTHOLD_ENABLED')
             feature_define_whitelist.add('MODE_ZIGZAG_ENABLED')
             feature_define_whitelist.add('MODE_SYSTEMID_ENABLED')
             feature_define_whitelist.add('MODE_SPORT_ENABLED')

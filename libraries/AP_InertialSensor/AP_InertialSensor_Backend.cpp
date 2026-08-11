@@ -782,8 +782,11 @@ void AP_InertialSensor_Backend::_publish_temperature(uint8_t instance, float tem
     _imu._temperature[instance] = temperature;
 
 #if HAL_HAVE_IMU_HEATER
-    /* give the temperature to the control loop in order to keep it constant*/
-    if (instance == AP_HEATER_IMU_INSTANCE) {
+    /* give the temperature to the control loop in order to keep it constant.
+       AP_HEATER_IMU_INSTANCE is offset by the occasional EAHRS which gets
+       interjected first in the registration order. */
+    const uint8_t offset = _imu.get_first_onboard_imu_instance();
+    if (instance == (AP_HEATER_IMU_INSTANCE + offset)) {
         AP_BoardConfig *bc = AP::boardConfig();
         if (bc) {
             bc->set_imu_temp(temperature);

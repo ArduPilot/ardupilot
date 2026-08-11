@@ -587,6 +587,9 @@ public:
     /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
     static bool is_nav_cmd(const Mission_Command& cmd);
 
+    // check if command is a takeoff type command.
+    bool is_takeoff_type_cmd(uint16_t id) const;
+
     /// get_current_nav_cmd - returns the current "navigation" command
     const Mission_Command& get_current_nav_cmd() const
     {
@@ -659,6 +662,9 @@ public:
     // restart current navigation command.  Used to handle external changes to mission
     // returns true on success, false if current nav command has been deleted
     bool restart_current_nav_cmd();
+
+    // fast call to get command ID of a mission index
+    uint16_t get_command_id(uint16_t index) const;
 
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
@@ -895,9 +901,6 @@ private:
     // check if command is a landing type command.  Asside the obvious, MAV_CMD_DO_PARACHUTE is considered a type of landing
     bool is_landing_type_cmd(uint16_t id) const;
 
-    // check if command is a takeoff type command.
-    bool is_takeoff_type_cmd(uint16_t id) const;
-
     // approximate the distance travelled to get to a landing.  DO_JUMP commands are observed in look forward.
     bool distance_to_landing(uint16_t index, float &tot_distance,Location current_loc);
 
@@ -956,9 +959,6 @@ private:
 #if AP_SDCARD_STORAGE_ENABLED
     bool _failed_sdcard_storage;
 #endif
-
-    // fast call to get command ID of a mission index
-    uint16_t get_command_id(uint16_t index) const;
 
     // memoisation of contains-relative:
     bool _contains_terrain_alt_items;  // true if the mission has terrain-relative items

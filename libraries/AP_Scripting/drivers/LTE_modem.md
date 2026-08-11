@@ -31,12 +31,12 @@ There are some limitations:
 
 The script uses the following parameters:
 
-## LTE_ENABLE
+### LTE_ENABLE
 
 This must be set to 1 to enable the driver. Set to 0 to disable the
 LTE modem driver.
 
-## LTE_PROTOCOL
+### LTE_PROTOCOL
 
 This controls if a PPP connection will be used or a raw TCP connection
 with MAVLink2.
@@ -50,12 +50,12 @@ parameters for the TCP server you want to connect to.
 Note that the LTE_PROTOCOL parameter must match the value of the
 SCR_SDEVn_PROTO parameter.
 
-## LTE_SERPORT
+### LTE_SERPORT
 
 This sets the serial port to use for the LTE modem. This is the index
 of the SERIALn_ ports that are set to 28 for "scripting".
 
-## LTE_SCRPORT
+### LTE_SCRPORT
 
 This sets the scripting serial port to use for the LTE modem. This is
 the index of the SCR_SDEVn ports that are set to 2 for "MAVLink2". This
@@ -63,51 +63,51 @@ port handles the MAVLink data that will be transmitted over the LTE
 connection. You must first set SCR_SDEV_EN to 1 to enable scripting
 serial devices.
 
-## LTE_SERVER_IP0
+### LTE_SERVER_IP0
 
 This is the first octet of the server IP address to connect to. The
 full IP address is constructed from LTE_SERVER_IP0 through
 LTE_SERVER_IP3. Range: 0-255. This is not used with PPP.
 
-## LTE_SERVER_IP1
+### LTE_SERVER_IP1
 
 This is the second octet of the server IP address to connect to.
 Range: 0-255. This is not used with PPP.
 
-## LTE_SERVER_IP2
+### LTE_SERVER_IP2
 
 This is the third octet of the server IP address to connect to.
 Range: 0-255. This is not used with PPP.
 
-## LTE_SERVER_IP3
+### LTE_SERVER_IP3
 
 This is the fourth octet of the server IP address to connect to.
 Range: 0-255. This is not used with PPP.
 
-## LTE_SERVER_PORT
+### LTE_SERVER_PORT
 
 This sets the IPv4 port of the server to connect to. This should match
 the port that your ground control station or server is listening on.
 Range: 1-65525. This is not used with PPP.
 
-## LTE_BAUD
+### LTE_BAUD
 
 This sets the baud rate for the serial port to the LTE modem to use
 for data transfer. Common values are 115200 or 921600. Default:
 115200.
 
-## LTE_IBAUD
+### LTE_IBAUD
 
 The initial baud rate when the modem is powered on. This is normally
 115200 but can be changed in the modem using the AT+IREX terminal command.
 
-## LTE_TIMEOUT
+### LTE_TIMEOUT
 
 This sets the timeout in seconds for the LTE connection. If no data is
 received for this time, the connection will be reset and the driver
 will attempt to reconnect. Range: 1-60 seconds. Default: 10 seconds.
 
-## LTE_OPTIONS
+### LTE_OPTIONS
 
 This sets options for debugging and data display
 

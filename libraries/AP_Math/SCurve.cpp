@@ -587,8 +587,8 @@ void SCurve::project_scurve_onto_track(float scurve_A1, float scurve_V1, float s
         Vector2f arc_tangent_ne = Vector2f(-center_to_pos_ne.y, center_to_pos_ne.x) * turn_dir;
         arc_tangent_ne /= arc.radius_ne;
         const float horiz_ds = arc.length_ne / seg_length;
-        Vector3f path_unit(arc_tangent_ne.x * horiz_ds, arc_tangent_ne.y * horiz_ds, dz_ds);
-        path_unit.normalize();
+        // unit length by construction: |arc_tangent_ne| = 1 and horiz_ds^2 + dz_ds^2 = 1 from the seg_length definition
+        const Vector3f path_unit(arc_tangent_ne.x * horiz_ds, arc_tangent_ne.y * horiz_ds, dz_ds);
 
         // velocity & tangential accel
         vel += path_unit * scurve_V1;

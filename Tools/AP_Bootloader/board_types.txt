@@ -50,6 +50,7 @@ TARGET_HW_ARK_CAN_RTK_GPS              82
 TARGET_HW_ARK_CANNODE                  83
 TARGET_HW_FF_RTK_CAN_GPS               85
 TARGET_HW_PDW_MAS_MAIN-V1              86
+TARGET_HW_ARK_X20_GPS                  89
 TARGET_HW_ATL_MANTIS_EDU               97
 TARGET_HW_THE_PEACH_K1                212
 TARGET_HW_THE_PEACH_R1                213
@@ -348,6 +349,7 @@ AP_HW_SIMPLIFLYH7                    1221
 
 AP_HW_MUPilot                        1222
 AP_HW_HWH7                           1223
+AP_HW_BrahmaH7                       1224
 
 AP_HW_ATLAS_CONTROL                  1227
 AP_HW_MatekH7A3_Wing                 1228
@@ -372,6 +374,9 @@ AP_HW_CBU_H753-SOM                   1302
 
 AP_HW_KHA_ETH                        1315
 AP_HW_SAAMPIXV1_1                    1316
+
+# IDs 1320-1329 reserved for Skyronin
+AP_HW_SkyroninL431                   1320
 
 # IDs 1330-1339 reserved for Nyxtronics
 AP_HW_NYXTRONICS_NYX405V1            1330
@@ -428,6 +433,9 @@ AP_HW_AERIUM_RADIAN_H743             1801
 AP_HW_A2M6X                          1850
 AP_HW_A2M6X_NANO                     1855
 AP_HW_A2M6X_V2                       1860
+
+# IDs 1940–1949 reserved for Agam Robotics
+AP_HW_AGAM_MEGH7                     1940
 
 # IDs 1950-1979 reserved for HC Robotics
 AP_HW_HCR-504                        1950
@@ -586,8 +594,11 @@ AP_HW_VIMDRONES_BMS                  5820
 #IDs 5830 ~ 5839 reserved for CyberX
 AP_HW_CyberX-v10                     5830
 
-# IDs 5900-5909 reserved for NewBeeDrone PixNova
+# IDs 5900-5904 reserved for NewBeeDrone PixNova
 AP_HW_NewBeeDrone_PixNova            5900
+
+# IDs 5905-5909 reserved for NewBeeDrone HUMMINGBIRD
+AP_HW_NewBeeDrone_HUMMINGBIRD_FC305_H7    5905
 
 # IDs 6000-6099 reserved for SpektreWorks
 AP_HW_sw-spar-f407                   6000
@@ -604,6 +615,9 @@ AP_HW_PixSurveyA2-IND                6104
 # IDs 6110 - 6119 for S-vehicle
 AP_HW_SVehicle-E2                    6110
 
+# IDs 6120-6129 reserved for Partizan Security s.r.o
+AP_HW_PILOTIX                          6120
+
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
 # IDs 6900-6909 reserved for Easy Aerial
@@ -614,6 +628,7 @@ AP_HW_SVehicle-E2                    6110
 AP_HW_CUAV-7-NANO                    7000
 AP_HW_CUAV-V6X-V2                    7001
 AP_HW_CUAV-X25-EVO                   7002
+AP_HW_CUAV-X25-MEGA                  7004
 
 # IDs 7100-7109 reserved for V-UAV
 AP_HW_VUAV-V7pro                     7100
@@ -647,6 +662,7 @@ AP_HW_ZeroOne_A6i_ODID              15621
 AP_HW_CUAV-7-NANO_ODID              17000
 AP_HW_CUAV-V6X-V2_ODID              17001
 AP_HW_CUAV-X25-EVO_ODID             17002
+AP_HW_CUAV-X25-MEGA_ODID            17004
 AP_HW_SKYDROID-S3_ODID              11300
 AP_HW_CUBEORANGEPLUS_ODID           11063
 AP_HW_SIYI_N7_ODID                  11123

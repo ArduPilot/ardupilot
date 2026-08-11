@@ -217,7 +217,7 @@ The static transforms for enabled sensors are also published, and can be receive
 ros2 topic echo /ap/tf_static --qos-depth 1 --qos-history keep_last --qos-reliability reliable --qos-durability transient_local --once
 ```
 
-In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/humble/Concepts/About-Tf2.html#tutorials).
+In order to consume the transforms, it's highly recommended to [create and run a transform broadcaster in ROS 2](https://docs.ros.org/en/jazzy/Concepts/About-Tf2.html#tutorials).
 
 ## Using ROS 2 services
 
@@ -329,11 +329,11 @@ This package is intended to work with any `.idl` file complying with those exten
 
 Over time, these restrictions will ideally go away.
 
-To get a new IDL file from ROS 2, follow this process:
+To get a new IDL file from ROS 2, follow the below process. Note this assumes ROS 2 Jazzy. If using ROS 2 Humble, replace the ``jazzy`` with ``humble`` in the code block.
 
 ```bash
 cd ardupilot
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 
 # Find the IDL file
 find /opt/ros/$ROS_DISTRO -type f -wholename \*builtin_interfaces/msg/Time.idl
@@ -342,7 +342,7 @@ find /opt/ros/$ROS_DISTRO -type f -wholename \*builtin_interfaces/msg/Time.idl
 mkdir -p libraries/AP_DDS/Idl/builtin_interfaces/msg/
 
 # Copy the IDL
-cp /opt/ros/humble/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
+cp /opt/ros/jazzy/share/builtin_interfaces/msg/Time.idl libraries/AP_DDS/Idl/builtin_interfaces/msg/
 
 # Build the code again with the `--enable-DDS` flag as described above
 ```

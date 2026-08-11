@@ -21,6 +21,7 @@
  *
  */
 
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include "AP_AHRS_config.h"
 
 #if AP_AHRS_DCM_ENABLED
@@ -99,8 +100,6 @@ public:
 
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
-
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 
 private:
 

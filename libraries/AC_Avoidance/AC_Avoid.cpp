@@ -1579,6 +1579,6 @@ AC_Avoid *ac_avoid()
 
 }
 
-#endif // !APM_BUILD_Arduplane
+#endif // !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 
 #endif  // AP_AVOIDANCE_ENABLED

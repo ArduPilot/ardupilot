@@ -1527,6 +1527,31 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Should pass 90m before passing waypoint 5")
         self.wait_disarmed(timeout=300)
 
+    def WPSpdChange(self):
+        '''verify Q_WP_SPD takes effect on AUTO entry without reboot'''
+        # enable VTOL-only AUTO so Q_WP_SPD controls cruise speed
+        self.set_parameter('Q_ENABLE', 2)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 700, 0, 40),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -700, 0, 40),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 700, 0, 40),
+        ])
+
+        # set Q_WP_SPD above default (5) without rebooting after the change
+        self.set_parameter('Q_WP_SPD', 12.0)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+
+        # wait for VTOL takeoff to complete, then check cruise speed
+        self.wait_altitude(35, 45, relative=True, timeout=60)
+        self.wait_groundspeed(8, 16, timeout=60)
+
+        # switch to QRTL so the plane ends up where it started
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=120)
+
     def Mission(self):
         '''fly the OBC 2016 mission in Dalby'''
         self.load_mission("Dalby-OBC2016.txt")
@@ -2489,28 +2514,29 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # with sag disabled the pack should read close to its resting voltage
         self.set_parameter("SIM_BATT_RES_OHM", 0)
         v_no_sag = hover_voltage()
-        self.progress(f"hover voltage, sag disabled: {v_no_sag}V")
+        self.progress(f"hover voltage, sag disabled: {v_no_sag:.4f}V")
         if abs(v_no_sag - 12.6) > 0.2:
             raise NotAchievedException(
-                "Expected ~resting voltage with sag disabled, got {v_no_sag}V")
+                f"Expected ~resting voltage with sag disabled, got {v_no_sag:.4f}V")
 
         # introducing resistance should sag the voltage under the same load
         hover_voltage_ohms = 0.05
         self.set_parameter("SIM_BATT_RES_OHM", hover_voltage_ohms)
         v_sag = hover_voltage()
-        self.progress("hover voltage, {hover_voltage_ohms}ohm: {v_sag}V")
+        self.progress(f"hover voltage, {hover_voltage_ohms:.4f}ohm: {v_sag:.4f}V")
         if v_sag > v_no_sag - 0.3:
             raise NotAchievedException(
-                "Expected voltage sag with resistance, got {v_sag}V (no-sag {v_no_sag}V)")
+                f"Expected voltage sag with resistance, got {v_sag:.4f}V (no-sag {v_no_sag:.4f}V)")
 
         # more resistance should sag the voltage further still
         hover_voltage_more_ohms = 0.1
         self.set_parameter("SIM_BATT_RES_OHM", hover_voltage_more_ohms)
         v_more_sag = hover_voltage()
-        self.progress("hover voltage, {hover_voltage_more_ohms}ohm: {v_more_sag}V")
+        self.progress(f"hover voltage, {hover_voltage_more_ohms:.4f}ohm: {v_more_sag:.4f}V")
         if v_more_sag > v_sag - 0.2:
             raise NotAchievedException(
-                "Expected more sag at higher resistance, got {v_more_sag}V ({hover_voltage_more_ohms}ohm {v_sag}V)")
+                f"Expected more sag at higher resistance, got {v_more_sag:.4f}V"
+                f" ({hover_voltage_more_ohms:.4f}ohm {v_sag:.4f}V)")
 
         # restore full thrust before landing so the RTL is not handicapped
         self.set_parameter("SIM_BATT_RES_OHM", 0)
@@ -3476,5 +3502,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.FenceRelativeToTerrainMinAlt,
             self.PlaneWindFailsafe,
             self.HighServoFunctionDefault,
+            self.WPSpdChange,
         ])
         return ret

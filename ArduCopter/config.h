@@ -143,6 +143,12 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// AltHold - fly vehicle with automatic altitude control
+#ifndef MODE_ALTHOLD_ENABLED
+# define MODE_ALTHOLD_ENABLED 1
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Auto mode - allows vehicle to trace waypoints and perform automated actions
 // Copter's one-and-only AP_Mission object is a member of ModeAuto, so the two
 // must be enabled and disabled together; see the checks below.
@@ -647,6 +653,10 @@
 
 #if TOY_MODE_ENABLED && FRAME_CONFIG == HELI_FRAME
   #error Toy mode is not available on Helicopters
+#endif
+
+#if TOY_MODE_ENABLED && !MODE_ALTHOLD_ENABLED
+  #error Toy mode requires AltHold mode support
 #endif
 
 #ifndef HAL_FRAME_TYPE_DEFAULT

@@ -46,7 +46,7 @@ extern const AP_HAL::HAL& hal;
 //==============================================================================
 
 #define AP_FOLLOW_TIMEOUT          3     // position estimate timeout in seconds
-#define AP_FOLLOW_SYSID_TIMEOUT_MS 10000 // forget sysid we are following if we have not heard from them in 10 seconds
+#define AP_FOLLOW_ESTIMATE_TIMEOUT_MS 10000 // discard the target estimate if we have not heard from the target in 10 seconds
 
 #define AP_FOLLOW_OFFSET_TYPE_NED       0   // offsets are in north-east-down frame
 #define AP_FOLLOW_OFFSET_TYPE_RELATIVE  1   // offsets are relative to lead vehicle's heading
@@ -82,7 +82,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
 
     // @Param: _SYSID
     // @DisplayName: Follow target's mavlink system id
-    // @Description: Follow target's mavlink system id
+    // @Description: Follow target's mavlink system id. Zero means no target has been selected and following is inactive.
     // @Range: 0 255
     // @User: Standard
     AP_GROUPINFO("_SYSID", 3, AP_Follow, _sysid, 0),
@@ -165,7 +165,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _ACCEL_NE
     // @DisplayName: Acceleration limit for the horizontal kinematic input shaping
     // @Description: Acceleration limit of the horizontal kinematic path generation used to determine how quickly the estimate varies in velocity
-    // @Range: 0 5
+    // @Range: 0 10
     // @Units: m/s/s
     // @User: Advanced
     AP_GROUPINFO("_ACCEL_NE", 12, AP_Follow, _accel_max_ne_mss, 5.0),
@@ -181,7 +181,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _ACCEL_D
     // @DisplayName: Acceleration limit for the vertical kinematic input shaping
     // @Description: Acceleration limit of the vertical kinematic path generation used to determine how quickly the estimate varies in velocity
-    // @Range: 0 2.5
+    // @Range: 0 10
     // @Units: m/s/s
     // @User: Advanced
     AP_GROUPINFO("_ACCEL_D", 14, AP_Follow, _accel_max_d_mss, 5.0),
@@ -189,7 +189,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _JERK_D
     // @DisplayName: Jerk limit for the vertical kinematic input shaping
     // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the estimate varies in acceleration
-    // @Range: 0 5
+    // @Range: 0 20
     // @Units: m/s/s/s
     // @User: Advanced
     AP_GROUPINFO("_JERK_D", 15, AP_Follow, _jerk_max_d_msss, 10.0),
@@ -197,7 +197,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _ACCEL_H
     // @DisplayName: Angular acceleration limit for the heading kinematic input shaping
     // @Description: Angular acceleration limit of the heading kinematic path generation used to determine how quickly the estimate varies in angular velocity
-    // @Range: 0 90
+    // @Range: 0 720
     // @Units: deg/s/s
     // @User: Advanced
     AP_GROUPINFO("_ACCEL_H", 16, AP_Follow, _accel_max_h_degss, 360.0),
@@ -205,7 +205,7 @@ const AP_Param::GroupInfo AP_Follow::var_info[] = {
     // @Param: _JERK_H
     // @DisplayName: Angular jerk limit for the heading kinematic input shaping
     // @Description: Angular jerk limit of the heading kinematic path generation used to determine how quickly the estimate varies in angular acceleration
-    // @Range: 0 360
+    // @Range: 0 1440
     // @Units: deg/s/s/s
     // @User: Advanced
     AP_GROUPINFO("_JERK_H", 17, AP_Follow, _jerk_max_h_degsss, 720.0),
@@ -499,13 +499,8 @@ bool AP_Follow::get_target_heading_rate_degs(float &heading_rate_degs)
 void AP_Follow::handle_msg(const mavlink_message_t &msg)
 {
     // Invalidate the estimate if no position update has been received within the timeout period.
-    // If using automatic sysid tracking, clear the sysid and reset tracking state.
     if ((_last_location_update_ms == 0) ||
-        (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_SYSID_TIMEOUT_MS)) {
-        if (_automatic_sysid) {
-            _sysid.set(0);         // clear target system ID
-            _sysid_used = 0;       // reset used sysid tracking
-        }
+        (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_ESTIMATE_TIMEOUT_MS)) {
         _estimate_valid = false;   // mark estimate as invalid
         _using_follow_target = false; // reset follow-target usage flag
     }
@@ -557,8 +552,9 @@ bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
         return false;
     }
 
-    // skip message if not from our target
-    if (_sysid != 0 && msg.sysid != _sysid) {
+    // skip message if not from our target.  a _sysid of zero means no target
+    // has been selected, so no message is ever accepted
+    if (msg.sysid != _sysid) {
         return false;
     }
 
@@ -695,14 +691,6 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
     // apply jitter-corrected timestamp to this update
     _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.time_boot_ms, AP_HAL::millis());
 
-    // if sysid not yet set, adopt sender’s sysid and enable automatic sysid tracking
-    if (_sysid == 0) {
-        _sysid.set(msg.sysid);
-        _sysid_used = 0;
-        _estimate_valid = false;
-        _automatic_sysid = true;
-    }
-
     return true;
 }
 
@@ -792,12 +780,6 @@ bool AP_Follow::handle_follow_target_message(const mavlink_message_t &msg)
 
     // apply jitter-corrected timestamp to this update
     _last_location_update_ms = _jitter.correct_offboard_timestamp_msec(packet.timestamp, AP_HAL::millis());
-
-    // if sysid not yet assigned, adopt sender's sysid and enable automatic sysid tracking
-    if (_sysid == 0) {
-        _sysid.set(msg.sysid);
-        _automatic_sysid = true;
-    }
 
     // we are using follow_target: set sysid to sender's sysid
     _using_follow_target = true;

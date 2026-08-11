@@ -389,6 +389,8 @@ public:
 #if AP_SIM_GLIDER_ENABLED
         Glider *glider_ptr;
 #endif
+        // multicopter/quadplane VTOL frame model
+        class Frame *simframe_ptr;
 #if AP_SIM_SLUNGPAYLOAD_ENABLED
         SlungPayloadSim slung_payload_sim;
 #endif

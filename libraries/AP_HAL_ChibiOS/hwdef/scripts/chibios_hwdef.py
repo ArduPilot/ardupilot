@@ -10,7 +10,6 @@ import argparse
 import fnmatch
 import os
 import re
-import shlex
 import shutil
 import sys
 
@@ -32,6 +31,30 @@ class ChibiOSHWDef(hwdef.HWDef):
     f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
     f1_vtypes = ['CRL', 'CRH', 'ODR']
     af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO']
+    # for the callers which only want to know whether a label names an
+    # alternative function, not which one:
+    af_label_prefixes = tuple(af_labels)
+
+    # the pin types a pin line may take; checked for every pin line, so
+    # compiled once here rather than per-call:
+    VALID_PIN_TYPE_RE = re.compile(
+        r'INPUT|OUTPUT|TIM\d+|USART\d+|UART\d+|ADC\d+|'
+        r'SPI\d+|OTG\d+|SWD|CAN\d?|I2C\d+|CS|'
+        r'SDMMC\d+|SDIO|QUADSPI\d|OCTOSPI\d|ETH\d|RCC'
+    )
+
+    # the peripheral number in a pin's type must match the one in its
+    # label; these are checked for every pin line, so are compiled here
+    # rather than per-call:
+    TIM_TYPE_RE = re.compile(r'TIM(\d+)')
+    TIM_LABEL_RE = re.compile(r'TIM(\d+)_CH\d+')
+    CAN_TYPE_RE = re.compile(r'CAN(\d+)')
+    CAN_LABEL_RE = re.compile(r'CAN(\d+)_(RX|TX)')
+    UART_INV_LABEL_RE = re.compile(r'US?ART\d+_(TXINV|RXINV)')
+    USART_TYPE_RE = re.compile(r'USART(\d+)')
+    USART_LABEL_RE = re.compile(r'USART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)')
+    UART_TYPE_RE = re.compile(r'UART(\d+)')
+    UART_LABEL_RE = re.compile(r'UART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)')
 
     def __init__(self, bootloader=False, signed_fw=False, default_params_filepath=None, **kwargs):
         super(ChibiOSHWDef, self).__init__(**kwargs)
@@ -40,6 +63,9 @@ class ChibiOSHWDef(hwdef.HWDef):
         self.default_params_filepath = default_params_filepath
         self.processed_defaults_filepath = None
         self.have_defaults_file = False
+
+        # modules for MCUs we have already imported, by MCU name:
+        self.mcu_lib_cache = {}
 
         # if true then parameters will be appended in special apj-tool
         # section at end of binary:
@@ -121,10 +147,15 @@ class ChibiOSHWDef(hwdef.HWDef):
     def get_mcu_lib(self, mcu):
         '''get library file for the chosen MCU'''
         import importlib
+        # this is called for every pin line, so remember what we found:
+        if mcu in self.mcu_lib_cache:
+            return self.mcu_lib_cache[mcu]
         try:
-            return importlib.import_module(mcu)
+            lib = importlib.import_module(mcu)
         except ImportError:
             self.error("Unable to find module for MCU %s" % mcu)
+        self.mcu_lib_cache[mcu] = lib
+        return lib
 
     def setup_mcu_type_defaults(self):
         '''setup defaults for given mcu type'''
@@ -158,9 +189,8 @@ class ChibiOSHWDef(hwdef.HWDef):
             alt_map = lib.AltFunction_map
         else:
             # just check if Alt Func is available or not
-            for label in self.af_labels:
-                if function.startswith(label):
-                    return 0
+            if function.startswith(self.af_label_prefixes):
+                return 0
             return None
 
         if function and (function.endswith("_RTS") or function.endswith("_CTS_GPIO")) and (
@@ -168,12 +198,11 @@ class ChibiOSHWDef(hwdef.HWDef):
             # we do software RTS and can do either software CTS or hardware CTS
             return None
 
-        for label in self.af_labels:
-            if function.startswith(label):
-                s = pin + ":" + function
-                if s not in alt_map:
-                    self.error("Unknown pin function %s for MCU %s" % (s, mcu))
-                return alt_map[s]
+        if function.startswith(self.af_label_prefixes):
+            s = pin + ":" + function
+            if s not in alt_map:
+                self.error("Unknown pin function %s for MCU %s" % (s, mcu))
+            return alt_map[s]
         return None
 
     def have_type_prefix(self, ptype):
@@ -1859,12 +1888,11 @@ INCLUDE common.ld
                         return "UINT8_MAX"
 
                     pin = self.bylabel[rts_line_name]
-                    for label in self.af_labels:
-                        if rts_line_name.startswith(label):
-                            s = pin.portpin + ":" + rts_line_name
-                            if s not in lib.AltFunction_map:
-                                return "UINT8_MAX"
-                            return lib.AltFunction_map[s]
+                    if rts_line_name.startswith(self.af_label_prefixes):
+                        s = pin.portpin + ":" + rts_line_name
+                        if s not in lib.AltFunction_map:
+                            return "UINT8_MAX"
+                        return lib.AltFunction_map[s]
                 if have_low_noise:
                     low_noise = 'false'
                     rx_port = dev + '_RX'
@@ -2788,38 +2816,28 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
     def valid_type(self, ptype, label):
         '''check type of a pin line is valid'''
-        patterns = [
-            r'INPUT', r'OUTPUT', r'TIM\d+', r'USART\d+', r'UART\d+', r'ADC\d+',
-            r'SPI\d+', r'OTG\d+', r'SWD', r'CAN\d?', r'I2C\d+', r'CS',
-            r'SDMMC\d+', r'SDIO', r'QUADSPI\d', r'OCTOSPI\d', r'ETH\d', r'RCC',
-        ]
-        matches = False
-        for p in patterns:
-            if re.match(p, ptype):
-                matches = True
-                break
-        if not matches:
+        if not self.VALID_PIN_TYPE_RE.match(ptype):
             return False
         # special checks for common errors
-        m1 = re.match(r'TIM(\d+)', ptype)
-        m2 = re.match(r'TIM(\d+)_CH\d+', label)
+        m1 = self.TIM_TYPE_RE.match(ptype)
+        m2 = self.TIM_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''timer numbers need to match'''
             return False
-        m1 = re.match(r'CAN(\d+)', ptype)
-        m2 = re.match(r'CAN(\d+)_(RX|TX)', label)
+        m1 = self.CAN_TYPE_RE.match(ptype)
+        m2 = self.CAN_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''CAN numbers need to match'''
             return False
-        if ptype == 'OUTPUT' and re.match(r'US?ART\d+_(TXINV|RXINV)', label):
+        if ptype == 'OUTPUT' and self.UART_INV_LABEL_RE.match(label):
             return True
-        m1 = re.match(r'USART(\d+)', ptype)
-        m2 = re.match(r'USART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)', label)
+        m1 = self.USART_TYPE_RE.match(ptype)
+        m2 = self.USART_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''usart numbers need to match'''
             return False
-        m1 = re.match(r'UART(\d+)', ptype)
-        m2 = re.match(r'UART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)', label)
+        m1 = self.UART_TYPE_RE.match(ptype)
+        m2 = self.UART_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''uart numbers need to match'''
             return False
@@ -2828,7 +2846,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
         self.all_lines.append(line)
-        a = shlex.split(line, posix=False)
+        a = self.split_line(line, posix=False)
         # keep all config lines for later use
         self.alllines.append(line)
 
@@ -2907,7 +2925,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
         elif a[0] == 'AIRSPEED':
             self.airspeed_list.append(a[1:])
         else:
-            super(ChibiOSHWDef, self).process_line(line, depth)
+            super(ChibiOSHWDef, self).process_line(line, depth, a)
 
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:

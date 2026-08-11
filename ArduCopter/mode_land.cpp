@@ -154,16 +154,15 @@ void ModeLand::nogps_run()
 
     // process pilot inputs
     if (rc().has_valid_input()) {
+#if MODE_ALTHOLD_ENABLED
         if ((g.throttle_behavior & THR_BEHAVE_HIGH_THROTTLE_CANCELS_LAND) != 0 && copter.rc_throttle_control_in_filter.get() > LAND_CANCEL_TRIGGER_THR){
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
         }
+#endif
 
         if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
             // get pilot desired lean angles
             get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
         }

@@ -87,6 +87,9 @@ public:
         uint16_t attitude_reset_count;  // counter incremented each time a sudden shift happens in attitude
         uint16_t yaw_reset_count;  // incremented when a sudden shift happens in yaw
 
+        // true when the state estimates are significantly degraded by vibration:
+        bool is_vibration_affected;
+
         // backends must always return the result in the vehicle body
         // frame.  A backend using the autopilot sensors will need to
         // rotate according to the TRIM parameters.  An ExternalAHRS
@@ -226,6 +229,19 @@ public:
         float terrain_alt_variance;
         bool terrain_alt_variance_valid;
 
+        // impositions on control placed on it by the estimator.  So,
+        // for example, if Optical flow is in play then perhaps we
+        // can't travel as fast:
+        float control_ground_speed_limit_ms;
+        // or we want to scale down the control magnitudes:
+        float control_gain_scaler_XY;
+        float control_gain_scaler_Z;
+
+        // hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
+        // this is used to limit height during optical flow navigation
+        float control_height_limit_m;
+        bool control_height_limit_valid; // false when no limiting is required
+
     private:
         bool hagl_valid;
         float hagl;
@@ -315,8 +331,6 @@ public:
     virtual bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const {
         return false;
     }
-
-    virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
 };
 
 // Converts an upstream "something changed" key (an EKF reset

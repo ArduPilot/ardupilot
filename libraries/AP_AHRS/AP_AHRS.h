@@ -330,12 +330,11 @@ public:
     // Write terrain (derived from SRTM) altitude in meters above sea level
     void writeTerrainAMSL(float alt_amsl_m);
 
-    // get speed limit
-    void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const {
-        active_backend->get_control_limits(ekfGndSpdLimit, controlScaleXY);
-    }
-
-    float getControlScaleZ(void) const;
+    // get speed limit imposed by the estimator
+    float get_control_ground_speed_limit_ms() const { return active_estimates->control_ground_speed_limit_ms; }
+    // get scaler used to limit response due to poor AHRS estimates
+    float get_control_gain_scaler_XY() const { return active_estimates->control_gain_scaler_XY; }
+    float get_control_gain_scaler_Z() const { return active_estimates->control_gain_scaler_Z; }
 
     // is the AHRS subsystem healthy?
     bool healthy() const;
@@ -397,7 +396,10 @@ public:
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
-    bool get_hgt_ctrl_limit(float &limit) const;
+    bool get_hgt_ctrl_limit(float &limit) const {
+        limit = active_estimates->control_height_limit_m;
+        return active_estimates->control_height_limit_valid;
+    }
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // this is not related to terrain following
@@ -410,7 +412,9 @@ public:
     }
 
     // returns true when the state estimates are significantly degraded by vibration
-    bool is_vibration_affected() const;
+    bool is_vibration_affected() const {
+        return configured_estimates->is_vibration_affected;
+    }
 
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
     // indicates perfect consistency between the measurement and the EKF solution and a value of 1 is the maximum

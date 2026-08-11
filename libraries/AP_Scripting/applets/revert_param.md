@@ -11,11 +11,11 @@ changes to the values from startup.
 The script adds 2 parameters to control it's behaviour. The parameters
 are:
 
-## PREV_ENABLE
+### PREV_ENABLE
 
 this must be set to 1 to enable the script
 
-## PREV_RC_FUNC
+### PREV_RC_FUNC
 
 The RCz_OPTIONS scripting function binding to be used for this script.
 Default RCz_OPTIONS binding is 300 (scripting1).

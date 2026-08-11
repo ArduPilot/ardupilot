@@ -120,6 +120,8 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.yaw_reset_count = yaw_reset_tracker.count();
 
+    results.is_vibration_affected = EKF3.isVibrationAffected();
+
     /*
      * acceleration estimates
      */
@@ -215,6 +217,11 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     results.variances_valid = EKF3.getVariances(results.velVar, results.posVar, results.hgtVar, results.magVar, results.tasVar, offset);
 
     results.terrain_alt_variance_valid = EKF3.getTerrainAltVariance(results.terrain_alt_variance);
+
+    EKF3.getEkfControlLimits(results.control_ground_speed_limit_ms, results.control_gain_scaler_XY);
+    results.control_gain_scaler_Z = 1;
+
+    results.control_height_limit_valid = EKF3.getHeightControlLimit(results.control_height_limit_m);
 }
 
 bool AP_AHRS_NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

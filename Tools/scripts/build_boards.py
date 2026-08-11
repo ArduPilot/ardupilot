@@ -69,8 +69,6 @@ class BuildBoards(BuildScriptBase):
             exclude_board_glob=exclude_board_glob,
         )
 
-        self.bootloader_blacklist = self.make_bootloader_blacklist()
-
     def progress_prefix(self):
         return 'BB'
 

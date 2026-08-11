@@ -83,6 +83,13 @@ public:
     virtual void set_interface_ports(const char* address, const int port_in, const int port_out) {};
 
     /*
+      Start the external simulator process, for backends that manage one. Called
+      once the model is fully configured, so the child's command line can depend
+      on anything the setters above supply.
+     */
+    virtual void launch_external_sim(void) {};
+
+    /*
       step the FDM by one time step
      */
     virtual void update(const struct sitl_input &input) = 0;

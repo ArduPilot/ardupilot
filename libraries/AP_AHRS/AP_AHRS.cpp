@@ -1698,21 +1698,6 @@ void AP_AHRS::writeTerrainAMSL(float alt_amsl_m)
 #endif
 }
 
-/*
-  get gain factor for Z controllers
- */
-float AP_AHRS::getControlScaleZ(void) const
-{
-#if AP_AHRS_DCM_ENABLED
-    if (active_EKF_type() == EKFType::DCM) {
-        // when flying on DCM lower gains by 4x to cope with the high
-        // lag
-        return 0.25;
-    }
-#endif
-    return 1;
-}
-
 // get compass offset estimates
 // true if offsets are valid
 bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
@@ -2040,41 +2025,6 @@ void AP_AHRS::load_watchdog_home()
     }
 }
 
-// get_hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
-// this is used to limit height during optical flow navigation
-// it will return false when no limiting is required
-bool AP_AHRS::get_hgt_ctrl_limit(float& limit) const
-{
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        // We are not using an EKF so no limiting applies
-        return false;
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.EKF2.getHeightControlLimit(limit);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.getHeightControlLimit(limit);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        return false;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return false;
-#endif
-    }
-
-    return false;
-}
-
 // Set to true if the terrain underneath is stable enough to be used as a height reference
 // this is not related to terrain following
 void AP_AHRS::set_terrain_hgt_stable(bool stable)
@@ -2103,31 +2053,6 @@ void AP_AHRS::set_terrain_hgt_stable(bool stable)
 #if HAL_NAVEKF3_AVAILABLE
     ekf3.EKF3.setTerrainHgtStable(stable);
 #endif
-}
-
-// returns true when the state estimates are significantly degraded by vibration
-bool AP_AHRS::is_vibration_affected() const
-{
-    switch (configured_ekf_type()) {
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.isVibrationAffected();
-#endif
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-        return false;
-    }
-    return false;
 }
 
 // get 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
