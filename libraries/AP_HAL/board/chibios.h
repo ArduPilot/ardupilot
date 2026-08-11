@@ -101,11 +101,6 @@
 #define HAL_COMPASS_HMC5843_NAME "hmc5843"
 #define HAL_COMPASS_LIS3MDL_NAME "lis3mdl"
 
-// allow for short names overridden in hwdef.dat
-#ifndef CHIBIOS_SHORT_BOARD_NAME
-#define CHIBIOS_SHORT_BOARD_NAME CHIBIOS_BOARD_NAME
-#endif
-
 #define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_NONE
 
 // note the compatability code here which only defaults the thread
@@ -135,24 +130,19 @@
 #define HAL_BOARD_STORAGE_DIRECTORY "/APM"
 #endif
 
-#if defined(STM32_WSPI_USE_QUADSPI1) && STM32_WSPI_USE_QUADSPI1
-#define HAL_USE_QUADSPI1 TRUE
-#else
+// hwdef.h defines these TRUE when the peripheral is in use; the
+// STM32_WSPI_USE_* macros it derives from are only visible to the
+// ChibiOS system layer
+#ifndef HAL_USE_QUADSPI1
 #define HAL_USE_QUADSPI1 FALSE
 #endif
-#if defined(STM32_WSPI_USE_QUADSPI2) && STM32_WSPI_USE_QUADSPI2
-#define HAL_USE_QUADSPI2 TRUE
-#else
+#ifndef HAL_USE_QUADSPI2
 #define HAL_USE_QUADSPI2 FALSE
 #endif
-#if defined(STM32_WSPI_USE_OCTOSPI1) && STM32_WSPI_USE_OCTOSPI1
-#define HAL_USE_OCTOSPI1 TRUE
-#else
+#ifndef HAL_USE_OCTOSPI1
 #define HAL_USE_OCTOSPI1 FALSE
 #endif
-#if defined(STM32_WSPI_USE_OCTOSPI2) && STM32_WSPI_USE_OCTOSPI2
-#define HAL_USE_OCTOSPI2 TRUE
-#else
+#ifndef HAL_USE_OCTOSPI2
 #define HAL_USE_OCTOSPI2 FALSE
 #endif
 #define HAL_USE_QUADSPI (HAL_USE_QUADSPI1 || HAL_USE_QUADSPI2)
