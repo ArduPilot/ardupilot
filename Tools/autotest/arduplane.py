@@ -7681,7 +7681,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
         # AFS_TERMINATE magically set-and-saved by code:
         self.context_preserve_parameters(["AFS_TERMINATE"])
-        self.takeoff(50, mode='TAKEOFF', timeout=200)
+        # the vehicle falls, disarmed, from the moment of termination
+        # until it is unterminated, rearmed and flying again.  From 50m
+        # that recovery has been seen to lose the race with the ground
+        # under --parallel load; terminate from high enough that it
+        # cannot:
+        self.takeoff(150, mode='TAKEOFF', timeout=200)
 
         # lock home to avoid alt messups
         original_home = self.home_position_as_location()
