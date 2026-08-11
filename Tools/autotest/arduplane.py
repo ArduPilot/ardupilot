@@ -7239,9 +7239,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # the vehicle falls, disarmed, from the moment of termination
         # until it is unterminated, rearmed and flying again.  From 50m
         # that recovery has been seen to lose the race with the ground
-        # under --parallel load; terminate from high enough that it
-        # cannot:
-        self.takeoff(150, mode='TAKEOFF', timeout=200)
+        # under --parallel load.  Do not simply terminate from as high
+        # as possible, though: the fly-home mission's approach starts
+        # at 60m, and from 150m the vehicle spent so long shedding the
+        # excess that it was still circling waypoint 10 when the
+        # approach timed out.  100m clears the fall with room to spare
+        # and leaves little to shed:
+        self.takeoff(100, mode='TAKEOFF', timeout=200)
 
         # lock home to avoid alt messups
         original_home = self.home_position_as_mav_location()
