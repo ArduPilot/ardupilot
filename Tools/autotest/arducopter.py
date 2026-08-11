@@ -18681,9 +18681,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
+        # the previous subtest leaves the vehicle pointing north,
+        # but only guarantees it to within the five degrees it checks
+        # for; do not demand better than that here:
         original_heading = self.get_heading()
-        if self.heading_delta(original_heading, 0) > 1:
-            raise NotAchievedException("Bad original heading")
+        if self.heading_delta(original_heading, 0) > 5:
+            raise NotAchievedException(f"Bad original heading {original_heading}")
         self.arm_vehicle()
         self.wait_current_waypoint(3)
         self.wait_rtl_complete()
