@@ -249,7 +249,7 @@ userdata RangeFinder::RangeFinder_State depends AP_RANGEFINDER_ENABLED
 userdata RangeFinder::RangeFinder_State rename RangeFinder_State
 userdata RangeFinder::RangeFinder_State field last_reading_ms uint32_t'skip_check read write
 userdata RangeFinder::RangeFinder_State field last_reading_ms rename last_reading
-userdata RangeFinder::RangeFinder_State field status RangeFinder::Status'enum read write RangeFinder::Status::NotConnected RangeFinder::Status::Good
+userdata RangeFinder::RangeFinder_State field status RangeFinder::Status'enum read write RangeFinder::Status::NotConnected RangeFinder::Status::PoweredDown
 userdata RangeFinder::RangeFinder_State field range_valid_count uint8_t'skip_check read write
 userdata RangeFinder::RangeFinder_State field distance_m float'skip_check read write
 userdata RangeFinder::RangeFinder_State field distance_m rename distance
