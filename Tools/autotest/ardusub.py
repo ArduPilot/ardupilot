@@ -962,6 +962,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_parameters({
             'GPS1_TYPE': 0,             # Disable the GPS
             'EK3_SRC1_POSXY': 0,        # Make sure EK3_SRC parameters do not refer to a GPS
+            # this test never arms, so its boot only produces an
+            # onboard log if disarmed logging is on; a predecessor
+            # which restarts SITL with its own defaults can leave
+            # LOG_DISARMED at 0, and the log scan below then silently
+            # reads a previous boot's log:
+            'LOG_DISARMED': 1,
         })
         self.reboot_sitl()
 
@@ -993,6 +999,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             'EK3_SRC1_VELXY': 0,        # Make sure EK3_SRC parameters do not refer to GPS
             'AHRS_ORIGIN_LAT': 47.607584,
             'AHRS_ORIGIN_LON': -122.343911,
+            # this test never arms, so its boot only produces an
+            # onboard log if disarmed logging is on; a predecessor
+            # which restarts SITL with its own defaults can leave
+            # LOG_DISARMED at 0, and the log scan below then silently
+            # reads a previous boot's log:
+            'LOG_DISARMED': 1,
         })
         # the origin statustext is emitted early in the boot - with no
         # GPS configured the EKF does not wait for anything before
@@ -1209,6 +1221,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def MAV_mgs(self):
         '''test individual GCS backends timestamps'''
+        # this test never arms, so its boot only produces an onboard
+        # log if disarmed logging is on; a predecessor which restarts
+        # SITL with its own defaults can leave LOG_DISARMED at 0, and
+        # the log scan below then silently reads a previous boot's log:
+        self.set_parameter('LOG_DISARMED', 1)
         self.reboot_sitl()
         self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
         self.delay_sim_time(10, reason='add delay on connecting "telemetry')
