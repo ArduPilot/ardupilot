@@ -17997,18 +17997,30 @@ switch value'''
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
             mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
             mavproxy.expect("Getting")
-            tstart = self.get_sim_time()
+            # "No transfer in progress" is also true before the
+            # transfer starts, so it cannot be taken as completion on
+            # its own: a status poll which lands in that window breaks
+            # out of this loop with an empty file.  Require content to
+            # have arrived as well.
+            # wall clock, not sim time: everything in this loop is
+            # paced by MAVProxy and the pexpect interaction with it,
+            # and at the vehicle's speedup a single one-second expect
+            # can consume a hundred seconds of simulated time - so a
+            # sim-time budget here expires after a poll or two.
+            tstart = time.time()
             while True:
-                now = self.get_sim_time()
+                now = time.time()
                 if now - tstart > timeout:
                     raise NotAchievedException("expected complete transfer")
                 self.progress("Polling status")
                 mavproxy.send("ftp status\n")
                 try:
                     mavproxy.expect("No transfer in progress", timeout=1)
-                    break
                 except Exception:  # noqa: BLE001
                     continue
+                if os.path.getsize(tmpfile.name) > 0:
+                    break
+                self.progress("Transfer has not started yet")
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
