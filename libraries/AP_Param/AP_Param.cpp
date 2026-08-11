@@ -56,7 +56,7 @@ AP_Param *AP_Param::_singleton;
 // least 32768 bytes or storage. We also don't enable when using flash
 // storage as this can lead to loss of storage when updating to a
 // larger storage size
-#define AP_PARAM_STORAGE_BAK_ENABLED (HAL_STORAGE_SIZE>=32768) && !defined(STORAGE_FLASH_PAGE)
+#define AP_PARAM_STORAGE_BAK_ENABLED (HAL_STORAGE_SIZE>=32768) && !HAL_CHIBIOS_MCU_FLASH_STORAGE_ENABLED
 #endif
 
 
