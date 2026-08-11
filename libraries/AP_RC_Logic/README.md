@@ -32,7 +32,7 @@ Registered on `AP_Vehicle` as subgroup `RCL` (index 33). One `_ENABLE` plus
 |--------------|-----------|---------|
 | `RCL_ENABLE` | Int8      | 0 = engine off, 1 = on |
 | `RCL<n>_FUNC`| Int16     | target `AUX_FUNC` (0 = row disabled). Reuses the `RCx_OPTION` value list. |
-| `RCL<n>_OPT` | Int16     | packed flags — bits 0-1 source type (0 range, 1 link, 2 condition), bit 2 combine (0 OR, 1 AND), bit 3 negate, bits 4-5 output position (0 HIGH, 1 MIDDLE, 2 LOW) |
+| `RCL<n>_OPT` | Int16     | packed flags — bits 0-1 source type (0 range, 1 link, 2 condition), bit 2 combine (0 OR, 1 AND), bit 3 negate, bit 4 level mode, bits 5-7 level index (0-7) |
 | `RCL<n>_SRC` | Int16     | range → RC channel 1-16; link → watched `AUX_FUNC`; condition → condition id |
 | `RCL<n>_MIN` | Int16     | range: PWM low bound |
 | `RCL<n>_MAX` | Int16     | range: PWM high bound |
@@ -50,7 +50,7 @@ mapping, several terms can share one channel with different ranges to select
 different functions or flight modes, exactly like a Betaflight range group.
 For example, on channel 6:
 
-```
+```text
 RCL1: FUNC=RTL(4)     SRC=6  MIN=1000 MAX=1300
 RCL2: FUNC=Loiter(?)  SRC=6  MIN=1400 MAX=1600
 RCL3: FUNC=Fence(11)  SRC=6  MIN=1800 MAX=2100
@@ -82,22 +82,30 @@ Per RC frame, for each distinct `FUNC` referenced by an enabled term:
 3. Debounce the combined result, then on a state edge invoke
    `run_aux_function(FUNC, active ? HIGH : LOW, Source::LOGIC)`.
 
-### Output position / selector mode
-By default a function is boolean: active rows drive it HIGH, otherwise LOW.
-A row may instead request a specific **output position** via `OPT` bits 4-5
-(0 HIGH, 1 MIDDLE, 2 LOW) so it can drive a **multi-position** target — for
-example VTX power low/mid/high — to a chosen level rather than just on/off.
+### Output level / selector mode
 
-If any row for a function uses a non-default (non-HIGH) output position, that
-function switches to **selector** mode: the AND/OR combine is skipped and the
-**lowest-numbered active row wins**, driving its output position; if no row is
-active the position is LOW. This gives condition- or range-driven multi-level
-output (e.g. `RC_FAILSAFE` → LOW power, low battery → MIDDLE, normal → HIGH),
-which the boolean combine cannot express. Positions map onto the target's aux
-handler exactly as a physical 3-position switch would. Arm functions are
-always boolean and never enter selector mode.
+By default a function is boolean: active rows drive it HIGH, otherwise LOW.
+A row may instead select a specific **output level** via `OPT` bit 4 (level
+mode) and bits 5-7 (a **zero-based** level index 0-7), so it can drive a
+**multi-level** target — for example VTX power — to an exact level rather than
+just on/off. The index stored in `OPT` is zero-based; the engine emits it
+**one-based** to the target (`run_aux_function` `level = index + 1`). For VTX
+power, index `i` selects the `i`-th supported (non-zero) power level in the
+order the `@VTX` power table lists them — so with a 25/400/800/1600 mW table,
+index 0 = 25 mW … index 3 = 1600 mW. This lets a row pick *any* table level,
+not just a coarse low/mid/high.
+
+If any row for a function uses level mode, that function switches to
+**selector** mode: the AND/OR combine is skipped and the **lowest-numbered
+active row wins**, driving its level (emitted as `run_aux_function` HIGH with a
+one-based `level`); if no row is active the output is LOW/off. This gives
+condition- or range-driven multi-level output (e.g. `RC_FAILSAFE` → level 0
+power, low battery → level 1, normal → top level), and lets you spread levels
+across several rows/switches — one row per level. Arm functions are always
+boolean and never enter selector mode.
 
 ### Links and cycles
+
 A link term may reference only a **range-driven** function, never another
 link-driven one. This is Betaflight's own restriction and it guarantees a
 single evaluation level with no cycles.
@@ -130,29 +138,39 @@ motor/throttle functions are supported as targets but with hard constraints:
   channel, **never a spring-return stick**, or the vehicle will disarm the
   moment the stick returns to centre.
 
-## Example: reduce VTX power on RC failsafe
+## Example: multi-level VTX power
 
-`VTX_POWER` (94) is now driveable through `run_aux_function`, so the engine
-(and scripting/MAVLink) can set it — previously it was only readable from a
-physical 6-position switch. The engine only ever emits HIGH or LOW, so it
-drives VTX to maximum (HIGH) or minimum (LOW) power via
-`AP_VideoTX::change_power`; the intermediate steps are only reachable from a
-physical switch or scripting. The minimum step enters pit mode only while
-disarmed; ArduPilot never enters pit mode while armed, so in flight the
-minimum drops to the lowest configured non-zero power level (video is not
-fully cut in the air).
+`VTX_POWER` (94) is driveable through `run_aux_function`, so the engine (and
+scripting/MAVLink) can set it — previously it was only readable from a physical
+6-position switch. In **level mode** a row selects an *exact* supported power
+level (`OPT` bit 4 set, zero-based index in bits 5-7), so the engine can reach
+any of the `@VTX` table's levels, not just on/off. Any row using level mode
+puts the function into selector mode: the lowest-numbered active row wins.
 
-Express "full power normally, minimum on RC failsafe" with a single
-negated condition term:
+**Range → level** — a switch position on channel 7 picks a power level (three
+rows, one per level, non-overlapping ranges):
 
-```
-RCL1_FUNC = 94     # VTX_POWER
-RCL1_OPT  = 0x0A   # condition source (2) + negate (8)
-RCL1_SRC  = 0      # condition 0 = RC failsafe
+```text
+RCL1_FUNC=94  RCL1_OPT=0x10        RCL1_SRC=7  RCL1_MIN=900   RCL1_MAX=1285   # low pos  -> level 0
+RCL2_FUNC=94  RCL2_OPT=0x10|0x20   RCL2_SRC=7  RCL2_MIN=1300  RCL2_MAX=1700   # mid pos  -> level 1
+RCL3_FUNC=94  RCL3_OPT=0x10|0x40   RCL3_SRC=7  RCL3_MIN=1750  RCL3_MAX=2100   # high pos -> level 2
 ```
 
-Not in failsafe -> negated -> HIGH -> full power. In failsafe -> LOW ->
-minimum power. (Negate is allowed here; it is only forbidden on arming
+`OPT` = `0x10` (level mode) `| (index << 5)`: index 0 → `0x10`, 1 → `0x30`,
+2 → `0x50`, … Add more rows/channels for more levels — one row per level.
+
+**Condition → level** — reduce power on RC failsafe (a condition source instead
+of a range; the firmware supports this identically):
+
+```text
+RCL1_FUNC=94  RCL1_OPT=0x02|0x10        RCL1_SRC=0   # RC-failsafe cond -> level 0 (min), highest priority
+RCL2_FUNC=94  RCL2_OPT=0x02|0x08|0x10|0x40  RCL2_SRC=0   # NOT failsafe (negate) -> level 2 (normal)
+```
+
+Row 1 (RC failsafe) wins by priority and forces the lowest level; otherwise the
+negated row selects the normal level. The lowest configured non-zero level is
+used in flight — ArduPilot never enters pit mode while armed, so video is not
+fully cut in the air. (Negate is allowed here; it is only forbidden on arming
 terms.)
 
 ## Build / footprint

@@ -57,23 +57,17 @@ public:
         }
         bool combine_is_and() const { return (options.get() & 0x4) != 0; }
         bool negated() const { return (options.get() & 0x8) != 0; }
-        // Output aux position emitted when this row is active, encoded in
-        // options bits 4-5: 0=HIGH (default), 1=MIDDLE, 2=LOW. This lets a row
-        // drive a multi-position function (e.g. VTX power low/mid/high) to a
-        // specific level instead of a plain on/off. Any row with a non-default
-        // (non-HIGH) output position puts the whole function into "selector"
-        // mode: the lowest-index active row wins and drives its position.
-        RC_Channel::AuxSwitchPos output_position() const {
-            switch ((options.get() >> 4) & 0x3) {
-            case 1:  return RC_Channel::AuxSwitchPos::MIDDLE;
-            case 2:  return RC_Channel::AuxSwitchPos::LOW;
-            default: return RC_Channel::AuxSwitchPos::HIGH;
-            }
-        }
-        bool has_output_position() const { return ((options.get() >> 4) & 0x3) != 0; }
+        // Output level selection for multi-level targets. Options bit 4 enables
+        // level mode; bits 5-7 hold a zero-based level index. In level mode an
+        // active row drives the target function to that specific level (for VTX
+        // power, the one-based table power index) instead of a plain on/off.
+        // Any row using level mode puts the whole function into "selector" mode:
+        // the lowest-index active row wins and drives its level.
+        bool uses_level() const { return (options.get() & 0x10) != 0; }
+        uint8_t output_level() const { return (options.get() >> 5) & 0x7; }
 
         AP_Int16 function;   // target AUX_FUNC (0 = row disabled)
-        AP_Int16 options;    // packed: type(0-1), combine(2), negate(3), outpos(4-5)
+        AP_Int16 options;    // packed: type(0-1), combine(2), negate(3), levelmode(4), level(5-7)
         AP_Int16 source;     // channel / watched func / condition id
         AP_Int16 pwm_min;
         AP_Int16 pwm_max;
@@ -87,10 +81,12 @@ private:
 
     // per-function debounce + committed state, keyed by target AUX_FUNC
     struct FuncState {
-        uint16_t func;         // AUX_FUNC, 0 = slot unused
-        uint8_t committed_pos; // last emitted position (RC_Channel::AuxSwitchPos)
-        uint8_t candidate_pos; // position currently settling
-        uint32_t since_ms;     // when the candidate first appeared
+        uint16_t func;           // AUX_FUNC, 0 = slot unused
+        uint8_t committed_pos;   // last emitted position (RC_Channel::AuxSwitchPos)
+        uint8_t committed_level; // last emitted level (0 = none)
+        uint8_t candidate_pos;   // position currently settling
+        uint8_t candidate_level; // level currently settling
+        uint32_t since_ms;       // when the candidate first appeared
     } _states[AP_RC_LOGIC_NUM_TERMS];
 
     // raw evaluation of a single term (no debounce)

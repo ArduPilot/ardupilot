@@ -195,7 +195,9 @@ AP_RC_Logic::FuncState *AP_RC_Logic::state_for(RC_Channel::AUX_FUNC f)
     if (first_free != nullptr) {
         first_free->func = (uint16_t)f;
         first_free->committed_pos = (uint8_t)RC_Channel::AuxSwitchPos::LOW;
+        first_free->committed_level = 0;
         first_free->candidate_pos = (uint8_t)RC_Channel::AuxSwitchPos::LOW;
+        first_free->candidate_level = 0;
         first_free->since_ms = 0;
     }
     return first_free;
@@ -273,35 +275,38 @@ void AP_RC_Logic::update()
 
         const bool arm_func = is_arm_function(f);
 
-        // A row may request a specific output position (OPT bits 4-5) to drive
-        // a multi-position function (e.g. VTX power) to a chosen level. If any
-        // row for this function does so, the function runs in "selector" mode:
-        // the lowest-index active row wins and drives its position; if none is
-        // active the position is LOW. Otherwise the classic boolean AND/OR
-        // combine is used. Arm functions are always strictly boolean
-        // (HIGH = arm, LOW = disarm) and never enter selector mode.
+        // A row may set a specific output level (OPT bit 4 = level mode, bits
+        // 5-7 = level index) to drive a multi-level function (e.g. VTX power) to
+        // a chosen level. If any row for this function does so the function runs
+        // in "selector" mode: the lowest-index active row wins and drives its
+        // level; if none is active the output is LOW/off. Otherwise the classic
+        // boolean AND/OR combine is used. Arm functions are always strictly
+        // boolean (HIGH = arm, LOW = disarm) and never enter selector mode.
         bool selector = false;
         if (!arm_func) {
             for (uint8_t j = i; j < AP_RC_LOGIC_NUM_TERMS; j++) {
                 if (terms[j].enabled() && terms[j].func() == f &&
-                    terms[j].has_output_position()) {
+                    terms[j].uses_level()) {
                     selector = true;
                     break;
                 }
             }
         }
 
-        RC_Channel::AuxSwitchPos target;
+        RC_Channel::AuxSwitchPos target_pos = RC_Channel::AuxSwitchPos::LOW;
+        uint8_t target_level = 0;
         if (selector) {
-            target = RC_Channel::AuxSwitchPos::LOW;
             for (uint8_t j = i; j < AP_RC_LOGIC_NUM_TERMS; j++) {
                 const Term &tj = terms[j];
                 if (!tj.enabled() || tj.func() != f) {
                     continue;
                 }
                 if (eval_term(tj)) {
-                    // priority: the first (lowest-index) active row wins
-                    target = tj.output_position();
+                    // priority: the first (lowest-index) active row wins. Emit
+                    // HIGH plus the row's one-based level so a multi-level
+                    // target selects that exact level.
+                    target_pos = RC_Channel::AuxSwitchPos::HIGH;
+                    target_level = tj.output_level() + 1;
                     break;
                 }
             }
@@ -331,8 +336,8 @@ void AP_RC_Logic::update()
             if (raw && arm_func && !rc_valid) {
                 raw = false;
             }
-            target = raw ? RC_Channel::AuxSwitchPos::HIGH
-                         : RC_Channel::AuxSwitchPos::LOW;
+            target_pos = raw ? RC_Channel::AuxSwitchPos::HIGH
+                             : RC_Channel::AuxSwitchPos::LOW;
         }
 
         FuncState *st = state_for(f);
@@ -340,19 +345,23 @@ void AP_RC_Logic::update()
             continue;  // no free slot (more distinct funcs than terms)
         }
 
-        // debounce: a changed position must settle before it is committed
-        const uint8_t tpos = (uint8_t)target;
-        if (tpos == st->committed_pos) {
+        // debounce: a changed (position, level) must settle before committing
+        const uint8_t tpos = (uint8_t)target_pos;
+        if (tpos == st->committed_pos && target_level == st->committed_level) {
             st->candidate_pos = tpos;  // nothing pending
+            st->candidate_level = target_level;
             continue;
         }
-        if (st->candidate_pos != tpos) {
+        if (st->candidate_pos != tpos || st->candidate_level != target_level) {
             st->candidate_pos = tpos;
+            st->candidate_level = target_level;
             st->since_ms = now_ms;
         } else if (now_ms - st->since_ms >= AP_RC_LOGIC_DEBOUNCE_MS) {
             st->committed_pos = tpos;
-            rc().run_aux_function(f, target,
-                                  RC_Channel::AuxFuncTrigger::Source::LOGIC, i);
+            st->committed_level = target_level;
+            rc().run_aux_function(f, target_pos,
+                                  RC_Channel::AuxFuncTrigger::Source::LOGIC, i,
+                                  target_level);
         }
     }
 }
