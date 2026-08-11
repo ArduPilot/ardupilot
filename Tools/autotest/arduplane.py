@@ -7259,7 +7259,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION, p1=0)
         self.wait_disarmed()
         self.wait_text('Aborting termination due to GCS request', check_context=True)
-        self.wait_ready_to_arm()  # please?
+        self.wait_ready_to_arm()
+        # the vehicle has just fallen, disarmed and tumbling, from the
+        # termination altitude, and that disturbs the compass enough
+        # for the mag-field arming check to refuse the arm:
+        #     Arm: Check mag field (xy diff:110>100)
+        # wait_ready_to_arm() does not cover that check - it watches
+        # the EKF flags, GPS health and home position - so wait for the
+        # prearm bit, which does:
+        self.wait_prearm_sys_status_healthy()
         self.arm_vehicle()
 
         self.fly_home_land_and_disarm()
