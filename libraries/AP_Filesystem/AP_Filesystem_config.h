@@ -2,6 +2,19 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#ifndef HAL_OS_FATFS_IO
+#define HAL_OS_FATFS_IO 0
+#endif
+
+#ifndef HAL_OS_LITTLEFS_IO
+#define HAL_OS_LITTLEFS_IO 0
+#endif
+
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
+
+
 // backends:
 
 #ifndef AP_FILESYSTEM_ESP32_ENABLED
