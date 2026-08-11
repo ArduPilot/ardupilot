@@ -1,6 +1,7 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include <hwdef_caps.h>
+#include <hwdef_gpio.h>
 
 #include "IMU_heater_config.h"
 #include <AP_Filesystem/AP_Filesystem_config.h>
