@@ -188,6 +188,12 @@ void NavEKF3_core::ResetPosition(resetDataSource posResetSource)
 // Returns true if the set was successful
 bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
 {
+    if (imuSampleTime_ms - setLatLngUseTime_ms < 200) {
+        // Protect from this interface being called too quickly which could degrade EKF stability
+        // The max rate is set to be equivalent to GPS which is a known safe value
+        return false;
+    }
+
     if (((imuSampleTime_ms - lastGpsPosPassTime_ms) < frontend->deadReckonDeclare_ms && !frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion))  ||
         (PV_AidingMode == AID_NONE)
         || !validOrigin) {
@@ -209,6 +215,10 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
     if (imuSampleTime_ms - timestamp_ms > 5000) {
         return false;
     }
+
+    // if it makes it this far then the data will be used
+    setLatLngUseTime_ms = imuSampleTime_ms;
+
     // Don't allow data to time travel into the future
     const uint32_t timeStampConstrained_ms = MIN(timestamp_ms, imuSampleTime_ms);
     const int32_t delta_ms = int32_t(imuDataDelayed.time_ms - timeStampConstrained_ms);

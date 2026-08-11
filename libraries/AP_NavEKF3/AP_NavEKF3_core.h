@@ -1677,6 +1677,7 @@ private:
 
 #if EK3_FEATURE_EXTERNAL_POSITION_FUSION
     // fusion of data received via the setLatLng interface
+    uint32_t setLatLngUseTime_ms; // last time the setLatLng data was received and used
     Vector2F setLatLngPosOffsetNE; // NE position offset in metres added to the received position
     bool setLatLngDataToFuse;      // true when there is new setLatLng position data to fuse
     uint32_t lastSetlatLngPassTime_ms; // last time setLatLng position data was fused
