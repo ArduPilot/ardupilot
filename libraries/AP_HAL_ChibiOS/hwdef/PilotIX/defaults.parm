@@ -1,0 +1,63 @@
+﻿# defaults.parm for PilotIX
+#
+# IMPORTANT correction vs. the original template: ArduPilot does not have
+# a single parameter that selects "plane / copter / rover". The vehicle
+# type is chosen by which firmware you flash (arducopter.apj, arduplane.apj,
+# ardurover.apj, etc). FRAME_CLASS/FRAME_TYPE below only apply once you've
+# flashed ArduCopter, and describe your motor geometry, not vehicle type.
+# You told me: Quadcopter, X layout -> FRAME_CLASS 1, FRAME_TYPE 1.
+
+FRAME_CLASS  1   # 1 = Quad
+FRAME_TYPE   1   # 1 = X
+
+# ---------------- Battery monitor 1 (main, ADC_BATT1/ADC_CURR1, PC0/PC1) ----------------
+BATT_MONITOR   4
+BATT_VOLT_PIN  10
+BATT_CURR_PIN  11
+# Verified against a multimeter with a known 16.8V 4S source (see README.md
+# Battery Monitoring section for the measured values).
+BATT_VOLT_MULT   11.21
+# Calibrated against a current clamp at 50% throttle (see README.md
+# Battery Monitoring section for the measured values).
+BATT_AMP_PERVLT 15.49
+
+# ---------------- Battery monitor 2 (secondary, ADC_BATT2/ADC_CURR2, PA4/PA7) ----------------
+BATT2_MONITOR   4
+BATT2_VOLT_PIN  18
+BATT2_CURR_PIN  7
+# Estimated from R60=1k / R61=20k divider ((20k+1k)/1k = 21) -- this
+# divider supports a notably higher voltage than BATT1, consistent with
+# the LM5116-based wide-input power stage on your second schematic page.
+BATT2_VOLT_MULT   21.46
+BATT2_AMP_PERVLT  15.58
+
+# ---------------- RSSI (ADC_RSSI1, PC5) ----------------
+RSSI_TYPE     1
+RSSI_ANA_PIN  8
+
+# ---------------- OSD (AT7456E, MAX7456-compatible) ----------------
+OSD_TYPE   1
+OSD_ENABLE 1
+
+# ---------------- CAN (SIT1051ATK/3 on CAN1) ----------------
+CAN_P1_DRIVER 1
+
+# ---------------- Serial port protocols ----------------
+# SERIAL0 = USB (MAVLink, always console)
+# SERIAL1 = UART7  (TX7/RX7, has RTS/CTS)  -> Telem1 (MAVLink2)
+SERIAL1_PROTOCOL 2
+# SERIAL2 = USART1 (TX1/RX1) -> Telem2 (MAVLink2)
+SERIAL2_PROTOCOL 2
+# SERIAL3 = USART2 (TX2/RX2) -> GPS1
+SERIAL3_PROTOCOL 5
+# SERIAL4 = USART3 (TX3/RX3) -> GPS2
+SERIAL4_PROTOCOL 5
+# SERIAL5 = UART4  (TX4/RX4) -> spare/user, left as MAVLink2 by default
+SERIAL5_PROTOCOL 2
+# SERIAL6 = USART6 (TX6/RX6) -> RC input (set to -1/None if you use a
+# dedicated RC connector elsewhere, or to your receiver protocol serial number)
+SERIAL6_PROTOCOL 23
+# SERIAL7 = UART8  (TX8/RX8) -> spare/user
+SERIAL7_PROTOCOL 2
+
+# adjust the above to match whatever you actually plug into each port

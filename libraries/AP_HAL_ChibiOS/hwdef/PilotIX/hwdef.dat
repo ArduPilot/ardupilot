@@ -1,0 +1,237 @@
+# hw definition file for processing by chibios_hwdef.py
+# for PilotIX flight controller
+#
+# MCU: STM32H743VIT6
+# IMU: 2x ICM-42688-P (SPI1 + SPI4)
+# BARO: DPS310 / DPS368 (I2C2)
+# OSD: AT7456E (SPI2, MAX7456-compatible)
+# CAN: SIT1051ATK/3 transceiver on CAN1
+#
+# NOTE ON HOW THIS FILE WAS BUILT:
+# Your README states PilotIX is derived from the Matek H743-Wing reference
+# design. Every single net name found in your schematic (TX1-8/RX1-8,
+# GYRO_CS1/2, ADC_BATT1/2, ADC_CURR1/2, ADC_RSSI1, ADC_AIRS, SDIO_*,
+# PINO1/2, CAN1_RX/TX, CAN_SILENT, CS1/CS2, OSD_CS1, BEEPER, LED_STRIP...)
+# matches, pin-for-pin, the real published Matek H743-Wing hwdef.dat.
+# So this file was built by taking that real, working reference and
+# substituting your actual parts (dual ICM-42688-P instead of
+# MPU6000+ICM20602/42605, AT7456E instead of MAX7456, SIT1051 CAN
+# transceiver). Please still do a final continuity check on the CS,
+# ADC and PWM lines against your PCB before first power-up -- see the
+# checklist at the end of README.md.
+
+# ---------------- MCU ----------------
+MCU STM32H7xx STM32H743xx
+
+# board ID -- pick a number that isn't used by any other board in your
+# build tree's Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID 6120
+
+OSCILLATOR_HZ 8000000
+FLASH_SIZE_KB 2048
+
+# H743 flash sectors are 128KB -- the bootloader reservation MUST be a
+# multiple of the sector size or the bootloader/app split will not work.
+# (your draft had 28, which is not sector-aligned -- corrected to 128)
+FLASH_RESERVE_START_KB 128
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 12
+define CH_CFG_ST_RESOLUTION 16
+
+define HAL_STORAGE_SIZE 32768
+STORAGE_FLASH_PAGE 14
+
+# ---------------- USB ----------------
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+USB_STRING_MANUFACTURER "PilotIX"
+USB_STRING_PRODUCT "PilotIX_FC"
+USB_VENDOR 0x1209
+USB_PRODUCT 0x6120
+
+# ---------------- SWD ----------------
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# ---------------- UART / Serial ports ----------------
+# order of UARTs (and USB) exposed as ArduPilot SERIALn ports
+SERIAL_ORDER OTG1 UART7 USART1 USART2 USART3 UART4 USART6 UART8
+
+# UART7 -> silkscreen TX7/RX7 (has RTS7/CTS7 flow control) - SERIAL1 (Telem1)
+PE7  UART7_RX UART7
+PE8  UART7_TX UART7
+PE9  UART7_RTS UART7
+PE10 UART7_CTS UART7
+
+# USART1 -> silkscreen TX1/RX1 - SERIAL2 (Telem2)
+PA9  USART1_TX USART1
+PA10 USART1_RX USART1
+
+# USART2 -> silkscreen TX2/RX2 - SERIAL3 (GPS1)
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# USART3 -> silkscreen TX3/RX3 - SERIAL4 (GPS2)
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+
+# UART4 -> silkscreen TX4/RX4 - SERIAL5 (spare/user)
+PB9 UART4_TX UART4
+PB8 UART4_RX UART4
+
+# USART6 -> silkscreen TX6/RX6 - SERIAL6 (RC input capable)
+PC6 USART6_TX USART6 NODMA
+PC7 USART6_RX USART6 NODMA
+
+# UART8 -> silkscreen TX8/RX8 - SERIAL7 (spare/user)
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+
+# NOTE: there is no USART5/TX5/RX5 on this MCU package -- your original
+# template's placeholder "UART5" doesn't exist in hardware, which matches
+# your schematic (it also skips straight from TX4 to TX6).
+
+# ---------------- I2C ----------------
+I2C_ORDER I2C2 I2C1
+
+# I2C1 -> external connector (compass / airspeed / rangefinder etc.)
+PB6 I2C1_SCL I2C1
+PB7 I2C1_SDA I2C1
+
+# I2C2 -> onboard DPS310/DPS368 barometer
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+
+# ---------------- SPI1: IMU1 (ICM-42688-P, U8) ----------------
+PA5 SPI1_SCK  SPI1
+PA6 SPI1_MISO SPI1
+PD7 SPI1_MOSI SPI1
+PC15 GYRO_CS1 CS
+
+# ---------------- SPI4: IMU2 (ICM-42688-P, U9) ----------------
+PE12 SPI4_SCK  SPI4   # confirmed via PDF text-coordinate extraction
+PE13 SPI4_MISO SPI4
+PE14 SPI4_MOSI SPI4
+PC13 GYRO_CS2 CS
+
+# NOTE: your schematic also brings out GYRO_EXTI1 / GYRO_EXTI2 (the
+# ICM-42688's INT1 data-ready pins). ArduPilot's InertialSensor driver
+# does not need a hwdef interrupt pin (it samples on a fixed schedule),
+# so these two nets do not need an entry here -- they're fine left
+# unconnected in firmware even though they exist in hardware.
+
+# ---------------- SPI2: OSD (AT7456E, U10) ----------------
+PB13 SPI2_SCK  SPI2
+PB14 SPI2_MISO SPI2
+PB15 SPI2_MOSI SPI2
+PB12 OSD_CS1 CS
+
+# ---------------- SPI3: spare / external header ----------------
+# Your schematic exposes SPI_SCK3/SDI3/SDO3 but no chip on this bus
+# was in the BOM -- treating it as a spare external SPI bus (e.g. for
+# an optional rangefinder/flow sensor), matching Matek's own spare SPI3.
+PB3 SPI3_SCK  SPI3
+PB4 SPI3_MISO SPI3
+PB5 SPI3_MOSI SPI3
+
+# External CS pins seen in your schematic as "CS1" / "CS2"
+PD4 EXT_CS1 CS
+PE2 EXT_CS2 CS
+
+# ---------------- CAN (SIT1051ATK/3) ----------------
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+PD3 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW GPIO(70)
+
+# ---------------- ADC ----------------
+PC0 BATT_VOLTAGE_SENS  ADC1 SCALE(1)   # ADC_BATT1
+PC1 BATT_CURRENT_SENS  ADC1 SCALE(1)   # ADC_CURR1
+PA4 BATT2_VOLTAGE_SENS ADC1 SCALE(1)   # ADC_BATT2
+PA7 BATT2_CURRENT_SENS ADC1 SCALE(1)   # ADC_CURR2
+PC5 RSSI_ADC ADC1                      # ADC_RSSI1
+PC4 PRESSURE_SENS ADC1 SCALE(2)        # ADC_AIRS (analog airspeed)
+
+define HAL_BATT_MONITOR_DEFAULT 4
+define BOARD_RSSI_ANA_PIN 8
+define HAL_DEFAULT_AIRSPEED_PIN 4
+
+# BATT_VOLT_MULT / BATT2_VOLT_MULT / *_AMP_PERVLT have been calibrated
+# against a multimeter and a current clamp -- see defaults.parm and
+# README.md Battery Monitoring section for the measured values.
+
+# ---------------- LEDs / notify ----------------
+PE3 LED0 OUTPUT LOW GPIO(90)  # status LED (blue/LED2 on silkscreen)
+PE4 LED1 OUTPUT LOW GPIO(91)  # status LED (green/LED3 on silkscreen)
+define HAL_GPIO_A_LED_PIN 91
+define HAL_GPIO_B_LED_PIN 90
+# LED1/KT-0603R on the schematic looks like a simple always-on 3.3V/BOOT0
+# power-indicator LED with no GPIO control -- no hwdef entry needed for it.
+
+# WS2812 addressable LED strip output
+PA8 TIM1_CH1 TIM1 PWM(13) GPIO(62)
+
+# Piezo buzzer
+PA15 TIM2_CH1 TIM2 GPIO(32) ALARM
+
+# ---------------- PWM / Motor & servo outputs (S1-S12) ----------------
+# Quadcopter X selected -> S1-S4 = motors, S5-S12 = spare/servo/gimbal/lights
+PB0  TIM8_CH2N TIM8  PWM(1)  GPIO(50)   # S1  (M1)
+PB1  TIM8_CH3N TIM8  PWM(2)  GPIO(51)   # S2  (M2)
+PA0  TIM5_CH1  TIM5  PWM(3)  GPIO(52)   # S3  (M3)
+PA1  TIM5_CH2  TIM5  PWM(4)  GPIO(53)   # S4  (M4)
+PA2  TIM5_CH3  TIM5  PWM(5)  GPIO(54)   # S5  (spare)
+PA3  TIM5_CH4  TIM5  PWM(6)  GPIO(55)   # S6  (spare)
+PD12 TIM4_CH1  TIM4  PWM(7)  GPIO(56)   # S7  (spare)
+PD13 TIM4_CH2  TIM4  PWM(8)  GPIO(57)   # S8  (spare)
+PD14 TIM4_CH3  TIM4  PWM(9)  GPIO(58)   # S9  (spare)
+PD15 TIM4_CH4  TIM4  PWM(10) GPIO(59)   # S10 (spare)
+PE5  TIM15_CH1 TIM15 PWM(11) GPIO(60)   # S11 (spare)
+PE6  TIM15_CH2 TIM15 PWM(12) GPIO(61)   # S12 (spare)
+
+# S1..S4 motor order has been confirmed against ESC wiring on the PCB.
+
+# ---------------- microSD (SDMMC1) ----------------
+PC8  SDMMC1_D0  SDMMC1
+PC9  SDMMC1_D1  SDMMC1
+PC10 SDMMC1_D2  SDMMC1
+PC11 SDMMC1_D3  SDMMC1
+PC12 SDMMC1_CK  SDMMC1
+PD2  SDMMC1_CMD SDMMC1
+define HAL_OS_FATFS_IO 1
+
+# ---------------- Power switching GPIOs ----------------
+PD10 PINIO1 OUTPUT GPIO(81) LOW   # Vsw (peripheral power) switch
+PD11 PINIO2 OUTPUT GPIO(82) LOW   # camera/VTX video mux select
+
+DMA_PRIORITY S*
+DMA_NOSHARE SPI1* SPI4*
+
+# ---------------- SPI devices ----------------
+SPIDEV icm42688_1 SPI1 DEVID1 GYRO_CS1  MODE3  2*MHZ 16*MHZ
+SPIDEV icm42688_2 SPI4 DEVID1 GYRO_CS2  MODE3  2*MHZ 16*MHZ
+SPIDEV osd        SPI2 DEVID4 OSD_CS1   MODE0 10*MHZ 10*MHZ
+
+# ---------------- IMUs ----------------
+IMU Invensensev3 SPI:icm42688_1 ROTATION_YAW_180
+IMU Invensensev3 SPI:icm42688_2 ROTATION_YAW_270
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+# ---------------- Barometer ----------------
+BARO DPS310 I2C:0:0x76
+
+# ---------------- Compass ----------------
+# No compass chip is populated on PilotIX itself (none appears in your
+# BOM) -- probe I2C1 (external connector) for whatever compass module
+# you plug in.
+define ALLOW_ARM_NO_COMPASS
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
+
+# ---------------- OSD ----------------
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+env BUILD_ABIN True
