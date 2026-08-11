@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include <hwdef_storage.h>
 
 #ifndef HAL_STORAGE_FLASH_PAGE_ENABLED
 #define HAL_STORAGE_FLASH_PAGE_ENABLED 0
