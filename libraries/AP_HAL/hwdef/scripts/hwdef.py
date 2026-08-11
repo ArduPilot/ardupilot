@@ -192,11 +192,46 @@ class HWDef:
     def write_define(self, f, name, value):
         f.write(f"#define {name} {value}\n")
 
-    def write_hwdef_header(self, outfilename):
-        '''write hwdef header file'''
-        self.progress("Writing hwdef setup in %s" % outfilename)
-        f = open(outfilename, 'w')
+    # headers a generated definition can be routed to in addition to
+    # hwdef.h.  Each fragment is included directly by the subsystem
+    # which owns the definitions it carries, so board-specific values
+    # only enter the include closure of code which uses them.  Every
+    # fragment is written for every board, whether or not the board
+    # defines anything in it, so those includes need no guards.
+    HWDEF_FRAGMENTS = ['logging', 'camera', 'parachute', 'filesystem',
+                       'button', 'rssi', 'storage', 'caps', 'heater',
+                       'serial', 'ins', 'mag', 'baro', 'airspeed',
+                       'battery', 'notify', 'boardid', 'gpio', 'spidev']
 
+    def open_generated_header(self, path, unique_tag=None):
+        '''open a generated header with the standard prologue.  A
+        fragment header (one with a unique_tag) contains no comments or
+        blank lines anywhere: any textual output would survive
+        preprocessing and make otherwise-identical translation units
+        differ between boards'''
+        f = open(path, 'w')
+        if unique_tag is not None:
+            # the unique guard stops gcc treating identical-content
+            # fragments as duplicates of one #pragma once file and
+            # skipping them; the marker declaration guarantees one
+            # constant line of text output so gcc represents the
+            # inclusion identically whether or not the board defines
+            # anything in the fragment
+            f.write('''#pragma once
+#ifndef HWDEF_%s_H
+#define HWDEF_%s_H
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+#ifndef __ASSEMBLER__
+struct hwdef_fragment_marker;
+#endif
+''' % (unique_tag, unique_tag))
+            return f
         f.write('''/*
  generated hardware definitions from hwdef.dat - DO NOT EDIT
 */
@@ -212,10 +247,27 @@ class HWDef:
 #endif
 
 ''')
+        return f
+
+    def open_hwdef_fragment(self, fragment):
+        '''open the generated header for one subsystem fragment'''
+        return self.open_generated_header(
+            self.get_output_path('hwdef_%s.h' % fragment),
+            unique_tag=fragment.upper())
+
+    def write_hwdef_header(self, outfilename):
+        '''write hwdef header file'''
+        self.progress("Writing hwdef setup in %s" % outfilename)
+        f = self.open_generated_header(outfilename)
 
         self.write_hwdef_header_content(f)
 
         f.close()
+
+        # this HAL routes nothing into the fragments, but they are
+        # included unconditionally by their owning subsystems:
+        for fragment in self.HWDEF_FRAGMENTS:
+            self.open_hwdef_fragment(fragment).close()
 
     def progress(self, message):
         if self.quiet:

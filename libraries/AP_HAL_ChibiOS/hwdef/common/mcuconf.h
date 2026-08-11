@@ -35,7 +35,7 @@
 #pragma once
 
 // include generated config
-#include "hwdef.h"
+#include "chibios_hwdef_internal.h"
 
 #ifdef HAL_CHIBIOS_ENABLE_ASSERTS
 #define STM32_DMA_ERROR_HOOK(devp) osalSysHalt("DMA failure")

@@ -27,7 +27,7 @@
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
  */
 #include "hal.h"
-#include "hwdef.h"
+#include "chibios_hwdef_internal.h"
 
 #include <stdlib.h>
 #include <string.h>

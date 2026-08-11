@@ -21,7 +21,7 @@
 #pragma once
 #include "ch.h"
 #include "hal.h"
-#include "hwdef.h"
+#include "chibios_hwdef_internal.h"
 
 /**
  * @file    sysperf.h
