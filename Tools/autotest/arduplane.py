@@ -11179,6 +11179,40 @@ return update()
         ])
         return ret
 
+    ##########################################################################
+    # Tests using last_letter as a simulation backend
+    ##########################################################################
+
+    def LastLetterLoiter(self):
+        '''Test Loiter mode with the last_letter external simulator'''
+        self.customise_SITL_commandline(
+            [],
+            model="last_letter",
+            defaults_filepath=self.model_defaults_filepath("last_letter") + [
+                # The suite's default frame is plane-elevrev, which reverses
+                # the pilot's pitch and yaw input. The last_letter frame does
+                # not carry the reversal, so add it here rather than forking
+                # the profile.
+                os.path.join(testdir, "models", "plane-reverse-rc-pitch-yaw.parm"),
+            ],
+            wipe=True,
+        )
+        self.LOITER()
+
+    def testsLastLetter(self):
+        '''tests flown against the last_letter external simulator
+
+        Deliberately not part of tests(): these need last_letter_ardupilot
+        installed, which only .github/workflows/test_sitl_last_letter.yml does,
+        so they are reached through AutoTestLastLetterPlane below and run as
+        test.LastLetterPlane rather than as part of test.Plane.
+        '''
+        return [
+            self.LastLetterLoiter,
+        ]
+
+    ##########################################################################
+
     def disabled_tests(self):
         ret = {
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
@@ -11207,3 +11241,8 @@ class AutoTestPlaneTests1b(AutoTestPlane):
 class AutoTestPlaneTests1c(AutoTestPlane):
     def tests(self):
         return self.tests1c()
+
+
+class AutoTestLastLetterPlane(AutoTestPlane):
+    def tests(self):
+        return self.testsLastLetter()

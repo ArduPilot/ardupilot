@@ -310,6 +310,7 @@ __bin_names = {
     "PlaneTests1a": "arduplane",
     "PlaneTests1b": "arduplane",
     "PlaneTests1c": "arduplane",
+    "LastLetterPlane": "arduplane",
 
     "Rover": "ardurover",
     "Tracker": "antennatracker",
@@ -393,6 +394,7 @@ tester_class_map = {
     "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a, # ~12m on CI
     "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b, # ~12m on CI
     "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c, # ~12m on CI
+    "test.LastLetterPlane": arduplane.AutoTestLastLetterPlane,
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.QuadPlaneTests1a": quadplane.AutoTestQuadPlaneTests1a, # ~11m on CI
     "test.QuadPlaneTests1b": quadplane.AutoTestQuadPlaneTests1b, # ~11m on CI
@@ -1219,6 +1221,10 @@ if __name__ == "__main__":
         'test.QuadPlaneTests1a',
         'test.QuadPlaneTests1b',
         'test.QuadPlaneTests1c',
+
+        # needs the external last_letter simulator installed, so it is kept
+        # out of the steps list above and named explicitly by CI
+        'test.LastLetterPlane',
 
         'clang-scan-build',
     ]
