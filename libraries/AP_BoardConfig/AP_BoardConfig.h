@@ -1,6 +1,12 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
 #include "IMU_heater_config.h"
+
+#ifndef HAL_WITH_IO_MCU_DSHOT
+#define HAL_WITH_IO_MCU_DSHOT HAL_WITH_IO_MCU_BIDIR_DSHOT
+#endif
 
 #include "AP_BoardConfig_config.h"
 #include <AP_Common/AP_Common.h>
