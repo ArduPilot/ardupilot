@@ -2,6 +2,8 @@
 
 #if HAL_LOGGING_ENABLED
 
+#include <hwdef_boardid.h>
+
 #include "AP_Logger_Backend.h"
 
 #include "LoggerMessageWriter.h"
