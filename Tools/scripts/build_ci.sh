@@ -205,6 +205,24 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
         continue
     fi
+    if [ "$t" == "sitltest-plane-last_letter" ]; then
+        # last_letter is an external simulator, shipped as a release tarball
+        # rather than built here. The github workflow unpacks it and exports
+        # LAST_LETTER_SITL_BIN. Fail fast and legibly if the binary is absent:
+        # SITL forks and execs it, and a failed exec only shows up as a
+        # heartbeat timeout in autotest 20 s later, with no hint of the cause.
+        if [ -n "${LAST_LETTER_SITL_BIN:-}" ]; then
+            if [ ! -x "${LAST_LETTER_SITL_BIN}" ]; then
+                echo "LAST_LETTER_SITL_BIN=${LAST_LETTER_SITL_BIN} is not an executable file"
+                exit 1
+            fi
+        elif ! command -v last_letter_ardupilot >/dev/null; then
+            echo "last_letter_ardupilot not found; set LAST_LETTER_SITL_BIN or put it on PATH"
+            exit 1
+        fi
+        run_autotest "Plane" "build.Plane" "test.LastLetterPlane"
+        continue
+    fi
     if [ "$t" == "sitltest-quadplane-tests1a" ]; then
         run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1a"
         continue
