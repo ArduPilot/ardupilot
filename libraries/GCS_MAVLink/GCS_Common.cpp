@@ -3939,12 +3939,8 @@ MAV_RESULT GCS_MAVLINK::set_ekf_origin(const Location& loc)
 
     AP_AHRS &ahrs = AP::ahrs();
 
-    // check if EKF origin has already been set
-    Location ekf_origin;
-    if (ahrs.get_origin(ekf_origin)) {
-        return MAV_RESULT_FAILED;
-    }
-
+    // Don't check whether origin is already set globally. Always pass it to all lanes,
+    // so they decide independently whether to accept the new origin.
     if (!ahrs.set_origin(loc)) {
         return MAV_RESULT_FAILED;
     }
