@@ -6445,15 +6445,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.set_analog_rangefinder_parameters()
                 self.set_parameter("SIM_SONAR_SCALE", 12)
 
-                start = self.mav.location()
-                target = start
-                (target.lat, target.lng) = mavextra.gps_offset(start.lat, start.lng, 4, -4)
-                self.progress("Setting target to %f %f" % (target.lat, target.lng))
-
                 self.set_parameters({
                     "SIM_PLD_ENABLE": 1,
-                    "SIM_PLD_LAT": target.lat,
-                    "SIM_PLD_LON": target.lng,
                     "SIM_PLD_HEIGHT": 0,
                     "SIM_PLD_ALT_LMT": 15,
                     "SIM_PLD_DIST_LMT": 10,
@@ -6462,6 +6455,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.reboot_sitl()
 
                 self.progress("Waiting for location")
+                self.wait_ready_to_arm()
+
+                # place the target relative to the vehicle's post-reboot
+                # position - which is the spawn position.  Sampling the
+                # position before the reboot places the target wherever
+                # the previous test happened to leave the vehicle:
+                start = self.mav.location()
+                target = start
+                (target.lat, target.lng) = mavextra.gps_offset(start.lat, start.lng, 4, -4)
+                self.progress("Setting target to %f %f" % (target.lat, target.lng))
+                self.set_parameters({
+                    "SIM_PLD_LAT": target.lat,
+                    "SIM_PLD_LON": target.lng,
+                })
+
                 self.zero_throttle()
                 self.takeoff(10, 1800, mode="LOITER")
                 self.change_mode("LAND")
