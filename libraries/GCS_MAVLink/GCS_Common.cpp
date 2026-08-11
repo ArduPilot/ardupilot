@@ -4180,7 +4180,7 @@ void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
 {
     mavlink_global_position_sensor_t m;
     mavlink_msg_global_position_sensor_decode(&msg, &m);
-    if (m.flags == GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
+    if (m.flags & GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
         return;
     }
     Location loc;
