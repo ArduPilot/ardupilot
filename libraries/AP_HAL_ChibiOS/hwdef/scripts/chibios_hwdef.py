@@ -2790,6 +2790,15 @@ Please run: Tools/scripts/build_bootloaders.py %s
 #endif
 ''')
 
+        # mirror where STORAGE_FLASH_PAGE gets defined: write_mcu_config
+        # only writes it for main firmware, not for bootloaders
+        if ((not self.is_bootloader_fw() and
+             self.get_config('STORAGE_FLASH_PAGE', required=False) is not None) or
+                'STORAGE_FLASH_PAGE' in self.intdefines):
+            # AP_Param needs to know flash-backed storage is in use
+            # without having to test the page number for definedness
+            f.write('#define HAL_CHIBIOS_MCU_FLASH_STORAGE_ENABLED 1\n')
+
     def build_peripheral_list(self):
         '''build a list of peripherals for DMA resolver to work on'''
         peripherals = []
