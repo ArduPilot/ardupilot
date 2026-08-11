@@ -696,7 +696,8 @@ void NavEKF3_core::SelectVelPosFusion()
     selectHeightForFusion();
 
 #if EK3_FEATURE_EXTERNAL_POSITION_FUSION
-    if (gpsDataToFuse && gpsGoodToAlign && ((imuSampleTime_ms - lastResetlatLngTime_ms) < 10000 || filterStatus.flags.dead_reckoning)) {
+    const bool recentlatLngReset = (lastResetlatLngTime_ms > 0) && ((imuSampleTime_ms - lastResetlatLngTime_ms) < 10000);
+    if (gpsDataToFuse && gpsGoodToAlign && (recentlatLngReset || filterStatus.flags.dead_reckoning)) {
         // prior bad data is likely so states are suspect and should be reset
         ResetVelocity(resetDataSource::GPS);
         ResetPosition(resetDataSource::GPS);
