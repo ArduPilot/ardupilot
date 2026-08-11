@@ -7695,6 +7695,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             'SCR_ENABLE': 1,
             'SCR_DEBUG_OPTS': 8,  # runtime memory usage and time
+            # this test never arms, so its boot only produces an
+            # onboard log if disarmed logging is on.  LOG_DISARMED=1 is
+            # only a suite default, and a predecessor which restarts
+            # SITL with its own defaults file can leave it at 0 - in
+            # which case the scan below reads a previous boot's log,
+            # which has no SCR records for these scripts:
+            #     ScriptStats (test script stats logging) (Did not see
+            #     simple_loop.lua script)
+            'LOG_DISARMED': 1,
         })
         self.install_test_scripts_context([
             "math.lua",
