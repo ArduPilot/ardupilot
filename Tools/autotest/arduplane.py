@@ -7901,7 +7901,7 @@ return update()
             dest_alt-5,
             dest_alt+5,
             minimum_duration=10,
-            timeout=30,
+            timeout=60,
             relative=True
         )
 
