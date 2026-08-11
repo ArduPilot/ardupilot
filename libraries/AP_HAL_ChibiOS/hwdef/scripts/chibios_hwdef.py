@@ -2688,6 +2688,26 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.add_iomcu_firmware_defaults(f)
         self.add_normal_firmware_defaults(f)
 
+        self.write_derived_flags(f)
+
+    def write_derived_flags(self, f):
+        '''write flags derived from the board configuration.  These were
+        derived in AP_HAL/board/chibios.h from macros which are only
+        meaningful to the ChibiOS layer, so resolve them here instead.'''
+        # INS_MAX_INSTANCES comes from the hwdef if it sets one, and is
+        # otherwise defaulted from the number of IMUs by write_IMU_config
+        ins_max_instances = self.intdefines.get('INS_MAX_INSTANCES',
+                                                self.ins_max_instances_default)
+        rate_capable = (self.mcu_series.startswith('STM32H7') or
+                        self.mcu_series.startswith('STM32F7') or
+                        (self.mcu_series.startswith('STM32F4') and
+                         ins_max_instances == 1))
+        if rate_capable:
+            f.write('''#ifndef HAL_INS_RATE_LOOP
+#define HAL_INS_RATE_LOOP 1
+#endif
+''')
+
     def build_peripheral_list(self):
         '''build a list of peripherals for DMA resolver to work on'''
         peripherals = []
