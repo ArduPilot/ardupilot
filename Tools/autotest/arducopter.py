@@ -4474,8 +4474,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         self.set_rc(1, rc_roll)
                     flip_pitch = not flip_pitch
                     last_stick_flip = now
-                m = self.assert_receive_message('NAMED_VALUE_FLOAT')
-                if m.name != 'HEST':
+                # do not block waiting for the estimator to report: the
+                # excitation above is what makes it converge, and a
+                # blocking wait lets an unrelated slow message hold the
+                # sticks still for seconds of simulated time.  Take
+                # whatever has arrived and get back to stirring.
+                m = self.mav.recv_match(
+                    type='NAMED_VALUE_FLOAT',
+                    blocking=True,
+                    timeout=0.1,
+                )
+                if m is None or m.name != 'HEST':
                     continue
                 hest_m = m.value
                 agl_m = true_agl_m(ground_alt_m)
