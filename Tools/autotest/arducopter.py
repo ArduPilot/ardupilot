@@ -18162,6 +18162,9 @@ RTL_ALT_M 111
 
     def RTLYaw(self):
         '''test that vehicle yaws to original heading on RTL'''
+        # the vehicle's heading is whatever the previous test left it
+        # at - reboot to get the known spawn heading
+        self.reboot_sitl()
         # 0 is WP_YAW_BEHAVIOR_NONE
         # 1 is WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP
         # 2 is WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
