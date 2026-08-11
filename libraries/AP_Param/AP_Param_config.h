@@ -2,6 +2,10 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#ifndef HAL_STORAGE_FLASH_PAGE_ENABLED
+#define HAL_STORAGE_FLASH_PAGE_ENABLED 0
+#endif
+
 #include <AP_Filesystem/AP_Filesystem_config.h>
 
 #ifndef AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
