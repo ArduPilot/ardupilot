@@ -1708,16 +1708,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.install_applet_script_context("plane_precland.lua")
 
-        here = self.mav.location()
-        target = self.offset_location_ne(here, 20, 0)
-
         self.set_parameters({
             "SCR_ENABLE": 1,
             "PLND_ENABLED": 1,
             "PLND_TYPE": 4,
             "SIM_PLD_ENABLE":   1,
-            "SIM_PLD_LAT" : target.lat,
-            "SIM_PLD_LON" : target.lng,
             "SIM_PLD_HEIGHT" : 0,
             "SIM_PLD_ALT_LMT" : 50,
             "SIM_PLD_DIST_LMT" : 30,
@@ -1741,6 +1736,19 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_text("PLND: Loaded", check_context=True)
 
         self.wait_ready_to_arm()
+
+        # place the target near the vehicle's current position - which,
+        # having just rebooted, is the spawn position.  Sampling the
+        # position before the reboot places the target wherever the
+        # previous test happened to leave the vehicle, which can be
+        # hundreds of metres from where QRTL will descend:
+        here = self.mav.location()
+        target = self.offset_location_ne(here, 20, 0)
+        self.set_parameters({
+            "SIM_PLD_LAT": target.lat,
+            "SIM_PLD_LON": target.lng,
+        })
+
         self.change_mode("GUIDED")
         self.arm_vehicle()
         self.takeoff(60, 'GUIDED')
