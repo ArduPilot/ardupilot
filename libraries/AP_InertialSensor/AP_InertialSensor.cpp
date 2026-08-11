@@ -2152,8 +2152,8 @@ check_sample:
                     // comes back we will start waiting on it again
                     _gyro_wait_mask &= gyro_available_mask;
                     _accel_wait_mask &= accel_available_mask;
-                    break;
                 }
+                break;
             }
 
             hal.scheduler->delay_microseconds_boost(wait_per_loop);
