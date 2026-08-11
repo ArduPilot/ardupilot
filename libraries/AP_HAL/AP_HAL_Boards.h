@@ -170,10 +170,6 @@
 #define HAL_PARAM_DEFAULTS_PATH nullptr
 #endif
 
-#ifndef HAL_HAVE_IMU_HEATER
-#define HAL_HAVE_IMU_HEATER 0
-#endif
-
 #ifndef HAL_NUM_CAN_IFACES
 #define HAL_NUM_CAN_IFACES 0
 #endif
