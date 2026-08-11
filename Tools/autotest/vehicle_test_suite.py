@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import abc
 import copy
+import faulthandler
 import enum
 import errno
 import fnmatch
@@ -14661,12 +14662,24 @@ switch value'''
         tests_by_name = {x.name: x for x in tests}
         outstanding_results = set(tests_by_name.keys())
         results = []
+        # hung-worker watchdog: if no result arrives for a while, ask
+        # each still-running worker to dump its thread stacks (SIGUSR1
+        # -> faulthandler, see test_runner_thread_main); if the silence
+        # persists, abandon the workers entirely so one stuck worker
+        # cannot stall the run until the global timeout
+        stack_dump_interval = 300
+        hung_worker_timeout = 1800
+        last_result_time = time.time()
+        stack_dumps_sent = 0
+        abandoned_workers = False
         while len(results) != len(tests):
             while True:
                 try:
                     result = self.result_queue.get(block=False)
                     self.progress("Received result (%s)" % str(result))
                     results.append(result)
+                    last_result_time = time.time()
+                    stack_dumps_sent = 0
                     if not hasattr(self, "fcu_firmware_version"):
                         try:
                             self.fcu_firmware_version = result.fcu_firmware_version
@@ -14699,7 +14712,11 @@ switch value'''
                     self.progress("   Test runner died without result for %s" % name)
                     result = Result(tests_by_name[name])
                     result.passed = False
-                    result.reason = "Test runner exited without returning a result"
+                    if abandoned_workers:
+                        result.reason = ("Test runner hung and was abandoned "
+                                         "(thread stacks in run output)")
+                    else:
+                        result.reason = "Test runner exited without returning a result"
                     results.append(result)
                 outstanding_results = set()
                 break
@@ -14709,6 +14726,23 @@ switch value'''
             if len(outstanding_results) < 5:
                 for t in outstanding_results:
                     self.progress("   Where are you %s?" % t)
+            silence = time.time() - last_result_time
+            if silence > stack_dump_interval * (stack_dumps_sent + 1):
+                alive = [t for t in self.threads if t.is_alive()]
+                self.progress("No results for %us; dumping thread stacks of %u worker(s) to run output" %
+                              (silence, len(alive)))
+                for t in alive:
+                    os.kill(t.pid, signal.SIGUSR1)
+                stack_dumps_sent += 1
+            if silence > hung_worker_timeout and not abandoned_workers:
+                self.progress("No results for %us; abandoning %u hung worker(s)" %
+                              (silence, len([t for t in self.threads if t.is_alive()])))
+                abandoned_workers = True
+                for t in self.threads:
+                    if t.is_alive():
+                        # SIGKILL, not SIGTERM: a worker hung in an
+                        # uninterruptible state ignores the latter
+                        t.kill()
 
         for t in self.threads:
             t.join()
@@ -14774,6 +14808,10 @@ switch value'''
 
     def test_runner_thread_main(self, instance):
         self.instance = instance
+        # let the dispatcher interrogate us if we hang: SIGUSR1 makes
+        # faulthandler write every thread's stack to stderr (the run
+        # log) without killing us
+        faulthandler.register(signal.SIGUSR1, all_threads=True)
         # move into this worker's private working directory; from here on
         # all cwd-relative paths (logs/, eeprom.bin, terrain/, ...) are
         # isolated from the other workers:

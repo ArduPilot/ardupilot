@@ -40,6 +40,8 @@ from vehicle_test_suite import Test
 
 tester = None
 
+autotest_start_time = time.time()
+
 
 def buildlogs_dirpath():
     """Return BUILDLOGS directory path."""
@@ -206,8 +208,11 @@ def mavtogpx_filepath():
 
 
 def convert_gpx():
-    """Convert any tlog files to GPX and KML."""
-    mavlog = glob.glob(buildlogs_path("*.tlog"))
+    """Convert this run's tlog files to GPX and KML."""
+    # the buildlogs directory is shared and accumulates tlogs from
+    # previous runs; only convert files this run produced
+    mavlog = [m for m in glob.glob(buildlogs_path("*.tlog"))
+              if os.path.getmtime(m) >= autotest_start_time]
     passed = True
     for m in mavlog:
         util.run_cmd(mavtogpx_filepath() + " --nofixcheck " + m)
