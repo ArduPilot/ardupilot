@@ -919,7 +919,12 @@ class ChibiOSHWDef(hwdef.HWDef):
 
     def write_mcu_config(self, f):
         '''write MCU config defines'''
-        f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % os.path.basename(os.path.dirname(self.hwdef[0])))
+        board_name = os.path.basename(os.path.dirname(self.hwdef[0]))
+        f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % board_name)
+        if not any(line.startswith('define CHIBIOS_SHORT_BOARD_NAME') for line in self.alllines):
+            # resolved here rather than aliased in AP_HAL/board/chibios.h,
+            # which cannot see CHIBIOS_BOARD_NAME once it is board-private
+            f.write('#define CHIBIOS_SHORT_BOARD_NAME "%s"\n' % board_name)
         f.write('// MCU type (ChibiOS define)\n')
         f.write('#define %s_MCUCONF\n' % self.get_config('MCU'))
         mcu_subtype = self.get_config('MCU', 1)
@@ -2455,9 +2460,10 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 f.write('#define STM32_SPI_USE_%s                  TRUE\n' % type)
             if type.startswith('I2C'):
                 f.write('#define STM32_I2C_USE_%s                  TRUE\n' % type)
-            if type.startswith('QUADSPI'):
-                f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
-            if type.startswith('OCTOSPI'):
+            if type.startswith('QUADSPI') or type.startswith('OCTOSPI'):
+                # AP_HAL/board/chibios.h needs the derived flag where all
+                # code can see it; STM32_WSPI_USE_* is ChibiOS-internal
+                f.write('#define HAL_USE_%s TRUE\n' % type)
                 f.write('#define STM32_WSPI_USE_%s                 TRUE\n' % type)
 
     def get_dma_exclude(self, periph_list):
