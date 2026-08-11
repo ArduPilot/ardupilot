@@ -7387,6 +7387,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def WPYawBehaviour1RTL(self):
         '''ensure behaviour 1 (face home) works in RTL'''
         self.start_subtest("moving off in guided mode and checking return yaw")
+        # the vehicle's heading is whatever the previous test left it
+        # at - reboot to get the known spawn heading
+        self.reboot_sitl()
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.wait_heading(272, timeout=1)  # verify initial heading"
