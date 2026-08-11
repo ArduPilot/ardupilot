@@ -18,6 +18,10 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 
+#ifndef AP_WHEELENCODER_ENABLED
+#define AP_WHEELENCODER_ENABLED 1
+#endif
+
 // Maximum number of WheelEncoder measurement instances available on this platform
 #define WHEELENCODER_MAX_INSTANCES      2
 #define WHEELENCODER_CPR_DEFAULT        3200    // default encoder counts per full revolution of the wheel
