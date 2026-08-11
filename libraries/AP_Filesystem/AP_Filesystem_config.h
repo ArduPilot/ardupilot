@@ -1,6 +1,6 @@
 #pragma once
 
-#include <AP_HAL/AP_HAL_Boards.h>
+#include <hwdef_filesystem.h>
 
 #ifndef HAL_OS_FATFS_IO
 #define HAL_OS_FATFS_IO 0
@@ -14,6 +14,7 @@
 #define HAL_OS_POSIX_IO 0
 #endif
 
+#include <AP_HAL/AP_HAL_Boards.h>
 
 // backends:
 
