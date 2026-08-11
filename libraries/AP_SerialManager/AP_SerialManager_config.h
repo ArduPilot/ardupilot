@@ -19,6 +19,8 @@
  */
 #pragma once
 
+#include <hwdef_serial.h>
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_Networking/AP_Networking_Config.h>
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
