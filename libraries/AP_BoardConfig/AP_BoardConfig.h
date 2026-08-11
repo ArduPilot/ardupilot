@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IMU_heater_config.h"
+#include <AP_Filesystem/AP_Filesystem_config.h>
 
 #include "AP_BoardConfig_config.h"
 #include <AP_Common/AP_Common.h>
