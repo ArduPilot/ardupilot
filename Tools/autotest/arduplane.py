@@ -8722,8 +8722,19 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Ensure we go back through this loiter point
         self.wait_distance_to_waypoint(3, distance_min=90, distance_max=110, timeout=90) # North West Loiter
 
-        self.wait_distance_to_waypoint(5, distance_min=10, distance_max=20, timeout=90)  # South West Waypoint
-        self.wait_distance_to_waypoint(6, distance_min=10, distance_max=20, timeout=90)  # South East Waypoint
+        # a banded distance wait can miss a fast flyby: a leaked 1Hz
+        # position stream put ~22m between samples through this
+        # waypoint's 10m-wide acceptance band.  Pin the stream rate and
+        # track the closest approach continuously instead:
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT, 10)
+        # the bound reflects what the firmware guarantees: waypoints
+        # are accepted within WP_RADIUS (default 90m) with L1 corner
+        # anticipation; measured closest approaches span 12-52m
+        # depending on the loiter-exit geometry.  A mission which
+        # skips or instantly-accepts these waypoints misses them by
+        # many hundreds of metres:
+        self.wait_mission_waypoint_passed_within(5, 100, timeout=90)  # South West Waypoint
+        self.wait_mission_waypoint_passed_within(6, 100, timeout=90)  # South East Waypoint
 
         self.fly_home_land_and_disarm()
 
