@@ -9141,6 +9141,49 @@ class TestSuite(abc.ABC):
         self.progress("loc: %s" % str(loc))
         self.wait_distance_to_location(loc, distance_min, distance_max, **kwargs)
 
+    def wait_mission_waypoint_passed_within(self, wp_num, max_distance, timeout=240):
+        '''wait until the mission has advanced past wp_num, continuously
+        tracking the vehicle's closest approach to that waypoint; raise
+        unless it passed within max_distance metres.  Unlike a banded
+        distance wait, a fast flyby cannot slip between two samples: the
+        minimum is accumulated from every position received from the
+        moment this is called until the mission moves on.'''
+        wps = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        m = wps[wp_num]
+        loc = mavutil.location(m.x / 1.0e7, m.y / 1.0e7, 0, 0)
+        self.progress("Waiting to pass within %.1fm of wp %u (%s)" %
+                      (max_distance, wp_num, str(loc)))
+        min_dist = None
+        last_print = 0
+        tstart = self.get_sim_time()
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > timeout:
+                raise AutoTestTimeoutException(
+                    "Mission did not pass wp %u (closest approach %s)" %
+                    (wp_num, str(min_dist)))
+            msg = self.assert_receive_message(['GLOBAL_POSITION_INT', 'MISSION_CURRENT'])
+            if msg.get_type() == 'MISSION_CURRENT':
+                if msg.seq > wp_num:
+                    break
+                # a final waypoint is never advanced past; the mission
+                # completes instead:
+                if msg.mission_state == mavutil.mavlink.MISSION_STATE_COMPLETE:
+                    break
+                continue
+            dist = self.get_distance(loc, mavutil.location(msg.lat/1.0e7, msg.lon/1.0e7, 0, 0))
+            if min_dist is None or dist < min_dist:
+                min_dist = dist
+            if now - last_print > 5:
+                self.progress("wp%u dist=%.1fm closest-so-far=%.1fm want<=%.1fm" %
+                              (wp_num, dist, min_dist, max_distance))
+                last_print = now
+        if min_dist is None or min_dist > max_distance:
+            raise NotAchievedException(
+                "Mission passed wp %u without coming within %.1fm (closest %s)" %
+                (wp_num, max_distance, str(min_dist)))
+        self.progress("Passed wp %u at %.1fm" % (wp_num, min_dist))
+
     def wait_distance_to_location(self, location, distance_min, distance_max, timeout=30, **kwargs):
         """Wait for flight of a given distance."""
         assert distance_min <= distance_max, "Distance min should be less than distance max."
