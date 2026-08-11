@@ -3628,6 +3628,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def CompassMot(self):
         '''test code that adjust mag field for motor interference'''
+        # simulate real motor interference for the calibration to
+        # learn: SIM_MAG_MOT is applied as mGauss per amp of battery
+        # current.  Without it the calibration fits noise and whatever
+        # attitude changes the (unanchored, throttled-up) vehicle's
+        # excursions produce - the historical strictly-positive
+        # compensation check passed or failed by accident.  Negative
+        # interference so the learned compensation is positive:
+        self.set_parameters({
+            "SIM_MAG_MOT_X": -10,
+            "SIM_MAG_MOT_Y": -10,
+            "SIM_MAG_MOT_Z": -10,
+            "SIM_CLAMP_CH": 11,
+        })
+        # hold the vehicle in the simulated clamp so the calibration
+        # is bench-static, as compassmot is in the real world - at
+        # full throttle an unclamped SITL vehicle takes off and
+        # crashes mid-calibration:
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=2000)
+        self.wait_statustext("SITL: Clamp: grabbed vehicle")
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
             0,  # p1
@@ -3677,10 +3696,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         m = self.wait_message_field_values("COMPASSMOT_STATUS", {
             "throttle": 0,
         }, verbose=True)
+        # the calibration should recover the injected interference:
+        # compensation is the negation of SIM_MAG_MOT (measured
+        # recovery error ~0.001%; tolerance is generous)
         for axis in "X", "Y", "Z":
             fieldname = "Compensation" + axis
-            if getattr(m, fieldname) <= 0:
-                raise NotAchievedException("Expected non-zero %s" % fieldname)
+            value = getattr(m, fieldname)
+            if abs(value - 10.0) > 0.5:
+                raise NotAchievedException(
+                    "%s %f does not match injected interference (want 10.0)" %
+                    (fieldname, value))
 
         # it's kind of crap - but any command-ack will stop the
         # calibration
