@@ -2252,7 +2252,7 @@ void NavEKF3_core::verifyTiltErrorVariance()
         const struct log_XKTV msg {
             LOG_PACKET_HEADER_INIT(LOG_XKTV_MSG),
             time_us      : dal.micros64(),
-            core         : core_index,
+            core         : DAL_CORE(core_index),
             tvs          : float(tiltErrorVariance),
             tvd          : float(tiltErrorVarianceAlt),
         };
