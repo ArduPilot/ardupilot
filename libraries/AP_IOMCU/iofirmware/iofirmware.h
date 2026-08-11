@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef_gpio.h>
+
 #include <stdint.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
