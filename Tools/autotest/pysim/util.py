@@ -510,6 +510,44 @@ class PSpawnStdPrettyPrinter(object):
         self.output.flush()
 
 
+def die_with_parent(expected_parent_pid):
+    '''preexec_fn which asks the kernel to kill this process when the
+    process that started it dies.
+
+    A parallel worker which hangs is SIGKILLed by the dispatcher, which
+    runs none of its cleanup, so whatever it started outlives it.  SITL
+    happens to notice - its pty hangs up and it exits - but a
+    peripheral does not: it is reparented to init and stays on the
+    simulation-state multicast group, which has no per-instance offset,
+    talking to every peripheral test which runs after it, in this run
+    or the next one on the machine.  Measured: a SIGKILLed worker left
+    AP_Periph running, reparented, with its ports still held.
+
+    expected_parent_pid is read in the parent, before the fork, because
+    of the race the other way: if the parent dies between the fork and
+    the prctl() below, the death signal has already been and gone and
+    we would sit here orphaned forever.  Comparing getppid() afterwards
+    catches exactly that window.
+
+    Best-effort, and deliberately quiet about it:
+      - Linux only.  Elsewhere this is a no-op and the previous
+        behaviour stands.
+      - cleared across a setuid exec, so it does nothing for
+        "sudo pppd"; that one still needs killing by hand.
+      - not inherited across fork, so a wrapper which forks the real
+        inferior (gdbserver, xterm) protects only the wrapper.
+    '''
+    try:
+        import ctypes
+        PR_SET_PDEATHSIG = 1
+        ctypes.CDLL("libc.so.6").prctl(PR_SET_PDEATHSIG, signal.SIGKILL)
+    except Exception:  # noqa: BLE001 - never let this stop a spawn
+        return
+    if os.getppid() != expected_parent_pid:
+        # already orphaned: the signal fired before we asked for it
+        os._exit(1)
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -724,7 +762,9 @@ def start_SITL(binary,
             print("Cannot find %s process terminal" % binary)
         child = FakeMacOSXSpawn()
     elif gdb and not os.getenv('DISPLAY'):
-        subprocess.Popen(cmd, cwd=cwd)
+        spawning_pid = os.getpid()
+        subprocess.Popen(cmd, cwd=cwd,
+                         preexec_fn=lambda: die_with_parent(spawning_pid))
         atexit.register(kill_screen_gdb)
         # we are expected to return a pexpect wrapped around the
         # stdout of the ArduPilot binary.  Not going to happen until
@@ -760,8 +800,10 @@ def start_SITL(binary,
             # non-empty even when no errors are detected.
             our_opts = 'log_path=%s:symbolize=1:verbosity=0' % log_base
             spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
+        spawning_pid = os.getpid()
         child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii',
-                              codec_errors='replace', timeout=5, cwd=cwd, env=spawn_env)
+                              codec_errors='replace', timeout=5, cwd=cwd, env=spawn_env,
+                              preexec_fn=lambda: die_with_parent(spawning_pid))
         pexpect_autoclose(child)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
@@ -833,8 +875,10 @@ def start_MAVProxy_SITL(atype,
     # firmware hash, which is not ASCII.  Replace what we cannot decode
     # rather than throwing UnicodeDecodeError out of an unrelated expect:
     #     AccelCal (...) ('ascii' codec can't decode byte 0xef in position 611: ...)
+    spawning_pid = os.getpid()
     ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii',
-                        codec_errors='replace', timeout=pexpect_timeout, env=env)
+                        codec_errors='replace', timeout=pexpect_timeout, env=env,
+                        preexec_fn=lambda: die_with_parent(spawning_pid))
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
@@ -847,8 +891,10 @@ def start_PPP_daemon(ips, sockaddr):
     cmd = cmd.split()
     print("Running: %s" % cmd_as_shell(cmd))
 
+    spawning_pid = os.getpid()
     ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii',
-                        codec_errors='replace', timeout=30)
+                        codec_errors='replace', timeout=30,
+                        preexec_fn=lambda: die_with_parent(spawning_pid))
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
