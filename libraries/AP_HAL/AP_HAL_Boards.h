@@ -162,10 +162,6 @@
 #define HAL_OS_SOCKETS 0
 #endif
 
-#ifndef HAL_OS_POSIX_IO
-#define HAL_OS_POSIX_IO 0
-#endif
-
 #ifndef HAL_PARAM_DEFAULTS_PATH
 #define HAL_PARAM_DEFAULTS_PATH nullptr
 #endif
@@ -214,14 +210,6 @@
 
 #ifndef AP_HAL_UARTDRIVER_ENABLED
 #define AP_HAL_UARTDRIVER_ENABLED 1
-#endif
-
-#ifndef HAL_OS_FATFS_IO
-#define HAL_OS_FATFS_IO 0
-#endif
-
-#ifndef HAL_OS_LITTLEFS_IO
-#define HAL_OS_LITTLEFS_IO 0
 #endif
 
 #ifndef HAL_BARO_DEFAULT
