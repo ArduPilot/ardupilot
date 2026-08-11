@@ -346,7 +346,7 @@ class Context(object):
         self.original_heartbeat_interval_ms = None
         self.installed_scripts = []
         self.installed_modules = []
-        self.overridden_message_rates = {}
+        self.overridden_message_intervals = {}
         self.raising_debug_trap_on_exceptions = False
         # self.speedup value to restore on context_pop(); set by the
         # first context_set_speedup() call in this context (None means
@@ -4083,10 +4083,16 @@ class TestSuite(abc.ABC):
         if run_cmd is None:
             run_cmd = self.run_cmd
 
-        overridden_message_rates = self.context_get().overridden_message_rates
+        overridden_message_intervals = self.context_get().overridden_message_intervals
 
-        if id not in overridden_message_rates:
-            overridden_message_rates[id] = self.measure_message_rate(id)
+        if id not in overridden_message_intervals:
+            # ask the vehicle for the configured interval rather than
+            # measuring the arrival rate: a measurement on a loaded
+            # host reads low, and restoring that on context-pop bakes
+            # the wrong rate in for everything which follows.  The
+            # queried interval also round-trips the "not set" (0) and
+            # "disabled" (-1) states exactly.
+            overridden_message_intervals[id] = self.get_message_interval(id, run_cmd=run_cmd)
 
         self.set_message_rate_hz(id, rate_hz, run_cmd=run_cmd)
 
@@ -7628,8 +7634,8 @@ class TestSuite(abc.ABC):
                 self.remove_message_hook(hook)
         for script in dead.installed_scripts:
             self.remove_installed_script(script)
-        for (message_id, rate_hz) in dead.overridden_message_rates.items():
-            self.set_message_rate_hz(message_id, rate_hz)
+        for (message_id, interval_us) in dead.overridden_message_intervals.items():
+            self.set_message_interval(message_id, interval_us)
         for module in dead.installed_modules:
             print("Removing module (%s)" % module)
             self.remove_installed_modules(module)
