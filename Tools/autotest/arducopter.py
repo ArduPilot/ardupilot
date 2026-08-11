@@ -13441,6 +13441,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def SensorErrorFlags(self):
         '''Test we get ERR messages when sensors have issues'''
+        # this test never arms, so its boot only produces an onboard
+        # log if disarmed logging is on; LOG_DISARMED=1 is only a suite
+        # default, and a predecessor which restarts SITL with its own
+        # defaults can leave it at 0, in which case the log scan below
+        # silently reads a previous boot's log:
+        self.set_parameter('LOG_DISARMED', 1)
         self.reboot_sitl()
 
         for (param_names, param_value, expected_subsys, expected_ecode, desc) in [
@@ -17418,7 +17424,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.guided_achieve_heading(0, direction=1, accuracy=1)
 
         self.set_parameter("GUID_OPTIONS", 128)
-        self.wait_heading(90, timeout=60, minimum_duration=10)
+
+        # Do not ask the vehicle to sit on the wind bearing.  The
+        # weathervane controller drives yaw from the roll lean angle
+        # and stops once that angle is inside WVANE_ANG_MIN, and a
+        # vehicle holding position in wind must lean into it - so the
+        # equilibrium heading sits past the wind by however much lean
+        # the deadzone permits.  Measured: from 342 degrees the vehicle
+        # swept through 90, carried on, and settled around 105,
+        # crossing a 5-degree window for only ~6 seconds of the 10 it
+        # was asked to hold there:
+        #     GuidedWeatherVane (...) (Failed to attain Heading want
+        #     90.0, reached 104)
+        # What the option is there to do is turn the vehicle towards
+        # the wind and keep it there; ask for that instead.  A vehicle
+        # which does not weathervane at all holds its commanded zero
+        # and still fails this.
+        self.wait_heading(90, accuracy=30, minimum_duration=10, timeout=90)
         self.do_RTL()
 
     def Clamp(self):
