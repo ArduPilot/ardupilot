@@ -7635,6 +7635,14 @@ class TestSuite(abc.ABC):
         for script in dead.installed_scripts:
             self.remove_installed_script(script)
         for (message_id, interval_us) in dead.overridden_message_intervals.items():
+            if interval_us == -1:
+                # the vehicle reports -1 for a message it is not
+                # streaming on an interval - which includes every
+                # message streamed by the SRx_ rates.  Sending -1 back
+                # would disable the message for the rest of the
+                # session; 0 means "back to the default", which is
+                # what we want in both cases.
+                interval_us = 0
             self.set_message_interval(message_id, interval_us)
         for module in dead.installed_modules:
             print("Removing module (%s)" % module)
