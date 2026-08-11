@@ -83,6 +83,7 @@ autotest.lck
 build
 launch-settings.json
 /renode/
+build-*/
 cmake_install.cmake
 cscope.in.out
 cscope.out
