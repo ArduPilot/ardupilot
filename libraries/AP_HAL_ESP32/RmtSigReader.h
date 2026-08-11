@@ -31,7 +31,9 @@ public:
 private:
     bool add_item(uint32_t duration, bool level);
     void start_receive();   // (re)arm rmt_receive into rx_symbols
-    // RX-done callback (runs in the RMT ISR): queues the received batch and re-arms.
+    // RX-done callback (runs in the RMT ISR): queues the received batch and flags a
+    // re-arm for read(). Must be IRAM_ATTR and must not call rmt_receive() --
+    // see the comment on its definition.
     static bool on_recv_done(rmt_channel_handle_t chan,
                              const rmt_rx_done_event_data_t *edata, void *user_ctx);
 
@@ -39,6 +41,9 @@ private:
     rmt_receive_config_t rx_cfg;
     RingbufHandle_t handle;                    // ISR -> read() handoff of symbol batches
     rmt_symbol_word_t rx_symbols[max_pulses];  // buffer the driver fills for each frame
+    // Set by the ISR, consumed by read(): the re-arm cannot happen in the ISR because
+    // rmt_receive() is not IRAM-resident.
+    volatile bool rearm_pending;
 
     // draining state for read()
     rmt_symbol_word_t *item;

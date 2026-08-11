@@ -8,22 +8,41 @@ using namespace ESP32;
 /*
   RX-done callback, invoked from the RMT ISR when a frame completes (the line has
   been idle for longer than signal_range_max_ns). Hand the received symbol batch
-  to read() via the ring buffer, then immediately re-arm the next receive. This
-  keeps the same producer/consumer split the legacy ring-buffer driver had, but on
-  the new RMT driver (driver_ng) so it coexists with DShot's rmt_tx output.
+  to read() via the ring buffer. This keeps the same producer/consumer split the
+  legacy ring-buffer driver had, but on the new RMT driver (driver_ng) so it
+  coexists with DShot's rmt_tx output.
+
+  ⚠️ TWO IRAM CONSTRAINTS, BOTH REQUIRED BY CONFIG_RMT_ISR_IRAM_SAFE=y
+  (targets/esp32s3/esp-idf/sdkconfig.defaults:51, enabled so DShot's RMT ISR
+  survives a flash-cache disable). Both were violated and both bit on hardware:
+
+  1. This callback MUST be IRAM_ATTR. Without it rmt_rx_register_event_callbacks()
+     returns ESP_ERR_INVALID_ARG ("on_recv_done callback not in IRAM") and the
+     ESP_ERROR_CHECK in init() aborts -> BOOT CRASH-LOOP. OBSERVED 2026-08-11 the
+     moment RC-in was first enabled on a board that also builds DShot.
+  2. It MUST NOT call rmt_receive(). That function is NOT IRAM-resident in the
+     pinned IDF v5.3 (no IRAM_ATTR on rmt_rx.c:361, and CONFIG_RMT_ISR_IRAM_SAFE's
+     Kconfig help only promises the *interrupt handler* is IRAM-safe). Calling it
+     from an IRAM-safe ISR faults whenever the cache happens to be disabled, i.e.
+     an intermittent crash during flash writes -- worse than the boot abort because
+     it is rare and load-dependent. The re-arm therefore moved to read(), which is
+     called periodically from RCInput (RCInput.cpp:124). RCOutput.cpp's bidir-DShot
+     RX callback already did exactly this, for exactly this reason.
  */
-bool RmtSigReader::on_recv_done(rmt_channel_handle_t chan,
-                                const rmt_rx_done_event_data_t *edata, void *user_ctx)
+bool IRAM_ATTR RmtSigReader::on_recv_done(rmt_channel_handle_t chan,
+                                          const rmt_rx_done_event_data_t *edata, void *user_ctx)
 {
     RmtSigReader *self = (RmtSigReader *)user_ctx;
     BaseType_t hp_task_woken = pdFALSE;
     if (edata->num_symbols > 0) {
+        // IRAM-safe: xRingbufferSendFromISR is in IRAM unless
+        // CONFIG_RINGBUF_PLACE_ISR_FUNCTIONS_INTO_FLASH is set (default n).
         xRingbufferSendFromISR(self->handle, edata->received_symbols,
                                edata->num_symbols * sizeof(rmt_symbol_word_t),
                                &hp_task_woken);
     }
-    // re-arm for the next frame (safe to call from the done callback)
-    rmt_receive(chan, self->rx_symbols, sizeof(self->rx_symbols), &self->rx_cfg);
+    // Ask read() to re-arm; do NOT call rmt_receive() here.
+    self->rearm_pending = true;
     return hp_task_woken == pdTRUE;
 }
 
@@ -50,6 +69,7 @@ void RmtSigReader::init()
     rx_cfg.signal_range_min_ns = 1000;                  // ignore < 1 us glitches
     rx_cfg.signal_range_max_ns = idle_threshold * 1000; // 3 ms idle -> end of frame
 
+    rearm_pending = false;
     start_receive();
 }
 
@@ -82,6 +102,14 @@ bool RmtSigReader::add_item(uint32_t duration, bool level)
 
 bool RmtSigReader::read(uint32_t &width_high, uint32_t &width_low)
 {
+    // Re-arm here rather than in the ISR: rmt_receive() is not IRAM-resident and the
+    // RX ISR is IRAM-safe (see the on_recv_done comment). Called every RCInput tick,
+    // so the gap between a completed frame and the next arm is ~1 ms -- far shorter
+    // than an RC frame period, and the protocol decoders resync anyway.
+    if (rearm_pending) {
+        rearm_pending = false;
+        start_receive();
+    }
     if (item == nullptr) {
         item = (rmt_symbol_word_t*) xRingbufferReceive(handle, &item_size, 0);
         item_size /= sizeof(rmt_symbol_word_t);
