@@ -610,6 +610,44 @@ def test_summary(bld):
 
 _build_commands = {}
 
+# Build commands which each produce a firmware of their own.  These are
+# tracked so that asking for more than one of them at a time can be
+# rejected - see _check_single_firmware_command().
+_firmware_build_commands = set()
+
+def _check_single_firmware_command(bld):
+    """Refuse to build more than one firmware in a single invocation.
+
+    Each firmware compiles the shared libraries with its own set of
+    feature defines, into the same build directory.  Asking for several
+    at once lets one firmware link against objects compiled for
+    another, which shows up as an undefined reference to a symbol only
+    the other vehicle enables - or, worse, as a binary which links
+    cleanly and misbehaves.
+    """
+    wanted = []
+    for c in [bld.cmd] + list(Options.commands):
+        # asking for the same firmware twice is harmless; it is two
+        # different ones which cannot share a build directory:
+        if c in _firmware_build_commands and c not in wanted:
+            wanted.append(c)
+    if len(wanted) < 2:
+        return
+
+    bld.fatal(
+        "Cannot build more than one firmware in a single command: asked "
+        "for %s.\n"
+        "\n"
+        "Each firmware compiles the shared libraries with its own feature "
+        "defines into the same build directory, so building several at "
+        "once can link one firmware against another's objects.\n"
+        "\n"
+        "Build them one at a time instead:\n"
+        "%s" % (
+            ", ".join(repr(c) for c in wanted),
+            "".join("    ./waf %s\n" % c for c in wanted),
+        ))
+
 def _process_build_command(bld):
     if bld.cmd not in _build_commands:
         return
@@ -629,14 +667,24 @@ def _process_build_command(bld):
 def build_command(name,
                    targets=None,
                    program_group_list=[],
-                   doc='build shortcut'):
+                   doc='build shortcut',
+                   firmware=False):
     _build_commands[name] = dict(
         targets=targets,
         program_group_list=program_group_list,
     )
+    if firmware:
+        _firmware_build_commands.add(name)
 
     class context_class(Build.BuildContext):
         cmd = name
+
+        def execute(self):
+            # before recursing into the build script, so this is not
+            # buried under the output of generating the task graph:
+            _check_single_firmware_command(self)
+            return super().execute()
+
     context_class.__doc__ = doc
 
 def _select_programs_from_group(bld):
