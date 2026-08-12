@@ -7719,20 +7719,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.delay_sim_time(delay, reason='gather some stats')
         self.wait_statustext("math.lua exceeded time limit", check_context=True, timeout=0)
 
-        dfreader = self.dfreader_for_current_onboard_log()
-        seen_hello_world = False
-#        runtime = None
-        while True:
-            m = dfreader.recv_match(type=['SCR'])
-            if m is None:
-                break
-            if m.Name == "simple_loop.lua":
-                seen_hello_world = True
-#            if m.Name == "math.lua":
-#                runtime = m.Runtime
-
-        if not seen_hello_world:
-            raise NotAchievedException("Did not see simple_loop.lua script")
+        # Poll for the record rather than reading the log once.  Which
+        # scripts have had a turn by any particular moment is not ours
+        # to decide: math.lua is deliberately a hog and overruns its
+        # time limit repeatedly, and on a loaded machine it can consume
+        # the whole of this window - a failing run logged 27 records for
+        # strings.lua and not one for simple_loop.lua, which had never
+        # been given a slot:
+        #     ScriptStats (test script stats logging) (Did not see
+        #     simple_loop.lua script)
+        self.wait_dataflash_message(
+            ['SCR'],
+            lambda m: m.Name == "simple_loop.lua",
+            timeout=120,
+            description="simple_loop.lua script stats",
+        )
 
 #        self.progress(f"math took {runtime} seconds to run over {delay} seconds")
 #        if runtime == 0:
