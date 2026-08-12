@@ -128,6 +128,11 @@ bool SOCKET_CLASS_NAME::connect(const char *address, uint16_t port)
         CALL_PREFIX(fcntl)(fd_in, F_SETFD, FD_CLOEXEC);
 #endif
         IGNORE_RETURN(CALL_PREFIX(setsockopt)(fd_in, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)));
+#if defined(SO_REUSEPORT)
+        // SO_REUSEPORT lets multiple processes on the same host each receive a copy of incoming multicast datagrams
+        // (required when running multiple SITL instances joined to the same multicast group)
+        IGNORE_RETURN(CALL_PREFIX(setsockopt)(fd_in, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one)));
+#endif
 
 #if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
         /*
