@@ -14729,7 +14729,28 @@ switch value'''
         last_result_time = time.time()
         stack_dumps_sent = 0
         abandoned_workers = False
+        reaped = set()
+
+        def reap_finished_workers():
+            '''join workers as they finish rather than at the end, so the
+            process list shrinks as the run proceeds, and say so loudly if
+            one exits non-zero: a worker whose SITL will not start (a port
+            still held by a leaked process, say) otherwise disappears in
+            silence, leaving the survivors to drain the queue and the run
+            looking healthy while it is short of workers.'''
+            for t in self.threads:
+                if t in reaped or t.is_alive():
+                    continue
+                t.join()
+                reaped.add(t)
+                if t.exitcode:
+                    self.progress("WORKER FAILED: %s exited with %s" %
+                                  (t.name, t.exitcode))
+                    worker_failures.append((t.name, t.exitcode))
+
+        worker_failures = []
         while len(results) != len(tests):
+            reap_finished_workers()
             while True:
                 try:
                     result = self.result_queue.get(block=False)
@@ -14803,6 +14824,14 @@ switch value'''
 
         for t in self.threads:
             t.join()
+        reap_finished_workers()
+
+        if worker_failures:
+            self.progress("%u worker(s) exited non-zero; the run was short of "
+                          "workers and may have taken longer than it looks:" %
+                          len(worker_failures))
+            for (name, code) in worker_failures:
+                self.progress("    %s exited with %s" % (name, code))
 
         self.progress("run_tests_parallel returning success")
 
