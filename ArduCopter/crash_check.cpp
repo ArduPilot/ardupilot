@@ -314,8 +314,17 @@ void Copter::parachute_check()
     if (control_loss_count == 1) {
         baro_alt_start_m = baro_alt_m;
 
-    // exit if baro altitude change indicates we are not falling
-    } else if (baro_alt_m >= baro_alt_start_m) {
+    // exit if baro altitude change indicates we are not falling.
+    // Only a reading above the latched one is evidence of that: this
+    // runs every loop, but baro_alt_m is only refreshed at 10Hz, so
+    // the loop after the latch - and 38 of the 39 after that - sees a
+    // bit-identical copy of the very sample which was latched.
+    // Treating that equality as "not falling" reset the counter before
+    // it could ever reach a second's worth of loops, and the phase
+    // between the two rates is fixed, so a vehicle which never caught
+    // the one loop in forty carrying a fresh reading never deployed at
+    // all.
+    } else if (baro_alt_m > baro_alt_start_m) {
         control_loss_count = 0;
         return;
 
