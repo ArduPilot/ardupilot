@@ -3736,6 +3736,14 @@ class TestSuite(abc.ABC):
             extra_configure_args=configure_args,
             **build_opts,
         )
+        # pick the rebuild up.  Under the parallel runner self.binary is
+        # this instance's private copy, not the build output, so without
+        # this the restart below runs the binary as it was before the
+        # build - for PPPPeriph, one built without --enable-PPP, which
+        # boots perfectly well and never starts PPP:
+        #     PPPPeriph ... Failed to receive text: ppp[0]: started
+        # Serial runs have no private copy and so never saw it.
+        self.refresh_test_binary()
 
         # a frame may target a non-default board (e.g. SITL_Nexus), whose
         # binary lands in build/<board>/ rather than overwriting self.binary.
