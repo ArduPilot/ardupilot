@@ -20,6 +20,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_RTC/AP_RTC.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_BattMonitor/AP_BattMonitor_config.h>
@@ -119,6 +120,11 @@ uint16_t AP_SwarmMesh_Backend::frontend_log_rate_hz() const
 uint32_t AP_SwarmMesh_Backend::frontend_log_mask() const
 {
     return (uint32_t)(int32_t)_frontend.log_mask;
+}
+
+int8_t AP_SwarmMesh_Backend::frontend_fwd_port() const
+{
+    return _frontend.fwd_port;
 }
 
 // ---- healthy / update ----
@@ -324,8 +330,14 @@ void AP_SwarmMesh_Backend::process_packet()
     if (hdr->type == SWARMMESH_TYPE_MAVLINK) {
         ps->prev_id = hdr->prev_id;
         ps->rx_count++;
-        mavlink_message_t msg;
         const uint8_t *payload = &_msgbuf[SWARMMESH_HEADER_SIZE];
+#if HAL_GCS_ENABLED
+        // hand the untouched frame to the companion computer port. This runs after the
+        // CRC, duplicate, staleness and TTL checks above, so only packets we accept
+        // locally are forwarded.
+        forward_to_port(payload, hdr->payload_len);
+#endif
+        mavlink_message_t msg;
         for (uint8_t i = 0; i < hdr->payload_len; i++) {
             if (mavlink_frame_char_buffer(&_mavlink_rxmsg, &_mavlink_rx_status, payload[i], &msg, &_mavlink_rx_status)) {
                 handle_mavlink(msg, *ps);
@@ -379,6 +391,49 @@ void AP_SwarmMesh_Backend::mark_fresh(AP_SwarmMesh::PeerState &ps, uint32_t msgi
     ps.last_heard_ms[bit] = AP_HAL::millis();
     ps.freshness |= (1U << (uint8_t)bit);
 }
+
+#if HAL_GCS_ENABLED
+// Forward a received peer MAVLink frame out the serial port selected by _FWD_PORT, so a
+// companion computer can consume the swarm as an ordinary multi-vehicle MAVLink stream.
+//
+// The frame is written exactly as the origin peer sent it, preserving its sysid, compid,
+// sequence number and CRC. Nothing is re-serialised or rewritten, so the companion's
+// parser sees each peer as a distinct MAVLink system.
+void AP_SwarmMesh_Backend::forward_to_port(const uint8_t *frame, uint16_t len)
+{
+    const int8_t port = frontend_fwd_port();
+    if (port < 0 || len == 0) {
+        return;
+    }
+
+    // resolve the port to a MAVLink channel once, and again whenever the parameter
+    // changes, rather than walking the channel list for every received frame
+    if (port != _fwd_port_resolved) {
+        _fwd_port_resolved = port;
+        _fwd_chan = gcs().get_channel_from_port_number((uint8_t)port);
+    }
+    if (_fwd_chan == UINT8_MAX) {
+        return;  // the selected port is not configured as a MAVLink port
+    }
+
+    GCS_MAVLINK *link = gcs().chan(_fwd_chan);
+    if (link == nullptr) {
+        return;
+    }
+    AP_HAL::UARTDriver *uart = link->get_uart();
+    if (uart == nullptr) {
+        return;
+    }
+
+    // write the whole frame or none of it: a partial write would desynchronise the
+    // companion's parser and corrupt every frame after it
+    if (uart->txspace() < len) {
+        _fwd_dropped++;
+        return;
+    }
+    uart->write(frame, len);
+}
+#endif  // HAL_GCS_ENABLED
 
 // GPS UTC is the only clock source synchronized across the mesh
 bool AP_SwarmMesh_Backend::have_synced_utc(uint64_t &usec) const

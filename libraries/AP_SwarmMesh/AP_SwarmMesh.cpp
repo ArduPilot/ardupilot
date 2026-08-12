@@ -165,6 +165,13 @@ const AP_Param::GroupInfo AP_SwarmMesh::var_info[] = {
     AP_GROUPINFO("_PEER_15", 27, AP_SwarmMesh, peer_filter[14], 0),
     AP_GROUPINFO("_PEER_16", 28, AP_SwarmMesh, peer_filter[15], 0),
 
+    // @Param: _FWD_PORT
+    // @DisplayName: Peer MAVLink forward port
+    // @Description: Serial port number that received peer MAVLink messages are forwarded to, so a companion computer can consume the swarm as an ordinary multi-vehicle MAVLink stream. Frames are forwarded unmodified, so each peer appears to the companion as a separate MAVLink system identified by that peer's SYSID_THISMAV (not its P2P_SYSID); give each vehicle a distinct SYSID_THISMAV or the companion cannot tell peers apart. The port must already be configured as a MAVLink port. -1 disables forwarding.
+    // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
+    // @User: Advanced
+    AP_GROUPINFO("_FWD_PORT", 29, AP_SwarmMesh, fwd_port, -1),
+
     AP_GROUPEND
 };
 

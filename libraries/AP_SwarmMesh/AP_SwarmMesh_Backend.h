@@ -66,6 +66,7 @@ protected:
     bool frontend_uses_full() const;
     uint16_t frontend_log_rate_hz() const;
     uint32_t frontend_log_mask() const;
+    int8_t   frontend_fwd_port() const;
 
     AP_SwarmMesh &_frontend;
 
@@ -140,6 +141,16 @@ private:
 
     // true only if we have GPS UTC. Used to gate the deadline/staleness check.
     bool have_synced_utc(uint64_t &usec) const;
+
+#if HAL_GCS_ENABLED
+    // forward a received peer MAVLink frame, unmodified, to the companion serial port
+    void forward_to_port(const uint8_t *frame, uint16_t len);
+
+    // cached resolution of the _FWD_PORT parameter to a MAVLink channel
+    int8_t   _fwd_port_resolved = -2;  // last port value resolved (-2 == never resolved)
+    uint8_t  _fwd_chan = UINT8_MAX;    // resolved channel, UINT8_MAX if port is not MAVLink
+    uint16_t _fwd_dropped;             // frames dropped because the port had no space
+#endif
 
     // TX path
     void send_mavlink(uint8_t dest_id, const mavlink_message_t *msg, uint16_t deadline_ms, uint8_t ttl);

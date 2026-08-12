@@ -179,6 +179,7 @@ private:
 #endif
     AP_Int8  prune_timeout;
     AP_Int8  peer_filter[AP_SWARMMESH_MAX_PEER_FILTERS]; // neighbourhood allowlist. 0 = slot unused
+    AP_Int8  fwd_port;     // serial port number received peer MAVLink is forwarded to. -1 disables
 
     // external references
     AP_SwarmMesh_Backend *_driver;
