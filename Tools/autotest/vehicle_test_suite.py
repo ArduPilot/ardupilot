@@ -15206,6 +15206,21 @@ switch value'''
             "NetworkingWebServerPPP",
             "PPPPeriph",
 
+            # the simulation-state multicast group these share is a
+            # fixed constant - SITL_MCAST_IP 239.255.145.51 port 20721,
+            # with no instance offset, unlike every other SITL port -
+            # so concurrent peripheral tests join the same bus: each
+            # vehicle sees the other's state and each peripheral answers
+            # a vehicle which is not its own.  They pass run serially
+            # and fail run together, with a different symptom each time
+            # ("GPS status bits did not become good", "Failed ordering
+            # for requested CASE", a log download which never finishes).
+            # TODO: derive the group or port from the instance number as
+            # the other ports are, and these can leave this list.
+            "CANGPSCopterMission",
+            "TestLogDownloadMAVProxyCAN",
+            "PeriphMultiUARTTunnel",
+
             # rebuilds the Replay tool; this mutates the shared build
             # directory / waf board configuration, which races with other
             # tests (and other instances) building or running.  TODO:
