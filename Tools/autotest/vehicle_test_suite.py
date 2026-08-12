@@ -15090,6 +15090,34 @@ switch value'''
                     "Insufficient %s/truth samples compared (%u)" % (key, ncompared))
             self.progress("Compared %u %s samples against simulator truth" % (ncompared, key))
 
+    def wait_dataflash_message(self, mtype, match, timeout=60, poll_interval=5,
+                               description=None):
+        """Poll the current onboard log until `match` accepts a message.
+
+        Reading the log once and giving up is not sound.  The log is
+        still being written, and what we are waiting for may not have
+        been flushed yet; worse, whether it has been *emitted* at all
+        can depend on scheduling we do not control.  Re-reading both
+        waits for it and - because our mavlink round-trips slow the
+        simulation down - gives the vehicle room to produce it.
+        """
+        tstart = self.get_sim_time()
+        while True:
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type=mtype)
+                if m is None:
+                    break
+                if match(m):
+                    return m
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(
+                    "Did not see %s in onboard log" %
+                    (description if description is not None else str(mtype)))
+            self.delay_sim_time(poll_interval,
+                                reason="waiting for %s in the onboard log" %
+                                (description if description is not None else str(mtype)))
+
     def dfreader_for_current_onboard_log(self):
         return self.dfreader_for_path(self.current_onboard_log_filepath())
 
