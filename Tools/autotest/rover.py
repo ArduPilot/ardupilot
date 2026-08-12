@@ -5317,6 +5317,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         '''Scripting callback time'''
         self.start_subtest("Scripting callback time")
 
+        # The script measures its callback delays with micros(), i.e. in
+        # simulated time, but how closely they can be met is governed by
+        # when the host schedules the scripting VM - in wall time.  At
+        # Rover's default speedup of 30 the script's 250ms tolerance is
+        # really a demand that the VM is never descheduled for more than
+        # 8.3ms of wall clock, which does not hold on a loaded machine:
+        # in a --parallel=32 sweep a 0.512s callback arrived at 1.140s,
+        # 628ms late in simulated time but only ~21ms in real terms, and
+        # the script errored out.  Unloaded the worst step uses 2.8% of
+        # its budget, so this is not a tolerance which wants widening -
+        # it is one which only means anything when the two clocks agree:
+        self.context_set_speedup(1)
         self.context_collect('STATUSTEXT')
         self.set_parameter("SCR_ENABLE", 1)
         self.install_test_script_context("callback_time_test.lua")
