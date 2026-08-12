@@ -1154,6 +1154,13 @@ userdata AP_Servo_Telem::TelemetryData field pcb_temperature_cdeg int16_t'skip_c
 userdata AP_Servo_Telem::TelemetryData field status_flags uint8_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::STATUS
 userdata AP_Servo_Telem::TelemetryData field last_update_ms uint32_t'skip_check read
 
+include AP_SwarmMesh/AP_SwarmMesh.h
+singleton AP_SwarmMesh depends AP_SWARMMESH_ENABLED
+singleton AP_SwarmMesh rename swarm
+singleton AP_SwarmMesh method count uint8_t
+singleton AP_SwarmMesh method get_peer_location boolean Location'Null uint8_t 1 255
+singleton AP_SwarmMesh method get_peer_velocity_NED boolean Vector3f'Null uint8_t 1 255
+
 -- simulator only bindings
 include SITL/SITL.h depends AP_SIM_ENABLED
 singleton SITL::SIM depends AP_SIM_ENABLED
