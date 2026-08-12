@@ -477,6 +477,21 @@ void SITL_State::multicast_state_open(void)
     int one = 1;
     setsockopt(servo_in_fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
 
+    const uint32_t mc_if_addr = sitl_multicast_interface_address();
+    if (mc_if_addr != 0) {
+        // the state is multicast from this socket, so it needs the same
+        // interface pinning the other multicast paths have: without it
+        // the state follows the routing table while the peripheral is
+        // listening on the interface it was told to use, and never sees
+        // the vehicle.  See sitl_multicast_interface_address()
+        struct in_addr ifaddr {};
+        ifaddr.s_addr = mc_if_addr;
+        if (setsockopt(servo_in_fd, IPPROTO_IP, IP_MULTICAST_IF, &ifaddr, sizeof(ifaddr)) == -1) {
+            fprintf(stderr, "failed to set multicast interface - %s\n", strerror(errno));
+            exit(1);
+        }
+    }
+
     sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     sockaddr.sin_port = htons(SITL_SERVO_PORT + _instance);
 
