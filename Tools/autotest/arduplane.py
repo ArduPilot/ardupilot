@@ -7639,12 +7639,29 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         higher_home = copy.copy(home)
         higher_home.alt += 40
         self.set_home(higher_home)
+        # timeout budgets the whole check, so it has to cover both the
+        # ten seconds of held altitude and however long the first
+        # in-range sample takes to turn up - wait_and_maintain_range()
+        # only starts its window at that first sample.  timeout=11 left
+        # one second for it, which is not enough under load: a failing
+        # run got its first sample 1.04s in and timed out with the
+        # window at 9.96s, having reported every sample inside the band
+        # and an average of 604.76 - itself inside the band, which is
+        # the giveaway that the altitude was never the problem.  Beware
+        # the progress line while reading such a failure: it formats the
+        # window with one decimal, so 9.96 prints as "maintain=10.0/10.0"
+        # and looks like a satisfied check.
+        #
+        # The assertion is unchanged - any out-of-range sample still
+        # resets the window, so the vehicle must hold altitude for ten
+        # continuous seconds; only the allowance for getting started
+        # grows.
         self.wait_altitude(
             home.alt+target_alt-5,
             home.alt+target_alt+5,
             relative=False,
             minimum_duration=10,
-            timeout=11,
+            timeout=20,
         )
 
         self.disarm_vehicle(force=True)
