@@ -14,7 +14,7 @@
 #define ODR_208Hz       (0x5 << 4)
 #define ODR_416Hz       (0x6 << 4)
 #define ODR_833Hz       (0x7 << 4)
-#define ODR_1666Hz      (0x8 << 4)
+#define ODR_1667Hz      (0x8 << 4)
 #define ODR_3333Hz      (0x9 << 4)
 #define ODR_6667Hz      (0xA << 4)
 
@@ -68,6 +68,7 @@
 #   define ASM330_REG_FIFO_CTRL4_ODR_T_BATCH_12500mHz       (0x2 << 4)
 #   define ASM330_REG_FIFO_CTRL4_ODR_T_BATCH_52Hz           (0x3 << 4)
 // FIFO_MODE
+#   define ASM330_REG_FIFO_CTRL4_FIFO_MODE_MASK             (0x7)
 #   define ASM330_REG_FIFO_CTRL4_FIFO_MODE_BYPASS           (0x0)
 #   define ASM330_REG_FIFO_CTRL4_FIFO_MODE_FIFO             (0x1)
 #   define ASM330_REG_FIFO_CTRL4_FIFO_MODE_CONT_TO_FIFO     (0x3)
