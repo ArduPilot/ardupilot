@@ -20,7 +20,6 @@
 #include "AP_GroundEffect.h"
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_Terrain/AP_Terrain.h>
 #include <AC_AttitudeControl/AC_PosControl.h>
 
 // hard cap on the takeoff_expected window, irrespective of GNDEFF_TMO
@@ -39,7 +38,7 @@ const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: ALT
     // @DisplayName: Ground effect altitude threshold
-    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the landing altitude gate, matching the legacy behaviour where any gentle descent counts. Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present), the terrain database (when available) or worst case using the height-change-since-takeoff assuming flat ground with a 20m horizontal gate disabling the touchdown side if the vehicle's horizontal position is available.
+    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the landing altitude gate, matching the legacy behaviour where any gentle descent counts. Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present) or using the height-change-since-takeoff assuming flat ground with a 20m horizontal gate from the takeoff location if the horizontal position is available.
     // @Range: -1 10
     // @Units: m
     // @User: Advanced
@@ -85,7 +84,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
 
     // Anchor the takeoff timer, altitude and XY position while still on
     // the ground without throttle up. Only the relative-to-takeoff
-    // fallback consumes these; HAGL / terrain paths ignore them.
+    // fallback consumes these; HAGL path ignores them.
     float pos_d_m = 0;
     UNUSED_RESULT(ahrs.get_relative_position_D_origin_float(pos_d_m));
     Vector2f pos_ne_m;
@@ -97,23 +96,11 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
         _state.takeoff_pos_ne_m = pos_ne_m;
     }
 
-    // Pick the best available height. EKF HAGL covers rangefinder and
-    // EKF3's optflow AGL KF; terrain database covers GPS + onboard tiles;
-    // otherwise fall back to height-since-takeoff and assume flat ground.
+    // Pick the best available height
+    // EKF's HAGL uses rangefinder or optflow AGL KF
+    // fall back to height-since-takeoff and assume flat ground
     float height_m = 0;
     bool height_is_agl = ahrs.get_hagl(height_m);
-
-#if AP_TERRAIN_AVAILABLE
-    if (!height_is_agl) {
-        AP_Terrain *terrain = AP::terrain();
-        // extrapolate=false: with no tiles loaded, height_above_terrain
-        // still "succeeds" by returning the raw AMSL altitude, which we
-        // do not want; require real data.
-        if (terrain != nullptr && terrain->height_above_terrain(height_m, false)) {
-            height_is_agl = true;
-        }
-    }
-#endif
     if (!height_is_agl) {
         height_m = -pos_d_m - _state.takeoff_alt_m;
     }
@@ -151,7 +138,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
 
     // Touchdown altitude gate.
     //   - GNDEFF_ALT <= 0: legacy behaviour, any gentle descent counts
-    //   - HAGL or terrain height available: trust height_m directly
+    //   - HAGL: trust height_m directly
     //   - relative-to-takeoff fallback with horizontal position: only
     //     trust the gate while still within AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M
     //     of the launch point; further out we cannot assume the ground

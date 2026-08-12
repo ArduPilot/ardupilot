@@ -44,26 +44,23 @@
 //
 //   1. AP_AHRS::get_hagl()             - rangefinder, or EKF3's
 //                                        optflow AGL Kalman filter
-//   2. AP_Terrain::height_above_terrain()
-//                                      - GPS position plus onboard
-//                                        terrain tiles for current loc
-//   3. relative-to-takeoff (-pos_d minus the altitude latched at
+//   2. relative-to-takeoff (-pos_d minus the altitude latched at
 //                          takeoff) with horizontal position available
-//   4. relative-to-takeoff with no horizontal position (baro-only):
+//   3. relative-to-takeoff with no horizontal position (baro-only):
 //                          assumes the ground beneath the vehicle is at
 //                          the takeoff elevation
 //
-// Paths 3 and 4 are not strictly AGL: they trust that the ground has
+// Paths 2 and 3 are not strictly AGL: they trust that the ground has
 // not changed elevation since takeoff. For the takeoff_expected window
 // (which closes within ~5 s of takeoff) that is almost always fine.
 // For touchdown_expected (which the vehicle may evaluate minutes later,
-// hundreds of metres from launch) it is not, so path 3 additionally
+// hundreds of metres from launch) it is not, so path 2 additionally
 // requires the vehicle to be within
 // AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M of the takeoff XY position before
 // the touchdown altitude gate is allowed to fire. Drift further than
 // that and touchdown_expected stays false regardless of motion, since
 // we have no basis to believe the ground below is at takeoff elevation.
-// Path 4 (no horizontal position at all) cannot apply the drift gate
+// Path 3 (no horizontal position at all) cannot apply the drift gate
 // and has to assume flat terrain.
 //
 // GNDEFF_ALT carries three regimes:
