@@ -157,6 +157,7 @@ bool AP_Mount_XFRobot::set_lens(uint8_t lens)
         CameraType::MAIN_ZOOM_SUB_THERMAL,
         CameraType::MAIN_THERMAL_SUB_ZOOM,
         CameraType::MAIN_PIP_ZOOM_SUB_THERMAL,
+        CameraType::MAIN_PIP_THERMAL_SUB_ZOOM,
     };
 
     // sanity check lens values
@@ -167,6 +168,30 @@ bool AP_Mount_XFRobot::set_lens(uint8_t lens)
     // map lens to camera type and send command
     return send_simple_command(FunctionOrder::PIC_IN_PIC, (uint8_t)cam_type_table[lens]);
 }
+
+#if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
+bool AP_Mount_XFRobot::set_camera_source(uint8_t primary_source, uint8_t secondary_source)
+{
+    // MAVLink CAMERA_SOURCE: 0 = default, 1 = RGB, 2 = IR/thermal
+    if ((primary_source == 0 || primary_source == 1) && secondary_source == 0) {
+        return set_lens(0);
+    }
+
+    if (primary_source == 2 && secondary_source == 0) {
+        return set_lens(1);
+    }
+
+    if (primary_source == 1 && secondary_source == 2) {
+        return set_lens(2);
+    }
+
+    if (primary_source == 2 && secondary_source == 1) {
+        return set_lens(3);
+    }
+
+    return false;
+}
+#endif // HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
 
 // start or stop video recording.  returns true on success
 // set start_recording = true to start record, false to stop recording

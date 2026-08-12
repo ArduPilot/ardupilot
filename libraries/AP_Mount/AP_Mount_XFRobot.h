@@ -51,6 +51,10 @@ public:
     // set camera lens to cycle through pic-in-pic modes
     bool set_lens(uint8_t lens) override;
 
+#if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
+    bool set_camera_source(uint8_t primary_source, uint8_t secondary_source) override;
+#endif // HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
+
     // set focus specified as rate, percentage or auto
     // focus in = -1, focus hold = 0, focus out = 1
     SetFocusResult set_focus(FocusType focus_type, float focus_value) override;
