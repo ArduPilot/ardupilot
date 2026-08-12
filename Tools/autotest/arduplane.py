@@ -9111,6 +9111,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 "(stale baro buffer not flushed on resetHeightDatum)" %
                 peak_excursion)
 
+        # we have played with SIM_BARO_DRIFT and that causes the
+        # estimators to build up state that takes time to decay - so
+        # just reboot.
+        self.reboot_sitl()
+
     def PPPPeriph(self):
         '''verify PPP-over-TCP link to an AP_Periph (sitl_periph_PPP) companion'''
         self.context_collect('STATUSTEXT')

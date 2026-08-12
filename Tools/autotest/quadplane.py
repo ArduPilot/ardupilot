@@ -3418,6 +3418,17 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         })
         self.do_RTL()
 
+        # SIM_BARO_DRIFT is a rate: zeroing it stops the offset it has
+        # accumulated from growing but leaves it in place for the life
+        # of the SITL process, and no parameter records it, so a
+        # context revert cannot undo it.  Recalibrating the barometer
+        # moves the ground reference but leaves the EKF to absorb the
+        # resulting step over several seconds, during which the next
+        # test can arm and take home from a height still being
+        # corrected.  Reboot instead: it discards the simulator and
+        # filter state together, with no transient to race.
+        self.reboot_sitl()
+
     def TECSThrSpikeOnModeChange(self):
         ''' Regression test for issue #33871. '''
 

@@ -4335,6 +4335,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+        # we have played with SIM_BARO_DRIFT and that causes the
+        # estimators to build up state that takes time to decay - so
+        # just reboot.
+        self.reboot_sitl()
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -12656,6 +12661,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+        # we have played with SIM_BARO_DRIFT and that causes the
+        # estimators to build up state that takes time to decay - so
+        # just reboot.
+        self.reboot_sitl()
+
     def AHRSSwitchBackendPositionNEReset(self):
         '''vehicle must not lurch when the active AHRS estimator is changed with divergent NE positions'''
         # glitch the GPS; EKF3 eventually adopts the glitched position
@@ -12774,6 +12784,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("In-filter height reset handled cleanly")
 
         self.do_RTL()
+
+        # we have played with SIM_BARO_DRIFT and that causes the
+        # estimators to build up state that takes time to decay - so
+        # just reboot.
+        self.reboot_sitl()
 
     def AHRSSwitchBackendYawReset(self):
         '''vehicle must not spin when the active AHRS estimator is changed with divergent yaws'''
