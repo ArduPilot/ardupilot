@@ -314,8 +314,9 @@ void Copter::parachute_check()
     if (control_loss_count == 1) {
         baro_alt_start_m = baro_alt_m;
 
-    // exit if baro altitude change indicates we are not falling
-    } else if (baro_alt_m >= baro_alt_start_m) {
+    // exit if baro altitude change indicates we are climbing.  Note
+    // that >= ("not falling") must not be used here
+    } else if (baro_alt_m > baro_alt_start_m) {
         control_loss_count = 0;
         return;
 
