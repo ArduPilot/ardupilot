@@ -560,7 +560,7 @@ bool AP_MotorsHeli_Dual::arming_checks(size_t buflen, char *buffer) const
 
     // returns false if Phase Angle is outside of range for H3 swashplate 1
     if (_swashplate1.get_phase_angle() > 30 || _swashplate1.get_phase_angle() < -30){
-        hal.util->snprintf(buffer, buflen, "H_SW1_PHANG out of range");
+        hal.util->snprintf(buffer, buflen, "H_SW_PHANG out of range");
         return false;
     }
 
