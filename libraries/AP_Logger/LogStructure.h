@@ -126,6 +126,7 @@ const struct MultiplierStructure log_Multipliers[] = {
 #define HEAD_BYTE2  0x95    // Decimal 149
 
 #include <AP_Beacon/LogStructure.h>
+#include <AP_SwarmMesh/LogStructure.h>
 #include <AP_DAL/LogStructure.h>
 #include <AP_NavEKF2/LogStructure.h>
 #include <AP_NavEKF3/LogStructure.h>
@@ -1203,6 +1204,7 @@ LOG_RTC_MESSAGE \
     { LOG_DMS_MSG, sizeof(log_DMS), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \
+    LOG_STRUCTURE_FROM_SWARMMESH                                    \
     LOG_STRUCTURE_FROM_PROXIMITY                                    \
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance),                     \
       "PM",  "QHHHIIHHIIIIIIQ", "TimeUS,LR,NLon,NL,MaxT,Mem,Load,ErrL,InE,ErC,SPIC,I2CC,I2CI,Ex,R", "sz---b%------ss", "F----0A------FF" }, \
@@ -1343,6 +1345,7 @@ enum LogMessages : uint8_t {
     LOG_IDS_FROM_VISUALODOM,
     LOG_IDS_FROM_AVOIDANCE,
     LOG_IDS_FROM_BEACON,
+    LOG_IDS_FROM_SWARMMESH,
     LOG_IDS_FROM_PROXIMITY,
     LOG_DF_FILE_STATS,
     LOG_SRTL_MSG,
