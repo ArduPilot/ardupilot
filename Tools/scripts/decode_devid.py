@@ -8,19 +8,23 @@ the sensor library, such as libraries/AP_Compass/AP_Compass_Backend.h
 
 AP_FLAKE8_CLEAN
 
-SPDX-FileCopyrightText: 2024-2026 ArduPilot developers
+SPDX-FileCopyrightText: 2017-2026 ArduPilot developers
 
 SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 
-import optparse
+import argparse
 import sys
 
-from typing import Union
+from typing import Dict
+from typing import Literal
+from typing import Optional
+from typing import Tuple
+from typing import TypedDict
 
 # Device type lookup tables
-BUSTYPES = {
+BUSTYPES: Dict[int, str] = {
     1: "I2C",
     2: "SPI",
     3: "DRONECAN",
@@ -30,7 +34,7 @@ BUSTYPES = {
     7: "WSPI",
 }
 
-COMPASS_TYPES = {
+COMPASS_TYPES: Dict[int, str] = {
     0x01: "DEVTYPE_HMC5883_OLD",
     0x07: "DEVTYPE_HMC5883",
     0x02: "DEVTYPE_LSM303D",
@@ -58,7 +62,7 @@ COMPASS_TYPES = {
     0x1A: "DEVTYPE_AF9838",
 }
 
-IMU_TYPES = {
+IMU_TYPES: Dict[int, str] = {
     0x09: "DEVTYPE_BMI160",
     0x10: "DEVTYPE_L3G4200D",
     0x11: "DEVTYPE_ACC_LSM303D",
@@ -101,7 +105,7 @@ IMU_TYPES = {
     0x43: "DEVTYPE_INS_LSM6DSK320X",
 }
 
-BARO_TYPES = {
+BARO_TYPES: Dict[int, str] = {
     0x01: "DEVTYPE_BARO_SITL",
     0x02: "DEVTYPE_BARO_BMP085",
     0x03: "DEVTYPE_BARO_BMP280",
@@ -128,7 +132,7 @@ BARO_TYPES = {
     0x18: "DEVTYPE_BARO_MS5837_02BA",
 }
 
-AIRSPEED_TYPES = {
+AIRSPEED_TYPES: Dict[int, str] = {
     0x01: "DEVTYPE_AIRSPEED_SITL",
     0x02: "DEVTYPE_AIRSPEED_MS4525",
     0x03: "DEVTYPE_AIRSPEED_MS5525",
@@ -143,30 +147,63 @@ AIRSPEED_TYPES = {
     0x0C: "DEVTYPE_AIRSPEED_SCRIPTING",
 }
 
-MAVLINK_TYPES = {
+MAVLINK_TYPES: Dict[int, str] = {
     0x01: "DEVTYPE_MAVLINK_UART",
     0x02: "DEVTYPE_MAVLINK_NETWORKING",
     0x03: "DEVTYPE_MAVLINK_CAN",
     0x04: "DEVTYPE_MAVLINK_SCRIPTING",
 }
 
-def parse_device_id(device_id_str: str) -> int:
-    """Parse device ID from string (decimal or hex)."""
+
+class DeviceInfo(TypedDict):
+    bus_type_value: int
+    bus_type_name: str
+    bus: int
+    address: int
+    devtype: int
+    is_dronecan: bool
+
+
+DeviceCategory = Literal["compass", "imu", "baro", "airspeed", "mavlink"]
+
+
+def parse_device_id(device_id_str: str) -> Tuple[Optional[int], Optional[str]]:
+    """Parse a device ID and return a diagnostic message, if applicable."""
+    # backwards compatibility:
+    #  - assume all digit strings are decimal,
+    #  - assume strings without "0x" prefix but with characters A-F are hexadecimal
     try:
-        return int(device_id_str)
+        device_id = int(device_id_str)
     except ValueError:
-        return int(device_id_str, 16)
+        try:
+            device_id = int(device_id_str, 16)
+        except ValueError:
+            return None, f"Invalid device ID '{device_id_str}'"
+
+    if device_id < 0:
+        return None, "device ID must not be negative"
+
+    # Warn that ambiguous digits-only input is interpreted as decimal.
+    if device_id_str.isdigit():
+        return (
+            device_id,
+            f"Warning: device ID '{device_id_str}' is interpreted as decimal; prefix hexadecimal IDs with 0x.",
+        )
+
+    return device_id, None
 
 
-def decode_device_id(device_id: int) -> dict[str, Union[int, str, bool]]:
+def decode_device_id(device_id: int) -> Tuple[Optional[DeviceInfo], Optional[str]]:
     """
     Decode an ArduPilot device ID into its components.
 
     Args:
-        device_id: Device ID as integer (can be decimal or hex)
+        device_id: Device ID as integer
 
     Returns:
-        Dictionary with keys:
+        A tuple containing the decoded dictionary and an error message. If
+        device_id does not fit in the 24-bit device ID format, the decoded
+        dictionary is None. Otherwise, it contains these keys:
             - bus_type_value: Bus type numeric value
             - bus_type_name: Bus type name (I2C, SPI, etc.)
             - bus: Bus number
@@ -175,12 +212,15 @@ def decode_device_id(device_id: int) -> dict[str, Union[int, str, bool]]:
             - is_dronecan: Whether this is DRONECAN bus type
 
     """
+    if device_id < 0 or device_id > 0x00FFFFFF:
+        return None, f"Error: device ID 0x{device_id:x} is outside the 24-bit range."
+
     bus_type = device_id & 0x07
     bus = (device_id >> 3) & 0x1F
     address = (device_id >> 8) & 0xFF
-    devtype = device_id >> 16
+    devtype = (device_id >> 16) & 0xFF
 
-    return {
+    decoded: DeviceInfo = {
         "bus_type_value": bus_type,
         "bus_type_name": BUSTYPES.get(bus_type, "UNKNOWN"),
         "bus": bus,
@@ -188,15 +228,16 @@ def decode_device_id(device_id: int) -> dict[str, Union[int, str, bool]]:
         "devtype": devtype,
         "is_dronecan": bus_type == 3,
     }
+    return decoded, None
 
 
-def get_device_type_name(devtype: int, device_category: str) -> str:
+def get_device_type_name(devtype: int, device_category: DeviceCategory) -> str:
     """
     Look up device type name based on device category.
 
     Args:
         devtype: Device type numeric value
-        device_category: One of 'compass', 'imu', 'baro', 'airspeed'
+        device_category: One of 'compass', 'imu', 'baro', 'airspeed', 'mavlink'
 
     Returns:
         Device type name string, or 'UNKNOWN' if not found
@@ -210,20 +251,21 @@ def get_device_type_name(devtype: int, device_category: str) -> str:
         "mavlink": MAVLINK_TYPES,
     }
 
-    type_dict = category_map.get(device_category.lower())
-    if type_dict is None:
-        return "UNKNOWN"
+    try:
+        type_dict = category_map[device_category.lower()]
+    except KeyError:
+        raise ValueError(f"Unknown device category: {device_category}") from None
 
     return type_dict.get(devtype, "UNKNOWN")
 
 
-def format_device_info(decode_info: dict, device_type_name: str = "") -> str:
+def format_device_info(decode_info: DeviceInfo, device_type_name: str = "") -> str:
     """
     Format decoded device info as a readable string.
 
     Args:
         decode_info: Dictionary returned by decode_device_id()
-        device_type_name: Device type name (optional)
+        device_type_name: Device type name (optional; not applicable to DroneCAN IDs)
 
     Returns:
         Formatted string with device information
@@ -237,48 +279,64 @@ def format_device_info(decode_info: dict, device_type_name: str = "") -> str:
     is_dronecan = decode_info["is_dronecan"]
 
     if is_dronecan:
-        # For DRONECAN, devtype represents sensor_id (0-indexed)
+        # Compass DroneCAN IDs store sensor_id + 1; other DroneCAN IDs use 0.
+        sensor_id = devtype - 1 if devtype > 0 else None
+        sensor_id_info = (
+            f"sensor_id:{sensor_id}(0x{sensor_id:x})"
+            if sensor_id is not None
+            else "sensor_id:not encoded"
+        )
         return (
             f"bus_type:{bus_type_name}({bus_type})  bus:{bus} "
-            f"address:{address}(0x{address:x}) sensor_id:{devtype - 1}(0x{devtype - 1:x}) "
-            f"{device_type_name}"
+            f"address:{address}(0x{address:x}) {sensor_id_info}"
         )
+    device_type_suffix = f" {device_type_name}" if device_type_name else ""
     return (
         f"bus_type:{bus_type_name}({bus_type})  bus:{bus} "
-        f"address:{address}(0x{address:x}) devtype:{devtype}(0x{devtype:x}) "
-        f"{device_type_name}"
+        f"address:{address}(0x{address:x}) devtype:{devtype}(0x{devtype:x})"
+        f"{device_type_suffix}"
     )
 
 
 def main() -> None:
     """Command-line interface."""
-    parser = optparse.OptionParser("decode_devid.py")
-    parser.add_option("-C", "--compass", action="store_true", help="decode compass IDs")
-    parser.add_option("-I", "--imu", action="store_true", help="decode IMU IDs")
-    parser.add_option("-B", "--baro", action="store_true", help="decode barometer IDs")
-    parser.add_option("-A", "--airspeed", action="store_true", help="decode airspeed IDs")
-    parser.add_option("-M", "--mavlink", action="store_true", help="decode MAVLink channel IDs")
+    parser = argparse.ArgumentParser(description="DEVICE_ID must be decimal or hexadecimal with a 0x prefix")
+    category_group = parser.add_mutually_exclusive_group()
+    category_group.add_argument("-C", "--compass", action="store_true", help="decode compass IDs")
+    category_group.add_argument("-I", "--imu", action="store_true", help="decode IMU IDs")
+    category_group.add_argument("-B", "--baro", action="store_true", help="decode barometer IDs")
+    category_group.add_argument("-A", "--airspeed", action="store_true", help="decode airspeed IDs")
+    category_group.add_argument("-M", "--mavlink", action="store_true", help="decode MAVLink channel IDs")
+    parser.add_argument("device_id", help="decimal or hexadecimal device ID")
 
-    opts, args = parser.parse_args()
+    opts = parser.parse_args()
 
-    if len(args) == 0:
-        print("Please supply a device ID")
+    device_id, err_msg = parse_device_id(opts.device_id)
+    if err_msg is not None:
+        print(err_msg, file=sys.stderr)
+    if device_id is None:
         sys.exit(1)
 
-    device_id = parse_device_id(args[0])
-    decoded = decode_device_id(device_id)
+    decoded, err_msg = decode_device_id(device_id)
+    if err_msg is not None:
+        print(err_msg, file=sys.stderr)
+        sys.exit(1)
+
+    if decoded is None:
+        sys.exit(1)
 
     device_type_name = ""
-    if opts.compass:
-        device_type_name = get_device_type_name(int(decoded["devtype"]), "compass")
-    if opts.imu:
-        device_type_name = get_device_type_name(int(decoded["devtype"]), "imu")
-    if opts.baro:
-        device_type_name = get_device_type_name(int(decoded["devtype"]), "baro")
-    if opts.airspeed:
-        device_type_name = get_device_type_name(int(decoded["devtype"]), "airspeed")
-    if opts.mavlink:
-        device_type_name = get_device_type_name(int(decoded["devtype"]), "mavlink")
+    if not decoded["is_dronecan"]:
+        if opts.compass:
+            device_type_name = get_device_type_name(decoded["devtype"], "compass")
+        elif opts.imu:
+            device_type_name = get_device_type_name(decoded["devtype"], "imu")
+        elif opts.baro:
+            device_type_name = get_device_type_name(decoded["devtype"], "baro")
+        elif opts.airspeed:
+            device_type_name = get_device_type_name(decoded["devtype"], "airspeed")
+        elif opts.mavlink:
+            device_type_name = get_device_type_name(decoded["devtype"], "mavlink")
 
     print(format_device_info(decoded, device_type_name))
 
