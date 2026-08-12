@@ -1504,6 +1504,29 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def assert_fence_sys_status(self, present, enabled, health):
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE, present, enabled, health)
 
+    def assert_fence_breach_was_seen(self):
+        '''assert an unhealthy geofence appeared in the collected SYS_STATUS.
+
+        The breach is transient - the fence goes unhealthy, the vehicle
+        changes mode in response, and by the time it has flown back
+        inside the fence it is healthy again.  Measured here: 1.37
+        seconds of it.  Sampling for the breach after noticing the mode
+        change is a race against the recovery, so look for it in
+        everything which arrived rather than at whatever happens to be
+        true now.
+        '''
+        fence_bit = mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE
+        for m in self.context_collection('SYS_STATUS'):
+            if not (m.onboard_control_sensors_present & fence_bit):
+                continue
+            if not (m.onboard_control_sensors_enabled & fence_bit):
+                continue
+            if not (m.onboard_control_sensors_health & fence_bit):
+                return m
+        raise NotAchievedException(
+            "No geofence breach seen in %u collected SYS_STATUS" %
+            len(self.context_collection('SYS_STATUS')))
+
     def MODE_SWITCH_RESET(self):
         '''test the MODE_SWITCH_RESET auxiliary function'''
         self.set_parameters({
@@ -4712,6 +4735,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                                verbose=False,
                                timeout=30)
 
+        # collect from before the breach: it lasts a second or so of
+        # real time and is over by the time the mode change has been
+        # noticed, so it must be caught as it happens
+        self.context_collect('SYS_STATUS')
+
         self.progress("Waiting for RTL")
         tstart = self.get_sim_time()
         mode = "RTL"
@@ -4722,9 +4750,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             if (self.get_sim_time_cached() > tstart + 120):
                 raise WaitModeTimeout("Did not change mode")
         self.progress("Got mode %s" % mode)
-        # check we are in breach
+        # check we were in breach
         self.assert_fence_enabled()
-        self.assert_fence_sys_status(True, True, False)
+        self.assert_fence_breach_was_seen()
+        self.context_stop_collecting('SYS_STATUS')
 
         # wait until we get home
         self.wait_distance_to_home(50, 100, timeout=200)
