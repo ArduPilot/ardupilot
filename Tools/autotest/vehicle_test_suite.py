@@ -3737,6 +3737,17 @@ class TestSuite(abc.ABC):
             **build_opts,
         )
 
+        # a frame may target a non-default board (e.g. SITL_Nexus), whose
+        # binary lands in build/<board>/ rather than overwriting self.binary.
+        # Restart SITL against that binary; self.binary is deliberately left
+        # pointing at the original board so context_pop() relaunches it.
+        board = frame_opts.get('board')
+        new_binary = None
+        if board is not None:
+            new_binary = os.path.join(
+                util.topdir(), 'build', board, 'bin',
+                os.path.basename(frame_opts['waf_target']))
+
         periph_port = None
         if frame_opts.get('periph_board') is not None:
             periph_port = self.spare_network_port()
@@ -3745,11 +3756,37 @@ class TestSuite(abc.ABC):
         # periph, otherwise the periph's first connection attempts race
         # against the customise_SITL_commandline restart and the link can
         # come up only to be torn down by the SITL stop/start.
-        if customisations is not None:
-            if periph_port is not None:
-                customisations = [c.replace('{port}', str(periph_port))
-                                  for c in customisations]
-            self.customise_SITL_commandline(customisations)
+        # when switching to a different board, boot it with the frame's own
+        # default parameters (its board-specific tuning/calibration) rather
+        # than the currently-running vehicle's defaults.
+        defaults_filepath = None
+        if new_binary is not None:
+            defaults_filepath = self.model_defaults_filepath(
+                frame, vehicleinfo_key)
+
+        # Restart on THIS frame.  Without passing it through, SITL comes
+        # back up on whatever model the previous test happened to leave
+        # behind - it is the suite's current frame, not an argument of
+        # the restart - and the frame's parameters are then missing.
+        # PPPPeriph duly booted a plane-elevrev left by an earlier test,
+        # brought networking up, and never started PPP:
+        #     PPPPeriph ... Failed to receive text: ppp[0]: started
+        # It passed whenever run on its own, where there was no previous
+        # test to inherit a frame from.
+        #
+        # Restart unconditionally too: the point of the call is to run on
+        # the frame's freshly-built binary, which does not happen at all
+        # if a caller passes no customisations.
+        if customisations is None:
+            customisations = []
+        if periph_port is not None:
+            customisations = [c.replace('{port}', str(periph_port))
+                              for c in customisations]
+        self.customise_SITL_commandline(
+            customisations,
+            model=frame_opts.get('model', frame),
+            binary=new_binary,
+            defaults_filepath=defaults_filepath)
 
         if periph_port is not None:
             topdir = util.topdir()
