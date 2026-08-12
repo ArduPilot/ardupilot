@@ -21,7 +21,7 @@
 --
 -- Configuration (standard SCR_USER parameters, so the user can set a
 -- different slot per instance without having to edit the script):
---   SCR_USER1 : leader SwarmMesh sysid (P2P_SYSID of the leader)
+--   SCR_USER1 : leader mesh sysid (the leader's MAV_SYSID)
 --   SCR_USER2 : this follower's offset North of the leader, metres
 --   SCR_USER3 : this follower's offset East of the leader, metres
 --   SCR_USER4 : formation altitude above home, metres

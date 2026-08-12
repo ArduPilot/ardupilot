@@ -115,7 +115,7 @@ class SITLInstance:
 
 def write_param_file(path, mesh_sysid, swarm_size, sr_pos, is_follower, cfg):
     lines = [
-        "P2P_TYPE 10", f"P2P_SYSID {mesh_sysid}", "P2P_DESTID 0", "P2P_TTL 1",
+        "P2P_TYPE 10", f"MAV_SYSID {mesh_sysid}", "P2P_DESTID 0", "P2P_TTL 1",
         # position stream only: the formation needs the leader's position/velocity;
         # EXT_STAT/EXTRA1 just multiply the (N-1)x per-node RX load at scale.
         f"P2P_SR_POSITION {sr_pos}", "P2P_SR_EXT_STAT 0", "P2P_SR_EXTRA1 0",

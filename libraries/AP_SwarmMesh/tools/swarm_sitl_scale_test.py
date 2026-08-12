@@ -65,7 +65,7 @@ def write_param_file(path, log_hz):
     # SMHB entries an undercount of what the peer table actually holds.
     lines = [
         "P2P_TYPE 10",
-        f"P2P_SYSID {RECEIVER_SYSID}",
+        f"MAV_SYSID {RECEIVER_SYSID}",
         "P2P_DESTID 0",
         "P2P_TTL 1",
         "P2P_SR_POSITION 0",

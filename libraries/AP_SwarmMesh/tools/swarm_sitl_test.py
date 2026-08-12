@@ -61,7 +61,7 @@ def find_sitl_binary():
 def write_param_file(path, sysid, sr_pos, sr_ext, sr_extra1, ttl):
     lines = [
         f"P2P_TYPE 10",          # Type::SITL
-        f"P2P_SYSID {sysid}",
+        f"MAV_SYSID {sysid}",
         f"P2P_DESTID 0",         # broadcast: deliver to all peers
         f"P2P_TTL {ttl}",
         f"P2P_SR_POSITION {sr_pos}",

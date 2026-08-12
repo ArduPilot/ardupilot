@@ -27,7 +27,7 @@ The script sets the following parameters per follower:
 
 | Param | Meaning |
 |-------|---------|
-| `SCR_USER1` | Leader SwarmMesh sysid (`P2P_SYSID` of the leader) |
+| `SCR_USER1` | Leader mesh sysid (the leader's `MAV_SYSID`) |
 | `SCR_USER2` | Offset North of the leader (m) |
 | `SCR_USER3` | Offset East of the leader (m) |
 | `SCR_USER4` | Formation altitude above home (m) |

@@ -111,7 +111,7 @@ class SITLInstance:
 def write_param_file(path, mesh_sysid, swarm_size, sr_pos, is_follower, cfg):
     lines = [
         "P2P_TYPE 10",              # Type::SITL
-        f"P2P_SYSID {mesh_sysid}",
+        f"MAV_SYSID {mesh_sysid}",
         "P2P_DESTID 0",            # broadcast
         "P2P_TTL 1",
         f"P2P_SR_POSITION {sr_pos}",

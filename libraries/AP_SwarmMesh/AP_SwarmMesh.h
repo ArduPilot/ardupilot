@@ -169,7 +169,6 @@ private:
     AP_Int8  stream_rate[NUM_BUCKETS];  // SR_POSITION, SR_EXT_STAT, SR_EXTRA1 (Hz; 0 = disabled)
     AP_Int16 swarm_size;
     AP_Int8  destination_id;
-    AP_Int8  sysid;
     AP_Int8  ttl;
     AP_Int8  hardware_mask;
     AP_Int16 log_rate_hz;  // max combined rate (Hz) of RX dataflash log writes; 0 disables

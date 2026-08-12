@@ -58,9 +58,15 @@ AP_SwarmMesh_Backend::AP_SwarmMesh_Backend(AP_SwarmMesh &frontend) :
 
 // ---- frontend accessors ----
 
+// The vehicle's MAVLink system ID is also its mesh identity: it is the origin_id in the peer header,
+// the sysid the peer stream is packed with, and the key of its peer table entry.
 uint8_t AP_SwarmMesh_Backend::frontend_sysid() const
 {
-    return (uint8_t)_frontend.sysid;
+#if HAL_GCS_ENABLED
+    return gcs().sysid_this_mav();
+#else
+    return 1;
+#endif
 }
 
 uint8_t AP_SwarmMesh_Backend::frontend_dest_id() const
@@ -333,8 +339,7 @@ void AP_SwarmMesh_Backend::process_packet()
         const uint8_t *payload = &_msgbuf[SWARMMESH_HEADER_SIZE];
 #if HAL_GCS_ENABLED
         // hand the untouched frame to the companion computer port. This runs after the
-        // CRC, duplicate, staleness and TTL checks above, so only packets we accept
-        // locally are forwarded.
+        // CRC, duplicate, staleness and TTL checks above, so only packets we accept locally are forwarded.
         forward_to_port(payload, hdr->payload_len);
 #endif
         mavlink_message_t msg;
