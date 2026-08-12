@@ -1185,6 +1185,12 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surf_dist_parameters.glitch_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
 #endif
 
+#if AP_SWARMMESH_ENABLED
+    // @Group: P2P
+    // @Path: ../libraries/AP_SwarmMesh/AP_SwarmMesh.cpp
+    AP_SUBGROUPINFO(swarmmesh, "P2P", 23, ParametersG2, AP_SwarmMesh),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
