@@ -48,9 +48,7 @@ The PilotIX autopilot is manufactured by [Partizan Security s.r.o.](https://www.
 
 ## Pinout
 
-![PilotIX Pinout](PilotIX_board_image1.jpg)
-
-<!-- TODO: add pin-name labels to the photo above (arrows/text overlay showing which pad is which), matching the PCB silkscreen -- a plain unlabeled photo does not satisfy the Pinout requirement. -->
+![PilotIX Pinout](pinout_diagram.jpg)
 
 ## UART Mapping
 
