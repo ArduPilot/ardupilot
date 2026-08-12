@@ -26,19 +26,16 @@
 #define AP_GROUNDEFFECT_TAKEOFF_MAX_MS 5000U
 
 // once we are using the relative-to-takeoff height fallback with GPS but
-// no rangefinder/terrain, disable the touchdown altitude gate once the
+// no rangefinder, disable the touchdown altitude gate once the
 // vehicle has drifted this far horizontally from where it lifted off, as
 // the terrain elevation under it may differ from the launch site
-#define AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M 20.0f
+#define AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M 20.0f
 
 const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
-    // 1 was ENABLE; the master switch is folded into GNDEFF_ALT
-    // (negative value disables the library)
-
     // @Param: ALT
     // @DisplayName: Ground effect altitude threshold
-    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the landing altitude gate, matching the legacy behaviour where any gentle descent counts. Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present) or using the height-change-since-takeoff assuming flat ground with a 20m horizontal gate from the takeoff location if the horizontal position is available.
+    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the altitude gating: the takeoff window is released once GNDEFF_TMO has elapsed and the vehicle has climbed at all, and any gentle descent counts as a landing (the legacy behaviour). Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present) or using the height-change-since-takeoff assuming flat ground with a 20m horizontal gate from the takeoff location if the horizontal position is available.
     // @Range: -1 10
     // @Units: m
     // @User: Advanced
@@ -75,12 +72,12 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
 
     const uint32_t tnow_ms = AP_HAL::millis();
 
-    // Vehicle allows the takeoff window: assert it. Normally this latches
-    // while still on the ground (takeoff imminent); modes that spool up
-    // after they are already airborne - e.g. THROW drop, where prop wash
-    // contaminates the baro once the drop is detected - assert it in the
-    // air. The release check below and the 5 s hard cap bound it either way.
-    _state.takeoff_expected = _takeoff_comp_enabled;
+    // latch takeoff_expected while armed on the ground; the release check below clears it
+    if (!_takeoff_comp_enabled) {
+        _state.takeoff_expected = false;
+    } else if (land_complete) {
+        _state.takeoff_expected = true;
+    }
 
     // Anchor the takeoff timer, altitude and XY position while still on
     // the ground without throttle up. Only the relative-to-takeoff
@@ -94,6 +91,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
         _state.takeoff_time_ms = tnow_ms;
         _state.takeoff_alt_m = -pos_d_m;
         _state.takeoff_pos_ne_m = pos_ne_m;
+        _state.takeoff_pos_ne_valid = have_pos_ne;
     }
 
     // Pick the best available height
@@ -107,7 +105,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
 
     // GNDEFF_TMO is a minimum hold time before the altitude check is
     // allowed to release; the 5s hard timeout still applies unconditionally.
-    const uint32_t min_hold_ms = MIN(uint32_t(_timeout_s * 1000.0f), AP_GROUNDEFFECT_TAKEOFF_MAX_MS);
+    const uint32_t min_hold_ms = uint32_t(constrain_float(_timeout_s * 1000.0f, 0.0f, float(AP_GROUNDEFFECT_TAKEOFF_MAX_MS)));
     const bool above_alt = height_m > _alt_m;
     const bool min_hold_elapsed = AP_HAL::timeout_expired(_state.takeoff_time_ms, tnow_ms, min_hold_ms);
     const bool max_timeout = AP_HAL::timeout_expired(_state.takeoff_time_ms, tnow_ms, AP_GROUNDEFFECT_TAKEOFF_MAX_MS);
@@ -140,18 +138,18 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
     //   - GNDEFF_ALT <= 0: legacy behaviour, any gentle descent counts
     //   - HAGL: trust height_m directly
     //   - relative-to-takeoff fallback with horizontal position: only
-    //     trust the gate while still within AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M
+    //     trust the gate while still within AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M
     //     of the launch point; further out we cannot assume the ground
     //     beneath us is at the takeoff elevation
     //   - baro-only fallback (no horizontal position): assume flat ground
     bool near_ground;
     if (!is_positive(_alt_m)) {
         near_ground = true;
-    } else if (height_is_agl || !have_pos_ne) {
+    } else if (height_is_agl || !have_pos_ne || !_state.takeoff_pos_ne_valid) {
         near_ground = height_m < _alt_m;
     } else {
-        const float drift_m = (pos_ne_m - _state.takeoff_pos_ne_m).length();
-        near_ground = (drift_m < AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M)
+        const float drift_ne_m = (pos_ne_m - _state.takeoff_pos_ne_m).length();
+        near_ground = (drift_ne_m < AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M)
                       && (height_m < _alt_m);
     }
 
