@@ -17430,7 +17430,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'WVANE_ENABLE': 1,
         })
         self.takeoff(20, mode='GUIDED')
-        self.guided_achieve_heading(0, direction=1, accuracy=1)
+        # Do not force the direction of this turn.  guided_achieve_heading
+        # commands 10deg/s and wait_heading allows 30s, so the most which
+        # can ever be turned through is 300deg - while forcing clockwise
+        # from a heading just clockwise of north asks for 358deg, which
+        # cannot fit.  Whether this passed therefore depended on which side
+        # of north the previous test happened to leave the vehicle: from
+        # 358deg it is a 2deg turn; from 2deg it is 358deg and fails with
+        #     Failed to attain Heading want 0.0, reached 305
+        # having run out of time at exactly 30s x 10deg/s.  The shortest
+        # way round is at most 180deg, i.e. 18s, whatever it was left at.
+        self.guided_achieve_heading(0, accuracy=1)
 
         self.set_parameter("GUID_OPTIONS", 128)
 
