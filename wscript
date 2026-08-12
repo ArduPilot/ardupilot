@@ -998,6 +998,7 @@ for name in (vehicles + ['bootloader','iofirmware','AP_Periph','replay']):
     ardupilotwaf.build_command(name,
         program_group_list=name,
         doc='builds %s programs' % name,
+        firmware=True,
     )
 
 for program_group in ('all', 'bin', 'tool', 'examples', 'tests', 'benchmarks'):
