@@ -56,7 +56,7 @@
 // For touchdown_expected (which the vehicle may evaluate minutes later,
 // hundreds of metres from launch) it is not, so path 2 additionally
 // requires the vehicle to be within
-// AP_GROUNDEFFECT_TAKEOFF_DRIFT_MAX_M of the takeoff XY position before
+// AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M of the takeoff XY position before
 // the touchdown altitude gate is allowed to fire. Drift further than
 // that and touchdown_expected stays false regardless of motion, since
 // we have no basis to believe the ground below is at takeoff elevation.
@@ -66,9 +66,10 @@
 // GNDEFF_ALT carries three regimes:
 //
 //   <  0   library entirely disabled, no signals emitted
-//   == 0   library on; touchdown altitude gate disabled (matches the
-//          legacy "any gentle descent counts" behaviour); takeoff window
-//          relies on the 5 s hard cap (and GNDEFF_TMO if set)
+//   == 0   library on with no altitude gating: the takeoff window
+//          releases once GNDEFF_TMO has elapsed and the vehicle has
+//          climbed at all, and any gentle descent counts as a landing
+//          (the legacy behaviour)
 //   >  0   library on with the threshold actively gating both sides
 
 #pragma once
@@ -141,6 +142,7 @@ private:
         uint32_t takeoff_time_ms;
         float    takeoff_alt_m;
         Vector2f takeoff_pos_ne_m;  // EKF-origin XY at takeoff, used by the relative-to-takeoff fallback
+        bool     takeoff_pos_ne_valid;
     } _state;
 };
 
