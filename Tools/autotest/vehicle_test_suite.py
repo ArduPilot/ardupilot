@@ -15566,6 +15566,14 @@ switch value'''
         if getattr(self, "sitl", None) is not None:
             self.stop_SITL()
 
+        # and the peripherals it was talking to.  Stopping only the
+        # vehicle leaves them running: they are reparented to init when
+        # this worker exits and stay on the CAN bus, so a later test -
+        # in this run or the next one on the same machine - shares a bus
+        # with the ghosts of every peripheral test which came before it.
+        if getattr(self, "sup_prog", None):
+            self.stop_sup_program()
+
         if self.rc_thread is not None:
             # no statustext: we stopped our SITL just above, so there is
             # nothing on the other end of the link to tell
