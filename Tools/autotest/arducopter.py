@@ -19584,6 +19584,8 @@ RTL_ALT_M 111
         })
 
         param_last_check_time = 0
+        roll_dz = self.get_parameter('RC1_DZ')
+        pitch_dz = self.get_parameter('RC2_DZ')
         for mode in ['STABILIZE', 'ALT_HOLD']:
             self.set_parameters({
                 'AHRS_TRIM_X': 0.1,
@@ -19599,19 +19601,39 @@ RTL_ALT_M 111
                 if now - tstart > 30:
                     raise ValueError(f"Failed to reduce trims in {mode}!")
                 lpn = self.assert_receive_message('LOCAL_POSITION_NED')
-                delta = 40
-                deadband = 0.1  # m/s; don't trim against residual drift
-                roll_input = 1500
-                if lpn.vx > deadband:
-                    roll_input -= delta
-                elif lpn.vx < -deadband:
-                    roll_input += delta
+                # AUTOTRIM integrates the attitude target into the trim
+                # at a constant rate, so it has no equilibrium while a
+                # stick is held off centre.  A fixed-step input against
+                # the vehicle's response lag therefore sweeps the trim
+                # monotonically past zero to the clamp, and the test
+                # only passed if its once-a-second sample happened to
+                # land in the window on the way through.  Hold the stick
+                # in proportion to the drift, as a pilot would, so that
+                # the trim rate falls to zero as the drift does.
+                gain = 40  # PWM per m/s of drift
+                limit = 100  # maximum deflection from centre
+                # a small deadband only; with proportional input a
+                # large one leaves a standing trim error, because the
+                # stick centres and the trim stops moving while drift
+                # remains
+                deadband = 0.02  # m/s
 
-                pitch_input = 1500
-                if lpn.vy > deadband:
-                    pitch_input += delta
-                elif lpn.vy < -deadband:
-                    pitch_input -= delta
+                def stick_offset(v, dz):
+                    if abs(v) < deadband:
+                        return 0
+                    # step past the channel dead zone: inside it the
+                    # stick produces no attitude target at all, so the
+                    # trim stops moving while drift remains
+                    return int(round(math.copysign(min(dz + gain * abs(v), limit), v)))
+
+                # the heading was set to north above so that the earth
+                # frame and the body frame agree: vx is therefore the
+                # forward axis, corrected with pitch, and vy the right
+                # axis, corrected with roll.  Correcting vx with roll
+                # and vy with pitch feeds each axis back through the
+                # other and cannot converge.
+                roll_input = 1500 - stick_offset(lpn.vy, roll_dz)
+                pitch_input = 1500 + stick_offset(lpn.vx, pitch_dz)
                 self.set_rc_from_map({
                     1: roll_input,
                     2: pitch_input,
