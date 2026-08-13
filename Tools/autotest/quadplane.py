@@ -3784,14 +3784,24 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.set_message_rate_hz('SERVO_OUTPUT_RAW', 200)
 
-        # Install a hook to check for throttle spike
+        # Lower the throttle and let it settle *before* arming the hook.
+        # The transition above needed full throttle stick and the hook
+        # fires on anything over 1750, so a SERVO_OUTPUT_RAW sampled
+        # between arming it and lowering the stick reports the pilot's
+        # own 2000 as a spike - which is exactly the value a failing run
+        # reported.  The window is a framework round trip, so how much
+        # simulated time it covers grows with the achieved speedup.
+        self.set_rc(3, 1000)
+        self.delay_sim_time(1, reason="Allow vehicle to stabilize at low throttle")
+
+        # Install a hook to check for throttle spike.  The spike under
+        # test is TECS's on the change into CRUISE, so the hook has to be
+        # armed across that - but not before.
         self.context_push()
         self.install_message_hook_context(DetectThrottleSpike(self))
 
         # Fly in CRUISE so TECS runs and _throttle_dem converges toward 80%
         # (TRIM_THROTTLE feed-forward keeps _throttle_dem well above 40%).
-        self.set_rc(3, 1000)
-        self.delay_sim_time(1, reason="Allow vehicle to stabilize at low throttle")
         self.change_mode('CRUISE')
 
         self.delay_sim_time(5, reason="Check throttle output")
