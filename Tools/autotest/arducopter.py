@@ -19371,7 +19371,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.FenceRelativeToOriginMaxAltHomeAbove,
             self.FenceRelativeToTerrainMaxAlt,
             self.FenceRelativeToTerrainMinAlt,
-            self.RefindGPS,
+            # speedup: the vehicle has to still be airborne when we
+            # refind the GPS and ask for RTL, and the LAND it is doing
+            # meanwhile is racing the framework round trips which restore
+            # GPS1_TYPE and change mode.  Those are bounded in wall clock,
+            # so the simulated time they consume scales with the achieved
+            # speedup - at the default it reached 55s, as long as the
+            # descent itself, and RTL was commanded one second after
+            # touchdown.
+            Test(self.RefindGPS, speedup=10),
             self.EK3SrcSwitchPosDownReset,
             self.AP_Avoidance,
             self.GPSBlending,
