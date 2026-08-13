@@ -25,7 +25,7 @@ MCU STM32H7xx STM32H743xx
 
 # board ID -- pick a number that isn't used by any other board in your
 # build tree's Tools/AP_Bootloader/board_types.txt
-APJ_BOARD_ID 6120
+APJ_BOARD_ID AP_HW_PILOTIX
 
 OSCILLATOR_HZ 8000000
 FLASH_SIZE_KB 2048
@@ -58,6 +58,14 @@ PA14 JTCK-SWCLK SWD
 # ---------------- UART / Serial ports ----------------
 # order of UARTs (and USB) exposed as ArduPilot SERIALn ports
 SERIAL_ORDER OTG1 UART7 USART1 USART2 USART3 UART4 USART6 UART8
+
+# SERIAL5 (UART4/spare) and SERIAL7 (UART8/spare) default to MAVLink2;
+# SERIAL6 (USART6) defaults to RC input. SERIAL1-4 are left unset here
+# since they already match ArduPilot's built-in defaults (MAVLink2/
+# MAVLink2/GPS/GPS).
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_RCIN
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_MAVLink2
 
 # UART7 -> silkscreen TX7/RX7 (has RTS7/CTS7 flow control) - SERIAL1 (Telem1)
 PE7  UART7_RX UART7
@@ -154,7 +162,16 @@ PC5 RSSI_ADC ADC1                      # ADC_RSSI1
 PC4 PRESSURE_SENS ADC1 SCALE(2)        # ADC_AIRS (analog airspeed)
 
 define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 10
+define HAL_BATT_CURR_PIN 11
+define HAL_BATT_VOLT_SCALE 11.21
+define HAL_BATT_CURR_SCALE 15.49
+define HAL_BATT2_VOLT_PIN 18
+define HAL_BATT2_CURR_PIN 7
+define HAL_BATT2_VOLT_SCALE 21.46
+define HAL_BATT2_CURR_SCALE 15.58
 define BOARD_RSSI_ANA_PIN 8
+define BOARD_RSSI_DEFAULT 1
 define HAL_DEFAULT_AIRSPEED_PIN 4
 
 # BATT_VOLT_MULT / BATT2_VOLT_MULT / *_AMP_PERVLT have been calibrated
