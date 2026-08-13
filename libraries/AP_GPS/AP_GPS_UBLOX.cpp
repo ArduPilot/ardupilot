@@ -2299,7 +2299,8 @@ static const char *reasons[] = {"navigation rate",
                                 "TIM TM2",
                                 "F9",
                                 "M10",
-                                "L5 Enable Disable"};
+                                "L5 Enable Disable",
+                                "dual antenna heading rate"};
 
 static_assert((1 << ARRAY_SIZE(reasons)) == CONFIG_LAST, "UBLOX: Missing configuration description");
 
