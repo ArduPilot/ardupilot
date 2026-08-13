@@ -1088,9 +1088,41 @@ void AP_Vehicle::update_arming()
 /*
   one Hz checks common to all vehicles
  */
+#if AP_MAINLOOP_FAILSAFE_ENABLED
+void AP_Vehicle::mainloop_failsafe_stalled(uint32_t stalled_ms)
+{
+    if (!hal.scheduler->is_system_initialized()) {
+        // we are still starting up; see the header
+        return;
+    }
+    if (mainloop_failsafe_stalled_ms != 0) {
+        // one is already waiting to be reported
+        return;
+    }
+    mainloop_failsafe_stalled_ms = stalled_ms;
+}
+
+void AP_Vehicle::mainloop_failsafe_announce()
+{
+    const uint32_t stalled_ms = mainloop_failsafe_stalled_ms;
+    if (stalled_ms == 0) {
+        return;
+    }
+    // clear before sending, so a stall which happens while we are
+    // sending is still recorded
+    mainloop_failsafe_stalled_ms = 0;
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Main loop failsafe: stalled for %u ms",
+                  unsigned(stalled_ms));
+}
+#endif  // AP_MAINLOOP_FAILSAFE_ENABLED
+
 void AP_Vehicle::one_Hz_update(void)
 {
     one_Hz_counter++;
+
+#if AP_MAINLOOP_FAILSAFE_ENABLED
+    mainloop_failsafe_announce();
+#endif
 
     /*
       every 10s check if using a 2M firmware on a 1M board
