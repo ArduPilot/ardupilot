@@ -17400,7 +17400,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ]
         self.correct_wp_seq_numbers(items)
         self.check_fence_upload_download(items)
-        self.takeoff(5, mode='STABILIZE')
+        # ALT_HOLD rather than STABILIZE: we have to cover the 50m to the
+        # inner fence while pitched over, and in STABILIZE that costs
+        # cos(pitch) of the vertical thrust with the stick at hover.  The
+        # vehicle sank from the ~9m it coasted to and hit the ground at
+        # about 45m out, just short of the fence.  How high it coasts
+        # depends on where takeoff()'s altitude polling happens to land,
+        # so this was a race rather than a fixed shortfall.  Fence
+        # breach detection is what is under test here, not manual
+        # altitude control.
+        self.takeoff(5, mode='ALT_HOLD')
         self.set_rc(2, 1200)
         self.wait_statustext("Polygon fence breached")
         self.set_rc(2, 1500)
