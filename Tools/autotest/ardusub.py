@@ -1170,16 +1170,19 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.context_pop()
 
         dfreader = self.dfreader_for_current_onboard_log()
+        temp_min = 35
+        temp_max = 45
         while True:
             m = dfreader.recv_match(type='TEMP')
             if m is None:
                 break
             self.progress(m)
-            if m.Temp > 15 or m.Temp < 30:
+            if temp_min < m.Temp < temp_max:
                 # success!
                 break
         if m is None:
-            raise NotAchievedException("Did not get good TEMP message")
+            raise NotAchievedException(
+                f"Did not get good TEMP message (want {temp_min} < Temp < {temp_max})")
 
     def MAV_mgs(self):
         '''test individual GCS backends timestamps'''
