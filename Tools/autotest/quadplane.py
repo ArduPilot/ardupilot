@@ -854,8 +854,19 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode="QLOITER")
         self.set_rc(2, 1000)
         self.delay_sim_time(10, reason="forward movement into wind")
-        # Check that it is using some forward throttle
-        fwd_thr_pwm = self.get_servo_channel_value(3)
+        # Check that it is using some forward throttle.  Average rather
+        # than taking one instant: the demand is still settling here and
+        # a failing run sampled 1125 out of a swing which reached 1057
+        # low and 1666 high.  Traced over 40s it sits at ~1185 (1181 to
+        # 1199), so the mean is a stable 35us clear of the threshold
+        # while a vehicle not using its forward motor is still ~1000.
+        samples = []
+        for _ in range(20):
+            samples.append(self.get_servo_channel_value(3))
+            self.delay_sim_time(0.25, reason="fwd throttle sampling interval")
+        fwd_thr_pwm = sum(samples) / len(samples)
+        self.progress("fwd thr mean=%.1f min=%u max=%u" %
+                      (fwd_thr_pwm, min(samples), max(samples)))
         if fwd_thr_pwm < 1150 :
             raise NotAchievedException("fwd motor pwm command low, want >= 1150 got %f" % (fwd_thr_pwm))
         # check that pitch is on limit
