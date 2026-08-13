@@ -551,6 +551,9 @@ def run_step(step):
         fly_opts["speedup"] = opts.speedup
 
     fly_opts["check_parameter_leaks"] = opts.check_parameter_leaks
+    if opts.shuffle_seed is not None:
+        fly_opts["shuffle_seed"] = opts.shuffle_seed
+
     fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
     # handle "test.Copter" etc:
@@ -1090,6 +1093,12 @@ if __name__ == "__main__":
                          help='do not check for parameter leaks after each '
                          'test.  The check downloads the full parameter set '
                          'once per test')
+    group_sim.add_option("--shuffle-seed",
+                         default=None,
+                         type='int',
+                         help='shuffle the test order with this seed; '
+                         'varies which tests run next to one another, '
+                         'and can be repeated to reproduce a run')
     group_sim.add_option("--valgrind",
                          default=False,
                          action='store_true',
