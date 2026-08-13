@@ -668,8 +668,10 @@ private:
         ftype         yawAng;         // yaw angle measurement (rad)
         ftype         yawAngErr;      // yaw angle 1SD measurement accuracy (rad)
         rotationOrder order;          // type specifiying Euler rotation order used, 0 = 321 (ZYX), 1 = 312 (ZXY)
+#if EK3_FEATURE_MOVING_BASELINE
         Vector3F      antOffset;      // body-frame antenna offset the yaw measurement was calculated from assuming the
                                       // vehicle was level, zero when the measurement does not require attitude correction (m)
+#endif
     };
 
     struct ext_nav_elements : EKF_obs_element_t {

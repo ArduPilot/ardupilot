@@ -58,12 +58,13 @@
 #define EK3_FEATURE_OPTFLOW_AGL_KF EK3_FEATURE_OPTFLOW_FUSION
 #endif
 
-// moving baseline GPS yaw corrected for vehicle attitude, on 2M boards. Requires
-// the moving-baseline GPS path, whose exported antenna offset the correction consumes
+// moving baseline GPS yaw corrected for vehicle attitude. The correction consumes
+// the antenna offset exported by the GPS driver, so it follows that switch, which
+// is already limited to the moving baseline GPS path on 2M boards
 #ifndef EK3_FEATURE_MOVING_BASELINE
-#define EK3_FEATURE_MOVING_BASELINE ((EK3_FEATURE_ALL || HAL_PROGRAM_SIZE_LIMIT_KB > 1024) && (GPS_MOVING_BASELINE))
+#define EK3_FEATURE_MOVING_BASELINE AP_GPS_MB_YAW_OFFSET_ENABLED
 #endif
 
-#if EK3_FEATURE_MOVING_BASELINE && !(GPS_MOVING_BASELINE)
-#error "EK3_FEATURE_MOVING_BASELINE requires GPS_MOVING_BASELINE"
+#if EK3_FEATURE_MOVING_BASELINE && !(AP_GPS_MB_YAW_OFFSET_ENABLED)
+#error "EK3_FEATURE_MOVING_BASELINE requires AP_GPS_MB_YAW_OFFSET_ENABLED"
 #endif
