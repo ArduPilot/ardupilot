@@ -19615,7 +19615,14 @@ RTL_ALT_M 111
         '''calibrate AHRS trim using RC input'''
         self.progress("Making earth frame same as body frame")  # because I'm lazy
         self.takeoff(5, mode='GUIDED')
-        self.guided_achieve_heading(0, direction=1, accuracy=1)
+        # let the vehicle take the short way round.  We inherit whatever
+        # heading the previous test left, and forcing clockwise makes the
+        # turn up to 359 degrees - at the 10deg/s this command requests
+        # that is 35.9s, past wait_heading()'s 30s budget.  Starting from
+        # 49 degrees it needed 311 and managed 301, timing out 10 short
+        # while turning at exactly the rate it was asked for.  Choosing
+        # the direction bounds the turn at 180 degrees, or 18s.
+        self.guided_achieve_heading(0, accuracy=1)
         self.do_land()
 
         self.set_parameters({
