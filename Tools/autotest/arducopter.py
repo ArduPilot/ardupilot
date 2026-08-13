@@ -20610,7 +20610,15 @@ return update, 1000
             self.mission_NAV_LOITER_TURNS_direction,
             self.StaticNotches,
             self.LuaParamLockdown,
-            self.RefindGPS,
+            # speedup: the vehicle has to still be airborne when we
+            # refind the GPS and ask for RTL, and the LAND it is doing
+            # meanwhile is racing the framework round trips which restore
+            # GPS1_TYPE and change mode.  Those are bounded in wall clock,
+            # so the simulated time they consume scales with the achieved
+            # speedup - at the default it reached 55s, as long as the
+            # descent itself, and RTL was commanded one second after
+            # touchdown.
+            Test(self.RefindGPS, speedup=10),
             Test(self.GyroFFT, attempts=1, speedup=8),
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
