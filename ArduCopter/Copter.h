@@ -829,8 +829,13 @@ private:
     void announce_failsafe(const char *type, const char *action_undertaken=nullptr);
 
     // failsafe.cpp
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void failsafe_enable();
     void failsafe_disable();
+#else
+    void failsafe_enable() {}
+    void failsafe_disable() {}
+#endif
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
@@ -1115,7 +1120,9 @@ private:
     bool using_rate_thread;
 
 public:
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void failsafe_check();      // failsafe.cpp
+#endif
 };
 
 extern Copter copter;
