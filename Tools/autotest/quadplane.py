@@ -2637,6 +2637,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             # disable simulated battery voltage sag so the repeated max-thrust
             # recoveries are not slowed by it
             "SIM_BATT_RES_OHM" : 0,
+            # demand AIRSPEED_CRUISE in CRUISE rather than deriving the
+            # target from the throttle stick.  By default centre stick
+            # asks for the midpoint of AIRSPEED_MIN..AIRSPEED_MAX, which
+            # for this frame is 24m/s - exactly the bottom of the
+            # AIRSPEED_CRUISE+-1 band checked below.
+            "FLIGHT_OPTIONS" : 8,  # CRUISE_TRIM_AIRSPEED
         })
 
         self.reboot_sitl(check_position=True)
