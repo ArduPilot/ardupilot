@@ -8356,14 +8356,26 @@ class TestSuite(abc.ABC):
             if m.custom_mode == custom_mode:
                 return True
 
-    def reach_heading_manual(self, heading, turn_right=True):
-        """Manually direct the vehicle to the target heading."""
+    def reach_heading_manual(self, heading, turn_right=None):
+        """Manually direct the vehicle to the target heading.
+
+        turn_right selects the direction; None takes the short way.
+        """
+        if turn_right is None:
+            # We start from whatever heading the previous test left the
+            # vehicle on, so a fixed direction can mean a turn of up to
+            # 359 degrees, and wait_heading() only budgets 30s: a rover
+            # which started at 23 and was steered right needed 337
+            # degrees, managed 205 and timed out.  Choosing bounds the
+            # turn at 180.  Headings increase clockwise and >1500us is
+            # right on every vehicle below, so the two agree.
+            turn_right = (heading - self.get_heading()) % 360 <= 180
         if self.is_copter() or self.is_sub():
-            self.set_rc(4, 1580)
+            self.set_rc(4, 1580 if turn_right else 1420)
             self.wait_heading(heading)
             self.set_rc(4, 1500)
         if self.is_plane():
-            self.set_rc(1, 1800)
+            self.set_rc(1, 1800 if turn_right else 1200)
             self.wait_heading(heading)
             self.set_rc(1, 1500)
         if self.is_rover():
