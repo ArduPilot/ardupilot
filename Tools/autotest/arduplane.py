@@ -7527,8 +7527,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.drain_mav()
         self.assert_servo_channel_value(3, servo_min_throttle)
 
-        # But not when disarmed
+        # that min throttle rolls the vehicle along the ground, and once
+        # it passes GPS_IS_FLYING_SPEED_MS (1.5m/s) Plane judges itself
+        # to be flying - isFlyingProbability low-passes up to 1 over
+        # about a second - and AP_Arming_Plane::disarm() then correctly
+        # refuses a GCS disarm.  How far it gets to roll is set by the
+        # wall-clock cost of the checks above, so under --parallel load
+        # the disarm below came back MAV_RESULT_FAILED.  Cut the
+        # throttle and let it stop first; the flying estimate falls back
+        # below the threshold well before the vehicle is this slow.
+        self.change_mode("MANUAL")
+        self.wait_groundspeed(0, 0.5)
         self.disarm_vehicle()
+
+        # min throttle should not be applied while disarmed
+        self.change_mode("FBWA")
         self.drain_mav()
         self.assert_servo_channel_value(3, servo_min)
 
