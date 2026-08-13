@@ -106,18 +106,16 @@ public:
         return _RGPI[instance].antenna_offset;
     }
 
+#if AP_DAL_RGPK_LOGGING_ENABLED
     // return the body-frame moving baseline antenna offset used to calculate
     // the yaw returned by gps_yaw_deg for this instance, zero when that yaw
     // is not derived from a moving baseline
     const Vector3f &get_mb_yaw_offset(uint8_t instance) const {
         return _RGPK[instance].mb_yaw_offset;
     }
+#endif
 
-    // log_mb_yaw_offset is the caller's EK3_FEATURE_MOVING_BASELINE. This file
-    // is compiled once and shared across vehicles so it cannot see the EKF
-    // feature macros itself, and the offset must only be logged when the EKF
-    // that consumes it applies the correction
-    void start_frame(bool log_mb_yaw_offset);
+    void start_frame();
 
     void handle_message(const log_RGPH &msg) {
         _RGPH = msg;
@@ -132,18 +130,22 @@ public:
         tmp_location[msg.instance].lng = msg.lng;
         tmp_location[msg.instance].alt = msg.alt;
     }
+#if AP_DAL_RGPK_LOGGING_ENABLED
     void handle_message(const log_RGPK &msg) {
         if (msg.instance < ARRAY_SIZE(_RGPK)) {
             _RGPK[msg.instance] = msg;
         }
     }
+#endif
 
 private:
 
     struct log_RGPH _RGPH;
     struct log_RGPI _RGPI[GPS_MAX_INSTANCES];
     struct log_RGPJ _RGPJ[GPS_MAX_INSTANCES];
+#if AP_DAL_RGPK_LOGGING_ENABLED
     struct log_RGPK _RGPK[GPS_MAX_INSTANCES];
+#endif
 
     Location tmp_location[GPS_MAX_INSTANCES];
 };

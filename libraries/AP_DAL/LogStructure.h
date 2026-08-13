@@ -1,10 +1,23 @@
 #pragma once
 
+#include <AP_GPS/AP_GPS_config.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Math/vector3.h>
 #include <AP_Math/vector2.h>
 #include <AP_Math/matrix3.h>
 #include <AP_Math/quaternion.h>
+
+// RGPK carries the antenna offset a moving baseline GPS yaw was calculated
+// from, which Replay needs only to reproduce the EKF3 correction of that yaw
+#ifndef AP_DAL_RGPK_LOGGING_ENABLED
+#define AP_DAL_RGPK_LOGGING_ENABLED AP_GPS_MB_YAW_OFFSET_ENABLED
+#endif
+
+#if AP_DAL_RGPK_LOGGING_ENABLED
+#define LOG_ID_FROM_DAL_RGPK LOG_RGPK_MSG,
+#else
+#define LOG_ID_FROM_DAL_RGPK
+#endif
 
 #define LOG_IDS_FROM_DAL \
     LOG_RFRH_MSG, \
@@ -27,7 +40,7 @@
     LOG_RGPH_MSG, \
     LOG_RGPI_MSG, \
     LOG_RGPJ_MSG, \
-    LOG_RGPK_MSG, \
+    LOG_ID_FROM_DAL_RGPK \
     LOG_RASH_MSG, \
     LOG_RASI_MSG, \
     LOG_RBCH_MSG, \
@@ -344,6 +357,7 @@ struct log_RGPJ {
     uint8_t _end;
 };
 
+#if AP_DAL_RGPK_LOGGING_ENABLED
 // @LoggerMessage: RGPK
 // @Description: Replay Data GPS Instance - moving baseline yaw antenna offset (low-rate, only logged when changed)
 // @Field: OX: moving baseline antenna offset used to calculate GPS yaw, X-axis
@@ -355,6 +369,7 @@ struct log_RGPK {
     uint8_t instance;
     uint8_t _end;
 };
+#endif  // AP_DAL_RGPK_LOGGING_ENABLED
 
 // @LoggerMessage: RASH
 // @Description: Replay Airspeed Sensor Header
@@ -617,6 +632,14 @@ struct log_RTER {
 
 #define RLOG_SIZE(sname) 3+offsetof(struct log_ ##sname,_end)
 
+#if AP_DAL_RGPK_LOGGING_ENABLED
+#define LOG_STRUCTURE_FROM_DAL_RGPK                                    \
+    { LOG_RGPK_MSG, RLOG_SIZE(RGPK),                                   \
+      "RGPK", "fffB", "OX,OY,OZ,I", "---#", "----" },
+#else
+#define LOG_STRUCTURE_FROM_DAL_RGPK
+#endif
+
 #define LOG_STRUCTURE_FROM_DAL        \
     { LOG_RFRH_MSG, RLOG_SIZE(RFRH),                          \
       "RFRH", "QI", "TimeUS,TF", "s-", "F-" }, \
@@ -662,8 +685,7 @@ struct log_RTER {
       "RGPI", "ffffBBBB", "OX,OY,OZ,Lg,Flags,Stat,NSats,I", "-------#", "--------" }, \
     { LOG_RGPJ_MSG, RLOG_SIZE(RGPJ),                                   \
       "RGPJ", "IffffffIiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,YT,Lat,Lon,Alt,HA,VA,HD,I", "--------------#", "---------------" }, \
-    { LOG_RGPK_MSG, RLOG_SIZE(RGPK),                                   \
-      "RGPK", "fffB", "OX,OY,OZ,I", "---#", "----" }, \
+    LOG_STRUCTURE_FROM_DAL_RGPK \
     { LOG_RMGH_MSG, RLOG_SIZE(RMGH),                                   \
       "RMGH", "fBBBBBBB", "Dec,Avail,NumInst,AutoDec,NumEna,LOE,C,FUsable", "--------", "--------" },  \
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \

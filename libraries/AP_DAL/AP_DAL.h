@@ -320,9 +320,11 @@ public:
     void handle_message(const log_RGPJ &msg) {
         _gps.handle_message(msg);
     }
+#if AP_DAL_RGPK_LOGGING_ENABLED
     void handle_message(const log_RGPK &msg) {
         _gps.handle_message(msg);
     }
+#endif
 
     void handle_message(const log_RMGH &msg) {
         _compass.handle_message(msg);
