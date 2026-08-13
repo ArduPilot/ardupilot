@@ -426,14 +426,18 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
             interim_state.gps_yaw = wrap_360(reported_heading_deg - degrees(rotation_offset_rad));
             interim_state.have_gps_yaw = true;
             interim_state.gps_yaw_time_ms = AP_HAL::millis();
+#if AP_GPS_MB_YAW_OFFSET_ENABLED
             interim_state.mb_yaw_offset = offset;
+#endif
         }
         goto good_yaw;
     }
 
 bad_yaw:
     interim_state.have_gps_yaw = false;
+#if AP_GPS_MB_YAW_OFFSET_ENABLED
     interim_state.mb_yaw_offset.zero();
+#endif
 
 good_yaw:
 

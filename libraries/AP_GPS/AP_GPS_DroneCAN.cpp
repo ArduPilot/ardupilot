@@ -509,7 +509,9 @@ void AP_GPS_DroneCAN::handle_heading_msg(const ardupilot_gnss_Heading& msg)
     // attitude correction is possible here. Zero the offset so a stale value
     // from an earlier relposheading calculation on this instance is never
     // applied to it
+#if AP_GPS_MB_YAW_OFFSET_ENABLED
     interim_state.mb_yaw_offset.zero();
+#endif
 
     interim_state.have_gps_yaw_accuracy = msg.heading_accuracy_valid;
     interim_state.gps_yaw_accuracy = degrees(msg.heading_accuracy_rad);

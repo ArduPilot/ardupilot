@@ -2039,6 +2039,7 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     return true;
 }
 
+#if AP_GPS_MB_YAW_OFFSET_ENABLED
 /*
   get the body-frame moving baseline antenna offset used to calculate the yaw
   returned by gps_yaw_deg, zero when that yaw is not derived from a moving
@@ -2053,6 +2054,7 @@ const Vector3f &AP_GPS::get_mb_yaw_offset(uint8_t instance) const
     const uint8_t yaw_instance = yaw_source_instance(instance);
     return state[yaw_instance].mb_yaw_offset;
 }
+#endif  // AP_GPS_MB_YAW_OFFSET_ENABLED
 
 /*
  * Old parameter metadata.  Until we have versioned parameters, keeping
