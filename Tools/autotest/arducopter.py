@@ -17834,6 +17834,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def Clamp(self):
         '''test Copter docking clamp'''
+        # the simulated clamp only grabs within 0.5m of home
+        # (SIM_Aircraft.cpp), but the suite lets a test leave the vehicle
+        # up to max_distance_from_startup_location_at_end_of_test() away,
+        # which is 2m for Copter - four times the grab radius.  Restart
+        # the simulator so we begin where the clamp expects us: a failing
+        # run inherited an 0.59m offset and got "Clamp: missed vehicle".
+        self.reset_SITL_commandline()
+
         clamp_ch = 11
         self.set_parameters({
             "SIM_CLAMP_CH": clamp_ch,
