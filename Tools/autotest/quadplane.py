@@ -149,6 +149,17 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if (spin_arm_pwm >= spin_min_pwm):
             raise PreconditionFailedException("SPIN_MIN pwm not greater than SPIN_ARM pwm")
 
+        # what the spin-up checks below are really distinguishing is
+        # SPIN_ARM from SPIN_MIN, which are 50us apart.  Demanding the
+        # exact recorded SPIN_MIN value back is a one-LSB race: the
+        # output dithers between 1150 and 1151, spin_min_pwm captured
+        # whichever of those it first saw, and a later wait which only
+        # ever saw the other one timed out with the motor spun up
+        # correctly the whole time.  Take a threshold in the middle of
+        # the gap, which is 25us clear of both states:
+        spun_up_pwm = (spin_arm_pwm + spin_min_pwm) // 2
+        self.progress("spun_up_pwm: %d" % spun_up_pwm)
+
         self.start_subtest("Test auxswitch arming with AirMode Switch")
         for mode in ('QSTABILIZE', 'QACRO'):
             """verify that arming with switch results in higher PWM output"""
@@ -158,7 +169,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.progress("Arming with switch at zero throttle")
             self.arm_motors_with_switch(arm_ch)
             self.progress("Waiting for Motor1 to speed up")
-            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+            self.wait_servo_channel_value(5, spun_up_pwm, comparator=operator.ge)
 
             self.progress("Verify that rudder disarm is disabled")
             try:
@@ -236,7 +247,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.progress("Turn airmode on with auxswitch")
             self.set_rc(7, 2000)
             self.progress("Waiting for Motor1 to speed up")
-            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+            self.wait_servo_channel_value(5, spun_up_pwm, comparator=operator.ge)
 
             self.progress("Turn airmode off with auxswitch")
             self.set_rc(7, 1000)
@@ -256,13 +267,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.progress("Turn airmode on with auxswitch")
             self.set_rc(7, 2000)
             self.progress("Waiting for Motor1 to speed up")
-            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+            self.wait_servo_channel_value(5, spun_up_pwm, comparator=operator.ge)
 
             self.disarm_vehicle_expect_fail()
             self.arm_vehicle()
 
             self.progress("Verify that airmode is still on")
-            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+            self.wait_servo_channel_value(5, spun_up_pwm, comparator=operator.ge)
             self.disarm_vehicle(force=True)
             self.wait_ready_to_arm()
 
