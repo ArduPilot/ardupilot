@@ -303,8 +303,13 @@ private:
     void gpsglitch_check();
 
     // failsafe.cpp
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void failsafe_enable();
     void failsafe_disable();
+#else
+    void failsafe_enable() {}
+    void failsafe_disable() {}
+#endif
 
     // fence.cpp
     void fence_check();
@@ -410,7 +415,9 @@ private:
     void exit_mode(Mode *&old_flightmode, Mode *&new_flightmode);
 
 public:
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void failsafe_check();      // failsafe.cpp
+#endif
 };
 
 extern Blimp blimp;
