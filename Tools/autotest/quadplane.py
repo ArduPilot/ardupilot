@@ -3115,6 +3115,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model="quadplane-tilthvec",
+            defaults_filepath=self.model_defaults_filepath("quadplane-tilthvec"),
             wipe=True,
         )
 
