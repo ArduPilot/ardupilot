@@ -450,8 +450,13 @@ private:
     void failsafe_terrain_check();
     void failsafe_terrain_set_status(bool data_ok);
     void failsafe_terrain_on_event();
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void mainloop_failsafe_enable();
     void mainloop_failsafe_disable();
+#else
+    void mainloop_failsafe_enable() {}
+    void mainloop_failsafe_disable() {}
+#endif
 #if AP_FENCE_ENABLED
     void fence_check();
     void fence_checks_async() override;
@@ -625,7 +630,9 @@ private:
 #endif // AP_SCRIPTING_ENABLED
 
 public:
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void mainloop_failsafe_check();
+#endif
     bool rangefinder_alt_ok() const WARN_IF_UNUSED;
 
     static Sub *_singleton;
