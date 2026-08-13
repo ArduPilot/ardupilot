@@ -11,6 +11,7 @@
   our failsafe strategy is to detect main loop lockup and disarm.
  */
 
+#if AP_MAINLOOP_FAILSAFE_ENABLED
 /*
   this failsafe_check function is called from the core timer interrupt
   at 1kHz.
@@ -33,13 +34,18 @@ void Rover::failsafe_check()
         // we have gone at least 0.2 seconds since the main loop
         // ran. That means we're in trouble, or perhaps are in
         // an initialisation routine or log erase. disarm the motors
-        // To-Do: log error
         if (arming.is_armed()) {
+            // say why before disarming; the disarm itself only emits
+            // "Throttle disarmed", which gives no clue as to the cause
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Main loop failsafe: stalled for %u ms",
+                          unsigned((tnow - last_timestamp) / 1000));
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_OCCURRED);
             // disarm motors
             arming.disarm(AP_Arming::Method::CPUFAILSAFE);
         }
     }
 }
+#endif  // AP_MAINLOOP_FAILSAFE_ENABLED
 
 /*
   called to set/unset a failsafe event.

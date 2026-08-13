@@ -1,9 +1,11 @@
 #include "Rover.h"
 
+#if AP_MAINLOOP_FAILSAFE_ENABLED
 static void failsafe_check_static()
 {
     rover.failsafe_check();
 }
+#endif
 
 void Rover::init_ardupilot()
 {
@@ -98,7 +100,9 @@ void Rover::init_ardupilot()
       setup the 'main loop is dead' check. Note that this relies on
       the RC library being initialised.
      */
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
+#endif
 
     // initialize SmartRTL
     g2.smart_rtl.init();
