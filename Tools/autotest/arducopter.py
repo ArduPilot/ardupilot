@@ -10403,7 +10403,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode="LOITER")
 
         self.progress("Ensuring RC inputs have no effect in brake mode")
-        self.change_mode("STABILIZE")
+        # ALT_HOLD rather than STABILIZE just to build up some speed:
+        # with the throttle stick at hover, tilting costs cos(pitch) of
+        # the lift, and the vehicle sinks instead of accelerating.  A
+        # failing run reached 2.84m/s, fell out of its 9.23m hover and
+        # hit the ground at 4.85m/s, after which groundspeed sat at
+        # 0.02m/s until the wait timed out.  What is under test is
+        # whether BRAKE stops the vehicle, not manual altitude control.
+        self.change_mode("ALT_HOLD")
         self.set_rc(3, 1500)
         self.set_rc(2, 1200)
         self.wait_groundspeed(5, 1000)
