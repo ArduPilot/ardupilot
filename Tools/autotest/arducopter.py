@@ -18960,6 +18960,17 @@ RTL_ALT_M 111
         self.set_rc(2, 1500)
         self.set_rc(4, 1500)
 
+        # the offsets are copied out of the EKF as we disarm, and only
+        # if its magnetic field states have converged - see
+        # NavEKF3_core::getMagOffsets(), which requires the mag state
+        # variances below 5e-6.  Flying the manoeuvres above does not
+        # guarantee that has happened, and when it has not the copy is
+        # silently skipped: the failure then surfaces as a parameter
+        # which never changed, with nothing to say why.  Wait for the
+        # filter to agree it has converged, so that a failure here
+        # names the reason instead.
+        self.wait_ekf_compass_variance_converged()
+
         self.do_RTL()
         self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
         self.reboot_sitl()
