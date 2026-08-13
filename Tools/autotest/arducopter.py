@@ -4005,6 +4005,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(flip_rc_aux_channel, aux_low)
         rc_option_flip_mode = 2 # (source: RC1_OPTION definition)
         self.set_parameter(f'RC{flip_rc_aux_channel}_OPTION', rc_option_flip_mode)
+        # the aux-switch state machine only acts on a *change* of
+        # debounced position: read_aux_all runs at 10Hz and a position
+        # must hold for SWITCH_DEBOUNCE_TIME_MS (200ms) before it is
+        # latched.  read_aux() also returns early while the option is
+        # DO_NOTHING, without updating the remembered position, so that
+        # position is whatever some earlier test in this SITL session
+        # left behind - frequently high.  If we drive the switch high
+        # before the low position has been latched the low->high edge is
+        # not seen as a change at all and no flip ever happens.  The
+        # dwell the low position used to get was just the tail of the
+        # parameter round-trip above, which is wall-clock-bounded and so
+        # shrinks in simulated time as the achieved speedup drops under
+        # --parallel load.  Hold it low explicitly instead:
+        self.delay_sim_time(1, reason="aux switch low position to be latched")
         self.set_rc(flip_rc_aux_channel, aux_high, timeout=None)
         try:
             wait_for_roll_right_flip()
