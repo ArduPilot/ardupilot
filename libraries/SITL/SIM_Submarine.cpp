@@ -232,20 +232,13 @@ void Submarine::calculate_angular_drag_torque(const Vector3f &angular_velocity, 
 */
 float Submarine::calculate_buoyancy_acceleration()
 {
-    float below_water_level = position.z - frame_property.height/2;
+    // position.z is the depth of the centre of the frame, so the frame starts to enter the
+    // water at -height/2 and is completely below the water level at +height/2
+    const float submerged_height = constrain_float(position.z + frame_property.height/2, 0, frame_property.height);
 
-    // Completely above water level
-    if (below_water_level < 0) {
-        return 0.0f;
-    }
-
-    // Completely below water level
-    if (below_water_level > frame_property.height/2) {
-        return GRAVITY_MSS + sitl->buoyancy / frame_property.mass;
-    }
-
-    // bouyant force is proportional to fraction of height in water
-    return GRAVITY_MSS + (sitl->buoyancy * below_water_level/frame_property.height) / frame_property.mass;
+    // the displaced volume, and so the whole buoyant force, is proportional to the fraction
+    // of the height in water
+    return (submerged_height / frame_property.height) * (GRAVITY_MSS + sitl->buoyancy / frame_property.mass);
 };
 
 /*
