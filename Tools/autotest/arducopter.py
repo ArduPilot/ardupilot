@@ -15327,9 +15327,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Moved too fast (%f>%f)" %
                                            (math.degrees(m.yawspeed), 5*degsecond))
         self.install_message_hook_context(rate_watcher)
+        # we inherit whatever heading the previous test left the vehicle
+        # on, so these have to be wrapped: the handler takes param1 as
+        # an absolute angle and rejects anything outside [0,360], and a
+        # vehicle left pointing at 354 gave a target of 414 and a bare
+        # MAV_RESULT_FAILED.
         self.progress("Yaw CW 60 degrees")
-        target = initial_heading + 60
-        part_way_target = initial_heading + 10
+        target = (initial_heading + 60) % 360
+        part_way_target = (initial_heading + 10) % 360
         command(
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
             p1=target,     # target angle
@@ -15342,7 +15347,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Yaw CCW 60 degrees")
         target = initial_heading
-        part_way_target = initial_heading + 30
+        part_way_target = (initial_heading + 30) % 360
         command(
             mavutil.mavlink.MAV_CMD_CONDITION_YAW,
             p1=target,  # target angle
