@@ -294,6 +294,12 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
             ('AP_FOLLOW_ENABLED', 'AP_Follow::AP_Follow'),
 
+            ('AP_MAINLOOP_FAILSAFE_ENABLED', r'Copter::failsafe_check\b'),
+            ('AP_MAINLOOP_FAILSAFE_ENABLED', r'Plane::failsafe_check\b'),
+            ('AP_MAINLOOP_FAILSAFE_ENABLED', r'Rover::failsafe_check\b'),
+            ('AP_MAINLOOP_FAILSAFE_ENABLED', r'Blimp::failsafe_check\b'),
+            ('AP_MAINLOOP_FAILSAFE_ENABLED', r'Sub::mainloop_failsafe_check\b'),
+
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
             ('AP_ROVER_AUTO_ARM_ONCE_ENABLED', r'Rover::handle_auto_arm_once'),
             ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
