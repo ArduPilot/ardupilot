@@ -19964,7 +19964,13 @@ SERIAL5_BAUD 128
             self.ParametersMIS_TOTAL,
             self.ParametersDownload,
             self.LoggerDocumentation,
-            self.Logging,
+            # Logging deliberately arms with LOG_DISARMED=0, so arming
+            # has to open a log.  That open blocks the main loop while
+            # the IO thread completes it, and the simulation clock runs
+            # on throughout - so the faster we are running, the more
+            # simulated time passes and the closer we come to the main
+            # loop failsafe threshold.  Run it slower.
+            Test(self.Logging, speedup=10),
             self.GetCapabilities,
             self.InitialMode,
         ]
