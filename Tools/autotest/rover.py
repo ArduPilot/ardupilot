@@ -411,7 +411,13 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
             m = self.assert_receive_message('VFR_HUD')
             self.progress("Current speed: %f" % m.groundspeed)
 
+        # centre the sticks and let the rover coast to a stop before we
+        # finish.  Disarming stops the motors but not the vehicle, and
+        # the next test is entitled to start from rest.
+        self.set_rc(3, 1500)
+        self.set_rc(1, 1500)
         self.disarm_vehicle()
+        self.wait_groundspeed(0, 0.2, minimum_duration=1)
 
     #################################################
     # AUTOTEST ALL
