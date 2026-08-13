@@ -7651,21 +7651,39 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("LOITER")
         self.delay_sim_time(20, reason="plane to settle") # Let the plane settle.
 
-        tstart = self.get_sim_time()
-        test_time = 10 # Run the test for 10s.
-        pub_freq = 10
-        for i in range(test_time*pub_freq):
-            tnow = self.get_sim_time()
+        # LOITER holds whatever altitude the vehicle was at when it was
+        # entered, which is the takeoff climb's overshoot rather than
+        # target_alt - with TRIM_THROTTLE at 70 that overshoot has been
+        # seen as high as 8m, which on its own busts the 5m band below.
+        # What this test is actually about is whether moving home
+        # disturbs that held altitude, so measure it rather than assume
+        # it:
+        settled_alt = self.get_altitude(relative=False)
+        self.progress("Holding %.2fm before home is moved" % settled_alt)
+
+        # Produce sine waves in home altitude change.  The phase comes
+        # from the sample index, not from the clock: each iteration
+        # costs a set_home round trip, which is wall-clock-bounded and
+        # so burns simulated time in proportion to the achieved speedup.
+        # Under --parallel load that reached ~2.5s of simulated time per
+        # iteration, which sampled the old 1Hz clock-driven sine at
+        # almost exactly its period - it aliased to a +/-5m wobble
+        # instead of the intended +/-40m, and the test stimulated
+        # nothing at all.
+        cycles = 2
+        samples_per_cycle = 10
+        # the +1 makes the last sample land back on phase zero, so home
+        # is left where it started rather than 23m low - otherwise the
+        # check below is made while the vehicle is chasing a target we
+        # moved and then abandoned:
+        for i in range(cycles * samples_per_cycle + 1):
             higher_home = copy.copy(home)
-            # Produce 1Hz sine waves in home altitude change.
-            higher_home.alt += 40*math.sin((tnow-tstart)*(2*math.pi))
+            higher_home.alt += 40*math.sin(i*(2*math.pi)/samples_per_cycle)
             self.set_home(higher_home)
-            if tnow-tstart > test_time:
-                break
-            self.delay_sim_time(1.0/pub_freq, reason="home update interval")
+            self.delay_sim_time(0.1, reason="home update interval")
 
         # Test if the altitude is still within bounds.
-        self.wait_altitude(home.alt+target_alt-5, home.alt+target_alt+5, relative=False, minimum_duration=1, timeout=2)
+        self.wait_altitude(settled_alt-5, settled_alt+5, relative=False, minimum_duration=1, timeout=2)
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
