@@ -7973,6 +7973,29 @@ class TestSuite(abc.ABC):
         if name not in already:
             self.context_get().preserved_attributes.append((name, getattr(self, name)))
 
+    def wait_ekf_compass_variance_converged(self, maximum=0.2, minimum_duration=10, timeout=300):
+        """Wait for the EKF to settle its magnetic field estimate.
+
+        EKF_STATUS_REPORT's compass_variance is the same quantity the
+        XKF4.SM log field carries - max(magVar) from getVariances() -
+        so it can be compared against flight logs directly.  Measured
+        over the last 45s before disarm in CompassLearnCopyFromEKF: a
+        converged filter sits at 0.05 falling to 0.00, one which never
+        converged sat at 1.25 throughout.
+        """
+        def get_compass_variance():
+            m = self.assert_receive_message('EKF_STATUS_REPORT', timeout=10)
+            return m.compass_variance
+
+        self.wait_and_maintain_range(
+            value_name="EKF compass variance",
+            minimum=0,
+            maximum=maximum,
+            current_value_getter=get_compass_variance,
+            minimum_duration=minimum_duration,
+            timeout=timeout,
+        )
+
     def context_push(self):
         """Save a copy of the parameters."""
         context = Context()
