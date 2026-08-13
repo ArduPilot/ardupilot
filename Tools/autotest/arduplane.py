@@ -201,6 +201,16 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def NeedEKFToArm(self):
         """Ensure the EKF must be healthy for the vehicle to arm."""
+        # this needs an EKF which has never flown: NavEKF3 only
+        # recomputes tasTimeout inside FuseAirspeed(), which does not run
+        # on the ground because the wind states are inhibited there, so a
+        # session which has already flown keeps tasTimeout false.  For a
+        # plane that makes doingWindRelNav permanently true, the EKF stays
+        # healthy however the GPS behaves, AHRS never falls back and the
+        # message we are waiting for is never sent - a failing run
+        # collected 20 prearm reports over 60s and every one of them was
+        # "GPS 1: Bad fix" alone.
+        self.reboot_sitl()
         self.progress("Ensuring we need EKF to be healthy to arm")
         self.set_parameter("SIM_GPS1_ENABLE", 0)
         self.context_collect("STATUSTEXT")
