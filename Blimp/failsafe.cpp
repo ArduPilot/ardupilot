@@ -7,6 +7,8 @@
 //  our failsafe strategy is to detect main loop lockup and disarm the motors
 //
 
+#if AP_MAINLOOP_FAILSAFE_ENABLED
+
 static bool failsafe_enabled = false;
 static uint16_t failsafe_last_ticks;
 static uint32_t failsafe_last_timestamp;
@@ -59,6 +61,8 @@ void Blimp::failsafe_check()
             //TODO: this may not work correctly.
         }
 
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Main loop failsafe: stalled for %u ms",
+                      unsigned((tnow - failsafe_last_timestamp) / 1000));
         LOGGER_WRITE_ERROR(LogErrorSubsystem::CPU, LogErrorCode::FAILSAFE_OCCURRED);
     }
 
@@ -71,3 +75,5 @@ void Blimp::failsafe_check()
         }
     }
 }
+
+#endif  // AP_MAINLOOP_FAILSAFE_ENABLED
