@@ -3444,6 +3444,15 @@ class TestSuite(abc.ABC):
         else:
             self.set_streamrate(self.sitl_streamrate())
 
+        if wipe:
+            # the wipe discarded the parameters the suite relies on;
+            # reset_SITL_commandline restores these but we did not.
+            # Notably LOG_DISARMED reverts to 0, which leaves no log
+            # open, so arming has to open one - and that blocks the
+            # main loop (see AP_Logger_File::PrepForArming_start_logging)
+            # for long enough to trip the main loop failsafe.
+            self.set_parameters(self.default_parameter_list())
+
         # mode switch needs to be debounced; waiting for more
         # RC_CHANNELS doesn't necessarily mean we have done that, but
         # it won't hurt
