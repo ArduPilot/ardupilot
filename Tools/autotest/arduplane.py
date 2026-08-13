@@ -10745,7 +10745,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.LandingDrift,
             self.TakeoffAuto4,
             self.TakeoffTakeoff1,
-            self.TakeoffGround,
+            # speedup: the first check wants groundspeed in [8,10], a
+            # window the aircraft is accelerating through, and it has to
+            # be below TKOFF_ROTATE_SPD (15) to mean anything so it
+            # cannot simply be widened.  The arm round trip before it is
+            # bounded in wall clock, so the simulated time it covers
+            # scales with the achieved speedup - at the default the very
+            # first sample after arming was already 18.76m/s.
+            Test(self.TakeoffGround, speedup=10),
             self.MAVFTP,
             self.MAVFTPListDirectoryFullPacket,
             self.MAVFTPMavLogDirectory,
