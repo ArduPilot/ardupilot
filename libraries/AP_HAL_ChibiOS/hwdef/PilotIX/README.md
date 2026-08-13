@@ -4,11 +4,9 @@ The PilotIX autopilot is manufactured by [Partizan Security s.r.o.](https://www.
 
 ![PilotIX](PilotIX_board_image.jpg)
 
-
 ## Where to Buy
 
 [Partizan Security s.r.o.](https://www.hobbydrone.cz/cs/)
-
 
 ## Specifications
 
