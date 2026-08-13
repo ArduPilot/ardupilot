@@ -13179,6 +13179,17 @@ Also, ignores heartbeats not from our target system'''
 
     def ArmFeatures(self):
         '''Arm features'''
+        # wait_gps_disable() below needs an EKF which has never flown.
+        # NavEKF3 only recomputes tasTimeout inside FuseAirspeed(), and
+        # airspeed is not fused on the ground because wind states are
+        # inhibited there - so once a flight has left tasTimeout false
+        # it stays false for the life of the EKF.  For a plane
+        # doingWindRelNav is then permanently true, horiz_pos_rel is
+        # reported valid no matter what the GPS does, and the wait can
+        # never succeed.  A reboot puts tasTimeout back to true.  Which
+        # test ran before us in this session used to decide whether we
+        # saw this; with --shuffle-seed it is a coin toss.
+        self.reboot_sitl()
         # TEST ARMING/DISARM
         self.delay_sim_time(12, reason="gyros and accels to stabilise")  # wait for gyros/accels to be happy
         if self.get_parameter("ARMING_SKIPCHK") != 0 and not self.is_sub():
