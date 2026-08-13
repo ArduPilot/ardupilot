@@ -2145,6 +2145,7 @@ class TestSuite(abc.ABC):
                  asan=False,
                  check_parameter_leaks=True,
                  instance=0,
+                 shuffle_seed=None,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2259,6 +2260,7 @@ class TestSuite(abc.ABC):
         # directory).  Parallel workers override this; a serial run can set it
         # via autotest.py's -I option to get its own working directory + ports.
         self.instance = instance
+        self.shuffle_seed = shuffle_seed
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -19501,6 +19503,17 @@ SERIAL5_BAUD 128
                 skip_list.append((test, disabled[test.name]))
                 continue
             tests.append(test)
+
+        if self.shuffle_seed is not None:
+            # Which tests end up adjacent decides which pairs are ever
+            # exercised for interaction, and by default that is fixed
+            # by the order they are declared in - so leaks between
+            # tests written far apart are never seen, while the same
+            # neighbours are retried every run.  Shuffling samples
+            # different adjacencies; the seed is reported so a run
+            # which finds something can be repeated exactly.
+            self.progress("Shuffling tests with seed %u" % self.shuffle_seed)
+            random.Random(self.shuffle_seed).shuffle(tests)
 
         if parallel != 1:
             # we preserve non-parallel behaviour to avoid fighting on
