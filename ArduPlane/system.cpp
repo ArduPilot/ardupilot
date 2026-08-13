@@ -2,10 +2,12 @@
 
 #include "qautotune.h"
 
+#if AP_MAINLOOP_FAILSAFE_ENABLED
 static void failsafe_check_static()
 {
     plane.failsafe_check();
 }
+#endif
 
 void Plane::init_ardupilot()
 {
@@ -87,7 +89,9 @@ void Plane::init_ardupilot()
      *  setup the 'main loop is dead' check. Note that this relies on
      *  the RC library being initialised.
      */
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     hal.scheduler->register_timer_failsafe(failsafe_check_static, 1000);
+#endif
 
 #if HAL_QUADPLANE_ENABLED
     quadplane.setup();
