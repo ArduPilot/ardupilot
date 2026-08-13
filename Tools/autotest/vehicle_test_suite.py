@@ -11151,6 +11151,10 @@ Also, ignores heartbeats not from our target system'''
             self.context_pop(process_interaction_allowed=ardupilot_alive, hooks_already_removed=hooks_removed)
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e, send_statustext=False)
+            # keep the exception if the test body did not supply one,
+            # otherwise the failure is reported with no reason at all
+            if ex is None:
+                ex = e
             passed = False
 
         pre_reboot_bin_logs = self.bin_logs()
@@ -11236,6 +11240,8 @@ Also, ignores heartbeats not from our target system'''
                     self.context_pop(process_interaction_allowed=ardupilot_alive, hooks_already_removed=hooks_removed)
                 except Exception as e:  # noqa: BLE001
                     self.print_exception_caught(e, send_statustext=False)
+                    if ex is None:
+                        ex = e
             self.progress("Done popping extra contexts")
 
         # make sure we don't leave around stray listeners:
