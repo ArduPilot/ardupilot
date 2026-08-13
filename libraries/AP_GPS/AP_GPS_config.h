@@ -137,3 +137,13 @@
 #ifndef AP_GPS_MB_MIN_ANTENNA_SEPARATION_M
 #define AP_GPS_MB_MIN_ANTENNA_SEPARATION_M 0.05f
 #endif
+
+// export of the body-frame antenna offset a moving baseline yaw was calculated
+// from, on 2M boards. Its only consumer is the EKF3 attitude correction of that
+// yaw, so EK3_FEATURE_MOVING_BASELINE and AP_DAL_RGPK_LOGGING_ENABLED follow
+// this switch. It is free of any vehicle-dependent macro so that the AP_GPS and
+// AP_DAL objects waf compiles once and shares between vehicles agree with the
+// EKF on the size of a GPS_State and on the DAL replay message IDs
+#ifndef AP_GPS_MB_YAW_OFFSET_ENABLED
+#define AP_GPS_MB_YAW_OFFSET_ENABLED (GPS_MOVING_BASELINE) && (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
+#endif
