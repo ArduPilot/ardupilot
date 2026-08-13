@@ -15527,10 +15527,17 @@ switch value'''
         })
         self.delay_sim_time(10, reason="baro disable to take effect")
         self.start_subtest("Ensuring breaking GPS does now terminate")
+        # collect before breaking the GPS: termination follows within a
+        # few loops, so with a bare wait_statustext() - which only sees
+        # what arrives after it is called - the message can be emitted
+        # while set_parameters() is still confirming and be missed
+        # entirely.  How much simulated time that round trip covers
+        # grows with the achieved speedup, so this bit under load.
+        self.context_collect('STATUSTEXT')
         self.set_parameters({
             "SIM_GPS1_ENABLE": 0,
         })
-        self.wait_statustext("Terminating due to fence breach")
+        self.wait_statustext("Terminating due to fence breach", check_context=True)
 
     def drain_mav_seconds(self, seconds):
         tstart = self.get_sim_time_cached()
