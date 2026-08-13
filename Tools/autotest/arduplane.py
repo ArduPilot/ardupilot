@@ -7448,6 +7448,19 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "AFS_ENABLE": 1,
             "MAV_GCS_SYSID": self.mav.source_system,
             "AFS_TERM_ACTION": 42,
+            # while disarmed with a 3D fix, Plane::update_home() runs
+            # every 5s and unconditionally calls
+            # barometer.update_calibration() and ahrs.resetHeightDatum()
+            # - it assumes disarmed means sitting on the ground.  This
+            # test breaks that assumption: termination disarms the
+            # vehicle in mid-air, so a tick landing during the fall
+            # re-zeroes the height datum at whatever altitude we happen
+            # to have reached by then.  Locking home (below) does not
+            # help; the datum reset is outside the home_is_locked()
+            # guard.  A failing run left the datum 63.8m high, after
+            # which the vehicle flew its 60m approach into the ground.
+            # -1 is "never reset":
+            "HOME_RESET_ALT": -1,
         })
         # the vehicle falls, disarmed, from the moment of termination
         # until it is unterminated, rearmed and flying again.  From 50m
