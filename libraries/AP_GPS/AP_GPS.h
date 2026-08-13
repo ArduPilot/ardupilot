@@ -244,12 +244,14 @@ public:
         float accHeading;                  ///< Reported Heading Accuracy in degrees
         uint32_t relposheading_ts;        ///< True if new data has been received since last time it was false
 
+#if AP_GPS_MB_YAW_OFFSET_ENABLED
         // body-frame antenna offset used to calculate gps_yaw from a moving
         // baseline, zero when gps_yaw is not derived from a moving baseline.
         // gps_yaw is calculated assuming this offset is horizontal, so
         // consumers with an attitude estimate can use this offset to correct
         // gps_yaw for vehicle roll and pitch
         Vector3f mb_yaw_offset;
+#endif
     };
 
     /// Startup initialisation.
@@ -504,10 +506,12 @@ public:
     // return a 3D vector defining the offset of the GPS antenna in meters relative to the body frame origin
     const Vector3f &get_antenna_offset(uint8_t instance) const;
 
+#if AP_GPS_MB_YAW_OFFSET_ENABLED
     // return the body-frame moving baseline antenna offset used to calculate
     // the yaw returned by gps_yaw_deg for this instance, zero when that yaw
     // is not derived from a moving baseline
     const Vector3f &get_mb_yaw_offset(uint8_t instance) const;
+#endif
 
     // lock out a GPS port, allowing another application to use the port
     void lock_port(uint8_t instance, bool locked);
