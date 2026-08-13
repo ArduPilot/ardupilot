@@ -1606,8 +1606,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("Gripper Released", timeout=60)
         self.wait_statustext("Auto disarmed", timeout=60)
 
-    def assert_fence_sys_status(self, present, enabled, health):
-        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE, present, enabled, health)
+    def assert_fence_sys_status(self, present, enabled, health, timeout=5):
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE, present, enabled, health, timeout=timeout)
 
     def assert_fence_breach_was_seen(self):
         '''assert an unhealthy geofence appeared in the collected SYS_STATUS.
@@ -4945,8 +4945,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # wait until we get home
         self.wait_distance_to_home(50, 100, timeout=200)
-        # now check we are now not in breach
-        self.assert_fence_sys_status(True, True, True)
+        # now check we are now not in breach.  The mode change into RTL
+        # was itself a mode change during a breach, so
+        # ArduPlane/mode.cpp calls AC_Fence::manual_recovery_start() for
+        # it - deliberately, see the comment there - and the fence then
+        # reports neither present nor enabled for
+        # AC_FENCE_MANUAL_RECOVERY_TIME_MIN, which is 10s.  Any further
+        # breach and mode change restarts that window.  The default 5s
+        # budget here is half of it, so an assertion landing inside a
+        # window could never pass however long the fence was healthy
+        # afterwards.
+        self.assert_fence_sys_status(True, True, True, timeout=30)
         # Turn fence off with aux function
         self.run_auxfunc(
             11,
