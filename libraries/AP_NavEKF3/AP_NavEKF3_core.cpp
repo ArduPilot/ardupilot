@@ -385,8 +385,8 @@ void NavEKF3_core::InitialiseVariables()
 
     // yaw sensor fusion
     yawMeasTime_ms = 0;
-    yawAngDataNew = {};
-    yawAngDataDelayed = {};
+    memset((void *)&yawAngDataNew, 0, sizeof(yawAngDataNew));
+    memset((void *)&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
 
 #if EK3_FEATURE_EXTERNAL_NAV
     // external nav data fusion

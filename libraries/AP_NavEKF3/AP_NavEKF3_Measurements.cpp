@@ -1067,7 +1067,9 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     // fusing. The raw timestamp is still used for new-measurement detection and
     // rate limiting via yawMeasTime_ms
     yawAngDataNew.time_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
+#if EK3_FEATURE_MOVING_BASELINE
     yawAngDataNew.antOffset = antOffset.toftype();
+#endif
 
     storedYawAng.push(yawAngDataNew);
 
