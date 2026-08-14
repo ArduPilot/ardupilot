@@ -2133,6 +2133,7 @@ class TestSuite(abc.ABC):
                  enable_fgview=False,
                  move_logs_on_test_failure: bool = False,
                  asan=False,
+                 check_parameter_leaks=False,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2239,6 +2240,7 @@ class TestSuite(abc.ABC):
         self.dronecan_tests = dronecan_tests
         self.statustext_id = 1
         self.message_hooks = []  # functions or MessageHook instances
+        self.check_parameter_leaks_enabled = check_parameter_leaks
 
     def __del__(self):
         if self.rc_thread is not None:
@@ -7021,6 +7023,83 @@ class TestSuite(abc.ABC):
         del context.collections[msg_type]
         return ret
 
+    # Parameters which legitimately differ across a test through no fault
+    # of the test: cumulative statistics, and values the vehicle learns
+    # for itself in flight.  Anything else changing across a test which
+    # the suite could not revert is a leak into the tests which follow.
+    parameter_leak_exemptions = frozenset([
+        "STAT_BOOTCNT",
+        "STAT_FLTTIME",
+        "STAT_RUNTIME",
+        "STAT_RESET",
+        "STAT_FLTCNT",
+        "STAT_DISTFLWN",
+        "MOT_THST_HOVER",   # learned in flight
+        # the mission's home item appears once home is set, so this reads
+        # 0->1 for the first test in a session and is stable thereafter.
+        # A leaked *mission* is better caught by checking the item count
+        # against what the test uploaded.
+        "MIS_TOTAL",
+    ])
+
+    def parameter_leak_exempt(self, name):
+        '''True if name is allowed to differ across a test'''
+        if name in self.parameter_leak_exemptions:
+            return True
+        # Barometer ground pressure/temperature: written by the firmware
+        # every time it calibrates, which includes every reboot.  A test
+        # which reboots therefore always "changes" these, and the value
+        # reverts to the default until calibration completes.
+        if re.match(r"^BARO\d*_GND_(PRESS|TEMP)$", name):
+            return True
+        # learned sensor calibration; the vehicle writes these itself
+        for prefix in ("INS_GYROFFS", "INS_GYR2OFFS", "INS_GYR3OFFS",
+                       "INS_ACCOFFS", "INS_ACC2OFFS", "INS_ACC3OFFS",
+                       "INS_ACCSCAL", "INS_ACC2SCAL", "INS_ACC3SCAL",
+                       "INS_GYR_CALTEMP", "INS_GYR1_CALTEMP",
+                       "INS_GYR2_CALTEMP", "INS_GYR3_CALTEMP",
+                       "INS_ACC_CALTEMP", "INS_ACC1_CALTEMP",
+                       "INS_ACC2_CALTEMP", "INS_ACC3_CALTEMP"):
+            if name.startswith(prefix):
+                return True
+        return False
+
+    def snapshot_parameters_for_leak_check(self):
+        '''download the full parameter set, or None if that fails'''
+        try:
+            (parameters, _seq) = self.download_parameters(self.sysid_thismav(), 1)
+            return parameters
+        except Exception as e:  # noqa: BLE001
+            self.progress("Parameter snapshot failed: %s" % str(e))
+            return None
+
+    def check_parameter_leaks(self, before):
+        '''compare the parameter set against a pre-test snapshot
+
+        Called after context_pop() has reverted everything the suite knows
+        about, so anything still changed was written by the vehicle itself
+        (a calibration writing its results, say) or set outside a context.
+        Either way it leaks into every test which follows in this session.
+        '''
+        after = self.snapshot_parameters_for_leak_check()
+        if before is None or after is None:
+            self.progress("Parameter leak check skipped; no usable snapshot")
+            return None
+        leaked = []
+        for name in sorted(set(before) | set(after)):
+            if self.parameter_leak_exempt(name):
+                continue
+            old = before.get(name)
+            new = after.get(name)
+            if old is None or new is None:
+                leaked.append("%s %s->%s" % (name, old, new))
+            elif abs(old - new) > max(abs(old), abs(new)) * 1e-6:
+                leaked.append("%s %f->%f" % (name, old, new))
+        if len(leaked) == 0:
+            self.progress("Parameter leak check: clean")
+            return None
+        return leaked
+
     def context_pop(self, process_interaction_allowed=True, hooks_already_removed=False):
         """Set parameters to origin values in reverse order."""
         dead = self.contexts.pop()
@@ -9745,6 +9824,12 @@ Also, ignores heartbeats not from our target system'''
         old_contexts_length = len(self.contexts)
         self.context_push()
 
+        # snapshot before the test runs, so the comparison after
+        # context_pop() shows what the suite could not put back
+        parameters_before = None
+        if self.check_parameter_leaks_enabled:
+            parameters_before = self.snapshot_parameters_for_leak_check()
+
         start_time = time.time()
 
         hooks_removed = False
@@ -9802,6 +9887,18 @@ Also, ignores heartbeats not from our target system'''
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e, send_statustext=False)
             passed = False
+
+        if self.check_parameter_leaks_enabled and ardupilot_alive:
+            leaked = self.check_parameter_leaks(parameters_before)
+            if leaked is not None:
+                self.progress("Test leaked %u parameters into the session:" % len(leaked))
+                for line in leaked:
+                    self.progress("  %s" % line)
+                if ex is None:
+                    ex = NotAchievedException(
+                        "Test leaked parameters the suite could not revert: %s" %
+                        ", ".join(leaked))
+                passed = False
 
         pre_reboot_bin_logs = self.bin_logs()
 

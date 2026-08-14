@@ -532,6 +532,8 @@ def run_step(step):
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
 
+    if opts.check_parameter_leaks:
+        fly_opts["check_parameter_leaks"] = True
     fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
     # handle "test.Copter" etc:
@@ -985,6 +987,13 @@ if __name__ == "__main__":
                          default=None,
                          type='int',
                          help='speedup to run the simulations at')
+    group_sim.add_option("--check-parameter-leaks",
+                         action='store_true',
+                         default=False,
+                         help='after each test, check no parameter the suite '
+                         'could not revert has been left changed; catches '
+                         'leaks into the tests which follow.  Slow: downloads '
+                         'the full parameter set twice per test')
     group_sim.add_option("--valgrind",
                          default=False,
                          action='store_true',
