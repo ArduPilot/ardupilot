@@ -9176,6 +9176,17 @@ class TestSuite(abc.ABC):
         # rejecting it: a caller asking where the vehicle is before the
         # EKF has an origin wants to wait for one, which is what
         # mavutil's location() did by way of wait_gps_fix().
+        #
+        # "not zero" is not enough to tell a position from the absence of
+        # one.  Before the EKF has an origin the vehicle reports a local
+        # position, so lat/lng come out a few metres from 0,0 rather than
+        # exactly 0,0: FenceNoFenceReturnPoint built its fence around
+        # (0.0000311, -0.0000107) that way, and then went looking for a
+        # return point 7641km off.  Treat anything within a kilometre of
+        # 0,0 as no position - no simulated vehicle starts in the Gulf of
+        # Guinea, and this leaves tests which turn the GPS off alone,
+        # since those keep reporting real positions from the origin they
+        # already have.
         tstart = self.get_sim_time()
         while True:
             m = self.assert_receive_message(location_source)
@@ -9188,7 +9199,7 @@ class TestSuite(abc.ABC):
                 lat = m.lat * 1e-7
                 lon = m.lng * 1e-7
                 alt_m = 0  # not available in SIMSTATE
-            if lat != 0 or lon != 0:
+            if abs(lat) > 0.01 or abs(lon) > 0.01:  # ~1km from 0,0
                 break
             if self.get_sim_time_cached() - tstart > timeout:
                 raise ValueError(f"Bad lat/lng {lat=} {lon=}")
