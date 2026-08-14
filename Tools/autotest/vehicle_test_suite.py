@@ -2137,7 +2137,7 @@ class TestSuite(abc.ABC):
                  enable_fgview=False,
                  move_logs_on_test_failure: bool = False,
                  asan=False,
-                 check_parameter_leaks=False,
+                 check_parameter_leaks=True,
                  ):
         if breakpoints is None:
             breakpoints = []
