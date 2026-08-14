@@ -1708,10 +1708,20 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
 
         self.progress("Re-enabling GPS, expecting position correction")
+        # Take the reference before the GPS comes back.  The vehicle is
+        # stationary on the surface here and is not being asked to travel
+        # anywhere: what this is watching for is the position estimate
+        # jumping as the GPS corrects the drift built up above, and that
+        # happens almost as soon as the GPS returns.  wait_distance()
+        # takes its reference when it is called, so measuring after
+        # re-enabling races the correction and usually sees nothing - a
+        # failing run reported 0.10m while its log shows the estimate
+        # moving 11.8m back onto the simulated position.
+        loc_before_gps = self.get_mav_location()
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
         })
-        self.wait_distance(10, accuracy=5, timeout=60)
+        self.wait_distance_to_location(loc_before_gps, 5, 15, timeout=60)
         self.disarm_vehicle()
 
     def AutoTerrainRecover(self):
