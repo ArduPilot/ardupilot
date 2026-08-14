@@ -82,7 +82,7 @@ Recommended receiver connections:
 - CRSF / ELRS / TBS Crossfire: connect to TX6 and RX6, set `SERIAL6_OPTIONS = 0`
 - DSM / SRXL: connect to RX6
 - SRXL2: connect to TX6 and set `SERIAL6_OPTIONS = 4`
-- FPort: connect to TX6 and RX6 through a bidirectional inverter, set `SERIAL6_OPTIONS = 15`
+- FPort: connect to TX6 and RX6 through a bidirectional inverter, set `SERIAL6_OPTIONS = 0`
 
 For more information, see [Radio Control Systems](https://ardupilot.org/plane/docs/common-rc-systems.html).
 
@@ -92,8 +92,8 @@ The board provides 12 PWM output channels.
 
 PWM outputs 1 to 11 are available on pin headers, labeled S1 to S11. The additional pad labeled `LED` is mapped as PWM12.
 
-PWM outputs 1 to 10 support PWM and DShot. PWM outputs 11 and 12 support normal
-PWM only in ArduPilot.
+PWM outputs 1 to 10 support PWM and DShot. PWM outputs 1 to 4 additionally support
+bi-directional DShot. PWM outputs 11 and 12 support normal PWM only in ArduPilot.
 
 The PWM outputs are in 5 groups:
 
@@ -109,10 +109,10 @@ Channels within the same group need to use the same output rate and protocol. If
 
 The pad labeled `LED` is mapped as PWM12.
 
-With INAV firmware, this pad can be used for serial LED output. With the current
-ArduPilot DMA allocation, the DMA stream required for TIM1 serial LED output is
-allocated to USART6. Therefore, the `LED` pad can only be used as a normal PWM12
-output in ArduPilot.
+With INAV firmware, this pad can be used for serial LED output. A serial LED
+output requires a DMA stream, but no DMA stream is available for TIM1 given this
+board's current allocation. Therefore, the `LED` pad can only be used as a normal
+PWM12 output in ArduPilot.
 
 PWM11 (S11) and PWM12 share TIM1 and therefore belong to the same output group.
 
@@ -167,12 +167,13 @@ UART3 TX is located in the video output connector and can be used to control vid
 
 ## VTX Power Control
 
-GPIO 81 controls the VTX/CAM power output. Setting this GPIO high removes voltage supply from the VTX/CAM power pins.
+GPIO 81 controls the VTX/CAM power output through Relay 1 (`RELAY1_PIN` is preset to 81). The output is high-side switched: driving the GPIO high removes power from the VTX/CAM pins and low restores it. Relay 1 defaults to off, which drives the GPIO low, so the VTX/CAM supply is powered on at boot.
 
-For example, use Channel 7 to control the switch using Relay 1:
+To switch the supply from a transmitter, assign an RC channel to Relay 1, for example on Channel 7:
 
-- RELAY1_PIN = 81
 - RC7_OPTION = 28
+
+Turning Relay 1 on removes power from the VTX/CAM pins.
 
 ## Battery Monitoring
 
