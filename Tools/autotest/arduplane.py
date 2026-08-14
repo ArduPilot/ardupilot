@@ -2496,6 +2496,18 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.test_adsb_send_threatening_adsb_message(here)
         m = self.assert_not_receive_message('COLLISION', timeout=4)
 
+        # AP_Avoidance::disable() writes AVD_ENABLE's live value.  Not
+        # saving it is correct - a switch position must not change what
+        # is stored - but writing the parameter at all is a firmware bug:
+        # the switch should drive a separate runtime flag, as
+        # AC_Avoid::proximity_avoidance_enable() does.  Until that is
+        # fixed, leaving the switch down means the live value reads 0
+        # while storage holds the 1 we set above, so the context restore
+        # asks for 0, sees 0, writes nothing, and the next boot in this
+        # session comes up with avoidance enabled.  Put the switch back.
+        self.set_rc(12, 2000)
+        self.delay_sim_time(1, reason="RC switch to be polled")
+
     def GuidedRequest(self, target_system=1, target_component=1):
         '''Test handling of MISSION_ITEM in guided mode'''
         self.progress("Takeoff")
