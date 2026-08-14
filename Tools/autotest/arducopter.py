@@ -18107,6 +18107,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter('AHRS_OPTIONS', 8)
         self.set_parameter('LOG_DISARMED', 1)
 
+        # AP_AHRS records the origin on the transition to having one
+        # ("if (origin_ok && !state.origin_ok)"), so if an earlier test in
+        # this session has already given the EKF an origin then the edge
+        # never comes again and nothing is written.  Reboot so that the
+        # transition happens with the option above already set.
+        self.reboot_sitl()
+
         # wait for vehicle to be ready to arm which means origin should have been written
         self.wait_ready_to_arm()
 
