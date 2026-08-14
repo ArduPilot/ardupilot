@@ -214,6 +214,79 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_GPS1_ENABLE", 1)
         self.wait_ready_to_arm()
 
+    def EKFPosHorizRelStaleAfterFlight(self):
+        """Ensure the EKF stops claiming relative position without GPS after a flight.
+
+        NavEKF3 derives ESTIMATOR_POS_HORIZ_REL from doingWindRelNav,
+        which for a plane is (!tasTimeout && assume_zero_sideslip())
+        (AP_NavEKF3_Control.cpp).  tasTimeout is assigned in only three
+        places: the core reset, attAidLossCritical, and inside
+        FuseAirspeed().  Airspeed is not fused on the ground, because
+        setWindMagStateLearningMode() inhibits the wind states when
+        onGround, so FuseAirspeed() stops running and tasTimeout freezes
+        at whatever the last in-flight fusion left it - false.
+
+        The vehicle therefore goes on advertising a valid relative
+        position estimate however the GPS behaves, indefinitely, for the
+        rest of that EKF's life.  posAidLossCritical does not clear it;
+        only attAidLossCritical does, and that needs attitude aiding
+        loss.
+
+        This applies the same GPS failure twice, differing only in
+        whether we have flown in between.
+        """
+        def gps_off_settle_time(timeout=60):
+            """Kill the GPS; return how long until POS_HORIZ_REL clears, or None.
+
+            Restores the GPS before returning, so the caller can raise on
+            the result without leaving it disabled.
+            """
+            self.context_push()
+            self.set_parameter("SIM_GPS1_ENABLE", 0)
+            tstart = self.get_sim_time()
+            settle = None
+            last_flags = None
+            while self.get_sim_time_cached() - tstart < timeout:
+                m = self.assert_receive_message('EKF_STATUS_REPORT')
+                last_flags = m.flags
+                if not (m.flags & mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL):
+                    settle = self.get_sim_time_cached() - tstart
+                    break
+            if settle is None:
+                self.progress("POS_HORIZ_REL still set after %us (flags=%u)" %
+                              (timeout, last_flags))
+            self.context_pop()
+            return settle
+
+        # a reboot leaves tasTimeout true, so this is an EKF which has
+        # never flown.  Wait for it to be using GPS before we take it
+        # away, or the baseline below proves nothing.  takeoff() does its
+        # own wait_ready_to_arm(), so this is the only one we need.
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.start_subtest("Before flying, losing GPS clears POS_HORIZ_REL")
+        settle = gps_off_settle_time()
+        if settle is None:
+            raise NotAchievedException(
+                "Baseline failed: POS_HORIZ_REL never cleared even before flying, "
+                "so this test cannot demonstrate anything")
+        self.progress("Cleared after %.1fs" % settle)
+
+        self.start_subtest("Fly, so airspeed is fused and tasTimeout goes false")
+        self.takeoff(30, mode='TAKEOFF')
+        self.fly_home_land_and_disarm()
+
+        self.start_subtest("After flying, losing GPS should still clear POS_HORIZ_REL")
+        settle = gps_off_settle_time()
+        if settle is None:
+            raise NotAchievedException(
+                "POS_HORIZ_REL still valid with no GPS after a flight: the EKF is "
+                "reporting a relative position estimate on the strength of a "
+                "tasTimeout last evaluated in flight, and nothing on the ground "
+                "can clear it")
+        self.progress("Cleared after %.1fs" % settle)
+
     def fly_LOITER(self, num_circles=4, timeout=60):
         """Loiter where we are."""
         self.progress("Testing LOITER for %u turns" % num_circles)
@@ -8770,6 +8843,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TestRCRelay,
             self.ThrottleFailsafe,
             self.NeedEKFToArm,
+            self.EKFPosHorizRelStaleAfterFlight,
             self.ThrottleFailsafeFence,
             self.NoShortFailsafe,
             self.SoaringClimbRate,
