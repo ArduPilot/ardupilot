@@ -106,7 +106,6 @@ void NavEKF3_core::FuseAirspeed()
 
         // fail if the ratio is > 1, but don't fail if bad IMU data
         const bool isConsistent = (tasTestRatio < 1.0f) || badIMUdata;
-        tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
         if (!isConsistent) {
             lastTasFailTime_ms = imuSampleTime_ms;
         } else {
@@ -155,6 +154,17 @@ void NavEKF3_core::SelectTasFusion()
 
     // get true airspeed measurement
     readAirSpdData();
+
+    // Declare a timeout if airspeed has not been fused for too long.  This
+    // is assessed here rather than inside FuseAirspeed() because that is
+    // not called when we are not fusing - notably on the ground, where
+    // setWindMagStateLearningMode() inhibits the wind states - and a
+    // timeout evaluated only while the thing it times is happening can
+    // never fire.  Left there it would freeze at whatever the last
+    // in-flight fusion set, and a landed vehicle would go on advertising
+    // horiz_pos_rel and horiz_vel with no GPS for the life of the filter.
+    // The other timeouts (hgtTimeout, magTimeout) are assessed this way.
+    tasTimeout = (imuSampleTime_ms - lastTasPassTime_ms) > frontend->tasRetryTime_ms;
 
     // if the filter is initialised, wind states are not inhibited and we have data to fuse, then perform TAS fusion
 
