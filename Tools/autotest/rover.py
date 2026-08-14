@@ -82,9 +82,6 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
     def default_frame(self):
         return "rover"
 
-    def default_speedup(self):
-        return 30
-
     def is_rover(self):
         return True
 
@@ -962,8 +959,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # Overrides normally expire RC_OVERRIDE_TIME (3s of vehicle
             # time) after the last one arrives, and the vehicle then
             # falls back to the TX value - which is exactly what this
-            # test raises the alarm about.  At Rover's speedup of 30
-            # those 3s are 100ms of wall clock, so a scheduling stall in
+            # test raises the alarm about.  At Rover's speedup of 100
+            # those 3s are 30ms of wall clock, so a scheduling stall in
             # this process while --parallel keeps the machine busy is
             # enough to make us report a bug which is not there.
             # Timeouts are orthogonal to the enable-channel behaviour
@@ -7221,7 +7218,7 @@ return update()
                     # vehicle loses whenever the machine is loaded.  These
                     # budgets are simulated seconds, and the deadline which
                     # actually matters is wall clock - at Rover's speedup of
-                    # 30 the original three seconds were a tenth of a second
+                    # 100 the original three seconds were thirty milliseconds
                     # of real time - so scale the acquiring case by the
                     # speedup to give it two seconds of real time.  The case
                     # which must *not* acquire keeps a fixed window, because
