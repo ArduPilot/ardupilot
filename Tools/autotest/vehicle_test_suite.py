@@ -7104,6 +7104,11 @@ class TestSuite(abc.ABC):
         # the quadplane equivalent, H_COL_HOVER the helicopter one.
         if name in ("MOT_THST_HOVER", "Q_M_THST_HOVER", "H_COL_HOVER"):
             return True
+        # Device IDs: the driver writes these when it detects (or stops
+        # detecting) a sensor, so they follow the simulated hardware
+        # rather than anything a test chose.
+        if re.match(r"^[A-Z0-9_]+_DEVID$", name):
+            return True
         # learned sensor calibration; the vehicle writes these itself
         for prefix in ("INS_GYROFFS", "INS_GYR2OFFS", "INS_GYR3OFFS",
                        "INS_ACCOFFS", "INS_ACC2OFFS", "INS_ACC3OFFS",
