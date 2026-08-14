@@ -269,13 +269,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         m = self.assert_receive_message('VFR_HUD')
         start_altitude = m.alt
-        start = self.mav.location()
+        start = self.get_mav_location()
         tstart = self.get_sim_time()
         self.progress("Holding loiter at %u meters for %u seconds" %
                       (start_altitude, holdtime))
         while self.get_sim_time_cached() < tstart + holdtime:
             m = self.assert_receive_message('VFR_HUD')
-            pos = self.mav.location()
+            pos = self.get_mav_location()
             delta = self.get_distance(start, pos)
             alt_delta = math.fabs(m.alt - start_altitude)
             self.progress("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
@@ -1137,7 +1137,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("CSPD_SPEED", expected_groundspeed)
         radius_m = self.get_parameter('CIRCLE_RADIUS_M')
         circle_point = self.offset_location_heading_distance(
-            self.mav.location(),
+            self.get_mav_location(),
             270,  # see SITL_START_LOCATION, FIXME!
             radius_m
         )
@@ -2451,7 +2451,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         m = self.assert_receive_message('VFR_HUD')
         start_altitude = m.alt
-        start = self.mav.location()
+        start = self.get_mav_location()
         tstart = self.get_sim_time()
         self.progress("Holding loiter at %u meters for %u seconds" %
                       (start_altitude, holdtime))
@@ -2465,7 +2465,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         while self.get_sim_time_cached() < tstart + holdtime:
             m = self.assert_receive_message('VFR_HUD')
-            pos = self.mav.location()
+            pos = self.get_mav_location()
             delta = self.get_distance(start, pos)
             alt_delta = math.fabs(m.alt - start_altitude)
             self.progress("Loiter Dist: %.2fm, alt:%u" % (delta, m.alt))
@@ -2718,7 +2718,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def MaxAltFence(self):
         '''Test Max Alt Fences'''
         self.poll_home_position(quiet=False)
-        home_loc = self.mav.location()
+        home_loc = self.get_mav_location()
         origin_alt = home_loc.alt
 
         self.max_alt_fence_frame(0, origin_alt + 80, origin_alt + 80)      # absolute
@@ -2840,7 +2840,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def MinAltFence(self):
         '''Test Min Alt Fences'''
         self.poll_home_position(quiet=False)
-        home_loc = self.mav.location()
+        home_loc = self.get_mav_location()
         self.set_home(home_loc)
 
         self.min_alt_fence_frame(0, home_loc.alt + 20)    # absolute
@@ -3112,7 +3112,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         m = self.poll_home_position(quiet=False)
 
         # 110m polyfence
-        home_loc = self.mav.location()
+        home_loc = self.get_mav_location()
         radius = self.get_parameter("FENCE_RADIUS")
         if self.use_map and self.mavproxy is not None:
             self.mavproxy.send("map circle %f %f %f green\n" % (home_loc.lat, home_loc.lng, radius))
@@ -3194,7 +3194,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.poll_home_position(quiet=False)
 
-        home_loc = self.mav.location()
+        home_loc = self.get_mav_location()
 
         fence_loc = [
             self.offset_location_ne(home_loc, -110, -110),
@@ -3270,7 +3270,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "FENCE_ENABLE": 1,
         })
         self.takeoff(10, mode='GUIDED')
-        here = self.mav.location()
+        here = self.get_mav_location()
 
         inside_loc = self.offset_location_ne(here, 10, 0)
         outside_loc = self.offset_location_ne(here, 200, 0)
@@ -4428,9 +4428,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_groundspeed(1.0, 100, timeout=10)
         self.set_rc(2, 1500)
         self.wait_groundspeed(0, 0.3, timeout=30, minimum_duration=5)
-        loc = self.mav.location()
+        loc = self.get_mav_location()
         self.delay_sim_time(15, "watch for drift")
-        drift_m = self.get_distance(loc, self.mav.location())
+        drift_m = self.get_distance(loc, self.get_mav_location())
         self.progress("Drifted %.2fm while holding" % drift_m)
         if drift_m > 3:
             raise NotAchievedException("Drifted %.2fm in FlowHold" % drift_m)
@@ -5047,7 +5047,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.install_message_hook_context(verify_innov)
 
         self.takeoff(50, mode='GUIDED')
-        current_alt = self.mav.location().alt
+        current_alt = self.get_mav_location().alt
         target_position = mavutil.location(
             -35.362938,
             149.165185,
@@ -6276,7 +6276,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.takeoff(10, mode="LOITER")
             lower_surface_pos = mavutil.location(-35.362421, 149.164534, 584, 270)
-            here = self.mav.location()
+            here = self.get_mav_location()
             bearing = self.get_bearing(here, lower_surface_pos)
 
             self.change_mode("GUIDED")
@@ -6676,7 +6676,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 # position - which is the spawn position.  Sampling the
                 # position before the reboot places the target wherever
                 # the previous test happened to leave the vehicle:
-                start = self.mav.location()
+                start = self.get_mav_location()
                 target = start
                 (target.lat, target.lng) = mavextra.gps_offset(start.lat, start.lng, 4, -4)
                 self.progress("Setting target to %f %f" % (target.lat, target.lng))
@@ -6691,7 +6691,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.zero_throttle()
                 self.wait_landed_and_disarmed()
                 self.assert_receive_message('GLOBAL_POSITION_INT')
-                new_pos = self.mav.location()
+                new_pos = self.get_mav_location()
                 delta = self.get_distance(target, new_pos)
                 self.progress("Landed %f metres from target position" % delta)
                 max_delta = 1.5
@@ -7418,7 +7418,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                       149.165436,
                                       0,
                                       0)
-        dist = self.get_distance(target_loc, self.mav.location())
+        dist = self.get_distance(target_loc, self.get_mav_location())
         self.progress("dist=%f" % (dist,))
         if dist > dist_limit:
             raise NotAchievedException("Did not honour target lat/lng (dist=%f want <%f" %
@@ -7723,7 +7723,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         alt = 50
 
-        loc = self.mav.location()
+        loc = self.get_mav_location()
 
         items = [
             self.mission_item_home(),
@@ -8100,7 +8100,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.progress("Testing mount ROI behaviour")
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
-            start = self.mav.location()
+            start = self.get_mav_location()
             self.progress("start=%s" % str(start))
             (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
                                                      start.lng,
@@ -8139,7 +8139,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI_NONE)
             self.test_mount_pitch(0, 1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
 
-            start = self.mav.location()
+            start = self.get_mav_location()
             (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
                                                      start.lng,
                                                      -100,
@@ -8154,7 +8154,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             )
             self.test_mount_pitch(-7.5, 1, mavutil.mavlink.MAV_MOUNT_MODE_GPS_POINT)
 
-            start = self.mav.location()
+            start = self.get_mav_location()
             (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
                                                      start.lng,
                                                      -100,
@@ -8193,7 +8193,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.progress("Testing mount roi-sysid behaviour")
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
-            start = self.mav.location()
+            start = self.get_mav_location()
             self.progress("start=%s" % str(start))
             (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
                                                      start.lng,
@@ -8909,7 +8909,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.setup_servo_mount()
         self.reboot_sitl() # to handle MNT_TYPE changing
 
-        takeoff_loc = self.mav.location()
+        takeoff_loc = self.get_mav_location()
 
         self.takeoff(20, mode='GUIDED')
         self.guided_achieve_heading(315, direction=1, accuracy=1)
@@ -9133,7 +9133,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Pointing North")
         self.guided_achieve_heading(0, direction=1, accuracy=1)
         self.delay_sim_time(5, reason="heading to stabilise")
-        start = self.mav.location()
+        start = self.get_mav_location()
         (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
                                                  start.lng,
                                                  -100,
@@ -10400,7 +10400,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         while True:
             if self.get_sim_time() - tstart > timeout:
                 raise NotAchievedException()
-            delta = self.get_distance(self.mav.location(), destination)
+            delta = self.get_distance(self.get_mav_location(), destination)
             self.progress("delta=%f (want <1)" % delta)
             if delta < 1:
                 break
@@ -10433,7 +10433,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.user_takeoff(5)
 
         self.progress("Flying to low position")
-        current_alt = self.mav.location().alt
+        current_alt = self.get_mav_location().alt
 # 10m delta        low_position = mavutil.location(-35.358273, 149.169165, current_alt, 0)
         low_position = mavutil.location(-35.36200016, 149.16415599, current_alt, 0)
         self.fly_guided_move_to(low_position, timeout=240)
@@ -10736,7 +10736,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def check_avoidance_corners(self):
         self.takeoff(10, mode="LOITER")
-        here = self.mav.location()
+        here = self.get_mav_location()
         # the vehicle starts a test at home but with whatever heading
         # the previous test left it; face west like the other corner
         # legs explicitly face their travel direction:
@@ -11097,7 +11097,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_push()
         self.context_set_speedup(1)
         self.change_mode("FOLLOW")
-        new_loc = self.mav.location()
+        new_loc = self.get_mav_location()
         new_loc_offset_n = 20
         new_loc_offset_e = 30
         self.location_offset_ne(new_loc, new_loc_offset_n, new_loc_offset_e)
@@ -11147,7 +11147,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("Trying relative-follow mode")
         self.change_mode('LOITER')
         self.set_parameter('FOLL_ALT_TYPE', 1)  # use relative-home data
-        new_loc = self.mav.location()
+        new_loc = self.get_mav_location()
         new_loc_offset_n = -40
         new_loc_offset_e = 60
         new_loc.alt += 1
@@ -11191,7 +11191,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("Trying follow-with-velocity mode")
         self.change_mode('LOITER')
         self.set_parameter('FOLL_ALT_TYPE', 1)  # use relative-home data
-        new_loc = self.mav.location()
+        new_loc = self.get_mav_location()
         vel_n = 3  # m/s
         vel_e = 2
         vel_d = -1
@@ -11235,7 +11235,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 gpi.pack(self.mav.mav)
                 self.mav.mav.send(gpi)
             self.assert_receive_message('GLOBAL_POSITION_INT')
-            pos = self.mav.location()
+            pos = self.get_mav_location()
             delta = self.get_distance(expected_loc, pos)
             want_delta = foll_ofs_x
             self.progress("position delta=%f (want <%f)" % (delta, max_delta))
@@ -11258,7 +11258,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_push()
         self.context_set_speedup(1)
         self.change_mode("FOLLOW")
-        new_loc = self.mav.location()
+        new_loc = self.get_mav_location()
         new_loc_offset_n = 40
         new_loc_offset_e = 60
         self.location_offset_ne(new_loc, new_loc_offset_n, new_loc_offset_e)
@@ -11310,7 +11310,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("Trying follow-with-velocity mode")
         self.change_mode('LOITER')
         self.set_parameter('FOLL_ALT_TYPE', 1)  # use relative-home data
-        new_loc = self.mav.location()
+        new_loc = self.get_mav_location()
         self.change_mode('FOLLOW')
         last_loop_s = self.get_sim_time_cached()
 
@@ -11479,7 +11479,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.takeoff(10, mode="LOITER")
             self.set_rc(2, 1400)
-            here = self.mav.location()
+            here = self.get_mav_location()
             west_loc = mavutil.location(-35.362919, 149.165055, here.alt, 0)
             self.wait_location(west_loc, accuracy=1)
             self.reach_heading_manual(0)
@@ -13006,7 +13006,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.wait_ready_to_arm()
-        home = self.mav.location()
+        home = self.get_mav_location()
 
         self.context_collect('STATUSTEXT')
 
@@ -14865,7 +14865,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(20, mode='GUIDED')
 
         # Set home current location, this gives a large home vs origin difference
-        self.set_home(self.mav.location())
+        self.set_home(self.get_mav_location())
 
         self.progress("fly 50m North (or whatever)")
         self.fly_guided_move_local(50, 0, 50)
@@ -15543,7 +15543,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_ready_to_arm()
 
-        here = self.mav.location()
+        here = self.get_mav_location()
 
         self.context_push()
 
@@ -15643,7 +15643,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.guided_achieve_heading(heading=270)
 
         # move vehicle on x direction
-        location = self.offset_location_ne(location=self.mav.location(), metres_north=0, metres_east=-300)
+        location = self.offset_location_ne(location=self.get_mav_location(), metres_north=0, metres_east=-300)
         self.mav.mav.set_position_target_global_int_send(
             0, # system time in milliseconds
             1, # target system
@@ -16717,7 +16717,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # test GPS_POINT (ROI)
         self.start_subtest("GPS_POINT (ROI)")
-        takeoff_loc = self.mav.location()
+        takeoff_loc = self.get_mav_location()
         t = self.offset_location_ne(takeoff_loc, 20, 0)
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
@@ -17126,14 +17126,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''test Copter DO_CHANGE_SPEED handling in guided mode'''
         self.takeoff(20, mode='GUIDED')
 
-        new_loc = self.mav.location()
+        new_loc = self.get_mav_location()
         new_loc_offset_n = 2000
         new_loc_offset_e = 0
         self.location_offset_ne(new_loc, new_loc_offset_n, new_loc_offset_e)
 
         second_loc_offset_n = -1000
         second_loc_offset_e = 0
-        second_loc = self.mav.location()
+        second_loc = self.get_mav_location()
         self.location_offset_ne(second_loc, second_loc_offset_n, second_loc_offset_e)
 
         # for run_cmd we fly away from home
@@ -17219,7 +17219,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        home_loc = self.mav.location()
+        home_loc = self.get_mav_location()
 
         cmd_ids = [
             mavutil.mavlink.MAV_CMD_DO_SET_ROI,
@@ -17575,7 +17575,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # reset home 20 metres above current location
         current_alt_abs = self.get_altitude(relative=False)
 
-        loc = self.mav.location()
+        loc = self.get_mav_location()
 
         home_z_ofs = 20
         self.run_cmd(
@@ -17609,7 +17609,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # reset home 20 metres above current location
         current_alt_abs = self.get_altitude(relative=False)
 
-        loc = self.mav.location()
+        loc = self.get_mav_location()
 
         home_z_ofs = 20
         self.run_cmd(
@@ -17860,7 +17860,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_TERRAIN": 1,
         })
         self.takeoff(10, mode='GUIDED')
-        here = self.mav.location()
+        here = self.get_mav_location()
         self.set_home(here)
         self.hover()
         self.change_mode('LOITER')
@@ -18206,7 +18206,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LOITER')
         self.context_pop()
 
-        here = self.mav.location()
+        here = self.get_mav_location()
         loc = self.offset_location_ne(here, 10, 0)
         self.takeoff(5, mode='GUIDED')
         self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
@@ -19038,7 +19038,7 @@ RTL_ALT_M 111
         self.change_mode('STABILIZE')
 
         # Set home current location, this gives a large home vs origin difference
-        self.set_home(self.mav.location())
+        self.set_home(self.get_mav_location())
 
         self.set_rc(4, 2000)
         self.wait_armed()
@@ -19088,7 +19088,7 @@ RTL_ALT_M 111
         self.start_subtest("Start circle when on edge of circle")
         radius = 30
         self.wait_ready_to_arm()
-        here = self.mav.location()
+        here = self.get_mav_location()
         circle_centre_loc = self.offset_location_ne(here, radius, 0)
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
@@ -19413,7 +19413,7 @@ RTL_ALT_M 111
         '''test we ignore takeoff location'''
         self.change_mode('LOITER')
         self.wait_ready_to_arm()
-        arming_loc = self.mav.location()
+        arming_loc = self.get_mav_location()
         # the location here should be ignored:
         self.start_flying_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 10, 10, 20),
@@ -19425,7 +19425,7 @@ RTL_ALT_M 111
             (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
         ])
         self.wait_current_waypoint(2)
-        delay_loc = self.mav.location()
+        delay_loc = self.get_mav_location()
         if self.get_distance(arming_loc, delay_loc) > 1:
             raise NotAchievedException("Should not move during takeoff")
         self.wait_altitude(18, 21, minimum_duration=10, relative=True)

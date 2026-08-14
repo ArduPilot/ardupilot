@@ -614,7 +614,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1500)
         self.progress("Entering guided and flying somewhere constant")
         self.change_mode("GUIDED")
-        loc = self.mav.location()
+        loc = self.get_mav_location()
         self.location_offset_ne(loc, 500, 500)
 
         new_alt = 100
@@ -688,7 +688,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.wait_altitude(48, 52, relative=True)
 
-        loc = self.mav.location()
+        loc = self.get_mav_location()
         self.location_offset_ne(loc, 2000, 2000)
 
         # setting external position fail while we have GPS lock
@@ -1230,7 +1230,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if abs(x.alt_msl - (original_alt+30)) > 10:
             raise NotAchievedException("Bad absalt (want=%f vs got=%f)" % (original_alt+30, x.alt_msl))
 
-        loc = self.mav.location()
+        loc = self.get_mav_location()
         self.run_cmd_int(
             mavutil.mavlink.MAV_CMD_DO_REPOSITION,
             p2=mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
@@ -1650,7 +1650,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.progress("Test arming while vehicle inside exclusion zone")
         self.set_parameter("FENCE_TYPE", 4) # Enables polygon fence types
-        home_loc = self.mav.location()
+        home_loc = self.get_mav_location()
         locs = [
             mavutil.location(home_loc.lat - 0.001, home_loc.lng - 0.001, 0, 0),
             mavutil.location(home_loc.lat - 0.001, home_loc.lng + 0.001, 0, 0),
@@ -1834,7 +1834,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.progress("Got required terrain")
 
         self.wait_ready_to_arm()
-        homeloc = self.mav.location()
+        homeloc = self.get_mav_location()
 
         guided_loc = mavutil.location(-35.39723762, 149.07284612, homeloc.alt+99.0, 0)
         rally_loc = mavutil.location(-35.3654952000, 149.1558698000, homeloc.alt+100, 0)
@@ -2242,11 +2242,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         expected_alt = self.get_parameter("RTL_ALTITUDE")
 
         home = self.home_position_as_mav_location()
-        distance = self.get_distance(home, self.mav.location())
+        distance = self.get_distance(home, self.get_mav_location())
 
         self.wait_altitude(expected_alt - 10, expected_alt + 10, relative=True, timeout=80)
 
-        new_distance = self.get_distance(home, self.mav.location())
+        new_distance = self.get_distance(home, self.get_mav_location())
         # We should be closer to home.
         if new_distance > distance:
             raise NotAchievedException(
@@ -2271,11 +2271,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("RTL")
 
         home = self.home_position_as_mav_location()
-        distance = self.get_distance(home, self.mav.location())
+        distance = self.get_distance(home, self.get_mav_location())
 
         self.wait_altitude(expected_alt - 10, expected_alt + 10, relative=True, timeout=80)
 
-        new_distance = self.get_distance(home, self.mav.location())
+        new_distance = self.get_distance(home, self.get_mav_location())
         # We should be farther from to home.
         if new_distance < distance:
             raise NotAchievedException(
@@ -2488,7 +2488,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # fly North, create thread to east, wait for flying east
         self.start_subtest("Testing loiter resume")
         self.reach_heading_manual(0)
-        here = self.mav.location()
+        here = self.get_mav_location()
         self.test_adsb_send_threatening_adsb_message(here, offset_ne=(0, 30))
         self.wait_mode('AVOID_ADSB')
         # recovery has the vehicle circling a point... but we don't
@@ -2525,7 +2525,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
         self.wait_ready_to_arm()
-        here = self.mav.location()
+        here = self.get_mav_location()
         self.change_mode("FBWA")
         self.delay_sim_time(2, reason="mode change to settle") # TODO: work out why this is required...
         self.test_adsb_send_threatening_adsb_message(here)
@@ -3159,7 +3159,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Entering guided and flying somewhere constant")
         self.change_mode("GUIDED")
         new_alt = 280
-        loc = self.mav.location()
+        loc = self.get_mav_location()
         self.location_offset_ne(loc, 350, 0)
         loc.alt = self.home_position_as_mav_location().alt + new_alt
         self.run_cmd_int(
@@ -3194,7 +3194,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.install_terrain_handlers_context()
 
         self.wait_ready_to_arm()
-        loc = self.mav.location()
+        loc = self.get_mav_location()
 
         lng_int = int(loc.lng * 1e7)
         lat_int = int(loc.lat * 1e7)
@@ -4221,7 +4221,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         def fail_speed():
             self.change_mode("GUIDED")
-            loc = self.mav.location()
+            loc = self.get_mav_location()
             self.run_cmd_int(
                 mavutil.mavlink.MAV_CMD_DO_REPOSITION,
                 p5=int(loc.lat * 1e7),
@@ -4283,7 +4283,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Grab Home Position
         self.wait_ready_to_arm()
-        startpos = self.mav.location()
+        startpos = self.get_mav_location()
 
         cruise_alt = 150
         self.takeoff(cruise_alt)
@@ -4824,7 +4824,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_ACTION": 1,
             "FENCE_TYPE": 4,
         })
-        home_loc = self.mav.location()
+        home_loc = self.get_mav_location()
         locs = [
             mavutil.location(home_loc.lat - 0.001, home_loc.lng - 0.001, 0, 0),
             mavutil.location(home_loc.lat - 0.001, home_loc.lng + 0.001, 0, 0),
@@ -4884,7 +4884,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "RTL_RADIUS": want_radius,
             "NAVL1_LIM_BANK": 60,
         })
-        home_loc = self.mav.location()
+        home_loc = self.get_mav_location()
         locs = [
             mavutil.location(home_loc.lat - 0.003, home_loc.lng - 0.001, 0, 0),
             mavutil.location(home_loc.lat - 0.003, home_loc.lng + 0.003, 0, 0),
@@ -4921,8 +4921,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         # Work out the approximate return point when no fence return point present
         # Logic taken from AC_PolyFence_loader.cpp
-        min_loc = self.mav.location()
-        max_loc = self.mav.location()
+        min_loc = self.get_mav_location()
+        max_loc = self.get_mav_location()
         for new_loc in locs:
             if new_loc.lat < min_loc.lat:
                 min_loc.lat = new_loc.lat
@@ -4965,7 +4965,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.delay_sim_time(1, reason="fence clear to complete")
         self.wait_ready_to_arm()
-        home_loc = self.mav.location()
+        home_loc = self.get_mav_location()
         self.takeoff(alt=50)
         self.set_rc(3, 1500)
         self.change_mode("CRUISE")
@@ -5233,7 +5233,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Check the landed heading matches takeoff plus offset")
         self.wait_heading(218, accuracy=5, timeout=1)
         loc = mavutil.location(-35.362938, 149.165085, 585, 218)
-        if self.get_distance(loc, self.mav.location()) > 35:
+        if self.get_distance(loc, self.get_mav_location()) > 35:
             raise NotAchievedException("Did not land close to home")
         self.set_parameters({
             "TKOFF_OPTIONS": 2,
@@ -5975,7 +5975,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.delay_sim_time(5, reason="takeoff altitude to settle")
 
         bearing_margin = 35
-        loc = self.mav.location()
+        loc = self.get_mav_location()
         bearing_from_home = self.get_bearing(start_loc, loc)
         if bearing_from_home < 0:
             bearing_from_home += 360
@@ -6571,7 +6571,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Check the landed heading matches takeoff")
         self.wait_heading(173, accuracy=5, timeout=1)
         loc = mavutil.location(-35.362938, 149.165085, 585, 173)
-        if self.get_distance(loc, self.mav.location()) > 35:
+        if self.get_distance(loc, self.get_mav_location()) > 35:
             raise NotAchievedException("Did not land close to home")
 
     def SDCardWPTest(self):
@@ -7897,7 +7897,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         fence_centre_ne = (0, -500)
 
-        fence_centre = self.mav.location()
+        fence_centre = self.get_mav_location()
         fence_centre = self.offset_location_ne(fence_centre, fence_centre_ne[0], fence_centre_ne[1])
 
         self.set_parameters({
@@ -8426,7 +8426,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         def guided_hold_alt(alt_rel_m, timeout=600):
             # loiter at the current position and climb/hold the target altitude
-            loc = self.mav.location()
+            loc = self.get_mav_location()
             self.run_cmd_int(
                 mavutil.mavlink.MAV_CMD_DO_REPOSITION,
                 p5=int(loc.lat * 1e7),

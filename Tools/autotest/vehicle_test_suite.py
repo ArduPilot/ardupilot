@@ -746,7 +746,7 @@ class WaitAndMaintainLocation(WaitAndMaintain):
 
     def get_current_value(self):
         if self.location_source is None:
-            return self.test_suite.mav.location()
+            return self.test_suite.get_mav_location()
         return self.test_suite.get_mav_location(self.location_source)
 
     def horizontal_error(self, value):
@@ -8156,7 +8156,7 @@ class TestSuite(abc.ABC):
 
     def bearing_to(self, loc):
         '''return bearing from here to location'''
-        here = self.mav.location()
+        here = self.get_mav_location()
         return self.get_bearing(here, loc)
 
     @staticmethod
@@ -8541,7 +8541,7 @@ class TestSuite(abc.ABC):
             tnow = self.get_sim_time(drain_mav=False)
 
     def send_terrain_check_message(self):
-        here = self.mav.location()
+        here = self.get_mav_location()
         self.mav.mav.terrain_check_send(int(here.lat * 1e7), int(here.lng * 1e7))
 
     def get_terrain_height(self, verbose=False):
@@ -9314,7 +9314,7 @@ class TestSuite(abc.ABC):
         assert distance_min <= distance_max, "Distance min should be less than distance max."
 
         def get_distance():
-            return self.get_distance(location, self.mav.location())
+            return self.get_distance(location, self.get_mav_location())
 
         def validator(value2, target2=None):
             return distance_min <= value2 <= distance_max
@@ -13688,7 +13688,7 @@ Also, ignores heartbeats not from our target system'''
         if self.is_copter() or self.is_heli():
             self.user_takeoff(alt_min=50)
 
-        targetpos = self.mav.location()
+        targetpos = self.get_mav_location()
         wp_accuracy = None
         if self.is_copter() or self.is_heli():
             wp_accuracy = self.get_parameter("WP_RADIUS_M", attempts=2)
@@ -19002,7 +19002,7 @@ SERIAL5_BAUD 128
         descend below the min altitude fence floor.
         Caller must call wait_mode('RTL') to confirm the fence breach.
         '''
-        current_loc = self.mav.location()
+        current_loc = self.get_mav_location()
         target_loc = self.offset_location_heading_distance(current_loc, 0, north_m)
 
         # At KalaupapaCliffs the terrain rises ~40 m in the first 100 m
@@ -19275,7 +19275,7 @@ SERIAL5_BAUD 128
         self.takeoff(10, mode=self.FenceRelative_TakeoffMode())
         # now move home 20 m above origin; vehicle at 10 m above origin
         # is safely below the fence max at 50 m above origin
-        original_home = self.mav.location()
+        original_home = self.get_mav_location()
         self.set_home(self.offset_location_up(original_home, 10))
         self.set_parameters({
             "FENCE_TYPE": 1,   # ALT_MAX only
@@ -19309,7 +19309,7 @@ SERIAL5_BAUD 128
         self.takeoff(30, mode=self.FenceRelative_TakeoffMode())
         # now move home 20 m above origin; vehicle at 30 m above origin
         # is safely above the fence min at 15 m above origin
-        original_home = self.mav.location()
+        original_home = self.get_mav_location()
         self.set_home(self.offset_location_up(original_home, -10))
         self.do_fence_enable()
         self.assert_mode_is(self.FenceRelative_TakeoffMode())
@@ -19669,7 +19669,7 @@ SERIAL5_BAUD 128
             now = self.get_sim_time()
             if now - tstart > timeout:
                 raise AutoTestTimeoutException("Did not get onto circle")
-            here = self.mav.location()
+            here = self.get_mav_location()
             got_radius = self.get_distance(loc, here)
             average_radius = 0.95*average_radius + 0.05*got_radius
             on_radius = abs(got_radius - want_radius) < epsilon

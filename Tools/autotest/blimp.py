@@ -195,7 +195,7 @@ class AutoTestBlimp(TestSuite):
         tim = 60
 
         # make sure we don't drift:
-        bl = self.mav.location()
+        bl = self.get_mav_location()
         tl = self.offset_location_ne(location=bl, metres_north=siz, metres_east=0)
         tr = self.offset_location_ne(location=bl, metres_north=siz, metres_east=siz)
         br = self.offset_location_ne(location=bl, metres_north=0, metres_east=siz)
@@ -228,7 +228,7 @@ class AutoTestBlimp(TestSuite):
         self.wait_distance_to_location(bl, 0, 0.5, timeout=tim)
         self.set_rc(1, 1500)
 
-        fin = self.mav.location()
+        fin = self.get_mav_location()
 
         self.progress("Yawing right.")
         self.set_rc(4, 1700)

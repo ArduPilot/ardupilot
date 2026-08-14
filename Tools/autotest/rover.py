@@ -4965,7 +4965,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_poly_fence_object_avoidance_guided_two_squares(self, target_system=1, target_component=1):
         self.start_subtest("Ensure we can steer around obstacles in guided mode")
-        here = self.mav.location()
+        here = self.get_mav_location()
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
                 # east
@@ -6541,7 +6541,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm(require_absolute=False)
 
         # use get_location() (GLOBAL_POSITION_INT, the EKF/beacon-fused
-        # position) rather than self.mav.location(), which blocks waiting for a
+        # position) rather than self.get_mav_location(), which blocks waiting for a
         # GPS 3D fix that never arrives with the GPS disabled:
         start_loc = self.get_location()
         self.progress("Beacon-derived start location: %s" % str(start_loc))

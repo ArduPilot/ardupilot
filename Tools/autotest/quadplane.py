@@ -876,12 +876,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
         self.set_rc(2, 1500)
         self.delay_sim_time(5, reason="position to stabilise")
-        loc1 = self.mav.location()
+        loc1 = self.get_mav_location()
         self.set_parameter("SIM_ENGINE_FAIL", 1 << 2) # simulate a complete loss of forward motor thrust
         self.delay_sim_time(20, reason="engine failure effect")
         self.change_mode('QLAND')
         self.wait_disarmed(timeout=60)
-        loc2 = self.mav.location()
+        loc2 = self.get_mav_location()
         position_drift = self.get_distance(loc1, loc2)
         if position_drift > 5.0 :
             raise NotAchievedException("position drift high, want < 5.0 m got %f m" % (position_drift))
@@ -1108,7 +1108,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         takeoff_alt = 5
         self.takeoff(takeoff_alt, mode='QLOITER')
-        loc = self.mav.location()
+        loc = self.get_mav_location()
         self.location_offset_ne(loc, 500, 500)
         new_alt = 100
         initial_altitude = self.get_altitude(relative=False, timeout=2)
@@ -1169,7 +1169,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         )
         takeoff_alt = 5
         self.takeoff(takeoff_alt, mode='QLOITER')
-        loc = self.mav.location()
+        loc = self.get_mav_location()
         self.location_offset_ne(loc, ofs_n, ofs_e)
         initial_altitude = self.get_altitude(relative=False, timeout=2)
         self.run_cmd_int(
@@ -1832,7 +1832,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # position before the reboot places the target wherever the
         # previous test happened to leave the vehicle, which can be
         # hundreds of metres from where QRTL will descend:
-        here = self.mav.location()
+        here = self.get_mav_location()
         target = self.offset_location_ne(here, 20, 0)
         self.set_parameters({
             "SIM_PLD_LAT": target.lat,
@@ -1849,7 +1849,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
 
         self.wait_disarmed(timeout=180)
-        loc2 = self.mav.location()
+        loc2 = self.get_mav_location()
         error = self.get_distance(target, loc2)
         self.progress("Target error %.1fm" % error)
         if error > 2:
@@ -2105,7 +2105,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # reset home 20 metres above current location
         current_alt_abs = self.get_altitude(relative=False)
 
-        loc = self.mav.location()
+        loc = self.get_mav_location()
 
         home_z_ofs = 20
         self.run_cmd(
@@ -2424,7 +2424,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
 
-        here = self.mav.location()
+        here = self.get_mav_location()
         guided_loc = self.offset_location_ne(here, 500, -500)
 
         self.arm_vehicle()
@@ -3145,7 +3145,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode("AUTO")
 
         # check that we got terrain data, this test doesn't work if we don't have the correct terrain.
-        loc = self.mav.location()
+        loc = self.get_mav_location()
 
         lng_int = int(loc.lng * 1e7)
         lat_int = int(loc.lat * 1e7)
