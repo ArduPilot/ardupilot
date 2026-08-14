@@ -6952,6 +6952,22 @@ class TestSuite(abc.ABC):
         """Get Saved parameters."""
         return self.contexts[-1]
 
+    def context_preserve_parameters(self, names):
+        """Arrange for these parameters to be restored on context_pop().
+
+        The context restores parameters the *suite* set.  It cannot know
+        about one the vehicle writes for itself - a calibration saving
+        its results, say - so those survive the test and leak into every
+        test which follows in the session.  Registering them here with
+        their current values puts them back with everything else, and
+        does so even if the test raises.
+        """
+        values = self.get_parameters(names)
+        already = [p[0] for p in self.context_get().parameters]
+        for name in names:
+            if name not in already:
+                self.context_get().parameters.append((name, values[name]))
+
     def context_push(self):
         """Save a copy of the parameters."""
         context = Context()
@@ -7040,6 +7056,11 @@ class TestSuite(abc.ABC):
         # A leaked *mission* is better caught by checking the item count
         # against what the test uploaded.
         "MIS_TOTAL",
+        # COMPASS_AUTODEC defaults on, so AP_Compass computes and writes
+        # the declination itself from the vehicle's position.  It reads
+        # back as zero until there is a position to compute it from, so
+        # any test which reboots appears to "change" it.
+        "COMPASS_DEC",
     ])
 
     def parameter_leak_exempt(self, name):
@@ -7051,6 +7072,12 @@ class TestSuite(abc.ABC):
         # which reboots therefore always "changes" these, and the value
         # reverts to the default until calibration completes.
         if re.match(r"^BARO\d*_GND_(PRESS|TEMP)$", name):
+            return True
+        # Airspeed zero offset and ratio: the offset is calibrated at
+        # every boot (AP_Airspeed.cpp set_and_save) and lands a hair
+        # different each time - measured drifting by 0.0007% - and the
+        # ratio is what AIRSPEED_AUTOCAL learns.
+        if re.match(r"^ARSPD\d*_(OFFSET|RATIO)$", name):
             return True
         # learned sensor calibration; the vehicle writes these itself
         for prefix in ("INS_GYROFFS", "INS_GYR2OFFS", "INS_GYR3OFFS",

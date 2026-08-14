@@ -3641,6 +3641,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_MAG_MOT_Z": -10,
             "SIM_CLAMP_CH": 11,
         })
+        # the calibration below makes the *firmware* write its results,
+        # so the suite has no record of them and they would survive into
+        # every test which follows in this session.  Register them for
+        # restoration on context_pop():
+        self.context_preserve_parameters([
+            "COMPASS_MOTCT",
+            "COMPASS_MOT_X", "COMPASS_MOT_Y", "COMPASS_MOT_Z",
+            "COMPASS_MOT2_X", "COMPASS_MOT2_Y", "COMPASS_MOT2_Z",
+            "COMPASS_MOT3_X", "COMPASS_MOT3_Y", "COMPASS_MOT3_Z",
+        ])
+
         # hold the vehicle in the simulated clamp so the calibration
         # is bench-static, as compassmot is in the real world - at
         # full throttle an unclamped SITL vehicle takes off and
