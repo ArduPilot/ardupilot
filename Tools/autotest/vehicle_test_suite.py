@@ -12369,6 +12369,22 @@ Also, ignores heartbeats not from our target system'''
                 }, add_to_context=False)
 
                 try:
+                    # the calibrations above have left their own
+                    # MAG_CAL_REPORTs behind.  Without dropping them the
+                    # loop below fills every slot from those and stops
+                    # before this calibration has reported anything, so
+                    # the check which follows grades the previous
+                    # calibration rather than this one - and passes or
+                    # fails on how promptly the earlier messages happened
+                    # to be consumed.
+                    #
+                    # A timesync roundtrip rather than drain_mav(): the
+                    # link is ordered, so everything the vehicle sent
+                    # before it answered us has arrived and been discarded
+                    # by the time the response does.  drain_mav() only
+                    # takes what has turned up so far, and pauses the
+                    # simulation to do it.
+                    self.do_timesync_roundtrip()
                     reset_pos_and_start_magcal(mavproxy, target_mask)
                     report_status = [None] * compass_tnumber
                     tstart = self.get_sim_time()
