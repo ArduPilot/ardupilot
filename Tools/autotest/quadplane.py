@@ -1581,8 +1581,19 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_current_waypoint(0, check_afterwards=False)
         self.fly_mission('mission.txt')
 
+    # The gains quicktune saves when it finishes.  Written by the applet
+    # or the C++ implementation rather than by us, so the suite cannot
+    # revert them and they would persist for the rest of the session.
+    quicktune_saved_gains = [
+        "Q_A_RAT_PIT_D", "Q_A_RAT_PIT_FLTT", "Q_A_RAT_PIT_I", "Q_A_RAT_PIT_P",
+        "Q_A_RAT_RLL_D", "Q_A_RAT_RLL_FLTT", "Q_A_RAT_RLL_I", "Q_A_RAT_RLL_P",
+        "Q_A_RAT_YAW_D", "Q_A_RAT_YAW_FLTD", "Q_A_RAT_YAW_FLTT",
+        "Q_A_RAT_YAW_I", "Q_A_RAT_YAW_P",
+    ]
+
     def VTOLQuicktune(self):
         '''VTOL Quicktune'''
+        self.context_preserve_parameters(self.quicktune_saved_gains)
         self.install_applet_script_context("VTOL-quicktune.lua")
 
         self.set_parameters({
@@ -1630,6 +1641,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def VTOLQuicktune_CPP(self):
         '''VTOL Quicktune in C++'''
+        self.context_preserve_parameters(self.quicktune_saved_gains)
         self.set_parameters({
             "RC7_OPTION": 181,
             "QWIK_ENABLE" : 1,

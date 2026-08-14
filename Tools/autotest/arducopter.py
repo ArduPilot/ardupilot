@@ -17996,6 +17996,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         """Test AHRS option to record and reuse origin"""
         self.context_push()
 
+        # The firmware writes these itself once the origin is known, so
+        # register them now, while they are still as the session started;
+        # otherwise the origin recorded here is left behind for every test
+        # which follows.
+        self.context_preserve_parameters([
+            'AHRS_ORIGIN_LAT', 'AHRS_ORIGIN_LON', 'AHRS_ORIGIN_ALT',
+        ])
         # Set AHRS_OPTIONS = 8 (UseRecordedOrigin)
         self.set_parameter('AHRS_OPTIONS', 8)
         self.set_parameter('LOG_DISARMED', 1)
@@ -18265,6 +18272,13 @@ RTL_ALT_M 111
 
     def CompassLearnCopyFromEKF(self):
         '''test compass learning whereby we copy learnt offsets from the EKF'''
+        # a successful learn makes the firmware save the offsets it found,
+        # which the suite has no record of and cannot put back
+        self.context_preserve_parameters([
+            "COMPASS_OFS_X", "COMPASS_OFS_Y", "COMPASS_OFS_Z",
+            "COMPASS_OFS2_X", "COMPASS_OFS2_Y", "COMPASS_OFS2_Z",
+            "COMPASS_OFS3_X", "COMPASS_OFS3_Y", "COMPASS_OFS3_Z",
+        ])
         self.reboot_sitl()
         self.context_push()
         self.set_parameters({

@@ -5236,8 +5236,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if ex is not None:
             raise ex
 
+    # The gains a completed autotune saves.  The firmware writes these,
+    # so the suite has no record of them and they would otherwise persist
+    # for the rest of the session.
+    autotune_saved_gains = [
+        "PTCH2SRV_RMAX_DN", "PTCH2SRV_RMAX_UP", "PTCH2SRV_TCONST",
+        "PTCH_RATE_D", "PTCH_RATE_FF", "PTCH_RATE_FLTD",
+        "PTCH_RATE_FLTT", "PTCH_RATE_I", "PTCH_RATE_P",
+        "RLL2SRV_RMAX", "RLL2SRV_TCONST",
+        "RLL_RATE_D", "RLL_RATE_FF", "RLL_RATE_FLTD",
+        "RLL_RATE_FLTT", "RLL_RATE_I", "RLL_RATE_P",
+    ]
+
     def AUTOTUNE(self):
         '''Test AutoTune mode'''
+        self.context_preserve_parameters(self.autotune_saved_gains)
 
         # Prior to 2026-07-15, the SITL airspeed sensor was reading about 5%
         # slower than actual during this test. We bump the scaling airspeed by
@@ -5343,6 +5356,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def AutotuneFiltering(self):
         '''Test AutoTune mode with filter updates disabled'''
+        self.context_preserve_parameters(self.autotune_saved_gains)
         self.set_parameters({
             "AUTOTUNE_OPTIONS": 3,
             # some filtering is required for autotune to complete
@@ -7557,6 +7571,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def CompassLearnInFlight(self):
         '''check we can learn compass offsets in flight'''
+        # a successful learn makes the firmware save the offsets it found,
+        # which the suite has no record of and cannot put back
+        self.context_preserve_parameters([
+            "COMPASS_OFS_X", "COMPASS_OFS_Y", "COMPASS_OFS_Z",
+            "COMPASS_OFS2_X", "COMPASS_OFS2_Y", "COMPASS_OFS2_Z",
+            "COMPASS_OFS3_X", "COMPASS_OFS3_Y", "COMPASS_OFS3_Z",
+        ])
         # learning completes only when the EKF's GSF yaw estimator is
         # converged.  Flying done by earlier tests in the same boot can
         # leave the EKF in a state where the GSF hovers above the
