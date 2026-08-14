@@ -7,7 +7,6 @@ The CoreWing F405 Wing Mini V2 is a compact fixed-wing and QuadPlane/VTOL flight
 - [CoreWing official website](https://www.corewing.com/en/)
 - [Banggood](https://www.banggood.com/COREWING-F405-Mini-V2-Fixed-Wing-Flight-Controller-STM32F405-OSD-VTOL-MicroSD-Card-Blackbox-Support-2-6S-LiPo-ArduPilot-INAV-for-FPV-RC-Airplane-p-2054148.html)
 
-
 ## Features
 
 - Processor
@@ -59,7 +58,6 @@ The CoreWing F405 Wing Mini V2 is a compact fixed-wing and QuadPlane/VTOL flight
 
 ## UART Mapping
 
-
 | Port | UART    | Protocol | TX DMA | RX DMA |
 |------|---------|----------|:------:|:------:|
 | 0    | USB     | MAVLink2 | ✘      | ✘      |
@@ -85,7 +83,7 @@ Recommended receiver connections:
 - CRSF / ELRS / TBS Crossfire: connect to TX6 and RX6, set `SERIAL6_OPTIONS = 0`
 - DSM / SRXL: connect to RX6
 - SRXL2: connect to TX6 and set `SERIAL6_OPTIONS = 4`
-- FPort: connect to TX6 and RX6 through a bidirectional inverter, set `SERIAL6_OPTIONS = 15`
+- FPort: connect to TX6 and RX6 through a bidirectional inverter, set `SERIAL6_OPTIONS = 0`
 
 For more information, see [Radio Control Systems](https://ardupilot.org/plane/docs/common-rc-systems.html).
 
@@ -97,8 +95,8 @@ PWM outputs 1 to 9 are available on pin headers, labeled S1 to S9. PWM10 and
 PWM11 are available on solder pads labeled S10 and S11. An additional pad
 labeled `LED` is mapped as PWM12.
 
-PWM outputs 1 to 10 support PWM and DShot. PWM outputs 11 and 12 support normal
-PWM only in ArduPilot.
+PWM outputs 1 to 10 support PWM and DShot. Unlike the Wing V2, no output supports
+bi-directional DShot. PWM outputs 11 and 12 support normal PWM only in ArduPilot.
 
 The PWM outputs are in 5 groups:
 
@@ -114,10 +112,10 @@ Channels within the same group need to use the same output rate and protocol. If
 
 The pad labeled `LED` is mapped as PWM12.
 
-With INAV firmware, this pad can be used for serial LED output. With the current
-ArduPilot DMA allocation, the DMA stream required for TIM1 serial LED output is
-allocated to USART6. Therefore, the `LED` pad can only be used as a normal PWM12
-output in ArduPilot.
+With INAV firmware, this pad can be used for serial LED output. A serial LED
+output requires a DMA stream, but no DMA stream is available for TIM1 given this
+board's current allocation. Therefore, the `LED` pad can only be used as a normal
+PWM12 output in ArduPilot.
 
 PWM11 (S11) and PWM12 share TIM1 and therefore belong to the same output group.
 
@@ -172,12 +170,13 @@ UART3 TX is located in the video output connector and can be used to control vid
 
 ## VTX Power Control
 
-GPIO 81 controls the VTX/CAM power output. Setting this GPIO high removes voltage supply from the VTX/CAM power pins.
+GPIO 81 controls the VTX/CAM power output through Relay 1 (`RELAY1_PIN` is preset to 81). The output is high-side switched: driving the GPIO high removes power from the VTX/CAM pins and low restores it. Relay 1 defaults to off, which drives the GPIO low, so the VTX/CAM supply is powered on at boot.
 
-For example, use Channel 7 to control the switch using Relay 1:
+To switch the supply from a transmitter, assign an RC channel to Relay 1, for example on Channel 7:
 
-- RELAY1_PIN = 81
 - RC7_OPTION = 28
+
+Turning Relay 1 on removes power from the VTX/CAM pins.
 
 ## Battery Monitoring
 
