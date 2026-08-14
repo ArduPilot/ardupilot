@@ -1074,11 +1074,15 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                       (fwd_thr_pwm, min(samples), max(samples)))
         if fwd_thr_pwm < 1150 :
             raise NotAchievedException("fwd motor pwm command low, want >= 1150 got %f" % (fwd_thr_pwm))
-        # check that pitch is on limit
-        m = self.assert_receive_message('ATTITUDE')
-        pitch = math.degrees(m.pitch)
-        if abs(pitch + 3.0) > 0.5 :
-            raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
+        # Check that pitch is on limit.  Wait for it rather than taking
+        # one instant: a single sample has been caught at -5.45 and at
+        # +0.05 in overnight runs, either side of the wanted -3.0, which
+        # is a vehicle which has not settled on the limit rather than one
+        # sitting off it.  Once it is there it is very steady - 201
+        # samples over 20s measured -3.03 to -2.97, mean -3.00 - so
+        # holding +-0.5 for five seconds asks nothing of a vehicle which
+        # has arrived, while still failing one which never does.
+        self.wait_pitch(-3.0, 0.5, minimum_duration=5, timeout=30)
         self.set_rc(2, 1500)
         self.delay_sim_time(5, reason="position to stabilise")
         loc1 = self.get_location()
