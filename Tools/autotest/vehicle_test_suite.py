@@ -7144,6 +7144,17 @@ class TestSuite(abc.ABC):
         # rather than anything a test chose.
         if re.match(r"^[A-Z0-9_]+_DEVID$", name):
             return True
+        # the same thing under the compass's older spelling, and the
+        # DroneCAN node a GPS was found on, which the driver records when
+        # it detects one
+        if re.match(r"^COMPASS_DEV_ID\d*$", name):
+            return True
+        if re.match(r"^GPS\d*_CAN_NODEID$", name):
+            return True
+        # compass scale factors are learned in the same way as the
+        # offsets below, and are zeroed when a compass goes away
+        if re.match(r"^COMPASS_SCALE\d*$", name):
+            return True
         # learned sensor calibration; the vehicle writes these itself
         for prefix in ("INS_GYROFFS", "INS_GYR2OFFS", "INS_GYR3OFFS",
                        "INS_ACCOFFS", "INS_ACC2OFFS", "INS_ACC3OFFS",
@@ -7193,9 +7204,18 @@ class TestSuite(abc.ABC):
             was = self.pristine_parameters.get(name)
             now = after.get(name)
             if was is None or now is None:
-                # appeared or vanished; nothing sensible to restore
-                described.append("%s %s->%s" % (name, was, now))
-            elif abs(was - now) > max(abs(was), abs(now)) * 1e-6:
+                # Appeared or vanished rather than changed.  The shape of
+                # the parameter tree follows enable-style parameters -
+                # BATT_MONITOR decides which BATT_ parameters exist,
+                # CAN_P1_DRIVER whether there are any CAN_D1_UC_ ones -
+                # and only re-shapes on reboot.  A test which sets one of
+                # those and has it restored still leaves the old shape
+                # behind until the vehicle next boots, which is not a leak
+                # and is not something we can put back.  The parameter
+                # which decides the shape is itself compared here, so a
+                # genuine leak of one is still caught on its own account.
+                continue
+            if abs(was - now) > max(abs(was), abs(now)) * 1e-6:
                 described.append("%s %f->%f" % (name, was, now))
                 restore[name] = was
         if len(described) == 0:
