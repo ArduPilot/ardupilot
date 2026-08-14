@@ -8388,15 +8388,58 @@ class TestSuite(abc.ABC):
             self.set_rc(3, 1500)
             self.set_rc(1, 1500)
 
-    def assert_vehicle_location_is_at_startup_location(self, dist_max=1):
-        here = self.mav.location()
-        start_loc = self.sitl_start_location()
-        dist = self.get_distance(here, start_loc)
-        data = "dist=%f max=%f (here: %s start-loc: %s)" % (dist, dist_max, here, start_loc)
+    def assert_vehicle_location_is_at_startup_location(self,
+                                                       dist_max=None,
+                                                       estimate_error_max=1):
+        '''check the vehicle is where the simulation put it, and that it
+        knows where it is.
 
+        These are two separate questions and want two separate
+        comparisons.  Whether a previous test left the vehicle somewhere
+        else is about where it *actually* is, so ask the simulator.
+        Whether the vehicle knows where it is is about the *estimate*, so
+        compare that against the simulator rather than against the startup
+        location - measuring the estimate against the startup location
+        adds the two errors together, and fails on a vehicle which has not
+        moved at all.  TestGripperMission did exactly that at
+        --parallel=24: it read 1.138945m from the startup location, over
+        its 1m limit, while the simulator had the vehicle at 0.000000m
+        from it.
+
+        Take the estimate from GLOBAL_POSITION_INT (get_mav_location())
+        rather than mavutil's location().  That blocks for a fresh
+        VFR_HUD and GLOBAL_POSITION_INT but then returns lat/lng from
+        whatever GPS_RAW_INT happens to be in the message cache - the raw
+        fix rather than the estimate, and of no particular age.  That
+        cached fix is what read 1.14m out while the vehicle sat exactly
+        where it started.
+
+        A metre for the estimate is loose against what it actually does -
+        measured 0.000m on a fresh boot and 0.014m after Landing had flown
+        and put the vehicle down 1.27m from where it started - but it is
+        tight enough to catch the metre-scale disagreement above, which is
+        what this is for.
+        '''
+        if dist_max is None:
+            dist_max = self.max_distance_from_startup_location_at_end_of_test()
+            if dist_max is None:
+                dist_max = 1
+
+        start_loc = self.sitl_start_location()
+        simstate_loc = self.sim_location()
+        here = self.get_mav_location()
+
+        dist = self.get_distance(simstate_loc, start_loc)
+        data = "dist=%f max=%f (simstate: %s start-loc: %s)" % (dist, dist_max, simstate_loc, start_loc)
         if dist > dist_max:
             raise NotAchievedException("Far from startup location: %s" % data)
         self.progress("Close to startup location: %s" % data)
+
+        error = self.get_distance(here, simstate_loc)
+        data = "error=%f max=%f (here: %s simstate: %s)" % (error, estimate_error_max, here, simstate_loc)
+        if error > estimate_error_max:
+            raise NotAchievedException("Position estimate far from simulated position: %s" % data)
+        self.progress("Position estimate close to simulated position: %s" % data)
 
     def max_distance_from_startup_location_at_end_of_test(self):
         '''how far a test may leave the vehicle from where the simulation
