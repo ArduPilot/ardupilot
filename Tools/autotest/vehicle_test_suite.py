@@ -3432,7 +3432,14 @@ class TestSuite(abc.ABC):
         return ret
 
     def apply_default_parameters(self):
-        self.set_parameters(self.default_parameter_list())
+        # deliberately not added to the context: these are the session's
+        # baseline, not something the running test asked for.  A test
+        # which resets the SITL commandline gets here part-way through,
+        # and if the context recorded the post-wipe values then popping
+        # it at the end of that test would revert the whole session to
+        # the firmware defaults.
+        self.set_parameters(self.default_parameter_list(),
+                            add_to_context=False)
         self.reboot_sitl()
 
     def reset_SITL_commandline(self):
@@ -7103,6 +7110,15 @@ class TestSuite(abc.ABC):
         # so any test which hovers moves them.  MOT_ is multicopter, Q_M_
         # the quadplane equivalent, H_COL_HOVER the helicopter one.
         if name in ("MOT_THST_HOVER", "Q_M_THST_HOVER", "H_COL_HOVER"):
+            return True
+        # AC_PosControl raises the vertical acceleration controller's
+        # integrator limit to the hover throttle if it is below it
+        # (AC_PosControl.cpp), so it moves the first time a vehicle runs
+        # that controller.  Sub is the one which shows this: it forces
+        # MOT_THST_HOVER to 0.5 (ArduSub/Parameters.cpp) but leaves the
+        # default limit at 0.1.  The write is to the live value only and
+        # never reaches storage, so a reboot puts it back.
+        if name in ("PSC_D_ACC_IMAX", "Q_P_D_ACC_IMAX"):
             return True
         # Device IDs: the driver writes these when it detects (or stops
         # detecting) a sensor, so they follow the simulated hardware
