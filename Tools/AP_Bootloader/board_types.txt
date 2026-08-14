@@ -582,6 +582,9 @@ AP_HW_IOMCU_F100                     5713
 
 # IDs 5730-5739 reserved for NWBlue
 
+#IDs 5740-5749 reserved for Zenithra Tech
+AP_HW_ZenFC_H743                     5740 
+
 #IDs 5800-5809 reserved for Droneer
 AP_HW_DroneerF405                    5800
 
