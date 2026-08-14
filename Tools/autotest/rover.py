@@ -77,9 +77,6 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
     def default_frame(self):
         return "rover"
 
-    def default_speedup(self):
-        return 30
-
     def is_rover(self):
         return True
 
