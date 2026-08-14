@@ -1195,6 +1195,10 @@ void AP_AHRS_DCM::set_external_wind_estimate(float speed, float direction) {
 // dead-reckoning or GPS
 bool AP_AHRS_DCM::get_location(Location &loc) const
 {
+    if (_last_lat == 0 && _last_lng == 0) {
+        // we have never had a position
+        return false;
+    }
     loc.lat = _last_lat;
     loc.lng = _last_lng;
     const auto &baro = AP::baro();
