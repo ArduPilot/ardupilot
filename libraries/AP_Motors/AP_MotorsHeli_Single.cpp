@@ -599,6 +599,12 @@ bool AP_MotorsHeli_Single::arming_checks(size_t buflen, char *buffer) const
         return false;
     }
 
+    // returns false if main rotor RSC Runup Time is less than tail rotor ramp time as this could cause undesired behaviour
+    if (_main_rotor._runup_time.get() <= _tail_rotor._ramp_time.get()){
+        hal.util->snprintf(buffer, buflen, "H_RUNUP_TIME is less than H_TAIL_RAMP_TIME");
+        return false;
+    }
+
     return true;
 }
 
