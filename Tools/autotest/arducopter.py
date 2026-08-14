@@ -17228,7 +17228,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ]
         for command in self.run_cmd, self.run_cmd_int:
             for cmd_id in cmd_ids:
-                self.wait_waypoint(2, 2)
+                # What the checks below need is home to the south of us
+                # and the next waypoint to the north.  Waiting on
+                # waypoint 2 for that does not work: it sits directly
+                # above the takeoff point, so the vehicle arrives at it
+                # the instant it becomes current and moves straight on to
+                # waypoint 3.  There is no interval in which it is the
+                # current waypoint, so whether wait_waypoint() ever sees
+                # it is down to when NAV_CONTROLLER_OUTPUT happens to
+                # arrive - and once missed it cannot recover, because
+                # wait_waypoint()'s current_wp follows the sequence
+                # upwards and can then never equal 2 again.  It spends
+                # its whole timeout before failing.
+                #
+                # Wait for the geometry instead.  Waypoint 3 is 200m
+                # north, so it is the current waypoint for long enough to
+                # be seen; the vehicle is then flying north with home
+                # behind it.  Coming back round the loop that means
+                # flying from waypoint 4 to waypoint 2, 400m at
+                # WP_SPD_DEFAULT (10m/s).
+                self.wait_current_waypoint(3, timeout=120)
+                self.wait_distance_to_home(30, 1000, timeout=30)
 
                 # Set an ROI at the Home location, expect to point at Home
                 self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION, p5=home_loc.lat, p6=home_loc.lng, p7=home_loc.alt)
