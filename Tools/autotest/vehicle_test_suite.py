@@ -7079,10 +7079,14 @@ class TestSuite(abc.ABC):
         # 0->1 for the first test in a session, as the mission's home
         # item appears once home is set.  A leaked mission/fence/rally
         # is better caught by checking the item count against what the
-        # test uploaded than by watching these.
+        # test uploaded than by watching these.  CMD_TOTAL is Tracker's
+        # equivalent of MIS_TOTAL ("Number of loaded mission items"),
+        # and run_one_test_attempt deliberately does not clear Tracker's
+        # mission, so it goes the other way: 1->0.
         "MIS_TOTAL",
         "FENCE_TOTAL",
         "RALLY_TOTAL",
+        "CMD_TOTAL",
         # COMPASS_AUTODEC defaults on, so AP_Compass computes and writes
         # the declination itself from the vehicle's position.  It reads
         # back as zero until there is a position to compute it from, so
