@@ -15018,8 +15018,31 @@ switch value'''
         (and an mmap) on the log until it is closed, so stash it for
         close_dfreaders() to release at the end of the test rather than
         leaking it for the life of the process.'''
-        ret = DFReader.DFReader_binary(path,
-                                       zero_time_base=True)
+        try:
+            ret = DFReader.DFReader_binary(path,
+                                           zero_time_base=True)
+        except struct.error as e:
+            # A log the vehicle is still writing can end part-way through
+            # a record, and pymavlink's fast indexer does not allow for
+            # that: it slices its mmap per record, and a memoryview slice
+            # clamps at the end of the buffer rather than raising, so a
+            # record whose length runs past the end of the file hands
+            # struct.unpack() a short buffer:
+            #     struct.error: unpack requires a buffer of 86 bytes
+            # (86 being an 89-byte FMT record less its 3-byte header).
+            # The legacy indexer checks for exactly this - "if
+            # len(body)+3 < mlen: break" - so fall back to it.
+            self.progress("Reading %s failed (%s); retrying with the legacy indexer" % (path, e))
+            old = os.environ.get("PYMAVLINK_FAST_INDEX")
+            os.environ["PYMAVLINK_FAST_INDEX"] = "0"
+            try:
+                ret = DFReader.DFReader_binary(path,
+                                               zero_time_base=True)
+            finally:
+                if old is None:
+                    del os.environ["PYMAVLINK_FAST_INDEX"]
+                else:
+                    os.environ["PYMAVLINK_FAST_INDEX"] = old
         self.dfreaders.append(ret)
         return ret
 
