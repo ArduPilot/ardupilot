@@ -17173,7 +17173,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ]
         for command in self.run_cmd, self.run_cmd_int:
             for cmd_id in cmd_ids:
-                self.wait_waypoint(2, 2)
+                # these checks need home to the south and the next
+                # waypoint to the north.  Waypoint 2 is directly above
+                # the takeoff point, so it is never reliably the current
+                # waypoint; wait for the geometry instead:
+                self.wait_current_waypoint(3, timeout=120)
+                self.wait_distance_to_home(30, 1000, timeout=30)
 
                 # Set an ROI at the Home location, expect to point at Home
                 self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
