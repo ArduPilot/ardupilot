@@ -481,10 +481,10 @@ class Board:
                 env.CFLAGS += [
                     '-Werror=use-after-free',
                 ]
-            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 1):
+            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 2):
                 # the following warnings appear to be buggy in later compiler versions
                 # https://github.com/ArduPilot/ardupilot/issues/33206
-                # TODO: readdress following a 16.2+ release
+                # TODO: readdress following a 16.3+ release
                 env.CXXFLAGS += [
                     '-Wno-error=maybe-uninitialized',
                     '-Wno-error=format-truncation',
