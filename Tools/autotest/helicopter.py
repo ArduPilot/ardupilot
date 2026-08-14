@@ -1018,7 +1018,10 @@ class AutoTestHelicopter(AutoTestCopter):
             "ARSPD_PIN": 1,      # Analog airspeed driver pin for SITL
         })
         # set the start location to CMAC to use same test script as other vehicles
-
+        # sitl_start_location() returns this for the rest of the session,
+        # so every later start_SITL() would come up at CMAC rather than
+        # at the heli's own start location; put it back afterwards.
+        self.context_preserve_attribute("sitl_start_loc")
         self.sitl_start_loc = mavutil.location(-35.362881, 149.165222, 582.000000, 90.0)   # CMAC
         self.customise_SITL_commandline(["--home", "%s,%s,%s,%s"
                                          % (-35.362881, 149.165222, 582.000000, 90.0)])

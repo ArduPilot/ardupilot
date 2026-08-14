@@ -1584,11 +1584,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     # The gains quicktune saves when it finishes.  Written by the applet
     # or the C++ implementation rather than by us, so the suite cannot
     # revert them and they would persist for the rest of the session.
+    # everything quicktune can save; the axes and suffixes here are
+    # AP_Quicktune::Param (libraries/AP_Quicktune/AP_Quicktune.h)
     quicktune_saved_gains = [
-        "Q_A_RAT_PIT_D", "Q_A_RAT_PIT_FLTT", "Q_A_RAT_PIT_I", "Q_A_RAT_PIT_P",
-        "Q_A_RAT_RLL_D", "Q_A_RAT_RLL_FLTT", "Q_A_RAT_RLL_I", "Q_A_RAT_RLL_P",
-        "Q_A_RAT_YAW_D", "Q_A_RAT_YAW_FLTD", "Q_A_RAT_YAW_FLTT",
-        "Q_A_RAT_YAW_I", "Q_A_RAT_YAW_P",
+        "Q_A_RAT_%s_%s" % (axis, suffix)
+        for axis in ("RLL", "PIT", "YAW")
+        for suffix in ("P", "I", "D", "SMAX", "FLTT", "FLTD", "FLTE", "FF")
     ]
 
     def VTOLQuicktune(self):
