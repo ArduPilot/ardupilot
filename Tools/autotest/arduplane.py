@@ -6792,6 +6792,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.generic_mission_filepath_for_filename("flaps.txt"),
         ], checkfail=True)
         self.start_SITL()
+        # run_mission.py flew a SITL of its own in this directory, so the
+        # storage is not as we left it - notably the parameters the suite
+        # relies on, LOG_DISARMED and the two logging rate limits, are no
+        # longer set, and nothing here has put them back.  Ask for the
+        # standard reset at the end of the test.
+        self.context_get().sitl_commandline_customised = True
 
     def MAV_CMD_GUIDED_CHANGE_ALTITUDE(self):
         '''test handling of MAV_CMD_GUIDED_CHANGE_ALTITUDE'''

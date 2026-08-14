@@ -349,6 +349,10 @@ class Context(object):
         # first context_set_speedup() call in this context (None means
         # speedup was never changed in this context)
         self.original_speedup = None
+        # suite attributes to put back on context_pop(); list of
+        # (name, original value) tuples, filled in by
+        # context_preserve_attribute()
+        self.preserved_attributes = []
         # files snapshotted via context_backup_file() and restored on
         # context_pop(); list of (path, original_bytes) tuples
         self.backup_files = []
@@ -6977,6 +6981,17 @@ class TestSuite(abc.ABC):
             if name not in already:
                 self.context_get().parameters.append((name, values[name]))
 
+    def context_preserve_attribute(self, name):
+        """Arrange for one of our own attributes to be restored on context_pop().
+
+        For state a test changes on the suite rather than on the vehicle
+        - sitl_start_loc, say - which otherwise applies to every test
+        which follows in the session.
+        """
+        already = [p[0] for p in self.context_get().preserved_attributes]
+        if name not in already:
+            self.context_get().preserved_attributes.append((name, getattr(self, name)))
+
     def context_push(self):
         """Save a copy of the parameters."""
         context = Context()
@@ -7194,6 +7209,8 @@ class TestSuite(abc.ABC):
         dead = self.contexts.pop()
         if dead.original_speedup is not None:
             self.speedup = dead.original_speedup
+        for (name, value) in dead.preserved_attributes:
+            setattr(self, name, value)
         # remove hooks first; these hooks can raise exceptions which
         # we really don't want...
         if not hooks_already_removed:
