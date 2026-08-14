@@ -628,6 +628,9 @@ private:
         DISABLE_THRUST_LOSS_CHECK     = (1<<0),   // 1
         DISABLE_YAW_IMBALANCE_WARNING = (1<<1),   // 2
         RELEASE_GRIPPER_ON_THRUST_LOSS = (1<<2),  // 4
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+        TAKEOFF_TIEDOWN_RELEASE       = (1<<4),   // 16
+#endif
     };
 
     // type of fast rate attitude controller in operation
