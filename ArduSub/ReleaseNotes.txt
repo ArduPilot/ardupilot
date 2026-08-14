@@ -1,5 +1,52 @@
 ArduPilot Sub Release Notes:
 ------------------------------------------------------------------
+Release 4.7.1-beta1 17-August-2026
+
+Changes from 4.7.0
+
+1) Board specific changes
+
+- ARKV6S board added (@dakejahl, PR:33157)
+- CORVON_V5 board added (@holydust, PR:33593)
+- DAKEFPV boards add support for LSM6DSV and BMI270 IMUs (@engineer-dakefpv, PR:33984)
+- FlywooF405S-AIO and -HD boards support SPL06 barometer (@mbuzdalov, PR:33779)
+- KakuteH7-Wing boards support LSM6DSV IMU (@zebulon-86, PR:33761)
+- ORBITH743v2 board added (@orbittechnologyx, PR:33582)
+
+2) Plane specific changes
+
+- Q_P_JERK_NE/D renamed to Q_P_NE/D_JERK (@rmackay9, PR:33843)
+- Quadplane: In transition only set TECS throttle min in auto throttle modes (@IamPete1, PR:33972)
+
+3) Copter specific changes
+
+- Auto mode climbing Arc waypoint speed limits and velocity/acceleration fixed (@lthall, PR:33833)
+- Auto mode fix to continue past RTL if rtl-final-descent non-zero (@rmackay9, PR:33797)
+- Circle mode entry fixed when RC input present (@peterbarker, PR:33525)
+- PSC_JERK_NE/D renamed to PSC_NE/D_JERK (@rmackay9, PR:33843)
+- Simple mode fixed (@rmackay9, PR:33947)
+
+4) Library/Driver changes
+
+- AC_WPNAV: Use of uninitialised values avoided in m/cm conversion code (@peterbarker, PR:33715)
+- AP_Filesystem: Files without an End-Of-Line character get correctly read (@peterbarker, PR:33744)
+- AP_FlashStorage: Fix incorrect value of `current_sector` during init (@Juergen-Fahlbusch, PR:33640)
+- AP_Follow: Fix parameter ranges to include their defaults (@lthall, PR:33928)
+- AP_GPS: Unicore baseline correction in vertical component of Unicore reported baseline (@lthall, PR:33730)
+- AP_Mount: Fix AlexMos yaw angle scaling (@borischernov, PR:33785)
+- AP_NavEKF: Log per-core source set in XKFS (@mykhailopylyp, PR:33904)
+- AP_OSD: use Betaflight SYM_TOTAL_DISTANCE for DisplayPort distance icon (@coreyfarley, PR:33908)
+- AP_RangeFinder: TFMiniPlus: Small delay added to improve read reliability (@IamPete1, PR:33709)
+- ChibiOS: fix overdrive disabled on H7 boards clocked above 400MHz (@andyp1per, PR:33824)
+- GCS_MAVLink: Correction in diagnostics printing (@peterbarker, PR:33800)
+- IST8310 compass gets probed only if the driver is enabled (@peterbarker, PR:32696)
+- Topotek gimbal network connection handling is corrected (@peterbarker, PR:33803)
+
+5) Tool changes
+
+- build_options.py: Wrong dependecy for MAVLINK_SIGNING has been removed (@peterbarker, PR:33798)
+
+------------------------------------------------------------------
 Release 4.7.0 21-July-2026/ 4.7.0-beta8 13-July-2026
 
 Changes from 4.7.0-beta7
