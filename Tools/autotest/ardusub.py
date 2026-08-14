@@ -1622,7 +1622,13 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
         })
-        self.wait_location(self.get_mav_location(), minimum_duration=5, accuracy=2, timeout=60.0)
+        # mav.location() rather than get_mav_location() here, deliberately:
+        # its lat/lng come from GPS_RAW_INT, and the raw fix is what this
+        # is waiting for the estimate to converge *to*.  Using the estimate
+        # would make the target a snapshot of the drift this test has just
+        # built up, which the vehicle then moves away from as it converges
+        # on the GPS, so it could never be attained.
+        self.wait_location(self.mav.location(), minimum_duration=5, accuracy=2, timeout=60.0)
 
         self.progress("Driving forward 10m with GPS+VISO")
         self.set_rc(Joystick.Forward, 1900)
