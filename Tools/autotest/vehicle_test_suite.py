@@ -9765,14 +9765,18 @@ class TestSuite(abc.ABC):
         if location_source is not None and location_source != 'GLOBAL_POSITION_INT':
             raise ValueError(f"Unknown location source {location_source}")
         # the vehicle reports zero lat/lng until it has a position estimate;
-        # block until a real one arrives.
+        # block until a real one arrives.  "not zero" is not enough to tell
+        # a position from the absence of one: with no EKF origin the origin
+        # is 0,0 and GLOBAL_POSITION_INT carries that plus the local
+        # position, so what arrives is a few metres from 0,0 rather than
+        # 0,0 itself and passes a != 0 test.
         tstart = self.get_sim_time_cached()
         self.send_poll_message('GLOBAL_POSITION_INT')
         while True:
             m = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=10)
             lat = m.lat * 1e-7
             lng = m.lon * 1e-7
-            if lat != 0 or lng != 0:
+            if abs(lat) > 0.01 or abs(lng) > 0.01:  # ~1km from 0,0
                 break
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Only zero lat/lng from GLOBAL_POSITION_INT")
