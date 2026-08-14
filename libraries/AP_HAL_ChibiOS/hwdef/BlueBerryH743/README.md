@@ -1,6 +1,7 @@
 # BlueBerry_H743 Flight Controller
 
 The BlueBerry_H743 is a flight controller designed and produced by blueberry
+[purchase link](https://m.tb.cn/h.81JLIfI4wSSfHzo)
 
 ## Features
 
@@ -21,12 +22,13 @@ The BlueBerry_H743 is a flight controller designed and produced by blueberry
 
 ## Physical
 
-![BlueBerry_H743 overview](BlueBerry_H743_overview.jpg)
+![Blueberry_H743 overview](Blueberry_H743_overview.jpg)
+
 ## Pinout
 
-![BlueBerry_H743 pinout](BlueBerry_H743_pinout.png)
+![Blueberry_H743 pinout](Blueberry_H743_pinout.png)
 
-![BlueBerry_H743 wiring_diagram](BlueBerry_H743_wiring_diagram.png)
+![Blueberry_H743 wiring_diagram](Blueberry_H743_wiring_diagram.png)
 
 ## Mechanical
 
@@ -45,6 +47,7 @@ The BlueBerry_H743 supports 3-12s Li battery input. It provides 3 on-board BEC r
 
 ## Loading Firmware
 
+
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "xxx_with_bl.hex" firmware, using your favorite DFU loading tool, such as the STM32CubeProgrammer.
 
 Once the initial firmware is loaded you can update the firmware using any ArduPilot ground station software. Updates should be done with the "\*.apj" firmware files.
@@ -58,8 +61,8 @@ All UARTs are DMA capable.
 - SERIAL0 -> USB
 - SERIAL1 -> UART1 (MAVLink2, dedicated to the Integrated Bluetooth module)
 - SERIAL2 -> UART2 (GPS)
-- SERIAL3 -> UART3 (MAVLink2)
-- SERIAL4 -> UART4 (GPS2, RX4 is also available as ESC telem if protocol is changed for this UART)
+- SERIAL3 -> UART3 (GPS2)
+- SERIAL4 -> UART4 (SerialProtocol_MSP_DisplayPort)
 - SERIAL5 -> USB (SLCAN)
 - SERIAL6 -> UART6 (RCIN)
 - SERIAL7 -> UART7 (MAVLink2)
@@ -124,4 +127,4 @@ The BlueBerry_H743 supports up to 2 cameras, connected to pin CAM1 and CAM2. You
 
 ## Bluetooth
 
-The BlueBerry_H743 support both legacy bluetooth SPP and BLE serial. The bluetooth uses UART7 for its serial port. Search for `BLE` or `SPP` to connect. Be careful NOT to use UART7 for other uses.
+The BlueBerry_H743 support both legacy bluetooth SPP and BLE serial. The bluetooth uses UART7 for its serial port. Search for `BLE` or `SPP` to connect. Be careful NOT to use UART1 for other uses.
