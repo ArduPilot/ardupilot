@@ -9587,8 +9587,11 @@ Also, ignores heartbeats not from our target system'''
                       (self.terrain_data_messages_sent,))
 
     def send_statustext(self, text):
-        if not isinstance(text, bytes):
-            text = bytes(text, "ascii")
+        # STATUSTEXT is UTF-8, so send UTF-8: accept it and nothing else.
+        if isinstance(text, bytes):
+            text = text.decode("utf-8", "replace").encode("utf-8")
+        else:
+            text = text.encode("utf-8")
         seq = 0
         while len(text):
             self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)
