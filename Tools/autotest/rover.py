@@ -6768,6 +6768,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.reboot_sitl()
 
+        # the applet creates its WEB_* parameters at runtime, and they
+        # only go away when the vehicle comes up without it; removing the
+        # script from disk at context_pop() does not unload the copy
+        # already running.  Nothing here has customised the SITL
+        # commandline, so ask for the standard reset explicitly.
+        self.context_get().sitl_commandline_customised = True
+
         self.progress("Starting PPP daemon")
         pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
 

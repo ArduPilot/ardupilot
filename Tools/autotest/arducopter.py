@@ -9831,8 +9831,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # when we pop the context
         self.set_parameter("FFT_ENABLE", 0)
 
+    # every parameter the harmonic notch has
+    # (libraries/Filter/HarmonicNotchFilter.cpp), which is what the FFT
+    # notch tune writes and saves for itself
+    harmonic_notch_params = [
+        "INS_HNTCH_%s" % suffix
+        for suffix in ("ENABLE", "FREQ", "BW", "ATT", "HMNCS", "REF",
+                       "MODE", "OPTS", "FM_RAT")
+    ]
+
     def GyroFFTAverage(self):
         """Use dynamic harmonic notch to control motor noise setup via FFT averaging."""
+        # the point of this test is that the vehicle works the notch out
+        # and saves it, which the suite has no record of and so cannot
+        # revert; register the values now so that it can
+        self.context_preserve_parameters(self.harmonic_notch_params)
         # basic gyro sample rate test
         self.progress("Flying with gyro FFT harmonic - Gyro sample rate")
         # Step 1
