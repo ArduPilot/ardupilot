@@ -9166,24 +9166,32 @@ class TestSuite(abc.ABC):
             **kwargs
         )
 
-    def get_mav_location(self, location_source: str = None):
-        '''return a mavutil.location object for the given source;
-        source must produce a good lat/lng or exception will be
-        raised.  Deprecated; use get_location() instead'''
+    def get_mav_location(self, location_source: str = None, timeout=60):
+        '''return a mavutil.location object for the given source; waits for
+        the source to produce a good lat/lng, and raises if it does not do
+        so within timeout.  Deprecated; use get_location() instead'''
         if location_source is None:
             location_source = 'GLOBAL_POSITION_INT'
-        m = self.assert_receive_message(location_source)
-        m_type = m.get_type()
-        if m_type == "GLOBAL_POSITION_INT":
-            lat = m.lat * 1e-7
-            lon = m.lon * 1e-7
-            alt_m = m.alt * 0.001
-        elif m_type == "SIMSTATE":
-            lat = m.lat * 1e-7
-            lon = m.lng * 1e-7
-            alt_m = 0  # not available in SIMSTATE
-        if lat == 0 and lon == 0:
-            raise ValueError(f"Bad lat/lng {lat=} {lon=}")
+        # wait for a position rather than taking the first message and
+        # rejecting it: a caller asking where the vehicle is before the
+        # EKF has an origin wants to wait for one, which is what
+        # mavutil's location() did by way of wait_gps_fix().
+        tstart = self.get_sim_time()
+        while True:
+            m = self.assert_receive_message(location_source)
+            m_type = m.get_type()
+            if m_type == "GLOBAL_POSITION_INT":
+                lat = m.lat * 1e-7
+                lon = m.lon * 1e-7
+                alt_m = m.alt * 0.001
+            elif m_type == "SIMSTATE":
+                lat = m.lat * 1e-7
+                lon = m.lng * 1e-7
+                alt_m = 0  # not available in SIMSTATE
+            if lat != 0 or lon != 0:
+                break
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise ValueError(f"Bad lat/lng {lat=} {lon=}")
 
         return mavutil.location(lat, lon, alt_m, 0)
 
