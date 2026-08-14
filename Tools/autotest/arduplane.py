@@ -7449,6 +7449,19 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(135, 165, relative=True)
         self.wait_disarmed(timeout=300)
 
+        # this test does not finish where it started, and home follows the
+        # vehicle: AP_Arming_Plane::arm() calls update_home() and then
+        # forces home to current_loc, so arming out on the mission moves
+        # home to wherever the vehicle then is.  It ends up ~240m north of the startup location and
+        # stays there for the rest of the session.  That matters to any
+        # later test which measures altitude relative to home while the
+        # vehicle is elsewhere - DO_CHANGE_ALTITUDE takes off to TKOFF_ALT,
+        # which mode_takeoff.cpp measures above *ground*, then checks the
+        # altitude it reached relative to *home*, and the two differ by
+        # the terrain between the two places.  Reboot so home is put back
+        # where the next test expects it.
+        self.reboot_sitl()
+
     def MAV_CMD_DO_GO_AROUND(self):
         '''test MAV_CMD_DO_GO_AROUND as a mavlink command'''
         self._MAV_CMD_DO_GO_AROUND(self.run_cmd)
