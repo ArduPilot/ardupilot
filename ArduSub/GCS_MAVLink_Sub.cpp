@@ -450,6 +450,39 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_packet(const mavlink_command_int_
     case MAV_CMD_DO_REPOSITION:
         return handle_command_int_do_reposition(packet);
 
+    case MAV_CMD_DO_SET_HOME: {
+        // same test as handle_command_do_set_home(); the packet location and
+        // frame are unused when home is set from the current location
+        if (is_equal(packet.param1, 1.0f) || (packet.x == 0 && packet.y == 0)) {
+            break;
+        }
+        // Sub assumes in multiple places that home altitude is the water surface.
+        Location::AltFrame alt_frame;
+        if (mavlink_coordinate_frame_to_location_alt_frame((MAV_FRAME)packet.frame, alt_frame)) {
+            switch (alt_frame) {
+            case Location::AltFrame::ABSOLUTE:
+                // an AMSL home only lands on the surface if the sender knows the surface's
+                // elevation, and it will not agree with our own absolute altitude, which
+                // inherits the GPS Z error baked into the EKF origin
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "HOME: ABSOLUTE altframe is not recommended");
+                break;
+            case Location::AltFrame::ABOVE_TERRAIN:
+                // terrain is the seafloor for a Sub, so this references home to the bottom,
+                // and only resolves where rangefinder or terrain data is available
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "HOME: ABOVE_TERRAIN altframe is not recommended");
+                break;
+            case Location::AltFrame::ABOVE_HOME:
+                // relative to a home we already keep at the surface: the recommended frame
+                break;
+            case Location::AltFrame::ABOVE_ORIGIN:
+                // no MAV_FRAME maps to this frame, so it cannot be reached from here; it is
+                // listed only to keep this switch exhaustive
+                break;
+            }
+        }
+        break;
+    }
+
     case MAV_CMD_MISSION_START:
         if (!is_zero(packet.param1) || !is_zero(packet.param2)) {
             // first-item/last item not supported
