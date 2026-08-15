@@ -385,6 +385,8 @@ struct PACKED log_MAVLink_Command {
 struct PACKED log_Radio {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t source_system;
+    uint8_t source_component;
     uint8_t rssi;
     uint8_t remrssi;
     uint8_t txbuf;
@@ -909,6 +911,8 @@ struct PACKED log_VER {
 // @LoggerMessage: RAD
 // @Description: Telemetry radio statistics
 // @Field: TimeUS: Time since system startup
+// @Field: SS: source system of the RADIO_STATUS sender
+// @Field: SC: source component of the RADIO_STATUS sender (instance field)
 // @Field: RSSI: RSSI
 // @Field: RemRSSI: RSSI reported from remote radio
 // @Field: TxBuf: number of bytes in radio ready to be sent
@@ -1189,7 +1193,7 @@ LOG_STRUCTURE_FROM_MISSION \
     { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
       "MAVC", "QBBBBBHffffiifBB","TimeUS,TS,TC,SS,SC,Fr,Cmd,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
-      "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------", true }, \
+      "RAD", "QBBBBBBBHH", "TimeUS,SS,SC,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-#-------", "F---------", true }, \
 LOG_STRUCTURE_FROM_CAMERA \
 LOG_STRUCTURE_FROM_MOUNT \
     { LOG_ARSP_MSG, sizeof(log_ARSP), "ARSP",  "QBffcffBBffB", "TimeUS,I,Airspeed,DiffPress,Temp,RawPress,Offset,U,H,Hp,TR,Pri", "s#nPOPP-----", "F-00B00-----", true }, \
