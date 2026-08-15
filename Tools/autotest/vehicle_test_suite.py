@@ -7165,6 +7165,19 @@ class TestSuite(abc.ABC):
                        "INS_ACC2_CALTEMP", "INS_ACC3_CALTEMP"):
             if name.startswith(prefix):
                 return True
+        # the same values for instances 4 and up, which are spelled
+        # INS<n>_ rather than folded into the INS_ prefixes above.  These
+        # additionally move when an accel calibration runs on a vehicle
+        # with fewer accels than INS_MAX_INSTANCES:
+        # _acal_save_calibrations() deliberately clears the unused slots
+        # ("clear any unused accels", AP_InertialSensor.cpp), taking
+        # ACCSCAL from its 1.0 default to 0.  Nothing downstream minds -
+        # accel_calibrated_ok_all() treats 0 and 1 alike for an accel
+        # which is not there.
+        if re.match(r"^INS\d+_(ACC|GYR)(OFFS|SCAL)_[XYZ]$", name):
+            return True
+        if re.match(r"^INS\d+_(ACC|GYR)_(CALTEMP|ID)$", name):
+            return True
         return False
 
     def snapshot_parameters_for_leak_check(self):
