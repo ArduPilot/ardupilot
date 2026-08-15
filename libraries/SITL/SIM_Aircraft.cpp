@@ -1266,7 +1266,13 @@ void Aircraft::add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel)
         body_accel.z += sitl->shove.z;
     } else {
         sitl->shove.start_ms = 0;
-        sitl->shove.t.set(0);
+        // save as well as set: the parameter was written to storage to
+        // ask for the shove, so clearing only the live value leaves
+        // storage still asking for one.  A GCS - or the test suite
+        // putting parameters back after a test - then sees the live
+        // value already at zero and has no reason to write, and the
+        // next reboot loads the old duration and shoves again.
+        sitl->shove.t.set_and_save(0);
     }
 }
 
