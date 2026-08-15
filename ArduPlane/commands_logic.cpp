@@ -1002,8 +1002,11 @@ void Plane::do_set_home(const AP_Mission::Mission_Command& cmd)
             // silently ignore failure
         }
     }
+    
+    // Sync EKF origin for visual navigation without GPS
+    // This ensures visual nav position is properly calibrated
+    AP::ahrs().set_origin(cmd.content.location);
 }
-
 // start_command_callback - callback function called from ap-mission when it begins a new mission command
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 bool Plane::start_command_callback(const AP_Mission::Mission_Command &cmd)
