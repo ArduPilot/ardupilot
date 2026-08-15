@@ -515,6 +515,10 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
+        // if we are using follow_target, ignore global_position_int messages
+        if (_using_follow_target) {
+            return;
+        }
         // handle standard global position messages
         updated = handle_global_position_int_message(msg);
         break;
@@ -626,11 +630,6 @@ bool AP_Follow::handle_global_position_int_message(const mavlink_message_t &msg)
 
     // ignore message if latitude and longitude are exactly zero (invalid GPS fix)
     if ((packet.lat == 0 && packet.lon == 0)) {
-        return false;
-    }
-
-    if (_using_follow_target) {
-        // if we are using follow_target, ignore global_position_int messages
         return false;
     }
 
