@@ -108,6 +108,9 @@ bool ShipSim::get_location(Location &loc) const
     if (!enable) {
         return false;
     }
+    if (!home.initialised()) {
+        return false;
+    }
     loc = home;
     loc.offset(ship.position.x, ship.position.y);
     return true;
