@@ -18002,6 +18002,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # Done
         self.land_and_disarm()
 
+        # we are not at the home location - reboot so the next test starts
+        # there.  The return leg arrives at the waypoint speed and the
+        # position controller's stopping point for that deceleration is
+        # about 2.1m past home; it holds that exactly (demanded -2.11m,
+        # achieved -2.11m, velocity zero) and LAND does not reposition, so
+        # the vehicle touches down there.  Measured 2.048m and 2.082m on
+        # two machines, either side of the 2m this vehicle allows.
+        self.reboot_sitl()
+
     def EK3_OGN_HGT_MASK(self):
         '''test baraometer-alt-compensation based on long-term GPS readings'''
         self.context_push()
