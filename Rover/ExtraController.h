@@ -11,6 +11,7 @@ public:
     static const AP_Param::GroupInfo var_info[];
 
     void update();
+    void apply();
     bool ready() const;
 
 private:
@@ -26,9 +27,6 @@ private:
         bool configured{};
     } inputs[NUM_INPUTS];
 
-    AP_Int16 pwm_min;
-    AP_Int16 pwm_trim;
-    AP_Int16 pwm_max;
     AP_Int16 deadzone;
     AP_Int16 timeout_ms;
 
@@ -39,5 +37,5 @@ private:
     bool configuration_changed() const;
     bool find_unique_input(SRV_Channel::Aux_servo_function_t function, uint8_t &channel) const;
     bool servo_channel_to_gpio(uint8_t servo_channel, uint8_t &gpio_pin) const;
-    float pwm_to_normalized(uint16_t pwm, bool reversed) const;
+    float pwm_to_normalized(const Input &input, uint16_t pwm) const;
 };

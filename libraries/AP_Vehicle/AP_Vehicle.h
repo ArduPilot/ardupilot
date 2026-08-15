@@ -119,6 +119,7 @@ public:
 
     // optional independent backup controller; implemented by Rover
     virtual bool arm_extra_controller(bool is_armed, bool force) { return false; }
+    virtual bool is_extra_armed() const { return false; }
 
     ModeReason get_control_mode_reason() const {
         return control_mode_reason;

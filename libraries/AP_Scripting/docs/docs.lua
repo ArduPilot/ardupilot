@@ -2781,6 +2781,10 @@ function vehicle:get_mode() end
 ---@return boolean -- resulting extraArm state
 function vehicle:arm_extra_controller(is_armed, force) end
 
+-- Returns true when the Rover independent extra controller is armed
+---@return boolean -- current extra controller armed state
+function vehicle:is_extra_armed() end
+
 -- Attempts to change vehicle mode to mode_number. Returns true if successful, false if mode change is not successful.
 ---@param mode_number integer -- mode number values for each vehcile type can be found here: https://mavlink.io/en/messages/ardupilotmega.html#PLANE_MODE
 ---@return boolean -- success

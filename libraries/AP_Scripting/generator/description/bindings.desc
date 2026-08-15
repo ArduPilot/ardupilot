@@ -316,6 +316,7 @@ singleton AP_Vehicle rename vehicle
 singleton AP_Vehicle scheduler-semaphore
 singleton AP_Vehicle method set_mode boolean uint8_t'skip_check ModeReason::SCRIPTING'literal
 singleton AP_Vehicle method arm_extra_controller boolean boolean boolean
+singleton AP_Vehicle method is_extra_armed boolean
 singleton AP_Vehicle method get_mode uint8_t
 singleton AP_Vehicle method get_control_mode_reason uint8_t
 singleton AP_Vehicle method get_likely_flying boolean

@@ -7,36 +7,9 @@
 extern const AP_HAL::HAL &hal;
 
 const AP_Param::GroupInfo ExtraController::var_info[] = {
-    // @Param: MIN
-    // @DisplayName: Extra controller minimum PWM
-    // @Description: PWM value interpreted as full reverse throttle or full left steering for the extra controller.
-    // @Units: PWM
-    // @Range: 800 1500
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("MIN", 10, ExtraController, pwm_min, 1000),
-
-    // @Param: TRIM
-    // @DisplayName: Extra controller neutral PWM
-    // @Description: PWM value interpreted as neutral throttle and centered steering for the extra controller.
-    // @Units: PWM
-    // @Range: 1000 2000
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("TRIM", 11, ExtraController, pwm_trim, 1500),
-
-    // @Param: MAX
-    // @DisplayName: Extra controller maximum PWM
-    // @Description: PWM value interpreted as full forward throttle or full right steering for the extra controller.
-    // @Units: PWM
-    // @Range: 1500 2200
-    // @Increment: 1
-    // @User: Advanced
-    AP_GROUPINFO("MAX", 12, ExtraController, pwm_max, 2000),
-
     // @Param: DZ
     // @DisplayName: Extra controller deadzone
-    // @Description: Deadzone around EXTRA_TRIM applied independently to throttle and steering inputs.
+    // @Description: Deadzone around each input channel SERVOx_TRIM value, applied independently to throttle and steering.
     // @Units: PWM
     // @Range: 0 200
     // @Increment: 1
@@ -47,7 +20,7 @@ const AP_Param::GroupInfo ExtraController::var_info[] = {
     // @DisplayName: Extra controller signal timeout
     // @Description: Maximum time without a valid ExtraThrottle or ExtraSteering pulse before extraArm is automatically cleared.
     // @Units: ms
-    // @Range: 20 1000
+    // @Range: 20 1000, 0 - disabled
     // @Increment: 10
     // @User: Advanced
     AP_GROUPINFO("TIMEOUT", 14, ExtraController, timeout_ms, 100),
@@ -143,11 +116,16 @@ void ExtraController::configure()
     }
 }
 
-float ExtraController::pwm_to_normalized(uint16_t pwm, bool reversed) const
+float ExtraController::pwm_to_normalized(const Input &input, uint16_t pwm) const
 {
-    const int16_t minimum = constrain_int16(pwm_min.get(), 800, 1500);
-    const int16_t trim = constrain_int16(pwm_trim.get(), minimum + 1, 2000);
-    const int16_t maximum = constrain_int16(pwm_max.get(), trim + 1, 2200);
+    const SRV_Channel *channel = SRV_Channels::srv_channel(input.channel);
+    if (channel == nullptr) {
+        return 0.0f;
+    }
+
+    const int16_t minimum = channel->get_output_min();
+    const int16_t trim = channel->get_trim();
+    const int16_t maximum = channel->get_output_max();
     const int16_t dz = constrain_int16(deadzone.get(), 0, 200);
     const int16_t delta = int16_t(pwm) - trim;
 
@@ -158,7 +136,7 @@ float ExtraController::pwm_to_normalized(uint16_t pwm, bool reversed) const
         value = float(delta + dz) / float(MAX(trim - minimum - dz, 1));
     }
     value = constrain_float(value, -1.0f, 1.0f);
-    return reversed ? -value : value;
+    return channel->get_reversed() ? -value : value;
 }
 
 bool ExtraController::ready() const
@@ -185,23 +163,25 @@ void ExtraController::update()
         last_config_check_ms = now;
     }
 
-    const uint16_t minimum = constrain_int16(pwm_min.get(), 800, 1500);
-    const uint16_t maximum = constrain_int16(pwm_max.get(), 1500, 2200);
     for (Input &input : inputs) {
         if (!input.configured) {
             continue;
         }
+        const SRV_Channel *channel = SRV_Channels::srv_channel(input.channel);
+        if (channel == nullptr) {
+            continue;
+        }
         const uint16_t pwm = input.source.get_pwm_us();
-        if (pwm >= minimum && pwm <= maximum) {
+        if (pwm >= channel->get_output_min() && pwm <= channel->get_output_max()) {
             input.last_valid_ms = now;
-            input.value = pwm_to_normalized(
-                pwm,
-                SRV_Channels::channel_reversed(input.channel));
+            input.value = pwm_to_normalized(input, pwm);
         }
         else
         {
+            const char *name = input.function == SRV_Channel::k_extra_throttle ? "ExtraThrottle" : "ExtraSteering";
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ExtraCtrl: %s, PWM: %u", name, pwm);
         }
-        // GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ExtraCtrl: PWM: %u, avg PWM: %u", pwm, input.source.get_pwm_avg_us());
+
     }
 
     if (!rover.extra_controller_armed) {
@@ -213,6 +193,13 @@ void ExtraController::update()
         if (!ready()) {
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "ExtraCtrl: signal lost, disarmed");
         }
+        return;
+    }
+}
+
+void ExtraController::apply()
+{
+    if (!rover.extra_controller_armed || rover.arming.is_armed() || !ready()) {
         return;
     }
 
@@ -254,4 +241,9 @@ bool Rover::arm_extra_controller(bool is_armed, bool force)
     arming.update_soft_armed();
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "ExtraCtrl: armed");
     return true;
+}
+
+bool Rover::is_extra_armed() const
+{
+    return extra_controller_armed;
 }

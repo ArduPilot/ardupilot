@@ -452,6 +452,7 @@ public:
 
     // arm or disarm the independent extra controller
     bool arm_extra_controller(bool is_armed, bool force) override;
+    bool is_extra_armed() const override;
 
     // frame type
     uint8_t get_frame_type() const { return g2.frame_type.get(); }
