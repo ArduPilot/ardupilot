@@ -3326,6 +3326,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         )
 
         self.wait_ready_to_arm()
+        # wait_ready_to_arm() returns as soon as everything is momentarily
+        # good, which is not the same as the vehicle being willing to arm
+        # a moment later.  The real-time thread noted above lets the GPS
+        # health bit flicker under load, so the arm gets refused with
+        # "Arm: GPS 1: not healthy" having been told we were armable a
+        # tenth of a second earlier - seen at --parallel=32.  Require the
+        # health to hold before asking.
+        self.wait_and_maintain_range(
+            value_name="GPS healthy",
+            minimum=1,
+            maximum=1,
+            current_value_getter=lambda: int(self.sensor_has_state(
+                mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS,
+                present=True, enabled=True, healthy=True)),
+            minimum_duration=5,
+            timeout=60,
+        )
         self.arm_vehicle()
         self.fly_generic_mission("externalahrs.txt", dist_to_final_wp_threshold_m=dist_to_final_wp_threshold_m)
         self.check_EAHRS_position_lag(max_position_lag_m)
