@@ -50,6 +50,12 @@ public:
     bool get_terrain_U_m(float& terrain_u_m);
     bool get_terrain_D_m(float& terrain_d_m);
 
+    // Converts _origin_ned_m.z between the terrain-relative and origin-relative altitude frames
+    // and re-seeds the position controller's terrain offset to match.  Call only when the new
+    // leg's frame differs from the current one.
+    // Returns false if terrain data is required but unavailable.
+    bool convert_origin_to_alt_frame(bool is_terrain_alt);
+
     // Returns the terrain following altitude margin in meters.
     // Vehicle will stop if distance from target altitude exceeds this margin.
     float get_terrain_margin_m() const { return MAX(_terrain_margin_m, 0.1); }
@@ -204,6 +210,9 @@ public:
     // (NED down) at the end of the orbit and is_terrain_alt selects the altitude frame. The orbit is
     // flown at the waypoint speed, limited by the corner acceleration through the arc radius.
     // Returns false if a terrain-frame transition is required but terrain data is unavailable.
+    // Not virtual: AC_WPNav_OA holds its avoidance state inactive for the whole orbit in
+    // update_wpnav() instead of overriding here, which lets the linker drop this and the
+    // S-curve arc builder behind it from vehicles that never fly an orbit.
     bool set_circle_destination_NED_m(const Vector2f& center_ne_m, float turns_signed, float dest_d_m, bool is_terrain_alt);
 
     // Returns the angle swept around the current circular-orbit leg so far, in radians.
@@ -396,6 +405,9 @@ protected:
 
     // path type flags
     bool _this_leg_is_spline;       // true if the current leg uses spline trajectory
+    // true if the current leg is a circular orbit built by set_circle_destination_NED_m.
+    // initialised here because it gates object avoidance, so it must be valid before the first leg is set
+    bool _this_leg_is_circle = false;
     bool _next_leg_is_spline;       // true if the next leg will use spline trajectory
 
     // waypoint navigation state
