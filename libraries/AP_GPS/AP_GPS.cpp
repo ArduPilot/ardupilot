@@ -843,6 +843,30 @@ bool AP_GPS::should_log() const
 
 
 /*
+  keep count of delayed frames and average frame delay for health
+  reporting. Must only be called when timing[instance].delta_time_ms is a
+  real measurement of the gap between two messages
+ */
+void AP_GPS::update_frame_timing_health(uint8_t instance)
+{
+    const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
+    GPS_timing &t = timing[instance];
+
+    if (t.delta_time_ms > gps_max_delta_ms) {
+        t.delayed_count++;
+    } else {
+        t.delayed_count = 0;
+    }
+    if (t.delta_time_ms < 2000) {
+        if (t.average_delta_ms <= 0) {
+            t.average_delta_ms = t.delta_time_ms;
+        } else {
+            t.average_delta_ms = 0.98f * t.average_delta_ms + 0.02f * t.delta_time_ms;
+        }
+    }
+}
+
+/*
   update one GPS instance. This should be called at 10Hz or greater
  */
 void AP_GPS::update_instance(uint8_t instance)
@@ -891,6 +915,7 @@ void AP_GPS::update_instance(uint8_t instance)
             state[instance].vdop = GPS_UNKNOWN_DOP;
             timing[instance].last_message_time_ms = tnow;
             timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
+            update_frame_timing_health(instance);
             // do not try to detect again if type is MAV or UAVCAN
             if (type == GPS_TYPE_MAV ||
                 type == GPS_TYPE_UAVCAN ||
@@ -923,9 +948,20 @@ void AP_GPS::update_instance(uint8_t instance)
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: detected %s", instance + 1, drivers[instance]->name());
         }
 
-        // delta will only be correct after parsing two messages
-        timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
+        // delta will only be correct after parsing two messages.
+        //
+        const int32_t delta_ms = int32_t(tnow - timing[instance].last_message_time_ms);
         timing[instance].last_message_time_ms = tnow;
+        if (delta_ms < 0) {
+            // time went backwards, so we have no measurement of how long
+            // this message took to arrive. Leave the health counters
+            // alone rather than either counting a delayed frame or
+            // resetting delayed_count and masking a real stall
+            timing[instance].delta_time_ms = 0;
+        } else {
+            timing[instance].delta_time_ms = MIN(delta_ms, UINT16_MAX);
+            update_frame_timing_health(instance);
+        }
         // if GPS disabled for flight testing then don't update fix timing value
         if (state[instance].status >= AP_GPS_FixType::FIX_2D && !_force_disable_gps) {
             timing[instance].last_fix_time_ms = tnow;
@@ -952,25 +988,6 @@ void AP_GPS::update_instance(uint8_t instance)
         }
     }
 #endif
-
-    if (new_data_or_timeout) {
-        // keep count of delayed frames and average frame delay for health reporting
-        const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
-        GPS_timing &t = timing[instance];
-
-        if (t.delta_time_ms > gps_max_delta_ms) {
-            t.delayed_count++;
-        } else {
-            t.delayed_count = 0;
-        }
-        if (t.delta_time_ms < 2000) {
-            if (t.average_delta_ms <= 0) {
-                t.average_delta_ms = t.delta_time_ms;
-            } else {
-                t.average_delta_ms = 0.98f * t.average_delta_ms + 0.02f * t.delta_time_ms;
-            }
-        }
-    }
 
 #if HAL_LOGGING_ENABLED
     if (new_data_or_timeout && should_log()) {

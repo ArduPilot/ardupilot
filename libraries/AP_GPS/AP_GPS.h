@@ -721,6 +721,11 @@ private:
 
     void update_instance(uint8_t instance);
 
+    // fold timing[instance].delta_time_ms into the delayed-frame counters
+    // used by is_healthy(). Only called when that delta is a real
+    // measurement of the interval between two messages
+    void update_frame_timing_health(uint8_t instance);
+
     /*
       buffer for re-assembling RTCM data for GPS injection.
       The 8 bit flags field in GPS_RTCM_DATA is interpreted as:
