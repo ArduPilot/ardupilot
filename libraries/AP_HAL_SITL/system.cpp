@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -76,14 +77,22 @@ static void run_command_on_ownpid(const char *commandname)
         "APM/Tools/scripts/%s", // for autotest server
         "../Tools/scripts/%s", // when run from e.g. ArduCopter subdirectory
     };
-    char buffer[60];
+    // long enough for an absolute path from AP_SCRIPTS_DIR_PATH; the 60
+    // bytes this used to be was not - a checkout under a path of any
+    // length silently truncated, and the truncated name simply failed to
+    // stat, so the override looked as though it had been ignored
+    char buffer[PATH_MAX];
     for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
         if (paths[i] == nullptr) {
             continue;
         }
         // form up a filepath from each path and commandname; if it
         // exists, use it
-        snprintf(buffer, sizeof(buffer), paths[i], commandname);
+        const int len = snprintf(buffer, sizeof(buffer), paths[i], commandname);
+        if (len < 0 || (unsigned)len >= sizeof(buffer)) {
+            // truncated, so this is not the path we were asked for
+            continue;
+        }
         if (::stat(buffer, &statbuf) != -1) {
             command_filepath = buffer;
             break;
@@ -113,7 +122,9 @@ static void run_command_on_ownpid(const char *commandname)
              commandname,
              p+1,
              (int)getpid());
-    char cmd[200];
+    // must fit the command filepath found above, which may now be
+    // an absolute path, plus the output filepath
+    char cmd[PATH_MAX + sizeof(output_filepath) + 32];
 	snprintf(cmd,
              sizeof(cmd),
              "sh %s %d >%s 2>&1",
