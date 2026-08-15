@@ -255,6 +255,7 @@ void AC_WPNav::wp_and_spline_init_m(float speed_ms, Vector3p stopping_point_ned_
     _origin_ned_m = _destination_ned_m = stopping_point_ned_m;
     _is_terrain_alt = false;
     _this_leg_is_spline = false;
+    _this_leg_is_circle = false;
 
     // initialise velocity profile for terrain margin shaping
     _offset_vel_ms = _wp_desired_speed_ne_ms;
@@ -402,23 +403,8 @@ bool AC_WPNav::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool 
             // Preserve current leg profile to enable blending with new leg
             _scurve_prev_leg = _scurve_this_leg;
         }
-    } else {
-        // Handle transition between terrain-relative and origin-relative altitude frames
-        float terrain_d_m;
-        if (!get_terrain_D_m(terrain_d_m)) {
-            return false;
-        }
-
-        // convert origin to alt-above-terrain if necessary
-        if (is_terrain_alt) {
-            // Convert origin.z to terrain-relative altitude
-            _origin_ned_m.z -= terrain_d_m;
-            _pos_control.init_pos_terrain_D_m(terrain_d_m);
-        } else {
-            // Convert origin.z to origin-relative altitude
-            _origin_ned_m.z += terrain_d_m;
-            _pos_control.init_pos_terrain_D_m(0.0);
-        }
+    } else if (!convert_origin_to_alt_frame(is_terrain_alt)) {
+        return false;
     }
 
     // update destination
@@ -441,6 +427,7 @@ bool AC_WPNav::set_wp_destination_NED_m(const Vector3p& destination_ned_m, bool 
     }
 
     _this_leg_is_spline = false;
+    _this_leg_is_circle = false;
     _scurve_next_leg.init();
     _next_destination_ned_m.zero(); // clear next destination_ned_m
     _flags.fast_waypoint = false;   // default waypoint back to slow
@@ -464,19 +451,8 @@ bool AC_WPNav::set_circle_destination_NED_m(const Vector2f& center_ne_m, float t
     // use previous destination as origin; it is assumed to lie on the circle
     _origin_ned_m = _destination_ned_m;
 
-    if (is_terrain_alt != _is_terrain_alt) {
-        // Handle transition between terrain-relative and origin-relative altitude frames
-        float terrain_d_m;
-        if (!get_terrain_D_m(terrain_d_m)) {
-            return false;
-        }
-        if (is_terrain_alt) {
-            _origin_ned_m.z -= terrain_d_m;
-            _pos_control.init_pos_terrain_D_m(terrain_d_m);
-        } else {
-            _origin_ned_m.z += terrain_d_m;
-            _pos_control.init_pos_terrain_D_m(0.0);
-        }
+    if ((is_terrain_alt != _is_terrain_alt) && !convert_origin_to_alt_frame(is_terrain_alt)) {
+        return false;
     }
 
     // build the S-curve orbit leg; net climb is applied linearly along the arc
@@ -494,6 +470,7 @@ bool AC_WPNav::set_circle_destination_NED_m(const Vector2f& center_ne_m, float t
     _is_terrain_alt = is_terrain_alt;
 
     _this_leg_is_spline = false;
+    _this_leg_is_circle = true;
     _scurve_next_leg.init();
     _next_destination_ned_m.zero();
     _flags.fast_waypoint = false;
@@ -836,6 +813,30 @@ bool AC_WPNav::get_terrain_U_m(float& terrain_u_m)
     // unreachable fallback path
     return false;
 }
+// Converts _origin_ned_m.z between the terrain-relative and origin-relative altitude frames and
+// re-seeds the position controller's terrain offset to match.  Call only when the new leg's
+// frame differs from the current one.
+// Returns false if terrain data is required but unavailable.
+bool AC_WPNav::convert_origin_to_alt_frame(bool is_terrain_alt)
+{
+    float terrain_d_m;
+    if (!get_terrain_D_m(terrain_d_m)) {
+        return false;
+    }
+
+    if (is_terrain_alt) {
+        // Convert origin.z to terrain-relative altitude
+        _origin_ned_m.z -= terrain_d_m;
+        _pos_control.init_pos_terrain_D_m(terrain_d_m);
+    } else {
+        // Convert origin.z to origin-relative altitude
+        _origin_ned_m.z += terrain_d_m;
+        _pos_control.init_pos_terrain_D_m(0.0);
+    }
+
+    return true;
+}
+
 bool AC_WPNav::get_terrain_D_m(float& terrain_d_m)
 {
         if (!get_terrain_U_m(terrain_d_m)) {
@@ -969,6 +970,7 @@ bool AC_WPNav::set_spline_destination_NED_m(const Vector3p& destination_ned_m, b
     // setup spline leg using origin and destination vectors
     _spline_this_leg.set_origin_and_destination(_origin_ned_m, _destination_ned_m, origin_vector_ned_m, destination_vector_ned_m);
     _this_leg_is_spline = true;
+    _this_leg_is_circle = false;
     _flags.reached_destination = false;
 
     return true;
