@@ -18,10 +18,10 @@
 #include "SPIDevice.h"
 #include "sdcard.h"
 #include "bouncebuffer.h"
+#include "CrashDump.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Filesystem/AP_Filesystem.h>
-#include "bouncebuffer.h"
 #include "stm32_util.h"
 
 extern const AP_HAL::HAL& hal;
@@ -178,6 +178,12 @@ bool sdcard_init()
  */
 void sdcard_stop(void)
 {
+#if AP_CRASHDUMP_FATFS_ENABLED && (HAL_USE_SDC || \
+    (HAL_USE_MMC_SPI && CRASHDUMP_SD_SPI_SUPPORTED_MCU))
+    // Do this before unmounting or disabling the peripheral clock. A fault
+    // after this point must not try to use the cached sector map.
+    crashdump_sd_invalidate();
+#endif
 #if HAL_USE_FATFS
     // unmount
     f_mount(nullptr, "/", 1);
@@ -205,6 +211,10 @@ void sdcard_stop(void)
 bool sdcard_retry(void)
 {
 #if HAL_USE_FATFS
+#if AP_CRASHDUMP_FATFS_ENABLED && (HAL_USE_SDC || \
+    (HAL_USE_MMC_SPI && CRASHDUMP_SD_SPI_SUPPORTED_MCU))
+    const bool sdcard_was_running = sdcard_running;
+#endif
     if (!sdcard_running) {
         if (sdcard_init()) {
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
@@ -213,12 +223,24 @@ bool sdcard_retry(void)
 #endif
         }
     }
+#if AP_CRASHDUMP_FATFS_ENABLED && (HAL_USE_SDC || \
+    (HAL_USE_MMC_SPI && CRASHDUMP_SD_SPI_SUPPORTED_MCU))
+    if (sdcard_running &&
+        (!sdcard_was_running || !crashdump_sd_ready())) {
+        crashdump_sd_init();
+    }
+#endif
     return sdcard_running;
 #endif
     return false;
 }
 
 #if HAL_USE_MMC_SPI
+
+AP_HAL::SPIDevice *sdcard_get_spi_device()
+{
+    return device;
+}
 
 /*
   hooks to allow hal_mmc_spi.c to work with HAL_ChibiOS SPI

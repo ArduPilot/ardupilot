@@ -22,48 +22,149 @@
 #include <CrashCatcher.h>
 #include <ch.h>
 #include <hal.h>
+#include <string.h>
 
 #include "CrashDump.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
 
-CRASH_CATCHER_TEST_WRITEABLE CrashCatcherReturnCodes g_crashCatcherDumpEndReturn = CRASH_CATCHER_TRY_AGAIN;
+#if HAL_USE_SDC || (HAL_USE_MMC_SPI && CRASHDUMP_SD_SPI_SUPPORTED_MCU)
+#define CRASHDUMP_SD_AVAILABLE 1
+#else
+#define CRASHDUMP_SD_AVAILABLE 0
+#endif
+
+#define CRASHDUMP_SD_ENABLED (AP_CRASHDUMP_FATFS_ENABLED && CRASHDUMP_SD_AVAILABLE)
+
+#if AP_CRASHDUMP_FLASH_ENABLED || CRASHDUMP_SD_ENABLED
 static CrashCatcherInfo g_info;
+#endif
+
+#if AP_CRASHDUMP_FLASH_ENABLED
+CRASH_CATCHER_TEST_WRITEABLE CrashCatcherReturnCodes g_crashCatcherDumpEndReturn = CRASH_CATCHER_TRY_AGAIN;
+#endif
+
+#if AP_CRASHDUMP_FLASH_ENABLED
 static bool do_flash_crash_dump = true;
+#endif
+#if CRASHDUMP_SD_ENABLED
+static bool do_sd_crash_dump = false;
+static uint32_t sd_dump_size = 0;
+#endif
 
-const CrashCatcherMemoryRegion *CrashCatcher_GetMemoryRegions(void)
+const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
 {
-    return crashdump_flash_memory_regions(do_flash_crash_dump);
-}
+#if CRASHDUMP_SD_ENABLED || !AP_CRASHDUMP_FLASH_ENABLED
+    static const CrashCatcherMemoryRegion no_regions[] = {
+        {0xFFFFFFFF, 0xFFFFFFFF, CRASH_CATCHER_BYTE}
+    };
+#endif
+#if CRASHDUMP_SD_ENABLED
+    if (crashdump_sd_ready()) {
+        if (!do_sd_crash_dump) {
+            return no_regions;
+        }
 
-void CrashCatcher_DumpMemory(const void *memory,
-                             CrashCatcherElementSizes element_size,
-                             size_t element_count)
-{
-    if (do_flash_crash_dump) {
-        crashdump_flash_write(memory, element_size, element_count);
+        // dump all memory regions exactly once, no duplication.
+        // thread stacks, BSS, heap are all inside these regions already.
+        static const CrashCatcherMemoryRegion sd_regions[] = {
+            HAL_CC_MEMORY_REGIONS,
+            {0xFFFFFFFF, 0xFFFFFFFF, CRASH_CATCHER_BYTE}
+        };
+        return sd_regions;
     }
+#endif
+
+#if AP_CRASHDUMP_FLASH_ENABLED
+    return crashdump_flash_memory_regions(do_flash_crash_dump);
+#else
+    return no_regions;
+#endif
 }
 
-void CrashCatcher_DumpStart(const CrashCatcherInfo *info)
+void CrashCatcher_DumpMemory(const void* pvMemory, CrashCatcherElementSizes elementSize, size_t elementCount)
+{
+    (void)pvMemory;
+    (void)elementSize;
+    (void)elementCount;
+#if CRASHDUMP_SD_ENABLED
+    if (do_sd_crash_dump) {
+        uint32_t byte_count = elementCount * (elementSize == CRASH_CATCHER_BYTE ? 1 :
+                                              elementSize == CRASH_CATCHER_HALFWORD ? 2 : 4);
+        if (crashdump_sd_write(pvMemory, elementSize, elementCount)) {
+            sd_dump_size += byte_count;
+        } else {
+            do_sd_crash_dump = false;
+        }
+    }
+#endif
+#if AP_CRASHDUMP_FLASH_ENABLED
+    if (do_flash_crash_dump) {
+        crashdump_flash_write(pvMemory, elementSize, elementCount);
+    }
+#endif
+}
+
+
+void CrashCatcher_DumpStart(const CrashCatcherInfo* pInfo)
 {
     // Record the fault info for watchdog
-    struct port_extctx *ctx = reinterpret_cast<struct port_extctx *>(info->sp);
-    FaultType fault_type = static_cast<FaultType>(__get_IPSR());
-    save_fault_watchdog(__LINE__, fault_type, info->sp, ctx->lr_thd);
-    g_info = *info;
-    if (do_flash_crash_dump) {
-        do_flash_crash_dump = crashdump_flash_start(info);
+    struct port_extctx* ctx = (struct port_extctx*)pInfo->sp;
+    FaultType faultType = (FaultType)__get_IPSR();
+    save_fault_watchdog(__LINE__, faultType, pInfo->sp, ctx->lr_thd);
+#if AP_CRASHDUMP_FLASH_ENABLED || CRASHDUMP_SD_ENABLED
+    g_info = *pInfo;
+#endif
+#if CRASHDUMP_SD_ENABLED
+    // when SD crash dump is configured, use it exclusively - no flash fallback
+    if (pInfo->isBKPT) {
+        return;
     }
+    if (crashdump_sd_ready()) {
+#if AP_CRASHDUMP_FLASH_ENABLED
+        do_flash_crash_dump = false;
+#endif
+        if (crashdump_sd_start()) {
+            do_sd_crash_dump = true;
+            sd_dump_size = 0;
+        }
+        // if SD start fails, we don't fall back to flash
+        return;
+    }
+#endif
+#if AP_CRASHDUMP_FLASH_ENABLED
+    if (do_flash_crash_dump) {
+        do_flash_crash_dump = crashdump_flash_start(pInfo);
+    }
+#endif
 }
 
 CrashCatcherReturnCodes CrashCatcher_DumpEnd(void)
 {
+#if CRASHDUMP_SD_ENABLED
+    if (g_info.isBKPT) {
+        return CRASH_CATCHER_EXIT;
+    }
+    if (crashdump_sd_ready()) {
+        if (do_sd_crash_dump) {
+            crashdump_sd_end(sd_dump_size);
+        }
+        do_sd_crash_dump = false;
+        // Let the watchdog reboot us so the saved watchdog state is restored.
+        while (true) {}
+    }
+#endif
+#if AP_CRASHDUMP_FLASH_ENABLED
     if (do_flash_crash_dump) {
         return crashdump_flash_end(g_crashCatcherDumpEndReturn, g_info.isBKPT);
     }
     do_flash_crash_dump = false;
     return CRASH_CATCHER_TRY_AGAIN;
+#else
+    // No configured backend accepted the dump. Let the watchdog reboot us so
+    // the saved watchdog state is restored.
+    while (true) {}
+#endif
 }
 
 #endif // AP_CRASHDUMP_ENABLED
