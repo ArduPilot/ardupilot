@@ -481,12 +481,15 @@ void AP_TECS::_update_speed_demand(void)
         _TAS_dem = _TAS_dem + (_TASmax - _TAS_dem) * _sink_fraction;
     }
 
-    // Set the airspeed demand to the minimum value if an underspeed condition exists
-    // or a bad descent condition exists
+    // Set the airspeed demand to the minimum value if an underspeed condition
+    // or a bad descent condition exists. A glider descent-rate override keeps
+    // the commanded airspeed as its recovery target because it cannot add
+    // energy with throttle.
     // This will minimise the rate of descent resulting from an engine failure,
     // enable the maximum climb rate to be achieved and prevent continued full power descent
     // into the ground due to an unachievable airspeed value
-    if ((_flags.badDescent) || (_flags.underspeed)) {
+    const bool gliding_descent_rate_control = _flags.is_gliding && descent_rate_override_active();
+    if (_flags.badDescent || (_flags.underspeed && !gliding_descent_rate_control)) {
         _TAS_dem     = _TASmin;
     }
 
@@ -666,6 +669,13 @@ void AP_TECS::_update_height_demand(void)
 
 void AP_TECS::_detect_underspeed(void)
 {
+    // A glider cannot use throttle demand to indicate that it has exhausted
+    // its propulsion. During a descent-rate override, low airspeed means the
+    // requested rate is outside the current aerodynamic envelope and pitch
+    // must revert to airspeed priority.
+    const bool gliding_descent_rate_control = _flags.is_gliding && descent_rate_override_active();
+    const float underspeed_threshold = _TASmin * (gliding_descent_rate_control ? 1.1f : 0.9f);
+
     // see if we can clear a previous underspeed condition. We clear
     // it if we are now more than 15% above min speed, and haven't
     // been below min speed for at least 3 seconds.
@@ -677,13 +687,13 @@ void AP_TECS::_detect_underspeed(void)
 
     if (_flight_stage == AP_FixedWing::FlightStage::VTOL) {
         _flags.underspeed = false;
-    } else if (((_TAS_state < _TASmin * 0.9f) &&
-                (_throttle_dem >= _THRmaxf * 0.95f) &&
+    } else if (((_TAS_state < underspeed_threshold) &&
+                ((_throttle_dem >= _THRmaxf * 0.95f) || gliding_descent_rate_control) &&
                 !_landing.is_flaring()) ||
-                ((_height < _hgt_dem) && _flags.underspeed))
+                (_flags.underspeed && ((_height < _hgt_dem) || gliding_descent_rate_control)))
     {
         _flags.underspeed = true;
-        if (_TAS_state < _TASmin * 0.9f) {
+        if (_TAS_state < underspeed_threshold) {
             // reset start time as we are still underspeed
             _underspeed_start_ms = AP_HAL::millis();
         }
