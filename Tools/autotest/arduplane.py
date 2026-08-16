@@ -7788,13 +7788,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.wait_text("TDR: loaded TECS descent rate control", check_context=True)
 
-        # Start on a rate that is not in the schedule, so that every rate the
-        # loop below demands produces a fresh statustext to synchronise on.
-        # Nothing is asserted about it directly, but it must be FASTER than the
-        # first scheduled rate: the controller settles promptly when the demand
-        # is reduced but overshoots and converges slowly when it is raised, and
-        # an unsettled first step then spoils the rest of the schedule.
-        initial_rate = 25
+        # Start with a rate that is deliberately too slow for the glider at
+        # high altitude. TECS must protect airspeed until the requested rate
+        # becomes achievable, rather than pulling up and stalling.
+        initial_rate = 10
         self.set_parameters({
             "TDR_ENABLE": 1,
             "TDR_RATE": initial_rate,
@@ -7819,6 +7816,47 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_text("TDR: descent rate %.1f m/s" % initial_rate,
                        check_context=True, timeout=300)
         minimum_airspeed = 0.9 * self.get_parameter("AIRSPEED_MIN")
+        self.wait_airspeed(
+            minimum_airspeed,
+            self.get_parameter("AIRSPEED_MAX"),
+            timeout=120,
+        )
+
+        def descent_rate_while_flying(demanded_rate, maximum_flight_path_angle=45):
+            att = self.assert_receive_message('ATTITUDE', timeout=5)
+            hud = self.assert_receive_message('VFR_HUD', timeout=5)
+            velocity = self.get_speed_vector()
+            roll = math.degrees(att.roll)
+            pitch = math.degrees(att.pitch)
+            flight_path_angle = math.degrees(
+                math.atan2(velocity.z, math.hypot(velocity.x, velocity.y)))
+            excessive_flight_path = (
+                maximum_flight_path_angle is not None and
+                flight_path_angle > maximum_flight_path_angle
+            )
+            if (abs(roll) > 60 or abs(pitch) > 60 or
+                    hud.airspeed < minimum_airspeed or excessive_flight_path):
+                raise NotAchievedException(
+                    "Glider not flying while demanding %um/s: "
+                    "roll=%.1f pitch=%.1f airspeed=%.1f flightpath=%.1f" %
+                    (demanded_rate, roll, pitch, hud.airspeed, flight_path_angle))
+            return velocity.z  # NED, positive down
+
+        # The first schedule entry is well below release. Check continuously
+        # that the unachievable initial request does not sacrifice airspeed on
+        # the way there.
+        first_schedule_alt = rate_schedule[0][0]
+        deadline = self.get_sim_time_cached() + 600
+        while True:
+            position = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
+            if position.alt * 0.001 <= first_schedule_alt:
+                break
+            if self.get_sim_time_cached() > deadline:
+                raise AutoTestTimeoutException("timed out checking glider underspeed protection")
+            # A steep flight path is expected while recovering energy in thin
+            # air. Airspeed and attitude, rather than sink angle, establish
+            # that the glider has not stalled.
+            descent_rate_while_flying(initial_rate, maximum_flight_path_angle=None)
 
         for alt, rate in rate_schedule:
             self.wait_altitude(-1000, alt, relative=False, timeout=600)
@@ -7834,26 +7872,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # wait_descent_rate(), whose getter takes the absolute value and so
             # would accept an equally fast climb.
 
-            def descent_rate_while_flying():
-                att = self.assert_receive_message('ATTITUDE', timeout=5)
-                hud = self.assert_receive_message('VFR_HUD', timeout=5)
-                velocity = self.get_speed_vector()
-                roll = math.degrees(att.roll)
-                pitch = math.degrees(att.pitch)
-                flight_path_angle = math.degrees(
-                    math.atan2(velocity.z, math.hypot(velocity.x, velocity.y)))
-                if (abs(roll) > 60 or abs(pitch) > 60 or
-                        hud.airspeed < minimum_airspeed or flight_path_angle > 45):
-                    raise NotAchievedException(
-                        "Glider not flying while holding %um/s: "
-                        "roll=%.1f pitch=%.1f airspeed=%.1f flightpath=%.1f" %
-                        (rate, roll, pitch, hud.airspeed, flight_path_angle))
-                return velocity.z  # NED, positive down
-
             self.wait_and_maintain(
                 value_name="DescentRate",
                 target=rate,
-                current_value_getter=descent_rate_while_flying,
+                current_value_getter=lambda: descent_rate_while_flying(rate),
                 accuracy=max(1.0, 0.10 * rate),
                 timeout=200,
                 minimum_duration=20,
