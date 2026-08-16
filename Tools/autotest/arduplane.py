@@ -7810,6 +7810,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         takeoff_alt = 30
         self.takeoff(alt=takeoff_alt, mode='TAKEOFF')
+        # TAKEOFF hands back to TECS 2m below target while still climbing at
+        # 9.3m/s, so let the ~10m overshoot settle before asserting altitude.
+        self.wait_altitude(takeoff_alt-2, takeoff_alt+2, minimum_duration=5, relative=True, timeout=90)
         self.wait_altitude(takeoff_alt-1, takeoff_alt+1, minimum_duration=10, relative=True, timeout=60)
 
         self.start_subtest("Home-relative altitude")
