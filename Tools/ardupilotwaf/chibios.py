@@ -633,6 +633,17 @@ def configure(cfg):
         env.DEFINES += [ 'CANARD_MULTI_IFACE=1' ]
     setup_optimization(cfg.env)
 
+def get_build_option_value(env, name):
+    '''return the value of a build option, or None if it was not specified'''
+    enable_option = 'enable_' + name
+    disable_option = 'disable_' + name
+    if env.OPTIONS.get(enable_option, False) or env.OPTIONS.get(enable_option.lower(), False):
+        return 1
+    if env.OPTIONS.get(disable_option, False) or env.OPTIONS.get(disable_option.lower(), False):
+        return 0
+    return None
+
+
 def generate_hwdef_h(env):
     '''run chibios_hwdef.py'''
     if env.BOOTLOADER:
@@ -660,6 +671,7 @@ def generate_hwdef_h(env):
         outdir=hwdef_out,
         bootloader=bootloader_flag,
         signed_fw=bool(env.AP_SIGNED_FIRMWARE),
+        mass_storage_option=get_build_option_value(env, 'MASS_STORAGE'),
         hwdef=hwdef,
         # stringify like old subprocess based invocation. note that no error is
         # generated if this path is missing!
