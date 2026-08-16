@@ -405,6 +405,23 @@ the emulation gets ahead, so a workload that cannot sustain real time is not
 slowed further. Use `--unthrottled` to run as fast as possible for benchmarks
 or automated regression tests.
 
+On a hybrid host, `--cpusel N` pins only Renode's emulated MCU CPU thread to
+host CPU N. Renode's logging, socket, monitor and runtime helper threads remain
+available to the normal scheduler, so they do not contend with the emulated CPU
+on the selected core. For example:
+
+```sh
+Tools/renode/run.py CubeOrange --cpusel 6
+```
+
+Use `--num-imus N` to limit sensor emulation to the first N distinct IMUs in
+the board's hwdef. Barometers and other sensors are unaffected. This is useful
+for reducing the peripheral workload on boards with several redundant IMUs:
+
+```sh
+Tools/renode/run.py CubeOrange --num-imus 1
+```
+
 Works against a stock Renode 1.16.1, but the performance patches in
 `patches/` are worth ~4x - see the performance notes for the build
 recipe.

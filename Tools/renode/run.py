@@ -512,6 +512,77 @@ def find_renode(explicit, here):
              "  ln -s /path/to/renode %s" % local)
 
 
+def process_tree(root_pid):
+    '''Return live process IDs rooted at root_pid from Linux procfs.'''
+    pending = [root_pid]
+    processes = set()
+    while pending:
+        pid = pending.pop()
+        if pid in processes:
+            continue
+        task_dir = Path('/proc') / str(pid) / 'task'
+        try:
+            tasks = list(task_dir.iterdir())
+        except FileNotFoundError:
+            continue
+        processes.add(pid)
+        for task in tasks:
+            try:
+                children = (task / 'children').read_text().split()
+            except FileNotFoundError:
+                continue
+            pending.extend(int(child) for child in children)
+    return processes
+
+
+def renode_cpu_threads(root_pid):
+    '''Find Renode's emulated ArduPilot CPU threads below its launcher.'''
+    threads = set()
+    for pid in process_tree(root_pid):
+        task_dir = Path('/proc') / str(pid) / 'task'
+        try:
+            tasks = list(task_dir.iterdir())
+        except FileNotFoundError:
+            continue
+        for task in tasks:
+            try:
+                name = (task / 'comm').read_text().strip()
+            except FileNotFoundError:
+                continue
+            # Linux truncates comm to 15 characters. The complete Renode name
+            # is ardupilot.cpu[0], so match the stable part of that name.
+            if name.startswith('ardupilot.cpu['):
+                threads.add(int(task.name))
+    return threads
+
+
+def run_renode(cmd, env, cpusel):
+    '''Run Renode, optionally pinning only its emulated CPU thread.'''
+    if cpusel is None:
+        return subprocess.run(cmd, env=env).returncode
+
+    process = subprocess.Popen(cmd, env=env)
+    pinned = set()
+    try:
+        while process.poll() is None:
+            live_threads = renode_cpu_threads(process.pid)
+            pinned.intersection_update(live_threads)
+            for thread_id in sorted(live_threads - pinned):
+                try:
+                    os.sched_setaffinity(thread_id, {cpusel})
+                except ProcessLookupError:
+                    continue
+                pinned.add(thread_id)
+                print('pinned Renode emulation thread %u to host CPU %u' %
+                      (thread_id, cpusel))
+            time.sleep(0.05 if not pinned else 0.5)
+        return process.returncode
+    except OSError:
+        process.terminate()
+        process.wait()
+        raise
+
+
 def main():
     root = Path(__file__).resolve().parents[2]
     boards = gen_board.supported_boards(root)
@@ -526,6 +597,11 @@ def main():
                              'targets, arducopter otherwise)')
     parser.add_argument('--elf', help='firmware ELF (default: build/<board>/bin/<vehicle>)')
     parser.add_argument('--renode', help='renode executable to use')
+    parser.add_argument('--cpusel', type=int, metavar='N',
+                        help='pin only Renode\'s emulated MCU CPU thread to '
+                             'host CPU N')
+    parser.add_argument('--num-imus', type=int, metavar='N',
+                        help='emulate at most the first N IMUs from the hwdef')
     parser.add_argument('--state-dir',
                         help='persistent board state directory '
                              '(default: renode/<board>)')
@@ -575,6 +651,20 @@ def main():
                         help='reproduce the stale BLHeli motor mapping and '
                              'observe the expected firmware behavior')
     args = parser.parse_args()
+
+    if args.cpusel is not None:
+        if args.cpusel < 0:
+            parser.error('--cpusel must be a non-negative host CPU number')
+        if not hasattr(os, 'sched_getaffinity') or not hasattr(os, 'sched_setaffinity'):
+            parser.error('--cpusel needs host CPU-affinity support')
+        if not (Path('/proc') / 'self' / 'task').is_dir():
+            parser.error('--cpusel needs Linux procfs thread information')
+        allowed = os.sched_getaffinity(0)
+        if args.cpusel not in allowed:
+            parser.error('--cpusel %u is not in this process affinity mask (%s)' %
+                         (args.cpusel, ','.join(str(cpu) for cpu in sorted(allowed))))
+    if args.num_imus is not None and args.num_imus < 0:
+        parser.error('--num-imus cannot be negative')
 
     if args.reverse_debug and not args.gdb:
         parser.error('--reverse-debug requires --gdb')
@@ -637,7 +727,8 @@ def main():
         generated = gen_board.generate(
             root, args.board, outdir / 'generated', serial_index, args.uart_port,
             state_dir, quiet_peripherals=not args.reverse_debug,
-            sigrok=args.sigrok, sigrok_channels=sigrok_channels)
+            sigrok=args.sigrok, sigrok_channels=sigrok_channels,
+            num_imus=args.num_imus)
     except (OSError, ValueError) as error:
         sys.exit('failed to generate Renode board: %s' % error)
     for warning in generated['warnings']:
@@ -848,6 +939,11 @@ def main():
         print('serial:  SERIAL%s/%s on tcp:localhost:%u' %
               (generated['serial_index'], generated['serial'], args.uart_port))
     print('time:    %s' % ('unthrottled' if args.unthrottled else 'paced at 1x'))
+    if args.cpusel is not None:
+        print('CPU:     emulation thread on host CPU %u' % args.cpusel)
+    if args.num_imus is not None:
+        print('IMUs:    %u emulated (limit %u)' %
+              (generated['num_imus'], args.num_imus))
     if enable_can:
         print('CAN:     %s' % ', '.join(
             '%s=mcast:%u' % (bus, args.can_base + index)
@@ -866,7 +962,10 @@ def main():
         print('PR33933: expecting %s behavior' % args.reproduce_pr33933)
     cmd = [renode, '--disable-xwt'] + monitor + ['-e', '; '.join(commands)]
     try:
-        ret = subprocess.run(cmd, env=env).returncode
+        try:
+            ret = run_renode(cmd, env, args.cpusel)
+        except OSError as error:
+            sys.exit('failed to set Renode emulation thread affinity: %s' % error)
     finally:
         if gdb_proc is not None:
             gdb_proc.terminate()

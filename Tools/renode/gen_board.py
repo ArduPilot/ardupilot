@@ -677,7 +677,7 @@ def _i2c_device(expression):
 
 
 def _sensor_devices(config, family, defines, fram_path, warnings,
-                    sigrok_bus=None):
+                    sigrok_bus=None, num_imus=None):
     '''Return (REPL declarations, CS pin -> peripheral names).'''
     spi_devices = {dev[0]: dev for dev in config.spidev}
     declarations = []
@@ -685,7 +685,10 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
     spi_children = []
 
     imu_locations = set()
+    emulated_imus = 0
     for index, imu in enumerate(config.imu_list):
+        if num_imus is not None and emulated_imus >= num_imus:
+            break
         if len(imu) < 2:
             warnings.append('unmodelled IMU: %s' % ' '.join(imu))
             continue
@@ -729,6 +732,8 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                         '    whoAmI: 0x%02X' % whoami,
                         '',
                     ]
+                if resolved_i2c:
+                    emulated_imus += 1
                 continue
             warnings.append('cannot resolve IMU SPI device: %s' % ' '.join(imu))
             continue
@@ -755,7 +760,10 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
             continue
         imu_locations.update(locations)
         name = 'imu%d' % index
-        spi_children += _imu_children(imu, resolved_devices, defines, name)
+        children = _imu_children(imu, resolved_devices, defines, name)
+        if children:
+            spi_children += children
+            emulated_imus += 1
 
     i2c_order = config.get_config('I2C_ORDER', required=False, aslist=True) or []
     baro_locations = set()
@@ -858,7 +866,7 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
             chip_selects.setdefault((cs.port, cs.pin), []).append(
                 '%s@%d' % (mux, address))
 
-    return declarations, chip_selects, has_fram
+    return declarations, chip_selects, has_fram, emulated_imus
 
 
 def _iomcu_device(root, app, family, defines, address, warnings):
@@ -1417,7 +1425,7 @@ def _sigrok_spi_capture(app, family):
 
 
 def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
-              sigrok=False):
+              sigrok=False, num_imus=None):
     family = FAMILIES[app.mcu_type]
     base = root / 'Tools' / 'renode' / 'platforms' / family['base']
     lines = [
@@ -1461,9 +1469,9 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
                          (gpio, pin.port, pin.pin))
         lines.append('')
         address += 4
-    sensor_lines, chip_selects, has_fram = _sensor_devices(
+    sensor_lines, chip_selects, has_fram, emulated_imus = _sensor_devices(
         app, family, defines, fram_path, warnings,
-        sigrok_capture['bus'] if sigrok_capture else None)
+        sigrok_capture['bus'] if sigrok_capture else None, num_imus)
     lines += sensor_lines
     iomcu_lines, iomcu_uart = _iomcu_device(
         root, app, family, defines, address, warnings)
@@ -1766,7 +1774,8 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
         family['name'], chip_selects, sigrok_pins, gpio_pins)
     return ('\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart,
             can_buses, has_ethernet, gps_uart, airspeed_bus, battery_samples,
-            rangefinder_uart, rangefinder_type, gpio_pins, sigrok_capture)
+            rangefinder_uart, rangefinder_type, gpio_pins, sigrok_capture,
+            emulated_imus)
 
 
 def _serial_device(app, family, serial_index, excluded=None):
@@ -2023,12 +2032,14 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
 
 def generate(root, board, outdir, serial_index=None, uart_port=5762,
              state_dir=None, quiet_peripherals=True, sigrok=False,
-             sigrok_channels=None):
+             sigrok_channels=None, num_imus=None):
     '''Generate the board REPL/RESC and return paths plus run metadata.'''
     root = root.resolve()
     outdir = outdir.resolve()
     state_dir = (Path(state_dir) if state_dir is not None else
                  root / 'renode' / board).resolve()
+    if num_imus is not None and num_imus < 0:
+        raise ValueError('number of IMUs cannot be negative')
     boards = supported_boards(root)
     if board not in boards:
         raise ValueError('%s is not a supported Renode target' % board)
@@ -2048,9 +2059,9 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     resc = outdir / ('%s.resc' % board)
     (platform, has_fram, iomcu_uart, can_buses, has_ethernet, gps_uart,
      airspeed_bus, battery_samples, rangefinder_uart,
-     rangefinder_type, gpio_pins, sigrok_capture) = _platform(
+     rangefinder_type, gpio_pins, sigrok_capture, emulated_imus) = _platform(
         root, board, app, outdir, state_dir / 'fram.img', is_periph, warnings,
-        sigrok)
+        sigrok, num_imus)
     repl.write_text(platform)
     script, metadata = _script(
         root, board, app, bootloader, repl, serial_index, uart_port,
@@ -2066,6 +2077,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         'has_fram': has_fram,
         'fram_size': 32 * 1024 if has_fram else 0,
         'gps_uart': gps_uart,
+        'num_imus': emulated_imus,
         'gpio_pins': {
             gpio: pin.portpin for gpio, pin in gpio_pins
         },
