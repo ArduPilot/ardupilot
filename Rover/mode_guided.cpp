@@ -48,7 +48,32 @@ void ModeGuided::update()
             }
             break;
         }
+        case SubMode::HeadingAndThrottle:
+        {
+            // stop vehicle if target not updated within 3 seconds
+            if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "heading not received last 3 secs, stopping");
+                have_attitude_target = false;
+            }
+            if (have_attitude_target) {
+                // steering from yaw cmd
+                calc_steering_to_heading(_desired_yaw_cd);
 
+                //throttle from pilot
+                float dummy, desired_throttle;
+                get_pilot_desired_steering_and_throttle(dummy, desired_throttle);
+                g2.motors.set_throttle(desired_throttle);
+            } else {
+                if (rover.is_boat()) {
+                    if (!start_loiter()) {
+                        stop_vehicle();
+                    }
+                } else {
+                    stop_vehicle();
+                }
+            }
+            break;
+        }
         case SubMode::HeadingAndSpeed:
         {
             // stop vehicle if target not updated within 3 seconds
@@ -149,6 +174,7 @@ float ModeGuided::wp_bearing() const
         return g2.wp_nav.wp_bearing_cd() * 0.01f;
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::HeadingAndThrottle:
         return 0.0f;
     case SubMode::Loiter:
         return rover.mode_loiter.wp_bearing();
@@ -168,6 +194,7 @@ float ModeGuided::nav_bearing() const
         return g2.wp_nav.nav_bearing_cd() * 0.01f;
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::HeadingAndThrottle:
         return 0.0f;
     case SubMode::Loiter:
         return rover.mode_loiter.nav_bearing();
@@ -187,6 +214,7 @@ float ModeGuided::crosstrack_error_m() const
         return g2.wp_nav.crosstrack_error_m();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::HeadingAndThrottle:
         return 0.0f;
     case SubMode::Loiter:
         return rover.mode_loiter.crosstrack_error_m();
@@ -206,6 +234,7 @@ float ModeGuided::get_desired_lat_accel() const
         return g2.wp_nav.get_lat_accel();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::HeadingAndThrottle:
         return 0.0f;
     case SubMode::Loiter:
         return rover.mode_loiter.get_desired_lat_accel();
@@ -226,6 +255,7 @@ float ModeGuided::get_distance_to_destination() const
         return _distance_to_destination;
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::HeadingAndThrottle:
         return 0.0f;
     case SubMode::Loiter:
         return rover.mode_loiter.get_distance_to_destination();
@@ -246,6 +276,7 @@ bool ModeGuided::reached_destination() const
         return g2.wp_nav.reached_destination();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::HeadingAndThrottle:
     case SubMode::Loiter:
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
@@ -269,6 +300,7 @@ bool ModeGuided::set_desired_speed(float speed_ms)
     case SubMode::Loiter:
         return rover.mode_loiter.set_desired_speed(speed_ms);
     case SubMode::SteeringAndThrottle:
+    case SubMode::HeadingAndThrottle:
     case SubMode::Stop:
         // no speed control
         return false;
@@ -288,6 +320,7 @@ bool ModeGuided::get_desired_location(Location& destination) const
         return false;
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
+    case SubMode::HeadingAndThrottle:
         // not supported in these submodes
         return false;
     case SubMode::Loiter:
@@ -392,6 +425,16 @@ void ModeGuided::set_steering_and_throttle(float steering, float throttle)
     _have_strthr = true;
 }
 
+
+void ModeGuided::set_desired_heading(float yaw_angle_cd){
+
+    _guided_mode = SubMode::HeadingAndThrottle;
+    _des_att_time_ms = AP_HAL::millis();
+
+    _desired_yaw_cd = yaw_angle_cd;
+    have_attitude_target = true;
+}
+
 bool ModeGuided::start_loiter()
 {
     if (rover.mode_loiter.enter()) {
@@ -452,4 +495,9 @@ bool ModeGuided::limit_breached() const
 bool ModeGuided::use_scurves_for_navigation() const
 {
     return ((g2.guided_options.get() & uint32_t(Options::SCurvesUsedForNavigation)) != 0);
+}
+
+bool ModeGuided::closed_loop_heading_only() const
+{
+    return ((g2.guided_options.get() & uint32_t(Options::ClosedLoopHeadingOnly)) != 0);
 }
