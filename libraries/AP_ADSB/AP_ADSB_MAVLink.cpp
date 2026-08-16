@@ -13,9 +13,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "AP_ADSB_uAvionix_MAVLink.h"
+#include "AP_ADSB_MAVLink.h"
 
-#if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
+#if HAL_ADSB_MAVLINK_ENABLED
 #include <stdio.h>  // for sprintf
 #include <limits.h>
 #include <GCS_MAVLink/GCS.h>
@@ -26,14 +26,14 @@
 extern const AP_HAL::HAL& hal;
 
 // detect if an port is configured as MAVLink
-bool AP_ADSB_uAvionix_MAVLink::detect()
+bool AP_ADSB_MAVLink::detect()
 {
     // this actually requires SerialProtocol_MAVLink or SerialProtocol_MAVLink2 but
     // we can't have a running system with that, so its safe to assume it's already defined
     return true;
 }
 
-void AP_ADSB_uAvionix_MAVLink::update()
+void AP_ADSB_MAVLink::update()
 {
     const uint32_t now = AP_HAL::millis();
 
@@ -58,7 +58,7 @@ void AP_ADSB_uAvionix_MAVLink::update()
     } // chan_last_ms
 }
 
-void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) const
+void AP_ADSB_MAVLink::send_dynamic_out(const mavlink_channel_t chan) const
 {
     const auto &_my_loc = _frontend._my_loc;
     const auto &gps = _my_loc;  // avoid churn
@@ -140,7 +140,7 @@ void AP_ADSB_uAvionix_MAVLink::send_dynamic_out(const mavlink_channel_t chan) co
  * This function will override the MSB byte of the 24bit ICAO address. To ensure an invalid >24bit ICAO is never broadcasted,
  * this function is used to create the encoded version without ever writing to the actual ICAO number. It's created on-demand
  */
-uint32_t AP_ADSB_uAvionix_MAVLink::encode_icao(const uint32_t icao_id) const
+uint32_t AP_ADSB_MAVLink::encode_icao(const uint32_t icao_id) const
 {
     // utilize the upper unused 8bits of the icao with special flags.
     // This encoding is required for uAvionix devices that break the MAVLink spec.
@@ -163,7 +163,7 @@ uint32_t AP_ADSB_uAvionix_MAVLink::encode_icao(const uint32_t icao_id) const
  * This function will override the usually-null ending char of the callsign. It always encodes the last byte [8], even if
  * the callsign string is less than 9 chars and there are other zero-padded nulls.
  */
-uint8_t AP_ADSB_uAvionix_MAVLink::get_encoded_callsign_null_char()
+uint8_t AP_ADSB_MAVLink::get_encoded_callsign_null_char()
 {
 //  Encoding of the 8bit null char
 //  (LSB) - knots
@@ -206,7 +206,7 @@ uint8_t AP_ADSB_uAvionix_MAVLink::get_encoded_callsign_null_char()
 /*
  * populate and send MAVLINK_MSG_UAVIONIX_ADSB_OUT_CFG
  */
-void AP_ADSB_uAvionix_MAVLink::send_configure(const mavlink_channel_t chan)
+void AP_ADSB_MAVLink::send_configure(const mavlink_channel_t chan)
 {
     // MAVLink spec says the 9 byte callsign field is 8 byte string with 9th byte as null.
     // Here we temporarily set some flags in that null char to signify the callsign
@@ -236,4 +236,4 @@ void AP_ADSB_uAvionix_MAVLink::send_configure(const mavlink_channel_t chan)
             (uint8_t)_frontend.out_state.cfg.rfSelect);
 }
 
-#endif // HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
+#endif // HAL_ADSB_MAVLINK_ENABLED

@@ -17,8 +17,8 @@
 
 #include "AP_ADSB_Backend.h"
 
-#if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
-class AP_ADSB_uAvionix_MAVLink : public AP_ADSB_Backend {
+#if HAL_ADSB_MAVLINK_ENABLED
+class AP_ADSB_MAVLink : public AP_ADSB_Backend {
 public:
     using AP_ADSB_Backend::AP_ADSB_Backend;
 
@@ -36,5 +36,5 @@ private:
     uint32_t encode_icao(const uint32_t icao_id) const;
     uint8_t get_encoded_callsign_null_char(void);
 };
-#endif // HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
+#endif // HAL_ADSB_MAVLINK_ENABLED
 
