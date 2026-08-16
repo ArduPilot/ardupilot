@@ -17,6 +17,11 @@
 
 #include <stdbool.h>
 
+namespace AP_HAL {
+class SPIDevice;
+}
+
 bool sdcard_init();
 void sdcard_stop();
 bool sdcard_retry();
+AP_HAL::SPIDevice *sdcard_get_spi_device();
