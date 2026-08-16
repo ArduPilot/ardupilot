@@ -1795,19 +1795,6 @@ INCLUDE common.ld
         devlist = []
         have_rts_cts = False
         have_low_noise = False
-        crash_uart = None
-
-        # write config for CrashCatcher UART
-        if not serial_list[0].startswith('OTG') and not serial_list[0].startswith('EMPTY'):
-            crash_uart = serial_list[0]
-        elif not serial_list[2].startswith('OTG') and not serial_list[2].startswith('EMPTY'):
-            crash_uart = serial_list[2]
-
-        if crash_uart is not None and self.get_config('FLASH_SIZE_KB', type=int) >= 2048:
-            f.write('#define HAL_CRASH_SERIAL_PORT %s\n' % crash_uart)
-            f.write('#define IRQ_DISABLE_HAL_CRASH_SERIAL_PORT() nvicDisableVector(STM32_%s_NUMBER)\n' % crash_uart)
-            f.write('#define RCC_RESET_HAL_CRASH_SERIAL_PORT() rccReset%s(); rccEnable%s(true)\n' % (crash_uart, crash_uart))
-            f.write('#define HAL_CRASH_SERIAL_PORT_CLOCK STM32_%sCLK\n' % crash_uart)
         # check if we have a UART with a low noise RX pin
         for num, dev in enumerate(serial_list):
             if not dev.startswith('UART') and not dev.startswith('USART'):

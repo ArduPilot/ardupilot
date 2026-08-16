@@ -347,8 +347,9 @@ $(BUILDDIR)/lib$(PROJECT).a: $(OBJS)
 	@echo
 	@echo ChibiOS: Done!
 
-$(BUILDDIR)/libcc.a: $(LIBCC_OBJS)
-	@$(AR) -r $@ $^
+$(BUILDDIR)/libcc.a: $(LIBCC_OBJS) $(HWDEF)/common/chibios_board.mk
+	@rm -f $@
+	@$(AR) -r $@ $(LIBCC_OBJS)
 	@echo
 	@echo CrashCatcher: Done!
 
