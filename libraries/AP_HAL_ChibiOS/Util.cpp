@@ -26,6 +26,9 @@
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
+#if AP_CRASHDUMP_FATFS_ENABLED
+#include "CrashDump.h"
+#endif
 #include <AP_ROMFS/AP_ROMFS.h>
 #include <AP_Common/ExpandingString.h>
 #include <AP_InternalError/AP_InternalError.h>
@@ -803,7 +806,15 @@ void Util::log_stack_info(void)
 #if AP_CRASHDUMP_ENABLED
 size_t Util::last_crash_dump_size() const
 {
-    // get dump size
+#if AP_CRASHDUMP_FATFS_ENABLED
+    // check SD card first
+    uint32_t sd_size = crashdump_sd_dump_size();
+    if (sd_size > 0) {
+        return sd_size;
+    }
+#endif
+#if AP_CRASHDUMP_FLASH_ENABLED
+    // check flash
     uint32_t size = stm32_crash_dump_size();
     char* dump_start = (char*)stm32_crash_dump_addr();
     if (!(dump_start[0] == 0x63 && dump_start[1] == 0x43)) {
@@ -814,14 +825,28 @@ size_t Util::last_crash_dump_size() const
         size = stm32_crash_dump_max_size();
     }
     return size;
+#else
+    return 0;
+#endif
 }
 
 void* Util::last_crash_dump_ptr() const
 {
+#if AP_CRASHDUMP_FATFS_ENABLED
+    // SD crash dump can't be memory-mapped, return nullptr
+    // The dump should be downloaded from APM/CrashDump.DAT via MAVFTP
+    if (crashdump_sd_dump_size() > 0) {
+        return nullptr;
+    }
+#endif
+#if AP_CRASHDUMP_FLASH_ENABLED
     if (last_crash_dump_size() == 0) {
         return nullptr;
     }
     return (void*)stm32_crash_dump_addr();
+#else
+    return nullptr;
+#endif
 }
 #endif // AP_CRASHDUMP_ENABLED
 
@@ -842,4 +867,3 @@ void Util::set_soft_armed(const bool b)
     palWriteLine(HAL_GPIO_PIN_nARMED, !b);
 #endif
 }
-
