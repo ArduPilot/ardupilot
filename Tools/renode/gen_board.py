@@ -678,7 +678,7 @@ def _i2c_device(expression):
 
 def _sensor_devices(config, family, defines, fram_path, warnings,
                     sigrok_bus=None, num_imus=None):
-    '''Return (REPL declarations, CS pin -> peripheral names).'''
+    '''Return sensor declarations, CS routes and storage metadata.'''
     spi_devices = {dev[0]: dev for dev in config.spidev}
     declarations = []
     chip_selects = {}
@@ -843,6 +843,23 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                     'fram', 'Miscellaneous.AP_RAMTRON', bus, cs,
                     ['    fileName: %s' % json.dumps(str(fram_path))]))
 
+    spi_sdcard = None
+    if defines.get('HAL_USE_MMC_SPI', 'FALSE') == 'TRUE':
+        device = spi_devices.get('sdcard')
+        if device is None:
+            warnings.append('HAL_USE_MMC_SPI is set without SPIDEV sdcard')
+        else:
+            bus, cs_label = device[1], device[3]
+            cs = config.bylabel.get(cs_label)
+            if bus not in family['spis']:
+                warnings.append('%s SD card bus is not present in the current MCU base' % bus)
+            elif cs is None:
+                warnings.append('cannot resolve SD card chip select %s' % cs_label)
+            else:
+                # The file-backed card is created in the RESC once its image
+                # path is known. Reserve an address in the bus multiplexer now.
+                spi_children.append((None, None, bus, cs, []))
+
     children_by_bus = {}
     for child in spi_children:
         children_by_bus.setdefault(child[2], []).append(child)
@@ -854,19 +871,23 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
         declarations += [
             '%s: Miscellaneous.AP_SPIMultiplexer @ %s' % (mux, bus.lower()),
         ]
-        if all(child[1] != 'Miscellaneous.AP_RAMTRON' for child in children):
+        if all(child[1] not in (None, 'Miscellaneous.AP_RAMTRON')
+               for child in children):
             declarations.append('    frameOnTransfer: true')
         if bus == sigrok_bus:
             declarations.append('    Analyzer: sigrok')
         declarations.append('')
         for address, (name, model, _, cs, properties) in enumerate(children):
-            declarations += [
-                '%s: %s @ %s %d' % (name, model, mux, address),
-            ] + properties + ['']
+            if model is None:
+                spi_sdcard = (bus.lower(), mux, address)
+            else:
+                declarations += [
+                    '%s: %s @ %s %d' % (name, model, mux, address),
+                ] + properties + ['']
             chip_selects.setdefault((cs.port, cs.pin), []).append(
                 '%s@%d' % (mux, address))
 
-    return declarations, chip_selects, has_fram, emulated_imus
+    return declarations, chip_selects, has_fram, emulated_imus, spi_sdcard
 
 
 def _iomcu_device(root, app, family, defines, address, warnings):
@@ -1469,7 +1490,7 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
                          (gpio, pin.port, pin.pin))
         lines.append('')
         address += 4
-    sensor_lines, chip_selects, has_fram, emulated_imus = _sensor_devices(
+    sensor_lines, chip_selects, has_fram, emulated_imus, spi_sdcard = _sensor_devices(
         app, family, defines, fram_path, warnings,
         sigrok_capture['bus'] if sigrok_capture else None, num_imus)
     lines += sensor_lines
@@ -1775,7 +1796,7 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
     return ('\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart,
             can_buses, has_ethernet, gps_uart, airspeed_bus, battery_samples,
             rangefinder_uart, rangefinder_type, gpio_pins, sigrok_capture,
-            emulated_imus)
+            emulated_imus, spi_sdcard)
 
 
 def _serial_device(app, family, serial_index, excluded=None):
@@ -1804,7 +1825,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             iomcu_uart, can_buses, has_ethernet, gps_uart, airspeed_bus,
             battery_samples, rangefinder_uart, rangefinder_type, warnings,
             gpio_pins, sigrok_capture=None, quiet_peripherals=True,
-            sigrok_channels=None):
+            sigrok_channels=None, spi_sdcard=None):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     boot_kb = bootloader.get_config(
@@ -1826,6 +1847,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     supported_sd_buses = set(family['sd_buses'])
     present_sd_buses = sorted(sd_buses & supported_sd_buses)
     has_sd = bool(present_sd_buses)
+    has_sdcard = has_sd or spi_sdcard is not None
     sd_bus = present_sd_buses[0] if has_sd else None
     if len(present_sd_buses) > 1:
         warnings.append('multiple SDMMC buses are not supported concurrently')
@@ -1849,6 +1871,9 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     if sigrok_capture is not None:
         lines.append(
             'include $repo/Tools/renode/peripherals/common/AP_Sigrok.cs')
+    if spi_sdcard is not None:
+        lines.append(
+            'include $repo/Tools/renode/peripherals/storage/AP_SPI_SDCard.cs')
     lines += ['include @%s' % common, '']
     for name, adc, channel, raw in battery_samples:
         lines += [
@@ -1971,6 +1996,14 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             family['sd_buses'][sd_bus],
             '',
         ]
+    elif spi_sdcard is not None:
+        bus, mux, address = spi_sdcard
+        lines += [
+            '$sdcard?=@none',
+            ('machine AP_SpiSdCardFromFile $sdcard sysbus.%s.%s %u '
+             '0x10000000 True "sdcard"') % (bus, mux, address),
+            '',
+        ]
     if tick is not None and int(tick) in family['timers']:
         lines += [
             'sysbus SetHookBeforePeripheralWrite sysbus.timer%s '
@@ -1996,8 +2029,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
                        {name.lower() for name in app.get_config(
                            'SERIAL_ORDER', required=False, aslist=True) or []
                         if name in family['uarts']} |
-                       (set(family.get('adcs', {}).values())
-                        if battery_samples else set()) |
+                       set(family.get('adcs', {}).values()) |
                        {'dma1', 'dma2', 'nvic'})
         lines += ['logLevel 3 sysbus.%s' % name for name in noisy]
         if has_sd:
@@ -2008,7 +2040,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     return '\n'.join(lines), {
         'app_base': app_base,
         'bootloader_load_base': 0x08000000 + boot_kb * 1024,
-        'has_sdcard': has_sd,
+        'has_sdcard': has_sdcard,
         'serial_index': serial_index,
         'serial': serial,
         'iomcu_uart': iomcu_uart,
@@ -2059,7 +2091,8 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     resc = outdir / ('%s.resc' % board)
     (platform, has_fram, iomcu_uart, can_buses, has_ethernet, gps_uart,
      airspeed_bus, battery_samples, rangefinder_uart,
-     rangefinder_type, gpio_pins, sigrok_capture, emulated_imus) = _platform(
+     rangefinder_type, gpio_pins, sigrok_capture, emulated_imus,
+     spi_sdcard) = _platform(
         root, board, app, outdir, state_dir / 'fram.img', is_periph, warnings,
         sigrok, num_imus)
     repl.write_text(platform)
@@ -2067,7 +2100,8 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         root, board, app, bootloader, repl, serial_index, uart_port,
         iomcu_uart, can_buses, has_ethernet, gps_uart, airspeed_bus,
         battery_samples, rangefinder_uart, rangefinder_type, warnings,
-        gpio_pins, sigrok_capture, quiet_peripherals, sigrok_channels)
+        gpio_pins, sigrok_capture, quiet_peripherals, sigrok_channels,
+        spi_sdcard)
     resc.write_text(script)
     metadata.update({
         'repl': repl,

@@ -468,13 +468,14 @@ def make_runtime_elf(source, destination):
 
 
 def make_firmware_binary(source, destination):
-    '''Extract only file-backed flash contents from an ELF.'''
+    '''Extract file-backed flash contents, preserving erased ELF gaps.'''
     objcopy = shutil.which('arm-none-eabi-objcopy') or shutil.which('objcopy')
     if objcopy is None:
         sys.exit('objcopy is required to make the Renode flash overlay')
     try:
         subprocess.check_call(
-            [objcopy, '-O', 'binary', str(source), str(destination)],
+            [objcopy, '-O', 'binary', '--gap-fill=0xff',
+             str(source), str(destination)],
             stderr=subprocess.STDOUT,
         )
     except (OSError, subprocess.CalledProcessError) as error:
@@ -621,6 +622,10 @@ def main():
                              'sigrok peripherals and pins')
     parser.add_argument('--unthrottled', action='store_true',
                         help='run as fast as possible instead of pacing at real time')
+    parser.add_argument('--watchdog', action='store_true',
+                        help='enforce the independent watchdog timeout '
+                             'and model the monitor thread fault '
+                             '(disabled by default for GDB usability)')
     parser.add_argument('--can', action='store_true',
                         help='bridge CAN1 and CAN2 to mcast:0 and mcast:1')
     parser.add_argument('--can-base', type=int, default=0,
@@ -721,7 +726,7 @@ def main():
     # every invocation. This is under one second on the supported families and
     # ensures hwdef.dat/hwdef-bl.dat, not checked-in Renode board copies, are
     # authoritative for pins, buses, DMA, flash layout, and devices.
-    outdir = root / 'build' / args.board / 'renode'
+    outdir = state_dir
     serial_index = 3 if args.reproduce_pr33933 and args.serial is None else args.serial
     try:
         generated = gen_board.generate(
@@ -838,6 +843,26 @@ def main():
         if args.gdb:
             sys.exit('--reproduce-pr33933 cannot be combined with --gdb')
         commands += pr33933_commands(elf, args.reproduce_pr33933)
+    post_start_commands = []
+    if args.watchdog:
+        # Scheduler::_monitor_thread deliberately branches to 0xE000FFFF to
+        # obtain a crashdump before the IWDG resets the board. Real Cortex-M
+        # parts fault when fetching there, but Renode does not execute hooks
+        # from the unmapped PPB hole. Map the page with an undefined Thumb
+        # instruction, then pend HardFault when the aligned PC reaches it,
+        # retaining the real monitor-thread PC and stack.
+        commands += [
+            'machine LoadPlatformDescriptionFromString '
+            '"watchdogFault: Memory.MappedMemory @ sysbus 0xE000F000 '
+            '{ size: 0x1000 }"',
+            'sysbus WriteWord 0xE000FFFE 0xDE00',
+            'watchdog EnforceReset true',
+        ]
+        # Install this after start: early firmware resets clear CPU hooks.
+        post_start_commands.append(
+            'cpu AddHook 0xE000FFFE '
+            '"monitor.Parse(\'sysbus.nvic SetPendingIRQ 3\')"'
+        )
 
     gdb_proc = None
     gdb_proxy_proc = None
@@ -921,6 +946,7 @@ def main():
         print('%s enabled; execution starts under GDB control' % features)
     else:
         commands.append('start')
+    commands += post_start_commands
     commands += args.extra
 
     # a source-built renode launcher needs dotnet; the standard
@@ -939,6 +965,8 @@ def main():
         print('serial:  SERIAL%s/%s on tcp:localhost:%u' %
               (generated['serial_index'], generated['serial'], args.uart_port))
     print('time:    %s' % ('unthrottled' if args.unthrottled else 'paced at 1x'))
+    if args.watchdog:
+        print('watchdog: reset enforced')
     if args.cpusel is not None:
         print('CPU:     emulation thread on host CPU %u' % args.cpusel)
     if args.num_imus is not None:

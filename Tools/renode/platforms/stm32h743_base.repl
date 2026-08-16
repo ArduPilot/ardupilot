@@ -79,7 +79,7 @@ nvicInput149: Miscellaneous.CombinedInput @ none
 
 // May be reserved
 
-flashController: MTD.STM32H7_FlashController @ sysbus 0x52002000
+flashController: MTD.AP_STM32H7_FlashController @ sysbus 0x52002000
     flash1: flashBank1
     flash2: flashBank2
     -> nvic@4

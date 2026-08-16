@@ -10,6 +10,7 @@ $platform?=$repo/Tools/renode/platforms/stm32h743_base.repl
 
 # each .cs is compiled on its own against the ones included before it
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_IWDG.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_FlashController.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_ADC_v3.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32DMA_Circular.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_PWR.cs

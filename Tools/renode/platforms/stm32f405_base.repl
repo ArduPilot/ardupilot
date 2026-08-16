@@ -222,6 +222,7 @@ rcc: Miscellaneous.AP_STM32F4_RCC @ sysbus 0x40023800
     timer4: timer4
     timer5: timer5
     timer8: timer8
+    timer9: timer9
 
 timer1: Timers.STM32_Timer @ sysbus 0x40010000
     BreakInterrupt -> nvic@24
@@ -256,6 +257,11 @@ timer8: Timers.STM32_Timer @ sysbus 0x40010400
     UpdateInterrupt -> nvic@44
     [TriggerInterrupt, CommutationInterrupt] -> nvic@[45, 45]
     CaptureCompareInterrupt -> nvic@46
+    frequency: 168000000
+    initialLimit: 0xFFFF
+
+timer9: Timers.STM32_Timer @ sysbus 0x40014000
+    -> nvic@24
     frequency: 168000000
     initialLimit: 0xFFFF
 

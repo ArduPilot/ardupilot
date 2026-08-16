@@ -390,6 +390,45 @@ old files in place as backups. A legacy crash-log image is aligned to the end
 of flash, so it remains at the address used by the firmware build that created
 it even when the current linker's crash-log boundary has moved.
 
+ELF gaps in the executable flash overlay retain the erased value `0xFF`. This
+matters for firmware-identity checks: flattening a non-file-backed alignment
+section as zeroes makes an SD crashdump's runtime flash CRC differ from the
+matching ELF.
+
+`test_crashdump.py` exercises an H7 microSD crashdump end to end using a fresh
+card image. It waits for MAVLink, sends ArduPilot's failure-creation HardFault
+command, requires the rebooted firmware to report the retained dump, extracts
+`APM/CrashDump.DAT`, and runs the `crashdump_info.py` found beside the selected
+ELF:
+
+```sh
+Tools/renode/test_crashdump.py Pixhawk6X --vehicle arduplane \
+    --elf /path/to/crashdump-branch/build/Pixhawk6X/bin/arduplane
+```
+
+Use `--fault lockup` to stop the main loop and exercise the scheduler monitor
+thread, watchdog, and its pre-watchdog crashdump path:
+
+```sh
+Tools/renode/test_crashdump.py Pixhawk6X --fault lockup \
+    --elf /path/to/build/Pixhawk6X/bin/arducopter
+```
+
+For a firmware built with `--enable-CRASHDUMP_FLASH` and
+`--disable-CRASHDUMP_FATFS`, select the internal-flash backend. The test reads
+the crash-log range from the ELF, extracts it from the persistent full-flash
+image, and checks the CrashCatcher signature and recorded length:
+
+```sh
+Tools/renode/test_crashdump.py Pixhawk6X --backend flash \
+    --vehicle arduplane --elf /path/to/build/Pixhawk6X/bin/arduplane
+```
+
+The flash and lockup tests enable `run.py --watchdog`, which makes the
+independent watchdog reset the emulated machine when it expires and models the
+fault address used by the scheduler monitor thread. It is opt-in so pausing a
+normal `--gdb` session does not unexpectedly reset the target.
+
 Existing images are reused and are never silently resized. Move or remove a
 board's state directory to return it to erased/factory state. The SD image is a
 normal host image suitable for `mtools` or loopback mounting while Renode is

@@ -73,7 +73,11 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 enablingWriteDma = false;
                 pendingWriteControl = 0;
             }
-            for(var i = 0; i < pendingWords; i++)
+            // Memory-to-peripheral transfers are drained by STM32DMA when the
+            // stream is enabled. DMAReceive is only needed to replay requests
+            // for peripheral-to-memory transfers.
+            var isWriteCommand = IsWriteCommand(currentCommand);
+            for(var i = 0; i < (isWriteCommand ? 0 : pendingWords); i++)
             {
                 sdmmc.DMAReceive.Blink();
             }
