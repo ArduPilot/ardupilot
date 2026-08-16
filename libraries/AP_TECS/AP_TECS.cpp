@@ -554,12 +554,10 @@ void AP_TECS::_update_height_demand(void)
 
         // Limit height rate of change
         if (descent_rate_override_active()) {
-            // NOTE: the units here are specific energy rather than height, so this
-            // is roughly GRAVITY_MSS times larger than the stated pitch fraction.
-            // It cannot simply be corrected: there is no feedback on the achieved
-            // sink rate, so the height error bounded here is what drives the rate,
-            // and a tighter leash loses the demand (20m/s achieves 16m/s).
-            const float hgt_leash = 0.25f * (_PITCHmaxf - _PITCHminf) * _TAS_state * GRAVITY_MSS * timeConstant(); // allow height tracking to access 50% of pitch range
+            // Keep the height profile near the aircraft for a smooth handback
+            // when the override ends. Height error is not used by the rate
+            // controller while the override is active.
+            const float hgt_leash = 0.25f * (_PITCHmaxf - _PITCHminf) * _TAS_state * timeConstant();
             if (_hgt_dem_rate_ltd > _height + hgt_leash) {
                 // drag the height profile to keep up with the plane
                 _hgt_dem_rate_ltd = _height + hgt_leash;
@@ -761,8 +759,11 @@ void AP_TECS::_update_throttle_with_airspeed(void)
         _SPEdot_dem = (_SPE_dem - _SPE_est) / timeConstant();
     }
 
-    // Calculate total energy error
-    _STE_error = constrain_float((_SPE_dem - _SPE_est), SPE_err_min, SPE_err_max) + _SKE_dem - _SKE_est;
+    // Calculate total energy error. A fixed descent-rate demand has no target
+    // height, so do not let the mission height error affect throttle.
+    const float SPE_error = descent_rate_override_active() ? 0.0f :
+        constrain_float((_SPE_dem - _SPE_est), SPE_err_min, SPE_err_max);
+    _STE_error = SPE_error + _SKE_dem - _SKE_est;
     float STEdot_dem = constrain_float((_SPEdot_dem + _SKEdot_dem), _STEdot_min, _STEdot_max);
     float STEdot_error = STEdot_dem - _SPEdot - _SKEdot;
 
@@ -1064,7 +1065,13 @@ void AP_TECS::_update_pitch(void)
     // Calculate demanded specific energy balance and error
     float SEB_dem = _SPE_dem * SPE_weighting - _SKE_dem * _SKE_weighting;
     float SEB_est = _SPE_est * SPE_weighting - _SKE_est * _SKE_weighting;
-    float SEB_error = SEB_dem - SEB_est;
+    // A fixed descent-rate demand has no target height. The height profile is
+    // maintained for handback when the override ends, but must not affect the
+    // rate controller while the override is active. Retain kinetic energy
+    // error in case underspeed protection changes the weighting.
+    const float SPE_error = descent_rate_override_active() ? 0.0f :
+        (_SPE_dem - _SPE_est) * SPE_weighting;
+    float SEB_error = SPE_error - (_SKE_dem - _SKE_est) * _SKE_weighting;
 
     // track demanded height using the specified time constant
     float SEBdot_dem = _hgt_rate_dem * GRAVITY_MSS * SPE_weighting + SEB_error / timeConstant();
@@ -1156,12 +1163,6 @@ void AP_TECS::_update_pitch(void)
     // Add a feedforward term from demanded airspeed to pitch
     if (_flags.is_gliding) {
         _pitch_dem_unc += (_TAS_dem_adj - _pitch_ff_v0) * _pitch_ff_k;
-    }
-
-    // add a feed forward term from sink rate to pitch
-    if (descent_rate_override_active() && is_positive(_TAS_dem_adj)) {
-        const float pitch_trim = asinf(constrain_float(- descent_rate_override_value() / _TAS_dem_adj, sinf(_PITCHminf), sinf(_PITCHmaxf)));
-        _pitch_dem_unc += pitch_trim;
     }
 
     // Constrain pitch demand
