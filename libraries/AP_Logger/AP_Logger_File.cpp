@@ -790,8 +790,12 @@ void AP_Logger_File::start_new_log(void)
         _read_fd = -1;
     }
 
-    if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
-        DEV_PRINTF("Out of space for logging\n");
+    const int64_t avail = disk_space_avail();
+    const int64_t total = disk_space();
+    if (avail < _free_space_min_avail && total > 0) {
+        DEV_PRINTF("Out of space for logging: avail=%lld total=%lld min=%u\n",
+                   (long long)avail, (long long)total,
+                   (unsigned)_free_space_min_avail);
         return;
     }
 
@@ -949,8 +953,12 @@ void AP_Logger_File::io_timer(void)
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
-        if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
-            DEV_PRINTF("Out of space for logging\n");
+        const int64_t avail = disk_space_avail();
+        const int64_t total = disk_space();
+        if (avail < _free_space_min_avail && total > 0) {
+            DEV_PRINTF("Out of space for logging: avail=%lld total=%lld min=%u\n",
+                       (long long)avail, (long long)total,
+                       (unsigned)_free_space_min_avail);
             stop_logging();
             _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
             last_io_operation = "";
@@ -996,7 +1004,11 @@ void AP_Logger_File::io_timer(void)
     last_io_operation = "";
     if (nwritten <= 0) {
         if (errno == ENOSPC) {
-            DEV_PRINTF("Out of space for logging\n");
+            const int64_t avail = disk_space_avail();
+            const int64_t total = disk_space();
+            DEV_PRINTF("Out of space for logging: write failed (ENOSPC): avail=%lld total=%lld min=%u\n",
+                       (long long)avail, (long long)total,
+                       (unsigned)_free_space_min_avail);
             stop_logging();
             _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
             last_io_operation = "";
