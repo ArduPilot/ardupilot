@@ -1,6 +1,8 @@
 // this file is inserted (by chibios_hwdef.py) into hwdef.h when
 // configuring for AP_Periph builds
 
+#define AP_REBOOT_MASS_STORAGE_ENABLED 0
+
 #ifndef AP_SCHEDULER_ENABLED
 #define AP_SCHEDULER_ENABLED 0
 #endif

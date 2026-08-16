@@ -47,21 +47,10 @@ static SPIConfig lowspeed;
 static SPIConfig highspeed;
 #endif
 
-/*
-  initialise microSD card if avaialble. This is called during
-  AP_BoardConfig initialisation. The parameter BRD_SD_SLOWDOWN
-  controls a scaling factor on the microSD clock
- */
-bool sdcard_init()
+// initialise the microSD block device without mounting its filesystem
+bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
 {
 #if HAL_USE_FATFS
-#ifndef HAL_BOOTLOADER_BUILD
-    WITH_SEMAPHORE(sem);
-
-    uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
-#else
-    uint8_t sd_slowdown = 0;  // maybe take from a define?
-#endif
 #if HAL_USE_SDC
 
 #if STM32_SDC_USE_SDMMC2 == TRUE
@@ -102,7 +91,6 @@ bool sdcard_init()
         sdcard_stop();
     }
 
-    const uint8_t tries = 3;
     for (uint8_t i=0; i<tries; i++) {
         sdcconfig.slowdown = sd_slowdown;
         sdcStart(&sdcd, &sdcconfig);
@@ -110,13 +98,6 @@ bool sdcard_init()
             sdcStop(&sdcd);
             continue;
         }
-        if (f_mount(&SDC_FS, "/", 1) != FR_OK) {
-            sdcDisconnect(&sdcd);
-            sdcStop(&sdcd);
-            continue;
-        }
-        printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
-
         sdcard_running = true;
         return true;
     }
@@ -148,10 +129,7 @@ bool sdcard_init()
     mmcconfig.hscfg = &highspeed;
     mmcconfig.lscfg = &lowspeed;
 
-    /*
-      try up to 3 times to init microSD interface
-     */
-    const uint8_t tries = 3;
+    // try the requested number of times to initialise the microSD interface
     for (uint8_t i=0; i<tries; i++) {
         mmcStart(&MMCD1, &mmcconfig);
 
@@ -159,17 +137,51 @@ bool sdcard_init()
             mmcStop(&MMCD1);
             continue;
         }
-        if (f_mount(&SDC_FS, "/", 1) != FR_OK) {
-            mmcDisconnect(&MMCD1);
-            mmcStop(&MMCD1);
-            continue;
-        }
-        printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
+        sdcard_running = true;
         return true;
     }
 #endif
     sdcard_running = false;
 #endif  // HAL_USE_FATFS
+    return false;
+}
+
+BaseBlockDevice *sdcard_get_block_device()
+{
+#if HAL_USE_SDC
+#if STM32_SDC_USE_SDMMC2 == TRUE
+    return reinterpret_cast<BaseBlockDevice *>(&SDCD2);
+#else
+    return reinterpret_cast<BaseBlockDevice *>(&SDCD1);
+#endif
+#elif HAL_USE_MMC_SPI
+    return reinterpret_cast<BaseBlockDevice *>(&MMCD1);
+#else
+    return nullptr;
+#endif
+}
+
+bool sdcard_init()
+{
+#if HAL_USE_FATFS
+#ifndef HAL_BOOTLOADER_BUILD
+    WITH_SEMAPHORE(sem);
+    const uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
+#else
+    const uint8_t sd_slowdown = 0;
+#endif
+
+    for (uint8_t i = 0; i < 3; i++) {
+        if (!sdcard_init_raw(sd_slowdown, 1)) {
+            continue;
+        }
+        if (f_mount(&SDC_FS, "/", 1) == FR_OK) {
+            printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
+            return true;
+        }
+        sdcard_stop();
+    }
+#endif
     return false;
 }
 

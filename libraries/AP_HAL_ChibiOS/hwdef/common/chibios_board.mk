@@ -279,3 +279,9 @@ ULIBS =
 # End of user defines
 ##############################################################################
 include $(HWDEF)/common/chibios_common.mk
+
+# ChibiOS intentionally fills the fixed-width USB MSD serial-number field
+# without a trailing NUL. Limit the warning suppression to that source file.
+ifeq ($(USE_USB_MSD),yes)
+$(OBJDIR)/hal_usb_msd.o: CWARN += -Wno-unterminated-string-initialization
+endif

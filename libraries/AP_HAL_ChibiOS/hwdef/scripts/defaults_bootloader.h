@@ -4,6 +4,7 @@
 #define HAL_DSHOT_ALARM_ENABLED 0
 #define HAL_LOGGING_ENABLED 0
 #define HAL_SCHEDULER_ENABLED 0
+#define AP_REBOOT_MASS_STORAGE_ENABLED 0
 
 // bootloaders *definitely* don't use the FFT library:
 #ifndef HAL_GYROFFT_ENABLED
