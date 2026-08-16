@@ -56,10 +56,13 @@ class ChibiOSHWDef(hwdef.HWDef):
     UART_TYPE_RE = re.compile(r'UART(\d+)')
     UART_LABEL_RE = re.compile(r'UART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)')
 
-    def __init__(self, bootloader=False, signed_fw=False, default_params_filepath=None, **kwargs):
+    def __init__(self, bootloader=False, signed_fw=False, mass_storage_option=None,
+                 default_params_filepath=None, **kwargs):
         super(ChibiOSHWDef, self).__init__(**kwargs)
         self.bootloader = bootloader
         self.signed_fw = signed_fw
+        self.mass_storage_option = mass_storage_option
+        self.usb_mass_storage_enabled = False
         self.default_params_filepath = default_params_filepath
         self.processed_defaults_filepath = None
         self.have_defaults_file = False
@@ -1056,6 +1059,17 @@ class ChibiOSHWDef(hwdef.HWDef):
         if 'OTG2' in self.bytype:
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
 
+        if self.is_normal_fw():
+            f.write('#define AP_REBOOT_MASS_STORAGE_ENABLED %u\n' % self.usb_mass_storage_enabled)
+        if self.usb_mass_storage_enabled:
+            f.write('''
+#define HAL_USB_MSD_BOOT_ENABLED 1
+#define HAL_USE_USB_MSD TRUE
+#define USB_MSD_THREAD_WA_SIZE 1024
+#define USB_USE_WAIT TRUE
+''')
+            self.build_flags.append('USE_USB_MSD=yes')
+
         if 'ETH1' in self.bytype:
             self.enable_networking(f)
             f.write('''
@@ -1116,13 +1130,12 @@ class ChibiOSHWDef(hwdef.HWDef):
             if d.startswith('define '):
                 if 'HAL_USE_CAN' in d:
                     using_chibios_can = True
+                if d.split()[1] == 'AP_REBOOT_MASS_STORAGE_ENABLED':
+                    continue
                 f.write('#define %s\n' % d[7:])
 
         if self.intdefines.get('AP_NETWORKING_ENABLED', 0) == 1:
             self.enable_networking(f)
-
-        if self.intdefines.get('HAL_USE_USB_MSD', 0) == 1:
-            self.build_flags.append('USE_USB_MSD=yes')
 
         if self.have_type_prefix('CAN') and not using_chibios_can:
             self.enable_can(f)
@@ -3055,7 +3068,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
 ''' % (description, content, description))
 
     def is_io_fw(self):
-        return int(self.env_vars.get('IOMCU_FW', 0)) != 0
+        return self.get_config('IOMCU_FW', default=0, required=False, type=int) != 0
 
     def add_iomcu_firmware_defaults(self, f):
         '''add default defines IO firmwares'''
@@ -3154,6 +3167,35 @@ Please run: Tools/scripts/build_bootloaders.py %s
         })
         return ret
 
+    def setup_usb_mass_storage(self):
+        '''setup USB mass storage support'''
+        flash_size = self.get_config('FLASH_SIZE_KB', type=int)
+        ext_flash_size = self.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
+        program_size_limit = self.intdefines.get(
+            'HAL_PROGRAM_SIZE_LIMIT_KB', flash_size + ext_flash_size * 1024)
+        mcu_defines = self.get_mcu_config('DEFINES', False) or {}
+        fastboot_enabled = self.intdefines.get(
+            'AP_FASTBOOT_ENABLED', int(mcu_defines.get('AP_FASTBOOT_ENABLED', 1))) == 1
+        default_mass_storage = (self.is_normal_fw() and
+                                program_size_limit >= 2048 and fastboot_enabled)
+        mass_storage_option = self.mass_storage_option
+        if mass_storage_option is None:
+            mass_storage_option = self.intdefines.get('AP_REBOOT_MASS_STORAGE_ENABLED')
+        mass_storage_requested = (default_mass_storage if mass_storage_option is None else
+                                  bool(mass_storage_option))
+        supported_mcu = self.mcu_series.startswith(('STM32F4', 'STM32F7', 'STM32H7'))
+        have_sdcard = (not self.dataflash_list and
+                       (self.have_type_prefix('SDIO') or self.have_type_prefix('SDMMC') or
+                        self.has_sdcard_spi()))
+        have_usb = 'OTG1' in self.bytype
+        self.usb_mass_storage_enabled = (self.is_normal_fw() and mass_storage_requested and
+                                         supported_mcu and fastboot_enabled and have_sdcard and have_usb)
+        if mass_storage_option is not None and mass_storage_option > 0 and not self.usb_mass_storage_enabled:
+            self.error('USB mass storage unavailable (requires normal STM32F4/F7/H7 firmware, '
+                       'persistent reboot state, USB and microSD)')
+        if mass_storage_option is None and default_mass_storage and not self.usb_mass_storage_enabled:
+            self.progress('USB mass storage unavailable (requires STM32F4/F7/H7, USB and microSD)')
+
     def run(self):
         # process input file
         self.process_hwdefs()
@@ -3165,6 +3207,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         self.mcu_type = self.get_config('MCU', 1)
         self.progress("Setup for MCU %s" % self.mcu_type)
+
+        self.setup_usb_mass_storage()
 
         # put USE_BOOTLOADER_FROM_BOARD into the environment so the
         # build process can use it when generating hex files:
