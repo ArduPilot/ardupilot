@@ -7813,9 +7813,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # dive; the mission then advances to LOITER_TO_ALT where the script
         # takes over the descent rate
         self.wait_text("Reached altitude", check_context=True, timeout=1000)
-        self.wait_text("Pullup level", check_context=True, timeout=400)
+        self.wait_text("Start pullup", check_context=True)
+        self.wait_text("released at", check_context=True, timeout=60)
+        self.wait_text("Pullup level r=", check_context=True, timeout=400)
         self.wait_text("TDR: descent rate %.1f m/s" % initial_rate,
                        check_context=True, timeout=300)
+        minimum_airspeed = 0.9 * self.get_parameter("AIRSPEED_MIN")
 
         for alt, rate in rate_schedule:
             self.wait_altitude(-1000, alt, relative=False, timeout=600)
@@ -7830,13 +7833,30 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # can be tight. Note this deliberately does not use
             # wait_descent_rate(), whose getter takes the absolute value and so
             # would accept an equally fast climb.
+
+            def descent_rate_while_flying():
+                att = self.assert_receive_message('ATTITUDE', timeout=5)
+                hud = self.assert_receive_message('VFR_HUD', timeout=5)
+                velocity = self.get_speed_vector()
+                roll = math.degrees(att.roll)
+                pitch = math.degrees(att.pitch)
+                flight_path_angle = math.degrees(
+                    math.atan2(velocity.z, math.hypot(velocity.x, velocity.y)))
+                if (abs(roll) > 60 or abs(pitch) > 60 or
+                        hud.airspeed < minimum_airspeed or flight_path_angle > 45):
+                    raise NotAchievedException(
+                        "Glider not flying while holding %um/s: "
+                        "roll=%.1f pitch=%.1f airspeed=%.1f flightpath=%.1f" %
+                        (rate, roll, pitch, hud.airspeed, flight_path_angle))
+                return velocity.z  # NED, positive down
+
             self.wait_and_maintain(
                 value_name="DescentRate",
                 target=rate,
-                current_value_getter=lambda: self.get_speed_vector().z,  # NED, positive down
+                current_value_getter=descent_rate_while_flying,
                 accuracy=max(1.0, 0.10 * rate),
                 timeout=200,
-                minimum_duration=10,
+                minimum_duration=20,
             )
 
         # releasing the override must hand height control back to TECS, which
