@@ -149,8 +149,7 @@ endif
 #	   $(TESTSRC) \
 #	   test.c
 ifneq ($(CRASHCATCHER),)
-LIBCC_CSRC = $(CRASHCATCHER)/Core/src/CrashCatcher.c \
-             $(HWDEF)/common/crashdump.c
+LIBCC_CSRC = $(CRASHCATCHER)/Core/src/CrashCatcher.c
 
 LIBCC_ASMXSRC = $(CRASHCATCHER)/Core/src/CrashCatcher_armv7m.S
 endif
