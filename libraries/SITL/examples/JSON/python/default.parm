@@ -1,0 +1,28 @@
+# Rover parameters for velocity_controlled_robot.py
+#
+# The defaults below assume the model defaults: 1.5 m/s at full throttle and
+# 1.2 rad/s at full steering.  Change them together with the script arguments.
+
+# Skid steering: left and right throttle on SERVO1 and SERVO3.
+SERVO1_FUNCTION 73
+SERVO3_FUNCTION 74
+
+# Speed feed forward: half throttle gives half of the maximum speed.
+CRUISE_SPEED 0.75
+CRUISE_THROTTLE 50
+
+# Steering feed forward is the steering fraction needed for 1 rad/s, which is
+# 1 / max turn rate.  Leaving this at the default under states the gain by a
+# factor of four, and the vehicle yaws back and forth without making progress.
+ATC_STR_RAT_FF 0.83
+
+WP_SPEED 1.0
+WP_RADIUS 2
+
+# A vehicle of this class can turn on the spot, so pivot rather than arc when
+# the heading error is large.
+WP_PIVOT_ANGLE 30
+WP_PIVOT_RATE 60
+
+# Lateral acceleration available at mission speed: 1.0 m/s * 1.2 rad/s.
+TURN_MAX_G 0.15
