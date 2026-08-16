@@ -34,6 +34,7 @@ class ExtractFeatures(BuildScriptBase):
         self.features = [
             ('AP_ADVANCEDFAILSAFE_ENABLED', r'AP_AdvancedFailsafe::heartbeat\b',),
             ('AP_BOOTLOADER_FLASHING_ENABLED', 'ChibiOS::Util::flash_bootloader',),
+            ('AP_REBOOT_MASS_STORAGE_ENABLED', r'ChibiOS::usb_msd_run',),
             ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
             ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
 
