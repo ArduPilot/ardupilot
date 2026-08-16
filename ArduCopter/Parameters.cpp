@@ -1185,6 +1185,15 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surf_dist_parameters.glitch_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
 #endif
 
+    // @Param: GPS_HACC_GOOD
+    // @DisplayName: GPS Horizontal Accuracy Good
+    // @Description: GPS Horizontal Accuracy in meters at or below this value represents a good position. Used for pre-arm checks. Set to 0 to disable.
+    // @Units: m
+    // @Range: 0 10
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("GPS_HACC_GOOD", 23, ParametersG2, gps_hacc_good, GPS_HACC_GOOD_DEFAULT),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
