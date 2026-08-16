@@ -57,6 +57,15 @@ extern AP_IOMCU iomcu;
 extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
+
+#if AP_REBOOT_MASS_STORAGE_ENABLED && HAL_USB_MSD_BOOT_ENABLED
+bool Util::request_usb_msd()
+{
+    usb_msd_set_boot_request();
+    return true;
+}
+#endif
+
 #if CH_CFG_USE_HEAP == TRUE
 
 /**
@@ -842,4 +851,3 @@ void Util::set_soft_armed(const bool b)
     palWriteLine(HAL_GPIO_PIN_nARMED, !b);
 #endif
 }
-

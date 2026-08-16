@@ -15,8 +15,10 @@
  */
 #pragma once
 
-#include <stdbool.h>
+#include <hal.h>
 
 bool sdcard_init();
+bool sdcard_init_raw(uint8_t slowdown, uint8_t tries);
+BaseBlockDevice *sdcard_get_block_device();
 void sdcard_stop();
 bool sdcard_retry();
