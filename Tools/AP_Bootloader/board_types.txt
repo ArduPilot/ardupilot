@@ -660,6 +660,10 @@ AP_HW_CoreWingF405WMiniV2            7131
 # IDs 7140-7149 reserved for Lectron
 AP_HW_LECTRON_Pi5_H7            7140
 
+# IDs 7170-7179 reserved for Tykho Electronics
+AP_HW_TYKHO_TLS7V2                   7170
+AP_HW_TYKHO_TLS7-Wing                7171
+
 # please fill gaps in the above ranges rather than adding past ID #7199
 
 
