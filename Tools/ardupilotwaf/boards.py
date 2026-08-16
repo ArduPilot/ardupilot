@@ -1140,6 +1140,17 @@ class chibios(Board):
             cfg.env.HWDEF = self.hwdef
         super(chibios, self).configure_env(cfg, env)
 
+        enable_mass_storage = (getattr(cfg.options, 'enable_MASS_STORAGE', False) or
+                               getattr(cfg.options, 'enable_mass_storage', False))
+        disable_mass_storage = (getattr(cfg.options, 'disable_MASS_STORAGE', False) or
+                                getattr(cfg.options, 'disable_mass_storage', False))
+        if enable_mass_storage:
+            cfg.env.MASS_STORAGE_OPTION = 1
+        elif disable_mass_storage:
+            cfg.env.MASS_STORAGE_OPTION = 0
+        else:
+            cfg.env.MASS_STORAGE_OPTION = -1
+
         cfg.load('chibios')
         env.BOARD = self.name
         env.BOARD_CLASS = "ChibiOS"
