@@ -57,8 +57,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
                 var scheduledGeneration = ++generation;
                 var baudRate = Math.Max(uart.BaudRate, 1U);
-                var delayUs = Math.Max(MinimumIdleDelayUs,
-                    (uint)Math.Ceiling(IdleBits * 1000000.0 / baudRate));
+                var delayUs = (uint)Math.Ceiling(IdleBits * 1000000.0 / baudRate);
                 machine.ScheduleAction(TimeInterval.FromMicroseconds(delayUs), _ =>
                 {
                     if(scheduledGeneration == generation)
@@ -88,8 +87,5 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const long InterruptFlagClear = 0x20;
         private const uint Idle = 1 << 4;
         private const uint IdleBits = 11;
-        // AP_UARTPacer uses a 500us minimum inter-byte interval. Keep the
-        // synthetic idle gap well clear of queued external byte events.
-        private const uint MinimumIdleDelayUs = 2000;
     }
 }

@@ -426,11 +426,13 @@ Renode's terminal delivered the complete TCP write at one virtual-time point;
 the long open frame was then consistently lost at the DMA-buffer handoff.
 
 Generated H743 UART endpoints now pass host input through `AP_UARTPacer`, which
-uses the UART buffer-state interface to release one byte per scheduled interval.
+uses the UART buffer-state interface to release one byte per configured frame
+time, after the preceding byte has been consumed by the receiver DMA.
 The IDLE helper was corrected at the same time: an empty one-byte USART FIFO is
 not an idle line, so pending IDLE is superseded by each following byte and is
-raised only after a 2ms input gap. With these changes CubeOrange's automatic
-parameter FTP fetched 1027 values plus defaults, ten consecutive direct
+raised only after a full character-time input gap. With these changes
+CubeOrange's automatic parameter FTP fetched 1027 values plus defaults, ten
+consecutive direct
 `withdefaults=1` downloads each returned 11562 bytes, and three direct packed
 parameter downloads each returned 11488 bytes.
 
