@@ -19,7 +19,7 @@
 
 #if AP_CRASHDUMP_ENABLED
 
-#include <CrashCatcher.h>
+#include "CrashCatcher.h"
 #include <ch.h>
 #include <hal.h>
 #include <string.h>

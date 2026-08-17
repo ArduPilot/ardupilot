@@ -41,7 +41,7 @@
 #include <stddef.h>
 
 #if AP_CRASHDUMP_FATFS_ENABLED || AP_CRASHDUMP_FLASH_ENABLED
-#include <CrashCatcher.h>
+#include "CrashCatcher.h"
 #endif
 
 #ifdef __cplusplus
