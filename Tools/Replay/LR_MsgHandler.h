@@ -2,6 +2,7 @@
 
 #include "MsgHandler.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_DAL/LogStructure.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
@@ -213,12 +214,14 @@ public:
     using LR_MsgHandler::LR_MsgHandler;
     void process_message(uint8_t *msg) override;
 };
+#if AP_DAL_RGPK_LOGGING_ENABLED
 class LR_MsgHandler_RGPK : public LR_MsgHandler
 {
 public:
     using LR_MsgHandler::LR_MsgHandler;
     void process_message(uint8_t *msg) override;
 };
+#endif
 
 class LR_MsgHandler_RMGH : public LR_MsgHandler
 {
