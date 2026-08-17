@@ -98,6 +98,9 @@ void set_fast_reboot(enum rtc_boot_magic v);
 // enable peripheral power if needed
 void peripheral_power_enable(void);
 
+// enable peripheral io output if needed
+void peripheral_io_output_enable(void);
+
 // initialise allocation subsystem
 void malloc_init(void);
 
