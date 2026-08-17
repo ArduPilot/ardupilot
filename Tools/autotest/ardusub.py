@@ -1208,6 +1208,36 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 f"Did not get good TEMP message (want {temp_min} < Temp < {temp_max})")
 
+    def TemperatureSensorDevID(self):
+        '''test TEMPn_DEV_ID is populated on detection and cleared when the sensor is missing'''
+        self.set_parameters({
+            'TEMP1_TYPE': 8,      # SHT3X
+            'TEMP1_BUS': 1,       # SITL provides the SHT3X on I2C bus 1
+            'TEMP1_ADDR': 0x44,   # SHT3X I2C address
+            'TEMP2_TYPE': 5,      # ANALOG
+        })
+        # TEMP2_PIN only exists once the analog backend has been created
+        self.reboot_sitl()
+        self.set_parameter('TEMP2_PIN', 1)
+        self.reboot_sitl()
+
+        # bus type (1 for I2C), bus, address and sensor type packed as per
+        # AP_HAL::Device::make_bus_id
+        self.assert_parameter_value('TEMP1_DEV_ID', 1 | (1 << 3) | (0x44 << 8) | (8 << 16))
+
+        # the analog backend has no bus, so it reports the pin as the address
+        self.assert_parameter_value('TEMP2_DEV_ID', (1 << 8) | (5 << 16))
+
+        self.progress("Moving sensor to an address nothing responds on")
+        self.set_parameters({
+            'TEMP1_ADDR': 0x45,
+            'TEMP2_PIN': -1,      # disabled, so no reading is possible
+        })
+        self.reboot_sitl()
+
+        self.assert_parameter_value('TEMP1_DEV_ID', 0)
+        self.assert_parameter_value('TEMP2_DEV_ID', 0)
+
     def MAV_mgs(self):
         '''test individual GCS backends timestamps'''
         self.reboot_sitl()
@@ -1872,6 +1902,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.INA3221,
             self.PosHoldBounceBack,
             self.SHT3X,
+            self.TemperatureSensorDevID,
             self.SurfaceSensorless,
             self.GPSForYaw,
             self.WaterDepth,
