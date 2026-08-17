@@ -997,8 +997,9 @@ bool Plane::set_land_descent_rate(float descent_rate_ms)
 #if AP_TECS_DESCENT_RATE_ENABLED
 bool Plane::set_tecs_descent_rate_override(float descent_rate, uint32_t timeout_ms)
 {
+    // Reject a new override when TECS is not controlling height, but always
+    // allow a zero-timeout cancellation to pass through.
     if (timeout_ms != 0 && !control_mode->does_auto_throttle()) {
-        // TECS is not controlling height, but always allow a cancel through
         return false;
     }
     return TECS_controller.set_descent_rate_override(descent_rate, timeout_ms);

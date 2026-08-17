@@ -557,20 +557,14 @@ void AP_TECS::_update_height_demand(void)
 
         // Limit height rate of change
         if (descent_rate_override_active()) {
-            // Keep the height profile near the aircraft for a smooth handback
-            // when the override ends. Height error is not used by the rate
-            // controller while the override is active.
+            // Advance the height profile at the requested rate and keep it near
+            // the aircraft for a smooth handback when the override ends. Height
+            // error is not used by the controller while the override is active.
             const float hgt_leash = 0.25f * (_PITCHmaxf - _PITCHminf) * _TAS_state * timeConstant();
-            if (_hgt_dem_rate_ltd > _height + hgt_leash) {
-                // drag the height profile to keep up with the plane
-                _hgt_dem_rate_ltd = _height + hgt_leash;
-            } else if (_hgt_dem_rate_ltd < _height - hgt_leash) {
-                // drag the height profile to keep up with the plane
-                _hgt_dem_rate_ltd = _height - hgt_leash;
-            } else {
-                // force a descent rate
-                _hgt_dem_rate_ltd = _hgt_dem_rate_ltd - descent_rate_override_value() * _DT;
-            }
+            _hgt_dem_rate_ltd = constrain_float(
+                _hgt_dem_rate_ltd - descent_rate_override_value() * _DT,
+                _height - hgt_leash,
+                _height + hgt_leash);
         } else if ((hgt_dem - _hgt_dem_rate_ltd) > (_climb_rate_limit * _DT)) {
             _hgt_dem_rate_ltd = _hgt_dem_rate_ltd + _climb_rate_limit * _DT;
             _sink_fraction = 0.0f;
@@ -1145,7 +1139,10 @@ void AP_TECS::_update_pitch(void)
     if (!inhibit_integrator) {
         _integSEBdot += integSEB_delta;
         if (descent_rate_override_active()) {
-            // when overriding descent rate we don't want the airspeed error integrator to fight the height control
+            // Decay kinetic-energy integrator state accumulated before the
+            // override instead of freezing it. Proportional kinetic-energy
+            // error still provides airspeed recovery when underspeed raises
+            // its weighting.
             const float coef = 1.0f - _DT / (_DT + timeConstant());
             _integKE *= coef;
         } else {
@@ -1158,8 +1155,8 @@ void AP_TECS::_update_pitch(void)
         _integKE *= coef;
     }
     if (descent_rate_override_active()) {
-        // use a more permissive integrator limit centered on 0
-        // this is because we are using a descent rate to pitch feed forward
+        // Use a more permissive integrator limit centered on zero because a
+        // fixed descent-rate demand does not provide a target height.
         integSEBdot_max = 0.5f * (_PITCHmaxf - _PITCHminf) * gainInv;
         integSEBdot_min = - integSEBdot_max;
     }
