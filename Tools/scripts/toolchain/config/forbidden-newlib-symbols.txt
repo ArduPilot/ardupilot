@@ -1,6 +1,7 @@
 # Public newlib entry points that flight firmware must never resolve.
 #
-# The sanitizer removes the complete archive member defining each symbol. Keep
+# Version-specific source patches omit the objects defining these interfaces,
+# and the build verifies every installed target archive against this list. Keep
 # one symbol per line; blank lines and lines beginning with '#' are ignored.
 
 # Process termination and host interaction.
