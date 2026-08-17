@@ -321,10 +321,4 @@ void AP_Compass_BMM150::_update()
     _dev->check_next_register();
 }
 
-void AP_Compass_BMM150::read()
-{
-    drain_accumulated_samples();
-}
-
-
 #endif  // AP_COMPASS_BMM150_ENABLED

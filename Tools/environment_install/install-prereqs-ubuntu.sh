@@ -72,7 +72,7 @@ case ${RELEASE_DISTRIBUTOR} in
     linuxmint)
         # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
         case ${RELEASE_CODENAME} in
-            wilma | xia)
+            zena | wilma | xia)
                 RELEASE_CODENAME='noble'
                 ;;
             vanessa | vera | victoria | virginia)
@@ -94,14 +94,39 @@ case ${RELEASE_DISTRIBUTOR} in
         ;;
 esac
 
-PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default python interpreter
+PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to default Python interpreter
 PIP=pip3
 
-if [ ${RELEASE_CODENAME} == 'bionic' ] ||
-      [ ${RELEASE_CODENAME} == 'buster' ]; then
-    echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
-    exit 1
-elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+case "${RELEASE_CODENAME}" in
+    bionic)   ;&
+    buster)   ;&
+    focal)    ;&
+    groovy)   ;&
+    lunar)    ;&
+    mantic)   ;&
+    oracular)
+        echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
+        exit 1
+        ;;
+
+    bookworm) ;&
+    trixie)   ;&
+    bullseye) ;&
+    jammy)    ;&
+    noble)    ;&
+    plucky)   ;&
+    questing) ;&
+    resolute)
+        echo "${RELEASE_CODENAME} is supported"
+        ;;
+
+    *)
+        echo "This install script does not handle installation for ${RELEASE_CODENAME}"
+        exit 1
+        ;;
+esac
+
+if [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITLFML_VERSION="2.6"
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
@@ -111,32 +136,12 @@ elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'focal' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'mantic' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
 elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    SITLFML_VERSION="2.6"
-    SITLCFML_VERSION="2.6"
-    PYTHON_V="python3"
-    PIP=pip3
-elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
     SITLFML_VERSION="2.6"
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
@@ -151,8 +156,12 @@ elif [ ${RELEASE_CODENAME} == 'questing' ]; then
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'bullseye' ]; then
+elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
+    SITLFML_VERSION="3.0"
+    SITLCFML_VERSION="3.0"
+    PYTHON_V="python3"
+    PIP="python3 -m pip"
+elif [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -194,26 +203,27 @@ fi
 
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect astyle"
-PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
+PYTHON_PKGS="lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser wsproto tabulate"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-    PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
+    if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
+        PYTHON_PKGS="$PYTHON_PKGS pygame"
+    fi
+    PYTHON_PKGS="$PYTHON_PKGS intelhex"
 fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
 
 if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-   [ ${RELEASE_CODENAME} == 'lunar' ] ||
-   [ ${RELEASE_CODENAME} == 'mantic' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'oracular' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
+   [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
-    # on Lunar (and presumably later releases), we install in venv, below
+    # on Ubuntu 23.04 Lunar (and presumably later releases), we install in venv, below
     PYTHON_PKGS+=" numpy pyparsing psutil"
     SITL_PKGS="python3-dev"
 else
@@ -224,12 +234,10 @@ fi
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
     if [ ${RELEASE_CODENAME} == 'trixie' ] ||
        [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-       [ ${RELEASE_CODENAME} == 'lunar' ] ||
-       [ ${RELEASE_CODENAME} == 'mantic' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'oracular' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
+       [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
         SITL_PKGS+=" xterm xfonts-base libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION}"
@@ -308,12 +316,7 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'focal' ];
-then
-    BASE_PKGS+=" python-is-python3"
-    SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'bullseye' ] ||
+if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
          [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
@@ -321,13 +324,10 @@ elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
-    SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} != 'mantic' ] &&
-     [ ${RELEASE_CODENAME} != 'noble' ] &&
-     [ ${RELEASE_CODENAME} != 'oracular' ] &&
+elif [ ${RELEASE_CODENAME} != 'noble' ] &&
      [ ${RELEASE_CODENAME} != 'plucky' ] &&
      [ ${RELEASE_CODENAME} != 'questing' ] &&
+     [ ${RELEASE_CODENAME} != 'resolute' ] &&
      true; then
     if apt-cache search python-argparse | grep argp; then
         SITL_PKGS+=" python-argparse"
@@ -340,28 +340,21 @@ fi
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     SITL_PKGS+=" libjpeg62-turbo-dev"
-  elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-           [ ${RELEASE_CODENAME} == 'focal' ]; then
-    SITL_PKGS+=" libjpeg8-dev"
   elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-  elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-  elif [ ${RELEASE_CODENAME} == 'mantic' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
-    # see below
-  elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'plucky' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'questing' ]; then
+    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
+    # see below
+  elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif apt-cache search python-wxgtk3.0 | grep wx; then
@@ -383,22 +376,15 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'lunar' ]; then
-      PYTHON_PKGS+=" wxpython opencv-python"
-      SITL_PKGS+=" python3-wxgtk4.0"
-      SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'mantic' ] ||
-       [ ${RELEASE_CODENAME} == 'noble' ] ||
-       [ ${RELEASE_CODENAME} == 'oracular' ] ||
+  elif [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
+       [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
       PYTHON_PKGS+=" wxpython opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'focal' ] ||
          [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
@@ -448,24 +434,14 @@ ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
-PYTHON_VENV_PACKAGE=""
 if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-   [ ${RELEASE_CODENAME} == 'lunar' ] ||
-   [ ${RELEASE_CODENAME} == 'mantic' ]; then
-    PYTHON_VENV_PACKAGE=python3.11-venv
-elif [ ${RELEASE_CODENAME} == 'noble' ]; then
-    PYTHON_VENV_PACKAGE=python3.12-venv
-elif [ ${RELEASE_CODENAME} == 'oracular' ]; then
-    PYTHON_VENV_PACKAGE=python3.12-venv
-elif [ ${RELEASE_CODENAME} == 'trixie' ] ||
+     [ ${RELEASE_CODENAME} == 'trixie' ] ||
+     [ ${RELEASE_CODENAME} == 'noble' ] ||
      [ ${RELEASE_CODENAME} == 'plucky' ] ||
      [ ${RELEASE_CODENAME} == 'questing' ] ||
+     [ ${RELEASE_CODENAME} == 'resolute' ] ||
      false; then
-    PYTHON_VENV_PACKAGE=python3-venv
-fi
-
-if [ -n "$PYTHON_VENV_PACKAGE" ]; then
-    $APT_GET install $PYTHON_VENV_PACKAGE
+    $APT_GET install python3-venv
 
     # Check if venv already exists in ARDUPILOT_ROOT (check both venv-ardupilot and venv)
     VENV_PATH=""
@@ -503,10 +479,7 @@ fi
 
 # try update packaging, setuptools and wheel before installing pip package that may need compilation
 SETUPTOOLS="setuptools"
-if [ ${RELEASE_CODENAME} == 'focal' ]; then
-    SETUPTOOLS=setuptools==70.3.0
-fi
-$PIP install $PIP_USER_ARGUMENT -U pip packaging $SETUPTOOLS wheel
+$PIP install $PIP_USER_ARGUMENT --upgrade pip packaging $SETUPTOOLS wheel
 
 if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
@@ -514,15 +487,13 @@ fi
 
 if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
-   [ ${RELEASE_CODENAME} == 'lunar' ] ||
-   [ ${RELEASE_CODENAME} == 'mantic' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
-   [ ${RELEASE_CODENAME} == 'oracular' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
+   [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # must do this ahead of wxPython pip3 run :-/
-    $PIP install $PIP_USER_ARGUMENT -U attrdict3
+    $PIP install $PIP_USER_ARGUMENT --upgrade attrdict3
 fi
 
 # install Python packages one-at-a-time so it is clear which package
@@ -532,36 +503,32 @@ for PACKAGE in $PYTHON_PKGS; do
         echo "##### $PACKAGE takes a *VERY* long time to install (~30 minutes).  Be patient."
         # Use wheel repository for specific supported Ubuntu releases only
         case ${RELEASE_CODENAME} in
-            focal)
-                echo "##### Adding wxpython wheel repository for faster installation"
-                WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-20.04"
-                time $PIP install $PIP_USER_ARGUMENT -U -f $WXPYTHON_WHEEL_REPO $PACKAGE
-                ;;
             jammy)
                 echo "##### Adding wxpython wheel repository for faster installation"
                 WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-22.04"
-                time $PIP install $PIP_USER_ARGUMENT -U -f $WXPYTHON_WHEEL_REPO $PACKAGE
+                time $PIP install $PIP_USER_ARGUMENT --upgrade --find-links $WXPYTHON_WHEEL_REPO $PACKAGE
                 ;;
             noble)
                 echo "##### Adding wxpython wheel repository for faster installation"
                 WXPYTHON_WHEEL_REPO="https://extras.wxpython.org/wxPython4/extras/linux/gtk3/ubuntu-24.04"
-                time $PIP install $PIP_USER_ARGUMENT -U -f $WXPYTHON_WHEEL_REPO $PACKAGE
+                time $PIP install $PIP_USER_ARGUMENT --upgrade --find-links $WXPYTHON_WHEEL_REPO $PACKAGE
                 ;;
             *)
                 echo "##### Installing wxpython from PyPI (no specific wheel repository for this release)"
-                time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
+                time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
                 ;;
         esac
     else
-        time $PIP install $PIP_USER_ARGUMENT -U $PACKAGE
+        time $PIP install $PIP_USER_ARGUMENT --upgrade $PACKAGE
     fi
 done
 
 # somehow Plucky really wants Pillow reinstalled or MAVProxy's map
 # won't load (version mismatch between "Core" and "Pillow")
-if [ ${RELEASE_CODENAME} == 'plucky' ] ||
-       ${RELEASE_CODENAME} == 'questing' ] ||
-       false; then
+if false || \
+        [ ${RELEASE_CODENAME} == 'plucky' ] || \
+        [ ${RELEASE_CODENAME} == 'questing' ] || \
+        false; then
     $PIP install --force-reinstall pillow
 fi
 

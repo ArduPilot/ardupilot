@@ -112,7 +112,7 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
         }
     }
 
-    if (angle <= 0) {
+    if (angle <= 0 || plane.fly_inverted()) {
         // Angle assist disabled
         angle_error.reset();
 
@@ -130,8 +130,8 @@ bool VTOL_Assist::should_assist(float aspeed, bool have_airspeed)
             (ahrs_pitch_deg > (plane.aparm.pitch_limit_min - allowed_envelope_error_deg));
 
         const bool inside_angle_error =
-            (fabsf(ahrs_roll_deg - plane.nav_roll_cd*0.01) < angle) &&
-            (fabsf(ahrs_pitch_deg - plane.nav_pitch_cd*0.01) < angle);
+            (fabsf(plane.rollController.get_angle_error_deg()) < angle) &&
+            (fabsf(plane.pitchController.get_angle_error_deg()) < angle);
 
         if (angle_error.update(!inside_envelope && !inside_angle_error, now_ms, tigger_delay_ms, clear_delay_ms)) {
             gcs().send_text(MAV_SEVERITY_WARNING, "Angle assist r=%d p=%d",
@@ -158,9 +158,9 @@ bool VTOL_Assist::check_VTOL_recovery(void)
         return false;
     }
 
-    // see if the attitude is outside twice the Q_ANGLE_MAX
+    // see if the attitude is outside twice the Q_A_ANGLE_MAX
     const auto &ahrs = plane.ahrs;
-    const int16_t angle_max_cd = quadplane.aparm.angle_max;
+    const float angle_max_cd = quadplane.attitude_control->lean_angle_max_cd();
     const float abs_angle_cd = fabsf(Vector2f{float(ahrs.roll_sensor), float(ahrs.pitch_sensor)}.length());
 
     if (abs_angle_cd > 2*angle_max_cd) {
@@ -169,7 +169,7 @@ bool VTOL_Assist::check_VTOL_recovery(void)
     }
 
     if (quadplane.force_fw_control_recovery) {
-        // stop fixed wing recovery if inside Q_ANGLE_MAX
+        // stop fixed wing recovery if inside Q_A_ANGLE_MAX
         if (abs_angle_cd <= angle_max_cd) {
             quadplane.force_fw_control_recovery = false;
             quadplane.attitude_control->reset_target_and_rate(false);

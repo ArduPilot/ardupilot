@@ -54,6 +54,9 @@ public:
 
     virtual bool allow_weathervane() { return true; }
 
+    // Return true if forward throttle should be allowed for position control, see Q_FWD_THR_USE
+    virtual bool allow_vfwd() const { return true; }
+
     virtual void set_last_fw_pitch(void) {}
 
     virtual bool allow_stick_mixing() const { return true; }

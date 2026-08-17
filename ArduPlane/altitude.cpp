@@ -34,7 +34,7 @@ void Plane::check_home_alt_change(void)
     if (home_alt_cm != auto_state.last_home_alt_cm && hal.util->get_soft_armed()) {
         // cope with home altitude changing
         const int32_t alt_change_cm = home_alt_cm - auto_state.last_home_alt_cm;
-        fix_terrain_WP(next_WP_loc, __LINE__);
+        fix_terrain_WP(next_WP_loc, __AP_LINE__);
 
         // reset TECS to force the field elevation estimate to reset
         TECS_controller.offset_altitude(alt_change_cm * 0.01f);
@@ -412,11 +412,11 @@ void Plane::check_fbwb_altitude(void)
     // taking fence max and min altitude (with margin)
     const uint8_t enabled_fences = plane.fence.get_enabled_fences();
     if ((enabled_fences & AC_FENCE_TYPE_ALT_MIN) != 0) {
-        min_alt_cm = plane.fence.get_safe_alt_min_m()*100.0;
+        min_alt_cm = plane.fence.get_relative_safe_alt_min_m()*100.0;
         should_check_min = true;
     }
     if ((enabled_fences & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        max_alt_cm = plane.fence.get_safe_alt_max_m()*100.0;
+        max_alt_cm = plane.fence.get_relative_safe_alt_max_m()*100.0;
         should_check_max = true;
     }
 #endif
@@ -686,8 +686,10 @@ float Plane::rangefinder_correction(void)
         return 0;
     }
 
-    // for now we only support the rangefinder for landing 
-    bool using_rangefinder = (rangefinder_use(RangeFinderUse::TAKEOFF_LANDING) && flight_stage == AP_FixedWing::FlightStage::LAND);
+    // for now we only support the rangefinder for landing
+    bool using_rangefinder = (rangefinder_use(RangeFinderUse::TAKEOFF_LANDING) &&
+                              flight_stage == AP_FixedWing::FlightStage::LAND &&
+                              rangefinder_state.in_use);
     if (!using_rangefinder) {
         return 0;
     }
@@ -783,9 +785,18 @@ void Plane::rangefinder_height_update(void)
                 flightstage_good_for_rangefinder_landing = true;
             }
 #endif
+
+            // Check if the aircraft is within RNGFND_LND_DIST meters from the
+            // landing point to engage it
+            const int16_t land_engage_dist_m = g2.rangefinder_land_engage_dist_m;
+            const bool is_within_engagement_distance =
+                (land_engage_dist_m <= 0) ||
+                (auto_state.wp_distance <= land_engage_dist_m);
+
             if (!rangefinder_state.in_use &&
                 flightstage_good_for_rangefinder_landing &&
-                rangefinder_use(RangeFinderUse::TAKEOFF_LANDING)) {
+                rangefinder_use(RangeFinderUse::TAKEOFF_LANDING) &&
+                is_within_engagement_distance) {
                 rangefinder_state.in_use = true;
                 gcs().send_text(MAV_SEVERITY_INFO, "Rangefinder engaged at %.2fm", (double)rangefinder_state.height_estimate);
             }
@@ -951,7 +962,8 @@ float Plane::get_landing_height(bool &rangefinder_active)
 #if AP_RANGEFINDER_ENABLED
     // possibly correct with rangefinder
     height -= rangefinder_correction();
-    rangefinder_active = rangefinder_use(RangeFinderUse::TAKEOFF_LANDING) && rangefinder_state.in_range;
+    rangefinder_active = rangefinder_use(RangeFinderUse::TAKEOFF_LANDING) &&
+                         rangefinder_state.in_use && rangefinder_state.in_range;
 #endif
 
     return height;

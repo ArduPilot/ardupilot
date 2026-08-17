@@ -590,4 +590,4 @@ uint32_t SOCKET_CLASS_NAME::inet_str_to_addr(const char *ipstr)
 
 }
 
-#endif // AP_NETWORKING_BACKEND_ANY
+#endif // AP_NETWORKING_SOCKETS_ENABLED || defined(AP_SOCKET_NATIVE_ENABLED)

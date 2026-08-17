@@ -93,6 +93,17 @@ public:
     // If false (aka "follow") the gimbal's tilt is maintained in body-frame meaning it will roll with the vehicle
     void set_roll_lock(bool roll_lock) { _roll_lock = roll_lock; }
 
+#if AP_MOUNT_POI_LOCK_ENABLED
+    // set poi_lock to switch to GPS Targeting mode using current GPS point in gimbal's view or current saved poi and save entry mode for suspend function
+    void set_poi_lock();
+    // clears poi_lock and reverts to default targeting mode
+    void clear_poi_lock();
+    // reverts to saved poi entry mode but maintains poi location if set_poi_lock is called again without clearing it
+    void suspend_poi_lock();
+    // check that poi_target has been set
+    bool roi_is_set() { return !_roi_target.is_zero(); }
+#endif // AP_MOUNT_POI_LOCK_ENABLED
+
     // set angle target in degrees
     // roll and pitch are in earth-frame
     // yaw_is_earth_frame (aka yaw_lock) should be true if yaw angle is earth-frame, false if body-frame
@@ -109,6 +120,11 @@ public:
 
     // set_sys_target - sets system that mount should attempt to point towards
     void set_target_sysid(uint8_t sysid);
+
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // set_roi_target_wpnext_offset - point to next waypoint, with offsets
+    void set_roi_target_wpnext_offset(const Vector3f &rpy);
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
     // handle do_mount_control command.  Returns MAV_RESULT_ACCEPTED on success
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);
@@ -144,19 +160,26 @@ public:
     // handle GIMBAL_DEVICE_ATTITUDE_STATUS message
     virtual void handle_gimbal_device_attitude_status(const mavlink_message_t &msg) {}
 
+#if AP_SCRIPTING_ENABLED
     // get target rate in deg/sec. returns true on success
-    bool get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
+    virtual bool get_rate_target(float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
 
     // get target angle in deg. returns true on success
-    bool get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
+    virtual bool get_angle_target(float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
 
-#if AP_SCRIPTING_ENABLED
     // get mount target location. returns true on success
     bool get_location_target(Location &target_loc);
 #endif
 
     // accessors for scripting backends
     virtual void set_attitude_euler(float roll_deg, float pitch_deg, float yaw_bf_deg) {};
+
+#if AP_SCRIPTING_ENABLED
+    // used by a script sending messages to a physical device to
+    // indicate what targets can be either natively sent to the device
+    // or internally handled by the script
+    virtual void set_natively_supported_mount_target_types(uint8_t types_mask) { }
+#endif  // AP_SCRIPTING_ENABLED
 
     // write mount log packet
     void write_log(uint64_t timestamp_us);
@@ -194,7 +217,18 @@ public:
 #endif
 
     // send camera information message to GCS
-    virtual void send_camera_information(mavlink_channel_t chan) const {}
+    void send_camera_information(mavlink_channel_t chan) const;
+
+    // virtual methods supplying data for send_camera_information
+    // backends that have no associated camera (e.g. pass-through gimbals like STorM32)
+    // should leave has_camera_information() returning false to suppress sending
+    virtual bool has_camera_information() const { return false; }
+    virtual void get_camera_vendor_name(char *buf, uint8_t buflen) const { }
+    virtual void get_camera_model_name(char *buf, uint8_t buflen) const { }
+    virtual uint32_t get_camera_firmware_version() const { return 0; }
+    virtual float get_camera_focal_length_mm() const { return NaNf; }
+    virtual uint8_t get_camera_lens_id() const { return 0; }
+    virtual uint32_t get_camera_cap_flags() const { return 0; }
 
     // send camera settings message to GCS
     virtual void send_camera_settings(mavlink_channel_t chan) const {}
@@ -230,6 +264,9 @@ protected:
     enum class MountTargetType {
         ANGLE     = 0,
         RATE      = 1,
+        RETRACTED = 2,
+        NEUTRAL   = 3,
+        LOCATION  = 4,
     };
 
     // class for a single angle or rate target
@@ -238,8 +275,8 @@ protected:
         float roll;
         float pitch;
         float yaw;
-        bool pitch_is_ef; //only changed and used by CADDX currently
-        bool roll_is_ef; //only changed and used  by CADDX currently
+        bool pitch_is_ef = true; //can be changed on select gimbals
+        bool roll_is_ef = true; //can be changed on select gimbals
         bool yaw_is_ef;
 
         // return body-frame yaw angle from a mount target (in radians)
@@ -256,6 +293,8 @@ protected:
         float roll;      // roll rate in radians/second
         float pitch;     // roll rate in radians/second
         float yaw;       // roll rate in radians/second
+        bool pitch_is_ef = true;
+        bool roll_is_ef = true;
         bool yaw_is_ef;  // if set then `yaw` is a rate in earth frame
     };
 
@@ -291,6 +330,9 @@ protected:
     // FIXME: make it an internal error for these to ever be called:
     virtual void send_target_angles(const MountAngleTarget &angle_rad) { }
     virtual void send_target_rates(const MountRateTarget &rate_rads) { }
+    virtual void send_target_retracted() { }
+    virtual void send_target_neutral() { }
+    virtual void send_target_location(const Location &roi_loc) { }
 
     // options parameter bitmask handling
     enum class Options : uint8_t {
@@ -302,11 +344,26 @@ protected:
 
     // called when mount mode is RC-targetting, updates the mnt_target object from RC inputs:
     void update_mnt_target_from_rc_target();
+    
+    //called to remove lean angle in roll/pitch mount angle to convert to bodyframe
+    void adjust_mnt_target_if_RP_locked();
+    
+    // if this function returns true, then when roll and pitch have
+    // been locked to body frame (e.g. the user is using a switch or mount option to
+    // lock them to body frame) we add in the vehicle's roll and
+    // pitch to the target angles to position the gimbal in body
+    // frame.  This is used on mounts which do not have the option to
+    // move in body frame themselves (e.g. SToRM32 in its normal
+    // configuration) and can be overriden in their heading files
+    virtual bool apply_bf_roll_pitch_adjustments_in_rc_targeting() const {
+        return false;
+    }
 
     // method for the mount backends to call to update mnt_target based on
     // the mount mode.  Methods in here may be overridden by the derived
     // class to customise behaviour
     void update_mnt_target();
+    void _update_mnt_target();
 
     // returns true if user has configured a valid roll angle range
     // allows user to disable roll even on 3-axis gimbal
@@ -335,6 +392,12 @@ protected:
     // returns true on success, false on failure
     bool get_angle_target_to_home(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // get angle targets (in radians) to next waypoint, with offsets previously supplied
+    // returns true on success, false on failure
+    bool get_angle_target_to_wpnext_offset(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
     // get angle targets (in radians) to a vehicle with sysid of _target_sysid
     // returns true on success, false on failure
     bool get_angle_target_to_sysid(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
@@ -362,12 +425,15 @@ protected:
         MountAngleTarget angle_rad; // angle target in radians
         MountRateTarget rate_rads;  // rate target in rad/s
         uint32_t last_rate_request_ms;
+        uint32_t poi_start_ms;  // time we started trying to find the gimbal POI for an AuxFunc::MOUNT_POI_LOCK
+        bool pointing_at_poi_at_home_alt;
     } mnt_target;
     
     // RP earth frame locks accessible by backend
     bool _pitch_lock = true;              // pitch_lock used in RC_TARGETING mode. True if the gimbal's tilt target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
     bool _roll_lock = true;               // roll_lock used in RC_TARGETING mode. True if the gimbal's roll target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
-    
+
+    bool clear_roi_pending;     // True if there is a pending clear ROI request
 
 private:
 
@@ -383,8 +449,13 @@ private:
     void calculate_poi();
 #endif
 
+#if AP_MOUNT_POI_LOCK_ENABLED
+    // calculate the Location that the gimbal is pointing at, assuming the target is at home altitude
+    bool calculate_poi_at_home_alt(Location &target_location);
+#endif
+
     bool _yaw_lock;                 // yaw_lock used in RC_TARGETING mode. True if the gimbal's yaw target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
-    
+
     float _yaw_lock_heading_rad;            // mount earth frame direction captured upon calling set_yaw_lock
 
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
@@ -399,6 +470,18 @@ private:
 #endif
 
     Location _roi_target;           // roi target location
+
+#if AP_MOUNT_POI_LOCK_ENABLED
+    void update_poi_lock_target();
+
+    // mount mode saved here entering poi lock for 
+    // switching poi lock back to previous mode with aux function middle position
+    MAV_MOUNT_MODE saved_mount_mode = MAV_MOUNT_MODE_ENUM_END;
+#endif // AP_MOUNT_POI_LOCK_ENABLED
+
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    Vector3f _roi_wpnext_rpy;       // angular offsets for pointing-at-waypoint
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location

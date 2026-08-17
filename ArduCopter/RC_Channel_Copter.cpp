@@ -16,12 +16,12 @@ int8_t RC_Channels_Copter::flight_mode_channel_number() const
 
 void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
 {
-    if (new_pos < 0 || (uint8_t)new_pos > copter.num_flight_modes) {
+    if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(copter.g.flight_modes)) {
         // should not have been called
         return;
     }
 
-    if (!copter.set_mode((Mode::Number)copter.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
+    if (!copter.set_mode((Mode::Number)copter.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
         return;
     }
 
@@ -94,7 +94,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::RESETTOARMEDYAW:
     case AUX_FUNC::RTL:
     case AUX_FUNC::SAVE_TRIM:
+#if MODE_AUTO_ENABLED
     case AUX_FUNC::SAVE_WP:
+#endif  // MODE_AUTO_ENABLED
     case AUX_FUNC::SMART_RTL:
     case AUX_FUNC::STABILIZE:
     case AUX_FUNC::THROW:
@@ -108,7 +110,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::ZIGZAG_Auto:
     case AUX_FUNC::ZIGZAG_SaveWP:
     case AUX_FUNC::ACRO:
+#if MODE_AUTO_ENABLED
     case AUX_FUNC::AUTO_RTL:
+#endif  // MODE_AUTO_ENABLED
     case AUX_FUNC::TURTLE:
     case AUX_FUNC::SIMPLE_HEADING_RESET:
     case AUX_FUNC::ARMDISARM_AIRMODE:
@@ -182,9 +186,12 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
 
     switch(ch_option) {
         case AUX_FUNC::FLIP:
-            // flip if switch is on, positive throttle and we're actually flying
             if (ch_flag == AuxSwitchPos::HIGH) {
                 copter.set_mode(Mode::Number::FLIP, ModeReason::AUX_FUNCTION);
+            } else {
+#if MODE_FLIP_ENABLED
+                copter.mode_flip.abandon_flip();
+#endif
             }
             break;
 
@@ -524,9 +531,11 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             break;
 #endif
 
+#if MODE_ALTHOLD_ENABLED
         case AUX_FUNC::ALTHOLD:
             do_aux_function_change_mode(Mode::Number::ALT_HOLD, ch_flag);
             break;
+#endif
 
 #if MODE_ACRO_ENABLED
         case AUX_FUNC::ACRO:
@@ -726,20 +735,24 @@ void RC_Channel_Copter::do_aux_function_change_force_flying(const AuxSwitchPos c
 // save_trim - adds roll and pitch trims from the radio to ahrs
 void RC_Channels_Copter::save_trim()
 {
-    float roll_trim = 0;
-    float pitch_trim = 0;
+    float roll_trim_rad = 0.0;
+    float pitch_trim_rad = 0.0;
+
 #if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
     if (auto_trim.running) {
         auto_trim.running = false;
     } else {
 #endif
-    // save roll and pitch trim
-    roll_trim = cd_to_rad((float)get_roll_channel().get_control_in());
-    pitch_trim = cd_to_rad((float)get_pitch_channel().get_control_in());
-#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED    
+
+    // get roll and pitch trim adjustment
+    copter.flightmode->get_pilot_desired_lean_angles_rad(roll_trim_rad, pitch_trim_rad, copter.attitude_control->lean_angle_max_rad(), copter.attitude_control->get_althold_lean_angle_max_rad());
+
+#if AP_COPTER_AHRS_AUTO_TRIM_ENABLED
     }
 #endif
-    AP::ahrs().add_trim(roll_trim, pitch_trim);
+
+    // save roll and pitch trim
+    AP::ahrs().add_trim(roll_trim_rad, pitch_trim_rad);
     LOGGER_WRITE_EVENT(LogEvent::SAVE_TRIM);
     gcs().send_text(MAV_SEVERITY_INFO, "Trim saved");
 }

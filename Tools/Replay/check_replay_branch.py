@@ -8,7 +8,6 @@ Check out a specified branch, compile and run Replay against replay log
 Run check_replay.py over the produced log
 '''
 
-import git # https://pypi.org/project/GitPython/
 import glob
 import os
 import subprocess
@@ -19,9 +18,16 @@ from pymavlink import DFReader
 
 import check_replay
 
-class CheckReplayBranch(object):
-    def __init__(self, master='remotes/origin/master'):
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'scripts'))
+from build_script_base import BuildScriptBase
+
+class CheckReplayBranch(BuildScriptBase):
+    def __init__(self, master='master', no_clean=False, no_debug=False, vehicles=()):
+        super().__init__()
         self.master = master
+        self.no_clean = no_clean
+        self.no_debug = no_debug
+        self.vehicles = vehicles
 
     def find_topdir(self):
         here = os.getcwd()
@@ -37,11 +43,9 @@ class CheckReplayBranch(object):
             bits = bits[:-2]
         raise FileNotFoundError()
 
-    def find_repo(self):
-        return git.Repo(self.topdir)
-
     def assert_tree_clean(self):
-        if self.repo.is_dirty():
+        output = self.run_git(["status", "--porcelain", "--untracked-files=no"], show_output=False)
+        if output.strip():
             raise ValueError("Tree is dirty")
 
     def is_replayable_log(self, logfile_path):
@@ -90,10 +94,18 @@ class CheckReplayBranch(object):
                 return False
         return False
 
-    def progress(self, message):
-        print("CRB: %s" % message)
+    def progress_prefix(self):
+        return 'CRB'
 
     def build_replay(self):
+        # explicitly reconfigure; the checkout of the branch after
+        # autotest configured on master may have changed the configure
+        # files, and waf's auto-reconfigure fails if the branches'
+        # configure options differ:
+        waf_configure = ["./waf", "configure", "--board", "sitl"]
+        if not self.no_debug:
+            waf_configure.append("--debug")
+        subprocess.check_call(waf_configure)
         subprocess.check_call(["./waf", "replay"])
 
     def run_replay_on_log(self, logfile_path):
@@ -102,20 +114,32 @@ class CheckReplayBranch(object):
     def get_logs(self):
         return sorted(glob.glob("logs/*.BIN"))
 
-    def run_autotest_replay_on_master(self):
-        # remember where we were:
-        old_branch = self.repo.active_branch
+    def run_autotest_replay_on_master(self, vehicle):
+        # remember where we were; may be a sha1 if in detached-HEAD state:
+        old_branch = self.find_current_git_branch_or_sha1()
 
         # check out the master branch:
-        self.repo.head.reference = self.master
-        self.repo.head.reset(index=True, working_tree=True)
+        self.run_git(["checkout", self.master], show_output=False)
+        self.run_git(["submodule", "update", "--recursive"], show_output=False)
 
         # generate logs:
-        subprocess.check_call(["Tools/autotest/autotest.py", "--debug", "build.Copter", "test.Copter.Replay"])
+        args = ["Tools/autotest/autotest.py"]
+
+        if self.no_debug:
+            args.append("--no-debug")
+        else:
+            args.append("--debug")
+
+        if self.no_clean:
+            args.append("--no-clean")
+
+        args.extend([f"build.{vehicle}", f"test.{vehicle}.Replay"])
+
+        subprocess.check_call(args) # actually run the test
 
         # check out the original branch:
-        self.repo.head.reference = old_branch
-        self.repo.head.reset(index=True, working_tree=True)
+        self.run_git(["checkout", old_branch], show_output=False)
+        self.run_git(["submodule", "update", "--recursive"], show_output=False)
 
     def find_replayed_logs(self):
         '''find logs which were replayed in the autotest'''
@@ -127,7 +151,7 @@ class CheckReplayBranch(object):
                 m = dfreader.recv_match(type='MSG')
                 if m is None:
                     break
-                match = re.match(".*Running replay on \(([^)]+)\).*", m.Message)
+                match = re.match(r".*Running replay on \(([^)]+)\).*", m.Message)
                 if match is None:
                     continue
                 replayed_logs.add(match.group(1))
@@ -135,42 +159,49 @@ class CheckReplayBranch(object):
 
     def run(self):
         self.topdir = self.find_topdir()
-        self.repo = self.find_repo()
         self.assert_tree_clean()
 
         os.chdir(self.topdir)
         self.progress("chdir (%s)" % str(self.topdir))
 
-        self.progress("Running autotest Replay on %s" % self.master)
-        self.run_autotest_replay_on_master()
-
-        self.progress("Building Replay")
-        self.build_replay()
-        self.progress("Build of Replay done")
-
-        # check all replayable logs
-        self.progress("Finding replayed logs")
-        replay_logs = self.find_replayed_logs()
         success = True
-        if len(replay_logs) == 0:
-            raise ValueError("Found no Replay logs")
-        for log in replay_logs:
-            self.progress("Running Replay on (%s)" % log)
-            old_logs = self.get_logs()
-            self.run_replay_on_log(log)
-            new_logs = self.get_logs()
-            delta = [x for x in new_logs if x not in old_logs]
-            if len(delta) != 1:
-                raise ValueError("Expected a single new log")
-            new_log = delta[0]
-            self.progress("Running check_replay.py on Replay output log: %s" % new_log)
+        for vehicle in self.vehicles:
+            self.progress("Running autotest Replay on %s (%s)" % (self.master, vehicle))
+            self.run_autotest_replay_on_master(vehicle)
 
-            # run check_replay across Replay log
-            if check_replay.check_log(new_log, verbose=True):
-                self.progress("check_replay.py of (%s): OK" % new_log)
-            else:
-                self.progress("check_replay.py of (%s): FAILED" % new_log)
-                success = False
+            # need to check now as running a new test for a new vehicle deletes the logs
+            self.progress("Building Replay")
+            self.build_replay()
+            self.progress("Build of Replay done")
+
+            # check all replayable logs
+            self.progress("Finding replayed logs")
+            replay_logs = self.find_replayed_logs()
+
+            if len(replay_logs) == 0:
+                raise ValueError("Found no Replay logs")
+            for log in replay_logs:
+                self.progress("Running Replay on (%s)" % log)
+                old_logs = self.get_logs()
+                self.run_replay_on_log(log)
+                new_logs = self.get_logs()
+                delta = [x for x in new_logs if x not in old_logs]
+                if len(delta) != 1:
+                    raise ValueError("Expected a single new log")
+                new_log = delta[0]
+                self.progress("Running check_replay.py on Replay output log: %s" % new_log)
+
+                # run check_replay across Replay log
+                if check_replay.check_log(new_log, verbose=True):
+                    self.progress("check_replay.py of (%s): OK" % new_log)
+                else:
+                    self.progress("check_replay.py of (%s): FAILED" % new_log)
+                    success = False
+
+            if not success:
+                # don't continue to next vehicle so bad logs are still around
+                break
+
         if success:
             self.progress("All OK")
         else:
@@ -179,14 +210,16 @@ class CheckReplayBranch(object):
         return success
 
 if __name__ == '__main__':
-    import sys
     from argparse import ArgumentParser
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument("--master", default='remotes/origin/master', help="branch to consider master branch")
+    parser.add_argument("--master", default='master', help="branch to consider master branch")
+    parser.add_argument("--no-clean", action="store_true", help="do not clean SITL before building")
+    parser.add_argument("--no-debug", action="store_true", help="do not make built SITL binaries debug binaries")
+    parser.add_argument("--vehicle", "-v", nargs="+", default=["Copter", "Plane"], help="vehicle to run Replay test on")
 
     args = parser.parse_args()
 
-    s = CheckReplayBranch(master=args.master)
+    s = CheckReplayBranch(master=args.master, no_clean=args.no_clean, no_debug=args.no_debug, vehicles=args.vehicle)
     if not s.run():
         sys.exit(1)
 

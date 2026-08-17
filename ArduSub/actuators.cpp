@@ -45,7 +45,7 @@ const AP_Param::GroupInfo Actuators::var_info[] = {
     // @Description:  Initial increment step for changing the actuator's PWM
     // @Units: us
     // @User: Standard
-    AP_GROUPINFO("6_INC", 6, Actuators, Actuators::actuator_increment_step[5], ACTUATOR_DEFAULT_INCREMENT),
+    AP_GROUPINFO("6_INC", 6, Actuators, actuator_increment_step[5], ACTUATOR_DEFAULT_INCREMENT),
 
     AP_GROUPEND
 };

@@ -147,11 +147,6 @@ void Copter::init_ardupilot()
     g2.proximity.init();
 #endif
 
-#if AP_BEACON_ENABLED
-    // init beacons used for non-gps position estimation
-    g2.beacon.init();
-#endif
-
 #if MODE_AUTO_ENABLED
     // initialise mission library
     mode_auto.mission.init();
@@ -441,15 +436,15 @@ void Copter::allocate_motors(void)
 #if FRAME_CONFIG != HELI_FRAME
     if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING) {
 #if AP_SCRIPTING_ENABLED
-        attitude_control = NEW_NOTHROW AC_AttitudeControl_Multi_6DoF(*ahrs_view, aparm, *motors);
+        attitude_control = NEW_NOTHROW AC_AttitudeControl_Multi_6DoF(*ahrs_view, *motors);
         attitude_control_var_info = AC_AttitudeControl_Multi_6DoF::var_info;
 #endif // AP_SCRIPTING_ENABLED
     } else {
-        attitude_control = NEW_NOTHROW AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors);
+        attitude_control = NEW_NOTHROW AC_AttitudeControl_Multi(*ahrs_view, *motors);
         attitude_control_var_info = AC_AttitudeControl_Multi::var_info;
     }
 #else
-    attitude_control = NEW_NOTHROW AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors);
+    attitude_control = NEW_NOTHROW AC_AttitudeControl_Heli(*ahrs_view, *motors);
     attitude_control_var_info = AC_AttitudeControl_Heli::var_info;
 #endif
     if (attitude_control == nullptr) {
@@ -523,8 +518,21 @@ void Copter::allocate_motors(void)
     convert_prx_parameters();
 #endif
 
+    // upgrade attitude controller parameters
+    copter.attitude_control->convert_parameters();
+
     // upgrade position controller parameters
     copter.pos_control->convert_parameters();
+
+    // convert wp_nav parameters
+    copter.wp_nav->convert_parameters();
+
+    // upgrade loiter navigation parameters
+    loiter_nav->convert_parameters();
+
+#if MODE_CIRCLE_ENABLED
+    circle_nav->convert_parameters();
+#endif
 
     // param count could have changed
     AP_Param::invalidate_count();

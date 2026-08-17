@@ -119,6 +119,13 @@ void GCS_MAVLINK::handle_device_op_write(const mavlink_message_t &msg)
         retcode = 2;
         goto fail;
     }
+    if (packet.count > sizeof(packet.data)) {
+        // bound count against the payload buffer to prevent OOB read
+        // from packet.data[i] in the register write loop and OOB read
+        // in the raw transfer_bank() path below.
+        retcode = 5;
+        goto fail;
+    }
     if (!dev->get_semaphore()->take(10)) {
         retcode = 3;
         goto fail;        

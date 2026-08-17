@@ -14,25 +14,47 @@ _ap_autotest() {
   case "$state" in
     (args)
       _arguments -C \
-        '--skip[list of steps to skip (comma separated)]' \
-        '(-j --jobs)'{-j,--jobs}'[number of processors to use during build]:int:' \
+        '--autotest-server[run in autotest-server mode; dangerous!]' \
+        '--move-logs-on-test-failure[move logs to ../buildlogs if a test fails]' \
+        '--skip[list of steps to skip (comma separated)]:SKIP:' \
         '--viewerip[IP address to send MAVLink and fg packets to]:VIEWERIP:' \
+        '--enable-fgview[enable FlightGear output]' \
         '--map[show map]' \
         '--experimental[enable experimental tests]' \
         '--timeout[maximum runtime in seconds]:TIMEOUT:' \
-        '--frame[specify frame type]:FRAME:' \
         '--show-test-timings[show how long each test took to run]' \
         '--validate-parameters[validate vehicle parameter files]' \
-        '--no-configure [do not configure before building]' \
-        '--waf-configure-args[extra arguments passed to waf in configure]:WAF_CONFIGURE_ARGS:' \
+        '--Werror[configure with --Werror]' \
+        '--junit[generate Junit XML tests report]' \
+        '--no-configure[do not configure before building]' \
+        '*--waf-configure-args[extra arguments passed to waf in configure]:WAF_CONFIGURE_ARGS:' \
+        '-j[build CPUs]:int:' \
         '--no-clean[do not clean before building]' \
-        '--debug[make built binaries debug binaries]' \
+        '--debug[make built SITL binaries debug binaries]' \
+        '--no-debug[do not make built SITL binaries debug binaries]' \
+        '--coverage[make built binaries coverage binaries]' \
+        '--enable-math-check-indexes[enable checking of math indexes]' \
+        '--postype-single[force single precision copter position controller]' \
+        '--ekf-single[force single precision EKF]' \
+        '--force-32bit[compile sitl using 32-bit]' \
+        '--ubsan[compile sitl with undefined behaviour sanitiser]' \
+        '--ubsan-abort[compile sitl with undefined behaviour sanitiser and abort on error]' \
+        '--num-aux-imus[number of auxiliary IMUs to simulate]:int:' \
+        '--enable-dronecan-tests[enable dronecan tests]' \
         '--speedup[speedup to run the simulations at]:SPEEDUP:' \
         '--valgrind[run ArduPilot binaries under valgrind]' \
-        '--gdb[run ArduPilot ot binaries under gdb]' \
+        '--asan[enable ASAN error checking (binary must be built with --asan --debug)]' \
+        '--callgrind[enable valgrind for performance analysis (slow!!)]' \
+        '--gdb[run ArduPilot binaries under gdb]' \
+        '--gdb-no-tui[when running under GDB do NOT start in TUI mode]' \
         '--gdbserver[run ArduPilot binaries under gdbserver]' \
+        '--lldb[run ArduPilot binaries under lldb]' \
+        '--strace[strace the ArduPilot binary]' \
         '(-B --breakpoint)'{-B,--breakpoint}'[add a breakpoint at given location in debugger]:BREAKPOINT:' \
         '--disable-breakpoints[disable all breakpoints before starting]' \
+        '--force-ahrs-type[force a specific AHRS type (e.g. 10 for SITL-ekf)]:AHRS_TYPE:' \
+        '--replay[enable replay logging for tests]' \
+        '--reset-after-every-test[reset everything after every test run]' \
         '*: :_ap_autotest_cmds' \
       ;;
     esac
@@ -51,7 +73,7 @@ _ap_autotest() {
     test)
       tasks=( $($caller --list-subtests-for-vehicle $vehicle) )
       suf=( -qS '.' )
-      _wanted "vehiclfdsfses" expl "vehifdsfcle" compadd $tasks && return 0
+      _wanted "subtests" expl "subtest" compadd $tasks && return 0
       ;;
     esac
   else

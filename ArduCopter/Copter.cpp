@@ -170,10 +170,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinder,      20,    100,  33),
 #endif
 #if HAL_PROXIMITY_ENABLED
-    SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         200,  50,  36),
-#endif
-#if AP_BEACON_ENABLED
-    SCHED_TASK_CLASS(AP_Beacon,            &copter.g2.beacon,           update,         400,  50,  39),
+    SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         200, 200,  36),
 #endif
     SCHED_TASK(update_altitude,       10,    100,  42),
     SCHED_TASK(run_nav_updates,       50,    100,  45),
@@ -384,7 +381,7 @@ bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, flo
     Quaternion q;
     q.from_euler(radians(roll_deg),radians(pitch_deg),radians(yaw_deg));
 
-    mode_guided.set_angle(q, Vector3f{}, climb_rate_ms*100, false);
+    mode_guided.set_angle(q, Vector3f{}, climb_rate_ms, false);
     return true;
 }
 
@@ -651,6 +648,8 @@ void Copter::loop_rate_logging()
     if (should_log(MASK_LOG_IMU_FAST)) {
         AP::ins().Write_IMU();
     }
+
+    motors->Log_Write_SPOL();
 }
 
 // ten_hz_logging_loop
@@ -691,7 +690,7 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_RCOUT)) {
         logger.Write_RCOUT();
     }
-    if (should_log(MASK_LOG_NTUN) && (flightmode->requires_GPS() || landing_with_GPS() || !flightmode->has_manual_throttle())) {
+    if (should_log(MASK_LOG_NTUN) && (flightmode->requires_position() || landing_with_GPS() || !flightmode->has_manual_throttle())) {
         pos_control->write_log();
     }
     if (should_log(MASK_LOG_IMU) || should_log(MASK_LOG_IMU_FAST) || should_log(MASK_LOG_IMU_RAW)) {
@@ -702,8 +701,8 @@ void Copter::ten_hz_logging_loop()
         g2.proximity.log();  // Write proximity sensor distances
 #endif
 #if AP_BEACON_ENABLED
-        g2.beacon.log();
-#endif
+        beacon.log();
+#endif  // AP_BEACON_ENABLED
     }
 #if AP_WINCH_ENABLED
     if (should_log(MASK_LOG_ANY)) {
@@ -851,39 +850,6 @@ void Copter::init_simple_bearing()
 #endif
 }
 
-// update_simple_mode - rotates pilot input if we are in simple mode
-void Copter::update_simple_mode(void)
-{
-    float rollx, pitchx;
-
-    // exit immediately if no new radio frame or not in simple mode
-    if (simple_mode == SimpleMode::NONE || !ap.new_radio_frame) {
-        return;
-    }
-
-    // mark radio frame as consumed
-    ap.new_radio_frame = false;
-
-    // avoid processing bind-time RC values:
-    if (!rc().has_valid_input()) {
-        return;
-    }
-
-    if (simple_mode == SimpleMode::SIMPLE) {
-        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
-        rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*simple_sin_yaw + channel_pitch->get_control_in()*simple_cos_yaw;
-    }else{
-        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
-        rollx = channel_roll->get_control_in()*super_simple_cos_yaw - channel_pitch->get_control_in()*super_simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*super_simple_sin_yaw + channel_pitch->get_control_in()*super_simple_cos_yaw;
-    }
-
-    // rotate roll, pitch input from north facing to vehicle's perspective
-    channel_roll->set_control_in(rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw());
-    channel_pitch->set_control_in(-rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw());
-}
-
 // update_super_simple_bearing - adjusts simple bearing based on location
 // should be called after home_bearing_rad has been updated
 void Copter::update_super_simple_bearing(bool force_update)
@@ -939,6 +905,13 @@ void Copter::update_altitude()
 }
 
 // vehicle specific waypoint info helpers
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+bool Copter::get_wp_location(Location &loc) const
+{
+    return flightmode->get_wp(loc);
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
 bool Copter::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()
@@ -963,13 +936,13 @@ bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
 }
 
 // get the target earth-frame angular velocities in rad/s (Z-axis component used by some gimbals)
-bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
+bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets_rads) const
 {
     // always returns zero vector if landed or disarmed
     if (copter.ap.land_complete) {
-        rate_ef_targets.zero();
+        rate_ef_targets_rads.zero();
     } else {
-        rate_ef_targets = attitude_control->get_rate_ef_targets();
+        rate_ef_targets_rads = attitude_control->get_rate_ef_target_rads();
     }
     return true;
 }
@@ -979,7 +952,6 @@ bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
  */
 Copter::Copter(void)
     :
-    flight_modes(&g.flight_mode1),
     pos_variance_filt(FS_EKF_FILT_DEFAULT),
     vel_variance_filt(FS_EKF_FILT_DEFAULT),
     flightmode(&mode_stabilize),

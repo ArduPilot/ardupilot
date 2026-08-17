@@ -25,8 +25,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <SITL/SITL.h>
 
-#define LOG_TAG "COMPASS"
-
 AP_Compass_DroneCAN::DetectedModules AP_Compass_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_Compass_DroneCAN::_sem_registry;
 
@@ -60,12 +58,6 @@ AP_Compass_Backend* AP_Compass_DroneCAN::probe(uint8_t index)
                 return nullptr;
             }
             _detected_modules[index].driver = driver;
-            AP::can().log_text(AP_CANManager::LOG_INFO,
-                                LOG_TAG,
-                                "Found Mag Node %d on Bus %d Sensor ID %d\n",
-                                _detected_modules[index].node_id,
-                                _detected_modules[index].ap_dronecan->get_driver_index(),
-                                _detected_modules[index].sensor_id);
 #if AP_TEST_DRONECAN_DRIVERS
             // Scroll through the registered compasses, and set the offsets
             if (driver->_compass.get_offsets(index).is_zero()) {
@@ -96,7 +88,6 @@ bool AP_Compass_DroneCAN::init()
     }
     set_external(true);
 
-    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG,  "AP_Compass_DroneCAN loaded\n\r");
     return true;
 }
 
@@ -225,8 +216,4 @@ void AP_Compass_DroneCAN::handle_magnetic_field_hires(AP_DroneCAN *ap_dronecan, 
 }
 #endif  // AP_COMPASS_DRONECAN_HIRES_ENABLED
 
-void AP_Compass_DroneCAN::read(void)
-{
-    drain_accumulated_samples();
-}
 #endif  // AP_COMPASS_DRONECAN_ENABLED

@@ -166,9 +166,4 @@ check_registers:
     dev->check_next_register();
 }
 
-void AP_Compass_LIS3MDL::read()
-{
-    drain_accumulated_samples();
-}
-
 #endif  // AP_COMPASS_LIS3MDL_ENABLED

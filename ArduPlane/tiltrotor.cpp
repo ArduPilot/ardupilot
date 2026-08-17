@@ -785,6 +785,38 @@ bool Tiltrotor_Transition::show_vtol_view() const
     return show_vtol;
 }
 
+// Return true if forward throttle should be allowed for position control, see Q_FWD_THR_USE
+bool Tiltrotor_Transition::allow_vfwd() const
+{
+    // Don't allow forward throttle (tilt) if a tilting motor has failed which would result in a yaw imbalance
+
+    // No resultant yaw imbalance if not vectored
+    if (!tiltrotor.is_vectored()) {
+        return true;
+    }
+
+    // No failed motor
+    if (!motors->get_thrust_boost()) {
+        return true;
+    }
+
+    // Get index of failed motor
+    const uint8_t lost_motor = motors->get_lost_motor();
+
+    // Failed motor is not tilting
+    if (!tiltrotor.is_motor_tilting(lost_motor)) {
+        return true;
+    }
+
+    // Failed tilting motor is on the center line, so will not cause a yaw imbalance
+    if (is_zero(motors->get_roll_factor(lost_motor))) {
+        return true;
+    }
+
+    // Disable forward throttle (tilt)
+    return false;
+}
+
 // return true if we are tilted over the max angle threshold
 bool Tiltrotor::tilt_over_max_angle(void) const
 {

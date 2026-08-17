@@ -7,11 +7,11 @@ Runs tests with gcov coverage support.
 """
 import argparse
 import os
-import tempfile
-import time
 import shutil
 import subprocess
 import sys
+import tempfile
+import time
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 os.set_blocking(sys.stdout.fileno(), True)
@@ -232,8 +232,7 @@ class CoverageRunner(object):
                     subprocess.run(["lcov",
                                     "--remove", self.INFO_FILE,
                                     ".waf*",
-                                    root_dir + "/modules/gtest/*",
-                                    root_dir + "/modules/DroneCAN/libcanard/*",
+                                    root_dir + "/modules/*",
                                     root_dir + "/build/linux/libraries/*",
                                     root_dir + "/build/linux/modules/*",
                                     root_dir + "/build/sitl/libraries/*",

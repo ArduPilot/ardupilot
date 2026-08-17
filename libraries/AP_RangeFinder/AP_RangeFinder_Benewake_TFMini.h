@@ -24,4 +24,4 @@ private:
     using AP_RangeFinder_Benewake::AP_RangeFinder_Benewake;
 };
 
-#endif  // AP_RANGEFINDER_BENEWAKE_TFMINI
+#endif  // AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED

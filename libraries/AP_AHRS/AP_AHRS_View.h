@@ -93,8 +93,8 @@ public:
         return ahrs.get_location(loc);
     }
 
-    bool wind_estimate(Vector3f &wind) {
-        return ahrs.wind_estimate(wind);
+    bool get_wind(Vector3f &wind) {
+        return ahrs.get_wind(wind);
     }
 
     bool airspeed_EAS(float &airspeed_ret) const WARN_IF_UNUSED {
@@ -149,19 +149,19 @@ public:
         return ahrs.get_accel_ef();
     }
 
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
-        return ahrs.getLastPosNorthEastReset(pos);
+    uint16_t get_position_NE_reset_count(void) WARN_IF_UNUSED {
+        return ahrs.get_position_NE_reset_count();
     }
 
-    uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
-        return ahrs.getLastPosDownReset(posDelta);
+    uint16_t get_position_D_reset_count(void) WARN_IF_UNUSED {
+        return ahrs.get_position_D_reset_count();
     }
 
     // rotate a 2D vector from earth frame to body frame
     // in result, x is forward, y is right
     Vector2f earth_to_body2D(const Vector2f &ef_vector) const;
 
-    // rotate a 2D vector from earth frame to body frame
+    // rotate a 2D vector from body frame to earth frame
     // in input, x is forward, y is right
     Vector2f body_to_earth2D(const Vector2f &bf) const;
 

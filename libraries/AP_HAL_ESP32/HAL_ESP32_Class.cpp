@@ -129,6 +129,10 @@ HAL_ESP32::HAL_ESP32() :
 
 void HAL_ESP32::run(int argc, char * const argv[], Callbacks* callbacks) const
 {
+#if AP_SIM_ENABLED
+    AP::sitl()->init();
+#endif  // AP_SIM_ENABLED
+
     ((ESP32::Scheduler *)hal.scheduler)->set_callbacks(callbacks);
     hal.scheduler->init();
 }

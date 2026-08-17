@@ -72,11 +72,17 @@ ModeSystemId::ModeSystemId(void) : Mode()
 
 #define SYSTEM_ID_DELAY     1.0f      // time in seconds waited after system id mode change for frequency sweep injection
 
+// Return true if this mode is enabled, used by MAVLink available modes
+bool ModeSystemId::enabled() const
+{
+    return axis != 0;
+}
+
 // systemId_init - initialise systemId controller
 bool ModeSystemId::init(bool ignore_checks)
 {
     // check if enabled
-    if (axis == 0) {
+    if (!enabled()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "No axis selected, SID_AXIS = 0");
         return false;
     }
@@ -167,9 +173,6 @@ void ModeSystemId::run()
     Vector2f input_vel_ne_ms;
 
     if (!is_poscontrol_axis_type()) {
-
-        // apply simple mode transform to pilot inputs
-        update_simple_mode();
 
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->lean_angle_max_rad());

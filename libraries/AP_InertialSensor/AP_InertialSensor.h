@@ -1,6 +1,54 @@
 #pragma once
 
+#include <AP_HAL/AP_HAL_Boards.h>
+
+#ifndef INS_AUX_INSTANCES
+#define INS_AUX_INSTANCES 0
+#endif
+
+#ifndef INS_MAX_INSTANCES
+#define INS_MAX_INSTANCES (3+INS_AUX_INSTANCES)
+#endif
+
+#if INS_MAX_INSTANCES < 3 && INS_AUX_INSTANCES > 0
+#error "INS_AUX_INSTANCES must be zero if INS_MAX_INSTANCES is less than 3"
+#endif
+
+#if INS_MAX_INSTANCES > 3 && INS_AUX_INSTANCES == 0
+#error "INS_AUX_INSTANCES must be non-zero if INS_MAX_INSTANCES is greater than 3"
+#endif
+
+#define INS_MAX_BACKENDS  2*INS_MAX_INSTANCES
+#define INS_MAX_NOTCHES 12
+#ifndef INS_VIBRATION_CHECK_INSTANCES
+  #if HAL_MEM_CLASS >= HAL_MEM_CLASS_300
+    #define INS_VIBRATION_CHECK_INSTANCES INS_MAX_INSTANCES
+  #else
+    #define INS_VIBRATION_CHECK_INSTANCES 1
+  #endif
+#endif
+#define XYZ_AXIS_COUNT    3
+// The maximum we need to store is gyro-rate / loop-rate, worst case ArduCopter with BMI088 is 2000/400
+#define INS_MAX_GYRO_WINDOW_SAMPLES 8
+
+#define DEFAULT_IMU_LOG_BAT_MASK 0
+
 #include "AP_InertialSensor_config.h"
+
+#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+#ifndef HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
+#if HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+# define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 3
+#else
+# define HAL_INS_NUM_HARMONIC_NOTCH_FILTERS 2
+#endif
+#endif
+#endif
+
+// time for the estimated gyro rates to converge
+#ifndef HAL_INS_CONVERGANCE_MS
+#define HAL_INS_CONVERGANCE_MS 30000
+#endif
 
 // Gyro and Accelerometer calibration criteria
 #define AP_INERTIAL_SENSOR_ACCEL_VIBE_FLOOR_FILT_HZ     5.0f    // accel vibration floor filter hz
@@ -186,6 +234,14 @@ public:
     const Vector3f &get_imu_pos_offset(void) const {
         return _accel_pos(_first_usable_accel);
     }
+
+    // return the gyro bias limit (rad/s) for this IMU instance.
+    // The EKF clamps its gyro bias state to this value.
+    float get_gyro_bias_limit_rads(uint8_t instance) const;
+
+    // return the initial gyro bias 1-sigma uncertainty (deg/s) for this
+    // IMU instance, used to seed the EKF's gyro bias covariance.
+    float get_gyro_bias_init_dps(uint8_t instance) const;
 
     // return the temperature if supported. Zero is returned if no
     // temperature is available
@@ -501,7 +557,10 @@ private:
 
     // Logging function
     void Write_IMU_instance(const uint64_t time_us, const uint8_t imu_instance) const;
-    
+
+    // look up the backend that owns the given gyro instance, or nullptr
+    const AP_InertialSensor_Backend *_find_gyro_backend(uint8_t instance) const;
+
     // backend objects
     AP_InertialSensor_Backend *_backends[INS_MAX_BACKENDS];
 
@@ -830,6 +889,10 @@ public:
     // is dynamic fifo enabled for this instance
     bool is_dynamic_fifo_enabled(uint8_t instance) const;
     // endif AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+
+    uint8_t get_first_onboard_imu_instance() const { return _first_onboard_imu_instance; }
+private:
+    uint8_t _first_onboard_imu_instance;
 };
 
 namespace AP {

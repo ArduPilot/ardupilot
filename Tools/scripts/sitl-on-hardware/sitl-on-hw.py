@@ -6,10 +6,11 @@ see https://ardupilot.org/dev/docs/sim-on-hardware.html
 AP_FLAKE8_CLEAN
 '''
 
+import os
 import subprocess
 import sys
-import os
 import tempfile
+
 from argparse import ArgumentParser
 
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../Tools', 'autotest'))
@@ -67,8 +68,8 @@ if args.frame and args.frame not in frame_options and not not args.simclass.star
     sys.exit(1)
 
 
-extra_hwdef = tempfile.NamedTemporaryFile(mode='w', delete=False)
-extra_defaults = tempfile.NamedTemporaryFile(mode='w')
+extra_hwdef = tempfile.NamedTemporaryFile(mode='w', delete=False)  # noqa: SIM115
+extra_defaults = tempfile.NamedTemporaryFile(mode='w')  # noqa: SIM115
 
 
 def hwdef_write(s):
@@ -94,17 +95,21 @@ else:
     defaults_base = "default.param"
 
 # add base hwdef to extra_hwdef
-hwdef_write(open(sohw_path(extra_hwdef_base), "r").read() + "\n")
+with open(sohw_path(extra_hwdef_base), "r") as in_file:
+    hwdef_write(in_file.read() + "\n")
 
 for f in args.extra_hwdef:
-    hwdef_write(open(f, "r").read() + "\n")
+    with open(f, "r") as in_file:
+        hwdef_write(in_file.read() + "\n")
 
 # add base defaults to extra_defaults
-defaults_write(open(sohw_path(defaults_base), "r").read() + "\n")
+with open(sohw_path(defaults_base), "r") as in_file:
+    defaults_write(in_file.read() + "\n")
 
 if args.defaults:
     for d in args.defaults.split(","):
-        defaults_write(open(d, "r").read() + "\n")
+        with open(d, "r") as in_file:
+            defaults_write(in_file.read() + "\n")
 
 if args.simclass:
     if args.simclass == 'Glider':

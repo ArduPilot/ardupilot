@@ -182,13 +182,13 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 17, AC_PrecLand, _options, 0),
 
-    // @Param{Rover,Copter}: ORIENT
+    // @Param{Rover}: ORIENT
     // @DisplayName: Camera Orientation
     // @Description: Orientation of camera/sensor on body
     // @Values: 0:Forward, 4:Back, 25:Down
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO_FRAME("ORIENT", 18, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER | AP_PARAM_FRAME_COPTER | AP_PARAM_FRAME_TRICOPTER | AP_PARAM_FRAME_HELI), 
+    AP_GROUPINFO_FRAME("ORIENT", 18, AC_PrecLand, _orient, AC_PRECLAND_ORIENT_DEFAULT, AP_PARAM_FRAME_ROVER), 
 
     AP_GROUPEND
 };
@@ -284,15 +284,17 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     // append current velocity and attitude correction into history buffer
     struct inertial_data_frame_s inertial_data_newest;
     const auto &_ahrs = AP::ahrs();
-    _ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt);
-    inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
+
     Vector3f curr_vel;
     nav_filter_status status;
-    if (!_ahrs.get_velocity_NED(curr_vel) || !_ahrs.get_filter_status(status)) {
+    if (!_ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt) ||
+        !_ahrs.get_velocity_NED(curr_vel) ||
+        !_ahrs.get_filter_status(status)) {
         inertial_data_newest.inertialNavVelocityValid = false;
     } else {
         inertial_data_newest.inertialNavVelocityValid = status.flags.horiz_vel;
     }
+    inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
     curr_vel.z = -curr_vel.z;  // NED to NEU
     inertial_data_newest.inertialNavVelocity = curr_vel;
 
@@ -671,7 +673,7 @@ bool AC_PrecLand::construct_pos_meas_using_rangefinder(float rangefinder_alt_m, 
             float roll_rad, pitch_rad, yaw_rad;
             _inertial_data_delayed->Tbn.to_euler(&roll_rad, &pitch_rad, &yaw_rad);
             target_vec_unit_ned = target_vec_unit;
-            target_vec_unit_ned.rotate_xy(-yaw_rad);
+            target_vec_unit_ned.rotate_xy(yaw_rad);
             break;
         }
 

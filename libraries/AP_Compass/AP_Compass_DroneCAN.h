@@ -12,8 +12,6 @@ class AP_Compass_DroneCAN : public AP_Compass_Backend {
 public:
     AP_Compass_DroneCAN(AP_DroneCAN* ap_dronecan, uint32_t devid);
 
-    void        read(void) override;
-
     static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);
     static AP_Compass_Backend* probe(uint8_t index);
     static uint32_t get_detected_devid(uint8_t index) { return _detected_modules[index].devid; }

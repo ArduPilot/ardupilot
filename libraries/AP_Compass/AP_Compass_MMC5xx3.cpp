@@ -302,10 +302,5 @@ void AP_Compass_MMC5XX3::timer()
     }
 }
 
-void AP_Compass_MMC5XX3::read()
-{
-    drain_accumulated_samples();
-}
-
 #endif  // AP_COMPASS_MMC5XX3_ENABLED
 

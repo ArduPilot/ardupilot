@@ -45,41 +45,15 @@ static constexpr uint16_t MAX_DIST_CM = 2000;
 static constexpr uint16_t MIN_DIST_CM = 1;
 static constexpr uint16_t MIN_STRENGTH = 100;
 
-
-AP_RangeFinder_Benewake_TFS20L::AP_RangeFinder_Benewake_TFS20L(
-        RangeFinder::RangeFinder_State &_state,
-        AP_RangeFinder_Params &_params,
-        AP_HAL::I2CDevice &dev)
-    : AP_RangeFinder_Backend(_state, _params)
-    , _dev(dev)
-{
-}
-
-AP_RangeFinder_Backend *AP_RangeFinder_Benewake_TFS20L::detect(
-        RangeFinder::RangeFinder_State &_state,
-        AP_RangeFinder_Params &_params,
-        AP_HAL::I2CDevice *dev)
-{
-    if (dev == nullptr) {
-        return nullptr;
-    }
-    AP_RangeFinder_Benewake_TFS20L *sensor = NEW_NOTHROW AP_RangeFinder_Benewake_TFS20L(_state, _params, *dev);
-    if (sensor == nullptr || !sensor->init()) {
-        delete sensor;
-        return nullptr;
-    }
-    return sensor;
-}
-
 bool AP_RangeFinder_Benewake_TFS20L::init()
 {
     {
-        WITH_SEMAPHORE(_dev.get_semaphore());
+        WITH_SEMAPHORE(dev.get_semaphore());
         uint8_t version_data[3];
-        _dev.set_retries(3);
+        dev.set_retries(3);
 
         // Read firmware version to detect if sensor is present
-        if (!_dev.read_registers(TFS20L_VERSION_MAJOR, version_data, 3)) {
+        if (!dev.read_registers(TFS20L_VERSION_MAJOR, version_data, 3)) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "TFS20L: No response from sensor");
             return false;
         }
@@ -89,7 +63,7 @@ bool AP_RangeFinder_Benewake_TFS20L::init()
     }
 
     // Register periodic callback to read sensor data
-    _dev.register_periodic_callback(50000,  // 20Hz sampling rate
+    dev.register_periodic_callback(50000,  // 20Hz sampling rate
                                      FUNCTOR_BIND_MEMBER(&AP_RangeFinder_Benewake_TFS20L::timer, void));
 
     return true;
@@ -126,7 +100,7 @@ void AP_RangeFinder_Benewake_TFS20L::timer()
      * TFS20L_DIST_LOW (0x00) through TFS20L_AMP_HIGH (0x03)
      */
     uint8_t raw_data[4]; // Buffer for distance + strength data only
-    if (!_dev.read_registers(TFS20L_DIST_LOW, raw_data, sizeof(raw_data))) {
+    if (!dev.read_registers(TFS20L_DIST_LOW, raw_data, sizeof(raw_data))) {
         return;
     }
 

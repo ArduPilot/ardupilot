@@ -41,7 +41,7 @@
 
 class AC_AttitudeControl_Multi : public AC_AttitudeControl {
 public:
-	AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors);
+	AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, AP_MotorsMulticopter& motors);
 
 	// empty destructor to suppress compiler warning
 	virtual ~AC_AttitudeControl_Multi() {}
@@ -77,7 +77,6 @@ public:
 
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) override;
-    void rate_controller_target_reset() override;
     void rate_controller_run() override;
 
     // sanity check parameters.  should be called once before take-off

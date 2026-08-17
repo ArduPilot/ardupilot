@@ -469,6 +469,114 @@ TEST(Control, test_control)
     EXPECT_FLOAT_EQ(velxy.y, 0.0);
 }
 
+TEST(KinematicLimit, normal_values)
+{
+    // This test's strategy is to select common hand-computable right triangles and show
+    // that for a variety of 'vertical planes' (defined by the ratio of X and Y) the +z
+    // 'half' of the permissible region computes the expected result.
+    // (In a few cases, test the other overload to contribute to test clarity.)
+    // For the -z 'half', we deliberately pick a different max in order to show that
+    // some cases are impacted by the z-limit, while others are only impacted by xy-limit.
+    constexpr float max_xy = 4.0f;
+    constexpr float max_z_pos = 4.0f;
+    constexpr float max_z_neg = 8.0f;
+    Vector3f direction;
+    float expected;
+
+    // Vertical
+    direction = Vector3f(0.0f, 0.0f, +1.0f);
+    expected = 4.0f;
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+    EXPECT_FLOAT_EQ(kinematic_limit(0.0f, direction.z, max_xy, max_z_neg, max_z_pos), expected);
+    direction.z *= -1.0f;
+    expected *= 2.0f;
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+    EXPECT_FLOAT_EQ(kinematic_limit(0.0f, direction.z, max_xy, max_z_neg, max_z_pos), expected);
+
+    // XZ plane, a (1, 2, sqrt(5)) right triangle
+    direction = Vector3f(1.0f, 0.0f, +2.0f);
+    expected = 2.0f * sqrtf(5.0f);
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+    direction.z *= -1.0f;
+    expected *= 2.0f;
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+    // Show that flipping the x-direction has no impact
+    // (once is enough, we don't need to show this in every case)
+    direction.x *= -1.0f;
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+
+    // YZ plane, a (3, 4, 5) right triangle
+    direction = Vector3f(0.0f, 3.0f, +4.0f);
+    expected = 5.0f;
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+    direction.z *= -1.0f;
+    expected *= (4.0f / 3.0f); // With a higher z-mag, this hits the xy-mag limit
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+
+    // X=-Y plane, a (1, 1, sqrt(2)) right triangle
+    direction = Vector3f(1.0f / sqrtf(2.0f), -1.0f / sqrtf(2.0f), +1.0f);
+    expected = 4.0f * sqrtf(2.0f);
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+    EXPECT_FLOAT_EQ(kinematic_limit(1.0f, direction.z, max_xy, max_z_neg, max_z_pos), expected);
+    direction.z *= -1.0f;
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+    EXPECT_FLOAT_EQ(kinematic_limit(1.0f, direction.z, max_xy, max_z_neg, max_z_pos), expected);
+
+    // Horizontal, in an arbitrary XY plane.
+    direction = Vector3f(-1.23f, -4.56f, 0.0f);
+    expected = max_xy;
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+    direction.z *= -1.0f;
+    EXPECT_FLOAT_EQ(kinematic_limit(direction, max_xy, max_z_neg, max_z_pos), expected);
+}
+
+// This test demonstrates the intended behavior when any of the 3 limits are zero.
+TEST(KinematicLimit, zero_max_limit)
+{
+    // If you can select any values here which cause this test to fail,
+    // that indicates the code has a problem.
+    constexpr float arbitrary1 = 1.11f;
+    constexpr float arbitrary2 = 2.22f;
+    constexpr float arbitrary3 = 3.33f;
+    constexpr float arbitrary4 = 4.44f;
+
+    constexpr float expected_limit = 0.0f;
+
+    for (const auto dir_xy : {0.0f, arbitrary1}) {
+        for (const auto dir_z : {0.0f, arbitrary2, -arbitrary2}) {
+            // Test 1: max_xy==0 constrains all cases.
+            // (The case likely to surprise users who don't read the
+            //  documentation is the pure-vertical case.)
+            float observed_limit = kinematic_limit(dir_xy,
+                                                   dir_z,
+                                                   0.0f,
+                                                   arbitrary3,
+                                                   arbitrary4);
+            EXPECT_FLOAT_EQ(observed_limit, expected_limit);
+
+            // Test 2: max_z_neg==0 constrains all cases.
+            // (The cases likely to surprise users who don't read the
+            //  documentation are when the z-component is non-negative.)
+            observed_limit = kinematic_limit(dir_xy,
+                                                   dir_z,
+                                                   arbitrary3,
+                                                   0.0f,
+                                                   arbitrary4);
+            EXPECT_FLOAT_EQ(observed_limit, expected_limit);
+
+            // Test 3: max_z_pos==0 constrains all cases.
+            // (The cases likely to surprise users who don't read the
+            //  documentation are when the z-component is non-positive.)
+            observed_limit = kinematic_limit(dir_xy,
+                                                   dir_z,
+                                                   arbitrary3,
+                                                   arbitrary4,
+                                                   0.0f);
+            EXPECT_FLOAT_EQ(observed_limit, expected_limit);
+        }
+    }
+}
+
 // catch floating point exceptions
 sigjmp_buf avert_your_eyes_children;
 static void _tc_sig_fpe(int signum)
@@ -520,6 +628,34 @@ TEST(Control, test_limit_accel)
         abort();
     }
     sigaction(SIGFPE, &old_sa_fpe, nullptr);
+}
+
+TEST(Control, test_limit_accel_reversal_no_lateral_spike)
+{
+    // A saturated braking command aligned with the North axis must not inject a
+    // lateral (East) acceleration as the cross-track reference rotates through zero
+    // (the roll wobble at a hard Loiter stop). A small residual perpendicular
+    // reference component makes the reference direction rotate through the crossing;
+    // below LIMIT_ACCEL_XY_MIN_REF the fade to the direction-preserving limit
+    // removes the spike.
+    const float accel_max = 5.0f;
+    // braking command pointing South, saturating the limit
+    const float accel_cmd_n = -1.5f * accel_max;
+    const float residual_e = 0.02f;   // small perpendicular reference residual
+
+    float worst_east = 0.0f;
+    // sweep the reference North component through zero
+    for (float rn = 1.0f; rn >= -1.0f; rn -= 0.005f) {
+        const Vector2f vel_norm{rn, residual_e};
+        Vector2f accel{accel_cmd_n, 0.0f};
+        limit_accel_xy(vel_norm, accel, accel_max);
+        // command has zero East; output East is pure injected cross-axis error
+        worst_east = MAX(worst_east, fabsf(accel.y));
+        // magnitude must always respect the limit
+        EXPECT_LE(accel.length(), accel_max * 1.001f);
+    }
+    // Without the low-reference fade this reaches ~0.2*accel_max. Assert it stays small.
+    EXPECT_LT(worst_east, 0.1f * accel_max);
 }
 
 AP_GTEST_MAIN()

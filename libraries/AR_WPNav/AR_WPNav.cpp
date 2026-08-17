@@ -491,7 +491,7 @@ void AR_WPNav::update_psc_input_shaping(float dt)
     }
 }
 
-// update distance from vehicle's current position to destination
+// update straight-line distance and bearing from vehicle's current position to destination
 void AR_WPNav::update_distance_and_bearing_to_destination()
 {
     // if no current location leave distance unchanged
@@ -536,6 +536,7 @@ void AR_WPNav::set_turn_params(float turn_radius, bool pivot_possible)
 }
 
 // calculate the crosstrack error
+// value is negative when the vehicle is on the path's left side
 float AR_WPNav::calc_crosstrack_error(const Location& current_loc) const
 {
     if (!_orig_and_dest_valid) {

@@ -41,7 +41,7 @@ enum ap_message : uint8_t {
     MSG_GPS2_RAW                       =  24,
     MSG_GPS2_RTK                       =  25,
     MSG_SYSTEM_TIME                    =  26,
-    MSG_SERVO_OUT                      =  27,
+    MSG_UNUSED1                        =  27,
     MSG_NEXT_MISSION_REQUEST_WAYPOINTS =  28,
     MSG_NEXT_MISSION_REQUEST_RALLY     =  29,
     MSG_NEXT_MISSION_REQUEST_FENCE     =  30,
@@ -49,9 +49,7 @@ enum ap_message : uint8_t {
     MSG_FENCE_STATUS                   =  32,
     MSG_SIMSTATE                       =  33,
     MSG_SIM_STATE                      =  34,
-#if AP_MAVLINK_MSG_HWSTATUS_ENABLED
-    MSG_HWSTATUS                       =  35,
-#endif  // AP_MAVLINK_MSG_HWSTATUS_ENABLED
+    // MSG_HWSTATUS                       =  35,
     MSG_WIND                           =  36,
 #if AP_MAVLINK_MSG_RANGEFINDER_SENDING_ENABLED
     MSG_RANGEFINDER                    =  37,
@@ -114,6 +112,9 @@ enum ap_message : uint8_t {
     MSG_AVAILABLE_MODES_MONITOR        =  99,
 #if AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
     MSG_FLIGHT_INFORMATION             = 100,
-#endif
+#endif  // AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED
+#if AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
+    MSG_UTM_GLOBAL_POSITION            = 101,
+#endif  // AP_MAVLINK_UTM_GLOBAL_POSITION_SENDING_ENABLED
     MSG_LAST // MSG_LAST must be the last entry in this enum
 };

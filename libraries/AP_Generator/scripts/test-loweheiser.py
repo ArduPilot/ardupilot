@@ -8,12 +8,12 @@ AP_FLAKE8_CLEAN
 
 """
 
-import sys
-import time
 import optparse
 import os
-import select
 import re
+import select
+import sys
+import time
 
 os.environ['MAVLINK20'] = '1'
 

@@ -45,13 +45,13 @@ void Sub::Log_Write_Control_Tuning()
         throttle_out        : motors.get_throttle(),
         throttle_hover      : motors.get_throttle_hover(),
         desired_alt         : pos_control.get_pos_target_U_cm() * 0.01f,
-        inav_alt            : inertial_nav.get_position_z_up_cm() * 0.01f,
+        inav_alt            : pos_control.get_pos_estimate_U_m(),
         baro_alt            : barometer.get_altitude(),
         desired_rangefinder_alt   : mode_surftrak.get_rangefinder_target_cm() * 0.01,
         rangefinder_alt           : rangefinder_state.alt,
         terr_alt            : terr_alt,
         target_climb_rate   : (int16_t)pos_control.get_vel_target_U_cms(),
-        climb_rate          : climb_rate
+        climb_rate          : int16_t(pos_control.get_vel_estimate_U_ms() * 100.0f)
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -185,18 +185,18 @@ struct PACKED log_GuidedTarget {
 };
 
 // Write a Guided mode target
-void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target, const Vector3f& vel_target)
+void Sub::Log_Write_GuidedTarget(uint8_t target_type, const Vector3f& pos_target_neu_cm, const Vector3f& vel_target_neu_cms)
 {
     struct log_GuidedTarget pkt = {
         LOG_PACKET_HEADER_INIT(LOG_GUIDEDTARGET_MSG),
         time_us         : AP_HAL::micros64(),
         type            : target_type,
-        pos_target_x    : pos_target.x,
-        pos_target_y    : pos_target.y,
-        pos_target_z    : pos_target.z,
-        vel_target_x    : vel_target.x,
-        vel_target_y    : vel_target.y,
-        vel_target_z    : vel_target.z
+        pos_target_x    : pos_target_neu_cm.x,
+        pos_target_y    : pos_target_neu_cm.y,
+        pos_target_z    : pos_target_neu_cm.z,
+        vel_target_x    : vel_target_neu_cms.x,
+        vel_target_y    : vel_target_neu_cms.y,
+        vel_target_z    : vel_target_neu_cms.z
     };
     logger.WriteBlock(&pkt, sizeof(pkt));
 }

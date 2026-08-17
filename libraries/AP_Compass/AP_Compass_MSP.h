@@ -14,8 +14,6 @@ public:
 
     static AP_Compass_Backend *probe(uint8_t _msp_instance);
 
-    void read(void) override;
-
 private:
     AP_Compass_MSP(uint8_t _msp_instance) :
         msp_instance{_msp_instance} { }

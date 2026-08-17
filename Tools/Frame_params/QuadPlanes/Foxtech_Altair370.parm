@@ -65,17 +65,17 @@ Q_ACRO_RLL_RATE  300
 Q_ACRO_YAW_RATE  15
 
 # small angle max
-Q_ANGLE_MAX      1000
+Q_A_ANGLE_MAX    10
 
 # setup assistance
 Q_ASSIST_ANGLE   35
 Q_ASSIST_SPEED   22
 
 # lower rate accels
-Q_A_ACCEL_P_MAX  25000
-Q_A_ACCEL_R_MAX  25000
-Q_A_ACCEL_Y_MAX  9000
-Q_WP_ACCEL       173
+Q_A_ACC_P_MAX    250
+Q_A_ACC_R_MAX    250
+Q_A_ACC_Y_MAX    90
+Q_WP_ACC         1.73
 
 Q_A_ANG_PIT_P    4
 Q_A_ANG_RLL_P    4
@@ -100,7 +100,7 @@ Q_A_RAT_YAW_P    1.5
 
 # adjust loiter break
 Q_LOIT_BRK_DELAY 0.5
-Q_LOIT_BRK_JERK  500
+Q_LOIT_BRK_JRK_M 5.0
 
 # approx expo and hover
 Q_M_THST_EXPO    0.7

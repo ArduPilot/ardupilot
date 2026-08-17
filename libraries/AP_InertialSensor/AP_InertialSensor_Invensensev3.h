@@ -39,7 +39,8 @@ public:
         IIM42652, // HiRes 19bit
         IIM42653, // HiRes 19bit
         ICM42670, // HiRes 19bit
-        ICM45686  // HiRes 20bit
+        ICM45686, // HiRes 20bit
+        ICM56686  // HiRes 20bit, ICM-456xy programming model, register block +4
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
@@ -72,6 +73,11 @@ private:
 
     uint8_t register_read_bank(uint8_t bank, uint8_t reg);
     void register_write_bank(uint8_t bank, uint8_t reg, uint8_t val);
+    // map an ICM-456xy register address to the current device. The ICM-56686
+    // uses the same programming model but its register block from PWR_MGMT0
+    // upwards sits 4 higher; WHO_AM_I and the IREG window are common.
+    uint8_t reg456(uint8_t reg) const;
+
     uint8_t register_read_bank_icm456xy(uint16_t bank_addr, uint16_t reg);
     void register_write_bank_icm456xy(uint16_t bank_addr, uint16_t reg, uint8_t val);
 
@@ -83,12 +89,31 @@ private:
         return backend_rate_hz;
     }
 
+    // The EKF clamp acts on residual gyro bias after ArduPilot's
+    // startup calibration has removed the static ZRO. Residual drift
+    // over a flight is therefore dominated by ZRO temperature drift
+    // (temp coefficient x in-flight temperature swing). The v3 family
+    // has a wide spread in this coefficient, so the override is tiered:
+    //
+    //   tier  parts                    ZRO drift   limit / init
+    //   ----  -----------------------  ----------  ------------------
+    //   low   ICM-42688-P, ICM-45686   0.005/C     radians(2.0) / 1.0
+    //   mid   ICM-42605, ICM-40609-D,  0.01-0.02/C radians(3.0) / 1.5
+    //         ICM-42670-P, IIM-42652
+    //   none  ICM-40605, IIM-42653,    0.04/C or   base default
+    //         (anything else)          unknown     (0.5 rad/s / 2.5)
+    //
+    // See datasheets DS-000347, DS-000489, DS-000292, DS-000330,
+    // DS-000451, DS-000440, DS-000529.
+    float gyro_bias_limit_rads() const override;
+    float gyro_bias_init_dps() const override;
+
     // reset FIFO configure1 register
     uint8_t fifo_config1;
 
     // temp scaling for FIFO temperature
     float temp_sensitivity;
-    const float temp_zero = 25; // degC
+    static constexpr float temp_zero = 25; // degC
     
     const enum Rotation rotation;
 

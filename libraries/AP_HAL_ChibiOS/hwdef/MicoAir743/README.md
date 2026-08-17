@@ -4,18 +4,18 @@ The MicoAir743 is a flight controller designed and produced by [MicoAir Tech.](h
 
 ## Features
 
- - STM32H743 microcontroller
- - BMI088/BMI270 dual IMUs
- - DPS310 barometer
- - IST8310 magnetometer
- - AT7456E OSD
- - 9V 3A BEC; 5V 3A BEC
- - MicroSD Card Slot
- - 7 UARTs
- - 10 PWM outputs
- - 1 CAN
- - 1 I2C
- - 1 SWD
+- STM32H743 microcontroller
+- BMI088/BMI270 dual IMUs
+- DPS310 barometer
+- IST8310 magnetometer
+- AT7456E OSD
+- 9V 3A BEC; 5V 3A BEC
+- MicroSD Card Slot
+- 7 UARTs
+- 10 PWM outputs
+- 1 CAN
+- 1 I2C
+- 1 SWD
 
 ## Physical
 
@@ -25,15 +25,14 @@ The MicoAir743 is a flight controller designed and produced by [MicoAir Tech.](h
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
- - SERIAL2 -> UART2 (DisplayPort, DMA-enabled)
- - SERIAL3 -> UART3 (GPS, DMA-enabled)
- - SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
- - SERIAL5 -> UART6 (RCIN, DMA-enabled)
- - SERIAL6 -> UART7 (RX only, ESC Telemetry, DMA-enabled)
- - SERIAL7 -> UART8 (User, DMA-enabled)
-
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
+- SERIAL2 -> UART2 (DisplayPort, DMA-enabled)
+- SERIAL3 -> UART3 (GPS, DMA-enabled)
+- SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
+- SERIAL5 -> UART6 (RCIN, DMA-enabled)
+- SERIAL6 -> UART7 (RX only, ESC Telemetry, DMA-enabled)
+- SERIAL7 -> UART8 (User, DMA-enabled)
 
 ## RC Input
 
@@ -42,7 +41,6 @@ The default RC input is configured on the UART6. The SBUS pin is inverted and co
 ## OSD Support
 
 The MicoAir743 supports onboard OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneously, DisplayPort OSD is available on the HD VTX connector, See below.
-
 
 ## VTX Support
 
@@ -71,11 +69,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 21.2
- - BATT_AMP_PERVLT 40.2
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 21.2
+- BATT_AMP_PERVLT 40.2
 
 ## Compass
 
@@ -83,9 +81,9 @@ The MicoAir743 has a built-in compass sensor (IST8310), and you can also attach 
 
 ## Mechanical
 
- - Mounting: 30.5 x 30.5mm, Φ4mm
- - Dimensions: 36 x 36 x 8 mm
- - Weight: 9g
+- Mounting: 30.5 x 30.5mm, Φ4mm
+- Dimensions: 36 x 36 x 8 mm
+- Weight: 9g
 
 ## Ports Connector
 

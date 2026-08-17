@@ -226,9 +226,21 @@ void ToyMode::update()
     bool power_button = false;
     bool left_change = false;
     
-    uint16_t ch5_in = RC_Channels::get_radio_in(CH_5);
-    uint16_t ch6_in = RC_Channels::get_radio_in(CH_6);
-    uint16_t ch7_in = RC_Channels::get_radio_in(CH_7);
+    uint16_t ch5_in = 0;
+    const auto *ch5 = rc().channel(CH_5);
+    if (ch5 != nullptr) {
+        ch5_in = ch5->get_radio_in();
+    }
+    uint16_t ch6_in = 0;
+    const auto *ch6 = rc().channel(CH_6);
+    if (ch6 != nullptr) {
+        ch6_in = ch6->get_radio_in();
+    }
+    uint16_t ch7_in = 0;
+    const auto *ch7 = rc().channel(CH_7);
+    if (ch7 != nullptr) {
+        ch7_in = ch7->get_radio_in();
+    }
 
     if (!rc().has_valid_input() || ch5_in < 900) {
         // failsafe handling is outside the scope of toy mode, it does
@@ -601,7 +613,7 @@ void ToyMode::update()
             } else {
                 new_mode = Mode::Number::ALT_HOLD;
             }
-        } else if (copter.flightmode->requires_GPS()) {
+        } else if (copter.flightmode->requires_position()) {
             // if we're in a GPS mode, then RTL
             new_mode = Mode::Number::RTL;
         } else {
@@ -650,7 +662,7 @@ void ToyMode::update()
             gcs().send_text(MAV_SEVERITY_INFO, "Tmode: mode %s", copter.flightmode->name4());
             // force fence on in all GPS flight modes
 #if AP_FENCE_ENABLED
-            if (copter.flightmode->requires_GPS()) {
+            if (copter.flightmode->requires_position()) {
                 copter.fence.enable(true, AC_FENCE_ALL_FENCES);
             }
 #endif
@@ -758,7 +770,7 @@ void ToyMode::trim_update(void)
     
     uint8_t need_trim = 0;
     for (uint8_t i=0; i<4; i++) {
-        RC_Channel *c = RC_Channels::rc_channel(i);
+        RC_Channel *c = rc().channel(i);
         if (c && abs(chan[i] - c->get_radio_trim()) > noise_limit) {
             need_trim |= 1U<<i;
         }
@@ -768,7 +780,7 @@ void ToyMode::trim_update(void)
     }
     for (uint8_t i=0; i<4; i++) {
         if (need_trim & (1U<<i)) {
-            RC_Channel *c = RC_Channels::rc_channel(i);
+            RC_Channel *c = rc().channel(i);
             c->set_and_save_radio_trim(chan[i]);
         }
     }
@@ -782,7 +794,7 @@ void ToyMode::trim_update(void)
  */
 void ToyMode::action_arm(void)
 {
-    bool needs_gps = copter.flightmode->requires_GPS();
+    bool needs_gps = copter.flightmode->requires_position();
 
     // don't arm if sticks aren't in deadzone, to prevent pot problems
     // on TX causing flight control issues

@@ -42,8 +42,6 @@ public:
                                      bool force_external,
                                      enum Rotation rotation);
 
-    void read() override;
-
     static constexpr const char *name = "IST8310";
 
 private:

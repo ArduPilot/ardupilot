@@ -11,6 +11,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_GPS/AP_GPS.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include "lua_bindings.h"
 
@@ -19,6 +20,7 @@
 
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Scripting/AP_Scripting.h>
+#include <AP_Scripting/lua_scripts.h>
 #include <string.h>
 
 #include "lua/src/lauxlib.h"
@@ -1087,7 +1089,8 @@ int lua_range_finder_handle_script_msg(lua_State *L) {
 #endif  // AP_RANGEFINDER_ENABLED
 
 /*
-  lua wants to abort, and doesn't have access to a panic function
+  Lua raised an error outside protected mode. Outside protected mode, our code
+  doesn't call functions which can raise errors, so this shouldn't happen (tm).
  */
 void lua_abort()
 {
@@ -1095,11 +1098,7 @@ void lua_abort()
 #if AP_SIM_ENABLED
     AP_HAL::panic("lua_abort called");
 #else
-    if (!hal.util->get_soft_armed()) {
-        AP_HAL::panic("lua_abort called");
-    }
-    // abort while flying, all we can do is loop
-    while (true) {
+    while (true) { // scripts will stop but the rest of the system will run
         hal.scheduler->delay(1000);
     }
 #endif
@@ -1226,7 +1225,42 @@ int lua_gps_inject_data(lua_State *L)
 
 #endif  // AP_GPS_ENABLED
 
-#if AP_VEHICLE_ENABLED
+#if AP_AHRS_ENABLED
+/*
+  deprecated compatibility binding for the Vector3f-returning
+  AP_AHRS::wind_estimate() method which has been removed from the AHRS
+  interface.  The validity of the estimate is discarded here and the
+  vector returned regardless; it may be zero or stale.  Scripts should
+  use ahrs:get_wind() instead.
+
+  the generator can not attach a deprecation warning to a manual
+  binding, so it is emitted here in the same manner as the generated
+  bindings do it.
+ */
+int lua_AP_AHRS_wind_estimate(lua_State *L)
+{
+    binding_argcheck(L, 1);
+    AP_AHRS *ahrs = check_AP_AHRS(L);
+
+    static bool warned;
+    if (!warned) {
+        lua_scripts::set_and_print_new_error_message(MAV_SEVERITY_WARNING, "ahrs:wind_estimate Use get_wind");
+        warned = true;
+    }
+
+    Vector3f wind;
+    {
+        WITH_SEMAPHORE(ahrs->get_semaphore());
+        IGNORE_RETURN(ahrs->get_wind(wind));
+    }
+
+    *new_Vector3f(L) = wind;
+
+    return 1;
+}
+#endif  // AP_AHRS_ENABLED
+
+#if AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L)
 {
     const int args = lua_gettop(L);
@@ -1258,6 +1292,6 @@ int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L)
     lua_pushboolean(L, data);
     return 1;
 }
-#endif // AP_VEHICLE_ENABLED
+#endif // AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 
 #endif  // AP_SCRIPTING_ENABLED

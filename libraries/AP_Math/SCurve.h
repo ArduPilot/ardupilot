@@ -173,12 +173,11 @@ private:
     // generate decreasing jerk magnitude time segment based on a raised cosine profile
     void add_segment_decr_jerk(uint8_t &seg_pnt, float Jm, float tj);
 
-    // set speed and acceleration limits for the path
-    // origin and destination are offsets from EKF origin
-    // speed and acceleration parameters are given in horizontal, up and down.
-    void set_kinematic_limits(const Vector3p &origin, const Vector3p &destination,
-                              float speed_xy, float speed_up, float speed_down,
-                              float accel_xy, float accel_z);
+    // extend the constant velocity segment so the deceleration finishes at target_pos
+    void extend_const_vel_to(float target_pos);
+
+    // fill segment[first..last] with zero-delta constant-jerk segments anchored to segment[src]
+    void fill_empty_segments(uint8_t first, uint8_t last, uint8_t src);
 
     // return true if the curve is valid.  Used to identify and protect against code errors
     bool valid() const WARN_IF_UNUSED;

@@ -652,7 +652,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 #endif
-#endif // AP_SIM_ENABLED
+#endif // AP_SIM_PARAM_ENABLED
 
 #if HAL_PERIPH_CAN_MIRROR
     // @Param: CAN_MIRROR_PORTS
@@ -749,6 +749,23 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Units: ms
     // @User: Advanced
     GSCALAR(servo_command_timeout_ms, "SRV_CMD_TIME_OUT", 200),
+#endif
+
+#if AP_SERVO_TELEM_ENABLED
+    // @Param: SRV_TLM_MSG_RATE
+    // @DisplayName: Servo telemetry message rate
+    // @Description: This is the rate servo telem data is sent in Hz. Zero means no send. Each servo is sent in turn.
+    // @Units: Hz
+    // @Range: 0 200
+    // @Increment: 1
+    // @User: Standard
+    GSCALAR(servo_telem_msg_rate, "SRV_TLM_MSG_RATE", 20),
+#endif
+
+#if AP_PERIPH_BATTERY_BMS_ENABLED
+    // @Group: BMS
+    // @Path: battery_bms.cpp
+    GOBJECT(battery_bms, "BMS_",  BatteryBMS),
 #endif
 
     AP_VAREND

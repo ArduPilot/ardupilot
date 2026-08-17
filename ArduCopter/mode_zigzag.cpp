@@ -67,9 +67,6 @@ ModeZigZag::ModeZigZag(void) : Mode()
 // initialise zigzag controller
 bool ModeZigZag::init(bool ignore_checks)
 {
-    // apply simple mode transform to pilot inputs
-    update_simple_mode();
-
     // convert pilot input to lean angles
     float target_roll_rad, target_pitch_rad;
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
@@ -288,9 +285,6 @@ void ModeZigZag::manual_control()
     // process pilot inputs unless we are in radio failsafe
     float target_roll_rad, target_pitch_rad;
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // convert pilot input to lean angles
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
 
@@ -302,8 +296,6 @@ void ModeZigZag::manual_control()
 
     // get pilot desired climb rate
     target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
-    // make sure the climb rate is in the given range, prevent floating point errors
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // relax loiter target if we might be landed
     if (copter.ap.land_complete_maybe) {
@@ -327,7 +319,7 @@ void ModeZigZag::manual_control()
     case AltHoldModeState::Takeoff:
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
+            takeoff.start_m(constrain_float(g2.pilot_takeoff_alt_m, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
@@ -355,9 +347,6 @@ void ModeZigZag::manual_control()
         break;
 
     case AltHoldModeState::Flying:
-        // set motors to full range
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-
         // run loiter controller
         loiter_nav->update();
 

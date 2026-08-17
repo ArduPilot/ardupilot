@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
+#include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 
 // Maximum number of range finder instances available on this platform
 #ifndef RANGEFINDER_MAX_INSTANCES 
@@ -191,6 +192,12 @@ public:
 #if AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
         BenewakeTFS20L = 46,
 #endif // AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
+#if AP_RANGEFINDER_DTS6012M_ENABLED
+        DTS6012M = 47,
+#endif // AP_RANGEFINDER_DTS6012M_ENABLED
+#if AP_RANGEFINDER_LIGHTWARE_GRF_I2C_ENABLED
+        LightWare_GRF_I2C = 48,
+#endif // AP_RANGEFINDER_LIGHTWARE_GRF_I2C_ENABLED
 #if AP_RANGEFINDER_SIM_ENABLED
         SIM = 100,
 #endif
@@ -222,6 +229,12 @@ public:
         enum RangeFinder::Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
         uint32_t last_reading_ms;       // system time of last successful update from sensor
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+        float temperature_C;            // externally-supplied fluid temperature (e.g. air, water) for speed-of-sound compensation, not the rangefinder sensors own temperature, e.g. from AP_TemperatureSensor (TEMPx_SRC=Rangefinder)
+        bool temperature_valid;         // true if a valid temperature has been set by an external source
+        uint32_t temperature_update_ms; // system time of last external temperature update
+#endif
 
         const struct AP_Param::GroupInfo *var_info;
     };
@@ -311,6 +324,14 @@ public:
     // get temperature reading in C.  returns true on success and populates temp argument
     bool get_temp(enum Rotation orientation, float &temp) const;
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    // set an externally-measured temperature (C) for a rangefinder instance.
+    // used by AP_TemperatureSensor when TEMPx_SRC is set to Rangefinder, for
+    // sensors (e.g. ultrasonic) whose readings can benefit from external
+    // temperature compensation but which have no onboard temperature sensor.
+    void set_temperature_C(uint8_t instance, float temperature_C);
+#endif
+
     /*
       set an externally estimated terrain height. Used to enable power
       saving (where available) at high altitudes.
@@ -339,6 +360,10 @@ private:
     void detect_instance(uint8_t instance, uint8_t& serial_instance);
 
     bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance, uint8_t serial_instance=0);
+
+    // search all i2c buses for a device at addr
+    using i2c_probe_fn_t = AP_RangeFinder_Backend* (*)(RangeFinder::RangeFinder_State&, AP_RangeFinder_Params&, AP_HAL::I2CDevice&);
+    void probe_i2c_buses(uint8_t instance, uint8_t addr, i2c_probe_fn_t detect_fn);
 
     uint32_t _log_rfnd_bit = -1;
     void Log_RFND() const;

@@ -23,8 +23,18 @@ parser = ArgumentParser(description='CAN playback')
 parser.add_argument("logfile", default=None, type=str, help="logfile")
 parser.add_argument("canport", default=None, type=str, help="CAN port")
 parser.add_argument("--bus", default=0, type=int, help="CAN bus")
+parser.add_argument("--nodes", default=None, type=str, help="comma separated list of source node IDs to send")
+parser.add_argument("--messageids", default=None, type=str, help="comma separated list of DroneCAN message IDs to send")
 
 args = parser.parse_args()
+
+node_filter = None
+if args.nodes is not None:
+    node_filter = set(int(n) for n in args.nodes.split(','))
+
+msgid_filter = None
+if args.messageids is not None:
+    msgid_filter = set(int(n, 0) for n in args.messageids.split(','))
 
 print("Connecting to %s" % args.canport)
 driver = dronecan.driver.make_driver(args.canport)
@@ -66,6 +76,16 @@ while True:
 
     if getattr(m,'bus',0) != args.bus:
         continue
+
+    if node_filter is not None and (m.Id & 0x7F) not in node_filter:
+        continue
+
+    if msgid_filter is not None:
+        is_message = (m.Id & 0x7F) != 0 and (m.Id & (1 << 7)) == 0
+        msgId = ((m.Id >> 8) & 0xFFFF)
+        if not is_message or msgId not in msgid_filter:
+            print("skip 0x%04x" % msgId, is_message)
+            continue
 
     if first_tstamp is None:
         first_tstamp = m.TimeUS

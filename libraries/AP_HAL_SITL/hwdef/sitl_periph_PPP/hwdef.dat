@@ -1,0 +1,57 @@
+include ../sitl_periph/hwdef.inc
+
+define CAN_APP_NODE_NAME "org.ardupilot.ap_periph_ppp"
+define APJ_BOARD_ID 101
+
+undef AP_PERIPH_NETWORKING_ENABLED
+define AP_PERIPH_NETWORKING_ENABLED 1
+
+undef AP_RTC_ENABLED
+define AP_RTC_ENABLED 1
+undef AP_PERIPH_RTC_ENABLED
+define AP_PERIPH_RTC_ENABLED 1
+
+undef AP_PERIPH_SERIAL_OPTIONS_ENABLED
+define AP_PERIPH_SERIAL_OPTIONS_ENABLED 1
+
+define AP_NETWORKING_BACKEND_PPP 1
+define AP_NETWORKING_CAN_MCAST_ENABLED 1
+
+# expose lwIP via a host TAP device so a developer browser/curl can reach the
+# PPPGW web UI at the periph's IP. Requires a TAP device set up beforehand
+# with `Tools/scripts/Networking/sitl_network.sh up`; pair with NET_OPTIONS=1 (PPP
+# ethernet gateway) so this backend takes the ethernet slot alongside PPP.
+define AP_NETWORKING_BACKEND_SITL_TUN 1
+
+# PPP on serial port 1; sim_vehicle.py passes --serial1=tcpclient:127.0.0.1:5765
+# so the periph connects to the plane SITL's SERIAL5 TCP listener
+define AP_PERIPH_NET_PPP_PORT_DEFAULT 1
+define AP_PERIPH_NET_PPP_BAUD_DEFAULT 12500000
+
+# Enable scripting + ROMFS so the built-in PPPGW web interface (the same
+# pppgw_webui.lua shipped on ChibiOS PPPGW boards) is available in SITL.
+undef AP_SCRIPTING_ENABLED
+define AP_SCRIPTING_ENABLED 1
+
+# AP_Periph does not link the subsystems below; disable their Lua bindings
+# and any RC_Channel-using helpers so the script binding generator does not
+# produce references to absent singletons (AP_Vehicle, AC_Fence, AP_Button,
+# AP_Camera, AP_Mount, AP_OpticalFlow, AP_VisualOdom, AP_Arming, RC_Channel,
+# AP_Frsky_Telem). ChibiOS periph builds handle this via defaults_periph.h.
+define AP_SCRIPTING_BINDING_VEHICLE_ENABLED 0
+define AP_FENCE_ENABLED 0
+define HAL_BUTTON_ENABLED 0
+define AP_CAMERA_ENABLED 0
+define HAL_MOUNT_ENABLED 0
+define AP_OPTICALFLOW_ENABLED 0
+define HAL_VISUALODOM_ENABLED 0
+define AP_FRSKY_TELEM_ENABLED 0
+define AP_FRSKY_SPORT_TELEM_ENABLED 0
+define AP_ARMING_ENABLED 0
+undef AP_RC_CHANNEL_ENABLED
+define AP_RC_CHANNEL_ENABLED 0
+
+define AP_FILESYSTEM_ROMFS_ENABLED 1
+define AP_PARAM_DYNAMIC_ENABLED 1
+
+ROMFS_DIRECTORY Tools/AP_Periph/Web

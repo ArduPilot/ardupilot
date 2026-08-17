@@ -4,9 +4,9 @@
 --    a) waits for the vehicle to be switched to Guided mode (does nothing)
 --    b) accepts pilot roll, pitch, throttle and yaw input
 --    c) manual mode
---        - roll and pitch cause vehicle to fly horizontally in body frame at up to WP_SPEED
+--        - roll and pitch cause vehicle to fly horizontally in body frame at up to WP_SPD
 --        - yaw controls turn rate
---        - throttle controls climb/descent rate at up to PILOT_SPEED_UP/DOWN?  (WP_SPEED_UP, WPNAV_SPEED_DN?)
+--        - throttle controls climb/descent rate at up to PILOT_SPD_UP/DN (WP_SPD_UP, WP_SPD_DN)
 --    d) autonomous mode
 --        - roll is unchanged from manual mode
 --        - yaw is unchanged from manual mode

@@ -139,7 +139,9 @@ void AP_Frsky_SPort_Passthrough::setup_wfq_scheduler(void)
     set_scheduler_entry(RPM, 300, 330);         // 0x500A rpm sensors 1 and 2
     set_scheduler_entry(TERRAIN, 700, 500);     // 0x500B terrain data
     set_scheduler_entry(WIND, 700, 500);        // 0x500C wind data
+#if AP_MISSION_ENABLED
     set_scheduler_entry(WAYPOINT, 750, 500);    // 0x500D waypoint data
+#endif  // AP_MISSION_ENABLED
     set_scheduler_entry(UDATA, 5000, 200);      // user data
 
     // initialize default sport sensor ID
@@ -258,12 +260,11 @@ bool AP_Frsky_SPort_Passthrough::is_packet_ready(uint8_t idx, bool queue_empty)
     }
 #endif
         break;
+#if AP_MISSION_ENABLED
     case WAYPOINT:
-        {
-            const AP_Mission *mission = AP::mission();
-            packet_ready = mission != nullptr && mission->get_current_nav_index() > 0;
-        }
+        packet_ready = AP::mission().get_current_nav_index() > 0;
         break;
+#endif  // AP_MISSION_ENABLED
     case UDATA:
         // when using fport user data is sent by scheduler
         // when using sport user data is sent responding to custom polling
@@ -339,9 +340,11 @@ void AP_Frsky_SPort_Passthrough::process_packet(uint8_t idx)
     case WIND: // 0x500C terrain data
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+0x0C, calc_wind());
         break;
+#if AP_MISSION_ENABLED
     case WAYPOINT: // 0x500D waypoint data
         send_sport_frame(SPORT_DATA_FRAME, DIY_FIRST_ID+0x0D, calc_waypoint());
         break;
+#endif  // AP_MISSION_ENABLED
     case UDATA: // user data
         {
             WITH_SEMAPHORE(_sport_push_buffer.sem);
@@ -508,11 +511,11 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_gps_status(void)
     // number of GPS satellites visible (limit to 15 (0xF) since the value is stored on 4 bits)
     uint32_t gps_status = (gps.num_sats() < GPS_SATS_LIMIT) ? gps.num_sats() : GPS_SATS_LIMIT;
     // GPS receiver status (limit to 0-3 (0x3) since the value is stored on 2 bits: NO_GPS = 0, NO_FIX = 1, GPS_OK_FIX_2D = 2, GPS_OK_FIX_3D or GPS_OK_FIX_3D_DGPS or GPS_OK_FIX_3D_RTK_FLOAT or GPS_OK_FIX_3D_RTK_FIXED = 3)
-    gps_status |= ((gps.status() < GPS_STATUS_LIMIT) ? gps.status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
+    gps_status |= (((uint8_t)gps.status() < GPS_STATUS_LIMIT) ? (uint8_t)gps.status() : GPS_STATUS_LIMIT)<<GPS_STATUS_OFFSET;
     // GPS horizontal dilution of precision in dm
     gps_status |= prep_number(roundf(gps.get_hdop() * 0.1f),2,1)<<GPS_HDOP_OFFSET;
     // GPS receiver advanced status (0: no advanced fix, 1: GPS_OK_FIX_3D_DGPS, 2: GPS_OK_FIX_3D_RTK_FLOAT, 3: GPS_OK_FIX_3D_RTK_FIXED)
-    gps_status |= ((gps.status() > GPS_STATUS_LIMIT) ? gps.status()-GPS_STATUS_LIMIT : 0)<<GPS_ADVSTATUS_OFFSET;
+    gps_status |= (((uint8_t)gps.status() > GPS_STATUS_LIMIT) ? (uint8_t)gps.status()-GPS_STATUS_LIMIT : 0)<<GPS_ADVSTATUS_OFFSET;
     // Altitude MSL in dm
     const Location &loc = gps.location();
     gps_status |= prep_number(roundf(loc.alt * 0.1f),2,2)<<GPS_ALTMSL_OFFSET;
@@ -765,7 +768,9 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_wind(void)
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
-        v = ahrs.wind_estimate();
+        // use the estimate even if it is not marked valid, to preserve
+        // existing behaviour
+        IGNORE_RETURN(ahrs.get_wind(v));
     }
     // wind angle in 3 degree increments 0,360 (unsigned)
     uint32_t value = prep_number(roundf(wrap_360(degrees(atan2f(-v.y, -v.x))) * (1.0f/3.0f)), 2, 0);
@@ -791,11 +796,11 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_wind(void)
  * prepare waypoint data
  * for FrSky SPort Passthrough (OpenTX) protocol (X-receivers)
  */
+#if AP_MISSION_ENABLED
 uint32_t AP_Frsky_SPort_Passthrough::calc_waypoint(void)
 {
-    const AP_Mission *mission = AP::mission();
     const AP_Vehicle *vehicle = AP::vehicle();
-    if (mission == nullptr || vehicle == nullptr) {
+    if (vehicle == nullptr) {
         return 0U;
     }
     float wp_distance;
@@ -807,13 +812,14 @@ uint32_t AP_Frsky_SPort_Passthrough::calc_waypoint(void)
         return 0U;
     }
     // waypoint current nav index
-    uint32_t value = MIN(mission->get_current_nav_index(), WP_NUMBER_LIMIT);
+    uint32_t value = MIN(AP::mission().get_current_nav_index(), WP_NUMBER_LIMIT);
     // distance to next waypoint
     value |= prep_number(wp_distance, 3, 2) << WP_DISTANCE_OFFSET;
     // bearing encoded in 3 degrees increments
     value |= ((uint8_t)roundf(wrap_360(angle) * 0.333f)) << WP_BEARING_OFFSET;
     return value;
 }
+#endif  // AP_MISSION_ENABLED
 
 /*
   fetch Sport data for an external transport, such as FPort or crossfire

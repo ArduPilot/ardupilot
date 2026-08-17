@@ -16,12 +16,14 @@
  */
 
 
+#include "AP_PiccoloCAN_config.h"
+
+#if AP_PICCOLOCAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_AHRS/AP_AHRS.h>
 
 #include "AP_PiccoloCAN.h"
-
-#if HAL_PICCOLO_CAN_ENABLE
 
 #include <AP_Param/AP_Param.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -48,12 +50,6 @@
 #include <AP_PiccoloCAN/piccolo_protocol/ServoPackets.h>
 
 extern const AP_HAL::HAL& hal;
-
-#if HAL_CANMANAGER_ENABLED
-#define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "PiccoloCAN", fmt, ##args); } while (0)
-#else
-#define debug_can(level_debug, fmt, args...)
-#endif
 
 // table of user-configurable Piccolo CAN bus parameters
 const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
@@ -109,8 +105,6 @@ const AP_Param::GroupInfo AP_PiccoloCAN::var_info[] = {
 AP_PiccoloCAN::AP_PiccoloCAN()
 {
     AP_Param::setup_object_defaults(this, var_info);
-
-    debug_can(AP_CANManager::LOG_INFO, "PiccoloCAN: constructed\n\r");
 }
 
 AP_PiccoloCAN *AP_PiccoloCAN::get_pcan(uint8_t driver_index)
@@ -125,24 +119,20 @@ AP_PiccoloCAN *AP_PiccoloCAN::get_pcan(uint8_t driver_index)
 
 bool AP_PiccoloCAN::add_interface(AP_HAL::CANIface* can_iface) {
     if (_can_iface != nullptr) {
-        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Multiple Interface not supported\n\r");
         return false;
     }
 
     _can_iface = can_iface;
 
     if (_can_iface == nullptr) {
-        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: CAN driver not found\n\r");
         return false;
     }
 
     if (!_can_iface->is_initialized()) {
-        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized\n\r");
         return false;
     }
 
     if (!_can_iface->set_event_handle(&sem_handle)) {
-        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Cannot add event handle\n\r");
         return false;
     }
     return true;
@@ -153,23 +143,17 @@ void AP_PiccoloCAN::init(uint8_t driver_index)
 {
     _driver_index = driver_index;
 
-    debug_can(AP_CANManager::LOG_DEBUG, "PiccoloCAN: starting init\n\r");
-
     if (_initialized) {
-        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: already initialized\n\r");
         return;
     }
     // start calls to loop in separate thread
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_PiccoloCAN::loop, void), _thread_name, 4096, AP_HAL::Scheduler::PRIORITY_MAIN, 1)) {
-        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: couldn't create thread\n\r");
         return;
     }
 
     _initialized = true;
 
     snprintf(_thread_name, sizeof(_thread_name), "PiccoloCAN_%u", driver_index);
-
-    debug_can(AP_CANManager::LOG_DEBUG, "PiccoloCAN: init done\n\r");
 }
 
 // loop to send output to CAN devices in background thread
@@ -191,7 +175,6 @@ void AP_PiccoloCAN::loop()
     while (true) {
 
         if (!_initialized) {
-            debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: not initialized\n\r");
             hal.scheduler->delay_microseconds(10000);
             continue;
         }
@@ -282,7 +265,6 @@ void AP_PiccoloCAN::loop()
 bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us)
 {
     if (!_initialized) {
-        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized for write_frame\n\r");
         return false;
     }
 
@@ -302,7 +284,6 @@ bool AP_PiccoloCAN::write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us
 bool AP_PiccoloCAN::read_frame(AP_HAL::CANFrame &recv_frame, uint32_t timeout_us)
 {
     if (!_initialized) {
-        debug_can(AP_CANManager::LOG_ERROR, "PiccoloCAN: Driver not initialized for read_frame\n\r");
         return false;
     }
 
@@ -792,4 +773,4 @@ bool AP_PiccoloCAN::pre_arm_check(char* reason, uint8_t reason_len)
 }
 
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED

@@ -32,8 +32,9 @@ void ModeQStabilize::update()
         set_limited_roll_pitch(roll_input, pitch_input);
     } else {
         // use angle max for both roll and pitch
-        plane.nav_roll_cd = roll_input * plane.quadplane.aparm.angle_max;
-        plane.nav_pitch_cd = pitch_input * plane.quadplane.aparm.angle_max;
+        const int16_t angle_max_cd = plane.quadplane.attitude_control->lean_angle_max_cd();
+        plane.nav_roll_cd = roll_input * angle_max_cd;
+        plane.nav_pitch_cd = pitch_input * angle_max_cd;
     }
 }
 
@@ -77,25 +78,25 @@ void ModeQStabilize::set_tailsitter_roll_pitch(const float roll_input, const flo
         // roll param is in degrees not centidegrees
         plane.nav_roll_cd = plane.quadplane.tailsitter.max_roll_angle * 100.0f * roll_input;
     } else {
-        plane.nav_roll_cd = roll_input * plane.quadplane.aparm.angle_max;
+        plane.nav_roll_cd = roll_input * plane.quadplane.attitude_control->lean_angle_max_cd();
     }
 
     // angle max for tailsitter pitch
-    plane.nav_pitch_cd = pitch_input * plane.quadplane.aparm.angle_max;
-
+    plane.nav_pitch_cd = pitch_input * plane.quadplane.attitude_control->lean_angle_max_cd();
     plane.quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd);
 }
 
 // set the desired roll and pitch for normal quadplanes, also limited by forward flight limits
 void ModeQStabilize::set_limited_roll_pitch(const float roll_input, const float pitch_input)
 {
-    plane.nav_roll_cd = roll_input * MIN(plane.roll_limit_cd, plane.quadplane.aparm.angle_max);
+    const int16_t angle_max_cd = plane.quadplane.attitude_control->lean_angle_max_cd();
+    plane.nav_roll_cd = roll_input * MIN(plane.roll_limit_cd, angle_max_cd);
     // pitch is further constrained by PTCH_LIM_MIN/MAX which may impose
     // tighter (possibly asymmetrical) limits than Q_ANGLE_MAX
     if (pitch_input > 0) {
-        plane.nav_pitch_cd = pitch_input * MIN(plane.aparm.pitch_limit_max*100, plane.quadplane.aparm.angle_max);
+        plane.nav_pitch_cd = pitch_input * MIN(plane.aparm.pitch_limit_max*100, angle_max_cd);
     } else {
-        plane.nav_pitch_cd = pitch_input * MIN(-plane.pitch_limit_min*100, plane.quadplane.aparm.angle_max);
+        plane.nav_pitch_cd = pitch_input * MIN(-plane.pitch_limit_min*100, angle_max_cd);
     }
 }
 

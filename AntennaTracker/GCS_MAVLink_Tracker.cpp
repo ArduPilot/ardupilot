@@ -558,7 +558,7 @@ void GCS_MAVLINK_Tracker::send_global_position_int()
         AP_HAL::millis(),
         tracker.current_loc.lat,  // in 1E7 degrees
         tracker.current_loc.lng,  // in 1E7 degrees
-        tracker.current_loc.alt,  // millimeters above ground/sea level
+        tracker.current_loc.alt * 10,  // millimeters above ground/sea level
         0,                        // millimeters above home
         0,                        // X speed cm/s (+ve North)
         0,                        // Y speed cm/s (+ve East)

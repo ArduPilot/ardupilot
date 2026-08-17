@@ -19,8 +19,6 @@ public:
 
     static constexpr const char *name = "LSM9DS1";
 
-    void read() override;
-
     virtual ~AP_Compass_LSM9DS1() {}
 
 private:

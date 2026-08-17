@@ -1,8 +1,7 @@
 # ThePeach FCC-R1
 
-
 :::warning
-Ardupilot does not manufacture this (or any) autopilot. 
+Ardupilot does not manufacture this (or any) autopilot.
 Contact the [manufacturer](https://thepeach.kr/) for hardware support or compliance issues.
 :::
 
@@ -51,7 +50,7 @@ Contact the [manufacturer](https://thepeach.kr/) for hardware support or complia
 
 ![pinmap_top](./pinmap.png)
 
-## Serial Port Mapping
+## UART Mapping
 
 | UART   | Device     | Port                       |
 | ------ | ---------- | -------------------------- |
@@ -72,14 +71,14 @@ Note:
 1. The output power rails **FMU PWM OUT** and **I/O PWM OUT** do not power the flight controller board (and are not powered by it). You must supply power to one of **POWER** or **USB** or the board will be unpowered.
 2. The USB do not power the **Raspberry Pi CM3+**. You must supply power to **POWER** or the Raspberry Pi CM3+ will be unpowered.
 
-**Normal Operation Maximum Ratings**
+### Normal Operation Maximum Ratings
 
 Under these conditions, all power sources will be used in this order to power the system:
 
 1. POWER input (5V to 5.5V)
 2. USB input (4.75V to 5.25V)
 
-**Absolute Maximum Ratings**
+### Absolute Maximum Ratings
 
 Under these conditions, all power sources cause permanent damage to the flight controller.
 
@@ -87,7 +86,6 @@ Under these conditions, all power sources cause permanent damage to the flight c
 
 2. USB input (5.5V Over)
 
-
-## Where to buy
+## Where to Buy
 
 Order from [ThePeach](http://thepeach.shop/)

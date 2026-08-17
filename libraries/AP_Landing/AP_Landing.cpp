@@ -101,8 +101,8 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: THR_SLEW
     // @DisplayName: Landing throttle slew rate
     // @Description: This parameter sets the slew rate for the throttle during auto landing. When this is zero the THR_SLEWRATE parameter is used during landing. The value is a percentage throttle change per second, so a value of 20 means to advance the throttle over 5 seconds on landing. Values below 50 are not recommended as it may cause a stall when airspeed is low and you can not throttle up fast enough.
-    // @Units: %
-    // @Range: 0 127
+    // @Units: %/s
+    // @Range: 0 500
     // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("THR_SLEW", 9, AP_Landing, throttle_slewrate, 0),
@@ -606,21 +606,21 @@ bool AP_Landing::get_target_altitude_location(Location &location)
 }
 
 /*
- * returns target airspeed in cm/s depending on flight stage
+ * returns target airspeed in m/s depending on flight stage
  */
-int32_t AP_Landing::get_target_airspeed_cm(void)
+float AP_Landing::get_target_airspeed_ms(void)
 {
     if (!flags.in_progress) {
         // not landing, use regular cruise airspeed
-        return aparm.airspeed_cruise*100;
+        return aparm.airspeed_cruise;
     }
 
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_get_target_airspeed_cm();
+        return type_slope_get_target_airspeed_ms();
 #if HAL_LANDING_DEEPSTALL_ENABLED
     case TYPE_DEEPSTALL:
-        return deepstall.get_target_airspeed_cm();
+        return deepstall.get_target_airspeed_ms();
 #endif
     default:
         // don't return the landing airspeed, because if type is invalid we have
@@ -774,4 +774,8 @@ void AP_Landing::convert_parameters(void)
 {
     // added January 2024
     pitch_deg.convert_centi_parameter(AP_PARAM_INT16);
+
+    // PARAMETER_CONVERSION - Added: Mar-2026 for THR_SLEWRATE width change
+    // Convert throttle slewrate from int8 to int16 to support higher slew rates
+    throttle_slewrate.convert_parameter_width(AP_PARAM_INT8);
 }

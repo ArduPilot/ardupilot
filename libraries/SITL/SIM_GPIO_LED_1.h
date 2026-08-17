@@ -43,4 +43,4 @@ private:
 
 } // namespace SITL
 
-#endif  // AP_SIM_GPIO_LED_2_ENABLED
+#endif  // AP_SIM_GPIO_LED_1_ENABLED

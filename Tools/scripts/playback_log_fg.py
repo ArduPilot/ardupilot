@@ -6,15 +6,15 @@ play back an onboard log as a FlightGear FG NET stream
 Useful for visualising flights
 '''
 
-from builtins import object
-
 import sys
 import time
+
+from argparse import ArgumentParser
+from builtins import object
 
 from pymavlink import fgFDM
 from pymavlink import mavutil
 
-from argparse import ArgumentParser
 parser = ArgumentParser(description=__doc__)
 
 parser.add_argument("--condition", default=None, help="select packets by condition")

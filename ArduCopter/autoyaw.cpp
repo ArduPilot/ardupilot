@@ -35,22 +35,22 @@ void Mode::AutoYaw::set_mode_to_default(bool rtl)
 // set rtl parameter to true if this is during an RTL
 Mode::AutoYaw::Mode Mode::AutoYaw::default_mode(bool rtl) const
 {
-    switch (copter.g.wp_yaw_behavior) {
+    switch ((Copter::WPYawBehavior)copter.g.wp_yaw_behavior) {
 
-    case WP_YAW_BEHAVIOR_NONE:
+    case Copter::WPYawBehavior::NONE:
         return Mode::HOLD;
 
-    case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
+    case Copter::WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL:
         if (rtl) {
             return Mode::HOLD;
         } else {
             return Mode::LOOK_AT_NEXT_WP;
         }
 
-    case WP_YAW_BEHAVIOR_LOOK_AHEAD:
+    case Copter::WPYawBehavior::LOOK_AHEAD:
         return Mode::LOOK_AHEAD;
 
-    case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP:
+    case Copter::WPYawBehavior::LOOK_AT_NEXT_WP:
     default:
         return Mode::LOOK_AT_NEXT_WP;
     }
@@ -375,12 +375,9 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
 #if WEATHERVANE_ENABLED
 void Mode::AutoYaw::update_weathervane(const float pilot_yaw_rads)
 {
-    if (!copter.flightmode->allows_weathervaning()) {
-        return;
-    }
-
     float yaw_rate_cds;
-    if (copter.g2.weathervane.get_yaw_out(yaw_rate_cds, rad_to_cd(pilot_yaw_rads), copter.flightmode->get_alt_above_ground_m(),
+    if (copter.flightmode->allows_weathervaning() &&
+        copter.g2.weathervane.get_yaw_out(yaw_rate_cds, rad_to_cd(pilot_yaw_rads), copter.flightmode->get_alt_above_ground_m(),
                                                                        copter.pos_control->get_roll_cd()-copter.attitude_control->get_roll_trim_cd(),
                                                                        copter.pos_control->get_pitch_cd(),
                                                                        copter.flightmode->is_taking_off(),
@@ -389,6 +386,8 @@ void Mode::AutoYaw::update_weathervane(const float pilot_yaw_rads)
         _yaw_rate_rads = cd_to_rad(yaw_rate_cds);
         return;
     }
+
+    // Weathervane not allowed in current mode, or weathervane thresholds not met
 
     // if the weathervane controller has previously been activated we need to ensure we return control back to what was previously set
     if (mode() == Mode::WEATHERVANE) {

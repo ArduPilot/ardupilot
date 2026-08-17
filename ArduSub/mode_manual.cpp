@@ -19,7 +19,7 @@ void ModeManual::run()
     // if not armed set throttle to zero and exit immediately
     if (!sub.motors.armed()) {
         sub.motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
-        attitude_control->set_throttle_out(0,true,g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE,true,g.throttle_filt);
         attitude_control->relax_attitude_controllers();
         return;
     }

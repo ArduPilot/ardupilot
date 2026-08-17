@@ -68,7 +68,7 @@ void AP_VisualOdom_MAV::handle_pose_estimate(uint64_t remote_time_us, uint32_t t
 
 // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
 // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
-void AP_VisualOdom_MAV::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality)
+void AP_VisualOdom_MAV::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, int8_t quality)
 {
     // record quality
     _quality = quality;
@@ -76,14 +76,15 @@ void AP_VisualOdom_MAV::handle_vision_speed_estimate(uint64_t remote_time_us, ui
     // send velocity to EKF if quality OK
     bool consume = (_quality >= _frontend.get_quality_min());
     if (consume) {
-        AP::ahrs().writeExtNavVelData(vel, _frontend.get_vel_noise(), time_ms, _frontend.get_delay_ms());
+        vel_err = fmaxf(vel_err, _frontend.get_vel_noise());
+        AP::ahrs().writeExtNavVelData(vel, vel_err, time_ms, _frontend.get_delay_ms());
     }
 
     // record time for health monitoring
     _last_update_ms = AP_HAL::millis();
 
 #if HAL_LOGGING_ENABLED
-    Write_VisualVelocity(remote_time_us, time_ms, vel, reset_counter, !consume, _quality);
+    Write_VisualVelocity(remote_time_us, time_ms, vel, vel_err, reset_counter, !consume, _quality);
 #endif
 }
 

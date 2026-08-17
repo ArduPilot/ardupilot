@@ -54,6 +54,7 @@
 #include "AP_Airspeed_MSP.h"
 #include "AP_Airspeed_AUAV.h"
 #include "AP_Airspeed_External.h"
+#include "AP_Airspeed_Scripting.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
@@ -340,6 +341,9 @@ void AP_Airspeed::init()
 
     convert_per_instance();
 
+    // Set primary from parameter to avoid primary changed message at boot
+    primary = primary_sensor.get();
+
 #if ENABLE_PARAMETER
     // if either type is set then enable if not manually set
     if (!_enable.configured() && ((param[0].type.get() != TYPE_NONE) || (param[1].type.get() != TYPE_NONE))) {
@@ -472,6 +476,11 @@ void AP_Airspeed::allocate()
             sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 30);
             break;
 #endif  // AP_AIRSPEED_AUAV_ENABLED
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+        case TYPE_SCRIPTING:
+            sensor[i] = NEW_NOTHROW AP_Airspeed_Scripting(*this, i);
+            break;
+#endif  // AP_AIRSPEED_SCRIPTING_ENABLED
         }
         if (sensor[i] && !sensor[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
@@ -709,6 +718,81 @@ void AP_Airspeed::read(uint8_t i)
 #endif // HAL_BUILD_AP_PERIPH
 }
 
+// Select primary sensor based on user parameters and health
+uint8_t AP_Airspeed::select_primary()
+{
+    // user selected primary from parameter, track changes
+    const uint8_t user_primary = primary_sensor.get();
+    const bool user_primary_changed = user_primary != last_user_primary;
+    last_user_primary = user_primary;
+
+    // If user selected instance is both healthy and set to use then it is a valid primary
+    const bool user_healthy = healthy(user_primary);
+    const bool user_healthy_and_use = user_healthy && use(user_primary);
+
+    if ((user_primary_changed || !hal.util->get_soft_armed()) && user_healthy_and_use) {
+        /*
+            If user selected primary is healthy and set to use then:
+                Always change when the user changes the parameter.
+                Always change if disarmed, if armed its better to stick with the current sensor to avoid needless switching.
+
+            The EKF3 innovation check only applies to the active sensor so a bad sensor will appear good after some time because
+            the EKF is no longer using the sensor so cannot provide feedback.
+
+            We can't just stick with the current primary when disarmed due to variation in detection time.
+        */
+        return user_primary;
+    }
+
+    // If the currently selected primary is valid there is no need to change
+    const bool primary_healthy = healthy(primary);
+    if (primary_healthy && use(primary)) {
+        return primary;
+    }
+
+    if (user_healthy_and_use) {
+        // The current primary is not valid, try the user set primary first
+        return user_primary;
+    }
+
+    // Select the first sensor which is both healthy and set to use
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if ((i == primary) || (i == user_primary)) {
+            // No need to re-check current/user primary
+            continue;
+        }
+        if (healthy(i) && use(i)) {
+            return i;
+        }
+    }
+
+    // No sensor is both healthy and set to use
+
+    // Continue with current primary if healthy
+    if (primary_healthy) {
+        return primary;
+    }
+
+    // Use user selected instance if healthy
+    if (user_healthy) {
+        return user_primary;
+    }
+
+    // Select the first sensor which is healthy
+    for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+        if ((i == primary) || (i == user_primary)) {
+            // No need to re-check current/user primary
+            continue;
+        }
+        if (healthy(i)) {
+            return i;
+        }
+    }
+
+    // No healthy sensor, don't change primary
+    return primary;
+}
+
 // read all airspeed sensors
 void AP_Airspeed::update()
 {
@@ -727,23 +811,18 @@ void AP_Airspeed::update()
     }
 #endif
 
-#if HAL_LOGGING_ENABLED
-    const uint8_t old_primary = primary;
-#endif
-
-    // setup primary
-    if (healthy(primary_sensor.get())) {
-        primary = primary_sensor.get();
-    } else {
-        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
-            if (healthy(i)) {
-                primary = i;
-                break;
-            }
-        }
-    }
-
+    // Check for failures possibly marking sensors and unhealthy
     check_sensor_failures();
+
+    // Record old primary sensor for reporting
+    const uint8_t old_primary = primary;
+
+    // Select primary sensor based on user parameters and health
+    primary = select_primary();
+
+    if (primary != old_primary) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Airspeed primary changed: %i", primary+1);
+    }
 
 #if HAL_LOGGING_ENABLED
     if (primary != old_primary) {
@@ -1011,9 +1090,34 @@ bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
         }
     }
 
+
+    // If the primary sensor is marked to not use then user should either:
+    // - change primary to a sensor which is marked to to use
+    // - allow using the primary
+    // If no sensors are marked for use then the check passes
+    if (!use(primary_sensor.get())) {
+        for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
+            if (use(i)) {
+                hal.util->snprintf(buffer, buflen, "not using Primary (%i)", primary_sensor.get() + 1);
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 #endif
+
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+// get backend for a given instance, used by scripting
+AP_Airspeed_Backend *AP_Airspeed::get_backend(uint8_t id) const
+{
+    if (id >= AIRSPEED_MAX_SENSORS) {
+        return nullptr;
+    }
+    return sensor[id];
+}
+#endif // AP_AIRSPEED_SCRIPTING_ENABLED
 
 #else  // build type is not appropriate; provide a dummy implementation:
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
@@ -1036,6 +1140,10 @@ void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
 bool AP_Airspeed::all_healthy(void) const { return false; }
 void AP_Airspeed::init(void) {};
 AP_Airspeed::AP_Airspeed() {}
+
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+AP_Airspeed_Backend *AP_Airspeed::get_backend(uint8_t id) const { return nullptr; }
+#endif // AP_AIRSPEED_SCRIPTING_ENABLED
 
 #endif // #if AP_AIRSPEED_DUMMY_METHODS_ENABLED
 

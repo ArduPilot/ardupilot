@@ -53,8 +53,8 @@ bool AP_RangeFinder_NMEA::get_reading(float &reading_m)
     return true;
 }
 
-// get temperature reading
-bool AP_RangeFinder_NMEA::get_temp(float &temp) const
+// get temperature reading from NMEA MTW sentence
+bool AP_RangeFinder_NMEA::_get_temp(float &temp) const
 {
     uint32_t now_ms = AP_HAL::millis();
     if ((_temp_readtime_ms == 0) || ((now_ms - _temp_readtime_ms) > read_timeout_ms())) {
@@ -121,12 +121,10 @@ bool AP_RangeFinder_NMEA::decode_latest_term()
     // handle the last term in a message
     if (_term_is_checksum) {
         _sentence_done = true;
-        uint8_t nibble_high = 0;
-        uint8_t nibble_low  = 0;
-        if (!hex_to_uint8(_term[0], nibble_high) || !hex_to_uint8(_term[1], nibble_low)) {
+        uint8_t checksum;
+        if (!hex_twochars_to_uint8(_term, checksum)) {
             return false;
         }
-        const uint8_t checksum = (nibble_high << 4u) | nibble_low;
         if (checksum == _checksum) {
             if ((_sentence_type == SONAR_DBT || _sentence_type == SONAR_DPT || _sentence_type == SONAR_HDED) && !is_negative(_distance_m)) {
                 // return true if distance is valid

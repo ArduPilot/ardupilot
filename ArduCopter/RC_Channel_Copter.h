@@ -37,7 +37,13 @@ public:
 
     RC_Channel_Copter obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Copter *channel(const uint8_t chan) override {
-        if (chan >= NUM_RC_CHANNELS) {
+        if (chan >= ARRAY_SIZE(obj_channels)) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
+    const RC_Channel_Copter *channel(const uint8_t chan) const override {
+        if (chan >= ARRAY_SIZE(obj_channels)) {
             return nullptr;
         }
         return &obj_channels[chan];

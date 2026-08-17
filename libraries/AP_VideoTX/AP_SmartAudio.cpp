@@ -353,7 +353,7 @@ bool AP_SmartAudio::read_response(uint8_t *response_buffer)
 #endif
     _is_waiting_response = false;
 
-    bool correct_parse = parse_response_buffer(response_buffer);
+    bool correct_parse = parse_response_buffer(response_buffer, _inline_buffer_length);
     response_buffer = nullptr;
     _inline_buffer_length=0;
     _packet_size = 0;
@@ -479,8 +479,14 @@ void AP_SmartAudio::unpack_settings(Settings *settings, const SettingsExtendedRe
 {
     unpack_settings(settings, &frame->settings);
     settings->power_in_dbm = frame->power_dbm;
-    settings->num_power_levels = frame->num_power_levels + 1;
-    memcpy(settings->power_levels, frame->power_levels, frame->num_power_levels + 1);
+    // the level count comes from the wire; clamp it to the size of the
+    // destination (and source) arrays to avoid overrunning them
+    uint8_t num_power_levels = frame->num_power_levels + 1;
+    if (num_power_levels > sizeof(settings->power_levels)) {
+        num_power_levels = sizeof(settings->power_levels);
+    }
+    settings->num_power_levels = num_power_levels;
+    memcpy(settings->power_levels, frame->power_levels, num_power_levels);
 }
 
 #ifdef SA_DEBUG
@@ -543,7 +549,7 @@ void AP_SmartAudio::update_vtx_settings(const Settings& settings)
     _vtx_power_change_pending = _vtx_freq_change_pending = _vtx_options_change_pending = false;
 }
 
-bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
+bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer_length)
 {
     const FrameHeader *header = (const FrameHeader *)buffer;
     const uint8_t fullFrameLength = sizeof(FrameHeader) + header->length;
@@ -557,12 +563,18 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
         debug("parse_response_buffer() failed - invalid CRC or header");
         return false;
     }
-    // SEND TO GCS A MESSAGE TO UNDERSTAND WHATS HAPPENING
     AP_VideoTX& vtx = AP::vtx();
     Settings settings {};
 
+    // the length field is taken from the wire, so before interpreting the
+    // buffer as a particular frame each case checks that we actually
+    // received enough bytes for it.  A short or corrupt frame would
+    // otherwise be parsed from stale buffer contents.
     switch (header->command) {
     case SMARTAUDIO_RSP_GET_SETTINGS_V1:
+        if (buffer_length < sizeof(SettingsResponseFrame)) {
+            return false;
+        }
         _protocol_version = SMARTAUDIO_SPEC_PROTOCOL_v1;
         unpack_settings(&settings, (const SettingsResponseFrame *)buffer);
         settings.version = SMARTAUDIO_SPEC_PROTOCOL_v1;
@@ -571,6 +583,9 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
         break;
 
     case SMARTAUDIO_RSP_GET_SETTINGS_V2:
+        if (buffer_length < sizeof(SettingsResponseFrame)) {
+            return false;
+        }
         _protocol_version = SMARTAUDIO_SPEC_PROTOCOL_v2;
         unpack_settings(&settings, (const SettingsResponseFrame *)buffer);
         settings.version = SMARTAUDIO_SPEC_PROTOCOL_v2;
@@ -579,6 +594,9 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
         break;
 
     case SMARTAUDIO_RSP_GET_SETTINGS_V21:
+        if (buffer_length < sizeof(SettingsExtendedResponseFrame)) {
+            return false;
+        }
         _protocol_version = SMARTAUDIO_SPEC_PROTOCOL_v21;
         unpack_settings(&settings, (const SettingsExtendedResponseFrame *)buffer);
         settings.version = SMARTAUDIO_SPEC_PROTOCOL_v21;
@@ -587,6 +605,9 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
         break;
 
     case SMARTAUDIO_RSP_SET_FREQUENCY: {
+        if (buffer_length < sizeof(U16ResponseFrame)) {
+            return false;
+        }
         const U16ResponseFrame *resp = (const U16ResponseFrame *)buffer;
         unpack_frequency(&settings, resp->payload);
         vtx.set_frequency_mhz(settings.frequency);
@@ -597,6 +618,9 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
         break;
 
     case SMARTAUDIO_RSP_SET_CHANNEL: {
+        if (buffer_length < sizeof(U8ResponseFrame)) {
+            return false;
+        }
         const U8ResponseFrame *resp = (const U8ResponseFrame *)buffer;
         vtx.set_band(resp->payload / VTX_MAX_CHANNELS);
         vtx.set_channel(resp->payload % VTX_MAX_CHANNELS);
@@ -608,6 +632,9 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
         break;
 
     case SMARTAUDIO_RSP_SET_POWER: {
+        if (buffer_length < sizeof(U16ResponseFrame)) {
+            return false;
+        }
         const U16ResponseFrame *resp = (const U16ResponseFrame *)buffer;
         const uint8_t power = resp->payload & 0xFF;
         switch (_protocol_version) {
@@ -638,6 +665,9 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer)
         break;
 
     case SMARTAUDIO_RSP_SET_MODE: {
+        if (buffer_length < sizeof(FrameHeader) + 1) {
+            return false;
+        }
         vtx.set_options(vtx.get_configured_options()); // easiest to just make them match
         debug("Mode was set to 0x%x", buffer[4]);
     }

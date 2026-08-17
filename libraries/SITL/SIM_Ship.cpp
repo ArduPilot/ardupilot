@@ -202,6 +202,13 @@ void ShipSim::send_report(void)
         return;
     }
 
+    // Drain and discard anything the vehicle sends us:
+    {
+        uint8_t discard[1024];
+        while (mav_socket.recv(discard, sizeof(discard), 0) > 0) {
+        }
+    }
+
     uint32_t now = AP_HAL::millis();
 
     const uint8_t component_id = MAV_COMP_ID_USER10;

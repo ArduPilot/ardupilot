@@ -28,7 +28,7 @@
 #if AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
 
 #include "AP_RangeFinder.h"
-#include "AP_RangeFinder_Backend.h"
+#include "AP_RangeFinder_Backend_I2C.h"
 #define TFS20L_ADDR_DEFAULT              0x10        // TFS20L default device id
 
 // Forward declaration
@@ -36,14 +36,17 @@ namespace AP_HAL {
     class I2CDevice;
 }
 
-class AP_RangeFinder_Benewake_TFS20L : public AP_RangeFinder_Backend
+class AP_RangeFinder_Benewake_TFS20L : public AP_RangeFinder_Backend_I2C
 {
 
 public:
     // static detection function
     static AP_RangeFinder_Backend *detect(RangeFinder::RangeFinder_State &_state,
                                           AP_RangeFinder_Params &_params,
-                                          AP_HAL::I2CDevice *dev);
+                                          AP_HAL::I2CDevice &dev) {
+        // this will free the object if configuration fails:
+        return configure(NEW_NOTHROW AP_RangeFinder_Benewake_TFS20L(_state, _params, dev));
+    }
 
     // update state
     void update(void) override;
@@ -55,14 +58,10 @@ protected:
     }
 
 private:
-    AP_RangeFinder_Benewake_TFS20L(RangeFinder::RangeFinder_State &_state,
-                                   AP_RangeFinder_Params &_params,
-                                   AP_HAL::I2CDevice &dev);
+    using AP_RangeFinder_Backend_I2C::AP_RangeFinder_Backend_I2C;
 
-    bool init();
+    bool init() override;
     void timer();
-
-    AP_HAL::I2CDevice &_dev;
 
     struct {
         uint32_t sum;

@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
+import optparse
+
 # useful script to test the build of all example code
 # This helps when doing large merges
 # Peter Barker, June 2016
 # based on build_examples.sh,  Andrew Tridgell, November 2012
-
 # AP_FLAKE8_CLEAN
-
 import os
 import sys
-import optparse
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), '../autotest/pysim'))
 

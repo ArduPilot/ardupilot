@@ -23,7 +23,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_VIEWPRO_EO_ZOOM_SPEED     0x07    // hard-coded zoom speed (fast)
 #define AP_MOUNT_VIEWPRO_IR_ZOOM_SPEED     1 
 #define AP_MOUNT_VIEWPRO_ZOOM_MAX       10      // hard-coded absolute zoom times max
-#define AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT  (65536.0 / 360.0)   // scalar to convert degrees to the viewpro angle scaling
+#define AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT  (65536.0 / M_2PI)   // scalar to convert radians to the viewpro angle scaling
 #define AP_MOUNT_VIEWPRO_OUTPUT_TO_DEG  (360.0 / 65536.0)   // scalar to convert viewpro angle scaling to degrees
 
 #define AP_MOUNT_VIEWPRO_DEBUG 0
@@ -236,10 +236,14 @@ void AP_Mount_Viewpro::process_packet()
             break;
         }
         case CommConfigCmd::QUERY_MODEL:
+            if (_parsed_msg.data_bytes_received == 0) {
+                break;
+            }
             // gimbal model, length is 10 bytes
-            strncpy((char *)_model_name, (const char *)&_msg_buff[_msg_buff_data_start+1], sizeof(_model_name)-1);
+            memset(_model_name, '\0', sizeof(_model_name));
+            memcpy(_model_name, &_msg_buff[_msg_buff_data_start+1], MIN(sizeof(_model_name)-1, (size_t)(_parsed_msg.data_bytes_received-1)));
             _got_model_name = true;
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, (const char*)_model_name);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, _model_name);
             break;
         default:
             // unsupported control command
@@ -471,7 +475,6 @@ void AP_Mount_Viewpro::send_target_angles(const MountAngleTarget &angle_rad)
 {
     const float pitch_rad = angle_rad.pitch;
     const float yaw_rad = angle_rad.yaw;
-    bool yaw_is_ef = angle_rad.yaw_is_ef;
 
     // gimbal does not support lock in angle control mode
     if (!set_lock(false)) {
@@ -479,19 +482,18 @@ void AP_Mount_Viewpro::send_target_angles(const MountAngleTarget &angle_rad)
     }
 
     // convert yaw angle to body-frame
-    float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw_rad()) : yaw_rad;
+    float yaw_bf_rad = angle_rad.yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw_rad()) : yaw_rad;
 
     // enforce body-frame yaw angle limits.  If beyond limits always use body-frame control
     const float yaw_bf_min = radians(_params.yaw_angle_min);
     const float yaw_bf_max = radians(_params.yaw_angle_max);
     if (yaw_bf_rad < yaw_bf_min || yaw_bf_rad > yaw_bf_max) {
         yaw_bf_rad = constrain_float(yaw_bf_rad, yaw_bf_min, yaw_bf_max);
-        yaw_is_ef = false;
     }
 
     // scale pitch and yaw to values gimbal understands
-    const int16_t pitch_angle_output = -degrees(pitch_rad) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT;
-    const int16_t yaw_angle_output = degrees(yaw_bf_rad) * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT;
+    const int16_t pitch_angle_output = -pitch_rad * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT;
+    const int16_t yaw_angle_output = yaw_bf_rad * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT;
 
     // fill in packet
     const A1Packet a1_packet {
@@ -624,13 +626,13 @@ bool AP_Mount_Viewpro::send_m_ahrs()
     // get vehicle velocity in m/s in NED Frame
     Vector3f vel_NED;
     IGNORE_RETURN(AP::ahrs().get_velocity_NED(vel_NED));
-    float vel_yaw_deg = wrap_360(degrees(vel_NED.xy().angle()));
+    const float vel_yaw_rad = wrap_2PI(vel_NED.xy().angle());
 
     // get GPS vdop
     uint16_t gps_vdop = AP::gps().get_vdop();
 
-    // get vehicle yaw in the range 0 to 360
-    const uint16_t veh_yaw_deg = AP::ahrs().get_yaw_deg();
+    // get vehicle yaw in the range 0 to 2*pi
+    const float veh_yaw_rad = wrap_2PI(AP::ahrs().get_yaw_rad());
 
     // fill in packet
     const M_AHRSPacket mahrs_packet {
@@ -638,14 +640,14 @@ bool AP_Mount_Viewpro::send_m_ahrs()
             frame_id: FrameId::M_AHRS,
             data_type: 0x07,                        // Bit0: Attitude, Bit1: GPS, Bit2 Gyro
             unused2to8 : {0, 0, 0, 0, 0, 0, 0},
-            roll_be: htobe16(AP::ahrs().get_roll_deg() * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
-            pitch_be: htobe16(-AP::ahrs().get_pitch_deg() * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
-            yaw_be: htobe16(veh_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
+            roll_be: htobe16(AP::ahrs().get_roll_rad() * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT),      // vehicle roll angle.  1bit=360deg/65536
+            pitch_be: htobe16(-AP::ahrs().get_pitch_rad() * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT),   // vehicle pitch angle.  1bit=360deg/65536
+            yaw_be: htobe16(veh_yaw_rad * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT),                          // vehicle yaw angle.  1bit=360deg/65536
             date_be: htobe16(date),                 // bit0~6:year, bit7~10:month, bit11~15:day
             seconds_utc: {uint8_t((second_hundredths & 0xFF0000ULL) >> 16), // seconds * 100 MSB.  1bit = 0.01sec
                           uint8_t((second_hundredths & 0xFF00ULL) >> 8),    // seconds * 100 next MSB.  1bit = 0.01sec
                           uint8_t(second_hundredths & 0xFFULL)},            // seconds * 100 LSB.  1bit = 0.01sec
-            gps_yaw_be: htobe16(vel_yaw_deg * AP_MOUNT_VIEWPRO_DEG_TO_OUTPUT),  // GPS yaw
+            gps_yaw_be: htobe16(vel_yaw_rad * AP_MOUNT_VIEWPRO_RAD_TO_OUTPUT),  // GPS yaw
             position_mark_bitmask: 0x0F,            // bit0:new position, bit1:clock fix calced, bit2:horiz calced, bit3:alt calced
             latitude_be: htobe32(loc.lat),          // latitude.  1bit = 10e-7
             longitude_be: htobe32(loc.lng),         // longitude.  1bit = 10e-7
@@ -856,48 +858,6 @@ bool AP_Mount_Viewpro::set_camera_source(uint8_t primary_source, uint8_t seconda
 
     // send desired image type to camera
     return send_camera_command(new_image_sensor, CameraCommand::NO_ACTION, 0);
-}
-
-// send camera information message to GCS
-void AP_Mount_Viewpro::send_camera_information(mavlink_channel_t chan) const
-{
-    // exit immediately if not initialised
-    if (!_initialised) {
-        return;
-    }
-
-    static const uint8_t vendor_name[32] = "Viewpro";
-    uint8_t model_name[32] {};
-    if (_got_model_name) {
-        strncpy((char *)model_name, (const char*)_model_name, MIN(sizeof(model_name), sizeof(_model_name)));
-    }
-    const char cam_definition_uri[140] {};
-
-    // capability flags
-    const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
-                           CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
-                           CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
-                           CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS |
-                           CAMERA_CAP_FLAGS_HAS_TRACKING_POINT |
-                           CAMERA_CAP_FLAGS_HAS_TRACKING_RECTANGLE;
-
-    // send CAMERA_INFORMATION message
-    mavlink_msg_camera_information_send(
-        chan,
-        AP_HAL::millis(),       // time_boot_ms
-        vendor_name,            // vendor_name uint8_t[32]
-        _model_name,            // model_name uint8_t[32]
-        _firmware_version,      // firmware version uint32_t
-        NaNf,                   // sensor_size_h float (mm)
-        NaNf,                   // sensor_size_v float (mm)
-        0,                      // sensor_size_v float (mm)
-        0,                      // resolution_h uint16_t (pix)
-        0,                      // resolution_v uint16_t (pix)
-        (uint8_t)_image_sensor, // lens_id uint8_t
-        flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
-        0,                      // cam_definition_version uint16_t
-        cam_definition_uri,     // cam_definition_uri char[140]
-        _instance + 1);         // gimbal_device_id uint8_t
 }
 
 // send camera settings message to GCS

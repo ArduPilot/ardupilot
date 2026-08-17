@@ -6,7 +6,6 @@
 #include <AC_Avoidance/AC_Avoid.h>
 #include "AC_Sprayer/AC_Sprayer.h"
 #include <AP_AIS/AP_AIS.h>
-#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Follow/AP_Follow.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "AP_Rally.h"
@@ -176,12 +175,12 @@ public:
         // 210: driving modes
         //
         k_param_mode_channel = 210,
-        k_param_mode1,
-        k_param_mode2,
-        k_param_mode3,
-        k_param_mode4,
-        k_param_mode5,
-        k_param_mode6,
+        k_param_modes0,
+        k_param_modes1,
+        k_param_modes2,
+        k_param_modes3,
+        k_param_modes4,
+        k_param_modes5,
         k_param_aux_channel_old,
 
         //
@@ -267,12 +266,7 @@ public:
     // driving modes
     //
     AP_Int8     mode_channel;
-    AP_Int8     mode1;
-    AP_Int8     mode2;
-    AP_Int8     mode3;
-    AP_Int8     mode4;
-    AP_Int8     mode5;
-    AP_Int8     mode6;
+    AP_Int8     modes[6];
 
     Parameters() {}
 };
@@ -296,10 +290,6 @@ public:
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     // advanced failsafe library
     AP_AdvancedFailsafe_Rover afs;
-#endif
-
-#if AP_BEACON_ENABLED
-    AP_Beacon beacon;
 #endif
 
     // wheel encoders
@@ -347,6 +337,18 @@ public:
 
     // pitch/roll angle for crash check
     AP_Int8 crash_angle;
+
+    // min throttle for crash check
+    AP_Float crash_thr_min;
+
+    // velocity threshold for crash check
+    AP_Float crash_vel_min;
+
+    // turn rate threshold for crash check
+    AP_Float crash_turn_rate_min;
+
+    // crash trigger time in seconds
+    AP_Float crash_timeout;
 
 #if AP_FOLLOW_ENABLED
     // follow mode library

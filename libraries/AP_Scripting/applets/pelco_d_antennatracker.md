@@ -7,10 +7,9 @@ Pelco-D allows to control using either speed-/differential- or absolute-control 
 The script assumes the following parameters to be set:
 
 SCR_ENABLE = 1
-SERVO_PITCH_TYPE = 2  # ContinuousRotation type servo 
+SERVO_PITCH_TYPE = 2  # ContinuousRotation type servo
 SERVO_YAW_TYPE = 2    # ContinuousRotation type servo
 SERIALx_PROTOCOL = 28 # replace 'x' with the serial port used by luascript
 
 Additionally the PITCH2SRV, YAW2SRV tuning needs to be done as described by the antennatracker description.
 Also keep attention to the PITCH_MIN, PITCH_MAX and YAW_RANGE parameters to fit your Pelco-D hardware!
-

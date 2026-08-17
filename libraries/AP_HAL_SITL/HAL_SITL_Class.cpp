@@ -137,13 +137,16 @@ static char *new_argv[100];
  */
 static bool watchdog_save(const uint32_t *data, uint32_t nwords)
 {
-    int fd = ::open("persistent.dat", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    int fd = ::open("persistent.dat.tmp", O_WRONLY|O_CREAT|O_TRUNC, 0644);
     bool ret = false;
     if (fd != -1) {
         if (::write(fd, data, nwords*4) == (ssize_t)(nwords*4)) {
             ret = true;
         }
         ::close(fd);
+    }
+    if (ret) {
+        ret = ::rename("persistent.dat.tmp", "persistent.dat") == 0;
     }
     return ret;
 }

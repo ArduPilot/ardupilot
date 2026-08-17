@@ -9,7 +9,7 @@
 // default angle controller PID gains
 // (Sub-specific defaults for parent class)
 #define AC_ATC_SUB_ANGLE_P             6.0f
-#define AC_ATC_SUB_ACCEL_Y_MAX         110000.0f
+#define AC_ATC_SUB_ACCEL_Y_MAX_DEGSS   1100.0f
 
 // default rate controller PID gains
 #define AC_ATC_SUB_RATE_RP_P           0.135f
@@ -27,7 +27,7 @@
 
 class AC_AttitudeControl_Sub : public AC_AttitudeControl {
 public:
-    AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors);
+    AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, AP_MotorsMulticopter& motors);
 
     // empty destructor to suppress compiler warning
     virtual ~AC_AttitudeControl_Sub() {}

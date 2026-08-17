@@ -12,8 +12,10 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
+      - 'Tools/AP_Periph/**'
       - 'Tools/bootloaders/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -26,11 +28,13 @@ on:
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -45,17 +49,17 @@ on:
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.pydevproject'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -63,7 +67,8 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_dds.yml'  # except this one
 
   pull_request:
     paths-ignore:
@@ -76,29 +81,32 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
-      - 'Tools/CHDK-Script/**'
-      - 'Tools/CPUInfo/**'
+      - 'Tools/AP_Periph/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
       - 'Tools/FilterTestTool/**'
       - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
       - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
-      - 'Tools/LogAnalyzer/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
-      - 'Tools/UDP_Proxy/**'
-      - 'Tools/Vicon/**'
-      - 'Tools/bootloaders/**'
-      - 'Tools/completion/**'
-      - 'Tools/debug/**'
-      - 'Tools/environment_install/**'
-      - 'Tools/geotag/**'
-      - 'Tools/gittools/**'
-      - 'Tools/mavproxy_modules/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
       # Discard python file from Tools/scripts as not used
       - 'Tools/scripts/**.py'
       - 'Tools/scripts/build_sizes/**'
@@ -110,17 +118,17 @@ on:
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.github'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.pydevproject'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
@@ -128,7 +136,8 @@ on:
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/workflows/test_dds.yml'  # except this one
 
   workflow_dispatch:
 
@@ -136,8 +145,14 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read  # checkout; jobs that save ccache add actions:write per-job
+
 jobs:
   build:
+    permissions:
+      contents: read
+      actions: write  # save-ccache prunes the previous cache entry
     runs-on: ubuntu-22.04
     container:
       image: ardupilot/ardupilot-dev-ros:latest
@@ -151,24 +166,12 @@ jobs:
         ]
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
-      # Put ccache into github cache for faster build
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-      - name: ccache cache files
-        uses: actions/cache@v4
+      - uses: ./.github/actions/setup-ccache
         with:
-          path: ~/.ccache
-          key: ${{github.workflow}}-ccache-${{ matrix.config }}-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-${{ matrix.config }}-  # restore ccache from either previous build on this branch or on master
-      - name: setup ccache
-        run: |
-          . .github/workflows/ccache.env
+          key-suffix: ${{ matrix.config }}
       # install Micro-XRCE-DDS-Gen from source until image is updated
       - name: install Micro-XRCE-DDS-Gen from source
         run: |
@@ -186,11 +189,14 @@ jobs:
           PATH="/tmp/Micro-XRCE-DDS-Gen/scripts:$PATH"
           which microxrceddsgen
           Tools/scripts/build_ci.sh
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ${{ matrix.config }}
 
       - name: Archive buildlog artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
-           name: fail-${{matrix.config}}
+           name: ${{ github.workflow }}-fail-${{matrix.config}}
            path: /tmp/buildlogs
            retention-days: 14

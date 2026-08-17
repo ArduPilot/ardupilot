@@ -7,6 +7,7 @@ set -e # exit on error to prevent bad ipk from being generated
     exit 1
 }
 
+BOARD="ModalAI-VOXL2"
 VEHICLETYPE="$1"
 VEHICLE_BINARY="$2"
 
@@ -53,16 +54,16 @@ rm -rf $DEB_DIR
 ## install compiled stuff into data directory
 ################################################################################
 
-if [ -f ../../../build/QURT/ardupilot ] && \
-   [ -f ../../../build/QURT/bin/$VEHICLE_BINARY ]; then
+if [ -f ../../../build/$BOARD/ardupilot ] && \
+   [ -f ../../../build/$BOARD/bin/$VEHICLE_BINARY ]; then
 
 	# Copy the SLPI DSP AP library
     mkdir -p $DATA_DIR/usr/lib/rfsa/adsp
-	cp ../../../build/QURT/bin/$VEHICLE_BINARY $DATA_DIR/usr/lib/rfsa/adsp/ArduPilot.so
+	cp ../../../build/$BOARD/bin/$VEHICLE_BINARY $DATA_DIR/usr/lib/rfsa/adsp/ArduPilot.so
 
     # Install executables
 	mkdir -p $DATA_DIR/usr/bin
-	cp ../../../build/QURT/ardupilot $DATA_DIR/usr/bin
+	cp ../../../build/$BOARD/ardupilot $DATA_DIR/usr/bin
 	cp ../ap_host/service/voxl-ardupilot $DATA_DIR/usr/bin
 	chmod a+x $DATA_DIR/usr/bin/ardupilot
 	chmod a+x $DATA_DIR/usr/bin/voxl-ardupilot

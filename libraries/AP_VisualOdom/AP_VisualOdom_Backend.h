@@ -44,7 +44,7 @@ public:
 
     // consume vision velocity estimate data and send to EKF, velocity in NED meters per second
     // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
-    virtual void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality) = 0;
+    virtual void handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, int8_t quality) = 0;
 
     // request sensor's yaw be aligned with vehicle's AHRS/EKF attitude
     virtual void request_align_yaw_to_ahrs() {}
@@ -69,7 +69,7 @@ protected:
     // Logging Functions
     void Write_VisualOdom(float time_delta, const Vector3f &angle_delta, const Vector3f &position_delta, float confidence);
     void Write_VisualPosition(uint64_t remote_time_us, uint32_t time_ms, float x, float y, float z, float roll, float pitch, float yaw, float pos_err, float ang_err, uint8_t reset_counter, bool ignored, int8_t quality);
-    void Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, bool ignored, int8_t quality);
+    void Write_VisualVelocity(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, bool ignored, int8_t quality);
 #endif
 
     // align position with ahrs position by updating _pos_correction

@@ -114,12 +114,12 @@ void RC_Channels_Plane::read_mode_switch()
 
 void RC_Channel_Plane::mode_switch_changed(modeswitch_pos_t new_pos)
 {
-    if (new_pos < 0 || (uint8_t)new_pos > plane.num_flight_modes) {
+    if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(plane.g.flight_modes)) {
         // should not have been called
         return;
     }
 
-    plane.set_mode_by_number((Mode::Number)plane.flight_modes[new_pos].get(), ModeReason::RC_COMMAND);
+    plane.set_mode_by_number((Mode::Number)plane.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND);
 }
 
 /*

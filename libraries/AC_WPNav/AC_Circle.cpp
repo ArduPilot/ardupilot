@@ -2,20 +2,19 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include "AC_Circle.h"
-
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 
 extern const AP_HAL::HAL& hal;
 
+// Circle mode default and limit constants
+#define AC_CIRCLE_RADIUS_M_DEFAULT   10.0f      // Default circle radius in meters
+#define AC_CIRCLE_RATE_DEFAULT       20.0f      // Default circle turn rate in degrees per second. Positive = clockwise, negative = counter-clockwise.
+#define AC_CIRCLE_ANGULAR_ACCEL_MIN  2.0f       // Minimum angular acceleration in deg/s² (used to avoid sluggish yaw transitions).
+#define AC_CIRCLE_RADIUS_MAX_M       2000.0     // Maximum allowed circle radius in meters (2000 m = 2 km).
+
 const AP_Param::GroupInfo AC_Circle::var_info[] = {
-    // @Param: RADIUS
-    // @DisplayName: Circle Radius
-    // @Description: Defines the radius of the circle the vehicle will fly when in Circle flight mode
-    // @Units: cm
-    // @Range: 0 200000
-    // @Increment: 100
-    // @User: Standard
-    AP_GROUPINFO("RADIUS",  0,  AC_Circle, _radius_parm_cm, AC_CIRCLE_RADIUS_DEFAULT),
+    // 0 was RADIUS (cm)
 
     // @Param: RATE
     // @DisplayName: Circle rate
@@ -28,10 +27,19 @@ const AP_Param::GroupInfo AC_Circle::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Circle options
-    // @Description: 0:Enable or disable using the pitch/roll stick control circle mode's radius and rate
-    // @Bitmask: 0:manual control, 1:face direction of travel, 2:Start at center rather than on perimeter, 3:Make Mount ROI the center of the circle
+    // @Description: Circle behaviour options
+    // @Bitmask: 0:RC pitch and roll control radius and rate, 1:Face direction of travel, 2:Start at center rather than on perimeter, 3:Make Mount ROI the center of the circle
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 2, AC_Circle, _options, 1),
+
+    // @Param: RADIUS_M
+    // @DisplayName: Circle Radius
+    // @Description: Radius of the circle the vehicle will fly when in Circle flight mode
+    // @Units: m
+    // @Range: 0 2000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RADIUS_M", 3, AC_Circle, _radius_parm_m, AC_CIRCLE_RADIUS_M_DEFAULT),
 
     AP_GROUPEND
 };
@@ -89,8 +97,8 @@ void AC_Circle::init_NED_m(const Vector3p& center_ned_m, bool is_terrain_alt, fl
 void AC_Circle::init()
 {
     // Load radius and rate from parameters
-    _radius_m = _radius_parm_cm * 0.01;
-    _last_radius_param_cm = _radius_parm_cm;
+    _radius_m = _radius_parm_m.get();
+    _last_radius_param_m = _radius_m;
     _rotation_rate_max_rads = radians(_rate_parm_degs);
 
     // Initialise position controller using current lean angles
@@ -281,9 +289,8 @@ bool AC_Circle::update_ms(float climb_rate_ms)
 // See get_closest_point_on_circle_NED_m() for full details.
 void AC_Circle::get_closest_point_on_circle_NEU_cm(Vector3f& result_neu_cm, float& dist_cm) const
 {
-    // Convert input arguments from neu cm to ned meters
-    Vector3p result_ned_m = Vector3p{result_neu_cm.x, result_neu_cm.y, -result_neu_cm.z} * 0.01;
-    float dist_m = dist_cm * 0.01;
+    Vector3p result_ned_m;
+    float dist_m;
 
     // Compute closest point in meters
     get_closest_point_on_circle_NED_m(result_ned_m, dist_m);
@@ -452,10 +459,30 @@ bool AC_Circle::get_terrain_U_m(float& terrain_u_m)
 void AC_Circle::check_param_change()
 {
     // Check if the stored radius param has changed
-    if (!is_equal(_last_radius_param_cm, _radius_parm_cm.get())) {
-        // Convert radius from cm to meters and update internal radius
-        _radius_m = _radius_parm_cm * 0.01;
-        // Store new parameter value to detect future changes
-        _last_radius_param_cm = _radius_parm_cm;
+    if (!is_equal(_last_radius_param_m, _radius_parm_m.get())) {
+        // update internal radius and store new parameter value to detect future changes
+        _radius_m = _radius_parm_m.get();
+        _last_radius_param_m = _radius_m;
     }
+}
+
+// perform any required parameter conversions
+void AC_Circle::convert_parameters()
+{
+    // PARAMETER_CONVERSION - Added: Jan-2026 for 4.7
+
+    // exit immediately if radius_m parameter is already configured
+    if (_radius_parm_m.configured()) {
+        return;
+    }
+
+    // convert parameters
+    static const AP_Param::ConversionInfo conversion_info[] = {
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+        { 60, 0, AP_PARAM_FLOAT, "CIRCLE_RADIUS_M" },    // CIRCLE_RADIUS moved to CIRCLE_RADIUS_M
+#else
+        { 104, 0, AP_PARAM_FLOAT, "CIRCLE_RADIUS_M" },   // CIRCLE_RADIUS moved to CIRCLE_RADIUS_M
+#endif
+    };
+    AP_Param::convert_old_parameters_scaled(conversion_info, ARRAY_SIZE(conversion_info), 0.01, 0);
 }

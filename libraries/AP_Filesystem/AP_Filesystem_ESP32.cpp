@@ -170,9 +170,7 @@ int64_t AP_Filesystem_ESP32::disk_free(const char *path)
     /* Get total sectors and free sectors */
     fre_sect = fre_clust * fs->csize;
 
-    int64_t tmp_free_bytes = fre_sect * FF_SS_SDCARD;
-
-    return tmp_free_bytes;
+    return (int64_t)fre_sect * FF_SS_SDCARD;
 }
 
 // return total disk space in bytes
@@ -193,9 +191,7 @@ int64_t AP_Filesystem_ESP32::disk_space(const char *path)
     /* Get total sectors and free sectors */
     tot_sect = (fs->n_fatent - 2) * fs->csize;
 
-    int64_t tmp_total_bytes = tot_sect * FF_SS_SDCARD;
-
-    return tmp_total_bytes;
+    return (int64_t)tot_sect * FF_SS_SDCARD;
 }
 
 /*

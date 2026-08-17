@@ -2,7 +2,7 @@
 
 #include "AC_CustomControl.h"
 
-#if AP_CUSTOMCONTROL_ENABLED
+#if AP_COPTER_CUSTOMCONTROL_ENABLED
 
 #include "AC_CustomControl_Backend.h"
 // #include "AC_CustomControl_Empty.h"
@@ -31,7 +31,8 @@ const AP_Param::GroupInfo AC_CustomControl::var_info[] = {
     // parameters for empty controller. only used as a template, no need for param table 
     // AP_SUBGROUPVARPTR(_backend, "1_", 6, AC_CustomControl, _backend_var_info[0]),
 
-    // parameters for PID controller
+    // @Group: 2_
+    // @Path: AC_CustomControl_PID.cpp
     AP_SUBGROUPVARPTR(_backend, "2_", 7, AC_CustomControl, _backend_var_info[1]),
 
     AP_GROUPEND
@@ -201,4 +202,4 @@ void AC_CustomControl::set_notch_sample_rate(float sample_rate)
 #endif
 }
 
-#endif  // AP_CUSTOMCONTROL_ENABLED
+#endif  // AP_COPTER_CUSTOMCONTROL_ENABLED

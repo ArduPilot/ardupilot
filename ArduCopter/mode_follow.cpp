@@ -13,10 +13,16 @@
  * TODO: ensure AP_AVOIDANCE_ENABLED is true because we rely on it velocity limiting functions
  */
 
+// Return true if this mode is enabled, used by MAVLink available modes
+bool ModeFollow::enabled() const
+{
+    return g2.follow.enabled();
+}
+
 // initialise follow mode
 bool ModeFollow::init(const bool ignore_checks)
 {
-    if (!g2.follow.enabled()) {
+    if (!enabled()) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Set FOLL_ENABLE = 1");
         return false;
     }
@@ -93,9 +99,11 @@ void ModeFollow::run()
                 Vector3p pos_ned_m;  // vector to lead vehicle
                 Vector3f vel_ned_ms;  // velocity of lead vehicle
                 Vector3f accel_ned_mss;  // accel of lead vehicle
-                if (g2.follow.get_target_pos_vel_accel_NED_m(pos_ned_m, vel_ned_ms, accel_ned_mss))
-                if (pos_ned_m.xy().length_squared() > 1.0) {
-                    yaw_rad = (pos_ned_m.xy() - pos_control->get_pos_target_NED_m().xy()).tofloat().angle();
+                if (g2.follow.get_target_pos_vel_accel_NED_m(pos_ned_m, vel_ned_ms, accel_ned_mss)) {
+                    const Vector2p vec_to_lead_ne_m = pos_ned_m.xy() - pos_control->get_pos_target_NED_m().xy();
+                    if (vec_to_lead_ne_m.length_squared() > 1.0) {
+                        yaw_rad = vec_to_lead_ne_m.angle();
+                    }
                 }
                 break;
             }
@@ -152,8 +160,8 @@ float ModeFollow::wp_bearing_deg() const
 // Returns target location with offset applied, for MAVLink reporting
 bool ModeFollow::get_wp(Location &loc) const
 {
-    Vector3f vel;
-    return g2.follow.get_target_location_and_velocity_ofs(loc, vel);
+    Vector3f vel_ned_ms;
+    return g2.follow.get_target_location_and_velocity_ofs(loc, vel_ned_ms);
 }
 
 #endif // MODE_FOLLOW_ENABLED

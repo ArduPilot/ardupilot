@@ -96,7 +96,7 @@ public:
 
     // helper functions
     bool restart_landing_sequence(void);
-    int32_t get_target_airspeed_cm(void);
+    float get_target_airspeed_ms(void);
 
     // accessor functions for the params and states
     static const struct AP_Param::GroupInfo var_info[];
@@ -110,7 +110,7 @@ public:
     int8_t get_then_servos_neutral(void) const { return then_servos_neutral; }
     int8_t get_abort_throttle_enable(void) const { return abort_throttle_enable; }
     int8_t get_flap_percent(void) const { return flap_percent; }
-    int8_t get_throttle_slewrate(void) const { return throttle_slewrate; }
+    int16_t get_throttle_slewrate(void) const { return throttle_slewrate; }
     bool is_commanded_go_around(void) const { return flags.commanded_go_around; }
     bool is_complete(void) const;
     void set_initial_slope(void) { initial_slope = slope; }
@@ -171,7 +171,7 @@ private:
     AP_Int8 then_servos_neutral;
     AP_Int8 abort_throttle_enable;
     AP_Int8 flap_percent;
-    AP_Int8 throttle_slewrate;
+    AP_Int16 throttle_slewrate;
     AP_Int8 type;
     AP_Int8 flare_effectivness_pct;
     AP_Float wind_comp;
@@ -200,7 +200,7 @@ private:
     void type_slope_adjust_landing_slope_for_rangefinder_bump(AP_FixedWing::Rangefinder_State &rangefinder_state, Location &prev_WP_loc, Location &next_WP_loc, const Location &current_loc, const float wp_distance, int32_t &target_altitude_offset_cm);
 
     void type_slope_setup_landing_glide_slope(const Location &prev_WP_loc, const Location &next_WP_loc, const Location &current_loc, int32_t &target_altitude_offset_cm);
-    int32_t type_slope_get_target_airspeed_cm(void);
+    float type_slope_get_target_airspeed_ms(void);
     void type_slope_check_if_need_to_abort(const AP_FixedWing::Rangefinder_State &rangefinder_state);
     int32_t type_slope_constrain_roll(const int32_t desired_roll_cd, const int32_t level_roll_limit_cd);
     bool type_slope_request_go_around(void);

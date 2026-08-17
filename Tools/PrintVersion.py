@@ -40,19 +40,18 @@ else:
     includefilepath = includefiles[vehicle]
 
 
-file = open(includefilepath)
-
 firmware_version_regex = re.compile(r".*define +FIRMWARE_VERSION.*")
 firmware_version_extract_regex = re.compile(r".*define +FIRMWARE_VERSION[	 ]+(?P<major>\d+)[ ]*,[ 	]*(?P<minor>\d+)[ ]*,[	 ]*(?P<point>\d+)[ ]*,[	 ]*(?P<type>[A-Z_]+)[	 ]*")  # noqa: E501
 
-for line in file:
-    if not firmware_version_regex.match(line):
-        continue
-    match = firmware_version_extract_regex.match(line)
-    if not match:
-        print("Failed to match FIRMWARE_VERSION line (%s)" % (line,))
-        sys.exit(1)
-    print("%d.%d.%d-%s" % (int(match.group("major")),
-                           int(match.group("minor")),
-                           int(match.group("point")),
-                           match.group("type")))
+with open(includefilepath) as in_file:
+    for line in in_file:
+        if not firmware_version_regex.match(line):
+            continue
+        match = firmware_version_extract_regex.match(line)
+        if not match:
+            print("Failed to match FIRMWARE_VERSION line (%s)" % (line,))
+            sys.exit(1)
+        print("%d.%d.%d-%s" % (int(match.group("major")),
+                               int(match.group("minor")),
+                               int(match.group("point")),
+                               match.group("type")))

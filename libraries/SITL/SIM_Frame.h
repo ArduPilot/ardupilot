@@ -21,6 +21,7 @@
 #include "SIM_Aircraft.h"
 #include "SIM_Motor.h"
 #include <AP_JSON/AP_JSON.h>
+#include <AP_Param/AP_Param.h>
 
 #ifndef SIM_FRAME_MAX_ACTUATORS
 #define SIM_FRAME_MAX_ACTUATORS 32
@@ -49,89 +50,102 @@ public:
     static Frame *create_frame(const char *name);
     
     // initialise frame
-    void init(const char *frame_str, Battery *_battery);
+    void init(const char *frame_str);
 
     // calculate rotational and linear accelerations
     void calculate_forces(const Aircraft &aircraft,
                           const struct sitl_input &input,
-                          Vector3f &rot_accel, Vector3f &body_accel, float* rpm,
-                          bool use_drag=true);
+                          Vector3f &rot_accel, Vector3f &body_accel, float* rpm);
 #endif // AP_SIM_ENABLED
+
+    static const struct AP_Param::GroupInfo var_info[];
 
     float terminal_velocity;
     float terminal_rotation_rate;
     uint8_t motor_offset;
 
-    // calculate current and voltage
-    void current_and_voltage(float &voltage, float &current);
+    float get_current_amp(void);
 
     // get mass in kg
     float get_mass(void) const {
         return mass;
     }
 
-    // set mass in kg
-    void set_mass(float new_mass) {
-        mass = new_mass;
+    // scale factor on model mass, used by quadplane to allow for plane components
+    void set_mass_scale(float scale) {
+        mass_scale = scale;
     }
+
+    float get_model_batt_max_voltage(void) const { return model.maxVoltage; }
+    float get_model_batt_capacity_ah(void) const { return model.battCapacityAh; }
+    float get_model_batt_resistance_ohm(void) const { return model.refBatRes; }
+
+    // returns true once when the battery model values have changed
+    bool battery_changed(void);
     
 private:
     /*
-      parameters that define the multicopter model. Can be loaded from
-      a json file to give a custom model
+      parameters that define the multicopter model. The scalars are
+      exposed as SIM_FRM_ parameters, defaults come from the parameter
+      table and can be overridden by loading a json model file
      */
-    const struct Model {
+    struct Model {
         // model mass kg
-        float mass = 3.0;
+        AP_Float mass;
 
         // diameter of model
-        float diagonal_size = 0.35;
+        AP_Float diagonal_size;
 
         /*
           the ref values are for a test at fixed angle, used to estimate drag
          */
-        float refSpd = 15.08; // m/s
-        float refAngle = 45;  // degrees
-        float refVoltage = 12.09; // Volts
-        float refCurrent = 29.3; // Amps
-        float refAlt = 593; // altitude AMSL
-        float refTempC = 25; // temperature C
-        float refBatRes = 0.01; // BAT.Res
+        AP_Float refSpd; // m/s
+        AP_Float refAngle;  // degrees
+        AP_Float refVoltage; // Volts
+        AP_Float refCurrent; // Amps
+        AP_Float refAlt; // altitude AMSL
+        float refTempC = 25; // temperature C, unused
+
+        // battery resistance reference value in Ohms
+        AP_Float refBatRes;
 
         // full pack voltage
-        float maxVoltage = 4.2*3;
+        AP_Float maxVoltage;
 
         // battery capacity in Ah. Use zero for unlimited
-        float battCapacityAh = 0.0;
+        AP_Float battCapacityAh;
 
         // CTUN.ThO at hover at refAlt
-        float hoverThrOut = 0.39;
+        AP_Float hoverThrOut;
 
         // MOT_THST_EXPO
-        float propExpo = 0.65;
+        AP_Float propExpo;
 
         // scaling factor for yaw response, deg/sec
-        float refRotRate = 120;
+        AP_Float refRotRate;
 
         // MOT params are from the reference test
         // MOT_PWM_MIN
-        float pwmMin = 1000;
+        AP_Float pwmMin;
         // MOT_PWM_MAX
-        float pwmMax = 2000;
+        AP_Float pwmMax;
         // MOT_SPIN_MIN
-        float spin_min = 0.15;
+        AP_Float spin_min;
         // MOT_SPIN_MAX
-        float spin_max = 0.95;
+        AP_Float spin_max;
 
         // maximum slew rate of motors
-        float slew_max = 150;
+        AP_Float slew_max;
 
-        // rotor disc area in m**2 for 4 x 0.35m dia rotors
+        // rotor disc area in m**2
         // Note that coaxial rotors count as one rotor only when calculating effective disc area
-        float disc_area = 0.385;
+        AP_Float disc_area;
 
         // momentum drag coefficient
-        float mdrag_coef = 0.2;
+        AP_Float mdrag_coef;
+
+        // bluff body drag scaling
+        AP_Float bbdrag_coef;
 
         // if zero value will be estimated from mass
         Vector3f moment_of_inertia;
@@ -142,8 +156,7 @@ private:
 
         // number of motors
         float num_motors = 4;
-
-    } default_model;
+    };
 
 protected:
     // load frame parameters from a json model file
@@ -155,13 +168,30 @@ protected:
     struct Model model;
 
 private:
+    // apply parameter based settings, called on each physics step so
+    // that SIM_FRM_ parameter changes take effect
+    void update_parameters(void);
+
     // exposed area times coefficient of drag
     float areaCd;
     float mass;
-    float last_param_voltage;
-#if AP_SIM_ENABLED
-    Battery *battery;
-#endif
+    float mass_scale = 1.0;
+
+    // effective momentum drag coefficient, possibly scaled down from model.mdrag_coef
+    float mdrag_coef;
+
+    // moment of inertia in use, from model or estimated from mass
+    Vector3f moment_of_inertia;
+
+    // last printed EK3 drag suggestions
+    float last_drag_bcoef;
+    float last_drag_mcoef;
+
+    // battery model change detection
+    bool battery_dirty;
+    float last_batt_voltage;
+    float last_batt_cap;
+    float last_batt_res;
 
     // json parsing helpers
     void parse_float(AP_JSON::value val, const char* label, float &param);

@@ -2,11 +2,13 @@
  Emits parameters as an EDN file, does some small remapping of names
 """
 
-from emit import Emit
-import edn_format
 import datetime
-import pytz
 import subprocess
+
+import edn_format
+import pytz
+
+from emit import Emit
 
 
 class EDNEmit(Emit):

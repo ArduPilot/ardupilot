@@ -218,7 +218,7 @@ friend class ModeQAcro;
 public:
 
     Mode::Number mode_number() const override { return Mode::Number::ACRO; }
-    const char *name() const override { return "ACRO"; }
+    const char *name() const override { return "Acro"; }
     const char *name4() const override { return "ACRO"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -258,7 +258,7 @@ public:
     friend class Plane;
 
     Number mode_number() const override { return Number::AUTO; }
-    const char *name() const override { return "AUTO"; }
+    const char *name() const override { return "Auto"; }
     const char *name4() const override { return "AUTO"; }
 
     bool does_automatic_thermal_switch() const override { return true; }
@@ -331,7 +331,7 @@ class ModeAutoTune : public Mode
 public:
 
     Number mode_number() const override { return Number::AUTOTUNE; }
-    const char *name() const override { return "AUTOTUNE"; }
+    const char *name() const override { return "Autotune"; }
     const char *name4() const override { return "ATUN"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -356,7 +356,7 @@ class ModeGuided : public Mode
 public:
 
     Number mode_number() const override { return Number::GUIDED; }
-    const char *name() const override { return "GUIDED"; }
+    const char *name() const override { return "Guided"; }
     const char *name4() const override { return "GUID"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -406,7 +406,7 @@ class ModeCircle: public Mode
 public:
 
     Number mode_number() const override { return Number::CIRCLE; }
-    const char *name() const override { return "CIRCLE"; }
+    const char *name() const override { return "Circle"; }
     const char *name4() const override { return "CIRC"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -431,7 +431,7 @@ class ModeLoiter : public Mode
 public:
 
     Number mode_number() const override { return Number::LOITER; }
-    const char *name() const override { return "LOITER"; }
+    const char *name() const override { return "Loiter"; }
     const char *name4() const override { return "LOIT"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -471,7 +471,7 @@ class ModeLoiterAltQLand : public ModeLoiter
 public:
 
     Number mode_number() const override { return Number::LOITER_ALT_QLAND; }
-    const char *name() const override { return "Loiter to QLAND"; }
+    const char *name() const override { return "Loiter to QLand"; }
     const char *name4() const override { return "L2QL"; }
 
     // handle a guided target request from GCS
@@ -493,7 +493,7 @@ class ModeManual : public Mode
 public:
 
     Number mode_number() const override { return Number::MANUAL; }
-    const char *name() const override { return "MANUAL"; }
+    const char *name() const override { return "Manual"; }
     const char *name4() const override { return "MANU"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -550,7 +550,7 @@ class ModeStabilize : public Mode
 public:
 
     Number mode_number() const override { return Number::STABILIZE; }
-    const char *name() const override { return "STABILIZE"; }
+    const char *name() const override { return "Stabilize"; }
     const char *name4() const override { return "STAB"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -573,7 +573,7 @@ class ModeTraining : public Mode
 public:
 
     Number mode_number() const override { return Number::TRAINING; }
-    const char *name() const override { return "TRAINING"; }
+    const char *name() const override { return "Training"; }
     const char *name4() const override { return "TRAN"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -592,7 +592,7 @@ class ModeInitializing : public Mode
 public:
 
     Number mode_number() const override { return Number::INITIALISING; }
-    const char *name() const override { return "INITIALISING"; }
+    const char *name() const override { return "Initialising"; }
     const char *name4() const override { return "INIT"; }
 
     bool _enter() override { return false; }
@@ -614,7 +614,7 @@ class ModeFBWA : public Mode
 public:
 
     Number mode_number() const override { return Number::FLY_BY_WIRE_A; }
-    const char *name() const override { return "FLY_BY_WIRE_A"; }
+    const char *name() const override { return "FBWA"; }
     const char *name4() const override { return "FBWA"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -641,7 +641,7 @@ class ModeFBWB : public Mode
 public:
 
     Number mode_number() const override { return Number::FLY_BY_WIRE_B; }
-    const char *name() const override { return "FLY_BY_WIRE_B"; }
+    const char *name() const override { return "FBWB"; }
     const char *name4() const override { return "FBWB"; }
 
     bool allows_terrain_disable() const override { return true; }
@@ -667,7 +667,7 @@ class ModeCruise : public Mode
 public:
 
     Number mode_number() const override { return Number::CRUISE; }
-    const char *name() const override { return "CRUISE"; }
+    const char *name() const override { return "Cruise"; }
     const char *name4() const override { return "CRUS"; }
 
     bool allows_terrain_disable() const override { return true; }
@@ -705,7 +705,7 @@ class ModeAvoidADSB : public Mode
 public:
 
     Number mode_number() const override { return Number::AVOID_ADSB; }
-    const char *name() const override { return "AVOID_ADSB"; }
+    const char *name() const override { return "Avoid ADSB"; }
     const char *name4() const override { return "AVOI"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -729,7 +729,7 @@ class ModeQStabilize : public Mode
 public:
 
     Number mode_number() const override { return Number::QSTABILIZE; }
-    const char *name() const override { return "QSTABILIZE"; }
+    const char *name() const override { return "QStabilize"; }
     const char *name4() const override { return "QSTB"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -763,7 +763,7 @@ class ModeQHover : public Mode
 public:
 
     Number mode_number() const override { return Number::QHOVER; }
-    const char *name() const override { return "QHOVER"; }
+    const char *name() const override { return "QHover"; }
     const char *name4() const override { return "QHOV"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -796,7 +796,7 @@ friend class Plane;
 public:
 
     Number mode_number() const override { return Number::QLOITER; }
-    const char *name() const override { return "QLOITER"; }
+    const char *name() const override { return "QLoiter"; }
     const char *name4() const override { return "QLOT"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -826,7 +826,7 @@ class ModeQLand : public Mode
 {
 public:
     Number mode_number() const override { return Number::QLAND; }
-    const char *name() const override { return "QLAND"; }
+    const char *name() const override { return "QLand"; }
     const char *name4() const override { return "QLND"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -883,7 +883,7 @@ class ModeQAcro : public Mode
 public:
 
     Number mode_number() const override { return Number::QACRO; }
-    const char *name() const override { return "QACRO"; }
+    const char *name() const override { return "QAcro"; }
     const char *name4() const override { return "QACO"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -906,7 +906,7 @@ class ModeQAutotune : public Mode
 public:
 
     Number mode_number() const override { return Number::QAUTOTUNE; }
-    const char *name() const override { return "QAUTOTUNE"; }
+    const char *name() const override { return "QAutotune"; }
     const char *name4() const override { return "QATN"; }
 
     bool is_vtol_mode() const override { return true; }
@@ -932,7 +932,7 @@ public:
     ModeTakeoff();
 
     Number mode_number() const override { return Number::TAKEOFF; }
-    const char *name() const override { return "TAKEOFF"; }
+    const char *name() const override { return "Takeoff"; }
     const char *name4() const override { return "TKOF"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -980,7 +980,7 @@ public:
     ModeAutoLand();
 
     Number mode_number() const override { return Number::AUTOLAND; }
-    const char *name() const override { return "AUTOLAND"; }
+    const char *name() const override { return "Autoland"; }
     const char *name4() const override { return "ALND"; }
 
     // methods that affect movement of the vehicle in this mode
@@ -1045,7 +1045,7 @@ class ModeThermal: public Mode
 public:
 
     Number mode_number() const override { return Number::THERMAL; }
-    const char *name() const override { return "THERMAL"; }
+    const char *name() const override { return "Thermal"; }
     const char *name4() const override { return "THML"; }
 
     // methods that affect movement of the vehicle in this mode

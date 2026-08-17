@@ -5,20 +5,19 @@
 Scripting is automatically enabled on all boards with more than 1MB of flash space.
 The following example enables scripting, builds the ArduPlane firmware for the Cube, and uploads it.
 
-```
-$ waf configure --board=CubeBlack
+```bash
+waf configure --board=CubeBlack
 
-$ waf plane
+waf plane
 
-$ waf plane --upload
+waf plane --upload
 ```
 
 To run SITL you can simply use the `sim_vehicle.py` script which will wrap the configuration, compilation,
 and launching of the simulation into one command for you.
 
-
-```
-$ Tools/autotest/sim_vehicle.py -v ArduPlane
+```bash
+Tools/autotest/sim_vehicle.py -v ArduPlane
 ```
 
 Once you have a vehicle flashed with scripting you need to set the `SCR_ENABLE` parameter to 1 to enable scripting and reboot.
@@ -49,6 +48,7 @@ return update, 1000   -- request "update" to be the first time 1000 milliseconds
 ```
 
 ## Examples
+
 See the [code examples folder](https://github.com/ArduPilot/ardupilot/tree/master/libraries/AP_Scripting/examples)
 
 ## Working with bindings

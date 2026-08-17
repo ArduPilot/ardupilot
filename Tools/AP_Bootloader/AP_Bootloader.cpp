@@ -100,7 +100,7 @@ int main(void)
 #endif
 
 #if AP_BOOTLOADER_NETWORK_ENABLED
-    network.save_comms_ip();
+    network.restore_comms_ip();
 #endif
 
 #if AP_FASTBOOT_ENABLED

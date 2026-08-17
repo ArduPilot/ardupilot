@@ -58,7 +58,7 @@ AP_GPS_SBP::AP_GPS_SBP(AP_GPS &_gps,
     parser_state.state = sbp_parser_state_t::WAITING;
 
     //Externally visible state
-    state.status = AP_GPS::NO_FIX;
+    state.status = AP_GPS_FixType::NONE;
     state.last_gps_time_ms = last_heatbeat_received_ms = AP_HAL::millis();
 
 }
@@ -247,7 +247,7 @@ AP_GPS_SBP::_attempt_state_update()
 
     if (now - last_heatbeat_received_ms > SBP_TIMEOUT_HEATBEAT) {
 
-        state.status = AP_GPS::NO_FIX;
+        state.status = AP_GPS_FixType::NONE;
         Debug("No Heartbeats from Piksi! Driver Ready to Die!");
 
     } else if (last_pos_llh_rtk.tow == last_vel_ned.tow
@@ -280,11 +280,11 @@ AP_GPS_SBP::_attempt_state_update()
         state.num_sats          = pos_llh->n_sats;
 
         if (pos_llh->flags == 0) {
-            state.status = AP_GPS::GPS_OK_FIX_3D;
+            state.status = AP_GPS_FixType::FIX_3D;
         } else if (pos_llh->flags == 2) {
-            state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+            state.status = AP_GPS_FixType::RTK_FLOAT;
         } else if (pos_llh->flags == 1) {
-            state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+            state.status = AP_GPS_FixType::RTK_FIXED;
         }
 
         last_full_update_tow = last_vel_ned.tow;
@@ -300,7 +300,7 @@ AP_GPS_SBP::_attempt_state_update()
 
         //INVARIANT: If we currently have a fix, ONLY return true after a full update.
 
-        state.status = AP_GPS::NO_FIX;
+        state.status = AP_GPS_FixType::NONE;
         ret = true;
 
     } else {

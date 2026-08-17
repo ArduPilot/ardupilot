@@ -99,11 +99,6 @@
 #include "AP_ExternalControl_Copter.h"
 #endif
 
-#include <AP_Beacon/AP_Beacon_config.h>
-#if AP_BEACON_ENABLED
- #include <AP_Beacon/AP_Beacon.h>
-#endif
-
 #if AP_AVOIDANCE_ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
@@ -154,6 +149,10 @@
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
 #include <AC_CustomControl/AC_CustomControl.h>                  // Custom control library
+#endif
+
+#if MODE_BRAKE_ENABLED && !MODE_ALTHOLD_ENABLED
+  #error Brake mode requires AltHold; disable MODE_BRAKE_ENABLED or enable MODE_ALTHOLD_ENABLED
 #endif
 
 #if AP_AVOIDANCE_ENABLED && !AP_FENCE_ENABLED
@@ -236,9 +235,6 @@ public:
 
 private:
 
-    // key aircraft parameters passed to multiple libraries
-    AP_MultiCopter aparm;
-
     // Global parameters are all contained within the 'g' class.
     Parameters g;
     ParametersG2 g2;
@@ -258,12 +254,8 @@ private:
     RC_Channel *rc_tuning2;
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
 
-    // flight modes convenience array
-    AP_Int8 *flight_modes;
-    const uint8_t num_flight_modes = 6;
-
-    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U};
-    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U};
+    AP_SurfaceDistance rangefinder_state {ROTATION_PITCH_270, 0U, &g2.surf_dist_parameters};
+    AP_SurfaceDistance rangefinder_up_state {ROTATION_PITCH_90, 1U, &g2.surf_dist_parameters};
 
     // helper function to get inertially interpolated rangefinder height.
     bool get_rangefinder_height_interpolated_m(float& ret) const;
@@ -322,9 +314,10 @@ private:
 #endif
 
 
-    // system time in milliseconds of last recorded yaw reset from ekf
-    uint32_t ekfYawReset_ms;
-    int8_t ekf_primary_core;
+    // old value of counter which increments when our yaw estimate is reset
+    uint16_t ahrs_yaw_reset_count;
+    // old value of counter which increments when our attitude estimate is reset
+    uint16_t attitude_reset_count;
 
     // vibration check
     struct {
@@ -370,7 +363,7 @@ private:
         bool auto_armed;                     //  5 stops auto missions from beginning until throttle is raised
         bool unused_log_started;             //  6
         bool land_complete;                  //  7 true if we have detected a landing
-        bool new_radio_frame;                //  8 Set true if we have new PWM data to act on from the Radio
+        bool unused_new_radio_frame;         //  8
         bool unused_usb_connected;           //  9
         bool unused_receiver_present;        // 10
         bool compass_mot;                    // 11 true if we are currently performing compassmot calibration
@@ -393,6 +386,12 @@ private:
 
     AirMode air_mode; // air mode is 0 = not-configured ; 1 = disabled; 2 = enabled;
     bool force_flying; // force flying is enabled when true;
+
+    // true if air-mode should be honoured; either it was turned on
+    // explicitly, or we armed with an arming switch which implies it:
+    bool air_mode_active() const {
+        return air_mode == AirMode::AIRMODE_ENABLED || ap.armed_with_airmode_switch;
+    }
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
@@ -421,6 +420,11 @@ private:
     bool any_failsafe_triggered() const {
         return failsafe.radio || battery.has_failsafed() || failsafe.gcs || failsafe.ekf || failsafe.terrain || failsafe.adsb || failsafe.deadreckon;
     }
+
+    using FS_GCS_Action = Parameters::FS_GCS_Action;
+    using FS_THR_Action = Parameters::FS_THR_Action;
+    using FS_EKF_Action = Parameters::FS_EKF_Action;
+    using WPYawBehavior = Parameters::WPYawBehavior;
 
     // dead reckoning state
     struct {
@@ -681,11 +685,11 @@ private:
 #if MODE_GUIDED_ENABLED
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
-    bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt) override;
-    bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) override;
-    bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) override;
-    bool set_target_velocity_NED(const Vector3f& vel_ned, bool align_yaw_to_target) override;
-    bool set_target_velaccel_NED(const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool relative_yaw) override;
+    bool set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt) override;
+    bool set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms) override;
+    bool set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) override;
+    bool set_target_velocity_NED(const Vector3f& vel_ned_ms, bool align_yaw_to_target) override;
+    bool set_target_velaccel_NED(const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool relative_yaw) override;
     bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) override;
     bool set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps, float throttle) override;
     bool set_target_angle_and_rate_and_throttle(float roll_deg, float pitch_deg, float yaw_deg, float roll_rate_degs, float pitch_rate_degs, float yaw_rate_degs, float throttle) override;
@@ -697,7 +701,7 @@ private:
     bool get_circle_radius(float &radius_m) override;
     bool set_circle_rate(float rate_dps) override;
 #endif
-    bool set_desired_speed(float speed) override;
+    bool set_desired_speed(float speed_ms) override;
 #if MODE_AUTO_ENABLED
     bool nav_scripting_enable(uint8_t mode) override;
     bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) override;
@@ -718,21 +722,25 @@ private:
     void three_hz_loop();
     void one_hz_loop();
     void init_simple_bearing();
-    void update_simple_mode(void);
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
     void update_altitude();
     bool get_wp_distance_m(float &distance) const override;
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    bool get_wp_location(Location &loc) const override;
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     bool get_wp_bearing_deg(float &bearing) const override;
     bool get_wp_crosstrack_error_m(float &xtrack_error) const override;
-    bool get_rate_ef_targets(Vector3f& rate_ef_targets) const override;
+    bool get_rate_ef_targets(Vector3f& rate_ef_targets_rads) const override;
 
     // Attitude.cpp
     void update_throttle_hover();
     float get_pilot_desired_climb_rate_ms();
     float get_non_takeoff_throttle();
     void set_accel_throttle_I_from_pilot_throttle();
-    uint16_t get_pilot_speed_dn() const;
+    float get_pilot_speed_dn_ms() const;
+    float get_pilot_speed_up_adjusted_ms() const;
+    float get_pilot_speed_dn_adjusted_ms() const;
     void run_rate_controller_main();
 
     // if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
@@ -913,9 +921,9 @@ private:
     void Log_Write_PTUN(uint8_t param, float tuning_val, float tune_min, float tune_max, float norm_in);
     void Log_Video_Stabilisation();
     void Log_Write_Guided_Position_Target(ModeGuided::SubMode submode, const Vector3p& pos_target_ned_m, bool is_terrain_alt, const Vector3f& vel_target_ms, const Vector3f& accel_target_mss);
-    void Log_Write_Guided_Attitude_Target(ModeGuided::SubMode submode, float roll, float pitch, float yaw, const Vector3f &ang_vel, float thrust, float climb_rate);
+    void Log_Write_Guided_Attitude_Target(ModeGuided::SubMode submode, float roll_rad, float pitch_rad, float yaw_rad, const Vector3f &ang_vel_rads, float thrust, float climb_rate_ms);
     void Log_Write_SysID_Setup(uint8_t systemID_axis, float waveform_magnitude, float frequency_start, float frequency_stop, float time_fade_in, float time_const_freq, float time_record, float time_fade_out);
-    void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq, float angle_x, float angle_y, float angle_z, float accel_x, float accel_y, float accel_z);
+    void Log_Write_SysID_Data(float waveform_time, float waveform_sample, float waveform_freq_hz, float angle_x_degs, float angle_y_degs, float angle_z_degs, float accel_x_mss, float accel_y_mss, float accel_z_mss);
     void Log_Write_Vehicle_Startup_Messages();
     void Log_Write_Rate_Thread_Dt(float dt, float dtAvg, float dtMax, float dtMin);
 #endif  // HAL_LOGGING_ENABLED
@@ -933,6 +941,9 @@ private:
 
     // Check if this mode can be entered from the GCS
     bool gcs_mode_enabled(const Mode::Number mode_num);
+
+    // Return mask of enabled modes, order does not matter, its just for tracking changes
+    uint32_t get_available_mode_enabled_mask() const override;
 
     // mode_land.cpp
     void set_mode_land_with_pause(ModeReason reason);
@@ -1029,7 +1040,9 @@ private:
     ModeAcro mode_acro;
 #endif
 #endif
+#if MODE_ALTHOLD_ENABLED
     ModeAltHold mode_althold;
+#endif
 #if MODE_AUTO_ENABLED
     ModeAuto mode_auto;
 #endif

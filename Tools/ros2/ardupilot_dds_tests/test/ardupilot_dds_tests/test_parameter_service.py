@@ -35,6 +35,7 @@ import time
 from launch import LaunchDescription
 
 from launch_pytest.tools import process as process_tools
+from ros_helpers import ros_node
 
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
@@ -78,10 +79,6 @@ class ParameterClient(rclpy.node.Node):
         self.set_cli = self.create_client(SetParameters, 'ap/set_parameters')
         while not self.set_cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('SetParameters service not available, waiting again...')
-
-        # Add a spin thread
-        self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
-        self.ros_spin_thread.start()
 
     def send_get_param_req(self, param_name):
         self.get_req = GetParameters.Request()
@@ -179,12 +176,10 @@ def test_dds_udp_parameter_services(launch_context, launch_sitl_copter_dds_udp):
     process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
     process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
-    rclpy.init()
-    try:
-        node = ParameterClient()
+    with ros_node(ParameterClient) as node:
         node.start_client()
-        parameter_name = "LOIT_SPEED"
-        param_change_value = 1250
+        parameter_name = "LOIT_SPEED_MS"
+        param_change_value = 12.50
         param_type = PARAMETER_DOUBLE
         node.send_get_param_req(parameter_name)
         get_param_received_flag = node.get_param_event_object.wait(timeout=10.0)
@@ -195,7 +190,4 @@ def test_dds_udp_parameter_services(launch_context, launch_sitl_copter_dds_udp):
         node.check_param_change()
         set_param_changed_flag = node.set_correct_object.wait(timeout=10.0)
         assert set_param_changed_flag, f"Did not confirm '{parameter_name}' value change"
-
-    finally:
-        rclpy.shutdown()
     yield

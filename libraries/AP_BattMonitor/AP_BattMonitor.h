@@ -82,6 +82,14 @@ public:
         Critical
     };
 
+    // power states
+    enum class ChargingState : uint8_t {
+        UNKNOWN = 0,
+        IDLE,
+        CHARGING,
+        DISCHARGING
+    };
+
     // Battery monitor driver types
     using Type = AP_BattMonitor_Params::Type;
 
@@ -128,6 +136,7 @@ public:
         bool        has_time_remaining;        // time_remaining is only valid if this is true
         uint8_t     state_of_health_pct;       // state of health (SOH) in percent
         bool        has_state_of_health_pct;   // state_of_health_pct is only valid if this is true
+        ChargingState charging_state;          // Charging state (unknown, idle, charging, discharging)
         uint8_t     instance;                  // instance number of this backend
         Type        type;                      // allocated instance type
         const struct AP_Param::GroupInfo *var_info;
@@ -224,7 +233,7 @@ public:
 
     // get once cell voltage (for scripting)
     bool get_cell_voltage(uint8_t instance, uint8_t cell, float &voltage) const;
-    
+
     // temperature
     bool get_temperature(float &temperature) const { return get_temperature(temperature, AP_BATT_PRIMARY_INSTANCE); }
     bool get_temperature(float &temperature, const uint8_t instance) const;
@@ -265,11 +274,20 @@ public:
     // return true if state of health (as a percentage) can be provided and fills in soh_pct argument
     bool get_state_of_health_pct(uint8_t instance, uint8_t &soh_pct) const;
 
+    // get charging state (idle, charging, discharging)
+    ChargingState get_charging_state() const { return get_charging_state(AP_BATT_PRIMARY_INSTANCE); }
+    ChargingState get_charging_state(uint8_t instance) const { return state[instance].charging_state; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 #if AP_BATTERY_SCRIPTING_ENABLED
     bool handle_scripting(uint8_t idx, const struct BattMonitorScript_State &state);
 #endif
+
+    // set battery BMS sleep timeout in seconds
+    // set to zero to disable sleep
+    void set_sleep_timeout(uint16_t timeout_sec) { return set_sleep_timeout(AP_BATT_PRIMARY_INSTANCE, timeout_sec); }
+    void set_sleep_timeout(uint8_t instance, uint16_t timeout_sec);
 
 protected:
 

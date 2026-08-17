@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from Tools.gittools.pre_commit_copyright import get_file_paths
 

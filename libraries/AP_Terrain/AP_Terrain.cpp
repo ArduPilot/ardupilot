@@ -57,8 +57,8 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Terrain options
-    // @Description: Options to change behaviour of terrain system
-    // @Bitmask: 0:Disable Download,1:Disable Disk
+    // @Description: Options to change behavior of terrain system. The Accept Old Terrain Data option can be used to accept terrain data generated from before the terrain database bugs were fixed. The bugs in the data were all fixed from 24th February 2026. If you really want to risk using the old terrain data then you can set this option, otherwise remove the old terrain data by formatting your microSD card or renaming the /APM/TERRAIN folder. Then downloaded updated data from https://terrain.ardupilot.org, or let the automatic terrain download repopulate your terrain data.
+    // @Bitmask: 0:Disable Download,1:Disable Disk,2:Accept Old Terrain Data
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",   2, AP_Terrain, options, 0),
 
@@ -446,6 +446,16 @@ bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) cons
     }
     if (grid_spacing <= 0) {
         hal.util->snprintf(failure_msg, failure_msg_len, "TERRAIN_SPACING can't be <= 0");
+        return false;
+    }
+
+    if (!option_set(Options::AcceptOldData) && found_old_data) {
+        /*
+          we have found old terrain data on the microSD card, warn the
+          user that they have out of date terrain data that may
+          contain errors.
+         */
+        hal.util->snprintf(failure_msg, failure_msg_len, "terrain data expired, possible errors");
         return false;
     }
 
