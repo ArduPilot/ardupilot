@@ -945,7 +945,7 @@ void GCS_MAVLINK::handle_radio_status(const mavlink_message_t &msg)
 #if HAL_LOGGING_ENABLED
     //log rssi, noise, etc if logging Performance monitoring data
     if (AP::logger().should_log(log_radio_bit())) {
-        AP::logger().Write_Radio(packet);
+        AP::logger().Write_Radio(packet, msg.sysid, msg.compid);
     }
 #endif
 }
