@@ -1512,7 +1512,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.wait_statustext("Gripper Grabbed", timeout=60)
         self.wait_statustext("Gripper Released", timeout=60)
-        self.wait_statustext("Auto disarmed", timeout=60)
+        # the mission's NAV_LAND carries no position, so it lands wherever
+        # the waypoint before it leaves us - 100m from where we started.
+        # The gripper is what is under test; land the standard way instead.
+        self.fly_home_land_and_disarm()
 
     def assert_fence_sys_status(self, present, enabled, health, timeout=5):
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_GEOFENCE, present, enabled, health, timeout=timeout)
