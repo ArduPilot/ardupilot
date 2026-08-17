@@ -363,12 +363,18 @@ private:
         // true when a reset of airspeed and height states to current is performed on this frame
         bool reset:1;
 
+#if AP_TECS_DESCENT_RATE_ENABLED
         // true when overriding descent rate
         bool descent_rate_override:1;
+#endif
     };
     union {
         struct flags _flags;
+#if AP_TECS_DESCENT_RATE_ENABLED
         uint16_t _flags_word;
+#else
+        uint8_t _flags_byte;
+#endif
     };
 
     // time when underspeed started
@@ -495,11 +501,6 @@ private:
 
     // externally commanded descent rate in m/s, positive is descending
     float descent_rate_override_value(void) const { return _descent_rate_override.rate_this_cycle; }
-#else
-    // compile the override out, leaving the call sites unchanged
-    void _update_descent_rate_override(void) {}
-    static constexpr bool descent_rate_override_active(void) { return false; }
-    static constexpr float descent_rate_override_value(void) { return 0.0f; }
 #endif  // AP_TECS_DESCENT_RATE_ENABLED
 
     // Update the airspeed internal state using a second order complementary filter
