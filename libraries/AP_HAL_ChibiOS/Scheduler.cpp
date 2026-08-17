@@ -201,10 +201,20 @@ void Scheduler::boost_end(void)
  */
 void Scheduler::delay_microseconds_boost(uint16_t usec)
 {
-    if (!_priority_boosted && in_main_thread()) {
+    const bool main_thread = in_main_thread();
+    if (!_priority_boosted && main_thread) {
         set_high_priority();
         _priority_boosted = true;
         _called_boost = true;
+    }
+    if (main_thread && !hal.util->get_soft_armed() && usec >= 500) {
+        const uint32_t start_us = AP_HAL::micros();
+        call_delay_cb();
+        const uint32_t dt_us = AP_HAL::micros() - start_us;
+        if (dt_us >= usec) {
+            return;
+        }
+        usec -= dt_us;
     }
     delay_microseconds(usec); //Suspends Thread for desired microseconds
 }
