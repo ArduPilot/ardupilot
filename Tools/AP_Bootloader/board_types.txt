@@ -651,11 +651,8 @@ AP_HW_CoreWingF405WMiniV2            7131
 # IDs 7140-7149 reserved for Lectron
 AP_HW_LECTRON_Pi5_H7            7140
 
-# IDs 7130-7139 reserved for Menthosa Solutions
-AP_HW_IDRONAM_PI6X                   7130
-
-# IDs 7130-7139 reserved for Menthosa Solutions
-AP_HW_IDRONAM_PI6X                   7130
+# IDs 7150-7159 reserved for Menthosa Solutions
+AP_HW_IDRONAM_PI6X                   7150
 
 # please fill gaps in the above ranges rather than adding past ID #7199
 
