@@ -8251,6 +8251,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_text("Loiter to alt complete", check_context=True, timeout=1000)
         self.wait_text("Flare", check_context=True, timeout=400)
         self.wait_text("Auto disarmed", check_context=True, timeout=200)
+        # this lands some 800m from home and we have no fine control over
+        # where; reboot so the next test does not start way out there.
+        self.reboot_sitl()
 
     def BadRollChannelDefined(self):
         '''ensure we don't die with a  bad Roll channel defined'''
