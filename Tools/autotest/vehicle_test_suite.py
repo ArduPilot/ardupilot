@@ -5369,7 +5369,10 @@ class TestSuite(abc.ABC):
         '''installs an applet script which will be removed when the context goes
         away'''
         self.install_applet_script(scriptname, **kwargs)
-        self.context_get().installed_scripts.append(scriptname)
+        install_name = kwargs.get("install_name")
+        if install_name is None:
+            install_name = scriptname
+        self.context_get().installed_scripts.append(install_name)
 
     def rootdir(self):
         this_dir = os.path.dirname(__file__)
