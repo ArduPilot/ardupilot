@@ -2787,6 +2787,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def min_alt_fence_frame(self, frame, alt, terrain=0):
         '''Test Min Alt Fence'''
 
+        # each frame gets its own fence configuration, and this takes off
+        # before setting it - so anything left behind here is what the
+        # next frame arms under.  The absolute case leaves FENCE_ALT_MIN
+        # holding an AMSL value some 600m above the relative one the next
+        # case expects.
+        self.context_push()
+
         if terrain == 1:
             self.set_parameters({
                 "TERRAIN_ENABLE": terrain,
@@ -2836,6 +2843,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_fence_disable()
 
         self.zero_throttle()
+
+        self.context_pop()
 
     def MinAltFence(self):
         '''Test Min Alt Fences'''
