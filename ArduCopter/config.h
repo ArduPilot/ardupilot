@@ -30,6 +30,8 @@
 #include <AP_ADSB/AP_ADSB_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AC_Avoidance/AC_Avoidance_config.h>
+#include <AC_CustomControl/AC_CustomControl_config.h>
+#include <AP_Mission/AP_Mission_config.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -56,7 +58,7 @@
 // TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
-  # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
+  # define WP_YAW_BEHAVIOR_DEFAULT              WPYawBehavior::LOOK_AHEAD
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -72,6 +74,14 @@
 
 #ifndef RANGEFINDER_FILT_DEFAULT
  # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
+#endif
+
+#ifndef AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT  3 // number of rangefinder glitches in a row to take new reading
+#endif
+
+#ifndef AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT 2.00     // amount of rangefinder change to be considered a glitch
 #endif
 
 #ifndef SURFACE_TRACKING_TIMEOUT_MS
@@ -100,7 +110,7 @@
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_ACTION_DEFAULT
- # define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_LAND  // EKF failsafe triggers land by default
+ # define FS_EKF_ACTION_DEFAULT         FS_EKF_Action::LAND  // EKF failsafe triggers land by default
 #endif
 #ifndef FS_EKF_THRESHOLD_DEFAULT
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
@@ -133,9 +143,17 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// AltHold - fly vehicle with automatic altitude control
+#ifndef MODE_ALTHOLD_ENABLED
+# define MODE_ALTHOLD_ENABLED 1
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Auto mode - allows vehicle to trace waypoints and perform automated actions
+// Copter's one-and-only AP_Mission object is a member of ModeAuto, so the two
+// must be enabled and disabled together; see the checks below.
 #ifndef MODE_AUTO_ENABLED
-# define MODE_AUTO_ENABLED 1
+# define MODE_AUTO_ENABLED AP_MISSION_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -452,7 +470,7 @@
 
 // AUTO Mode
 #ifndef WP_YAW_BEHAVIOR_DEFAULT
- # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+ # define WP_YAW_BEHAVIOR_DEFAULT   WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL
 #endif
 
 #ifndef YAW_LOOK_AHEAD_MIN_SPEED_MS
@@ -570,6 +588,17 @@
   #error Follow Mode relies on AP_AVOIDANCE_ENABLED which is disabled
 #endif
 
+#if MODE_AUTO_ENABLED && !AP_MISSION_ENABLED
+  #error ModeAuto requires AP_MISSION_ENABLED which is disabled
+#endif  // MODE_AUTO_ENABLED && !AP_MISSION_ENABLED
+
+// Copter stores its AP_Mission object inside ModeAuto, so compiling ModeAuto
+// out would leave AP::mission() with nothing to return.  Disable
+// AP_MISSION_ENABLED rather than MODE_AUTO_ENABLED to remove mission support.
+#if AP_MISSION_ENABLED && !MODE_AUTO_ENABLED
+  #error AP_MISSION_ENABLED requires ModeAuto which is disabled
+#endif  // AP_MISSION_ENABLED && !MODE_AUTO_ENABLED
+
 #if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED
   #error ModeAuto requires ModeGuided which is disabled
 #endif
@@ -626,12 +655,16 @@
   #error Toy mode is not available on Helicopters
 #endif
 
+#if TOY_MODE_ENABLED && !MODE_ALTHOLD_ENABLED
+  #error Toy mode requires AltHold mode support
+#endif
+
 #ifndef HAL_FRAME_TYPE_DEFAULT
 #define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif
 
 #ifndef AC_CUSTOMCONTROL_MULTI_ENABLED
-#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_CUSTOMCONTROL_ENABLED
+#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_COPTER_CUSTOMCONTROL_ENABLED
 #endif
 
 #ifndef AC_PAYLOAD_PLACE_ENABLED

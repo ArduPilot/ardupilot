@@ -27,6 +27,16 @@
 // control default definitions
 #define CORNER_ACCELERATION_RATIO   1.0/safe_sqrt(2.0)   // acceleration reduction to enable zero overshoot corners
 
+// Normalised cross-track reference magnitude below which limit_accel_xy() fades
+// out cross-track prioritisation. The reference is expected normalised by the
+// maximum speed, so this is a fraction of max speed (0.25 -> 25%). When the
+// reference is small its direction is ill-defined, so prioritising "cross-track"
+// acceleration re-projects a saturated command onto a rapidly rotating axis and
+// injects a lateral acceleration spike (e.g. the roll wobble seen at the
+// zero-crossing of a hard Loiter stick reversal). Below this magnitude we fade to
+// an isotropic magnitude limit that preserves the commanded direction.
+#define LIMIT_ACCEL_XY_MIN_REF   0.25f
+
 // Projects velocity forward in time using acceleration, constrained by directional limit.
 // - If `limit` is non-zero, it defines a direction in which acceleration is constrained.
 // - The `vel_error` value defines the direction of velocity error (its sign matters, not its magnitude).
@@ -431,42 +441,63 @@ void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float a
 }
 
 // Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.
-// - `vel` defines the current direction of motion (used to split the acceleration).
+// - `vel_norm` is the normalised velocity (velocity divided by maximum speed) that sets the reference direction used to split the acceleration: the in-track component is parallel to it and the cross-track component is perpendicular. Normalising keys the cross-track prioritisation fade to a fraction of max speed.
 // - `accel` is modified in-place to remain within `accel_max`.
-// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize lateral correction.
-// - If `vel` is zero, a simple magnitude limit is applied.
+// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize the cross-track component.
+// - If `vel_norm` is zero, a simple magnitude limit is applied.
 // Returns true if the acceleration vector was modified.
-bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max)
+bool limit_accel_xy(const Vector2f& vel_norm, Vector2f& accel, float accel_max)
 {
     // check accel_max is defined
     if (!is_positive(accel_max)) {
         return false;
     }
-    // limit acceleration to accel_max while prioritizing cross track acceleration
-    if (accel.length_squared() > sq(accel_max)) {
-        if (vel.is_zero()) {
-            // We do not have a direction of travel so do a simple vector length limit
-            accel.limit_length(accel_max);
-        } else {
-            // calculate acceleration in the direction of and perpendicular to the velocity input
-            const Vector2f vel_unit = vel.normalized();
-            // acceleration in the direction of travel
-            float accel_dir = vel_unit * accel;
-            // cross track acceleration
-            Vector2f accel_cross = accel - (vel_unit * accel_dir);
-            if (accel_cross.limit_length(accel_max)) {
-                accel_dir = 0.0;
-            } else {
-                // limit_length can't absolutely guarantee this subtraction
-                // won't be slightly negative, so safe_sqrt is used
-                float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());
-                accel_dir = constrain_float(accel_dir, -accel_max_dir, accel_max_dir);
-            }
-            accel = accel_cross + vel_unit * accel_dir;
-        }
+    // nothing to do unless the acceleration vector exceeds the limit
+    if (accel.length_squared() <= sq(accel_max)) {
+        return false;
+    }
+
+    // isotropic (direction-preserving) magnitude limit. Used directly when there
+    // is no meaningful reference direction, and blended in at low reference
+    // magnitude below.
+    Vector2f accel_isotropic = accel;
+    accel_isotropic.limit_length(accel_max);
+
+    const float ref_mag = vel_norm.length();
+    if (!is_positive(ref_mag)) {
+        // We do not have a reference direction so do a simple vector length limit
+        accel = accel_isotropic;
         return true;
     }
-    return false;
+
+    // limit acceleration to accel_max while prioritizing cross track acceleration
+    // calculate acceleration along and perpendicular to the reference direction
+    const Vector2f ref_unit = vel_norm / ref_mag;
+    // acceleration along the reference direction (in-track)
+    float accel_dir = ref_unit * accel;
+    // cross track acceleration
+    Vector2f accel_cross = accel - (ref_unit * accel_dir);
+    if (accel_cross.limit_length(accel_max)) {
+        accel_dir = 0.0;
+    } else {
+        // limit_length can't absolutely guarantee this subtraction
+        // won't be slightly negative, so safe_sqrt is used
+        float accel_max_dir = safe_sqrt(sq(accel_max) - accel_cross.length_squared());
+        accel_dir = constrain_float(accel_dir, -accel_max_dir, accel_max_dir);
+    }
+    const Vector2f accel_prioritised = accel_cross + ref_unit * accel_dir;
+
+    // Fade between the isotropic limit (weak reference) and the cross-track
+    // prioritised limit (reference magnitude at or above LIMIT_ACCEL_XY_MIN_REF).
+    // When the reference is small its direction is ill-defined and the prioritised
+    // split would re-project the saturated braking command into a lateral
+    // acceleration spike (e.g. a hard stick reversal in Loiter). Fading to the
+    // direction-preserving limit removes that spike. Both blend inputs have
+    // magnitude <= accel_max, so the result does too.
+    const float prioritise_ratio = constrain_float(ref_mag / LIMIT_ACCEL_XY_MIN_REF, 0.0f, 1.0f);
+    accel = accel_isotropic * (1.0f - prioritise_ratio) + accel_prioritised * prioritise_ratio;
+
+    return true;
 }
 
 // Limits a 2D acceleration vector with direction-dependent prioritisation.
@@ -684,73 +715,92 @@ float stopping_distance(float velocity, float p, float accel_max)
     return inv_sqrt_controller(velocity, p, accel_max);
 }
 
-// Computes the maximum possible acceleration or velocity in a specified 3D direction,
-// constrained by separate limits in horizontal (XY) and vertical (Z) axes.
-// - `direction` should be a non-zero vector indicating desired direction of travel.
-// - Limits: max_xy, max_z_pos (upward), max_z_neg (downward)
-// Returns the maximum achievable magnitude in that direction without violating any axis constraint.
+// Return the largest M >= 0 that can scale a 3D direction without exceeding
+// independent axis limits:
+//
+//   M * |unit.xy| <= max_xy
+//   -max_z_neg <= M * unit.z <= max_z_pos
+//
+// where unit = normalize(direction). The magnitude of direction is ignored.
+//
+// max_z_pos limits travel in the +Z direction.
+// max_z_neg limits travel in the -Z direction.
+// All limits must be positive.
+//
+// Typical use: limit velocity or acceleration magnitude along a desired
+// direction without changing that direction.
+//
+// Returns 0 if the direction is zero or any limit is zero.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_neg, float max_z_pos)
 {
-    // Reject zero-length direction vectors or undefined limits
-    if (is_zero(direction.length_squared())) {
-        return 0.0;
-    }
+    // Decompose into horizontal magnitude and vertical component
+    const float dir_xy = direction.xy().length();
 
-    const float segment_length_xy = direction.xy().length();
-    
-    return kinematic_limit(segment_length_xy, direction.z, max_xy, max_z_neg, max_z_pos);
+    return kinematic_limit(dir_xy, direction.z, max_xy, max_z_neg, max_z_pos);
 }
 
-// compute the maximum allowed magnitude along a direction defined by segment_length_xy and segment_length_z components
-// constrained by independent horizontal (max_xy) and vertical (max_z_pos/max_z_neg) limits
-// returns the maximum achievable magnitude without exceeding any axis limit
-float kinematic_limit(float segment_length_xy, float segment_length_z, float max_xy, float max_z_neg, float max_z_pos)
+// Return the largest M >= 0 along a direction defined by horizontal and
+// vertical components, constrained by:
+//
+//   M * |unit.xy| <= max_xy
+//   -max_z_neg <= M * unit.z <= max_z_pos
+//
+// dir_xy (>= 0) and dir_z define a direction; only their ratio matters
+// (normalized internally).
+//
+// max_z_pos limits travel in the +Z direction.
+// max_z_neg limits travel in the -Z direction.
+// All limits must be positive.
+//
+// Returns 0 if any limit is zero or the direction is zero.
+float kinematic_limit(float dir_xy, float dir_z, float max_xy, float max_z_neg, float max_z_pos)
 {
-    // Reject zero-length direction vectors or undefined limits
-    if (is_zero(max_xy) || is_zero(max_z_pos) || is_zero(max_z_neg)) {
+    // Reject invalid limits
+    if (is_negative(dir_xy) || !is_positive(max_xy) || !is_positive(max_z_pos) || !is_positive(max_z_neg)) {
         return 0.0;
     }
 
-    max_xy = fabsf(max_xy);
-    max_z_pos = fabsf(max_z_pos);
-    max_z_neg = fabsf(max_z_neg);
-
-    const float length = safe_sqrt(sq(segment_length_xy) + sq(segment_length_z));
-    // check for divide by zero.
-    if (!is_positive(length)) {
+    // Check for zero length direction vector
+    const float dir_length = safe_sqrt(sq(dir_xy) + sq(dir_z));
+    if (!is_positive(dir_length)) {
         return 0.0;
     }
-    segment_length_xy /= length;
-    segment_length_z /= length;
 
-    if (is_zero(segment_length_xy)) {
-        // Pure vertical motion
-        return is_positive(segment_length_z) ? max_z_pos : max_z_neg;
+    if (is_zero(dir_xy)) {
+        // Pure vertical - constrained only by vertical limits
+        return is_positive(dir_z) ? max_z_pos : max_z_neg;
     }
 
-    if (is_zero(segment_length_z)) {
-        // Pure horizontal motion
+    if (is_zero(dir_z)) {
+        // Pure horizontal - constrained only by horizontal limits
         return max_xy;
     }
 
-    // Compute vertical-to-horizontal slope of desired direction
-    const float slope = segment_length_z/segment_length_xy;
+    // Normalize the direction vector (only ratio matters)
+    dir_xy /= dir_length;
+    dir_z /= dir_length;
+
+    // Compare the direction slope (|dir_z/dir_xy|) to the limit slope
+    // (max_z/max_xy) to determine which axis constraint is hit first.
+    const float slope = dir_z / dir_xy;
+
     if (is_positive(slope)) {
-        // Ascending: check if slope is within limits
-        if (fabsf(slope) < max_z_pos/max_xy) {
-            return max_xy/segment_length_xy;
+        // Positive-Z: constrained by max_z_pos
+        if (slope < max_z_pos / max_xy) {
+            // Shallow direction: horizontal limit reached first
+            return max_xy / dir_xy;
         }
-        // Vertical limit dominates in upward direction
-        return fabsf(max_z_pos/segment_length_z);
+        // Steep direction: vertical limit reached first
+        return max_z_pos / dir_z;
     }
 
-    // Descending: check if slope is within limits
-    if (fabsf(slope) < max_z_neg/max_xy) {
-        return max_xy/segment_length_xy;
+    // Negative-Z: constrained by max_z_neg
+    if (-slope < max_z_neg / max_xy) {
+        // Shallow direction: horizontal limit reached first
+        return max_xy / dir_xy;
     }
-
-    // Vertical limit dominates in downward direction
-    return fabsf(max_z_neg/segment_length_z);
+    // Steep direction: vertical limit reached first
+    return -max_z_neg / dir_z;
 }
 
 // Applies an exponential curve to a normalized input in the range [-1, 1].

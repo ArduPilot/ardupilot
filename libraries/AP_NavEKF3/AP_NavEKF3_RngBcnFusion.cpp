@@ -192,27 +192,20 @@ void NavEKF3_core::FuseRngBcn()
         Kfusion[7] = -t26*(t22+P[7][8]*t3*t9+P[7][9]*t2*t9);
         Kfusion[8] = -t26*(t16+P[8][7]*t4*t9+P[8][9]*t2*t9);
 
+        // values to calculate in Kfusion (others are set to zero, indices 0-9 ignored)
+        uint32_t kalman_mask = 0;
+
         if (!inhibitDelAngBiasStates) {
-            Kfusion[10] = -t26*(P[10][7]*t4*t9+P[10][8]*t3*t9+P[10][9]*t2*t9);
-            Kfusion[11] = -t26*(P[11][7]*t4*t9+P[11][8]*t3*t9+P[11][9]*t2*t9);
-            Kfusion[12] = -t26*(P[12][7]*t4*t9+P[12][8]*t3*t9+P[12][9]*t2*t9);
-        } else {
-            // zero indexes 10 to 12
-            zero_range(&Kfusion[0], 10, 12);
+            kalman_mask |= (1<<10) | (1<<11) | (1<<12);
         }
 
         if (!inhibitDelVelBiasStates && !badIMUdata) {
             for (uint8_t index = 0; index < 3; index++) {
                 const uint8_t stateIndex = index + 13;
                 if (!dvelBiasAxisInhibit[index]) {
-                    Kfusion[stateIndex] = -t26*(P[stateIndex][7]*t4*t9+P[stateIndex][8]*t3*t9+P[stateIndex][9]*t2*t9);
-                } else {
-                    Kfusion[stateIndex] = 0.0f;
+                    kalman_mask |= (1<<stateIndex);
                 }
             }
-        } else {
-            // zero indexes 13 to 15
-            zero_range(&Kfusion[0], 13, 15);
         }
 
         // only allow the range observations to modify the vertical states if we are using it as a height reference
@@ -225,23 +218,19 @@ void NavEKF3_core::FuseRngBcn()
         }
 
         if (!inhibitMagStates) {
-            Kfusion[16] = -t26*(P[16][7]*t4*t9+P[16][8]*t3*t9+P[16][9]*t2*t9);
-            Kfusion[17] = -t26*(P[17][7]*t4*t9+P[17][8]*t3*t9+P[17][9]*t2*t9);
-            Kfusion[18] = -t26*(P[18][7]*t4*t9+P[18][8]*t3*t9+P[18][9]*t2*t9);
-            Kfusion[19] = -t26*(P[19][7]*t4*t9+P[19][8]*t3*t9+P[19][9]*t2*t9);
-            Kfusion[20] = -t26*(P[20][7]*t4*t9+P[20][8]*t3*t9+P[20][9]*t2*t9);
-            Kfusion[21] = -t26*(P[21][7]*t4*t9+P[21][8]*t3*t9+P[21][9]*t2*t9);
-        } else {
-            // zero indexes 16 to 21
-            zero_range(&Kfusion[0], 16, 21);
+            kalman_mask |= (1<<16) | (1<<17) | (1<<18) | (1<<19) | (1<<20) | (1<<21);
         }
 
         if (!inhibitWindStates && !treatWindStatesAsTruth) {
-            Kfusion[22] = -t26*(P[22][7]*t4*t9+P[22][8]*t3*t9+P[22][9]*t2*t9);
-            Kfusion[23] = -t26*(P[23][7]*t4*t9+P[23][8]*t3*t9+P[23][9]*t2*t9);
-        } else {
-            // zero indexes 22 to 23
-            zero_range(&Kfusion[0], 22, 23);
+            kalman_mask |= (1<<22) | (1<<23);
+        }
+
+        for (auto i=10; i<24; i++) { // 0-9 are already computed
+            ftype res = 0;
+            if (kalman_mask & (1<<i)) {
+                res = -t26*(P[i][7]*t4*t9+P[i][8]*t3*t9+P[i][9]*t2*t9);
+            }
+            Kfusion[i] = res;
         }
 
         // Calculate innovation using the selected offset value
@@ -256,7 +245,6 @@ void NavEKF3_core::FuseRngBcn()
 
         // test the ratio before fusing data
         if (rngBcn.health) {
-
             // restart the counter
             rngBcn.lastPassTime_ms = imuSampleTime_ms;
 
@@ -274,38 +262,8 @@ void NavEKF3_core::FuseRngBcn()
                 }
             }
 
-            // Check that we are not going to drive any variances negative and skip the update if so
-            bool healthyFusion = true;
-            for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                if (KHP[i][i] > P[i][i]) {
-                    healthyFusion = false;
-                }
-            }
-            if (healthyFusion) {
-                // update the covariance matrix
-                for (uint8_t i= 0; i<=stateIndexLim; i++) {
-                    for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                        P[i][j] = P[i][j] - KHP[i][j];
-                    }
-                }
-
-                // force the covariance matrix to be symmetrical and limit the variances to prevent ill-conditioning.
-                ForceSymmetry();
-                ConstrainVariances();
-
-                // correct the state vector
-                for (uint8_t j= 0; j<=stateIndexLim; j++) {
-                    statesArray[j] = statesArray[j] - Kfusion[j] * rngBcn.innov;
-                }
-
-                // record healthy fusion
-                faultStatus.bad_rngbcn = false;
-
-            } else {
-                // record bad fusion
-                faultStatus.bad_rngbcn = true;
-
-            }
+            // finish fusion from KHP and Kfusion then record health status
+            faultStatus.bad_rngbcn = FinishFusion(rngBcn.innov);
         }
 
         // Update the fusion report

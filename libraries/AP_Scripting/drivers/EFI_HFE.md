@@ -9,32 +9,32 @@ ICE subsystem in fixed wing aircraft for engine control.
 
 The script used the following parameters:
 
-## EFI_HFE_ENABLE
+### EFI_HFE_ENABLE
 
 this must be set to 1 to enable the driver
 
-## EFI_HFE_CANDRV
+### EFI_HFE_CANDRV
 
 This sets the CAN scripting driver number to attach to. This is
 normally set to 1 to use a CAN driver with CAN_Dx_PROTOCOL=10. To use
 the 2nd scripting CAN driver set this to 2 and set CAN_Dx_PROTOCOL=12.
 
-## EFI_HFE_ECU_IDX
+### EFI_HFE_ECU_IDX
 
 This sets the ECU number on the CAN bus. A value of zero means that
 the ECU number is auto-detected based on the first ECU seen on the
 bus.
 
-## EFI_HFE_RATE_HZ
+### EFI_HFE_RATE_HZ
 
 This sets the update rate of the driver. A value of 200 is reasonable
 
-## EFI_HFE_FUEL_DTY
+### EFI_HFE_FUEL_DTY
 
 This sets the fuel density in grams per litre, for fuel consumption
 calculations
 
-## EFI_HFE_REL_IDX
+### EFI_HFE_REL_IDX
 
 This sets a relay number to use for the ECU enable function. if the
 ECU requires a high voltage GPIO to enable then you should set a

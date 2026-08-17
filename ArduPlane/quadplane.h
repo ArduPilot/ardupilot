@@ -235,9 +235,6 @@ private:
     // return true if airmode should be active
     bool air_mode_active() const;
 
-    // check for an EKF yaw reset
-    void check_yaw_reset(void);
-    
     // hold hover (for transition)
     void hold_hover(float target_climb_rate_cms);
 
@@ -416,9 +413,6 @@ private:
     // return which vfwd method to use
     ActiveFwdThr get_vfwd_method(void) const;
 
-    // time we last got an EKF yaw reset
-    uint32_t ekfYawReset_ms;
-
     struct {
         AP_Float gain;
         float integrator;
@@ -528,7 +522,7 @@ private:
         uint32_t last_velocity_match_ms;
         float target_speed_ms;
         float target_accel_mss;
-        uint32_t last_pos_reset_ms;
+        uint16_t ahrs_position_NE_reset_count;
         bool overshoot;
 
         float override_descent_rate_ms;
@@ -633,10 +627,6 @@ private:
     AP_Float takeoff_navalt_min_m;
     uint32_t takeoff_last_run_ms;
     float takeoff_start_alt_m;
-
-    // oneshot with duration ARMING_DELAY_MS used by quadplane to delay spoolup after arming:
-    // ignored unless OPTION_DELAY_ARMING or OPTION_TILT_DISARMED is set
-    bool delay_arming;
 
     // should we force use of fixed wing controller for attitude upset recovery?
     bool force_fw_control_recovery;

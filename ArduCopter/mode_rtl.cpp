@@ -341,14 +341,13 @@ void ModeRTL::descent_run()
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!copter.set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+#if MODE_ALTHOLD_ENABLED
                 copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+#endif
             }
         }
 
         if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
             // convert pilot input to reposition velocity
             vel_correction_ms = get_pilot_desired_velocity(wp_nav->get_wp_acceleration_mss() * 0.5);
 
@@ -567,8 +566,8 @@ void ModeRTL::compute_return_target()
     //       the vehicle not climbing at all as RTL begins.  This can be overly conservative and it might be better
     //       to apply the fence alt limit independently on the origin_point and return_target
     if ((copter.fence.get_enabled_fences() & AC_FENCE_TYPE_ALT_MAX) != 0) {
-        // get return target as alt-above-home so it can be compared to fence's alt
-        if (rtl_path.return_target.get_alt_m(Location::AltFrame::ABOVE_HOME, target_alt_m)) {
+        // get return target in max alt frame so it can be compared to fence's alt
+        if (rtl_path.return_target.get_alt_m(copter.fence.get_alt_max_frame(), target_alt_m)) {
             float fence_alt_m = copter.fence.get_safe_alt_max_m();
             if (target_alt_m > fence_alt_m) {
                 // reduce target alt to the fence alt
@@ -613,10 +612,11 @@ float ModeRTL::wp_bearing_deg() const
 // returns true if pilot's yaw input should be used to adjust vehicle's heading
 bool ModeRTL::use_pilot_yaw(void) const
 {
-    const bool allow_yaw_option = !option_is_enabled(Option::IgnorePilotYaw);
-    const bool land_repositioning = g.land_repositioning && (_state == SubMode::FINAL_DESCENT);
-    const bool final_landing = _state == SubMode::LAND;
-    return allow_yaw_option || land_repositioning || final_landing;
+    // use land mode setting during descent
+    if (_state == SubMode::FINAL_DESCENT || _state == SubMode::LAND) {
+        return copter.mode_land.use_pilot_yaw();
+    }
+    return !option_is_enabled(Option::IgnorePilotYaw);
 }
 
 bool ModeRTL::set_speed_NE_ms(float speed_ne_ms)

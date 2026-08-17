@@ -45,6 +45,7 @@ bustypes = {
     4: "SITL",
     5: "MSP",
     6: "SERIAL",
+    7: "WSPI",
 }
 
 compass_types = {
@@ -71,7 +72,7 @@ compass_types = {
     0x16 : "DEVTYPE_QMC5883P",
     0x17 : "DEVTYPE_BMM350",
     0x18 : "DEVTYPE_IIS2MDC",
-    0x19 : "DEVTYPE_LIS2MDL",
+    0x19 : "DEVTYPE_LIS2MDL",  # unused except on pre-release firmware
 }
 
 imu_types = {
@@ -110,6 +111,11 @@ imu_types = {
     0x3B : "DEVTYPE_INS_ICM45686",
     0x3C : "DEVTYPE_INS_SCHA63T",
     0x3D : "DEVTYPE_INS_IIM42653",
+    0x3E : "DEVTYPE_INS_LSM6DSV16X",
+    0x3F : "DEVTYPE_INS_ASM330",
+    0x40 : "DEVTYPE_INS_ADIS16607",
+    0x42 : "DEVTYPE_INS_LSM6DSV32X",
+    0x43 : "DEVTYPE_INS_LSM6DSK320X",
 }
 
 baro_types = {
@@ -151,6 +157,7 @@ airspeed_types = {
     0x09 : "DEVTYPE_AIRSPEED_NMEA",
     0x0A : "DEVTYPE_AIRSPEED_ASP5033",
     0x0B : "DEVTYPE_AIRSPEED_AUAV",
+    0x0C : "DEVTYPE_AIRSPEED_SCRIPTING",
 }
 
 decoded_devname = ""

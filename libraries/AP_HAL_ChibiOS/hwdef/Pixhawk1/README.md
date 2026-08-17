@@ -209,7 +209,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - AUX5 54
 - AUX6 55
 
-## Analog inputs
+## Analog Inputs
 
 The Pixhawk1 has 6 analog inputs on the FMU, plus servo rail voltage
 and RSSI monitoring on the IO controller.

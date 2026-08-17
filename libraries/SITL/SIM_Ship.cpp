@@ -108,6 +108,9 @@ bool ShipSim::get_location(Location &loc) const
     if (!enable) {
         return false;
     }
+    if (!home.initialised()) {
+        return false;
+    }
     loc = home;
     loc.offset(ship.position.x, ship.position.y);
     return true;
@@ -200,6 +203,13 @@ void ShipSim::send_report(void)
     }
     if (!mavlink_connected) {
         return;
+    }
+
+    // Drain and discard anything the vehicle sends us:
+    {
+        uint8_t discard[1024];
+        while (mav_socket.recv(discard, sizeof(discard), 0) > 0) {
+        }
     }
 
     uint32_t now = AP_HAL::millis();

@@ -48,18 +48,18 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
 RC input is configured by default via the USART4 RX input. It supports all serial RC protocols except PPM.
 
-- For FPort the receiver must be tied to the USART4 TX pin , :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3, :ref:`SERIAL4_OPTIONS <SERIAL4_OPTIONS>` = "7" (invert TX/RX, half duplex).
-- For full duplex CRSF/ELRS use both TX4 and RX4, and :ref:`RSSI_TYPE<RSSI_TYPE>` set to 3 and provides telemetry.
+- For FPort the receiver must be tied to the USART4 TX pin , [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) set to 3, [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) = "7" (invert TX/RX, half duplex).
+- For full duplex CRSF/ELRS use both TX4 and RX4, and [RSSI_TYPE](https://ardupilot.org/copter/docs/parameters.html#rssi-type-rssi-type) set to 3 and provides telemetry.
 
-If SBUS is used on HD VTX connector (DJI TX), then :ref:`SERIAL1_PROTOCOl<SERIAL1_PROTOCOl>` should be set to "23" and :ref:`SERIAL4_PROTOCOL<SERIAL4_PROTOCOL>` changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
+If SBUS is used on HD VTX connector (DJI TX), then [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) should be set to "23" and [SERIAL4_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial4-protocol-serial4-protocol-selection) changed to something else. If UART1 is used for something else, be sure the RX2 pin on the HD VTX connector is left open.
 
 ## FrSky Telemetry
 
 FrSky Telemetry is supported using an unused UART, such as the T2 pin (UART2 transmit).
 Using UART2 you would need to set the following parameters to enable support for FrSky S.PORT:
 
-- :ref:`SERIAL2_PROTOCOL<SERIAL1_PROTOCOL>` 10
-- :ref:`SERIAL2_OPTIONS<SERIAL1_OPTIONS>` 7
+- [SERIAL2_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial2-protocol-telemetry-2-protocol-selection) 10
+- [SERIAL2_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial2-options-telem2-options) 7
 
 ## OSD Support
 
@@ -90,19 +90,19 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` 10
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` 11
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` 11.0
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` 40.0
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.0
+- BATT_AMP_PERVLT = 40.0
 
-Pads for a second analog battery monitor are provided. To use:
+Pads for a second analog - BATTery monitor are provided. To use:
 
-- :ref:`BATT2_MONITOR<BATT2_MONITOR>` 4
-- :ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN__AP_BattMonitor_Analog>` 18
-- :ref:`BATT2_CURR_PIN<BATT2_CURR_PIN__AP_BattMonitor_Analog>` 7
-- :ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT__AP_BattMonitor_Analog>` 11.0
-- :ref:`BATT2_AMP_PERVLT<BATT2_AMP_PERVLT__AP_BattMonitor_Analog>` as required
+- BATT2_MONITOR = 4
+- BATT2_VOLT_PIN = 18
+- BATT2_CURR_PIN = 7
+- BATT2_VOLT_MULT = 11.0
+- BATT2_AMP_PERVLT = as required
 
 ## Analog RSSI and AIRSPEED inputs
 
@@ -113,21 +113,21 @@ Analog Airspeed sensor would use ARSPD_PIN 4
 
 The TBS Lucid H7 Wing AIO does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 81 controls the Vsw pins which can be set to output either VFC (9/12V) or 5V via a board jumper. Setting this GPIO high removes voltage supply to pins. RELAY2 is configured by default to control this GPIO and is low by default.
 
 GPIO 83 controls the VTX BEC output to pins marked "9V/12V"  included on the HD VTX connector and VFC pads and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad.
 By default RELAY4 is configured to control this pin and sets the GPIO high.
 
-## Camera control
+## Camera Control
 
 GPIO 82 controls the camera output to the connectors marked "C1" and "C2". Setting this GPIO low switches the video input from C1 to C2. By default RELAY3 is configured to control this pin.
 
 ## Loading Firmware
 
-The TBS Lucid H7 Wing AIO does not come with ArduPilot firmware pre-installed. Use the instructions here to load ArduPilot the first time :ref:`common-loading-firmware-onto-chibios-only-boards`.
-Firmware for the TBS Lucid H7 Wing AIO can be found `here <https://firmware.ardupilot.org>`_ in sub-folders labeled “TBS_LUCID_H7_WING_AIO".
+The TBS Lucid H7 Wing AIO does not come with ArduPilot firmware pre-installed. Use the instructions here to load ArduPilot the first time [loading firmware onto ChibiOS boards](https://ardupilot.org/copter/docs/common-loading-firmware-onto-chibios-only-boards.html).
+Firmware for the TBS Lucid H7 Wing AIO can be found [here](https://firmware.ardupilot.org) in sub-folders labeled “TBS_LUCID_H7_WING_AIO".
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

@@ -66,8 +66,11 @@ void Copter::update_throttle_hover()
     }
 }
 
-// get_pilot_desired_climb_rate_ms - transform pilot's throttle input to climb rate in cm/s
-// without any deadzone at the bottom
+// get_pilot_desired_climb_rate_ms - transform pilot's throttle input to climb rate in m/s
+// without any deadzone at the bottom.
+// The max climb and descent rates are adjusted for any climb/descent rate currently being
+// commanded by surface tracking, so full stick deflection always yields net vehicle climb
+// or descent at PILOT_SPD_UP  / PILOT_SPD_DN  (see get_pilot_speed_up_adjusted_ms()).
 float Copter::get_pilot_desired_climb_rate_ms()
 {
     // throttle failsafe check
@@ -99,10 +102,10 @@ float Copter::get_pilot_desired_climb_rate_ms()
     // check throttle is above, below or in the deadband
     if (throttle_control < deadband_bottom) {
         // below the deadband
-        desired_rate_ms = get_pilot_speed_dn_ms() * (throttle_control - deadband_bottom) / deadband_bottom;
+        desired_rate_ms = get_pilot_speed_dn_adjusted_ms() * (throttle_control - deadband_bottom) / deadband_bottom;
     } else if (throttle_control > deadband_top) {
         // above the deadband
-        desired_rate_ms = g2.pilot_speed_up_ms * (throttle_control - deadband_top) / (1000.0 - deadband_top);
+        desired_rate_ms = get_pilot_speed_up_adjusted_ms() * (throttle_control - deadband_top) / (1000.0 - deadband_top);
     } else {
         // must be in the deadband
         desired_rate_ms = 0.0f;
@@ -134,4 +137,25 @@ float Copter::get_pilot_speed_dn_ms() const
     } else {
         return fabsf(g2.pilot_speed_dn_ms);
     }
+}
+
+// Returns the maximum pilot climb rate (m/s) adjusted for the climb/descent rate currently
+// being commanded by surface tracking, to always result in at least PILOT_SPD_UP on full up stick.
+float Copter::get_pilot_speed_up_adjusted_ms() const
+{
+    // terrain velocity in Up-positive frame (m/s)
+    const float terrain_climb_ms = -pos_control->get_vel_terrain_D_ms();
+    // floored at zero to prevent sign flip if terrain velocity exceeds PILOT_SPD_UP
+    return MAX(0.0f, g2.pilot_speed_up_ms - terrain_climb_ms);
+}
+
+// Returns the maximum pilot descent rate (m/s, positive magnitude) adjusted for the
+// climb/descent rate currently being commanded by surface tracking, to always result in
+// at least PILOT_SPD_DN on full down stick.
+float Copter::get_pilot_speed_dn_adjusted_ms() const
+{
+    // terrain velocity in Up-positive frame (m/s)
+    const float terrain_climb_ms = -pos_control->get_vel_terrain_D_ms();
+    // floored at zero to prevent sign flip if terrain velocity exceeds PILOT_SPD_DN
+    return MAX(0.0f, get_pilot_speed_dn_ms() + terrain_climb_ms);
 }

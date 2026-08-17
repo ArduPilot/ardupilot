@@ -89,7 +89,7 @@ Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
 to use DShot.
 
-## Power Monitoring
+## Battery Monitoring
 
 In addition to the normal range of ArduPilot power monitoring options,
 the modalAI build supports two I2C power monitors, the INA231 and the

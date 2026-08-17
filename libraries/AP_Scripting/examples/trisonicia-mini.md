@@ -27,7 +27,7 @@ Set the following parameters:
 
 ## Sensor configuration
 
-Use Trisonica's [CLI](logger:write) to configure the unit. On Linux, you can use `screen` to interract with the device:
+Use Trisonica's CLI to configure the unit. On Linux, you can use `screen` to interact with the device:
 
 ```bash
 screen /dev/ttyUSB0 230400

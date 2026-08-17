@@ -101,4 +101,3 @@ define AP_PERIPH_AIRSPEED_ENABLED 1
 # bootloader embedding / bootloader flashing not available
 define AP_BOOTLOADER_FLASHING_ENABLED 0
 
-define HAL_RCIN_THREAD_ENABLED 1

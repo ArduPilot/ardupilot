@@ -20,6 +20,7 @@
 #include <AP_Motors/AP_Motors.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "SIM_Aircraft.h"
 
 #include "SIM_config.h"
@@ -28,6 +29,147 @@
 #include <sys/stat.h>
 
 using namespace SITL;
+
+#if AP_SIM_ENABLED
+// default to no bluff body or momentum drag on planes, where the
+// plane model handles drag
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+#define SIM_FRAME_BBDRAG_DEFAULT 0.0
+#define SIM_FRAME_MDRAG_DEFAULT  0.0
+#else
+#define SIM_FRAME_BBDRAG_DEFAULT 1.0
+#define SIM_FRAME_MDRAG_DEFAULT  0.2
+#endif
+
+// user settable multicopter model parameters. Defaults can be
+// overridden by a json model file
+const AP_Param::GroupInfo Frame::var_info[] = {
+    // @Param: MASS
+    // @DisplayName: model mass
+    // @Description: mass of the multicopter model
+    // @Units: kg
+    AP_GROUPINFO("MASS", 1, Frame, model.mass, 3.0),
+
+    // @Param: DIAG_SZ
+    // @DisplayName: model diagonal size
+    // @Description: diagonal motor to motor distance of the model
+    // @Units: m
+    AP_GROUPINFO("DIAG_SZ", 2, Frame, model.diagonal_size, 0.35),
+
+    // @Param: REF_SPD
+    // @DisplayName: reference speed
+    // @Description: airspeed in the drag reference test, at a fixed lean angle
+    // @Units: m/s
+    AP_GROUPINFO("REF_SPD", 3, Frame, model.refSpd, 15.08),
+
+    // @Param: REF_ANG
+    // @DisplayName: reference angle
+    // @Description: lean angle in the drag reference test
+    // @Units: deg
+    AP_GROUPINFO("REF_ANG", 4, Frame, model.refAngle, 45),
+
+    // @Param: REF_VOLT
+    // @DisplayName: reference voltage
+    // @Description: battery voltage in the drag reference test
+    // @Units: V
+    AP_GROUPINFO("REF_VOLT", 5, Frame, model.refVoltage, 12.09),
+
+    // @Param: REF_AMP
+    // @DisplayName: reference current
+    // @Description: battery current in the drag reference test
+    // @Units: A
+    AP_GROUPINFO("REF_AMP", 6, Frame, model.refCurrent, 29.3),
+
+    // @Param: REF_ALT
+    // @DisplayName: reference altitude
+    // @Description: altitude AMSL of the drag reference test
+    // @Units: m
+    AP_GROUPINFO("REF_ALT", 7, Frame, model.refAlt, 593),
+
+    // @Param: BAT_RES
+    // @DisplayName: battery resistance
+    // @Description: battery resistance
+    // @Units: Ohm
+    AP_GROUPINFO("BAT_RES", 8, Frame, model.refBatRes, 0.01),
+
+    // @Param: BAT_VOLT
+    // @DisplayName: battery full voltage
+    // @Description: full pack battery voltage
+    // @Units: V
+    AP_GROUPINFO("BAT_VOLT", 9, Frame, model.maxVoltage, 12.6),
+
+    // @Param: BAT_CAP
+    // @DisplayName: battery capacity
+    // @Description: battery capacity, zero for unlimited
+    // @Units: Ah
+    AP_GROUPINFO("BAT_CAP", 10, Frame, model.battCapacityAh, 0),
+
+    // @Param: HOVR_THR
+    // @DisplayName: hover throttle
+    // @Description: throttle output (CTUN.ThO) at hover at the reference altitude
+    // @Range: 0.05 1
+    AP_GROUPINFO("HOVR_THR", 11, Frame, model.hoverThrOut, 0.39),
+
+    // @Param: EXPO
+    // @DisplayName: thrust expo
+    // @Description: motor thrust expo, matching MOT_THST_EXPO
+    AP_GROUPINFO("EXPO", 12, Frame, model.propExpo, 0.65),
+
+    // @Param: ROT_RATE
+    // @DisplayName: rotation rate
+    // @Description: terminal yaw rotation rate
+    // @Units: deg/s
+    AP_GROUPINFO("ROT_RATE", 13, Frame, model.refRotRate, 120),
+
+    // @Param: PWM_MIN
+    // @DisplayName: minimum PWM
+    // @Description: minimum motor PWM in the reference test, matching MOT_PWM_MIN
+    // @Units: PWM
+    AP_GROUPINFO("PWM_MIN", 14, Frame, model.pwmMin, 1000),
+
+    // @Param: PWM_MAX
+    // @DisplayName: maximum PWM
+    // @Description: maximum motor PWM in the reference test, matching MOT_PWM_MAX
+    // @Units: PWM
+    AP_GROUPINFO("PWM_MAX", 15, Frame, model.pwmMax, 2000),
+
+    // @Param: SPIN_MIN
+    // @DisplayName: motor spin minimum
+    // @Description: minimum motor spin fraction, matching MOT_SPIN_MIN
+    // @Range: 0 1
+    AP_GROUPINFO("SPIN_MIN", 16, Frame, model.spin_min, 0.15),
+
+    // @Param: SPIN_MAX
+    // @DisplayName: motor spin maximum
+    // @Description: maximum motor spin fraction, matching MOT_SPIN_MAX
+    // @Range: 0 1
+    AP_GROUPINFO("SPIN_MAX", 17, Frame, model.spin_max, 0.95),
+
+    // @Param: SLEW_MAX
+    // @DisplayName: motor slew rate
+    // @Description: maximum motor slew rate in throttle fraction per second
+    // @Units: 1/s
+    AP_GROUPINFO("SLEW_MAX", 18, Frame, model.slew_max, 150),
+
+    // @Param: DISCAREA
+    // @DisplayName: rotor disc area
+    // @Description: total rotor disc area. Coaxial rotors count as one rotor only
+    // @Units: m.m
+    AP_GROUPINFO("DISCAREA", 19, Frame, model.disc_area, 0.385),
+
+    // @Param: MDRAG
+    // @DisplayName: momentum drag coefficient
+    // @Description: momentum drag coefficient of the rotors. Defaults to zero on planes where the plane model handles drag
+    AP_GROUPINFO("MDRAG", 20, Frame, model.mdrag_coef, SIM_FRAME_MDRAG_DEFAULT),
+
+    // @Param: BBDRAG
+    // @DisplayName: bluff body drag coefficient
+    // @Description: scaling of the bluff body drag derived from the reference test, zero for no bluff body drag. Defaults to zero on planes where the plane model handles drag
+    AP_GROUPINFO("BBDRAG", 21, Frame, model.bbdrag_coef, SIM_FRAME_BBDRAG_DEFAULT),
+
+    AP_GROUPEND
+};
+#endif // AP_SIM_ENABLED
 
 static Motor quad_plus_motors[] =
 {
@@ -143,6 +285,19 @@ static Motor tiltquad[] =
     Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  3),
     Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   4, -1, 0, 0, 8, 10, -90),
     Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   2),
+};
+
+// collective pitch quad helicopter, matching AP_MotorsHeli_Quad's
+// layout, with rotor speed control on channel 8 to match
+// AP_MotorsHeli_RSC's default channel
+// Run in a shell: ./Tools/autotest/fg_heliquad_view.sh
+// then Tools/autotest/sim_vehicle.py -v ArduCopter -f heli-quad --enable-fgview
+static Motor heliquad_motors[] =
+{
+    Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1, 7),
+    Motor(AP_MOTORS_MOT_2, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3, 7),
+    Motor(AP_MOTORS_MOT_3,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4, 7),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2, 7),
 };
 
 static Motor hexa_motors[] =
@@ -261,12 +416,12 @@ static Motor octa_quad_cw_x_motors[] =
 {
     Motor(AP_MOTORS_MOT_1,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 1),
     Motor(AP_MOTORS_MOT_2,   45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  2),
-    Motor(AP_MOTORS_MOT_3,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 3),
-    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  4),
+    Motor(AP_MOTORS_MOT_3,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  3),
+    Motor(AP_MOTORS_MOT_4,  135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 4),
     Motor(AP_MOTORS_MOT_5, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 5),
     Motor(AP_MOTORS_MOT_6, -135, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  6),
-    Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 7),
-    Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  8)
+    Motor(AP_MOTORS_MOT_7,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CW,  7),
+    Motor(AP_MOTORS_MOT_8,  -45, AP_MOTORS_MATRIX_YAW_FACTOR_CCW, 8)
 };
 
 
@@ -422,6 +577,7 @@ static const FrameTemplate supported_frame_templates[] =
     {"djix",      4, quad_dji_x_motors},
     {"cwx",       4, quad_cw_x_motors},
     {"tilthvec",  4, tiltquad_h_vectored_motors},
+    {"heli-quad", 4, heliquad_motors},
     {"hexadeca-octa", 16, hexadeca_octa_motors},
     {"hexadeca-octa-cwx", 16, hexadeca_octa_cw_x_motors},
     {"hexax",     6, hexax_motors},
@@ -463,20 +619,21 @@ void Frame::load_frame_params(const char *model_json)
         fname = strdup(model_json);
     } else {
         IGNORE_RETURN(asprintf(&fname, "@ROMFS/models/%s", model_json));
-        if (AP::FS().stat(model_json, &st) != 0) {
+        if (fname == nullptr || AP::FS().stat(fname, &st) != 0) {
             AP_HAL::panic("%s failed to load", model_json);
         }
     }
     if (fname == nullptr) {
         AP_HAL::panic("%s failed to load", model_json);
     }
-    AP_JSON::value *obj = AP_JSON::load_json(model_json);
+    AP_JSON::value *obj = AP_JSON::load_json(fname);
     if (obj == nullptr) {
-        AP_HAL::panic("%s failed to load", model_json);
+        AP_HAL::panic("%s failed to load", fname);
     }
 
     enum class VarType {
         FLOAT,
+        AP_FLOAT,
         VECTOR3F,
     };
 
@@ -485,9 +642,9 @@ void Frame::load_frame_params(const char *model_json)
         void *ptr;
         VarType t;
     };
-    
+
     json_search vars[] = {
-#define FRAME_VAR(s) { #s, &model.s, VarType::FLOAT }
+#define FRAME_VAR(s) { #s, &model.s, VarType::AP_FLOAT }
         FRAME_VAR(mass),
         FRAME_VAR(diagonal_size),
         FRAME_VAR(refSpd),
@@ -495,7 +652,6 @@ void Frame::load_frame_params(const char *model_json)
         FRAME_VAR(refVoltage),
         FRAME_VAR(refCurrent),
         FRAME_VAR(refAlt),
-        FRAME_VAR(refTempC),
         FRAME_VAR(maxVoltage),
         FRAME_VAR(battCapacityAh),
         FRAME_VAR(refBatRes),
@@ -509,8 +665,10 @@ void Frame::load_frame_params(const char *model_json)
         FRAME_VAR(slew_max),
         FRAME_VAR(disc_area),
         FRAME_VAR(mdrag_coef),
+        FRAME_VAR(bbdrag_coef),
         {"moment_inertia", &model.moment_of_inertia, VarType::VECTOR3F},
-        FRAME_VAR(num_motors),
+        {"refTempC", &model.refTempC, VarType::FLOAT},
+        {"num_motors", &model.num_motors, VarType::FLOAT},
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
@@ -521,6 +679,12 @@ void Frame::load_frame_params(const char *model_json)
         }
         if (vars[i].t == VarType::FLOAT) {
             parse_float(v, vars[i].label, *((float *)vars[i].ptr));
+
+        } else if (vars[i].t == VarType::AP_FLOAT) {
+            // json model values become the defaults for the SIM_FRM_ parameters
+            float value;
+            parse_float(v, vars[i].label, value);
+            ((AP_Float *)vars[i].ptr)->set_default(value);
 
         } else if (vars[i].t == VarType::VECTOR3F) {
             parse_vector3(v, vars[i].label, *(Vector3f *)vars[i].ptr);
@@ -553,7 +717,8 @@ void Frame::load_frame_params(const char *model_json)
 
     delete obj;
 
-    ::printf("Loaded model params from %s\n", model_json);
+    ::printf("Loaded model params from %s\n", fname);
+    free(fname);
 }
 
 void Frame::parse_float(AP_JSON::value val, const char* label, float &param) {
@@ -577,75 +742,119 @@ void Frame::parse_vector3(AP_JSON::value val, const char* label, Vector3f &param
 /*
   initialise the frame
  */
-void Frame::init(const char *frame_str, Battery *_battery)
+void Frame::init(const char *frame_str)
 {
-    model = default_model;
-    battery = _battery;
+    auto *sitl = AP::sitl();
+    if (sitl != nullptr) {
+        sitl->models.simframe_ptr = this;
+    }
+    AP_Param::setup_object_defaults(this, var_info);
 
     const char *colon = strchr(frame_str, ':');
     size_t slen = strlen(frame_str);
     if (colon != nullptr && slen > 5 && strcmp(&frame_str[slen-5], ".json") == 0) {
         load_frame_params(colon+1);
     }
-    mass = model.mass;
+
+    if (uint8_t(model.num_motors) != num_motors) {
+        ::printf("Warning model expected %u motors and got %u\n", uint8_t(model.num_motors), num_motors);
+    }
+
+    update_parameters();
+}
+
+/*
+  apply settings from the model parameters. Called on each physics
+  step so changes to SIM_FRM_ parameters take effect. Note that
+  parameters loaded from eeprom are only applied after the frame is
+  created, so this cannot be done just once in init()
+ */
+void Frame::update_parameters(void)
+{
+    mass = model.mass * mass_scale;
 
     const float drag_force = model.mass * GRAVITY_MSS * tanf(radians(model.refAngle));
 
     const float cos_tilt = cosf(radians(model.refAngle));
     const float airspeed_bf = model.refSpd * cos_tilt;
     const float ref_thrust = model.mass * GRAVITY_MSS / cos_tilt;
-    float ref_air_density = get_air_density(model.refAlt);
+    const float ref_air_density = get_air_density(model.refAlt);
 
-    const float momentum_drag = cos_tilt * model.mdrag_coef * airspeed_bf * sqrtf(ref_thrust * ref_air_density * model.disc_area);
+    mdrag_coef = model.mdrag_coef;
+    const float momentum_drag = cos_tilt * mdrag_coef * airspeed_bf * sqrtf(ref_thrust * ref_air_density * model.disc_area);
 
     if (momentum_drag > drag_force) {
-        model.mdrag_coef *= drag_force / momentum_drag;
+        mdrag_coef *= drag_force / momentum_drag;
         areaCd = 0.0;
-        ::printf("Suggested EK3_DRAG_BCOEF_* = 0, EK3_DRAG_MCOEF = %.3f\n", (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
     } else {
-        areaCd = (drag_force - momentum_drag) / (0.5f * ref_air_density * sq(model.refSpd));
-        ::printf("Suggested EK3_DRAG_BCOEF_* = %.3f, EK3_DRAG_MCOEF = %.3f\n", model.mass / areaCd, (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density));
+        areaCd = model.bbdrag_coef * (drag_force - momentum_drag) / (0.5f * ref_air_density * sq(model.refSpd));
+    }
+    const float drag_bcoef = is_positive(areaCd) ? model.mass / areaCd : 0.0;
+    const float drag_mcoef = (momentum_drag / (model.mass * airspeed_bf)) * sqrtf(1.225f / ref_air_density);
+    if ((!is_equal(drag_bcoef, last_drag_bcoef) || !is_equal(drag_mcoef, last_drag_mcoef)) &&
+        isfinite(drag_bcoef) && isfinite(drag_mcoef)) {
+        last_drag_bcoef = drag_bcoef;
+        last_drag_mcoef = drag_mcoef;
+        ::printf("Suggested EK3_DRAG_BCOEF_* = %.3f, EK3_DRAG_MCOEF = %.3f\n", drag_bcoef, drag_mcoef);
     }
 
     terminal_rotation_rate = model.refRotRate;
 
-    float hover_thrust = mass * GRAVITY_MSS;
-    float hover_power = model.refCurrent * model.refVoltage;
-    float hover_velocity_out = 2 * hover_power / hover_thrust;
-    float effective_disc_area = hover_thrust / (0.5 * ref_air_density * sq(hover_velocity_out));
-    float velocity_max = hover_velocity_out / sqrtf(model.hoverThrOut);
-    float effective_prop_area = effective_disc_area / num_motors;
-    float true_prop_area = model.disc_area / num_motors;
+    const float hover_thrust = model.mass * GRAVITY_MSS;
+    const float hover_power = model.refCurrent * model.refVoltage;
+    const float hover_velocity_out = 2 * hover_power / hover_thrust;
+    const float effective_disc_area = hover_thrust / (0.5 * ref_air_density * sq(hover_velocity_out));
+    const float velocity_max = hover_velocity_out / sqrtf(MAX(model.hoverThrOut.get(), 0.01f));
+    const float effective_prop_area = effective_disc_area / num_motors;
+    const float true_prop_area = model.disc_area / num_motors;
 
     // power_factor is ratio of power consumed per newton of thrust
-    float power_factor = hover_power / hover_thrust;
-
-    battery->setup(model.battCapacityAh, model.refBatRes, model.maxVoltage);
-
-    if (uint8_t(model.num_motors) != num_motors) {
-        ::printf("Warning model expected %u motors and got %u\n", uint8_t(model.num_motors), num_motors);
-    }
+    const float power_factor = hover_power / hover_thrust;
 
     for (uint8_t i=0; i<num_motors; i++) {
-        motors[i].setup_params(model.pwmMin, model.pwmMax, model.spin_min, model.spin_max, model.propExpo, model.slew_max,
+        motors[i].setup_params(model.pwmMin.get(), model.pwmMax.get(), model.spin_min, model.spin_max, model.propExpo, model.slew_max,
                                model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max,
                                model.motor_pos[i], model.motor_thrust_vec[i], model.yaw_factor[i], true_prop_area,
-                               model.mdrag_coef);
+                               mdrag_coef);
     }
 
     if (is_zero(model.moment_of_inertia.x) || is_zero(model.moment_of_inertia.y) || is_zero(model.moment_of_inertia.z)) {
         // if no inertia provided, assume 50% of mass on ring around center
-        model.moment_of_inertia.x = model.mass * 0.25 * sq(model.diagonal_size*0.5);
-        model.moment_of_inertia.y = model.moment_of_inertia.x;
-        model.moment_of_inertia.z = model.mass * 0.5 * sq(model.diagonal_size*0.5);
+        moment_of_inertia.x = model.mass * 0.25 * sq(model.diagonal_size*0.5);
+        moment_of_inertia.y = moment_of_inertia.x;
+        moment_of_inertia.z = model.mass * 0.5 * sq(model.diagonal_size*0.5);
+    } else {
+        moment_of_inertia = model.moment_of_inertia;
     }
 
-    // setup reasonable defaults for battery
-    AP_Param::set_default_by_name("SIM_BATT_VOLTAGE", model.maxVoltage);
-    AP_Param::set_default_by_name("SIM_BATT_CAP_AH", model.battCapacityAh);
-    if (model.battCapacityAh > 0) {
-        AP_Param::set_default_by_name("BATT_CAPACITY", model.battCapacityAh*1000);
+    if (!is_equal(last_batt_voltage, model.maxVoltage.get()) ||
+        !is_equal(last_batt_cap, model.battCapacityAh.get()) ||
+        !is_equal(last_batt_res, model.refBatRes.get())) {
+        const float prev_cap = last_batt_cap;
+        last_batt_voltage = model.maxVoltage;
+        last_batt_cap = model.battCapacityAh;
+        last_batt_res = model.refBatRes;
+        battery_dirty = true;
+
+        // setup reasonable defaults for battery
+        AP_Param::set_default_by_name("SIM_BATT_VOLTAGE", model.maxVoltage);
+        AP_Param::set_default_by_name("SIM_BATT_CAP_AH", model.battCapacityAh);
+        if (model.battCapacityAh > 0) {
+            AP_Param::set_default_by_name("BATT_CAPACITY", model.battCapacityAh*1000);
+        } else if (prev_cap > 0) {
+            // returning to unlimited capacity, mark vehicle capacity unknown
+            AP_Param::set_default_by_name("BATT_CAPACITY", 0);
+        }
     }
+}
+
+// returns true once when the battery model values have changed, so
+// the vehicle can re-setup the simulated battery
+bool Frame::battery_changed(void)
+{
+    bool ret = battery_dirty;
+    battery_dirty = false;
+    return ret;
 }
 
 /*
@@ -668,11 +877,12 @@ void Frame::calculate_forces(const Aircraft &aircraft,
                              const struct sitl_input &input,
                              Vector3f &rot_accel,
                              Vector3f &body_accel,
-                             float* rpm,
-                             bool use_drag)
+                             float* rpm)
 {
     Vector3f thrust; // newtons
     Vector3f torque;
+
+    update_parameters();
 
     const float air_density = get_air_density(aircraft.get_location().alt*0.01);
     const Vector3f gyro = aircraft.get_gyro();
@@ -682,7 +892,8 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     const auto *_sitl = AP::sitl();
     for (uint8_t i=0; i<num_motors; i++) {
         Vector3f mtorque, mthrust;
-        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf, gyro, air_density, battery->get_voltage(), use_drag);
+        motors[i].calculate_forces(input, motor_offset, mtorque, mthrust, vel_air_bf,
+                                   gyro, air_density, aircraft.get_battery_voltage(), true);
         torque += mtorque;
         thrust += mthrust;
         // simulate motor rpm
@@ -692,9 +903,9 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     }
 
     // calculate total rotational acceleration
-    rot_accel.x = torque.x / model.moment_of_inertia.x;
-    rot_accel.y = torque.y / model.moment_of_inertia.y;
-    rot_accel.z = torque.z / model.moment_of_inertia.z;
+    rot_accel.x = torque.x / moment_of_inertia.x;
+    rot_accel.y = torque.y / moment_of_inertia.y;
+    rot_accel.z = torque.z / moment_of_inertia.z;
 
     if (terminal_rotation_rate > 0) {
         // rotational air resistance
@@ -703,7 +914,7 @@ void Frame::calculate_forces(const Aircraft &aircraft,
         rot_accel.z -= gyro.z * radians(400.0) / terminal_rotation_rate;
     }
 
-    if (use_drag) {
+    if (is_positive(areaCd)) {
         // use the model params to calculate drag
         Vector3f drag_bf;
         drag_bf.x = areaCd * 0.5f * air_density * sq(vel_air_bf.x);
@@ -727,23 +938,13 @@ void Frame::calculate_forces(const Aircraft &aircraft,
     body_accel = thrust/aircraft.gross_mass();
 }
 
-
-// calculate current and voltage
-void Frame::current_and_voltage(float &voltage, float &current)
+// computes (total) instantaneous current
+float Frame::get_current_amp(void)
 {
-    float param_voltage = AP::sitl()->batt_voltage;
-    if (!is_equal(last_param_voltage,param_voltage)) {
-        battery->init_voltage(param_voltage);
-        last_param_voltage = param_voltage;
-    }
-    const float param_capacity = AP::sitl()->batt_capacity_ah;
-    if (!is_equal(battery->get_capacity(), param_capacity)) {
-        battery->init_capacity(param_capacity);
-    }
-    voltage = battery->get_voltage();
-    current = 0;
+    float current = 0;
     for (uint8_t i=0; i<num_motors; i++) {
         current += motors[i].get_current();
     }
+    return current;
 }
 #endif // AP_SIM_ENABLED

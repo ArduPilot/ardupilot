@@ -1426,7 +1426,7 @@ void AP_Radio_cc2500::send_SRT_telemetry(void)
     pkt.length = sizeof(pkt)-1;
 
     t_status.flags = 0;
-    t_status.flags |= AP_Notify::flags.gps_status >= 3?TELEM_FLAG_GPS_OK:0;
+    t_status.flags |= AP_Notify::flags.gps_status >= AP_GPS_FixType::FIX_3D?TELEM_FLAG_GPS_OK:0;
     t_status.flags |= AP_Notify::flags.pre_arm_check?TELEM_FLAG_ARM_OK:0;
     t_status.flags |= AP_Notify::flags.failsafe_battery?0:TELEM_FLAG_BATT_OK;
     t_status.flags |= hal.util->get_soft_armed()?TELEM_FLAG_ARMED:0;

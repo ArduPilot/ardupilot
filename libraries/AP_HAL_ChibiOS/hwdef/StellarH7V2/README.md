@@ -59,13 +59,13 @@ The default RC input is configured on the UART4 RX4 input and can be used for al
 
 - PPM is not supported.
 - SBUS/DSM/SRXL connects to the RX4 pin.
-- FPort requires connection to TX4 and :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>` set to "7". See :ref:`common-FPort-receivers`.
+- FPort requires connection to TX4 and [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html).
 - CRSF also requires a TX4 connection, in addition to RX4, and automatically provides telemetry.
-- SRXL2 requires a connection to TX4 and automatically provides telemetry. Set :ref:`SERIAL4_OPTIONS<SERIAL4_OPTIONS>` to "4".
+- SRXL2 requires a connection to TX4 and automatically provides telemetry. Set [SERIAL4_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial4-options-serial4-options) to "4".
 
 ## OSD Support
 
-StellarH7V2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation  is preconfigured on SERIAL 6 but requires OSD_TYPE2 = 5. See :ref:`common-msp-osd-overview-4.2` for more info.
+StellarH7V2 supports using its internal OSD using OSD_TYPE 1 (MAX7456 driver). Simultaneous DisplayPort OSD operation  is preconfigured on SERIAL 6 but requires OSD_TYPE2 = 5. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## PWM Output
 
@@ -84,17 +84,17 @@ The board has 1 built-in voltage divider and 2x current ADC. Support external 3.
 The voltage input is compatible with 2~8S LiPo batteries.
 The default battery parameters are:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 10
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.0
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 66.7
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN = 11
+- BATT_VOLT_MULT = 11.0
+- BATT_AMP_PERVLT = 66.7
 
-Pads for a second analog battery monitor are provided (Voltage only). To use:
+Pads for a second analog - BATTery monitor are provided (Voltage only). To use:
 
-- :ref:`BATT2_MONITOR<BATT2_MONITOR>` = 4
-- :ref:`BATT2_VOLT_PIN<BATT2_VOLT_PIN__AP_BattMonitor_Analog>` = 18 (ADC1 pin, PA4)
-- :ref:`BATT2_VOLT_MULT<BATT2_VOLT_MULT__AP_BattMonitor_Analog>` = 21.0
+- BATT2_MONITOR = 4
+- BATT2_VOLT_PIN = 18
+- BATT2_VOLT_MULT = 21.0
 
 ## Compass
 

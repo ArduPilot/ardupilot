@@ -110,6 +110,10 @@
 # define PREARM_DISPLAY_PERIOD 30
 #endif
 
+#ifndef AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS
+  #define AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS 10000
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
@@ -470,10 +474,12 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
     }
 
     // if accels can in theory be inconsistent,
-    // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < 10000) {
+    // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
+#if AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0
+    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
+#endif
 
     return true;
 }
@@ -495,10 +501,12 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
     }
 
     // if gyros can in theory be inconsistent,
-    // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < 10000) {
+    // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
+#if AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0
+    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
+#endif
 
     return true;
 }
@@ -546,15 +554,19 @@ bool AP_Arming::ins_checks(bool report)
         }
 #endif
 
-        if (run_imu_consistency_check) {
+        if (run_imu_consistency_check && AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0) {
             // check all accelerometers point in roughly same direction
-            if (!ins_accels_consistent(ins)) {
+            const bool accels_consistent = ins_accels_consistent(ins);
+
+            // check all gyros are giving consistent readings
+            const bool gyros_consistent = ins_gyros_consistent(ins);
+
+            if (!accels_consistent) {
                 check_failed(Check::INS, report, "Accels inconsistent");
                 return false;
             }
 
-            // check all gyros are giving consistent readings
-            if (!ins_gyros_consistent(ins)) {
+            if (!gyros_consistent) {
                 check_failed(Check::INS, report, "Gyros inconsistent");
                 return false;
             }
@@ -720,7 +732,7 @@ bool AP_Arming::gps_checks(bool report)
             }
 
             //GPS OK?
-            if (gps.status(i) < AP_GPS::GPS_OK_FIX_3D) {
+            if (gps.status(i) < AP_GPS_FixType::FIX_3D) {
                 check_failed(Check::GPS, report, "GPS %i: Bad fix", i+1);
                 return false;
             }
@@ -929,13 +941,8 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 #if AP_MISSION_ENABLED
 bool AP_Arming::mission_checks(bool report)
 {
-    AP_Mission *mission = AP::mission();
+    AP_Mission &mission = AP::mission();
     if (check_enabled(Check::MISSION) && _required_mission_items) {
-        if (mission == nullptr) {
-            check_failed(Check::MISSION, report, "No mission library present");
-            return false;
-        }
-
         const struct MisItemTable {
           MIS_ITEM_CHECK check;
           MAV_CMD mis_item_type;
@@ -950,7 +957,7 @@ bool AP_Arming::mission_checks(bool report)
         };
         for (uint8_t i = 0; i < ARRAY_SIZE(misChecks); i++) {
             if (_required_mission_items & misChecks[i].check) {
-                if (!mission->contains_item(misChecks[i].mis_item_type)) {
+                if (!mission.contains_item(misChecks[i].mis_item_type)) {
                     check_failed(Check::MISSION, report, "Missing mission item: %s", misChecks[i].type);
                     return false;
                 }
@@ -980,10 +987,28 @@ bool AP_Arming::mission_checks(bool report)
         }
     }
 
+    // Check there are no zero altitude takeoffs
+    // Although technically valid in some very rare cases it's most likely that the user simply forgot to enter an altitude.
+    if (check_enabled(Check::MISSION)) {
+        const uint16_t num_commands = mission.num_commands();
+        for (uint16_t i = 1; i < num_commands; i++) {
+            if (!mission.is_takeoff_type_cmd(mission.get_command_id(i))) {
+                continue;
+            }
+            AP_Mission::Mission_Command cmd;
+            if (!mission.read_cmd_from_storage(i, cmd)) {
+                continue;
+            }
+            if (cmd.content.location.alt == 0) {
+                check_failed(Check::MISSION, report, "Mission: Zero takeoff altitude");
+                return false;
+            }
+        }
+    }
+
 #if AP_SDCARD_STORAGE_ENABLED
     if (check_enabled(Check::MISSION) &&
-        mission != nullptr &&
-        (mission->failed_sdcard_storage() || StorageManager::storage_failed())) {
+        (mission.failed_sdcard_storage() || StorageManager::storage_failed())) {
         check_failed(Check::MISSION, report, "Failed to open %s", AP_MISSION_SDCARD_FILENAME);
         return false;
     }
@@ -993,7 +1018,7 @@ bool AP_Arming::mission_checks(bool report)
     // do not allow arming if there are no mission items and we are in
     // (e.g.) AUTO mode
     if (AP::vehicle()->current_mode_requires_mission() &&
-        (mission == nullptr || !mission->present())) {
+        !mission.present()) {
         check_failed(Check::MISSION, report, "Mode requires mission");
         return false;
     }
@@ -1226,12 +1251,13 @@ bool AP_Arming::system_checks(bool report)
 bool AP_Arming::terrain_database_required() const
 {
 #if AP_MISSION_ENABLED
-    AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        // no mission support?
-        return false;
+    if (AP::mission().contains_terrain_alt_items()) {
+        return true;
     }
-    if (mission->contains_terrain_alt_items()) {
+#endif
+#if AP_FENCE_ENABLED
+    const AC_Fence* fence = AP::fence();
+    if (fence != nullptr && fence->terrain_database_required()) {
         return true;
     }
 #endif
@@ -1774,6 +1800,13 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
         }
     }
 #endif
+
+    // Run estop check again, here in the arm checks there is no need
+    // bypass the check if arm emergency stop aux function is setup
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(true, "Motors Emergency Stopped");
+        return false;
+    }
 
     // ensure the GPS drivers are ready on any final changes
     if (check_enabled(Check::GPS_CONFIG)) {

@@ -137,7 +137,7 @@ void loop()
                             gps.num_sats(),
                             gps.time_week(),
                             (long unsigned int)gps.time_week_ms(),
-                            gps.status());
+                            unsigned(gps.status()));
     }
 
     // Delay for 10 mS will give us 100 Hz invocation rate

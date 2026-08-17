@@ -178,10 +178,10 @@ void SITL::TSYS03::update(const class Aircraft &aircraft)
         break;
     case State::CONVERTING:
         if (time_in_state_ms() > 5) {
-            const float temperature = get_sim_temperature(aircraft);
-            if (!is_equal(last_temperature, temperature)) {
-                last_temperature = temperature;
-                adc = calculate_adc(KELVIN_TO_C(temperature));
+            const float temperature_degC = get_sim_temperature_degC(aircraft);
+            if (!is_equal(last_temperature_degC, temperature_degC)) {
+                last_temperature_degC = temperature_degC;
+                adc = calculate_adc(temperature_degC);
             }
             set_state(State::CONVERTED);
         }
@@ -191,9 +191,9 @@ void SITL::TSYS03::update(const class Aircraft &aircraft)
     }
 }
 
-float SITL::TSYS03::get_sim_temperature(const Aircraft &aircraft) const
+float SITL::TSYS03::get_sim_temperature_degC(const Aircraft &aircraft) const
 {
-    return aircraft.get_battery_temperature();
+    return aircraft.get_battery_temperature_degC();
 }
 
 #endif  // AP_SIM_TSYS03_ENABLED

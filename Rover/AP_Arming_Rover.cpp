@@ -94,7 +94,9 @@ bool AP_Arming_Rover::pre_arm_checks(bool report)
     }
 
 #pragma clang diagnostic push
+#if defined(__clang_major__) && __clang_major__ >= 14
 #pragma clang diagnostic ignored "-Wbitwise-instead-of-logical"
+#endif
     return (AP_Arming::pre_arm_checks(report)
             & motor_checks(report)
 #if AP_OAPATHPLANNER_ENABLED
@@ -124,8 +126,7 @@ bool AP_Arming_Rover::arm_checks(AP_Arming::Method method)
 
 void AP_Arming_Rover::update_soft_armed()
 {
-    hal.util->set_soft_armed(is_armed() &&
-                             hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED);
+    hal.util->set_soft_armed(is_armed());
 }
 
 /*

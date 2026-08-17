@@ -449,6 +449,9 @@ public:
     // Returns the current terrain altitude (Down-positive, relative to EKF origin, in meters).
     float get_pos_terrain_D_m() const { return _pos_terrain_d_m; }
 
+    // Returns the current terrain correction velocity (Down-positive, m/s).
+    float get_vel_terrain_D_ms() const { return _vel_terrain_d_ms; }
+
 
     /// Offset
 
@@ -774,8 +777,8 @@ protected:
     uint32_t    _posvelaccel_offset_target_d_ms;    // system time that pos, vel, accel targets were set (used to implement timeouts)
 
     // ekf reset handling
-    uint32_t    _ekf_ne_reset_ms;       // system time of last recorded ekf ne position reset
-    uint32_t    _ekf_d_reset_ms;        // system time of last recorded ekf altitude reset
+    uint16_t    _ahrs_position_NE_reset_count;       // count of ekf ne position resets
+    uint16_t    _ahrs_position_D_reset_count;        // count of ekf altitude resets
     EKFResetMethod _ekf_reset_method = EKFResetMethod::MoveTarget;  // EKF reset handling method.  Loiter should use MoveTarget, Auto should use MoveVehicle
 
     // high vibration handling

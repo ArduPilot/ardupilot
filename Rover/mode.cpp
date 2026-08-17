@@ -21,7 +21,7 @@ void Mode::exit()
 
 bool Mode::enter()
 {
-    const bool ignore_checks = !hal.util->get_soft_armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
+    const bool ignore_checks = !rover.arming.is_armed();   // allow switching to any mode if disarmed.  We rely on the arming check to perform
     if (!ignore_checks) {
 
         // get EKF filter status
@@ -228,12 +228,12 @@ float Mode::nav_bearing() const
 }
 
 // return cross track error (i.e. vehicle's distance from the line between waypoints)
-float Mode::crosstrack_error() const
+float Mode::crosstrack_error_m() const
 {
     if (!is_autopilot_mode()) {
         return 0.0f;
     }
-    return g2.wp_nav.crosstrack_error();
+    return g2.wp_nav.crosstrack_error_m();
 }
 
 // return desired lateral acceleration

@@ -41,8 +41,10 @@ Mode *Copter::mode_from_mode_num(const Mode::Number mode)
         case Mode::Number::STABILIZE:
             return &mode_stabilize;
 
+#if MODE_ALTHOLD_ENABLED
         case Mode::Number::ALT_HOLD:
             return &mode_althold;
+#endif
 
 #if MODE_AUTO_ENABLED
         case Mode::Number::AUTO:
@@ -225,7 +227,9 @@ uint32_t Copter::get_available_mode_enabled_mask() const
         &copter.mode_acro,
 #endif
         &copter.mode_stabilize,
+#if MODE_ALTHOLD_ENABLED
         &copter.mode_althold,
+#endif
 #if MODE_CIRCLE_ENABLED
         &copter.mode_circle,
 #endif
@@ -309,7 +313,8 @@ uint32_t Copter::get_available_mode_enabled_mask() const
 // set_mode - change flight mode and perform any necessary initialisation
 // optional force parameter used to force the flight mode change (used only first time mode is set)
 // returns true if mode was successfully set
-// ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT can always be set successfully but the return state of other flight modes should be checked and the caller should deal with failures appropriately
+// compiled-in ACRO, STABILIZE, ALTHOLD, LAND, DRIFT and SPORT modes can always be set successfully,
+// but the return state of other flight modes should be checked and the caller should deal with failures appropriately
 bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 {
     // update last reason
@@ -361,7 +366,7 @@ bool Copter::set_mode(Mode::Number mode, ModeReason reason)
 #if FRAME_CONFIG == HELI_FRAME
     // do not allow helis to enter a non-manual throttle mode if the
     // rotor runup is not complete
-    if (!ignore_checks && !new_flightmode->has_manual_throttle() && !motors->rotor_runup_complete()) {
+    if (!ignore_checks && !new_flightmode->has_manual_throttle() && motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         mode_change_failed(new_flightmode, "runup not complete");
         return false;
     }
@@ -524,12 +529,6 @@ void Copter::exit_mode(Mode *&old_flightmode,
     old_flightmode->exit();
 
 #if FRAME_CONFIG == HELI_FRAME
-    // firmly reset the flybar passthrough to false when exiting acro mode.
-    if (old_flightmode == &mode_acro) {
-        attitude_control->use_flybar_passthrough(false, false);
-        motors->set_acro_tail(false);
-    }
-
     //last collective output
     input_manager.set_last_coll_output(motors->get_throttle());
 
@@ -564,8 +563,15 @@ void Mode::get_pilot_desired_lean_angles_rad(float &roll_out_rad, float &pitch_o
         return;
     }
 
-    //transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
-    rc_input_to_roll_pitch_rad(channel_roll->norm_input_dz(), channel_pitch->norm_input_dz(), angle_max_rad,  angle_limit_rad, roll_out_rad, pitch_out_rad);
+    // fetch roll and pitch inputs
+    float roll_in_norm = channel_roll->norm_input_dz();
+    float pitch_in_norm = channel_pitch->norm_input_dz();
+
+    // apply SIMPLE mode transform to pilot inputs
+    apply_simple_mode(roll_in_norm, pitch_in_norm);
+
+    // transform pilot's normalised roll or pitch stick input into a roll and pitch euler angle command
+    rc_input_to_roll_pitch_rad(roll_in_norm, pitch_in_norm, angle_max_rad, angle_limit_rad, roll_out_rad, pitch_out_rad);
 }
 
 // transform pilot's roll or pitch input into a desired velocity
@@ -579,6 +585,9 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     // fetch roll and pitch inputs
     float roll_out_norm = channel_roll->norm_input_dz();
     float pitch_out_norm = channel_pitch->norm_input_dz();
+
+    // apply SIMPLE mode transform to pilot inputs
+    apply_simple_mode(roll_out_norm, pitch_out_norm);
 
     // convert roll and pitch inputs into velocity in NE frame
     vel_ne_ms = Vector2f(-pitch_out_norm, roll_out_norm);
@@ -783,14 +792,13 @@ void Mode::land_run_horizontal_control()
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+#if MODE_ALTHOLD_ENABLED
                 set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+#endif
             }
         }
 
         if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
             // convert pilot input to reposition velocity
             // use half maximum acceleration as the maximum velocity to ensure aircraft will
             // stop from full reposition speed in less than 1 second.
@@ -877,7 +885,9 @@ void Mode::precland_retry_position(const Vector3p &retry_pos_ned_m)
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+#if MODE_ALTHOLD_ENABLED
                 set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+#endif
             }
         }
 
@@ -1091,9 +1101,30 @@ float Mode::get_non_takeoff_throttle() const
     return copter.get_non_takeoff_throttle();
 }
 
-// Updates simple/super-simple heading reference based on current yaw and mode.
-void Mode::update_simple_mode(void) {
-    copter.update_simple_mode();
+// Rotates roll/pitch pilot input if simple or super simple mode is active.
+// roll and pitch may be in any units/scale; the rotation is scale-independent
+void Mode::apply_simple_mode(float &roll, float &pitch) const
+{
+    // exit immediately if not in simple mode
+    if (copter.simple_mode == Copter::SimpleMode::NONE) {
+        return;
+    }
+
+    float roll_out, pitch_out;
+
+    if (copter.simple_mode == Copter::SimpleMode::SIMPLE) {
+        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
+        roll_out = roll*copter.simple_cos_yaw - pitch*copter.simple_sin_yaw;
+        pitch_out = roll*copter.simple_sin_yaw + pitch*copter.simple_cos_yaw;
+    } else {
+        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
+        roll_out = roll*copter.super_simple_cos_yaw - pitch*copter.super_simple_sin_yaw;
+        pitch_out = roll*copter.super_simple_sin_yaw + pitch*copter.super_simple_cos_yaw;
+    }
+
+    // rotate roll, pitch input from north facing to vehicle's perspective
+    roll = roll_out*copter.ahrs.cos_yaw() + pitch_out*copter.ahrs.sin_yaw();
+    pitch = -roll_out*copter.ahrs.sin_yaw() + pitch_out*copter.ahrs.cos_yaw();
 }
 
 // Requests a mode change with the specified reason; returns true if accepted.

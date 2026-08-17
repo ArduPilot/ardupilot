@@ -233,7 +233,7 @@ for joint_number in range(number_of_joints):
 while True:
     try:
         data, address = sock.recvfrom(100)
-    except Exception:
+    except OSError:
         time.sleep(0.01)
         continue
 

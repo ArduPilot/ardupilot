@@ -114,6 +114,10 @@
 #define AP_NOTIFY_BUZZER_ENABLED 1
 #endif
 
+#ifndef AP_AHRS_EKF_RESET_ENABLED
+#define AP_AHRS_EKF_RESET_ENABLED 1
+#endif
+
 #define HAL_BATT_VOLT_PIN                  13
 #define HAL_BATT_CURR_PIN                  12
 #define HAL_BATT_VOLT_SCALE                10.1f

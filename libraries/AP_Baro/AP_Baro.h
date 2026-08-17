@@ -6,6 +6,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <Filter/DerivativeFilter.h>
+#include <Filter/LowPassFilter.h>
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 
@@ -144,10 +145,6 @@ public:
     // airspeed. This should only be used to update the AHRS value
     // once per loop. Please use AP::ahrs().get_EAS2TAS()
     float _get_EAS2TAS(void) const;
-
-    // get air density / sea level density - decreases as altitude climbs
-    // please use AP::ahrs()::get_air_density_ratio()
-    float _get_air_density_ratio(void);
 
     // get current climb rate in meters/s. A positive number means
     // going up
@@ -369,6 +366,11 @@ private:
 #endif
 #if AP_BARO_THST_COMP_ENABLED
     float thrust_pressure_correction(uint8_t instance);
+    void update_thrust_filter(void);        // update filtered throttle once per update cycle
+    LowPassFilterFloat _thrust_filter;      // low-pass filter for thrust compensation
+    uint32_t _thrust_filter_last_update_us; // last update time for filter dt calculation
+    AP_Float _thst_filt_cutoff;             // thrust filter cutoff frequency in Hz
+    float _filtered_throttle;               // filtered throttle value for thrust compensation
 #endif
     // Logging function
     void Write_Baro(void);

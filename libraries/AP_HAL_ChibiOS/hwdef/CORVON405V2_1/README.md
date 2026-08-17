@@ -32,15 +32,15 @@ The CORVON405V2.1 is a flight controller produced by CORVON.
 
 ## RC Input
 
-The default RC input is configured on the UART6_RX input which is inverted from the SBUS pin. Other RC  protocols  should be applied at UART1 which has DMA, and set the :ref:`SERIAL1_PROTOCOL<SERIAL1_PROTOCOL>` ='23' and change :ref:`SERIAL6_PROTOCOL<>SERIAL6_PROTOCOL` to something other than '23'.
+The default RC input is configured on the UART6_RX input which is inverted from the SBUS pin. Other RC  protocols  should be applied at UART1 which has DMA, and set the [SERIAL1_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial1-protocol-telem1-protocol-selection) ='23' and change [SERIAL6_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial6-protocol-serial6-protocol-selection) to something other than '23'.
 
 - CRSF/ELRS also requires a TX1 connection, in addition to RX1, and automatically provides telemetry.
-- FPort requires connection to TX1 and :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` set to "7". See :ref:common-FPort-receivers.
-- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set :ref:`SERIAL1_OPTIONS<SERIAL1_OPTIONS>` to "4".
+- FPort requires connection to TX1 and [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) set to "7". See [FPort receivers](https://ardupilot.org/copter/docs/common-FPort-receivers.html)
+- SRXL2 requires a connection to TX2 and automatically provides telemetry. Set [SERIAL1_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial1-options-telem1-options) to "4".
 
 ## OSD Support
 
-The CORVON405V2.1 supports  internal analog OSD MAX7456. Simultaneous external HD OSD support is preconfigured on SERIAL6. See :ref:`common-msp-osd-overview-4.2` for more info.
+The CORVON405V2.1 supports  internal analog OSD MAX7456. Simultaneous external HD OSD support is preconfigured on SERIAL6. See [MSP OSD](https://ardupilot.org/copter/docs/common-msp-osd-overview-4.2.html) for more info.
 
 ## VTX Support
 
@@ -53,10 +53,11 @@ The CORVON405V2.1 supports up to 10 PWM outputs.
 Channels 1-8 support DShot. Channels 1-4 support bi-directional DShot.
 
 PWM outputs are grouped and every  group must use the same output protocol:
-1,2,5,6 are group1
-3, 4 are group 2
-7,8 are group 3
-9,10 are in group 4
+
+- 1,2,5,6 are group1
+- 3, 4 are group 2
+- 7,8 are group 3
+- 9,10 are in group 4
 
 ## Battery Monitoring
 
@@ -65,11 +66,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
-- :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
-- :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 10
-- :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 11 (CURR pin)
-- :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 21.2
-- :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 40.2
+- BATT_MONITOR = 4
+- BATT_VOLT_PIN = 10
+- BATT_CURR_PIN =1 1
+- BATT_VOLT_MULT = 21.2
+- BATT_AMP_PERVLT = 40.2
 
 ## Compass
 

@@ -243,7 +243,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
 
         // get the time the packet arrived on the UART
         uint64_t uart_us;
-        if (_last_pps_time_us != 0 && (state.status >= AP_GPS::GPS_OK_FIX_2D)) {
+        if (_last_pps_time_us != 0 && (state.status >= AP_GPS_FixType::FIX_2D)) {
             // pps is only reliable when we have some sort of GPS fix
             uart_us = _last_pps_time_us;
             _last_pps_time_us = 0;
@@ -309,7 +309,7 @@ void AP_GPS_Backend::check_new_itow(uint32_t itow, uint32_t msg_length)
         }
 #endif // HAL_BUILD_AP_PERIPH
 
-        if (state.status >= AP_GPS::GPS_OK_FIX_2D) {
+        if (state.status >= AP_GPS_FixType::FIX_2D) {
             // we must have a decent fix to calculate difference between itow and pseudo-itow
             _pseudo_itow_delta_ms = itow - (_pseudo_itow/1000ULL);
         }

@@ -420,6 +420,8 @@ void AP_DAL::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vec
     _RBOH.delAng = delAng;
     _RBOH.delTime = delTime;
     _RBOH.timeStamp_ms = timeStamp_ms;
+    _RBOH.posOffset = posOffset;
+    _RBOH.delay_ms = delay_ms;
     WRITE_REPLAY_BLOCK_IFCHANGED(RBOH, _RBOH, old);
 }
 

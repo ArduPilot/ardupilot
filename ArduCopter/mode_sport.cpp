@@ -29,11 +29,13 @@ void ModeSport::run()
     pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // apply SIMPLE mode transform
-    update_simple_mode();
+    float roll_in_norm = channel_roll->norm_input_dz();
+    float pitch_in_norm = channel_pitch->norm_input_dz();
+    apply_simple_mode(roll_in_norm, pitch_in_norm);
 
     // get pilot's desired roll and pitch rates
-    float target_roll_rads = channel_roll->norm_input_dz() * radians(g2.command_model_acro_rp.get_rate());
-    float target_pitch_rads = channel_pitch->norm_input_dz() * radians(g2.command_model_acro_rp.get_rate());
+    float target_roll_rads = roll_in_norm * radians(g2.command_model_acro_rp.get_rate());
+    float target_pitch_rads = pitch_in_norm * radians(g2.command_model_acro_rp.get_rate());
 
     // get pilot's desired yaw rate
     float target_yaw_rads = get_pilot_desired_yaw_rate_rads();
@@ -65,7 +67,6 @@ void ModeSport::run()
 
     // get pilot desired climb rate
     float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // Sport State Machine Determination
     AltHoldModeState sport_state = get_alt_hold_state_D_ms(target_climb_rate_ms);

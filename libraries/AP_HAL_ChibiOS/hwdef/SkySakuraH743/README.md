@@ -101,7 +101,7 @@ PWM13 provides external NeoPixel LED support.
 
 ## Firmware
 
-Firmware can bee found on the `firmware server < https://firmware.ardupilot.org`__ in the "SkySakuraH743"  folders
+Firmware can bee found on the [firmware server](https://firmware.ardupilot.org) in the "SkySakuraH743"  folders
 
 ## Loading Firmware
 

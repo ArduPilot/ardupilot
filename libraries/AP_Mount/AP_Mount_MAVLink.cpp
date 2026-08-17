@@ -139,6 +139,9 @@ void AP_Mount_MAVLink::handle_gimbal_device_information(const mavlink_message_t 
     strncpy(vendor_name, info.vendor_name, ARRAY_SIZE(vendor_name));
     strncpy(model_name, info.model_name, ARRAY_SIZE(model_name));
 
+    // prefer the 32-bit extension, fall back to the 16-bit field:
+    device_capapability_flags = (info.cap_flags2 != 0) ? info.cap_flags2 : info.cap_flags;
+
     // display gimbal info to user
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount: %s %s fw:%u.%u.%u.%u",
             info.vendor_name,

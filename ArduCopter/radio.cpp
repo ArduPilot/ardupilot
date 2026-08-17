@@ -41,7 +41,6 @@ void Copter::init_rc_in()
 
     #if FRAME_CONFIG == HELI_FRAME
         static const struct AP_Param::defaults_table_struct heli_defaults_table[] = {
-            { "RC_OPTIONS", 0 },
             { "RC8_OPTION", 32 }
         };
         AP_Param::set_defaults_from_table(heli_defaults_table, ARRAY_SIZE(heli_defaults_table));
@@ -95,8 +94,6 @@ void Copter::read_radio()
     const uint32_t tnow_ms = millis();
 
     if (rc().read_input()) {
-        ap.new_radio_frame = true;
-
         set_throttle_and_failsafe(channel_throttle->get_radio_in());
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
@@ -139,7 +136,7 @@ void Copter::read_radio()
 void Copter::set_throttle_and_failsafe(uint16_t throttle_pwm)
 {
     // if failsafe not enabled pass through throttle and exit
-    if(g.failsafe_throttle == FS_THR_DISABLED) {
+    if(g.failsafe_throttle == FS_THR_Action::DISABLED) {
         set_failsafe_radio(false);
         return;
     }
@@ -189,7 +186,7 @@ void Copter::set_throttle_zero_flag(int16_t throttle_control)
     // and we are flying. Immediately set as non-zero
     if ((!ap.using_interlock && (throttle_control > 0) && !SRV_Channels::get_emergency_stop()) ||
         (ap.using_interlock && motors->get_interlock()) ||
-        ap.armed_with_airmode_switch || air_mode == AirMode::AIRMODE_ENABLED) {
+        air_mode_active()) {
         last_nonzero_throttle_ms = tnow_ms;
         ap.throttle_zero = false;
     } else if (tnow_ms - last_nonzero_throttle_ms > THROTTLE_ZERO_DEBOUNCE_TIME_MS) {

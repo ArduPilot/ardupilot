@@ -66,12 +66,12 @@ void ModeAuto::run()
 }
 
 // auto_wp_start - initialises waypoint controller to implement flying to a particular destination
-void ModeAuto::auto_wp_start(const Vector3f& destination)
+void ModeAuto::auto_wp_start(const Vector3f& destination_neu_cm)
 {
     sub.auto_mode = Auto_WP;
 
     // initialise wpnav (no need to check return status because terrain data is not used)
-    sub.wp_nav.set_wp_destination_NEU_cm(destination, false);
+    sub.wp_nav.set_wp_destination_NEU_cm(destination_neu_cm, false);
 
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
@@ -208,7 +208,7 @@ void ModeAuto::auto_circle_movetoedge_start(const Location &circle_center, float
         }
 
         // if we are outside the circle, point at the edge, otherwise hold yaw
-        float dist_to_center = get_horizontal_distance(inertial_nav.get_position_xy_cm().topostype(), sub.circle_nav.get_center_NEU_cm().xy());
+        float dist_to_center = get_horizontal_distance((position_control->get_pos_estimate_NED_m().xy() * 100.0f).tofloat(), sub.circle_nav.get_center_NEU_cm().xy().tofloat());
         if (dist_to_center > sub.circle_nav.get_radius_cm() && dist_to_center > 500) {
             set_auto_yaw_mode(get_default_auto_yaw_mode(false));
         } else {
@@ -401,7 +401,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the sub
         if (!sub.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
+            if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP_neu_cm)) {
                 set_auto_yaw_mode(AUTO_YAW_ROI);
             }
         }
@@ -416,7 +416,7 @@ void ModeAuto::set_auto_yaw_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the sub at the location
-        if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP)) {
+        if (roi_location.get_vector_from_origin_NEU_cm(sub.roi_WP_neu_cm)) {
             set_auto_yaw_mode(AUTO_YAW_ROI);
         }
 #endif  // HAL_MOUNT_ENABLED
@@ -497,7 +497,7 @@ void ModeAuto::auto_terrain_recover_run()
         break;
 
     case RangeFinder::Status::OutOfRangeHigh:
-        target_climb_rate = sub.wp_nav.get_default_speed_down_cms();
+        target_climb_rate = -sub.wp_nav.get_default_speed_down_cms();
         rangefinder_recovery_ms = 0;
         break;
 
@@ -538,6 +538,7 @@ void ModeAuto::auto_terrain_recover_run()
 #else
     gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery failure: No Rangefinder!");
     sub.failsafe_terrain_act();
+    return;
 #endif
 
     // exit on failure (timeout)
@@ -545,6 +546,7 @@ void ModeAuto::auto_terrain_recover_run()
         // Recovery has failed, revert to failsafe action
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Terrain failsafe recovery timeout!");
         sub.failsafe_terrain_act();
+        return;
     }
 
     // run loiter controller

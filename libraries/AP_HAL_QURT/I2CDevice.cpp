@@ -23,16 +23,13 @@
 using namespace QURT;
 
 /*
-  4 I2C buses
-
-  bus1: mag
-  bus2: power manager
-  bus5: barometer (internal)*
-  bus4: external spare bus (unused)
+  I2C bus map is defined per-board in hwdef.dat (see I2C_BUS directive).
+  HAL_QURT_I2C_BUS_IDS lists physical SLPI bus ids in logical order;
+  HAL_QURT_I2C_INTERNAL_MASK is a bitmask of logical indices flagged internal.
 */
-static uint8_t i2c_bus_ids[] = { 1, 2, 5 };
+static uint8_t i2c_bus_ids[] = HAL_QURT_I2C_BUS_IDS;
 
-static uint32_t i2c_internal_mask = (1U<<3);
+static uint32_t i2c_internal_mask = HAL_QURT_I2C_INTERNAL_MASK;
 
 I2CBus I2CDeviceManager::businfo[ARRAY_SIZE(i2c_bus_ids)];
 

@@ -147,7 +147,7 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 | PWM6         | 55   |              |      |
 | PWM7         | 56   |              |      |
 
-## Analog inputs
+## Analog Inputs
 
 The PixFlamingo-F767 flight controller has 4 analog inputs
 
@@ -156,7 +156,7 @@ The PixFlamingo-F767 flight controller has 4 analog inputs
 - ADC Pin14   -> ADC 3V3 Sense
 - ADC Pin15 -> ADC 6V6 Sense
 
-## Battery Monitor Configuration
+## Battery Monitoring
 
 The board has voltage and current sensor inputs on the POWER_ADC connector.
 

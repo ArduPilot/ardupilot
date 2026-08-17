@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+#if MODE_ALTHOLD_ENABLED
 
 /*
  * Init and run calls for althold, flight mode
@@ -28,9 +29,6 @@ void ModeAltHold::run()
     // set vertical speed and acceleration limits
     pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // get pilot desired lean angles
     float target_roll_rad, target_pitch_rad;
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
@@ -40,7 +38,6 @@ void ModeAltHold::run()
 
     // get pilot desired climb rate
     float target_climb_rate_ms = get_pilot_desired_climb_rate_ms();
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // Alt Hold State Machine Determination
     AltHoldModeState althold_state = get_alt_hold_state_D_ms(target_climb_rate_ms);
@@ -102,3 +99,5 @@ void ModeAltHold::run()
     // run the vertical position controller and set output throttle
     pos_control->D_update_controller();
 }
+
+#endif // MODE_ALTHOLD_ENABLED

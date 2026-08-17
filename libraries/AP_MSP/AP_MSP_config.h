@@ -15,3 +15,9 @@
 #ifndef HAL_WITH_MSP_DISPLAYPORT
 #define HAL_WITH_MSP_DISPLAYPORT HAL_MSP_ENABLED
 #endif
+
+// MSP VTX control needs both the MSP layer and AP_VideoTX. It is non-essential
+// and off by default; boards with MSP and the video hardware opt in.
+#ifndef AP_MSP_VIDEOTX_ENABLED
+#define AP_MSP_VIDEOTX_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB > 2048)
+#endif

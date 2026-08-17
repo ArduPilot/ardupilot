@@ -51,9 +51,9 @@ void ModeGuided::update()
 
         case SubMode::HeadingAndSpeed:
         {
-            // stop vehicle if target not updated within 3 seconds
-            if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+            // stop vehicle if target not updated within GUID_TIMEOUT seconds
+            if (have_attitude_target && (millis() - _des_att_time_ms) > get_timeout_ms()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last %.1f secs, stopping", get_timeout_ms()/1000.0f);
                 have_attitude_target = false;
             }
             if (have_attitude_target) {
@@ -75,9 +75,9 @@ void ModeGuided::update()
 
         case SubMode::TurnRateAndSpeed:
         {
-            // stop vehicle if target not updated within 3 seconds
-            if (have_attitude_target && (millis() - _des_att_time_ms) > 3000) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+            // stop vehicle if target not updated within GUID_TIMEOUT seconds
+            if (have_attitude_target && (millis() - _des_att_time_ms) > get_timeout_ms()) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last %.1f secs, stopping", get_timeout_ms()/1000.0f);
                 have_attitude_target = false;
             }
             if (have_attitude_target) {
@@ -110,9 +110,9 @@ void ModeGuided::update()
         case SubMode::SteeringAndThrottle:
         {
             // handle timeout
-            if (_have_strthr && (AP_HAL::millis() - _strthr_time_ms) > 3000) {
+            if (_have_strthr && (AP_HAL::millis() - _strthr_time_ms) > get_timeout_ms()) {
                 _have_strthr = false;
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last 3secs, stopping");
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "target not received last %.1f secs, stopping", get_timeout_ms()/1000.0f);
             }
             if (_have_strthr) {
                 // pass latest steering and throttle directly to motors library
@@ -180,16 +180,16 @@ float ModeGuided::nav_bearing() const
     return 0.0f;
 }
 
-float ModeGuided::crosstrack_error() const
+float ModeGuided::crosstrack_error_m() const
 {
     switch (_guided_mode) {
     case SubMode::WP:
-        return g2.wp_nav.crosstrack_error();
+        return g2.wp_nav.crosstrack_error_m();
     case SubMode::HeadingAndSpeed:
     case SubMode::TurnRateAndSpeed:
         return 0.0f;
     case SubMode::Loiter:
-        return rover.mode_loiter.crosstrack_error();
+        return rover.mode_loiter.crosstrack_error_m();
     case SubMode::SteeringAndThrottle:
     case SubMode::Stop:
         return 0.0f;
@@ -218,7 +218,7 @@ float ModeGuided::get_desired_lat_accel() const
     return 0.0f;
 }
 
-// return distance (in meters) to destination
+// return straight-line distance (in meters) to destination
 float ModeGuided::get_distance_to_destination() const
 {
     switch (_guided_mode) {
@@ -306,6 +306,14 @@ bool ModeGuided::get_desired_location(Location& destination) const
 // set desired location
 bool ModeGuided::set_desired_location(const Location &destination, Location next_destination)
 {
+#if AP_FENCE_ENABLED
+    // reject destination outside the fence
+    if (!rover.fence.check_location_within_fence(destination)) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::DEST_OUTSIDE_FENCE);
+        return false;
+    }
+#endif
+
     if (use_scurves_for_navigation()) {
         // use scurves for navigation
         if (!g2.wp_nav.set_desired_location(destination, next_destination)) {
@@ -444,4 +452,10 @@ bool ModeGuided::limit_breached() const
 bool ModeGuided::use_scurves_for_navigation() const
 {
     return ((g2.guided_options.get() & uint32_t(Options::SCurvesUsedForNavigation)) != 0);
+}
+
+// return guided mode timeout in milliseconds. Only used for velocity, throttle, heading or turn rate control
+uint32_t ModeGuided::get_timeout_ms() const
+{
+    return MAX(g2.guided_timeout, 0.1) * 1000;
 }

@@ -33,7 +33,9 @@ export GIT_VERSION="abcdef"
 export GIT_VERSION_EXTENDED="0123456789abcdef"
 export GIT_VERSION_INT="15"
 export CHIBIOS_GIT_VERSION="12345667"
-export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+if [ -z "$GITHUB_ACTIONS" ] || [ "$GITHUB_ACTIONS" != "true" ]; then
+  export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+fi
 autotest_args=""
 
 # If CI_BUILD_TARGET is not set, build 4 different ones
@@ -518,9 +520,14 @@ for t in $CI_BUILD_TARGET; do
         echo "Checking AStyle code cleanliness"
 
         ./Tools/scripts/run_astyle.py --dry-run
-        if [ $? -ne 0 ]; then
-            echo The code failed astyle cleanliness checks. Please run ./Tools/scripts/run_astyle.py
-        fi
+        continue
+    fi
+
+    if [ "$t" == "shellcheck" ]; then
+        echo "Running shellcheck on scripts"
+
+        # Ignore scripts in the modules directory
+        find . -path ./modules -prune -o -type f -name '*.sh' -exec shellcheck --severity=error '{}' +
         continue
     fi
 

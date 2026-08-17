@@ -52,6 +52,8 @@ void SITL::Calibration::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    update_battery();
 }
 
 void SITL::Calibration::_stop_control(const struct sitl_input &input,

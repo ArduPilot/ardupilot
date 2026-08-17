@@ -6,7 +6,6 @@
 Mode::Mode(void) :
     g(sub.g),
     g2(sub.g2),
-    inertial_nav(sub.inertial_nav),
     ahrs(sub.ahrs),
     motors(sub.motors),
     channel_roll(sub.channel_roll),

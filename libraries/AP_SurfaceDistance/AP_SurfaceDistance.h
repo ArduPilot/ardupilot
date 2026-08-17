@@ -4,11 +4,20 @@
 #include <Filter/LowPassFilter.h>
 #include <AP_HAL/Semaphores.h>
 
+
 class AP_SurfaceDistance {
+private:
 public:
-    AP_SurfaceDistance(Rotation rot, uint8_t i) :
-        instance(i),
-        rotation(rot)
+    struct SurfDistParameters {
+        AP_Float                glitch_alt; // Glitch detection threshold, in meters.
+        AP_Int8                 glitch_num_samples; // Number of consecutive glitches before the value is deemed correct.
+    };
+    SurfDistParameters *parameters;
+
+    AP_SurfaceDistance(Rotation rot, uint8_t i, SurfDistParameters *surf_dist_params) :
+            parameters(surf_dist_params),
+            rotation(rot),
+            instance(i)
     {};
 
     void update();
@@ -32,6 +41,9 @@ public:
     uint32_t glitch_cleared_ms;             // system time glitch cleared
     float terrain_u_m;                      // filtered terrain offset (e.g. terrain's height above EKF origin)
 
+    // accessor functions for the params
+    static const struct AP_Param::GroupInfo var_info[];
+
 private:
 #if HAL_LOGGING_ENABLED
     void Log_Write(void) const;
@@ -40,9 +52,8 @@ private:
     // multi-thread access support
     HAL_Semaphore sem;
 
+    const Rotation rotation;
     const uint8_t instance;
     uint8_t status;
     uint32_t last_healthy_ms;
-
-    const Rotation rotation;
 };

@@ -212,12 +212,12 @@ public:
         k_param_surface_max_throttle,
         k_param_surface_nobaro_thrust,
         // 200: flight modes
-        k_param_flight_mode1 = 200,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
+        k_param_flight_modes0 = 200,
+        k_param_flight_modes1,
+        k_param_flight_modes2,
+        k_param_flight_modes3,
+        k_param_flight_modes4,
+        k_param_flight_modes5,
         k_param_simple_modes,
         k_param_flight_mode_chan,
 #if AP_RSSI_ENABLED
@@ -362,12 +362,7 @@ public:
 
     // Flight modes
     //
-    AP_Int8         flight_mode1;
-    AP_Int8         flight_mode2;
-    AP_Int8         flight_mode3;
-    AP_Int8         flight_mode4;
-    AP_Int8         flight_mode5;
-    AP_Int8         flight_mode6;
+    AP_Int8         flight_modes[6];
     AP_Int8         simple_modes;
     AP_Int8         flight_mode_chan;
 #endif 
@@ -408,6 +403,8 @@ public:
     AP_Float surface_nobaro_thrust;
     Actuators actuators;
 
+    // Used to track parameter conversions
+    AP_Int8 param_conversion_increment;
 };
 
 extern const AP_Param::Info        var_info[];
@@ -438,7 +435,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "RC8_OPTION",          213},   // MOUNT1_PITCH
     { "MOT_PWM_MIN",         1100},
     { "MOT_PWM_MAX",         1900},
-    { "PSC_JERK_D",          50.0f},
+    { "PSC_D_JERK",          50.0f},
     { "WP_SPD",              1.0f},
     { "PILOT_SPEED_UP",      100.0f},
     { "PSC_NE_VEL_P",         6.0f},
@@ -459,7 +456,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
 #if AP_BARO_PROBE_EXT_PARAMETER_ENABLED
     { "BARO_PROBE_EXT",      768},
 #endif
-    { "SERVO9_FUNCTION",     59},    // k_rcin9, lights 1
+    { "SERVO9_FUNCTION",     181},   // k_lights1
     { "SERVO10_FUNCTION",    7},     // k_mount_tilt
 #endif
 };

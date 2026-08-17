@@ -740,12 +740,12 @@ uint8_t AP_IBus_Telem::get_gps_status()
         return 0;
     }
 
-    const AP_GPS::GPS_Status gps_status = AP::gps().status();
-    if (gps_status >= AP_GPS::GPS_OK_FIX_3D) {
+    const AP_GPS_FixType gps_status = AP::gps().status();
+    if (gps_status >= AP_GPS_FixType::FIX_3D) {
         return 3;
-    } else if (gps_status >= AP_GPS::GPS_OK_FIX_2D) {
+    } else if (gps_status >= AP_GPS_FixType::FIX_2D) {
         return 2;
-    } else if (gps_status == AP_GPS::NO_FIX) {
+    } else if (gps_status == AP_GPS_FixType::NONE) {
         return 1;
     } else {
         return 0;

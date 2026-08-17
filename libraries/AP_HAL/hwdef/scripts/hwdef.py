@@ -6,6 +6,7 @@ AP_FLAKE8_CLEAN
 
 from __future__ import annotations
 
+import fnmatch
 import os
 import re
 import shlex
@@ -49,6 +50,22 @@ class Compass():
 
 
 class HWDef:
+
+    # a line which contains none of shlex's special characters, and whose
+    # whitespace is only spaces and tabs, is split identically by
+    # str.split() and by shlex.split() in either posix mode:
+    NEEDS_SHLEX_RE = re.compile(r"""[\\'"]|[^\S \t]""")
+
+    @staticmethod
+    def split_line(line, posix=True):
+        '''shlex.split(), but taking a much cheaper path for the simple lines
+        which make up almost all of a hwdef.  shlex is a
+        character-at-a-time lexer written in Python, and parsing every
+        line of every hwdef with it is slow.'''
+        if HWDef.NEEDS_SHLEX_RE.search(line) is None:
+            return line.split()
+        return shlex.split(line, posix=posix)
+
     def __init__(self, quiet=False, outdir=None, hwdef: list | None = None):
         if hwdef is None:
             hwdef = []
@@ -68,6 +85,11 @@ class HWDef:
 
         # output lines:
         self.all_lines = []
+
+        # dictionary of romfs filename -> source filename for files added via
+        # the ROMFS / ROMFS_WILDCARD / ROMFS_DIRECTORY hwdef keywords;
+        # published to env_vars['ROMFS_FILES'] by write_ROMFS()
+        self.romfs = {}
 
         # integer defines
         self.intdefines = {}
@@ -95,7 +117,7 @@ class HWDef:
         '''check if a string is an integer'''
         try:
             int(str)
-        except Exception:
+        except ValueError:
             return False
         return True
 
@@ -110,7 +132,7 @@ class HWDef:
         ret = []
         for line in lines:
             if line.startswith("include"):
-                a = shlex.split(line)
+                a = self.split_line(line)
                 if len(a) > 1 and a[0] == "include":
                     fname2 = os.path.relpath(os.path.join(os.path.dirname(fname), a[1]))
                     ret.extend(self.load_file_with_include(fname2))
@@ -210,16 +232,19 @@ class HWDef:
             line = line.strip()
             if len(line) == 0 or line[0] == '#':
                 continue
-            a = shlex.split(line)
-            if a[0] == "include" and len(a) > 1:
-                include_file = a[1]
-                if include_file[0] != '/':
-                    dir = os.path.dirname(filename)
-                    include_file = os.path.normpath(
-                        os.path.join(dir, include_file))
-                self.process_file(include_file, depth+1)
-            else:
-                self.process_line(line, depth)
+            # only the include lines need splitting here; every other
+            # line is split once, by process_line:
+            if "include" in line:
+                a = self.split_line(line)
+                if a[0] == "include" and len(a) > 1:
+                    include_file = a[1]
+                    if include_file[0] != '/':
+                        dir = os.path.dirname(filename)
+                        include_file = os.path.normpath(
+                            os.path.join(dir, include_file))
+                    self.process_file(include_file, depth+1)
+                    continue
+            self.process_line(line, depth)
 
     def process_hwdefs(self):
         for fname in self.hwdef:
@@ -233,9 +258,17 @@ class HWDef:
         # write out hwdef.h
         self.write_hwdef_header(self.get_output_path("hwdef.h"))
 
-    def process_line(self, line, depth):
-        '''process one line of pin definition file'''
-        a = shlex.split(line, posix=False)
+        # publish any ROMFS files into env_vars so the waf build picks
+        # them up via process_hwdef_results. Subclasses that override
+        # run() and need ROMFS handling at a specific point in their
+        # flow should call self.write_ROMFS() directly there.
+        self.write_ROMFS()
+
+    def process_line(self, line, depth, a=None):
+        '''process one line of pin definition file.  a is the line already
+        split into words, if the caller has done that itself'''
+        if a is None:
+            a = self.split_line(line, posix=False)
 
         if a[0] == 'undef':
             return self.process_line_undef(line, depth, a)
@@ -255,6 +288,63 @@ class HWDef:
         elif a[0] == 'BARO':
             self.process_line_BARO(line, depth, a)
 
+        elif a[0] == 'ROMFS':
+            self.romfs_add(a[1], a[2])
+
+        elif a[0] == 'ROMFS_WILDCARD':
+            self.romfs_wildcard(a[1])
+
+        elif a[0] == 'ROMFS_DIRECTORY':
+            self.romfs_add_dir([a[1]], relative_to_base=True)
+
+    def romfs_add(self, romfs_filename, filename):
+        '''add a single file to ROMFS at romfs_filename, sourced from filename'''
+        self.romfs[romfs_filename] = filename
+
+    def romfs_wildcard(self, pattern):
+        '''add a set of files to ROMFS matching pattern (e.g. "models/*.parm");
+        the path is taken relative to the ardupilot repo root.'''
+        base_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
+        (pattern_dir, pattern) = os.path.split(pattern)
+        for f in os.listdir(os.path.join(base_path, pattern_dir)):
+            if fnmatch.fnmatch(f, pattern):
+                self.romfs[f] = os.path.join(pattern_dir, f)
+
+    def romfs_add_dir(self, subdirs, relative_to_base=False):
+        '''recursively add a directory tree to ROMFS. subdirs are taken
+        relative to the hwdef.dat by default, or to the ardupilot repo
+        root when relative_to_base=True (the ROMFS_DIRECTORY hwdef
+        keyword uses relative_to_base=True).'''
+        for dirname in subdirs:
+            if relative_to_base:
+                romfs_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', dirname)
+            else:
+                romfs_dir = os.path.join(os.path.dirname(self.hwdef[0]), dirname)
+            if not os.path.exists(romfs_dir):
+                continue
+            for root, dirs, files in os.walk(romfs_dir):
+                for f in files:
+                    if fnmatch.fnmatch(f, '*~'):
+                        # skip editor backup files
+                        continue
+                    fullpath = os.path.join(root, f)
+                    relpath = os.path.normpath(os.path.join(dirname, os.path.relpath(root, romfs_dir), f))
+                    if relative_to_base:
+                        relpath = relpath[len(dirname)+1:]
+                    self.romfs[relpath] = fullpath
+
+    def write_ROMFS(self):
+        '''publish ROMFS file list to env_vars so the waf build embeds them
+        via process_hwdef_results. Safe to call multiple times; subclasses
+        that need it at a specific point in their run() should call it
+        directly. Does nothing if no ROMFS files have been registered.'''
+        if not self.romfs:
+            return
+        romfs_list = []
+        for k in sorted(self.romfs.keys()):
+            romfs_list.append((k, self.romfs[k]))
+        self.env_vars['ROMFS_FILES'] = romfs_list
+
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
             self.progress("Removing %s" % u)
@@ -272,6 +362,8 @@ class HWDef:
             if u == 'BARO':
                 self.baro_list = []
                 self.seen_BARO_lines = set()
+            if u == 'ROMFS':
+                self.romfs = {}
 
     def process_line_env(self, line, depth, a):
         self.progress("Adding environment %s" % ' '.join(a[1:]))
@@ -279,6 +371,8 @@ class HWDef:
             self.error("Bad env line for %s" % a[0])
         name = a[1]
         value = ' '.join(a[2:])
+        if name == 'OPTIMIZE' and value == '-Os':
+            self.error("'env OPTIMIZE -Os' should not appear in hwdef files, as -Os is the default")
         self.env_vars[name] = value
 
     def get_stale_defines(self):
@@ -295,11 +389,25 @@ class HWDef:
             'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE': 'HAL_COMPASS_DISABLE_IST8310_INTERNAL_PROBE is no longer used; try "define AP_COMPASS_IST8310_INTERNAL_BUS_PROBING_ENABLED 0"',  # noqa:E501
             'BOARD_PWM_COUNT_DEFAULT': 'BOARD_PWM_COUNT_DEFAULT is no longer used; remove it from your hwdef files',
             'HAL_PICCOLO_CAN_ENABLE': 'HAL_PICCOLO_CAN_ENABLE was renamed to AP_PICCOLOCAN_ENABLED; fix your hwdef file',
+            'HAL_PERIPH_ENABLE_NETWORKING': 'HAL_PERIPH_ENABLE_NETWORKING is no longer used; try "define AP_PERIPH_NETWORKING_ENABLED 1"',  # noqa:E501
+            'HAL_PROBE_EXTERNAL_I2C_BAROS': 'HAL_PROBE_EXTERNAL_I2C_BAROS is no longer used; try "define AP_BARO_PROBE_EXTERNAL_I2C_BUSES 1"',  # noqa:E501
         }
 
     def assert_good_define(self, name):
         if name in self.stale_defines:
             self.error(self.stale_defines[name])
+
+    def is_periph_fw(self):
+        return False
+
+    def validate_periph_defines(self):
+        '''error if any AP_PERIPH_* define is present on a non-AP_Periph board'''
+        if self.is_periph_fw():
+            return
+
+        for name in self.intdefines:
+            if name.startswith('AP_PERIPH_') and self.intdefines[name]:
+                self.error(f"define {name} is only valid on AP_Periph boards")
 
     def process_line_define(self, line, depth, a):
         # defines are currently written out a little haphazardly, but
@@ -309,6 +417,17 @@ class HWDef:
             # ensure that stale defines aren't introduced into hwdef files:
             name = result.group(1)
             self.assert_good_define(name)
+
+        # a serial port's default protocol must be given as a SerialProtocol_*
+        # name, not a bare number, so the value stays readable and is checked
+        # by AP_SerialManager_default_protocol_check.cpp.  Both DEFAULT_SERIALn
+        # and HAL_OTGn feed the DEFAULT_SERIALn value that file asserts on (the
+        # deprecated HAL_SERIALn form is rejected separately in
+        # AP_SerialManager.cpp):
+        result = re.match(r'define\s+((?:DEFAULT_SERIAL|HAL_OTG)[0-9]+_PROTOCOL)\s+(-?[0-9]+)\s*$', line)
+        if result is not None:
+            self.error("%s must use a SerialProtocol_* name, not the numeric value %s" %
+                       (result.group(1), result.group(2)))
 
         # extract numerical defines for processing by other parts of the script
         result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
@@ -452,6 +571,18 @@ class HWDef:
             elif driver == 'AK8963' and probe != 'probe':
                 expected_device_count = 0
 
+            # this maps from a driver name in the hwdef to an
+            # ArduPilot driver name.  This is useful if devices are
+            # believed to be identical but we want to reserve the
+            # option of differentiating later.  If you add something
+            # here, consider adding something to build_options.py
+            device_type_to_driver_mapping = {
+                "LIS2MDL": "IIS2MDC",
+            }
+
+            # apply mapping from hwdef driver to ArduPilot driver:
+            driver = device_type_to_driver_mapping.get(driver, driver)
+
             devlist = []
             for i in range(0, expected_device_count):
                 d = dev[0]
@@ -533,8 +664,11 @@ class HWDef:
             args.append(str(compass.rotation))
 
             f.write(
-                '#define HAL_MAG_PROBE%u %s {add_backend(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;}\n'
-                % (n, wrapper, driver, driver, probe, ','.join(args)))
+                '''#define HAL_MAG_PROBE%u %s \\
+                    if (_driver_enabled(DRIVER_%s)) { \\
+                        {add_backend(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;} \\
+                    }\n'''
+                % (n, wrapper, driver, driver, driver, probe, ','.join(args)))
             f.write(f"#undef AP_COMPASS_{driver}_ENABLED\n#define AP_COMPASS_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))
@@ -581,11 +715,6 @@ class HWDef:
             probe = baro.probe
 
             n = len(devlist)+1
-
-            if driver == "DPS280":
-                # special handling for DPS280; use a probe method of
-                # the correct signature to pass into probe_spi_dev:
-                probe = "probe_280"
 
             backend_probe_method = f"AP_Baro_{driver}::{probe}"
 

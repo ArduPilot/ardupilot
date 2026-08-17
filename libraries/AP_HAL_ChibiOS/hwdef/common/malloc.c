@@ -139,10 +139,14 @@ static void *malloc_flags(size_t size, uint32_t flags)
         size = (size + (DMA_ALIGNMENT-1)) & ~(DMA_ALIGNMENT-1);
     }
 
-    // if no flags are set or this is a DMA request and default heap
-    // is DMA safe then start with default heap
+    // start with default heap if:
+    // - no flags are set, or
+    // - DMA is requested and default heap is DMA safe
+    // - AXI bus is requested and default heap is AXI bus capable(needed when USE_ALT_RAM_MAP places AXI SRAM as region 0)
     if (flags == 0 || (flags == MEM_REGION_FLAG_DMA_OK &&
-                       (memory_regions[0].flags & MEM_REGION_FLAG_DMA_OK))) {
+                       (memory_regions[0].flags & MEM_REGION_FLAG_DMA_OK)) ||
+        (flags == MEM_REGION_FLAG_AXI_BUS &&
+         (memory_regions[0].flags & MEM_REGION_FLAG_AXI_BUS))) {
         p = chHeapAllocAligned(NULL, size, alignment);
         if (p) {
             goto found;

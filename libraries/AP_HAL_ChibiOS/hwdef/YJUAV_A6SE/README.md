@@ -189,7 +189,7 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 | PWM6         | 55   |              |      |
 | PWM7         | 56   |              |      |
 
-## Analog inputs
+## Analog Inputs
 
 The A6SE flight controller has 5 analog inputs
 

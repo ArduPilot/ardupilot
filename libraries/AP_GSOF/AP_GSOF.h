@@ -140,7 +140,7 @@ public:
         float ang_rate_x;
         // [deg/s, transverse axis]
         float ang_rate_y;
-        // [m/s, down axis]
+        // [deg/s, down axis]
         float ang_rate_z;
         // [m/s^2, longitudinal axis]
         float acc_x;

@@ -157,6 +157,23 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 11, AP_PitchController, AC_PID),
 
+    // @Param: 2SRV_ACCEL
+    // @DisplayName: Pitch max acceleration
+    // @Description: Pitch acceleration limit. Setting to zero disables input shaping.
+    // @Range: 0 2500
+    // @Units: deg/s/s
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("2SRV_ACCEL", 12, AP_PitchController, accel_limit, 500),
+
+    // @Param: _ANGLE_P
+    // @DisplayName: Pitch angle P gain
+    // @Description: Pitch angle P gain. If zero a gain of (1 / PTCH2SRV_TCONST) will be used.
+    // @Range: 0.000 12.000
+    // @Increment: 0.01
+    // @User: Advanced
+    AP_GROUPINFO("_ANGLE_P", 13, AP_PitchController, angle_p, 0.0),
+
     AP_GROUPEND
 };
 
@@ -179,105 +196,89 @@ AP_PitchController::AP_PitchController(const AP_FixedWing &parms)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-float AP_PitchController::get_measured_rate() const
+// Return the measured pitch angle in degrees
+float AP_PitchController::get_measured_angle_deg() const
+{
+    return AP::ahrs().get_pitch_deg();
+}
+
+// Return the measured pitch rate in radians per second
+float AP_PitchController::get_measured_rate_rads() const
 {
     return AP::ahrs().get_gyro().y;
 }
 
-float AP_PitchController::get_airspeed() const
+// Return true if the airspeed should be considered as under speed
+bool AP_PitchController::is_underspeed() const
 {
-    float aspeed;
-    if (!AP::ahrs().airspeed_EAS(aspeed)) {
-        // If no airspeed available use average of min and max
-        aspeed = 0.5f*(float(aparm.airspeed_min) + float(aparm.airspeed_max));
-    }
-    return aspeed;
+    return get_airspeed() <= 0.5*float(aparm.airspeed_min);
 }
 
-bool AP_PitchController::is_underspeed(const float aspeed) const
+// Return true if the vehicle is inverted
+bool AP_PitchController::is_inverted() const
 {
-    return aspeed <= 0.5*float(aparm.airspeed_min);
+    return fabsf(AP::ahrs().get_roll_deg()) >= 90.0;
 }
 
-/*
-  get the rate offset in degrees/second needed for pitch in body frame
-  to maintain height in a coordinated turn.
-
-  Also returns the inverted flag and the estimated airspeed in m/s for
-  use by the rest of the pitch controller
- */
-float AP_PitchController::_get_coordination_rate_offset(const float &aspeed, bool &inverted) const
+// Return positive rate limit in deg per second, zero if disabled
+float AP_PitchController::get_positive_rate_limit_degs() const
 {
-    float rate_offset;
-    float bank_angle = AP::ahrs().get_roll_rad();
+    return MAX(gains.rmax_pos.get(), 0.0);
+}
 
-    // limit bank angle between +- 80 deg if right way up
-    if (fabsf(bank_angle) < radians(90))	{
-        bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
-        inverted = false;
-    } else {
-        inverted = true;
-        if (bank_angle > 0.0f) {
-            bank_angle = constrain_float(bank_angle,radians(100),radians(180));
-        } else {
-            bank_angle = constrain_float(bank_angle,-radians(180),-radians(100));
-        }
-    }
+// Return negative rate limit in deg per second (as a positive number) zero if disabled
+float AP_PitchController::get_negative_rate_limit_degs() const
+{
+    return MAX(gains.rmax_neg.get(), 0.0);
+}
+
+// Return true if rate limits should be applied
+bool AP_PitchController::should_apply_rate_limits() const
+{
+    return !is_inverted();
+}
+
+// get the rate offset in degrees/second needed for pitch in body frame to maintain height in a coordinated turn.
+float AP_PitchController::get_rate_target_offset_degs() const
+{
     const AP_AHRS &_ahrs = AP::ahrs();
+
+    float bank_angle = _ahrs.get_roll_rad();
+
+    // limit bank angle between +- 80 deg if right way up and between 100 and 260 if inverted
+    if (!is_inverted()) {
+        bank_angle = constrain_float(bank_angle,-radians(80),radians(80));
+    } else {
+        // Note that the wrap means we have a different range here, we could wrap it back but its only used in trigonometric functions so we don't need to.
+        bank_angle = constrain_float(wrap_2PI(bank_angle), radians(100), radians(260));
+    }
     if (abs(_ahrs.pitch_sensor) > 7000) {
         // don't do turn coordination handling when at very high pitch angles
-        rate_offset = 0;
-    } else {
-        rate_offset = cosf(_ahrs.get_pitch_rad())*fabsf(degrees((GRAVITY_MSS / MAX((aspeed * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1))) * tanf(bank_angle) * sinf(bank_angle))) * _roll_ff;
+        return 0.0;
     }
-    if (inverted) {
-        rate_offset = -rate_offset;
-    }
+
+    // Assume true airspeed is at least min airspeed, protect against zeros.
+    const float true_airspeed = MAX((get_airspeed() * _ahrs.get_EAS2TAS()), MAX(aparm.airspeed_min, 1));
+
+    // Lateral acceleration
+    const float lateral_accel = tanf(bank_angle) * GRAVITY_MSS * cosf(_ahrs.get_pitch_rad());
+
+    // Resultant turn rate in the pitch axis
+    const float turn_rate = (lateral_accel / true_airspeed) * sinf(bank_angle);
+
+    // Apply gain
+    float rate_offset = fabsf(degrees(turn_rate)) * _roll_ff;
+
     return rate_offset;
 }
 
 // Function returns an equivalent elevator deflection in centi-degrees in the range from -4500 to 4500
 // A positive demand is up
-// Inputs are:
-// 1) demanded pitch angle in centi-degrees
-// 2) control gain scaler = scaling_speed / aspeed
-// 3) boolean which is true when stabilise mode is active
-// 4) minimum FBW airspeed (metres/sec)
-// 5) maximum FBW airspeed (metres/sec)
-//
-float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool disable_integrator, bool ground_mode)
+float AP_PitchController::run_axis_rate_control(float desired_rate_degs, float scaler, bool disable_integrator, bool ground_mode)
 {
-    // Calculate offset to pitch rate demand required to maintain pitch angle whilst banking
-    // Calculate ideal turn rate from bank angle and airspeed assuming a level coordinated turn
-    // Pitch rate offset is the component of turn rate about the pitch axis
-    float rate_offset;
-    bool inverted;
-
-    if (gains.tau < 0.05f) {
-        gains.tau.set(0.05f);
-    }
-
-    const float aspeed = get_airspeed();
-
-    rate_offset = _get_coordination_rate_offset(aspeed, inverted);
-
-    // Calculate the desired pitch rate (deg/sec) from the angle error
-    angle_err_deg = angle_err * 0.01;
-    float desired_rate = angle_err_deg / gains.tau;
-
-    // limit the maximum pitch rate demand. Don't apply when inverted
-    // as the rates will be tuned when upright, and it is common that
-    // much higher rates are needed inverted
-    if (!inverted) {
-        desired_rate += rate_offset;
-        if (gains.rmax_neg && desired_rate < -gains.rmax_neg) {
-            desired_rate = -gains.rmax_neg;
-        } else if (gains.rmax_pos && desired_rate > gains.rmax_pos) {
-            desired_rate = gains.rmax_pos;
-        }
-    } else {
-        // Make sure not to invert the turn coordination offset
-        desired_rate = -desired_rate + rate_offset;
+    // Invert desired if vehicle is inverted.
+    if (is_inverted()) {
+        desired_rate_degs *= -1.0;
     }
 
     /*
@@ -297,10 +298,10 @@ float AP_PitchController::get_servo_out(int32_t angle_err, float scaler, bool di
     const float roll_limit_margin = MIN(aparm.roll_limit*100 + 500.0, 8500.0);
     if (roll_wrapped > roll_limit_margin && labs(_ahrs.pitch_sensor) < 7000) {
         float roll_prop = (roll_wrapped - roll_limit_margin) / (float)(9000 - roll_limit_margin);
-        desired_rate *= (1 - roll_prop);
+        desired_rate_degs *= (1 - roll_prop);
     }
 
-    return _get_rate_out(desired_rate, scaler, disable_integrator, aspeed, ground_mode);
+    return run_rate_control(desired_rate_degs, scaler, disable_integrator, ground_mode);
 }
 
 /*

@@ -271,7 +271,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - EXTERN_GPIO1 1 (requires custom carrier board, and alternate pin configuration 2)
 - EXTERN_GPIO2 2 (requires custom carrier board, and alternate pin configuration 2)
 
-## Analog inputs
+## Analog Inputs
 
 The CubeOrangePlus has 7 analog inputs
 

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import annotations
-
 '''
 Build N commits on a branch and track flash size and feature changes.
 
@@ -16,6 +14,8 @@ Usage:
 
 AP_FLAKE8_CLEAN
 '''
+
+from __future__ import annotations
 
 import argparse
 import html
@@ -104,7 +104,7 @@ class SizeHistory(BuildScriptBase):
             from extract_features import ExtractFeatures
             ef = ExtractFeatures(elf_path)
             (features_in, features_not_in) = ef.extract()
-        except Exception as ex:
+        except Exception as ex:  # noqa: BLE001
             self.progress("Feature extraction failed: %s" % str(ex))
             features_in = set()
 

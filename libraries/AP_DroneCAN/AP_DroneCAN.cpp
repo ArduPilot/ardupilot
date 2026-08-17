@@ -87,8 +87,6 @@ extern const AP_HAL::HAL& hal;
 
 #define AP_DRONECAN_GETSET_TIMEOUT_MS 100       // timeout waiting for response from node after 0.1 sec
 
-#define debug_dronecan(level_debug, fmt, args...) do { AP::can().log_text(level_debug, "DroneCAN", fmt, ##args); } while (0)
-
 // Translation of all messages from DroneCAN structures into AP structures is done
 // in AP_DroneCAN and not in corresponding drivers.
 // The overhead of including definitions of DSDL is very high and it is best to
@@ -291,8 +289,6 @@ _dna_server(*this, canard_iface, driver_index)
         _SRV_conf[i].esc_pending = false;
         _SRV_conf[i].servo_pending = false;
     }
-
-    debug_dronecan(AP_CANManager::LOG_INFO, "AP_DroneCAN constructed\n\r");
 }
 
 AP_DroneCAN::~AP_DroneCAN()
@@ -311,7 +307,6 @@ AP_DroneCAN *AP_DroneCAN::get_dronecan(uint8_t driver_index)
 bool AP_DroneCAN::add_interface(AP_HAL::CANIface* can_iface)
 {
     if (!canard_iface.add_interface(can_iface)) {
-        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: can't add DroneCAN interface\n\r");
         return false;   
     }
     return true;
@@ -320,11 +315,9 @@ bool AP_DroneCAN::add_interface(AP_HAL::CANIface* can_iface)
 void AP_DroneCAN::init(uint8_t driver_index)
 {
     if (driver_index != _driver_index) {
-        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: init called with wrong driver_index");
         return;
     }
     if (_initialized) {
-        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: init called more than once\n\r");
         return;
     }
     uint8_t node = _dronecan_node;
@@ -351,7 +344,6 @@ void AP_DroneCAN::init(uint8_t driver_index)
 
     mem_pool = NEW_NOTHROW uint32_t[_pool_size/sizeof(uint32_t)];
     if (mem_pool == nullptr) {
-        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to allocate memory pool\n\r");
         return;
     }
     canard_iface.init(mem_pool, (_pool_size/sizeof(uint32_t))*sizeof(uint32_t), node);
@@ -364,7 +356,6 @@ void AP_DroneCAN::init(uint8_t driver_index)
 
     //Start Servers
     if (!_dna_server.init(unique_id, uid_len, node)) {
-        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: Failed to start DNA Server\n\r");
         return;
     }
 
@@ -507,7 +498,6 @@ void AP_DroneCAN::init(uint8_t driver_index)
     hal.util->snprintf(_thread_name, sizeof(_thread_name), "dronecan_%u", driver_index);
 
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_DroneCAN::loop, void), _thread_name, DRONECAN_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
-        debug_dronecan(AP_CANManager::LOG_ERROR, "DroneCAN: couldn't create thread\n\r");
         return;
     }
 
@@ -516,7 +506,6 @@ void AP_DroneCAN::init(uint8_t driver_index)
 #endif
 
     _initialized = true;
-    debug_dronecan(AP_CANManager::LOG_INFO, "DroneCAN: init done\n\r");
 }
 
 void AP_DroneCAN::loop(void)
@@ -1114,39 +1103,39 @@ void AP_DroneCAN::gnss_send_fix()
     }
     pkt.sats_used = gps.num_sats();
     switch (gps.status()) {
-    case AP_GPS::GPS_Status::NO_GPS:
-    case AP_GPS::GPS_Status::NO_FIX:
+    case AP_GPS_FixType::NO_GPS:
+    case AP_GPS_FixType::NONE:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_NO_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_SINGLE;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_DGPS_OTHER;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_2D:
+    case AP_GPS_FixType::FIX_2D:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_2D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_SINGLE;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_DGPS_OTHER;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_3D:
+    case AP_GPS_FixType::FIX_3D:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_SINGLE;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_DGPS_OTHER;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_3D_DGPS:
+    case AP_GPS_FixType::DGPS:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_DGPS;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_DGPS_SBAS;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FLOAT:
+    case AP_GPS_FixType::RTK_FLOAT:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_RTK;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FLOAT;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_3D_RTK_FIXED:
+    case AP_GPS_FixType::RTK_FIXED:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_RTK;
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED;
         break;
-    case AP_GPS::GPS_Status::GPS_OK_FIX_TYPE_STATIC:
-    case AP_GPS::GPS_Status::GPS_OK_FIX_TYPE_PPP:
+    case AP_GPS_FixType::STATIC:
+    case AP_GPS_FixType::PPP:
         pkt.status = UAVCAN_EQUIPMENT_GNSS_FIX2_STATUS_3D_FIX;
         pkt.mode = UAVCAN_EQUIPMENT_GNSS_FIX2_MODE_PPP; // Static is not representable in DroneCAN.
         pkt.sub_mode = UAVCAN_EQUIPMENT_GNSS_FIX2_SUB_MODE_RTK_FIXED; // There is no submode for static or PPP
@@ -1417,6 +1406,61 @@ void AP_DroneCAN::handle_actuator_status(const CanardRxTransfer& transfer, const
     servo_telem->update_telem_data(msg.actuator_id - 1, telem_data);
 }
 #endif
+
+#if AP_SERVO_TELEM_ENABLED || AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED
+/*
+    handle circuit status message
+*/
+void AP_DroneCAN::handle_circuit_status(const CanardRxTransfer& transfer, const uavcan_equipment_power_CircuitStatus& msg)
+{
+#if AP_SERVO_TELEM_ENABLED
+    if (msg.circuit_id >= 1 && msg.circuit_id <= DRONECAN_SRV_NUMBER &&
+        (_servo_bm & (1U << (msg.circuit_id - 1)))) {
+        // circuit_id maps to a channel we are driving as a DroneCAN servo,
+        // route into AP_Servo_Telem so it is logged alongside other servo telemetry
+        const uint8_t servo_index = msg.circuit_id - 1;
+
+        AP_Servo_Telem *servo_telem = AP_Servo_Telem::get_singleton();
+        if (servo_telem != nullptr && servo_telem->is_active(servo_index)) {
+            const AP_Servo_Telem::TelemetryData telem_data {
+                .voltage = msg.voltage,
+                .current = msg.current,
+                .status_flags = msg.error_flags,
+                .present_types = AP_Servo_Telem::TelemetryData::Types::VOLTAGE |
+                                 AP_Servo_Telem::TelemetryData::Types::CURRENT |
+                                 AP_Servo_Telem::TelemetryData::Types::STATUS
+            };
+            servo_telem->update_telem_data(servo_index, telem_data);
+        }
+        return;
+    }
+#endif  // AP_SERVO_TELEM_ENABLED
+
+#if AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED && HAL_LOGGING_ENABLED
+    if (AP::logger().logging_enabled()) {
+// @LoggerMessage: CSCU
+// @Description: Generic DroneCAN circuit status
+// @Field: TimeUS: Time since system startup
+// @Field: I: driver index
+// @Field: Id: circuit id
+// @Field: V: Voltage
+// @Field: A: Current
+// @Field: Err: error flags
+        AP::logger().WriteStreaming("CSCU",
+                                    "TimeUS,I,Id,V,A,Err",
+                                    "s#-vA-",
+                                    "F-----",
+                                    "QBHffB",
+                                    AP_HAL::micros64(),
+                                    _driver_index,
+                                    msg.circuit_id,
+                                    msg.voltage,
+                                    msg.current,
+                                    msg.error_flags);
+    }
+#endif // AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED && HAL_LOGGING_ENABLED
+}
+#endif // AP_SERVO_TELEM_ENABLED || AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED
 
 #if AP_DRONECAN_HIMARK_SERVO_SUPPORT && AP_SERVO_TELEM_ENABLED
 /*
@@ -2026,4 +2070,4 @@ bool AP_DroneCAN::write_aux_frame(AP_HAL::CANFrame &out_frame, const uint32_t ti
     return canard_iface.write_aux_frame(out_frame, timeout_us);
 }
 
-#endif // HAL_NUM_CAN_IFACES
+#endif // HAL_ENABLE_DRONECAN_DRIVERS

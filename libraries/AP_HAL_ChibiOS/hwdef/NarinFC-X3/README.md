@@ -49,7 +49,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![Outline Dimensions](./images/NarinFC_X3_Dimensions.png "Outline Dimensions")
 
-## UART Mapping (Port Diagram & Pin outs)
+## UART Mapping
 
  UART corresponding to each SERIAL port, and its default protocol, are shown below:
 
@@ -147,8 +147,9 @@ If SBUS is used on HD VTX connector (DJI TX), then SERIAL1_PROTOCOl should be se
 ## FrSky Telemetry
 
 FrSky Telemetry is supported using an unused UART, such as the T1 pin (UART1 transmit). You need to set the following parameters to enable support for FrSky S.PORT:
-SERIAL1_PROTOCOL = 10
-SERIAL1_OPTIONS = 7
+
+- SERIAL1_PROTOCOL = 10
+- SERIAL1_OPTIONS = 7
 
 ## OSD Support
 
@@ -184,7 +185,7 @@ The correct battery setting parameters are:
 
 Pads for a second analog battery monitor are provided. To use:
 
-- Set BATT2_MONIOTOR = 4
+- BATT2_MONITOR = 4
 - BATT2_VOLT_PIN = 18
 - BATT2_CURR_PIN = 7
 - BATT2_VOLT_MULT = 11.0

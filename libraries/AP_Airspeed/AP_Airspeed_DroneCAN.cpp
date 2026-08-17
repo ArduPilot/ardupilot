@@ -8,8 +8,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define LOG_TAG "AirSpeed"
-
 AP_Airspeed_DroneCAN::DetectedModules AP_Airspeed_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_Airspeed_DroneCAN::_sem_registry;
 
@@ -40,19 +38,8 @@ AP_Airspeed_Backend* AP_Airspeed_DroneCAN::probe(AP_Airspeed &_frontend, uint8_t
                 continue;
             }
             backend = NEW_NOTHROW AP_Airspeed_DroneCAN(_frontend, _instance);
-            if (backend == nullptr) {
-                AP::can().log_text(AP_CANManager::LOG_INFO,
-                                   LOG_TAG,
-                                   "Failed register DroneCAN Airspeed Node %d on Bus %d\n",
-                                   _detected_modules[i].node_id,
-                                   _detected_modules[i].ap_dronecan->get_driver_index());
-            } else {
+            if (backend != nullptr) {
                 _detected_modules[i].driver = backend;
-                AP::can().log_text(AP_CANManager::LOG_INFO,
-                                   LOG_TAG,
-                                   "Registered DroneCAN Airspeed Node %d on Bus %d\n",
-                                   _detected_modules[i].node_id,
-                                   _detected_modules[i].ap_dronecan->get_driver_index());
                 backend->set_bus_id(bus_id);
             }
             break;

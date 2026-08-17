@@ -66,7 +66,8 @@ private:
 
     void send_wind() const;
 
-    //This is 1-indexed, unlike most enums for consistency with the mavlink PID_TUNING enums.
+    // Internal bitmask indices for gcs_pid_mask (1-indexed, sequential).
+    // These do not correspond to MAVLink PID_TUNING_AXIS values.
     enum PID_SEND : uint8_t {
         VELX =        1,
         VELY =        2,

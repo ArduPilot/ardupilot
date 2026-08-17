@@ -1,7 +1,7 @@
 ---@meta
 -- ArduPilot lua scripting documentation in EmmyLua Annotations
 -- This file should be auto generated and then manual edited
--- generate with --scripting-docs, eg  ./waf copter --scripting-docs
+-- generate with scripting-docs, eg  ./waf scripting-docs
 -- see: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations
 -- luacheck: ignore 121 (Setting a read-only global variable)
 -- luacheck: ignore 122 (Setting a read-only field of a global variable)
@@ -1732,74 +1732,108 @@ function mavlink_video_stream_information_t_ud:encoding(value) end
 ---@param stream_info mavlink_video_stream_information_t_ud
 function camera:set_stream_information(instance, stream_info) end
 
--- desc
+-- Mount/gimbal control and driver interface
 mount = {}
 
--- desc
----@param instance integer
+-- methods to interact with ArduPilot's mount/gimbal frontend
+
+-- Returns the current mount mode
+---@param instance integer -- mount instance (0 or 1)
+---@return integer
+---| '0' # Retract
+---| '1' # Neutral
+---| '2' # MAVLink targeting
+---| '3' # RC targeting
+---| '4' # GPS point
+---| '5' # SysID target
+---| '6' # Home location
+function mount:get_mode(instance) end
+
+-- Set mount operating mode
+---@param instance integer -- mount instance (0 or 1)
+---@param mode integer
+---| '0' # Retract
+---| '1' # Neutral
+---| '2' # MAVLink targeting
+---| '3' # RC targeting
+---| '4' # GPS point
+---| '5' # SysID target
+---| '6' # Home location
+function mount:set_mode(instance, mode) end
+
+-- Set target angles for the gimbal. Roll and pitch are always earth-frame, yaw frame is selectable
+---@param instance integer -- mount instance (0 or 1)
 ---@param roll_deg number
 ---@param pitch_deg number
 ---@param yaw_deg number
-function mount:set_attitude_euler(instance, roll_deg, pitch_deg, yaw_deg) end
+---@param yaw_is_earth_frame boolean -- true for earth-frame yaw, false for body-frame
+function mount:set_angle_target(instance, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame) end
 
--- desc
----@param instance integer
----@return Location_ud|nil
-function mount:get_location_target(instance) end
+-- Set target angular rates for the gimbal in degrees per second
+---@param instance integer -- mount instance (0 or 1)
+---@param roll_degs number
+---@param pitch_degs number
+---@param yaw_degs number
+---@param yaw_is_earth_frame boolean -- true for earth-frame yaw rate, false for body-frame
+function mount:set_rate_target(instance, roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame) end
 
--- desc
----@param instance integer
+-- Point the gimbal at a Location (Region of Interest)
+---@param instance integer -- mount instance (0 or 1)
+---@param target_loc Location_ud
+function mount:set_roi_target(instance, target_loc) end
+
+-- Returns the gimbal's current attitude as Euler angles in degrees. Yaw is in body-frame
+---@param instance integer -- mount instance (0 or 1)
+---@return number|nil -- roll_deg
+---@return number|nil -- pitch_deg
+---@return number|nil -- yaw_bf_deg
+function mount:get_attitude_euler(instance) end
+
+-- methods used to implement a gimbal driver in Lua (MNTn_TYPE = 9):
+
+-- Declare which target types the gimbal driver natively supports as a bitmask of MountTargetType
+-- bit values. The mount frontend uses this to decide what to pass through and what to convert.
+-- e.g., if your gimbal only supports setting the angle targets, then the frontend will convert
+-- location and rate commands to an angle for you.
+---@param instance integer -- mount instance (0 or 1)
+---@param types_mask integer -- bitmask of supported MountTargetType values, combine with bitwise OR
+---| '1' # angle (1 << 0)
+---| '2' # rate (1 << 1)
+---| '4' # retracted (1 << 2)
+---| '8' # neutral (1 << 3)
+---| '16' # location (1 << 4)
+function mount:set_natively_supported_mount_target_types(instance, types_mask) end
+
+-- Get the angle target that the frontend has requested, in degrees. Returns nil if angles are not the active target type
+---@param instance integer -- mount instance (0 or 1)
 ---@return number|nil   -- roll_deg
 ---@return number|nil   -- pitch_deg
 ---@return number|nil   -- yaw_deg
 ---@return boolean|nil  -- yaw_is_earth_frame
 function mount:get_angle_target(instance) end
 
--- desc
----@param instance integer
+-- Get the rate target that the frontend has requested, in degrees per second. Returns nil if rates are not the active target type
+---@param instance integer -- mount instance (0 or 1)
 ---@return number|nil   -- roll_degs
 ---@return number|nil   -- pitch_degs
 ---@return number|nil   -- yaw_degs
 ---@return boolean|nil  -- yaw_is_earth_frame
 function mount:get_rate_target(instance) end
 
--- desc
----@param instance integer
----@param target_loc Location_ud
-function mount:set_roi_target(instance, target_loc) end
+-- Get the location the mount should be pointing at, if any. Returns a target when the mount mode
+-- implies a location (GPS_POINT, HOME_LOCATION, SYSID_TARGET), nil otherwise.
+-- Unlike get_angle_target/get_rate_target this is not affected by natively supported types
+---@param instance integer -- mount instance (0 or 1)
+---@return Location_ud|nil
+function mount:get_location_target(instance) end
 
--- desc
----@param instance integer
----@param roll_degs number
----@param pitch_degs number
----@param yaw_degs number
----@param yaw_is_earth_frame boolean
-function mount:set_rate_target(instance, roll_degs, pitch_degs, yaw_degs, yaw_is_earth_frame) end
-
--- desc
----@param instance integer
+-- Report the gimbal's current attitude back to ArduPilot. Must be called regularly to indicate
+-- the mount is healthy; stop calling when the gimbal is unhealthy to signal the failure
+---@param instance integer -- mount instance (0 or 1)
 ---@param roll_deg number
 ---@param pitch_deg number
 ---@param yaw_deg number
----@param yaw_is_earth_frame boolean
-function mount:set_angle_target(instance, roll_deg, pitch_deg, yaw_deg, yaw_is_earth_frame) end
-
--- desc
----@param instance integer
----@param mode integer
-function mount:set_mode(instance, mode) end
-
--- desc
----@param instance integer
----@return integer
-function mount:get_mode(instance) end
-
--- desc
----@param instance integer
----@return number|nil -- roll_deg
----@return number|nil -- pitch_deg
----@return number|nil -- yaw_bf_deg
-function mount:get_attitude_euler(instance) end
+function mount:set_attitude_euler(instance, roll_deg, pitch_deg, yaw_deg) end
 
 -- desc
 motors = {}
@@ -2882,6 +2916,10 @@ function vehicle:reboot(hold_in_bootloader) end
 ---@return boolean
 function vehicle:is_taking_off() end
 
+-- Returns true if the vehicle's crash detection has triggered
+---@return boolean
+function vehicle:is_crashed() end
+
 -- desc
 ---@return boolean
 function vehicle:is_landing() end
@@ -2944,6 +2982,11 @@ gcs = {}
 ---@param name string -- up to 10 chars long
 ---@param value number -- value to send
 function gcs:send_named_float(name, value) end
+
+-- send named integer value using NAMED_VALUE_INT message
+---@param name string -- up to 10 chars long
+---@param value integer -- value to send
+function gcs:send_named_int(name, value) end
 
 -- send named string value using NAMED_VALUE_STRING message
 ---@param name string -- up to 10 chars long
@@ -3280,6 +3323,33 @@ function rangefinder:has_orientation(orientation) end
 -- desc
 ---@return integer
 function rangefinder:num_sensors() end
+
+-- Airspeed backend
+---@class (exact) AP_Airspeed_Backend_ud
+local AP_Airspeed_Backend_ud = {}
+
+-- Provide a differential pressure reading, in Pascal. Returns false if failed. If an airspeed is provided directly that will take priority and the differential pressure will not be used.
+---@param press_pa number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_differential_pressure(press_pa) end
+
+-- Provide an airspeed reading, in m/s. Returns false if failed
+---@param airspeed_ms number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_airspeed(airspeed_ms) end
+
+-- Provide a temperature reading, in degrees C. Returns false if failed
+---@param temperature_c number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_temperature(temperature_c) end
+
+-- Airspeed library methods
+airspeed = {}
+
+-- get backend based on airspeed instance provided, 0 indexed
+---@param instance integer
+---@return AP_Airspeed_Backend_ud|nil
+function airspeed:get_backend(instance) end
 
 -- Proximity backend methods
 ---@class (exact) AP_Proximity_Backend_ud
@@ -3803,7 +3873,14 @@ function ahrs:get_velocity_NED() end
 ---@return Vector2f_ud -- ground speed vector, North East, meters / second
 function ahrs:groundspeed_vector() end
 
+-- Returns nil, or a Vector3f containing the current wind estimate for the vehicle.
+---@return Vector3f_ud|nil -- wind estimate North, East, Down meters / second if available
+function ahrs:get_wind() end
+
 -- Returns a Vector3f containing the current wind estimate for the vehicle.
+-- Deprecated, use get_wind; this gives no indication of whether the vehicle
+-- actually has a valid wind estimate, so the returned vector may be zero or stale.
+---@deprecated Use get_wind
 ---@return Vector3f_ud -- wind estiamte North, East, Down meters / second
 function ahrs:wind_estimate() end
 
@@ -4044,12 +4121,14 @@ function fence:get_margin_breach_time() end
 ---| 8 # Minimum altitude
 function fence:get_breaches() end
 
--- Returns minimum safe altitude in meters above home alt frame (i.e. alt_min + margin)
----@return number 
+-- Returns minimum safe altitude in meters and its altitude frame (i.e. alt_min + margin)
+---@return number altitude_m
+---@return integer frame -- 0:Above sea level, 1:Above Home, 2:Above Origin, 3:Above Terrain
 function fence:get_safe_alt_min() end
 
--- Returns maximum safe altitude in meters above home alt frame (i.e. alt_max - margin)
----@return number 
+-- Returns maximum safe altitude in meters and its altitude frame (i.e. alt_max - margin)
+---@return number altitude_m
+---@return integer frame -- 0:Above sea level, 1:Above Home, 2:Above Origin, 3:Above Terrain
 function fence:get_safe_alt_max() end
 
 -- Returns configured fences
@@ -4454,4 +4533,34 @@ function DroneCAN_Handle_ud:request(target_node, payload) end
 ---@param payload string -- payload for message
 ---@return boolean -- true if send succeeded
 function DroneCAN_Handle_ud:broadcast(payload) end
+
+-- OSD scripting backend access
+osd = {}
+
+-- write a string to the OSD at the given column and row
+---@param col integer -- column (0-29 typically)
+---@param row integer -- row (0-15 typically)
+---@param text string -- text to display
+function osd:write(col, row, text) end
+
+-- flush the OSD buffer to the display
+function osd:flush() end
+
+-- clear the OSD buffer
+function osd:clear() end
+
+-- request a screen redraw
+function osd:draw_screen() end
+
+-- get the aspect ratio correction factor
+---@return number
+function osd:get_aspect_ratio_correction() end
+
+-- get the current screen number
+---@return integer
+function osd:get_screen() end
+
+-- check if display is disabled
+---@return boolean
+function osd:display_disabled() end
 

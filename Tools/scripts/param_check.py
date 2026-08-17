@@ -495,17 +495,17 @@ def main():
         messages[os.path.relpath(file)] = msgs
 
     # Print the success/failure for each file
-    for file in messages:
-        if not messages[file]:
+    for file, msgs in messages.items():
+        if not msgs:
             if not args.quiet_success:
                 print(f'{file}: Passed')
         else:
             print(f'{file}: Failed')
-            for msg in messages[file]:
+            for msg in msgs:
                 print(f'  {msg}')
 
     # Check if any files failed (i.e. have error messages)
-    if any(messages[file] for file in messages):
+    if any(msgs for msgs in messages.values()):
         exit(1)
 
 

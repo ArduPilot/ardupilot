@@ -85,6 +85,33 @@ private:
         mavlink_ais_vessel_t info;
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
         uint32_t last_send_ms; // last time this message was sent via mavlink, stops us spamming the link
+
+        // Reset to default unknown state
+        void reset();
+
+        // Set dimensions of vessel
+        void set_dimensions(uint16_t bow, uint16_t stern, uint8_t port, uint8_t star_dim);
+
+        // Set course over ground of vessel
+        void set_cog(uint16_t cog);
+
+        // Set speed over ground of vessel
+        void set_sog(uint16_t sog);
+
+        // Set position accuracy flag of vessel
+        void set_pos_acc(bool pos_acc);
+
+        // Set rate of turn of vessel
+        void set_rot(int8_t rot);
+
+        // Set true heading of vessel
+        void set_heading(uint16_t heading);
+
+        // Set call sign of vessel
+        void set_callsign(const char* callsign);
+
+        // Set name of vessel
+        void set_name(const char* name);
     };
 
     // list of the vessels that are being tracked
@@ -105,18 +132,18 @@ private:
 
     // find vessel index in existing list, if not then return new index if possible, returns true if index is valid
     bool get_vessel_index(uint32_t mmsi, uint16_t &index, int32_t lat = 0, int32_t lon = 0) WARN_IF_UNUSED;
-    void clear_list_item(uint16_t index);
 
     // decode the payload
     bool payload_decode(const char *payload) WARN_IF_UNUSED;
 
-    // Apply scale to lat lon felids, avoiding integer overflow
+    // Apply scale to lat lon fields, avoiding integer overflow
     int32_t scale_lat_lon(const int32_t val) const;
 
     // decode specific message types
     bool decode_position_report(const char *payload, uint8_t type) WARN_IF_UNUSED;
     bool decode_base_station_report(const char *payload) WARN_IF_UNUSED;
     bool decode_static_and_voyage_data(const char *payload) WARN_IF_UNUSED;
+    bool decode_class_B_position_report(const char *payload, uint8_t type) WARN_IF_UNUSED;
 
     // read the specified bits from the char array each char giving 6 bits
     void get_char(const char *payload, char *array, uint16_t low, uint16_t high);

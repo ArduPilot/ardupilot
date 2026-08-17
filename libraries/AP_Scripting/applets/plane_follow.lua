@@ -25,7 +25,7 @@
    FOLLP_TURN_DEG - if the target is more than this many degrees left or right, assume it's turning
 --]]
 
-SCRIPT_VERSION = "4.7.0-074"
+SCRIPT_VERSION = "4.7.0-075"
 SCRIPT_NAME = "Plane Follow"
 SCRIPT_NAME_SHORT = "PFollow"
 
@@ -47,7 +47,9 @@ MAV_DATA_STREAM = { MAV_DATA_STREAM_ALL=0, MAV_DATA_STREAM_RAW_SENSORS=1, MAV_DA
 FLIGHT_MODE = {AUTO=10, RTL=11, LOITER=12, GUIDED=15, QHOVER=18, QLOITER=19, QRTL=21}
 
 local ahrs_eas2tas = ahrs:get_EAS2TAS()
-local windspeed_vector = ahrs:wind_estimate()
+-- assume zero wind if we have no estimate; this is only used to derive an
+-- airspeed vector from the ground velocity
+local windspeed_vector = ahrs:get_wind() or Vector3f()
 
 local now_ms = millis()
 local now_target_heading_ms = now_ms
@@ -564,14 +566,13 @@ local follow_mode = {
       else
          if reported_target then -- i.e. if we previously reported a target but lost it
             if (now_ms - lost_target_now_ms) > 5000 then
-               gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": lost prior target: " .. follow:get_target_sysid())
+               gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": lost prior SYSID: " .. tostring(follow:get_target_sysid()))
                lost_target_now_ms = now_ms
             end
          end
          reported_target = false
-         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": no target: " .. follow:get_target_sysid())
+         gcs:send_text(MAV_SEVERITY.WARNING, SCRIPT_NAME_SHORT .. ": no target SYSID: " .. tostring(follow:get_target_sysid()))
       end
-
       return reported_target
    end
    function follow_mode.enable()
@@ -720,7 +721,7 @@ end
 function Update()
    now_ms = millis()
    ahrs_eas2tas = ahrs:get_EAS2TAS()
-   windspeed_vector = ahrs:wind_estimate()
+   windspeed_vector = ahrs:get_wind() or Vector3f()
 
    simulate_failure.check()
    follow_mode.check()
@@ -920,8 +921,10 @@ function Update()
       mechanism = 1  -- position/location - for logging
    end
 
-   -- The desired heading needs a PID controller, especially when it gets close.
-   desired_heading = xt_pid:compute(desired_heading, cross_track_distance, (now_ms - now_heading_ms):tofloat() * 0.001)
+   -- The desired heading needs a PID controller for crosstrack, but only when it gets close.
+   if close or too_close_follow_up > 0 then
+      desired_heading = xt_pid:compute(desired_heading, cross_track_distance, (now_ms - now_heading_ms):tofloat() * 0.001)
+   end
 
    -- dv = interim delta velocity based on the pid controller using projected_distance per loop as the error (we want distance == 0)
    local dv_error = along_track_distance * refresh_rate * 2.0

@@ -132,7 +132,7 @@ bool Plane::update_home()
         return false;
     }
     bool ret = false;
-    if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS_FixType::FIX_3D) {
         Location loc;
         if (ahrs.get_location(loc)) {
             // we take the altitude directly from the GPS as we are

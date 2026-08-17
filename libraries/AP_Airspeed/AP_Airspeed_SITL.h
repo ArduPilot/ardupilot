@@ -7,6 +7,7 @@
 
 #if AP_AIRSPEED_SITL_ENABLED
 
+#include <AP_HAL/AP_HAL.h>
 #include "AP_Airspeed_Backend.h"
 
 class AP_Airspeed_SITL : public AP_Airspeed_Backend
@@ -16,6 +17,12 @@ public:
     using AP_Airspeed_Backend::AP_Airspeed_Backend;
 
     bool init(void) override {
+        set_bus_id(AP_HAL::Device::make_bus_id(
+            AP_HAL::Device::BUS_TYPE_SITL,
+            0,
+            0,
+            uint8_t(DevType::SITL)
+        ));
         return true;
     }
 

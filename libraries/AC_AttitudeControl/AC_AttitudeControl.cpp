@@ -8,12 +8,12 @@ extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
  // default gains for Plane
- # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.2f    // Soft
+ # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.15f    // Medium
  #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN     5.0     // Min lean angle so that vehicle can maintain limited control
  #define AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL 0
 #else
  // default gains for Copter and Sub
- # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.15f   // Medium
+ # define AC_ATTITUDE_CONTROL_INPUT_TC_DEFAULT  0.10f   // Crisp
  #define AC_ATTITUDE_CONTROL_ANGLE_LIMIT_MIN     10.0   // Min lean angle so that vehicle can maintain limited control
  #define AC_ATTITUDE_CONTROL_AFTER_RATE_CONTROL 1
 #endif
@@ -283,6 +283,16 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
     get_rate_roll_pid().relax_integrator(0.0, _dt_s, AC_ATTITUDE_RATE_RELAX_TC);
     get_rate_pitch_pid().relax_integrator(0.0, _dt_s, AC_ATTITUDE_RATE_RELAX_TC);
     get_rate_yaw_pid().relax_integrator(0.0, _dt_s, AC_ATTITUDE_RATE_RELAX_TC);
+}
+
+// reset the rate controller target loop updates
+void AC_AttitudeControl::rate_controller_target_reset()
+{
+    _sysid_ang_vel_body_rads.zero();
+    _actuator_sysid.zero();
+    _pd_scale = VECTORF_111;
+    _i_scale = VECTORF_111;
+    _angle_P_scale = VECTORF_111;
 }
 
 // Reduce attitude control gains while landed to stop ground resonance

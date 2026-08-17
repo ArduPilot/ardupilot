@@ -58,4 +58,4 @@ void Plane::update_soaring() {
     g2.soaring_controller.set_throttle_suppressed(false);
 }
 
-#endif // SOARING_ENABLED
+#endif // HAL_SOARING_ENABLED

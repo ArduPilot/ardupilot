@@ -37,7 +37,7 @@ PA8 VBUS INPUT OPENDRAIN
 PB6 USART1_TX USART1
 PA10 USART1_RX USART1
 # default Serial1 to ELRS RX
-define DEFAULT_SERIAL1_PROTOCOL 23
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_RCIN
 define HAL_RSSI_TYPE 3 
 
 # USART2
@@ -121,7 +121,6 @@ BARO BMP280 I2C:0:0x76
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
-define ALLOW_ARM_NO_COMPASS
 define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2

@@ -93,6 +93,35 @@ void GCS_MAVLINK_Sub::send_nav_controller_output() const
         0);
 }
 
+// returns a Location to which the vehicle is currently heading, or
+// would head in an autonomous mode
+bool GCS_MAVLINK_Sub::get_target_location(Location &loc) const
+{
+    // in Guided mode, only Guided_WP uses wp_nav; the other submodes keep
+    // their own targets. Guided_WP breaks out to the wp_nav return below.
+    if (sub.flightmode->in_guided_mode()) {
+        switch (sub.guided_mode) {
+        case Guided_WP:
+            break;
+        case Guided_PosVel: {
+            Vector3f pos_neu_cm;
+            if (!sub.mode_guided.get_posvel_target_NEU_cm(pos_neu_cm)) {
+                return false;
+            }
+            loc = Location(pos_neu_cm, Location::AltFrame::ABOVE_ORIGIN);
+            return true;
+        }
+        case Guided_Velocity:
+        case Guided_Angle:
+            // no fixed position target to report
+            return false;
+        }
+    }
+
+    // for non-guided modes (Auto, etc.) fall back to wp_nav as before
+    return sub.wp_nav.is_active() && sub.wp_nav.get_wp_destination_loc(loc);
+}
+
 int16_t GCS_MAVLINK_Sub::vfr_hud_throttle() const
 {
     return (int16_t)(sub.motors.get_throttle() * 100);
@@ -377,11 +406,6 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_command_int_do_reposition(const mavlink_comma
         return MAV_RESULT_DENIED;
     }
 
-    // sanity check location
-    if (!check_latlng(packet.x, packet.y)) {
-        return MAV_RESULT_DENIED;
-    }
-
     Location request_location;
     if (!location_from_command_t(packet, request_location)) {
         return MAV_RESULT_DENIED;
@@ -619,33 +643,35 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
         bool yaw_rate_ignore = packet.type_mask & MAVLINK_SET_POS_TYPE_MASK_YAW_RATE_IGNORE;
 
         // prepare position
-        Vector3f pos_vector;
+        Vector3f pos_vector_neu_cm;
         if (!pos_ignore) {
             // convert to cm
-            pos_vector = Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f);
+            pos_vector_neu_cm = Vector3f(packet.x * 100.0f, packet.y * 100.0f, -packet.z * 100.0f);
             // rotate from body-frame if necessary
             if (packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                     packet.coordinate_frame == MAV_FRAME_BODY_FRD ||
                     packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-                sub.rotate_body_frame_to_NE(pos_vector.x, pos_vector.y);
+                sub.rotate_body_frame_to_NE(pos_vector_neu_cm.x, pos_vector_neu_cm.y);
             }
             // add body offset if necessary
             if (packet.coordinate_frame == MAV_FRAME_LOCAL_OFFSET_NED ||
                     packet.coordinate_frame == MAV_FRAME_BODY_NED ||
                     packet.coordinate_frame == MAV_FRAME_BODY_FRD ||
                     packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-                pos_vector += sub.inertial_nav.get_position_neu_cm();
+                Vector3f pos_neu_cm = (sub.pos_control.get_pos_estimate_NED_m() * 100.0f).tofloat();
+                pos_neu_cm.z = -pos_neu_cm.z;
+                pos_vector_neu_cm += pos_neu_cm;
             }
         }
 
         // prepare velocity
-        Vector3f vel_vector;
+        Vector3f vel_vector_neu_cms;
         if (!vel_ignore) {
             // convert to cm
-            vel_vector = Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f);
+            vel_vector_neu_cms = Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f);
             // rotate from body-frame if necessary
             if (packet.coordinate_frame == MAV_FRAME_BODY_NED || packet.coordinate_frame == MAV_FRAME_BODY_FRD || packet.coordinate_frame == MAV_FRAME_BODY_OFFSET_NED) {
-                sub.rotate_body_frame_to_NE(vel_vector.x, vel_vector.y);
+                sub.rotate_body_frame_to_NE(vel_vector_neu_cms.x, vel_vector_neu_cms.y);
             }
         }
 
@@ -663,11 +689,11 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
 
         // send request
         if (!pos_ignore && !vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_destination_posvel(pos_vector, vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            sub.mode_guided.guided_set_destination_posvel(pos_vector_neu_cm, vel_vector_neu_cms, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_velocity(vel_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            sub.mode_guided.guided_set_velocity(vel_vector_neu_cms, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_destination(pos_vector, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
+            sub.mode_guided.guided_set_destination(pos_vector_neu_cm, !yaw_ignore, yaw_cd, !yaw_rate_ignore, yaw_rate_cds, yaw_relative);
         }
 
         break;
@@ -702,8 +728,7 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
             break;
         }
 
-        Vector3f pos_neu_cm;  // position (North, East, Up coordinates) in centimeters
-
+        Location loc;
         if (!pos_ignore) {
             // sanity check location
             if (!check_latlng(packet.lat_int, packet.lon_int)) {
@@ -714,38 +739,37 @@ void GCS_MAVLINK_Sub::handle_message(const mavlink_message_t &msg)
                 // unknown coordinate frame
                 break;
             }
-            const Location loc{
+            loc = {
                 packet.lat_int,
                 packet.lon_int,
                 int32_t(packet.alt*100),
                 frame,
             };
-            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
-                break;
-            }
         }
 
         if (!pos_ignore && !vel_ignore && acc_ignore) {
+            Vector3f pos_neu_cm;
+            if (!loc.get_vector_from_origin_NEU_cm(pos_neu_cm)) {
+                break;
+            }
             sub.mode_guided.guided_set_destination_posvel(pos_neu_cm, Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (pos_ignore && !vel_ignore && acc_ignore) {
             sub.mode_guided.guided_set_velocity(Vector3f(packet.vx * 100.0f, packet.vy * 100.0f, -packet.vz * 100.0f));
         } else if (!pos_ignore && vel_ignore && acc_ignore) {
-            sub.mode_guided.guided_set_destination(pos_neu_cm);
+            sub.mode_guided.guided_set_destination(loc);
         }
 
         break;
     }
 
-    // This adds support for leak detectors in a separate enclosure
-    // connected to a mavlink enabled subsystem
+    // Remote leak sensor support (e.g. in a separate enclosure), via MAVLink status messages.
     case MAVLINK_MSG_ID_SYS_STATUS: {
-        uint32_t MAV_SENSOR_WATER = 0x20000000;
         mavlink_sys_status_t packet;
         mavlink_msg_sys_status_decode(&msg, &packet);
         if ((msg.sysid == gcs().sysid_this_mav()) &&
-            (packet.onboard_control_sensors_enabled & MAV_SENSOR_WATER) &&
-            !(packet.onboard_control_sensors_health & MAV_SENSOR_WATER)
-        ) {
+            (packet.onboard_control_sensors_present & MAV_SYS_STATUS_EXTENSION_USED) &&
+            (packet.onboard_control_sensors_enabled_extended & MAV_SYS_STATUS_SENSOR_LEAK) &&
+            !(packet.onboard_control_sensors_health_extended & MAV_SYS_STATUS_SENSOR_LEAK)) {
             sub.leak_detector.set_detect();
         }
         break;
@@ -816,11 +840,10 @@ uint8_t GCS_MAVLINK_Sub::high_latency_tgt_heading() const
     return 0;      
 }
     
-uint16_t GCS_MAVLINK_Sub::high_latency_tgt_dist() const
+uint16_t GCS_MAVLINK_Sub::high_latency_tgt_dist_dam() const
 {
-    // return units are dm
     if (sub.control_mode == Mode::Number::AUTO || sub.control_mode == Mode::Number::GUIDED) {
-        return MIN(sub.wp_nav.get_wp_distance_to_destination_cm() * 0.001, UINT16_MAX);
+        return MIN(static_cast<uint16_t>(sub.wp_nav.get_wp_distance_to_destination_cm() * 1e-3), UINT16_MAX);
     }
     return 0;
 }

@@ -73,7 +73,11 @@ bool AP_Compass_MMC3416::init()
     dev->get_semaphore()->take_blocking();
 
     dev->set_retries(10);
-    
+
+    // reset sensor. This seems to solve some unreliablity on boot reading WHOAMI
+    dev->write_register(REG_CONTROL1, 0x80);
+    hal.scheduler->delay(10);
+
     uint8_t whoami;
     if (!dev->read_registers(REG_PRODUCT_ID, &whoami, 1) ||
         whoami != 0x06) {

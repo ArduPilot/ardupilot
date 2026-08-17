@@ -42,4 +42,22 @@ void MSP::sbuf_write_data(sbuf_t *dst, const void *data, int len)
     dst->ptr += len;
 }
 
+uint8_t MSP::sbuf_read_u8(sbuf_t *src)
+{
+    if (!sbuf_check_bounds(src, 1)) {
+        return 0;
+    }
+    return *src->ptr++;
+}
+
+uint16_t MSP::sbuf_read_u16(sbuf_t *src)
+{
+    if (!sbuf_check_bounds(src, 2)) {
+        return 0;
+    }
+    uint16_t val = le16toh_ptr(src->ptr);
+    src->ptr += 2;
+    return val;
+}
+
 #endif //HAL_MSP_ENABLED

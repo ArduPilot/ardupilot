@@ -325,7 +325,12 @@ void SoaringController::update_thermalling()
         return;
     }
 
-    Vector3f wind_drift = _ahrs.wind_estimate()*deltaT*_vario.get_filtered_climb()/_ekf.X[0];
+    Vector3f wind;
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(_ahrs.get_wind(wind));
+
+    Vector3f wind_drift = wind*deltaT*_vario.get_filtered_climb()/_ekf.X[0];
 
     // update the filter
     _ekf.update(_vario.reading, current_position.x, current_position.y, wind_drift.x, wind_drift.y);
@@ -392,7 +397,10 @@ void SoaringController::update_cruising()
     // Calculate the optimal airspeed for the current conditions of wind along current direction,
     // expected lift in next thermal and filtered sink rate.
 
-    Vector3f wind    = AP::ahrs().wind_estimate();
+    Vector3f wind;
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
     Vector3f wind_bf = AP::ahrs().earth_to_body(wind);
 
     const float wx = wind_bf.x;

@@ -65,7 +65,7 @@ SBUS on the DJI connector may be used if SERIAL5_PROTOCOL is changed to 0 and SE
 
 This flight controller has an MSP-DisplayPort output on a 6-pin DJI-compatible JST SH port re-configured.
 
-## Motor Output
+## PWM Output
 
 Motor 1-8 is capable of bidirectional DSHOT and PWM.
 

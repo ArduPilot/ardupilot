@@ -251,8 +251,10 @@ private:
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_FEATURE_RTSCTS
         AP_Int8 ser_rtscts[9];
+#endif
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         AP_Int8 sbus_out_rate;
 #endif
 #if AP_CPU_IDLE_STATS_ENABLED

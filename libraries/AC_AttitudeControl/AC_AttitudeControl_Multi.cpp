@@ -392,8 +392,8 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
         _angle_boost = 0;
         return throttle_in;
     }
-    // inverted_factor is 1 for tilt angles below 60 degrees
-    // inverted_factor reduces from 1 to 0 for tilt angles between 60 and 90 degrees
+    // inverted_factor is 1 for tilt angles below 84 degrees
+    // inverted_factor reduces from 1 to 0 for tilt angles between 84 and 90 degrees
 
     float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
     float inverted_factor = constrain_float(10.0f * cos_tilt, 0.0f, 1.0f);
@@ -482,16 +482,6 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
     _pd_scale_used = _pd_scale;
     _i_scale_used = _i_scale;
     _angle_P_scale_used = _angle_P_scale;
-}
-
-// reset the rate controller target loop updates
-void AC_AttitudeControl_Multi::rate_controller_target_reset()
-{
-    _sysid_ang_vel_body_rads.zero();
-    _actuator_sysid.zero();
-    _pd_scale = VECTORF_111;
-    _i_scale = VECTORF_111;
-    _angle_P_scale = VECTORF_111;
 }
 
 // run the rate controller using the configured _dt and latest gyro_rads

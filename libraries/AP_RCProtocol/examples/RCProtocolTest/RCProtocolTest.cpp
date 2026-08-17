@@ -40,6 +40,12 @@ class RC_Channels_Example : public RC_Channels
 public:
     RC_Channel_Example obj_channels[NUM_RC_CHANNELS];
 
+    const RC_Channel_Example *channel(const uint8_t chan) const override {
+        if (chan >= NUM_RC_CHANNELS) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
     RC_Channel_Example *channel(const uint8_t chan) override {
         if (chan >= NUM_RC_CHANNELS) {
             return nullptr;
@@ -321,7 +327,11 @@ static void test_random(void)
 }
 
 //Main loop where the action takes place
+#if defined(__clang_major__)
+// clang doesn't understand -Wframe-larger-than=
+#else
 #pragma GCC diagnostic error "-Wframe-larger-than=2000"
+#endif
 void loop()
 {
     const uint8_t srxl_bytes[] = { 0xa5, 0x03, 0x0c, 0x04, 0x2f, 0x6c, 0x10, 0xb4, 0x26,

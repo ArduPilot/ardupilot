@@ -71,12 +71,6 @@
 #define CAN2_RX1_IRQ_Handler     STM32_CAN2_RX1_HANDLER
 #endif // #if defined(STM32F3XX)
 
-#if HAL_CANMANAGER_ENABLED
-#define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANIface", fmt, ##args); } while (0)
-#else
-#define Debug(fmt, args...)
-#endif
-
 #if !defined(HAL_BOOTLOADER_BUILD)
 #define PERF_STATS(x) (x++)
 #else
@@ -195,7 +189,17 @@ bool CANIface::computeTimings(uint32_t target_bitrate, Timings& out_timings)
      * ==>
      *   PRESCALER_BS = PCLK / BITRATE
      */
+#if HAL_CAN_ALLOW_INEXACT_CLOCK
+    /*
+     *
+     * Rounded to nearest so a PCLK that is not an exact multiple of the bitrate
+     * (e.g. MSI-PLL derived clocks like 79.96MHz) still resolves to a divisor.
+     * This is a no-op when PCLK is an exact multiple.
+     */
+    const uint32_t prescaler_bs = (pclk + target_bitrate / 2) / target_bitrate;
+#else
     const uint32_t prescaler_bs = pclk / target_bitrate;
+#endif
 
     /*
      * Searching for such prescaler value so that the number of quanta per bit is highest.
@@ -272,12 +276,20 @@ bool CANIface::computeTimings(uint32_t target_bitrate, Timings& out_timings)
      *     return (1+ts1+1)/(1+ts1+1+ts2+1)
      *
      */
+#if HAL_CAN_ALLOW_INEXACT_CLOCK
+    // accept the closest achievable bitrate within CAN oscillator tolerance;
+    // an exact match is not possible when PCLK is not an integer multiple.
+    const uint32_t achieved_bitrate = pclk / (prescaler * (1 + solution.bs1 + solution.bs2));
+    const uint32_t bitrate_error = achieved_bitrate > target_bitrate ?
+                                   achieved_bitrate - target_bitrate : target_bitrate - achieved_bitrate;
+    if ((bitrate_error > target_bitrate / 100U) || !solution.isValid()) {
+        return false;
+    }
+#else
     if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
         return false;
     }
-
-    Debug("Timings: quanta/bit: %d, sample point location: %.1f%%",
-          int(1 + solution.bs1 + solution.bs2), float(solution.sample_point_permill) / 10.F);
+#endif
 
     out_timings.prescaler = uint16_t(prescaler - 1U);
     out_timings.sjw = 0;                                        // Which means one
@@ -733,9 +745,7 @@ void CANIface::initOnce(bool enable_irq)
 
 bool CANIface::init(const uint32_t bitrate)
 {
-    Debug("Bitrate %lu", static_cast<unsigned long>(bitrate));
     if (self_index_ > HAL_NUM_CAN_IFACES) {
-        Debug("CAN drv init failed");
         return false;
     }
     if (can_ifaces[self_index_] == nullptr) {
@@ -749,22 +759,15 @@ bool CANIface::init(const uint32_t bitrate)
 
     if (can_ifaces[0] == nullptr) {
         can_ifaces[0] = NEW_NOTHROW CANIface(0);
-        Debug("Failed to allocate CAN iface 0");
         if (can_ifaces[0] == nullptr) {
             return false;
         }
     }
     if (self_index_ == 1 && !can_ifaces[0]->is_initialized()) {
-        Debug("Iface 0 is not initialized yet but we need it for Iface 1, trying to init it");
-        Debug("Enabling CAN iface 0");
         can_ifaces[0]->initOnce(false);
-        Debug("Initing iface 0...");
         if (!can_ifaces[0]->init(bitrate)) {
-            Debug("Iface 0 init failed");
             return false;
         }
-
-        Debug("Enabling CAN iface");
     }
     initOnce(true);
     /*
@@ -780,7 +783,6 @@ bool CANIface::init(const uint32_t bitrate)
     }
 
     if (!waitMsrINakBitStateChange(true)) {
-        Debug("MSR INAK not set");
         can_->MCR = bxcan::MCR_RESET;
         return false;
     }
@@ -803,8 +805,6 @@ bool CANIface::init(const uint32_t bitrate)
         can_->MCR = bxcan::MCR_RESET;
         return false;
     }
-    Debug("Timings: presc=%u sjw=%u bs1=%u bs2=%u",
-          unsigned(timings.prescaler), unsigned(timings.sjw), unsigned(timings.bs1), unsigned(timings.bs2));
 
     /*
      * Hardware initialization (the hardware has already confirmed initialization mode, see above)
@@ -823,7 +823,6 @@ bool CANIface::init(const uint32_t bitrate)
     can_->MCR &= ~bxcan::MCR_INRQ;   // Leave init mode
 
     if (!waitMsrINakBitStateChange(false)) {
-        Debug("MSR INAK not cleared");
         can_->MCR = bxcan::MCR_RESET;
         return false;
     }

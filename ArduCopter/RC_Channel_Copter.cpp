@@ -16,12 +16,12 @@ int8_t RC_Channels_Copter::flight_mode_channel_number() const
 
 void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
 {
-    if (new_pos < 0 || (uint8_t)new_pos > copter.num_flight_modes) {
+    if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(copter.g.flight_modes)) {
         // should not have been called
         return;
     }
 
-    if (!copter.set_mode((Mode::Number)copter.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
+    if (!copter.set_mode((Mode::Number)copter.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND)) {
         return;
     }
 
@@ -94,7 +94,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::RESETTOARMEDYAW:
     case AUX_FUNC::RTL:
     case AUX_FUNC::SAVE_TRIM:
+#if MODE_AUTO_ENABLED
     case AUX_FUNC::SAVE_WP:
+#endif  // MODE_AUTO_ENABLED
     case AUX_FUNC::SMART_RTL:
     case AUX_FUNC::STABILIZE:
     case AUX_FUNC::THROW:
@@ -108,7 +110,9 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::ZIGZAG_Auto:
     case AUX_FUNC::ZIGZAG_SaveWP:
     case AUX_FUNC::ACRO:
+#if MODE_AUTO_ENABLED
     case AUX_FUNC::AUTO_RTL:
+#endif  // MODE_AUTO_ENABLED
     case AUX_FUNC::TURTLE:
     case AUX_FUNC::SIMPLE_HEADING_RESET:
     case AUX_FUNC::ARMDISARM_AIRMODE:
@@ -182,9 +186,12 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
 
     switch(ch_option) {
         case AUX_FUNC::FLIP:
-            // flip if switch is on, positive throttle and we're actually flying
             if (ch_flag == AuxSwitchPos::HIGH) {
                 copter.set_mode(Mode::Number::FLIP, ModeReason::AUX_FUNCTION);
+            } else {
+#if MODE_FLIP_ENABLED
+                copter.mode_flip.abandon_flip();
+#endif
             }
             break;
 
@@ -524,9 +531,11 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
             break;
 #endif
 
+#if MODE_ALTHOLD_ENABLED
         case AUX_FUNC::ALTHOLD:
             do_aux_function_change_mode(Mode::Number::ALT_HOLD, ch_flag);
             break;
+#endif
 
 #if MODE_ACRO_ENABLED
         case AUX_FUNC::ACRO:

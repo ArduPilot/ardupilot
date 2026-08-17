@@ -599,7 +599,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
     { "Q_LOIT_SPEED_MS",  5.0 },
     { "Q_WP_SPD",         5.0 },
     { "Q_WP_ACC",         1.0 },
-    { "Q_P_JERK_NE",      2   },
+    { "Q_P_NE_JERK",      2   },
     // lower rotational accel limits
     { "Q_A_ACC_R_MAX", 400 },
     { "Q_A_ACC_P_MAX", 400 },
@@ -1072,23 +1072,6 @@ void QuadPlane::relax_attitude_control()
     attitude_control->relax_attitude_controllers(!tailsitter.relax_pitch());
 }
 
-/*
-  check for an EKF yaw reset
- */
-void QuadPlane::check_yaw_reset(void)
-{
-    if (!initialised) {
-        return;
-    }
-    float yaw_angle_change_rad = 0.0f;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
-        attitude_control->inertial_frame_reset();
-        ekfYawReset_ms = new_ekfYawReset_ms;
-        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
-    }
-}
-
 void QuadPlane::set_climb_rate_ms(float target_climb_rate_ms)
 {
     float vel_d_m = -target_climb_rate_ms;
@@ -1518,7 +1501,9 @@ void SLT_Transition::update()
             if (plane.quadplane.tiltrotor.get_forward_throttle(throttle)) {
                 // Reset the TECS minimum throttle to match throttle of forward thrust motors
                 // and set the throttle channel slew rate limiter to prevent a sudden drop in throttle
-                plane.TECS_controller.set_throttle_min(throttle, true);
+                if (plane.control_mode->does_auto_throttle()) {
+                    plane.TECS_controller.set_throttle_min(throttle, true);
+                }
                 SRV_Channels::set_slew_last_scaled_output(SRV_Channel::k_throttle, throttle * 100);
                 SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle * 100);
             }
@@ -1637,7 +1622,9 @@ void SLT_Transition::update()
             if (plane.quadplane.tiltrotor.get_forward_throttle(throttle)) {
                 // Reset the TECS minimum throttle to match throttle of forward thrust motors
                 // and set the throttle channel slew rate limiter to prevent a sudden drop in throttle
-                plane.TECS_controller.set_throttle_min(throttle, true);
+                if (plane.control_mode->does_auto_throttle()) {
+                    plane.TECS_controller.set_throttle_min(throttle, true);
+                }
                 SRV_Channels::set_slew_last_scaled_output(SRV_Channel::k_throttle, throttle * 100);
                 SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, throttle * 100);
             }
@@ -1963,6 +1950,12 @@ void QuadPlane::update_throttle_hover()
  */
 void QuadPlane::motors_output(bool run_rate_controller)
 {
+    // QuadPlane has no pre-takeoff RPM gate that asserts the spool-up block,
+    // so clear it every cycle before motors->output() runs output_logic().
+    // Without this the block set during ground-idle ramp would never clear
+    // and the spool would stay in GROUND_IDLE.
+    motors->set_spoolup_block(false);
+
     /* Delay for ARMING_DELAY_MS after arming before allowing props to spin:
        1) for safety (OPTION_DELAY_ARMING)
        2) to allow motors to return to vertical (OPTION_DISARMED_TILT)
@@ -2316,8 +2309,7 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
             qp.thr_ctrl_land = false;
         } else if (s == QPOS_LAND_FINAL) {
             // remember last pos reset to handle GPS glitch in LAND_FINAL
-            Vector2f rpos;
-            last_pos_reset_ms = plane.ahrs.getLastPosNorthEastReset(rpos);
+            ahrs_position_NE_reset_count = plane.ahrs.get_position_NE_reset_count();
             qp.landing_detect.land_start_ms = 0;
             qp.landing_detect.lower_limit_start_ms = 0;
         }
@@ -2642,7 +2634,11 @@ void QuadPlane::vtol_position_controller(void)
                 target_speed_ne_ms = diff_wp_norm * approach_speed_ms;
                 
                 // adjust target yaw angle into the apparent wind
-                const Vector2f wind_ms = plane.ahrs.wind_estimate().xy();
+                Vector3f wind_ned_ms;
+                // use the estimate even if it is not marked valid, to
+                // preserve existing behaviour
+                IGNORE_RETURN(plane.ahrs.get_wind(wind_ned_ms));
+                const Vector2f wind_ms = wind_ned_ms.xy();
                 const Vector2f airspeed_ne_ms = plane.ahrs.groundspeed_vector() - wind_ms;
                 if (airspeed_ne_ms.length_squared() < 1) {
                     // Don't cause unpredictable yaw swings if the airspeed vector
@@ -2772,8 +2768,7 @@ void QuadPlane::vtol_position_controller(void)
         } else {
             Vector2f zero;
             Vector2f vel_ne_ms = poscontrol.target_vel_ms.xy() + landing_velocity_ne_ms;
-            Vector2f rpos;
-            const uint32_t last_reset_ms = plane.ahrs.getLastPosNorthEastReset(rpos);
+            const uint16_t last_reset_count = plane.ahrs.get_position_NE_reset_count();
             /* we use velocity control when we may be touching the
               ground or if we've had a position reset from AHRS. This
               helps us handle a GPS glitch in the final land phase,
@@ -2781,7 +2776,7 @@ void QuadPlane::vtol_position_controller(void)
             */
             if (motors->limit.throttle_lower ||
                 motors->get_throttle() < 0.5*motors->get_throttle_hover() ||
-                last_reset_ms != poscontrol.last_pos_reset_ms) {
+                last_reset_count != poscontrol.ahrs_position_NE_reset_count) {
                 pos_control->input_vel_accel_NE_m(vel_ne_ms, zero);
             } else {
                 // otherwise use full pos control
@@ -2844,7 +2839,9 @@ void QuadPlane::vtol_position_controller(void)
             }
         }
         if (plane.control_mode == &plane.mode_guided || vtol_loiter_auto) {
-            plane.ahrs.get_location(plane.current_loc);
+            // FIXME: we have updated current_loc without updating the
+            // health flag.  And why are we doing this here?!
+            UNUSED_RESULT(plane.ahrs.get_location(plane.current_loc));
             int32_t target_altitude_cm;
             if (!plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABOVE_ORIGIN,target_altitude_cm)) {
                 break;
@@ -4050,10 +4047,33 @@ bool QuadPlane::using_wp_nav(void) const
  */
 MAV_TYPE QuadPlane::get_mav_type(void) const
 {
-    if (mav_type.get() == 0) {
+    if (!available()) {
+        // Not enabled, must be a normal plane
         return MAV_TYPE_FIXED_WING;
     }
-    return MAV_TYPE(mav_type.get());
+    if (mav_type.get() != 0) {
+        // Override parameter set by user
+        return MAV_TYPE(mav_type.get());
+    }
+    if (tiltrotor.enabled()) {
+        // Tiltrotor specific type
+        return MAV_TYPE_VTOL_TILTROTOR;
+    }
+    if (tailsitter.enabled()) {
+        // Tailsitter specific types
+        switch (motors->get_frame_mav_type()) {
+        case MAV_TYPE_VTOL_DUOROTOR:
+            return MAV_TYPE_VTOL_DUOROTOR;
+
+        case MAV_TYPE_QUADROTOR:
+            return MAV_TYPE_VTOL_QUADROTOR;
+
+        default:
+            break;
+        }
+    }
+    // Default to normal plane
+    return MAV_TYPE_FIXED_WING;
 }
 
 /*
@@ -4188,7 +4208,12 @@ void QuadPlane::update_throttle_mix(void)
           attitude control until LAND_FINAL
          */
         if (in_vtol_land_sequence()) {
-            use_mix_max = !in_vtol_land_final();
+            // during the descent phase we don't want to priortise
+            // attitude too much. Rapid descent on quadplanes often
+            // leads to very poor attitude control and putting more
+            // power into attitude doesn't tend to fix it, what we
+            // need to do is slow the descent.
+            use_mix_max = !in_vtol_land_descent() || poscontrol.get_state() == QPOS_LAND_ABORT;
         }
 
         if (use_mix_max) {
@@ -4428,9 +4453,12 @@ float QuadPlane::get_land_airspeed_ms(void)
     
     // calculate speed based on landing desired velocity
     Vector2f vel_ne_ms = landing_desired_closing_velocity_NE_ms();
-    const Vector2f wind_ms = plane.ahrs.wind_estimate().xy();
+    Vector3f wind_ned_ms;
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(plane.ahrs.get_wind(wind_ned_ms));
     const float eas2tas = plane.ahrs.get_EAS2TAS();
-    vel_ne_ms -= wind_ms;
+    vel_ne_ms -= wind_ned_ms.xy();
     vel_ne_ms /= eas2tas;
     return vel_ne_ms.length();
 }
@@ -4792,8 +4820,8 @@ void QuadPlane::setup_rp_fw_angle_gains(void)
 {
     const float mc_angR = attitude_control->get_angle_roll_p().kP();
     const float mc_angP = attitude_control->get_angle_pitch_p().kP();
-    const float fw_angR = 1.0/plane.rollController.tau();
-    const float fw_angP = 1.0/plane.pitchController.tau();
+    const float fw_angR = plane.rollController.get_angle_p();
+    const float fw_angP = plane.pitchController.get_angle_p();
 
     if (!is_positive(mc_angR) || !is_positive(mc_angP)) {
         // bad configuration, don't scale

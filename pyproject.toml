@@ -1,5 +1,12 @@
 [tool.ruff]
-target-version = "py310"
+target-version = "py39"  # Default Python of the oldest Standard Support Debian + Ubuntu LTS.
+# This should be kept in sync with `min_ver` in the files `./wscript` and `./waf`.
+line-length = 127
+lint.select = [
+    "BLE001",  # flake8-blind-except
+    "E",       # pycodestyle
+    "F",       # Pyflakes
+]
 lint.ignore = [
     "E402",  # module-import-not-at-top-of-file
 ]
@@ -9,11 +16,13 @@ lint.extend-select = [
 ]
 lint.flake8-tidy-imports.ban-relative-imports = "all"
 lint.per-file-ignores."Tools/autotest/autotest.py" = ["I001"]  # unsorted-imports
+per-file-target-version."Tools/scripts/mavlink_parse.py" = "py310"
 
 [tool.ruff.lint.isort]
 force-single-line = true
 lines-between-types = 1
 known-first-party = [
+    "allowed_subsystems",
     "annotate_params",
     "antennatracker",
     "arducopter",

@@ -74,6 +74,8 @@ void Balloon::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    update_battery();
 }
 
 } // namespace SITL

@@ -126,23 +126,23 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // IDs 8,9 used for _TC_XY and _TC_Z in beta release candidate
 
-    // @Param: _JERK_NE
+    // @Param: _NE_JERK
     // @DisplayName: Jerk limit for the horizontal kinematic input shaping
     // @Description: Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
     // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("_JERK_NE", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
+    AP_GROUPINFO("_NE_JERK", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
 
-    // @Param: _JERK_D
+    // @Param: _D_JERK
     // @DisplayName: Jerk limit for the vertical kinematic input shaping
     // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
     // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("_JERK_D", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
+    AP_GROUPINFO("_D_JERK", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
 
     // @Param: _D_VEL_P
     // @DisplayName: Velocity (vertical) controller P gain
@@ -709,8 +709,10 @@ void AC_PosControl::NE_update_controller()
     }
     _last_update_ne_ticks = AP::scheduler().ticks32();
 
-    float ahrsGndSpdLimit, ahrsControlScaleXY;
-    AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY);
+    // the estimator might require scaling down of control
+    // (e.g. because of sensors being used to arrive at attitude
+    // estimate):
+    const float ahrsControlScaleXY = AP::ahrs().get_control_gain_scaler_XY();
 
     // Update lateral position, velocity, and acceleration offsets using path shaping
     NE_update_offsets();
@@ -764,7 +766,12 @@ void AC_PosControl::NE_update_controller()
     const float accel_max_mss = angle_rad_to_accel_mss(angle_max_rad);
     // Save unbounded target for use in "limited" check (not unit-consistent with z!)
     _limit_vector_ned.xy() = _accel_target_ned_mss.xy();
-    if (!limit_accel_xy(_vel_desired_ned_ms.xy(), _accel_target_ned_mss.xy(), accel_max_mss)) {
+    // Normalise desired velocity by max speed for the cross-track reference (guard zero max speed).
+    Vector2f vel_norm_ne;
+    if (is_positive(_vel_max_ne_ms)) {
+        vel_norm_ne = _vel_desired_ned_ms.xy() / _vel_max_ne_ms;
+    }
+    if (!limit_accel_xy(vel_norm_ne, _accel_target_ned_mss.xy(), accel_max_mss)) {
         // _accel_target_ned_mss was not limited so we can zero the xy limit vector
         _limit_vector_ned.xy().zero();
     }
@@ -1095,7 +1102,7 @@ void AC_PosControl::D_update_controller()
 
     // P controller: convert position error to velocity target
     _vel_target_ned_ms.z = _p_pos_d_m.update_all(_pos_target_ned_m.z, _pos_estimate_ned_m.z);
-    _vel_target_ned_ms.z *= AP::ahrs().getControlScaleZ();
+    _vel_target_ned_ms.z *= AP::ahrs().get_control_gain_scaler_Z();
 
     _pos_desired_ned_m.z = _pos_target_ned_m.z - (_pos_offset_ned_m.z + _pos_terrain_d_m);
 
@@ -1106,7 +1113,7 @@ void AC_PosControl::D_update_controller()
 
     // PID controller: convert velocity error to acceleration
     _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
-    _accel_target_ned_mss.z *= AP::ahrs().getControlScaleZ();
+    _accel_target_ned_mss.z *= AP::ahrs().get_control_gain_scaler_Z();
 
     // add feed forward component
     _accel_target_ned_mss.z += _accel_desired_ned_mss.z + _accel_offset_ned_mss.z + _accel_terrain_d_mss;
@@ -1682,20 +1689,16 @@ float AC_PosControl::calculate_overspeed_gain()
 // Initializes tracking of NE EKF position resets.
 void AC_PosControl::NE_init_ekf_reset()
 {
-    Vector2f pos_shift;
-    _ekf_ne_reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift);
+    _ahrs_position_NE_reset_count = _ahrs.get_position_NE_reset_count();
 }
 
 // Handles NE position reset detection and response (e.g., clearing accumulated errors).
 void AC_PosControl::NE_handle_ekf_reset()
 {
-    // Check for EKF-reported NE position shift since last update
-    Vector2f pos_shift_ne_m;
-    uint32_t reset_ms = _ahrs.getLastPosNorthEastReset(pos_shift_ne_m);
-    // todo: the actual difference in position and velocity estimation.
-    // This will prevent the need to pause error calculation for one cycle.
+    // Check for EKF-reported NE position reset since last update
+    const uint16_t reset_count = _ahrs.get_position_NE_reset_count();
 
-    if (reset_ms != _ekf_ne_reset_ms) {
+    if (reset_count != _ahrs_position_NE_reset_count) {
         // This ensures controller output remains continuous after EKF realigns the origin.
 
         // Reconstruct position target relative to the to new EKF estimation to maintain the current position error
@@ -1718,27 +1721,23 @@ void AC_PosControl::NE_handle_ekf_reset()
             _vel_offset_ned_ms.xy() += delta_vel_estimate_ne_ms;
             break;
         }
-        _ekf_ne_reset_ms = reset_ms;
+        _ahrs_position_NE_reset_count = reset_count;
     }
 }
 
 // Initializes tracking of vertical (U) EKF resets.
 void AC_PosControl::D_init_ekf_reset()
 {
-    float alt_shift_d_m;
-    _ekf_d_reset_ms = _ahrs.getLastPosDownReset(alt_shift_d_m);
+    _ahrs_position_D_reset_count = _ahrs.get_position_D_reset_count();
 }
 
 // Handles U EKF reset detection and response.
 void AC_PosControl::D_handle_ekf_reset()
 {
-    // Check for EKF-reported Down-axis shift since last update
-    float pos_shift_d_m;
-    uint32_t reset_ms = _ahrs.getLastPosDownReset(pos_shift_d_m);
-    // todo: the actual difference in position and velocity estimation.
-    // This will prevent the need to pause error calculation for one cycle.
+    // Check for EKF-reported Down-axis reset since last update
+    const uint16_t reset_count = _ahrs.get_position_D_reset_count();
 
-    if (reset_ms != 0 && reset_ms != _ekf_d_reset_ms) {
+    if (reset_count != _ahrs_position_D_reset_count) {
         // This ensures controller output remains continuous after EKF realigns the origin.
         // Reconstruct position target relative to the to new EKF estimation to maintain the current position error
         postype_t delta_pos_estimate_d_m = _p_pos_d_m.get_error() - (_pos_target_ned_m.z - _pos_estimate_ned_m.z);
@@ -1760,7 +1759,7 @@ void AC_PosControl::D_handle_ekf_reset()
             _vel_offset_ned_ms.z += delta_vel_estimate_d_ms;
             break;
         }
-        _ekf_d_reset_ms = reset_ms;
+        _ahrs_position_D_reset_count = reset_count;
     }
 }
 

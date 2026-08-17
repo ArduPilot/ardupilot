@@ -41,7 +41,7 @@ MAV_STATE GCS_MAVLINK_Blimp::vehicle_system_status() const
         return MAV_STATE_STANDBY;
     }
     if (!blimp.ap.initialised) {
-    	return MAV_STATE_BOOT;
+        return MAV_STATE_BOOT;
     }
 
     return MAV_STATE_ACTIVE;
@@ -95,7 +95,7 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
         PID_SEND::POSX,
         PID_SEND::POSY,
         PID_SEND::POSZ,
-        PID_SEND::POSYAW
+        PID_SEND::POSYAW,
     };
     for (uint8_t i=0; i<ARRAY_SIZE(axes); i++) {
         if (!(blimp.g.gcs_pid_mask & (1<<(axes[i]-1)))) {
@@ -105,37 +105,44 @@ void GCS_MAVLINK_Blimp::send_pid_tuning()
             return;
         }
         const AP_PIDInfo *pid_info = nullptr;
+        uint8_t mav_axis = 0;
         switch (axes[i]) {
         case PID_SEND::VELX:
-            pid_info = &blimp.pid_vel_xy.get_pid_info_x();
+            pid_info = &blimp.loiter->pid_vel_x.get_pid_info();
+            mav_axis = PID_TUNING_VEL_NORTH;
             break;
         case PID_SEND::VELY:
-            pid_info = &blimp.pid_vel_xy.get_pid_info_y();
+            pid_info = &blimp.loiter->pid_vel_y.get_pid_info();
+            mav_axis = PID_TUNING_VEL_EAST;
             break;
         case PID_SEND::VELZ:
-            pid_info = &blimp.pid_vel_z.get_pid_info();
+            pid_info = &blimp.loiter->pid_vel_z.get_pid_info();
+            mav_axis = PID_TUNING_VEL_DOWN;
             break;
         case PID_SEND::VELYAW:
-            pid_info = &blimp.pid_vel_yaw.get_pid_info();
+            pid_info = &blimp.loiter->pid_vel_yaw.get_pid_info();
+            mav_axis = PID_TUNING_YAW;
             break;
         case PID_SEND::POSX:
-            pid_info = &blimp.pid_pos_xy.get_pid_info_x();
+            pid_info = &blimp.loiter->pid_pos_x.get_pid_info();
+            mav_axis = PID_TUNING_POS_NORTH;
             break;
         case PID_SEND::POSY:
-            pid_info = &blimp.pid_pos_xy.get_pid_info_y();
+            pid_info = &blimp.loiter->pid_pos_y.get_pid_info();
+            mav_axis = PID_TUNING_POS_EAST;
             break;
         case PID_SEND::POSZ:
-            pid_info = &blimp.pid_pos_z.get_pid_info();
+            pid_info = &blimp.loiter->pid_pos_z.get_pid_info();
+            mav_axis = PID_TUNING_POS_DOWN;
             break;
         case PID_SEND::POSYAW:
-            pid_info = &blimp.pid_pos_yaw.get_pid_info();
+            pid_info = &blimp.loiter->pid_pos_yaw.get_pid_info();
+            mav_axis = PID_TUNING_YAW_ANGLE;
             break;
-        default:
-            continue;
         }
         if (pid_info != nullptr) {
             mavlink_msg_pid_tuning_send(chan,
-                                        axes[i],
+                                        mav_axis,
                                         pid_info->target,
                                         pid_info->actual,
                                         pid_info->FF,
@@ -216,11 +223,6 @@ MAV_RESULT GCS_MAVLINK_Blimp::handle_command_int_do_reposition(const mavlink_com
 {
     const bool change_modes = ((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) == MAV_DO_REPOSITION_FLAGS_CHANGE_MODE;
     if (!blimp.flightmode->in_guided_mode() && !change_modes) {
-        return MAV_RESULT_DENIED;
-    }
-
-    // sanity check location
-    if (!check_latlng(packet.x, packet.y)) {
         return MAV_RESULT_DENIED;
     }
 
@@ -324,7 +326,10 @@ void GCS_MAVLINK_Blimp::send_wind() const
         // valid wind estimate on blimps
         return;
     }
-    const Vector3f wind = AP::ahrs().wind_estimate();
+    Vector3f wind;
+    // send the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
     mavlink_msg_wind_send(
         chan,
         degrees(atan2f(-wind.y, -wind.x)),
@@ -342,7 +347,10 @@ uint8_t GCS_MAVLINK_Blimp::high_latency_wind_speed() const
         return 0;
     }
     // return units are m/s*5
-    const Vector3f wind = AP::ahrs().wind_estimate();
+    Vector3f wind;
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
     return wind.xy().length() * 5;
 }
 
@@ -354,7 +362,10 @@ uint8_t GCS_MAVLINK_Blimp::high_latency_wind_direction() const
         // valid wind estimate on blimps
         return 0;
     }
-    const Vector3f wind = AP::ahrs().wind_estimate();
+    Vector3f wind;
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
     // need to convert -180->180 to 0->360/2
     return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
 }

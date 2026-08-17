@@ -1592,7 +1592,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
     uint8_t nsat = gps.num_sats();
-    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
+    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS_FixType::FIX_3D);
     backend->write(x, y, flash, "%c%c%2u", SYMBOL(SYM_SAT_L), SYMBOL(SYM_SAT_R), nsat);
 }
 
@@ -1940,7 +1940,10 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 #if !APM_BUILD_TYPE(APM_BUILD_Rover)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    Vector3f v = ahrs.wind_estimate();
+    Vector3f v;
+    // draw the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(ahrs.get_wind(v));
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
@@ -2447,7 +2450,7 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
     AP_GPS & gps = AP::gps();
     const Location &loc = gps.location();
     char buff[16];
-    if (gps.status() == AP_GPS::NO_GPS || gps.status() == AP_GPS::NO_FIX){
+    if (gps.status() == AP_GPS_FixType::NO_GPS || gps.status() == AP_GPS_FixType::NONE){
         backend->write(x, y, false, "--------+--");
     } else {
         AP_OLC::olc_encode(loc.lat, loc.lng, 10, buff, sizeof(buff));
@@ -2496,7 +2499,9 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
     uint16_t powr = 0;
     // If currently in pit mode, just render 0mW to the screen
     if(!vtx->has_option(AP_VideoTX::VideoOptions::VTX_PITMODE)){
-        powr = vtx->get_power_mw();
+        // prefer VTX-reported actual; SmartAudio returns -1 here
+        const int32_t actual_mw = vtx->get_actual_power_mw();
+        powr = actual_mw >= 0 ? uint16_t(actual_mw) : vtx->get_power_mw();
     }
     backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYMBOL(SYM_MW));
 }

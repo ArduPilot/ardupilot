@@ -115,7 +115,7 @@ static inline double be64todouble_ptr(const uint8_t *p, const uint8_t offset) { 
 static inline void put_le16_ptr(uint8_t *p, uint16_t v) { p[0] = (v&0xFF); p[1] = (v>>8); }
 static inline void put_le24_ptr(uint8_t *p, uint32_t v) { p[0] = (v&0xFF); p[1] = (v>>8)&0xFF; p[2] = (v>>16)&0xFF; }
 static inline void put_le32_ptr(uint8_t *p, uint32_t v) { p[0] = (v&0xFF); p[1] = (v>>8)&0xFF; p[2] = (v>>16)&0xFF; p[3] = (v>>24)&0xFF; }
-static inline void put_le64_ptr(uint8_t *p, uint64_t v) { p[0] = (v&0xFF); p[1] = (v>>8)&0xFF; p[2] = (v>>16)&0xFF; p[3] = (v>>24)&0xFF; p[4] = (v>>24)&0xFF;p[5] = (v>>24)&0xFF; p[6] = (v>>24)&0xFF;p[7] = (v>>24)&0xFF;}
+static inline void put_le64_ptr(uint8_t *p, uint64_t v) { p[0] = (v&0xFF); p[1] = (v>>8)&0xFF; p[2] = (v>>16)&0xFF; p[3] = (v>>24)&0xFF; p[4] = (v>>32)&0xFF;p[5] = (v>>40)&0xFF; p[6] = (v>>48)&0xFF;p[7] = (v>>56)&0xFF;}
 static inline void put_be16_ptr(uint8_t *p, uint16_t v) { p[1] = (v&0xFF); p[0] = (v>>8); }
 static inline void put_be24_ptr(uint8_t *p, uint32_t v) { p[2] = (v&0xFF); p[1] = (v>>8)&0xFF; p[0] = (v>>16)&0xFF; }
 static inline void put_be32_ptr(uint8_t *p, uint32_t v) { p[3] = (v&0xFF); p[2] = (v>>8)&0xFF; p[1] = (v>>16)&0xFF; p[0] = (v>>24)&0xFF; }

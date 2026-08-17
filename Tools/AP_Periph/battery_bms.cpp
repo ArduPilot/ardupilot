@@ -27,6 +27,24 @@ extern AP_Periph_FW periph;
 // GPIO pins used for BMS LEDs
 const uint8_t BatteryBMS::led_gpios[] = {AP_PERIPH_BMS_LED_PINS};
 
+const AP_Param::GroupInfo BatteryBMS::var_info[] {
+
+    // @Param: SLEEP_SEC
+    // @DisplayName: Battery Sleep Timeout
+    // @Description: Battery sleep timeout in seconds.  If there is no activity for this many seconds the battery will enter sleep mode.  Set to 0 to disable sleep mode
+    // @Range: 0 600
+    // @User: Advanced
+    AP_GROUPINFO("SLEEP_SEC", 1, BatteryBMS, sleep_timeout_sec, 30),
+
+    AP_GROUPEND
+};
+
+// constructor
+BatteryBMS::BatteryBMS(void)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 // configure gpio pins. returns true once configured
 bool BatteryBMS::configured()
 {
@@ -51,6 +69,9 @@ bool BatteryBMS::configured()
 
     // mark configuration as complete
     config_complete = true;
+
+    // display battery percentage after startup
+    request_display_percentage();
     return true;
 }
 
@@ -66,6 +87,9 @@ void BatteryBMS::update(void)
     if (!configured()) {
         return;
     }
+
+    // update sleep timeout
+    periph.battery_lib.set_sleep_timeout(constrain_uint16(sleep_timeout_sec.get(), 0, INT16_MAX));
 
 #ifdef HAL_GPIO_PIN_BMS_BTN1
     // check and handle button press events
@@ -182,7 +206,8 @@ void BatteryBMS::request_display_percentage()
 }
 
 // display battery SOC percentage using LEDs
-void BatteryBMS::display_percentage()
+// last_led_off allows blinking the last LED to indicate charging
+void BatteryBMS::display_percentage(bool last_led_off)
 {
     // get battery percentage
     uint8_t batt_soc_pct;
@@ -193,7 +218,13 @@ void BatteryBMS::display_percentage()
     // calculate how many LEDs to light up based on battery percentage
     // uses ceiling division to round up: 0% = 0 LEDs, 1-12% = 1 LED, etc
     const uint8_t num_leds = ARRAY_SIZE(led_gpios);
-    const uint8_t num_leds_on = MIN(num_leds, (batt_soc_pct * num_leds + 99) / 100);
+    uint8_t num_leds_on = MIN(num_leds, (batt_soc_pct * num_leds + 99) / 100);
+
+    // if last_led_off is true, we turn off the last LED
+    // this allows the caller to blink the last LED to indicate charging
+    if (last_led_off && num_leds_on > 0) {
+        num_leds_on--;
+    }
 
     // build bitmask for LEDs (e.g., num_leds=3 gives 0b00000111)
     const uint8_t pattern = (1U << num_leds_on) - 1;
@@ -287,11 +318,10 @@ void BatteryBMS::update_led_state(void)
     auto battery_charging_state = periph.battery_lib.get_charging_state();
     if (battery_charging_state == AP_BattMonitor::ChargingState::CHARGING) {
         led_charging_animation_step = (led_charging_animation_step + 1) % 8;
-
-        // charging: chase forward (bit 0 -> 7)
-        uint8_t pattern = 1 << led_charging_animation_step;
-        set_led_pattern(pattern);
+        display_percentage(led_charging_animation_step >= 4);
         return;
+    } else {
+        led_charging_animation_step = 0;
     }
 
     // handle POWERED_ON state - display SOC percentage

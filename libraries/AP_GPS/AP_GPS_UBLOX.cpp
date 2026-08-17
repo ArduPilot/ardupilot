@@ -1550,21 +1550,21 @@ AP_GPS_UBLOX::_parse_gps(void)
         if (_buffer.status.fix_status & NAV_STATUS_FIX_VALID) {
             if( (_buffer.status.fix_type == AP_GPS_UBLOX::FIX_3D) &&
                 (_buffer.status.fix_status & AP_GPS_UBLOX::NAV_STATUS_DGPS_USED)) {
-                next_fix = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                next_fix = AP_GPS_FixType::DGPS;
             }else if( _buffer.status.fix_type == AP_GPS_UBLOX::FIX_3D) {
-                next_fix = AP_GPS::GPS_OK_FIX_3D;
+                next_fix = AP_GPS_FixType::FIX_3D;
             }else if (_buffer.status.fix_type == AP_GPS_UBLOX::FIX_2D) {
-                next_fix = AP_GPS::GPS_OK_FIX_2D;
+                next_fix = AP_GPS_FixType::FIX_2D;
             }else{
-                next_fix = AP_GPS::NO_FIX;
-                state.status = AP_GPS::NO_FIX;
+                next_fix = AP_GPS_FixType::NONE;
+                state.status = AP_GPS_FixType::NONE;
             }
         }else{
-            next_fix = AP_GPS::NO_FIX;
-            state.status = AP_GPS::NO_FIX;
+            next_fix = AP_GPS_FixType::NONE;
+            state.status = AP_GPS_FixType::NONE;
         }
 #if UBLOX_FAKE_3DLOCK
-        state.status = AP_GPS::GPS_OK_FIX_3D;
+        state.status = AP_GPS_FixType::FIX_3D;
         next_fix = state.status;
 #endif
         break;
@@ -1591,24 +1591,24 @@ AP_GPS_UBLOX::_parse_gps(void)
         if (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) {
             if( (_buffer.solution.fix_type == AP_GPS_UBLOX::FIX_3D) &&
                 (_buffer.solution.fix_status & AP_GPS_UBLOX::NAV_STATUS_DGPS_USED)) {
-                next_fix = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                next_fix = AP_GPS_FixType::DGPS;
             }else if( _buffer.solution.fix_type == AP_GPS_UBLOX::FIX_3D) {
-                next_fix = AP_GPS::GPS_OK_FIX_3D;
+                next_fix = AP_GPS_FixType::FIX_3D;
             }else if (_buffer.solution.fix_type == AP_GPS_UBLOX::FIX_2D) {
-                next_fix = AP_GPS::GPS_OK_FIX_2D;
+                next_fix = AP_GPS_FixType::FIX_2D;
             }else{
-                next_fix = AP_GPS::NO_FIX;
-                state.status = AP_GPS::NO_FIX;
+                next_fix = AP_GPS_FixType::NONE;
+                state.status = AP_GPS_FixType::NONE;
             }
         }else{
-            next_fix = AP_GPS::NO_FIX;
-            state.status = AP_GPS::NO_FIX;
+            next_fix = AP_GPS_FixType::NONE;
+            state.status = AP_GPS_FixType::NONE;
         }
         if(noReceivedHdop) {
             state.hdop = _buffer.solution.position_DOP;
         }
         state.num_sats    = _buffer.solution.satellites;
-        if (next_fix >= AP_GPS::GPS_OK_FIX_2D) {
+        if (next_fix >= AP_GPS_FixType::FIX_2D) {
             state.last_gps_time_ms = AP_HAL::millis();
             state.time_week_ms    = _buffer.solution.itow;
             state.time_week       = _buffer.solution.week;
@@ -1703,33 +1703,33 @@ AP_GPS_UBLOX::_parse_gps(void)
         switch (_buffer.pvt.fix_type)
         {
             case 0:
-                state.status = AP_GPS::NO_FIX;
+                state.status = AP_GPS_FixType::NONE;
                 break;
             case 1:
-                state.status = AP_GPS::NO_FIX;
+                state.status = AP_GPS_FixType::NONE;
                 break;
             case 2:
-                state.status = AP_GPS::GPS_OK_FIX_2D;
+                state.status = AP_GPS_FixType::FIX_2D;
                 break;
             case 3:
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS_FixType::FIX_3D;
                 if (_buffer.pvt.flags & 0b00000010)  // diffsoln
-                    state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                    state.status = AP_GPS_FixType::DGPS;
                 if (_buffer.pvt.flags & 0b01000000)  // carrsoln - float
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                    state.status = AP_GPS_FixType::RTK_FLOAT;
                 if (_buffer.pvt.flags & 0b10000000)  // carrsoln - fixed
-                    state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                    state.status = AP_GPS_FixType::RTK_FIXED;
                 break;
             case 4:
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO,
                                 "Unexpected state %d", _buffer.pvt.flags);
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS_FixType::FIX_3D;
                 break;
             case 5:
-                state.status = AP_GPS::NO_FIX;
+                state.status = AP_GPS_FixType::NONE;
                 break;
             default:
-                state.status = AP_GPS::NO_FIX;
+                state.status = AP_GPS_FixType::NONE;
                 break;
         }
         next_fix = state.status;
@@ -1769,7 +1769,7 @@ AP_GPS_UBLOX::_parse_gps(void)
         state.location.alt = 58400;
         state.vertical_accuracy = 0;
         state.horizontal_accuracy = 0;
-        state.status = AP_GPS::GPS_OK_FIX_3D;
+        state.status = AP_GPS_FixType::FIX_3D;
         state.num_sats = 10;
         state.time_week = 1721;
         state.time_week_ms = AP_HAL::millis() + 3*60*60*1000 + 37000;

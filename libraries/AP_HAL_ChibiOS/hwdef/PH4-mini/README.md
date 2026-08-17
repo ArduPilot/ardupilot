@@ -108,7 +108,7 @@ following GPIO numbers:
 - CAP3 60
 - CAP4 61
 
-## Analog inputs
+## Analog Inputs
 
 The Pixhawk4-Mini has 4 analog inputs
 

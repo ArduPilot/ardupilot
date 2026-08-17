@@ -49,7 +49,7 @@ void AP_Frsky_D::send(void)
     // send frame1 every 200ms
     if (now - _D.last_200ms_frame >= 200) {
         _D.last_200ms_frame = now;
-        send_uint16(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
+        send_uint16(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + (uint8_t)AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
         send_uint16(DATA_ID_TEMP1, gcs().custom_mode()); // send flight mode
         uint8_t percentage = 0;
         IGNORE_RETURN(_battery.capacity_remaining_pct(percentage));
@@ -70,7 +70,7 @@ void AP_Frsky_D::send(void)
         AP_AHRS &_ahrs = AP::ahrs();
         send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)_ahrs.get_yaw_deg()); // send heading in degree based on AHRS and not GPS
         calc_gps_position();
-        if (AP::gps().status() >= 3) {
+        if (AP::gps().status() >= AP_GPS_FixType::FIX_3D) {
             send_uint16(DATA_ID_GPS_LAT_BP, _SPort_data.latdddmm); // send gps latitude degree and minute integer part
             send_uint16(DATA_ID_GPS_LAT_AP, _SPort_data.latmmmm); // send gps latitude minutes decimal part
             send_uint16(DATA_ID_GPS_LAT_NS, _SPort_data.lat_ns); // send gps North / South information

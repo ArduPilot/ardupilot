@@ -4,7 +4,12 @@
 -- this script waits for the vehicle to be armed and in circle mode and then
 -- updates the target rate around the circle (in degrees / sec) to maintain the desired ground speed
 
-local circle_ground_speed = 6 -- the ground speed in circle mode (m/s)
+-- create and initialise parameters
+local PARAM_TABLE_KEY = 95
+assert(param:add_table(PARAM_TABLE_KEY, "CSPD_", 1), 'could not add param table')
+assert(param:add_param(PARAM_TABLE_KEY, 1, 'SPEED', 6), 'could not add CSPD_SPEED param') -- ground speed in circle mode (m/s)
+
+local circle_ground_speed = Parameter("CSPD_SPEED")
 
 function update() -- this is the loop which periodically runs
 
@@ -21,7 +26,7 @@ function update() -- this is the loop which periodically runs
   end
 
   -- set the rate to give the desired ground speed at the current radius
-  local new_rate = 360 * (circle_ground_speed / (radius*math.pi*2))
+  local new_rate = 360 * (circle_ground_speed:get() / (radius*math.pi*2))
   new_rate = math.max(new_rate, -90)
   new_rate = math.min(new_rate, 90)
   if not vehicle:set_circle_rate(new_rate) then

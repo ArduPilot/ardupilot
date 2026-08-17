@@ -9,7 +9,7 @@
 # sim_vehicle.py --debug --valgrind
 #
 # Make testing rather faster:
-# time rsync -aPH /vagrant/ $HOME/ardupilot  # real	50s
+# time rsync -aPH /vagrant/ $HOME/ardupilot --exclude=/build/ --delete-excluded # real	50s
 # time (cd $HOME/ardupilot && ./waf configure --board=fmuv2 && ./waf build --target=bin/ardusub) # ~4 minutes
 # time (cd $HOME/ardupilot && ./waf configure --board=fmuv3 && ./waf build --target=bin/ardusub) # ~4 minutes (after building fmuv2)
 # time (cd $HOME/ardupilot && ./waf configure --board=navio2 && ./waf build --target=bin/arduplane)  # ~6 minutes
@@ -40,7 +40,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       vb.customize ["guestproperty", "set", :id, "/VirtualBox/GuestAdd/VBoxService/--timesync-set-on-restore", "1"]
   end
 
-  # If you are on windows then you must use a version of git >= 1.8.x
+  # If you are on Windows then you must use a version of git >= 1.8.x
   # to update the submodules in order to build. Older versions of git
   # use absolute paths for submodules which confuses things.
 
@@ -48,6 +48,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # and this is the default box that will be booted if no name is specified
   config.vm.boot_timeout = 1500
 
+  # Ubuntu releases: https://releases.ubuntu.com
+  # https://ubuntu.com/about/release-cycle -- Try here first and then fall back to:
+  # https://en.wikipedia.org/wiki/Ubuntu_version_history#Table_of_versions
+
+  # 22.04 LTS Standard Support EOL May 2027
   config.vm.define "autotest-server", primary: true do |autotest|
     autotest.vm.box = "ubuntu/jammy64"
     autotest.vm.provision :shell, path: "Tools/vagrant/initvagrant-autotest-server.sh"
@@ -57,26 +62,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     autotest.vm.boot_timeout = 1200
   end
 
-  # 20.04 LTS  EOL April 2025
-  config.vm.define "focal", autostart: false do |focal|
-    focal.vm.box = "ubuntu/focal64"
-    focal.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    focal.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (focal)"
-    end
-    focal.vm.boot_timeout = 1200
-  end
-  config.vm.define "focal-desktop", autostart: false do |focal|
-    focal.vm.box = "ubuntu/focal64"
-    focal.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
-    focal.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (focal-desktop)"
-      vb.gui = true
-    end
-    focal.vm.boot_timeout = 1500
-  end
-
-  # 22.04 LTS EOL Apr 2032
+  # 22.04 LTS Standard Support EOL May 2027
   config.vm.define "jammy", primary: true do |jammy|
     jammy.vm.box = "ubuntu/jammy64"
     jammy.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
@@ -95,45 +81,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     jammy.vm.boot_timeout = 1200
   end
 
-  # 23.04 EOL Jan 2024
-  config.vm.define "lunar", autostart: false do |lunar|
-    lunar.vm.box = "ubuntu/lunar64"
-    lunar.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    lunar.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (lunar)"
-    end
-    lunar.vm.boot_timeout = 1200
-  end
-  config.vm.define "lunar-desktop", autostart: false do |lunar|
-    lunar.vm.box = "ubuntu/lunar64"
-    lunar.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
-    lunar.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (lunar-desktop)"
-      vb.gui = true
-    end
-    lunar.vm.boot_timeout = 1200
-  end
-
-  # 23.10 EOL Jul 2024
-  config.vm.define "mantic", autostart: false do |mantic|
-    mantic.vm.box = "ubuntu/mantic64"
-    mantic.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    mantic.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (mantic)"
-    end
-    mantic.vm.boot_timeout = 1200
-  end
-  config.vm.define "mantic-desktop", autostart: false do |mantic|
-    mantic.vm.box = "ubuntu/mantic64"
-    mantic.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
-    mantic.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (mantic-desktop)"
-      vb.gui = true
-    end
-    mantic.vm.boot_timeout = 1200
-  end
-
-  # 24.04 end of standard support Jun 2029
+  # 24.04 LTS Standard Support EOL May 2029
   # note the use of "bento" here; Ubuntu stopped providing Vagrant
   # images due to Hashicorp adopting the "Business Source License".
   config.vm.define "noble", autostart: false do |noble|
@@ -154,28 +102,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     noble.vm.boot_timeout = 1200
   end
 
-  # 24.10 end of standard support ??
-  # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
-  # images due to Hashicorp adopting the "Business Source License".
-  config.vm.define "oracular", autostart: false do |oracular|
-    oracular.vm.box = "alvistack/ubuntu-24.10"
-    oracular.vm.provision :shell, path: "Tools/vagrant/initvagrant.sh"
-    oracular.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (oracular)"
-    end
-    oracular.vm.boot_timeout = 1200
-  end
-  config.vm.define "oracular-desktop", autostart: false do |oracular|
-    oracular.vm.box = "alvistack/ubuntu-24.10"
-    oracular.vm.provision :shell, path: "Tools/vagrant/initvagrant-desktop.sh"
-    oracular.vm.provider "virtualbox" do |vb|
-      vb.name = "ArduPilot (oracular-desktop)"
-      vb.gui = true
-    end
-    oracular.vm.boot_timeout = 1200
-  end
-
-  # 25.04 end of standard support ??
+  # 25.04 Standard Support EOL Jan 2026
   # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
   # images due to Hashicorp adopting the "Business Source License".
   config.vm.define "plucky", autostart: false do |plucky|
@@ -196,7 +123,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     plucky.vm.boot_timeout = 1200
   end
 
-  # 25.10 end of standard support ??
+  # 25.10 Standard Support EOL Jul 2026
   # note the use of "alvistack" here; Ubuntu stopped providing Vagrant
   # images due to Hashicorp adopting the "Business Source License".
   config.vm.define "questing", autostart: false do |questing|

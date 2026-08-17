@@ -7,23 +7,12 @@
 class AP_DAL_GPS {
 public:
 
-    /// GPS status codes
-    enum GPS_Status : uint8_t {
-        NO_GPS = 0,                     ///< No GPS connected/detected
-        NO_FIX = 1,                     ///< Receiving valid GPS messages but no lock
-        GPS_OK_FIX_2D = 2,              ///< Receiving valid messages and 2D lock
-        GPS_OK_FIX_3D = 3,              ///< Receiving valid messages and 3D lock
-        GPS_OK_FIX_3D_DGPS = 4,           ///< Receiving valid messages and 3D lock with differential improvements
-        GPS_OK_FIX_3D_RTK_FLOAT = 5, ///< Receiving valid messages and 3D RTK Float
-        GPS_OK_FIX_3D_RTK_FIXED = 6, ///< Receiving valid messages and 3D RTK Fixed
-    };
-
     AP_DAL_GPS();
 
-    GPS_Status status(uint8_t sensor_id) const {
-        return (GPS_Status)_RGPI[sensor_id].status;
+    AP_GPS_FixType status(uint8_t sensor_id) const {
+        return (AP_GPS_FixType)_RGPI[sensor_id].status;
     }
-    GPS_Status status() const {
+    AP_GPS_FixType status() const {
         return status(primary_sensor());
     }
     const Location &location(uint8_t instance) const {

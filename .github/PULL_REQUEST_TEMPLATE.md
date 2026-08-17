@@ -1,19 +1,24 @@
-## Summary
+### Summary
 
-<!-- a one or two line summary of what your PR does here -->
+<!-- Put a one or two line summary of what your PR does here -->
 
-## Testing (more checks increases chance of being merged)
+### Classification & Testing (check all that apply and add your own)
 
 - [ ] Checked by a human programmer
-- [ ] Tested in SITL
+- [ ] Non-functional change
+- [ ] No-binary change
+- [ ] Infrastructure change (e.g. unit tests, helper scripts)
+- [ ] Automated test(s) verify changes (e.g. unit test, autotest)
+- [ ] Tested manually, description below (e.g. SITL)
 - [ ] Tested on hardware
 - [ ] Logs attached
 - [ ] Logs available on request
-- [ ] Autotest included
 
-## Description
+<!-- Put additional testing description for this PR's changes here -->
 
-<!-- Describe your changes here -->
+### Description
+
+<!-- Describe the PR's content here -->
 
 <!--
 Don't overlook our community's expectations for creating a PR:

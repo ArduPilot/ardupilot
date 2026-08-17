@@ -61,9 +61,9 @@ The GOKU F405 AIO supports up to 5 PWM outputs. The pads for motor output ESC1 t
 
 The PWM are in 3 groups:
 
-PWM 1-2: Group 1
-PWM 3-4: Group 2
-LED: Group 3
+- PWM 1-2: Group 1
+- PWM 3-4: Group 2
+- LED: Group 3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -92,7 +92,7 @@ The GOKU F405 AIO does not have a builtin compass but it does have an external I
 
 The board includes a NeoPixel LED pad.
 
-## Loading Firmware (you will need to compile your own firmware)
+## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

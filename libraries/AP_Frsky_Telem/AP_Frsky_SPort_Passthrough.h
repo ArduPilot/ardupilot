@@ -5,6 +5,7 @@
 #if AP_FRSKY_SPORT_PASSTHROUGH_ENABLED
 
 #include <AP_RCTelemetry/AP_RCTelemetry.h>
+#include <AP_Mission/AP_Mission_config.h>
 
 #include "AP_Frsky_SPortParser.h"
 #include "AP_Frsky_MAVlite.h"
@@ -77,7 +78,9 @@ public:
 #endif //HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL
         TERRAIN =       14, // 0x500B terrain data
         WIND =          15, // 0x500C wind data
+#if AP_MISSION_ENABLED
         WAYPOINT =      16, // 0x500D waypoint data
+#endif  // AP_MISSION_ENABLED
         WFQ_LAST_ITEM       // must be last
     };
 
@@ -114,7 +117,9 @@ private:
     uint32_t calc_rpm(void);
     uint32_t calc_terrain(void);
     uint32_t calc_wind(void);
+#if AP_MISSION_ENABLED
     uint32_t calc_waypoint(void);
+#endif  // AP_MISSION_ENABLED
 
     // use_external_data is set when this library will
     // be providing data to another transport, such as FPort

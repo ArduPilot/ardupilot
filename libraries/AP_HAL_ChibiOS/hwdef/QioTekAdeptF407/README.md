@@ -27,7 +27,7 @@ It is an autopilot used CKS MCU.
 
 ## Pinout
 
-![QioTek AdpetF407 Board](../QioTekAdeptF407/adept_f407.jpg "QioTek AdpetF407")
+![QioTek AdeptF407 Board](../QioTekAdeptF407/adept_f407.jpg "QioTek AdeptF407")
 
 ## Connectors
 
@@ -164,17 +164,17 @@ RC input is configured on the RCIN pin by PA15 TIM2_CH1 TIM2 , at one end of the
 
 ## OSD Support
 
-QioTek AdpetF407 supports OSD using OSD_TYPE 1 (MAX7456 driver).
+QioTek AdeptF407 supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
 ## PWM Output
 
-The QioTek AdpetF407 AIO supports up to 12 PWM outputs. All 14 PWM outputs have GND on the top row, 5V on the middle row and signal on the bottom row.
+The QioTek AdeptF407 AIO supports up to 12 PWM outputs. All 14 PWM outputs have GND on the top row, 5V on the middle row and signal on the bottom row.
 
 The 12 PWM outputs are in 3 groups:
 
-PWM 1 and 4 in group1
-PWM 4 and 8 in group2
-PWM 9 and 12 in group3
+- PWM 1 and 4 in group1
+- PWM 4 and 8 in group2
+- PWM 9 and 12 in group3
 
 Channels within the same group need to use the same output rate. If any channel in a group uses DShot or then all channels in the group need to use DShot.
 
@@ -188,14 +188,14 @@ The board has two dedicated power monitor ports on 6 pin connectors. The correct
 
 The correct battery setting parameters are:
 
-BATT_VOLT_PIN 2
-BATT_CURR_PIN 3
-BATT_VOLT_MULT 20.000
-BATT_AMP_PERVLT 60.000
-BATT2_VOLT_PIN 14
-BATT2_CURR_PIN 15
-BATT2_VOLT_MULT 20.000
-BATT2_AMP_PERVLT 60.000
+- BATT_VOLT_PIN 2
+- BATT_CURR_PIN 3
+- BATT_VOLT_MULT 20.000
+- BATT_AMP_PERVLT 60.000
+- BATT2_VOLT_PIN 14
+- BATT2_CURR_PIN 15
+- BATT2_VOLT_MULT 20.000
+- BATT2_AMP_PERVLT 60.000
 
 In addition, the builtin voltage divider circuit can be used by Solder pad to switching to share the battery voltage monitoring by power2 support to 6S.
 
@@ -206,7 +206,7 @@ The built-in BEC 5V output has a starting voltage of 2S, and 9V/12V has a starti
 
 ## Compass
 
-The QioTek AdpetF407 has a builtin QMC5883 compass. Due to potential interference the board is usually used with an external I2C compass as part of a GPS/Compass combination.
+The QioTek AdeptF407 has a builtin QMC5883 compass. Due to potential interference the board is usually used with an external I2C compass as part of a GPS/Compass combination.
 
 ## Loading Firmware
 

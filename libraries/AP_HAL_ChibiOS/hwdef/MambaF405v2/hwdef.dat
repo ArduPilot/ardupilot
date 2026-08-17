@@ -42,7 +42,7 @@ PA10 USART1_RX USART1 ALT(1)
 define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_RCIN
 
 # SBUS inversion control pin, active low
-PC0 USART1_RXINV OUTPUT HIGH GPIO(78) POL(0)
+PC0 USART1_RXINV OUTPUT HIGH GPIO(78) POL(1)
 
 define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_None
 
@@ -134,7 +134,6 @@ define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
-define ALLOW_ARM_NO_COMPASS
 define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2

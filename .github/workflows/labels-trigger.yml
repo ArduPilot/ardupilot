@@ -1,0 +1,25 @@
+name: Labels Trigger
+# Minimal workflow triggered by pull_request (restricted token, safe for forks).
+# Its only purpose is to complete successfully so that the labels-apply
+# workflow_run can fire with elevated permissions.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: labels-trigger-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  trigger:
+    name: Trigger
+    runs-on: ubuntu-slim
+    permissions: {}
+    steps:
+      - name: Log PR number
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: echo "PR $PR_NUMBER ready for labelling"

@@ -95,11 +95,11 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     AP_GROUPINFO("POS",        9, GPSParms, pos_offset, 0),
 
     // @Param: NOISE
-    // @DisplayName: GPS Noise
-    // @Description: Amplitude of the GPS altitude error
+    // @DisplayName: GPS vertical noise
+    // @Description: Amplitude of the GPS vertical position error
     // @Units: m
     // @User: Advanced
-    AP_GROUPINFO("NOISE",     10, GPSParms, noise, 0),
+    AP_GROUPINFO("NOISE",     10, GPSParms, noise_vertical, 0),
 
     // @Param: LCKTIME
     // @DisplayName: GPS Lock Time
@@ -153,6 +153,20 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
     // @Bitmask: 0:UBlox GPS is F9P
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  18, GPSParms, options, 0),
+
+    // @Param: FIXTYPE
+    // @DisplayName: GPS Fix Type
+    // @Description: Allow setting which fix type (only some GPS's supported); matches AP_GPS_FixType
+    // @Values: 0:No GPS connected, 1:No Fix, 2:2D Fix, 3:3D Fix, 4:3D DGPS Fix, 5:3D RTK Float, 6:3D RTK Fixed
+    // @User: Advanced
+    AP_GROUPINFO("FIXTYPE", 19, GPSParms, fix_type, 6),
+
+    // @Param: HNSE
+    // @DisplayName: GPS horizontal noise
+    // @Description: Radius of the GPS horizontal position error in meters
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("HNSE",       20, GPSParms, noise_horizontal, 0),
 
     AP_GROUPEND
 };
@@ -489,14 +503,16 @@ void GPS::update()
     struct GPS_Data d {};
 
     d.num_sats = params.numsats;
+    d.fix_type = params.fix_type;
     d.latitude = latitude;
     d.longitude = longitude;
     d.yaw_deg = wrap_360(_sitl->state.yawDeg + params.heading_offset);
     d.roll_deg = _sitl->state.rollDeg;
     d.pitch_deg = _sitl->state.pitchDeg;
 
+    const float gps_wander_angle_rad = now_ms * 0.0005f;  // choosing T=12.6 sec arbitrarily
     // add an altitude error controlled by a slow sine wave
-    d.altitude = altitude + params.noise * sinf(now_ms * 0.0005f) + params.alt_offset;
+    d.altitude = altitude + params.noise_vertical * sinf(gps_wander_angle_rad) + params.alt_offset;
 
     // Add offset to c.g. velocity to get velocity at antenna and add simulated error
     Vector3f velErrorNED = params.vel_err;
@@ -556,8 +572,14 @@ void GPS::update()
     // Applying GPS glitch
     // Using first gps glitch
     Vector3f glitch_offsets = params.glitch;
-    d.latitude += glitch_offsets.x;
-    d.longitude += glitch_offsets.y;
+    // apply a slow circular horizontal wander of radius noise_horizontal (in metres)
+    const double earth_rad_inv = 1.0f/RADIUS_OF_EARTH;
+    const float lat_wander_m = params.noise_horizontal * sinf(gps_wander_angle_rad);
+    const float lon_wander_m = params.noise_horizontal * cosf(gps_wander_angle_rad);
+    const float highest_permissible_lat_deg = 89.0f;
+    const double cosine_of_lat = (fabsf(d.latitude) < highest_permissible_lat_deg) ? cos(radians(d.latitude)) : cos(radians(highest_permissible_lat_deg));
+    d.latitude += glitch_offsets.x + degrees(lat_wander_m * earth_rad_inv);
+    d.longitude += glitch_offsets.y + degrees(lon_wander_m * earth_rad_inv / cosine_of_lat);
     d.altitude += glitch_offsets.z;
 
     if (params.jam == 1) {

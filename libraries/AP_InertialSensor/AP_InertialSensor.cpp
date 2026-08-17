@@ -26,6 +26,7 @@
 #include "AP_InertialSensor_BMI270.h"
 #include "AP_InertialSensor_Backend.h"
 #include "AP_InertialSensor_L3G4200D.h"
+#include "AP_InertialSensor_LSM6DSV.h"
 #include "AP_InertialSensor_LSM9DS0.h"
 #include "AP_InertialSensor_LSM9DS1.h"
 #include "AP_InertialSensor_Invensense.h"
@@ -38,7 +39,10 @@
 #include "AP_InertialSensor_Invensensev3.h"
 #include "AP_InertialSensor_NONE.h"
 #include "AP_InertialSensor_SCHA63T.h"
+#include "AP_InertialSensor_ASM330.h"
+#include "AP_InertialSensor_ADIS16607.h"
 #include <AP_Scheduler/AP_Scheduler.h>
+#include "AP_InertialSensor_ZeroOne_FPGA_SCH16T.h"
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
  * Output is on the debug console. */
@@ -1203,7 +1207,9 @@ AP_InertialSensor::detect_backends(void)
     // if enabled, make the first IMU the external AHRS
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
     if (serial_port >= 0) {
+        const uint8_t count_before = _backend_count;
         ADD_BACKEND(NEW_NOTHROW AP_InertialSensor_ExternalAHRS(*this, serial_port));
+        _first_onboard_imu_instance = _backend_count - count_before;   // Sets to 1 only if it actually registered.
     }
 #endif
 
@@ -1504,6 +1510,36 @@ bool AP_InertialSensor::use_gyro(uint8_t instance) const
     }
 
     return (get_gyro_health(instance) && _use(instance));
+}
+
+// look up the backend that owns the given gyro instance, or nullptr
+const AP_InertialSensor_Backend *AP_InertialSensor::_find_gyro_backend(uint8_t instance) const
+{
+    for (uint8_t i = 0; i < _backend_count; i++) {
+        if (_backends[i] != nullptr && _backends[i]->get_gyro_instance() == instance) {
+            return _backends[i];
+        }
+    }
+    return nullptr;
+}
+
+float AP_InertialSensor::get_gyro_bias_limit_rads(uint8_t instance) const
+{
+    const auto *backend = _find_gyro_backend(instance);
+    if (backend == nullptr) {
+        // fall back to the legacy default if no backend has claimed this instance yet
+        return 0.5f;
+    }
+    return backend->gyro_bias_limit_rads();
+}
+
+float AP_InertialSensor::get_gyro_bias_init_dps(uint8_t instance) const
+{
+    const auto *backend = _find_gyro_backend(instance);
+    if (backend == nullptr) {
+        return 2.5f;
+    }
+    return backend->gyro_bias_init_dps();
 }
 
 // get_accel_health_all - return true if all accels are healthy

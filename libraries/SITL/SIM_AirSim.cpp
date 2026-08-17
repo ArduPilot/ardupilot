@@ -346,6 +346,9 @@ void AirSim::recv_fdm(const sitl_input& input)
         rangefinder_m[i] = state.rng.rng_distances.data[i];
     }
 
+    // AirSim does not provide battery information, so use the standard battery model.
+    update_battery();
+
 #if 0
 // @LoggerMessage: ASM1
 // @Description: AirSim simulation data

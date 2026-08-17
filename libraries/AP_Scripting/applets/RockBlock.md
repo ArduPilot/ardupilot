@@ -1,6 +1,6 @@
 # RockBlock Lua Script
 
-Lua script to send a recieve very basic MAVLink telemetry over a
+Lua script to send and receive very basic MAVLink telemetry over a
 Rockblock SBD satellite modem
 Requires [rockblock2mav](https://github.com/stephendade/rockblock2mav) at the GCS end
 
@@ -28,7 +28,7 @@ Caveats:
 
 The script adds the following parameters:
 
-## RCK_FORCEHL
+### RCK_FORCEHL
 
 Mode of operation:
 
@@ -36,19 +36,19 @@ Mode of operation:
 - 1 = start enabled, can be disabled via MAV_CMD_CONTROL_HIGH_LATENCY
 - 2 = enabled on loss of telemetry (GCS) link for RCK_TIMEOUT seconds
 
-## RCK_PERIOD
+### RCK_PERIOD
 
 When in High Latency mode, send Rockblock updates every RCK_PERIOD seconds
 
-## RCK_DEBUG
+### RCK_DEBUG
 
 Sends Rockblock debug text to GCS via statustexts
 
-## RCK_ENABLE
+### RCK_ENABLE
 
 Enables the modem transmission
 
-## RCK_TIMEOUT
+### RCK_TIMEOUT
 
 If RCK_FORCEHL=2, this is the number of seconds of no-messages from the GCS until High Latency mode is auto-enabled
 

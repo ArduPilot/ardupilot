@@ -243,9 +243,6 @@ void ModeFlowHold::run()
     // set vertical speed and acceleration limits
     pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // check for filter change
     if (!is_equal(flow_filter.get_cutoff_freq(), flow_filter_hz.get())) {
         flow_filter.set_cutoff_frequency(copter.scheduler.get_loop_rate_hz(), flow_filter_hz.get());
@@ -253,7 +250,6 @@ void ModeFlowHold::run()
 
     // get pilot desired climb rate
     float target_climb_rate_ms = copter.get_pilot_desired_climb_rate_ms();
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // get pilot's desired yaw rate
     float target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
@@ -450,7 +446,7 @@ void ModeFlowHold::update_height_estimate(void)
       for each axis update the height estimate
      */
     float delta_height_m = 0;
-    uint8_t total_weight = 0;
+    float total_weight = 0;
     float height_estimate_m = ins_height_m + height_offset_m;
 
     for (uint8_t i=0; i<2; i++) {

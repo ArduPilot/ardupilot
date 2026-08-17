@@ -131,12 +131,15 @@ void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float a
                          float angle_jerk_max, float dt, bool limit_total);
 
 // Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.
-// - `vel` defines the current direction of motion (used to split the acceleration).
+// - `vel_norm` is the normalised velocity (velocity divided by maximum speed) that sets the reference direction used to split the acceleration: the in-track component is parallel to it and the cross-track component is perpendicular. Normalising keys the cross-track prioritisation fade to a fraction of max speed.
 // - `accel` is modified in-place to remain within `accel_max`.
-// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize lateral correction.
-// - If `vel` is zero, a simple magnitude limit is applied.
+// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize the cross-track component.
+// - Near a weak reference the cross-track prioritisation is faded out to a simple
+//   direction-preserving magnitude limit, avoiding a lateral acceleration spike
+//   as the reference direction rotates (e.g. a hard stick reversal).
+// - If `vel_norm` is zero, a simple magnitude limit is applied.
 // Returns true if the acceleration vector was modified.
-bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
+bool limit_accel_xy(const Vector2f& vel_norm, Vector2f& accel, float accel_max);
 
 // Limits a 2D acceleration vector with direction-dependent prioritisation.
 // - Acceleration is decomposed into along-track (parallel to velocity) and cross-track components.
@@ -187,17 +190,39 @@ float sqrt_controller_accel(float error, float rate_cmd, float rate_state, float
 // - Output: stopping distance required to decelerate cleanly.
 float stopping_distance(float velocity, float p, float accel_max);
 
-// Computes the maximum possible acceleration or velocity in a specified 3D direction,
-// constrained by separate limits in horizontal (XY) and vertical (Z) axes.
-// - `direction` should be a non-zero vector indicating desired direction of travel.
-// - Limits: max_xy, max_z_pos (upward), max_z_neg (downward)
-// Returns the maximum achievable magnitude in that direction without violating any axis constraint.
+// Return the largest M >= 0 that can scale a 3D direction without exceeding
+// independent axis limits:
+//
+//   M * |unit.xy| <= max_xy
+//   -max_z_neg <= M * unit.z <= max_z_pos
+//
+// where unit = normalize(direction). The magnitude of direction is ignored.
+//
+// max_z_pos limits travel in the +Z direction.
+// max_z_neg limits travel in the -Z direction.
+// All limits must be positive.
+//
+// Typical use: limit velocity or acceleration magnitude along a desired
+// direction without changing that direction.
+//
+// Returns 0 if the direction is zero or any limit is zero.
 float kinematic_limit(Vector3f direction, float max_xy, float max_z_neg, float max_z_pos);
 
-// compute the maximum allowed magnitude along a direction defined by segment_length_xy and segment_length_z components
-// constrained by independent horizontal (max_xy) and vertical (max_z_pos/max_z_neg) limits
-// returns the maximum achievable magnitude without exceeding any axis limit
-float kinematic_limit(float segment_length_xy, float segment_length_z, float max_xy, float max_z_pos, float max_z_neg);
+// Return the largest M >= 0 along a direction defined by horizontal and
+// vertical components, constrained by:
+//
+//   M * |unit.xy| <= max_xy
+//   -max_z_neg <= M * unit.z <= max_z_pos
+//
+// dir_xy (>= 0) and dir_z define a direction; only their ratio matters
+// (normalized internally).
+//
+// max_z_pos limits travel in the +Z direction.
+// max_z_neg limits travel in the -Z direction.
+// All limits must be positive.
+//
+// Returns 0 if any limit is zero or the direction is zero.
+float kinematic_limit(float dir_xy, float dir_z, float max_xy, float max_z_neg, float max_z_pos);
 
 // Applies an exponential curve to a normalized input in the range [-1, 1].
 // - `expo` shapes the curve (0 = linear, closer to 1 = more curvature).

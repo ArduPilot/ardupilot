@@ -37,10 +37,18 @@ public:
 
     RC_Channel *get_arming_channel(void) const override;
 
+    bool has_pilot_input_for_override_clear() override;
+
     RC_Channel_Rover obj_channels[NUM_RC_CHANNELS];
 
     RC_Channel_Rover *channel(const uint8_t chan) override {
-        if (chan >= NUM_RC_CHANNELS) {
+        if (chan >= ARRAY_SIZE(obj_channels)) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
+    const RC_Channel_Rover *channel(const uint8_t chan) const override {
+        if (chan >= ARRAY_SIZE(obj_channels)) {
             return nullptr;
         }
         return &obj_channels[chan];

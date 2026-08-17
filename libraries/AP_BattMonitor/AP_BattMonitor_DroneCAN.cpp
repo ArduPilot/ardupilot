@@ -13,8 +13,6 @@
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#define LOG_TAG "BattMon"
-
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
@@ -100,11 +98,6 @@ AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneC
             batmon->_node_id = node_id;
             batmon->_instance = i;
             batmon->init();
-            AP::can().log_text(AP_CANManager::LOG_INFO,
-                            LOG_TAG,
-                            "Registered BattMonitor Node %d on Bus %d\n",
-                            node_id,
-                            ap_dronecan->get_driver_index());
             return batmon;
         }
     }

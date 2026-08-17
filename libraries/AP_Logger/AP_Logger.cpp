@@ -99,6 +99,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
 
     // @Param: _FILE_BUFSIZE
@@ -171,7 +172,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Range: 0 1000
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
+    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 10),
 #endif
 
 #if HAL_LOGGING_BLOCK_ENABLED
@@ -375,7 +376,7 @@ bool AP_Logger::labels_string_is_good(const char *labels) const
 {
     bool passed = true;
     if (strlen(labels) >= LS_LABELS_SIZE) {
-        Debug("Labels string too long (%u > %u)", unsigned(strlen(labels)), unsigned(LS_LABELS_SIZE));
+        Debug("Labels string too long (%u >= %u)", unsigned(strlen(labels)), unsigned(LS_LABELS_SIZE));
         passed = false;
     }
     // This goes through and slices labels up into substrings by
@@ -961,7 +962,7 @@ void AP_Logger::Write_Fence()
 
 void AP_Logger::Write_NamedValueFloat(const char *name, float value)
 {
-    WriteStreaming(
+    Write(
         "NVF",
         "TimeUS,Name,Value",
         "s#-",

@@ -106,7 +106,6 @@ define HAL_GPIO_ETH_ENABLE 113
 
 define BOARD_PHY_ID  MII_LAN8742A_ID
 define BOARD_PHY_RMII
-define AP_PERIPH_NETWORKING_ENABLED 1
 
 # ADC
 PA0 SCALED1_V3V3 ADC1 SCALE(2)
@@ -320,6 +319,9 @@ IMU Invensensev3 SPI:iim42653_ext2 ROTATION_ROLL_180_YAW_270
 
 define HAL_DEFAULT_INS_FAST_SAMPLE 7
 
+# enable high-resolution FIFO sampling on all three IMUs
+define HAL_INS_HIGHRES_SAMPLE 7
+
 # enable RAMTRON parameter storage
 define HAL_STORAGE_SIZE 32768
 define HAL_WITH_RAMTRON 1
@@ -343,6 +345,3 @@ ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_lowpolh.bin
 # note that if firmware is build with --secure-bl then DFU is
 # disabled
 ENABLE_DFU_BOOT 1
-
-# bootloader embedding / bootloader flashing not available
-define AP_BOOTLOADER_FLASHING_ENABLED 0

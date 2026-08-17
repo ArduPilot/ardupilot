@@ -64,6 +64,7 @@
 #include "AP_RangeFinder_Ainstein_LR_D1.h"
 #include "AP_RangeFinder_RDS02UF.h"
 #include "AP_RangeFinder_LightWare_GRF.h"
+#include "AP_RangeFinder_LightWare_GRF_I2C.h"
 #include "AP_RangeFinder_DTS6012M.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -83,7 +84,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
 	AP_SUBGROUPINFO(params[0], "1_", 25, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 1_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[0], "1_",  57, RangeFinder, backend_var_info[0]),
 
 #if RANGEFINDER_MAX_INSTANCES > 1
@@ -92,7 +93,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[1], "2_", 27, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 2_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[1], "2_",  58, RangeFinder, backend_var_info[1]),
 #endif
 
@@ -102,7 +103,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[2], "3_", 29, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 3_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[2], "3_",  59, RangeFinder, backend_var_info[2]),
 #endif
 
@@ -112,7 +113,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[3], "4_", 31, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 4_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[3], "4_",  60, RangeFinder, backend_var_info[3]),
 #endif
 
@@ -122,7 +123,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[4], "5_", 33, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 5_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[4], "5_",  34, RangeFinder, backend_var_info[4]),
 #endif
 
@@ -132,7 +133,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[5], "6_", 35, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 6_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[5], "6_",  36, RangeFinder, backend_var_info[5]),
 #endif
 
@@ -142,7 +143,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[6], "7_", 37, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 7_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[6], "7_",  38, RangeFinder, backend_var_info[6]),
 #endif
 
@@ -152,7 +153,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[7], "8_", 39, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 8_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[7], "8_",  40, RangeFinder, backend_var_info[7]),
 #endif
 
@@ -162,7 +163,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[8], "9_", 41, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: 9_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[8], "9_",  42, RangeFinder, backend_var_info[8]),
 #endif
 
@@ -172,7 +173,7 @@ const AP_Param::GroupInfo RangeFinder::var_info[] = {
     AP_SUBGROUPINFO(params[9], "A_", 43, RangeFinder, AP_RangeFinder_Params),
 
     // @Group: A_
-    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp
+    // @Path: AP_RangeFinder_Wasp.cpp,AP_RangeFinder_Backend_CAN.cpp,AP_RangeFinder_LightWare_GRF.cpp,AP_RangeFinder_LightWare_GRF_I2C.cpp
     AP_SUBGROUPVARPTR(drivers[9], "A_",  44, RangeFinder, backend_var_info[9]),
 #endif
 
@@ -238,6 +239,10 @@ __INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
         state[i].range_valid_count = 0;
         // initialize signal_quality_pct for drivers that don't handle it.
         state[i].signal_quality_pct = SIGNAL_QUALITY_UNKNOWN;
+#if AP_TEMPERATURE_SENSOR_ENABLED
+        state[i].temperature_valid = false;
+        state[i].temperature_update_ms = 0;
+#endif
     }
 }
 
@@ -634,6 +639,15 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         break;
 #endif // AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
 
+#if AP_RANGEFINDER_LIGHTWARE_GRF_I2C_ENABLED
+    case Type::LightWare_GRF_I2C: {
+        const uint8_t addr = params[instance].address ? params[instance].address
+                                                      : AP_RANGEFINDER_LIGHTWARE_GRF_I2C_DEFAULT_ADDR;
+        probe_i2c_buses(instance, addr, AP_RangeFinder_LightWare_GRF_I2C::detect);
+        break;
+    }
+#endif // AP_RANGEFINDER_LIGHTWARE_GRF_I2C_ENABLED
+
 #if AP_RANGEFINDER_DTS6012M_ENABLED
     case Type::DTS6012M:
         serial_create_fn = AP_RangeFinder_DTS6012M::create;
@@ -855,6 +869,20 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
     return backend->get_temp(temp);
 }
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
+// set an externally-measured temperature (C) for a rangefinder instance.
+// used by AP_TemperatureSensor when TEMPx_SRC is set to Rangefinder.
+void RangeFinder::set_temperature_C(uint8_t instance, float temperature_C)
+{
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
+        return;
+    }
+    state[instance].temperature_C = temperature_C;
+    state[instance].temperature_valid = true;
+    state[instance].temperature_update_ms = AP_HAL::millis();
+}
+#endif
+
 #if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
 void RangeFinder::Log_RFND() const
@@ -874,6 +902,11 @@ void RangeFinder::Log_RFND() const
             continue;
         }
 
+        float temperature = logger.quiet_nanf();
+        float temp;
+        if (s->get_temp(temp)) {
+            temperature = temp;
+        }
         const struct log_RFND pkt = {
                 LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
                 time_us      : AP_HAL::micros64(),
@@ -882,6 +915,7 @@ void RangeFinder::Log_RFND() const
                 status       : (uint8_t)s->status(),
                 orient       : s->orientation(),
                 quality      : s->signal_quality_pct(),
+                temperature  : temperature,
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }

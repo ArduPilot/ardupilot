@@ -29,10 +29,6 @@
 #include <AP_Relay/AP_Relay_config.h>
 #include <RC_Channel/RC_Channel.h>
 
-#if AP_ICENGINE_TCA9554_STARTER_ENABLED
-#include "AP_ICEngine_TCA9554.h"
-#endif
-
 class AP_ICEngine {
 public:
     // constructor
@@ -180,10 +176,6 @@ private:
 
     // Last aux function value
     RC_Channel::AuxSwitchPos aux_pos = RC_Channel::AuxSwitchPos::MIDDLE;
-
-#if AP_ICENGINE_TCA9554_STARTER_ENABLED
-    AP_ICEngine_TCA9554 tca9554_starter;
-#endif
 
 #if AP_RPM_ENABLED
     // redline rpm

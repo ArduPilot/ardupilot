@@ -214,6 +214,12 @@ public:
     // handling of set_roi_sysid message
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // point at next waypoint, with attitude offsets:
+    void set_roi_target_wpnext_offset(const Vector3f &rpy) { set_roi_target_wpnext_offset(_primary, rpy); }
+    void set_roi_target_wpnext_offset(uint8_t instance, const Vector3f &rpy);
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
     // mavlink message handling:
     MAV_RESULT handle_command(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
     void handle_param_value(const mavlink_message_t &msg);
@@ -246,19 +252,26 @@ public:
     // any failure_msg returned will not include a prefix
     bool pre_arm_checks(char *failure_msg, uint8_t failure_msg_len);
 
+#if AP_SCRIPTING_ENABLED
     // get target rate in deg/sec. returns true on success
     bool get_rate_target(uint8_t instance, float& roll_degs, float& pitch_degs, float& yaw_degs, bool& yaw_is_earth_frame);
 
     // get target angle in deg. returns true on success
     bool get_angle_target(uint8_t instance, float& roll_deg, float& pitch_deg, float& yaw_deg, bool& yaw_is_earth_frame);
 
-#if AP_SCRIPTING_ENABLED
     // get mount target location. returns true on success
     bool get_location_target(uint8_t instance, Location& target_loc);
 #endif
 
     // accessors for scripting backends and logging
     void set_attitude_euler(uint8_t instance, float roll_deg, float pitch_deg, float yaw_bf_deg);
+
+ #if AP_SCRIPTING_ENABLED
+    // used by a script sending messages to a physical device to
+    // indicate what targets can be either natively sent to the device
+    // or internally handled by the script
+    void set_natively_supported_mount_target_types(uint8_t instance, uint8_t types_mask);
+#endif  // AP_SCRIPTING_ENABLED
 
     // write mount log packet for all backends
     void write_log();

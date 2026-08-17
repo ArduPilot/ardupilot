@@ -36,6 +36,10 @@ sitl_params_to_skip = set([
     'default_params/motorboat.parm',
     'default_params/sub.parm',
     'default_params/sub-6dof.parm',
+    # PPP-only AP_Periph params (NET_PPP_BAUD) are not in the default
+    # AP_Periph metadata, the same reason CubeRedPrimary-PPPGW and
+    # Pixhawk6X-PPPGW are in periph_hwdefs_to_skip above.
+    'default_params/periph-ppp.parm',
 ])
 
 frame_params_to_skip = set([
@@ -91,7 +95,8 @@ def check_sitl(skip: SkippedChecks | None = None):
         'Rover': 'Rover',
         'ArduSub': 'Sub',
         'AntennaTracker': 'Tracker',
-        'sitl_periph_universal': 'AP_Periph'
+        'sitl_periph_universal': 'AP_Periph',
+        'sitl_periph_PPP': 'AP_Periph',
     }
     directory = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),

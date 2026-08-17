@@ -15,6 +15,7 @@
 #pragma once
 
 #include "AP_GPS_config.h"
+#include "AP_GPS_FixType.h"
 
 #if AP_GPS_ENABLED
 
@@ -141,19 +142,16 @@ public:
         static const struct AP_Param::GroupInfo var_info[];
     };
 
-    /// GPS status codes.  These are kept aligned with MAVLink by
-    /// static_assert in AP_GPS.cpp
-    enum GPS_Status {
-        NO_GPS = 0,                  ///< No GPS connected/detected
-        NO_FIX = 1,                  ///< Receiving valid GPS messages but no lock
-        GPS_OK_FIX_2D = 2,           ///< Receiving valid messages and 2D lock
-        GPS_OK_FIX_3D = 3,           ///< Receiving valid messages and 3D lock
-        GPS_OK_FIX_3D_DGPS = 4,      ///< Receiving valid messages and 3D lock with differential improvements
-        GPS_OK_FIX_3D_RTK_FLOAT = 5, ///< Receiving valid messages and 3D RTK Float
-        GPS_OK_FIX_3D_RTK_FIXED = 6, ///< Receiving valid messages and 3D RTK Fixed
-        GPS_OK_FIX_TYPE_STATIC = 7,     ///< Receiving valid messages and static fixed, typically used for base stations
-        GPS_OK_FIX_TYPE_PPP = 8,        ///< Receiving valid messages and PPP, 3D position.
-    };
+    // Aliases for AP_GPS_FixType values, for backwards compatibility with scripting
+    static constexpr uint8_t NO_GPS                  = (uint8_t)AP_GPS_FixType::NO_GPS;
+    static constexpr uint8_t NO_FIX                  = (uint8_t)AP_GPS_FixType::NONE;
+    static constexpr uint8_t GPS_OK_FIX_2D           = (uint8_t)AP_GPS_FixType::FIX_2D;
+    static constexpr uint8_t GPS_OK_FIX_3D           = (uint8_t)AP_GPS_FixType::FIX_3D;
+    static constexpr uint8_t GPS_OK_FIX_3D_DGPS      = (uint8_t)AP_GPS_FixType::DGPS;
+    static constexpr uint8_t GPS_OK_FIX_3D_RTK_FLOAT = (uint8_t)AP_GPS_FixType::RTK_FLOAT;
+    static constexpr uint8_t GPS_OK_FIX_3D_RTK_FIXED = (uint8_t)AP_GPS_FixType::RTK_FIXED;
+    static constexpr uint8_t GPS_OK_FIX_TYPE_STATIC = (uint8_t)AP_GPS_FixType::STATIC;
+    static constexpr uint8_t GPS_OK_FIX_TYPE_PPP =    (uint8_t)AP_GPS_FixType::PPP;
 
     // GPS navigation engine settings. Not all GPS receivers support
     // this
@@ -192,7 +190,7 @@ public:
         uint8_t instance; // the instance number of this GPS
 
         // all the following fields must all be filled by the backend driver
-        GPS_Status status;                  ///< driver fix status
+        AP_GPS_FixType status;              ///< driver fix status
         uint32_t time_week_ms;              ///< GPS time (milliseconds from start of GPS week)
         uint16_t time_week;                 ///< GPS week number
         Location location;                  ///< last fix location
@@ -283,13 +281,13 @@ public:
     }
 
     /// Query GPS status
-    GPS_Status status(uint8_t instance) const {
-        if (_force_disable_gps && state[instance].status > NO_FIX) {
-            return NO_FIX;
+    AP_GPS_FixType status(uint8_t instance) const {
+        if (_force_disable_gps && state[instance].status > AP_GPS_FixType::NONE) {
+            return AP_GPS_FixType::NONE;
         }
         return state[instance].status;
     }
-    GPS_Status status(void) const {
+    AP_GPS_FixType status(void) const {
         return status(primary_instance);
     }
 
@@ -297,31 +295,31 @@ public:
     // fix type.  For space-constrained human-readable displays
     char status_onechar(void) const {
         switch (status()) {
-        case AP_GPS::NO_GPS:
+        case AP_GPS_FixType::NO_GPS:
             return ' ';
-        case AP_GPS::NO_FIX:
+        case AP_GPS_FixType::NONE:
             return '-';
-        case AP_GPS::GPS_OK_FIX_2D:
+        case AP_GPS_FixType::FIX_2D:
             return '2';
-        case AP_GPS::GPS_OK_FIX_3D:
+        case AP_GPS_FixType::FIX_3D:
             return '3';
-        case AP_GPS::GPS_OK_FIX_3D_DGPS:
+        case AP_GPS_FixType::DGPS:
             return '4';
-        case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
+        case AP_GPS_FixType::RTK_FLOAT:
             return '5';
-        case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+        case AP_GPS_FixType::RTK_FIXED:
             return '6';
-        case AP_GPS::GPS_OK_FIX_TYPE_STATIC:
+        case AP_GPS_FixType::STATIC:
             return '7';
-        case AP_GPS::GPS_OK_FIX_TYPE_PPP:
+        case AP_GPS_FixType::PPP:
             return '8';
         }
         // should never reach here; compiler flags guarantees this.
         return '?';
     }
 
-    // Query the highest status this GPS supports (always reports GPS_OK_FIX_3D for the blended GPS)
-    GPS_Status highest_supported_status(uint8_t instance) const WARN_IF_UNUSED;
+    // Query the highest status this GPS supports (always reports FIX_3D for the blended GPS)
+    AP_GPS_FixType highest_supported_status(uint8_t instance) const WARN_IF_UNUSED;
 
     // location of last fix
     const Location &location(uint8_t instance) const {

@@ -70,6 +70,31 @@ struct dirent {
 
 #include "AP_Filesystem_backend.h"
 
+// used by LittleFS
+#define AP_FILESYSTEM_FLASH_JEDEC_NOR 1
+#define AP_FILESYSTEM_FLASH_W25NXX 2
+
+#ifndef AP_FILESYSTEM_LITTLEFS_FLASH_TYPE
+#define AP_FILESYSTEM_LITTLEFS_FLASH_TYPE AP_FILESYSTEM_FLASH_JEDEC_NOR
+#endif
+
+#ifndef AP_FILESYSTEM_POSIX_MAP_FILENAME_ALLOC
+// this requires AP_FILESYSTEM_POSIX_MAP_FILENAME_BASEDIR
+#define AP_FILESYSTEM_POSIX_MAP_FILENAME_ALLOC 0
+#endif
+
+#ifndef AP_FILESYSTEM_HAVE_DIRENT_DTYPE
+#define AP_FILESYSTEM_HAVE_DIRENT_DTYPE 1
+#endif
+
+#ifndef AP_FATFS_MAX_IO_SIZE
+#define AP_FATFS_MAX_IO_SIZE 4096
+#endif
+
+#ifndef AP_FATFS_MIN_IO_SIZE
+#define AP_FATFS_MIN_IO_SIZE 4096
+#endif
+
 class AP_Filesystem {
 private:
     struct DirHandle {
@@ -129,7 +154,10 @@ public:
     // unmount filesystem for reboot
     void unmount(void);
 
-    // returns null-terminated string; cr or lf terminates line
+    // reads a line into buf, guaranteeing null-termination.  buflen
+    // is the full size of buf, including the space required for the
+    // null terminator, so up to buflen-1 characters are returned.  cr
+    // or lf terminates the line and is consumed but not returned.
     bool fgets(char *buf, uint8_t buflen, int fd);
 
     // run crc32 over file with given name, returns true if successful

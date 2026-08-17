@@ -1,0 +1,10 @@
+# copter PPP networking link (paired with sitl_periph_PPP).
+# Copter is the PPP "client" - it lets IPCP negotiate its IP from the periph.
+
+NET_ENABLE 1
+SERIAL5_PROTOCOL 48
+
+# Enable CAN driver 1 so the SITL multicast sim-state publisher comes alive.
+# The companion AP_Periph SITL blocks waiting for that multicast on boot.
+# The PPP link itself runs over a loopback TCP connection on SERIAL5, not CAN.
+CAN_P1_DRIVER 1

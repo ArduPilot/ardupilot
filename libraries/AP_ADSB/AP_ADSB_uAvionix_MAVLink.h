@@ -36,5 +36,5 @@ private:
     uint32_t encode_icao(const uint32_t icao_id) const;
     uint8_t get_encoded_callsign_null_char(void);
 };
-#endif // HAL_ADSB_ENABLED
+#endif // HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
 

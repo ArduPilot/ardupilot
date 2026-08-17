@@ -6,23 +6,23 @@ This driver implements support for the UltraMotion CAN servos
 
 The script used the following parameters:
 
-## UM_SERVO_MASK
+### UM_SERVO_MASK
 
 Mask of servo channels to transmit using UltraMotion CAN messages
 
-## UM_CANDRV
+### UM_CANDRV
 
 This sets the CAN scripting driver number to attach to. This is
 normally set to 1 to use a CAN driver with CAN_Dx_PROTOCOL=10. To use
 the 2nd scripting CAN driver set this to 2 and set CAN_Dx_PROTOCOL=12.
 
-## UM_RATE_HZ
+### UM_RATE_HZ
 
 This sets the update rate of the script in Hz (how often it sends
 commands and checks for new data from the actuator). A value of 200 is
 reasonable.
 
-## UM_OPTIONS
+### UM_OPTIONS
 
 This sets optional features. Set bit 1 for enabling CAN logging. Bit 2
 enables telemetry parsing. Bit 3 for sending the position of all
