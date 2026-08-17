@@ -228,3 +228,5 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # build ABIN for flash-from-bootloader support:
 env BUILD_ABIN True
+
+define DEFAULT_NTF_LED_TYPES 455

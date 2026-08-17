@@ -6,9 +6,9 @@ The BlueBerry_H743 is a flight controller designed and produced by blueberry
 ## Features
 
 - STM32H743 microcontroller
-- Dual ICM426** IMUs
+- Dual ICM42688/ICM42605 IMUs
 - 13 PWM / Dshot outputs
-- 8 UARTs, one dedicated to the one board BT module
+- 7 UARTs, one dedicated to the one board BT module
 - 1 CAN
 - Dedicated remote USB board with buzzer and boot switch
 - DPS310 or SPL06 barometer
@@ -45,8 +45,11 @@ The BlueBerry_H743 supports 3-12s Li battery input. It provides 3 on-board BEC r
 | 9V | from 9V BEC | 27W (3A) |
 | VX | Servo rail VX BEC, default 5V, can be changed to 6V or 7.2V or 8.4V | 70W (14A) |
 
-## Loading Firmware
+## Firmware
 
+Firmware for this board can be found [here](https://firmware.ardupilot.org) in sub-folders labeled "BlueBerryH743".
+
+## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the bootloader button pressed. Then you should load the "xxx_with_bl.hex" firmware, using your favorite DFU loading tool, such as the STM32CubeProgrammer.
 
@@ -62,7 +65,7 @@ All UARTs are DMA capable.
 - SERIAL1 -> UART1 (MAVLink2, dedicated to the Integrated Bluetooth module)
 - SERIAL2 -> UART2 (GPS)
 - SERIAL3 -> UART3 (GPS2)
-- SERIAL4 -> UART4 (SerialProtocol_MSP_DisplayPort)
+- SERIAL4 -> UART4 (HD-VTX DisplayPort OSD support on UART4)
 - SERIAL5 -> USB (SLCAN)
 - SERIAL6 -> UART6 (RCIN)
 - SERIAL7 -> UART7 (MAVLink2)
@@ -113,13 +116,18 @@ The first voltage/current sensor is enabled by default and the pin inputs and vo
 - BATT2_CURR_PIN 7
 - BATT2_VOLT_MULT 21
 
+## Analog RSSI and AIRSPEED inputs
+
+- Analog RSSI uses RSSI_ANA_PIN = 8
+- Analog Airspeed sensor would use ARSPD_PIN = 4
+
 ## Compass
 
 The BlueBerry_H743 has no built-in compass. An external compass can be attached to either set of SDA/SCL pins or via DroneCAN.
 
 ## Camera Switch
 
-The BlueBerry_H743 supports up to 2 cameras, connected to pin CAM1 and CAM2. You can select whcih camera is used by an RC channel. Set the parameters below (RC 6 used in the example:
+The BlueBerry_H743 supports up to 2 cameras, connected to pins CM1 and CM2. You can select which camera is used by an RC channel. Set the parameters below (RC 6 used in the example):
 
 - RELAY2_FUNCTION = 1
 - RELAY2_PIN = 82
