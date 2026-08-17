@@ -193,6 +193,136 @@ class ArmedAtEndOfTestException(ErrorException):
     pass
 
 
+class LocationAltFrameException(ErrorException):
+    """Thrown when a Location's altitude is accessed in the wrong frame"""
+    pass
+
+
+class AltFrame(enum.Enum):
+    '''altitude frame for Location, mirroring AP_Common Location::AltFrame'''
+    ABSOLUTE = 0        # above mean sea level (AMSL)
+    ABOVE_HOME = 1
+    ABOVE_ORIGIN = 2    # above EKF origin
+    ABOVE_TERRAIN = 3
+
+
+class Location(object):
+    '''a latitude/longitude/altitude-with-frame, mirroring AP_Common's
+    Location.  Use this in preference to mavutil.location, which has no
+    field for the frame the altitude is in, and in practice is used to
+    hold altitudes in a variety of frames.
+
+    lat/lng are in degrees.  The altitude is in metres, tagged with the
+    AltFrame it is measured in, and is only accessible via get_alt_m(),
+    which raises LocationAltFrameException unless the caller names the
+    frame the altitude is stored in; use TestSuite.change_alt_frame()
+    to convert between frames.  There is deliberately no "alt"
+    attribute, so code assuming a frame fails loudly rather than
+    misinterpreting the altitude.
+    '''
+
+    def __init__(self, lat_deg: float, lng_deg: float, alt_m: float, alt_frame: AltFrame):
+        if not isinstance(alt_frame, AltFrame):
+            raise ValueError("alt_frame must be an AltFrame, got %s" % str(alt_frame))
+        self.lat = lat_deg
+        self.lng = lng_deg
+        self._alt_m = alt_m
+        self._alt_frame = alt_frame
+
+    @classmethod
+    def latlon_only(cls, lat_deg: float, lng_deg: float) -> Location:
+        '''a Location with no altitude at all; altitude access raises.
+        Use for 2D targets instead of a lie like alt=0'''
+        ret = cls(lat_deg, lng_deg, 0, AltFrame.ABSOLUTE)
+        ret._alt_m = None
+        ret._alt_frame = None
+        return ret
+
+    @classmethod
+    def from_mavutil(cls, loc) -> Location:
+        '''create from a mavutil.location, whose alt is AMSL by
+        convention; the caller must ensure that is true of this one'''
+        return cls(loc.lat, loc.lng, loc.alt, AltFrame.ABSOLUTE)
+
+    @property
+    def alt_frame(self) -> AltFrame:
+        '''frame the altitude is stored in, None if lat/lng-only'''
+        return self._alt_frame
+
+    def has_alt(self) -> bool:
+        return self._alt_frame is not None
+
+    def get_alt_m(self, frame: AltFrame) -> float:
+        '''return altitude in metres in the given frame.  frame must
+        match the frame the altitude is stored in - this is a demand
+        that the caller know what frame it is working in, not a
+        conversion; see TestSuite.change_alt_frame() for that'''
+        if not isinstance(frame, AltFrame):
+            raise ValueError("frame must be an AltFrame, got %s" % str(frame))
+        if self._alt_frame is None:
+            raise LocationAltFrameException("Location is lat/lng-only, has no altitude")
+        if frame != self._alt_frame:
+            raise LocationAltFrameException(
+                "altitude is in frame %s, requested %s; use TestSuite.change_alt_frame() to convert" %
+                (self._alt_frame.name, frame.name))
+        return self._alt_m
+
+    def set_alt_m(self, alt_m: float, frame: AltFrame) -> None:
+        if not isinstance(frame, AltFrame):
+            raise ValueError("frame must be an AltFrame, got %s" % str(frame))
+        self._alt_m = alt_m
+        self._alt_frame = frame
+
+    def offset_up_m(self, alt_offset_m: float) -> None:
+        '''adjust altitude upwards by alt_offset_m metres, keeping its frame'''
+        if self._alt_frame is None:
+            raise LocationAltFrameException("Location is lat/lng-only, has no altitude")
+        self._alt_m += alt_offset_m
+
+    def copy(self) -> Location:
+        ret = Location.latlon_only(self.lat, self.lng)
+        ret._alt_m = self._alt_m
+        ret._alt_frame = self._alt_frame
+        return ret
+
+    def mav_frame(self) -> int:
+        '''return the MAV_FRAME matching this Location's altitude
+        frame, for sending in COMMAND_INT, mission items and elsewhere.
+        The _INT frame variants were superseded as synonyms of these in
+        MAVLink in 2024-03, so are never returned'''
+        frame_map = {
+            AltFrame.ABSOLUTE: mavutil.mavlink.MAV_FRAME_GLOBAL,
+            AltFrame.ABOVE_HOME: mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            AltFrame.ABOVE_TERRAIN: mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+        }
+        if self._alt_frame not in frame_map:
+            raise LocationAltFrameException(
+                "no MAV_FRAME for altitude frame %s" %
+                ("None" if self._alt_frame is None else self._alt_frame.name))
+        return frame_map[self._alt_frame]
+
+    @staticmethod
+    def alt_frame_from_mav_frame(mav_frame: int) -> AltFrame:
+        '''return the AltFrame matching a MAV_FRAME_GLOBAL_* frame'''
+        frame_map = {
+            mavutil.mavlink.MAV_FRAME_GLOBAL: AltFrame.ABSOLUTE,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_INT: AltFrame.ABSOLUTE,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT: AltFrame.ABOVE_HOME,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT: AltFrame.ABOVE_HOME,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT: AltFrame.ABOVE_TERRAIN,
+            mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT_INT: AltFrame.ABOVE_TERRAIN,
+        }
+        if mav_frame not in frame_map:
+            raise LocationAltFrameException("no AltFrame for MAV_FRAME %u" % mav_frame)
+        return frame_map[mav_frame]
+
+    def __str__(self):
+        if self._alt_frame is None:
+            return "Location(lat=%.7f lng=%.7f no-alt)" % (self.lat, self.lng)
+        return "Location(lat=%.7f lng=%.7f alt=%.2fm-%s)" % (
+            self.lat, self.lng, self._alt_m, self._alt_frame.name)
+
+
 class Context(object):
     def __init__(self):
         self.parameters = []
@@ -8019,6 +8149,56 @@ class TestSuite(abc.ABC):
             raise ValueError(f"Bad lat/lng {lat=} {lon=}")
 
         return mavutil.location(lat, lon, alt_m, 0)
+
+    def get_location(self,
+                     location_source: str = None,
+                     frame: AltFrame = AltFrame.ABSOLUTE,
+                     timeout: float = 60,
+                     ) -> Location:
+        '''return the current vehicle location as a (frame-aware)
+        Location, with the altitude taken in the requested frame.  Use
+        this in preference to the mavutil.location producers
+        (mav.location(), get_mav_location()).  Note that lat/lng and
+        (for ABSOLUTE and ABOVE_HOME) altitude come from a single
+        GLOBAL_POSITION_INT, unlike mav.location() which mixes
+        GPS_RAW_INT and VFR_HUD.  location_source of SIMSTATE returns a
+        lat/lng-only Location as SIMSTATE carries no altitude'''
+        # drain the link so the message we then block for reflects the
+        # current position rather than being one which has sat in the
+        # receive queue:
+        self.drain_mav()
+        if location_source == 'SIMSTATE':
+            self.send_poll_message('SIMSTATE')
+            m = self.assert_receive_message('SIMSTATE')
+            lat = m.lat * 1e-7
+            lng = m.lng * 1e-7
+            if lat == 0 and lng == 0:
+                raise ValueError(f"Bad lat/lng {lat=} {lng=}")
+            return Location.latlon_only(lat, lng)
+        if location_source is not None and location_source != 'GLOBAL_POSITION_INT':
+            raise ValueError(f"Unknown location source {location_source}")
+        # the vehicle reports zero lat/lng until it has a position estimate;
+        # block until a real one arrives.
+        tstart = self.get_sim_time_cached()
+        self.send_poll_message('GLOBAL_POSITION_INT')
+        while True:
+            m = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=10)
+            lat = m.lat * 1e-7
+            lng = m.lon * 1e-7
+            if lat != 0 or lng != 0:
+                break
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Only zero lat/lng from GLOBAL_POSITION_INT")
+        if frame == AltFrame.ABSOLUTE:
+            return Location(lat, lng, m.alt * 0.001, frame)
+        if frame == AltFrame.ABOVE_HOME:
+            return Location(lat, lng, m.relative_alt * 0.001, frame)
+        if frame == AltFrame.ABOVE_TERRAIN:
+            self.send_poll_message('TERRAIN_REPORT')
+            terrain = self.assert_receive_message('TERRAIN_REPORT')
+            return Location(lat, lng, terrain.current_height, frame)
+        # ABOVE_ORIGIN has no direct message source; convert:
+        return self.change_alt_frame(Location(lat, lng, m.alt * 0.001, AltFrame.ABSOLUTE), frame)
 
     def wait_distance(self, distance, accuracy=2, timeout=30, location_source=None, **kwargs):
         """Wait for flight of a given distance."""
