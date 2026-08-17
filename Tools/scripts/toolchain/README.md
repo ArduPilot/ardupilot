@@ -90,15 +90,16 @@ libstdc++, or GDB:
 
 ```sh
 python3 Tools/scripts/toolchain/build-toolchain.py \
-    --profile gcc-16.1 --rebuild-library
+    --profile gcc-16.1 --newlib-only
 ```
 
 This requires a completed build using the same profile, work directory, and
 install prefix. It restores pristine newlib sources, reapplies the repository
-patch, discards only `obj/newlib` and `obj/newlib-nano`, and rebuilds and
-reinstalls those two library variants. It then regenerates the manifest,
-sanitizes all target archives, and runs the complete toolchain verifier. Build
-state is updated only after those checks pass.
+patches for the selected newlib version, discards only `obj/newlib` and
+`obj/newlib-nano`, and rebuilds and reinstalls those two library variants. It
+then verifies that every installed target archive is free of forbidden
+definitions, regenerates the manifest, and runs the complete toolchain
+verifier. Build state is updated only after those checks pass.
 
 ## Linux release packages
 
@@ -107,7 +108,7 @@ Create a package after a full build or library-only rebuild with `--package`:
 ```sh
 python3 Tools/scripts/toolchain/build-toolchain.py --profile gcc-16.1 --package
 python3 Tools/scripts/toolchain/build-toolchain.py --profile gcc-16.1 \
-    --rebuild-library --package
+    --newlib-only --package
 ```
 
 To verify and package an already installed toolchain without running any build
@@ -133,12 +134,13 @@ Use `--package-dir DIR` to select a different output directory.
 
 ## Newlib safety policy
 
-After building all multilibs, `scripts/sanitize-newlib.sh` removes archive
-members that define symbols listed in `config/forbidden-newlib-symbols.txt`.
-The default policy includes ArduPilot's complete ChibiOS blacklist: termination
-and host-command entry points, newlib allocation, buffered file I/O, host time
-calls, `setjmp`, and the process-global `gmtime`. Headers retain their normal
-declarations, so accidental use compiles but fails at link time.
+Version-specific patches in `patches/newlib-VERSION/` remove the source objects
+that define symbols listed in `config/forbidden-newlib-symbols.txt` from
+newlib's archive build lists. The default policy includes ArduPilot's complete
+ChibiOS blacklist: termination and host-command entry points, newlib
+allocation, buffered file I/O, host time calls, `setjmp`, and the
+process-global `gmtime`. Headers retain their normal declarations, so
+accidental use compiles but fails at link time.
 
 Newlib is built with `NDEBUG`, and its optional reentrancy-allocation
 verification is disabled. This removes internal `__assert_func` calls from
@@ -146,18 +148,14 @@ routines such as `rand()` and floating-point formatting; newlib's assertion
 handler calls the deliberately removed `abort()`. ArduPilot handles allocation
 failures and fatal conditions in its own runtime instead.
 
-The version-independent patch in `patches/newlib-disable-internal-asserts.patch`
-also removes the unconditional allocation assertion in newlib's `eBalloc`
-helper. The verifier scans every installed newlib archive for internal
-`__assert_func` references so changes in later newlib releases fail the build.
-
-Archive members are the smallest removable unit. Both libc and libgloss
-archives (including `libnosys` and the semihosting libraries) are sanitized. If
-a new newlib version puts a forbidden symbol in an object containing other
-public functions, those functions are removed with it and recorded in
-`share/ardupilot-toolchain/removed-newlib-members.txt`. The post-build verifier
-scans every installed target archive and fails if any forbidden definition
-survives.
+Each version directory also carries the patch that removes the unconditional
+allocation assertion in newlib's `eBalloc` helper. Patches cover libc and
+libgloss, including `libnosys` and the Arm semihosting libraries. No installed
+archive is rewritten after the build. `scripts/verify-newlib-symbols.sh` scans
+every installed target archive immediately after newlib installation and fails
+if any forbidden definition survives. The complete verifier also rejects
+internal `__assert_func` references in newlib archives, so changes in later
+releases fail the build.
 
 This complements ArduPilot's existing link-time blacklist. It does not replace
 the wrappers and stubs in `Tools/ardupilotwaf/chibios.py` and
@@ -193,6 +191,9 @@ The helper scripts can also be run directly:
 
 ```sh
 Tools/scripts/toolchain/scripts/check-host.sh
+Tools/scripts/toolchain/scripts/verify-newlib-symbols.sh \
+    Tools/scripts/toolchain/_build/install/ardupilot-arm-none-eabi-16.1.0 \
+    Tools/scripts/toolchain/config/forbidden-newlib-symbols.txt
 Tools/scripts/toolchain/scripts/verify-toolchain.sh \
     Tools/scripts/toolchain/_build/install/ardupilot-arm-none-eabi-16.1.0 \
     Tools/scripts/toolchain/config/forbidden-newlib-symbols.txt
@@ -200,5 +201,4 @@ Tools/scripts/toolchain/tests/run.sh
 ```
 
 The installed `share/ardupilot-toolchain/manifest.txt` captures the selected
-source versions, multilibs, and Python version. The neighboring removal report
-records every newlib archive member stripped by the safety policy.
+source versions, multilibs, and Python version.

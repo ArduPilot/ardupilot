@@ -59,6 +59,8 @@ while IFS= read -r multilib; do
     done
 done <<<"$multilib_output"
 
+"$SCRIPT_DIR/verify-newlib-symbols.sh" "$prefix" "$policy"
+
 test_dir=$(mktemp -d)
 trap 'rm -rf "$test_dir"' EXIT
 printf '%s\n' \
@@ -108,28 +110,6 @@ read -r -a link_flags <<<"${compile_variants[3]}"
     "$test_dir/cxx-3.o" "$test_dir/allocator-wrappers.o" \
     -o "$test_dir/smoke.elf"
 "$bindir/$target-readelf" -h "$test_dir/smoke.elf" >/dev/null
-
-declare -A is_forbidden=()
-while IFS= read -r symbol; do
-    is_forbidden["$symbol"]=1
-done < <(policy_symbols "$policy")
-
-# Inspect each archive once regardless of policy size. The POSIX nm format
-# emits archive-member headings as well as records; only an exact first-field
-# match can be a forbidden definition.
-while IFS= read -r -d '' archive; do
-    if ! "$nm" -g --defined-only --format=posix "$archive" \
-        >"$test_dir/archive-symbols" 2>"$test_dir/archive-nm-errors"
-    then
-        cat "$test_dir/archive-nm-errors" >&2
-        die "could not inspect target archive: $archive"
-    fi
-    while read -r candidate _; do
-        if [[ -n ${is_forbidden[$candidate]:-} ]]; then
-            die "forbidden symbol $candidate remains in $archive"
-        fi
-    done <"$test_dir/archive-symbols"
-done < <(find "$prefix" -type f -name '*.a' -print0)
 
 # Public assert() is intentionally unusable because its abort dependency is
 # forbidden, but no implementation detail inside newlib may pull it in.

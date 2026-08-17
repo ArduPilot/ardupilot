@@ -22,7 +22,7 @@ from typing import Sequence
 ROOT_DIR = Path(__file__).resolve().parent
 TARGET = "arm-none-eabi"
 DEFAULT_SOURCE_DATE_EPOCH = "1785542400"
-BUILD_RECIPE_VERSION = "2"
+BUILD_RECIPE_VERSION = "3"
 PROFILE_ASSIGNMENT = re.compile(r"^([A-Z][A-Z0-9_]*)=(.*)$")
 
 
@@ -126,11 +126,12 @@ def argument_parser() -> argparse.ArgumentParser:
         "--download-only", action="store_true", help="fetch and verify source archives, then stop"
     )
     parser.add_argument(
+        "--newlib-only",
         "--rebuild-library",
         "--rebuild-newlib",
-        dest="rebuild_library",
+        dest="newlib_only",
         action="store_true",
-        help="rebuild and reinstall only full and nano newlib",
+        help="rebuild, reinstall, and verify only full and nano newlib",
     )
     package_group = parser.add_mutually_exclusive_group()
     package_group.add_argument(
@@ -207,6 +208,9 @@ class ToolchainBuilder:
         self.state_dir = self.work_dir / "state"
         self.nano_prefix = self.work_dir / "nano-install"
         self.policy = ROOT_DIR / "config" / "forbidden-newlib-symbols.txt"
+        self.newlib_patch_dir = (
+            ROOT_DIR / "patches" / f"newlib-{self.required('NEWLIB_VERSION')}"
+        )
         self.jobs = args.jobs or (os.cpu_count() or 1)
         self.python_bin = args.python_bin
         self.source_date_epoch = os.environ.get(
@@ -217,6 +221,12 @@ class ToolchainBuilder:
         if any(character.isspace() for character in os.fspath(self.prefix)):
             fail("the install prefix must not contain whitespace")
         self.env = os.environ.copy()
+        # Configure scripts may select bash via CONFIG_SHELL. Bash evaluates
+        # BASH_ENV for non-interactive shells, so user aliases can corrupt old
+        # Autoconf probes (for example, an `ls --color` alias changes the
+        # output expected by newlib 3.3's timestamp sanity check).
+        self.env.pop("BASH_ENV", None)
+        self.env.pop("ENV", None)
         self.env["PATH"] = f"{self.prefix / 'bin'}{os.pathsep}{self.env.get('PATH', '')}"
         self.env["LC_ALL"] = "C"
         self.env["SOURCE_DATE_EPOCH"] = self.source_date_epoch
@@ -274,7 +284,11 @@ class ToolchainBuilder:
 
     def input_fingerprint(self) -> str:
         digest = hashlib.sha256()
-        inputs = [self.profile_path, self.policy, *sorted((ROOT_DIR / "patches").glob("*.patch"))]
+        inputs = [
+            self.profile_path,
+            self.policy,
+            *sorted(self.newlib_patch_dir.glob("*.patch")),
+        ]
         for path in inputs:
             digest.update(os.fspath(path.relative_to(ROOT_DIR)).encode())
             digest.update(path.read_bytes())
@@ -441,14 +455,25 @@ class ToolchainBuilder:
                 self.replace_symlink(
                     f"../gcc-prerequisites/{source_name}", self.source_dir / "gcc" / link_name
                 )
-        self.apply_newlib_patch()
+        self.apply_newlib_patches()
 
-    def apply_newlib_patch(self) -> None:
-        with (ROOT_DIR / "patches" / "newlib-disable-internal-asserts.patch").open("r") as patch:
-            run(["patch", "-d", self.source_dir / "newlib", "-p1", "--forward"], stdin=patch)
+    def apply_newlib_patches(self) -> None:
+        patches = sorted(self.newlib_patch_dir.glob("*.patch"))
+        if not patches:
+            fail(
+                f"no source patches found for newlib {self.required('NEWLIB_VERSION')} "
+                f"in {self.newlib_patch_dir}"
+            )
+        for patch_path in patches:
+            note(f"Applying newlib patch: {patch_path.name}")
+            with patch_path.open("r") as patch:
+                run(
+                    ["patch", "-d", self.source_dir / "newlib", "-p1", "--forward"],
+                    stdin=patch,
+                )
 
     def reset_newlib_source(self) -> None:
-        """Restore pristine newlib sources and apply the repository patch."""
+        """Restore pristine newlib sources and apply versioned patches."""
         source = self.source_dir / "newlib"
         if source.exists():
             shutil.rmtree(source)
@@ -459,7 +484,7 @@ class ToolchainBuilder:
             self.extract_stripped(
                 self.download_dir / self.required("NEWLIB_ARCHIVE"), source
             )
-        self.apply_newlib_patch()
+        self.apply_newlib_patches()
 
     def gcc_options(self) -> list[str]:
         return [
@@ -723,13 +748,11 @@ class ToolchainBuilder:
         ]
         (manifest_dir / "manifest.txt").write_text("\n".join(sections))
 
-    def sanitize_newlib(self) -> None:
+    def verify_newlib_symbols(self) -> None:
         run(
             [
-                ROOT_DIR / "scripts" / "sanitize-newlib.sh",
-                "--prefix",
+                ROOT_DIR / "scripts" / "verify-newlib-symbols.sh",
                 self.prefix,
-                "--policy",
                 self.policy,
             ],
             env=self.env,
@@ -761,25 +784,33 @@ class ToolchainBuilder:
         if not self.installed_profile_matches():
             fail("the installed toolchain does not match the selected version profile")
 
-    def rebuild_library(self) -> None:
+    def build_newlib_only(self) -> None:
         self.require_library_rebuild_inputs()
         note("Rebuilding full and nano newlib only")
         for name in ("newlib", "newlib-nano"):
             build = self.object_dir / name
             if build.exists():
                 shutil.rmtree(build)
-        for name in ("newlib", "newlib-nano", "manifest", "sanitize", "verify"):
+        for name in (
+            "newlib",
+            "newlib-nano",
+            "newlib-symbols",
+            "manifest",
+            # Clear state left by builds made before source-level omission.
+            "sanitize",
+            "verify",
+        ):
             marker = self.state_dir / f"{name}.done"
             if marker.exists():
                 marker.unlink()
         self.reset_newlib_source()
         self.build_newlib()
         self.build_newlib_nano()
+        self.verify_newlib_symbols()
         self.write_manifest()
-        self.sanitize_newlib()
         self.verify_toolchain()
         self.write_fingerprint()
-        for name in ("newlib", "newlib-nano", "manifest", "sanitize", "verify"):
+        for name in ("newlib", "newlib-nano", "newlib-symbols", "manifest", "verify"):
             (self.state_dir / f"{name}.done").touch()
 
     @staticmethod
@@ -893,11 +924,11 @@ class ToolchainBuilder:
         self.run_stage("gcc-stage1", self.build_gcc_stage1)
         self.run_stage("newlib", self.build_newlib)
         self.run_stage("newlib-nano", self.build_newlib_nano)
+        self.run_stage("newlib-symbols", self.verify_newlib_symbols)
         self.run_stage("gcc-final", self.build_gcc_final)
         self.run_stage("gcc-nano", self.build_gcc_nano)
         self.run_stage("gdb", self.build_gdb)
         self.run_stage("manifest", self.write_manifest)
-        self.run_stage("sanitize", self.sanitize_newlib)
         self.run_stage("verify", self.verify_toolchain)
         note(f"Toolchain ready: {self.prefix}")
 
@@ -919,10 +950,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     profile_path = ROOT_DIR / "versions" / f"{args.profile}.conf"
     if not profile_path.is_file():
         fail(f"unknown profile '{args.profile}' (use --list-profiles)")
-    if args.download_only and (args.rebuild_library or args.package_only or args.package):
+    if args.download_only and (args.newlib_only or args.package_only or args.package):
         parser.error("--download-only cannot be combined with rebuild or packaging options")
-    if args.rebuild_library and args.package_only:
-        parser.error("--rebuild-library cannot be combined with --package-only")
+    if args.newlib_only and args.package_only:
+        parser.error("--newlib-only cannot be combined with --package-only")
     builder = ToolchainBuilder(args, profile_path, parse_profile(profile_path))
     note(builder.required("PROFILE_DESCRIPTION"))
     note(f"Work directory: {builder.work_dir}")
@@ -931,13 +962,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         builder.verify_toolchain()
         builder.package_toolchain()
         return 0
-    if args.rebuild_library:
+    if args.newlib_only:
         builder.check_fingerprint(allow_legacy=True, allow_changed=True)
         run(
             ["env", f"PYTHON={builder.python_bin}", ROOT_DIR / "scripts" / "check-host.sh"],
             env=builder.env,
         )
-        builder.rebuild_library()
+        builder.build_newlib_only()
     else:
         builder.full_build()
     if args.package:
