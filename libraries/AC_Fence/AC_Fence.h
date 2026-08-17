@@ -238,6 +238,18 @@ public:
     // get alt min frame
     Location::AltFrame get_alt_min_frame() const { return (Location::AltFrame)_alt_min_type.get(); }
 
+    // put the two altitude limits into a single frame so they can be
+    // compared with one another; the limits may be configured in
+    // different frames, in which case their raw values are measured
+    // from different datums and comparing them is meaningless.
+    // returns false if the conversion cannot be done - for example an
+    // above-terrain limit with no terrain data available
+    bool get_alt_limits_in_common_frame_m(float alt_min_m,
+                                          float alt_max_m,
+                                          float &ret_min_m,
+                                          float &ret_max_m,
+                                          Location::AltFrame &ret_frame) const WARN_IF_UNUSED;
+
 private:
     static AC_Fence *_singleton;
 
