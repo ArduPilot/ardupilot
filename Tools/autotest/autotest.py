@@ -747,7 +747,14 @@ def run_tests(steps):
     # and exempt from this check.
     if opts.parallel == 1 and opts.instance == 0:
         if os.path.isdir("scripts"):
-            scripts_contents = os.listdir("scripts")
+            # "scripts/modules" is exempt: the engine reads it only when a
+            # script requires a module rather than loading it on sight, and
+            # removing an installed module leaves its parent directory
+            # behind, so an empty one is what a clean run looks like.
+            scripts_contents = [
+                x for x in os.listdir("scripts")
+                if not (x == "modules" and os.path.isdir(os.path.join("scripts", x)))
+            ]
             if len(scripts_contents) > 0:
                 print("ERROR: refusing to start: serial autotest runs in the "
                       "repo-root working directory but 'scripts/' is not empty: "
