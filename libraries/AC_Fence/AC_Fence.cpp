@@ -560,17 +560,75 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
         return false;
     }
 
-    if (_alt_max_m < _alt_min_m) {
+    // the two limits carry their own frames, so compare them in one
+    // frame rather than comparing their raw values
+    float alt_min_m, alt_max_m;
+    Location::AltFrame alt_frame;
+    if (!get_alt_limits_in_common_frame_m(_alt_min_m, _alt_max_m, alt_min_m, alt_max_m, alt_frame)) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Fence alt limits not comparable");
+        return false;
+    }
+
+    if (alt_max_m < alt_min_m) {
         hal.util->snprintf(failure_msg, failure_msg_len, "FENCE_ALT_MAX < FENCE_ALT_MIN");
         return false;
     }
 
-    if (_alt_max_m - _alt_min_m <= 2.0f * _margin_m) {
+    if (alt_max_m - alt_min_m <= 2.0f * _margin_m) {
         hal.util->snprintf(failure_msg, failure_msg_len, "FENCE_MARGIN too big");
         return false;
     }
 
     // if we got this far everything must be ok
+    return true;
+}
+
+/*
+  put the two altitude limits into a single frame so they can be
+  compared with one another.  FENCE_ALT_MIN and FENCE_ALT_MAX each carry
+  their own frame, so their raw values may be measured from different
+  datums - an above-home minimum of 20 and an absolute maximum of 100
+  are not 20 and 100 of the same thing.  The minimum is converted into
+  the maximum's frame, which is returned along with both values.
+
+  returns false if the conversion cannot be done, which happens when a
+  limit is above-terrain and no terrain height is available, or
+  above-home and home is not set.
+ */
+bool AC_Fence::get_alt_limits_in_common_frame_m(float alt_min_m,
+                                                float alt_max_m,
+                                                float &ret_min_m,
+                                                float &ret_max_m,
+                                                Location::AltFrame &ret_frame) const
+{
+    const Location::AltFrame min_frame = get_alt_min_frame();
+    const Location::AltFrame max_frame = get_alt_max_frame();
+
+    ret_max_m = alt_max_m;
+    ret_frame = max_frame;
+
+    if (min_frame == max_frame) {
+        // nothing to convert, and in particular nothing which requires
+        // home, an origin or terrain data to be available
+        ret_min_m = alt_min_m;
+        return true;
+    }
+
+    // a position is only really needed to resolve an above-terrain
+    // limit, but converting through a Location wants one regardless
+    Location loc;
+    if (!AP::ahrs().get_location(loc)) {
+        return false;
+    }
+
+    loc.set_alt_m(alt_min_m, min_frame);
+    if (!loc.change_alt_frame(max_frame)) {
+        return false;
+    }
+    if (!loc.get_alt_m(max_frame, ret_min_m)) {
+        return false;
+    }
+
     return true;
 }
 
