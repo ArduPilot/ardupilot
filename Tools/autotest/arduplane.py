@@ -37,6 +37,9 @@ WIND = "0,180,0.2"  # speed,direction,variance
 
 
 class AutoTestPlane(vehicle_test_suite.TestSuite):
+    def reboot_between_tests(self):
+        return True
+
     @staticmethod
     def get_not_armable_mode_list():
         return []

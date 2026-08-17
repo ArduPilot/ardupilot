@@ -8449,6 +8449,14 @@ class TestSuite(abc.ABC):
         through a mission stops there, 215m out.'''
         return None
 
+    def reboot_between_tests(self):
+        '''whether to reboot the vehicle after each test which passes.
+        Tests inherit whatever their predecessor left behind, and not all
+        of that is undone by popping contexts.  Measured on a
+        single-threaded test.Plane run: 151 extra reboots cost 15s of
+        1081s, about 0.1s each.'''
+        return False
+
     def assert_simstate_location_is_at_startup_location(self, dist_max=1):
         simstate_loc = self.sim_location()
         start_loc = self.sitl_start_location()
@@ -10737,6 +10745,19 @@ Also, ignores heartbeats not from our target system'''
                 # whatever happens, do not pass the displacement on:
                 self.progress("Resetting SITL to recover the startup location")
                 self.reset_SITL_commandline()
+
+        # a passing test still hands the next one everything it changed
+        # which a reboot would undo - a moved home, a shifted height
+        # datum, an advanced mission index, and wherever it parked the
+        # vehicle.  A failing test already reboots above; do the same
+        # after a passing one where the vehicle asks for it.  Rebooting
+        # is what puts the vehicle back, so it cannot require the vehicle
+        # to already be there: a Plane lands along a runway rather than
+        # on the spot, and would never meet reboot_sitl()'s default of
+        # one metre.
+        if passed and ardupilot_alive and not reset_needed and self.reboot_between_tests():
+            self.progress("Rebooting between tests")
+            self.reboot_sitl(check_position=False)
 
         if self._mavproxy is not None:
             self.progress("Stopping auto-started mavproxy")
