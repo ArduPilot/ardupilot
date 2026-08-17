@@ -538,6 +538,15 @@ def configure(cfg):
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
     cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
     env = cfg.env
+
+    # Flash and FATFS use the same crash dump in a mutually exclusive way.
+    # Selecting flash explicitly should override an SD-capable board's FATFS
+    # default, while explicitly selecting both still reaches the compile-time
+    # diagnostic.
+    if (cfg.options.enable_CRASHDUMP_FLASH and
+            not cfg.options.enable_CRASHDUMP_FATFS):
+        cfg.options.disable_CRASHDUMP_FATFS = True
+
     bldnode = cfg.bldnode.make_node(cfg.variant)
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()
@@ -587,6 +596,23 @@ def configure(cfg):
         traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
     hal_common.process_hwdef_results(cfg, hwdef_obj)
+
+    crashdump_fatfs_enabled = env.ENABLE_CRASHDUMP_FATFS
+    crashdump_flash_enabled = env.ENABLE_CRASHDUMP_FLASH
+    if cfg.options.enable_CRASHDUMP_FATFS:
+        crashdump_fatfs_enabled = env.CRASHDUMP_FATFS_SUPPORTED
+    elif cfg.options.disable_CRASHDUMP_FATFS:
+        crashdump_fatfs_enabled = False
+    if cfg.options.enable_CRASHDUMP_FLASH:
+        crashdump_flash_enabled = True
+    elif cfg.options.disable_CRASHDUMP_FLASH:
+        crashdump_flash_enabled = False
+    if env.AP_PERIPH:
+        crashdump_fatfs_enabled = False
+        crashdump_flash_enabled = False
+    env.ENABLE_CRASHDUMP_FATFS = crashdump_fatfs_enabled
+    env.ENABLE_CRASHDUMP_FLASH = crashdump_flash_enabled
+    env.ENABLE_CRASHDUMP = crashdump_fatfs_enabled or crashdump_flash_enabled
 
     if env.DEBUG or env.DEBUG_SYMBOLS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
