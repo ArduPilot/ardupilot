@@ -10113,7 +10113,12 @@ Also, ignores heartbeats not from our target system'''
                                             mission_type)
         remaining_to_send = set(range(item_base, item_base + len(items)))
         sent = set()
-        timeout = (10 + len(items)/10.0)
+        # get_sim_time_cached() below is simulated time, so this needs the
+        # same self.speedup scaling download_using_mission_protocol()'s
+        # timeout already gets -- otherwise the real-time budget available
+        # to the GCS side of the handshake shrinks as SIM_SPEEDUP rises,
+        # even though the real cost of each round trip does not.
+        timeout = (10 + len(items)/10.0) * self.speedup / 10.0
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("timeout uploading %s" % str(mission_type))
