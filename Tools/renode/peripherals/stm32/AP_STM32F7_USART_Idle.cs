@@ -86,6 +86,9 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const long InterruptAndStatus = 0x1C;
         private const long InterruptFlagClear = 0x20;
         private const uint Idle = 1 << 4;
-        private const uint IdleBits = 11;
+        // Host terminal input is delivered from a host thread. With virtual
+        // time running unthrottled, allow that thread to supply all bytes
+        // already queued by the host before declaring the line idle.
+        private const uint IdleBits = 1000;
     }
 }

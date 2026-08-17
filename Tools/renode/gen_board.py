@@ -284,6 +284,10 @@ FAMILIES['STM32L496xx'] = dict(
     FAMILIES['STM32L431xx'],
     uarts=FAMILIES['STM32L431xx']['uarts'] | {'UART5'},
     uart_irq=dict(FAMILIES['STM32L431xx']['uart_irq'], UART5=53))
+# L4R5 flight controllers add the SDMMCv2 peripheral to the L4 peripheral
+# subset used by the existing model.
+FAMILIES['STM32L4R5xx'] = dict(
+    FAMILIES['STM32L496xx'], sd_buses={'SDMMC1': 'sdmmc'}, dmamux=True)
 
 IMU_MODELS = {
     'ADIS1647x': 'Sensors.AP_ADIS1647x',
@@ -635,26 +639,31 @@ def _imu_children(imu, resolved_devices, defines, name):
     return [(name, model, bus, cs, properties)]
 
 
-def _dmamux_requests(root):
-    path = (root / 'modules' / 'ChibiOS' / 'os' / 'hal' / 'ports' /
-            'STM32' / 'STM32H7xx' / 'stm32_dmamux.h')
+def _dmamux_requests_from(path):
     requests = {}
     for line in path.read_text().splitlines():
         match = re.match(r'#define\s+(STM32_DMAMUX1_\w+)\s+(\d+)', line)
         if match:
             requests[match.group(1)] = int(match.group(2))
     return requests
+
+
+def _dmamux_requests(root):
+    path = (root / 'modules' / 'ChibiOS' / 'os' / 'hal' / 'ports' /
+            'STM32' / 'STM32H7xx' / 'stm32_dmamux.h')
+    return _dmamux_requests_from(path)
 
 
 def _g474_dmamux_requests(root):
     path = (root / 'modules' / 'ChibiOS' / 'os' / 'hal' / 'ports' /
             'STM32' / 'STM32G4xx' / 'stm32_dmamux.h')
-    requests = {}
-    for line in path.read_text().splitlines():
-        match = re.match(r'#define\s+(STM32_DMAMUX1_\w+)\s+(\d+)', line)
-        if match:
-            requests[match.group(1)] = int(match.group(2))
-    return requests
+    return _dmamux_requests_from(path)
+
+
+def _l4plus_dmamux_requests(root):
+    path = (root / 'modules' / 'ChibiOS' / 'os' / 'hal' / 'ports' /
+            'STM32' / 'STM32L4xx+' / 'stm32_dmamux.h')
+    return _dmamux_requests_from(path)
 
 
 def _safe_name(value):
@@ -1226,9 +1235,8 @@ def _h743_dma_wiring(root, defines, family, alloc, warnings):
     return lines
 
 
-def _g474_dma_wiring(root, defines, family, alloc, warnings):
+def _dmamux_dma_wiring(requests, defines, family, alloc, warnings):
     lines = []
-    requests = _g474_dmamux_requests(root)
 
     for peripheral, model in family.get('adcs', {}).items():
         channel = defines.get('STM32_ADC_%s_DMA_CHAN' % peripheral)
@@ -1285,6 +1293,16 @@ def _g474_dma_wiring(root, defines, family, alloc, warnings):
         ]
 
     return lines
+
+
+def _g474_dma_wiring(root, defines, family, alloc, warnings):
+    return _dmamux_dma_wiring(
+        _g474_dmamux_requests(root), defines, family, alloc, warnings)
+
+
+def _l4plus_dma_wiring(root, defines, family, alloc, warnings):
+    return _dmamux_dma_wiring(
+        _l4plus_dmamux_requests(root), defines, family, alloc, warnings)
 
 
 def _l4_dma_wiring(defines, family, alloc, warnings):
@@ -1753,6 +1771,8 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
         lines += _f767_dma_wiring(defines, family, alloc, warnings)
     elif family['name'] == 'g474':
         lines += _g474_dma_wiring(root, defines, family, alloc, warnings)
+    elif family['name'] == 'l4' and family.get('dmamux'):
+        lines += _l4plus_dma_wiring(root, defines, family, alloc, warnings)
     elif family['name'] in ('f103', 'f105', 'f303', 'l4'):
         lines += _l4_dma_wiring(defines, family, alloc, warnings)
     elif family['name'] in ('h743', 'h757'):

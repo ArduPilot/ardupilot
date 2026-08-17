@@ -10,6 +10,7 @@ include $repo/Tools/renode/peripherals/stm32/AP_STM32L4G4_RCC.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32G4_DMA.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_ADC_v3.cs
 include $repo/Tools/renode/peripherals/stm32/AP_STM32_I2C.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32H7_SDMMC.cs
 include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
 include $repo/Tools/renode/peripherals/common/AP_DWT.cs
 include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs
@@ -22,7 +23,9 @@ include $repo/Tools/renode/peripherals/sensors/AP_Airspeed.cs
 include $repo/Tools/renode/peripherals/sensors/AP_BMP388.cs
 include $repo/Tools/renode/peripherals/sensors/AP_Benewake.cs
 include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
+include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
 include $repo/Tools/renode/peripherals/sensors/AP_LightWare.cs
+include $repo/Tools/renode/peripherals/sensors/AP_MS5611.cs
 include $repo/Tools/renode/peripherals/sensors/AP_AdditionalBarometers.cs
 include $repo/Tools/renode/peripherals/sensors/AP_RegisterIMU.cs
 

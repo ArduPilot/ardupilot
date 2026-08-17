@@ -115,6 +115,9 @@ spi2: SPI.STM32SPI @ sysbus 0x40003800
 spi3: SPI.STM32SPI @ sysbus 0x40003C00
     IRQ -> nvic@51
 
+sdmmc: SD.AP_STM32H7_SDMMC @ sysbus 0x50062400
+    IRQ -> nvic@49
+
 i2c1: I2C.AP_STM32_I2C @ sysbus 0x40005400
     EventInterrupt -> nvic@31
     ErrorInterrupt -> nvic@32
@@ -139,6 +142,12 @@ dma2: DMA.AP_STM32G4_DMA @ sysbus 0x40020400
     numberOfChannels: 7
     [0-4] -> nvic@[56-60]
     [5-6] -> nvic@[68-69]
+
+dmamux1: Miscellaneous.STM32_DMAMUX @ sysbus 0x40020800
+    numberOfOutputRequestChannels: 14
+    numberOfRequestGeneratorChannels: 4
+    [0-6] -> dma1@[1-7]
+    [7-13] -> dma2@[1-7]
 
 adc1: Analog.AP_STM32_ADC_v3 @ sysbus 0x50040000
     IRQ -> nvic@18
@@ -198,6 +207,12 @@ timer7: Timers.STM32_Timer @ sysbus 0x40001400
     initialLimit: 0xFFFF
     -> nvic@55
 
+timer8: Timers.STM32_Timer @ sysbus 0x40013400
+    frequency: 80000000
+    initialLimit: 0xFFFF
+    [BreakInterrupt, UpdateInterrupt, TriggerInterrupt, CommutationInterrupt] -> nvic@[43-45, 45]
+    CaptureCompareInterrupt -> nvic@46
+
 timer15: Timers.STM32_Timer @ sysbus 0x40014000
     frequency: 80000000
     initialLimit: 0xFFFF
@@ -240,6 +255,7 @@ rcc: Miscellaneous.AP_STM32L4G4_RCC @ sysbus 0x40021000
     timer5: timer5
     timer6: timer6
     timer7: timer7
+    timer8: timer8
     timer15: timer15
     timer16: timer16
     timer17: timer17

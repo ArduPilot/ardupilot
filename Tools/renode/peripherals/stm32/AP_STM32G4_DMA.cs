@@ -15,6 +15,7 @@ namespace Antmicro.Renode.Peripherals.DMA
             dma = new STM32G0DMA(machine, numberOfChannels);
             channelEnabled = new bool[numberOfChannels];
             channelConfiguration = new uint[numberOfChannels];
+            requestActive = new bool[numberOfChannels];
         }
 
         public void Reset()
@@ -25,6 +26,7 @@ namespace Antmicro.Renode.Peripherals.DMA
             {
                 channelEnabled[i] = false;
                 channelConfiguration[i] = 0;
+                requestActive[i] = false;
             }
         }
 
@@ -75,28 +77,47 @@ namespace Antmicro.Renode.Peripherals.DMA
             // behavior in the wrapped model.
             innerValue &= ~UnsupportedConfigurationBits;
             var memoryToMemory = (value & MemoryToMemory) != 0;
-            if(!memoryToMemory)
+            var memoryToPeripheral = (value & MemoryToPeripheral) != 0;
+            if(!memoryToMemory && !memoryToPeripheral)
             {
-                // STM32G0DMA starts memory-to-peripheral transfers as soon as
+                // STM32G0DMA starts peripheral-to-memory transfers as soon as
                 // EN is written. STM32L4/G4 channels wait for a peripheral
-                // request, so latch EN here and assert it from OnGPIO.
+                // request, so latch EN here and assert it from OnGPIO. Keep
+                // memory-to-peripheral transfers immediate because Renode's
+                // USART model has no transmit-DMA request output.
                 innerValue &= ~ChannelEnable;
             }
             dma.WriteDoubleWord(offset, innerValue);
 
             channelEnabled[channel] = (value & ChannelEnable) != 0;
             channelConfiguration[channel] = innerValue;
+            if(channelEnabled[channel] && requestActive[channel])
+            {
+                HandleRequest(channel);
+            }
         }
 
         public void OnGPIO(int number, bool value)
         {
-            if(!value || number < 1 || number > channelEnabled.Length)
+            if(number < 1 || number > channelEnabled.Length)
             {
                 dma.OnGPIO(number, value);
                 return;
             }
 
             var channel = number - 1;
+            requestActive[channel] = value;
+            if(!value)
+            {
+                dma.OnGPIO(number, false);
+                return;
+            }
+
+            HandleRequest(channel);
+        }
+
+        private void HandleRequest(int channel)
+        {
             var remaining = dma.ReadDoubleWord(ChannelDataCount(channel)) & 0xFFFF;
             if(!channelEnabled[channel] || remaining == 0)
             {
@@ -114,7 +135,7 @@ namespace Antmicro.Renode.Peripherals.DMA
             remaining = dma.ReadDoubleWord(ChannelDataCount(channel)) & 0xFFFF;
             if(remaining != 0)
             {
-                dma.OnGPIO(number, true);
+                dma.OnGPIO(channel + 1, true);
             }
             remaining = dma.ReadDoubleWord(ChannelDataCount(channel)) & 0xFFFF;
             if(remaining == 0)
@@ -146,12 +167,14 @@ namespace Antmicro.Renode.Peripherals.DMA
         private readonly STM32G0DMA dma;
         private readonly bool[] channelEnabled;
         private readonly uint[] channelConfiguration;
+        private readonly bool[] requestActive;
         private uint requestSelection;
 
         private const uint ChannelEnable = 1U;
         private const uint UnsupportedConfigurationBits =
             (1U << 3) | (3U << 12) | (0xFU << 16);
         private const uint MemoryToMemory = 1U << 14;
+        private const uint MemoryToPeripheral = 1U << 4;
         private const uint TransferFlagMask = 0x77777777U;
         private const long InterruptFlagClear = 0x4;
         private const long RequestSelection = 0xA8;
