@@ -1,0 +1,45 @@
+# hw definition file for processing by chibios_pins.py
+# for Agam MegH7 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_AGAM_MEGH7
+
+# crystal frequency, setup to use external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 2048
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+# the H743 has 128k sized sectors
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# order of UARTs (and USB). Allow bootloading on USB and telem1
+SERIAL_ORDER OTG1 UART4
+
+# UART4 (telem1)
+PB9 UART4_TX UART4 NODMA
+PB8 UART4_RX UART4 NODMA
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# make sure the switched VTX rail is on during the bootloader. The high-side
+# switch is enabled high, so this must match the HIGH used in hwdef.dat.
+PE5 PINIO1 OUTPUT HIGH
+
+PE3 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# Add CS pins to ensure they are high in bootloader
+PD11 IMU1_CS CS
+PD10 MAX7456_CS CS
+PB12 EXT_CS1 CS
