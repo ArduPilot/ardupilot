@@ -247,6 +247,8 @@ void HarmonicNotchFilter<T>::expand_filter_count(uint16_t total_notches)
         _alloc_has_failed = true;
         return;
     }
+    // safe shallow copy: HarmonicNotchFilter only calls init_with_A_and_Q on its
+    // internal filters, so _harmonic_filters is always nullptr in this array
     memcpy(filters, _filters, sizeof(filters[0])*_num_filters);
     auto _old_filters = _filters;
     _filters = filters;

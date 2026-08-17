@@ -153,14 +153,14 @@ void setup()
         break;
 
     case filter_type::Notch:
-        notch.init(sample_rate, target_freq, target_freq*0.25, 40);
+        notch.init(sample_rate, target_freq, target_freq*0.25, 40, 1);
         notch.print_transfer_function();
         break;
 
     case filter_type::Combination:
         // A combination of two notches and a biquad lowpass, representative of a typical setup
-        notch.init(sample_rate, target_freq, target_freq*0.25, 40);
-        notch2.init(sample_rate, target_freq*2.00, target_freq*0.25, 40);
+        notch.init(sample_rate, target_freq, target_freq*0.25, 40, 1);
+        notch2.init(sample_rate, target_freq*2.00, target_freq*0.25, 40, 1);
         biquad.set_cutoff_frequency(sample_rate, target_freq*1.5);
         notch.print_transfer_function();
         hal.console->printf("\n");
