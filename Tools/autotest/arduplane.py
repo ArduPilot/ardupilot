@@ -818,6 +818,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.disarm_wait(timeout=120)
         self.set_current_waypoint(0, check_afterwards=False)
+        # a deepstall lands wherever the descent takes it, some 85m from
+        # home; reboot so the next test starts where the simulation put us.
+        self.reboot_sitl()
 
         self.progress("Flying home")
         self.set_current_waypoint(0, check_afterwards=False)
