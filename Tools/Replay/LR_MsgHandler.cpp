@@ -241,11 +241,13 @@ void LR_MsgHandler_RGPJ::process_message(uint8_t *msgbytes)
     AP::dal().handle_message(msg);
 }
 
+#if AP_DAL_RGPK_LOGGING_ENABLED
 void LR_MsgHandler_RGPK::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RGPK, msgbytes);
     AP::dal().handle_message(msg);
 }
+#endif
 
 void LR_MsgHandler_RMGH::process_message(uint8_t *msgbytes)
 {
