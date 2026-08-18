@@ -145,5 +145,5 @@
 // AP_DAL objects waf compiles once and shares between vehicles agree with the
 // EKF on the size of a GPS_State and on the DAL replay message IDs
 #ifndef AP_GPS_MB_YAW_OFFSET_ENABLED
-#define AP_GPS_MB_YAW_OFFSET_ENABLED (GPS_MOVING_BASELINE) && (HAL_PROGRAM_SIZE_LIMIT_KB > 1024)
+#define AP_GPS_MB_YAW_OFFSET_ENABLED ((GPS_MOVING_BASELINE) && (HAL_PROGRAM_SIZE_LIMIT_KB > 1024))
 #endif
