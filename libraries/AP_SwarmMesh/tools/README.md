@@ -88,6 +88,25 @@ SITL logs are under `<work-dir>/inst_*/sitl.log`.
 
 With velocity FF, a 4 drone diamond holds its formation to within ~0.2 m (lag bias ~0.17 m, jitter rms ~0.12 m) while the leader manoeuvres.
 
+## Packet loss and relay
+
+`SIM_SWARM_LOSS` sets the percentage of incoming mesh packets each vehicle discards, simulating an unreliable radio link. The draw is made per receiver, so a packet lost by one vehicle is still heard by the others, which is what a real radio link does and what a shared multicast bus on its own does not. The parameter is read live, so loss can be introduced and cleared mid-flight without a reboot:
+
+```bash
+# in a GCS attached to one instance
+param set SIM_SWARM_LOSS 30
+```
+
+Relaying is observable from outside the fleet: a packet whose `dest_id` is neither broadcast (0) nor the receiving vehicle's own sysid is forwarded back onto the group with `ttl` decremented and `prev_id` set to the forwarding vehicle, so joining the multicast group from a script is enough to watch a packet travel.
+
+Both behaviours are covered by the `Copter.SwarmMesh` autotest, which joins the mesh as an extra node, injects packets addressed to a third-party sysid, and checks that they come back relayed, that `ttl=0` packets do not, and that `SIM_SWARM_LOSS=50` removes roughly half of them:
+
+```bash
+./Tools/autotest/autotest.py test.Copter.SwarmMesh
+```
+
+Note the multicast group is fixed, so that test assumes no other SwarmMesh SITL instance is running on the same host.
+
 ## Notes / next steps
 
 - Velocity FF (`swarm:get_peer_velocity_NED`) is on by default. It falls back to a position target if the EKF origin or leader velocity is unavailable. Could add accel FF.

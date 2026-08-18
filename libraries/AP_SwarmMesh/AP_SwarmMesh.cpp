@@ -359,7 +359,7 @@ AP_SwarmMesh::PeerState *AP_SwarmMesh::find_or_alloc_peer(uint8_t peer_sysid)
         return nullptr;
     }
     PeerState &ps = peer_state[num_peers++];
-    memset(&ps, 0, sizeof(ps));
+    ps = {};
     ps.sysid = peer_sysid;
     return &ps;
 }

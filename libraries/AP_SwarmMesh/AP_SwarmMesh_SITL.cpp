@@ -20,6 +20,10 @@
 #include <AP_HAL/AP_HAL.h>
 #include <sys/socket.h>
 
+#if AP_SIM_SWARMMESH_LOSS_ENABLED
+#include <SITL/SITL.h>
+#endif
+
 // multicast group shared by all SITL swarm instances
 #define SWARMMESH_MCAST_ADDRESS "239.65.83.0"
 #define SWARMMESH_MCAST_PORT    57733U
@@ -53,20 +57,47 @@ uint32_t AP_SwarmMesh_SITL::transport_txspace()
     return 0xFFFFU;
 }
 
+#if AP_SIM_SWARMMESH_LOSS_ENABLED
+// returns true if this datagram should be discarded to simulate an unreliable radio link.
+// the draw is made per receiver, so a packet lost here may still be heard by other vehicles,
+// which is what a real radio link does and what a shared multicast bus does not.
+bool AP_SwarmMesh_SITL::packet_lost() const
+{
+    const SITL::SIM *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return false;
+    }
+    const float loss_pct = sitl->swarm_packet_loss_pct;
+    if (!is_positive(loss_pct)) {
+        return false;
+    }
+    // rand_float() is uniform over [-1, 1], so its magnitude is uniform over [0, 1]
+    return fabsf(rand_float()) < loss_pct * 0.01f;
+}
+#endif  // AP_SIM_SWARMMESH_LOSS_ENABLED
+
 // bridge UDP datagram recv into a byte-stream buffer that parse_byte() drains one byte at a time
 uint32_t AP_SwarmMesh_SITL::transport_available()
 {
     if (_rx_buf_pos < _rx_buf_len) {
         return _rx_buf_len - _rx_buf_pos;
     }
-    // buffer exhausted, try to pull the next datagram (non-blocking)
-    const ssize_t n = _sock.recv(_rx_buf, sizeof(_rx_buf), 0);
-    if (n <= 0) {
-        return 0;
+    // buffer exhausted, try to pull the next datagram (non-blocking). bounded loop so a high simulated loss rate cannot stall this call
+    for (uint8_t tries = 0; tries < 32; tries++) {
+        const ssize_t n = _sock.recv(_rx_buf, sizeof(_rx_buf), 0);
+        if (n <= 0) {
+            return 0;
+        }
+#if AP_SIM_SWARMMESH_LOSS_ENABLED
+        if (packet_lost()) {
+            continue;
+        }
+#endif
+        _rx_buf_len = (uint16_t)n;
+        _rx_buf_pos = 0;
+        return _rx_buf_len;
     }
-    _rx_buf_len = (uint16_t)n;
-    _rx_buf_pos = 0;
-    return _rx_buf_len;
+    return 0;
 }
 
 int16_t AP_SwarmMesh_SITL::transport_read()

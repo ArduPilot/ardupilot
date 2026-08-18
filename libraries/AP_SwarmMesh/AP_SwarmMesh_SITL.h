@@ -20,6 +20,7 @@
 #if AP_SWARMMESH_SITL_ENABLED
 
 #include <AP_HAL/utility/Socket_native.h>
+#include <SITL/SIM_config.h>
 
 class AP_SwarmMesh_SITL : public AP_SwarmMesh_Backend
 {
@@ -34,6 +35,11 @@ protected:
     void     transport_write(const uint8_t *buf, uint16_t len) override;
 
 private:
+#if AP_SIM_SWARMMESH_LOSS_ENABLED
+    // true if this datagram should be discarded, per SIM_SWARM_LOSS
+    bool packet_lost() const;
+#endif
+
     SocketAPM_native _sock{true};   // true = datagram (UDP)
     bool     _sock_ok = false;
 
