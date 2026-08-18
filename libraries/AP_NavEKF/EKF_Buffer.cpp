@@ -16,13 +16,13 @@ ekf_ring_buffer::ekf_ring_buffer(uint8_t _elsize) :
 
 bool ekf_ring_buffer::init(uint8_t _size)
 {
-    if (buffer) {
-        free(buffer);
-    }
-    buffer = calloc(_size, elsize);
-    if (buffer == nullptr) {
+    // allocate before freeing so a failure leaves the old buffer usable
+    void *newbuf = calloc(_size, elsize);
+    if (newbuf == nullptr) {
         return false;
     }
+    free(buffer);
+    buffer = newbuf;
     size = _size;
     reset();
     return true;
@@ -132,14 +132,14 @@ void *ekf_imu_buffer::get_offset(uint8_t idx) const
 // initialise buffer, returns false when allocation has failed
 bool ekf_imu_buffer::init(uint32_t size)
 {
-    if (buffer != nullptr) {
-        // allow for init twice
-        free(buffer);
-    }
-    buffer = calloc(size, elsize);
-    if (buffer == nullptr) {
+    // allow for init twice; allocate before freeing so a failure
+    // leaves the old buffer usable
+    void *newbuf = calloc(size, elsize);
+    if (newbuf == nullptr) {
         return false;
     }
+    free(buffer);
+    buffer = newbuf;
     _size = size;
     _youngest = 0;
     _oldest = 0;
@@ -199,4 +199,101 @@ void ekf_imu_buffer::reset()
 void *ekf_imu_buffer::get(uint8_t index) const
 {
     return get_offset(index);
+}
+
+/*
+  save and restore of complete buffer state, used by the EKF3 arming
+  snapshot. The layout is indices followed by the raw element data;
+  both sides must be initialised to the same size and element type.
+ */
+uint16_t ekf_ring_buffer::serialise_len(void) const
+{
+    return 3 + size*uint16_t(elsize);
+}
+
+bool ekf_ring_buffer::serialise(uint8_t *buf, uint16_t len) const
+{
+    if (len != serialise_len()) {
+        return false;
+    }
+    buf[0] = size;
+    buf[1] = oldest;
+    buf[2] = count;
+    if (size > 0) {
+        memcpy(&buf[3], buffer, size*uint32_t(elsize));
+    }
+    return true;
+}
+
+// the stored size wins: buffer sizes derive from measured sensor rates,
+// which can differ between the writer and loader of a snapshot
+bool ekf_ring_buffer::deserialise(const uint8_t *buf, uint16_t len)
+{
+    if (len < 3) {
+        return false;
+    }
+    const uint8_t stored_size = buf[0];
+    if (len != 3 + stored_size*uint16_t(elsize)) {
+        return false;
+    }
+    if (stored_size == 0) {
+        // the writer never used this buffer; keep our capacity and
+        // just clear any stale contents
+        if (buffer != nullptr) {
+            reset();
+        }
+        return true;
+    }
+    if (stored_size != size && !init(stored_size)) {
+        return false;
+    }
+    if (buf[1] >= stored_size || buf[2] > stored_size) {
+        return false;
+    }
+    oldest = buf[1];
+    count = buf[2];
+    memcpy(buffer, &buf[3], size*uint32_t(elsize));
+    return true;
+}
+
+uint16_t ekf_imu_buffer::serialise_len(void) const
+{
+    return 4 + _size*uint16_t(elsize);
+}
+
+bool ekf_imu_buffer::serialise(uint8_t *buf, uint16_t len) const
+{
+    if (len != serialise_len()) {
+        return false;
+    }
+    buf[0] = _size;
+    buf[1] = _oldest;
+    buf[2] = _youngest;
+    buf[3] = _filled ? 1 : 0;
+    if (_size > 0) {
+        memcpy(&buf[4], buffer, _size*uint32_t(elsize));
+    }
+    return true;
+}
+
+bool ekf_imu_buffer::deserialise(const uint8_t *buf, uint16_t len)
+{
+    if (len < 4) {
+        return false;
+    }
+    const uint8_t stored_size = buf[0];
+    if (stored_size == 0 || len != 4 + stored_size*uint16_t(elsize)) {
+        return false;
+    }
+    if (stored_size != _size && !init(stored_size)) {
+        return false;
+    }
+    if (buf[1] >= stored_size || buf[2] >= stored_size) {
+        return false;
+    }
+    _oldest = buf[1];
+    _youngest = buf[2];
+    _filled = buf[3] != 0;
+    memcpy(buffer, &buf[4], _size*uint32_t(elsize));
+    return true;
 }

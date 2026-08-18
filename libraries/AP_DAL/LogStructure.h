@@ -40,7 +40,9 @@
     LOG_REVH_MSG, \
     LOG_RWOH_MSG, \
     LOG_RBOH_MSG, \
-    LOG_RTER_MSG
+    LOG_RTER_MSG, \
+    LOG_RSNH_MSG, \
+    LOG_RSND_MSG
 
 // @LoggerMessage: RFRH
 // @Description: Replay FRame Header
@@ -602,6 +604,42 @@ struct log_RTER {
     uint8_t _end;
 };
 
+// @LoggerMessage: RSNH
+// @Description: Replay EKF snapshot header, written at arming for LOG_REPLAY=2
+// @Field: Len: total snapshot length in bytes
+// @Field: C: EKF core index
+// @Field: Ver: snapshot schema version
+// @Field: FSz: size of the EKF floating point type in bytes
+// @Field: NChunk: number of RSND chunks making up this snapshot
+struct log_RSNH {
+    uint32_t total_len;
+    uint8_t core;
+    uint8_t version;
+    uint8_t ftype_size;
+    uint8_t num_chunks;
+    uint8_t _end;
+};
+
+// @LoggerMessage: RSND
+// @Description: Replay EKF snapshot data chunk
+// @Field: Seq: chunk sequence number within the snapshot
+// @Field: C: EKF core index
+// @Field: Len: number of valid bytes in this chunk
+// @Field: Data: snapshot payload bytes
+struct log_RSND {
+    uint16_t seq;
+    uint8_t core;
+    uint8_t len;
+    int16_t data[32];
+    uint8_t _end;
+};
+
+#define RSND_CHUNK_LEN_BYTES sizeof(((struct log_RSND *)nullptr)->data)
+
+// RSNH.num_chunks is a uint8_t, which bounds a snapshot's serialised size
+#define RSN_SNAPSHOT_MAX_CHUNKS UINT8_MAX
+#define RSN_SNAPSHOT_MAX_LEN_BYTES (RSN_SNAPSHOT_MAX_CHUNKS * RSND_CHUNK_LEN_BYTES)
+
 #define RLOG_SIZE(sname) 3+offsetof(struct log_ ##sname,_end)
 
 #define LOG_STRUCTURE_FROM_DAL        \
@@ -672,4 +710,8 @@ struct log_RTER {
     { LOG_RBOH_MSG, RLOG_SIZE(RBOH),                                   \
       "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" }, \
     { LOG_RTER_MSG, RLOG_SIZE(RTER),                                   \
-      "RTER", "f", "Alt", "m", "0" },
+      "RTER", "f", "Alt", "m", "0" }, \
+    { LOG_RSNH_MSG, RLOG_SIZE(RSNH),                                   \
+      "RSNH", "IBBBB", "Len,C,Ver,FSz,NChunk", "-----", "-----" }, \
+    { LOG_RSND_MSG, RLOG_SIZE(RSND),                                   \
+      "RSND", "HBBa", "Seq,C,Len,Data", "----", "----" },

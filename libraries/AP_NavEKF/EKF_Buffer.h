@@ -39,6 +39,14 @@ public:
     // zeroes all data in the ring buffer
     void reset();
 
+    // save and restore of the complete buffer state, for EKF snapshots
+    uint16_t serialise_len(void) const;
+    bool serialise(uint8_t *buf, uint16_t len) const;
+    bool deserialise(const uint8_t *buf, uint16_t len);
+    uint8_t get_size(void) const {
+        return size;
+    }
+
 private:
     const uint8_t elsize;
     void *buffer;
@@ -86,6 +94,11 @@ public:
     void reset() {
         return ekf_ring_buffer::reset();
     }
+
+    using ekf_ring_buffer::serialise_len;
+    using ekf_ring_buffer::serialise;
+    using ekf_ring_buffer::deserialise;
+    using ekf_ring_buffer::get_size;
 };
 
 
@@ -119,6 +132,14 @@ public:
 
     // zeroes all data in the ring buffer
     void reset();
+
+    // save and restore of the complete buffer state, for EKF snapshots
+    uint16_t serialise_len(void) const;
+    bool serialise(uint8_t *buf, uint16_t len) const;
+    bool deserialise(const uint8_t *buf, uint16_t len);
+    uint8_t get_size(void) const {
+        return _size;
+    }
 
     // retrieves data from the ring buffer at a specified index
     void *get(uint8_t index) const;
@@ -202,4 +223,9 @@ public:
     inline uint8_t get_youngest_index() {
         return ekf_imu_buffer::get_youngest_index();
     }
+
+    using ekf_imu_buffer::serialise_len;
+    using ekf_imu_buffer::serialise;
+    using ekf_imu_buffer::deserialise;
+    using ekf_imu_buffer::get_size;
 };

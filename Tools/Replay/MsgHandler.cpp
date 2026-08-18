@@ -36,6 +36,7 @@ void MsgHandler::init_field_types()
     add_field_type('Z', sizeof(char[64]));
     add_field_type('q', sizeof(int64_t));
     add_field_type('Q', sizeof(uint64_t));
+    add_field_type('a', sizeof(int16_t[32]));
 }
 
 struct MsgHandler::format_field_info *MsgHandler::find_field_info(const char *label)

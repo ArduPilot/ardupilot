@@ -335,6 +335,21 @@ public:
     bool in_log_persistance(void) const;
     uint8_t log_replay(void) const { return _params.log_replay; }
 
+    enum class LogReplay : uint8_t {
+        NONE = 0,
+        FROM_BOOT = 1,
+        FROM_ARM_SNAPSHOT = 2,
+    };
+
+    // true when replay data starts at arming from an EKF snapshot
+    bool log_replay_from_arm(void) const {
+        return LogReplay(_params.log_replay.get()) == LogReplay::FROM_ARM_SNAPSHOT;
+    }
+
+    // true once all backends have written their startup messages, so
+    // prioritised writes are no longer dropped
+    bool log_startup_complete(void) const;
+
     vehicle_startup_message_Writer _vehicle_messages;
 
     enum class LogDisarmed : uint8_t {

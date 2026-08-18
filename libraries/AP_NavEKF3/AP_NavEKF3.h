@@ -24,6 +24,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
+#include "AP_NavEKF3_feature.h"
 
 class NavEKF3_core;
 class EKFGSF_yaw;
@@ -382,6 +383,13 @@ public:
     // Do a reset and bootstrap alignment of all EKF cores
     // return true if successful for all cores
     bool InitialiseFilterBootstrap();
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    // LOG_REPLAY=2 support: accept a core snapshot read from a log by the
+    // Replay tool; applied immediately if the cores are running, else when
+    // they are initialised
+    bool loadCoreSnapshot(uint8_t core_index, uint8_t version, uint8_t ftype_size,
+                          const uint8_t *blob, uint16_t len);
+#endif
 
 private:
     class AP_DAL &dal;
@@ -550,6 +558,25 @@ private:
     
     bool runCoreSelection;                          // true when the primary core has stabilised and the core selection logic can be started
     bool coreSetupRequired[MAX_EKF_CORES];          // true when this core index needs to be setup
+
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    // LOG_REPLAY=2 support
+    uint8_t *pending_snapshot[MAX_EKF_CORES];       // snapshots loaded from a log, applied when cores exist
+    uint16_t pending_snapshot_len[MAX_EKF_CORES];
+    bool applyCoreSnapshots(void);
+    void writeReplaySnapshots(void);
+    void resetReplaySnapshotWriter(void);
+    // in-progress snapshot write; all cores are serialised together and the
+    // blobs frozen so a stalled write resumes rather than restarting with
+    // newer state
+    uint8_t *snapshot_write_buf;
+    uint8_t snapshot_write_core;
+    bool snapshot_hdr_written;
+    uint16_t snapshot_chunks_done;
+    bool snapshot_alloc_warned;
+    uint32_t snapshot_write_ofs[MAX_EKF_CORES];
+    uint16_t snapshot_write_len[MAX_EKF_CORES];
+#endif
     uint8_t coreImuIndex[MAX_EKF_CORES];            // IMU index used by this core
     float coreRelativeErrors[MAX_EKF_CORES];        // relative errors of cores with respect to primary
     float coreErrorScores[MAX_EKF_CORES];           // the instance error values used to update relative core error

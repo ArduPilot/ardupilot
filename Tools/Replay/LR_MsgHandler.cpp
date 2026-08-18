@@ -289,6 +289,84 @@ void LR_MsgHandler_RBOH::process_message(uint8_t *msgbytes)
     AP::dal().handle_message(msg, ekf2, ekf3);
 }
 
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+/*
+  EKF snapshot assembly for LOG_REPLAY=2 logs. Each RSNH restarts
+  assembly for its core, so a partially written snapshot that the
+  firmware retried is discarded cleanly.
+ */
+static struct {
+    uint8_t *buf;
+    uint32_t total_len;
+    uint16_t num_chunks;
+    uint16_t chunks_seen;
+    uint8_t seen[(RSN_SNAPSHOT_MAX_CHUNKS+7)/8];
+    uint8_t version;
+    uint8_t ftype_size;
+} snapshot_assembly[MAX_EKF_CORES];
+
+void LR_MsgHandler_RSNH::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RSNH, msgbytes);
+    if (msg.core >= ARRAY_SIZE(snapshot_assembly)) {
+        return;
+    }
+    auto &assembly = snapshot_assembly[msg.core];
+    free(assembly.buf);
+    assembly.buf = nullptr;
+    if (msg.total_len == 0 || msg.total_len > RSN_SNAPSHOT_MAX_LEN_BYTES) {
+        ::printf("RSNH core %u: bad total_len %u, ignored\n",
+                 unsigned(msg.core), unsigned(msg.total_len));
+        return;
+    }
+    assembly.buf = (uint8_t *)calloc(1, msg.total_len);
+    if (assembly.buf == nullptr) {
+        ::printf("RSNH core %u: allocation failed\n", unsigned(msg.core));
+        return;
+    }
+    assembly.total_len = msg.total_len;
+    assembly.num_chunks = (msg.total_len + RSND_CHUNK_LEN_BYTES - 1) / RSND_CHUNK_LEN_BYTES;
+    assembly.chunks_seen = 0;
+    memset(assembly.seen, 0, sizeof(assembly.seen));
+    assembly.version = msg.version;
+    assembly.ftype_size = msg.ftype_size;
+}
+
+void LR_MsgHandler_RSND::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RSND, msgbytes);
+    if (msg.core >= ARRAY_SIZE(snapshot_assembly)) {
+        return;
+    }
+    auto &assembly = snapshot_assembly[msg.core];
+    const uint32_t ofs = msg.seq * RSND_CHUNK_LEN_BYTES;
+    if (assembly.buf == nullptr || msg.seq >= assembly.num_chunks) {
+        return;
+    }
+    // every chunk is full sized except the last
+    const uint32_t expected = MIN(assembly.total_len - ofs, uint32_t(RSND_CHUNK_LEN_BYTES));
+    if (msg.len != expected) {
+        return;
+    }
+    // a chunk can appear twice if one log backend dropped it and the
+    // firmware retried; only the first copy counts towards completion
+    if (assembly.seen[msg.seq/8] & (1U << (msg.seq%8))) {
+        return;
+    }
+    assembly.seen[msg.seq/8] |= 1U << (msg.seq%8);
+    assembly.chunks_seen++;
+    memcpy(&assembly.buf[ofs], msg.data, msg.len);
+    if (assembly.chunks_seen == assembly.num_chunks) {
+        if (!ekf3.loadCoreSnapshot(msg.core, assembly.version, assembly.ftype_size,
+                                   assembly.buf, assembly.total_len)) {
+            ::printf("EKF3 snapshot core %u load failed\n", unsigned(msg.core));
+        }
+        free(assembly.buf);
+        assembly.buf = nullptr;
+    }
+}
+#endif  // EK3_FEATURE_REPLAY_SNAPSHOT
+
 void LR_MsgHandler_REPH::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(REPH, msgbytes);

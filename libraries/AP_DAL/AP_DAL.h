@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <cstddef>
+#include <AP_NavEKF3/AP_NavEKF3_feature.h>
 
 
 #define DAL_CORE(c) AP::dal().logging_core(c)
@@ -367,6 +368,17 @@ public:
     // write out a DAL log message. If old_msg is non-null, then
     // only write if the content has changed
     static void WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size);
+
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    // LOG_REPLAY=2 support: the EKF serialises a state snapshot into the
+    // log at arming, and the replay stream is held until it has been
+    // written or the attempt is abandoned
+    bool replay_snapshot_pending(void) const;
+    bool write_replay_snapshot(uint8_t core, uint8_t version, uint8_t ftype_size,
+                               const uint8_t *blob, uint16_t len,
+                               bool &hdr_written, uint16_t &chunks_done);
+    void complete_replay_snapshot(void);
+#endif
 #endif
 
 private:
@@ -415,6 +427,21 @@ private:
 
     bool ekf2_init_done;
     bool ekf3_init_done;
+
+#if HAL_LOGGING_ENABLED
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    // LOG_REPLAY=2 arm-edge snapshot state
+    enum class SnapshotState : uint8_t {
+        IDLE,
+        REQUESTED,
+        COMPLETE,
+    };
+    SnapshotState _snapshot_state;
+    uint32_t _snapshot_request_ms;
+    bool _was_armed;
+    void update_replay_snapshot_state(void);
+#endif
+#endif
 
     void init_sensors(void);
     bool init_done;

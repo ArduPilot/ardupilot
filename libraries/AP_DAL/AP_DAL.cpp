@@ -15,6 +15,14 @@
 #include <AP_NavEKF3/AP_NavEKF3.h>
 #endif
 
+// the AP_DAL_Standalone example links without AP_Logger; this exclusion
+// cannot live in AP_NavEKF3_feature.h, where APM_BUILD_TYPE must not be
+// evaluated (see there)
+#if APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
+#undef EK3_FEATURE_REPLAY_SNAPSHOT
+#define EK3_FEATURE_REPLAY_SNAPSHOT 0
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 AP_DAL *AP_DAL::_singleton = nullptr;
@@ -42,8 +50,23 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     // we force write all msgs when logging starts
 #if HAL_LOGGING_ENABLED
     bool logging = AP::logger().logging_started() && AP::logger().allow_start_ekf();
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+    if (AP::logger().log_replay_from_arm()) {
+        // hold the replay stream until the arming snapshot is written or
+        // abandoned; the gate also closes the stream at disarm
+        update_replay_snapshot_state();
+        logging = logging && _snapshot_state == SnapshotState::COMPLETE;
+    }
+#endif
     if (logging && !logging_started) {
         force_write = true;
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+        if (AP::logger().log_replay_from_arm()) {
+            // drop the frame footer accumulated while gated so the
+            // stream starts with a frame header
+            _RFRF.frame_types = 0;
+        }
+#endif
     }
     logging_started = logging;
 #endif
@@ -314,6 +337,86 @@ void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *o
         _end = 0;
     }
 }
+
+#if EK3_FEATURE_REPLAY_SNAPSHOT
+// how long an unserviced snapshot request gates the replay stream
+static constexpr uint32_t REPLAY_SNAPSHOT_TIMEOUT_MS = 10000;
+
+void AP_DAL::update_replay_snapshot_state(void)
+{
+    const bool armed = hal.util->get_soft_armed();
+    if (armed && !_was_armed) {
+        _snapshot_state = SnapshotState::REQUESTED;
+        _snapshot_request_ms = AP_HAL::millis();
+    } else if (!armed) {
+        _snapshot_state = SnapshotState::IDLE;
+    }
+    _was_armed = armed;
+    // request not serviced in time (EKF3 disabled or a stalled writer);
+    // open the stream rather than log nothing, losing the warm start
+    if (_snapshot_state == SnapshotState::REQUESTED &&
+        AP_HAL::millis() - _snapshot_request_ms > REPLAY_SNAPSHOT_TIMEOUT_MS) {
+        _snapshot_state = SnapshotState::COMPLETE;
+    }
+}
+
+bool AP_DAL::replay_snapshot_pending(void) const
+{
+    if (_snapshot_state != SnapshotState::REQUESTED) {
+        return false;
+    }
+    // the snapshot can only go out once the log's startup messages are
+    // written, or its blocks would be dropped
+    return AP::logger().log_startup_complete();
+}
+
+/*
+  write one core's serialised snapshot as an RSNH header plus RSND
+  chunks. hdr_written/chunks_done let a write stalled by a full buffer
+  resume; the caller must keep the blob unchanged until this returns true.
+ */
+bool AP_DAL::write_replay_snapshot(uint8_t core, uint8_t version, uint8_t ftype_size,
+                                   const uint8_t *blob, uint16_t len,
+                                   bool &hdr_written, uint16_t &chunks_done)
+{
+    if (_snapshot_state != SnapshotState::REQUESTED) {
+        return false;
+    }
+    const uint16_t num_chunks = (len + RSND_CHUNK_LEN_BYTES - 1) / RSND_CHUNK_LEN_BYTES;
+    if (!hdr_written) {
+        struct log_RSNH hdr {};
+        hdr.total_len = len;
+        hdr.core = core;
+        hdr.version = version;
+        hdr.ftype_size = ftype_size;
+        hdr.num_chunks = num_chunks;
+        if (!AP::logger().WriteReplayBlock(LOG_RSNH_MSG, &hdr, offsetof(log_RSNH, _end))) {
+            return false;
+        }
+        hdr_written = true;
+    }
+    while (chunks_done < num_chunks) {
+        struct log_RSND chunk {};
+        const uint32_t ofs = chunks_done * RSND_CHUNK_LEN_BYTES;
+        chunk.seq = chunks_done;
+        chunk.core = core;
+        chunk.len = MIN(uint32_t(len) - ofs, RSND_CHUNK_LEN_BYTES);
+        memcpy(chunk.data, &blob[ofs], chunk.len);
+        if (!AP::logger().WriteReplayBlock(LOG_RSND_MSG, &chunk, offsetof(log_RSND, _end))) {
+            return false;
+        }
+        chunks_done++;
+    }
+    return true;
+}
+
+void AP_DAL::complete_replay_snapshot(void)
+{
+    if (_snapshot_state == SnapshotState::REQUESTED) {
+        _snapshot_state = SnapshotState::COMPLETE;
+    }
+}
+#endif  // EK3_FEATURE_REPLAY_SNAPSHOT
 #endif
 
 /*

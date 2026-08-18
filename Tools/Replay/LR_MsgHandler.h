@@ -81,6 +81,18 @@ class LR_MsgHandler_RBOH : public LR_MsgHandler_EKF
     void process_message(uint8_t *msg) override;
 };
 
+class LR_MsgHandler_RSNH : public LR_MsgHandler_EKF
+{
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
+    void process_message(uint8_t *msg) override;
+};
+
+class LR_MsgHandler_RSND : public LR_MsgHandler_EKF
+{
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
+    void process_message(uint8_t *msg) override;
+};
+
 class LR_MsgHandler_RFRN : public LR_MsgHandler
 {
 public:
