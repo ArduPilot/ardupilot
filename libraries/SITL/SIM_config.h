@@ -2,8 +2,14 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <GCS_MAVLink/GCS_config.h>
+#include <AP_SwarmMesh/AP_SwarmMesh_config.h>
 
 #define AP_SIM_MAX_GPS_SENSORS 4
+
+// simulated packet loss on the SwarmMesh multicast transport
+#ifndef AP_SIM_SWARMMESH_LOSS_ENABLED
+#define AP_SIM_SWARMMESH_LOSS_ENABLED AP_SWARMMESH_SITL_ENABLED
+#endif  // AP_SIM_SWARMMESH_LOSS_ENABLED
 
 #ifndef AP_SIM_ADSB_ENABLED
 #define AP_SIM_ADSB_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)

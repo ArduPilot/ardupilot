@@ -13,6 +13,7 @@
 #include <AP_DDS/AP_DDS_config.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
+#include "SIM_config.h"
 #include "SIM_Buzzer.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
@@ -265,6 +266,10 @@ public:
     AP_Int16 on_hardware_relay_enable_mask;   // mask of relays passed through to actual hardware
 
     AP_Float uart_byte_loss_pct;
+
+#if AP_SIM_SWARMMESH_LOSS_ENABLED
+    AP_Float swarm_packet_loss_pct;  // percentage of incoming SwarmMesh packets dropped by this receiver
+#endif
 
 #ifdef AP_DDS_ENABLED
     bool use_dds_sim_time = false; // use ROS2 simulation time for DDS topics
