@@ -14773,7 +14773,7 @@ switch value'''
 
         received_frsky_texts = []
         last_len_received_statustexts = 0
-        timeout = 7 * self.speedup # it can take a *long* time to get these messages down!
+        timeout = 150
         while True:
             self.drain_mav()
             now = self.get_sim_time_cached()
