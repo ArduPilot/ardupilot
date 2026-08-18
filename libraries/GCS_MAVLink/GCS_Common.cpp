@@ -108,6 +108,11 @@
 #include <AP_RCProtocol/AP_RCProtocol.h>
 #endif
 
+#include <AP_SwarmMesh/AP_SwarmMesh_config.h>
+#if AP_SWARMMESH_COORD_ENABLED
+#include <AP_SwarmMesh/AP_SwarmMesh.h>
+#endif
+
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
@@ -4641,6 +4646,17 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_CANFD_FRAME:
         handle_can_frame(msg);
         break;
+#endif
+
+#if AP_SWARMMESH_COORD_ENABLED
+    case MAVLINK_MSG_ID_TUNNEL: {
+        // a companion computer publishes its coordination state to the swarm this way.
+        AP_SwarmMesh *swarmmesh = AP::swarmmesh();
+        if (swarmmesh != nullptr) {
+            swarmmesh->handle_tunnel(msg);
+        }
+        break;
+    }
 #endif
 
 #if AP_MAVLINKCAN_ENABLED
