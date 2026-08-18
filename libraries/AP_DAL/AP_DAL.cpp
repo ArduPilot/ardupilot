@@ -371,7 +371,7 @@ void AP_DAL::writeExtNavData(const Vector3f &pos, const Quaternion &quat, float 
     WRITE_REPLAY_BLOCK_IFCHANGED(REPH, _REPH, old);
 }
 
-void AP_DAL::log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms)
+void AP_DAL::log_SetLatLng(const Location &loc, float posAccuracy, uint32_t timestamp_ms, uint32_t received_ms)
 {
     end_frame();
     const log_RSLL old = _RSLL;
@@ -379,6 +379,7 @@ void AP_DAL::log_SetLatLng(const Location &loc, float posAccuracy, uint32_t time
     _RSLL.lng = loc.lng;
     _RSLL.posAccSD = posAccuracy;
     _RSLL.timestamp_ms = timestamp_ms;
+    _RSLL.received_ms = received_ms;
     WRITE_REPLAY_BLOCK_IFCHANGED(RSLL, _RSLL, old);
 }
 
