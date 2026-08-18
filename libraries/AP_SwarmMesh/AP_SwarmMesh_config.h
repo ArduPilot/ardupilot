@@ -43,6 +43,18 @@
 #define AP_SWARMMESH_MAX_PEER_FILTERS 16
 #endif
 
+// Coordination hook: lets an onboard Lua script or a companion computer publish its own
+// coordination state to the swarm, and read back what each peer published.
+#ifndef AP_SWARMMESH_COORD_ENABLED
+#define AP_SWARMMESH_COORD_ENABLED AP_SWARMMESH_ENABLED
+#endif
+
+// Bytes of payload carried alongside the typed coordination fields defined by script (Lua or companion computer). The library doesnt interpret these, so a script can coordinate on things the wire format doesnt define.
+// Costs this many bytes per peer table entry, so small boards should reduce/remove it. Peers with different max values can still work. a receiver keeps what fits and reports how much it kept.
+#ifndef AP_SWARMMESH_COORD_USER_MAX
+#define AP_SWARMMESH_COORD_USER_MAX 32
+#endif
+
 // Max RX bytes drained through the parser per update tick. Must exceed the max arrival rate (~N_peers x stream-rate x ~90B) divided by the update rate,
 // or the transport's buffers overflow and the peer table starves. SITL gets a large budget to cope with 254 node swarms.
 #ifndef AP_SWARMMESH_RX_BUDGET_BYTES

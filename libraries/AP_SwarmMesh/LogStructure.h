@@ -13,7 +13,8 @@
     LOG_SWARMMESH_ES_MSG,      \
     LOG_SWARMMESH_AT_MSG,      \
     LOG_SWARMMESH_EK_MSG,      \
-    LOG_SWARMMESH_IM_MSG
+    LOG_SWARMMESH_IM_MSG,      \
+    LOG_SWARMMESH_CO_MSG
     // TODO: Add more log types
 
 // @LoggerMessage: SMST
@@ -213,6 +214,33 @@ struct PACKED log_SwarmMesh_IM {
     int16_t  zacc;
 };
 
+// @LoggerMessage: SMCO
+// @Description: SwarmMesh RX coordination state published by a peer's script or companion computer
+// @Field: TimeUS: Time since system startup
+// @Field: SysID: SysID of origin
+// @Field: Role: Script defined role
+// @Field: Task: Script defined task id
+// @Field: Slot: Script defined formation slot
+// @Field: Prio: Script defined priority
+// @Field: Lat: Target latitude in degE7
+// @Field: Lon: Target longitude in degE7
+// @Field: Alt: Target altitude AMSL in m
+// @Field: ULen: Bytes of script defined payload received
+
+struct PACKED log_SwarmMesh_CO {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    uint8_t  sysid;
+    uint8_t  role;
+    uint8_t  task_id;
+    uint8_t  formation_slot;
+    uint8_t  priority;
+    int32_t  lat;
+    int32_t  lon;
+    float    alt;
+    uint8_t  user_len;
+};
+
 #if AP_SWARMMESH_ENABLED
 #define LOG_STRUCTURE_FROM_SWARMMESH \
     { LOG_SWARMMESH_MSG, sizeof(log_SwarmMesh), \
@@ -234,7 +262,9 @@ struct PACKED log_SwarmMesh_IM {
     { LOG_SWARMMESH_EK_MSG, sizeof(log_SwarmMesh_EK), \
         "SMEK", "QBfff",  "TimeUS,SysID,PHV,PVV,VV", "s----", "F----", true },  \
     { LOG_SWARMMESH_IM_MSG, sizeof(log_SwarmMesh_IM), \
-        "SMIM", "QBhhh",  "TimeUS,SysID,AX,AY,AZ", "s----", "F----", true },
+        "SMIM", "QBhhh",  "TimeUS,SysID,AX,AY,AZ", "s----", "F----", true },  \
+    { LOG_SWARMMESH_CO_MSG, sizeof(log_SwarmMesh_CO), \
+        "SMCO", "QBBBBBLLfB",  "TimeUS,SysID,Role,Task,Slot,Prio,Lat,Lon,Alt,ULen", "s-------m-", "F---------", true },
 #else
 #define LOG_STRUCTURE_FROM_SWARMMESH
 #endif

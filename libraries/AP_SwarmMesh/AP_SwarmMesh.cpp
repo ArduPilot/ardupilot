@@ -18,6 +18,7 @@
 #if AP_SWARMMESH_ENABLED
 
 #include "AP_SwarmMesh_Backend.h"
+#include "AP_SwarmMesh_coord.h"
 
 #if AP_SWARMMESH_SERIAL_ENABLED
 #include "AP_SwarmMesh_Serial.h"
@@ -114,10 +115,10 @@ const AP_Param::GroupInfo AP_SwarmMesh::var_info[] = {
 
     // @Param: _LOG_MASK
     // @DisplayName: RX log message mask
-    // @Description: Bitmask of which RX message types are written to the dataflash log (still subject to LOG_HZ). Bits 9-31 are reserved for future message types.
-    // @Bitmask: 0:Heartbeat,1:SysStatus,2:GlobalPositionInt,3:LocalPositionNED,4:PositionTargetGlobalInt,5:ExtendedSysState,6:Attitude,7:EkfStatusReport,8:ScaledIMU
+    // @Description: Bitmask of which RX message types are written to the dataflash log (still subject to LOG_HZ). Bits 10-31 are reserved for future message types.
+    // @Bitmask: 0:Heartbeat,1:SysStatus,2:GlobalPositionInt,3:LocalPositionNED,4:PositionTargetGlobalInt,5:ExtendedSysState,6:Attitude,7:EkfStatusReport,8:ScaledIMU,9:Coordination
     // @User: Advanced
-    AP_GROUPINFO("_LOG_MASK", 10, AP_SwarmMesh, log_mask, 0x1FF),
+    AP_GROUPINFO("_LOG_MASK", 10, AP_SwarmMesh, log_mask, 0x3FF),
 
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
     // @Param: _SAVE_HZ
@@ -165,6 +166,16 @@ const AP_Param::GroupInfo AP_SwarmMesh::var_info[] = {
     // @Values: -1:Disabled,0:Serial0,1:Serial1,2:Serial2,3:Serial3,4:Serial4,5:Serial5,6:Serial6
     // @User: Advanced
     AP_GROUPINFO("_FWD_PORT", 29, AP_SwarmMesh, fwd_port, -1),
+
+#if AP_SWARMMESH_COORD_ENABLED
+    // @Param: _SR_COORD
+    // @DisplayName: Coordination stream rate
+    // @Description: Rate at which this vehicle's coordination state is broadcast (Hz). Nothing is sent until a script or companion computer has published a state. 0 disables.
+    // @Units: Hz
+    // @Range: 0 50
+    // @User: Advanced
+    AP_GROUPINFO("_SR_COORD", 30, AP_SwarmMesh, stream_rate[3], 0),
+#endif
 
     AP_GROUPEND
 };
@@ -276,6 +287,15 @@ bool AP_SwarmMesh::get_peer_data(uint8_t peer_id, struct PeerState& state) const
     return true;
 }
 
+// return the sysid at a peer table index. 0 is the broadcast id, so it is never a valid peer.
+uint8_t AP_SwarmMesh::get_peer_sysid(uint8_t index) const
+{
+    if (!device_ready() || index >= num_peers) {
+        return 0;
+    }
+    return peer_state[index].sysid;
+}
+
 // find an existing peer entry by sysid without allocating. returns nullptr if absent.
 const AP_SwarmMesh::PeerState *AP_SwarmMesh::find_peer_by_sysid(uint8_t peer_sysid) const
 {
@@ -315,6 +335,80 @@ bool AP_SwarmMesh::get_peer_velocity_NED(Vector3f& vel_ned, uint8_t peer_sysid) 
     vel_ned = Vector3f(ps->velocity[0], ps->velocity[1], ps->velocity[2]) * 0.01f;
     return true;
 }
+
+#if AP_SWARMMESH_COORD_ENABLED
+// publish our own coordination state. It is copied rather than referenced, so the caller's object can go away immediately (backend broadcasts the copy at _SR_COORD Hz).
+bool AP_SwarmMesh::set_coord_state(const SwarmCoordState &state)
+{
+    if (!device_ready()) {
+        return false;
+    }
+    _coord_state = state;
+    _coord_state.user_len = MIN(_coord_state.user_len, (uint8_t)AP_SWARMMESH_COORD_USER_MAX);
+    _coord_state_set = true;
+    return true;
+}
+
+// fill state with what a peer last published, if that is still fresh
+bool AP_SwarmMesh::get_peer_coord_state(SwarmCoordState &state, uint8_t peer_sysid) const
+{
+    const PeerState *ps = find_peer_by_sysid(peer_sysid);
+    const uint32_t coord_bit = 1U << (uint8_t)MsgFresh::COORDINATION;
+    if (ps == nullptr || !(ps->freshness & coord_bit)) {
+        return false;
+    }
+    state.role            = ps->role;
+    state.task_id         = ps->task_id;
+    state.formation_slot  = ps->formation_slot;
+    state.priority        = ps->priority;
+    state.target_lat      = ps->target_pos.x;
+    state.target_lng      = ps->target_pos.y;
+    state.target_alt_mm   = ps->target_pos.z;
+    memcpy(state.target_vel_NED, ps->target_velocity, sizeof(state.target_vel_NED));
+    memcpy(state.target_accel_NED, ps->target_accel, sizeof(state.target_accel_NED));
+    state.user_len = MIN(ps->coord_user_len, (uint8_t)AP_SWARMMESH_COORD_USER_MAX);
+    memcpy(state.user, ps->coord_user, state.user_len);
+    return true;
+}
+
+// a companion computer publishes coordination state by sending us the same TUNNEL message the mesh carries over its ordinary telemetry link.
+// Returns false for any TUNNEL msg that is not ours, so other users of the message are unaffected.
+bool AP_SwarmMesh::handle_tunnel(const mavlink_message_t &msg)
+{
+    if (!device_ready()) {
+        return false;
+    }
+    mavlink_tunnel_t tunnel;
+    mavlink_msg_tunnel_decode(&msg, &tunnel);
+    if (tunnel.payload_type != SWARMMESH_COORD_PAYLOAD_TYPE ||
+        tunnel.payload_length < SWARMMESH_COORD_FIXED_LEN) {
+        return false;
+    }
+
+    swarmmesh_coord_t basket;
+    memcpy(&basket, tunnel.payload, MIN((size_t)tunnel.payload_length, sizeof(basket)));
+    if (basket.version != SWARMMESH_COORD_VERSION) {
+        return false;
+    }
+
+    SwarmCoordState state {};
+    state.role           = basket.role;
+    state.task_id        = basket.task_id;
+    state.formation_slot = basket.formation_slot;
+    state.priority       = basket.priority;
+    state.target_lat     = basket.target_pos[0];
+    state.target_lng     = basket.target_pos[1];
+    state.target_alt_mm  = basket.target_pos[2];
+    memcpy(state.target_vel_NED, basket.target_velocity, sizeof(state.target_vel_NED));
+    memcpy(state.target_accel_NED, basket.target_accel, sizeof(state.target_accel_NED));
+    // a sender built with a larger AP_SWARMMESH_COORD_USER_MAX than ours is truncated, not rejected
+    const uint8_t on_wire = MIN((uint16_t)basket.user_len, (uint16_t)(tunnel.payload_length - SWARMMESH_COORD_FIXED_LEN));
+    state.user_len = MIN(on_wire, (uint8_t)AP_SWARMMESH_COORD_USER_MAX);
+    memcpy(state.user, basket.user, state.user_len);
+
+    return set_coord_state(state);
+}
+#endif  // AP_SWARMMESH_COORD_ENABLED
 
 // check if the device is ready
 bool AP_SwarmMesh::device_ready(void) const

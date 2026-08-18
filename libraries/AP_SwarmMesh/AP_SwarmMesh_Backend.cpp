@@ -35,6 +35,10 @@
 
 #include "LogStructure.h"
 
+#if AP_SWARMMESH_COORD_ENABLED
+#include "AP_SwarmMesh_coord.h"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 // freshness budgets (ms), indexed by AP_SwarmMesh::MsgFresh. Each is ~3x the stream period. Order MUST match the MsgFresh enum
@@ -48,6 +52,9 @@ static constexpr uint32_t FRESH_BUDGET_MS[] = {
     2000,  // ATTITUDE
     5000,  // EKF_STATUS_REPORT
     2000,  // SCALED_IMU
+#if AP_SWARMMESH_COORD_ENABLED
+    3000,  // COORDINATION
+#endif
 };
 static_assert(sizeof(FRESH_BUDGET_MS) / sizeof(FRESH_BUDGET_MS[0]) == AP_SwarmMesh::NUM_FRESH_TYPES, "FRESH_BUDGET_MS must have one entry per MsgFresh bit");
 
@@ -382,6 +389,9 @@ int8_t AP_SwarmMesh_Backend::fresh_bit_for_msgid(uint32_t msgid)
     case MAVLINK_MSG_ID_ATTITUDE:                   return (int8_t)AP_SwarmMesh::MsgFresh::ATTITUDE;
     case MAVLINK_MSG_ID_EKF_STATUS_REPORT:          return (int8_t)AP_SwarmMesh::MsgFresh::EKF_STATUS_REPORT;
     case MAVLINK_MSG_ID_SCALED_IMU:                 return (int8_t)AP_SwarmMesh::MsgFresh::SCALED_IMU;
+#if AP_SWARMMESH_COORD_ENABLED
+    case MAVLINK_MSG_ID_TUNNEL:                     return (int8_t)AP_SwarmMesh::MsgFresh::COORDINATION;
+#endif
     default:                                        return -1;
     }
 }
@@ -676,6 +686,12 @@ void AP_SwarmMesh_Backend::handle_mavlink(const mavlink_message_t &msg, AP_Swarm
         break;
     }
 
+#if AP_SWARMMESH_COORD_ENABLED
+    case MAVLINK_MSG_ID_TUNNEL:
+        handle_coordination(msg, ps);
+        break;
+#endif
+
     // TODO: Add more cases (NAV_CONTROLLER_OUTPUT, MISSION_CURRENT, ...)
 
     default:
@@ -684,6 +700,60 @@ void AP_SwarmMesh_Backend::handle_mavlink(const mavlink_message_t &msg, AP_Swarm
         break;
     }
 }
+
+#if AP_SWARMMESH_COORD_ENABLED
+// unpack a peer's coordination basket. A TUNNEL that is not a basket, or is a version we dont know, counts as a drop.
+void AP_SwarmMesh_Backend::handle_coordination(const mavlink_message_t &msg, AP_SwarmMesh::PeerState &ps)
+{
+    mavlink_tunnel_t tunnel;
+    mavlink_msg_tunnel_decode(&msg, &tunnel);
+    if (tunnel.payload_type != SWARMMESH_COORD_PAYLOAD_TYPE ||
+        tunnel.payload_length < SWARMMESH_COORD_FIXED_LEN) {
+        _dropped++;
+        ps.drop_count++;
+        return;
+    }
+
+    swarmmesh_coord_t basket;
+    memcpy(&basket, tunnel.payload, MIN((size_t)tunnel.payload_length, sizeof(basket)));
+    if (basket.version != SWARMMESH_COORD_VERSION) {
+        _dropped++;
+        ps.drop_count++;
+        return;
+    }
+
+    ps.role           = basket.role;
+    ps.task_id        = basket.task_id;
+    ps.formation_slot = basket.formation_slot;
+    ps.priority       = basket.priority;
+    ps.target_pos     = Vector3l(basket.target_pos[0], basket.target_pos[1], basket.target_pos[2]);
+    memcpy(ps.target_velocity, basket.target_velocity, sizeof(ps.target_velocity));
+    memcpy(ps.target_accel, basket.target_accel, sizeof(ps.target_accel));
+    // a peer built with a larger AP_SWARMMESH_COORD_USER_MAX than ours is truncated, not rejected
+    const uint8_t on_wire = MIN((uint16_t)basket.user_len, (uint16_t)(tunnel.payload_length - SWARMMESH_COORD_FIXED_LEN));
+    ps.coord_user_len = MIN(on_wire, (uint8_t)AP_SWARMMESH_COORD_USER_MAX);
+    memcpy(ps.coord_user, basket.user, ps.coord_user_len);
+
+#if HAL_LOGGING_ENABLED
+    if ((frontend_log_mask() & (uint32_t)LogMsg::COORDINATION) && log_rate_ok()) {
+        const struct log_SwarmMesh_CO pkt{
+            LOG_PACKET_HEADER_INIT(LOG_SWARMMESH_CO_MSG),
+            time_us        : AP_HAL::micros64(),
+            sysid          : ps.sysid,
+            role           : ps.role,
+            task_id        : ps.task_id,
+            formation_slot : ps.formation_slot,
+            priority       : ps.priority,
+            lat            : ps.target_pos.x,
+            lon            : ps.target_pos.y,
+            alt            : ps.target_pos.z * 0.001f,
+            user_len       : ps.coord_user_len
+        };
+        AP::logger().WriteBlock(&pkt, sizeof(pkt));
+    }
+#endif
+}
+#endif  // AP_SWARMMESH_COORD_ENABLED
 
 // ---- TX path ----
 
@@ -795,6 +865,11 @@ void AP_SwarmMesh_Backend::send_stream(Bucket bucket)
 #endif
         send_extended_sys_state();
         break;
+#if AP_SWARMMESH_COORD_ENABLED
+    case Bucket::COORD:
+        send_coordination();
+        break;
+#endif
     }
     // TODO: Add more buckets (mode, mission state, etc.)
 }
@@ -975,6 +1050,50 @@ void AP_SwarmMesh_Backend::send_extended_sys_state()
 
     send_mavlink(frontend_dest_id(), &msg, 0, frontend_ttl());
 }
+
+#if AP_SWARMMESH_COORD_ENABLED
+// broadcast whatever a script or companion computer last published.
+// Nothing goes on the air until something has been published, so a vehicle without coordination logic stays quiet.
+void AP_SwarmMesh_Backend::send_coordination()
+{
+    if (!_frontend._coord_state_set) {
+        return;
+    }
+    const SwarmCoordState &state = _frontend._coord_state;
+
+    swarmmesh_coord_t basket {};
+    basket.version           = SWARMMESH_COORD_VERSION;
+    basket.role              = state.role;
+    basket.task_id           = state.task_id;
+    basket.formation_slot    = state.formation_slot;
+    basket.priority          = state.priority;
+    basket.target_pos[0]     = state.target_lat;
+    basket.target_pos[1]     = state.target_lng;
+    basket.target_pos[2]     = state.target_alt_mm;
+    memcpy(basket.target_velocity, state.target_vel_NED, sizeof(basket.target_velocity));
+    memcpy(basket.target_accel, state.target_accel_NED, sizeof(basket.target_accel));
+    basket.user_len = MIN(state.user_len, (uint8_t)AP_SWARMMESH_COORD_USER_MAX);
+    memcpy(basket.user, state.user, basket.user_len);
+
+    // only the user bytes actually in use go on the wire
+    const uint8_t payload_len = SWARMMESH_COORD_FIXED_LEN + basket.user_len;
+    uint8_t payload[MAVLINK_MSG_TUNNEL_FIELD_PAYLOAD_LEN] {};
+    memcpy(payload, &basket, payload_len);
+
+    mavlink_message_t msg;
+    mavlink_msg_tunnel_pack(
+        frontend_sysid(),
+        MAV_COMP_ID_AUTOPILOT1,
+        &msg,
+        0,                      // target_system: any peer may consume this
+        0,                      // target_component
+        SWARMMESH_COORD_PAYLOAD_TYPE,
+        payload_len,
+        payload);
+
+    send_mavlink(frontend_dest_id(), &msg, 0, frontend_ttl());
+}
+#endif  // AP_SWARMMESH_COORD_ENABLED
 
 #if AP_AHRS_ENABLED
 void AP_SwarmMesh_Backend::send_attitude()

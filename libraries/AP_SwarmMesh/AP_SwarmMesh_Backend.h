@@ -77,6 +77,9 @@ private:
         POSITION = 0,   // GLOBAL_POSITION_INT, LOCAL_POSITION_NED
         EXT_STAT = 1,   // SYS_STATUS, NAV_CONTROLLER_OUTPUT, POSITION_TARGET_GLOBAL_INT, MISSION_CURRENT
         EXTRA1   = 2,   // ATTITUDE, EKF_STATUS_REPORT, SCALED_IMU
+#if AP_SWARMMESH_COORD_ENABLED
+        COORD    = 3,   // TUNNEL carrying the coordination basket
+#endif
     };
 
     // RX message types gated by the _LOG_MASK param (bits 9-31 reserved)
@@ -90,6 +93,9 @@ private:
         ATTITUDE                    = 1U << 6,
         EKF_STATUS_REPORT           = 1U << 7,
         SCALED_IMU                  = 1U << 8,
+#if AP_SWARMMESH_COORD_ENABLED
+        COORDINATION                = 1U << 9,
+#endif
     };
 
     // RX parser state machine
@@ -169,6 +175,10 @@ private:
     void send_nav_controller_output();
     void send_position_target_global_int();
     void send_extended_sys_state();
+#if AP_SWARMMESH_COORD_ENABLED
+    void send_coordination();
+    void handle_coordination(const mavlink_message_t &msg, AP_SwarmMesh::PeerState &ps);
+#endif
 };
 
 #endif  // AP_SWARMMESH_ENABLED

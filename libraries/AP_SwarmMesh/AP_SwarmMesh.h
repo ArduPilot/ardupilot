@@ -22,8 +22,32 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Filesystem/AP_Filesystem_config.h>
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 class AP_SwarmMesh_Backend;
+
+#if AP_SWARMMESH_COORD_ENABLED
+/*
+  Coordination state published by a Lua script or a companion computer, and read back for each peer.
+  The library assigns no meaning to any of these values beyond carrying them (what a role or a task
+  id means is entirely up to your automated scripts).
+
+  Fields are flat scalars because this is bound directly into Lua as a userdata.
+ */
+struct SwarmCoordState {
+    uint8_t role;
+    uint8_t task_id;
+    uint8_t formation_slot;
+    uint8_t priority;
+    int32_t target_lat;             // degE7
+    int32_t target_lng;             // degE7
+    int32_t target_alt_mm;          // mm, AMSL
+    int16_t target_vel_NED[3];      // cm/s
+    int16_t target_accel_NED[3];    // cm/s/s
+    uint8_t user[AP_SWARMMESH_COORD_USER_MAX];  // opaque to the library
+    uint8_t user_len;               // number of valid bytes in user[]
+};
+#endif  // AP_SWARMMESH_COORD_ENABLED
 
 class AP_SwarmMesh
 {
@@ -59,6 +83,9 @@ public:
         ATTITUDE                   = 6,
         EKF_STATUS_REPORT          = 7,
         SCALED_IMU                 = 8,
+#if AP_SWARMMESH_COORD_ENABLED
+        COORDINATION               = 9,
+#endif
         NUM_TYPES                  // keep last
     };
     static constexpr uint8_t NUM_FRESH_TYPES = (uint8_t)MsgFresh::NUM_TYPES;
@@ -101,6 +128,10 @@ public:
         int16_t  target_velocity[3]; // commanded velocity [x, y, z] NED, cm/s, from POSITION_TARGET_GLOBAL_INT
         int16_t  target_accel[3];    // commanded acceleration [x, y, z] NED, cm/s/s, from POSITION_TARGET_GLOBAL_INT
         uint8_t  priority;
+#if AP_SWARMMESH_COORD_ENABLED
+        uint8_t  coord_user[AP_SWARMMESH_COORD_USER_MAX]; // script defined payload from this peer's coordination basket
+        uint8_t  coord_user_len;     // valid bytes in coord_user. A longer basket than we can hold is truncated to this
+#endif
     };
 
     // initialise
@@ -121,11 +152,25 @@ public:
     // return data for a specific peer by index
     bool get_peer_data(uint8_t peer_id, struct PeerState& state) const;
 
+    // return the sysid held at a peer table index, or 0 if that index is not filled
+    uint8_t get_peer_sysid(uint8_t index) const;
+
     // fill loc with peer's last global pos, returns false if the peer is unknown or its entry is stale.
     bool get_peer_location(Location& loc, uint8_t peer_sysid) const;
 
     // fill vel_ned with the peer's last vel, returns false if the peer is unknown or its entry is stale.
     bool get_peer_velocity_NED(Vector3f& vel_ned, uint8_t peer_sysid) const;
+
+#if AP_SWARMMESH_COORD_ENABLED
+    // publish our own coordination state to the swarm. It is broadcast at _SR_COORD Hz until it is replaced by another call. Returns false if the mesh is not running.
+    bool set_coord_state(const SwarmCoordState &state);
+
+    // fill state with the coordination state a peer last published. Returns false if the peer is unknown or has not published within the freshness budget.
+    bool get_peer_coord_state(SwarmCoordState &state, uint8_t peer_sysid) const;
+
+    // handle a TUNNEL received on an ordinary telemetry link, so a companion computer can publish coordination state the same way a script does. Returns true if it was ours.
+    bool handle_tunnel(const mavlink_message_t &msg);
+#endif
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -133,7 +178,11 @@ public:
     void log();
 
     // number of SR stream buckets (must match the SR_* param entries in var_info)
+#if AP_SWARMMESH_COORD_ENABLED
+    static constexpr uint8_t NUM_BUCKETS = 4;
+#else
     static constexpr uint8_t NUM_BUCKETS = 3;
+#endif
 
 private:
 
@@ -182,6 +231,12 @@ private:
 
     // external references
     AP_SwarmMesh_Backend *_driver;
+
+#if AP_SWARMMESH_COORD_ENABLED
+    // coordination state we publish, as last set by a script or companion computer. nothing is broadcast until it has been set at least once.
+    SwarmCoordState _coord_state;
+    bool _coord_state_set;
+#endif
 
     // individual peer data
     uint8_t num_peers = 0;

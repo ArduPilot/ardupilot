@@ -88,6 +88,30 @@ SITL logs are under `<work-dir>/inst_*/sitl.log`.
 
 With velocity FF, a 4 drone diamond holds its formation to within ~0.2 m (lag bias ~0.17 m, jitter rms ~0.12 m) while the leader manoeuvres.
 
+## Coordination hook
+
+The mesh carries vehicle telemetry by itself, but it assigns nothing to `role`, `task_id`, `formation_slot` or `priority` -- those belong to whatever is coordinating the swarm. This hook lets an onboard Lua script or a companion computer fill them in and read back what every peer published. See `../../AP_Scripting/examples/swarm_coordination.lua`.
+
+```lua
+local state = SwarmCoordState()
+state:role(2)
+state:formation_slot(3)
+state:user(0, 1)      -- bytes the library never interprets
+state:user_len(1)
+swarm:set_coord_state(state)
+
+local peer = swarm:get_peer_coord_state(swarm:get_peer_sysid(0))
+if peer then
+  gcs:send_text(6, string.format('peer slot %u', peer:formation_slot()))
+end
+```
+
+The published state is rebroadcast at `P2P_SR_COORD` Hz until it is replaced, so a script only calls `set_coord_state()` when something changes. Nothing is transmitted until the first call, so a vehicle with no coordination logic does not put an empty basket on the mesh. Received state is logged as `SMCO` and expires from `get_peer_coord_state()` like any other message type.
+
+Alongside the named fields, `AP_SWARMMESH_COORD_USER_MAX` bytes (32 by default) travel opaquely for coordination the wire format does not name. Vehicles built with different max sizes are compatible: a receiver keeps what fits and reports how much it kept through `user_len()`.
+
+A basket travels as a MAVLink `TUNNEL` message, which is what lets a **companion computer** use the same hook. It publishes by sending that TUNNEL over its ordinary telemetry link, AP_SwarmMesh intercepts it and broadcasts it to the swarm, and it receives the peers' baskets as `P2P_FWD_PORT` forwards peer traffic to the companion unmodified.
+
 ## Packet loss and relay
 
 `SIM_SWARM_LOSS` sets the percentage of incoming mesh packets each vehicle discards, simulating an unreliable radio link. The draw is made per receiver, so a packet lost by one vehicle is still heard by the others, which is what a real radio link does and what a shared multicast bus on its own does not. The parameter is read live, so loss can be introduced and cleared mid-flight without a reboot:
@@ -111,4 +135,4 @@ Note the multicast group is fixed, so that test assumes no other SwarmMesh SITL 
 
 - Velocity FF (`swarm:get_peer_velocity_NED`) is on by default. It falls back to a position target if the EKF origin or leader velocity is unavailable. Could add accel FF.
 - Altitude is held fixed (ABOVE_HOME). Should extend to full 3D by tracking the leades altitude instead.
-- Coordination fields (`role`, `formation_slot`) are not yet on the TX path. Leader identity and readiness are currently determined locally. The sender should set a readiness variable itself for robustness.
+- The follower applet still derives leader identity and readiness locally. Now that coordination state is on the TX path (see above), it could publish readiness in its own basket and let followers wait on the leader's `role` instead of counting peers.
