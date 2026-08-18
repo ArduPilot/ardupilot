@@ -461,7 +461,8 @@ BUILD_OPTIONS = [
     Feature('MAVLink', 'MAVLINK_GET_HOME_POSITION', 'AP_MAVLINK_MAV_CMD_GET_HOME_POSITION_ENABLED', 'Enable superseded MAV_CMD_GET_HOME_POSITION', 0, None),  # noqa
 
     Feature('Developer', 'KILL_IMU', 'AP_INERTIALSENSOR_KILL_IMU_ENABLED', 'Allow IMUs to be disabled at runtime', 0, None),
-    Feature('Developer', 'CRASHCATCHER', 'AP_CRASHDUMP_ENABLED', 'Enable CrashCatcher', 0, None),
+    Feature('Developer', 'CRASHDUMP_FLASH', 'AP_CRASHDUMP_FLASH_ENABLED', 'Enable crash dumps to flash', 0, None),
+    Feature('Developer', 'CRASHDUMP_FATFS', 'AP_CRASHDUMP_FATFS_ENABLED', 'Enable crash dumps to microSD', 0, None),
     Feature('Developer', 'FAILURE_INJECTION', 'AP_MAVLINK_FAILURE_CREATION_ENABLED', 'Enable autopilot failure injection via MAVLink ', 0, None),  # noqa:E501
 
     Feature('GPS Drivers', 'UBLOX', 'AP_GPS_UBLOX_ENABLED', 'Enable U-blox GPS', 1, None),
