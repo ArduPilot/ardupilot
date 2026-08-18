@@ -1541,6 +1541,12 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.status.fix_status,
               _buffer.status.fix_type);
         _check_new_itow(_buffer.status.itow);
+        if (_payload_length >= sizeof(ubx_nav_status)) {
+            const uint8_t spoof_state = (_buffer.status.flags2 >> 3) & 0x03;
+            state.spoofing_detected = (spoof_state >= 2);
+        } else {
+            state.spoofing_detected = false;
+        }
         if (havePvtMsg) {
             // when we have PVT we don't need status, just change the rate for STATUS to zero
             _unconfigured_messages &= ~CONFIG_RATE_STATUS;
@@ -1674,6 +1680,12 @@ AP_GPS_UBLOX::_parse_gps(void)
         Debug("MSG_PVT");
 
         havePvtMsg = true;
+        
+        {
+            const uint8_t spoof_state = (_buffer.pvt.flags2 >> 3) & 0x03;
+            state.spoofing_detected = (spoof_state >= 2);
+        }
+
 
         // if we have PVT we don't want MSG_STATUS
         _unconfigured_messages &= ~CONFIG_RATE_STATUS;
