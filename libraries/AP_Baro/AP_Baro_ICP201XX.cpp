@@ -428,7 +428,7 @@ void AP_Baro_ICP201XX::wait_read()
         hal.scheduler->delay(10);
         read_reg(REG_FIFO_FILL, &fifo_packets);
         fifo_packets = (uint8_t)(fifo_packets & 0x1F);
-    } while (fifo_packets >= fifo_packets_to_skip);
+    } while (fifo_packets < fifo_packets_to_skip);
 
     flush_fifo();
     fifo_packets = 0;
