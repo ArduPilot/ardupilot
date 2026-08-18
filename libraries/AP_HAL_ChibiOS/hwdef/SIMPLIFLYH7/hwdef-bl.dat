@@ -41,3 +41,6 @@ PD3 BUZZER OUTPUT HIGH PUSHPULL
 PC4  GYRO1_CS CS
 PB12 OSD1_CS  CS
 PD0  FLASH1_CS CS
+
+# VTX power switch (see hwdef.dat) - must be set here too or it floats during the bootloader
+PB2 PINIO1 OUTPUT GPIO(81) HIGH PULLUP
