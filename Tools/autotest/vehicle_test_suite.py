@@ -14264,6 +14264,8 @@ switch value'''
             })
             self.drain_mav()
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
+            # AFS_TERMINATE magically set-and-saved by code:
+            self.context_preserve_parameters(["AFS_TERMINATE"])
             self.set_parameter("AFS_TERM_ACTION", 42)
             self.load_sample_mission()
             self.context_collect("STATUSTEXT")
@@ -14340,6 +14342,8 @@ switch value'''
             "AFS_QNH_PRESSURE": 1000,
             "AFS_AMSL_ERR_GPS": 10,
         })
+        # AFS_TERMINATE magically set-and-saved by code:
+        self.context_preserve_parameters(["AFS_TERMINATE"])
         self.wait_ready_to_arm()
         self.start_subtest("Ensuring breaking baros doesn't terminate")
         self.set_parameters({
