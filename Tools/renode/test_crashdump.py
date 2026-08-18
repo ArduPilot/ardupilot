@@ -8,7 +8,6 @@ import argparse
 import contextlib
 import io
 import os
-from pathlib import Path
 import shutil
 import signal
 import socket
@@ -18,8 +17,9 @@ import sys
 import tempfile
 import time
 
-from pymavlink import mavutil
+from pathlib import Path
 
+from pymavlink import mavutil
 
 CRASHDUMP_TEXT = 'CrashDump data detected'
 

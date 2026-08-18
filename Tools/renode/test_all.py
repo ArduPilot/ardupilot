@@ -24,8 +24,10 @@ import sys
 import tempfile
 import threading
 import time
+
 from collections import deque
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import as_completed
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -50,6 +52,7 @@ def dronecan_param_test(bus, timeout):
     # Keep this import in the client process. Flight-controller-only test
     # hosts do not need pydronecan installed.
     import dronecan
+
     from dronecan import uavcan
 
     deadline = time.monotonic() + timeout
@@ -385,7 +388,7 @@ def test_build(build, root, run_py, mavproxy, state_root, timeout, renode,
                 wait_for_listener(renode_process, renode_output, uart_port, deadline)
                 detail = test_mavlink(mavproxy, uart_port, state_dir, deadline)
         return Result(build, time.monotonic() - started, detail)
-    except Exception as error:
+    except Exception as error:  # noqa: BLE001
         logs = []
         if isinstance(error, ClientFailure) and error.output:
             logs += ['--- client output (tail) ---', error.output]
