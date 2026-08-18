@@ -12,6 +12,8 @@ import os
 import pathlib
 import re
 import shutil
+import socket
+import struct
 import tempfile
 import time
 
@@ -19066,8 +19068,193 @@ return update, 1000
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.HomeAltResetTest,
+            self.SwarmMesh,
         ])
         return ret
+
+    # SwarmMesh SITL transport constants, see libraries/AP_SwarmMesh/AP_SwarmMesh_SITL.cpp
+    # and libraries/AP_SwarmMesh/AP_SwarmMesh_packet.h
+    SWARMMESH_MCAST_ADDRESS = "239.65.83.0"
+    SWARMMESH_MCAST_PORT = 57733
+    SWARMMESH_SYNC1 = 0xAD
+    SWARMMESH_SYNC2 = 0xBC
+    SWARMMESH_VERSION_01 = 0x01
+    SWARMMESH_TYPE_MAVLINK = 0x00
+    SWARMMESH_NO_RTC = 0x01
+    SWARMMESH_HEADER_SIZE = 23
+    # 9 uint8s, then seq (uint16), origin_time_us (uint64), deadline_ms (uint16), payload_len and crc (uint8)
+    SWARMMESH_HEADER_FORMAT = "<9BHQHBB"
+
+    def swarmmesh_packet(self, origin_id, seq, dest_id, ttl):
+        '''build one SwarmMesh frame carrying a HEARTBEAT from origin_id'''
+        mav = mavutil.mavlink.MAVLink(None, srcSystem=origin_id, srcComponent=1)
+        payload = mav.heartbeat_encode(
+            mavutil.mavlink.MAV_TYPE_QUADROTOR,
+            mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA,
+            0,
+            0,
+            mavutil.mavlink.MAV_STATE_STANDBY).pack(mav)
+        header = struct.pack(
+            self.SWARMMESH_HEADER_FORMAT[:-1],   # everything except the crc
+            self.SWARMMESH_SYNC1,
+            self.SWARMMESH_SYNC2,
+            self.SWARMMESH_VERSION_01,
+            self.SWARMMESH_TYPE_MAVLINK,
+            self.SWARMMESH_NO_RTC,  # no RTC, so the receiver skips the freshness deadline check
+            origin_id,
+            dest_id,
+            origin_id,               # prev_id
+            ttl,
+            seq,
+            0,                       # origin_time_us
+            0,                       # deadline_ms
+            len(payload))
+        crc = sum(header) & 0xFF     # plain byte sum (see AP_SwarmMesh_Backend::send_mavlink())
+        return header + struct.pack("<B", crc) + payload
+
+    def swarmmesh_parse(self, data):
+        '''return the header fields of a SwarmMesh frame, or None if it is not one'''
+        if len(data) < self.SWARMMESH_HEADER_SIZE:
+            return None
+        fields = struct.unpack(self.SWARMMESH_HEADER_FORMAT, data[:self.SWARMMESH_HEADER_SIZE])
+        if fields[0] != self.SWARMMESH_SYNC1 or fields[1] != self.SWARMMESH_SYNC2:
+            return None
+        names = ["stx1", "stx2", "version", "type", "flags", "origin_id", "dest_id", "prev_id", "ttl", "seq", "origin_time_us", "deadline_ms", "payload_len", "crc"]
+        return dict(zip(names, fields))
+
+    def swarmmesh_socket(self):
+        '''join the SwarmMesh multicast group as an extra node on the mesh'''
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        if hasattr(socket, "SO_REUSEPORT"):
+            # required on BSD/macOS for this process and SITL to share the port
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        sock.bind(("", self.SWARMMESH_MCAST_PORT))
+        mreq = struct.pack("4sl", socket.inet_aton(self.SWARMMESH_MCAST_ADDRESS), socket.INADDR_ANY)
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+        sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+        sock.settimeout(0.05)
+        return sock
+
+    def swarmmesh_drain(self, sock, timeout=1):
+        '''discard anything already queued on the mesh socket.  bounded in wallclock because the vehicle keeps broadcasting, so the socket may never fall idle'''
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                sock.recv(2048)
+            except (socket.timeout, BlockingIOError):
+                return
+
+    def swarmmesh_relay_count(self, sock, vehicle_sysid, origin_id, dest_id, count, ttl, seq_start, settle=3):
+        '''inject count packets addressed to dest_id and return the seqs the vehicle relayed.
+
+        A packet whose dest_id is neither broadcast or the vehicle's own sysid is forwarded by AP_SwarmMesh_Backend::process_packet(), so counting the relayed copies on the group measures what the vehicle actually received.
+        '''
+        self.swarmmesh_drain(sock)
+        for i in range(count):
+            pkt = self.swarmmesh_packet(origin_id, seq_start + i, dest_id, ttl)
+            sock.sendto(pkt, (self.SWARMMESH_MCAST_ADDRESS, self.SWARMMESH_MCAST_PORT))
+            time.sleep(0.005)
+
+        relayed = {}
+        deadline = time.time() + settle
+        while time.time() < deadline:
+            try:
+                data = sock.recv(2048)
+            except socket.timeout:
+                continue
+            except BlockingIOError:
+                continue
+            hdr = self.swarmmesh_parse(data)
+            if hdr is None:
+                continue
+            # our own injected copies come back off the multicast loopback; the
+            # vehicle's relay is distinguished by prev_id being the vehicle
+            if hdr["origin_id"] != origin_id or hdr["dest_id"] != dest_id:
+                continue
+            if hdr["prev_id"] != vehicle_sysid:
+                continue
+            relayed[hdr["seq"]] = hdr
+        return relayed
+
+    def SwarmMesh(self):
+        '''test SwarmMesh packet relay, TTL expiry and simulated packet loss'''
+        # the SITL backend uses a fixed multicast group, so this test assumes no other SwarmMesh SITL instance is running on this host
+        self.context_push()
+        sock = None
+        try:
+            self.set_parameters({
+                "P2P_TYPE": 10,        # SITL multicast backend
+                "P2P_TTL": 5,
+                "SIM_SWARM_LOSS": 0,
+            })
+            self.reboot_sitl()
+            vehicle_sysid = int(self.get_parameter("MAV_SYSID"))
+
+            sock = self.swarmmesh_socket()
+
+            self.start_subtest("vehicle transmits on the mesh")
+            deadline = time.time() + 10
+            heard = False
+            while time.time() < deadline and not heard:
+                try:
+                    data = sock.recv(2048)
+                except socket.timeout:
+                    continue
+                hdr = self.swarmmesh_parse(data)
+                if hdr is not None and hdr["origin_id"] == vehicle_sysid:
+                    heard = True
+            if not heard:
+                raise NotAchievedException(
+                    "No SwarmMesh traffic from the vehicle on %s:%u (does this host route multicast?)" %
+                    (self.SWARMMESH_MCAST_ADDRESS, self.SWARMMESH_MCAST_PORT))
+
+            # a sysid which is neither broadcast (0) or the vehicle, so packets addressed to it must be relayed rather than consumed
+            third_party = 200
+            peer = 20
+
+            self.start_subtest("vehicle relays packets addressed to another node")
+            relayed = self.swarmmesh_relay_count(sock, vehicle_sysid, peer, third_party, count=50, ttl=3, seq_start=1)
+            self.progress("relayed %u of 50 packets" % len(relayed))
+            if len(relayed) < 45:
+                raise NotAchievedException("Expected at least 45 of 50 packets to be relayed, got %u" % len(relayed))
+            for seq, hdr in relayed.items():
+                if hdr["ttl"] != 2:
+                    raise NotAchievedException("Relayed seq %u has ttl=%u, expected 2" % (seq, hdr["ttl"]))
+
+            self.start_subtest("vehicle drops packets whose TTL is exhausted")
+            relayed = self.swarmmesh_relay_count(sock, vehicle_sysid, peer, third_party, count=20, ttl=0, seq_start=1000)
+            if len(relayed) != 0:
+                raise NotAchievedException("Expected no relay of ttl=0 packets, got %u" % len(relayed))
+
+            self.start_subtest("SIM_SWARM_LOSS drops the expected share of packets")
+            count = 200
+            self.set_parameter("SIM_SWARM_LOSS", 50)
+            lossy = self.swarmmesh_relay_count(sock, vehicle_sysid, peer, third_party, count=count, ttl=3, seq_start=2000)
+            self.progress("relayed %u of %u packets with 50%% simulated loss" % (len(lossy), count))
+            # 200 draws at p=0.5 has a standard deviation of ~7, so this band is very wide
+            if not 0.3 * count < len(lossy) < 0.7 * count:
+                raise NotAchievedException(
+                    "Expected roughly half of %u packets to be relayed with SIM_SWARM_LOSS=50, got %u" %
+                    (count, len(lossy)))
+
+            # the loss is read live, so clearing it restores the link without a reboot
+            self.set_parameter("SIM_SWARM_LOSS", 0)
+            clean = self.swarmmesh_relay_count(sock, vehicle_sysid, peer, third_party, count=count, ttl=3, seq_start=3000)
+            self.progress("relayed %u of %u packets with no simulated loss" % (len(clean), count))
+            if len(clean) < 0.9 * count:
+                raise NotAchievedException(
+                    "Expected at least %u of %u packets to be relayed with SIM_SWARM_LOSS=0, got %u" %
+                    (0.9 * count, count, len(clean)))
+            if len(lossy) >= len(clean):
+                raise NotAchievedException(
+                    "Simulated loss relayed %u packets, no-loss relayed %u; loss had no effect" %
+                    (len(lossy), len(clean)))
+        finally:
+            if sock is not None:
+                sock.close()
+            self.context_pop()
+            self.reboot_sitl()
 
     def UTMGlobalPositionWaypoint(self):
         '''test UTM_GLOBAL_POSITION waypoint fields in AUTO and GUIDED'''
