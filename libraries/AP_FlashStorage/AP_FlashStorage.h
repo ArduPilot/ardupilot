@@ -215,8 +215,8 @@ private:
     };
 
     // amount of space needed to write full storage
-    static const uint32_t reserve_size = (storage_size / max_write) * (sizeof(block_header) + max_write) + max_write;
-        
+    uint16_t reserve_size() const;
+
     // load data from a sector
     bool load_sector(uint8_t sector) WARN_IF_UNUSED;
 
@@ -230,7 +230,7 @@ private:
     bool write_all() WARN_IF_UNUSED;
 
     // return true if all bytes are zero
-    bool all_zero(uint16_t ofs, uint16_t size) WARN_IF_UNUSED;
+    bool all_zero(uint16_t ofs, uint16_t size) const WARN_IF_UNUSED;
 
     // switch to next sector for writing
     bool switch_sectors(void) WARN_IF_UNUSED;
