@@ -406,7 +406,7 @@ bool AP_Baro_ICP201XX::configure()
     /* FIFO Readout Mode Selection: Pressure first. */
     reg_value |= (reg_value & (~0x03)) | ((uint8_t)(_fifo_readout_mode));
 
-    /* Measurement Configuration: Mode2*/
+    /* Measurement Configuration */
     reg_value |= (reg_value & (~0xE0)) | (((uint8_t)_op_mode) << 5);
 
     /* Measurement Mode Selection: Continuous Measurements (duty cycled) */
