@@ -5,8 +5,12 @@ root:
 
 ```sh
 Tools/renode/tests/build_renode.sh
-Tools/renode/tests/test_mission.py --renode build/renode/renode
+Tools/renode/tests/test_mission.py
 ```
+
+The build helper follows the `pr-arudpilot-am32-perf` branch of the ArduPilot
+Renode fork. It fetches the latest branch tip on every run so local testing and
+CI pick up ongoing Renode development.
 
 The test builds Copter with `Tools/scripts/sitl-on-hardware/sitl-on-hw.py`,
 uploads and flies a four-waypoint mission, lands, downloads the DataFlash log

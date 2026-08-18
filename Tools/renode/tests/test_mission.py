@@ -500,7 +500,7 @@ def run_test(args, root, output_dir):
 def main():
     root = Path(__file__).resolve().parents[3]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--renode', help='Renode executable passed to Tools/renode/run.py')
+    parser.add_argument('--renode', help='Renode executable (defaults to build/renode/renode when present)')
     parser.add_argument('--firmware', type=Path,
                         help='existing arducopter ELF (implies --skip-build)')
     parser.add_argument('--skip-build', action='store_true',
@@ -510,6 +510,10 @@ def main():
     parser.add_argument('--timeout', type=positive_float, default=300,
                         help='overall boot and flight timeout in seconds (default: 300)')
     args = parser.parse_args()
+    default_renode = root / 'build' / 'renode' / 'renode'
+    if args.renode is None and default_renode.is_file():
+        args.renode = str(default_renode)
+
     if args.firmware is not None:
         args.skip_build = True
 
