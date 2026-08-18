@@ -184,7 +184,10 @@ public:
     bool load_from_storage() WARN_IF_UNUSED;
 
     // allow threads to lock against AHRS update
-    HAL_Semaphore &get_loaded_fence_semaphore(void) {
+    // const so that read-only callers (e.g. the scripted-avoidance distance queries)
+    // can lock before walking the loaded boundary arrays.  Taking a lock is not a
+    // logical mutation, hence the mutable member - as AP_Avoidance does with _rsem.
+    HAL_Semaphore &get_loaded_fence_semaphore(void) const {
         return _loaded_fence_sem;
     }
 
@@ -204,6 +207,11 @@ public:
                 get_inclusion_circle_count());
     }
 
+    // methods to support scripted fence checking and avoidance
+    float distance_line_to_circle_inclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const;
+    float distance_line_to_circle_exclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const;
+    float distance_line_to_polygon_inclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const;
+    float distance_line_to_polygon_exclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const;
 
 #if AP_SDCARD_STORAGE_ENABLED
     bool failed_sdcard_storage(void) const {
@@ -213,7 +221,7 @@ public:
 
 private:
     // multi-thread access support
-    HAL_Semaphore _loaded_fence_sem;
+    mutable HAL_Semaphore _loaded_fence_sem;
 
     /*
      * Fence storage Index related functions
