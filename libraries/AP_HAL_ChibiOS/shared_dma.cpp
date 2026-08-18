@@ -74,13 +74,17 @@ void Shared_DMA::unregister()
 {
     if (stream_id1 < SHARED_DMA_MAX_STREAM_ID &&
         locks[stream_id1].obj == this) {
-        locks[stream_id1].deallocate(this);
+        if (locks[stream_id1].deallocate) {
+            locks[stream_id1].deallocate(this);
+        }
         locks[stream_id1].obj = nullptr;
     }
 
     if (stream_id2 < SHARED_DMA_MAX_STREAM_ID &&
         locks[stream_id2].obj == this) {
-        locks[stream_id2].deallocate(this);
+        if (locks[stream_id2].deallocate) {
+            locks[stream_id2].deallocate(this);
+        }
         locks[stream_id2].obj = nullptr;
     }
 }
@@ -151,24 +155,27 @@ void Shared_DMA::lock_core(void)
         // allocate the DMA channels and put our deallocation function in place
         if (allocate) {
             allocate(this);
+            if (stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
+                locks[stream_id1].deallocate = deallocate;
+                locks[stream_id1].obj = this;
+            }
+            if (stream_id2 < SHARED_DMA_MAX_STREAM_ID) {
+                locks[stream_id2].deallocate = deallocate;
+                locks[stream_id2].obj = this;
+            }
         } else {
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         }
-        if (stream_id1 < SHARED_DMA_MAX_STREAM_ID) {
-            locks[stream_id1].deallocate = deallocate;
-            locks[stream_id1].obj = this;
-        }
-        if (stream_id2 < SHARED_DMA_MAX_STREAM_ID) {
-            locks[stream_id2].deallocate = deallocate;
-            locks[stream_id2].obj = this;
-        }
     }
-}
 #ifdef STM32_DMA_STREAM_ID_ANY
     else if (stream_id1 == STM32_DMA_STREAM_ID_ANY ||
              stream_id2 == STM32_DMA_STREAM_ID_ANY) {
         // call allocator without needing locking
-        allocate(this);
+        if (allocate) {
+            allocate(this);
+        } else {
+            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+        }
     }
 #endif
     // update contention stats
