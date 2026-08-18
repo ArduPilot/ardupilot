@@ -78,7 +78,8 @@ public:
     //==========================================================================
 
     // Returns true if a usable estimate of the configured target is available.  Every accessor
-    // below is gated on this, so a true return guarantees each of them succeeds.
+    // below is gated on this, but a true return does not guarantee they will succeed, so callers
+    // must still check what each accessor returns.
     bool have_target() const;
 
     // Projects the target’s position, velocity, and heading forward using the latest updates, smoothing with input shaping if necessary 
