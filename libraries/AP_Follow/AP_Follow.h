@@ -171,7 +171,7 @@ private:
     bool should_handle_message(const mavlink_message_t &msg) const;
 
     // Returns true if the target data we hold is fresh and was supplied by the configured system.
-    bool target_data_current() const;
+    bool have_target_data() const;
 
     // Checks whether the current estimate should be reset based on position and velocity errors.
     bool estimate_error_too_large() const;

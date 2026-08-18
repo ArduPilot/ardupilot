@@ -241,7 +241,14 @@ void AP_Follow::update_estimates()
     // if we do not hold fresh data from the configured target, invalidate the estimate.
     // this cannot gate on have_target() because that tests _estimate_valid, which is
     // cleared below, and the estimate could then never be rebuilt
-    if (!target_data_current()) {
+    if (!have_target_data()) {
+        clear_dist_and_bearing_to_target();
+        _estimate_valid = false;
+        return;
+    }
+
+    // check for timeout
+    if ((_last_location_update_ms == 0) || ((AP_HAL::millis() - _last_location_update_ms) > (uint32_t)(_timeout * 1000.0f))) {
         clear_dist_and_bearing_to_target();
         _estimate_valid = false;
         return;
@@ -955,7 +962,7 @@ void AP_Follow::Log_Write_FOLL()
 // Returns true if the target data we hold is fresh and was supplied by the configured system.
 // This is the gate for update_estimates().  It deliberately excludes _estimate_valid so that
 // update_estimates() can rebuild the estimate after that flag has been cleared.
-bool AP_Follow::target_data_current(void) const
+bool AP_Follow::have_target_data(void) const
 {
     if (!_enabled) {
         return false;
@@ -971,10 +978,6 @@ bool AP_Follow::target_data_current(void) const
         return false;
     }
 
-    // check for timeout
-    if ((_last_location_update_ms == 0) || ((AP_HAL::millis() - _last_location_update_ms) > (uint32_t)(_timeout * 1000.0f))) {
-        return false;
-    }
     return true;
 }
 
@@ -984,7 +987,7 @@ bool AP_Follow::target_data_current(void) const
 // getters return without checking them.
 bool AP_Follow::have_target(void) const
 {
-    return _estimate_valid && target_data_current();
+    return _estimate_valid && have_target_data();
 }
 
 //==============================================================================
