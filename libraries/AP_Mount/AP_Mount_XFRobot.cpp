@@ -145,6 +145,8 @@ bool AP_Mount_XFRobot::healthy() const
 // take a picture.  returns true on success
 bool AP_Mount_XFRobot::take_picture()
 {
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s take picture requested", send_text_prefix);
+
     // send command to take picture
     return send_simple_command(FunctionOrder::SHUTTER, 0x01);
 }
@@ -159,11 +161,19 @@ bool AP_Mount_XFRobot::set_lens(uint8_t lens)
         CameraType::MAIN_PIP_ZOOM_SUB_THERMAL,
         CameraType::MAIN_PIP_THERMAL_SUB_ZOOM,
     };
+    static const char* const source_name_table[] {
+        "RGB",
+        "thermal",
+        "RGB/thermal",
+        "thermal/RGB",
+    };
 
     // sanity check lens values
     if (lens >= ARRAY_SIZE(cam_type_table)) {
         return false;
     }
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s camera source %s requested", send_text_prefix, source_name_table[lens]);
 
     // map lens to camera type and send command
     return send_simple_command(FunctionOrder::PIC_IN_PIC, (uint8_t)cam_type_table[lens]);
@@ -197,6 +207,8 @@ bool AP_Mount_XFRobot::set_camera_source(uint8_t primary_source, uint8_t seconda
 // set start_recording = true to start record, false to stop recording
 bool AP_Mount_XFRobot::record_video(bool start_recording)
 {
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s recording %s requested", send_text_prefix, start_recording ? "ON" : "OFF");
+
     // reject request if waiting for reply on earlier request
     if (recording.request_ms > 0) {
         return false;
