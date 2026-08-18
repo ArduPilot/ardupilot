@@ -548,12 +548,14 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
 
     if (updated) {
         // reset the estimate on a large error or a change of source system
-        if (estimate_error_too_large() || (_sysid_of_data != _sysid)) {
+        if (estimate_error_too_large() || (_sysid_of_data != msg.sysid)) {
             _estimate_valid = false;
         }
 
-        // record the system that supplied this update
-        _sysid_of_data = _sysid;
+        // record the system that supplied this update.  this is msg.sysid rather than
+        // _sysid because msg.sysid is the value should_handle_message() validated, and
+        // _sysid can be written by the scripting thread part way through this function
+        _sysid_of_data = msg.sysid;
 
 #if HAL_LOGGING_ENABLED
         // log current follow diagnostic data
