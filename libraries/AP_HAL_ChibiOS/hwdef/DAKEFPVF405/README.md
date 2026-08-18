@@ -70,7 +70,7 @@ The PWM is in 4 groups:
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
-to use DShot.
+to use DShot. Bi-Directional DShot is supported for M1-M6.
 
 ## Battery Monitoring
 
