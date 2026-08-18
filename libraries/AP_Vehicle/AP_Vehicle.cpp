@@ -215,7 +215,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
 #if AP_LOCATIONDB_ENABLED
     // @Group: LDB_
     // @Path: ../AP_LocationDB/AP_LocationDB.cpp
-    AP_SUBGROUPINFO(locationdb, "LDB_",  21, AP_Vehicle, AP_LocationDB),
+    AP_SUBGROUPINFO(locationdb, "LDB_",  33, AP_Vehicle, AP_LocationDB),
 #endif
 
 #if AP_NETWORKING_ENABLED
