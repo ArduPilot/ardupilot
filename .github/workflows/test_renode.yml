@@ -1,0 +1,47 @@
+name: test Renode
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cubeorange-mission:
+    runs-on: ubuntu-22.04
+    container:
+      image: ardupilot/ardupilot-dev-chibios:v0.2.0
+      options: --user root
+    steps:
+      - name: Install Renode runtime dependencies
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y dosfstools
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v5
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/.dotnet
+        with:
+          dotnet-version: 10.0.x
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: renode-cubeorange
+      - name: Build Renode
+        run: Tools/renode/tests/build_renode.sh
+      - name: Fly CubeOrange mission
+        env:
+          PYTHONPATH: ${{ github.workspace }}/modules/mavlink
+        run: Tools/renode/tests/test_mission.py --renode build/renode/renode
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: renode-cubeorange-mission
+          path: build/renode-test/
