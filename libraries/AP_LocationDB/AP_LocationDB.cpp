@@ -73,12 +73,16 @@ void AP_LocationDB::init()
 
     if (!healthy()) {
     // just in case we fail to allocate memory
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LocationDB init failed . DB size: %u", _capacity);
+#endif
         delete[] _items;
         return;
     }
 
+#if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LocationDB init successful . DB size: %u", _capacity);
+#endif
 }
 
 void AP_LocationDB::update()
@@ -115,12 +119,12 @@ bool AP_LocationDB::add_item(const AP_LocationDB_Item item)
 
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && AP_AHRS_ENABLED
     Vector3f item_pos;
-    Vector3f our_pos;
+    Vector3p our_pos;
     if (item.get_pos_cm_NEU(item_pos) && AP::ahrs().get_relative_position_NED_origin(our_pos)) {
         our_pos.z = -our_pos.z;
-        item_pos = item_pos / 100; // cm to m
+        const Vector3p item_pos_m = item_pos.topostype() / 100; // cm to m
         // check if the item is inside the inclusion radius
-        if ((item_pos - our_pos).length_squared() > (_inc_radius.get() * _inc_radius.get())) {
+        if ((item_pos_m - our_pos).length_squared() > (_inc_radius.get() * _inc_radius.get())) {
             // item very far away from the vehicle
             return false; 
         }
@@ -282,12 +286,12 @@ bool AP_LocationDB::update_item(const uint32_t key, const AP_LocationDB_Item &ne
 
 #if !APM_BUILD_TYPE(APM_BUILD_UNKNOWN) && AP_AHRS_ENABLED
     Vector3f item_pos;
-    Vector3f our_pos;
+    Vector3p our_pos;
     if (new_item.get_pos_cm_NEU(item_pos) && AP::ahrs().get_relative_position_NED_origin(our_pos)) {
         our_pos.z = -our_pos.z;
-        item_pos = item_pos / 100; // cm to m
+        const Vector3p item_pos_m = item_pos.topostype() / 100; // cm to m
         // check if the items is inside the inclusion radius
-        if ((item_pos - our_pos).length_squared() > (_inc_radius.get() * _inc_radius.get())) {
+        if ((item_pos_m - our_pos).length_squared() > (_inc_radius.get() * _inc_radius.get())) {
             // item very far away from the vehicle
             return false; 
         }
