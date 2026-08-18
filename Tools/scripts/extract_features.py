@@ -155,6 +155,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_AVOIDANCE_ENABLED', 'AC_Avoid::AC_Avoid',),
             ('AP_AVOIDANCE_ALTHOLD_ENABLED', 'AC_Avoid::adjust_roll_pitch',),
             ('AP_OAPATHPLANNER_ENABLED', 'AP_OAPathPlanner::AP_OAPathPlanner',),
+            ('AP_OA_SCRIPTING_ENABLED', r'AP_OAScripting::find_threats\b',),
             ('AC_PAYLOAD_PLACE_ENABLED', 'PayloadPlace::start_descent'),
             ('AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED', ExtractFeatures.FindString('PayloadPlace')),
             ('AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED', 'AP_Mount_Backend::get_angle_target_to_wpnext_offset'),
