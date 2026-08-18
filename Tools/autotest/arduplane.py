@@ -7499,6 +7499,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "MAV_GCS_SYSID": self.mav.source_system,
             "AFS_TERM_ACTION": 42,
         })
+        # the vehicle sets AFS_TERMINATE itself when it terminates, and it is
+        # a saved parameter, so it outlives this test: the "if (!_terminate)"
+        # gate in AP_AdvancedFailsafe then swallows the termination message
+        # whichever test runs next is waiting for.
+        self.context_preserve_parameters(["AFS_TERMINATE"])
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.context_collect('STATUSTEXT')
@@ -7532,6 +7537,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # -1 is "never reset":
             "HOME_RESET_ALT": -1,
         })
+        # the vehicle sets AFS_TERMINATE itself when it terminates, and it is
+        # a saved parameter, so it outlives this test: the "if (!_terminate)"
+        # gate in AP_AdvancedFailsafe then swallows the termination message
+        # whichever test runs next is waiting for.
+        self.context_preserve_parameters(["AFS_TERMINATE"])
         # the vehicle falls, disarmed, from the moment of termination
         # until it is unterminated, rearmed and flying again.  From 50m
         # that recovery has been seen to lose the race with the ground
