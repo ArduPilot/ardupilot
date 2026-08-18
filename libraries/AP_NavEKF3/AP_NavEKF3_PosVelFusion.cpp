@@ -19,8 +19,7 @@ static constexpr uint32_t POSITION_RESET_MAX_AGE_MS = 250;
 void NavEKF3_core::ResetVelocity(resetDataSource velResetSource)
 {
     // Store the velocity before the reset so that we can record the reset delta
-    velResetNE.x = stateStruct.velocity.x;
-    velResetNE.y = stateStruct.velocity.y;
+    velResetNE = stateStruct.velocity.xy();
 
     // reset the corresponding covariances
     zeroRows(P,4,5);
