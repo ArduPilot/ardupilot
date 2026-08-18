@@ -40,3 +40,6 @@ PA4 GYRO1_CS CS
 
 PA15 LED_BOOTLOADER OUTPUT LOW
 define HAL_LED_ON 0
+
+# VTX power switch (see hwdef.dat) - must be set here too or it floats during the bootloader
+PB9 VTX_SW OUTPUT GPIO(74) LOW
