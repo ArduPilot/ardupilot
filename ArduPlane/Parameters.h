@@ -334,6 +334,7 @@ public:
         k_param_TECS_controller,
         k_param_rally_total_old,  //unused
         k_param_steerController,
+        k_param_fs_gps_spoof_action, //for gps spoofing failsafe action, 
 
         //
         // 240: PID Controllers
@@ -416,6 +417,7 @@ public:
     AP_Int8 fs_action_long;
     AP_Float fs_timeout_long;
     AP_Int8 gcs_heartbeat_fs_enabled;
+    AP_Int8 fs_gps_spoof_action;
 
     // Flight modes
     //

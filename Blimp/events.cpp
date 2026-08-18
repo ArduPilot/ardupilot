@@ -1,5 +1,7 @@
 #include "Blimp.h"
 
+#include <AP_GPS/AP_GPS.h>
+
 /*
  *       This event will be called when the failsafe changes
  *       boolean failsafe reflects the current state
@@ -171,5 +173,49 @@ void Blimp::gpsglitch_check()
             LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
             gcs().send_text(MAV_SEVERITY_CRITICAL,"GPS Glitch cleared");
         }
+    }
+}
+
+// check for GPS spoofing failsafe
+void Blimp::gpsspoof_check()
+{
+    if (g.fs_gps_spoof_action == 0) {
+        if (failsafe.gps_spoof) {
+            failsafe.gps_spoof = false;
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS Spoofing Cleared");
+        }
+        return;
+    }
+
+    const bool gps_spoofed = AP::gps().is_spoofed();
+    if (!gps_spoofed) {
+        if (failsafe.gps_spoof) {
+            failsafe.gps_spoof = false;
+            LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::ERROR_RESOLVED);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS Spoofing Cleared");
+        }
+        return;
+    }
+
+    if (failsafe.gps_spoof) {
+        return;
+    }
+
+    failsafe.gps_spoof = true;
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::GPS, LogErrorCode::GPS_GLITCH);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "GPS Spoofing Detected");
+
+    switch (g.fs_gps_spoof_action) {
+        case 1: // Warn only
+            break;
+        case 2: // Land
+            do_failsafe_action(Failsafe_Action_Land, ModeReason::GPS_GLITCH);
+            break;
+        case 3: // Terminate
+            do_failsafe_action(Failsafe_Action_Terminate, ModeReason::GPS_GLITCH);
+            break;
+        default:
+            break;
     }
 }

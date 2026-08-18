@@ -1940,6 +1940,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.reboot_sitl()  # Copter should start at home
 
+    def GPSSpoofing(self):
+        '''Test GPS spoofing failsafe'''
+        self.context_push()
+        self.set_parameters({
+            "FS_GPS_SPOOF_ACT": 3,  # AltHold
+        })
+        self.takeoff(10, mode="LOITER")
+
+        self.progress("Injecting GPS spoof command")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_USER_1, p1=1, p2=0)
+        self.wait_mode("ALT_HOLD", timeout=20)
+
+        self.progress("Clearing GPS spoof command")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_USER_1, p1=0, p2=0)
+        self.wait_statustext("GPS Spoofing Cleared", timeout=30)
+
+        self.change_mode("LAND")
+        self.wait_landed_and_disarmed()
+        self.context_pop()
+        self.reboot_sitl()
+
     def BatteryMissing(self):
         ''' Test battery health pre-arm and missing failsafe'''
         self.context_push()
@@ -15747,6 +15768,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.ThrottleFailsafe,
              self.ThrottleFailsafePassthrough,
              self.GCSFailsafe,
+             self.GPSSpoofing,
              self.TerrainFailsafe,
              self.CustomController,
              self.WPArcs,

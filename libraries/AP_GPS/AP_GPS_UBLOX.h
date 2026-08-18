@@ -332,7 +332,7 @@ private:
         uint8_t fix_type;
         uint8_t fix_status;
         uint8_t differential_status;
-        uint8_t res;
+        uint8_t flags2;
         uint32_t time_to_first_fix;
         uint32_t uptime;                                // milliseconds
     };
