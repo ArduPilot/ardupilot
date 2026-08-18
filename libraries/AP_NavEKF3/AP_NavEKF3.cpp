@@ -1236,13 +1236,18 @@ bool NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t f
 
     // check if using compass (i.e. EK3_SRCn_YAW) with deprecated MAG_CAL values (5 was EXTERNAL_YAW, 6 was EXTERNAL_YAW_FALLBACK)
     const int8_t magCalParamVal = _magCal.get();
+    bool magCalInconsistent = false;
     for (uint8_t i = 0; i < num_cores; i++) {
         const AP_NavEKF_Source::SourceYaw yaw_source = sources.getYawSource(i);
         if (((magCalParamVal == 5) || (magCalParamVal == 6)) && (yaw_source != AP_NavEKF_Source::SourceYaw::GPS)) {
             // yaw source is configured to use compass but MAG_CAL valid is deprecated
-            dal.snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRC1_YAW inconsistent");
-            return false;
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "PreArm: EK3_MAG_CAL and EK3_SRC%u_YAW inconsistent", unsigned(i) + 1);
+            magCalInconsistent = true;
         }
+    }
+    if (magCalInconsistent) {
+        dal.snprintf(failure_msg, failure_msg_len, "EK3_MAG_CAL and EK3_SRCn_YAW inconsistent");
+        return false;
     }
 
     if (!core) {

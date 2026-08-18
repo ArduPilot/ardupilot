@@ -232,7 +232,7 @@ void NavEKF3_core::updateStateIndexLim()
 // set the default yaw source
 void NavEKF3_core::setYawSource()
 {
-    AP_NavEKF_Source::SourceYaw yaw_source_new = this->yaw_source();
+    AP_NavEKF_Source::SourceYaw yaw_source_new = yaw_source();
     if (wasLearningCompass_ms > 0) {
         // can't use compass while it is being calibrated
         if (yaw_source_new == AP_NavEKF_Source::SourceYaw::COMPASS) {
@@ -261,45 +261,8 @@ void NavEKF3_core::setAidingMode()
     // Check that the gyro bias variance has converged
     checkGyroCalStatus();
 
-    // Handle the special case where we are on ground and disarmed without a yaw measurement
-    // and in AID_ABSOLUTE mode. This can occur if not using a magnetometer and yaw was aligned
-    // using GPS during the previous flight. AID_RELATIVE is excluded because optical flow and
-    // body odometry are body-frame sensors that do not require yaw alignment.
-    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::NONE &&
-        !motorsArmed &&
-        onGround &&
-        false && // SENTINEL-EAGLE CHANGE
-        PV_AidingMode == AID_ABSOLUTE)
-    {
-        PV_AidingMode = AID_NONE;
-        yawAlignComplete = false;
-        yawAlignGpsValidCount = 0;
-        finalInflightYawInit = false;
-        ResetVelocity(resetDataSource::DEFAULT);
-        ResetPosition(resetDataSource::DEFAULT);
-        ResetHeight();
-        // preserve quaternion 4x4 covariances, but zero the other rows and columns
-        for (uint8_t row=0; row<4; row++) {
-            for (uint8_t col=4; col<24; col++) {
-                P[row][col] = 0.0f;
-            }
-        }
-        for (uint8_t col=0; col<4; col++) {
-            for (uint8_t row=4; row<24; row++) {
-                P[row][col] = 0.0f;
-            }
-        }
-        // keep the IMU bias state variances, but zero the covariances
-        ftype oldBiasVariance[6];
-        for (uint8_t row=0; row<6; row++) {
-            oldBiasVariance[row] = P[row+10][row+10];
-        }
-        zeroCols(P,10,15);
-        zeroRows(P,10,15);
-        for (uint8_t row=0; row<6; row++) {
-            P[row+10][row+10] = oldBiasVariance[row];
-        }
-    }
+    // Upstream has code here related to disabling ext-nav in specific cases, e.g. when compass
+    // is disabled, but it is unwanted by us.
 
     // Determine if we should change aiding mode
     switch (PV_AidingMode) {
