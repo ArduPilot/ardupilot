@@ -984,9 +984,10 @@ bool AP_Follow::have_target_data(void) const
 }
 
 // Returns true if a usable estimate of the configured target is available.
-// Every accessor is gated on this, so a true return guarantees that each of them succeeds.
-// Lua scripts depend on that: they test follow:have_target() and then use the values the
-// getters return without checking them.
+// Every accessor is gated on this, but a true return does not guarantee that they succeed.
+// The location getters can still fail on the AHRS origin lookup or on the FOLL_ALT_TYPE frame
+// conversion, and the target state can change between this call and the accessor call, so
+// callers must check the value every accessor returns.
 bool AP_Follow::have_target(void) const
 {
     return _estimate_valid && have_target_data();
