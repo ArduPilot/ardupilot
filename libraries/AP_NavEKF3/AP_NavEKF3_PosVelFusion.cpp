@@ -937,7 +937,8 @@ void NavEKF3_core::FuseVelPosNED()
                         if (!extNavRepositionMessageSentThisCycle) {
                             GCS_SEND_TEXT(
                                 MAV_SEVERITY_WARNING,
-                                "EKF3 IMU%u EXTNAV repositioned: %s",
+                                "EKF3 lane%u IMU%u EXTNAV repositioned: %s",
+                                (unsigned)core_index,
                                 (unsigned)imu_index,
                                 reason);
                             extNavRepositionMessageSentThisCycle = true;
@@ -2036,7 +2037,7 @@ void NavEKF3_core::FuseBodyVel()
             // notify first time only
             if (!bodyVelFusionActive) {
                 bodyVelFusionActive = true;
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing odometry",(unsigned)imu_index);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 lane%u IMU%u fusing odometry",(unsigned)core_index,(unsigned)imu_index);
             }
 
             // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
