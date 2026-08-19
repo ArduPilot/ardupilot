@@ -677,8 +677,8 @@ void NavEKF3_core::SelectVelPosFusion()
             }
         } else {
             fusePosData = true;
-            // When stationary on ground, fuse zero velocity
-            // to constrain gyro bias and Z-axis accel bias learning. XY accel biases
+            // When stationary on ground or armed before takeoff, fuse zero velocity
+            // to improve gyro bias and Z-axis accel bias learning. XY accel biases
             // remain unobservable until the vehicle accelerates and are separately
             // inhibited by dvelBiasAxisInhibit in CovariancePrediction.
             // Use onGroundNotMoving to avoid fusing zero velocity when the vehicle
@@ -699,7 +699,7 @@ void NavEKF3_core::SelectVelPosFusion()
     }
 
     // When in AID_RELATIVE or AID_ABSOLUTE mode but stationary on ground without velocity
-    // aiding, fuse synthetic zero velocity to constrain gyro bias and Z-axis accel bias
+    // aiding, fuse synthetic zero velocity to improve gyro bias and Z-axis accel bias
     // learning. XY accel biases are unobservable on the ground and are inhibited by
     // dvelBiasAxisInhibit. Without this, configurations like optical flow where
     // PV_AidingMode is AID_RELATIVE but no velocity data is available when stationary
@@ -724,7 +724,7 @@ void NavEKF3_core::SelectVelPosFusion()
 
         if (!haveRecentGpsVel && !haveRecentFlowVel && !haveRecentBodyVel) {
             // No velocity aiding available while stationary - fuse synthetic zero velocity
-            // to constrain gyro bias and gravity-aligned accel bias
+            // to improve gyro bias and gravity-aligned accel bias learning
             fuseVelData = true;
             fusingStationaryZeroVel = true;
             velPosObs[0] = 0.0f;
@@ -1150,9 +1150,32 @@ void NavEKF3_core::FuseVelPosNED()
                 // Don't use 'fake' horizontal measurements used to constrain attitude drift during
                 // periods of non-aiding to learn bias as these can give incorrect esitmates.
                 const bool horizInhibit = PV_AidingMode == AID_NONE && obsIndex != 2 && obsIndex != 5;
-                if (!horizInhibit && !inhibitDelVelBiasStates && !badIMUdata) {
+                // Learn the Z-axis accel bias only where it is observable from a trustworthy
+                // reference: stationary on the ground (zero-velocity fusion pins it) or airborne
+                // with a good height reference. Inhibit when armed on the ground (motor vibration,
+                // no real observation) or airborne on a corrupt height reference (baro in ground
+                // effect), where learning would drive the bias to a wrong value.
+                const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
+                bool heightRefGood;
+                switch (activeHgtSource) {
+                case AP_NavEKF_Source::SourceZ::RANGEFINDER:
+                    heightRefGood = (imuSampleTime_ms - rngValidMeaTime_ms < 500);
+                    break;
+                case AP_NavEKF_Source::SourceZ::BARO:
+                    heightRefGood = !gndEffectActive;
+                    break;
+                case AP_NavEKF_Source::SourceZ::GPS:
+                    heightRefGood = gpsAccuracyGoodForAltitude;
+                    break;
+                default:
+                    heightRefGood = false;
+                    break;
+                }
+                const bool learnZBias = onGroundNotMoving || (takeOffDetected && heightRefGood);
+                if (!horizInhibit && !accelBiasLearningInhibited() && !badIMUdata) {
                     for (uint8_t i = 13; i<=15; i++) {
-                        if (!dvelBiasAxisInhibit[i-13]) {
+                        const bool zAxisInhibit = (i == 15) && !learnZBias;
+                        if (!dvelBiasAxisInhibit[i-13] && !zAxisInhibit) {
                             kalman_mask |= (1<<i);
                         }
                     }
@@ -1628,7 +1651,7 @@ void NavEKF3_core::FuseBodyVel()
                 kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
-            if (!inhibitDelVelBiasStates && !badIMUdata) {
+            if (!accelBiasLearningInhibited() && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -1791,7 +1814,7 @@ void NavEKF3_core::FuseBodyVel()
                 kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
-            if (!inhibitDelVelBiasStates && !badIMUdata) {
+            if (!accelBiasLearningInhibited() && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -1954,7 +1977,7 @@ void NavEKF3_core::FuseBodyVel()
                 kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
-            if (!inhibitDelVelBiasStates && !badIMUdata) {
+            if (!accelBiasLearningInhibited() && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {

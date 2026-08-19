@@ -163,6 +163,10 @@ void NavEKF3_core::setWindMagStateLearningMode()
         P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
         P[14][14] = P[13][13];
         P[15][15] = P[13][13];
+
+        // Note: Learned hover Z-bias is applied at the IMU level in correctDeltaVelocity()
+        // using a value frozen at boot. This is immune to EKF resets and avoids feedback
+        // instability that occurs when the correction value changes during flight.
     }
 
     if (tiltAlignComplete && inhibitDelAngBiasStates) {
