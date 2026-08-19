@@ -15128,13 +15128,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.takeoff(20, mode='GUIDED')
 
-        # fly a gentle circle to hold a steady, modest lean angle.  A large
-        # radius keeps the turn rate (and hence any residual yaw lag) small.
+        # Hold the heading fixed and drive the vehicle hard from side to side
+        # in GUIDED.  With the nose fixed a lateral acceleration is a pure
+        # roll, so the levelled antenna offset keeps the lateral component the
+        # correction acts on, and there is no coupling between the axes to
+        # reason about.  The velocity target is reversed before the vehicle
+        # reaches it, so the vehicle is always accelerating and the bank is
+        # held for as long as we need to sample it.
         self.set_parameters({
-            "CIRCLE_RADIUS_M": 50,
-            "CIRCLE_RATE": 12,
+            "WP_YAW_BEHAVIOR": 0,  # never change yaw
+            "WP_ACC": 4,           # m/s/s: bank hard, ~22 degrees
         })
-        self.change_mode('CIRCLE')
+        self.set_message_rate_hz("EKF_STATUS_REPORT", 10)
+        self.guided_achieve_heading(0)
 
         # Sample the EKF attitude against truth while the vehicle is banked.
         # copter-gps-for-yaw.parm sets EK3_SRC1_YAW=2 so the moving-baseline
@@ -15148,11 +15154,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         max_yaw_err_deg = 15
         wanted_samples = 10
         good_samples = 0
+        vel_ms = 20
+        reverse_interval_s = 5
         tstart = self.get_sim_time()
+        last_reverse = tstart
         while True:
-            if self.get_sim_time_cached() - tstart > 90:
+            now = self.get_sim_time_cached()
+            if now - tstart > 90:
                 raise NotAchievedException(
                     "Only gathered %u/%u banked GPS-yaw samples" % (good_samples, wanted_samples))
+            if now - last_reverse > reverse_interval_s:
+                vel_ms = -vel_ms
+                last_reverse = now
+            # the nose is held north, so an east/west velocity is lateral
+            self.mav.mav.set_position_target_local_ned_send(
+                0,  # timestamp
+                1,  # target system_id
+                1,  # target component id
+                mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                MAV_POS_TARGET_TYPE_MASK.POS_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE |
+                MAV_POS_TARGET_TYPE_MASK.LAST_BYTE,
+                0, 0, 0,          # x, y, z
+                0, vel_ms, 0,     # vx, vy, vz
+                0, 0, 0,          # afx, afy, afz
+                0, 0,             # yaw, yawrate
+            )
             att = self.assert_receive_message("ATTITUDE")
             sim = self.assert_receive_message("SIMSTATE")
             roll_deg = math.degrees(sim.roll)
