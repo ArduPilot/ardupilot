@@ -20,7 +20,7 @@
 - INA226 Voltage/Current Monitor
 - Buzzer
 
-### Power
+### Power Supplies
 
 - 5.5V - 25.2V (2S - 6S) input
 - 5V, 2A output. 300ma for main system, 200ma for heater
@@ -47,7 +47,7 @@
   - 3.3V Out, USART3, SWD
   - JST-SH 6 Pin
 
-### Dimensions
+### Physical
 
 - Size: 91.5mm x 56mm
 - Weight: 41g

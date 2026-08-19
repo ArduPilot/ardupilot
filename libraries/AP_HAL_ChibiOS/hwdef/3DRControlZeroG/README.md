@@ -36,7 +36,7 @@ The Control Zero H7 OEM revision G is a flight controller produced by [3DR (mRo)
   - Buzzer
   - Safety Button
 
-### Uncased Weight and Dimensions
+### Physical
 
  Weight: 3.66g (13.oz)
  Width:  20mm (.79in)
@@ -124,6 +124,6 @@ This board has a built-in voltage and current sensors. The following settings ne
 
 The compiled binary will be located in `build/3DRControlZeroG/bin/arducopter.apj`.
 
-## Uploading Firmware
+## Loading Firmware
 
 Any Control Zero H7 OEM revision G has a preloaded Ardupilot bootloader, which allows the user to use a compatible Ground Station software to upload the `.apj` file.

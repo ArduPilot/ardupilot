@@ -21,6 +21,6 @@ Here4 Module is sold as a GPS module, but it can be used as a flight controller.
 - For enabling future updates to FC firmware, use flash bootloader through mission planner, and then user should be able to update firmware through Serial port.
 - Please note that once the firmware is updated to FC, to rollback to GPS firmware user will need to update using APJ file available here [GNSSPeriph-release](https://github.com/CubePilot/GNSSPeriph-release/releases.)
 
-## Pinout and Connectors
+## Pinout
 
 [CubePilot documentation](https://docs.cubepilot.org/user-guides/here-4/here-4-manual#pinout)

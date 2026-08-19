@@ -22,12 +22,12 @@ The MUPilot flight controller is sold by [MUGIN UAV](http://https://www.muginuav
 - voltage monitoring for servo rail and Vcc
 - two dedicated power input ports for external power bricks
 
-## Mechanical
+## Physical
 
 - 91mm x 46mm x 31mm
 - 106g
 
-## Connectors
+## Pinout
 
 ![MUPilot Pinout1](MUPilot-pinout1.png "Pinout1")
 
