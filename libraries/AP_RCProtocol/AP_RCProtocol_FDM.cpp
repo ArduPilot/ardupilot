@@ -24,6 +24,10 @@ void AP_RCProtocol_FDM::update()
         return;
     }
 
+    if (sitl->rc_fail == SITL::SIM::SITL_RCFail_NoPulses) {
+        return;
+    }
+
     // simulate RC input at 50Hz
     if (AP_HAL::millis() - last_input_ms < 20) {
         return;
@@ -31,17 +35,32 @@ void AP_RCProtocol_FDM::update()
 
     last_input_ms = AP_HAL::millis();
 
-    // scale from FDM 0-1 floats to PWM values
-    // these are the values that will be fed into the autopilot.
     uint16_t pwm_input[16];
     const uint8_t count = MIN(ARRAY_SIZE(pwm_input), fdm.rcin_chan_count);
-    for (uint8_t i=0; i<count; i++) {
-        pwm_input[i] = 1000 + fdm.rcin[i] * 1000;
+    bool failsafe = false;
+    if (sitl->rc_fail == SITL::SIM::SITL_RCFail_Throttle950) {
+        for (uint8_t i=0; i<count; i++) {
+            pwm_input[i] = 1500;
+        }
+        if (count > 2) {
+            pwm_input[2] = 950;
+        }
+    } else if (sitl->rc_fail == SITL::SIM::SITL_RCFail_Protocol_Fail_Bit_Set) {
+        for (uint8_t i=0; i<count; i++) {
+            pwm_input[i] = 1456;
+        }
+        failsafe = true;
+    } else {
+        // scale from FDM 0-1 floats to PWM values
+        // these are the values that will be fed into the autopilot.
+        for (uint8_t i=0; i<count; i++) {
+            pwm_input[i] = 1000 + fdm.rcin[i] * 1000;
+        }
     }
     add_input(
         count,
         pwm_input,
-        false,  // failsafe
+        failsafe,
         0, // check me
         0  // link quality
         );
