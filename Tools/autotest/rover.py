@@ -4067,7 +4067,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                         raise NotAchievedException("Breach of unexpected type")
             if self.mode_is("RTL", cached=True) and seen_fence_breach:
                 break
-        self.wait_distance_to_home(3, 7, timeout=30)
+        self.wait_at_home()
 
     def drive_somewhere_stop_at_boundary(self,
                                          loc,
@@ -4675,7 +4675,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-        self.wait_rtl_complete()
+        self.wait_at_home()
 
         self.progress("Drive outside bottom polygon")
         fence_middle = self.offset_location_ne(here, 150, 0)
@@ -4684,10 +4684,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-    def wait_rtl_complete(self):
-        """Wait for RTL to reach home and disarm"""
-        self.progress("Waiting RTL to reach Home")
-        self.wait_distance_to_home(0, 7, timeout=30)
+    def wait_at_home(self, timeout=30):
+        """Wait for the vehicle to arrive home"""
+        self.progress("Waiting for vehicle to reach home")
+        self.wait_distance_to_home(0, 7, timeout=timeout)
 
     def test_poly_fence_exclusion(self, here, target_system=1, target_component=1):
 
@@ -4790,7 +4790,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "Did not go via the intermediate point (closest %.1fm)" % closest)
 
         self.progress("Ensure we get home")
-        self.wait_distance_to_home(3, 7, timeout=30)
+        self.wait_at_home()
 
         self.disarm_vehicle()
 
@@ -4846,7 +4846,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         target_loc = Location.latlon_only(40.073799, -105.229156)
         self.wait_location(target_loc, height_accuracy=None, timeout=300)
         # mission has RTL as last item
-        self.wait_distance_to_home(3, 7, timeout=300)
+        self.wait_at_home(timeout=300)
         self.disarm_vehicle()
 
     def send_guided_mission_item(self, loc, target_system=1, target_component=1):
@@ -5115,7 +5115,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # RTL home, "Mission Complete".
         self.wait_location(target_loc, timeout=300, height_accuracy=None)
         # mission has RTL as last item
-        self.wait_distance_to_home(3, 7, timeout=300)
+        self.wait_at_home(timeout=300)
         self.disarm_vehicle()
 
     def ScriptingSimpleLoop(self):
