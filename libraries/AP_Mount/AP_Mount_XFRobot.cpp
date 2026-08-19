@@ -191,7 +191,7 @@ bool AP_Mount_XFRobot::set_camera_source(uint8_t primary_source, uint8_t seconda
         return set_lens(1);
     }
 
-    if (primary_source == 1 && secondary_source == 2) {
+    if ((primary_source == 0 || primary_source == 1) && secondary_source == 2) {
         return set_lens(2);
     }
 

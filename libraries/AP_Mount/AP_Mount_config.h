@@ -76,7 +76,8 @@
 
 // set camera source is supported on gimbals that may have more than one lens
 #ifndef HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
-#define HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED HAL_MOUNT_SIYI_ENABLED || HAL_MOUNT_XACTI_ENABLED || HAL_MOUNT_VIEWPRO_ENABLED
+#define HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED (HAL_MOUNT_SIYI_ENABLED || HAL_MOUNT_XACTI_ENABLED || \
+                                             HAL_MOUNT_VIEWPRO_ENABLED || HAL_MOUNT_XFROBOT_ENABLED)
 #endif
 
 // send thermal range is only support on Siyi cameras
