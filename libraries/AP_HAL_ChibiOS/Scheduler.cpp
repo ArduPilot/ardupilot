@@ -604,11 +604,33 @@ void Scheduler::check_low_memory_is_zero()
         // read using assembly so we don't invoke UB dereferencing nullptr
         __asm__("\tldr %0, [%1]\n\t" : "=r"(val) : "r"(addr));
         if (val != 0) {
+            // report before AP_memory_guard_error(), which does not
+            // return when we are disarmed
+            report_low_memory_write(uint16_t(addr), val);
             // re-use memory guard internal error
             AP_memory_guard_error(1023);
             break;
         }
     }
+}
+
+/*
+  report a write into the reserved low memory region.  The offset is
+  the offset from a nullptr base which was written through, and the
+  value is the data which was written; together these narrow down the
+  code responsible.  We do not clear the region, so we only report a
+  given value once to avoid repeating the same message on every check
+ */
+void Scheduler::report_low_memory_write(uint16_t offset, uint32_t value)
+{
+    if (offset == last_low_memory_offset && value == last_low_memory_value) {
+        return;
+    }
+    last_low_memory_offset = offset;
+    last_low_memory_value = value;
+
+    GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "low memory write 0x%03x=0x%08x",
+                  unsigned(offset), unsigned(value));
 }
 #endif // MEMCHECK_ENABLED
 
