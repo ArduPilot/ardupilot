@@ -5,7 +5,6 @@ AP_FLAKE8_CLEAN
 
 '''
 
-import copy
 import math
 import operator
 import os
@@ -19,7 +18,9 @@ from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
 
+from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
@@ -27,7 +28,8 @@ from vehicle_test_suite import Test
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 WIND = "0,180,0.2"  # speed,direction,variance
-SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
+SITL_START_LOCATION = Location(-27.274439, 151.290064, 343, AltFrame.ABSOLUTE)
+SITL_START_HEADING = 8.7
 
 
 class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
@@ -63,6 +65,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def sitl_start_location(self):
         return SITL_START_LOCATION
+
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
 
     def log_name(self):
         return "QuadPlane"
@@ -1002,12 +1007,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
         self.set_rc(2, 1500)
         self.delay_sim_time(5, reason="position to stabilise")
-        loc1 = self.mav.location()
+        loc1 = self.get_location()
         self.set_parameter("SIM_ENGINE_FAIL", 1 << 2) # simulate a complete loss of forward motor thrust
         self.delay_sim_time(20, reason="engine failure effect")
         self.change_mode('QLAND')
         self.wait_disarmed(timeout=60)
-        loc2 = self.mav.location()
+        loc2 = self.get_location()
         position_drift = self.get_distance(loc1, loc2)
         if position_drift > 5.0 :
             raise NotAchievedException("position drift high, want < 5.0 m got %f m" % (position_drift))
@@ -1187,15 +1192,15 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         # Test alt assist, climb to 60m and set assist alt to 50m
         self.context_push()
-        guided_loc = self.home_relative_loc_ne(0, 0)
-        guided_loc.alt = 60
+        guided_loc = self.home_position_as_location()
+        guided_loc.set_alt_m(60, AltFrame.ABOVE_HOME)
         self.change_mode("GUIDED")
         self.send_do_reposition(guided_loc)
         self.wait_altitude(58, 62, relative=True, timeout=120)
         self.set_parameter("Q_ASSIST_ALT", 50)
 
         # Try and descent to 40m
-        guided_loc.alt = 40
+        guided_loc.set_alt_m(40, AltFrame.ABOVE_HOME)
         self.send_do_reposition(guided_loc)
 
         # Expect alt assist to kick in, eg "Alt assist 48.9m"
@@ -1234,7 +1239,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         takeoff_alt = 5
         self.takeoff(takeoff_alt, mode='QLOITER')
-        loc = self.mav.location()
+        loc = self.get_location()
         self.location_offset_ne(loc, 500, 500)
         new_alt = 100
         initial_altitude = self.get_altitude(relative=False, timeout=2)
@@ -1295,7 +1300,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         )
         takeoff_alt = 5
         self.takeoff(takeoff_alt, mode='QLOITER')
-        loc = self.mav.location()
+        loc = self.get_location()
         self.location_offset_ne(loc, ofs_n, ofs_e)
         initial_altitude = self.get_altitude(relative=False, timeout=2)
         self.run_cmd_int(
@@ -1958,7 +1963,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # position before the reboot places the target wherever the
         # previous test happened to leave the vehicle, which can be
         # hundreds of metres from where QRTL will descend:
-        here = self.mav.location()
+        here = self.get_location()
         target = self.offset_location_ne(here, 20, 0)
         self.set_parameters({
             "SIM_PLD_LAT": target.lat,
@@ -1975,7 +1980,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
 
         self.wait_disarmed(timeout=180)
-        loc2 = self.mav.location()
+        loc2 = self.get_location()
         error = self.get_distance(target, loc2)
         self.progress("Target error %.1fm" % error)
         if error > 2:
@@ -2231,7 +2236,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # reset home 20 metres above current location
         current_alt_abs = self.get_altitude(relative=False)
 
-        loc = self.mav.location()
+        loc = self.get_location()
 
         home_z_ofs = 20
         self.run_cmd(
@@ -2265,7 +2270,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_altitude(14, 16, relative=True)
 
         target_alt = 30
-        loc = self.home_relative_loc_neu(50, 50, target_alt)
+        loc = self.offset_location_ne(self.home_position_as_location(), 50, 50)
+        loc.set_alt_m(target_alt, AltFrame.ABOVE_HOME)
 
         # set position target
         self.run_cmd_int(
@@ -2550,7 +2556,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
 
-        here = self.mav.location()
+        here = self.get_location()
         guided_loc = self.offset_location_ne(here, 500, -500)
 
         self.arm_vehicle()
@@ -2928,8 +2934,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.start_subtest("test reposition with terrain alt")
         self.wait_ready_to_arm()
 
-        dest = copy.copy(SITL_START_LOCATION)
-        dest.alt = 45
+        dest_alt = 45
+        dest = Location(SITL_START_LOCATION.lat,
+                        SITL_START_LOCATION.lng,
+                        dest_alt,
+                        AltFrame.ABOVE_TERRAIN)
 
         self.set_parameters({
             'Q_GUIDED_MODE': 1,
@@ -2938,16 +2947,16 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.takeoff(30, mode='GUIDED')
 
         # fly to higher ground
-        self.send_do_reposition(dest, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.send_do_reposition(dest)
         self.wait_location(
             dest,
             accuracy=200,
             timeout=600,
-            height_accuracy=None,  # dest.alt is above-terrain; alt checked below
+            height_accuracy=None,  # dest's altitude is above-terrain; alt checked below
         )
         self.wait_altitude(
-            dest.alt-10,  # NOTE: reuse of alt from abovE
-            dest.alt+10,  # use a 10m buffer as the plane needs to go up and down a bit to maintain terrain distance
+            dest_alt-10,
+            dest_alt+10,  # use a 10m buffer as the plane needs to go up and down a bit to maintain terrain distance
             minimum_duration=10,
             timeout=50,  # includes time for the terrain altitude to settle
             relative=False,
@@ -2968,16 +2977,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.install_message_hook_context(terrain_height_range)
 
         # two locations 500m apart
-        loc1 = copy.copy(dest)
-        self.location_offset_ne(loc1, -250, 0)
-        loc1.alt = 100
+        loc1 = self.offset_location_ne(dest, -250, 0)
+        loc1.set_alt_m(100, AltFrame.ABOVE_TERRAIN)
 
-        loc2 = copy.copy(dest)
-        self.location_offset_ne(loc2, 250, 0)
-        loc2.alt = 150
+        loc2 = self.offset_location_ne(dest, 250, 0)
+        loc2.set_alt_m(150, AltFrame.ABOVE_TERRAIN)
 
-        loc3 = copy.copy(loc2)
-        loc3.alt = 100
+        loc3 = loc2.copy()
+        loc3.set_alt_m(100, AltFrame.ABOVE_TERRAIN)
 
         positions = [
             ("Loc1", loc1),
@@ -2997,18 +3004,19 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             terrain_height_min = start_alt
             terrain_height_max = start_alt
 
-            self.progress(f"Flying to {name} at {loc.alt:.1f} from {start_alt:.1f}")
-            self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+            loc_alt = loc.get_alt_m(AltFrame.ABOVE_TERRAIN)
+            self.progress(f"Flying to {name} at {loc_alt:.1f} from {start_alt:.1f}")
+            self.send_do_reposition(loc)
 
             self.wait_location(
                 loc,
                 accuracy=10,
                 timeout=600,
-                height_accuracy=None,  # loc.alt is above-terrain; alt checked below
+                height_accuracy=None,  # loc's altitude is above-terrain; alt checked below
             )
             self.wait_altitude(
-                loc.alt-5,
-                loc.alt+5,
+                loc_alt-5,
+                loc_alt+5,
                 minimum_duration=10,
                 timeout=40,  # includes time for the terrain altitude to settle
                 relative=False,
@@ -3016,15 +3024,15 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             )
             self.wait_groundspeed(0, 2)
             self.wait_altitude(
-                loc.alt-5,
-                loc.alt+5,
+                loc_alt-5,
+                loc_alt+5,
                 minimum_duration=10,
                 timeout=30,
                 relative=False,
                 altitude_source="TERRAIN_REPORT.current_height"
             )
-            min_alt_ok = min(start_alt, loc.alt) - 10
-            max_alt_ok = max(start_alt, loc.alt) + 10
+            min_alt_ok = min(start_alt, loc_alt) - 10
+            max_alt_ok = max(start_alt, loc_alt) + 10
             self.progress(f"theight {terrain_height_min:.0f} to {terrain_height_max:.0f} accept {min_alt_ok:.0f}:{max_alt_ok:.0f}") # noqa:E501
             if terrain_height_min < min_alt_ok or terrain_height_max > max_alt_ok:
                 raise NotAchievedException(f"terrain range breach {start_alt:.1f} {terrain_height_min:.1f} {terrain_height_max:.1f}")  # noqa:E501
@@ -3037,15 +3045,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.install_terrain_handlers_context()
         self.start_subtest("test reposition terrain alt2")
 
-        takeoff_loc = mavutil.location(-35.28243788, 149.00502473, 583.7)
+        takeoff_loc = Location(-35.28243788, 149.00502473, 583.7, AltFrame.ABSOLUTE)
+        takeoff_alt_amsl = takeoff_loc.get_alt_m(AltFrame.ABSOLUTE)
         self.customise_SITL_commandline(
-            ["--home", f"{takeoff_loc.lat},{takeoff_loc.lng},{takeoff_loc.alt},0"]
+            ["--home", f"{takeoff_loc.lat},{takeoff_loc.lng},{takeoff_alt_amsl},0"]
         )
         self.reboot_sitl(check_position=False)
         self.wait_ready_to_arm()
-
-        dest = copy.copy(takeoff_loc)
-        dest.alt = 45
 
         self.set_parameters({
             'Q_GUIDED_MODE': 1,
@@ -3066,13 +3072,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.install_message_hook_context(terrain_height_range)
 
-        loc1 = mavutil.location(-35.27502040, 148.98635977, 75)
-        loc2 = mavutil.location(-35.28505202, 148.98604378, 75)
+        loc1 = Location(-35.27502040, 148.98635977, 75, AltFrame.ABOVE_TERRAIN)
+        loc2 = Location(-35.28505202, 148.98604378, 75, AltFrame.ABOVE_TERRAIN)
 
-        loc3 = mavutil.location(-35.27502040, 148.98635977, 120)
-        loc4 = mavutil.location(-35.28505202, 148.98604378, 120)
+        loc3 = Location(-35.27502040, 148.98635977, 120, AltFrame.ABOVE_TERRAIN)
+        loc4 = Location(-35.28505202, 148.98604378, 120, AltFrame.ABOVE_TERRAIN)
 
-        loc5 = mavutil.location(-35.28505202, 148.98604378, 100)
+        loc5 = Location(-35.28505202, 148.98604378, 100, AltFrame.ABOVE_TERRAIN)
 
         positions = [
             ("Loc1", loc1),
@@ -3093,18 +3099,19 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             terrain_height_min = start_alt
             terrain_height_max = start_alt
 
-            self.progress(f"Flying to {name} at {loc.alt:.1f} from {start_alt:.1f}")
-            self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+            loc_alt = loc.get_alt_m(AltFrame.ABOVE_TERRAIN)
+            self.progress(f"Flying to {name} at {loc_alt:.1f} from {start_alt:.1f}")
+            self.send_do_reposition(loc)
 
             self.wait_location(
                 loc,
                 accuracy=10,
                 timeout=600,
-                height_accuracy=None,  # loc.alt is above-terrain; alt checked below
+                height_accuracy=None,  # loc's altitude is above-terrain; alt checked below
             )
             self.wait_altitude(
-                loc.alt-5,
-                loc.alt+5,
+                loc_alt-5,
+                loc_alt+5,
                 minimum_duration=10,
                 timeout=40,  # includes time for the terrain altitude to settle
                 relative=False,
@@ -3113,15 +3120,15 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
             self.wait_groundspeed(0, 2)
             self.wait_altitude(
-                loc.alt-5,
-                loc.alt+5,
+                loc_alt-5,
+                loc_alt+5,
                 minimum_duration=10,
                 timeout=30,
                 relative=False,
                 altitude_source="TERRAIN_REPORT.current_height"
             )
-            min_alt_ok = min(start_alt, loc.alt) - 10
-            max_alt_ok = max(start_alt, loc.alt) + 25
+            min_alt_ok = min(start_alt, loc_alt) - 10
+            max_alt_ok = max(start_alt, loc_alt) + 25
             self.progress(f"theight {terrain_height_min:.0f} to {terrain_height_max:.0f} accept {min_alt_ok:.0f}:{max_alt_ok:.0f}") # noqa:E501
             if terrain_height_min < min_alt_ok or terrain_height_max > max_alt_ok:
                 raise NotAchievedException(f"terrain range breach {start_alt:.1f} {terrain_height_min:.1f} {terrain_height_max:.1f}") # noqa:E501
@@ -3209,9 +3216,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         # We do this in a real-world scenario in Alaska where we take off from the Top of the World
         # and fly a mission that goes down into the valley to purposefully trigger Pitcing, Quading and CMTC events
-        topofworld_loc = mavutil.location(64.1624778, -139.8402246, 1109.0)
+        topofworld_loc = Location(64.1624778, -139.8402246, 1109.0, AltFrame.ABSOLUTE)
+        topofworld_alt_amsl = topofworld_loc.get_alt_m(AltFrame.ABSOLUTE)
         self.customise_SITL_commandline(
-            ["--home", f"{topofworld_loc.lat},{topofworld_loc.lng},{topofworld_loc.alt},0"]
+            ["--home", f"{topofworld_loc.lat},{topofworld_loc.lng},{topofworld_alt_amsl},0"]
         )
 
         self.context_collect("STATUSTEXT")
@@ -3265,7 +3273,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode("AUTO")
 
         # check that we got terrain data, this test doesn't work if we don't have the correct terrain.
-        loc = self.mav.location()
+        loc = self.get_location()
 
         lng_int = int(loc.lng * 1e7)
         lat_int = int(loc.lat * 1e7)
@@ -3600,7 +3608,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.delay_sim_time(5, reason="let things settle")
 
         truth_yaw_deg = math.degrees(self.assert_receive_message('SIMSTATE').yaw)
-        truth_loc = self.sim_location()
+        truth_loc = self.get_location('SIMSTATE')
         truth_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
 
         self.context_collect('STATUSTEXT')
@@ -3611,7 +3619,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # ensure the switch really implied resets on each axis, else
         # this test is vacuous:
         yaw_divergence = self.heading_delta(self.get_heading(), truth_yaw_deg)
-        ne_divergence = self.get_distance(self.get_mav_location(), truth_loc)
+        ne_divergence = self.get_distance(self.get_location(), truth_loc)
         alt_divergence = abs(self.get_altitude(altitude_source='GLOBAL_POSITION_INT.alt') - truth_alt)
         self.progress(f"divergences: yaw={yaw_divergence:.1f}deg NE={ne_divergence:.1f}m alt={alt_divergence:.1f}m")
         if yaw_divergence < 20:
@@ -3630,7 +3638,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         tstart = self.get_sim_time()
         while self.get_sim_time() - tstart < 20:
             rotated = self.heading_delta(math.degrees(self.assert_receive_message('SIMSTATE').yaw), truth_yaw_deg)
-            moved_ne = self.get_distance(truth_loc, self.sim_location())
+            moved_ne = self.get_distance(truth_loc, self.get_location('SIMSTATE'))
             moved_alt = abs(self.get_altitude(altitude_source='SIM_STATE.alt') - truth_alt)
             self.progress(f"rotated={rotated:.1f}deg moved_ne={moved_ne:.1f}m moved_alt={moved_alt:.1f}m")
             if rotated > 20:
