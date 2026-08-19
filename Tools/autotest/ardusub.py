@@ -19,12 +19,15 @@ from pymavlink import mavutil
 import vehicle_test_suite
 
 from pysim import util
+from vehicle_test_suite import AltFrame
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
-SITL_START_LOCATION = mavutil.location(33.810313, -118.393867, 0, 185)
+SITL_START_LOCATION = Location(33.810313, -118.393867, 0, AltFrame.ABSOLUTE)
+SITL_START_HEADING = 185
 
 # Extract true range from STATUSTEXT messages sent by sub_test_synthetic_seafloor.lua
 RE_TR_SEARCH = re.compile(r'#TR#\s*([-+]?\d*\.?\d+)')
@@ -90,6 +93,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def sitl_start_location(self):
         return SITL_START_LOCATION
+
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
 
     def default_frame(self):
         return 'vectored'
@@ -529,11 +535,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # Save starting point
         self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
-        start_pos = self.mav.location()
+        start_pos = self.get_location()
         # Hold in perfect conditions
         self.progress("Testing position hold in perfect conditions")
         self.delay_sim_time(10, reason="position hold measurement period")
-        distance_m = self.get_distance(start_pos, self.mav.location())
+        distance_m = self.get_distance(start_pos, self.get_location())
         if distance_m > 1:
             raise NotAchievedException(f"Position Hold was unable to keep position in calm waters within 1 meter after 10 seconds, drifted {distance_m} meters")  # noqa
 
@@ -542,17 +548,17 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_WIND_SPD", 1)
         self.set_parameter("SIM_WIND_T", 1)
         self.delay_sim_time(10, reason="drift measurement in 1m/s current")
-        distance_m = self.get_distance(start_pos, self.mav.location())
+        distance_m = self.get_distance(start_pos, self.get_location())
         if distance_m > 1:
             raise NotAchievedException(f"Position Hold was unable to keep position in 1m/s current within 1 meter after 10 seconds, drifted {distance_m} meters")  # noqa
 
         # Move forward slowly in 1 m/s current
-        start_pos = self.mav.location()
+        start_pos = self.get_location()
         self.progress("Testing moving forward in position hold in 1m/s current")
         self.set_rc(Joystick.Forward, 1600)
         self.delay_sim_time(10, reason="forward movement")
-        distance_m = self.get_distance(start_pos, self.mav.location())
-        bearing = self.get_bearing(start_pos, self.mav.location())
+        distance_m = self.get_distance(start_pos, self.get_location())
+        bearing = self.get_bearing(start_pos, self.get_location())
         if distance_m < 2 or (bearing > 30 and bearing < 330):
             raise NotAchievedException(f"Position Hold was unable to move north 2 meters, moved {distance_m} at {bearing} degrees instead")  # noqa
         self.disarm_vehicle()
@@ -881,25 +887,23 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.dive(start_altitude)
         self.change_mode('GUIDED')
 
-        loc = self.mav.location()
+        loc = self.get_location()
 
         # Reposition, alt relative to surface
         loc = self.offset_location_ne(loc, 10, 10)
-        loc.alt = start_altitude
-        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT)
+        loc.set_alt_m(start_altitude, AltFrame.ABOVE_HOME)
+        self.send_do_reposition(loc)
         self.wait_location(loc, timeout=120)
 
         # Reposition, alt relative to seafloor.  The SITL seafloor is
         # ~50m deep here, so holding 25m above it is ~-25m AMSL.
-        # target_terrain abuses the location's alt field to carry a
-        # terrain-frame altitude, as send_do_reposition requires
         seafloor_depth = 50
         alt_above_seafloor = 25
         target_terrain = self.offset_location_ne(loc, 10, 10)
-        target_terrain.alt = alt_above_seafloor
+        target_terrain.set_alt_m(alt_above_seafloor, AltFrame.ABOVE_TERRAIN)
         target_global = self.offset_location_ne(loc, 10, 10)
-        target_global.alt = alt_above_seafloor - seafloor_depth
-        self.send_do_reposition(target_terrain, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        target_global.set_alt_m(alt_above_seafloor - seafloor_depth, AltFrame.ABSOLUTE)
+        self.send_do_reposition(target_terrain)
         self.wait_location(target_global, timeout=120, height_accuracy=5)
 
         self.disarm_vehicle()
@@ -1104,7 +1108,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def wait_for_stop(self):
         """Watch the sub slow down and stop"""
         tstart = self.get_sim_time_cached()
-        lstart = self.mav.location()
+        lstart = self.get_location()
 
         dmax = 0
         dprev = 0
@@ -1112,7 +1116,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         while True:
             self.delay_sim_time(1, reason="movement measurement interval")
 
-            dcurr = self.get_distance(lstart, self.mav.location())
+            dcurr = self.get_distance(lstart, self.get_location())
 
             if dcurr - dmax < -0.2:
                 raise NotAchievedException(f"Bounced back from {dmax:.2f}m to {dcurr:.2f}m")
@@ -1560,10 +1564,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.change_mode('POSHOLD')
         self.set_parameter("SIM_GPS1_HNSE", 2)
         self.wait_location(
-            self.sim_location(),
+            self.get_location('SIMSTATE'),
             location_source="SIMSTATE",
             minimum_duration=10,
-            height_accuracy=10.0,
+            height_accuracy=None,  # SIMSTATE carries no altitude
             accuracy=1.0,
             timeout=60.0,
         )
@@ -1592,7 +1596,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
         })
-        self.wait_location(self.mav.location(), minimum_duration=5, accuracy=2, timeout=60.0)
+        self.wait_location(self.get_location(), minimum_duration=5, accuracy=2, timeout=60.0)
 
         self.progress("Driving forward 10m with GPS+VISO")
         self.set_rc(Joystick.Forward, 1900)

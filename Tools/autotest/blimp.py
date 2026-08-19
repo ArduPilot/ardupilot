@@ -10,12 +10,15 @@ import shutil
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
+from vehicle_test_suite import AltFrame
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import TestSuite
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 584, 0)
+SITL_START_LOCATION = Location(-35.362938, 149.165085, 584, AltFrame.ABSOLUTE)
+SITL_START_HEADING = 0
 
 # Flight mode switch positions are set-up in blimp.parm to be
 #   switch 1 = Land
@@ -61,6 +64,9 @@ class AutoTestBlimp(TestSuite):
 
     def sitl_start_location(self):
         return SITL_START_LOCATION
+
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
 
     def sitl_streamrate(self):
         return 5
@@ -195,7 +201,7 @@ class AutoTestBlimp(TestSuite):
         tim = 60
 
         # make sure we don't drift:
-        bl = self.mav.location()
+        bl = self.get_location()
         tl = self.offset_location_ne(location=bl, metres_north=siz, metres_east=0)
         tr = self.offset_location_ne(location=bl, metres_north=siz, metres_east=siz)
         br = self.offset_location_ne(location=bl, metres_north=0, metres_east=siz)
@@ -228,7 +234,7 @@ class AutoTestBlimp(TestSuite):
         self.wait_distance_to_location(bl, 0, 0.5, timeout=tim)
         self.set_rc(1, 1500)
 
-        fin = self.mav.location()
+        fin = self.get_location()
 
         self.progress("Yawing right.")
         self.set_rc(4, 1700)
