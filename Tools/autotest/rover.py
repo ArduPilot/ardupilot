@@ -3826,17 +3826,59 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_current_waypoint(set_wp)
 
         self.start_subsubtest("wp changealt")
-        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         changealt_item = 1
-#        oldalt = downloaded_items[changealt_item].z
         want_newalt = 37.2
         mavproxy.send('wp changealt %u %f\n' % (changealt_item, want_newalt))
-        self.delay_sim_time(15, reason="waypoint alt change to propagate")
-        downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-        if abs(downloaded_items[changealt_item].z - want_newalt) > 0.0001:
-            raise NotAchievedException(
-                "changealt didn't (want=%f got=%f)" %
-                (want_newalt, downloaded_items[changealt_item].z))
+        # MAVProxy prints this once it has sent the partial-list write:
+        mavproxy.expect("Changed alt for WPs")
+
+        # ...but that is the request going out, not the vehicle having
+        # taken it.  The vehicle does announce the write, with a
+        # MISSION_ACK - but it sends that on the link the transaction
+        # came in on, which is MAVProxy's and not ours, so we never see
+        # it; and a partial write of a single item never produces
+        # MAVProxy's "Loaded n waypoints" line either, that only firing
+        # when the *last* item is requested.  So ask for the item until
+        # it holds the altitude we asked for.
+        #
+        # Wait in wall clock: the work is MAVProxy's, and a
+        # delay_sim_time() budget shrinks in real terms as the speedup
+        # rises - the 15 simulated seconds this used to wait are 0.5s of
+        # wall clock at speedup 30 but 0.15s at 100, and the test then
+        # reads back the item's original altitude.
+        # ...and the vehicle will not serve an item up while that write
+        # is still in flight - MissionItemProtocol::handle_mission_request_int()
+        # answers MAV_MISSION_DENIED while it is receiving - so a denial
+        # here means "not yet", and anything else is a real failure.
+        tstart = time.time()
+        while True:
+            self.drain_mav()
+            self.mav.mav.mission_request_int_send(
+                target_system,
+                target_component,
+                changealt_item,
+                mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+            )
+            m = self.assert_receive_message(['MISSION_ITEM_INT', 'MISSION_ACK'])
+            if m.get_type() == 'MISSION_ACK':
+                if m.type != mavutil.mavlink.MAV_MISSION_DENIED:
+                    raise NotAchievedException(
+                        "Unexpected mission ack (%s)" %
+                        mavutil.mavlink.enums["MAV_MISSION_RESULT"][m.type].name)
+                got_newalt = None
+            else:
+                if m.seq != changealt_item:
+                    raise NotAchievedException(
+                        "Received waypoint is out of sequence (want=%u got=%u)" %
+                        (changealt_item, m.seq))
+                got_newalt = m.z
+                if abs(got_newalt - want_newalt) <= 0.0001:
+                    break
+            if time.time() - tstart > 30:
+                raise NotAchievedException(
+                    "changealt didn't (want=%f got=%s)" %
+                    (want_newalt, str(got_newalt)))
+            time.sleep(0.5)
         self.end_subsubtest("wp changealt")
 
         self.start_subsubtest("wp sethome")
@@ -3844,13 +3886,19 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         new_home_lng = 2.71828
         mavproxy.send('click %f %f\n' % (new_home_lat, new_home_lng))
         mavproxy.send('wp sethome\n')
-        self.delay_sim_time(5, reason="home waypoint to be set")
-        # any way to close the loop on this one?
-        # downloaded_items = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-        # if abs(downloaded_items[0].x - new_home_lat) > 0.0001:
-        #     raise NotAchievedException("wp sethome didn't work")
-        # if abs(downloaded_items[0].y - new_home_lng) > 0.0001:
-        #     raise NotAchievedException("wp sethome didn't work")
+        # there is no loop to close on this one, and the delay_sim_time()
+        # which used to stand here was waiting for something which never
+        # happens.  "wp sethome" partially-writes mission item 0, and
+        # AP_Mission::set_item() throws index-0 writes away while still
+        # reporting success ("Really should be returning false in this
+        # case, but in order to not break things we return true"), item 0
+        # always being served back out of the AHRS home.  So the clicked
+        # location can never appear in a download.  The vehicle's
+        # MISSION_ACK is no use either: it goes out on the link the
+        # transaction arrived on, which is MAVProxy's and not ours.
+        # Nothing below here talks to the vehicle before "wp slope",
+        # which is entirely MAVProxy-local, so there is nothing to wait
+        # for.
         self.end_subsubtest("wp sethome")
 
         self.start_subsubtest("wp slope")
