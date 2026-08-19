@@ -286,6 +286,16 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
  *
  * really_fuse should be true to actually fuse into the main filter, false to only calculate variances
 */
+
+// With optical flow as the horizontal aiding source and no yaw source, heading and the
+// Z gyro bias are jointly unobservable. Learning the Z bias from flow lets a flow velocity
+// error be absorbed as a phantom bias that then drifts yaw, so freeze it (the gyro then
+// carries relative heading). Mirrors the unconditional accel-Z bias inhibition under flow.
+bool NavEKF3_core::flowYawGyroBiasInhibited() const
+{
+    return yaw_source_last == AP_NavEKF_Source::SourceYaw::NONE;
+}
+
 void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse)
 {
     Vector24 H_LOS;
@@ -487,7 +497,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
+                kalman_mask |= (1<<10) | (1<<11);
+                if (!flowYawGyroBiasInhibited()) {
+                    kalman_mask |= (1<<12);
+                }
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
@@ -649,7 +662,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
+                kalman_mask |= (1<<10) | (1<<11);
+                if (!flowYawGyroBiasInhibited()) {
+                    kalman_mask |= (1<<12);
+                }
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
