@@ -3962,6 +3962,7 @@ class TestSuite(abc.ABC):
         if timeout_in_wallclock:
             tstart = time.time()
         else:
+            self.drain_mav()
             tstart = self.get_sim_time()
         self.mav.mav.timesync_send(0, self.timesync_number * 1000 + self.mav.source_system)
         while True:
@@ -4713,10 +4714,10 @@ class TestSuite(abc.ABC):
     #################################################
     # SIM UTILITIES
     #################################################
-    def get_sim_time(self, timeout=60, drain_mav=True):
-        """Get SITL time in seconds."""
-        if drain_mav:
-            self.drain_mav()
+    def get_sim_time(self, timeout=60):
+        """Get SITL time in seconds.  Note this does not flush the incoming
+        message queue; a caller which needs the vehicle to have caught up
+        with what it has been told should do_timesync_roundtrip() first."""
         tstart = time.time()
         while True:
             self.drain_all_pexpects()
@@ -7864,7 +7865,11 @@ class TestSuite(abc.ABC):
         if target_compid is None:
             target_compid = 1
 
-        self.get_sim_time() # required for timeout in run_cmd_get_ack to work
+        # run_cmd_get_ack budgets its wait in simulated time but spends it
+        # walking whatever is already queued to reach the ack, so it needs
+        # to start from an empty queue and a current clock; this used to
+        # come from get_sim_time() draining:
+        self.do_timesync_roundtrip(quiet=True)
 
         """Send a MAVLink command int."""
         if not quiet:
@@ -7968,7 +7973,11 @@ class TestSuite(abc.ABC):
                 quiet=False,
                 mav=None):
         self.drain_mav(mav=mav)
-        self.get_sim_time() # required for timeout in run_cmd_get_ack to work
+        # run_cmd_get_ack budgets its wait in simulated time but spends it
+        # walking whatever is already queued to reach the ack, so it needs
+        # to start from an empty queue and a current clock; this used to
+        # come from get_sim_time() draining:
+        self.do_timesync_roundtrip(quiet=True)
         self.send_cmd(
             command,
             p1,
@@ -8545,7 +8554,7 @@ class TestSuite(abc.ABC):
         tnow = tstart
         self.progress("Delaying %f seconds for %s" % (seconds_to_wait, reason))
         while tstart + seconds_to_wait > tnow:
-            tnow = self.get_sim_time(drain_mav=False)
+            tnow = self.get_sim_time()
 
     def send_terrain_check_message(self):
         here = self.get_mav_location()
@@ -13338,7 +13347,10 @@ Also, ignores heartbeats not from our target system'''
             target_compid = 1
         if isinstance(message_id, str):
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
-        tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
+        # as in run_cmd(): run_cmd_get_ack needs an empty queue and a
+        # current clock for its timeout to mean anything
+        self.do_timesync_roundtrip(quiet=True)
+        tstart = self.get_sim_time()
         self.send_poll_message(message_id, quiet=quiet, mav=mav, target_sysid=target_sysid, target_compid=target_compid, p2=p2)
         self.run_cmd_get_ack(
             mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
