@@ -138,12 +138,12 @@ uint32_t RGBLed::get_colour_sequence(void) const
     }
 
 #if AP_GPS_ENABLED
-    Location loc;
 #if AP_AHRS_ENABLED
     // the AHRS can return "true" for get_location and still not be
     // happy enough with the location to set its origin from that
     // location:
-    const bool good_ahrs_location = AP::ahrs().get_location(loc) && AP::ahrs().get_origin(loc);
+    Location loc;
+    const bool good_ahrs_location = AP::ahrs().get_location(loc) && AP::ahrs().has_origin();
 #else
     const bool good_ahrs_location = true;
 #endif
