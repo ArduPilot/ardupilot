@@ -533,7 +533,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: IMU_MASK
     // @DisplayName: Bitmask of active IMUs
-    // @Description: 1 byte bitmap of IMUs to use in EKF3. A separate instance of EKF3 will be started for each IMU selected. Set to 1 to use the first IMU only (default), set to 2 to use the second IMU only, set to 3 to use the first and second IMU. Additional IMU's can be used up to a maximum of 6 if memory and processing resources permit. There may be insufficient memory and processing resources to run multiple instances. If this occurs EKF3 will fail to start.
+    // @Description: 1 byte bitmap of IMUs available for EKF3 to use. EKF3 always runs MAX_EKF_CORES (3) lanes, one per source set, regardless of how many IMUs are selected here. Lane number `i` uses the `min(i, N-1)`'th IMU selected by this mask, where `N` is the number of IMUs selected. In particular, this means that lanes beyond the last available IMU share it with the last lane that has one of its own. Set to 1 to use only the first IMU (all three lanes share it), set to 3 to use the first and second IMU (the third lane shares the second), set to 7 to give every lane its own IMU. There may be insufficient memory and processing resources to run all three lanes. If this occurs EKF3 will fail to start.
     // @Bitmask: 0:FirstIMU,1:SecondIMU,2:ThirdIMU,3:FourthIMU,4:FifthIMU,5:SixthIMU
     // @User: Advanced
     // @RebootRequired: True
@@ -843,7 +843,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: PRIMARY
     // @DisplayName: Primary core number
-    // @Description: Sets how the primary EKF lane is chosen. A value of -1 selects the first healthy lane automatically. Values of 0, 1, or 2 force use of that exact EKF core number (index in IMU mask) and disable automatic lane switching.
+    // @Description: Sets how the primary EKF lane is chosen. A value of -1 selects the first healthy lane automatically. Values of 0, 1, or 2 force use of that exact EKF lane number and disable automatic lane switching. Note the lane number is not necessarily an IMU number: see EK3_IMU_MASK, as lanes may share an IMU when there are fewer IMUs than lanes.
     // @Range: -1 2
     // @Increment: 1
     // @User: Advanced
@@ -919,7 +919,7 @@ bool NavEKF3::InitialiseFilter(void)
 
     if (core == nullptr) {
 
-        // don't run multiple filters for 1 IMU
+        // clip the mask to the IMUs that actually exist
         uint8_t mask = (1U<<ins.get_accel_count())-1;
         _imuMask.set_and_default(_imuMask.get() & mask);
         
@@ -932,13 +932,24 @@ bool NavEKF3::InitialiseFilter(void)
         }
         num_cores = 0;
 
-        // count IMUs from mask
-        for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
+        // collect the IMUs selected by the mask, in ascending order, capped at
+        // MAX_EKF_CORES (a lane is never assigned an IMU beyond the third)
+        uint8_t available_imus[MAX_EKF_CORES];
+        uint8_t num_available_imus = 0;
+        for (uint8_t i=0; i<INS_MAX_INSTANCES && num_available_imus<MAX_EKF_CORES; i++) {
             if (_imuMask & (1U<<i)) {
-                coreSetupRequired[num_cores] = true;
-                coreImuIndex[num_cores] = i;
-                num_cores++;
+                available_imus[num_available_imus++] = i;
             }
+        }
+
+        if (num_available_imus == 0) {
+            return false;
+        }
+
+        num_cores = MAX_EKF_CORES;
+        for (uint8_t i=0; i<num_cores; i++) {
+            coreSetupRequired[i] = true;
+            coreImuIndex[i] = available_imus[MIN(i, uint8_t(num_available_imus-1))];
         }
 
         // check if there is enough memory to create the EKF cores
@@ -962,6 +973,8 @@ bool NavEKF3::InitialiseFilter(void)
         for (uint8_t i = 0; i < num_cores; i++) {
             new (&core[i]) NavEKF3_core(this, dal);
         }
+
+        report_lane_sensor_assignments();
     }
 
     // Set up any cores that have been created
@@ -997,7 +1010,48 @@ bool NavEKF3::InitialiseFilter(void)
     return ret;
 }
 
-/* 
+void NavEKF3::report_lane_sensor_assignments(void) const
+{
+    // must match NavEKF3_core::ekf_affinity in AP_NavEKF3_core.h
+    const uint32_t affinity_gps  = (1U<<0);
+    const uint32_t affinity_baro = (1U<<1);
+    const uint32_t affinity_mag  = (1U<<2);
+    const uint32_t affinity_arsp = (1U<<3);
+
+    const auto &gps = dal.gps();
+    const auto &compass = dal.compass();
+    auto &baro = dal.baro();
+    const auto *arsp = dal.airspeed();
+
+    for (uint8_t i=0; i<num_cores; i++) {
+        char msg[70];
+        size_t msg_len = 0;
+        msg_len += MAX(dal.snprintf(msg+msg_len, sizeof(msg)-msg_len, "IMU%u", (unsigned)coreImuIndex[i]), 0);
+        msg_len = MIN(msg_len, sizeof(msg)-1);
+        // lanes only get a dedicated sensor here when EK3_AFFINITY assigns
+        // them one and it actually exists; otherwise they share the primary
+        // sensor, which is not lane-specific and not worth reporting per lane
+        if ((_affinity & affinity_gps) && i < gps.num_sensors()) {
+            msg_len += MAX(dal.snprintf(msg+msg_len, sizeof(msg)-msg_len, " GPS%u", (unsigned)i), 0);
+            msg_len = MIN(msg_len, sizeof(msg)-1);
+        }
+        if ((_affinity & affinity_mag) && i < compass.get_count()) {
+            msg_len += MAX(dal.snprintf(msg+msg_len, sizeof(msg)-msg_len, " compass%u", (unsigned)i), 0);
+            msg_len = MIN(msg_len, sizeof(msg)-1);
+        }
+        if ((_affinity & affinity_baro) && i < baro.num_instances()) {
+            msg_len += MAX(dal.snprintf(msg+msg_len, sizeof(msg)-msg_len, " baro%u", (unsigned)i), 0);
+            msg_len = MIN(msg_len, sizeof(msg)-1);
+        }
+        if (arsp != nullptr && (_affinity & affinity_arsp) && i < arsp->get_num_sensors()) {
+            msg_len += MAX(dal.snprintf(msg+msg_len, sizeof(msg)-msg_len, " airspeed%u", (unsigned)i), 0);
+            msg_len = MIN(msg_len, sizeof(msg)-1);
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 lane%u: %s", (unsigned)i, msg);
+    }
+}
+
+/*
   Update Filter States - this should be called whenever new IMU data is available
   Execution speed governed by SCHED_LOOP_RATE
 */

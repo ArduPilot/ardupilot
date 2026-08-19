@@ -671,7 +671,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing optical flow",(unsigned)imu_index);
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 lane%u IMU%u fusing optical flow",(unsigned)core_index,(unsigned)imu_index);
             }
 
             // correct the covariance P = (I - K*H)*P = P - K*H*P. take advantage of
