@@ -13037,10 +13037,15 @@ Also, ignores heartbeats not from our target system'''
         '''Test DataFlash over MAVLink'''
         self.context_push()
         ex = None
-        mavproxy = self.start_mavproxy()
+        mavproxy = None
         try:
             self.set_parameter("LOG_BACKEND_TYPE", 2)
             self.reboot_sitl()
+            # as in DataFlash(): MAVProxy started before that reboot is
+            # left holding a dead socket, and the commands which start
+            # the logger below go nowhere - the vehicle then refuses to
+            # arm because logging never started
+            mavproxy = self.start_mavproxy()
             self.wait_ready_to_arm(check_prearm_bit=False)
             mavproxy.send('arm throttle\n')
             mavproxy.expect('PreArm: Logging failed')
@@ -13097,11 +13102,13 @@ Also, ignores heartbeats not from our target system'''
         mavproxy.send("log download 1\n")
         # no response to this...
 
-        self.mavproxy_unload_module(mavproxy, 'log')
+        if mavproxy is not None:
+            self.mavproxy_unload_module(mavproxy, 'log')
 
         self.context_pop()
 
-        self.stop_mavproxy(mavproxy)
+        if mavproxy is not None:
+            self.stop_mavproxy(mavproxy)
         self.reboot_sitl()
         if ex is not None:
             raise ex
