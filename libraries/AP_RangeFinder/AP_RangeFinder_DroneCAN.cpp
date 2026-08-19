@@ -12,6 +12,25 @@ extern const AP_HAL::HAL& hal;
 
 #define debug_range_finder_uavcan(level_debug, can_driver, fmt, args...) do { if ((level_debug) <= AP::can().get_debug_level_driver(can_driver)) { hal.console->printf(fmt, ##args); }} while (0)
 
+const AP_Param::GroupInfo AP_RangeFinder_DroneCAN::var_info[] = {
+
+    // @Param: RECV_ID
+    // @DisplayName: RangeFinder DroneCAN node ID
+    // @Description: DroneCAN node ID of the sensor to accept measurements from. Zero accepts the first node seen reporting the sensor ID set in ADDR.
+    // @Range: 0 127
+    // @User: Advanced
+    AP_GROUPINFO("RECV_ID", 10, AP_RangeFinder_DroneCAN, receive_node_id, 0),
+
+    AP_GROUPEND
+};
+
+AP_RangeFinder_DroneCAN::AP_RangeFinder_DroneCAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend(_state, _params)
+{
+    AP_Param::setup_object_defaults(this, var_info);
+    state.var_info = var_info;
+}
+
 //links the rangefinder uavcan message to this backend
 bool AP_RangeFinder_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
 {
@@ -20,39 +39,67 @@ bool AP_RangeFinder_DroneCAN::subscribe_msgs(AP_DroneCAN* ap_dronecan)
     return (Canard::allocate_sub_arg_callback(ap_dronecan, &handle_measurement, driver_index) != nullptr);
 }
 
-// find the backend bound to node_id and sensor_id, binding an unused
-// instance with a matching ADDR on first contact. An instance stays
-// bound so that two sensors reporting the same sensor_id cannot both
-// feed it.
+void AP_RangeFinder_DroneCAN::bind(AP_DroneCAN *ap_dronecan, uint8_t node_id, uint8_t instance)
+{
+    if (bound_to(ap_dronecan, node_id)) {
+        return;
+    }
+    _ap_dronecan = ap_dronecan;
+    _node_id = node_id;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RangeFinder[%u]: added DroneCAN node %u addr %u",
+                  unsigned(instance), unsigned(node_id), unsigned(params.address.get()));
+}
+
+// find the backend for a measurement from node_id with sensor_id. An
+// instance with RECV_ID set to node_id takes precedence; otherwise the
+// instance already bound to node_id, or the first unbound instance
+// accepting any node, is used. An instance stays bound to its node so
+// two sensors reporting the same sensor_id cannot both feed it.
 AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneCAN* ap_dronecan, uint8_t node_id, uint8_t sensor_id)
 {
     if (ap_dronecan == nullptr) {
         return nullptr;
     }
     RangeFinder &frontend = *AP::rangefinder();
+
+    int8_t configured = -1;
+    int8_t bound = -1;
+    int8_t unbound = -1;
     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
         if ((RangeFinder::Type)frontend.params[i].type.get() != RangeFinder::Type::UAVCAN ||
             frontend.params[i].address != sensor_id) {
             continue;
         }
-        auto *driver = (AP_RangeFinder_DroneCAN*)frontend.drivers[i];
+        const auto *driver = (AP_RangeFinder_DroneCAN*)frontend.drivers[i];
         if (driver == nullptr || driver->_backend_type != RangeFinder::Type::UAVCAN) {
             continue;
         }
-        if (driver->_ap_dronecan == ap_dronecan && driver->_node_id == node_id) {
-            return driver;
+        if (driver->receive_node_id != 0) {
+            if (driver->receive_node_id == node_id && configured < 0) {
+                configured = i;
+            }
+        } else if (driver->_ap_dronecan == nullptr) {
+            if (unbound < 0) {
+                unbound = i;
+            }
+        } else if (driver->bound_to(ap_dronecan, node_id)) {
+            bound = i;
         }
-        if (driver->_ap_dronecan != nullptr) {
-            // bound to another sensor with the same sensor_id
-            continue;
-        }
-        driver->_ap_dronecan = ap_dronecan;
-        driver->_node_id = node_id;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RangeFinder[%u]: added DroneCAN node %u addr %u",
-                      unsigned(i), unsigned(node_id), unsigned(sensor_id));
-        return driver;
     }
-    return nullptr;
+
+    if (configured >= 0 && bound >= 0) {
+        // RECV_ID was set at runtime to a node another instance had
+        // already taken; release that instance for another node
+        ((AP_RangeFinder_DroneCAN*)frontend.drivers[bound])->_ap_dronecan = nullptr;
+        bound = -1;
+    }
+    const int8_t selected = configured >= 0 ? configured : (bound >= 0 ? bound : unbound);
+    if (selected < 0) {
+        return nullptr;
+    }
+    auto *driver = (AP_RangeFinder_DroneCAN*)frontend.drivers[selected];
+    driver->bind(ap_dronecan, node_id, selected);
+    return driver;
 }
 
 //Called from frontend to update with the readings received by handler
