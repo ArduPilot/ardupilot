@@ -28,6 +28,10 @@
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #endif
 #include <AP_Vehicle/AP_Vehicle.h>
+#include <AP_LocationDB/AP_LocationDB_config.h>
+#if AP_LOCATIONDB_KEYDOMAIN_MAVLINK_ENABLED
+#include <AP_LocationDB/AP_LocationDB.h>
+#endif
 
 #if AP_SWARMMESH_POSCONTROL_ENABLED
 #include <AC_AttitudeControl/AC_PosControl.h>
@@ -45,7 +49,7 @@ extern const AP_HAL::HAL& hal;
 static constexpr uint32_t FRESH_BUDGET_MS[] = {
     3000,  // HEARTBEAT                  (~1 Hz)
     3000,  // SYS_STATUS
-    2000,  // GLOBAL_POSITION_INT
+    10000, // GLOBAL_POSITION_INT
     2000,  // LOCAL_POSITION_NED
     3000,  // POSITION_TARGET_GLOBAL_INT
     5000,  // EXTENDED_SYS_STATE
@@ -57,6 +61,40 @@ static constexpr uint32_t FRESH_BUDGET_MS[] = {
 #endif
 };
 static_assert(sizeof(FRESH_BUDGET_MS) / sizeof(FRESH_BUDGET_MS[0]) == AP_SwarmMesh::NUM_FRESH_TYPES, "FRESH_BUDGET_MS must have one entry per MsgFresh bit");
+
+#if AP_LOCATIONDB_KEYDOMAIN_MAVLINK_ENABLED
+static void update_locationdb_global_position(const mavlink_message_t &msg,
+                                              const mavlink_global_position_int_t &packet,
+                                              uint8_t origin_id)
+{
+    AP_LocationDB *db = AP::locationdb();
+    if (db == nullptr || (packet.lat == 0 && packet.lon == 0)) {
+        return;
+    }
+
+    const Location loc {
+        packet.lat,
+        packet.lon,
+        packet.alt / 10,
+        Location::AltFrame::ABSOLUTE
+    };
+    Vector3f pos;
+    if (!loc.get_vector_from_origin_NEU(pos)) {
+        return;
+    }
+
+    const Vector3f vel(packet.vx, packet.vy, -packet.vz);
+    const uint32_t key = AP_LocationDB::construct_key_mavlink(origin_id, msg.compid, msg.msgid);
+    const uint8_t populated_fields = (uint8_t)AP_LocationDB_Item::DataField::POS |
+        (uint8_t)AP_LocationDB_Item::DataField::VEL |
+        (uint8_t)AP_LocationDB_Item::DataField::HEADING;
+    const AP_LocationDB_Item item(key, AP_HAL::millis(), pos, vel, Vector3f{}, packet.hdg, 0, populated_fields);
+
+    if (!db->update_item(key, item)) {
+        IGNORE_RETURN(db->add_item(item));
+    }
+}
+#endif
 
 AP_SwarmMesh_Backend::AP_SwarmMesh_Backend(AP_SwarmMesh &frontend) :
     _frontend(frontend)
@@ -526,6 +564,9 @@ void AP_SwarmMesh_Backend::handle_mavlink(const mavlink_message_t &msg, AP_Swarm
         ps.velocity[0] = gp.vx;
         ps.velocity[1] = gp.vy;
         ps.velocity[2] = gp.vz;
+#if AP_LOCATIONDB_KEYDOMAIN_MAVLINK_ENABLED
+        update_locationdb_global_position(msg, gp, ps.sysid);
+#endif
 #if HAL_LOGGING_ENABLED
         if ((frontend_log_mask() & (uint32_t)LogMsg::GLOBAL_POSITION_INT) && log_rate_ok()) {
             const struct log_SwarmMesh_GP pkt{
