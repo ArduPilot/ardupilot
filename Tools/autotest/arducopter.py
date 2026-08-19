@@ -10997,29 +10997,33 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_ready_to_arm()
             expected_distances_copy = copy.copy(expected_distances)
             tstart = self.get_sim_time()
-            failed = False
-            wants = []
-            gots = []
+            last_seen = {}
             epsilon = 20
             while True:
                 if self.get_sim_time_cached() - tstart > 30:
-                    raise AutoTestTimeoutException("Failed to get distances")
+                    orientations = sorted(expected_distances.keys())
+                    raise NotAchievedException(
+                        "Distance too great (%s) (want=%s != got=%s)" %
+                        (name,
+                         [expected_distances[x] for x in orientations],
+                         [last_seen.get(x) for x in orientations]))
                 if len(expected_distances_copy.keys()) == 0:
                     break
                 m = self.assert_receive_message("DISTANCE_SENSOR")
                 if m.orientation not in expected_distances_copy:
                     continue
                 got = m.current_distance
+                last_seen[m.orientation] = got
                 want = expected_distances_copy[m.orientation]
-                wants.append(want)
-                gots.append(got)
                 if abs(want - got) > epsilon:
-                    failed = True
+                    # these sensors sweep, so a sector still holds the
+                    # distance measured from wherever the vehicle was
+                    # before it came here until the sweep next reaches
+                    # it.  Wait for a reading taken from here rather than
+                    # taking the first one offered; the budget above
+                    # still bounds how long a sector may be wrong for.
+                    continue
                 del expected_distances_copy[m.orientation]
-            if failed:
-                raise NotAchievedException(
-                    "Distance too great (%s) (want=%s != got=%s)" %
-                    (name, wants, gots))
 
     def AC_Avoidance_Proximity_AVOID_ALT_MIN(self):
         '''Test proximity avoidance with AVOID_ALT_MIN'''
@@ -13752,6 +13756,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         alt = 10
         self.fly_guided_move_local(0, 0, alt)
         self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
+        # the next DISTANCE_SENSOR has to be one measured since we moved,
+        # not one queued while we were still at the old altitude:
+        self.drain_mav()
         m = self.assert_receive_message('DISTANCE_SENSOR', verbose=True)
         if abs(m.current_distance * 0.01 - alt) > 1:
             raise NotAchievedException(f"Expected {alt}m range")
