@@ -13110,12 +13110,22 @@ Also, ignores heartbeats not from our target system'''
         """Test DataFlash SITL backend"""
         self.context_push()
         ex = None
-        mavproxy = self.start_mavproxy()
+        mavproxy = None
         try:
             self.set_parameter("LOG_BACKEND_TYPE", 4)
             self.set_parameter("LOG_FILE_DSRMROT", 1)
             self.set_parameter("LOG_BLK_RATEMAX", 1)
             self.reboot_sitl()
+            # MAVProxy holds its own connection to SITL.  Started before
+            # the reboot above it is left on a dead socket which it does
+            # not notice until it next tries to use it, and the erase
+            # below is simply lost - the test then waits out its timeout
+            # for a "Chip erase complete" which was never asked for:
+            #     Timed out after 60s looking for Chip erase complete
+            # (an erase which does happen completes in well under a
+            # second).  Stand MAVProxy up after the reboot, as
+            # DataFlashErase() already does.
+            mavproxy = self.start_mavproxy()
             # First log created here, but we are in chip erase so ignored
             mavproxy.send("module load log\n")
             mavproxy.send("log erase\n")
@@ -13169,8 +13179,11 @@ Also, ignores heartbeats not from our target system'''
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
-        mavproxy.send("module unload log\n")
-        self.stop_mavproxy(mavproxy)
+        # mavproxy is None if we came to grief before standing it up;
+        # driving it then would raise over the top of the real error
+        if mavproxy is not None:
+            mavproxy.send("module unload log\n")
+            self.stop_mavproxy(mavproxy)
         self.context_pop()
         self.reboot_sitl()
         if ex is not None:
