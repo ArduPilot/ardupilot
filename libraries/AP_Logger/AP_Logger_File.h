@@ -131,6 +131,14 @@ private:
     // data and failures-to-boot.
     uint32_t _free_space_last_check_time; // milliseconds
     static constexpr uint32_t _free_space_check_interval = 1000UL; // milliseconds
+
+    // Proactive low-space scan: once per interval, run
+    // Prep_MinSpace() if disk_space_avail() is below the threshold.
+    // Lets us trim old logs while the writer is still healthy, so
+    // the active log file keeps growing instead of running out of
+    // space mid-write.
+    uint32_t _low_space_check_last_ms;
+    static constexpr uint32_t _low_space_check_interval_ms = 60000UL;
 #if AP_FILESYSTEM_LITTLEFS_ENABLED
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     static constexpr uint32_t _free_space_min_avail = 1024 * 1024; // bytes
