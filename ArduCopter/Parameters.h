@@ -638,6 +638,9 @@ public:
     // Failsafe options bitmask #36
     AP_Int32 fs_options;
 
+    // which failsafes drive the per-servo failsafe positions (SERVOn_FSPWM)
+    AP_Int16 fs_servo_mask;
+
 #if MODE_AUTOROTATE_ENABLED
     // Autonmous autorotation
     AC_Autorotation arot;

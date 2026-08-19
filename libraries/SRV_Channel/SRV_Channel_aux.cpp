@@ -96,6 +96,16 @@ void SRV_Channel::output_ch(void)
     }
 #endif // HAL_BUILD_AP_PERIPH
 
+    // servo failsafe position: when the vehicle reports an active failsafe,
+    // force this output to its configured SERVOn_FSPWM. Done here, at the last
+    // per-channel seam before the write, so it overrides every function type
+    // uniformly (normal mixing, motors, and RC passthrough alike) and, because
+    // a functioned channel is recomputed every loop, releases cleanly when the
+    // failsafe clears. Only functioned channels are posed (0 = disabled).
+    if (SRV_Channels::get_failsafe_active() && valid_function() && servo_fs_pwm != 0) {
+        output_pwm = constrain_uint16(servo_fs_pwm.get(), 500, 2500);
+    }
+
     if (!(SRV_Channels::disabled_mask & (1U<<ch_num))) {
         hal.rcout->write(ch_num, output_pwm);
     }

@@ -1185,6 +1185,13 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surf_dist_parameters.glitch_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
 #endif
 
+    // @Param: FS_SERVO_MASK
+    // @DisplayName: Servo failsafe trigger mask
+    // @Description: Selects which failsafe conditions drive the per-servo failsafe positions (SERVOn_FSPWM). When any selected failsafe is active, every output with a non-zero SERVOn_FSPWM is forced to its configured PWM. Set to 0 to disable the servo failsafe positions entirely.
+    // @Bitmask: 0:Radio,1:Battery,2:GCS,3:EKF,4:Terrain,5:ADSB,6:DeadReckon
+    // @User: Standard
+    AP_GROUPINFO("FS_SERVO_MASK", 32, ParametersG2, fs_servo_mask, 7),
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
