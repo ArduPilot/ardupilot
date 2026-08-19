@@ -694,6 +694,9 @@ void NavEKF3_core::FuseMagnetometer()
         return;
     }
 
+    // record the yaw observation being fused for logging
+    recordYawFused(yawFusionMethod::MAG_3AXIS);
+
     Vector24 H_MAG;
     // index of H_MAG which is exactly 1, for more efficient computation below
     int H_MAG_unit_index;
@@ -925,6 +928,13 @@ void NavEKF3_core::FuseMagnetometer()
     }
 }
 
+// record the yaw observation which has just been fused so that it can be logged
+void NavEKF3_core::recordYawFused(yawFusionMethod method)
+{
+    yawFusionSel = method;
+    lastYawFuseTime_ms = imuSampleTime_ms;
+}
+
 /*
  * Fuse direct yaw measurements using explicit algebraic equations auto-generated from
  * derivation/generate_2.py with output recorded in derivation/generated/yaw_generated.cpp
@@ -932,6 +942,23 @@ void NavEKF3_core::FuseMagnetometer()
 */
 bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
 {
+    // reject the methods which only describe the state of yaw fusion for
+    // logging.  This switch has no default so that a method added later
+    // must be classified here rather than being silently fused.
+    switch (method) {
+    case yawFusionMethod::MAGNETOMETER:
+    case yawFusionMethod::GPS:
+    case yawFusionMethod::GSF:
+    case yawFusionMethod::STATIC:
+    case yawFusionMethod::PREDICTED:
+    case yawFusionMethod::EXTNAV:
+        break;
+
+    case yawFusionMethod::MAG_3AXIS:
+    case yawFusionMethod::NOT_FUSING:
+        return false;
+    }
+
     const ftype &q0 = stateStruct.quat[0];
     const ftype &q1 = stateStruct.quat[1];
     const ftype &q2 = stateStruct.quat[2];
@@ -1225,6 +1252,9 @@ bool NavEKF3_core::fuseEulerYaw(yawFusionMethod method)
     const ftype innovFusion = constrain_ftype(innovYaw, -0.5f, 0.5f);
     // finish fusion from KHP and Kfusion then record health status
     faultStatus.bad_yaw = FinishFusion(innovFusion);
+
+    // record the yaw observation being fused for logging
+    recordYawFused(method);
 
     return true;
 }
