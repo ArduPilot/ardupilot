@@ -124,3 +124,29 @@
 
 // Whether to include Twist support
 #define AP_DDS_NEEDS_TWIST AP_DDS_VEL_CTRL_ENABLED || AP_DDS_LOCAL_VEL_PUB_ENABLED
+
+// Whether to include Transform support
+#define AP_DDS_NEEDS_TRANSFORMS AP_DDS_DYNAMIC_TF_SUB_ENABLED || AP_DDS_STATIC_TF_PUB_ENABLED
+
+// Whether DDS needs GPS
+#define AP_DDS_NEEDS_GPS AP_DDS_NAVSATFIX_PUB_ENABLED || AP_DDS_STATIC_TF_PUB_ENABLED
+
+#ifndef AP_DDS_DEFAULT_UDP_IP_ADDR
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define AP_DDS_DEFAULT_UDP_IP_ADDR "192.168.144.2"
+#else
+#define AP_DDS_DEFAULT_UDP_IP_ADDR "127.0.0.1"
+#endif
+#endif
+
+// Max DDS topic/service string
+#ifndef AP_DDS_MAX_NAME_LEN
+#define AP_DDS_MAX_NAME_LEN 128
+#endif
+
+// Minimum interval between two sends of the same status text. These texts are
+// emitted from paths driven by an external node, so the rate has to be bounded
+// here or a high rate publisher would flood the GCS link.
+#ifndef AP_DDS_STATUSTEXT_MIN_INTERVAL_MS
+#define AP_DDS_STATUSTEXT_MIN_INTERVAL_MS 5000
+#endif
