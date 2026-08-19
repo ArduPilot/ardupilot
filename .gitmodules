@@ -45,3 +45,6 @@
 [submodule "modules/littlefs"]
 	path = modules/littlefs
 	url = https://github.com/ArduPilot/littlefs.git
+[submodule "modules/zenoh-pico"]
+	path = modules/zenoh-pico
+	url = https://github.com/eclipse-zenoh/zenoh-pico.git
