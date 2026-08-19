@@ -23,6 +23,7 @@
 #include <AP_HAL/RCOutput.h>
 #include "HAL_ESP32_Namespace.h"
 #include <AP_HAL/Util.h>
+#include <AP_HAL/Semaphores.h>
 
 #include "driver/gpio.h"
 #include "driver/mcpwm_prelude.h"
@@ -55,6 +56,11 @@ public:
     void read(uint16_t* period_us, uint8_t len) override;
 
     void set_output_mode(uint32_t mask, const enum output_mode mode) override;
+
+    // queue a DShot special command (arm/beep/spin-direction/3D/save) on a single
+    // DShot channel or all of them; the rcout task transmits it repeat_count times.
+    void send_dshot_command(uint8_t command, uint8_t chan, uint32_t command_timeout_ms,
+                            uint16_t repeat_count, bool priority) override;
 
     void cork() override;
     void push() override;
@@ -120,6 +126,28 @@ private:
 
         uint8_t gpio_num; // associated GPIO number (always defined)
         int value; // output value in microseconds
+
+        // RMT backend handles (rmt_channel_handle_t / rmt_encoder_handle_t), kept
+        // as void* so the new RMT driver headers stay out of RCOutput.h: they
+        // clash with the legacy RMT driver that RCInput (RmtSigReader) uses when
+        // both are pulled into one translation unit. Used only in a DShot mode
+        // (nullptr otherwise). The S3 has 4 RMT TX channels -> max 4 DShot outputs.
+        void *rmt_chan;
+        void *rmt_encoder;
+        uint8_t dshot_buf[2]; // persistent TX buffer for the async RMT frame
+
+        // Pending DShot special command (arm/beep/spin-direction/3D/save). While
+        // dshot_command_repeat > 0 the rcout task transmits dshot_command (value
+        // 0..47, telemetry bit set, as commands require) instead of the throttle,
+        // decrementing once per frame; 0 means "send throttle normally". Updated
+        // lock-free from the main thread (same approach as `value`): the writer
+        // stores dshot_command, a full barrier, then dshot_command_repeat, and the
+        // task pairs that with a barrier between loading the count and the command
+        // (see send_dshot_command/dshot_task) so it never pairs a fresh count with
+        // a stale command, even across cores. volatile stops the compiler from
+        // reordering or caching the two fields.
+        volatile uint16_t dshot_command;
+        volatile uint16_t dshot_command_repeat;
     };
 
     uint32_t fast_channel_mask;
@@ -127,6 +155,20 @@ private:
     uint32_t constrain_freq(pwm_group &group);
 
     void set_group_mode(pwm_group &group);
+    // DShot uses the RMT peripheral (MCPWM cannot generate the digital frame).
+    // Set up / tear down the RMT backend for a group switched to a DShot mode.
+    void set_group_mode_dshot(pwm_group &group);
+    void dshot_free_chan(pwm_chan &ch); // release a channel's RMT resources
+    // build a 16-bit DShot frame (value<<1 | telem, then 4-bit CRC)
+    static uint16_t create_dshot_packet(uint16_t value, bool telem_request);
+    // encode + asynchronously transmit one DShot frame on a channel
+    void dshot_send_chan(pwm_chan &ch, uint16_t value, bool telem_request);
+    // scale an ArduPilot PWM value (us) to a DShot throttle command (0, 48..2047)
+    static uint16_t dshot_throttle_from_pwm(uint16_t period_us);
+    // periodic task that re-transmits DShot frames at the DShot rate
+    void start_dshot_task();
+    void dshot_task();
+    static void dshot_task_entry(void *arg);
 
     void write_int(uint8_t chan, uint16_t period_us);
 
@@ -153,6 +195,13 @@ private:
 
 
     bool _initialized;
+    bool _dshot_task_started = false; // periodic DShot transmit task running?
+
+    // Serialises RMT channel lifecycle (alloc/free in set_group_mode_dshot) against
+    // the transmit task (dshot_task), which reads the per-channel RMT handles. Without
+    // it, a re-entrant set_output_mode() at boot can rmt_disable()/rmt_del_channel() a
+    // channel while the task is mid-transmit on it -> use-after-free crash.
+    HAL_Semaphore _dshot_sem;
 
 };
 
