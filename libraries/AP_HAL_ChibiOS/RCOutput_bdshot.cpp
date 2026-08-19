@@ -707,6 +707,37 @@ uint32_t RCOutput::bdshot_get_output_rate_hz(const enum output_mode mode)
     }
 }
 
+// decode the four GCR quintets of a 20 bit telemetry word and verify the checksum
+uint32_t RCOutput::bdshot_decode_gcr_erpm(uint32_t value)
+{
+    // 0xff marks the sixteen quintets GCR never emits
+    static const uint32_t decode[32] = {
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 9, 10, 11, 0xff, 13, 14, 15,
+        0xff, 0xff, 2, 3, 0xff, 5, 6, 7, 0xff, 0, 8, 1, 0xff, 4, 12, 0xff };
+
+    const uint32_t n0 = decode[value & 0x1fU];
+    const uint32_t n1 = decode[(value >> 5U) & 0x1fU];
+    const uint32_t n2 = decode[(value >> 10U) & 0x1fU];
+    const uint32_t n3 = decode[(value >> 15U) & 0x1fU];
+
+    if ((n0 | n1 | n2 | n3) > 0x0fU) {
+        return INVALID_ERPM;
+    }
+
+    uint32_t decodedValue = n0 | (n1 << 4U) | (n2 << 8U) | (n3 << 12U);
+
+    uint32_t csum = decodedValue;
+    csum = csum ^ (csum >> 8U); // xor bytes
+    csum = csum ^ (csum >> 4U); // xor nibbles
+
+    if ((csum & 0xfU) != 0xfU) {
+        return INVALID_ERPM;
+    }
+    decodedValue >>= 4;
+
+    return decodedValue;
+}
+
 // decode a telemetry packet from a GCR encoded stride buffer, take from betaflight decodeTelemetryPacket
 // see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625 for a description of the protocol
 uint32_t RCOutput::bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t count)
@@ -738,34 +769,7 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t 
         return INVALID_ERPM;
     }
 
-    // 0xff marks the sixteen quintets GCR never emits. Using 0 for those made a
-    // corrupt quintet decode to nibble 0, indistinguishable from the legitimate
-    // 0 at index 25, leaving only the four bit checksum to catch it
-    static const uint32_t decode[32] = {
-        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 9, 10, 11, 0xff, 13, 14, 15,
-        0xff, 0xff, 2, 3, 0xff, 5, 6, 7, 0xff, 0, 8, 1, 0xff, 4, 12, 0xff };
-
-    const uint32_t n0 = decode[value & 0x1fU];
-    const uint32_t n1 = decode[(value >> 5U) & 0x1fU];
-    const uint32_t n2 = decode[(value >> 10U) & 0x1fU];
-    const uint32_t n3 = decode[(value >> 15U) & 0x1fU];
-
-    if ((n0 | n1 | n2 | n3) > 0x0fU) {
-        return INVALID_ERPM;
-    }
-
-    uint32_t decodedValue = n0 | (n1 << 4U) | (n2 << 8U) | (n3 << 12U);
-
-    uint32_t csum = decodedValue;
-    csum = csum ^ (csum >> 8U); // xor bytes
-    csum = csum ^ (csum >> 4U); // xor nibbles
-
-    if ((csum & 0xfU) != 0xfU) {
-        return INVALID_ERPM;
-    }
-    decodedValue >>= 4;
-
-    return decodedValue;
+    return bdshot_decode_gcr_erpm(value);
 }
 #pragma GCC pop_options
 
