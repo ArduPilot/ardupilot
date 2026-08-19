@@ -12317,11 +12317,17 @@ Also, ignores heartbeats not from our target system'''
             # to itself.  So stand it back up after the restart.
             self.stop_mavproxy(mavproxy)
             self.customise_SITL_commandline(["-M", "calibration"])
+            # the EKF says this within a few seconds of the boot above,
+            # while we are still standing MAVProxy up and loading its
+            # modules - so collect from the boot rather than starting to
+            # listen afterwards and waiting out a timeout for something
+            # which has already been said:
+            self.context_collect('STATUSTEXT')
             mavproxy = self.start_mavproxy()
             self.mavproxy_load_module(mavproxy, "sitl_calibration")
             self.mavproxy_load_module(mavproxy, "calibration")
             self.mavproxy_load_module(mavproxy, "relay")
-            self.wait_statustext("is using GPS", timeout=60)
+            self.wait_statustext("is using GPS", timeout=60, check_context=True)
             mavproxy.send("accelcalsimple\n")
             mavproxy.expect("Calibrated")
             # disable it to not interfert with calibration acceptation
