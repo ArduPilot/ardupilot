@@ -28,6 +28,29 @@
 #define FLIP_PITCH_BACK      1      // used to set flip_dir
 #define FLIP_PITCH_FORWARD  -1      // used to set flip_dir
 
+#define FLIP_RATE_DEFAULT_DPS 400.0f  // default flip rate in deg/s
+
+const AP_Param::GroupInfo ModeFlip::var_info[] = {
+
+    // @Param: RATE
+    // @DisplayName: Flip Mode Rotational Rate
+    // @Description: Rotational Rate for Flip Mode in Deg/s.  Be sure to set a rotational rate that the aircraft can achieve.
+    // @Units: deg/s
+    // @Range: 60 1000
+    // @Increment: 1
+    // @User: Standard
+    AP_GROUPINFO("RATE", 1, ModeFlip, flip_rate_dps, FLIP_RATE_DEFAULT_DPS),
+
+    AP_GROUPEND
+};
+
+// constructor
+ModeFlip::ModeFlip(void) : Mode()
+{
+    // load parameter defaults
+    AP_Param::setup_object_defaults(this, var_info);
+}
+
 // flip_init - initialise flip controller
 bool ModeFlip::init(bool ignore_checks)
 {
@@ -88,7 +111,7 @@ bool ModeFlip::init(bool ignore_checks)
 void ModeFlip::run()
 {
     // get flip rotation rate parameter and constrain to range from 60 to 1000 deg/s.
-    const float flip_rate_rads = radians(constrain_float(g2.flip_rate_dps.get(), 60.0f, 1000.0f));
+    const float flip_rate_rads = radians(constrain_float(flip_rate_dps.get(), 60.0f, 1000.0f));
     // determine timeout for flip based on rotation rate.  Time is doubled to allow for poorly tuned vehicles.
     const float flip_time_out_ms = 1000.0f * (2.0f * radians(360.0f) / flip_rate_rads);
 
