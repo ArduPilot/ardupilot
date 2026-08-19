@@ -25,10 +25,6 @@
 
 #if HAVE_AP_BLHELI_SUPPORT
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#include <hal.h>
-#endif
-
 #include <AP_Math/crc.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #if APM_BUILD_TYPE(APM_BUILD_Rover)
@@ -415,11 +411,15 @@ void AP_BLHeli::msp_process_command(void)
         blheli.connected[blheli.chan] = false;
         break;
 
-    case MSP_UID:
+    case MSP_UID: {
         // MCU identifier
         debug("MSP_UID");
-        msp_send_reply(msp.cmdMSP, (const uint8_t *)UDID_START, 12);
+        uint8_t uid[12] {};
+        uint8_t len = sizeof(uid);
+        hal.util->get_system_id_unformatted(uid, len);
+        msp_send_reply(msp.cmdMSP, uid, sizeof(uid));
         break;
+    }
 
         // a literal "4" is used for the PWMType here to allow Rover
         // to use the same number for the same protocol.  At time of
@@ -1504,7 +1504,7 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
         }
     }
     motor_mask = mask;
-    debug("ESC: %u motors mask=0x%08lx", num_motors, digital_mask);
+    debug("%u motors mask=0x%08lx", num_motors, (unsigned long)digital_mask);
 
     // check if we have a combination of reversible and normal
     mixed_type = (mask != (mask & channel_reversible_mask.get())) && (channel_reversible_mask.get() != 0);
