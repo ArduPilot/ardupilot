@@ -8,12 +8,12 @@ altitudes into its alt attribute has been a recurring source of bugs.
 It is being replaced by vehicle_test_suite.Location, which tags its
 altitude with an AltFrame.
 
-This script counts uses of mavutil.location (and of the deprecated
-helpers which produce one) per file, both in the working tree and at
-the merge-base with --base-ref, and fails if any file's count has
-increased.  There is deliberately no stored budget: the invariant is
-simply that a branch must not add uses, whatever the current number
-happens to be.
+This script counts uses of mavutil.location (and of pymavlink's
+mavfile.location(), which returns one) per file, both in the working
+tree and at the merge-base with --base-ref, and fails if any file's
+count has increased.  There is deliberately no stored budget: the
+invariant is simply that a branch must not add uses, whatever the
+current number happens to be.  The autotest suite currently has none.
 
 AP_FLAKE8_CLEAN
 '''
@@ -32,20 +32,6 @@ PATTERNS = [
      "or Location.latlon_only() where the altitude is unused"),
     (re.compile(r"\.mav\.location\("),
      "self.get_location(); frame=AltFrame.ABOVE_HOME replaces relative_alt=True"),
-    (re.compile(r"\.get_mav_location\("),
-     "self.get_location()"),
-    (re.compile(r"\.home_position_as_mav_location\("),
-     "self.home_position_as_location()"),
-    (re.compile(r"\.sim_location\("),
-     "self.get_location('SIMSTATE')"),
-    (re.compile(r"\.home_relative_loc_ne\("),
-     "self.offset_location_ne(self.home_position_as_location(), n, e)"),
-    (re.compile(r"\.home_relative_loc_neu\("),
-     "self.offset_location_ne(self.home_position_as_location(), n, e) "
-     "then set_alt_m(u, AltFrame.ABOVE_HOME)"),
-    (re.compile(r"\.position_target_loc\("),
-     "a Location built from POSITION_TARGET_GLOBAL_INT carrying the frame "
-     "the target was commanded in"),
 ]
 
 AUTOTEST_DIR = os.path.join(

@@ -30,10 +30,11 @@ from vehicle_test_suite import Test
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
-SITL_START_LOCATION = mavutil.location(40.071374969556928,
-                                       -105.22978898137808,
-                                       1583.702759,
-                                       246)
+SITL_START_LOCATION = Location(40.071374969556928,
+                               -105.22978898137808,
+                               1583.702759,
+                               AltFrame.ABSOLUTE)
+SITL_START_HEADING = 246
 
 
 class AutoTestRover(vehicle_test_suite.TestSuite):
@@ -68,6 +69,9 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
 
     def sitl_start_location(self):
         return SITL_START_LOCATION
+
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
 
     def default_frame(self):
         return "rover"
@@ -4781,11 +4785,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_parameter("FENCE_ENABLE", 1)
-        target_loc = mavutil.location(40.073800, -105.229172)
+        target_loc = Location.latlon_only(40.073800, -105.229172)
         self.send_guided_mission_item(target_loc,
                                       target_system=target_system,
                                       target_component=target_component)
-        self.wait_location(target_loc, timeout=300)
+        self.wait_location(target_loc, height_accuracy=None, timeout=300)
         self.do_RTL(timeout=300)
         self.disarm_vehicle()
 
@@ -4820,7 +4824,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def test_poly_fence_object_avoidance_guided_two_squares(self, target_system=1, target_component=1):
         self.start_subtest("Ensure we can steer around obstacles in guided mode")
-        here = self.mav.location()
+        here = self.get_location()
         self.upload_fences_from_locations([
             (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
                 # east
@@ -4851,11 +4855,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.arm_vehicle()
 
             self.change_mode("GUIDED")
-            target = mavutil.location(40.071382, -105.228340, 0, 0)
+            target = Location.latlon_only(40.071382, -105.228340)
             self.send_guided_mission_item(target,
                                           target_system=target_system,
                                           target_component=target_component)
-            self.wait_location(target, timeout=300)
+            self.wait_location(target, height_accuracy=None, timeout=300)
             self.do_RTL()
             self.disarm_vehicle()
         except Exception as e:  # noqa: BLE001
@@ -4947,7 +4951,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        target_loc = mavutil.location(40.071060, -105.227734, 1584, 0)
+        target_loc = Location(40.071060, -105.227734, 1584, AltFrame.ABSOLUTE)
         self.send_guided_mission_item(target_loc,
                                       target_system=target_system,
                                       target_component=target_component)
@@ -5832,7 +5836,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # mode with a 0m altitude in MAV_FRAME_GLOBAL_RELATIVE_ALT_INT.
         # At the SITL start location (~1584m AMSL) the correct AMSL altitude
         # is ~1584m, not 0m.
-        home_alt_amsl = SITL_START_LOCATION.alt  # ~1583.7m
+        home_alt_amsl = SITL_START_LOCATION.get_alt_m(AltFrame.ABSOLUTE)  # ~1583.7m
 
         home_loc = self.home_position_as_location()
         # NAV_LOITER_TURNS: param1=number of turns, param3=radius in metres
@@ -6358,7 +6362,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             "BCN_TYPE": 10,    # SITL
             "BCN_LATITUDE": SITL_START_LOCATION.lat,
             "BCN_LONGITUDE": SITL_START_LOCATION.lng,
-            "BCN_ALT": SITL_START_LOCATION.alt,
+            "BCN_ALT": SITL_START_LOCATION.get_alt_m(AltFrame.ABSOLUTE),
             "BCN_ORIENT_YAW": 0,
             "GPS1_TYPE": 0,    # no GPS
             "EK3_ENABLE": 1,
@@ -6379,8 +6383,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_ready_to_arm(require_absolute=False)
 
         # use get_location() (GLOBAL_POSITION_INT, the EKF/beacon-fused
-        # position) rather than self.mav.location(), which blocks waiting for a
-        # GPS 3D fix that never arrives with the GPS disabled:
+        # position) rather than pymavlink's mavfile.location(), which blocks
+        # waiting for a GPS 3D fix that never arrives with the GPS disabled:
         start_loc = self.get_location()
         self.progress("Beacon-derived start location: %s" % str(start_loc))
 
