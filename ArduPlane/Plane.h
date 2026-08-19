@@ -88,6 +88,8 @@
 #include "AP_ExternalControl_Plane.h"
 #endif
 
+
+
 #include <AC_PrecLand/AC_PrecLand_config.h>
 #if AC_PRECLAND_ENABLED
  # include <AC_PrecLand/AC_PrecLand.h>
@@ -1188,6 +1190,14 @@ private:
     void update_throttle_hover();
     void channel_function_mixer(SRV_Channel::Function func1_in, SRV_Channel::Function func2_in,
                                 SRV_Channel::Function func1_out, SRV_Channel::Function func2_out) const;
+#if AP_BIONICYAW_ENABLED
+    // BionicYaw: differential tail mixer with turn-coordination roll
+    // assist (see AP_BionicYaw::update()). Called from
+    // servos_output() in place of the standard VTail
+    // channel_function_mixer() call for k_vtail_left/k_vtail_right.
+    void bionicyaw_update(void);
+#endif
+
     void flaperon_update();
     void indicate_waiting_for_rud_neutral_to_takeoff(void);
 
