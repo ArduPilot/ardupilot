@@ -1140,10 +1140,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rtc(sbuf_t *dst)
 #if AP_RC_CHANNEL_ENABLED
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
 {
-    float roll = rc().get_roll_channel().norm_input_dz();
-    float pitch = -rc().get_pitch_channel().norm_input_dz();
-    float yaw = rc().get_yaw_channel().norm_input_dz();
-    float throttle = rc().get_throttle_channel().norm_input_dz();
+    // ignore the trims and deadzones: these values describe stick position to a
+    // device which knows nothing of this vehicle's RC setup, and which expects
+    // every axis to span 1000-2000us as betaflight's do. Honouring the throttle
+    // trim in particular put mid-stick at 1000us, breaking the stick gestures a
+    // VTX uses to open its menus
+    float roll = rc().get_roll_channel().norm_input_ignore_trim();
+    float pitch = -rc().get_pitch_channel().norm_input_ignore_trim();
+    float yaw = rc().get_yaw_channel().norm_input_ignore_trim();
+    float throttle = rc().get_throttle_channel().norm_input_ignore_trim();
 
     const struct PACKED {
         uint16_t a;
@@ -1155,7 +1160,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_rc(sbuf_t *dst)
         a : uint16_t(roll*500+1500),       // A
         e : uint16_t(pitch*500+1500),      // E
         r : uint16_t(yaw*500+1500),        // R
-        t : uint16_t(throttle*1000+1000)    // T
+        t : uint16_t(throttle*500+1500)    // T
     };
 
     sbuf_write_data(dst, &rc, sizeof(rc));
