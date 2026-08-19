@@ -736,6 +736,11 @@ public:
     void *mode_poshold_ptr;
 #endif
 
+#if AP_SWARMMESH_ENABLED
+    // Peer-to-Peer Network Library
+    AP_SwarmMesh swarmmesh;
+#endif
+
 };
 
 extern const AP_Param::Info        var_info[];

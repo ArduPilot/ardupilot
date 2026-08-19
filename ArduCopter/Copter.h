@@ -170,6 +170,11 @@
 #if HAL_ADSB_ENABLED
 #include "avoidance_adsb.h"
 #endif
+
+#include <AP_SwarmMesh/AP_SwarmMesh_config.h>
+#if AP_SWARMMESH_ENABLED
+#include <AP_SwarmMesh/AP_SwarmMesh.h>
+#endif
 // Local modules
 #include "Parameters.h"
 #if USER_PARAMS_ENABLED

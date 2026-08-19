@@ -618,6 +618,16 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @User: Advanced
     AP_GROUPINFO("UART_LOSS", 42, SIM,  uart_byte_loss_pct, 0),
 
+#if AP_SIM_SWARMMESH_LOSS_ENABLED
+    // @Param: SWARM_LOSS
+    // @DisplayName: SwarmMesh packet loss percentage
+    // @Description: Percentage of incoming SwarmMesh packets discarded by this vehicle, simulating an unreliable radio link. Loss is applied independently at each receiver, so a packet lost here may still be heard by other vehicles.
+    // @Units: %
+    // @Range: 0 100
+    // @User: Advanced
+    AP_GROUPINFO("SWARM_LOSS", 43, SIM,  swarm_packet_loss_pct, 0),
+#endif
+
     // @Group: ARSPD_
     // @Path: ./SITL_Airspeed.cpp
     AP_SUBGROUPINFO(airspeed[0], "ARSPD_", 50, SIM, AirspeedParm),

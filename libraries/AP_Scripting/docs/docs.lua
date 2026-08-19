@@ -4564,3 +4564,136 @@ function osd:get_screen() end
 ---@return boolean
 function osd:display_disabled() end
 
+
+-- decentralized swarm mesh peer table, see AP_SwarmMesh
+swarm = {}
+
+-- number of peers currently held in the mesh peer table
+---@return integer
+function swarm:count() end
+
+-- get a peer's last known global position
+---@param sysid integer -- peer MAV_SYSID
+---@return Location_ud|nil -- nil if the peer is unknown or its position is stale
+function swarm:get_peer_location(sysid) end
+
+-- get a peer's last known velocity in NED
+---@param sysid integer -- peer MAV_SYSID
+---@return Vector3f_ud|nil -- nil if the peer is unknown or its velocity is stale
+function swarm:get_peer_velocity_NED(sysid) end
+
+-- get the sysid held at a peer table index, for walking the table
+---@param index integer -- 0 indexed
+---@return integer -- 0 if that index is not filled
+function swarm:get_peer_sysid(index) end
+
+-- publish this vehicle's coordination state to the swarm. It is rebroadcast at P2P_SR_COORD Hz until replaced by another call
+---@param state SwarmCoordState_ud
+---@return boolean -- false if the mesh is not running
+function swarm:set_coord_state(state) end
+
+-- get the coordination state a peer last published
+---@param sysid integer -- peer MAV_SYSID
+---@return SwarmCoordState_ud|nil -- nil if the peer is unknown or is not coordinating
+function swarm:get_peer_coord_state(sysid) end
+
+---@class (exact) SwarmCoordState_ud
+local SwarmCoordState_ud = {}
+
+-- Create SwarmCoordState object
+---@return SwarmCoordState_ud
+function SwarmCoordState() end
+
+-- get role
+---@return integer
+function SwarmCoordState_ud:role() end
+
+-- set role
+---@param value integer
+function SwarmCoordState_ud:role(value) end
+
+-- get task id
+---@return integer
+function SwarmCoordState_ud:task_id() end
+
+-- set task id
+---@param value integer
+function SwarmCoordState_ud:task_id(value) end
+
+-- get formation slot
+---@return integer
+function SwarmCoordState_ud:formation_slot() end
+
+-- set formation slot
+---@param value integer
+function SwarmCoordState_ud:formation_slot(value) end
+
+-- get priority
+---@return integer
+function SwarmCoordState_ud:priority() end
+
+-- set priority
+---@param value integer
+function SwarmCoordState_ud:priority(value) end
+
+-- get target latitude
+---@return integer -- degE7
+function SwarmCoordState_ud:target_lat() end
+
+-- set target latitude
+---@param value integer -- degE7
+function SwarmCoordState_ud:target_lat(value) end
+
+-- get target longitude
+---@return integer -- degE7
+function SwarmCoordState_ud:target_lng() end
+
+-- set target longitude
+---@param value integer -- degE7
+function SwarmCoordState_ud:target_lng(value) end
+
+-- get target altitude
+---@return integer -- mm AMSL
+function SwarmCoordState_ud:target_alt_mm() end
+
+-- set target altitude
+---@param value integer -- mm AMSL
+function SwarmCoordState_ud:target_alt_mm(value) end
+
+-- get target velocity array field
+---@param index integer -- 0 indexed
+---@return integer -- cm/s NED
+function SwarmCoordState_ud:target_vel_NED(index) end
+
+-- set target velocity array field
+---@param index integer -- 0 indexed
+---@param value integer -- cm/s NED
+function SwarmCoordState_ud:target_vel_NED(index, value) end
+
+-- get target acceleration array field
+---@param index integer -- 0 indexed
+---@return integer -- cm/s/s NED
+function SwarmCoordState_ud:target_accel_NED(index) end
+
+-- set target acceleration array field
+---@param index integer -- 0 indexed
+---@param value integer -- cm/s/s NED
+function SwarmCoordState_ud:target_accel_NED(index, value) end
+
+-- get script defined payload array field, meaning is agreed between the scripts sharing the swarm
+---@param index integer -- 0 indexed
+---@return integer
+function SwarmCoordState_ud:user(index) end
+
+-- set script defined payload array field
+---@param index integer -- 0 indexed
+---@param value integer
+function SwarmCoordState_ud:user(index, value) end
+
+-- get the number of valid bytes in the script defined payload
+---@return integer
+function SwarmCoordState_ud:user_len() end
+
+-- set the number of valid bytes in the script defined payload
+---@param value integer
+function SwarmCoordState_ud:user_len(value) end

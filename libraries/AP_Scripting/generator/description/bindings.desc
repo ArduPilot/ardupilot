@@ -1167,6 +1167,31 @@ userdata AP_Servo_Telem::TelemetryData field pcb_temperature_cdeg int16_t'skip_c
 userdata AP_Servo_Telem::TelemetryData field status_flags uint8_t'skip_check read write valid_mask present_types AP_Servo_Telem::TelemetryData::Types::STATUS
 userdata AP_Servo_Telem::TelemetryData field last_update_ms uint32_t'skip_check read
 
+include AP_SwarmMesh/AP_SwarmMesh.h
+singleton AP_SwarmMesh depends AP_SWARMMESH_ENABLED
+singleton AP_SwarmMesh rename swarm
+singleton AP_SwarmMesh method count uint8_t
+singleton AP_SwarmMesh method get_peer_location boolean Location'Null uint8_t 1 255
+singleton AP_SwarmMesh method get_peer_velocity_NED boolean Vector3f'Null uint8_t 1 255
+singleton AP_SwarmMesh method get_peer_sysid uint8_t uint8_t 0 254
+singleton AP_SwarmMesh method set_coord_state boolean SwarmCoordState
+singleton AP_SwarmMesh method set_coord_state depends AP_SWARMMESH_COORD_ENABLED
+singleton AP_SwarmMesh method get_peer_coord_state boolean SwarmCoordState'Null uint8_t 1 255
+singleton AP_SwarmMesh method get_peer_coord_state depends AP_SWARMMESH_COORD_ENABLED
+
+userdata SwarmCoordState depends AP_SWARMMESH_COORD_ENABLED
+userdata SwarmCoordState field role uint8_t'skip_check read write
+userdata SwarmCoordState field task_id uint8_t'skip_check read write
+userdata SwarmCoordState field formation_slot uint8_t'skip_check read write
+userdata SwarmCoordState field priority uint8_t'skip_check read write
+userdata SwarmCoordState field target_lat int32_t read write -900000000 900000000
+userdata SwarmCoordState field target_lng int32_t read write -1800000000 1800000000
+userdata SwarmCoordState field target_alt_mm int32_t'skip_check read write
+userdata SwarmCoordState field target_vel_NED'array 3 int16_t'skip_check read write
+userdata SwarmCoordState field target_accel_NED'array 3 int16_t'skip_check read write
+userdata SwarmCoordState field user'array int(ARRAY_SIZE(ud->user)) uint8_t'skip_check read write
+userdata SwarmCoordState field user_len uint8_t'skip_check read write
+
 -- simulator only bindings
 include SITL/SITL.h depends AP_SIM_ENABLED
 singleton SITL::SIM depends AP_SIM_ENABLED
