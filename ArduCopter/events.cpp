@@ -103,7 +103,7 @@ void Copter::handle_battery_failsafe(const char *type_str, const int8_t action)
     FailsafeAction desired_action = (FailsafeAction)action;
 
     // Conditions to deviate from BATT_FS_XXX_ACT parameter setting
-    if (should_disarm_on_failsafe()) {
+    if (should_disarm_on_failsafe() && (desired_action != FailsafeAction::NONE)) {
         // should immediately disarm when we're on the ground
         arming.disarm(AP_Arming::Method::BATTERYFAILSAFE);
         desired_action = FailsafeAction::NONE;
