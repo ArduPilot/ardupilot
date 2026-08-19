@@ -636,10 +636,13 @@ void Plane::set_throttle(void)
             // throttle is suppressed (above) to zero in final flare in auto mode, but we allow instead thr_min if user prefers, eg turbines:
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, aparm.throttle_min.get());
 
-        } else if ((flight_stage == AP_FixedWing::FlightStage::TAKEOFF)
-                    && (aparm.takeoff_throttle_idle.get() > 0)
+        } else if ((aparm.takeoff_throttle_idle.get() > 0)
+                    && (flight_stage == AP_FixedWing::FlightStage::TAKEOFF
+                        || (control_mode == &mode_auto
+                            && mission.get_current_nav_cmd().id == MAV_CMD_NAV_TAKEOFF))
                   ) {
-            // we want to spin at idle throttle before the takeoff conditions are met
+            // we want to spin at idle throttle before the takeoff conditions are met.
+            // AUTO mode doesnt trigger FlightStage::TAKEOFF therefor check for the takeoff command.
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, aparm.takeoff_throttle_idle.get());
         } else {
             // default
