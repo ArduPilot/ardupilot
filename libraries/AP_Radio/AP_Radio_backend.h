@@ -115,12 +115,12 @@ protected:
 
     uint8_t get_transmit_power(void) const
     {
-        return constrain_int16(radio.transmit_power.get(), 1, 8);
+        return constrain_int8(radio.transmit_power.get(), 1, 8);
     }
 
     uint8_t get_tx_max_power(void) const
     {
-        return constrain_int16(radio.tx_max_power.get(), 1, 8);
+        return constrain_int8(radio.tx_max_power.get(), 1, 8);
     }
 
     void set_tx_max_power_default(uint8_t v)

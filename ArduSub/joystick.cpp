@@ -308,7 +308,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             // check that our gain parameters are in correct range, update in eeprom and notify gcs if needed
             g.minGain.set_and_save(constrain_float(g.minGain, 0.10, 0.80));
             g.maxGain.set_and_save(constrain_float(g.maxGain, g.minGain, 1.0));
-            g.numGainSettings.set_and_save(constrain_int16(g.numGainSettings, 1, 10));
+            g.numGainSettings.set_and_save(constrain_int8(g.numGainSettings, 1, 10));
 
             if (g.numGainSettings == 1) {
                 gain = constrain_float(g.gain_default, g.minGain, g.maxGain);
@@ -324,7 +324,7 @@ void Sub::handle_jsbutton_press(uint8_t _button, bool shift, bool held)
             // check that our gain parameters are in correct range, update in eeprom and notify gcs if needed
             g.minGain.set_and_save(constrain_float(g.minGain, 0.10, 0.80));
             g.maxGain.set_and_save(constrain_float(g.maxGain, g.minGain, 1.0));
-            g.numGainSettings.set_and_save(constrain_int16(g.numGainSettings, 1, 10));
+            g.numGainSettings.set_and_save(constrain_int8(g.numGainSettings, 1, 10));
 
             if (g.numGainSettings == 1) {
                 gain = constrain_float(g.gain_default, g.minGain, g.maxGain);
