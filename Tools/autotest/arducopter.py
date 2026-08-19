@@ -2178,6 +2178,93 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3YawFusionLogging(self):
+        '''Test EKF3 logs which yaw observation it is fusing'''
+        # XKFS.YF values, from NavEKF3_core::yawFusionMethod:
+        yf_not_fusing = 0
+        yf_magnetometer = 1
+        yf_mag_3axis = 7
+        yf_compass = [yf_magnetometer, yf_mag_3axis]
+
+        self.set_parameters({
+            "LOG_DISARMED": 1,
+        })
+        self.set_message_rate_hz("EKF_STATUS_REPORT", 10)
+        self.wait_ready_to_arm()
+
+        # the compass is the default yaw source:
+        self.delay_sim_time(5, reason="XKFS to be logged while fusing the compass")
+
+        self.start_subtest("Removing the compass as a yaw source")
+        self.set_parameter("EK3_SRC1_YAW", 8)  # 8 is GSF
+
+        # EKF3 zeroes the compass innovation test ratios once it stops
+        # fusing the compass; waiting for that both proves the source
+        # change has taken effect and leaves us a window in the log we
+        # can assert over:
+        self.wait_message_field_values(
+            "EKF_STATUS_REPORT",
+            {"compass_variance": 0},
+            epsilon=0.0001,
+            minimum_duration=10,
+            timeout=60,
+        )
+
+        self.progress("Examining XKFS in the onboard log")
+        dfreader = self.dfreader_for_current_onboard_log()
+        switch_us = None
+        fusing_count = 0
+        checked_count = 0
+        still_fusing = []
+        not_fusing = []
+        max_age_ms = 0
+        while True:
+            m = dfreader.recv_match(type=["PARM", "XKFS"])
+            if m is None:
+                break
+            if m.get_type() == "PARM":
+                if m.Name == "EK3_SRC1_YAW" and int(m.Value) == 8:
+                    switch_us = m.TimeUS
+                continue
+            if m.C != 0:
+                # only examine the first EKF core
+                continue
+            if switch_us is None:
+                if m.YF in yf_compass:
+                    fusing_count += 1
+                continue
+            if m.TimeUS - switch_us < 3 * 1000000:
+                # allow the EKF time to stop fusing the compass
+                continue
+            checked_count += 1
+            if m.YF in yf_compass:
+                still_fusing.append(m.TimeUS)
+            if m.YF == yf_not_fusing:
+                not_fusing.append(m.TimeUS)
+            max_age_ms = max(max_age_ms, m.YFA)
+
+        if switch_us is None:
+            raise NotAchievedException("EK3_SRC1_YAW change not found in log")
+        if fusing_count == 0:
+            raise NotAchievedException("Compass was never logged as being fused")
+        if checked_count == 0:
+            raise NotAchievedException("No XKFS logged after the yaw source change")
+        self.progress("%u XKFS fusing the compass, %u checked after the change "
+                      "(max YFA %ums)" % (fusing_count, checked_count, max_age_ms))
+        if len(still_fusing) > 0:
+            raise NotAchievedException(
+                "XKFS.YF still reports compass fusion on %u of %u messages after the "
+                "compass stopped being fused (first at %u)" %
+                (len(still_fusing), checked_count, still_fusing[0]))
+        if len(not_fusing) > 0:
+            raise NotAchievedException(
+                "XKFS.YF reports no yaw fusion on %u of %u messages (first at %u)" %
+                (len(not_fusing), checked_count, not_fusing[0]))
+        # the replacement yaw observation is fused at 7Hz:
+        if max_age_ms > 1000:
+            raise NotAchievedException(
+                "XKFS.YFA reached %ums; yaw is not being fused" % max_age_ms)
+
     def EK3_AccelBiasInhibitOnGroundMoving(self):
         '''Test EKF3 inhibits accel bias learning when vehicle is moved on ground'''
         # When a copter is on the ground and being moved (carried, on a ship),
@@ -16025,6 +16112,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.EK3YawFusionLogging,
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
