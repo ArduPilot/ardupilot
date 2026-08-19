@@ -512,7 +512,7 @@ public:
     AP_Int32 manual_rc_mask;
 
     // home reset altitude threshold
-    AP_Int8 home_reset_threshold;
+    AP_Float home_reset_threshold;
 
     AP_Int32 flight_options;
 

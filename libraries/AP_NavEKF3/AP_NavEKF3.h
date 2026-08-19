@@ -106,12 +106,40 @@ public:
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
-    // Resets the baro so that it reads zero at the current height
-    // Resets the EKF height to zero
-    // Adjusts the EKF origin height so that the EKF height + origin height is the same as before
-    // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    // Reset the EKF height datum and clear baro temperature drift
+    // accumulated while disarmed.
+    //
+    // Despite the name this is more than a zero-point relabel: a full
+    // reset also zeroes the vertical velocity state and recalibrates the
+    // barometer (see the full-reset list below).  It deliberately does
+    // NOT touch the state covariance -- it re-datums the height/velocity
+    // states, it does not reset the filter.  Intended to be called on the
+    // ground at a well-defined moment (e.g. arm), not run continuously.
+    //
+    // origin_alt_tolerance_m caps how far EKF_origin.alt may diverge
+    // from current GPS altitude before the reset is suppressed.
+    //   <  0  : disable the check; always do a full reset.
+    //   >= 0  : if |EKF_origin.alt - GPS.alt| is within the tolerance
+    //           the EKF performs a full reset (zero position.z and
+    //           velocity.z, recalibrate the baro to read 0 at current
+    //           height, flush the baro observation buffer, snap
+    //           ekfGpsRefHgt so AMSL reporting is preserved).
+    //           If it exceeds the tolerance the EKF takes a no-op
+    //           partial-reset path: position.z, velocity.z, the baro
+    //           calibration, the baro buffer and baroHgtOffset are
+    //           ALL left untouched.  This preserves AMSL altitude for
+    //           cases where the user pinned the origin elsewhere via
+    //           AHRS_ORIGIN_ALT or MAV_CMD_DO_SET_GLOBAL_ORIGIN.
+    //
+    // Returns true if the function evaluated and acted on the state
+    // (regardless of full vs partial branch).  Returns false if no
+    // action could be taken at all -- specifically when the active height
+    // source is not the baro or GPS, or the vehicle is not on the ground.
+    bool resetHeightDatum(float origin_alt_tolerance_m);
+
+    // Backward-compatible no-arg form: equivalent to passing -1.0f
+    // (always full reset, no origin-vs-GPS tolerance check).
+    bool resetHeightDatum(void) { return resetHeightDatum(-1.0f); }
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow

@@ -97,9 +97,11 @@ public:
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+    // origin_alt_tolerance_m < 0 disables the origin-vs-GPS altitude check.
     // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
-    bool resetHeightDatum(void);
+    // If using a non-baro/GPS height source no reset is performed and it returns false
+    bool resetHeightDatum(float origin_alt_tolerance_m);
+    bool resetHeightDatum(void) { return resetHeightDatum(-1.0f); }
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
     // return the scale factor to be applied to navigation velocity gains to compensate for increase in velocity noise with height when using optical flow
