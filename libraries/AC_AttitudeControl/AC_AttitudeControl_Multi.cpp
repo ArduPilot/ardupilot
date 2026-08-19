@@ -293,7 +293,6 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @DisplayName: Yaw Target notch filter index
     // @Description: Yaw Target notch filter index
     // @Range: 1 8
-    // @Units: Hz
     // @User: Advanced
 
     // @Param: RAT_YAW_NEF
