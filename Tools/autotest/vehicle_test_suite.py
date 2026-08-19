@@ -10530,6 +10530,18 @@ Also, ignores heartbeats not from our target system'''
         )
         if m is None:
             raise NotAchievedException("Did not receive MISSION_ITEM_INT")
+        # check we were given the item we asked for, and that it was
+        # addressed to us; a stale item left over from someone else's
+        # transaction is not an answer to our request:
+        if m.seq != seq:
+            raise NotAchievedException("Received waypoint is out of sequence (want=%u got=%u)" %
+                                       (seq, m.seq))
+        if m.target_system != self.mav.source_system:
+            raise NotAchievedException("Wrong target system (want=%u got=%u)" %
+                                       (self.mav.source_system, m.target_system))
+        if m.target_component != self.mav.source_component:
+            raise NotAchievedException("Wrong target component (want=%u got=%u)" %
+                                       (self.mav.source_component, m.target_component))
         return m
 
     def download_using_mission_protocol(self, mission_type, verbose=False, timeout=10):
@@ -10584,16 +10596,7 @@ Also, ignores heartbeats not from our target system'''
             self.progress("Requesting item %u (remaining=%u)" %
                           (next_to_request, len(remaining_to_receive)))
             m = self.assert_fetch_mission_item_int(target_system, target_component, next_to_request, mission_type)
-            if m.target_system != self.mav.source_system:
-                raise NotAchievedException("Wrong target system (want=%u got=%u)" %
-                                           (self.mav.source_system, m.target_system))
-            if m.target_component != self.mav.source_component:
-                raise NotAchievedException("Wrong target component")
             self.progress("Got (%s)" % str(m))
-            if m.mission_type != mission_type:
-                raise NotAchievedException("Received waypoint of wrong type")
-            if m.seq != next_to_request:
-                raise NotAchievedException("Received waypoint is out of sequence")
             self.progress("Item %u OK" % m.seq)
             timeout += 10  # we received an item; be generous with our timeouts
             items.append(m)
