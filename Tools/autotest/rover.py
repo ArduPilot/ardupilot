@@ -8612,10 +8612,19 @@ return update()
         '''
         ratios = []
         for i in range(windows):
-            wall_start = time.time()
+            # get_sim_time() takes the next queued SYSTEM_TIME rather than the
+            # newest, so with a backlog both ends of the window read a stale
+            # clock and the difference measures how fast SYSTEM_TIME arrives -
+            # a flat ~0.1x however fast the simulation is really running.
+            # Drain before each end so both are current.
+            self.drain_mav()
             sim_start = self.get_sim_time()
+            wall_start = time.time()
             time.sleep(1)
-            ratios.append((self.get_sim_time() - sim_start) / (time.time() - wall_start))
+            self.drain_mav()
+            sim_end = self.get_sim_time()
+            wall_end = time.time()
+            ratios.append((sim_end - sim_start) / (wall_end - wall_start))
         ratio = statistics.median(ratios)
         self.progress("sim/wall median=%f stdev=%f %s" % (ratio, statistics.stdev(ratios), ["%.2f" % r for r in ratios]))
         return ratio
