@@ -6604,8 +6604,16 @@ class TestSuite(abc.ABC):
         path = os.path.join(testdir, self.current_test_name_directory, filename)
         mavproxy = self.start_mavproxy()
         mavproxy.send('rally load %s\n' % path)
+        # "Loaded" is MAVProxy reading the file; the points still have to
+        # go up the link, which is MAVProxy's work and so takes wall-clock
+        # time.  The delay_sim_time() which used to stand here budgeted
+        # that in simulated seconds, which shrink as the speedup rises -
+        # and then stop_mavproxy() took the transfer down with it, leaving
+        # the vehicle with RALLY_TOTAL=0.
         mavproxy.expect("Loaded")
-        self.delay_sim_time(10, reason="rally point transfer to complete")  # allow transfer to complete
+        mavproxy.expect(r"Sent all (\d+) rally items")
+        count = int(mavproxy.match.group(1))
+        self.wait_parameter_value("RALLY_TOTAL", count, timeout=20)
         self.stop_mavproxy(mavproxy)
 
     def load_sample_mission(self):
