@@ -926,6 +926,9 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #if HAL_MOUNT_ENABLED
     { AUX_FUNC::MOUNT_YAW_LOCK, "Mount Yaw Lock"},
     { AUX_FUNC::MOUNT_RP_LOCK, "Mount Roll/Pitch Lock"},
+#if AP_MOUNT_POI_LOCK_ENABLED
+    { AUX_FUNC::MOUNT_POI_LOCK, "Mount POI Lock"},
+#endif // AP_MOUNT_POI_LOCK_ENABLED
 #endif //HAL_MOUNT_ENABLED
 #if HAL_LOGGING_ENABLED
     { AUX_FUNC::LOG_PAUSE, "Pause Stream Logging"},
