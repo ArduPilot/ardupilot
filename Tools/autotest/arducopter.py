@@ -18788,8 +18788,6 @@ RTL_ALT_M 111
 
         self.start_subtest("Ensure parameters can't be set via FTP either")
         mavproxy = self.start_mavproxy()
-        # can't do two FTP things at once, so wait until parameters are received
-        mavproxy.expect("Received .* parameters")
         self.mavproxy_load_module(mavproxy, 'ftp')
         mavproxy.send(f"param ftpload {new_values_filepath.name}\n")
         mavproxy.expect("Loaded")
