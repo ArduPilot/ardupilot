@@ -17526,8 +17526,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # Move home 10m further along the direction of travel. The fence
         # boundary follows home, so avoidance must allow the vehicle to
         # advance to the new boundary.
-        home = self.home_position_as_mav_location()
-        travel_bearing = self.get_bearing(home, self.get_mav_location())
+        home = self.home_position_as_location()
+        travel_bearing = self.get_bearing(home, self.get_location())
         new_home = self.offset_location_heading_distance(
             home, travel_bearing, 10,
         )

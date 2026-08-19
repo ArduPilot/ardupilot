@@ -1690,7 +1690,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # re-enabling races the correction and usually sees nothing - a
         # failing run reported 0.10m while its log shows the estimate
         # moving 11.8m back onto the simulated position.
-        loc_before_gps = self.get_mav_location()
+        loc_before_gps = self.get_location()
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
         })
