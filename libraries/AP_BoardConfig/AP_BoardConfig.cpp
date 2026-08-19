@@ -358,7 +358,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     // @DisplayName: Servo voltage requirement
     // @Description: Minimum voltage on the servo rail to allow the aircraft to arm. 0 to disable the check.
     // @Units: V
-    // @Range: 3.3 12.0
+    // @Range: 0 12.0
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("VSERVO_MIN",    16,     AP_BoardConfig, _vservo_min,  0),

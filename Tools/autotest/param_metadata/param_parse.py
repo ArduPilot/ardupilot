@@ -69,6 +69,35 @@ prog_param_tagged_fields = re.compile(r"[ \t]*// @(\w+){([^}]+)}: ([^\r\n]*)")
 
 prog_groups = re.compile(r"@Group: *(\w*).*((?:\n[ \t]*// @(Path): (\S+))+)", re.MULTILINE)
 
+# macros which define a parameter, mapped to the indices of the macro
+# arguments which hold the parameter's name and its default value.
+# Macros which do not supply a default value (e.g.
+# AP_GROUPINFO_FLAGS_DEFAULT_POINTER) are deliberately absent:
+prog_param_macros = {
+    #                          (name, default)
+    "AP_GROUPINFO": (0, 4),             # (name, idx, clazz, element, def)
+    "AP_GROUPINFO_FLAGS": (0, 4),       # (name, idx, clazz, element, def, flags)
+    "AP_GROUPINFO_FRAME": (0, 4),       # (name, idx, clazz, element, def, frame_flags)
+    "AP_GROUPINFO_FLAGS_FRAME": (0, 4), # (name, idx, clazz, element, def, flags, frame_flags)  # noqa
+    "GSCALAR": (1, 2),                  # (v, name, def)
+    "ASCALAR": (1, 2),                  # (v, name, def)
+    "GARRAY": (2, 3),                   # (v, index, name, def)
+}
+
+# match the start of a macro invocation at the start of a line
+prog_macro_start = re.compile(r"^[ \t]*(\w+)[ \t]*\(")
+
+# match a plain numeric literal, possibly with a C numeric suffix
+prog_number_literal = re.compile(r"^[-+]?(?:0[xX][0-9a-fA-F]+|(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?)[fFuUlL]*$")
+
+# match a cast of a numeric literal; e.g. "(float)5" or "uint8_t(5)".
+# Only casts to built-in types are recognised; a function call (e.g.
+# "radians(30)") must not be mistaken for a cast:
+prog_c_type = (r"(?:const\s+)?(?:unsigned\s+|signed\s+)?"
+               r"(?:u?int(?:8|16|32|64)_t|float|double|bool|char|short|long|int)")
+prog_cast_prefix = re.compile(r"^\(\s*" + prog_c_type + r"\s*\)\s*(.*)$")
+prog_cast_functional = re.compile(r"^" + prog_c_type + r"\s*\((.*)\)$")
+
 apm_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 
 
@@ -101,6 +130,150 @@ def debug(str_to_print):
     """Debug output if verbose is set."""
     if args.verbose:
         print(str_to_print)
+
+
+def split_macro_arguments(text, offset):
+    """Split the arguments of a macro invocation.
+
+    offset must be the index of the opening bracket of the macro
+    invocation in text.  Returns a list of the (unstripped) arguments,
+    or None if the closing bracket is not found.
+    """
+    args_found = []
+    depth = 0
+    current = ''
+    in_string = False
+    in_char = False
+    i = offset
+    while i < len(text):
+        c = text[i]
+        i += 1
+        if in_string or in_char:
+            current += c
+            if c == '\\':
+                # skip the escaped character
+                if i < len(text):
+                    current += text[i]
+                    i += 1
+            elif in_string and c == '"':
+                in_string = False
+            elif in_char and c == "'":
+                in_char = False
+            continue
+        if c == '"':
+            in_string = True
+        elif c == "'":
+            in_char = True
+        elif c in '([{':
+            depth += 1
+            if depth == 1:
+                # this is the opening bracket of the macro itself
+                continue
+        elif c in ')]}':
+            depth -= 1
+            if depth == 0:
+                args_found.append(current)
+                return args_found
+        elif c == ',' and depth == 1:
+            args_found.append(current)
+            current = ''
+            continue
+        current += c
+
+    return None
+
+
+def number_from_c_literal(value):
+    """Return the number a C expression evaluates to, or None.
+
+    Only simple numeric literals (and casts of those literals) are
+    understood; anything more complicated (e.g. a #define or an
+    arithmetic expression) returns None.
+    """
+    value = value.strip()
+
+    # strip comments (e.g. a trailing "// note") and newlines:
+    value = re.sub(r"/\*.*?\*/", " ", value, flags=re.DOTALL)
+    value = re.sub(r"//[^\n]*", " ", value)
+    value = " ".join(value.split())
+
+    # strip casts and redundant brackets; e.g. "(float)5", "int8_t(5)",
+    # "((0.5))":
+    while True:
+        stripped = prog_cast_prefix.match(value)
+        if stripped is not None:
+            value = stripped.group(1).strip()
+            continue
+        stripped = prog_cast_functional.match(value)
+        if stripped is not None:
+            value = stripped.group(1).strip()
+            continue
+        if value.startswith("(") and value.endswith(")"):
+            value = value[1:-1].strip()
+            continue
+        break
+
+    if not prog_number_literal.match(value):
+        return None
+
+    # remove any C numeric suffix:
+    value = value.rstrip("fFuUlL")
+
+    try:
+        if value[0:2].lower() == "0x" or value[0:3].lower() in ("+0x", "-0x"):
+            return float(int(value, 16))
+        return float(value)
+    except ValueError:
+        return None
+
+
+def find_default_value(text, param_match, param_name):
+    """Find the default value of the parameter documented by param_match.
+
+    The parameter's default value comes from the macro invocation
+    immediately following the documentation block.  Returns None if the
+    default value can not be determined - for example if the parameter
+    is not defined by a macro we understand (Lua parameters, for
+    example, are not), or if the default is not a simple number.
+    """
+    # the documentation block match ends part-way into the line
+    # following the documentation; step back to the start of that line:
+    offset = text.rfind("\n", 0, param_match.end()) + 1
+
+    while offset < len(text):
+        eol = text.find("\n", offset)
+        if eol == -1:
+            eol = len(text)
+        line = text[offset:eol]
+        stripped = line.strip()
+        # step over anything between the documentation and the macro:
+        if (stripped == "" or
+                stripped.startswith("//") or
+                stripped.startswith("#") or
+                stripped.startswith("--")):
+            offset = eol + 1
+            continue
+
+        macro = prog_macro_start.match(line)
+        if macro is None:
+            return None
+        offsets = prog_param_macros.get(macro.group(1), None)
+        if offsets is None:
+            # not a macro which supplies a default value
+            return None
+        (name_offset, default_offset) = offsets
+        macro_args = split_macro_arguments(text, offset + macro.end() - 1)
+        if macro_args is None or len(macro_args) <= default_offset:
+            return None
+
+        # only trust the macro if it is defining the parameter we have
+        # just seen documentation for:
+        if macro_args[name_offset].strip() != '"%s"' % param_name:
+            return None
+
+        return number_from_c_literal(macro_args[default_offset])
+
+    return None
 
 
 def lua_applets():
@@ -202,12 +375,12 @@ def process_vehicle(vehicle):
             libraries.append(lib)
 
     param_matches = []
-    param_matches = prog_param.findall(p_text)
+    param_matches = prog_param.finditer(p_text)
 
     for param_match in param_matches:
-        (only_vehicles, param_name, field_text) = (param_match[0].strip(),
-                                                   param_match[1].strip(),
-                                                   param_match[2].strip())
+        (only_vehicles, param_name, field_text) = ((param_match.group(1) or '').strip(),
+                                                   param_match.group(2).strip(),
+                                                   param_match.group(3).strip())
         if len(only_vehicles):
             only_vehicles_list = [x.strip() for x in only_vehicles.split(",")]
             for only_vehicle in only_vehicles_list:
@@ -221,6 +394,7 @@ def process_vehicle(vehicle):
         current_param = p.name
         fields = prog_param_fields.findall(field_text)
         p.__field_text = field_text
+        p.__default_value = find_default_value(p_text, param_match, param_name)
         field_list = []
         for field in fields:
             (field_name, field_value) = (field[0].strip(), field[1].strip())
@@ -291,12 +465,12 @@ def process_library(vehicle, library, pathprefix=None):
             error("Path %s not found for library %s (fname=%s)" % (path, library.name, libraryfname))
             continue
 
-        param_matches = prog_param.findall(p_text)
+        param_matches = list(prog_param.finditer(p_text))
         debug("Found %u documented parameters" % len(param_matches))
         for param_match in param_matches:
-            (only_vehicles, param_name, field_text) = (param_match[0].strip(),
-                                                       param_match[1].strip(),
-                                                       param_match[2].strip())
+            (only_vehicles, param_name, field_text) = ((param_match.group(1) or '').strip(),
+                                                       param_match.group(2).strip(),
+                                                       param_match.group(3).strip())
             if len(only_vehicles):
                 only_vehicles_list = [x.strip() for x in only_vehicles.split(",")]
                 for only_vehicle in only_vehicles_list:
@@ -310,6 +484,7 @@ def process_library(vehicle, library, pathprefix=None):
             current_param = p.name
             fields = prog_param_fields.findall(field_text)
             p.__field_text = field_text
+            p.__default_value = find_default_value(p_text, param_match, param_name)
             field_list = []
             for field in fields:
                 (field_name, field_value) = (field[0].strip(), field[1].strip())
@@ -584,6 +759,29 @@ def do_copy_fields(vehicle_params, libraries, param):
           (param.name, wanted_name))
 
 
+def validate_default_value(param):
+    """Check the parameter's default value against its documentation.
+
+    A default value which the documentation says is invalid is either a
+    bug in the code or (more usually) a bug in the documentation; a user
+    resetting a parameter to its default via a GCS must not end up with
+    a value the GCS is told is out-of-range.
+    """
+    default_value = getattr(param, "__default_value", None)
+    if default_value is None:
+        # we were unable to work out what the default value is
+        return
+
+    if hasattr(param, "Range"):
+        range_values = param.Range.split(" ")
+        # malformed ranges are complained about elsewhere:
+        if len(range_values) == 2 and is_number(range_values[0]) and is_number(range_values[1]):
+            (min_range, max_range) = (float(range_values[0]), float(range_values[1]))
+            if default_value < min_range or default_value > max_range:
+                error("Default value of %g is outside Range of %g to %g" %
+                      (default_value, min_range, max_range))
+
+
 def validate(param, is_library=False):
     """
     Validates the parameter meta data.
@@ -656,6 +854,10 @@ def validate(param, is_library=False):
         if maxValue > maxRange:
             error("Range of %f to %f and value of: %f" % (minRange, maxRange, maxValue))
 
+    # Check the parameter's default value is consistent with its
+    # documentation:
+    validate_default_value(param)
+
     # Validate increment
     if (hasattr(param, "Increment")):
         if not is_number(param.Increment):
@@ -706,6 +908,14 @@ for library in libraries:
 for library in libraries:
     for param in library.params:
         validate(param, is_library=True)
+
+# the default value is used for validation only; remove it so that it
+# does not appear in the emitted metadata:
+for param in vehicle.params:
+    param.__dict__.pop('__default_value', None)
+for library in libraries:
+    for param in library.params:
+        param.__dict__.pop('__default_value', None)
 
 if not args.emit_params:
     sys.exit(error_count)

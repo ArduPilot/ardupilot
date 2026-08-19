@@ -103,13 +103,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_RLL_NTF
     // @DisplayName: Roll Target notch filter index
     // @Description: Roll Target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_RLL_NEF
     // @DisplayName: Roll Error notch filter index
     // @Description: Roll Error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 2, AC_AttitudeControl_Heli, AC_HELI_PID),
@@ -201,13 +201,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_PIT_NTF
     // @DisplayName: Pitch Target notch filter index
     // @Description: Pitch Target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_PIT_NEF
     // @DisplayName: Pitch Error notch filter index
     // @Description: Pitch Error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 3, AC_AttitudeControl_Heli, AC_HELI_PID),
@@ -268,7 +268,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_YAW_FLTE
     // @DisplayName: Yaw axis rate controller error frequency in Hz
     // @Description: Yaw axis rate controller error frequency in Hz
-    // @Range: 5 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -299,14 +299,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Heli::var_info[] = {
     // @Param: RAT_YAW_NTF
     // @DisplayName: Yaw Target notch filter index
     // @Description: Yaw Target notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @Units: Hz
     // @User: Advanced
 
     // @Param: RAT_YAW_NEF
     // @DisplayName: Yaw Error notch filter index
     // @Description: Yaw Error notch filter index
-    // @Range: 1 8
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 4, AC_AttitudeControl_Heli, AC_HELI_PID),

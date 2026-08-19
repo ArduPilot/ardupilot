@@ -43,7 +43,7 @@ const AP_Param::GroupInfo Tailsitter::var_info[] = {
     // @DisplayName: Tailsitter VTOL transition angle
     // @Description: This is the pitch angle at which tailsitter aircraft will change from fixed wing control to VTOL control, if zero Q_TAILSIT_ANGLE will be used
     // @Units: deg
-    // @Range: 5 80
+    // @Range: 0 80
     AP_GROUPINFO("ANG_VT", 3, Tailsitter, transition_angle_vtol, 0),
 
     // @Param: INPUT
