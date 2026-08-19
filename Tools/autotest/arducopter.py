@@ -1780,9 +1780,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(6, 2000)
         self.wait_statustext("Custom controller is ON", check_context=True)
 
-        # wait 20 second to see if the custom controller destabilize the aircraft
-        if self.wait_altitude(7, 13, relative=True, minimum_duration=20) :
-            raise NotAchievedException("Custom controller is not stable.")
+        # wait 20 seconds to see if the custom controller destabilises the
+        # aircraft.  Measure from where the vehicle actually is: the
+        # takeoff above uses full throttle and does not leave it at the
+        # 10m it asked for, so a band fixed around 10m is a check on the
+        # takeoff's overshoot rather than on the controller - a vehicle
+        # holding a rock-steady 13.003m failed a hard 13m ceiling by
+        # three millimetres.
+        alt = self.get_altitude(relative=True)
+        self.wait_altitude(alt - 3, alt + 3, relative=True, minimum_duration=20)
 
         # switch custom controller off
         self.set_rc(6, 1000)
