@@ -1457,7 +1457,7 @@ void RC_Channel::do_aux_function_retract_mount(const AuxSwitchPos ch_flag, const
 }
 #endif  // HAL_MOUNT_ENABLED
 
-bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, uint16_t source_index)
+bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, uint16_t source_index, uint8_t level)
 {
 #if AP_SCRIPTING_ENABLED
     rc().set_aux_cached(ch_option, pos);
@@ -1468,6 +1468,7 @@ bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncT
         pos: pos,
         source: source,
         source_index: source_index,
+        level: level,
     };
 
     const bool ret = do_aux_function(trigger);

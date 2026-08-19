@@ -459,6 +459,9 @@ public:
             LOGIC,     // Source index is the RC logic table term index
         } source;
         uint16_t source_index;
+        // optional one-based level for multi-level functions (e.g. VTX power
+        // index). 0 = unspecified, use pos. Only some functions honour it.
+        uint8_t level;
     };
 
     AuxSwitchPos get_aux_switch_pos() const;
@@ -467,7 +470,7 @@ public:
     AuxSwitchPos get_stick_gesture_pos() const;
 
     // wrapper function around do_aux_function which allows us to log
-    bool run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, uint16_t source_index);
+    bool run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncTrigger::Source source, uint16_t source_index, uint8_t level = 0);
 
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     const char *string_for_aux_function(AUX_FUNC function) const;
@@ -730,8 +733,8 @@ public:
 
     // method for other parts of the system (e.g. Button and mavlink)
     // to trigger auxiliary functions
-    bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTrigger::Source source, uint16_t source_index) {
-        return channel(0)->run_aux_function(ch_option, pos, source, source_index);
+    bool run_aux_function(RC_Channel::AUX_FUNC ch_option, RC_Channel::AuxSwitchPos pos, RC_Channel::AuxFuncTrigger::Source source, uint16_t source_index, uint8_t level = 0) {
+        return channel(0)->run_aux_function(ch_option, pos, source, source_index, level);
     }
 
     // check if flight mode channel is assigned RC option
