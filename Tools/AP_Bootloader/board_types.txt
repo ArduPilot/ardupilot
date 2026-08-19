@@ -443,7 +443,7 @@ AP_HW_AGAM_GNSSPLUS                  1931
 AP_HW_AGAM_BASE-RTK                  1932
 AP_HW_AGAM_CAN-RTK                   1933
 AP_HW_AGAM_FloRange                  1939
-AP_HW_AGAM_MEGH7                     1940
+AP_HW_AGAM_MegH7                     1940
 AP_HW_AGAM_v6XRT                     1949
 
 # IDs 1950-1979 reserved for HC Robotics
