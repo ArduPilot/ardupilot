@@ -224,15 +224,7 @@ __INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
     for (uint8_t i=0, serial_instance = 0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         // serial_instance will be increased inside detect_instance
         // if a serial driver is loaded for this instance
-        WITH_SEMAPHORE(detect_sem);
         detect_instance(i, serial_instance);
-        if (drivers[i] != nullptr) {
-            // we loaded a driver for this instance, so it must be
-            // present (although it may not be healthy). We use MAX()
-            // here as a UAVCAN rangefinder may already have been
-            // found
-            num_instances = MAX(num_instances, i+1);
-        }
 
         // initialise status
         state[i].status = Status::NotConnected;
@@ -527,12 +519,7 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 
 #if AP_RANGEFINDER_DRONECAN_ENABLED
     case Type::UAVCAN:
-        /*
-          the UAVCAN driver gets created when we first receive a
-          measurement. We take the instance slot now, even if we don't
-          yet have the driver
-         */
-        num_instances = MAX(num_instances, instance+1);
+        _add_backend(NEW_NOTHROW AP_RangeFinder_DroneCAN(state[instance], params[instance]), instance);
         break;
 #endif
 
@@ -724,26 +711,7 @@ void RangeFinder::handle_msp(const MSP::msp_rangefinder_data_message_t &pkt)
 // return true if we have a range finder with the specified orientation
 bool RangeFinder::has_orientation(enum Rotation orientation) const
 {
-    if ((find_instance(orientation) != nullptr)) {
-        // we have a rangefinder with this orientation
-        return true;
-    }
-
-    // special case for DroneCAN
-    // DroneCAN rangefinder backend is not created until we receive a
-    // measurement, so we need to check the params directly
-#if AP_RANGEFINDER_DRONECAN_ENABLED
-     for (uint8_t i = 0; i < RANGEFINDER_MAX_INSTANCES; i++) {
-        if ((RangeFinder::Type)params[i].type.get() == RangeFinder::Type::UAVCAN) {
-            if (params[i].orientation.get() == orientation) {
-                return true;
-            }
-        }
-    }
-#endif
-
-    // no rangefinder with this orientation
-    return false;
+    return find_instance(orientation) != nullptr;
 }
 
 // find first range finder instance with the specified orientation

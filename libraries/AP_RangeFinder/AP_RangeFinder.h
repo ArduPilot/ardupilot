@@ -49,7 +49,7 @@ class AP_RangeFinder_Backend;
 class RangeFinder
 {
     friend class AP_RangeFinder_Backend;
-    //UAVCAN drivers are initialised in the Backend, hence list of drivers is needed there.
+    // the DroneCAN backend looks up instances by node ID and sensor ID on each message
     friend class AP_RangeFinder_DroneCAN;
 public:
     RangeFinder();
@@ -351,7 +351,6 @@ private:
     RangeFinder_State state[RANGEFINDER_MAX_INSTANCES];
     AP_RangeFinder_Backend *drivers[RANGEFINDER_MAX_INSTANCES];
     uint8_t num_instances;
-    HAL_Semaphore detect_sem;
     float estimated_terrain_height;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 
