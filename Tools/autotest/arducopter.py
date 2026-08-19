@@ -19069,6 +19069,7 @@ return update, 1000
             self.UTMGlobalPositionWaypoint,
             self.HomeAltResetTest,
             self.SwarmMesh,
+            self.SwarmMeshLocationDB,
         ])
         return ret
 
@@ -19085,15 +19086,16 @@ return update, 1000
     # 9 uint8s, then seq (uint16), origin_time_us (uint64), deadline_ms (uint16), payload_len and crc (uint8)
     SWARMMESH_HEADER_FORMAT = "<9BHQHBB"
 
-    def swarmmesh_packet(self, origin_id, seq, dest_id, ttl):
-        '''build one SwarmMesh frame carrying a HEARTBEAT from origin_id'''
-        mav = mavutil.mavlink.MAVLink(None, srcSystem=origin_id, srcComponent=1)
-        payload = mav.heartbeat_encode(
-            mavutil.mavlink.MAV_TYPE_QUADROTOR,
-            mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA,
-            0,
-            0,
-            mavutil.mavlink.MAV_STATE_STANDBY).pack(mav)
+    def swarmmesh_packet(self, origin_id, seq, dest_id, ttl, payload=None):
+        '''build one SwarmMesh frame carrying a MAVLink payload from origin_id'''
+        if payload is None:
+            mav = mavutil.mavlink.MAVLink(None, srcSystem=origin_id, srcComponent=1)
+            payload = mav.heartbeat_encode(
+                mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA,
+                0,
+                0,
+                mavutil.mavlink.MAV_STATE_STANDBY).pack(mav)
         header = struct.pack(
             self.SWARMMESH_HEADER_FORMAT[:-1],   # everything except the crc
             self.SWARMMESH_SYNC1,
@@ -19119,7 +19121,10 @@ return update, 1000
         fields = struct.unpack(self.SWARMMESH_HEADER_FORMAT, data[:self.SWARMMESH_HEADER_SIZE])
         if fields[0] != self.SWARMMESH_SYNC1 or fields[1] != self.SWARMMESH_SYNC2:
             return None
-        names = ["stx1", "stx2", "version", "type", "flags", "origin_id", "dest_id", "prev_id", "ttl", "seq", "origin_time_us", "deadline_ms", "payload_len", "crc"]
+        names = [
+            "stx1", "stx2", "version", "type", "flags", "origin_id", "dest_id", "prev_id", "ttl", "seq",
+            "origin_time_us", "deadline_ms", "payload_len", "crc",
+        ]
         return dict(zip(names, fields))
 
     def swarmmesh_socket(self):
@@ -19137,7 +19142,11 @@ return update, 1000
         return sock
 
     def swarmmesh_drain(self, sock, timeout=1):
-        '''discard anything already queued on the mesh socket.  bounded in wallclock because the vehicle keeps broadcasting, so the socket may never fall idle'''
+        '''discard queued mesh packets within a wall-clock deadline
+
+        The vehicle keeps broadcasting, so waiting for the socket to fall idle
+        may never finish.
+        '''
         deadline = time.time() + timeout
         while time.time() < deadline:
             try:
@@ -19148,7 +19157,9 @@ return update, 1000
     def swarmmesh_relay_count(self, sock, vehicle_sysid, origin_id, dest_id, count, ttl, seq_start, settle=3):
         '''inject count packets addressed to dest_id and return the seqs the vehicle relayed.
 
-        A packet whose dest_id is neither broadcast or the vehicle's own sysid is forwarded by AP_SwarmMesh_Backend::process_packet(), so counting the relayed copies on the group measures what the vehicle actually received.
+        A packet whose dest_id is neither broadcast nor the vehicle's sysid is
+        forwarded by AP_SwarmMesh_Backend::process_packet(). Counting relayed
+        copies measures what the vehicle received.
         '''
         self.swarmmesh_drain(sock)
         for i in range(count):
@@ -19177,9 +19188,44 @@ return update, 1000
             relayed[hdr["seq"]] = hdr
         return relayed
 
+    def locationdb_items_from_ftp(self, data):
+        '''parse the compressed @LOCATIONDB/locationdb.dat representation'''
+        header_size = struct.calcsize("<HH")
+        item_header_size = struct.calcsize("<IIBB")
+        if len(data) < header_size:
+            raise NotAchievedException("LocationDB file is shorter than its header")
+
+        magic, item_count = struct.unpack_from("<HH", data)
+        if magic != 0x2801:
+            raise NotAchievedException("Unexpected LocationDB magic 0x%04x" % magic)
+
+        items = []
+        offset = header_size
+        for _ in range(item_count):
+            if len(data) - offset < item_header_size:
+                raise NotAchievedException("LocationDB item header is truncated")
+            key, timestamp_ms, populated_fields, field_count = struct.unpack_from("<IIBB", data, offset)
+            offset += item_header_size
+            fields_size = field_count * 4
+            if field_count > 11 or len(data) - offset < fields_size:
+                raise NotAchievedException("LocationDB item fields are invalid or truncated")
+            fields = struct.unpack_from("<%uf" % field_count, data, offset)
+            offset += fields_size
+            items.append({
+                "key": key,
+                "timestamp_ms": timestamp_ms,
+                "populated_fields": populated_fields,
+                "fields": fields,
+            })
+
+        if offset != len(data):
+            raise NotAchievedException("LocationDB file has %u trailing bytes" % (len(data) - offset))
+        return items
+
     def SwarmMesh(self):
         '''test SwarmMesh packet relay, TTL expiry and simulated packet loss'''
-        # the SITL backend uses a fixed multicast group, so this test assumes no other SwarmMesh SITL instance is running on this host
+        # The SITL backend uses a fixed multicast group, so this test assumes no
+        # other SwarmMesh SITL instance is running on this host.
         self.context_push()
         sock = None
         try:
@@ -19209,7 +19255,8 @@ return update, 1000
                     "No SwarmMesh traffic from the vehicle on %s:%u (does this host route multicast?)" %
                     (self.SWARMMESH_MCAST_ADDRESS, self.SWARMMESH_MCAST_PORT))
 
-            # a sysid which is neither broadcast (0) or the vehicle, so packets addressed to it must be relayed rather than consumed
+            # A sysid which is neither broadcast (0) nor the vehicle, so packets
+            # addressed to it must be relayed rather than consumed.
             third_party = 200
             peer = 20
 
@@ -19250,6 +19297,102 @@ return update, 1000
                 raise NotAchievedException(
                     "Simulated loss relayed %u packets, no-loss relayed %u; loss had no effect" %
                     (len(lossy), len(clean)))
+        finally:
+            if sock is not None:
+                sock.close()
+            self.context_pop()
+            self.reboot_sitl()
+
+    def SwarmMeshLocationDB(self):
+        '''test that a SwarmMesh global position is published to LocationDB'''
+        self.context_push()
+        sock = None
+        try:
+            self.set_parameters({
+                "P2P_TYPE": 10,
+                "P2P_TTL": 1,
+                "LDB_CAPACITY": 4,
+                "LDB_TIMEOUT": 300,
+            })
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.poll_message("GPS_GLOBAL_ORIGIN")
+
+            own_position = self.assert_receive_message("GLOBAL_POSITION_INT")
+            peer_sysid = 21
+            peer_compid = 1
+            peer_lat = own_position.lat + 100
+            peer_lon = own_position.lon + 100
+            peer_alt_mm = own_position.alt
+            peer_vx = 120
+            peer_vy = -30
+            peer_vz = 10
+            peer_heading_cdeg = 9000
+
+            mav = mavutil.mavlink.MAVLink(None, srcSystem=peer_sysid, srcComponent=peer_compid)
+            payload = mav.global_position_int_encode(
+                1000,
+                peer_lat,
+                peer_lon,
+                peer_alt_mm,
+                own_position.relative_alt,
+                peer_vx,
+                peer_vy,
+                peer_vz,
+                peer_heading_cdeg,
+            ).pack(mav)
+
+            sock = self.swarmmesh_socket()
+            self.swarmmesh_drain(sock)
+            for sequence in range(1, 4):
+                packet = self.swarmmesh_packet(peer_sysid, sequence, 0, 1, payload=payload)
+                sock.sendto(packet, (self.SWARMMESH_MCAST_ADDRESS, self.SWARMMESH_MCAST_PORT))
+                time.sleep(0.05)
+            self.delay_sim_time(1, reason="SwarmMesh position to reach LocationDB")
+
+            data, _ = self.ftp_burst_read("@LOCATIONDB/locationdb.dat")
+            items = self.locationdb_items_from_ftp(data)
+            expected_key = (1 << 24) | (peer_sysid << 16) | (peer_compid << 8)
+            matching_items = [item for item in items if item["key"] == expected_key]
+            if len(matching_items) != 1:
+                raise NotAchievedException(
+                    "Expected one LocationDB item with key 0x%08x, found %u" %
+                    (expected_key, len(matching_items)))
+
+            item = matching_items[0]
+            expected_populated_fields = (1 << 0) | (1 << 1) | (1 << 3)
+            if item["populated_fields"] != expected_populated_fields:
+                raise NotAchievedException(
+                    "LocationDB fields 0x%02x, expected 0x%02x" %
+                    (item["populated_fields"], expected_populated_fields))
+            if item["timestamp_ms"] == 0:
+                raise NotAchievedException("LocationDB item timestamp was not populated")
+
+            fields = item["fields"]
+            if len(fields) != 7:
+                raise NotAchievedException("LocationDB item has %u values, expected 7" % len(fields))
+            expected_values = (
+                peer_lat,
+                peer_lon,
+                peer_alt_mm / 10.0,
+                peer_vx,
+                peer_vy,
+                -peer_vz,
+                peer_heading_cdeg,
+            )
+            tolerances = (256, 256, 1, 0.01, 0.01, 0.01, 0.01)
+            for index, (actual, expected, tolerance) in enumerate(zip(fields, expected_values, tolerances)):
+                if abs(actual - expected) > tolerance:
+                    raise NotAchievedException(
+                        "LocationDB value %u is %f, expected %f +/- %f" %
+                        (index, actual, expected, tolerance))
+
+            self.set_parameter("LDB_TIMEOUT", 1)
+            self.delay_sim_time(3, reason="LocationDB item to expire")
+            data, _ = self.ftp_burst_read("@LOCATIONDB/locationdb.dat")
+            items = self.locationdb_items_from_ftp(data)
+            if any(item["key"] == expected_key for item in items):
+                raise NotAchievedException("SwarmMesh LocationDB item did not expire")
         finally:
             if sock is not None:
                 sock.close()
