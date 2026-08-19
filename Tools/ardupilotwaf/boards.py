@@ -1463,6 +1463,24 @@ class LinuxBoard(Board):
         if self.with_can:
             env.DEFINES.update(CANARD_MULTI_IFACE=1,
                                CANARD_IFACE_ALL = 0x3)
+            # libcanard infers pointer width from glibc's __WORDSIZE, which
+            # musl does not provide, so probe the target compiler's pointer
+            # width and define CANARD_64_BIT explicitly on 64-bit targets.
+            is_64bit = cfg.check(
+                compiler='c',
+                features='c',
+                fragment='''
+                typedef char canard_64_bit_pointer_check[
+                    sizeof(void *) == 8 ? 1 : -1
+                ];
+                ''',
+                msg='Checking for 64-bit pointers',
+                okmsg='yes',
+                errmsg='no',
+                mandatory=False,
+            )
+            if is_64bit:
+                env.DEFINES.update(CANARD_64_BIT=1)
 
         if cfg.options.apstatedir:
             cfg.define('AP_STATEDIR', cfg.options.apstatedir)
