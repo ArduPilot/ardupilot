@@ -51,9 +51,21 @@ RangeFinder::Status AP_RangeFinder_Backend::status() const {
 }
 
 // true if sensor is returning data
-bool AP_RangeFinder_Backend::has_data() const {
-    return ((state.status != RangeFinder::Status::NotConnected) &&
-            (state.status != RangeFinder::Status::NoData));
+bool AP_RangeFinder_Backend::has_data() const
+{
+    switch (state.status) {
+        case RangeFinder::Status::NotConnected:
+        case RangeFinder::Status::NoData:
+        case RangeFinder::Status::PoweredDown:
+            break;
+
+        case RangeFinder::Status::OutOfRangeLow:
+        case RangeFinder::Status::OutOfRangeHigh:
+        case RangeFinder::Status::Good:
+            return true;
+    }
+
+    return false;
 }
 
 // update status based on distance measurement
@@ -95,6 +107,19 @@ bool AP_RangeFinder_Backend::get_temp(float &temp) const
     }
 #endif
     return _get_temp(temp);
+}
+
+// return true if rangefinder should be powered down
+bool AP_RangeFinder_Backend::should_power_down() const
+{
+    // Power saving range must be configured
+    if (params.powersave_range <= 0) {
+        return false;
+    }
+
+    // Must be above configured height
+    RangeFinder &frontend = *AP::rangefinder();
+    return frontend.estimated_terrain_height > params.powersave_range;
 }
 
 #if AP_SCRIPTING_ENABLED
