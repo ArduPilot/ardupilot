@@ -74,6 +74,9 @@ extern const AP_HAL::HAL& hal;
 #define MPU_SAMPLE_SIZE 14
 #define MPU_FIFO_BUFFER_LEN 8
 
+// rate the FIFO is filled at when fast sampling, independent of the backend rate
+#define MPU_FAST_SAMPLE_RATE_HZ 8000
+
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
@@ -491,9 +494,12 @@ void AP_InertialSensor_Invensense::set_primary(bool _is_primary)
         if (_is_primary) {
             _dev->adjust_periodic_callback(periodic_handle, 1000000UL / _gyro_backend_rate_hz);
         } else {
-            // scale down non-primary to 2x loop rate, but no greater than the default sampling rate
+            // scale down non-primary to 2x loop rate, but no greater than the default sampling rate.
+            // unlike the v3 IMUs the FIFO fills at the sensor rate rather than the backend rate, so
+            // never beat slower than one _fifo_buffer of samples or the tail of the read is corrupt
+            const uint16_t min_rate_hz = _fast_sampling ? MPU_FAST_SAMPLE_RATE_HZ / MPU_FIFO_BUFFER_LEN : 400;
             _dev->adjust_periodic_callback(periodic_handle,
-                                          1000000UL / constrain_int16(get_loop_rate_hz() * 2, 400, 1000));
+                                          1000000UL / constrain_int16(get_loop_rate_hz() * 2, min_rate_hz, 1000));
         }
     }
 #endif
@@ -747,8 +753,9 @@ void AP_InertialSensor_Invensense::_read_fifo()
     n_samples = bytes_read / MPU_SAMPLE_SIZE;
 
     // see if we have enough samples to output a gyro value, if we don't then delay the 
-    // next beat by the block read time above until we do
-    if (n_samples + _accum.gyro_count < _gyro_fifo_downsample_rate) {
+    // next beat by the block read time above until we do. only for the primary, a non-primary
+    // beats at the rate set by set_primary()
+    if (is_primary && n_samples + _accum.gyro_count < _gyro_fifo_downsample_rate) {
         _dev->adjust_periodic_callback(periodic_handle, 1000000UL / _gyro_backend_rate_hz);
     }
 
