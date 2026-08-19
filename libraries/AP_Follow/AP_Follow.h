@@ -186,8 +186,10 @@ private:
     bool handle_global_position_int_message(const mavlink_message_t &msg);
     bool handle_follow_target_message(const mavlink_message_t &msg);
 
-    // write out an onboard-log message to help diagnose follow problems:
-    void Log_Write_FOLL();
+    // write onboard-log messages to help diagnose follow problems:
+    void Log_Write_FOLL();   // most recently received target state
+    void Log_Write_FOLE();   // jerk-limited estimate of the target state
+    void Log_Write_FOLO();   // offset-applied estimate consumed by the controller
 
     //==========================================================================
     // Parameters
