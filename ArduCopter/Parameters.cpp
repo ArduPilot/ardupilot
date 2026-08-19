@@ -1186,14 +1186,9 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
 #endif
 
 #if MODE_FLIP_ENABLED
-    // @Param: FLIP_RATE
-    // @DisplayName: Flip Mode Rotational Rate
-    // @Description: Rotational Rate for Flip Mode in Deg/s.  Be sure to set a rotational rate that the aircraft can achieve.
-    // @Units: deg/s
-    // @Range: 60 1000
-    // @Increment: 1
-    // @User: Standard
-    AP_GROUPINFO("FLIP_RATE", 23, ParametersG2, flip_rate_dps, 400),
+    // @Group: FLIP_
+    // @Path: mode_flip.cpp
+    AP_SUBGROUPPTR(mode_flip_ptr, "FLIP_", 23, ParametersG2, ModeFlip),
 #endif
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
@@ -1262,6 +1257,11 @@ ParametersG2::ParametersG2(void) :
 #if MODE_POSHOLD_ENABLED
     ,mode_poshold_ptr(&copter.mode_poshold)
 #endif
+
+#if MODE_FLIP_ENABLED
+    ,mode_flip_ptr(&copter.mode_flip)
+#endif
+
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);

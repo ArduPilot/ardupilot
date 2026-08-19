@@ -958,8 +958,8 @@ private:
 class ModeFlip : public Mode {
 
 public:
-    // inherit constructor
-    using Mode::Mode;
+    // need a constructor
+    ModeFlip(void);
     Number mode_number() const override { return Number::FLIP; }
 
     bool init(bool ignore_checks) override;
@@ -972,6 +972,8 @@ public:
     bool crash_check_enabled() const override { return false; }
 
     void abandon_flip();
+
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
@@ -996,6 +998,7 @@ private:
     uint32_t start_time_ms;
     int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
     int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
+    AP_Float flip_rate_dps;              // rotational rate during flip
 
     bool input_is_high_magnitude(RC_Channel &input) const;
 };

@@ -737,8 +737,9 @@ public:
 #endif
 
 #if MODE_FLIP_ENABLED
-    AP_Int16 flip_rate_dps;
+    void *mode_flip_ptr;
 #endif
+
 };
 
 extern const AP_Param::Info        var_info[];
