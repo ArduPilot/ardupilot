@@ -9837,7 +9837,7 @@ class TestSuite(abc.ABC):
         moment this is called until the mission moves on.'''
         wps = self.download_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
         m = wps[wp_num]
-        loc = mavutil.location(m.x / 1.0e7, m.y / 1.0e7, 0, 0)
+        loc = Location.latlon_only(m.x / 1.0e7, m.y / 1.0e7)
         self.progress("Waiting to pass within %.1fm of wp %u (%s)" %
                       (max_distance, wp_num, str(loc)))
         min_dist = None
@@ -9858,7 +9858,7 @@ class TestSuite(abc.ABC):
                 if msg.mission_state == mavutil.mavlink.MISSION_STATE_COMPLETE:
                     break
                 continue
-            dist = self.get_distance(loc, mavutil.location(msg.lat/1.0e7, msg.lon/1.0e7, 0, 0))
+            dist = self.get_distance(loc, Location.latlon_only(msg.lat/1.0e7, msg.lon/1.0e7))
             if min_dist is None or dist < min_dist:
                 min_dist = dist
             if now - last_print > 5:
