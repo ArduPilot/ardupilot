@@ -9,11 +9,13 @@ typedef double postype_t;
 typedef Vector2d Vector2p;
 typedef Vector3d Vector3p;
 #define topostype todouble
+#define fabsP fabs
 #else
 typedef float postype_t;
 typedef Vector2f Vector2p;
 typedef Vector3f Vector3p;
 #define topostype tofloat
+#define fabsP fabsf
 #endif
 
 /*
