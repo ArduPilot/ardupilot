@@ -167,20 +167,55 @@ bool RC_Channels::has_active_overrides()
     return false;
 }
 
+// return true for payload auxiliary functions that may be used without valid
+// vehicle RC input
+// Ideally camera functions would also check that CAMx_TYPE uses a mount backend,
+// but that would introduce an additional dependency between RC_Channel and AP_Camera.
+static bool payload_aux_allowed_without_valid_rc(const RC_Channel::AUX_FUNC option)
+{
+    switch (option) {
+#if AP_CAMERA_ENABLED
+    case RC_Channel::AUX_FUNC::CAMERA_TRIGGER:
+    case RC_Channel::AUX_FUNC::CAM_MODE_TOGGLE:
+    case RC_Channel::AUX_FUNC::CAMERA_REC_VIDEO:
+    case RC_Channel::AUX_FUNC::CAMERA_ZOOM:
+    case RC_Channel::AUX_FUNC::CAMERA_MANUAL_FOCUS:
+    case RC_Channel::AUX_FUNC::CAMERA_AUTO_FOCUS:
+    case RC_Channel::AUX_FUNC::CAMERA_IMAGE_TRACKING:
+    case RC_Channel::AUX_FUNC::CAMERA_LENS:
+        return true;
+#endif // AP_CAMERA_ENABLED
+#if HAL_MOUNT_ENABLED
+    case RC_Channel::AUX_FUNC::RETRACT_MOUNT1:
+    case RC_Channel::AUX_FUNC::RETRACT_MOUNT2:
+    case RC_Channel::AUX_FUNC::MOUNT_YAW_LOCK:
+    case RC_Channel::AUX_FUNC::MOUNT_LRF_ENABLE:
+    case RC_Channel::AUX_FUNC::MOUNT_RP_LOCK:
+#if AP_MOUNT_POI_LOCK_ENABLED
+    case RC_Channel::AUX_FUNC::MOUNT_POI_LOCK:
+#endif // AP_MOUNT_POI_LOCK_ENABLED
+        return true;
+#endif // HAL_MOUNT_ENABLED
+    default:
+        return false;
+    }
+}
+
 
 // support for auxiliary switches:
 // read_aux_switches - checks aux switch positions and invokes configured actions
 void RC_Channels::read_aux_all()
 {
-    if (!has_valid_input()) {
-        // exit immediately when no RC input
-        return;
-    }
+    const bool valid_rc_input = has_valid_input();
     bool need_log = false;
 
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         RC_Channel *c = channel(i);
         if (c == nullptr) {
+            continue;
+        }
+        const auto option = (RC_Channel::AUX_FUNC)c->option.get();
+        if (!valid_rc_input && !payload_aux_allowed_without_valid_rc(option)) {
             continue;
         }
         need_log |= c->read_aux();
