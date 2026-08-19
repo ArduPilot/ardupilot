@@ -108,7 +108,6 @@ void NavEKF3_core::Log_Write_XKFS(uint64_t time_us) const
         source_set     : frontend->sources.getActiveSourceSet(core_index),
         gps_good_to_align : gpsGoodToAlign,
         wait_for_gps_checks : waitingForGpsChecks,
-        mag_fusion: (uint8_t) magFusionSel,
         yaw_fusion: (uint8_t) yawFusionSel,
         yaw_fusion_age_ms : (uint16_t)yaw_fusion_age_ms
     };

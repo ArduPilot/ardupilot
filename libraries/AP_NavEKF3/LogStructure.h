@@ -372,7 +372,6 @@ struct PACKED log_XKQ {
 // @Field: SS: Source Set (primary=0/secondary=1/tertiary=2)
 // @Field: GPS_GTA: GPS good to align
 // @Field: GPS_CHK_WAIT: Waiting for GPS checks to pass
-// @Field: MAG_FUSION: Magnetometer fusion (0=not fusing/1=fuse yaw/2=fuse mag)
 // @Field: YF: yaw observation last fused
 // @FieldValueEnum: YF: NavEKF3_core::yawFusionMethod
 // @Field: YFA: time since the observation in YF was fused; saturates
@@ -387,7 +386,6 @@ struct PACKED log_XKFS {
     uint8_t source_set;
     uint8_t gps_good_to_align;
     uint8_t wait_for_gps_checks;
-    uint8_t mag_fusion;
     uint8_t yaw_fusion;
     uint16_t yaw_fusion_age_ms;
 };
@@ -478,7 +476,7 @@ struct PACKED log_XKV {
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
       "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------", true }, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
-      "XKFS","QBBBBBBBBBBH","TimeUS,C,MI,BI,GI,AI,SS,GPS_GTA,GPS_CHK_WAIT,MAG_FUSION,YF,YFA", "s#---------s", "F----------C" , true }, \
+      "XKFS","QBBBBBBBBBH","TimeUS,C,MI,BI,GI,AI,SS,GPS_GTA,GPS_CHK_WAIT,YF,YFA", "s#--------s", "F---------C" , true }, \
     { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" , true }, \
     { LOG_XKT_MSG, sizeof(log_XKT),   \
       "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true }, \
