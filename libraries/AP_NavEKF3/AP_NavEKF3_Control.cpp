@@ -778,10 +778,14 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.horiz_vel = someHorizRefData && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
 
+    // above the rangefinder's range keep relative position valid: the height-above-ground source
+    // (see FuseOptFlow) prefers the terrain database when available and otherwise falls back to a
+    // flat-ground assumption, so the two transition together as terrain coverage comes and goes
+    const bool flatGndAssumed = frontend->option_is_enabled(NavEKF3::Option::OptflowAssumeFlatGnd) && !hgtTimeout;
 #if EK3_FEATURE_OPTFLOW_SRTM
-    const bool optflow_gnd_offset = gndOffsetValid || terrain_srtm_alt_valid;
+    const bool optflow_gnd_offset = gndOffsetValid || terrain_srtm_alt_valid || flatGndAssumed;
 #else
-    const bool optflow_gnd_offset = gndOffsetValid;
+    const bool optflow_gnd_offset = gndOffsetValid || flatGndAssumed;
 #endif
     status.flags.horiz_pos_rel = ((doingFlowNav && optflow_gnd_offset) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthy;   // relative horizontal position estimate valid
 
