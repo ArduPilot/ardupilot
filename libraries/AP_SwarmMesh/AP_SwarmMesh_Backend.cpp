@@ -267,14 +267,19 @@ bool AP_SwarmMesh_Backend::parse_byte(uint8_t b)
 
 void AP_SwarmMesh_Backend::process_packet()
 {
-    _last_rx_ms = AP_HAL::millis();
-
     const p2p_header_t *hdr = (const p2p_header_t *)_msgbuf;
 
     if (hdr->version != SWARMMESH_VERSION_01) {
         _dropped++;
         return;
     }
+
+    if (hdr->origin_id == frontend_sysid()) {
+        _dropped++;
+        return;
+    }
+
+    _last_rx_ms = AP_HAL::millis();
 
     AP_SwarmMesh::PeerState *ps = frontend_peerstate(hdr->origin_id);
     if (ps == nullptr) {
@@ -904,7 +909,9 @@ void AP_SwarmMesh_Backend::send_global_position_int()
     AP_AHRS &ahrs = AP::ahrs();
 
     Location loc;
-    UNUSED_RESULT(ahrs.get_location(loc));
+    if (!ahrs.get_location(loc) || !loc.check_latlng()) {
+        return;
+    }
 
     Vector3f vel;
     if (!ahrs.get_velocity_NED(vel)) {

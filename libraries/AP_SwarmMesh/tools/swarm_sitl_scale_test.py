@@ -19,6 +19,8 @@ logs exactly one distinct SysID there; if the peer table were still capped
 at the old hardcoded 16, only the first 16 distinct sysids would ever appear
 - everything after that would be dropped by find_or_alloc_peer() before
 handle_mavlink() (and therefore the SMHB log write) is ever reached.
+The test also injects a packet with the receiver's own sysid and verifies that
+it is discarded rather than added to the peer table.
 
 Usage:
     python3 swarm_sitl_scale_test.py
@@ -235,6 +237,7 @@ def main():
     sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
     injected_sysids = list(range(2, args.count + 2))
     t0 = time.monotonic()
+    sock.sendto(make_packet(origin_id=RECEIVER_SYSID, seq=1), (MCAST_ADDR, MCAST_PORT))
     for sysid in injected_sysids:
         pkt = make_packet(origin_id=sysid, seq=1)
         sock.sendto(pkt, (MCAST_ADDR, MCAST_PORT))
@@ -261,21 +264,25 @@ def main():
         sys.exit(1)
 
     seen = heard_sysids(bin_path)
-    seen.discard(RECEIVER_SYSID)  # multicast loopback: receiver may hear its own heartbeat
+    self_origin_seen = RECEIVER_SYSID in seen
+    seen.discard(RECEIVER_SYSID)
     expected = set(injected_sysids)
     missing = expected - seen
     unexpected = seen - expected
 
     print(f"  Injected   : {len(expected)} distinct sysids")
     print(f"  Tracked    : {len(seen)} distinct sysids seen in receiver's own SMHB log")
+    print(f"  Self-origin: {'FAILED' if self_origin_seen else 'rejected'}")
     if missing:
         shown = sorted(missing)[:20]
         print(f"  MISSING    : {len(missing)} sysid(s) never made it into the peer table, e.g. {shown}{' ...' if len(missing) > 20 else ''}")
     if unexpected:
         print(f"  UNEXPECTED : {sorted(unexpected)}")
+    if self_origin_seen:
+        print(f"  SELF ORIGIN: sysid {RECEIVER_SYSID} was incorrectly added to the peer table")
 
     print_sep()
-    passed = not missing and not unexpected
+    passed = not missing and not unexpected and not self_origin_seen
     print("  SCALE TEST:", "PASSED - peer table held every injected peer" if passed else "FAILED")
     print(f"  Logs written to: {work_dir}")
     print_sep()
