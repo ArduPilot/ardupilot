@@ -19,6 +19,7 @@ public:
     AP_Vector3f _accel_offset;
     AP_Vector3f _accel_pos;
     AP_Float caltemp_accel;
+    AP_Float _accel_vrf_bias_z;
 
     AP_Int32 _gyro_id;
     AP_Vector3f _gyro_offset;
