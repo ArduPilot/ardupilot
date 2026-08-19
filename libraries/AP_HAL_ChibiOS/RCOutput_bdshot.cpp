@@ -711,7 +711,7 @@ uint32_t RCOutput::bdshot_get_output_rate_hz(const enum output_mode mode)
 uint32_t RCOutput::bdshot_decode_gcr_erpm(uint32_t value)
 {
     // 0xff marks the sixteen quintets GCR never emits
-    static const uint32_t decode[32] = {
+    static const uint8_t decode[32] = {
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 9, 10, 11, 0xff, 13, 14, 15,
         0xff, 0xff, 2, 3, 0xff, 5, 6, 7, 0xff, 0, 8, 1, 0xff, 4, 12, 0xff };
 
