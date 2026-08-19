@@ -6466,6 +6466,13 @@ class TestSuite(abc.ABC):
         if timeout is None:
             return
 
+        # the RC values go out over SITL's RC-in socket, so anything
+        # already queued on the mavlink link was sent before them and
+        # cannot show them.  Reading our way through that backlog burns
+        # the budget below - which is in simulated time - a message at a
+        # time, and every RC_CHANNELS in it says the old value:
+        #     RC values bad: (ch=3 want=1000 got=1500)   (x13, same instant)
+        self.drain_mav()
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
