@@ -45,6 +45,21 @@ from vehicle_test_suite import WaitModeTimeout
 CAMERA_IMAGE_STATUS_IDLE = 0
 CAMERA_IMAGE_STATUS_INTERVAL_IDLE = 2
 
+
+# Values for XKFS.YF, from NavEKF3_core::yawFusionMethod
+class YawFuseSel():
+    NOT_FUSING = 0
+    MAGNETOMETER = 1
+    GPS = 2
+    GSF = 3
+    STATIC = 4
+    PREDICTED = 5
+    EXTNAV = 6
+    MAG_3AXIS = 7
+
+
+YAW_FUSE_SEL_COMPASS = [YawFuseSel.MAGNETOMETER, YawFuseSel.MAG_3AXIS]
+
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 SITL_START_LOCATION = Location(
@@ -2187,12 +2202,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def EK3YawFusionLogging(self):
         '''Test EKF3 logs which yaw observation it is fusing'''
-        # XKFS.YF values, from NavEKF3_core::yawFusionMethod:
-        yf_not_fusing = 0
-        yf_magnetometer = 1
-        yf_mag_3axis = 7
-        yf_compass = [yf_magnetometer, yf_mag_3axis]
-
         self.set_parameters({
             "LOG_DISARMED": 1,
         })
@@ -2237,16 +2246,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 # only examine the first EKF core
                 continue
             if switch_us is None:
-                if m.YF in yf_compass:
+                if m.YF in YAW_FUSE_SEL_COMPASS:
                     fusing_count += 1
                 continue
             if m.TimeUS - switch_us < 3 * 1000000:
                 # allow the EKF time to stop fusing the compass
                 continue
             checked_count += 1
-            if m.YF in yf_compass:
+            if m.YF in YAW_FUSE_SEL_COMPASS:
                 still_fusing.append(m.TimeUS)
-            if m.YF == yf_not_fusing:
+            if m.YF == YawFuseSel.NOT_FUSING:
                 not_fusing.append(m.TimeUS)
             max_age_ms = max(max_age_ms, m.YFA)
 
@@ -15622,6 +15631,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "GPS2_POS_X": 0.0, "GPS2_POS_Y": 0.0, "GPS2_POS_Z": 0.45,
             "SIM_GPS1_POS_X": 0.0, "SIM_GPS1_POS_Y": 0.0, "SIM_GPS1_POS_Z": -0.45,
             "SIM_GPS2_POS_X": 0.0, "SIM_GPS2_POS_Y": 0.0, "SIM_GPS2_POS_Z": 0.45,
+            "LOG_DISARMED": 1,  # so that XKFS is logged without arming
         })
         self.reboot_sitl()
 
@@ -15636,6 +15646,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m.yaw not in [0, 65535]:
                 raise NotAchievedException(
                     "Got GPS yaw %.1f deg from a baseline with no horizontal separation" % (m.yaw * 0.01))
+
+        # EK3_SRC1_YAW is 2, so with no GPS yaw to fuse the EKF falls back to
+        # synthesising a yaw observation to keep the filter stable.  XKFS.YF
+        # says which observation was last fused, so it must never name the
+        # GPS here
+        self.progress("Checking the EKF never fused GPS yaw")
+        dfreader = self.dfreader_for_current_onboard_log()
+        synthesised = 0
+        while True:
+            m = dfreader.recv_match(type="XKFS")
+            if m is None:
+                break
+            if m.C != 0:
+                # only examine the first EKF core
+                continue
+            if m.YF == YawFuseSel.GPS:
+                raise NotAchievedException(
+                    "EKF fused GPS yaw from a baseline with no horizontal separation (at %u)" % m.TimeUS)
+            if m.YF in [YawFuseSel.STATIC, YawFuseSel.PREDICTED] and m.YFA < 1000:
+                synthesised += 1
+        if synthesised == 0:
+            raise NotAchievedException("EKF never fused a synthesised yaw observation")
+        self.progress("%u XKFS fusing a synthesised yaw" % synthesised)
 
     def GPSForYawCompassFallback(self):
         '''EKF3 must fall back to the compass when GPS yaw is present but unusable'''
@@ -15690,6 +15723,77 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Yaw not tracking truth under compass fallback (err=%.1f deg)" % yaw_err_deg)
 
         self.do_RTL()
+
+        # The GPS keeps publishing yaw once the baseline goes vertical, so a
+        # rejected measurement looks exactly like a fused one from outside the
+        # EKF.  XKFS.YF names the observation last fused and XKFS.YFA says how
+        # long ago, which is the only trace the rejection leaves: YF stays on
+        # the GPS while YFA climbs to the ten seconds the fallback waits for.
+        self.progress("Checking the yaw fusion trace in the onboard log")
+        rtl_mode = self.get_mode_from_mode_mapping('RTL')
+        dfreader = self.dfreader_for_current_onboard_log()
+        fallback_us = None
+        rtl_us = None
+        gps_fused = 0
+        max_gps_age_ms = 0
+        compass_ages = []
+        not_compass = []
+        while True:
+            m = dfreader.recv_match(type=["MSG", "MODE", "XKFS"])
+            if m is None:
+                break
+            if m.get_type() == "MODE":
+                if m.ModeNum == rtl_mode and rtl_us is None:
+                    rtl_us = m.TimeUS
+                continue
+            if m.get_type() == "MSG":
+                # the test's own progress text is logged as MSG as well, so
+                # match the EKF's message rather than any mention of fallback
+                if (fallback_us is None and m.Message.startswith("EKF3 IMU") and
+                        "yaw fallback active" in m.Message):
+                    fallback_us = m.TimeUS
+                continue
+            if m.C != 0:
+                # only examine the first EKF core
+                continue
+            if fallback_us is None:
+                if m.YF != YawFuseSel.GPS:
+                    continue
+                if m.YFA < 1000:
+                    gps_fused += 1
+                else:
+                    max_gps_age_ms = max(max_gps_age_ms, m.YFA)
+                continue
+            if rtl_us is not None:
+                # the descent and landing legitimately pause mag fusion
+                continue
+            if m.TimeUS - fallback_us < 2 * 1000000:
+                # allow the compass to take over
+                continue
+            if m.YF not in YAW_FUSE_SEL_COMPASS:
+                not_compass.append(m.TimeUS)
+            compass_ages.append(m.YFA)
+
+        if gps_fused == 0:
+            raise NotAchievedException("GPS yaw was never logged as being fused")
+        if fallback_us is None:
+            raise NotAchievedException("Fallback message not found in log")
+        # the fallback waits ten seconds for a usable GPS yaw
+        if max_gps_age_ms < 5000:
+            raise NotAchievedException(
+                "XKFS.YFA only reached %ums; GPS yaw was still being fused" % max_gps_age_ms)
+        if len(compass_ages) < 10:
+            raise NotAchievedException(
+                "Only %u XKFS logged between the fallback and the RTL" % len(compass_ages))
+        if len(not_compass) > 0:
+            raise NotAchievedException(
+                "XKFS.YF not reporting compass fusion on %u of %u messages after the "
+                "fallback (first at %u)" % (len(not_compass), len(compass_ages), not_compass[0]))
+        if max(compass_ages) > 1000:
+            raise NotAchievedException(
+                "XKFS.YFA reached %ums under compass fallback" % max(compass_ages))
+        self.progress("%u XKFS fusing GPS yaw, rejection ran for %ums, "
+                      "%u checked under fallback" % (gps_fused, max_gps_age_ms, len(compass_ages)))
 
     def SMART_RTL_EnterLeave(self):
         '''check SmartRTL behaviour when entering/leaving'''
