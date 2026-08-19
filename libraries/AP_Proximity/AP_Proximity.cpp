@@ -46,7 +46,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // 3 was _YAW_CORR
     // 4 to 15 was _IGN_ANG1 to _IGN_WID6
 
-    // @Param{Copter}: _IGN_GND
+    // @Param{Copter,Heli}: _IGN_GND
     // @DisplayName: Proximity sensor land detection
     // @Description: Ignore proximity data that is within 1 meter of the ground below the vehicle. This requires a downward facing rangefinder
     // @Values: 0:Disabled, 1:Enabled
@@ -71,7 +71,7 @@ const AP_Param::GroupInfo AP_Proximity::var_info[] = {
     // 19 was _MIN
     // 20 was _MAX
 
-    // @Param{Copter}: _ALT_MIN
+    // @Param{Copter,Heli}: _ALT_MIN
     // @DisplayName: Proximity lowest altitude.
     // @Description: Minimum altitude below which proximity should not work.
     // @Units: m

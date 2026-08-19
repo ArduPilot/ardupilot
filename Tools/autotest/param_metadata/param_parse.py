@@ -80,6 +80,7 @@ def find_vehicle_parameter_filepath(vehicle_name):
         "Plane": "ArduPlane",
         "Tracker": "AntennaTracker",
         "Sub": "ArduSub",
+        "Heli": "ArduCopter",
     }
 
     # first try ArduCopter/Parameters.cpp
@@ -158,6 +159,7 @@ truename_map = {
     "AntennaTracker": "Tracker",
     "AP_Periph": "AP_Periph",
     "Blimp": "Blimp",
+    "Helicopter": "Heli",
 }
 valid_truenames = frozenset(truename_map.values())
 truename = truename_map.get(args.vehicle, args.vehicle)
@@ -172,6 +174,8 @@ vehicle_path = find_vehicle_parameter_filepath(args.vehicle)
 basename = os.path.basename(os.path.dirname(vehicle_path))
 path = os.path.normpath(os.path.dirname(vehicle_path))
 reference = basename  # so links don't break we use ArduCopter
+if truename == "Heli":
+    reference = "Helicopter"
 vehicle = Vehicle(truename, path, reference=reference)
 debug('Found vehicle type %s' % vehicle.name)
 
