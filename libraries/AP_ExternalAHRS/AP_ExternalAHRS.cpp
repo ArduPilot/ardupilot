@@ -268,6 +268,17 @@ bool AP_ExternalAHRS::get_velocity_NED(Vector3f &vel)
     return true;
 }
 
+bool AP_ExternalAHRS::get_velocity_NED(Vector3f &vel, uint32_t &last_update_us)
+{
+    WITH_SEMAPHORE(state.sem);
+    if (!state.have_velocity) {
+        return false;
+    }
+    vel = state.velocity;
+    last_update_us = state.last_velocity_update_us;
+    return true;
+}
+
 bool AP_ExternalAHRS::get_speed_down(float &speedD)
 {
     if (!state.have_velocity) {
