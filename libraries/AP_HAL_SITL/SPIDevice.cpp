@@ -18,7 +18,7 @@
 #include "SPIDevice.h"
 
 #include <AP_HAL/AP_HAL.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 #include <SITL/SITL.h>
 
@@ -42,7 +42,7 @@ public:
     int ioctl(uint8_t cs_pin, uint8_t ioctl_number, void *data) {
         return _ioctl(cs_pin, ioctl_number, data);
     }
-    // void _timer_tick(); // in lieu of a thread-per-bus
+    void _timer_tick(); // in lieu of a thread-per-bus
     AP_HAL::Device::PeriodicHandle register_periodic_callback(uint32_t period_usec, AP_HAL::Device::PeriodicCb cb);
 
     class SPIBus *next;
@@ -87,17 +87,17 @@ AP_HAL::Device::PeriodicHandle SPIBus::register_periodic_callback(uint32_t perio
     return callback;
 }
 
-// void SPIBus::_timer_tick()
-// {
-//     const uint64_t now = AP_HAL::micros64();
-//     for (struct callback_info *ci = callbacks; ci != nullptr; ci = ci->next) {
-//         if (ci->next_usec < now) {
-//             WITH_SEMAPHORE(sem);
-//             ci->cb();
-//             ci->next_usec += ci->period_usec;
-//         }
-//     }
-// }
+void SPIBus::_timer_tick()
+{
+    const uint64_t now = AP_HAL::micros64();
+    for (struct callback_info *ci = callbacks; ci != nullptr; ci = ci->next) {
+        if (ci->next_usec < now) {
+            WITH_SEMAPHORE(sem);
+            ci->cb();
+            ci->next_usec += ci->period_usec;
+        }
+    }
+}
 
 /*
  * SPIDeviceManager
@@ -116,12 +116,17 @@ static const struct SPIDriverInfo {
 } spi_devices[] = {
     { 0, },
     { 1, },
+    { 2, },
 };
 
 // name, bus, cs_pin
 SPIDesc SPIDeviceManager::device_table[] = {
     { "ramtron", 0, 0 },
-    { "dataflash", 1, 0}
+    { "dataflash", 1, 0},
+    { "adis16470", 2, 0 },
+    { "adis16507", 2, 1 },
+    { "adis16547", 2, 2 },
+    { "icm40609", 2, 3 },
 };
 
 AP_HAL::SPIDevice *
@@ -164,12 +169,12 @@ SPIDeviceManager::get_device_ptr(const char *name)
     return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 
-// void SPIDeviceManager::_timer_tick()
-// {
-//     for (auto &bus : buses) {
-//         bus._timer_tick();
-//     }
-// }
+void SPIDeviceManager::_timer_tick()
+{
+    for (SPIBus *b = buses; b != nullptr; b = (SPIBus *)b->next) {
+        b->_timer_tick();
+    }
+}
 
 /*
  * SPIDevice
@@ -254,6 +259,26 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         return false;
     }
 
+    return true;
+}
+
+bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
+                                    uint32_t len)
+{
+    bus.sem.check_owner();
+
+    // a single transfer that both sends and receives; the simulated device
+    // reads tx_buf and writes rx_buf (which may alias send)
+    struct spi_ioc_transfer msg {};
+    msg.tx_buf = (uint64_t)send;
+    msg.rx_buf = (uint64_t)recv;
+    msg.len = len;
+
+    const int r = bus.ioctl(device_desc.cs_pin, SPI_TRANSACTION_1LONG, &msg);
+    if (r == -1) {
+        hal.console->printf("SPIDevice: error transferring data\n");
+        return false;
+    }
     return true;
 }
 
