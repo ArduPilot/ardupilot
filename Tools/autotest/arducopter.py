@@ -19133,11 +19133,23 @@ RTL_ALT_M 111
         self.mavproxy_load_module(mavproxy, 'ftp')
         mavproxy.send(f"param ftpload {new_values_filepath.name}\n")
         mavproxy.expect("Loaded")
-        self.delay_sim_time(1, reason="parameter write to be processed")
+        # "Loaded" is MAVProxy reading the file; pushing the values by
+        # FTP is wall-clock work, and the delay_sim_time(1) which stood
+        # here is 62ms of wall clock at speedup 16 - not enough on a
+        # machine running the suite --parallel.  Wait for the writable
+        # parameter to take its new value, which is proof the load was
+        # processed; only then does asserting that the readonly one
+        # withstood it mean anything.
+        tstart = time.time()
+        while True:
+            if abs(self.get_parameter("RTL_ALT_M") - 111) < 0.5:
+                break
+            if time.time() - tstart > 30:
+                raise NotAchievedException("ftpload did not take effect")
+            time.sleep(0.5)
         self.stop_mavproxy(mavproxy)
 
         self.assert_parameter_value("DISARM_DELAY", 77)
-        self.assert_parameter_value("RTL_ALT_M", 111)
         self.assert_parameter_value('RTL_ALT_FINAL_M', 101)
 
     def DefaultsCommaList(self):
