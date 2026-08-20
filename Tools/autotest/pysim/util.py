@@ -714,9 +714,16 @@ def start_SITL(binary,
 
         first = cmd[0]
         rest = cmd[1:]
-        spawn_env = None
+        spawn_env = dict(os.environ)
+        # Tell SITL where to find dumpstack.sh and dumpcore.sh.  It looks
+        # for them relative to its working directory, which works for a
+        # serial run - that runs in the repo root - but not under
+        # --parallel, where each instance runs in its own directory and
+        # every lookup misses.  A panic there produces no backtrace at
+        # all, which is exactly when one is wanted.
+        spawn_env.setdefault('AP_SCRIPTS_DIR_PATH',
+                             os.path.abspath(reltopdir('Tools/scripts')))
         if asan:
-            spawn_env = dict(os.environ)
             log_base = asan_log_filepath(binary=binary, model=model)
             existing = spawn_env.get('ASAN_OPTIONS', '')
             # Append our options after any inherited ones so that our
