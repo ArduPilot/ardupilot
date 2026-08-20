@@ -11,6 +11,8 @@
 #include "SITL_Periph_State.h"
 #else
 
+#include <netinet/in.h>
+
 class HAL_SITL;
 
 class HALSITL::SITL_State : public SITL_State_Common {
@@ -123,8 +125,8 @@ private:
     float _sonar_pin_voltage() const;
 
     // multicast state
-    int mc_out_fd = -1;
     int servo_in_fd = -1;
+    struct sockaddr_in mc_dest;
 
     // send out SITL state as UDP multicast
     void multicast_state_open(void);
