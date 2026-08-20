@@ -1573,11 +1573,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def MAVProxyRallyLoad(self):
         '''upload a rally-point file with MAVProxy's "rally load"'''
         # the only test exercising MAVProxy's rally-file upload;
-        # everything else uploads rally points natively.  Run serially
-        # and at a pinned speedup for the same reason as
-        # MAVProxyFenceLoad: the vehicle's upload deadline is spent in
-        # simulated time, and a machine full of workers cannot schedule
-        # MAVProxy inside it.
+        # everything else uploads rally points natively; see
+        # MAVProxyFenceLoad.
         self.load_rally_using_mavproxy("rover-test-rally.txt")
 
     def Rally(self):
@@ -4835,13 +4832,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def MAVProxyFenceLoad(self):
         '''upload a fence file with MAVProxy's "fence load"'''
-        # this is the only test exercising MAVProxy's fence-file upload;
-        # everything else uploads fences natively.  MAVProxy has to
-        # answer the vehicle's item requests inside the vehicle's eight
-        # second upload timeout (MissionItemProtocol.h::upload_timeout_ms)
-        # and that budget is spent in simulated time, so this runs
-        # serially and at a pinned speedup - the deadline belongs to the
-        # vehicle, and a busy machine cannot schedule MAVProxy inside it.
+        # the only test exercising MAVProxy's fence-file upload;
+        # everything else uploads fences natively.  serial1's "pace"
+        # option holds the simulation back while MAVProxy is not keeping
+        # up, so the vehicle's upload deadline cannot expire behind
+        # MAVProxy's back.
         mavproxy = self.start_mavproxy()
         self.load_fence_using_mavproxy(mavproxy, "rover-path-planning-fence.txt")
         self.stop_mavproxy(mavproxy)
@@ -7794,7 +7789,7 @@ return update()
             self.MAV_CMD_MISSION_START,
             self.Button,
             self.Rally,
-            Test(self.MAVProxyRallyLoad, speedup=30),
+            self.MAVProxyRallyLoad,
             self.Offboard,
             self.MAVProxyParam,
             self.GCSFence,
@@ -7812,7 +7807,7 @@ return update()
             self.SDPolyFence,
             self.PolyFenceAvoidance,
             self.PolyFenceObjectAvoidanceAuto,
-            Test(self.MAVProxyFenceLoad, speedup=30),
+            self.MAVProxyFenceLoad,
             self.PolyFenceObjectAvoidanceGuided,
             self.PolyFenceObjectAvoidanceBendyRuler,
             self.SendToComponents,
