@@ -115,6 +115,7 @@ public:
         bool have_velocity;
 
         uint32_t last_location_update_us;
+        uint32_t last_velocity_update_us;
     } state;
 
     // accessors for AP_AHRS

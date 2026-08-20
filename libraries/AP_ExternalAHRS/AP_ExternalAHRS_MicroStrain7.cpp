@@ -194,6 +194,7 @@ void AP_ExternalAHRS_MicroStrain7::post_filter() const
         WITH_SEMAPHORE(state.sem);
         state.velocity = Vector3f{filter_data.ned_velocity_north, filter_data.ned_velocity_east, filter_data.ned_velocity_down};
         state.have_velocity = true;
+        state.last_velocity_update_us = AP_HAL::micros();
 
         // TODO the filter does not supply MSL altitude.
         // The GNSS system has both MSL and WGS-84 ellipsoid height.
