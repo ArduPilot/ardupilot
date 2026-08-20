@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/select.h>
@@ -52,9 +53,13 @@ void SITL_State::_sitl_setup()
         _update_airspeed(0);
 #if AP_SIM_SOLOGIMBAL_ENABLED
         if (enable_gimbal) {
-            // the gimbal connects back to the vehicle's SERIAL2 MAVLink
-            // port, which is base_port + 2 (offset by the SITL instance):
-            gimbal = NEW_NOTHROW SITL::SoloGimbal(base_port() + 2);
+            // the gimbal connects back to the vehicle's SERIAL1 MAVLink endpoint
+            const char *serial1_path = _serial_path[1];
+            if (strncmp(serial1_path, "uds:", 4) == 0) {
+                gimbal = NEW_NOTHROW SITL::SoloGimbal(serial1_path + 4);
+            } else {
+                gimbal = NEW_NOTHROW SITL::SoloGimbal(base_port() + 2);
+            }
         }
 #endif
 
@@ -77,6 +82,7 @@ void SITL_State::_sitl_setup()
         _sitl->irlock_port = _irlock_port;
 
         _sitl->rcin_port = _rcin_port;
+        _sitl->rcin_path = _rcin_path;
 
         fprintf(stdout, "Using \\clock topic for DDS timing: %s\n", _use_dds_sim_time ? "enabled" : "disabled");
         _sitl->use_dds_sim_time = _use_dds_sim_time;
@@ -166,7 +172,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             HALSITL::UARTDriver *uart = (HALSITL::UARTDriver*)hal.serial(0);
             const int queue_length = uart->get_system_outqueue_length();
             // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
-            if (queue_length < 1024) {
+            if (queue_length < uart->get_system_outqueue_limit()) {
                 break;
             }
             _serial_0_outqueue_full_count++;
