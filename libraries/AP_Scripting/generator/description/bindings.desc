@@ -1174,6 +1174,7 @@ singleton AP_SwarmMesh rename swarm
 singleton AP_SwarmMesh method count uint8_t
 singleton AP_SwarmMesh method get_peer_location boolean Location'Null uint8_t 1 255
 singleton AP_SwarmMesh method get_peer_velocity_NED boolean Vector3f'Null uint8_t 1 255
+singleton AP_SwarmMesh method get_peer_position_last_update_ms uint32_t uint8_t 1 255
 singleton AP_SwarmMesh method get_peer_sysid uint8_t uint8_t 0 254
 singleton AP_SwarmMesh method set_coord_state boolean SwarmCoordState
 singleton AP_SwarmMesh method set_coord_state depends AP_SWARMMESH_COORD_ENABLED
