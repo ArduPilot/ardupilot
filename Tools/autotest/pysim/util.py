@@ -724,8 +724,8 @@ def start_SITL(binary,
             cmd.extend(unix_domain_socket_serial_args())
             cmd.append("--rc-in-port=uds:APM-UDS-rcin")
         else:
-            # somewhere for MAVProxy to connect to:
-            cmd.append('--serial1=tcp:2')
+            # somewhere for MAVProxy to connect to; pace the sim on it:
+            cmd.append('--serial1=tcp:2:pace')
         if enable_fgview:
             cmd.append("--enable-fgview")
 
