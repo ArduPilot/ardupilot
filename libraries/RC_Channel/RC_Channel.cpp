@@ -971,6 +971,26 @@ const char *RC_Channel::string_for_aux_pos(AuxSwitchPos pos) const
     return "";
 }
 
+static bool announce_aux_function_from_rc(const RC_Channel::AUX_FUNC function)
+{
+    switch (function) {
+#if AP_CAMERA_ENABLED
+    case RC_Channel::AUX_FUNC::CAMERA_TRIGGER:
+    case RC_Channel::AUX_FUNC::CAM_MODE_TOGGLE:
+    case RC_Channel::AUX_FUNC::CAMERA_REC_VIDEO:
+    case RC_Channel::AUX_FUNC::CAMERA_ZOOM:
+    case RC_Channel::AUX_FUNC::CAMERA_MANUAL_FOCUS:
+    case RC_Channel::AUX_FUNC::CAMERA_AUTO_FOCUS:
+    case RC_Channel::AUX_FUNC::CAMERA_IMAGE_TRACKING:
+    case RC_Channel::AUX_FUNC::CAMERA_LENS:
+        // Camera backends provide a more useful, device-specific status.
+        return false;
+#endif
+    default:
+        return true;
+    }
+}
+
 #endif // AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
 
 /*
@@ -1014,7 +1034,7 @@ bool RC_Channel::read_aux()
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     // announce the change to the GCS:
     const char *aux_string = string_for_aux_function(_option);
-    if (aux_string != nullptr) {
+    if (aux_string != nullptr && announce_aux_function_from_rc(_option)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RC%i: %s %s", ch_in+1, aux_string, string_for_aux_pos(new_position));
     }
 #endif
