@@ -21,6 +21,19 @@
 
 const char* AP_Mount_XFRobot::send_text_prefix = "XFRobot:";
 
+enum class CameraSource : uint8_t {
+    DEFAULT = 0,
+    RGB = 1,
+    THERMAL = 2,
+};
+
+enum class LensSource : uint8_t {
+    RGB_NOTHING = 0,
+    THERMAL_NOTHING = 1,
+    RGB_THERMAL = 2,
+    THERMAL_RGB = 3,
+};
+
 ////////////////////////////////////////////////////////
 // packet structure from autopilot to gimbal
 // byte 0: header1 (0xA8)
@@ -180,26 +193,32 @@ bool AP_Mount_XFRobot::set_lens(uint8_t lens)
 }
 
 #if HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
-bool AP_Mount_XFRobot::set_camera_source(uint8_t primary_source, uint8_t secondary_source)
-{
-    // MAVLink CAMERA_SOURCE: 0 = default, 1 = RGB, 2 = IR/thermal
-    if ((primary_source == 0 || primary_source == 1) && secondary_source == 0) {
-        return set_lens(0);
+bool AP_Mount_XFRobot::set_camera_source(uint8_t primary_source, uint8_t secondary_source) {
+    switch (primary_source) {
+    case CameraSource::DEFAULT:
+    case CameraSource::RGB: {
+        switch (secondary_source) {
+        case CameraSource::DEFAULT:
+            return set_lens(LensSource::RGB_NOTHING);
+        case CameraSource::THERMAL:
+            return set_lens(LensSource::RGB_THERMAL);
+        default:
+            return false;
+        }
     }
-
-    if (primary_source == 2 && secondary_source == 0) {
-        return set_lens(1);
+    case CameraSource::THERMAL: {
+        switch (secondary_source) {
+        case CameraSource::DEFAULT:
+            return set_lens(LensSource::THERMAL_NOTHING);
+        case CameraSource::RGB:
+            return set_lens(LensSource::THERMAL_RGB);
+        default:
+            return false;
+        }
     }
-
-    if ((primary_source == 0 || primary_source == 1) && secondary_source == 2) {
-        return set_lens(2);
+    default:
+        return false;
     }
-
-    if (primary_source == 2 && secondary_source == 1) {
-        return set_lens(3);
-    }
-
-    return false;
 }
 #endif // HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
 
