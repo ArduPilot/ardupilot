@@ -950,7 +950,11 @@ if __name__ == "__main__":
     parser.add_option("--move-logs-on-test-failure",
                       action='store_true',
                       default=None,
-                      help='Move logs to ../buildlogs if a test fails')
+                      help='Move logs to ../buildlogs if a test fails (default)')
+    parser.add_option("--no-move-logs-on-test-failure",
+                      action='store_false',
+                      dest='move_logs_on_test_failure',
+                      help='Leave logs where they are when a test fails')
     parser.add_option("--skip",
                       type='string',
                       default='',
@@ -1204,11 +1208,11 @@ if __name__ == "__main__":
         elif opts.gdb:
             opts.timeout = None
 
-    # default to moving logs when running in autotest-server mode:
+    # Keep the telemetry and dataflash logs of a test which fails.  They
+    # are what the failure has to be diagnosed from, the next run of that
+    # test overwrites them, and a failure nobody can look into is a run
+    # wasted.  Pass --no-move-logs-on-test-failure to leave them be.
     if opts.move_logs_on_test_failure is None:
-        opts.move_logs_on_test_failure = opts.autotest_server
-
-    if os.getenv("GITHUB_ACTIONS") == "true":
         opts.move_logs_on_test_failure = True
 
     steps = [
