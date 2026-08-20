@@ -876,6 +876,19 @@ private:
         climb,
         RTL,
     } submode;
+
+    // current height above the QRTL destination altitude, in the same
+    // frame (terrain-relative if QRTL is terrain following, else absolute)
+    // the approach altitude ramp is applied in
+    float calc_alt_delta_m() const;
+
+    // state latched at the start of the fixed wing approach, used to
+    // gradually ramp the target altitude down to RTL_ALTITUDE
+    struct {
+        bool valid;
+        float alt_delta_m;  // height above the QRTL destination altitude
+        float dist_m;       // distance to the QRTL destination
+    } approach_start;
 };
 
 class ModeQAcro : public Mode
