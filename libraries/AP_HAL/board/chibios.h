@@ -185,6 +185,43 @@
 #define AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED 0
 #endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
 
+/*
+  trap CPU reads and writes to the reserved first 1k of memory with a
+  no-access MPU region, record a backtrace and keep flying. Unlike
+  AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED this is recoverable. Excluded on
+  external flash boards, which run code from ITCM just above the reserved
+  region. Needs the storage thread to re-arm
+ */
+#ifndef AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+#if defined(STM32H7) && !AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED && \
+    EXT_FLASH_SIZE_MB == 0 && \
+    !defined(HAL_USE_EMPTY_STORAGE) && \
+    !defined(HAL_BUILD_AP_PERIPH) && !defined(HAL_BOOTLOADER_BUILD) && \
+    !defined(IOMCU_FW)
+#define AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED 1
+#else
+#define AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED 0
+#endif
+#endif  // AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+
+/*
+  the custom build server can ask for this on any board, so silently ignore it
+  where it cannot work: only H7 has the reserved region at address 0, on
+  external flash boards ITCM holds executable code just above it, and the
+  periph, bootloader and iofirmware builds have no storage thread to re-arm
+  the region (nor the logger and GCS the reporting relies on)
+ */
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED && \
+    (!defined(STM32H7) || EXT_FLASH_SIZE_MB != 0 || defined(HAL_USE_EMPTY_STORAGE) || \
+     defined(HAL_BUILD_AP_PERIPH) || defined(HAL_BOOTLOADER_BUILD) || defined(IOMCU_FW))
+#undef AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED
+#define AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED 0
+#endif
+
+#if AP_BOARDCONFIG_MCU_MEMPROTECT_TRACE_ENABLED && AP_BOARDCONFIG_MCU_MEMPROTECT_ENABLED
+#error "MEMPROTECT_TRACE and MEMPROTECT both use MPU region 7"
+#endif
+
 #ifndef AP_CPU_IDLE_STATS_ENABLED
 #define AP_CPU_IDLE_STATS_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
