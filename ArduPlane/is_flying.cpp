@@ -210,6 +210,16 @@ bool Plane::is_flying(void)
  */
 void Plane::crash_detection_update(void)
 {
+    if (standby_active) {
+        // exit immediately if in standby. A ride-along controller is
+        // not commanding the aircraft, so the comparison of its own
+        // commands against sensed motion is meaningless and must never
+        // be allowed to disarm the vehicle
+        crash_state.debounce_timer_ms = 0;
+        crash_state.is_crashed = false;
+        return;
+    }
+
     if (control_mode != &mode_auto || !aparm.crash_detection_enable)
     {
         // crash detection is only available in AUTO mode

@@ -95,3 +95,17 @@ bool ModeCruise::get_target_heading_cd(int32_t &target_heading) const
     target_heading = locked_heading_cd;
     return locked_heading;
 }
+
+/*
+  while standing by we are not the controller in command, so don't hold
+  a locked heading. The locked track is anchored at the position where
+  the lock was taken, and would otherwise accumulate cross-track error
+  while another controller flies the aircraft, giving a large roll
+  demand at takeover. The heading re-locks half a second after standby
+  is released.
+ */
+void ModeCruise::standby_reset()
+{
+    locked_heading = false;
+    lock_timer_ms = 0;
+}
