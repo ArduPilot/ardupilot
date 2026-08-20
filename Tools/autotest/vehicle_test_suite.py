@@ -14930,21 +14930,22 @@ switch value'''
         their own - serially, at instance 0 (base ports, repo-root working
         directory) - before the rest of the tests are run in parallel.'''
         return [
+            # MAVProxy answers the vehicle's upload item requests from
+            # its wp/fence/rally module, and serial1's "pace" option
+            # cannot protect that: pacing keys on the kernel outqueue,
+            # and MAVProxy's select loop drains the socket promptly even
+            # while the module lags, so the simulation runs on and the
+            # vehicle's eight-simulated-second upload deadline can expire
+            # before the module has sent a single item.  Run them alone:
+            "MAVProxyFenceLoad",
+            "MAVProxyRallyLoad",
+
             # uses pppd (sudo), a fixed PPP-over-TCP port and fixed
             # addresses for the PPP interfaces themselves.  TODO:
             # concurrent pppd instances coexist happily; derive the
             # port and the interface address pair from the instance
             # number (the pppd serial port is already
             # instance-relative) and these can leave this list:
-            # MAVProxy has to answer the vehicle's fence-item requests
-            # inside the vehicle's upload timeout, which is spent in
-            # simulated time; on a machine busy running tests in parallel
-            # MAVProxy does not get scheduled inside it and the vehicle
-            # abandons the transfer.  Run it alone (and it is registered
-            # at a pinned speedup):
-            "MAVProxyFenceLoad",
-            "MAVProxyRallyLoad",
-
             "NetworkingWebServerPPP",
             "PPPPeriph",
 
