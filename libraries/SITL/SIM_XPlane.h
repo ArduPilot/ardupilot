@@ -40,6 +40,9 @@ public:
     /* update model by one time step */
     void update(const struct sitl_input &input) override;
 
+    /*  Create and set in/out socket for Airsim simulator */
+    void set_interface_ports(const char* address, const int port_in, const int port_out) override;
+
     /* static object creator */
     static Aircraft *create(const char *frame_str) {
         return NEW_NOTHROW XPlane(frame_str);
@@ -66,14 +69,12 @@ private:
     uint16_t xplane_port = 49000;
     uint16_t bind_port = 49001;
     // udp socket, input and output
-    SocketAPM_native socket_in{true};
-    SocketAPM_native socket_out{true};
+    SocketAPM_native sock;
 
     uint64_t time_base_us;
     uint32_t last_data_time_ms;
     Vector3d position_zero;
     Vector3f accel_earth;
-    bool connected = false;
     uint32_t xplane_frame_time;
     uint64_t seen_mask;
 
