@@ -13805,6 +13805,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         alt = 635
         self.fly_guided_move_local(0, 0, alt)
         self.assert_sensor_state(rf_bit, present=True, enabled=True, healthy=True)
+        # the next DISTANCE_SENSOR has to be one measured since we moved,
+        # not one queued while we were still climbing (the same fix as
+        # RangeFinderDriversLongRange):
+        self.drain_mav()
         m = self.assert_receive_message('DISTANCE_SENSOR', verbose=True)
         if abs(m.current_distance * 0.01 - alt) > 1:
             raise NotAchievedException(f"Expected {alt}m range")
