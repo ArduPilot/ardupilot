@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import abc
 import copy
-import faulthandler
 import enum
 import errno
+import faulthandler
 import fnmatch
 import glob
 import importlib.util
