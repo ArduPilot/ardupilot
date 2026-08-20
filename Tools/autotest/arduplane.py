@@ -3535,14 +3535,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "AHRS_EKF_TYPE": 10,        # SIM backend: returns actual 3D SITL wind
-            "SIM_WIND_SPD": wind_spd,
-            "SIM_WIND_DIR": 45,
-            "SIM_WIND_DIR_Z": wind_dir_z_deg,
         })
 
         # The SIM AHRS backend returns actual 3D SITL wind, but the
         # fallback logic prevents it being used until in flight.
+        #
+        # Take off in calm air and only then turn the wind on: with
+        # dir_z=45 the wind includes a ~7m/s updraft, stronger than the
+        # plane can sink against, so a takeoff which misses its
+        # target-altitude band on the way up - easy on a loaded machine -
+        # can never come back down to it.  The wind is only needed for
+        # the WIND-message measurement below.
         self.takeoff(20, mode='TAKEOFF')
+        self.set_parameters({
+            "SIM_WIND_SPD": wind_spd,
+            "SIM_WIND_DIR": 45,
+            "SIM_WIND_DIR_Z": wind_dir_z_deg,
+        })
 
         # Without the fix, speed == wind_spd (3D magnitude ~10 m/s).
         # With the fix, speed == horizontal component (~7.07 m/s).
