@@ -64,8 +64,8 @@ public:
 
 private:
 
-    // ExternalAHRS sample time of the last sample fed to the wind
-    // estimator, used to feed it once per new sample:
+    // ExternalAHRS velocity sample time of the last sample fed to the
+    // wind estimator, used to feed it once per new velocity sample:
     uint32_t _last_wind_sample_us;
 };
 
