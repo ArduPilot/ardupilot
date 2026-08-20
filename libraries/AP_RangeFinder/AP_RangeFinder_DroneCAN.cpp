@@ -16,7 +16,7 @@ const AP_Param::GroupInfo AP_RangeFinder_DroneCAN::var_info[] = {
 
     // @Param: RECV_ID
     // @DisplayName: RangeFinder DroneCAN node ID
-    // @Description: DroneCAN node ID of the sensor to accept measurements from. Zero accepts the first node seen reporting the sensor ID set in ADDR.
+    // @Description: DroneCAN node ID of the sensor to accept measurements from. Zero accepts the first node seen reporting the sensor ID set in ADDR. Node IDs are only unique within one CAN network, so the node must not share its ID with a node on another DroneCAN network. Each instance needs a different node ID; a second instance with the same value never receives data.
     // @Range: 0 127
     // @User: Advanced
     AP_GROUPINFO("RECV_ID", 10, AP_RangeFinder_DroneCAN, receive_node_id, 0),
