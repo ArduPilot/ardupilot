@@ -110,6 +110,12 @@ public:
         // a ground velocity in meters/second, North/East/Down
         Vector3f velocity_NED;
         bool velocity_NED_valid;
+        // true if this backend has a ground-velocity source which is
+        // independent of airspeed (e.g. GPS or an external INS); such
+        // a velocity may be used for wind estimation or synthetic
+        // airspeed without circularity.  This may be true while
+        // velocity_NED_valid is false (e.g. DCM with a 2D GPS fix):
+        bool have_velocity_source;
         // return a ground velocity in meters/second, North/East/Down
         bool get_velocity_NED(Vector3f &vel) const WARN_IF_UNUSED {
             if (!velocity_NED_valid) {
@@ -272,15 +278,24 @@ public:
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
 
+#if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+    void set_external_wind_estimate(float speed, float direction);
+#endif
+
     // return an airspeed estimate if available. return true
-    // if we have an estimate
-    virtual bool airspeed_EAS(float &airspeed_ret) const WARN_IF_UNUSED { return false; }
-    virtual bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const { return false; }
+    // if we have an estimate.  have_velocity_source is the backend's
+    // published Estimates::have_velocity_source, gating the synthetic
+    // (wind-triangle) estimate.
+    virtual bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED;
+
+    // return an airspeed estimate if available. return true
+    // if we have an estimate from a specific sensor index
+    virtual bool airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_TAS(float &airspeed_ret) const WARN_IF_UNUSED {
-        if (!airspeed_EAS(airspeed_ret)) {
+    bool airspeed_TAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED {
+        if (!airspeed_EAS(have_velocity_source, airspeed_ret)) {
             return false;
         }
         airspeed_ret *= get_EAS2TAS();
@@ -331,6 +346,49 @@ public:
     virtual bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const {
         return false;
     }
+
+protected:
+
+    // update our wind speed estimate.  velocity is a current velocity
+    // estimate in m/s in NED frame.  fuselageDirection is the vehicle's
+    // forward (fuselage) direction as a UNIT vector in the earth NED
+    // frame - i.e. the first column of the body-to-NED rotation
+    // (dcm_matrix.colx()): for level flight it is the heading direction,
+    // tilted by pitch and unaffected by roll.  Must be a unit vector;
+    // not normalised here.
+    void estimate_wind(const Vector3f &velocity, const Vector3f &fuselageDirection);
+
+    // estimated wind in m/s
+    Vector3f _wind;
+
+    // true once the wind estimation has actually updated _wind;
+    // estimate_wind's early calls merely seed its filter history, so
+    // until this is set the zero _wind is not an estimate at all.
+    // Note DCM deliberately does not consult this when publishing
+    // wind_valid: DCM has always reported its initial zero wind as a
+    // valid estimate.  New consumers should gate on it.
+    bool _have_wind_estimate;
+
+    // last true-airspeed found via the wind triangle, used for
+    // dead-reckoning and synthetic airspeed:
+    float _last_airspeed_TAS;
+
+private:
+
+    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
+    //               airspeed as filled-in by an enabled airspeed sensor
+    //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
+    //               Or if none of the above, fills-in using the previous airspeed estimate
+    // Return false: if we are using the previous airspeed estimate
+    bool get_unconstrained_airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
+
+    // support for wind estimation
+    Vector3f _last_fuse;
+    Vector3f _last_vel;
+    uint32_t _last_wind_time;
+
+    // time of last wind estimate update, used to rate-limit estimation:
+    uint32_t _last_wind_estimate_ms;
 };
 
 // Converts an upstream "something changed" key (an EKF reset

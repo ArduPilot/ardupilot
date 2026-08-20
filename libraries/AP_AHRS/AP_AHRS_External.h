@@ -52,8 +52,6 @@ public:
         return true;
     }
 
-    void estimate_wind(void);
-
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
@@ -63,6 +61,12 @@ public:
     // AHRS backend to be shared with the external AHRS
     bool set_origin(const Location &loc) override;
     bool get_origin(Location &ret) const override;
+
+private:
+
+    // ExternalAHRS sample time of the last sample fed to the wind
+    // estimator, used to feed it once per new sample:
+    uint32_t _last_wind_sample_us;
 };
 
 #endif
