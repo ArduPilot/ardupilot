@@ -14325,14 +14325,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
 
-        current_log_filepath = self.current_onboard_log_filepath()
-        self.progress("Current log path: %s" % str(current_log_filepath))
-
         self.change_mode("LOITER")
         self.wait_ready_to_arm(require_absolute=True)
         self.arm_vehicle()
         self.takeoffAndMoveAway()
         self.do_RTL()
+
+        # take the log after the flight, not before it: this returns the
+        # most-recently-modified log, and a log opened just before this
+        # point - by the reboot above - can still be behind the previous
+        # one by mtime while its first writes sit in the buffer.  The
+        # flight then goes to a log we did not take, and Replay is handed
+        # one with no flight in it, which it faithfully replays as
+        # nothing:
+        #     Processed 0/108 messages, 0 errors
+        #     check_replay (logs/00000018.BIN) failed
+        # (163840 bytes, where its siblings were ~17MB)
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
 
         self.reboot_sitl()
 
@@ -14349,14 +14359,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
         self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
 
-        current_log_filepath = self.current_onboard_log_filepath()
-        self.progress("Current log path: %s" % str(current_log_filepath))
-
         self.change_mode("LOITER")
         self.wait_ready_to_arm(require_absolute=True)
         self.arm_vehicle()
         self.takeoffAndMoveAway()
         self.do_RTL()
+
+        # take the log after the flight, not before it: this returns the
+        # most-recently-modified log, and a log opened just before this
+        # point - by the reboot above - can still be behind the previous
+        # one by mtime while its first writes sit in the buffer.  The
+        # flight then goes to a log we did not take, and Replay is handed
+        # one with no flight in it, which it faithfully replays as
+        # nothing:
+        #     Processed 0/108 messages, 0 errors
+        #     check_replay (logs/00000018.BIN) failed
+        # (163840 bytes, where its siblings were ~17MB)
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
 
         self.reboot_sitl()
 
@@ -14411,9 +14431,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
 
-        current_log_filepath = self.current_onboard_log_filepath()
-        self.progress("Current log path: %s" % str(current_log_filepath))
-
         self.change_mode("LOITER")
         self.wait_ready_to_arm(require_absolute=True)
         # make sure airspeed is being used
@@ -14427,6 +14444,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("never fused airspeed")
 
         self.do_RTL()
+
+        # take the log after the flight, not before it: this returns the
+        # most-recently-modified log, and a log opened just before this
+        # point - by the reboot above - can still be behind the previous
+        # one by mtime while its first writes sit in the buffer.  The
+        # flight then goes to a log we did not take, and Replay is handed
+        # one with no flight in it, which it faithfully replays as
+        # nothing:
+        #     Processed 0/108 messages, 0 errors
+        #     check_replay (logs/00000018.BIN) failed
+        # (163840 bytes, where its siblings were ~17MB)
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
 
         self.reboot_sitl()
 
@@ -14453,9 +14483,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
 
-        current_log_filepath = self.current_onboard_log_filepath()
-        self.progress("Current log path: %s" % str(current_log_filepath))
-
         self.change_mode("LOITER")
         self.wait_ready_to_arm(require_absolute=False)
         # require_absolute=False does not wait for the EKF origin (and thus home)
@@ -14465,6 +14492,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.takeoffAndMoveAway()
         self.do_RTL()
+
+        # take the log after the flight, not before it: this returns the
+        # most-recently-modified log, and a log opened just before this
+        # point - by the reboot above - can still be behind the previous
+        # one by mtime while its first writes sit in the buffer.  The
+        # flight then goes to a log we did not take, and Replay is handed
+        # one with no flight in it, which it faithfully replays as
+        # nothing:
+        #     Processed 0/108 messages, 0 errors
+        #     check_replay (logs/00000018.BIN) failed
+        # (163840 bytes, where its siblings were ~17MB)
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
 
         self.customise_SITL_commandline([]) # implicit reboot
 
