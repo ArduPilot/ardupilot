@@ -15472,6 +15472,7 @@ switch value'''
             # abandons the transfer.  Run it alone (and it is registered
             # at a pinned speedup):
             "MAVProxyFenceLoad",
+            "MAVProxyRallyLoad",
 
             "NetworkingWebServerPPP",
             "PPPPeriph",

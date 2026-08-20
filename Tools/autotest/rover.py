@@ -1571,17 +1571,25 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         if ex is not None:
             raise ex
 
+    def MAVProxyRallyLoad(self):
+        '''upload a rally-point file with MAVProxy's "rally load"'''
+        # the only test exercising MAVProxy's rally-file upload;
+        # everything else uploads rally points natively.  Run serially
+        # and at a pinned speedup for the same reason as
+        # MAVProxyFenceLoad: the vehicle's upload deadline is spent in
+        # simulated time, and a machine full of workers cannot schedule
+        # MAVProxy inside it.
+        self.load_rally_using_mavproxy("rover-test-rally.txt")
+
     def Rally(self):
         '''Test Rally Points'''
-        self.load_rally_using_mavproxy("rover-test-rally.txt")
-        self.assert_parameter_value('RALLY_TOTAL', 2)
-
-        # the file's rally points are fixed coordinates chosen relative
-        # to the SITL startup location, but RTL returns to whichever of
-        # home and the rally points is closest - and home is wherever
-        # the vehicle happened to be.  Re-place them relative to us so
-        # the rally point is the closer of the two once we have driven
-        # away, whatever a previous test did with the vehicle:
+        # rally points are uploaded natively (MAVProxy's rally-file
+        # upload is exercised by MAVProxyRallyLoad).  RTL returns to
+        # whichever of home and the rally points is closest - and home
+        # is wherever the vehicle happened to be - so place them
+        # relative to us, ensuring the rally point is the closer of the
+        # two once we have driven away, whatever a previous test did
+        # with the vehicle:
         here = self.get_location()
         rally_locs = [
             self.offset_location_ne(here, 19.8, 33.0),
@@ -7799,6 +7807,7 @@ return update()
             self.MAV_CMD_MISSION_START,
             self.Button,
             self.Rally,
+            Test(self.MAVProxyRallyLoad, speedup=30),
             self.Offboard,
             self.MAVProxyParam,
             self.GCSFence,
