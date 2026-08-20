@@ -2182,6 +2182,7 @@ class TestSuite(abc.ABC):
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
+        self.mavproxy_ftp_listing_times = None  # probed on first use
         self.mav = None
         self.viewerip = viewerip
         self.use_map = use_map
@@ -16826,6 +16827,36 @@ switch value'''
                 raise NotAchievedException(f"Empty entry in listing page ({payload})")
         return [entry.decode('utf-8') for entry in entries]
 
+    def mavproxy_supports_ftp_listing_times(self):
+        """return True if MAVProxy's FTP module knows about listing times
+
+        MAVProxy gained the ListDirectoryWithTime opcode, the listing
+        continuation built from the listing's own state and the parsing of a
+        listing entry from its end all in the one change, and its version
+        number did not move with them - so there is nothing to compare a
+        version against, and the list_time setting is the signature to look
+        for.  An older MAVProxy reports it as an unknown setting.
+
+        The answer cannot change during a run, so it is probed once.
+        """
+        if self.mavproxy_ftp_listing_times is not None:
+            return self.mavproxy_ftp_listing_times
+
+        mavproxy = self.start_mavproxy()
+        try:
+            # the parameter download ends by terminating the FTP session, so
+            # let it finish before using the module
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp set list_time\n")
+            i = mavproxy.expect(["Unknown setting 'list_time'", r"list_time\s+\d"])
+            self.mavproxy_ftp_listing_times = i == 1
+        finally:
+            self.stop_mavproxy(mavproxy)
+
+        return self.mavproxy_ftp_listing_times
+
     def ftp_list_dir(self, path, with_time=False):
         '''list a remote directory via raw MAVLink FTP, paging through the
         listing as a GCS does.  returns (entries, page_count)'''
@@ -17279,6 +17310,220 @@ switch value'''
                 raise NotAchievedException(f"Plain listing did not send {tab_name!r} as it is ({entries})")
         finally:
             shutil.rmtree(dirname)
+
+    def MAVFTPListDirectoryLossyRetry(self):
+        '''test a directory listing completes over a link which drops replies'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_lossy_listing_test"
+        file_count = 200
+
+        self.create_ftp_listing_pages(dirname, file_count)
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            # let the parameter download finish first; it ends by terminating
+            # the FTP session, which would take any listing with it
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+
+            # a listing has no retransmit of its own, so half the pages going
+            # missing must not leave it silently unfinished
+            mavproxy.send("ftp set debug 1\n")
+            mavproxy.send("ftp set list_time_timeout 0.5\n")
+            mavproxy.send("ftp set list_retries 20\n")
+            # a fixed seed: MAVProxy gives up after 10 retries of one request,
+            # which unseeded 50% loss reaches in about 1 run in 80
+            mavproxy.send("ftp set loss_seed 2\n")
+            mavproxy.send("ftp set pkt_loss_rx 50\n")
+            mavproxy.send("ftp list %s\n" % dirname)
+            mavproxy.expect("Total size", timeout=120)
+            mavproxy.send("ftp set pkt_loss_rx 0\n")
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryWithTimeMAVProxyTabInName(self):
+        '''test MAVProxy passes over the skip entry a timed listing gives a name containing a tab'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_listing_tab_test"
+        # a timed listing sends this name as a skip entry; the file listed
+        # after it shows the listing carried on past it
+        name = "tab\there.txt"
+        other_name = "zz_after_tab.txt"
+        content = b"x" * 10
+        mtime = self.ftp_listing_mtime_base
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        for filename in name, other_name:
+            filepath = os.path.join(dirname, filename)
+            self.write_content_to_filepath(content, filepath)
+            os.utime(filepath, (mtime, mtime))
+        mtime_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime))
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            # let the parameter download finish first; it ends by terminating
+            # the FTP session, which would take any listing with it
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp list %s\n" % dirname)
+            # MAVProxy's total counts only the entries it listed
+            mavproxy.expect(re.escape("   %s\t%u\t%s" % (other_name, len(content), mtime_str)), timeout=20)
+            mavproxy.expect(re.escape("Total size %.2f kByte" % (len(content) / 1024.0)), timeout=20)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryWithTimeMAVProxy(self):
+        '''test MAVProxy shows FTP modification times, and can be told not to'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_listing_mavproxy_test"
+        expected_files = self.create_ftp_listing_directory(dirname, "subdir", 20)
+
+        # pick one file to look for in MAVProxy's output
+        name = sorted(expected_files.keys())[0]
+        (size, mtime) = expected_files[name]
+        # MAVProxy shows the time in local time, as that is what the user is
+        # comparing against their own files
+        mtime_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime))
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            # let the parameter download finish first; it ends by terminating
+            # the FTP session, which would take any listing with it
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+
+            self.progress("MAVProxy asks for modification times by default")
+            mavproxy.send("ftp list %s\n" % dirname)
+            mavproxy.expect(re.escape("   %s\t%u\t%s" % (name, size, mtime_str)))
+            mavproxy.expect("Total size")
+
+            self.progress("MAVProxy can be told not to ask for them")
+            mavproxy.send("ftp set list_time 0\n")
+            mavproxy.send("ftp list %s\n" % dirname)
+            # anchored at the end of the line, so a listing which did carry a
+            # time would not match
+            mavproxy.expect(re.escape("   %s\t%u" % (name, size)) + r"[\r\n]")
+            mavproxy.expect("Total size")
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryUnknownTimeMAVProxy(self):
+        '''test MAVProxy shows a file whose time the autopilot does not know'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_unknown_time_test"
+        name = "unknown_time.txt"
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        filepath = os.path.join(dirname, name)
+        self.write_content_to_filepath(b"x" * 10, filepath)
+        os.utime(filepath, (0, 0))
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp list %s\n" % dirname)
+            mavproxy.expect(re.escape("   %s\t10\t-" % name), timeout=30)
+            mavproxy.expect("Total size", timeout=30)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryFallbackMAVProxy(self):
+        '''test MAVProxy drops back to a plain listing when no times come back'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_fallback_test"
+        expected_files = self.create_ftp_listing_directory(dirname, "subdir", 3)
+        name = sorted(expected_files.keys())[0]
+        (size, _) = expected_files[name]
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+
+            # a server which ignores the timestamped opcode rather than NAKing
+            # it looks exactly like a link which is dropping the replies
+            mavproxy.send("ftp set debug 1\n")
+            mavproxy.send("ftp set list_time_timeout 0.5\n")
+            mavproxy.send("ftp set list_retries 3\n")
+            mavproxy.send("ftp set pkt_loss_rx 100\n")
+            mavproxy.send("ftp list %s\n" % dirname)
+            mavproxy.expect("no directory listing with time, retrying without", timeout=30)
+
+            # let the plain listing through, and it must complete
+            mavproxy.send("ftp set pkt_loss_rx 0\n")
+            mavproxy.expect(re.escape("   %s\t%u" % (name, size)) + r"[\r\n]", timeout=30)
+            mavproxy.expect("Total size", timeout=30)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
 
     def MAVFTPListDirectoryEdgeCases(self):
         '''test how FTP directory listing rejects and terminates'''
@@ -17790,6 +18035,10 @@ switch value'''
             mavproxy.expect("Saved .* parameters to")
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            # this checks the plain listing format, so ask for it: a
+            # MAVProxy which knows ListDirectoryWithTime asks for times
+            # by default and the entry would carry one
+            mavproxy.send("ftp set list_time 0\n")
             mavproxy.send("ftp list %s\n" % dirname)
             mavproxy.expect(re.escape("   %s\t%u" % (name, len(content))) + r"[\r\n]", timeout=20)
         except Exception as e:  # noqa: BLE001
