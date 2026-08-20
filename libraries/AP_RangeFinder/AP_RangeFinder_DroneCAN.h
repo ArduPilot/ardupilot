@@ -39,6 +39,9 @@ private:
 
     AP_Int8 receive_node_id;  // only accept measurements from this node; 0 for any
 
+    // binding state is read and written from every AP_DroneCAN thread
+    static HAL_Semaphore _bind_sem;
+
     void bind(AP_DroneCAN *ap_dronecan, uint8_t node_id, uint8_t instance);
     bool bound_to(const AP_DroneCAN *ap_dronecan, uint8_t node_id) const {
         return _ap_dronecan == ap_dronecan && _node_id == node_id;

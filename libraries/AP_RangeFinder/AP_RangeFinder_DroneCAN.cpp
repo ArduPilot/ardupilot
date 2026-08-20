@@ -24,6 +24,8 @@ const AP_Param::GroupInfo AP_RangeFinder_DroneCAN::var_info[] = {
     AP_GROUPEND
 };
 
+HAL_Semaphore AP_RangeFinder_DroneCAN::_bind_sem;
+
 AP_RangeFinder_DroneCAN::AP_RangeFinder_DroneCAN(RangeFinder::RangeFinder_State &_state, AP_RangeFinder_Params &_params) :
     AP_RangeFinder_Backend(_state, _params)
 {
@@ -61,6 +63,7 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
         return nullptr;
     }
     RangeFinder &frontend = *AP::rangefinder();
+    WITH_SEMAPHORE(_bind_sem);
 
     int8_t configured = -1;
     int8_t bound = -1;
