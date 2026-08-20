@@ -9338,9 +9338,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         psd = self.mavfft_fttd(1, instance, tstart * 1.0e6, tend * 1.0e6)
 
-        # batch sampler defaults give 1024 fft and sample rate of 1kz so roughly 1hz/bin
-        freq = psd["F"][numpy.argmax(psd["X"][minhz:maxhz]) + minhz] * (1000. / 1024.)
-        peakdb = numpy.amax(psd["X"][minhz:maxhz])
+        # select the band by real frequency: minhz/maxhz used to be
+        # treated as bin indices on an assumed 1kHz sample rate, but the
+        # sample rate comes from the batch header - SITL's second gyro
+        # logs at 760Hz, putting both the band edges and the reported
+        # frequency ~24% off for that instance
+        lohz = numpy.searchsorted(psd["F"], minhz)
+        hihz = numpy.searchsorted(psd["F"], maxhz)
+        freq = psd["F"][numpy.argmax(psd["X"][lohz:hihz]) + lohz]
+        peakdb = numpy.amax(psd["X"][lohz:hihz])
         if peakdb < dblevel or (peakhz is not None and abs(freq - peakhz) / peakhz > 0.05):
             if reverse is not None:
                 self.progress("Did not detect a motor peak, found %fHz at %fdB" % (freq, peakdb))
@@ -9680,10 +9686,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
 
-        # batch sampler defaults give 1024 fft and sample rate of 1kz so roughly 1hz/bin
-        scale = 1000. / 1024.
-        sminhz = int(minhz * scale)
-        smaxhz = int(maxhz * scale)
+        # select the band by real frequency rather than by bin index on
+        # an assumed 1kHz sample rate; see
+        # hover_and_check_matched_frequency_with_fft_and_psd
+        sminhz = numpy.searchsorted(psd["F"], minhz)
+        smaxhz = numpy.searchsorted(psd["F"], maxhz)
         freq = psd["F"][numpy.argmax(psd["X"][sminhz:smaxhz]) + sminhz]
         peakdb = numpy.amax(psd["X"][sminhz:smaxhz])
 
