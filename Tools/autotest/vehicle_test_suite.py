@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import abc
 import copy
-import faulthandler
 import enum
 import errno
+import faulthandler
 import fnmatch
 import glob
 import importlib.util
@@ -10906,7 +10906,7 @@ Also, ignores heartbeats not from our target system'''
                         "target_component": self.mav.mav.srcComponent,
                         "type": mavutil.mavlink.MAV_MISSION_ACCEPTED,
                     })
-            except Exception as ex:
+            except Exception as ex:  # noqa: BLE001
                 self.progress("Exception clearing mission")
                 self.print_exception_caught(ex)
                 try:
