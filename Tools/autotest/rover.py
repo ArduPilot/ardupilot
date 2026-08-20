@@ -754,9 +754,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def MAVProxy_SetModeUsingSwitch(self):
         """Set modes via mavproxy switch"""
-        port = self.sitl_rcin_port(offset=1)
+        rcin_commandline_value = self.sitl_rcin_commandline_value(offset=1)
+        rcin_endpoint = self.sitl_rcin_endpoint(offset=1)
         self.customise_SITL_commandline([
-            "--rc-in-port", str(port),
+            "--rc-in-port", rcin_commandline_value,
         ])
         ex = None
         try:
@@ -768,7 +769,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     (4, 'AUTO'),
                     (5, 'AUTO'),  # non-existent mode, should stay in RTL
                     (6, 'MANUAL')]
-            mavproxy = self.start_mavproxy(sitl_rcin_port=port)
+            mavproxy = self.start_mavproxy(sitl_rcin_port=rcin_endpoint)
             for (num, expected) in fnoo:
                 mavproxy.send('switch %u\n' % num)
                 self.wait_mode(expected)
@@ -3268,7 +3269,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("ensure a mavlink1 connection can't do anything useful with new item types")
             self.set_parameter("SERIAL2_PROTOCOL", 1)
             self.reboot_sitl()
-            mav2 = mavutil.mavlink_connection("tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+            mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
                                               robust_parsing=True,
                                               source_system=7,
                                               source_component=7)
@@ -3692,7 +3693,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.drain_mav()
 
         self.start_subtest("No clear mission while it is being uploaded by a different node")
-        mav2 = mavutil.mavlink_connection("tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
                                           robust_parsing=True,
                                           source_system=7,
                                           source_component=7)
@@ -6412,8 +6413,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
     def PrivateChannel(self):
         '''test the serial option bit specifying a mavlink channel as private'''
         global mav2
-        port = self.adjust_ardupilot_port(5763)
-        mav2 = mavutil.mavlink_connection("tcp:localhost:%u" % port,
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
                                           robust_parsing=True,
                                           source_system=7,
                                           source_component=7)
@@ -6477,7 +6477,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # execute these commands:
         self.set_parameter("MAV3_OPTIONS", 2)
         self.reboot_sitl()  # mavlink-private is reboot-required
-        mav2 = mavutil.mavlink_connection("tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
                                           robust_parsing=True,
                                           source_system=7,
                                           source_component=7)
@@ -7174,8 +7174,20 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.wait_statustext("hello, world")
         conns = {}
-        for port in 5761, 5762, 5763, 5764, 5765, 5766, 5767, 6700, 6701, 6702, 6703:
-            cstring = f"tcp:localhost:{port}"
+        endpoints = [
+            "tcp:localhost:5761",
+            self.sitl_serial_endpoint(1),
+            self.sitl_serial_endpoint(2),
+            "tcp:localhost:5764",
+            self.sitl_serial_endpoint(5),
+            self.sitl_serial_endpoint(6),
+            self.sitl_serial_endpoint(7),
+            "tcp:localhost:6700",
+            "tcp:localhost:6701",
+            "tcp:localhost:6702",
+            "tcp:localhost:6703",
+        ]
+        for cstring in endpoints:
             self.progress(f"Connecting to {cstring}")
             c = mavutil.mavlink_connection(
                 cstring,
@@ -7183,17 +7195,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 source_system=7,
                 source_component=7,
             )
-            conns[port] = c
+            conns[cstring] = c
 
         for repeats in range(1, 5):
-            for (port, conn) in conns.items():
+            for (endpoint, conn) in conns.items():
                 while True:
-                    self.progress(f"Checking port {port}")
+                    self.progress(f"Checking endpoint {endpoint}")
                     m = self.assert_receive_message('STATUSTEXT', mav=conn, timeout=120)
                     self.drain_all_pexpects()
                     self.drain_mav()
                     if m.text == "hello, world":
-                        self.progress(f"Received {m.text} from port {port}")
+                        self.progress(f"Received {m.text} from {endpoint}")
                         break
 
     def REQUIRE_LOCATION_FOR_ARMING(self):

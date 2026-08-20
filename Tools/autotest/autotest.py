@@ -540,6 +540,7 @@ def run_step(step):
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
+        "unix_domain_socket": opts.unix_domain_socket,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -1068,6 +1069,10 @@ if __name__ == "__main__":
     group_sim.add_option("", "--replay",
                          action='store_true',
                          help="enable replay logging for tests")
+    group_sim.add_option("--unix-domain-socket", "--uds",
+                         action='store_true',
+                         default=False,
+                         help="use Unix domain sockets for SITL UARTs")
     parser.add_option_group(group_sim)
 
     group_completion = optparse.OptionGroup(parser, "Completion helpers")
