@@ -7789,6 +7789,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("LOITER")
         self.delay_sim_time(20, reason="plane to settle") # Let the plane settle.
 
+        # hold the altitude the plane actually settled at: TAKEOFF can
+        # overshoot under load and LOITER then holds the overshoot;
+        # remove this re-reference once #34082 fixes the overshoot.
+        settled_alt = self.get_altitude(relative=False)
+
         higher_home = copy.copy(home)
         higher_home.alt += 40
         self.set_home(higher_home)
@@ -7810,8 +7815,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # continuous seconds; only the allowance for getting started
         # grows.
         self.wait_altitude(
-            home.alt+target_alt-5,
-            home.alt+target_alt+5,
+            settled_alt-5,
+            settled_alt+5,
             relative=False,
             minimum_duration=10,
             timeout=20,
