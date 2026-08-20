@@ -236,6 +236,7 @@ __INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
         state[i].temperature_update_ms = 0;
 #endif
     }
+    init_done = true;
 }
 
 /*

@@ -63,6 +63,11 @@ AP_RangeFinder_DroneCAN* AP_RangeFinder_DroneCAN::get_dronecan_backend(AP_DroneC
         return nullptr;
     }
     RangeFinder &frontend = *AP::rangefinder();
+    if (!frontend.init_done) {
+        // drivers[] is visible before the backend's saved RECV_ID is
+        // loaded; don't bind on the default
+        return nullptr;
+    }
     WITH_SEMAPHORE(_bind_sem);
 
     int8_t configured = -1;
