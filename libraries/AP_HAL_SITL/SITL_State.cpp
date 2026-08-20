@@ -159,16 +159,26 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     // up seeing traffic well into our past and hits time-out
     // conditions.
     if (speedup > 1 && hal.scheduler->in_main_thread()) {
-        while (true) {
-            HALSITL::UARTDriver *uart = (HALSITL::UARTDriver*)hal.serial(0);
-            const int queue_length = uart->get_system_outqueue_length();
-            // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
-            if (queue_length < 1024) {
-                break;
+        // serial0 is always paced; other ports opt in with the "pace"
+        // option (e.g. tcp:2:pace for a MAVProxy on 5762)
+        for (uint8_t i = 0; i < ARRAY_SIZE(_serial_path); i++) {
+            HALSITL::UARTDriver *uart = (HALSITL::UARTDriver*)hal.serial(i);
+            if (uart == nullptr) {
+                continue;
             }
-            _serial_0_outqueue_full_count++;
-            uart->handle_reading_from_device_to_readbuffer();
-            usleep(1000);
+            if (i != 0 && !uart->pacing()) {
+                continue;
+            }
+            while (true) {
+                const int queue_length = uart->get_system_outqueue_length();
+                // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
+                if (queue_length < 1024) {
+                    break;
+                }
+                _serial_0_outqueue_full_count++;
+                uart->handle_reading_from_device_to_readbuffer();
+                usleep(1000);
+            }
         }
     }
 }

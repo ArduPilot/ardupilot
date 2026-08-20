@@ -32,6 +32,12 @@ public:
 
     ssize_t get_system_outqueue_length() const;
 
+    // true if the simulation should be held back while this port's
+    // outbound queue is backed up, as wait_clock() always does for
+    // serial0; set with the "pace" option in the device string's
+    // comma-separated flags list, e.g. tcp:2:pace or tcp:2:wait,pace
+    bool pacing() const { return _pace_sim; }
+
     bool tx_pending() override {
         return false;
     }
@@ -40,6 +46,7 @@ public:
     uint32_t txspace() override;
 
     bool _unbuffered_writes;
+    bool _pace_sim;
 
     void set_flow_control(enum flow_control flow_control_setting) override;
     enum flow_control get_flow_control(void) override;

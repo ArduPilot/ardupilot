@@ -86,6 +86,7 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
         /* parse type:args:flags string for path. 
            For example:
              tcp:5760:wait    // tcp listen on port 5760
+             tcp:2:wait,pace  // flags are a comma-separated list
              tcp:0:wait       // tcp listen on use base_port + 0
              tcpclient:192.168.2.15:5762
              udpclient:127.0.0.1
@@ -114,7 +115,25 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
 #endif
         if (strcmp(devtype, "tcp") == 0) {
             uint16_t port = atoi(args1);
-            bool wait = (args2 && strcmp(args2, "wait") == 0);
+            // the flags field is a comma-separated option list, e.g.
+            // tcp:2:wait,pace:
+            //   wait: do not start the simulation until a client connects
+            //   pace: hold the simulation back while this port's
+            //         outbound queue is backed up, exactly as
+            //         wait_clock() always does for serial0, so a GCS
+            //         reading this port is never left processing
+            //         traffic from well in our past
+            bool wait = false;
+            char *optsave = nullptr;
+            for (char *opt = args2 ? strtok_r(args2, ",", &optsave) : nullptr;
+                 opt != nullptr;
+                 opt = strtok_r(nullptr, ",", &optsave)) {
+                if (strcmp(opt, "wait") == 0) {
+                    wait = true;
+                } else if (strcmp(opt, "pace") == 0) {
+                    _pace_sim = true;
+                }
+            }
             _tcp_start_connection(port, wait);
         } else if (strcmp(devtype, "tcpclient") == 0) {
             if (args2 == nullptr) {
