@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <hwdef_gpio.h>
+
 #include "AP_Radio_config.h"
 
 #if AP_RADIO_BK2425_ENABLED

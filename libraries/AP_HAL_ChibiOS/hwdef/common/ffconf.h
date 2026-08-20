@@ -1,4 +1,4 @@
-#include "hwdef.h"
+#include "chibios_hwdef_internal.h"
 
 /*---------------------------------------------------------------------------/
 /  FatFs Functional Configurations

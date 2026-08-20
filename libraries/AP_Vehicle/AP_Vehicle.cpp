@@ -2,6 +2,8 @@
 
 #if AP_VEHICLE_ENABLED
 
+#include <hwdef_boardid.h>
+
 #include "AP_Vehicle.h"
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 

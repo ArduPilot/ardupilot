@@ -2,6 +2,8 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
+#include <hwdef_ins.h>
+
 #ifndef INS_AUX_INSTANCES
 #define INS_AUX_INSTANCES 0
 #endif

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef_baro.h>
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_MSP/msp.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
