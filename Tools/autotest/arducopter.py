@@ -20085,13 +20085,19 @@ return update, 1000
             )
             return int(re.match(r".*node (\d+) addr", text).group(1))
 
-        def assert_distance_sensor_ids(want_ids):
-            self.context_collect('DISTANCE_SENSOR')
-            self.delay_sim_time(2, reason="collect rangefinder output")
-            got_ids = set(m.id for m in self.context_stop_collecting('DISTANCE_SENSOR'))
-            if got_ids != want_ids:
-                raise NotAchievedException(
-                    "DISTANCE_SENSOR ids mismatch (want=%s got=%s)" % (sorted(want_ids), sorted(got_ids)))
+        def assert_distance_sensor_ids(want_ids, absent_ids=()):
+            for want in want_ids:
+                self.assert_receive_message(
+                    'DISTANCE_SENSOR',
+                    timeout=10,
+                    condition="DISTANCE_SENSOR.id==%u" % want,
+                )
+            for absent in absent_ids:
+                self.assert_not_receive_message(
+                    'DISTANCE_SENSOR',
+                    timeout=2,
+                    condition="DISTANCE_SENSOR.id==%u" % absent,
+                )
 
         # both periphs report sensor_id 0, so each instance takes the
         # first node it hears from
@@ -20120,8 +20126,9 @@ return update, 1000
 
         self.start_subtest("RECV_ID for an absent node starves the instance")
         self.set_parameter("RNGFND2_RECV_ID", 100)
-        self.delay_sim_time(2, reason="instance to time out")
-        assert_distance_sensor_ids({0})
+        # the instance drops to NoData 500ms after its last measurement
+        self.delay_sim_time(1, reason="instance to time out")
+        assert_distance_sensor_ids({0}, absent_ids={1})
 
     def testcan(self):
         ret = ([
