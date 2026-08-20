@@ -255,38 +255,45 @@ uint32_t AP_RTC::get_time_utc(int32_t hour, int32_t min, int32_t sec, int32_t ms
     if (!get_system_clock_utc(curr_hour, curr_min, curr_sec, curr_ms)) {
         return 0;
     }
-    int32_t total_delay_ms = 0;
 
-    // calculate ms to target
-    if (largest_element >= 1) {
-        total_delay_ms += ms - curr_ms;
-    }
-    if (largest_element == 1 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms + 1000);
-    }
+    // track ignored (-1) inputs
+    const bool ms_is_ignored = (ms == -1);
+    const bool sec_is_ignored = (sec == -1);
+    const bool min_is_ignored = (min == -1);
+    const bool hour_is_ignored = (hour == -1);
 
-    // calculate sec to target
-    if (largest_element >= 2) {
-        total_delay_ms += (sec - curr_sec)*1000;
+    // replace ignored values with current values or 0
+    if (hour_is_ignored) {
+        hour = curr_hour;
     }
-    if (largest_element == 2 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms + (60*1000));
+    if (min_is_ignored) {
+        min = (hour == curr_hour) ? curr_min : 0;
     }
-
-    // calculate min to target
-    if (largest_element >= 3) {
-        total_delay_ms += (min - curr_min)*60*1000;
+    if (sec_is_ignored) {
+        sec = (hour == curr_hour && min == curr_min) ? curr_sec : 0;
     }
-    if (largest_element == 3 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms + (60*60*1000));
+    if (ms_is_ignored) {
+        ms = (hour == curr_hour && min == curr_min && sec == curr_sec) ? curr_ms : 0;
     }
 
-    // calculate hours to target
-    if (largest_element >= 4) {
-        total_delay_ms += (hour - curr_hour)*60*60*1000;
-    }
-    if (largest_element == 4 && total_delay_ms < 0) {
-        return static_cast<uint32_t>(total_delay_ms + (24*60*60*1000));
+    int32_t total_delay_ms = (ms - int32_t(curr_ms)) +
+                             (sec - int32_t(curr_sec)) * 1000 +
+                             (min - int32_t(curr_min)) * 60 * 1000 +
+                             (hour - int32_t(curr_hour)) * 60 * 60 * 1000;
+
+    // if target time is in the past, roll over ignored values starting from the lowest level
+    if (total_delay_ms < 0) {
+        if (sec_is_ignored && hour == curr_hour && min == curr_min) {
+            total_delay_ms += 1000;
+        } else if (min_is_ignored && hour == curr_hour) {
+            total_delay_ms += 60 * 1000;
+        } else if (hour_is_ignored) {
+            total_delay_ms += 60 * 60 * 1000;
+        } else {
+            // nothing is ignored or the mismatch is at/above the ignored level, roll over the largest specified element
+            const uint32_t periods[] = { 0, 1000, 60 * 1000, 60 * 60 * 1000, 24 * 60 * 60 * 1000 };
+            total_delay_ms += periods[largest_element];
+        }
     }
 
     // total delay in milliseconds
