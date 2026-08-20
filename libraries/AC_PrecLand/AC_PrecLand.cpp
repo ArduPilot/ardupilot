@@ -44,14 +44,20 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
 
-    // @Param: YAW_ALIGN
+
+    // Remove the old parameter definition (index 2):
+    // AP_GROUPINFO("YAW_ALIGN", 2, AC_PrecLand, _yaw_align_cd, 0),
+
+    // And add the new one at the end of the `var_info` table (using the next available index, e.g., 19):
+
+    // @Param: ORIENT_YAW
     // @DisplayName: Sensor yaw alignment
     // @Description: Yaw angle from body x-axis to sensor x-axis.
-    // @Range: 0 36000
-    // @Increment: 10
+    // @Range: 0 360
+    // @Increment: 1
     // @User: Advanced
-    // @Units: cdeg
-    AP_GROUPINFO("YAW_ALIGN",    2, AC_PrecLand, _yaw_align_cd, 0),
+    // @Units: deg
+    AP_GROUPINFO("ORIENT_YAW", 19, AC_PrecLand, _orient_yaw, 0),
 
     // @Param: LAND_OFS_X
     // @DisplayName: Land offset forward
@@ -627,9 +633,8 @@ bool AC_PrecLand::retrieve_los_meas(Vector3f& target_vec_unit, VectorFrame& fram
     const uint32_t los_meas_time_ms = _backend->los_meas_time_ms();
     if ((los_meas_time_ms != _last_backend_los_meas_ms) && _backend->get_los_meas(target_vec_unit, frame)) {
         _last_backend_los_meas_ms = los_meas_time_ms;
-        if (!is_zero(_yaw_align_cd)) {
-            // Apply sensor yaw alignment rotation
-            target_vec_unit.rotate_xy(cd_to_rad(_yaw_align_cd));
+        if (!is_zero(_orient_yaw)) {
+            target_vec_unit.rotate_xy(radians(_orient_yaw));
         }
 
         // rotate vector based on sensor orientation to get correct body frame vector
