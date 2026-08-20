@@ -11319,7 +11319,11 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException("Did not get MISSION_COUNT packet")
             m = self.mav.recv_match(blocking=True, timeout=0.2)
             if m is None:
-                raise NotAchievedException("Did not get MISSION_COUNT response")
+                # a quiet 0.2s of wall clock is not a failure - the
+                # vehicle may legitimately be busy (e.g. writing a
+                # 700-item fence to storage); the simulated-time check
+                # above bounds the wait
+                continue
             if verbose:
                 self.progress(str(m))
             if m.get_type() == 'MISSION_ACK':
