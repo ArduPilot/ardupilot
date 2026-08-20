@@ -16528,12 +16528,17 @@ switch value'''
         if ex is not None:
             raise ex
 
+    # like OP_ListDirectory, but each file entry also carries its
+    # last-modification time.  Not in pymavlink yet; value from GCS_FTP.h
+    FTP_OP_ListDirectoryWithTime = 16
+
     # build opcode value->name lookup from pymavlink constants
     _ftp_opcode_names = {
         v: k[3:]  # strip "OP_" prefix
         for k, v in vars(mavftp_op).items()
         if k.startswith('OP_')
     }
+    _ftp_opcode_names[FTP_OP_ListDirectoryWithTime] = "ListDirectoryWithTime"
 
     def ftp_op_to_str(self, op):
         '''format an FTP_OP as a human-readable string'''
@@ -16828,10 +16833,13 @@ switch value'''
                 raise NotAchievedException(f"Empty entry in listing page ({payload})")
         return [entry.decode('utf-8') for entry in entries]
 
-    def ftp_list_dir(self, path):
+    def ftp_list_dir(self, path, with_time=False):
         '''list a remote directory via raw MAVLink FTP, paging through the
         listing as a GCS does.  returns (entries, page_count)'''
-        opcode = mavftp_op.OP_ListDirectory
+        if with_time:
+            opcode = self.FTP_OP_ListDirectoryWithTime
+        else:
+            opcode = mavftp_op.OP_ListDirectory
 
         seq = self.ftp_reset_sessions()
 
@@ -16865,9 +16873,10 @@ switch value'''
 
         return entries, page_count
 
-    def ftp_listing_files_and_dirs(self, entries):
-        '''pick an FTP directory listing apart into a {name: size} dict of
-        files and a set of directory names'''
+    def ftp_listing_files_and_dirs(self, entries, with_time=False):
+        '''pick an FTP directory listing apart into a {name: (size, mtime)}
+        dict of files and a set of directory names.  mtime is None when the
+        listing did not carry times'''
         files = {}
         dirs = set()
         for entry in entries:
@@ -16877,18 +16886,24 @@ switch value'''
             if entry[0] != 'F':
                 raise NotAchievedException(f"Unexpected listing entry ({entry})")
             fields = entry[1:].split("\t")
-            if len(fields) != 2:
+            expected_field_count = 3 if with_time else 2
+            if len(fields) != expected_field_count:
                 raise NotAchievedException(
-                    f"Listing entry ({entry}) has {len(fields)} fields, expected 2")
+                    f"Listing entry ({entry}) has {len(fields)} fields, expected {expected_field_count}")
             name = fields[0]
             if name in files:
                 raise NotAchievedException(f"Duplicate listing entry for {name}")
-            files[name] = int(fields[1])
+            files[name] = (int(fields[1]), int(fields[2]) if with_time else None)
         return files, dirs
 
+    # a fixed base for the modification times we set on the files in a
+    # listing test, so the values we get back are unambiguous
+    ftp_listing_mtime_base = 1700000000  # 2023-11-14T22:13:20Z
+
     def create_ftp_listing_directory(self, dirname, subdirname, file_count):
-        '''populate dirname with file_count files of distinct sizes, plus a
-        subdirectory.  returns the expected {name: size} for the files'''
+        '''populate dirname with file_count files of distinct sizes and
+        modification times, plus a subdirectory.  returns the expected
+        {name: (size, mtime)} for the files'''
         if os.path.exists(dirname):
             shutil.rmtree(dirname)
         os.mkdir(dirname)
@@ -16897,8 +16912,11 @@ switch value'''
         for i in range(file_count):
             name = "listentry_%02u.txt" % i
             content = b"x" * (10 + i)
-            self.write_content_to_filepath(content, os.path.join(dirname, name))
-            expected[name] = len(content)
+            mtime = self.ftp_listing_mtime_base + i * 86400
+            filepath = os.path.join(dirname, name)
+            self.write_content_to_filepath(content, filepath)
+            os.utime(filepath, (mtime, mtime))
+            expected[name] = (len(content), mtime)
         return expected
 
     def create_ftp_listing_pages(self, dirname, file_count):
@@ -16921,6 +16939,58 @@ switch value'''
             time.sleep(0.1)
         raise NotAchievedException(
             "%s did not %s" % (path, "appear" if present else "go away"))
+
+    def MAVFTPListDirectoryWithTime(self):
+        '''test FTP directory listing with and without modification times'''
+
+        dirname = "ftp_listing_test"
+        subdirname = "subdir"
+
+        # enough files that a listing does not fit in a single packet, so we
+        # page through it as a GCS would
+        expected_files = self.create_ftp_listing_directory(dirname, subdirname, 20)
+
+        # a filesystem which does not know when a file was written stamps it
+        # with the FAT epoch rather than saying so, and FATFS with no RTC
+        # does exactly that. those must come back as the format's unknown 0
+        for (name, mtime) in ("unknown_fat_epoch.txt", 315532800), ("unknown_zero.txt", 0):
+            filepath = os.path.join(dirname, name)
+            self.write_content_to_filepath(b"x" * 10, filepath)
+            os.utime(filepath, (mtime, mtime))
+            expected_files[name] = (10, 0)
+
+        try:
+            for with_time in False, True:
+                self.progress("Listing %s with_time=%s" % (dirname, with_time))
+                (entries, page_count) = self.ftp_list_dir(dirname, with_time=with_time)
+                if page_count < 2:
+                    raise NotAchievedException(
+                        f"Expected listing to span multiple packets (got {page_count})")
+
+                (files, dirs) = self.ftp_listing_files_and_dirs(entries, with_time)
+
+                if subdirname not in dirs:
+                    raise NotAchievedException(f"{subdirname} missing from listing")
+                if sorted(files.keys()) != sorted(expected_files.keys()):
+                    raise NotAchievedException(
+                        f"Listed {sorted(files.keys())}, expected {sorted(expected_files.keys())}")
+
+                for (name, (size, mtime)) in sorted(files.items()):
+                    (expected_size, expected_mtime) = expected_files[name]
+                    if size != expected_size:
+                        raise NotAchievedException(f"{name}: size {size}, expected {expected_size}")
+                    if with_time and mtime != expected_mtime:
+                        raise NotAchievedException(f"{name}: mtime {mtime}, expected {expected_mtime}")
+
+            # a listing opcode we do not implement must be NAKed, as that is
+            # what tells a client talking to an older autopilot to fall back
+            # to a plain listing.  MAVFTPUnknownOpcodeNack covers which error
+            # code it should be
+            error = self.ftp_unsupported_opcode_error(127)
+            if error not in (FtpError.Fail, FtpError.UnknownCommand):
+                raise NotAchievedException(f"Expected an unsupported-opcode error, got {error}")
+        finally:
+            shutil.rmtree(dirname)
 
     def MAVFTPListDirectoryEdgeCases(self):
         '''test how FTP directory listing rejects and terminates'''
