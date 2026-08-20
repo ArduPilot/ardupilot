@@ -34,6 +34,7 @@ import os
 import selectors
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import threading
@@ -313,6 +314,15 @@ class FleetLogger:
             for key, _ in events:
                 v = key.data
                 try:
+                    # A closed TCP socket remains selector readable forever. Detect
+                    # EOF before pymavlink sees it; mavtcp.recv() only prints an EOF
+                    # warning and returns, which otherwise creates a tight log loop.
+                    try:
+                        if key.fileobj.recv(1, socket.MSG_PEEK) == b"":
+                            self.sel.unregister(key.fileobj)
+                            continue
+                    except BlockingIOError:
+                        continue
                     # drain everything buffered on this socket
                     while True:
                         with v.iolock:

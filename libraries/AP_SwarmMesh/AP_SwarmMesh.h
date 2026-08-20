@@ -161,6 +161,9 @@ public:
     // fill vel_ned with the peer's last vel, returns false if the peer is unknown or its entry is stale.
     bool get_peer_velocity_NED(Vector3f& vel_ned, uint8_t peer_sysid) const;
 
+    // local AP_HAL time when the peer's latest global position was received, or zero if unknown.
+    uint32_t get_peer_position_last_update_ms(uint8_t peer_sysid) const;
+
 #if AP_SWARMMESH_COORD_ENABLED
     // publish our own coordination state to the swarm. It is broadcast at _SR_COORD Hz until it is replaced by another call. Returns false if the mesh is not running.
     bool set_coord_state(const SwarmCoordState &state);

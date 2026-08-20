@@ -336,6 +336,15 @@ bool AP_SwarmMesh::get_peer_velocity_NED(Vector3f& vel_ned, uint8_t peer_sysid) 
     return true;
 }
 
+uint32_t AP_SwarmMesh::get_peer_position_last_update_ms(uint8_t peer_sysid) const
+{
+    const PeerState *ps = find_peer_by_sysid(peer_sysid);
+    if (ps == nullptr) {
+        return 0;
+    }
+    return ps->last_heard_ms[(uint8_t)MsgFresh::GLOBAL_POSITION_INT];
+}
+
 #if AP_SWARMMESH_COORD_ENABLED
 // publish our own coordination state. It is copied rather than referenced, so the caller's object can go away immediately (backend broadcasts the copy at _SR_COORD Hz).
 bool AP_SwarmMesh::set_coord_state(const SwarmCoordState &state)

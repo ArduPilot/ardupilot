@@ -1,20 +1,20 @@
-# AP_SwarmMesh Leader-Follower Formation Demo (SITL)
+# AP_SwarmMesh Formation Experiments (SITL)
 
-A leader + N follower ArduCopter SITL instances connect over the AP_SwarmMesh multicast mesh. Each follower reads the leaders position out of its own peer table (**populated over the decentralized mesh, not from the GCS**) and holds a fixed NED offset in `GUIDED` mode as the leader flies in a set trajectory.
-
-> **Scaling to the full 254-node sysid range** (bugs fixed, lessons, and the
-> `swarm_formation_scale_test.py` usage) is documented in **[SCALING.md](SCALING.md)**.
-> Headline: 253/254 sitl drones held **0.87 m median** formation off a moving leader.
+These tools exercise decentralized formation control with multiple ArduCopter SITL instances connected through the AP_SwarmMesh multicast backend. The GCS harness launches, arms, measures, and stops the fleet and onboard Lua scripts read mesh state and issue each vehicle's `GUIDED` setpoints.
 
 ## Pieces
 
 | File | Role |
 |------|------|
-| `../../AP_Scripting/applets/swarm_follower.lua` | Onboard follower logic: reads `swarm:get_peer_location(leader_sysid)`, commands a fixed NED offset target with the leaders velocity FF. |
+| `../../AP_Scripting/applets/swarm_follower.lua` | Onboard follower logic: reads `swarm:get_peer_location(leader_sysid)`, commands a fixed NED offset target with the leader's velocity FF. |
 | `swarm_formation_test.py` | launches the formation, arms/takeoff, engages followers, flies the leader, logs tracks to CSV. |
 | `swarm_formation_scale_test.py` | Scale variant (up to 253 followers): staggered launch, concurrent bring up, single thread logger. See [SCALING.md](SCALING.md). |
 | `swarm_formation_plot.py` | Static matplotlib plot of the track CSV (overhead paths + formation error). |
 | `swarm_formation_viz.py` | Animated HTML replay of the CSV (large swarm mode + `--from/--to` cropping). |
+| `../../AP_Scripting/applets/swarm_speller.lua` | Onboard glyph controller: replicated slot allocation, cohort scheduling, guidance, and CBF velocity filtering. |
+| `swarm_spell_test.py` | Launches and measures the decentralized glyph formation SITL experiment. |
+| `swarm_spell_viz.py` | Creates a standalone animated HTML replay from the track and glyph CSV files. |
+| `swarm_cbf_sim.py` | Lightweight 2D kinematic model used to develop the CBF and wave strategy before SITL. |
 
 The follower logic depends on the `swarm:` Lua binding
 (`swarm:count()`, `swarm:get_peer_location(sysid)`, `swarm:get_peer_velocity_NED(sysid)`),
@@ -88,6 +88,40 @@ SITL logs are under `<work-dir>/inst_*/sitl.log`.
 
 With velocity FF, a 4 drone diamond holds its formation to within ~0.2 m (lag bias ~0.17 m, jitter rms ~0.12 m) while the leader manoeuvres.
 
+## Spelling demo: decentralized glyph formation
+
+The leader publishes a task ID, anchor, and shared task epoch but does not send vehicle setpoints. Each speller runs [`swarm_speller.lua`](../../AP_Scripting/applets/swarm_speller.lua), constructs the same ordered 5×7 bitmap cells, maps its persistent formation number to one cell, and computes its own motion. Two-follower cohorts transit at separate altitudes in scheduled waves. Only active cohorts publish the 5 Hz position state used by their local CBF filters, which bounds mesh load as the fleet grows.
+
+See [GLYPH_FORMATION_EXPERIMENT.md](GLYPH_FORMATION_EXPERIMENT.md) for the system model, CBF equations, uncertainty treatment, scheduling model, measurement method, results, and limitations.
+
+```bash
+# One speller per occupied bitmap cell; GSoC creates 56 spellers + 1 leader.
+~/swarm-venv/bin/python libraries/AP_SwarmMesh/tools/swarm_spell_test.py \
+    --word GSoC --speedup 1 \
+    --work-dir ~/spell_run --csv ~/spell_run/track.csv
+
+# Standalone replay that opens directly in a browser.
+~/swarm-venv/bin/python libraries/AP_SwarmMesh/tools/swarm_spell_viz.py \
+    ~/spell_run/track.csv ~/spell_run/track_glyph.csv -o ~/spell_run/spell.html
+```
+
+The test parses the font and word list from the Lua script, making the onboard cell ordering the main coordination. Use `--then SwarmMesh` to issue a second task, or `--followers`/`--spare` to override the automatically selected fleet size. Keep `--speedup 1` for this fleet size.
+
+Note that faster simulation floods the host and changes the effective timing of state delivery and vehicle dynamics.
+
+### Result
+
+The final `GSoC` run used 57 SITL instances, 4 m cell spacing, a 3 m commanded separation bound, 5 Hz peer position updates, and 1× speedup:
+
+| Measure | Value |
+|---|---|
+| Airborne | 57/57 |
+| Cells occupied | **56/56** |
+| Cell error | median **0.02 m**, worst **0.05 m** |
+| Formation time | **944 s** |
+| Minimum sampled separation | **2.03 m** |
+| Sampled overlaps below 1 m | **0 / 15,028,995 pair samples** |
+
 ## Coordination hook
 
 The mesh carries vehicle telemetry by itself, but it assigns nothing to `role`, `task_id`, `formation_slot` or `priority` -- those belong to whatever is coordinating the swarm. This hook lets an onboard Lua script or a companion computer fill them in and read back what every peer published. See `../../AP_Scripting/examples/swarm_coordination.lua`.
@@ -130,9 +164,3 @@ Both behaviours are covered by the `Copter.SwarmMesh` autotest, which joins the 
 ```
 
 Note the multicast group is fixed, so that test assumes no other SwarmMesh SITL instance is running on the same host.
-
-## Notes / next steps
-
-- Velocity FF (`swarm:get_peer_velocity_NED`) is on by default. It falls back to a position target if the EKF origin or leader velocity is unavailable. Could add accel FF.
-- Altitude is held fixed (ABOVE_HOME). Should extend to full 3D by tracking the leades altitude instead.
-- The follower applet still derives leader identity and readiness locally. Now that coordination state is on the TX path (see above), it could publish readiness in its own basket and let followers wait on the leader's `role` instead of counting peers.
