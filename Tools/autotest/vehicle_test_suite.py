@@ -2544,6 +2544,15 @@ class TestSuite(abc.ABC):
         if not os.path.exists(filepath):
             filepath = self.generic_mission_filepath_for_filename(filename)
         self.progress("Loading fence from (%s)" % str(filepath))
+        with open(filepath, 'rb') as f:
+            first_line = f.readline()
+        if first_line.startswith(b"QGC WPL"):
+            # a full fence in mission-item format - may contain exclusion
+            # polygons and circles, which the bare lat/lon form below
+            # cannot express
+            items = self.mission_item_protocol_items_from_filepath(mavwp.MissionItemProtocol_Fence, filepath)
+            self.check_fence_upload_download(items)
+            return
         locs = []
         for line in open(filepath, 'rb'):
             if len(line) == 0:
@@ -14927,6 +14936,14 @@ switch value'''
             # port and the interface address pair from the instance
             # number (the pppd serial port is already
             # instance-relative) and these can leave this list:
+            # MAVProxy has to answer the vehicle's fence-item requests
+            # inside the vehicle's upload timeout, which is spent in
+            # simulated time; on a machine busy running tests in parallel
+            # MAVProxy does not get scheduled inside it and the vehicle
+            # abandons the transfer.  Run it alone (and it is registered
+            # at a pinned speedup):
+            "MAVProxyFenceLoad",
+
             "NetworkingWebServerPPP",
             "PPPPeriph",
 
