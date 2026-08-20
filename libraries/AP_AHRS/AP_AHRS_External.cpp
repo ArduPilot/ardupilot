@@ -71,7 +71,8 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
     results.accel_ef = accel_ef;
 
-    results.velocity_NED_valid = AP::externalAHRS().get_velocity_NED(results.velocity_NED);
+    uint32_t velocity_update_us = 0;
+    results.velocity_NED_valid = extahrs.get_velocity_NED(results.velocity_NED, velocity_update_us);
     // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     results.vert_pos_rate_D_valid = AP::externalAHRS().get_speed_down(results.vert_pos_rate_D);
@@ -105,23 +106,17 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * air data estimates
      */
-    // feed the wind-triangle estimator once per new external solution.
-    // The velocity, attitude and timestamp are read under separate
-    // semaphore acquisitions, so they may straddle an update from the
-    // receive thread: the attitude may come from a neighbouring packet
-    // on devices which deliver attitude and velocity separately, and a
-    // sample arriving mid-read can be consumed against the older
-    // values, skipping that solution.  Both effects cost at most one
-    // sample interval, which the slow wind filter tolerates.
+    // feed the wind-triangle estimator once per new velocity sample,
+    // captured above atomically with its timestamp.  Keying on the
+    // velocity's own timestamp means a stalled velocity stream stops
+    // wind estimation rather than repeatedly fusing a stale velocity;
+    // the attitude may come from a neighbouring packet on devices
+    // which deliver attitude and velocity separately, a skew bounded
+    // by one packet interval, which the slow wind filter tolerates.
     // ExternalAHRS can produce solutions faster than the estimator's
     // safe rate, but estimate_wind rate-limits internally.
-    uint32_t sample_us;
-    {
-        WITH_SEMAPHORE(extahrs.state.sem);
-        sample_us = extahrs.state.last_location_update_us;
-    }
-    if (results.velocity_NED_valid && sample_us != _last_wind_sample_us) {
-        _last_wind_sample_us = sample_us;
+    if (results.velocity_NED_valid && velocity_update_us != _last_wind_sample_us) {
+        _last_wind_sample_us = velocity_update_us;
         // estimate_wind wants the fuselage forward direction: the
         // body forward axis as a unit vector in NED:
         estimate_wind(results.velocity_NED, results.dcm_matrix.colx());
