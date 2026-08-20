@@ -4825,12 +4825,22 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             target_system=target_system,
             target_component=target_component)
 
-    def PolyFenceObjectAvoidanceAuto(self, target_system=1, target_component=1):
-        '''PolyFence object avoidance tests - auto mode'''
+    def MAVProxyFenceLoad(self):
+        '''upload a fence file with MAVProxy's "fence load"'''
+        # this is the only test exercising MAVProxy's fence-file upload;
+        # everything else uploads fences natively.  MAVProxy has to
+        # answer the vehicle's item requests inside the vehicle's eight
+        # second upload timeout (MissionItemProtocol.h::upload_timeout_ms)
+        # and that budget is spent in simulated time, so this runs
+        # serially and at a pinned speedup - the deadline belongs to the
+        # vehicle, and a busy machine cannot schedule MAVProxy inside it.
         mavproxy = self.start_mavproxy()
         self.load_fence_using_mavproxy(mavproxy, "rover-path-planning-fence.txt")
         self.stop_mavproxy(mavproxy)
-        # self.load_fence("rover-path-planning-fence.txt")
+
+    def PolyFenceObjectAvoidanceAuto(self, target_system=1, target_component=1):
+        '''PolyFence object avoidance tests - auto mode'''
+        self.load_fence("rover-path-planning-fence.txt")
         self.load_mission("rover-path-planning-mission.txt")
         self.set_parameters({
             "AVOID_ENABLE": 3,
@@ -7793,6 +7803,7 @@ return update()
             self.SDPolyFence,
             self.PolyFenceAvoidance,
             self.PolyFenceObjectAvoidanceAuto,
+            Test(self.MAVProxyFenceLoad, speedup=30),
             self.PolyFenceObjectAvoidanceGuided,
             self.PolyFenceObjectAvoidanceBendyRuler,
             self.SendToComponents,
