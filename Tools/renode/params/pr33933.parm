@@ -1,0 +1,5 @@
+# Configure one DShot output for the issue #33926 regression. The Renode hook
+# changes the live BLHeli mapping after initialization and starts the built-in
+# connection test; no board-specific serial or sensor defaults are required.
+SERVO_BLH_MASK 16
+SERVO_BLH_OTYPE 5
