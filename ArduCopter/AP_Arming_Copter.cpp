@@ -398,6 +398,14 @@ bool AP_Arming_Copter::gps_checks(bool display_failure)
         return false;
     }
 
+    // check horizontal accuracy (HACC) if available
+    float hacc = 0.0f;
+    if (is_positive(copter.g2.gps_hacc_good) && copter.gps.horizontal_accuracy(hacc) && (hacc > copter.g2.gps_hacc_good)) {
+        check_failed(Check::GPS, display_failure, "High GPS HACC");
+        AP_Notify::flags.pre_arm_gps_check = false;
+        return false;
+    }
+
     // if we got here all must be ok
     AP_Notify::flags.pre_arm_gps_check = true;
     return true;

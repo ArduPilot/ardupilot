@@ -704,6 +704,9 @@ public:
     // EKF variance filter cutoff
     AP_Float fs_ekf_filt_hz;
 
+    // GPS horizontal accuracy good
+    AP_Float gps_hacc_good;
+
 #if WEATHERVANE_ENABLED
     AC_WeatherVane weathervane;
 #endif
