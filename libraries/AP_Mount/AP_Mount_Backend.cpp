@@ -334,6 +334,8 @@ void AP_Mount_Backend::update_poi_lock_target()
 // set yaw lock - sets the _yaw_lock variable and captures current earth frame heading of mount for targeting in RC Targeting mode
 void AP_Mount_Backend::set_yaw_lock(bool yaw_lock)
 {
+    const bool yaw_lock_has_changed = _yaw_lock != yaw_lock;
+
     // if yaw not locked already, capture mount's earth frame heading for later possible use
     if (!_yaw_lock) {
         float roll_in, pitch_in, yaw_in;
@@ -347,6 +349,10 @@ void AP_Mount_Backend::set_yaw_lock(bool yaw_lock)
         }
     }
     _yaw_lock = yaw_lock;
+
+    if (yaw_lock_has_changed) {
+        yaw_lock_changed(yaw_lock);
+    }
  }
 
 

@@ -985,7 +985,14 @@ static bool announce_aux_function_from_rc(const RC_Channel::AUX_FUNC function)
     case RC_Channel::AUX_FUNC::CAMERA_LENS:
         // Camera backends provide a more useful, device-specific status.
         return false;
-#endif
+#endif // AP_CAMERA_ENABLED
+#if HAL_MOUNT_ENABLED
+    case RC_Channel::AUX_FUNC::MOUNT_YAW_LOCK:
+#if AP_MOUNT_POI_LOCK_ENABLED
+    case RC_Channel::AUX_FUNC::MOUNT_POI_LOCK:
+#endif // AP_MOUNT_POI_LOCK_ENABLED
+        return false;
+#endif // HAL_MOUNT_ENABLED
     default:
         return true;
     }

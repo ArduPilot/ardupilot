@@ -238,6 +238,8 @@ public:
 
 protected:
 
+    virtual void yaw_lock_changed(bool) {}
+
     enum class MountTargetType {
         ANGLE     = 0,
         RATE      = 1,

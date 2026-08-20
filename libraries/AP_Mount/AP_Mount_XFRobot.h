@@ -61,6 +61,8 @@ public:
 
 protected:
 
+    void yaw_lock_changed(bool yaw_lock) override;
+
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
