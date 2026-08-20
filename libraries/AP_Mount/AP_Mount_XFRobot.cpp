@@ -21,13 +21,13 @@
 
 const char* AP_Mount_XFRobot::send_text_prefix = "XFRobot:";
 
-enum class CameraSource : uint8_t {
+enum CameraSource : uint8_t {
     DEFAULT = 0,
     RGB = 1,
     THERMAL = 2,
 };
 
-enum class LensSource : uint8_t {
+enum LensSource : uint8_t {
     RGB_NOTHING = 0,
     THERMAL_NOTHING = 1,
     RGB_THERMAL = 2,
