@@ -28,6 +28,7 @@ userdata Location method get_alt_frame uint8_t
 userdata Location method change_alt_frame boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
 userdata Location method copy Location
 userdata Location method set_alt_m void float'skip_check Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN
+userdata Location method get_alt_m boolean Location::AltFrame'enum Location::AltFrame::ABSOLUTE Location::AltFrame::ABOVE_TERRAIN float'Null
 
 include AP_AHRS/AP_AHRS.h
 
@@ -1193,3 +1194,25 @@ singleton AP_OSD_Backend method draw_screen void
 singleton AP_OSD_Backend method get_aspect_ratio_correction float
 singleton AP_OSD_Backend method get_screen uint8_t
 singleton AP_OSD_Backend method display_disabled boolean
+
+-- ---- AP_OAScripting - scripted avoidance Library ----
+include AC_Avoidance/AP_OAScripting.h
+
+
+userdata OAObstacle rename OAObstacle
+userdata OAObstacle depends AP_OA_SCRIPTING_ENABLED
+userdata OAObstacle field timestamp_ms int32_t read write 0 2147483647
+userdata OAObstacle field src_id int32_t read write -1 2147483647
+userdata OAObstacle field icao_code int32_t read write 0 0xFFFFFF
+userdata OAObstacle field emitter_type uint8_t read write 0 UINT8_MAX
+userdata OAObstacle field obstacle_type uint8_t read write 0 UINT8_MAX
+userdata OAObstacle field location Location read
+userdata OAObstacle field position_NED_m Vector3f read
+userdata OAObstacle field velocity_NED_ms Vector3f read
+
+singleton AP_OAScripting rename OAScripting
+singleton AP_OAScripting depends AP_OA_SCRIPTING_ENABLED
+singleton AP_OAScripting method find_threats boolean Location Location float'skip_check float'Null OAObstacle'Null
+singleton AP_OAScripting method find_aircraft boolean Location float'skip_check float'skip_check float'Null OAObstacle'Null
+singleton AP_OAScripting method fence_distance boolean Location uint8_t 0 255 float'Null
+-- singleton AP_OAScripting method find_closest_aircraft boolean Location float'skip_check float'Null uint16_t'Null string'Null uint32_t'Null Location'Null Vector3f'Null Vector3f'Null

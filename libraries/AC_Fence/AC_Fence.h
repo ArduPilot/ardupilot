@@ -206,6 +206,14 @@ public:
     bool sys_status_enabled() const;
     bool sys_status_failed() const;
 
+    // methods used by scripted avoidance to detect distances from various fences
+    // each method returns true if it finds a fence and false if no related fence is found
+    float distance_line_to_home_inclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const;
+    float distance_line_to_circle_inclusion(const Vector2f &start_NE_cm, const Vector2f &end_NE_cm) const;
+    float distance_line_to_circle_exclusion(const Vector2f &start_NE_cm, const Vector2f &end_NE_cm) const;
+    float distance_line_to_polygon_inclusion(const Vector2f &start_NE_cm, const Vector2f &end_NE_cm) const;
+    float distance_line_to_polygon_exclusion(const Vector2f &start_NE_cm, const Vector2f &end_NE_cm) const;
+
     AC_PolyFence_loader &polyfence();
     const AC_PolyFence_loader &polyfence() const;
 

@@ -121,6 +121,9 @@
 #if AP_ADSB_AVOIDANCE_ENABLED
 #include "avoidance_adsb.h"
 #endif  // AP_ADSB_AVOIDANCE_ENABLED
+// included unconditionally so AP_OA_SCRIPTING_ENABLED is always defined (the
+// header self-guards); the aoscripting member below is gated on that macro.
+#include <AC_Avoidance/AP_OAScripting.h>
 #include "AP_Arming_Plane.h"
 #include "pullup.h"
 #include "systemid.h"
@@ -293,6 +296,10 @@ private:
 
 #if OSD_ENABLED || OSD_PARAM_ENABLED
     AP_OSD osd;
+#endif
+
+#if AP_OA_SCRIPTING_ENABLED
+    AP_OAScripting aoscripting;
 #endif
 
     ModeCircle mode_circle;
