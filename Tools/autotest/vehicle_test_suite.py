@@ -10558,12 +10558,22 @@ Also, ignores heartbeats not from our target system'''
             newname = os.path.join(to_dir, "%s-%s-%s" % (self.log_name(), name, bname))
             print("Renaming %s to %s" % (log, newname))
             shutil.move(log, newname)
-        # move binary log files
+        # move binary log files.  The name carries a timestamp so that a
+        # test which fails more than once in a session - or across runs -
+        # does not have its second failure's logs silently overwrite the
+        # first's, which cost us the only preserved copies of a rare
+        # failure's data:
+        stamp = time.strftime("%Y%m%d%H%M%S")
         if bin_logs is None:
             bin_logs = self.bin_logs()
         for log in sorted(bin_logs):
             bname = os.path.basename(log)
-            newname = os.path.join(to_dir, "%s-%s-%s" % (self.log_name(), name, bname))
+            newname = os.path.join(to_dir, "%s-%s-%s-%s" % (self.log_name(), name, stamp, bname))
+            # retries can fail twice within a second:
+            uniq = 0
+            while os.path.exists(newname):
+                uniq += 1
+                newname = os.path.join(to_dir, "%s-%s-%s.%u-%s" % (self.log_name(), name, stamp, uniq, bname))
             print("Renaming %s to %s" % (log, newname))
             shutil.move(log, newname)
         # move core files
@@ -10644,6 +10654,10 @@ Also, ignores heartbeats not from our target system'''
                                                        (self.log_name(), name))
 
         tee = TeeBoth(test_output_filename, 'w', self.mavproxy_logfile, suppress_stdout=suppress_stdout)
+
+        # so failure-preservation can tell this test's logs from ones
+        # accumulated by earlier tests on this worker:
+        bin_logs_at_test_start = {x: os.path.getmtime(x) for x in self.bin_logs()}
 
         sitl_stdout_offset = self.sitl_stdout_offset()
 
@@ -10727,7 +10741,14 @@ Also, ignores heartbeats not from our target system'''
                 ex = e
             passed = False
 
-        pre_reboot_bin_logs = self.bin_logs()
+        # only preserve onboard logs this test produced or extended: the
+        # worker's logs/ directory accumulates files from every previous
+        # test it ran (downloads included), and sweeping those up labels
+        # another test's data with this test's name
+        pre_reboot_bin_logs = [
+            x for x in self.bin_logs()
+            if bin_logs_at_test_start.get(x) != os.path.getmtime(x)
+        ]
 
         # if we haven't already reset ArduPilot because it's dead,
         # then ensure the vehicle was disarmed at the end of the test.
