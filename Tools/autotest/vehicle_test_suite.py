@@ -1830,15 +1830,20 @@ class FRSkySPort(FRSky):
         # example, if you poll an unhealthy RPM sensor then we will
         # *never* get a response back.  So we must re-poll (which
         # moves onto the next sensor):
-        if now - self.poll_sent > 5:
+        # this timeout is in simulated seconds - get_time is
+        # get_sim_time_cached - while the gap between our own update()
+        # calls is wall-clock work, and five simulated seconds are 50ms
+        # of wall clock at speedup 100.  So it fires routinely when we
+        # already have our response and simply have not sent the next
+        # poll yet, which is not something to recover from: only a poll
+        # still waiting on an answer is.
+        if now - self.poll_sent > 5 and self.state == self.state_WANT_FRAME_TYPE:
             if self.last_poll_sensor is None:
                 self.progress("Re-polling (last poll sensor was None)")
             else:
                 msg = ("Re-polling (last_poll_sensor=0x%02x state=%s)" %
                        (self.last_poll_sensor, self.state))
                 self.progress(msg)
-            if self.state != self.state_WANT_FRAME_TYPE:
-                raise ValueError("Expected to be wanting a frame type when repolling (state=%s)" % str(self.state))
             self.state = self.state_SEND_POLL
 
         if self.state == self.state_SEND_POLL:
