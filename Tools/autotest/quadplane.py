@@ -385,6 +385,206 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''Check extended sys state works'''
         self.EXTENDED_SYS_STATE_SLT()
 
+    def QRTLGradualAltDescent(self):
+        '''check gradual descent to RTL_ALTITUDE in QRTL'''
+        qrtl_alt = 20
+        rtl_altitude = 60
+        self.set_parameters({
+            "Q_RTL_ALT": qrtl_alt,
+            "RTL_ALTITUDE": rtl_altitude,
+            # decelerate gently, so the airbrake stage starts a long way
+            # out.  That is where the approach altitude profile hands back
+            # to the generic waypoint target, and any step in the target
+            # altitude at that handover shows up clearly
+            "Q_TRANS_DECEL": 0.6,
+        })
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, 100),
+        ])
+
+        self.wait_current_waypoint(2)
+
+        # get well away from home, cruising at the mission altitude, so
+        # QRTL's approach-phase ramp still has a long way to run
+        self.wait_distance_to_home(900, 1000, timeout=180)
+
+        entry_alt = self.get_altitude(relative=True)
+        self.progress("Entering QRTL at altitude %.1fm" % entry_alt)
+        self.change_mode('QRTL')
+
+        # entry_alt (~100m) is well above RTL_ALTITUDE (60m).  Track the
+        # altitude the fixed wing controller is actually chasing,
+        # reconstructed from NAV_CONTROLLER_OUTPUT.alt_error, which is
+        # (target - current) for as long as the fixed wing controller owns
+        # altitude.  That covers the approach and the airbrake stage, up to
+        # the handover to the VTOL position controller at QPOS_POSITION1,
+        # after which alt_error means something else entirely.
+        #
+        # The target must ease down from entry_alt towards RTL_ALTITUDE
+        # rather than snapping down while still ~900m short of home, must
+        # not step at any point (in particular at the approach to airbrake
+        # handover), and must actually make progress downwards - simply
+        # holding entry_alt for ever is not a gradual descent.
+        min_progress = 20           # m, target must come down at least this far
+
+        class MonitorQRTLDescentRate(vehicle_test_suite.TestSuite.MessageHook):
+            '''watches NAV_CONTROLLER_OUTPUT/GLOBAL_POSITION_INT and makes
+            sure the QRTL approach altitude target eases down continuously,
+            without stepping, towards RTL_ALTITUDE'''
+            def __init__(self, suite, entry_alt, max_step_rate=5, max_step_fixed=2):
+                super(MonitorQRTLDescentRate, self).__init__(suite)
+                # max_step_rate: m/s, target may not chase faster than this
+                # max_step_fixed: m, allowed on top of max_step_rate * dt
+                self.max_step_rate = max_step_rate
+                self.max_step_fixed = max_step_fixed
+                self.alt = entry_alt
+                self.prev_target = None
+                self.prev_t = None
+                self.target = None
+
+            def process(self, mav, m):
+                m_type = m.get_type()
+                if m_type == 'GLOBAL_POSITION_INT':
+                    self.alt = m.relative_alt * 0.001
+                    return
+                if m_type != 'NAV_CONTROLLER_OUTPUT':
+                    return
+
+                now = self.suite.get_sim_time_cached()
+                self.target = self.alt + m.alt_error
+                if self.prev_target is not None:
+                    dt = now - self.prev_t
+                    step = abs(self.target - self.prev_target)
+                    max_step = self.max_step_fixed + self.max_step_rate * dt
+                    self.progress("QRTL descent: alt=%.1f target=%.1f step=%.1f" %
+                                  (self.alt, self.target, step))
+                    if step > max_step:
+                        raise NotAchievedException(
+                            "QRTL target altitude stepped by %.1fm in %.2fs "
+                            "(max %.1fm), expected a continuous descent" %
+                            (step, dt, max_step))
+                self.prev_target = self.target
+                self.prev_t = now
+
+        self.context_push()
+        monitor = MonitorQRTLDescentRate(self, entry_alt)
+        self.install_message_hook_context(monitor)
+        # the VTOL position controller taking over altitude marks the end
+        # of the approach-phase ramp this test is checking
+        self.wait_statustext('VTOL position1', timeout=300)
+        self.context_pop()
+
+        if monitor.target is None:
+            raise NotAchievedException("Never saw a target altitude")
+        if monitor.target > entry_alt - min_progress:
+            raise NotAchievedException(
+                "QRTL target altitude only came down from %.1fm to %.1fm, "
+                "expected at least %.1fm of descent" %
+                (entry_alt, monitor.target, min_progress))
+
+        # let it continue home, transition and land normally
+        self.wait_altitude(-5, 1, relative=True, timeout=240)
+        self.wait_disarmed(timeout=60)
+
+    def QRTLGradualAltDescentTerrain(self):
+        '''check QRTL's approach altitude ramp is computed in the correct
+        altitude frame when QRTL is terrain following'''
+        self.install_terrain_handlers_context()
+
+        qrtl_alt = 20
+        rtl_altitude = 60
+        self.set_parameters({
+            "TERRAIN_ENABLE": 1,
+            "TERRAIN_FOLLOW": 1 << 9,  # bit 9 is QRTL
+            "TERRAIN_OPTIONS": 1 << 2,  # accept the cached terrain data as-is
+            "TERRAIN_LOOKAHD": 0,  # isolate the approach ramp; no lookahead confound
+            "ALT_SLOPE_MIN": 1,  # ensure the gradual ramp is used, not an immediate jump
+            "Q_RTL_ALT": qrtl_alt,
+            "RTL_ALTITUDE": rtl_altitude,
+            "Q_TRANS_DECEL": 0.6,
+        })
+
+        # move home to CMAC: the default QuadPlane test location is very
+        # flat, and this test needs real, cached-locally terrain relief
+        # to distinguish correct from buggy behaviour
+        self.customise_SITL_commandline(["--home", "-35.362938,149.165085,585,354"])
+
+        # fly west, where the ground rises steadily away from home for a
+        # couple of kilometres, so the QRTL destination (home) ends up
+        # well below the point the approach starts from
+        homeloc = self.home_position_as_location()
+        far_loc = self.offset_location_ne(homeloc, 0, -2000)
+
+        # prime the terrain database along the route before arming, or
+        # the prearm terrain check will never clear
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("Did not get required terrain data")
+            pending = 0
+            for i in range(11):
+                lat = homeloc.lat + i * (far_loc.lat - homeloc.lat) / 10
+                lon = homeloc.lng + i * (far_loc.lng - homeloc.lng) / 10
+                self.mav.mav.terrain_check_send(int(lat*1e7), int(lon*1e7))
+                report = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
+                pending += report.pending
+            self.progress("Terrain pending=%u" % pending)
+            if pending == 0:
+                break
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -2000, 100),
+        ])
+
+        self.wait_current_waypoint(2)
+        self.wait_distance_to_home(1500, 1600, timeout=180)
+
+        entry_agl = self.get_altitude(altitude_source="TERRAIN_REPORT.current_height")
+        self.progress("Entering QRTL at %.1fm AGL" % entry_agl)
+        self.change_mode('QRTL')
+
+        # the approach ramp must start from where the aircraft actually
+        # is. If its initial excess-height figure is computed in the
+        # wrong altitude frame (absolute rather than terrain-relative)
+        # the sloping ground between here and home biases it by the
+        # ground-height difference between the two points, and
+        # alt_error jumps by roughly that amount the moment QRTL is
+        # entered instead of starting near zero
+        class MonitorQRTLTerrainEntryError(vehicle_test_suite.TestSuite.MessageHook):
+            '''watches NAV_CONTROLLER_OUTPUT.alt_error right after QRTL is
+            entered over sloping terrain; a large jump means the approach
+            ramp mixed absolute and terrain-relative altitude frames'''
+            def __init__(self, suite, max_entry_error=8):
+                super(MonitorQRTLTerrainEntryError, self).__init__(suite)
+                self.max_entry_error = max_entry_error  # metres
+                self.seen_sample = False
+
+            def process(self, mav, m):
+                if m.get_type() != 'NAV_CONTROLLER_OUTPUT':
+                    return
+                self.seen_sample = True
+                self.progress("QRTL terrain entry: alt_error=%.1f" % m.alt_error)
+                if abs(m.alt_error) > self.max_entry_error:
+                    raise NotAchievedException(
+                        "QRTL target altitude jumped by %.1fm on entry over "
+                        "sloping terrain (max %.1fm); the approach ramp is "
+                        "mixing altitude frames" % (m.alt_error, self.max_entry_error))
+
+        self.context_push()
+        monitor = MonitorQRTLTerrainEntryError(self)
+        self.install_message_hook_context(monitor)
+        self.delay_sim_time(5, reason="sample QRTL entry altitude error")
+        self.context_pop()
+
+        if not monitor.seen_sample:
+            raise NotAchievedException("Never saw a NAV_CONTROLLER_OUTPUT sample")
+
+        # let it continue home, transition and land normally
+        self.wait_disarmed(timeout=300)
+
     def QAUTOTUNE(self):
         '''test Plane QAutoTune mode'''
 
@@ -3407,6 +3607,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownload,
             self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
+            self.QRTLGradualAltDescent,
+            self.QRTLGradualAltDescentTerrain,
             self.Mission,
             self.Weathervane,
             self.QAssist,
