@@ -454,7 +454,10 @@ void AP_SerialManager::init()
         state[i].idx = i;
 
         if (uart != nullptr) {
-            set_options(i);
+            // setup any special options
+            if (!uart->set_options(state[i].options)) {
+                DEV_PRINTF("Unable to setup options for Serial%u\n", i);
+            }
             switch (state[i].protocol) {
                 case SerialProtocol_None:
 #if HAL_GCS_ENABLED
@@ -790,16 +793,6 @@ bool AP_SerialManager::protocol_match(enum SerialProtocol protocol1, enum Serial
     }
 
     return false;
-}
-
-// setup any special options
-void AP_SerialManager::set_options(uint16_t i)
-{
-    struct UARTState &opt = state[i];
-    // pass through to HAL
-    if (!hal.serial(i)->set_options(opt.options)) {
-        DEV_PRINTF("Unable to setup options for Serial%u\n", i);
-    }
 }
 
 // get the passthru ports if enabled

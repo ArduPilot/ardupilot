@@ -500,13 +500,18 @@ void AC_PrecLand::handle_msg(const mavlink_landing_target_t &packet, uint32_t ti
 void AC_PrecLand::run_estimator(float rangefinder_alt_m, bool rangefinder_alt_valid)
 {
     _inertial_data_delayed = (*_inertial_history)[0];
+    if (_inertial_data_delayed == nullptr) {
+        // can't happen; the history always has an entry pushed before
+        // this method is called
+        return;
+    }
 
     switch ((EstimatorType)_estimator_type.get()) {
         case EstimatorType::RAW_SENSOR: {
             // Return if there's any invalid velocity data
             for (uint8_t i=0; i<_inertial_history->available(); i++) {
                 const struct inertial_data_frame_s *inertial_data = (*_inertial_history)[i];
-                if (!inertial_data->inertialNavVelocityValid) {
+                if (inertial_data == nullptr || !inertial_data->inertialNavVelocityValid) {
                     _target_acquired = false;
                     return;
                 }
@@ -729,6 +734,9 @@ void AC_PrecLand::run_output_prediction()
     // Predict forward from delayed time horizon
     for (uint8_t i=1; i<_inertial_history->available(); i++) {
         const struct inertial_data_frame_s *inertial_data = (*_inertial_history)[i];
+        if (inertial_data == nullptr) {
+            continue;
+        }
         _target_vel_rel_out_ne_ms.x -= inertial_data->correctedVehicleDeltaVelocityNED.x;
         _target_vel_rel_out_ne_ms.y -= inertial_data->correctedVehicleDeltaVelocityNED.y;
         _target_pos_rel_out_ne_m.x += _target_vel_rel_out_ne_ms.x * inertial_data->dt;
