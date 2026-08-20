@@ -34,6 +34,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 #include <AP_HAL/SIMState.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 using namespace HALSITL;
 
@@ -173,6 +174,7 @@ static void sig_alrm(int signum)
     static char env[] = "SITL_WATCHDOG_RESET=1";
     putenv(env);
     printf("GOT SIGALRM\n");
+    SocketAPM_native::cleanup_unix_paths();
     execv(new_argv[0], new_argv);
 }
 
@@ -319,6 +321,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 
 void HAL_SITL::actually_reboot()
 {
+    SocketAPM_native::cleanup_unix_paths();
     execv(new_argv[0], new_argv);
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }

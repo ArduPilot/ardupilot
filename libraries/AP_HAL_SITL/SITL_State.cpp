@@ -74,6 +74,7 @@ void SITL_State::_sitl_setup()
         _sitl->irlock_port = _irlock_port;
 
         _sitl->rcin_port = _rcin_port;
+        _sitl->rcin_path = _rcin_path;
 
         fprintf(stdout, "Using \\clock topic for DDS timing: %s\n", _use_dds_sim_time ? "enabled" : "disabled");
         _sitl->use_dds_sim_time = _use_dds_sim_time;
