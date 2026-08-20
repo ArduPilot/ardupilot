@@ -13561,8 +13561,19 @@ Also, ignores heartbeats not from our target system'''
                 self.progress("PASS not able to arm in mode : %s" % mode)
             if mode in self.get_position_armable_modes_list():
                 self.progress("Armable mode needing Position : %s" % mode)
-                self.wait_ekf_happy()
                 self.change_mode(mode)
+                # ask the vehicle whether it is ready rather than
+                # inferring it from the EKF status flags.  Those flags
+                # recover as soon as the estimator does, but arming also
+                # refuses while the EKF failsafe latch set by the GPS
+                # outage above is still set - Copter::position_ok()
+                # returns false on failsafe.ekf before it ever looks at a
+                # position - so a vehicle reporting a healthy 831 can
+                # still answer
+                #     Arm: Need Position Estimate
+                # The check is mode-dependent, so this has to come after
+                # the change_mode() above.
+                self.wait_ready_to_arm()
                 self.arm_vehicle()
                 self.wait_heartbeat()
                 self.disarm_vehicle()
