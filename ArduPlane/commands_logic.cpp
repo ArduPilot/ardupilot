@@ -777,17 +777,28 @@ bool Plane::verify_loiter_to_alt(const AP_Mission::Mission_Command &cmd)
 
     update_loiter(cmd.p1);
 
+    // type_specific_bit 0 stores the MAVLink param1 "heading required" flag:
+    // 1 = continue loitering until heading towards next waypoint (original behaviour)
+    // 0 = complete as soon as target altitude is reached
+    const bool heading_required = (cmd.type_specific_bits & (1U << 0)) != 0;
+
     // condition_value == 0 means alt has never been reached
     if (condition_value == 0) {
         // primary goal, loiter to alt
         if (labs(loiter.sum_cd) > 1 && (loiter.reached_target_alt || loiter.unable_to_achieve_target_alt)) {
-            // primary goal completed, initialize secondary heading goal
+            // primary goal completed
             if (loiter.unable_to_achieve_target_alt) {
                 gcs().send_text(MAV_SEVERITY_INFO,"Loiter to alt was stuck at %d", int(current_loc.alt/100));
             }
 
             condition_value = 1;
-            result = verify_loiter_heading(true);
+            if (!heading_required) {
+                // altitude reached and heading alignment not required, we are done
+                result = true;
+            } else {
+                // initialize secondary heading goal
+                result = verify_loiter_heading(true);
+            }
         }
     } else {
         // secondary goal, loiter to heading
