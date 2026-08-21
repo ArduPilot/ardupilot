@@ -118,14 +118,7 @@ bool AP_Arming_Sub::arm(AP_Arming::Method method, bool do_arming_checks)
 
     sub.initial_armed_bearing = ahrs.yaw_sensor;
 
-    if (!ahrs.home_is_set()) {
-        // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-
-        // Always use absolute altitude for ROV
-        // ahrs.resetHeightDatum();
-        // AP::logger().Write_Event(LogEvent::EKF_ALT_RESET);
-    } else if (!ahrs.home_is_locked()) {
-        // Reset home position if it has already been set before (but not locked)
+    if (!ahrs.home_is_set() || (!ahrs.home_is_locked() && !option_enabled(AP_Arming::Option::DISABLE_UPDATE_HOME_ON_ARM))) {
         if (!sub.set_home_to_current_location(false)) {
             // ignore this failure
         }
