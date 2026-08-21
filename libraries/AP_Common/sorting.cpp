@@ -21,20 +21,28 @@
   already sorted and O(n^2) for worst case (elements are reversed)
   sort order is smallest first
  */
-void insertion_sort_uint16(uint16_t *data, uint16_t n)
+template<typename T>
+void insertion_sort(T *data, uint16_t n)
 {
     for (uint16_t i=1; i<n; i++) {
-        uint16_t temp = data[i];
+        T temp = data[i];
         int16_t j = i - 1;
 
         while (j >= 0 && data[j] > temp) {
             data[j+1] = data[j];
             j--;
-		}
+        }
         data[j+1] = temp;
     }
 }
+void insertion_sort_uint16(uint16_t *data, uint16_t n)
+{
+    insertion_sort(data, n);
+}
 
+template void insertion_sort<float>(float*, unsigned short);
+template void insertion_sort<int16_t>(int16_t*, unsigned short);
+template void insertion_sort<uint16_t>(uint16_t*, unsigned short);
 /*
   remove duplicates from a sorted uint16_t array, returning the new
   count
