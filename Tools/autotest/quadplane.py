@@ -3552,6 +3552,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def PlaneWindFailsafe(self):
         '''test the plane-wind-failsafe.lua example script'''
+        # the script's 1Hz (simulated) callbacks execute on the
+        # wall-scheduled scripting thread; on a loaded machine at
+        # unlimited speedup whole warning cycles go missing:
+        #     Failed to receive text: wind warning at
+        self.context_set_speedup(10)
         self.install_example_script_context("plane-wind-failsafe.lua")
         self.set_parameters({
             "SCR_ENABLE": 1,
