@@ -183,6 +183,17 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
         continue
     fi
+    if [ "$t" == "sitltest-plane-last_letter" ]; then
+        # last_letter is an external simulator, shipped as a release tarball
+        # rather than built here. The github workflow unpacks it and exports
+        # LAST_LETTER_SITL_BIN; fail fast and legibly if it is absent.
+        if [ -z "${LAST_LETTER_SITL_BIN:-}" ] && ! command -v last_letter_ardupilot >/dev/null; then
+            echo "last_letter_ardupilot not found; set LAST_LETTER_SITL_BIN or put it on PATH"
+            exit 1
+        fi
+        run_autotest "Plane" "build.Plane" "test.LastLetterPlane"
+        continue
+    fi
     if [ "$t" == "sitltest-quadplane" ]; then
         run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
         continue
