@@ -12568,6 +12568,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def AuxSwitchOptions(self):
         '''Test random aux mode options'''
+        # establish home before exercising the clear-waypoints switch:
+        # when home is set (EKF origin arriving on a loaded machine
+        # well into the test) the firmware writes home back into the
+        # mission as item 0, and a clear racing that ends with
+        # MIS_TOTAL=1:
+        #     Unexpected count got=1 want=0
+        self.wait_ready_to_arm()
         self.set_parameter("RC7_OPTION", 58) # clear waypoints
         self.load_mission("copter_loiter_to_alt.txt")
         self.set_rc(7, 1000)
