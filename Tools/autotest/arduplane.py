@@ -7448,7 +7448,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # the EKF flags, GPS health and home position - so wait for the
         # prearm bit, which does:
         self.wait_prearm_sys_status_healthy()
-        self.arm_vehicle()
+        # ...even so, the arming-time mag-field check applies its own
+        # threshold which the prearm bit does not reflect, and a loaded
+        # run was refused at "Arm: Check mag field (xy diff:104>100)"
+        # moments after the bit went healthy.  Retry while the field
+        # settles.
+        tstart = self.get_sim_time()
+        while True:
+            try:
+                self.arm_vehicle()
+                break
+            except ValueError:
+                if self.get_sim_time_cached() - tstart > 60:
+                    raise
+                self.progress("Arm refused; allowing the mag field to settle")
+                self.delay_sim_time(5, reason="mag field settling after termination tumble")
 
         self.fly_home_land_and_disarm()
 
