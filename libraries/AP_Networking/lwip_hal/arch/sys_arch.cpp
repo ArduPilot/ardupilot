@@ -102,6 +102,11 @@ void sys_unlock_tcpip_core(void)
     tcpip_mutex.give();
 }
 
+int sys_trylock_tcpip_core(void)
+{
+    return tcpip_mutex.take_nonblocking();
+}
+
 void sys_mark_tcpip_thread(void)
 {
 }

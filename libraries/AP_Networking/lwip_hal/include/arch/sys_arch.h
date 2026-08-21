@@ -37,6 +37,8 @@ void sys_lock_tcpip_core(void);
 #define LOCK_TCPIP_CORE()          sys_lock_tcpip_core()
 void sys_unlock_tcpip_core(void);
 #define UNLOCK_TCPIP_CORE()        sys_unlock_tcpip_core()
+// take the core lock if it is free, returns non-zero on success
+int sys_trylock_tcpip_core(void);
 #endif
 
 struct timeval;
