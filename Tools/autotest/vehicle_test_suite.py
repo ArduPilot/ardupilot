@@ -6481,6 +6481,13 @@ class TestSuite(abc.ABC):
 
         if self.rc_thread is None:
             self.rc_thread = threading.Thread(target=self.rc_thread_main, name='RC')
+            # daemon: the quit flag is only set on the paths which join
+            # the thread, and a teardown which misses them (e.g. an
+            # exception during test cleanup) otherwise leaves the
+            # interpreter's shutdown waiting on this thread for ever -
+            # the whole worker process then hangs after its test has
+            # finished, and the parallel runner eventually abandons it
+            self.rc_thread.daemon = True
             if self.rc_thread is None:
                 raise NotAchievedException("Could not create thread")
             self.rc_thread.start()
@@ -11992,6 +11999,12 @@ Also, ignores heartbeats not from our target system'''
                     raise NotAchievedException("Cannot receive enough MAG_CAL_PROGRESS")
                 m = self.assert_receive_message(["MAG_CAL_PROGRESS", "MAG_CAL_REPORT"], timeout=10)
                 if m.get_type() == "MAG_CAL_REPORT":
+                    if reached_pct[m.compass_id] == 0:
+                        # see the other subtests: reports re-broadcast
+                        # from a previous calibration must not be graded
+                        # as this one's
+                        self.progress("Ignoring stale report for compass %u" % m.compass_id)
+                        continue
                     if report_get[m.compass_id] == 0:
                         self.progress("Report: %s" % str(m))
                         if m.cal_status == MAG_CAL_FAILED_RESIDUALS_HIGH:
@@ -12144,6 +12157,15 @@ Also, ignores heartbeats not from our target system'''
                     raise NotAchievedException("Cannot receive enough MAG_CAL_PROGRESS")
                 m = self.assert_receive_message(["MAG_CAL_PROGRESS", "MAG_CAL_REPORT"], timeout=5)
                 if m.get_type() == "MAG_CAL_REPORT":
+                    if progress_count[m.compass_id] == 0:
+                        # the firmware re-broadcasts unacknowledged
+                        # reports from the previous calibration; one
+                        # arrived 0.1s after this calibration's start
+                        # command and was graded as a zero-progress
+                        # SUCCESS.  A report for this calibration must
+                        # follow this calibration's progress.
+                        self.progress("Ignoring stale report for compass %u" % m.compass_id)
+                        continue
                     if report_get[m.compass_id] == 0:
                         self.progress("Report: %s" % self.dump_message_verbose(m))
                         param_names = ["SIM_MAG1_ORIENT"]
