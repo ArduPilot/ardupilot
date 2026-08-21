@@ -5,7 +5,15 @@
 NET_ENABLE 1
 NET_DHCP 0
 NET_PPP_PORT 1
-NET_OPTIONS 1
+# 20 second TCP discard client, plus the UDP client. TCP stops by itself
+# when its data is not acknowledged, the UDP stream only stops if the
+# periph honours software flow control
+NET_TESTS 65
+NET_TEST_IP0 10
+NET_TEST_IP1 77
+NET_TEST_IP2 193
+NET_TEST_IP3 10
+NET_OPTIONS 257
 NET_IPADDR0 10
 NET_IPADDR1 77
 NET_IPADDR2 193
