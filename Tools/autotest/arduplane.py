@@ -2175,7 +2175,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         if disable_airspeed_sensor:
-            max_allowed_divergence = 300
+            # two --parallel=32 runs grazed a 300m bound (300.46m,
+            # 300.82m) with the EKF otherwise healthy - the bound sat
+            # on the edge of the healthy distribution.  Catastrophic
+            # dead-reckoning failure is kilometre-scale, so a little
+            # headroom does not blunt the check.
+            max_allowed_divergence = 350
         else:
             max_allowed_divergence = 150
         self.install_message_hook_context(vehicle_test_suite.TestSuite.ValidateGlobalPositionIntAgainstSimState(self, max_allowed_divergence=max_allowed_divergence))  # noqa

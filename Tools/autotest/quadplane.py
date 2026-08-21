@@ -3383,7 +3383,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         # Allow the EKF to converge at warning-level wind before exercising the
         # warning threshold; EKF wind estimation requires sustained fixed-wing flight
-        self.set_parameter('SIM_WIND_SPD', 13)
+        # the DCM estimate substantially undershoots the true wind:
+        # 13m/s true was estimated at 10.02-10.12, a whisker above the
+        # script's 10m/s warn threshold, and on a loaded machine a dip
+        # below silenced the warnings mid-subtest.  16m/s true puts the
+        # estimate mid-way between the warn (10) and failsafe (15)
+        # thresholds.
+        self.set_parameter('SIM_WIND_SPD', 16)
         self.delay_sim_time(200, reason="EKF wind estimation to converge")
 
         self.start_subtest("Warning repeated approximately every 15 seconds, no failsafe")
