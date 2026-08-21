@@ -592,7 +592,7 @@ void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & st
  */
 int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
-    if (!_initialised || recent_open_error()) {
+    if (!_initialised) {
         return -1;
     }
 
