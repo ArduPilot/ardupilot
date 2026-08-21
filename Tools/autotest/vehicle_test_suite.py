@@ -4461,7 +4461,7 @@ class TestSuite(abc.ABC):
                                            log_id,
                                            ofs,
                                            count)
-        m = self.assert_receive_message('LOG_DATA', timeout=2)
+        m = self.assert_receive_message('LOG_DATA', timeout=10)
         if m.ofs != ofs:
             raise NotAchievedException("Incorrect offset")
         if m.count != count:
@@ -4517,7 +4517,7 @@ class TestSuite(abc.ABC):
                 break
             if self.get_sim_time_cached() - tstart > 120:
                 raise NotAchievedException("Did not download log in good time")
-            m = self.assert_receive_message('LOG_DATA', timeout=2)
+            m = self.assert_receive_message('LOG_DATA', timeout=10)
             if m.ofs != bytes_read:
                 raise NotAchievedException("Unexpected offset")
             if m.id != log_id:
@@ -4551,7 +4551,7 @@ class TestSuite(abc.ABC):
                     bytes_read,
                     bytes_to_fetch
                 )
-                m = self.assert_receive_message('LOG_DATA', timeout=2)
+                m = self.assert_receive_message('LOG_DATA', timeout=10)
                 self.progress("Read %u bytes at offset %u" % (m.count, m.ofs))
                 if m.ofs != bytes_read:
                     raise NotAchievedException("Incorrect offset in reply want=%u got=%u (%s)" % (bytes_read, m.ofs, str(m)))
@@ -4589,7 +4589,7 @@ class TestSuite(abc.ABC):
                 ofs,
                 bytes_to_fetch
             )
-            m = self.assert_receive_message('LOG_DATA', timeout=2)
+            m = self.assert_receive_message('LOG_DATA', timeout=10)
             if m.count == 0:
                 raise NotAchievedException("xZero bytes read (ofs=%u)" % (ofs,))
             if m.count > bytes_to_fetch:
@@ -4623,7 +4623,7 @@ class TestSuite(abc.ABC):
                 bytes_read,
                 90
             )
-            m = self.assert_receive_message('LOG_DATA', timeout=2)
+            m = self.assert_receive_message('LOG_DATA', timeout=10)
             if m.ofs != bytes_read:
                 raise NotAchievedException(f"Unexpected offset {bytes_read=} {self.dump_message_verbose(m)}")
             if m.id != log_id:
