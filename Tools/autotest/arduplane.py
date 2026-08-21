@@ -3587,9 +3587,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # Without the fix, speed == wind_spd (3D magnitude ~10 m/s).
         # With the fix, speed == horizontal component (~7.07 m/s).
         # A tolerance of 1 m/s distinguishes the two clearly.
+        # the timeout must cover the simulated wind's ramp-up plus the
+        # full 10s hold: a loaded run converged late and was cut off
+        # having held good values for 9.1 of the required 10 seconds
         self.wait_message_field_values("WIND", {
             "speed": expected_horizontal,
-        }, epsilon=1, timeout=30, minimum_duration=10)
+        }, epsilon=1, timeout=60, minimum_duration=10)
 
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
