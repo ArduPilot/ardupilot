@@ -3649,6 +3649,20 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 #endif
     }
 
+    const bool reboot = is_equal(packet.param1, static_cast<float>(REBOOT_SHUTDOWN_ACTION_REBOOT));
+    const bool reboot_to_bootloader = is_equal(packet.param1,
+                                                static_cast<float>(REBOOT_SHUTDOWN_ACTION_REBOOT_TO_BOOTLOADER));
+
+#if AP_REBOOT_MASS_STORAGE_ENABLED
+    const bool reboot_to_mass_storage = is_equal(packet.param1,
+                                                  static_cast<float>(REBOOT_SHUTDOWN_ACTION_REBOOT_TO_MASS_STORAGE));
+
+    // exporting writable storage must never be entered while armed
+    if (reboot_to_mass_storage && hal.util->get_soft_armed()) {
+        return MAV_RESULT_FAILED;
+    }
+#endif
+
     // refuse reboot when armed:
     if (hal.util->get_soft_armed()) {
         /// but allow it if forced:
@@ -3658,10 +3672,21 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
         }
     }
 
-    if (!(is_equal(packet.param1, 1.0f) || is_equal(packet.param1, 3.0f))) {
-        // param1 must be 1 or 3 - 1 being reboot, 3 being reboot-to-bootloader
+#if AP_REBOOT_MASS_STORAGE_ENABLED
+    const bool supported_reboot_action = reboot || reboot_to_bootloader || reboot_to_mass_storage;
+#else
+    const bool supported_reboot_action = reboot || reboot_to_bootloader;
+#endif
+    if (!supported_reboot_action) {
+        // param1 must select a supported reboot action
         return MAV_RESULT_UNSUPPORTED;
     }
+
+#if AP_REBOOT_MASS_STORAGE_ENABLED
+    if (reboot_to_mass_storage && !hal.util->request_usb_msd()) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     {  // autotest relies in receiving the ACK for the reboot.  Ensure
@@ -3682,13 +3707,10 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
                                  msg.sysid,
                                  msg.compid);
 
-    // when packet.param1 == 3 we reboot to hold in bootloader
-    const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
-
 #if AP_VEHICLE_ENABLED
-    AP::vehicle()->reboot(hold_in_bootloader);  // not expected to return
+    AP::vehicle()->reboot(reboot_to_bootloader);  // not expected to return
 #else
-    hal.scheduler->reboot(hold_in_bootloader);
+    hal.scheduler->reboot(reboot_to_bootloader);
 #endif
 
     return MAV_RESULT_FAILED;

@@ -636,6 +636,7 @@ def generate_hwdef_h(env):
         outdir=hwdef_out,
         bootloader=bootloader_flag,
         signed_fw=bool(env.AP_SIGNED_FIRMWARE),
+        mass_storage_option=int(env.MASS_STORAGE_OPTION),
         hwdef=hwdef,
         # stringify like old subprocess based invocation. note that no error is
         # generated if this path is missing!
