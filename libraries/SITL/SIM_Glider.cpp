@@ -304,9 +304,20 @@ void Glider::calculate_forces(const struct sitl_input &input, Vector3f &rot_acce
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "released at %.0f m AMSL", (0.01f * home.alt) - position.z);
         }
     } else if (carriage_state == carriageState::WAITING_FOR_PICKUP) {
-        // Don't allow the balloon to drag sideways until the pickup
-        balloon_velocity = Vector3f(0.0f, 0.0f, -balloon_rate * balloon);
-        balloon_position += balloon_velocity * (1.0e-6 * (float)frame_time_us);
+        // Don't allow the balloon to drag sideways until the pickup.
+        // Don't move the balloon at all until the vehicle is armed:
+        // update_balloon() applies no forces while disarmed, and
+        // SERVO6_FUNCTION defaults to a passthrough emitting trim
+        // (1500), so before a test or user configures the channel the
+        // balloon would climb at half rate.  Left long enough it parks
+        // beyond tether length, and the eventual pickup happens with
+        // the tether spring pre-stretched, catapulting the glider hard
+        // enough for the resulting pogo sink to trip NAV_ALTITUDE_WAIT
+        // descent-rate triggers.
+        if (hal.util->get_soft_armed()) {
+            balloon_velocity = Vector3f(0.0f, 0.0f, -balloon_rate * balloon);
+            balloon_position += balloon_velocity * (1.0e-6 * (float)frame_time_us);
+        }
     }
 
     // calculate angle of attack
