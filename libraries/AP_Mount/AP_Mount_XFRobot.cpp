@@ -19,6 +19,12 @@
 #define RECV_LENGTH_MIN             10      // receive packet minimum length in bytes
 #define PROTOCOL_VERSION            0x02    // protocol version
 
+static constexpr uint8_t SUB_FRAME_REQUEST_CODE = 0x01;
+static constexpr uint8_t CAMERA_1_MASK = 1U << 0;
+static constexpr float ZOOM_PROTOCOL_UNITS_PER_PERCENT = 100.0f;
+static constexpr uint16_t ABSOLUTE_ZOOM_PROTOCOL_MIN = 1U;
+static constexpr uint16_t ABSOLUTE_ZOOM_PROTOCOL_MAX = 10000U;
+
 const char* AP_Mount_XFRobot::send_text_prefix = "XFRobot:";
 
 enum CameraSource : uint8_t {
@@ -144,6 +150,12 @@ void AP_Mount_XFRobot::update()
 
     AP_Mount_Backend::update_mnt_target();
 
+    // Zoom commands are queued by set_zoom().  Send them before the
+    // periodic attitude packet, which can occupy most of the UART TX buffer.
+    if (zoom_target.pending && send_zoom_pct()) {
+        zoom_target.pending = false;
+    }
+
     // send target angles (which may be derived from other target types)
     send_target_to_gimbal();
 }
@@ -249,8 +261,8 @@ void AP_Mount_XFRobot::yaw_lock_changed(bool yaw_lock)
 // set zoom specified as a rate or percentage
 bool AP_Mount_XFRobot::set_zoom(ZoomType zoom_type, float zoom_value)
 {
-    // zoom rate
-    if (zoom_type == ZoomType::RATE) {
+    switch (zoom_type) {
+    case ZoomType::RATE: {
         FunctionOrder zoom_fn = FunctionOrder::ZOOM_STOP;
         if (zoom_value < 0) {
             zoom_fn = FunctionOrder::ZOOM_OUT;
@@ -258,6 +270,16 @@ bool AP_Mount_XFRobot::set_zoom(ZoomType zoom_type, float zoom_value)
             zoom_fn = FunctionOrder::ZOOM_IN;
         }
         return send_simple_command(zoom_fn, 0x01);
+    }
+    case ZoomType::PCT:
+        if (!healthy()) {
+            return false;
+        }
+        zoom_target.pct_100 = constrain_float(zoom_value * ZOOM_PROTOCOL_UNITS_PER_PERCENT,
+                                              ABSOLUTE_ZOOM_PROTOCOL_MIN,
+                                              ABSOLUTE_ZOOM_PROTOCOL_MAX);
+        zoom_target.pending = true;
+        return true;
     }
 
     // unsupported zoom type
@@ -574,6 +596,34 @@ bool AP_Mount_XFRobot::send_simple_command(FunctionOrder order, uint8_t param)
     _uart->write(simple_command.bytes, sizeof(SimpleCommand));
 
     // packet sent
+    return true;
+}
+
+// send the pending absolute zoom target
+bool AP_Mount_XFRobot::send_zoom_pct()
+{
+    if (!healthy() || _uart->txspace() < sizeof(ZoomCommand)) {
+        return false;
+    }
+
+    ZoomCommand zoom_command {};
+    zoom_command.content.main.header1 = SEND_HEADER1;
+    zoom_command.content.main.header2 = SEND_HEADER2;
+    zoom_command.content.main.length = htole16(sizeof(ZoomCommand));
+    zoom_command.content.main.version = PROTOCOL_VERSION;
+    zoom_command.content.main.request_code = SUB_FRAME_REQUEST_CODE;
+    zoom_command.content.main.order = FunctionOrder::ZOOM_RATE;
+
+    // Bit zero selects camera 1. Positive zoom values use 1~10000 for
+    // the minimum through maximum camera zoom range.
+    zoom_command.content.camera_mask = CAMERA_1_MASK;
+    zoom_command.content.zoom_pct_100 = htole16(zoom_target.pct_100);
+
+    const uint16_t crc16 = crc16_ccitt(zoom_command.bytes, sizeof(ZoomCommand) - 2, 0);
+    zoom_command.content.crc.crc_high = HIGHBYTE(crc16);
+    zoom_command.content.crc.crc_low = LOWBYTE(crc16);
+
+    _uart->write(zoom_command.bytes, sizeof(ZoomCommand));
     return true;
 }
 

@@ -35,6 +35,18 @@ extern const AP_HAL::HAL& hal;
 #include "RC_Channel.h"
 
 #include <AP_Arming/AP_Arming.h>
+#if AP_CAMERA_ENABLED
+#include <AP_Camera/AP_Camera.h>
+#endif
+
+#if AP_CAMERA_ENABLED
+static constexpr float CAMERA_ZOOM_PERCENT_MIN = 0.0f;
+static constexpr float CAMERA_ZOOM_PERCENT_MAX = 100.0f;
+static constexpr float RC_NORMALISED_INPUT_MIN = -1.0f;
+static constexpr float RC_NORMALISED_INPUT_MAX = 1.0f;
+static constexpr float CENTIPERCENT_PER_PERCENT = 100.0f;
+static constexpr uint32_t CAMERA_ZOOM_RETRY_MS = 1000U;
+#endif
 
 /*
   channels group object constructor
@@ -179,6 +191,7 @@ static bool payload_aux_allowed_without_valid_rc(const RC_Channel::AUX_FUNC opti
     case RC_Channel::AUX_FUNC::CAM_MODE_TOGGLE:
     case RC_Channel::AUX_FUNC::CAMERA_REC_VIDEO:
     case RC_Channel::AUX_FUNC::CAMERA_ZOOM:
+    case RC_Channel::AUX_FUNC::CAMERA_ZOOM_ABS:
     case RC_Channel::AUX_FUNC::CAMERA_MANUAL_FOCUS:
     case RC_Channel::AUX_FUNC::CAMERA_AUTO_FOCUS:
     case RC_Channel::AUX_FUNC::CAMERA_IMAGE_TRACKING:
@@ -220,6 +233,9 @@ void RC_Channels::read_aux_all()
         }
         need_log |= c->read_aux();
     }
+#if AP_CAMERA_ENABLED
+    update_camera_zoom_absolute();
+#endif
 #if HAL_LOGGING_ENABLED
     if (need_log) {
         // guarantee that we log when a switch changes
@@ -227,6 +243,40 @@ void RC_Channels::read_aux_all()
     }
 #endif
 }
+
+#if AP_CAMERA_ENABLED
+// update absolute camera zoom from the channel assigned CAMERA_ZOOM_ABS
+void RC_Channels::update_camera_zoom_absolute()
+{
+    AP_Camera *camera = AP::camera();
+    const RC_Channel *zoom_ch = find_channel_for_option(RC_Channel::AUX_FUNC::CAMERA_ZOOM_ABS);
+    if ((camera == nullptr) || (zoom_ch == nullptr) || (zoom_ch->get_radio_in() == 0)) {
+        return;
+    }
+
+    const float zoom_pct = linear_interpolate(CAMERA_ZOOM_PERCENT_MIN,
+                                              CAMERA_ZOOM_PERCENT_MAX,
+                                              zoom_ch->norm_input(),
+                                              RC_NORMALISED_INPUT_MIN,
+                                              RC_NORMALISED_INPUT_MAX);
+    const int16_t zoom_pct_100 = zoom_pct * CENTIPERCENT_PER_PERCENT;
+    if (_last_camera_zoom_pct_100 == zoom_pct_100) {
+        return;
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    if ((_last_camera_zoom_attempt_pct_100 == zoom_pct_100) &&
+        (now_ms - _last_camera_zoom_attempt_ms < CAMERA_ZOOM_RETRY_MS)) {
+        return;
+    }
+
+    _last_camera_zoom_attempt_pct_100 = zoom_pct_100;
+    _last_camera_zoom_attempt_ms = now_ms;
+    if (camera->set_zoom(ZoomType::PCT, zoom_pct)) {
+        _last_camera_zoom_pct_100 = zoom_pct_100;
+    }
+}
+#endif // AP_CAMERA_ENABLED
 
 void RC_Channels::init_aux_all()
 {

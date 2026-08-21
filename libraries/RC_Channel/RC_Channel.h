@@ -397,6 +397,9 @@ public:
         TRANSMITTER_TUNING = 219, // use a transmitter knob or slider for in-flight tuning
         TRANSMITTER_TUNING2 = 220, // use another transmitter knob or slider for in-flight tuning
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
+#if AP_CAMERA_ENABLED
+        CAMERA_ZOOM_ABS =    221, // absolute camera zoom input
+#endif  // AP_CAMERA_ENABLED
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
@@ -791,6 +794,13 @@ private:
 
     // Allow override by default at start
     bool _gcs_overrides_enabled = true;
+
+#if AP_CAMERA_ENABLED
+    void update_camera_zoom_absolute();
+    int16_t _last_camera_zoom_pct_100 = -1;
+    int16_t _last_camera_zoom_attempt_pct_100 = -1;
+    uint32_t _last_camera_zoom_attempt_ms = 0;
+#endif
 
     // true if GCS is performing a RC calibration
     bool gcs_is_calibrating;

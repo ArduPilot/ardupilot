@@ -262,6 +262,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Sub}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  218:Loweheiser throttle
     // @Values{Copter}: 219:Transmitter Tuning
+    // @Values{Copter, Rover, Plane, Sub}: 221:Camera Zoom Absolute
     // @Values{All-Vehicles}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @Values{All-Vehicles}: 316:Stop-Restart Scripting
     // @User: Standard
@@ -755,6 +756,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #endif
 #if AP_CAMERA_ENABLED
     case AUX_FUNC::CAMERA_IMAGE_TRACKING:
+    case AUX_FUNC::CAMERA_ZOOM_ABS:
 #endif
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::MOUNT_LRF_ENABLE:
@@ -936,6 +938,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #if AP_CAMERA_ENABLED
     { AUX_FUNC::CAMERA_REC_VIDEO, "Camera Record Video"},
     { AUX_FUNC::CAMERA_ZOOM, "Camera Zoom"},
+    { AUX_FUNC::CAMERA_ZOOM_ABS, "Camera Zoom Absolute"},
     { AUX_FUNC::CAMERA_MANUAL_FOCUS, "Camera Manual Focus"},
     { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
     { AUX_FUNC::CAMERA_IMAGE_TRACKING, "Camera Image Tracking"},
@@ -1171,6 +1174,7 @@ bool RC_Channel::do_aux_function_camera_zoom(const AuxSwitchPos ch_flag)
     if (camera == nullptr) {
         return false;
     }
+
     int8_t zoom_step = 0;   // zoom out = -1, hold = 0, zoom in = 1
     switch (ch_flag) {
     case AuxSwitchPos::HIGH:
@@ -2007,6 +2011,9 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 #endif
 
 // do nothing for these functions
+#if AP_CAMERA_ENABLED
+    case AUX_FUNC::CAMERA_ZOOM_ABS:
+#endif
 #if HAL_MOUNT_ENABLED
     case AUX_FUNC::MOUNT1_ROLL:
     case AUX_FUNC::MOUNT1_PITCH:

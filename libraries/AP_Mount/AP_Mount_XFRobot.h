@@ -147,6 +147,9 @@ private:
     // returns true on success, false on failure to send
     bool send_simple_command(FunctionOrder order, uint8_t param);
 
+    // send the pending absolute zoom target
+    bool send_zoom_pct();
+
     // check for recording timeout
     void check_recording_timeout();
 
@@ -257,6 +260,32 @@ private:
         } content;
         uint8_t bytes[sizeof(content)];
     };
+
+    // Absolute zoom command (order 0x25) is exactly 75 bytes:
+    // bytes 0..69 are the common main/sub frame, byte 70 is the camera
+    // selection mask, bytes 71..72 are the little-endian absolute zoom
+    // target, and bytes 73..74 are the CRC.  The length field includes the
+    // entire packet.  XFRobot GCU protocol requires target values 1..10000.
+    static constexpr uint8_t SEND_FRAME_SIZE = 70U;
+    static constexpr uint8_t ABSOLUTE_ZOOM_PACKET_SIZE = 75U;
+    union ZoomCommand {
+        struct PACKED {
+            SendPacketMainAndSubFrame main;
+            uint8_t camera_mask;
+            uint16_t zoom_pct_100;
+            PacketCRC crc;
+        } content;
+        uint8_t bytes[sizeof(content)];
+    };
+    static_assert(sizeof(SendPacketMainAndSubFrame) == SEND_FRAME_SIZE,
+                  "XFRobot send frame must be 70 bytes");
+    static_assert(sizeof(ZoomCommand) == ABSOLUTE_ZOOM_PACKET_SIZE,
+                  "XFRobot absolute zoom packet must be 75 bytes");
+
+    struct {
+        uint16_t pct_100;
+        bool pending;
+    } zoom_target;
 
     // structure to decode incoming packets
     struct PACKED GCUSimpleReply {
