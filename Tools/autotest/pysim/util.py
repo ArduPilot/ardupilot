@@ -213,11 +213,26 @@ def build_SITL(
         dronecan_tests=False,
         asan=False,
         waflock=None,
+        isolated=False,
 ):
     if extra_configure_args is None:
         extra_configure_args = []
     if extra_defines is None:
         extra_defines = {}
+
+    # isolated: configure and build in a separate output directory with
+    # a separate waf lockfile, then copy the built binary to the path in
+    # the default build tree callers expect.  For mid-test rebuilds with
+    # special configure options (e.g. --enable-PPP): without isolation
+    # the configure rewrites the default build tree's stored
+    # configuration and every binary built there afterwards inherits the
+    # options.
+    isolated_builddir = None
+    if isolated:
+        isolated_builddir = reltopdir('build-frame')
+        extra_configure_args = list(extra_configure_args) + ['--out', isolated_builddir]
+        if waflock is None:
+            waflock = '.lock-waf-frame-build'
 
     # first configure
     if configure:
@@ -251,6 +266,8 @@ def build_SITL(
         build_env = dict(os.environ)
         build_env['WAFLOCK'] = waflock
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True, env=build_env)
+    if isolated:
+        _copy_frame_artefact(isolated_builddir, board, build_target)
     return True
 
 
@@ -300,30 +317,22 @@ def build_SITL_frame(
     if board is not None:
         vehicle_build_kwargs['board'] = board
 
-    # build in a separate output directory: the frame's configure args
-    # (e.g. --enable-PPP) must not rewrite the default build tree's
-    # stored configuration, or every binary built there afterwards
-    # inherits them - a Plane suite's PPPPeriph run left build/sitl
-    # PPP-enabled, and the Sub network-port tests built after it
-    # black-holed all NET traffic.  The built binaries are copied to
-    # the paths consumers expect.
-    frame_builddir = reltopdir('build-frame')
-    configure_args += ['--out', frame_builddir]
-
+    # isolated: the frame's configure args (e.g. --enable-PPP) must not
+    # rewrite the default build tree's stored configuration - a Plane
+    # suite's PPPPeriph run left build/sitl PPP-enabled, and the Sub
+    # network-port tests built after it black-holed all NET traffic
     build_SITL(frame_opts['waf_target'],
                extra_configure_args=configure_args,
+               isolated=True,
                **vehicle_build_kwargs)
-    _copy_frame_artefact(frame_builddir,
-                         vehicle_build_kwargs.get('board', 'sitl'),
-                         frame_opts['waf_target'])
 
     periph_board = frame_opts.get('periph_board')
     if periph_board is not None:
         build_SITL('bin/AP_Periph',
                    board=periph_board,
                    extra_configure_args=configure_args,
+                   isolated=True,
                    **build_kwargs)
-        _copy_frame_artefact(frame_builddir, periph_board, 'bin/AP_Periph')
 
     return frame_opts
 
