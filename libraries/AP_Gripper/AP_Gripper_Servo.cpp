@@ -68,6 +68,28 @@ void AP_Gripper_Servo::release()
     LOGGER_WRITE_EVENT(LogEvent::GRIPPER_RELEASE);
 }
 
+void AP_Gripper_Servo::hold()
+{
+    // check if we are already holding
+    if (config.state == AP_Gripper::STATE_HOLDING) {
+        // do nothing
+        return;
+    }
+
+    uint16_t pwm;
+
+    if (!SRV_Channels::get_output_pwm(SRV_Channel::k_gripper, pwm)) {
+        return;
+    }
+
+    _hold_pwm = pwm;
+    config.state = AP_Gripper::STATE_HOLDING;
+    // stop the servo at the current position
+    SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, _hold_pwm);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper holding position");
+    LOGGER_WRITE_EVENT(LogEvent::GRIPPER_HOLD);
+}
+
 bool AP_Gripper_Servo::has_state_pwm(const uint16_t pwm) const
 {
     // return true if servo is in position represented by pwm
@@ -98,9 +120,20 @@ bool AP_Gripper_Servo::grabbed() const
     return (config.state == AP_Gripper::STATE_GRABBED);
 }
 
+bool AP_Gripper_Servo::holding() const
+{
+    return (config.state == AP_Gripper::STATE_HOLDING);
+}
+
 // type-specific periodic updates:
 void AP_Gripper_Servo::update_gripper()
 {
+    if (config.state == AP_Gripper::STATE_HOLDING) {
+        // Freeze output
+        SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, _hold_pwm);
+        return;
+    }
+
     // Check for successful grabbed or released
     if (config.state == AP_Gripper::STATE_GRABBING && has_state_pwm(config.grab_pwm)) {
         config.state = AP_Gripper::STATE_GRABBED;
