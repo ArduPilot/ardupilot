@@ -826,6 +826,7 @@ private:
     void gpsglitch_check();
     void failsafe_deadreckon_check();
     void set_mode_RTL_or_land_with_pause(ModeReason reason);
+    void set_mode_SmartRTL_or_fallback(const char *action_str, ModeReason reason, bool fallback_to_rtl);
     void set_mode_SmartRTL_or_RTL(ModeReason reason);
     void set_mode_SmartRTL_or_land_with_pause(ModeReason reason);
     void set_mode_auto_do_land_start_or_RTL(ModeReason reason);
