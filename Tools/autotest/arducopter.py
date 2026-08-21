@@ -23866,6 +23866,11 @@ return update()
             extra_configure_args=[
                 '--out', periph_builddir,
             ],
+            # keep this configuration's waf lockfile away from the
+            # tree's default one; without this the next plain "./waf
+            # build" (or autotest --no-configure) silently builds the
+            # peripheral board instead of the configured vehicle board
+            waflock='.lock-waf-build-periph',
             # extra_defines={
             # },
         )
