@@ -74,6 +74,13 @@ public:
         _reverse = reverse;
     }
 
+    // flush the cross-track integrator. Used by standby mode so that no
+    // lateral correction is stored up while another flight controller is
+    // flying the aircraft
+    void standby_reset(void) override {
+        _L1_xtrack_i = 0;
+    }
+
 private:
     // reference to the AHRS object
     AP_AHRS &_ahrs;
