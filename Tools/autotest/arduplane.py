@@ -9152,7 +9152,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.EK3HeightDatumResetFlushesBuffers,
-            self.PPPPeriph,
+            Test(self.PPPPeriphNoSoftFlow, speedup=1),
+            Test(self.PPPPeriph, speedup=1),
             self.steplessAHRSSwitch,
         ]
 
@@ -9326,6 +9327,45 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # just reboot.
         self.reboot_sitl()
 
+    def PPPPeriphNoSoftFlow(self):
+        '''verify the original PPP path with software flow control disabled'''
+        self.context_collect('STATUSTEXT')
+
+        self.set_parameters({
+            "NET_ENABLE": 1,
+            "SERIAL5_PROTOCOL": 48,
+            "SERIAL5_BAUD": 921,
+            "CAN_P1_DRIVER": 1,
+            "SIM_BAUDLIMIT_EN": 1,
+        })
+        self.restart_SITL_frame(
+            'quadplane-PPP-no-flow',
+            extra_configure_args=['--debug'],
+            # lockstep: the periph's PPP endpoint must not fall behind
+            # simulation time when the runner is loaded
+            customisations=['--serial5=tcp:{port}', '--sim-periph-lockstep'],
+        )
+        self.wait_statustext("PPP[0]: started", check_context=True, timeout=30,
+                             wallclock_timeout=True)
+        m = self.wait_statustext(r"NET: IP\s+10\.\d+\.\d+\.\d+",
+                                 check_context=True, regex=True, timeout=30,
+                                 wallclock_timeout=True)
+        self.progress("PPP link established without software flow: %s" %
+                      m.text.strip())
+        self.wait_statustext(
+            r"Discard server (?!0\.000)\d+\.\d+ kbyte/sec",
+            check_context=True,
+            regex=True,
+            timeout=30,
+        )
+
+        # A peer without the software-flow option sends ordinary PPP bytes;
+        # this path must not emit a negotiation warning or use the parser.
+        if self.statustext_in_collections(
+                "peer software flow unavailable") is not None:
+            raise NotAchievedException(
+                "Software flow-control callback used while option was disabled")
+
     def PPPPeriph(self):
         '''verify PPP-over-TCP link to an AP_Periph (sitl_periph_PPP) companion'''
         self.context_collect('STATUSTEXT')
@@ -9341,7 +9381,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "NET_ENABLE": 1,
             "SERIAL5_PROTOCOL": 48,
+            "SERIAL5_BAUD": 921,
             "CAN_P1_DRIVER": 1,
+            "SIM_BAUDLIMIT_EN": 1,
         })
         self.restart_SITL_frame(
             'quadplane-PPP',
@@ -9373,6 +9415,93 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                                  check_context=True, regex=True, timeout=30,
                                  wallclock_timeout=True)
         self.progress("PPP link established: %s" % m.text.strip())
+
+        # AP_Periph's TCP discard client now sends continuously to the
+        # discard server on Plane. Verify traffic is crossing PPP before
+        # stalling Plane's PPP consumer.
+        self.wait_statustext(
+            r"Discard server (?!0\.000)\d+\.\d+ kbyte/sec",
+            check_context=True,
+            regex=True,
+            timeout=30,
+        )
+        self.context_clear_collection('STATUSTEXT')
+        stall_start_us = int(self.get_sim_time() * 1.0e6)
+        self.set_parameter("SIM_UART_STALL_P", 5)
+        self.delay_sim_time(5, reason="fill PPP UART receive buffer")
+        if self.statustext_in_collections("PPP[0]: reconnecting") is not None:
+            raise NotAchievedException(
+                "PPP restarted while software flow control was active")
+
+        # Once reads resume, START should release the peer and TCP throughput
+        # should continue without a fresh PPP negotiation.
+        self.set_parameter("SIM_UART_STALL_P", -1)
+        self.context_clear_collection('STATUSTEXT')
+        self.wait_statustext(
+            r"Discard server (?!0\.000)\d+\.\d+ kbyte/sec",
+            check_context=True,
+            regex=True,
+            timeout=30,
+        )
+        self.delay_sim_time(2, reason="log UART flow-control recovery")
+        flow_test_end_us = int(self.get_sim_time() * 1.0e6)
+        if self.statustext_in_collections("PPP[0]: reconnecting") is not None:
+            raise NotAchievedException(
+                "PPP restarted after releasing the software flow-control stall")
+
+        # UART log instance 5 is the PPP port. A sustained five-second input
+        # stall at 921600 baud is much larger than its receive ring; zero
+        # RxDp proves that STOP throttled AP_Periph before the ring overflowed.
+        mlog = self.dfreader_for_current_onboard_log()
+        uart_messages = 0
+        max_dropped = 0
+        while True:
+            uart = mlog.recv_match(type='UART')
+            if uart is None:
+                break
+            if (uart.I != 5 or uart.TimeUS < stall_start_us or
+                    uart.TimeUS > flow_test_end_us):
+                continue
+            uart_messages += 1
+            max_dropped = max(max_dropped, uart.RxDp)
+        if uart_messages == 0:
+            raise NotAchievedException("No PPP UART statistics during stall")
+        if max_dropped != 0:
+            raise NotAchievedException(
+                "PPP UART dropped bytes during flow-control stall: %s" %
+                max_dropped)
+
+        # The bounded peer client now closes, leaving no TCP state to mask the
+        # independent PPP lifecycle test below.
+        self.wait_statustext("Discard server: disconnected",
+                             check_context=True, timeout=30)
+
+        # Drop an interior byte from every write on the PPP UART only. This
+        # models a burst of receive overruns at AP_Periph on a link without
+        # hardware flow control, while leaving SERIAL0 intact to observe it.
+        self.set_parameters({
+            "SIM_UART_LOSS": 0,
+            "SIM_UART_LOSS_P": 5,
+        })
+        self.context_clear_collection('STATUSTEXT')
+        loss_start = self.get_sim_time()
+        self.set_parameter("SIM_UART_LOSS", 100)
+        self.wait_statustext("PPP[0]: reconnecting",
+                             check_context=True, timeout=30)
+        restart_time = self.get_sim_time()
+        self.progress("PPP restart after %.2f seconds of byte loss" %
+                      (restart_time - loss_start))
+
+        # Restore the serial stream and verify that IPCP establishes the link
+        # again.  The repeated NET address announcement comes from the PPP
+        # status callback, so it proves that this is a fresh negotiation.
+        self.set_parameter("SIM_UART_LOSS", 0)
+        self.context_clear_collection('STATUSTEXT')
+        m = self.wait_statustext(r"NET: IP\s+10\.\d+\.\d+\.\d+",
+                                 check_context=True, regex=True, timeout=75)
+        recovery_time = self.get_sim_time()
+        self.progress("PPP link recovered after %.2f seconds: %s" %
+                      (recovery_time - loss_start, m.text.strip()))
 
     def tests1c(self):
         '''kind of reserved for flapping tests which we still have hopes for'''
