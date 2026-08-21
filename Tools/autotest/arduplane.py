@@ -6575,11 +6575,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "RC7_OPTION" : 300, # activation switch
             "RC9_OPTION" : 301, # selection switch
             # need to give some cycles to lua.  5 was not enough on a
-            # 16-core machine running the suite --parallel=32: the
-            # scripting thread's share of a contended core fell far
-            # enough that the path error reached 20 (threshold 15)
-            # during ScaleFigureEight
-            "SIM_SPEEDUP": 3,
+            # 16-core machine running the suite --parallel=32 (path
+            # error 20, threshold 15, during ScaleFigureEight), and at
+            # 3 the same machine still grazed the threshold at 15.3
+            "SIM_SPEEDUP": 2,
         })
 
         self.wait_ready_to_arm()
