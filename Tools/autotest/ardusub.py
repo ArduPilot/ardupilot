@@ -19,6 +19,7 @@ from pymavlink import mavutil
 import vehicle_test_suite
 
 from pysim import util
+from vehicle_test_suite import AltFrame
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
@@ -1310,6 +1311,75 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.progress("Baro-less Surface mode OK")
         self.disarm_vehicle()
 
+    def thruster_output_channels(self):
+        """Return the servo output channels driving thrusters on the current frame"""
+        motor_functions = range(33, 41)  # SRV_Channel::k_motor1 .. k_motor8
+        return [chan for chan in range(1, 9)
+                if self.get_parameter(f"SERVO{chan}_FUNCTION") in motor_functions]
+
+    def watch_thrusters_unsaturated(self, duration=10, margin=50):
+        """Raise if any thruster output sits against the PWM rails
+
+        Keyword Arguments:
+            duration {float} -- Time in simulation seconds to watch for (default: {10})
+            margin {int} -- Distance in us from a rail that still counts as saturated (default: {50})
+        """
+        pwm_min = self.get_parameter("MOT_PWM_MIN")
+        pwm_max = self.get_parameter("MOT_PWM_MAX")
+        channels = self.thruster_output_channels()
+        tstart = self.get_sim_time_cached()
+        while self.get_sim_time_cached() - tstart < duration:
+            m = self.assert_receive_message('SERVO_OUTPUT_RAW')
+            for chan in channels:
+                pwm = getattr(m, f"servo{chan}_raw")
+                if pwm < pwm_min + margin or pwm > pwm_max - margin:
+                    raise NotAchievedException(
+                        f"Thruster {chan} saturated while surfaced: pwm={pwm}")
+        self.progress("Thrusters remained unsaturated")
+
+    def SurfaceIndependentFromEkfOrigin(self):
+        """Check surface handling when the EKF origin carries a GPS altitude error
+
+        The origin is set at the first GPS lock, so its altitude is only as good as that
+        one fix and can be metres out.  Depth comes from the depth sensor, and
+        SURFACE_DEPTH is a reading of that sensor, so the vehicle must stop at the same
+        real altitude wherever the origin ended up.
+        """
+        stop_altitudes = []
+
+        for gps_alt_error_m in (5, -5):
+            self.progress(f"GPS reporting the surface {gps_alt_error_m}m out")
+
+            self.set_parameters({
+                "SIM_GPS1_ALT_OFS": gps_alt_error_m,
+                "SIM_BUOYANCY": 0,
+            })
+            self.reboot_sitl()
+            self.dive(-10)
+
+            self.change_mode('GUIDED')
+            target = self.get_location()
+            target.set_alt_m(5, AltFrame.ABOVE_HOME)
+            self.send_do_reposition(target)
+
+            self.delay_sim_time(30, reason="vehicle to surface and settle")
+            self.watch_altitude_maintained(delta=0.3, timeout=10)
+            self.watch_thrusters_unsaturated()
+            stop_altitudes.append(self.get_altitude(altitude_source="SIM_STATE.alt"))
+
+            self.change_mode('MANUAL')
+            self.disarm_vehicle()
+
+        if abs(stop_altitudes[0] - stop_altitudes[1]) > 0.3:
+            raise NotAchievedException(
+                f"surface stops differ: {stop_altitudes[0]:.2f}m and {stop_altitudes[1]:.2f}m")
+        self.progress(
+            f"both origins stopped at the same altitude: "
+            f"{stop_altitudes[0]:.2f}m and {stop_altitudes[1]:.2f}m")
+
+        self.set_parameter("SIM_GPS1_ALT_OFS", 0)
+        self.reboot_sitl()
+
     def UTMGlobalPositionWaypoint(self):
         '''test UTM_GLOBAL_POSITION waypoint fields in AUTO'''
         self.upload_simple_relhome_mission([
@@ -1720,6 +1790,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.PosHoldBounceBack,
             self.SHT3X,
             self.SurfaceSensorless,
+            self.SurfaceIndependentFromEkfOrigin,
             self.GPSForYaw,
             self.WaterDepth,
             self.VisoForYaw,
