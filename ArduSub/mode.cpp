@@ -292,7 +292,7 @@ void Mode::get_pilot_desired_angle_rates(int16_t roll_in, int16_t pitch_in, int1
 // allows SURFACE_MAX_THR at the surface, scaling linearly to full throttle one metre below it
 void Mode::set_surface_throttle_limit()
 {
-    float distance_to_surface = (g.surface_depth - position_control->get_pos_estimate_U_m() * 100.0f) * 0.01f;
+    float distance_to_surface = (sub.get_surface_depth_U_cm() - position_control->get_pos_estimate_U_m() * 100.0f) * 0.01f;
     distance_to_surface = constrain_float(distance_to_surface, 0.0f, 1.0f);
     motors.set_max_throttle(g.surface_max_throttle + (1.0f - g.surface_max_throttle) * distance_to_surface);
 }
@@ -306,7 +306,7 @@ void Mode::update_depth_controller()
 
     if (sub.ap.at_surface) {
         // do not ask the controller to climb above the surface
-        position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), g.surface_depth));
+        position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), sub.get_surface_depth_U_cm()));
 
         // drop any upwards feed-forward (up is negative down) so the velocity loop stops demanding a climb
         position_control->set_vel_desired_D_ms(MAX(position_control->get_vel_desired_NED_ms().z, 0.0f));
