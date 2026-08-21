@@ -592,7 +592,7 @@ void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & st
  */
 int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
-    if (!_initialised || recent_open_error()) {
+    if (!_initialised) {
         return -1;
     }
 
@@ -607,6 +607,15 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         _read_fd = -1;
     }
     if (_read_fd == -1) {
+        // Only consult the write path's open-error state when we must
+        // open a file ourselves.  start_new_log() sets _open_error_ms
+        // speculatively on entry and clears it after a successful
+        // open; a read arriving in that window is not evidence of a
+        // broken filesystem, and returning -1 here is reported to the
+        // log-download client as EOF (LOG_DATA.count==0) mid-file.
+        if (recent_open_error()) {
+            return -1;
+        }
         char *fname = _log_file_name(log_num);
         if (fname == nullptr) {
             return -1;
