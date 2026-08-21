@@ -3331,8 +3331,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # thread cannot keep the simulated GPS within its health window
         # on a loaded CI runner, producing intermittent "GPS 1: not
         # healthy" arm failures.  Run these tests at a reduced speedup so
-        # the thread keeps up.
-        self.context_set_speedup(20)
+        # the thread keeps up.  20 was not enough on a 32-thread machine
+        # running the suite --parallel=32: the external AHRS itself
+        # dropped to DCM for a moment ("AHRS: DCM active" / "AHRS:
+        # External active") exactly as the arm command landed, and the
+        # arm was refused.
+        self.context_set_speedup(10)
         self.customise_SITL_commandline(["--serial4=sim:%s" % sim])
 
         self.set_parameters({
@@ -3361,12 +3365,19 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # tenth of a second earlier - seen at --parallel=32.  Require the
         # health to hold before asking.
         self.wait_and_maintain_range(
-            value_name="GPS healthy",
+            value_name="GPS and AHRS healthy",
             minimum=1,
             maximum=1,
-            current_value_getter=lambda: int(self.sensor_has_state(
-                mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS,
-                present=True, enabled=True, healthy=True)),
+            # the AHRS bit covers the external AHRS dropping to DCM
+            # when its parser thread starves - that blip refused an arm
+            # after the GPS-only guard had been satisfied
+            current_value_getter=lambda: int(
+                self.sensor_has_state(
+                    mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS,
+                    present=True, enabled=True, healthy=True) and
+                self.sensor_has_state(
+                    mavutil.mavlink.MAV_SYS_STATUS_AHRS,
+                    present=True, enabled=True, healthy=True)),
             minimum_duration=5,
             timeout=60,
         )
