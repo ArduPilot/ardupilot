@@ -278,6 +278,14 @@ def build_SITL_frame(
     vinfo = vehicleinfo.VehicleInfo()
     frame_opts = vinfo.options[vehicleinfo_key]['frames'][frame]
 
+    # keep these configurations' waf lockfile away from the tree's
+    # default one: the vehicle is configured with frame-specific
+    # options and the companion is a peripheral board, and letting
+    # either rewrite the default lockfile makes the next plain
+    # "./waf build" (or autotest --no-configure) silently build with
+    # this frame's configuration instead of the tree's
+    build_kwargs.setdefault('waflock', '.lock-waf-frame-build')
+
     configure_args = list(frame_opts.get('configure_args', []))
     if extra_configure_args is not None:
         configure_args += list(extra_configure_args)
