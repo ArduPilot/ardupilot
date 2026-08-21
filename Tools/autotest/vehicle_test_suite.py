@@ -11402,9 +11402,11 @@ Also, ignores heartbeats not from our target system'''
         path = None
         try:
             path = self.current_onboard_log_filepath()
-        except (FileNotFoundError, ValueError):
+        except (FileNotFoundError, IndexError, ValueError):
             # no log yet, or we can't understand LASTLOG.TXT; either way
-            # don't mask the exception we are in the middle of reporting
+            # this diagnostic path must never mask the exception we are in
+            # the middle of reporting, nor take the worker down (it did:
+            # "Test runner exited without returning a result")
             pass
         self.progress("Most recent logfile: %s" % (path, ), send_statustext=send_statustext)
 
