@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <errno.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -133,18 +134,40 @@ static void run_command_on_ownpid(const char *commandname)
         fprintf(stderr, "Failed to open stack dump filepath: %m");
         return;
     }
+    fflush(stderr);  // we are about to write(2) around it
     char buf[1024]; // let's hope we're not here because we ran out of stack
     while (true) {
         const ssize_t ret = read(fd, buf, ARRAY_SIZE(buf));
         if (ret == -1) {
+            if (errno == EINTR) {
+                // one of our timers, not a real error
+                continue;
+            }
             fprintf(stderr, "Read error: %m");
             break;
         }
         if (ret == 0) {
             break;
         }
-        if (write(2, buf, ret) != ret) {
-            // *sigh*
+        // write() is allowed to write less than it was asked to - stderr
+        // is a pipe when run from autotest, and a signal can cut a write
+        // short - so keep going until the whole block is out.  Treating a
+        // short write as fatal silently truncated the output, which is
+        // the one thing we came here to collect.
+        ssize_t written = 0;
+        while (written < ret) {
+            const ssize_t wrote = write(2, &buf[written], ret - written);
+            if (wrote == -1) {
+                if (errno == EINTR) {
+                    continue;
+                }
+                break;
+            }
+            written += wrote;
+        }
+        if (written != ret) {
+            fprintf(stderr, "Write error after %d of %d bytes: %m\n",
+                    (int)written, (int)ret);
             break;
         }
     }
