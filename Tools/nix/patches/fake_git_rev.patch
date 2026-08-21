@@ -1,0 +1,12 @@
+diff --git a/Tools/ardupilotwaf/git_submodule.py b/Tools/ardupilotwaf/git_submodule.py
+index be28216e9c..71ab1f9c33 100644
+--- a/Tools/ardupilotwaf/git_submodule.py
++++ b/Tools/ardupilotwaf/git_submodule.py
+@@ -157,6 +157,7 @@ def git_submodule_post_fun(bld):
+     bld.add_post_fun(_post_fun)
+
+ def _git_head_hash(ctx, path, short=False):
++    return "2388afcd"
+     cmd = [ctx.env.get_flat('GIT'), 'rev-parse']
+     if short:
+         cmd.append('--short=8')
