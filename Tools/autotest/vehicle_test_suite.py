@@ -5946,11 +5946,22 @@ class TestSuite(abc.ABC):
         # of a wall second at speedup, so poll for growth rather than
         # sampling once:
         #     Log is not growing
-        tstart_wall = time.time()
+        # every gate here is paced by simulated time - LOG_DISARMED is
+        # polled, and a write chunk accumulates at the (simulated)
+        # disarmed logging rate before anything reaches the disk - so
+        # budget in simulated time too; wall-clock budgets (10s, then
+        # 30s) each proved too small on a thrashed 16-core machine at
+        # --parallel=32 where simulated time crawls
+        # sized to the write-chunk arithmetic: this test runs with
+        # LOG_DARM_RATEMAX=1, so disarmed data accumulates at roughly
+        # 60-200 bytes per simulated second and a 4KiB IO chunk can
+        # legitimately take over a simulated minute to fill before
+        # anything reaches the disk
+        tstart = self.get_sim_time()
         while os.path.getsize(current_log_filepath) == current_log_filepath_size:
-            if time.time() - tstart_wall > 10:
+            if self.get_sim_time_cached() - tstart > 240:
                 raise NotAchievedException("Log is not growing")
-            time.sleep(0.2)
+            self.delay_sim_time(5, reason="log data to accumulate")
 
         # self.progress("Checking LOG_FILE_DSRMROT behaviour when log_DISARMED set")
         # self.set_parameter("LOG_FILE_DSRMROT", 1)
