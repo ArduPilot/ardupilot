@@ -128,6 +128,19 @@ bool AP_Compass_IIS2MDC::check_whoami()
 
 void AP_Compass_IIS2MDC::timer()
 {
+    _dev->check_next_register();
+
+    uint8_t status = 0;
+    if (!_dev->read_registers(IIS2MDC_ADDR_STATUS_REG, &status, 1)) {
+        return;
+    }
+
+    if (!(status & IIS2MDC_STATUS_REG_READY)) {
+        return;
+    }
+
+    // A burst read wraps around inside OUTX..OUTZ rather than running on into
+    // TEMP_OUT, so only the six axis bytes are worth asking for.
     struct PACKED {
         uint8_t xout0;
         uint8_t xout1;
@@ -135,26 +148,14 @@ void AP_Compass_IIS2MDC::timer()
         uint8_t yout1;
         uint8_t zout0;
         uint8_t zout1;
-        uint8_t tout0;
-        uint8_t tout1;
     } buffer;
+
+    if (!_dev->read_registers(IIS2MDC_ADDR_OUTX_L_REG, (uint8_t *) &buffer, sizeof(buffer))) {
+        return;
+    }
 
     const float range_scale = 1.5f; // 1.5 mgauss/LSB
 
-    uint8_t status = 0;
-    if (!_dev->read_registers(IIS2MDC_ADDR_STATUS_REG, &status, 1)) {
-        goto check_registers;
-    }
-
-    if (!(status & IIS2MDC_STATUS_REG_READY)) {
-        goto check_registers;
-    }
-
-    if (!_dev->read_registers(IIS2MDC_ADDR_OUTX_L_REG, (uint8_t *) &buffer, sizeof(buffer))) {
-        goto check_registers;
-    }
-
-    {
     const int16_t x = ((buffer.xout1 << 8) | buffer.xout0);
     const int16_t y = ((buffer.yout1 << 8) | buffer.yout0);
     const int16_t z = -1 * ((buffer.zout1 << 8) | buffer.zout0);
@@ -162,10 +163,6 @@ void AP_Compass_IIS2MDC::timer()
     Vector3f field{ x * range_scale, y * range_scale, z * range_scale };
 
     accumulate_sample(field);
-    }
-
-check_registers:
-    _dev->check_next_register();
 }
 
 #endif //AP_COMPASS_IIS2MDC_ENABLED
