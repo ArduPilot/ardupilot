@@ -432,6 +432,8 @@ private:
     bool set_home(const Location& loc, bool lock) override WARN_IF_UNUSED;
     float get_alt_rel() const WARN_IF_UNUSED;
     float get_alt_msl() const WARN_IF_UNUSED;
+    float get_surface_alt_U_m() const WARN_IF_UNUSED;
+    float get_surface_depth_U_cm() const WARN_IF_UNUSED;
     void exit_mission();
     void set_origin(const Location& loc);
     bool verify_loiter_unlimited();

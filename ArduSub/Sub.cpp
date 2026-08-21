@@ -455,6 +455,27 @@ float Sub::get_alt_msl() const
     return -posD;
 }
 
+// get the altitude of the water surface in the position controller's U frame
+// The position controller works relative to the EKF origin, whose vertical datum is
+// arbitrary, while the depth sensor is zeroed at the surface. The offset between the
+// two is the difference between the position estimate and the depth reading, so it
+// tracks a re-zeroed depth sensor or a new origin without needing to be latched.
+// Without a depth sensor nothing ties the estimate to the surface, so assume the datum.
+float Sub::get_surface_alt_U_m() const
+{
+    if (!ap.depth_sensor_present) {
+        return 0;
+    }
+
+    return pos_control.get_pos_estimate_U_m() - barometer.get_altitude();
+}
+
+// get SURFACE_DEPTH expressed in the position controller's U frame
+float Sub::get_surface_depth_U_cm() const
+{
+    return get_surface_alt_U_m() * 100.0f + g.surface_depth;
+}
+
 #if AP_SUB_RC_ENABLED
 void Sub::rc_loop()
 {
