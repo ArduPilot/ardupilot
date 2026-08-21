@@ -58,7 +58,7 @@ public:
     // record that a task slipped
     void task_slipped(uint8_t task_index) {
         if (_task_info && task_index < _num_tasks) {
-            _task_info[task_index].overrun_count++;
+            _task_info[task_index].slip_count++;
         }
     }
 
