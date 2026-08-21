@@ -3283,10 +3283,42 @@ void QuadPlane::waypoint_controller(void)
 
     // call attitude controller
     disable_yaw_rate_time_constant();
-    attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
-                                                       plane.nav_pitch_cd,
-                                                       wp_nav->get_yaw(),
-                                                       true);
+
+    // Weathervane if enabled
+    const bool allow_weathervane = transition->allow_weathervane();
+    if (!allow_weathervane) {
+        // Reset weathervane controller
+        weathervane->reset();
+    }
+
+    float wv_output;
+    if (allow_weathervane &&
+        weathervane->get_yaw_out(wv_output,
+                                0,
+                                plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING),
+                                pos_control->get_roll_cd(),
+                                pos_control->get_pitch_cd(),
+                                false,
+                                false)) {
+
+        // Yaw rate target from weathervane controller
+        float wv_yaw_rate_cds = scale_weathervane_output(wv_output);
+
+        // Apply auto mode slew limit
+        const float slew_limit_cds = rad_to_cd(attitude_control->get_slew_yaw_max_rads());
+        wv_yaw_rate_cds = constrain_float(wv_yaw_rate_cds, -slew_limit_cds, slew_limit_cds);
+
+        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(plane.nav_roll_cd,
+                                                                    plane.nav_pitch_cd,
+                                                                    wv_yaw_rate_cds);
+
+    } else {
+        // Yaw angle target from waypoint navigation
+        attitude_control->input_euler_angle_roll_pitch_yaw_cd(plane.nav_roll_cd,
+                                                        plane.nav_pitch_cd,
+                                                        wp_nav->get_yaw(),
+                                                        true);
+    }
 
     // climb based on altitude error
     set_climb_rate_ms(assist_climb_rate_cms() * 0.01);
@@ -3892,6 +3924,12 @@ float QuadPlane::forward_throttle_pct()
     return vel_forward.last_pct;
 }
 
+// Scale weathervane output into yaw rate in cds
+float QuadPlane::scale_weathervane_output(float wv_out) const
+{
+    return constrain_float(wv_out * (1/45.0), -100.0, 100.0) * command_model_pilot.get_rate() * 0.5;
+}
+
 /*
   get weathervaning yaw rate in cd/s
  */
@@ -3925,7 +3963,7 @@ float QuadPlane::get_weathervane_yaw_rate_cds(void)
                                      pos_control->get_pitch_cd(),
                                      is_takeoff,
                                      in_vtol_land_sequence())) {
-        return constrain_float(wv_output * (1/45.0), -100.0, 100.0) * command_model_pilot.get_rate() * 0.5;
+        return scale_weathervane_output(wv_output);
     }
 
     return 0.0;
