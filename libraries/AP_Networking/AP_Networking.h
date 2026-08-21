@@ -177,6 +177,7 @@ public:
 #if AP_NETWORKING_CAPTURE_ENABLED
         CAPTURE_PACKETS=(1U<<7),
 #endif
+        PPP_SOFTWARE_FLOW_CONTROL=(1U<<8),
     };
     bool option_is_set(OPTION option) const {
         return (param.options.get() & int32_t(option)) != 0;
@@ -330,12 +331,16 @@ private:
         TEST_TCP_DISCARD = (1U<<2),
         TEST_TCP_REFLECT = (1U<<3),
         TEST_CONNECTOR_LOOPBACK = (1U<<4),
+        TEST_TCP_DISCARD_SERVER = (1U<<5),
+        TEST_TCP_DISCARD_ONESHOT = (1U<<6),
     };
     void start_tests(void);
     void test_UDP_client(void);
     void test_TCP_client(void);
     void test_TCP_discard(void);
+    void test_TCP_discard_oneshot(void);
     void test_TCP_reflect(void);
+    void test_TCP_discard_server(void);
     void test_connector_loopback(void);
 #endif // AP_NETWORKING_TESTS_ENABLED
 
