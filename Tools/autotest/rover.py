@@ -6986,7 +6986,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # --enable-math-check-indexes matches the CI rover build
         # configuration, so in CI this rebuild is a ccache hit against
         # the pre-built PPP rover from the build job
-        util.build_SITL('bin/ardurover', clean=False, configure=True,
+        # isolated: --enable-PPP must not rewrite the default build
+        # tree's stored configuration, or every binary built there
+        # afterwards comes out PPP-enabled
+        util.build_SITL('bin/ardurover', clean=False, configure=True, isolated=True,
                         extra_configure_args=['--enable-PPP', '--enable-math-check-indexes', '--debug'])
 
         # under the parallel test runner each test runs against a private
