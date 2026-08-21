@@ -265,6 +265,8 @@ public:
     AP_Int16 on_hardware_relay_enable_mask;   // mask of relays passed through to actual hardware
 
     AP_Float uart_byte_loss_pct;
+    AP_Int8 uart_byte_loss_port;
+    AP_Int8 uart_read_stall_port;
 
 #ifdef AP_DDS_ENABLED
     bool use_dds_sim_time = false; // use ROS2 simulation time for DDS topics
