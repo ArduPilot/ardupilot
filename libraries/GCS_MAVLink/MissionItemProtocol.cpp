@@ -6,6 +6,10 @@
 
 #include "GCS.h"
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+#endif
+
 void MissionItemProtocol::init_send_requests(GCS_MAVLINK &_link,
                                              const mavlink_message_t &msg,
                                              const int16_t _request_first,
@@ -388,7 +392,20 @@ void MissionItemProtocol::update()
     }
     // stop waypoint receiving if timeout
     const uint32_t tnow = AP_HAL::millis();
-    if (tnow - timelast_receive_ms > upload_timeout_ms) {
+    uint32_t effective_upload_timeout_ms = upload_timeout_ms;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // AP_HAL::millis() is simulated time here, so upload_timeout_ms -- a
+    // real-world tolerance for an unresponsive/slow GCS -- shrinks in real
+    // time as SIM_SPEEDUP rises, while the real (wall-clock) cost of the
+    // GCS's side of the protocol (socket I/O, message parsing, etc) does
+    // not get any smaller. Scale it back up so it reflects roughly the
+    // same real-time budget regardless of speedup.
+    const SITL::SIM *sitl = AP::sitl();
+    if (sitl != nullptr && sitl->speedup > 0) {
+        effective_upload_timeout_ms *= sitl->speedup;
+    }
+#endif
+    if (tnow - timelast_receive_ms > effective_upload_timeout_ms) {
         receiving = false;
         timeout();
         const mavlink_channel_t chan = link->get_chan();
