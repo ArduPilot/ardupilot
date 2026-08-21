@@ -344,10 +344,6 @@ int CANIface::_read(AP_HAL::CANFrame& frame, uint64_t& timestamp_us, bool& loopb
      */
     loopback = (msg.msg_flags & static_cast<int>(MSG_CONFIRM)) != 0;
 
-    if (!loopback) {
-        return 0;
-    }
-
     frame = makeUavcanFrame(sockcan_frame);
     /*
      * Timestamp
