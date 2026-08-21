@@ -832,6 +832,7 @@ void AP_Logger_File::start_new_log(void)
     // into the buffer between the fd becoming valid and the buffer
     // being cleared would have those bytes silently discarded.
     _writebuf.clear();
+    clear_formats_written_to_file();
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
     _cached_oldest_log = 0;
 

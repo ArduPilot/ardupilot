@@ -139,6 +139,10 @@ public:
     bool have_emitted_format_for_type(LogMessages a_type) const {
         return _formats_written.get(uint8_t(a_type));
     }
+    // DEBUG: see _formats_written_to_file
+    void clear_formats_written_to_file() {
+        _formats_written_to_file.clearall();
+    }
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
     bool Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq);
@@ -277,6 +281,13 @@ private:
     bool ensure_format_emitted(const void *pBuffer, uint16_t size);
     bool emit_format_for_type(LogMessages a_type);
     Bitmask<256> _formats_written;
+    // DEBUG: shadow of _formats_written which is additionally cleared
+    // at the moment a backend actually installs a new file, rather
+    // than at start_new_log_reset_variables() time.  If the two ever
+    // disagree then a format was marked sent while its bytes went to a
+    // previous file - the suspected mechanism behind logs containing
+    // (e.g.) BARO records but no BARO FMT.
+    Bitmask<256> _formats_written_to_file;
 
     uint8_t msg_id;  // the ID of the next MSG message that will be logged
 };
