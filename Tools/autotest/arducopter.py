@@ -19923,6 +19923,14 @@ RTL_ALT_M 111
 
     def RCOverridesNoRCReceiver(self):
         '''test RC override timeout with no RC receiver present'''
+        # the overrides are sent from this process per received
+        # ATTITUDE, so their delivery rate is wall-bound while the
+        # firmware's override timeout counts simulated time; on a
+        # loaded machine at unlimited speedup the stream cannot make
+        # every timeout window and the vehicle falls into RC failsafe
+        # mid-takeoff ("Failed to attain Altitude want 25.0, reached
+        # 0.011").  Bound the ratio.
+        self.context_set_speedup(10)
         self.set_parameters({
             "MAV_GCS_SYSID": 250,
             "SIM_RC_FAIL": 1,  # no-pulses
