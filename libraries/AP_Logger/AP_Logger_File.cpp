@@ -826,6 +826,12 @@ void AP_Logger_File::start_new_log(void)
     ensure_log_directory_exists();
 
     EXPECT_DELAY_MS(3000);
+    // clear the write buffer *before* making the new fd visible to
+    // writer threads; a writer which sneaks a block (or worse, a FMT
+    // message, which is marked as sent-to-this-log as a side-effect)
+    // into the buffer between the fd becoming valid and the buffer
+    // being cleared would have those bytes silently discarded.
+    _writebuf.clear();
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
     _cached_oldest_log = 0;
 
@@ -843,7 +849,6 @@ void AP_Logger_File::start_new_log(void)
     _last_write_ms = AP_HAL::millis();
     _open_error_ms = 0;
     _write_offset = 0;
-    _writebuf.clear();
     write_fd_semaphore.give();
 
     // now update lastlog.txt with the new log number
