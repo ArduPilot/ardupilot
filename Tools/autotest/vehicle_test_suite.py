@@ -10536,6 +10536,12 @@ Also, ignores heartbeats not from our target system'''
         else:
             text = text.encode("utf-8")
         seq = 0
+        # chunk_seq is a uint8 on the wire; a text longer than 256
+        # chunks overflowed it and struct.error killed the whole worker
+        # process mid-teardown while it was relaying a very long SITL
+        # output line.  Nothing can reassemble more than 256 chunks
+        # anyway, so truncate.
+        text = text[:255*50]
         while len(text):
             try:
                 self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)  # noqa:E501
