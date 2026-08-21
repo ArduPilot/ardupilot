@@ -12455,6 +12455,15 @@ Also, ignores heartbeats not from our target system'''
             self.start_subtest("Try magcal and make it failed")
             self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
             old_cal_fit = self.get_parameter("COMPASS_CAL_FIT")
+            # the magcal subtests below assert on the MAG_CAL_PROGRESS
+            # stream (a rate-limited, coalescing deferred message paced
+            # by the wall clock) while the calibration itself runs in
+            # simulated time; at high speedup on a loaded machine a
+            # whole calibration can finish without a single progress
+            # message getting out.  Bound the sim:wall ratio for the
+            # calibration sequence so the stream can keep up.
+            self.context_push()
+            self.context_set_speedup(10)
             self.set_parameter("COMPASS_CAL_FIT", 0.001, add_to_context=False)
             reset_pos_and_start_magcal(mavproxy, target_mask)
             tstart = self.get_sim_time()
@@ -12530,6 +12539,7 @@ Also, ignores heartbeats not from our target system'''
                     self.do_timesync_roundtrip()
                     reset_pos_and_start_magcal(mavproxy, target_mask)
                     report_status = [None] * compass_tnumber
+                    progress_seen = [False] * compass_tnumber
                     tstart = self.get_sim_time()
                     while True:
                         if self.get_sim_time_cached() - tstart > timeout:
@@ -12537,7 +12547,22 @@ Also, ignores heartbeats not from our target system'''
                         m = self.mav.recv_match(type=["MAG_CAL_PROGRESS", "MAG_CAL_REPORT"], blocking=True, timeout=1)
                         if m is None:
                             continue
+                        if m.get_type() == "MAG_CAL_PROGRESS":
+                            progress_seen[m.compass_id] = True
+                            continue
                         if m.get_type() != "MAG_CAL_REPORT":
+                            continue
+                        # the firmware re-broadcasts unacknowledged
+                        # MAG_CAL_REPORTs from the previous calibration,
+                        # so the timesync drop above cannot defend
+                        # against re-sends arriving after it.  A report
+                        # for this calibration must follow this
+                        # calibration's progress for that compass; a run
+                        # graded three stale FAILED_RESIDUALS_HIGH
+                        # re-sends and concluded no compass had failed
+                        # on offsets.
+                        if not progress_seen[m.compass_id]:
+                            self.progress("Ignoring stale report for compass %u" % m.compass_id)
                             continue
 
                         report_status[m.compass_id] = m.cal_status
@@ -12594,16 +12619,10 @@ Also, ignores heartbeats not from our target system'''
             self.start_subtest("Try magcal and wait success")
             self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
             # this subtest asserts >=95% completion was reported before
-            # the SUCCESS report.  MAG_CAL_PROGRESS is a rate-limited,
-            # coalescing deferred message paced by the wall clock, while
-            # the calibration itself runs in simulated time: at high
-            # speedup on a loaded machine the whole calibration finished
-            # inside a fraction of a wall-second and NO progress message
-            # made it out before the report:
+            # the SUCCESS report; the speedup bound pushed at the start
+            # of the calibration sequence (above) keeps the progress
+            # stream flowing:
             #     Mag calibration report SUCCESS without >=95% completion (got 0%)
-            # Bound the sim:wall ratio so the stream can keep up.
-            self.context_push()
-            self.context_set_speedup(10)
             reset_pos_and_start_magcal(mavproxy, target_mask)
             progress_count = [0] * compass_tnumber
             reached_pct = [0] * compass_tnumber
