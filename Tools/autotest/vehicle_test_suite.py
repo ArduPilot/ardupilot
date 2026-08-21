@@ -18009,32 +18009,27 @@ switch value'''
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
             mavproxy.send("ftp set debug 1\n")  # so we get the "Terminated session" message
-            mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
-            mavproxy.expect("Getting")
-            # "No transfer in progress" is also true before the
-            # transfer starts, so it cannot be taken as completion on
-            # its own: a status poll which lands in that window breaks
-            # out of this loop with an empty file.  Require content to
-            # have arrived as well.
-            # wall clock, not sim time: everything in this loop is
-            # paced by MAVProxy and the pexpect interaction with it,
-            # and at the vehicle's speedup a single one-second expect
-            # can consume a hundred seconds of simulated time - so a
-            # sim-time budget here expires after a poll or two.
-            tstart = time.time()
-            while True:
-                now = time.time()
-                if now - tstart > timeout:
-                    raise NotAchievedException("expected complete transfer")
-                self.progress("Polling status")
-                mavproxy.send("ftp status\n")
+            # Completion is detected by MAVProxy's own success message
+            # ("Wrote N bytes to ...", printed only when the whole file
+            # has been written).  The previous approach - polling "ftp
+            # status" for "No transfer in progress" and requiring a
+            # non-empty file - could not tell a completed transfer from
+            # an aborted one: @SYS/tasks.txt arrived truncated mid-line
+            # on a loaded machine and PerfInfo graded the fragment.
+            # Timeouts here are wall-clock: everything is paced by
+            # MAVProxy and pexpect, not the simulation.
+            for attempt in range(3):
+                mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
+                mavproxy.expect("Getting")
                 try:
-                    mavproxy.expect("No transfer in progress", timeout=1)
-                except Exception:  # noqa: BLE001
-                    continue
-                if os.path.getsize(tmpfile.name) > 0:
+                    mavproxy.expect(r"Wrote \d+ bytes to ", timeout=timeout)
                     break
-                self.progress("Transfer has not started yet")
+                except pexpect.TIMEOUT:
+                    self.progress("Transfer did not complete (attempt=%u)" % attempt)
+                    mavproxy.send("ftp cancel\n")
+                    mavproxy.expect("Terminated session")
+            else:
+                raise NotAchievedException("expected complete transfer")
             # terminate the connection, or it may still be in progress the next time an FTP is attempted:
             mavproxy.send("ftp cancel\n")
             mavproxy.expect("Terminated session")
