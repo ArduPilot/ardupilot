@@ -77,7 +77,7 @@ RC input is provided on UART6 for all ArduPilot supported protocols except PPM. 
 
 ## OSD Support
 
-The BlueBerry_H743 supports onboard analog SD OSD using a AT7456 chip. The analog VTX should connect to the VTX pin.
+The BlueBerry_H743 supports onboard analog OSD using a AT7456 chip. The analog VTX should connect to the VTX pin. Simultaneous DisplayPort OSD operation for an HD-VTX (DJI/Caddx/OpenIPC/etc) is also pre-configured on SERIAL4/UART4.
 
 ## PWM Output
 
@@ -135,4 +135,4 @@ The BlueBerry_H743 supports up to 2 cameras, connected to pins CM1 and CM2. You 
 
 ## Bluetooth
 
-The BlueBerry_H743 support both legacy bluetooth SPP and BLE serial. The bluetooth uses UART7 for its serial port. Search for `BLE` or `SPP` to connect. Be careful NOT to use UART1 for other uses.
+The BlueBerry_H743 support both legacy bluetooth SPP and BLE serial. The bluetooth uses UART1 for its serial port. Search for `BLE` or `SPP` to connect. Be careful NOT to use UART1 for other uses.
