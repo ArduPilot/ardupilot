@@ -290,9 +290,21 @@ def build_SITL_frame(
     if extra_configure_args is not None:
         configure_args += list(extra_configure_args)
 
+    # build in a separate output directory: the frame's configure args
+    # (e.g. --enable-PPP) must not rewrite the default build tree's
+    # stored configuration, or every binary built there afterwards
+    # inherits them - a Plane suite's PPPPeriph run left build/sitl
+    # PPP-enabled, and the Sub network-port tests built after it
+    # black-holed all NET traffic.  The built binaries are copied to
+    # the paths consumers expect.
+    frame_builddir = reltopdir('build-frame')
+    configure_args += ['--out', frame_builddir]
+
     build_SITL(frame_opts['waf_target'],
                extra_configure_args=configure_args,
                **build_kwargs)
+    board = build_kwargs.get('board', 'sitl')
+    _copy_frame_artefact(frame_builddir, board, frame_opts['waf_target'])
 
     periph_board = frame_opts.get('periph_board')
     if periph_board is not None:
@@ -300,8 +312,26 @@ def build_SITL_frame(
                    board=periph_board,
                    extra_configure_args=configure_args,
                    **build_kwargs)
+        _copy_frame_artefact(frame_builddir, periph_board, 'bin/AP_Periph')
 
     return frame_opts
+
+
+def _copy_frame_artefact(frame_builddir, board, waf_target):
+    '''copy a binary built in the frame build directory to the same
+    relative location in the default build directory, where callers
+    (and the parallel runner's refresh_test_binary()) expect it'''
+    import shutil
+    src = os.path.join(frame_builddir, board, waf_target)
+    dst = os.path.join(topdir(), 'build', board, waf_target)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    # unlink first: the destination may be a binary a running SITL was
+    # started from, and overwriting it in place fails with ETXTBSY
+    try:
+        os.unlink(dst)
+    except FileNotFoundError:
+        pass
+    shutil.copy2(src, dst)
 
 
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
