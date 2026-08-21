@@ -6076,6 +6076,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "TKOFF_THR_IDLE": 20.0,
             "TKOFF_THR_MINSPD": 3.0,
+            # require a real acceleration event before the launch logic
+            # runs at all.  Without this the plane creeping forward
+            # under idle throttle crosses TKOFF_THR_MINSPD by GPS speed
+            # alone, and on a loaded machine the simulation races ahead
+            # of this test, the takeoff triggers and the idle-throttle
+            # assertion below reads takeoff throttle:
+            #     assert SERVO_OUTPUT_RAW.servo3_raw=1580 in [1190, 1210]
+            "TKOFF_THR_MINACC": 10.0,
         })
         self.change_mode("TAKEOFF")
 
@@ -6086,8 +6094,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         expected_idle_throttle = 1000+10*self.get_parameter("TKOFF_THR_IDLE")
         self.assert_servo_channel_range(3, expected_idle_throttle-10, expected_idle_throttle+10)
 
-        # Launch the catapult
-        self.set_servo(6, 1000)
+        # Fire the simulated launcher: SIM_Plane's -catapult frame
+        # applies launch acceleration while servo 7 is above 1700,
+        # providing the acceleration event TKOFF_THR_MINACC demands
+        self.set_servo(7, 2000)
 
         self.delay_sim_time(5, reason="catapult launch to establish flight")
         self.change_mode('RTL')
