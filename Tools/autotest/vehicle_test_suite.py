@@ -11949,7 +11949,11 @@ Also, ignores heartbeats not from our target system'''
             report_get = [0] * compass_tnumber
             # COMPASS_CAL_FIT=0.001 forces fitness > tolerance, so we expect
             # MAG_CAL_FAILED_RESIDUALS_HIGH.
-            MAG_CAL_FAILED_RESIDUALS_HIGH = mavutil.mavlink.MAG_CAL_FAILED_RESIDUALS_HIGH
+            # pymavlink releases up to at least 2.4.49 predate this
+            # MAG_CAL_STATUS enum entry; fall back to its value so the
+            # test does not depend on the installed pymavlink version
+            MAG_CAL_FAILED_RESIDUALS_HIGH = getattr(
+                mavutil.mavlink, 'MAG_CAL_FAILED_RESIDUALS_HIGH', 10)
             while True:
                 if self.get_sim_time_cached() - tstart > timeout:
                     raise NotAchievedException("Cannot receive enough MAG_CAL_PROGRESS")
