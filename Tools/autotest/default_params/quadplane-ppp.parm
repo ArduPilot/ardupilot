@@ -2,6 +2,7 @@
 # Plane is the PPP "client" - it lets IPCP negotiate its IP from the periph.
 
 NET_ENABLE 1
+NET_OPTIONS 256
 SERIAL5_PROTOCOL 48
 
 # Enable CAN driver 1 so the SITL multicast sim-state publisher comes alive.
