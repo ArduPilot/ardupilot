@@ -116,6 +116,14 @@ public:
 
     virtual void set_reverse(bool reverse) = 0;
 
+    // flush any error that the controller has accumulated over time
+    // (for example a cross-track integrator). This is used by standby
+    // mode, where this flight controller is running in parallel with
+    // another one which is actually flying the aircraft, so any stored
+    // up correction is meaningless and would produce a transient when
+    // this controller takes command.
+    virtual void standby_reset(void) {}
+
     // add new navigation controllers to this enum. Users can then
     // select which navigation controller to use by setting the
     // NAV_CONTROLLER parameter
