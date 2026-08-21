@@ -3496,11 +3496,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # on a loaded CI runner, producing intermittent "GPS 1: not
         # healthy" arm failures.  Run these tests at a reduced speedup so
         # the thread keeps up.  20 was not enough on a 32-thread machine
-        # running the suite --parallel=32: the external AHRS itself
-        # dropped to DCM for a moment ("AHRS: DCM active" / "AHRS:
-        # External active") exactly as the arm command landed, and the
-        # arm was refused.
-        self.context_set_speedup(10)
+        # running the suite --parallel=32 (the external AHRS dropped to
+        # DCM exactly as the arm command landed and the arm was
+        # refused); at 10 a 16-core machine at --parallel=32 still
+        # blipped often enough that the 5s continuous-health pre-arm
+        # hold below could not complete within its budget, and at 5 the
+        # same machine still could not string the hold together.
+        self.context_set_speedup(2)
         self.customise_SITL_commandline(["--serial4=sim:%s" % sim])
 
         self.set_parameters({
