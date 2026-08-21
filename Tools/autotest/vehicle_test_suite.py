@@ -15717,6 +15717,21 @@ switch value'''
                 abandoned_workers = True
                 for t in self.threads:
                     if t.is_alive():
+                        # preserve the worker's onboard logs before
+                        # killing it: the next suite reuses the
+                        # instance directory, and the evidence of what
+                        # wedged (e.g. SIM2 pacing/achieved-speedup
+                        # counters) is otherwise lost
+                        instance = t.name.split('-')[-1]
+                        src = util.reltopdir(os.path.join("parallel-autotest", instance, "logs"))
+                        if os.path.exists(src):
+                            stamp = time.strftime("%Y%m%d%H%M%S")
+                            dst = self.buildlogs_path("abandoned-worker-%s-%s" % (instance, stamp))
+                            try:
+                                shutil.copytree(src, dst)
+                                self.progress("Preserved abandoned worker logs to %s" % dst)
+                            except OSError as e:
+                                self.progress("Could not preserve worker logs: %s" % e)
                         # SIGKILL, not SIGTERM: a worker hung in an
                         # uninterruptible state ignores the latter
                         t.kill()
