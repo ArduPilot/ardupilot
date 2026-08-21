@@ -371,6 +371,24 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def set_attitude_target(self, tolerance=10):
         """Test setting of attitude target in guided mode."""
+        # the test streams SET_ATTITUDE_TARGET from this process, and
+        # the firmware reverts to its own attitude control if the
+        # stream pauses for GUIDED_TIMEOUT simulated seconds (default
+        # 3).  At unlimited speedup on a loaded machine a sub-second
+        # wall-clock stall in this loop exceeds that, the plane departs
+        # the target and the hold check fails:
+        #     pitch-up+throttle: Failed to hold set attitude
+        # Bound simulated time's advance over the stall and give the
+        # stream the documented maximum timeout.
+        self.context_push()
+        self.context_set_speedup(10)
+        self.set_parameter("GUIDED_TIMEOUT", 10)
+        try:
+            self.set_attitude_target_main(tolerance=tolerance)
+        finally:
+            self.context_pop()
+
+    def set_attitude_target_main(self, tolerance=10):
         self.change_mode("GUIDED")
 
         steps = [{"name": "roll-over",         "roll": 60, "pitch": 0,  "yaw": 0, "throttle": 0, "type_mask": 0b10000001},
