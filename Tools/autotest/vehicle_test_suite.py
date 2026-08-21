@@ -10767,7 +10767,15 @@ Also, ignores heartbeats not from our target system'''
             if regex:
                 if re.match(text, x.text):
                     return x
-            elif text.lower() in x.text.lower():
+                # fall through to the substring check: the live message
+                # handler in wait_statustext accepts anchored-regex OR
+                # substring, and whether a message is graded here or
+                # there is a matter of arrival timing.  With regex-only
+                # matching here, "clear: Motors EStopped" failed
+                # against a collected "ArmCk: clear: Motors EStopped"
+                # while the same message arriving live would have
+                # passed.
+            if text.lower() in x.text.lower():
                 return x
         return None
 
