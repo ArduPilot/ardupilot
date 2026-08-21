@@ -93,7 +93,8 @@ def waf_configure(board,
                   num_aux_imus=0,
                   dronecan_tests=False,
                   extra_defines: dict | None = None,
-                  asan=False):
+                  asan=False,
+                  waflock=None):
 
     if extra_args is None:
         extra_args = []
@@ -131,6 +132,14 @@ def waf_configure(board,
     for piece in pieces:
         cmd_configure.extend(piece)
 
+    configure_env = None
+    if waflock is not None:
+        # give this configuration its own waf lockfile so it does not
+        # usurp the tree's default build directory/board (e.g. a
+        # peripheral firmware built mid-test must not cause a later
+        # "./waf build" to build the peripheral board)
+        configure_env = dict(os.environ)
+        configure_env['WAFLOCK'] = waflock
     if asan:
         cmd_configure.append('--asan')
         if not debug:
@@ -143,11 +152,15 @@ def waf_configure(board,
         # compiler silently compiles all of the networking code out of
         # every sanitizer build.
 
-    run_cmd(cmd_configure, directory=topdir(), checkfail=True)
+    run_cmd(cmd_configure, directory=topdir(), checkfail=True, env=configure_env)
 
 
-def waf_clean():
-    run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True)
+def waf_clean(waflock=None):
+    env = None
+    if waflock is not None:
+        env = dict(os.environ)
+        env['WAFLOCK'] = waflock
+    run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True, env=env)
 
 
 def waf_build(target=None):
@@ -176,6 +189,7 @@ def build_SITL(
         num_aux_imus=0,
         dronecan_tests=False,
         asan=False,
+        waflock=None,
 ):
     if extra_configure_args is None:
         extra_configure_args = []
@@ -198,17 +212,22 @@ def build_SITL(
                       num_aux_imus=num_aux_imus,
                       dronecan_tests=dronecan_tests,
                       extra_args=extra_configure_args,
-                      asan=asan,)
+                      asan=asan,
+                      waflock=waflock,)
 
     # then clean
     if clean:
-        waf_clean()
+        waf_clean(waflock=waflock)
 
     # then build
     cmd_make = [relwaf(), "build", "--target", build_target]
     if j is not None:
         cmd_make.extend(['-j', str(j)])
-    run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
+    build_env = None
+    if waflock is not None:
+        build_env = dict(os.environ)
+        build_env['WAFLOCK'] = waflock
+    run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True, env=build_env)
     return True
 
 
