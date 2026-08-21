@@ -596,6 +596,12 @@ private:
         uint32_t target_alt_time_ms = 0;
         uint8_t target_mav_frame = -1;
 
+        // interim altitude demand in metres, in target_location's altitude frame, advanced
+        // towards target_location's altitude at target_alt_rate. Invalid until seeded from
+        // the current altitude after a new altitude target is accepted.
+        float target_alt_interim_m;
+        bool target_alt_interim_valid;
+
         // heading track
         float target_heading = -4; // don't default to zero or -1 here, as both are valid headings in radians
         float target_heading_accel_limit;
