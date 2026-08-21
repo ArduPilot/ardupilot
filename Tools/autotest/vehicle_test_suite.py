@@ -5336,8 +5336,16 @@ class TestSuite(abc.ABC):
         if len(post_toggleon_list) != len(post_toggleoff_list):
             raise NotAchievedException("Log rotated when it shouldn't")
         self.progress("Checking log is now growing again")
-        if os.path.getsize(current_log_filepath) == current_log_filepath_size:
-            raise NotAchievedException("Log is not growing")
+        # the write buffer is flushed to disk by the IO thread on the
+        # wall clock; the simulated-time delay above can be a fraction
+        # of a wall second at speedup, so poll for growth rather than
+        # sampling once:
+        #     Log is not growing
+        tstart_wall = time.time()
+        while os.path.getsize(current_log_filepath) == current_log_filepath_size:
+            if time.time() - tstart_wall > 10:
+                raise NotAchievedException("Log is not growing")
+            time.sleep(0.2)
 
         # self.progress("Checking LOG_FILE_DSRMROT behaviour when log_DISARMED set")
         # self.set_parameter("LOG_FILE_DSRMROT", 1)
@@ -9998,7 +10006,15 @@ class TestSuite(abc.ABC):
 
     def assert_prearm_failure(self,
                               expected_statustext,
-                              timeout=5,
+                              # the arming code's report_immediately path
+                              # (MAV_CMD_RUN_PREARM_CHECKS) only re-displays
+                              # failures 4 seconds after the previous
+                              # display (AP_Arming.cpp), and a display can
+                              # fire and be drained just before our loop
+                              # starts - a 5s budget left the re-display
+                              # racing the deadline:
+                              #     Did not see failure-to-arm messages (seen_statustext=False ...)
+                              timeout=12,
                               ignore_prearm_failures: list | None = None,
                               other_prearm_failures_fatal=True):
         if ignore_prearm_failures is None:
@@ -12080,6 +12096,17 @@ Also, ignores heartbeats not from our target system'''
             #################################################
             self.start_subtest("Try magcal and wait success")
             self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
+            # this subtest asserts >=95% completion was reported before
+            # the SUCCESS report.  MAG_CAL_PROGRESS is a rate-limited,
+            # coalescing deferred message paced by the wall clock, while
+            # the calibration itself runs in simulated time: at high
+            # speedup on a loaded machine the whole calibration finished
+            # inside a fraction of a wall-second and NO progress message
+            # made it out before the report:
+            #     Mag calibration report SUCCESS without >=95% completion (got 0%)
+            # Bound the sim:wall ratio so the stream can keep up.
+            self.context_push()
+            self.context_set_speedup(10)
             reset_pos_and_start_magcal(mavproxy, target_mask)
             progress_count = [0] * compass_tnumber
             reached_pct = [0] * compass_tnumber
@@ -12118,6 +12145,7 @@ Also, ignores heartbeats not from our target system'''
                     if new_pct != reached_pct[cid]:
                         reached_pct[cid] = new_pct
                         self.progress("Calibration progress compass ID %d: %s%%" % (cid, str(reached_pct[cid])))
+            self.context_pop()
             mavproxy.send("sitl_stop\n")
             mavproxy.send("sitl_attitude 0 0 0\n")
             self.progress("Checking that value aren't changed without acceptation")

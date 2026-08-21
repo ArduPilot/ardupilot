@@ -10806,7 +10806,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                     149.164911,
                                     here.alt,
                                     0)
-        self.wait_location(west_loc, accuracy=6)
+        # same budget as the other corner legs: the vehicle slides
+        # along the fence at ever-decreasing speed, and the default
+        # wait_location timeout expired at 9.7m to go on a loaded
+        # machine
+        self.wait_location(west_loc, accuracy=6, timeout=200)
         north_loc = mavutil.location(-35.362908,
                                      149.165051,
                                      here.alt,
@@ -10818,7 +10822,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                     149.165194,
                                     here.alt,
                                     0)
-        self.wait_location(east_loc, accuracy=6)
+        self.wait_location(east_loc, accuracy=6, timeout=200)
         self.reach_heading_manual(225)
         self.wait_location(west_loc, accuracy=6, timeout=200)
         self.set_rc(2, 1500)
