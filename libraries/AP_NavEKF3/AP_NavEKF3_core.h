@@ -435,13 +435,6 @@ public:
         GROUND_AND_INFLIGHT = 7,
     };
 
-    // magnetometer fusion selections
-    enum class MagFuseSel {
-        NOT_FUSING = 0,
-        FUSE_YAW = 1,
-        FUSE_MAG = 2
-    };
-
     // are we using (aka fusing) a non-compass yaw?
     bool using_noncompass_for_yaw(void) const;
 
@@ -711,14 +704,20 @@ private:
         EXTNAV=7        // Use external nav data
     };
 
-    // specifies the method to be used when fusing yaw observations
+    // specifies the method to be used when fusing yaw observations.
+    // MAG_3AXIS and NOT_FUSING describe the state of yaw fusion for
+    // logging and are not observations which can be fused.  NOT_FUSING
+    // is zero so that the state before the filter is initialised is
+    // reported correctly.
     enum class yawFusionMethod {
-	    MAGNETOMETER=0,
-	    GPS=1,
-        GSF=2,
-        STATIC=3,
-        PREDICTED=4,
-        EXTNAV=5,
+        NOT_FUSING=0,   // no yaw observation has been fused
+        MAGNETOMETER=1, // simple yaw fusion of magnetometer data
+        GPS=2,          // yaw from a GPS or other external yaw sensor
+        GSF=3,          // yaw from the EKF-GSF yaw estimator
+        STATIC=4,       // yaw held from before the vehicle stopped moving
+        PREDICTED=5,    // zero innovation fused to bound the yaw variance
+        EXTNAV=6,       // yaw from an external navigation system
+        MAG_3AXIS=7,    // 3-axis fusion of magnetometer data
     };
 
     // update the navigation filter status
@@ -995,6 +994,9 @@ private:
     // Fuse compass measurements using a direct yaw angle observation (doesn't require magnetic field states)
     // Returns true if the fusion was successful
     bool fuseEulerYaw(yawFusionMethod method);
+
+    // record the yaw observation which has just been fused so that it can be logged
+    void recordYawFused(yawFusionMethod method);
 
     // return the best Tait-Bryan rotation order to use
     void bestRotationOrder(rotationOrder &order);
@@ -1510,7 +1512,8 @@ private:
     ftype posDownAtLastMagReset;    // vertical position last time the mag states were reset (m)
     ftype yawInnovAtLastMagReset;   // magnetic yaw innovation last time the yaw and mag field states were reset (rad)
     QuaternionF quatAtLastMagReset;  // quaternion states last time the mag states were reset
-    MagFuseSel magFusionSel;        // magnetometer fusion selection
+    yawFusionMethod yawFusionSel;   // yaw observation last fused
+    uint32_t lastYawFuseTime_ms;    // time yawFusionSel was fused (msec)
 
     // Used by on ground movement check required when operating on ground without a yaw reference
     ftype gyro_diff;                    // filtered gyro difference (rad/s)

@@ -91,6 +91,11 @@ void NavEKF3_core::Log_Write_XKF2(uint64_t time_us) const
 
 void NavEKF3_core::Log_Write_XKFS(uint64_t time_us) const
 {
+    // how long ago the yaw observation in yawFusionSel was fused.  This
+    // saturates rather than wrapping so that a stale selection can be told
+    // from a live one without the EKF having to decide what stale means.
+    const uint32_t yaw_fusion_age_ms = MIN(imuSampleTime_ms - lastYawFuseTime_ms, (uint32_t)UINT16_MAX);
+
     // Write sensor selection EKF packet
     const struct log_XKFS pkt {
         LOG_PACKET_HEADER_INIT(LOG_XKFS_MSG),
@@ -103,7 +108,8 @@ void NavEKF3_core::Log_Write_XKFS(uint64_t time_us) const
         source_set     : frontend->sources.getActiveSourceSet(core_index),
         gps_good_to_align : gpsGoodToAlign,
         wait_for_gps_checks : waitingForGpsChecks,
-        mag_fusion: (uint8_t) magFusionSel
+        yaw_fusion: (uint8_t) yawFusionSel,
+        yaw_fusion_age_ms : (uint16_t)yaw_fusion_age_ms
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
