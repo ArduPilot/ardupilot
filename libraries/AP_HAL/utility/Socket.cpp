@@ -36,6 +36,10 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+#include <sys/stat.h>
+#include <sys/un.h>
+#endif
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
@@ -44,6 +48,7 @@
 #endif
 
 #include <errno.h>
+#include <stdlib.h>
 
 #if AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP
 #define CALL_PREFIX(x) ::lwip_##x
@@ -53,6 +58,68 @@
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
+#endif
+
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+struct UnixSocketPath {
+    int fd;
+    char *path;
+    dev_t device;
+    ino_t inode;
+    UnixSocketPath *next;
+};
+
+static UnixSocketPath *unix_socket_paths;
+
+static void unlink_unix_path(const UnixSocketPath &socket_path)
+{
+    struct stat path_stat;
+    if (lstat(socket_path.path, &path_stat) == 0 &&
+        S_ISSOCK(path_stat.st_mode) &&
+        path_stat.st_dev == socket_path.device &&
+        path_stat.st_ino == socket_path.inode) {
+        unlink(socket_path.path);
+    }
+}
+
+static void forget_unix_path(int fd)
+{
+    UnixSocketPath **entry = &unix_socket_paths;
+    while (*entry != nullptr) {
+        if ((*entry)->fd == fd) {
+            UnixSocketPath *removed = *entry;
+            *entry = removed->next;
+            unlink_unix_path(*removed);
+            free(removed->path);
+            free(removed);
+            return;
+        }
+        entry = &(*entry)->next;
+    }
+}
+
+static void remember_unix_path(int fd, const char *path)
+{
+    struct stat path_stat;
+    if (lstat(path, &path_stat) != 0 || !S_ISSOCK(path_stat.st_mode)) {
+        return;
+    }
+
+    char *path_copy = strdup(path);
+    UnixSocketPath *entry = (UnixSocketPath *)calloc(1, sizeof(*entry));
+    if (path_copy == nullptr || entry == nullptr) {
+        free(path_copy);
+        free(entry);
+        return;
+    }
+
+    entry->fd = fd;
+    entry->path = path_copy;
+    entry->device = path_stat.st_dev;
+    entry->inode = path_stat.st_ino;
+    entry->next = unix_socket_paths;
+    unix_socket_paths = entry;
+}
 #endif
 
 /*
@@ -80,12 +147,7 @@ SOCKET_CLASS_NAME::SOCKET_CLASS_NAME(bool _datagram, int _fd) :
 
 SOCKET_CLASS_NAME::~SOCKET_CLASS_NAME()
 {
-    if (fd != -1) {
-        CALL_PREFIX(close)(fd);
-    }
-    if (fd_in != -1) {
-        CALL_PREFIX(close)(fd_in);
-    }
+    close();
 }
 
 void SOCKET_CLASS_NAME::make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr)
@@ -245,6 +307,73 @@ bool SOCKET_CLASS_NAME::bind(const char *address, uint16_t port)
     }
     return true;
 }
+
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+/*
+  bind a native Unix domain datagram socket
+ */
+bool SOCKET_CLASS_NAME::bind_unix(const char *path)
+{
+    if (!datagram || path == nullptr || path[0] == '\0') {
+        return false;
+    }
+
+    struct sockaddr_un sockaddr {};
+    if (strlen(path) >= sizeof(sockaddr.sun_path)) {
+        return false;
+    }
+    sockaddr.sun_family = AF_UNIX;
+    strncpy(sockaddr.sun_path, path, sizeof(sockaddr.sun_path) - 1);
+
+    const int unix_fd = CALL_PREFIX(socket)(AF_UNIX, SOCK_DGRAM, 0);
+    if (unix_fd == -1) {
+        return false;
+    }
+#ifdef FD_CLOEXEC
+    CALL_PREFIX(fcntl)(unix_fd, F_SETFD, FD_CLOEXEC);
+#endif
+
+    int ret = CALL_PREFIX(bind)(unix_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+    if (ret == -1 && errno == EADDRINUSE) {
+        struct stat path_stat;
+        if (lstat(path, &path_stat) == 0 && S_ISSOCK(path_stat.st_mode)) {
+            const int probe_fd = CALL_PREFIX(socket)(AF_UNIX, SOCK_DGRAM, 0);
+            const int connect_ret = probe_fd == -1 ? -1 : CALL_PREFIX(connect)(
+                probe_fd,
+                (struct sockaddr *)&sockaddr,
+                sizeof(sockaddr));
+            const int connect_errno = errno;
+            if (probe_fd != -1) {
+                CALL_PREFIX(close)(probe_fd);
+            }
+            if (connect_ret == -1 && connect_errno == ECONNREFUSED && unlink(path) == 0) {
+                ret = CALL_PREFIX(bind)(unix_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
+            }
+        }
+    }
+    if (ret == -1) {
+        CALL_PREFIX(close)(unix_fd);
+        return false;
+    }
+
+    if (fd != -1) {
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+        forget_unix_path(fd);
+#endif
+        CALL_PREFIX(close)(fd);
+    }
+    fd = unix_fd;
+    remember_unix_path(fd, path);
+    return true;
+}
+
+void SOCKET_CLASS_NAME::cleanup_unix_paths()
+{
+    for (UnixSocketPath *entry = unix_socket_paths; entry != nullptr; entry = entry->next) {
+        unlink_unix_path(*entry);
+    }
+}
+#endif
 
 
 /*
@@ -548,6 +677,9 @@ bool SOCKET_CLASS_NAME::is_multicast_address(struct sockaddr_in &addr) const
 void SOCKET_CLASS_NAME::close(void)
 {
     if (fd != -1) {
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+        forget_unix_path(fd);
+#endif
         CALL_PREFIX(close)(fd);
         fd = -1;
     }

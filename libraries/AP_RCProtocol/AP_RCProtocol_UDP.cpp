@@ -43,11 +43,17 @@ bool AP_RCProtocol_UDP::init()
     if (sitl == nullptr) {
         return false;
     }
-    if (!rc_in.reuseaddress()) {
-        return false;
-    }
-    if (!rc_in.bind("0.0.0.0", sitl->rcin_port)) {
-        return false;
+    if (sitl->rcin_path != nullptr) {
+        if (!rc_in.bind_unix(sitl->rcin_path)) {
+            return false;
+        }
+    } else {
+        if (!rc_in.reuseaddress()) {
+            return false;
+        }
+        if (!rc_in.bind("0.0.0.0", sitl->rcin_port)) {
+            return false;
+        }
     }
     if (!rc_in.set_blocking(false)) {
         return false;

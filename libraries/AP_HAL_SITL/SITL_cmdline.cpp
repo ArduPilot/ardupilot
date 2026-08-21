@@ -110,7 +110,7 @@ void SITL_State::_usage(void)
            "\t--uartA device           alias for --serial0 (do not use)\n"
            "\t--net-device NAME:PORT   attach simulated device NAME to TCP port PORT rather than to a serial port\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
-           "\t--rc-in-port PORT        set port num for rc in\n"
+           "\t--rc-in-port PORT|uds:PATH set UDP port or Unix datagram path for rc in\n"
            "\t--sim-address ADDR       set address string for simulator\n"
            "\t--sim-port-in PORT       set port num for simulator in\n"
            "\t--sim-port-out PORT      set port num for simulator out\n"
@@ -254,6 +254,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const int FG_VIEW_PORT = 5503;
     _base_port = BASE_PORT;
     _rcin_port = RCIN_PORT;
+    _rcin_path = nullptr;
     _fg_view_port = FG_VIEW_PORT;
 
     const int SIM_IN_PORT = 9003;
@@ -448,7 +449,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             if (_base_port == BASE_PORT) {
                 _base_port += _instance * 10;
             }
-            if (_rcin_port == RCIN_PORT) {
+            if (_rcin_path == nullptr && _rcin_port == RCIN_PORT) {
                 _rcin_port += _instance * 10;
             }
             if (_fg_view_port == FG_VIEW_PORT) {
@@ -543,7 +544,16 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             _base_port = atoi(gopt.optarg);
             break;
         case CMDLINE_RCIN_PORT:
-            _rcin_port = atoi(gopt.optarg);
+            if (strncmp(gopt.optarg, "uds:", 4) == 0) {
+                _rcin_path = &gopt.optarg[4];
+                if (_rcin_path[0] == '\0') {
+                    printf("--rc-in-port requires a path after uds:\n");
+                    exit(1);
+                }
+            } else {
+                _rcin_path = nullptr;
+                _rcin_port = atoi(gopt.optarg);
+            }
             break;
         case CMDLINE_SIM_ADDRESS:
             simulator_address = gopt.optarg;

@@ -744,9 +744,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def MAVProxy_SetModeUsingSwitch(self):
         """Set modes via mavproxy switch"""
-        port = self.sitl_rcin_port(offset=1)
+        rcin_commandline_value = self.sitl_rcin_commandline_value(offset=1)
+        rcin_endpoint = self.sitl_rcin_endpoint(offset=1)
         self.customise_SITL_commandline([
-            "--rc-in-port", str(port),
+            "--rc-in-port", rcin_commandline_value,
         ])
         ex = None
         try:
@@ -758,7 +759,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     (4, 'AUTO'),
                     (5, 'AUTO'),  # non-existent mode, should stay in RTL
                     (6, 'MANUAL')]
-            mavproxy = self.start_mavproxy(sitl_rcin_port=port)
+            mavproxy = self.start_mavproxy(sitl_rcin_port=rcin_endpoint)
             for (num, expected) in fnoo:
                 mavproxy.send('switch %u\n' % num)
                 self.wait_mode(expected)

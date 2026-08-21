@@ -36,6 +36,10 @@ public:
     bool connect(const char *address, uint16_t port);
     bool connect_timeout(const char *address, uint16_t port, uint32_t timeout_ms);
     bool bind(const char *address, uint16_t port);
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+    bool bind_unix(const char *path);
+    static void cleanup_unix_paths();
+#endif
     bool reuseaddress() const;
     bool set_blocking(bool blocking) const;
     bool set_cloexec() const;

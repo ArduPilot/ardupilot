@@ -2139,6 +2139,7 @@ class TestSuite(abc.ABC):
                  move_logs_on_test_failure: bool = False,
                  asan=False,
                  check_parameter_leaks=True,
+                 unix_domain_socket=False,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2219,6 +2220,8 @@ class TestSuite(abc.ABC):
         self.in_drain_mav = False
         self.tlog = None
         self.enable_fgview = enable_fgview
+        self.unix_domain_socket = unix_domain_socket
+        self.unix_domain_socket_dir = os.getcwd()
 
         self.rc_thread: threading.Thread | None = None
         self.rc_thread_should_quit: bool = False
@@ -2329,12 +2332,26 @@ class TestSuite(abc.ABC):
         return 8000 + offset
 
     def autotest_connection_string_to_ardupilot(self):
+        if self.unix_domain_socket:
+            return "uds:" + util.unix_domain_socket_path(0, self.unix_domain_socket_dir)
         return "tcp:127.0.0.1:%u" % self.adjust_ardupilot_port(5760)
 
     def sitl_rcin_port(self, offset=0):
         if offset > 2:
             raise ValueError("offset too large")
         return 5501 + offset
+
+    def sitl_rcin_endpoint(self, offset=0):
+        if self.unix_domain_socket:
+            path = util.unix_domain_socket_rcin_path(self.unix_domain_socket_dir, offset)
+            return "uds:" + path
+        return "127.0.0.1:%u" % self.sitl_rcin_port(offset)
+
+    def sitl_rcin_commandline_value(self, offset=0):
+        if self.unix_domain_socket:
+            path = util.unix_domain_socket_rcin_path(self.unix_domain_socket_dir, offset)
+            return "uds:" + path
+        return str(self.sitl_rcin_port(offset))
 
     def mavproxy_options(self):
         """Returns options to be passed to MAVProxy."""
@@ -6078,7 +6095,7 @@ class TestSuite(abc.ABC):
 
     def rc_thread_main(self):
         """When this function completes, the thread terminates."""
-        sitl_output = mavutil.mavudp("127.0.0.1:%u" % self.sitl_rcin_port(), input=False)
+        sitl_output = util.sitl_rcin_connection(self.sitl_rcin_endpoint())
 
         # Pay attention, there are race conditions /
         # wallclock-vs-simtime issues to worry about here.
@@ -10228,10 +10245,13 @@ Also, ignores heartbeats not from our target system'''
             pexpect_timeout *= 2
 
         if sitl_rcin_port is None:
-            sitl_rcin_port = self.sitl_rcin_port()
+            sitl_rcin_port = self.sitl_rcin_endpoint()
 
         if master is None:
-            master = 'tcp:127.0.0.1:%u' % self.adjust_ardupilot_port(5762)
+            if self.unix_domain_socket:
+                master = "uds:" + util.unix_domain_socket_path(1, self.unix_domain_socket_dir)
+            else:
+                master = 'tcp:127.0.0.1:%u' % self.adjust_ardupilot_port(5762)
 
         if options is None:
             options = self.mavproxy_options()
@@ -10284,6 +10304,7 @@ Also, ignores heartbeats not from our target system'''
             "asan": self.asan,
             "wipe": True,
             "enable_fgview": self.enable_fgview,
+            "unix_domain_socket": self.unix_domain_socket,
         }
         start_sitl_args.update(**sitl_args)
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:

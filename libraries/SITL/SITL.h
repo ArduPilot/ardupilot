@@ -530,6 +530,7 @@ public:
 
     uint16_t irlock_port;
     uint16_t rcin_port;
+    const char *rcin_path = nullptr;
 
     time_t start_time_UTC;
 
