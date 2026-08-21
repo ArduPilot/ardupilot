@@ -11202,7 +11202,12 @@ Also, ignores heartbeats not from our target system'''
         path = None
         try:
             path = self.current_onboard_log_filepath()
-        except IndexError:
+        except (IndexError, ValueError):
+            # ValueError: max() of an empty log list - e.g. the
+            # log-wrap tests can leave no logs on disk at exception
+            # time, and this diagnostic path must never take the
+            # worker down (it did: "Test runner exited without
+            # returning a result")
             pass
         self.progress("Most recent logfile: %s" % (path, ), send_statustext=send_statustext)
 
