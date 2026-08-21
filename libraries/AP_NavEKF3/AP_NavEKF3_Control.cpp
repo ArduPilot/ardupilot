@@ -399,6 +399,14 @@ void NavEKF3_core::setAidingMode()
                 velTimeout = !optFlowUsed && !gpsVelUsed && !bodyOdmUsed;
                 gpsIsInUse = false;
 
+                // If no absolute position source remains but optical flow (or body
+                // odometry) is still aiding, drop to relative aiding. Without this the
+                // filter stays in AID_ABSOLUTE while dead-reckoning on flow, so the
+                // flow-relative control limits in getEkfControlLimits never engage.
+                if (!readyToUseGPS() && !readyToUseRangeBeacon() && !readyToUseExtNav() &&
+                    (optFlowUsed || bodyOdmUsed)) {
+                    PV_AidingMode = AID_RELATIVE;
+                }
             }
             break;
         }
