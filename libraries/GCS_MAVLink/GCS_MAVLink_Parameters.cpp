@@ -221,6 +221,32 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // This allows one time conversion while allowing user to flash between versions with and without converted params
     AP_GROUPINFO_FLAGS("_OPTIONSCNV",   21, GCS_MAVLINK, options_were_converted, 0, AP_PARAM_FLAG_HIDDEN),
 
+    // @Param: _DEVID
+    // @DisplayName: DeviceID
+    // @Description: ID of device using this MAVLink channel
+    // @ReadOnly: True
+    // @Values: 0:Unknown
+    // @Values: 6:SERIAL0 (USB on ChibiOS)
+    // @Values: 14:SERIAL1
+    // @Values: 22:SERIAL2
+    // @Values: 30:SERIAL3
+    // @Values: 38:SERIAL4
+    // @Values: 46:SERIAL5
+    // @Values: 54:SERIAL6
+    // @Values: 62:SERIAL7
+    // @Values: 70:SERIAL8
+    // @Values: 78:SERIAL9
+    // @Values: 174:NET_P1
+    // @Values: 182:NET_P2
+    // @Values: 190:NET_P3
+    // @Values: 198:NET_P4
+    // @Values: 334:CAN_D1_UC_S1
+    // @Values: 414:CAN_D2_UC_S1
+    // @Values: 494:SCR_SDEV1
+    // @Values: 502:SCR_SDEV2
+    // @User: Advanced
+    AP_GROUPINFO_FLAGS("_DEVID",   22, GCS_MAVLINK, devid, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
     AP_GROUPEND
 };
 #undef DRATE
