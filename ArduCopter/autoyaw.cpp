@@ -70,6 +70,7 @@ void Mode::AutoYaw::set_mode(Mode yaw_mode)
     switch (_mode) {
 
     case Mode::HOLD:
+        _yaw_angle_rad = copter.attitude_control->get_att_target_euler_rad().z;
         break;
 
     case Mode::LOOK_AT_NEXT_WP:
@@ -277,6 +278,7 @@ float Mode::AutoYaw::yaw_rad()
         break;
     }
 
+    case Mode::HOLD:
     case Mode::RATE:
     case Mode::WEATHERVANE:
     case Mode::PILOT_RATE:
