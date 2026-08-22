@@ -1331,6 +1331,17 @@ public:
     // It's up to the Lua script to ensure the provided location makes sense
     bool set_crosstrack_start(const Location &new_start_location) override;
 
+#if AP_TECS_DESCENT_RATE_ENABLED
+    // Override the TECS height controller so that it attempts to maintain the demanded descent rate
+    // descent_rate has units of m/s, positive is descending, and must satisfy
+    // -TECS_CLMB_MAX <= rate <= TECS_SINK_MAX
+    // timeout_ms is how long the command remains in effect, after which height control reverts to normal operation
+    // Send the command with timeout_ms = 0 to cancel a previous command
+    // The request is dropped, not suspended, if a landing approach or flare starts
+    // Returns false if the command cannot be executed
+    bool set_tecs_descent_rate_override(float descent_rate, uint32_t timeout_ms) override;
+#endif  // AP_TECS_DESCENT_RATE_ENABLED
+
 #endif // AP_SCRIPTING_ENABLED
 
     bool tkoff_option_is_set(AP_FixedWing::TakeoffOption option) const {

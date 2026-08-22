@@ -180,6 +180,7 @@ class ExtractFeatures(BuildScriptBase):
 
             ('HAL_QUADPLANE_ENABLED', 'QuadPlane::QuadPlane',),
             ('AP_PLANE_GLIDER_PULLUP_ENABLED', 'GliderPullup::in_pullup',),
+            ('AP_TECS_DESCENT_RATE_ENABLED', 'AP_TECS::set_descent_rate_override',),
             ('QAUTOTUNE_ENABLED', 'ModeQAutotune::_enter',),
             ('HAL_SOARING_ENABLED', 'SoaringController::var_info',),
             ('HAL_LANDING_DEEPSTALL_ENABLED', r'AP_Landing_Deepstall::override_servos',),

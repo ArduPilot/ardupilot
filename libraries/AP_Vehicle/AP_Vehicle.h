@@ -35,6 +35,7 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
+#include <AP_TECS/AP_TECS_config.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Generator/AP_Generator.h>
 #include <AP_Logger/AP_Logger.h>
@@ -241,6 +242,17 @@ public:
     // Allow for scripting to have control over the crosstracking when exiting and resuming missions or guided flight
     // It's up to the Lua script to ensure the provided location makes sense
     virtual bool set_crosstrack_start(const Location &new_start_location) { return false; }
+
+#if AP_TECS_DESCENT_RATE_ENABLED
+    // Override the TECS height controller so that it attempts to maintain the demanded descent rate
+    // descent_rate has units of m/s, positive is descending, and must satisfy
+    // -TECS_CLMB_MAX <= rate <= TECS_SINK_MAX
+    // timeout_ms is how long the command remains in effect, after which height control reverts to normal operation
+    // Send the command with timeout_ms = 0 to cancel a previous command
+    // The request is dropped, not suspended, if a landing approach or flare starts
+    // Returns false if the command cannot be executed
+    virtual bool set_tecs_descent_rate_override(float descent_rate, uint32_t timeout_ms) { return false; }
+#endif  // AP_TECS_DESCENT_RATE_ENABLED
 
     // control outputs enumeration
     enum class ControlOutput {
