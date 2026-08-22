@@ -26,6 +26,8 @@ void NavEKF3_core::readRangeFinder(void)
     if (_rng == nullptr) {
         return;
     }
+
+    // update global range-on-ground, used for all rangefinders
     rngOnGnd = MAX(_rng->ground_clearance_orient(ROTATION_PITCH_270), 0.05f);
 
     // limit update rate to maximum allowed by data buffers
@@ -36,22 +38,36 @@ void NavEKF3_core::readRangeFinder(void)
 
         // store samples and sample time into a ring buffer if valid
         // use data from two range finders if available
-
+        float range_distance = 0.0f;
         for (uint8_t sensorIndex = 0; sensorIndex < ARRAY_SIZE(rngMeasIndex); sensorIndex++) {
             const auto *sensor = _rng->get_backend(sensorIndex);
             if (sensor == nullptr) {
                 continue;
             }
-            if ((sensor->orientation() == ROTATION_PITCH_270) && (sensor->status() == AP_DAL_RangeFinder::Status::Good)) {
-                rngMeasIndex[sensorIndex] ++;
-                if (rngMeasIndex[sensorIndex] > 2) {
-                    rngMeasIndex[sensorIndex] = 0;
-                }
-                storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
-                storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = sensor->distance();
-            } else {
+            if (sensor->orientation() != ROTATION_PITCH_270) {
+                // only consume downward facing rangefinder data
                 continue;
             }
+            if (sensor->status() == AP_DAL_RangeFinder::Status::Good) {
+                // get the current range measurement
+                range_distance = sensor->distance();
+            } else if (!takeOffDetected && sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow) {
+                // use ground clearance range until takeoff is detected.
+                // once the rangefinder comes into range on climb, the Good
+                // status branch above takes over automatically.
+                range_distance = rngOnGnd;
+            } else {
+                // ignore out-of-range data
+                continue;
+            }
+
+            // place distance in the range data buffer
+            rngMeasIndex[sensorIndex]++;
+            if (rngMeasIndex[sensorIndex] > 2) {
+                rngMeasIndex[sensorIndex] = 0;
+            }
+            storedRngMeasTime_ms[sensorIndex][rngMeasIndex[sensorIndex]] = imuSampleTime_ms - 25;
+            storedRngMeas[sensorIndex][rngMeasIndex[sensorIndex]] = range_distance;
 
             // check for three fresh samples
             bool sampleFresh[DOWNWARD_RANGEFINDER_MAX_INSTANCES][3] = {};
@@ -92,18 +108,6 @@ void NavEKF3_core::readRangeFinder(void)
 
                 // indicate we have updated the measurement
                 rngValidMeaTime_ms = imuSampleTime_ms;
-
-            } else if (onGround && ((imuSampleTime_ms - rngValidMeaTime_ms) > 200)) {
-                // before takeoff we assume on-ground range value if there is no data
-                rangeDataNew.time_ms = imuSampleTime_ms;
-                rangeDataNew.rng = rngOnGnd;
-
-                // write data to buffer with time stamp to be fused when the fusion time horizon catches up with it
-                storedRange.push(rangeDataNew);
-
-                // indicate we have updated the measurement
-                rngValidMeaTime_ms = imuSampleTime_ms;
-
             }
         }
     }
@@ -196,8 +200,8 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         delTimeOF = 0.0f;
     }
     // by definition if this function is called, then flow measurements have been provided so we
-    // need to run the optical flow takeoff detection
-    detectOptFlowTakeoff();
+    // need to run the takeoff detection
+    detectTakeoff();
 
     // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
     if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
