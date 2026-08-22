@@ -145,14 +145,14 @@ const AP_Param::GroupInfo AP_PitchController::var_info[] = {
 
     // @Param: _RATE_NTF
     // @DisplayName: Pitch Target notch filter index
-    // @Description: Pitch Target notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _RATE_NEF
     // @DisplayName: Pitch Error notch filter index
-    // @Description: Pitch Error notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(rate_pid, "_RATE_", 11, AP_PitchController, AC_PID),
