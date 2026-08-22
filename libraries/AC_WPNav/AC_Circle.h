@@ -4,6 +4,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Math/AP_Math.h>
 #include <AC_AttitudeControl/AC_PosControl.h>      // Position control library
+#include "AC_WPNav.h"
 
 class AC_Circle
 {
@@ -171,11 +172,7 @@ private:
 
     // Returns the expected source of terrain data for the circle controller.
     // Used to determine whether terrain offset comes from rangefinder, terrain database, or is unavailable.
-    enum class TerrainSource {
-        TERRAIN_UNAVAILABLE,
-        TERRAIN_FROM_RANGEFINDER,
-        TERRAIN_FROM_TERRAINDATABASE,
-    };
+    using TerrainSource = AC_WPNav::TerrainSource;
     AC_Circle::TerrainSource get_terrain_source() const;
 
     // Returns terrain offset in meters above the EKF origin at the current position.
