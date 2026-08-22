@@ -7063,6 +7063,13 @@ class TestSuite(abc.ABC):
 
         if self.rc_thread is None:
             self.rc_thread = threading.Thread(target=self.rc_thread_main, name='RC')
+            # daemon: the quit flag is only set on the paths which join
+            # the thread, and a teardown which misses them (e.g. an
+            # exception during test cleanup) otherwise leaves the
+            # interpreter's shutdown waiting on this thread for ever -
+            # the whole worker process then hangs after its test has
+            # finished, and the parallel runner eventually abandons it
+            self.rc_thread.daemon = True
             if self.rc_thread is None:
                 raise NotAchievedException("Could not create thread")
             self.rc_thread.start()
