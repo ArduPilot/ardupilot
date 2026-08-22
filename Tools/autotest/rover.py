@@ -7061,14 +7061,18 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # this vehicle is actually listening on.  Hard-coding 5765 sends
         # pppd at nothing when the instance is not zero, and it exits:
         #     End Of File (EOF) ... command: /usr/bin/sudo ... socket 127.0.0.1:5765
+        # The PPP interface addresses move with the instance too: pppd
+        # creates a real kernel interface, so concurrent instances must
+        # not share an address pair.
+        local_ip, remote_ip = self.ppp_ip_pair()
         pppd = util.start_PPP_daemon(
-            "192.168.14.15:192.168.14.13",
+            "%s:%s" % (local_ip, remote_ip),
             '127.0.0.1:%u' % self.adjust_ardupilot_port(5765))
 
         self.context_push()
         self.context_collect('STATUSTEXT')
 
-        pppd.expect("remote IP address 192.168.14.13")
+        pppd.expect("remote IP address %s" % remote_ip)
 
         self.progress("PPP daemon started")
 
@@ -7081,7 +7085,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.wait_ready_to_arm()
 
-        self.TestWebServer("http://192.168.14.13:8081")
+        self.TestWebServer("http://%s:8081" % remote_ip)
 
         self.context_pop()
         # this pop restores the non-PPP rover backed up above
