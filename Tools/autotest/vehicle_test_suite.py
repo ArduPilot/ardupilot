@@ -12568,7 +12568,11 @@ Also, ignores heartbeats not from our target system'''
                     # compass is expected to report FAILED_OFFSETS. Do not
                     # assume compass_id ordering here; some SITL setups can
                     # differ in instance mapping.
-                    MAG_CAL_FAILED_OFFSETS = mavutil.mavlink.MAG_CAL_FAILED_OFFSETS
+                    # pymavlink releases up to at least 2.4.49 predate
+                    # this MAG_CAL_STATUS enum entry; fall back to its
+                    # value (matching CompassCalibrator.h / common.xml)
+                    MAG_CAL_FAILED_OFFSETS = getattr(
+                        mavutil.mavlink, 'MAG_CAL_FAILED_OFFSETS', 8)
                     failed_offsets_idxs = []
                     for i, status in enumerate(report_status):
                         if status == MAG_CAL_FAILED_OFFSETS:
