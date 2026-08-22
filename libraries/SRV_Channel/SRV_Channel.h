@@ -661,7 +661,7 @@ private:
     AP_RobotisServo robotis;
 #endif
 
-#if HAL_SUPPORT_RCOUT_SERIAL
+#if HAVE_AP_BLHELI_SUPPORT
     // support for BLHeli protocol
     AP_BLHeli blheli;
 #endif
