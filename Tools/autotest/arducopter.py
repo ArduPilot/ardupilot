@@ -10858,13 +10858,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reach_heading_manual(270)
         self.set_rc(2, 1400)
         west_loc = Location(-35.363007, 149.164911, here_alt_amsl, AltFrame.ABSOLUTE)
-        self.wait_location(west_loc, accuracy=6)
+        # same budget as the other corner legs: the vehicle slides
+        # along the fence at ever-decreasing speed, and the default
+        # wait_location timeout expired at 9.7m to go on a loaded
+        # machine
+        self.wait_location(west_loc, accuracy=6, timeout=200)
         north_loc = Location(-35.362908, 149.165051, here_alt_amsl, AltFrame.ABSOLUTE)
         self.reach_heading_manual(0)
         self.wait_location(north_loc, accuracy=6, timeout=200)
         self.reach_heading_manual(90)
         east_loc = Location(-35.363013, 149.165194, here_alt_amsl, AltFrame.ABSOLUTE)
-        self.wait_location(east_loc, accuracy=6)
+        self.wait_location(east_loc, accuracy=6, timeout=200)
         self.reach_heading_manual(225)
         self.wait_location(west_loc, accuracy=6, timeout=200)
         self.set_rc(2, 1500)
