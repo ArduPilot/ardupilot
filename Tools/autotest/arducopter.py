@@ -11784,6 +11784,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.context_pop()
             self.reboot_sitl()
 
+    def wait_IE24_battery_drain(self, instance, from_remaining, drop, timeout=60):
+        '''wait for battery_remaining on instance to fall at least `drop`
+        below from_remaining.  The IE24 simulator's shared capacity
+        drains to empty and then RECHARGES (a sawtooth between 42V and
+        50.4V), and message delivery under load can skip percentages,
+        so an exact-value wait on a transient reading is a race: wait
+        for at-least-this-much-drop instead.'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(
+                    "battery %u did not drop %u below %u" %
+                    (instance, drop, from_remaining))
+            m = self.assert_receive_message('BATTERY_STATUS', instance=instance)
+            if m.battery_remaining <= from_remaining - drop:
+                return m
+
     def run_IE24(self, proto_ver):
         '''Test IntelligentEnergy 2.4kWh generator'''
         elec_battery_instance = 2
@@ -11800,6 +11817,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.customise_SITL_commandline(["--serial5=sim:ie24"])
 
+        # the simulated pack drains 100->0 in about ten simulated
+        # minutes and then recharges, and the fuel percentage is
+        # derived from the same capacity.  At high speedup that whole
+        # cycle is seconds of wall clock, so a couple of framework
+        # round-trips can see the tank half-empty - or filling.  Bound
+        # the sim:wall ratio so the drain is slow against the checks.
+        self.context_set_speedup(8)
+
         self.start_subtest("Protocol %i: ensure that BATTERY_STATUS for electrical generator message looks right" % proto_ver)
         self.start_subsubtest("Protocol %i: Checking original voltage (electrical)" % proto_ver)
         # ArduPilot spits out essentially uninitialised battery
@@ -11810,24 +11835,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         if original_elec_m.battery_remaining < 90:
             raise NotAchievedException("Bad original percentage")
-        self.start_subsubtest("Ensure percentage is counting down")
-        self.wait_message_field_values('BATTERY_STATUS', {
-            "battery_remaining": original_elec_m.battery_remaining - 1,
-        }, instance=elec_battery_instance)
+
+        # sample the fuel baseline right away, before any waiting
+        # spends simulated time draining the shared capacity - taken
+        # after the electrical countdown, a loaded run read 37%.  The
+        # first reports carry battery_remaining=0 until the fuel
+        # monitor has processed a tank-pressure line, so poll for the
+        # near-full baseline rather than asserting the first sample:
+        self.start_subsubtest("Protocol %i: Checking original voltage (fuel)" % proto_ver)
+        tstart = self.get_sim_time()
+        last_fuel_remaining = None
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException(
+                    "Bad original percentage (want=>%f got %s" %
+                    (90, last_fuel_remaining))
+            original_fuel_m = self.wait_message_field_values('BATTERY_STATUS', {
+                "charge_state": mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK
+            }, instance=fuel_battery_instance)
+            last_fuel_remaining = original_fuel_m.battery_remaining
+            if original_fuel_m.battery_remaining > 90:
+                break
+
+        self.start_subsubtest("Ensure percentage is counting down (electrical)")
+        self.wait_IE24_battery_drain(elec_battery_instance,
+                                     original_elec_m.battery_remaining, 1,
+                                     timeout=30)
 
         self.start_subtest("Protocol %i: ensure that BATTERY_STATUS for fuel generator message looks right" % proto_ver)
-        self.start_subsubtest("Protocol %i: Checking original voltage (fuel)" % proto_ver)
-        # ArduPilot spits out essentially uninitialised battery
-        # messages until we read things from the battery:
-        original_fuel_m = self.wait_message_field_values('BATTERY_STATUS', {
-            "charge_state": mavutil.mavlink.MAV_BATTERY_CHARGE_STATE_OK
-        }, instance=fuel_battery_instance)
-        if original_fuel_m.battery_remaining <= 90:
-            raise NotAchievedException("Bad original percentage (want=>%f got %f" % (90, original_fuel_m.battery_remaining))
         self.start_subsubtest("Protocol %i: Ensure percentage is counting down" % proto_ver)
-        self.wait_message_field_values('BATTERY_STATUS', {
-            "battery_remaining": original_fuel_m.battery_remaining - 2,
-        }, instance=fuel_battery_instance, timeout=30)
+        self.wait_IE24_battery_drain(fuel_battery_instance,
+                                     original_fuel_m.battery_remaining, 2,
+                                     timeout=30)
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -11865,6 +11904,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
 
         self.customise_SITL_commandline(["--serial5=sim:ie24"])
+
+        # see run_IE24: bound the sim:wall ratio against the pack's
+        # fast simulated drain-and-recharge cycle
+        self.context_set_speedup(8)
 
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
