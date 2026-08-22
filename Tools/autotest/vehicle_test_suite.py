@@ -6269,8 +6269,11 @@ class TestSuite(abc.ABC):
         self.context_set_speedup(1)
 
         filename = "MAVProxy-downloaded-can-log.BIN"
-        # port 15550 is in SITL_Periph_State.h as SERIAL4 udpclient:127.0.0.1:15550
-        mavproxy = self.start_mavproxy(master=':15550')
+        # the peripheral's SERIAL4 defaults to
+        # udpclient:127.0.0.1:15550 (SITL_Periph_State.h); the
+        # framework overrides the port per-instance when it starts the
+        # peripheral, so listen where this worker's peripheral sends:
+        mavproxy = self.start_mavproxy(master=':%u' % self.periph_serial4_udp_port())
         self.mavproxy_load_module(mavproxy, 'log')
         mavproxy.send("log list\n")
         mavproxy.expect(r"\bLog (\d+) .* lastLog \1 ")
@@ -11678,7 +11681,7 @@ Also, ignores heartbeats not from our target system'''
         del start_sitl_args["sitl_rcin_port"]
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
-            start_sitl_args["customisations"] = [sup_binary['customisation']]
+            start_sitl_args["customisations"] = self.sup_customisations(count)
             start_sitl_args["supplementary"] = True
             start_sitl_args["stdout_prefix"] = "%s-%u" % (os.path.basename(sup_binary['binary']), count)
             start_sitl_args["defaults_filepath"] = sup_binary['param_file']
@@ -11694,6 +11697,42 @@ Also, ignores heartbeats not from our target system'''
 
     def get_supplementary_programs(self):
         return self.sup_prog
+
+    def sup_instance_number(self, sup_index):
+        '''SITL instance number for this worker's sup_index-th
+        supplementary peripheral.  The suite definitions historically
+        fixed these at 0 and 1, but an instance number allocates real
+        machine resources - the TCP serial ports at 5760+10*instance -
+        so every parallel worker's peripherals fought over the same
+        ports (and over low-numbered workers' vehicle ports).
+
+        Clearing the other *instance* families is not enough: what
+        collides is the ports they map to.  Base 150 put worker 19's
+        first peripheral on 8020, which is inside worker 6's
+        spare_network_port() range - 28 such overlaps at --parallel=32
+        alone.  Base 250 starts this family at 8260, above the whole
+        spare range (8000..8257 at the highest supported instance).'''
+        return 250 + self.instance * 4 + sup_index
+
+    def periph_serial4_udp_port(self):
+        '''port a supplementary peripheral's SERIAL4 sends to.  The
+        compiled-in default (SITL_Periph_State.h) is
+        udpclient:127.0.0.1:15550 for every peripheral on the machine;
+        the framework overrides it per-instance on the command line so
+        each worker's CAN-tunnelled serial traffic arrives only at its
+        own test.  Base 17000 sits clear of the NET_Pn test ports
+        around 16001-16006.'''
+        return 17000 + 10 * self.instance
+
+    def sup_customisations(self, sup_index):
+        '''command-line customisations for the sup_index-th
+        supplementary peripheral; placed after the framework arguments
+        so this -I overrides the vehicle instance number start_SITL
+        supplies.'''
+        return [
+            "-I", str(self.sup_instance_number(sup_index)),
+            "--serial4", "udpclient:127.0.0.1:%u" % self.periph_serial4_udp_port(),
+        ]
 
     def stop_sup_program(self, instance=None):
         self.progress("Stopping supplementary program")
@@ -11737,9 +11776,9 @@ Also, ignores heartbeats not from our target system'''
             if instance is not None and instance != i:
                 continue
             sup_binary = self.sup_binaries[i]
-            start_sitl_args["customisations"] = [sup_binary['customisation']]
+            start_sitl_args["customisations"] = self.sup_customisations(i)
             if args is not None:
-                start_sitl_args["customisations"] = [sup_binary['customisation'], args]
+                start_sitl_args["customisations"] += [args]
             start_sitl_args["supplementary"] = True
             start_sitl_args["defaults_filepath"] = sup_binary['param_file']
             sup_prog_link = util.start_SITL(sup_binary['binary'], **start_sitl_args)
@@ -15606,9 +15645,16 @@ switch value'''
             # for requested CASE", a log download which never finishes).
             # TODO: derive the group or port from the instance number as
             # the other ports are, and these can leave this list.
+            # (PeriphMultiUARTTunnel formerly sat here too: its CAN bus
+            # and periph serial ports were already instance-derived, and
+            # the state bus now is - see SITL_MCAST_STATE_PORT.  These
+            # two still need a per-instance CAN transport - the DroneCAN
+            # multicast group is derived from the CAN bus number, not
+            # the SITL instance - and worker-derived supplementary
+            # peripheral instance numbers, whose fixed 0/1 collide with
+            # low-numbered workers' vehicle ports.)
             "CANGPSCopterMission",
             "TestLogDownloadMAVProxyCAN",
-            "PeriphMultiUARTTunnel",
 
             # rebuilds the Replay tool; this mutates the shared build
             # directory / waf board configuration, which races with other
@@ -15641,17 +15687,10 @@ switch value'''
             # on its own); may just be host-load sensitive:
             "WatchdogHome",
 
-            # builds the AP_Periph binary; it already passes --out for
-            # a separate build directory, but waf configure also writes
-            # .lock-waf into the source tree - measured: it does so even
-            # when waf is launched from a different directory with
-            # --top/--out - repointing the shared tree's default build,
-            # which races with anything else building.  TODO: set
-            # WAFLOCK in the build's environment (waf's stock
-            # multi-variant mechanism - the lockfile name comes from it)
-            # so it uses its own lockfile, or build AP_Periph before any
-            # test runs, and this can leave this list:
-            "PeriphMultiUARTTunnel",
+            # (PeriphMultiUARTTunnel's mid-test AP_Periph build formerly
+            # kept it here as well; the build now runs under its own waf
+            # lockfile and output directory, leaving only its build-time
+            # CPU load, which is not a correctness hazard.)
 
             # FFT motor-noise detection; flaky under parallel load (passes
             # in isolation at any instance):
@@ -15879,6 +15918,11 @@ switch value'''
         # (a base of 20721+instance did exactly that: worker W's state
         # port was worker W-1's servo port).
         os.environ["SITL_MCAST_STATE_PORT"] = str(24000 + self.instance)
+        # likewise for the simulated CAN buses: the multicast group
+        # varies with the CAN bus number but the port is a fixed
+        # constant, so concurrent workers' CAN traffic would otherwise
+        # share one set of buses.
+        os.environ["SITL_CAN_MCAST_PORT"] = str(57732 + self.instance)
 
     def refresh_test_binary(self):
         '''make a pristine per-instance copy of the binary.  Some tests
