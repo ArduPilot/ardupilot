@@ -4489,7 +4489,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 p3=-1, # throttle / no change
                 p4=0, # absolute values
             )
-        self.wait_statustext(text="EKF3 lane switch", timeout=30, the_function=fail_speed, check_context=True)
+        # inject the failure first, then wait: with the setup running
+        # inside the wait (the_function), its reposition, 5s settle and
+        # parameter roundtrips were billed against the 30s switch
+        # budget - and on a loaded machine that left too little time
+        # for TECS to diverge and the lane switch to trigger.  The
+        # statustext collection is active throughout, so a switch
+        # arriving during setup is still caught.
+        fail_speed()
+        self.wait_statustext(text="EKF3 lane switch", timeout=45, check_context=True)
         if self.lane_switches != [1, 0, 1, 0, 1]:
             raise NotAchievedException("Expected lane switch 1, got %s" % str(self.lane_switches[-1]))
         # Cleanup
