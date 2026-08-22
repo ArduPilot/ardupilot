@@ -1238,7 +1238,7 @@ if __name__ == "__main__":
 
     if lck is None:
         print("autotest is locked - exiting.  lckfile=(%s)" % (lckfile,))
-        sys.exit(0)
+        sys.exit(1)
 
     atexit.register(util.pexpect_close_all)
 
