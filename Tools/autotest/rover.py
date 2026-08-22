@@ -6767,24 +6767,27 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
             self.wait_groundspeed(speed-0.5, speed+0.5, minimum_duration=5)
 
-        self.send_guided_mission_item(original_loc)
+        # drive back through the start point to a target well beyond
+        # it: the return leg must not arrive (and stop) while the speed
+        # cycling below is still asserting groundspeeds - under load
+        # the legs stretch, and one run's 12m/s segment covered the
+        # remaining distance to the old original_loc target:
+        #     Failed to attain groundspeed between 11.5 and 12.5, reached 0.027
+        beyond_home = self.offset_location_ne(original_loc, -2000, 0)
+        self.send_guided_mission_item(beyond_home)
 
         for speed in speeds:
             self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
             self.wait_groundspeed(speed-0.5, speed+0.5, minimum_duration=5)
 
-        # the speed-cycling legs leave the vehicle a load-dependent
-        # distance from home - each wait_groundspeed leg stretches when
-        # the machine is busy, and RTL's completion budget below is
-        # sized for the last few metres, not for however much of the
-        # return leg remains:
-        #     Failed to attain Distance to home want 0.0, reached 15.762769171937096
-        # Finish the drive back to the guided target near home first.
-        self.wait_distance_to_home(0, 20, timeout=120)
-
         self.change_mode('RTL')
 
-        self.wait_distance_to_home(0, 5, timeout=30)
+        # the speed-cycling legs leave the vehicle a load-dependent
+        # distance from home, so budget the drive back by how far away
+        # it actually is rather than assuming it is close:
+        #     Failed to attain Distance to home want 0.0, reached 15.762769171937096
+        distance = self.distance_to_home()
+        self.wait_distance_to_home(0, 5, timeout=60 + distance / 1.5)
         self.disarm_vehicle()
 
     def MAV_CMD_MISSION_START(self):
