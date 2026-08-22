@@ -105,9 +105,6 @@ bool AP_Baro_BMP388::init()
     }
     hal.scheduler->delay(10);
 
-    // normal mode, temp and pressure
-    dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
-
     // read the calibration data
     if (!read_registers(BMP388_REG_CAL_T, (uint8_t *)&calib_t, sizeof(calib_t)) ||
         !read_registers(BMP388_REG_CAL_P, (uint8_t *)&calib_p, sizeof(calib_p))) {
@@ -119,7 +116,9 @@ bool AP_Baro_BMP388::init()
     dev->setup_checked_registers(4);
 
     // normal mode, temp and pressure
-    dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
+    if (!dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true)) {
+        return false;
+    }
 
     instance = _frontend.register_sensor();
 
