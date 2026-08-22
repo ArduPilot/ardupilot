@@ -191,7 +191,11 @@ bool AP_OABendyRuler::search_xy_path(const Location& current_loc, const Location
                 // perform second stage test in three directions looking for obstacles
                 const float test_bearings[] { 0.0f, 45.0f, -45.0f };
                 const float bearing_to_dest2 = test_loc.get_bearing_to(destination) * 0.01f;
-                float distance2 = constrain_float(lookahead_step2_dist, OA_BENDYRULER_LOOKAHEAD_STEP2_MIN, test_loc.get_distance(destination));
+                float distance2 = OA_BENDYRULER_LOOKAHEAD_STEP2_MIN;
+                const float test_loc_dist = test_loc.get_distance(destination);
+                if (test_loc_dist > OA_BENDYRULER_LOOKAHEAD_STEP2_MIN) {
+                    distance2 = constrain_float(lookahead_step2_dist, OA_BENDYRULER_LOOKAHEAD_STEP2_MIN, test_loc_dist);
+                }
                 for (uint8_t j = 0; j < ARRAY_SIZE(test_bearings); j++) {
                     float bearing_test2 = wrap_180(bearing_to_dest2 + test_bearings[j]);
                     Location test_loc2 = test_loc;
