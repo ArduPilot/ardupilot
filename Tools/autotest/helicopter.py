@@ -789,7 +789,7 @@ class AutoTestHelicopter(AutoTestCopter):
         '''returns a mission which attempts to give the SCurve library
         indigestion.  The same destination is given several times.'''
 
-        wp2_loc = self.mav.location()
+        wp2_loc = self.get_mav_location()
         wp2_offset_n = 20
         wp2_offset_e = 30
         self.location_offset_ne(wp2_loc, wp2_offset_n, wp2_offset_e)
@@ -811,7 +811,7 @@ class AutoTestHelicopter(AutoTestCopter):
             31.0000, # altitude
             mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
 
-        wp5_loc = self.mav.location()
+        wp5_loc = self.get_mav_location()
         wp5_offset_n = -20
         wp5_offset_e = 30
         self.location_offset_ne(wp5_loc, wp5_offset_n, wp5_offset_e)
@@ -855,7 +855,7 @@ class AutoTestHelicopter(AutoTestCopter):
         '''returns a mission which attempts to give the SCurve library
         indigestion.  The same destination is given several times but with differing altitudes.'''
 
-        wp2_loc = self.mav.location()
+        wp2_loc = self.get_mav_location()
         wp2_offset_n = 20
         wp2_offset_e = 30
         self.location_offset_ne(wp2_loc, wp2_offset_n, wp2_offset_e)
@@ -881,7 +881,7 @@ class AutoTestHelicopter(AutoTestCopter):
         wp4 = copy.copy(wp2)
         wp4.alt = 31
 
-        wp5_loc = self.mav.location()
+        wp5_loc = self.get_mav_location()
         wp5_offset_n = -20
         wp5_offset_e = 30
         self.location_offset_ne(wp5_loc, wp5_offset_n, wp5_offset_e)

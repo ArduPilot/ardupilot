@@ -1313,7 +1313,9 @@ private:
     int32_t tecs_target_alt_cm;
 
 public:
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void failsafe_check(void);
+#endif
     bool is_landing() const override;
     bool is_taking_off() const override;
 #if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED

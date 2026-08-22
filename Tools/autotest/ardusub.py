@@ -529,11 +529,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # Save starting point
         self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
-        start_pos = self.mav.location()
+        start_pos = self.get_mav_location()
         # Hold in perfect conditions
         self.progress("Testing position hold in perfect conditions")
         self.delay_sim_time(10, reason="position hold measurement period")
-        distance_m = self.get_distance(start_pos, self.mav.location())
+        distance_m = self.get_distance(start_pos, self.get_mav_location())
         if distance_m > 1:
             raise NotAchievedException(f"Position Hold was unable to keep position in calm waters within 1 meter after 10 seconds, drifted {distance_m} meters")  # noqa
 
@@ -542,17 +542,17 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_WIND_SPD", 1)
         self.set_parameter("SIM_WIND_T", 1)
         self.delay_sim_time(10, reason="drift measurement in 1m/s current")
-        distance_m = self.get_distance(start_pos, self.mav.location())
+        distance_m = self.get_distance(start_pos, self.get_mav_location())
         if distance_m > 1:
             raise NotAchievedException(f"Position Hold was unable to keep position in 1m/s current within 1 meter after 10 seconds, drifted {distance_m} meters")  # noqa
 
         # Move forward slowly in 1 m/s current
-        start_pos = self.mav.location()
+        start_pos = self.get_mav_location()
         self.progress("Testing moving forward in position hold in 1m/s current")
         self.set_rc(Joystick.Forward, 1600)
         self.delay_sim_time(10, reason="forward movement")
-        distance_m = self.get_distance(start_pos, self.mav.location())
-        bearing = self.get_bearing(start_pos, self.mav.location())
+        distance_m = self.get_distance(start_pos, self.get_mav_location())
+        bearing = self.get_bearing(start_pos, self.get_mav_location())
         if distance_m < 2 or (bearing > 30 and bearing < 330):
             raise NotAchievedException(f"Position Hold was unable to move north 2 meters, moved {distance_m} at {bearing} degrees instead")  # noqa
         self.disarm_vehicle()
@@ -881,7 +881,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.dive(start_altitude)
         self.change_mode('GUIDED')
 
-        loc = self.mav.location()
+        loc = self.get_mav_location()
 
         # Reposition, alt relative to surface
         loc = self.offset_location_ne(loc, 10, 10)
@@ -956,6 +956,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_parameters({
             'GPS1_TYPE': 0,             # Disable the GPS
             'EK3_SRC1_POSXY': 0,        # Make sure EK3_SRC parameters do not refer to a GPS
+            # this test never arms, so its boot only produces an
+            # onboard log if disarmed logging is on; a predecessor
+            # which restarts SITL with its own defaults can leave
+            # LOG_DISARMED at 0, and the log scan below then silently
+            # reads a previous boot's log:
+            'LOG_DISARMED': 1,
         })
         self.reboot_sitl()
 
@@ -987,6 +993,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             'EK3_SRC1_VELXY': 0,        # Make sure EK3_SRC parameters do not refer to GPS
             'AHRS_ORIGIN_LAT': 47.607584,
             'AHRS_ORIGIN_LON': -122.343911,
+            # this test never arms, so its boot only produces an
+            # onboard log if disarmed logging is on; a predecessor
+            # which restarts SITL with its own defaults can leave
+            # LOG_DISARMED at 0, and the log scan below then silently
+            # reads a previous boot's log:
+            'LOG_DISARMED': 1,
         })
         # the origin statustext is emitted early in the boot - with no
         # GPS configured the EKF does not wait for anything before
@@ -1104,7 +1116,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def wait_for_stop(self):
         """Watch the sub slow down and stop"""
         tstart = self.get_sim_time_cached()
-        lstart = self.mav.location()
+        lstart = self.get_mav_location()
 
         dmax = 0
         dprev = 0
@@ -1112,7 +1124,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         while True:
             self.delay_sim_time(1, reason="movement measurement interval")
 
-            dcurr = self.get_distance(lstart, self.mav.location())
+            dcurr = self.get_distance(lstart, self.get_mav_location())
 
             if dcurr - dmax < -0.2:
                 raise NotAchievedException(f"Bounced back from {dmax:.2f}m to {dcurr:.2f}m")
@@ -1186,6 +1198,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def MAV_mgs(self):
         '''test individual GCS backends timestamps'''
+        # this test never arms, so its boot only produces an onboard
+        # log if disarmed logging is on; a predecessor which restarts
+        # SITL with its own defaults can leave LOG_DISARMED at 0, and
+        # the log scan below then silently reads a previous boot's log:
+        self.set_parameter('LOG_DISARMED', 1)
         self.reboot_sitl()
         self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
         self.delay_sim_time(10, reason='add delay on connecting "telemetry')
@@ -1221,13 +1238,24 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         chan2_last_timestamp_us = 0
         chan2_last_mgs = 0
         att_ts_us = 0
+        gcs_sysid_set_ts_us = None
         while True:
-            m = dfreader.recv_match(type=['MAV', 'ATT'])
+            m = dfreader.recv_match(type=['MAV', 'ATT', 'PARM'])
             if m is None:
                 raise NotAchievedException("Did not find everything wanted in log")
             if chan2_count > 10:
                 self.progress("Received 10 heartbeats on chan==2")
                 break
+            if m.get_type() == 'PARM':
+                # the moment MAV_GCS_SYSID took effect; heartbeats from
+                # us only count towards mgs from here on.  Measuring
+                # chan 0's latching relative to this rather than to
+                # boot keeps the check independent of how much
+                # simulated time the reboot-detection polling burnt,
+                # which at high speedup can be many seconds.
+                if m.Name == 'MAV_GCS_SYSID' and int(m.Value) == self.mav.source_system:
+                    gcs_sysid_set_ts_us = m.TimeUS
+                continue
             if m.get_type() == 'ATT':
                 att_ts_us = m.TimeUS
                 continue
@@ -1236,8 +1264,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 continue
             if m.chan == 0:
                 if chan0_count == 0:
-                    if att_ts_us > 5000000:
-                        raise NotAchievedException(f"Late arrival on chan=0 {att_ts_us=}")
+                    if gcs_sysid_set_ts_us is None:
+                        raise NotAchievedException(f"mgs nonzero on chan=0 before MAV_GCS_SYSID was set {att_ts_us=}")
+                    if att_ts_us - gcs_sysid_set_ts_us > 5000000:
+                        raise NotAchievedException(f"Late arrival on chan=0 {att_ts_us=} {gcs_sysid_set_ts_us=}")
                 chan0_count += 1
                 if chan0_count > 3:
                     if att_ts_us - chan0_last_timestamp_us > 2000000:
@@ -1592,6 +1622,12 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
         })
+        # mav.location() rather than get_mav_location() here, deliberately:
+        # its lat/lng come from GPS_RAW_INT, and the raw fix is what this
+        # is waiting for the estimate to converge *to*.  Using the estimate
+        # would make the target a snapshot of the drift this test has just
+        # built up, which the vehicle then moves away from as it converges
+        # on the GPS, so it could never be attained.
         self.wait_location(self.mav.location(), minimum_duration=5, accuracy=2, timeout=60.0)
 
         self.progress("Driving forward 10m with GPS+VISO")
@@ -1645,10 +1681,20 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_rc(Joystick.Throttle, 1500)
 
         self.progress("Re-enabling GPS, expecting position correction")
+        # Take the reference before the GPS comes back.  The vehicle is
+        # stationary on the surface here and is not being asked to travel
+        # anywhere: what this is watching for is the position estimate
+        # jumping as the GPS corrects the drift built up above, and that
+        # happens almost as soon as the GPS returns.  wait_distance()
+        # takes its reference when it is called, so measuring after
+        # re-enabling races the correction and usually sees nothing - a
+        # failing run reported 0.10m while its log shows the estimate
+        # moving 11.8m back onto the simulated position.
+        loc_before_gps = self.get_location()
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
         })
-        self.wait_distance(10, accuracy=5, timeout=60)
+        self.wait_distance_to_location(loc_before_gps, 5, 15, timeout=60)
         self.disarm_vehicle()
 
     def AutoTerrainRecover(self):

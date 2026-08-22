@@ -85,7 +85,15 @@ void NavEKF3_core::setWindMagStateLearningMode()
                 stateStruct.wind_vel.x = windSpeed * cosF(tempEuler.z);
                 stateStruct.wind_vel.y = windSpeed * sinF(tempEuler.z);
             } else {
-                trueAirspeedVariance = sq(WIND_VEL_VARIANCE_MAX); // use 2-sigma for faster initial convergence
+                // WIND_VEL_VARIANCE_MAX is already a variance - it
+                // bounds tasVariance above - so squaring it put a
+                // 400m/s 1-sigma on the wind states: without an
+                // airspeed sensor the filter then attributed early
+                // velocity innovations almost entirely to wind,
+                // producing initial wind estimates of more than twice
+                // the true wind speed pointing the wrong way, which
+                // take hundreds of seconds to unwind
+                trueAirspeedVariance = WIND_VEL_VARIANCE_MAX;
             }
 
             // set the wind state variances to the measurement uncertainty
@@ -98,7 +106,8 @@ void NavEKF3_core::setWindMagStateLearningMode()
             // set the variances using a typical max wind speed for small UAV operation
             zeroStatesVarCov(22, 23);
             for (uint8_t index=22; index<=23; index++) {
-                P[index][index] = sq(WIND_VEL_VARIANCE_MAX);
+                // as above: WIND_VEL_VARIANCE_MAX is already a variance
+                P[index][index] = WIND_VEL_VARIANCE_MAX;
             }
         }
     }

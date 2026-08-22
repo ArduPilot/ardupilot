@@ -125,7 +125,7 @@ function run_autotest() {
     if [ "$NAME" == "Examples" ]; then
         w="$w --speedup=5 --timeout=14400 --debug --no-clean"
     fi
-    Tools/autotest/autotest.py --show-test-timings --junit --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
+    Tools/autotest/autotest.py --parallel=8 --show-test-timings --junit --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
 
@@ -169,6 +169,7 @@ for t in $CI_BUILD_TARGET; do
         $waf configure --board sitl
         $waf copter
         run_autotest "Copter" "build.SITLPeriphUniversal" "test.CAN"
+        run_autotest "Copter" "build.SITLPeriphBattMon" "test.BattCAN"
         continue
     fi
     if [ "$t" == "sitltest-plane-tests1a" ]; then

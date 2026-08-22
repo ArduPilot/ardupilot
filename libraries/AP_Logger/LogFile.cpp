@@ -64,6 +64,7 @@ bool AP_Logger_Backend::Write_Format(const struct LogStructure *s)
         return false;
     }
     _formats_written.set(s->msg_type);
+    _formats_written_to_file.set(s->msg_type);
     return true;
 }
 

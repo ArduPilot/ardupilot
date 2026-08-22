@@ -93,7 +93,8 @@ def waf_configure(board,
                   num_aux_imus=0,
                   dronecan_tests=False,
                   extra_defines: dict | None = None,
-                  asan=False):
+                  asan=False,
+                  waflock=None):
 
     if extra_args is None:
         extra_args = []
@@ -132,6 +133,13 @@ def waf_configure(board,
         cmd_configure.extend(piece)
 
     configure_env = None
+    if waflock is not None:
+        # give this configuration its own waf lockfile so it does not
+        # usurp the tree's default build directory/board (e.g. a
+        # peripheral firmware built mid-test must not cause a later
+        # "./waf build" to build the peripheral board)
+        configure_env = dict(os.environ)
+        configure_env['WAFLOCK'] = waflock
     if asan:
         cmd_configure.append('--asan')
         if not debug:
@@ -160,15 +168,20 @@ def waf_configure(board,
                 cc = 'clang'
         if not cxx or not cc:
             raise RuntimeError("--asan requires clang; install clang or set CXX/CC environment variables")
-        configure_env = dict(os.environ)
+        if configure_env is None:
+            configure_env = dict(os.environ)
         configure_env['CXX'] = cxx
         configure_env['CC'] = cc
 
     run_cmd(cmd_configure, directory=topdir(), checkfail=True, env=configure_env)
 
 
-def waf_clean():
-    run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True)
+def waf_clean(waflock=None):
+    env = None
+    if waflock is not None:
+        env = dict(os.environ)
+        env['WAFLOCK'] = waflock
+    run_cmd([relwaf(), "clean"], directory=topdir(), checkfail=True, env=env)
 
 
 def waf_build(target=None):
@@ -197,11 +210,27 @@ def build_SITL(
         num_aux_imus=0,
         dronecan_tests=False,
         asan=False,
+        waflock=None,
+        isolated=False,
 ):
     if extra_configure_args is None:
         extra_configure_args = []
     if extra_defines is None:
         extra_defines = {}
+
+    # isolated: configure and build in a separate output directory with
+    # a separate waf lockfile, then copy the built binary to the path in
+    # the default build tree callers expect.  For mid-test rebuilds with
+    # special configure options (e.g. --enable-PPP): without isolation
+    # the configure rewrites the default build tree's stored
+    # configuration and every binary built there afterwards inherits the
+    # options.
+    isolated_builddir = None
+    if isolated:
+        isolated_builddir = reltopdir('build-frame')
+        extra_configure_args = list(extra_configure_args) + ['--out', isolated_builddir]
+        if waflock is None:
+            waflock = '.lock-waf-frame-build'
 
     # first configure
     if configure:
@@ -219,17 +248,24 @@ def build_SITL(
                       num_aux_imus=num_aux_imus,
                       dronecan_tests=dronecan_tests,
                       extra_args=extra_configure_args,
-                      asan=asan,)
+                      asan=asan,
+                      waflock=waflock,)
 
     # then clean
     if clean:
-        waf_clean()
+        waf_clean(waflock=waflock)
 
     # then build
     cmd_make = [relwaf(), "build", "--target", build_target]
     if j is not None:
         cmd_make.extend(['-j', str(j)])
-    run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
+    build_env = None
+    if waflock is not None:
+        build_env = dict(os.environ)
+        build_env['WAFLOCK'] = waflock
+    run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True, env=build_env)
+    if isolated:
+        _copy_frame_artefact(isolated_builddir, board, build_target)
     return True
 
 
@@ -259,12 +295,25 @@ def build_SITL_frame(
     vinfo = vehicleinfo.VehicleInfo()
     frame_opts = vinfo.options[vehicleinfo_key]['frames'][frame]
 
+    # keep these configurations' waf lockfile away from the tree's
+    # default one: the vehicle is configured with frame-specific
+    # options and the companion is a peripheral board, and letting
+    # either rewrite the default lockfile makes the next plain
+    # "./waf build" (or autotest --no-configure) silently build with
+    # this frame's configuration instead of the tree's
+    build_kwargs.setdefault('waflock', '.lock-waf-frame-build')
+
     configure_args = list(frame_opts.get('configure_args', []))
     if extra_configure_args is not None:
         configure_args += list(extra_configure_args)
 
+    # isolated: the frame's configure args (e.g. --enable-PPP) must not
+    # rewrite the default build tree's stored configuration - a Plane
+    # suite's PPPPeriph run left build/sitl PPP-enabled, and the Sub
+    # network-port tests built after it black-holed all NET traffic
     build_SITL(frame_opts['waf_target'],
                extra_configure_args=configure_args,
+               isolated=True,
                **build_kwargs)
 
     periph_board = frame_opts.get('periph_board')
@@ -272,9 +321,27 @@ def build_SITL_frame(
         build_SITL('bin/AP_Periph',
                    board=periph_board,
                    extra_configure_args=configure_args,
+                   isolated=True,
                    **build_kwargs)
 
     return frame_opts
+
+
+def _copy_frame_artefact(frame_builddir, board, waf_target):
+    '''copy a binary built in the frame build directory to the same
+    relative location in the default build directory, where callers
+    (and the parallel runner's refresh_test_binary()) expect it'''
+    import shutil
+    src = os.path.join(frame_builddir, board, waf_target)
+    dst = os.path.join(topdir(), 'build', board, waf_target)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    # unlink first: the destination may be a binary a running SITL was
+    # started from, and overwriting it in place fails with ETXTBSY
+    try:
+        os.unlink(dst)
+    except FileNotFoundError:
+        pass
+    shutil.copy2(src, dst)
 
 
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
@@ -504,7 +571,10 @@ class PSpawnStdPrettyPrinter(object):
         print("%s: %s" % (self.prefix, line), file=self.output)
 
     def flush(self):
-        pass
+        # when we are writing to a file rather than a terminal this is
+        # the only thing which gets the last line of a SITL which is
+        # about to die onto disk.  pexpect flushes us after each write.
+        self.output.flush()
 
 
 def start_SITL(binary,
@@ -530,8 +600,15 @@ def start_SITL(binary,
                enable_fgview=False,
                supplementary=False,
                stdout_prefix=None,
+               stdout_file=None,
                asan=False,
+               instance=0,
+               sitl_rcin_port=None,
                ):
+
+    if model is None and not supplementary:
+        raise ValueError("model must not be None")
+
     """Launch a SITL instance."""
 
     if defaults_filepath is None:
@@ -634,6 +711,11 @@ def start_SITL(binary,
         filepath.close()
         defaults.append(str(filepath.name))
 
+    cmd.extend(['-I', str(instance)])
+
+    if sitl_rcin_port is not None:
+        cmd.extend(["--rc-in-port", str(sitl_rcin_port)])
+
     if not supplementary:
         if wipe:
             cmd.append('-w')
@@ -652,8 +734,13 @@ def start_SITL(binary,
             cmd.extend(['--rate', str(sim_rate_hz)])
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
-        # somewhere for MAVProxy to connect to:
-        cmd.append('--serial1=tcp:2')
+        # somewhere for MAVProxy to connect to.  "pace" holds the
+        # simulation back while this port's outbound queue is backed up,
+        # as always happens for serial0: without it a loaded machine can
+        # advance the simulation many seconds while MAVProxy is not
+        # scheduled, and the vehicle's own deadlines (e.g. the mission
+        # upload timeout) expire before MAVProxy has a chance to act.
+        cmd.append('--serial1=tcp:2:pace')
         if enable_fgview:
             cmd.append("--enable-fgview")
 
@@ -668,7 +755,11 @@ def start_SITL(binary,
     pexpect_logfile_prefix = stdout_prefix
     if pexpect_logfile_prefix is None:
         pexpect_logfile_prefix = os.path.basename(binary)
-    pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
+    if stdout_file is None:
+        pexpect_logfile = PSpawnStdPrettyPrinter(prefix=pexpect_logfile_prefix)
+    else:
+        pexpect_logfile = PSpawnStdPrettyPrinter(output=stdout_file,
+                                                 prefix=pexpect_logfile_prefix)
 
     if (gdb or lldb) and sys.platform == "darwin" and os.getenv('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
@@ -708,15 +799,23 @@ def start_SITL(binary,
         return pexpect.spawn("true", ["true"],
                              logfile=pexpect_logfile,
                              encoding='ascii',
+                             codec_errors='replace',
                              timeout=5)
     else:
         print("Running: %s" % cmd_as_shell(cmd))
 
         first = cmd[0]
         rest = cmd[1:]
-        spawn_env = None
+        spawn_env = dict(os.environ)
+        # Tell SITL where to find dumpstack.sh and dumpcore.sh.  It looks
+        # for them relative to its working directory, which works for a
+        # serial run - that runs in the repo root - but not under
+        # --parallel, where each instance runs in its own directory and
+        # every lookup misses.  A panic there produces no backtrace at
+        # all, which is exactly when one is wanted.
+        spawn_env.setdefault('AP_SCRIPTS_DIR_PATH',
+                             os.path.abspath(reltopdir('Tools/scripts')))
         if asan:
-            spawn_env = dict(os.environ)
             log_base = asan_log_filepath(binary=binary, model=model)
             existing = spawn_env.get('ASAN_OPTIONS', '')
             # Append our options after any inherited ones so that our
@@ -725,7 +824,8 @@ def start_SITL(binary,
             # non-empty even when no errors are detected.
             our_opts = 'log_path=%s:symbolize=1:verbosity=0' % log_base
             spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
-        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd, env=spawn_env)
+        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii',
+                              codec_errors='replace', timeout=5, cwd=cwd, env=spawn_env)
         pexpect_autoclose(child)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
@@ -793,7 +893,12 @@ def start_MAVProxy_SITL(atype,
     print("PYTHONPATH: %s" % str(env['PYTHONPATH']))
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii', timeout=pexpect_timeout, env=env)
+    # the vehicle's boot banner includes a statustext carrying the
+    # firmware hash, which is not ASCII.  Replace what we cannot decode
+    # rather than throwing UnicodeDecodeError out of an unrelated expect:
+    #     AccelCal (...) ('ascii' codec can't decode byte 0xef in position 611: ...)
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=logfile, encoding='ascii',
+                        codec_errors='replace', timeout=pexpect_timeout, env=env)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
@@ -806,7 +911,8 @@ def start_PPP_daemon(ips, sockaddr):
     cmd = cmd.split()
     print("Running: %s" % cmd_as_shell(cmd))
 
-    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii', timeout=30)
+    ret = pexpect.spawn(cmd[0], cmd[1:], logfile=sys.stdout, encoding='ascii',
+                        codec_errors='replace', timeout=30)
     ret.delaybeforesend = 0
     pexpect_autoclose(ret)
     return ret
@@ -823,8 +929,11 @@ def expect_setup_callback(e, callback):
                 return ret
             except pexpect.TIMEOUT:
                 e.expect_user_callback(e)
-        print("Timed out looking for %s" % pattern)
-        raise pexpect.TIMEOUT(timeout)
+        # put the pattern in the exception, not just the timeout value.
+        # str() of this is all the failure summary gets to show, and
+        # "(60)" tells you nothing about what we were waiting for.
+        raise pexpect.TIMEOUT("Timed out after %ss looking for %s" %
+                              (timeout, pattern))
 
     e.expect_user_callback = callback
     e.expect_saved = e.expect

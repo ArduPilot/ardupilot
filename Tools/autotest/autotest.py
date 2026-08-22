@@ -40,6 +40,8 @@ from vehicle_test_suite import Test
 
 tester = None
 
+autotest_start_time = time.time()
+
 
 def buildlogs_dirpath():
     """Return BUILDLOGS directory path."""
@@ -206,8 +208,11 @@ def mavtogpx_filepath():
 
 
 def convert_gpx():
-    """Convert any tlog files to GPX and KML."""
-    mavlog = glob.glob(buildlogs_path("*.tlog"))
+    """Convert this run's tlog files to GPX and KML."""
+    # the buildlogs directory is shared and accumulates tlogs from
+    # previous runs; only convert files this run produced
+    mavlog = [m for m in glob.glob(buildlogs_path("*.tlog"))
+              if os.path.getmtime(m) >= autotest_start_time]
     passed = True
     for m in mavlog:
         util.run_cmd(mavtogpx_filepath() + " --nofixcheck " + m)
@@ -492,17 +497,19 @@ def run_step(step):
                     raise ValueError("Bad supplementary_test_binary %s" % supplementary_test_binary)
                 config_name = a[0]
                 binary_name = a[1]
-                instance_num = int(a[2])
                 param_file = a[3].split(",")
                 bin_path = util.reltopdir(os.path.join('build', config_name, 'bin', binary_name))
-                customisation = '-I {}'.format(instance_num)
+                # note that the instance-number field is ignored:
+                # an instance number allocates real machine resources,
+                # so the test framework derives each supplementary
+                # peripheral's instance from its own worker instance
+                # instead (sup_instance_number)
                 sup_binary = {"binary" : bin_path,
-                              "customisation" : customisation,
                               "param_file" : param_file}
                 supplementary_binaries.append(sup_binary)
-            # we are running in conjunction with a supplementary app
-            # can't have speedup
-            opts.speedup = 1.0
+            # note that speedup is permitted here: the vehicle SITL is
+            # started with --sim-periph-lockstep so it cannot outrun
+            # the supplementary peripherals
             break
 
     fly_opts = {
@@ -528,11 +535,15 @@ def run_step(step):
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
+        "instance": opts.instance,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
 
     fly_opts["check_parameter_leaks"] = opts.check_parameter_leaks
+    if opts.shuffle_seed is not None:
+        fly_opts["shuffle_seed"] = opts.shuffle_seed
+
     fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
     # handle "test.Copter" etc:
@@ -541,7 +552,7 @@ def run_step(step):
         global tester
         tester = tester_class_map[step](binary, **fly_opts)
         # run the test and return its result and the tester itself
-        return tester.autotest(None, step_name=step), tester
+        return (tester.autotest(step_name=step, parallel=opts.parallel), tester)
 
     # handle "test.Copter.CPUFailsafe" etc:
     specific_test_to_run = find_specific_test_to_run(step)
@@ -709,8 +720,55 @@ def write_fullresults():
     write_webresults(results)
 
 
+# highest instance number the per-instance port allocation supports;
+# instance 86's RC-in port (5501+3*86) is instance 0's SITL port (5760)
+MAX_AUTOTEST_INSTANCE = 85
+
+
 def run_tests(steps):
     """Run a list of steps."""
+
+    # A serial, instance-0 run uses the repo-root working directory.  The
+    # ArduPilot scripting engine loads every file in "scripts/", so stale
+    # content there (e.g. left over from a previous run, or a dangling
+    # symlink) silently pollutes the run.  Refuse to start rather than
+    # produce confusing failures.  Parallel runs - and serial "-I N" runs -
+    # each use their own fresh per-instance directory, so they are immune
+    # and exempt from this check.
+    if opts.parallel == 1 and opts.instance == 0:
+        if os.path.isdir("scripts"):
+            # "scripts/modules" is exempt: the engine reads it only when a
+            # script requires a module rather than loading it on sight, and
+            # removing an installed module leaves its parent directory
+            # behind, so an empty one is what a clean run looks like.
+            scripts_contents = [
+                x for x in os.listdir("scripts")
+                if not (x == "modules" and os.path.isdir(os.path.join("scripts", x)))
+            ]
+            if len(scripts_contents) > 0:
+                print("ERROR: refusing to start: serial autotest runs in the "
+                      "repo-root working directory but 'scripts/' is not empty: "
+                      "%s" % sorted(scripts_contents))
+                print("Remove its contents first (parallel runs use "
+                      "per-instance directories and are unaffected).")
+                sys.exit(1)
+
+    # The per-instance port formulas in vehicle_test_suite.py only stay
+    # clear of one another for so many instances: RC-in is
+    # 5501+3*instance and SITL's TCP ports are 5760+10*instance, so by
+    # instance 86 the RC-in block has walked into instance 0's SITL
+    # port.  Past that, two workers bind the same port, one of them
+    # never gets a SITL up, and the run sits waiting for a result which
+    # is never coming - the runner only gives up when *every* worker has
+    # died, so one stuck worker hangs the lot.  Say so now instead.
+    highest_instance = opts.instance + opts.parallel
+    if highest_instance > MAX_AUTOTEST_INSTANCE:
+        print("ERROR: --parallel=%u with -I %u would use instances up to "
+              "%u, but the per-instance port allocation only supports up "
+              "to %u (instance %u's RC-in port is instance 0's SITL "
+              "port)." % (opts.parallel, opts.instance, highest_instance,
+                          MAX_AUTOTEST_INSTANCE, MAX_AUTOTEST_INSTANCE + 1))
+        sys.exit(1)
 
     corefiles = glob.glob("core*")
     corefiles.extend(glob.glob("ap-*.core"))
@@ -726,6 +784,17 @@ def run_tests(steps):
         print('Removing diagnostic files: %s' % str(diagnostic_files))
         for f in diagnostic_files:
             os.unlink(f)
+
+    # each parallel worker (and serial "-I N" run) runs in its own
+    # "parallel-autotest/<instance>" directory.  Wipe the directories THIS
+    # run will use so per-instance logs/eeprom/etc. don't accumulate across
+    # runs - but only this run's instance range, so concurrent runs started
+    # with different -I values don't delete each other's directories.
+    lo = opts.instance
+    hi = opts.instance + opts.parallel  # parallel pass uses base+1..base+parallel
+    instance_dirs = " ".join("parallel-autotest/%u" % n for n in range(lo, hi + 1))
+    print("Removing parallel autotest instance directories %u..%u" % (lo, hi))
+    util.run_cmd("rm -rf " + instance_dirs, checkfail=False)
 
     passed = True
     failed = []
@@ -836,6 +905,15 @@ if __name__ == "__main__":
     ''' main program '''
     os.environ['PYTHONUNBUFFERED'] = '1'
 
+    # pin SITL's multicast traffic (the simulation state a periph
+    # consumes, and multicast CAN) to the loopback interface.  By
+    # default it follows the routing table, which means it goes out
+    # whichever interface has the default route and stops working when
+    # that route is not up or is not multicast-capable; a test should
+    # not pass or fail on the state of the machine's network.  Every
+    # SITL we start inherits this.
+    os.environ.setdefault('SITL_MULTICAST_IF_ADDR', '127.0.0.1')
+
     if sys.platform != "darwin":
         os.putenv('TMPDIR', util.reltopdir('tmp'))
 
@@ -861,7 +939,11 @@ if __name__ == "__main__":
     parser.add_option("--move-logs-on-test-failure",
                       action='store_true',
                       default=None,
-                      help='Move logs to ../buildlogs if a test fails')
+                      help='Move logs to ../buildlogs if a test fails (default)')
+    parser.add_option("--no-move-logs-on-test-failure",
+                      action='store_false',
+                      dest='move_logs_on_test_failure',
+                      help='Leave logs where they are when a test fails')
     parser.add_option("--skip",
                       type='string',
                       default='',
@@ -892,6 +974,19 @@ if __name__ == "__main__":
                       default=None,
                       type='int',
                       help='maximum runtime in seconds')
+    parser.add_option("--parallel",
+                      default=1,
+                      type='int',
+                      help='number of tests to run in parallel')
+    parser.add_option("-I", "--instance",
+                      default=0,
+                      type='int',
+                      help='base instance number (like sim_vehicle.py -I): offsets '
+                           'the ports and per-instance working directories.  For a '
+                           'serial run this is the instance used; with --parallel it '
+                           'is the lowest instance, and workers count up from it.  '
+                           'Use distinct -I values to run several parallel suites at '
+                           'once without colliding (give each its own BUILDLOGS too).')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,
@@ -999,6 +1094,12 @@ if __name__ == "__main__":
                          help='do not check for parameter leaks after each '
                          'test.  The check downloads the full parameter set '
                          'once per test')
+    group_sim.add_option("--shuffle-seed",
+                         default=None,
+                         type='int',
+                         help='shuffle the test order with this seed; '
+                         'varies which tests run next to one another, '
+                         'and can be repeated to reproduce a run')
     group_sim.add_option("--valgrind",
                          default=False,
                          action='store_true',
@@ -1092,11 +1193,11 @@ if __name__ == "__main__":
         elif opts.gdb:
             opts.timeout = None
 
-    # default to moving logs when running in autotest-server mode:
+    # Keep the telemetry and dataflash logs of a test which fails.  They
+    # are what the failure has to be diagnosed from, the next run of that
+    # test overwrites them, and a failure nobody can look into is a run
+    # wasted.  Pass --no-move-logs-on-test-failure to leave them be.
     if opts.move_logs_on_test_failure is None:
-        opts.move_logs_on_test_failure = opts.autotest_server
-
-    if os.getenv("GITHUB_ACTIONS") == "true":
         opts.move_logs_on_test_failure = True
 
     steps = [
@@ -1238,7 +1339,10 @@ if __name__ == "__main__":
 
     if lck is None:
         print("autotest is locked - exiting.  lckfile=(%s)" % (lckfile,))
-        sys.exit(0)
+        # exit failure: we did not run what we were asked to run.
+        # Exiting success here turns a refusal into a silent no-op for
+        # any caller checking the exit code.
+        sys.exit(1)
 
     atexit.register(util.pexpect_close_all)
 

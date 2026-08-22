@@ -1,6 +1,7 @@
 #include <assert.h>
 
 #include "AP_InertialSensor.h"
+#include "AP_InertialSensor_rate_config.h"
 
 #if AP_INERTIALSENSOR_ENABLED
 
@@ -2008,6 +2009,15 @@ void AP_InertialSensor::update(void)
     _last_update_usec = AP_HAL::micros();
     
     _have_sample = false;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    // extend the lockstep to the fast rate loop: don't let simulated
+    // time advance while the rate thread still has queued gyro
+    // samples, or on a loaded host the vehicle flies physics steps on
+    // stale motor outputs (called with no backend semaphore held - the
+    // rate thread's filter updates need those)
+    wait_for_rate_loop_gyro_consumption();
+#endif
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
     if (tcal_learning && !temperature_cal_running()) {

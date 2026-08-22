@@ -799,6 +799,22 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
             // zero roll/pitch, but keep yaw
             float r, p, y;
             dcm.to_euler(&r, &p, &y);
+            // DEBUG: this instantly re-levels the vehicle on ground
+            // contact no matter how hard or how tilted the arrival -
+            // a real vehicle would tip, bounce or stay tilted.  Say
+            // so whenever the forcing erases a material attitude or
+            // rotation, so logs of hard arrivals self-document what
+            // the simulation just papered over.
+            if (fabsf(r) > radians(5) || fabsf(p) > radians(5) ||
+                gyro.xy().length() > radians(45)) {
+                const uint32_t now_ms = AP_HAL::millis();
+                if (now_ms - last_ground_level_debug_ms > 1000) {
+                    last_ground_level_debug_ms = now_ms;
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                                  "SIM: ground forced level from r=%.0f p=%.0f gyro=%.0fdps",
+                                  degrees(r), degrees(p), degrees(gyro.xy().length()));
+                }
+            }
             y = y + yaw_rate * delta_time;
             dcm.from_euler(0.0f, 0.0f, y);
             // X, Y movement tracks ground movement

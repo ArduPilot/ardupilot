@@ -67,7 +67,8 @@ SOCKET_CLASS_NAME::SOCKET_CLASS_NAME(bool _datagram) :
 
 SOCKET_CLASS_NAME::SOCKET_CLASS_NAME(bool _datagram, int _fd) :
     datagram(_datagram),
-    fd(_fd)
+    fd(_fd),
+    multicast_interface_address(0)  // INADDR_ANY; routing table chooses
 {
 #ifdef FD_CLOEXEC
     CALL_PREFIX(fcntl)(fd, F_SETFD, FD_CLOEXEC);
@@ -143,11 +144,26 @@ bool SOCKET_CLASS_NAME::connect(const char *address, uint16_t port)
         }
 
         mreq.imr_multiaddr.s_addr = sockaddr.sin_addr.s_addr;
-        mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+        mreq.imr_interface.s_addr = multicast_interface_address;
 
         ret = CALL_PREFIX(setsockopt)(fd_in, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
         if (ret == -1) {
             goto fail_multi;
+        }
+
+        if (multicast_interface_address != 0) {
+            /*
+              also send on that interface; without this the routing
+              table chooses, which for a multicast address with no
+              specific route means whichever interface the default
+              route uses
+             */
+            struct in_addr ifaddr {};
+            ifaddr.s_addr = multicast_interface_address;
+            ret = CALL_PREFIX(setsockopt)(fd, IPPROTO_IP, IP_MULTICAST_IF, &ifaddr, sizeof(ifaddr));
+            if (ret == -1) {
+                goto fail_multi;
+            }
         }
     }
 

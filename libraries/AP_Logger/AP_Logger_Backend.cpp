@@ -11,6 +11,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Rally/AP_Rally.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <GCS_MAVLink/GCS.h>
 #include <Filter/Filter.h>
 #include "AP_Logger.h"
 #include <AP_IOMCU/AP_IOMCU.h>
@@ -102,6 +103,7 @@ void AP_Logger_Backend::start_new_log_reset_variables()
     _startup_messagewriter->reset();
     _front.backend_starting_new_log(this);
     _formats_written.clearall();
+    _formats_written_to_file.clearall();
 }
 
 // We may need to make sure data is loggable before starting the
@@ -423,6 +425,13 @@ bool AP_Logger_Backend::ensure_format_emitted(const void *pBuffer, uint16_t size
         return false;
     }
     if (have_emitted_format_for_type(type)) {
+        if (!_formats_written_to_file.get(uint8_t(type))) {
+            // DEBUG: the format was marked sent, but not since the
+            // current file was installed - the bytes went to a previous
+            // file.  Say so, and heal by re-emitting.
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Logger: fmt %u marked sent but absent from file", unsigned(type));
+            return Write_Emit_FMT(type);
+        }
         return true;
     }
 
