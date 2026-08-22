@@ -12083,11 +12083,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Expected energy consumed to rise")
 
         self.progress("Checking battery reset")
-        batt_reset_values = [(25, 24),
-                             (50, 49),
-                             (63, 62),
-                             (87, 86),
-                             (100, 99)]
+        # the value reported after a reset is the reset value itself;
+        # it used to come back one lower, the percentage computation
+        # truncating its float arithmetic, until AP_BattMonitor rounded
+        batt_reset_values = [(25, 25),
+                             (50, 50),
+                             (63, 63),
+                             (87, 87),
+                             (100, 100)]
 
         for (reset_val, return_val) in batt_reset_values:
             self.run_cmd(mavutil.mavlink.MAV_CMD_BATTERY_RESET,
@@ -12441,11 +12444,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Expected energy consumed to rise")
 
         self.progress("Checking battery reset")
-        batt_reset_values = [(25, 24),
-                             (50, 49),
-                             (63, 62),
-                             (87, 86),
-                             (100, 99)]
+        # the value reported after a reset is the reset value itself;
+        # it used to come back one lower, the percentage computation
+        # truncating its float arithmetic, until AP_BattMonitor rounded
+        batt_reset_values = [(25, 25),
+                             (50, 50),
+                             (63, 63),
+                             (87, 87),
+                             (100, 100)]
 
         for (reset_val, return_val) in batt_reset_values:
             self.run_cmd(mavutil.mavlink.MAV_CMD_BATTERY_RESET,

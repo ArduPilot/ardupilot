@@ -152,12 +152,16 @@ bool AP_BattMonitor_Generator_FuelLevel::capacity_remaining_pct(uint8_t &percent
         }
 
         // now we get the percentage according to tank capacity (pack_capacity parameter)
-        percentage = constrain_float(100 * remaining_ml / _params._pack_capacity, 0, UINT8_MAX);;
+        // round: assigning the float to the uint8_t truncates, and the
+        // generator's fuel fraction is quantised, so 0.92 stored as
+        // 0.9199999... would otherwise report 91 and 92 is never seen
+        percentage = constrain_float(roundf(100 * remaining_ml / _params._pack_capacity), 0, UINT8_MAX);
         return true;
-        
+
     // Otherwise use generator's own percentage
     } else {
-        percentage = generator->get_fuel_remaining() * 100;  // convert from scale to actual percentage
+        // round, as above: convert from scale to actual percentage
+        percentage = constrain_float(roundf(generator->get_fuel_remaining() * 100), 0, UINT8_MAX);
         return true;
     }
 }
