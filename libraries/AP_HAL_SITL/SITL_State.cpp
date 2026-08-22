@@ -507,7 +507,7 @@ void SITL_State::multicast_state_open(void)
     mc_dest.sin_len = sizeof(mc_dest);
 #endif
     mc_dest.sin_family = AF_INET;
-    mc_dest.sin_port = htons(SITL_MCAST_PORT);
+    mc_dest.sin_port = htons(sitl_multicast_state_port(SITL_MCAST_PORT));
     mc_dest.sin_addr.s_addr = inet_addr(SITL_MCAST_IP);
 
     ::printf("multicast initialised\n");

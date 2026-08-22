@@ -39,4 +39,28 @@ static inline uint32_t sitl_multicast_interface_address(void)
     return ret;
 }
 
+/*
+  return the port for the simulation-state multicast, taking any
+  override from the environment.  The compiled-in default is a fixed
+  constant with no per-instance offset - unlike every other SITL port -
+  so simulations run concurrently on one machine share a state bus and
+  each peripheral answers a vehicle which is not its own.  A test
+  framework running vehicles in parallel exports a per-instance
+  SITL_MCAST_STATE_PORT to the vehicle and its peripherals (environment
+  inheritance reaches both) to give each simulation its own bus.
+ */
+static inline uint16_t sitl_multicast_state_port(uint16_t default_port)
+{
+    const char *port_str = getenv("SITL_MCAST_STATE_PORT");
+    if (port_str == nullptr || *port_str == 0) {
+        return default_port;
+    }
+    const long port = strtol(port_str, nullptr, 10);
+    if (port <= 0 || port > 65535) {
+        ::fprintf(stderr, "Bad SITL_MCAST_STATE_PORT (%s); using default\n", port_str);
+        return default_port;
+    }
+    return (uint16_t)port;
+}
+
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
