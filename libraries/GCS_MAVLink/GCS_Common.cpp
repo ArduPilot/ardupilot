@@ -1134,6 +1134,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
 #if AP_OPTICALFLOW_ENABLED
         { MAVLINK_MSG_ID_OPTICAL_FLOW,          MSG_OPTICAL_FLOW},
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+        { MAVLINK_MSG_ID_OPTICAL_FLOW_RAD,      MSG_OPTICAL_FLOW_RAD},
+#endif
 #endif
 #if COMPASS_CAL_ENABLED
         { MAVLINK_MSG_ID_MAG_CAL_PROGRESS,      MSG_MAG_CAL_PROGRESS},
@@ -6797,6 +6800,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
         break;
+#if AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+    case MSG_OPTICAL_FLOW_RAD:
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW_RAD);
+        send_optical_flow_rad();
+        break;
+#endif
 #endif
 
     case MSG_ATTITUDE_TARGET:
@@ -7812,4 +7821,27 @@ void GCS_MAVLINK::handle_radio_rc_channels(const mavlink_message_t &msg)
 }
 #endif // AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
 
+#if defined(AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_SENDING_ENABLED) && AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_SENDING_ENABLED
+void GCS_MAVLINK::send_optical_flow_rad()
+{
+    const AP_OpticalFlow *flow = AP::opticalflow();
+    if (flow == nullptr || !flow->healthy()) {
+        return;
+    }
+    const Vector2f &flowRate = flow->flowRate();
+    const Vector2f &bodyRate = flow->bodyRate();
+    float hagl = 0;
+#if AP_AHRS_ENABLED
+    if (!AP::ahrs().get_hagl(hagl)) {
+        hagl = 0;
+    }
+#endif
+    mavlink_msg_optical_flow_rad_send(
+        chan, AP_HAL::micros64(), 0, 0,
+        flowRate.x, flowRate.y, bodyRate.x, bodyRate.y, 0.0f,
+        0, flow->quality(), 0, hagl
+    );
+}
+#endif
+3
 #endif  // HAL_GCS_ENABLED
