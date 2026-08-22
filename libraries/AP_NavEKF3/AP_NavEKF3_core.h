@@ -439,7 +439,8 @@ public:
     enum class MagFuseSel {
         NOT_FUSING = 0,
         FUSE_YAW = 1,
-        FUSE_MAG = 2
+        FUSE_MAG = 2,
+        FUSE_MAG_ANCHORED = 3
     };
 
     // are we using (aka fusing) a non-compass yaw?
