@@ -73,15 +73,16 @@ void Copter::update_land_detector()
     } else {
 
         float land_trigger_sec = LAND_DETECTOR_TRIGGER_SEC;
+
+        // check if landing
+        const bool landing = flightmode->is_landing();
+        SET_LOG_FLAG(landing, LandDetectorLoggingFlag::LANDING);
 #if FRAME_CONFIG == HELI_FRAME
         // check for both manual collective modes and modes that use altitude hold. For manual collective (called throttle
         // because multi's use throttle), check that collective pitch is below land min collective position or throttle stick is zero.
         // Including the throttle zero check will ensure the conditions where stabilize stick zero position was not below collective min. For modes
         // that use altitude hold, check that the pilot is commanding a descent and collective is at min allowed for altitude hold modes.
 
-        // check if landing
-        const bool landing = flightmode->is_landing();
-        SET_LOG_FLAG(landing, LandDetectorLoggingFlag::LANDING);
         bool motor_at_lower_limit = (flightmode->has_manual_throttle() && (motors->get_below_land_min_coll() || heli_flags.coll_stk_low) && fabsf(ahrs.get_roll_rad()) < M_PI/2.0f)
 #if MODE_AUTOROTATE_ENABLED
                                     || (flightmode->mode_number() == Mode::Number::AUTOROTATE && motors->get_below_land_min_coll())
@@ -142,7 +143,16 @@ void Copter::update_land_detector()
 #endif
         SET_LOG_FLAG(WoW_check, LandDetectorLoggingFlag::WOW);
 
-        if (motor_at_lower_limit && throttle_mix_at_min && !large_angle_request && !large_angle_error && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
+        // during a landing the large-angle request is the landing
+        // controller's own output: a touchdown displaced from the
+        // horizontal target leaves the controller demanding a large
+        // lean toward a position the vehicle can no longer reach, and
+        // that very demand would hold the landed check off for ever
+        // (the target is only softened once land_complete_maybe is
+        // set, which this check feeds).  update_throttle_mix() below
+        // already exempts the request while landing for the same
+        // reason.
+        if (motor_at_lower_limit && throttle_mix_at_min && !(large_angle_request && !landing) && !large_angle_error && accel_stationary && descent_rate_low && rangefinder_check && WoW_check) {
             // landed criteria met - increment the counter and check if we've triggered
             if( land_detector_count < land_trigger_sec*scheduler.get_loop_rate_hz()) {
                 land_detector_count++;
