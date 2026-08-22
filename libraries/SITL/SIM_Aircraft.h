@@ -393,6 +393,7 @@ private:
     uint64_t last_time_us;
     uint32_t frame_counter;
     uint32_t last_ground_contact_ms;
+    uint32_t last_ground_level_debug_ms;
 #if defined(__CYGWIN__) || defined(__CYGWIN64__)
     const uint32_t min_sleep_time{20000};
 #else
