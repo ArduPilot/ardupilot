@@ -11,7 +11,7 @@
 #define SMARTRTL_POINTS_MAX              500    // the absolute maximum number of points this library can support.
 #define SMARTRTL_TIMEOUT                 15000  // the time in milliseconds with no points saved to the path (for whatever reason), before SmartRTL is disabled for the flight
 #define SMARTRTL_CLEANUP_POINT_TRIGGER   50     // simplification will trigger when this many points are added to the path
-#define SMARTRTL_CLEANUP_START_MARGIN    10     // routine cleanup algorithms begin when the path array has only this many empty slots remaining
+#define SMARTRTL_CLEANUP_START_MARGIN    50     // routine cleanup algorithms begin when the path array has only this many empty slots remaining
 #define SMARTRTL_CLEANUP_POINT_MIN       10     // cleanup algorithms will remove points if they remove at least this many points
 #define SMARTRTL_SIMPLIFY_EPSILON (_accuracy * 0.5f)
 #define SMARTRTL_SIMPLIFY_STACK_LEN_MULT (2.0f/3.0f)+1  // simplify buffer size as compared to maximum number of points.
