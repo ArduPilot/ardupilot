@@ -301,9 +301,28 @@ void Scheduler::_run_io_procs()
 void Scheduler::stop_clock(uint64_t time_usec)
 {
     _stopped_clock_usec = time_usec;
-    if (_sitlState->_sitl != nullptr && time_usec - _last_io_run > 10000) {
-        _last_io_run = time_usec;
-        _run_io_procs();
+#ifndef HAL_BUILD_AP_PERIPH
+    _sitlState->_shared_mem.update(time_usec);
+#endif
+    if (_sitlState->_sitl != nullptr) {
+        /*
+          Bound the IO polling rate in WALL time at high speedup. Each
+          pass select()s every UART plus storage and I2C; the fixed 10ms
+          sim interval meant the sweep rate scaled with speedup - 10000
+          sweeps per wall second at 100x - measured at 4-5% of CPU spent
+          in kernel select paths alone. Above 10x the interval scales so
+          the wall rate holds at roughly 1kHz, which still flushes
+          telemetry every few sim-stream messages.
+        */
+        uint32_t io_interval_us = 10000;
+        const float sp = _sitlState->_sitl->speedup.get();
+        if (sp > 10) {
+            io_interval_us = (uint32_t)(1000 * sp);
+        }
+        if (time_usec - _last_io_run > io_interval_us) {
+            _last_io_run = time_usec;
+            _run_io_procs();
+        }
     }
 }
 
