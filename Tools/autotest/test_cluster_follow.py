@@ -332,7 +332,10 @@ class Vehicle(object):
             # speedup, and on Windows it also removes the log_io
             # thread's ~15k sleeps/second, each of which costs a full
             # 1ms timer tick under Cygwin
-            "--defaults", self.MODEL_DEFAULTS[self.model] + "," + self.opts.fast_parm,
+            "--defaults", self.MODEL_DEFAULTS[self.model] + "," + self.opts.fast_parm
+                          + ("," + self.opts.copter_parm
+                             if self.model != "plane" and self.opts.copter_parm
+                             else ""),
         ]
         # note: lowering the physics frame rate (--rate 400) was tried
         # here and MEASURED SLOWER (23.9x -> 13.6x): 1:1 physics frames
@@ -344,6 +347,10 @@ class Vehicle(object):
         env["SITL_DISABLE_STACK_NANF"] = "1"
         # remove every wall-clock sleep from the sim path; cores run hot
         env["SITL_HARD_NONBLOCK"] = "1"
+        # runtime governor: trade physics frame rate for achieved speedup
+        # until the commanded speedup is met (measured: the curve is
+        # non-monotonic, so it must be tuned live, not statically)
+        env["SITL_ADAPTIVE_RATE"] = "1"
         self.proc = subprocess.Popen(
             cmd, stdout=self.logfile, stderr=subprocess.STDOUT,
             cwd=self.workdir, preexec_fn=os.setsid, env=env)
@@ -569,6 +576,18 @@ class ClusterFollowTest(object):
             f.write("AHRS_EKF_TYPE 10\n"
                     "LOG_BACKEND_TYPE 0\n"
                     "TERRAIN_ENABLE 0\n")
+        # Copters only, and only when chasing real speedup (> 5): halve
+        # the flight-controller loop rate. Scheduler iterations are the
+        # measured scaling axis for per-sim-second cost (the 50Hz plane
+        # solos at 50x where the 400Hz copter manages 24x), and the user
+        # explicitly authorised 200Hz for cluster copters. The plane and
+        # all sub-5x runs are untouched.
+        opts.copter_parm = ""
+        if opts.speedup > 5:
+            opts.copter_parm = os.path.abspath(
+                os.path.join(self.logdir, "copter_200hz.parm"))
+            with open(opts.copter_parm, "w") as f:
+                f.write("SCHED_LOOP_RATE 200\n")
         self.plane = Vehicle("plane", opts.plane_binary, 0, 1, "plane",
                              opts.cluster, opts.speedup, self.logdir, opts)
         self.copters = [
