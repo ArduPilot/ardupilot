@@ -884,7 +884,7 @@ private:
         DESCENT_RATE_LOW     = 1U <<  6,
         ACCEL_STATIONARY     = 1U <<  7,
         LARGE_ANGLE_ERROR    = 1U <<  8,
-        LARGE_ANGLE_REQUEST  = 1U <<  8,
+        LARGE_ANGLE_REQUEST  = 1U << 11,  // was duplicated onto bit 8, hiding which of the two conditions was blocking
         MOTOR_AT_LOWER_LIMIT = 1U <<  9,
         THROTTLE_MIX_AT_MIN  = 1U << 10,
     };
