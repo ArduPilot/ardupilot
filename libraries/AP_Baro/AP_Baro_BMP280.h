@@ -40,8 +40,20 @@ private:
     float _temperature;
 
     // Internal calibration registers
-    int16_t _t2, _t3, _p2, _p3, _p4, _p5, _p6, _p7, _p8, _p9;
-    uint16_t _t1, _p1;
+    struct PACKED {
+        uint16_t t1;
+        int16_t  t2;
+        int16_t  t3;
+        uint16_t p1;
+        int16_t  p2;
+        int16_t  p3;
+        int16_t  p4;
+        int16_t  p5;
+        int16_t  p6;
+        int16_t  p7;
+        int16_t  p8;
+        int16_t  p9;
+    } _calib;
 };
 
 #endif  // AP_BARO_BMP280_ENABLED
