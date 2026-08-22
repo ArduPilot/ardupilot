@@ -5941,8 +5941,16 @@ class TestSuite(abc.ABC):
         if len(post_toggleon_list) != len(post_toggleoff_list):
             raise NotAchievedException("Log rotated when it shouldn't")
         self.progress("Checking log is now growing again")
-        if os.path.getsize(current_log_filepath) == current_log_filepath_size:
-            raise NotAchievedException("Log is not growing")
+        # the write buffer is flushed to disk by the IO thread on the
+        # wall clock; the simulated-time delay above can be a fraction
+        # of a wall second at speedup, so poll for growth rather than
+        # sampling once:
+        #     Log is not growing
+        tstart_wall = time.time()
+        while os.path.getsize(current_log_filepath) == current_log_filepath_size:
+            if time.time() - tstart_wall > 10:
+                raise NotAchievedException("Log is not growing")
+            time.sleep(0.2)
 
         # self.progress("Checking LOG_FILE_DSRMROT behaviour when log_DISARMED set")
         # self.set_parameter("LOG_FILE_DSRMROT", 1)
