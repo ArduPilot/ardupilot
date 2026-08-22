@@ -15796,9 +15796,16 @@ switch value'''
             # for requested CASE", a log download which never finishes).
             # TODO: derive the group or port from the instance number as
             # the other ports are, and these can leave this list.
+            # (PeriphMultiUARTTunnel formerly sat here too: its CAN bus
+            # and periph serial ports were already instance-derived, and
+            # the state bus now is - see SITL_MCAST_STATE_PORT.  These
+            # two still need a per-instance CAN transport - the DroneCAN
+            # multicast group is derived from the CAN bus number, not
+            # the SITL instance - and worker-derived supplementary
+            # peripheral instance numbers, whose fixed 0/1 collide with
+            # low-numbered workers' vehicle ports.)
             "CANGPSCopterMission",
             "TestLogDownloadMAVProxyCAN",
-            "PeriphMultiUARTTunnel",
 
             # rebuilds the Replay tool; this mutates the shared build
             # directory / waf board configuration, which races with other
@@ -15831,17 +15838,10 @@ switch value'''
             # on its own); may just be host-load sensitive:
             "WatchdogHome",
 
-            # builds the AP_Periph binary; it already passes --out for
-            # a separate build directory, but waf configure also writes
-            # .lock-waf into the source tree - measured: it does so even
-            # when waf is launched from a different directory with
-            # --top/--out - repointing the shared tree's default build,
-            # which races with anything else building.  TODO: set
-            # WAFLOCK in the build's environment (waf's stock
-            # multi-variant mechanism - the lockfile name comes from it)
-            # so it uses its own lockfile, or build AP_Periph before any
-            # test runs, and this can leave this list:
-            "PeriphMultiUARTTunnel",
+            # (PeriphMultiUARTTunnel's mid-test AP_Periph build formerly
+            # kept it here as well; the build now runs under its own waf
+            # lockfile and output directory, leaving only its build-time
+            # CPU load, which is not a correctness hazard.)
 
             # FFT motor-noise detection; flaky under parallel load (passes
             # in isolation at any instance):
@@ -16069,6 +16069,11 @@ switch value'''
         # (a base of 20721+instance did exactly that: worker W's state
         # port was worker W-1's servo port).
         os.environ["SITL_MCAST_STATE_PORT"] = str(24000 + self.instance)
+        # likewise for the simulated CAN buses: the multicast group
+        # varies with the CAN bus number but the port is a fixed
+        # constant, so concurrent workers' CAN traffic would otherwise
+        # share one set of buses.
+        os.environ["SITL_CAN_MCAST_PORT"] = str(57732 + self.instance)
 
     def refresh_test_binary(self):
         '''make a pristine per-instance copy of the binary.  Some tests
