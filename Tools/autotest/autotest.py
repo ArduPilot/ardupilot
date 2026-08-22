@@ -497,12 +497,14 @@ def run_step(step):
                     raise ValueError("Bad supplementary_test_binary %s" % supplementary_test_binary)
                 config_name = a[0]
                 binary_name = a[1]
-                instance_num = int(a[2])
                 param_file = a[3].split(",")
                 bin_path = util.reltopdir(os.path.join('build', config_name, 'bin', binary_name))
-                customisation = '-I {}'.format(instance_num)
+                # note that the instance-number field is ignored:
+                # an instance number allocates real machine resources,
+                # so the test framework derives each supplementary
+                # peripheral's instance from its own worker instance
+                # instead (sup_instance_number)
                 sup_binary = {"binary" : bin_path,
-                              "customisation" : customisation,
                               "param_file" : param_file}
                 supplementary_binaries.append(sup_binary)
             # note that speedup is permitted here: the vehicle SITL is
