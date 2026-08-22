@@ -12221,6 +12221,124 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_message_rate_hz("EFI_STATUS", -1)
         self.set_message_rate_hz("GENERATOR_STATUS", -1)
 
+    def RCLogic(self):
+        '''Test the AP_RC_Logic range/link engine driving AUX functions'''
+        self.set_parameter("RCL_ENABLE", 1)
+        self.set_rc(9, 1000)
+        self.set_rc(10, 1000)
+
+        self.start_subtest("Range term drives fence; link term drives RTL")
+        self.set_parameters({
+            # fence enable (11) when ch9 is high (range, OR)
+            "RCL1_FUNC": 11, "RCL1_OPT": 0, "RCL1_SRC": 9,
+            "RCL1_MIN": 1800, "RCL1_MAX": 2100,
+            # RTL (4) when the fence function is active (link, OR)
+            "RCL2_FUNC": 4, "RCL2_OPT": 1, "RCL2_SRC": 11,
+        })
+        self.wait_ready_to_arm()
+        self.set_rc(9, 2000)
+        self.assert_fence_enabled()
+        self.wait_mode('RTL')
+
+        self.start_subtest("Re-targeting a source row reclaims its slot (no stale link)")
+        # ch9 still high, fence active, RTL held by the link. Disable the fence
+        # row: the fence function becomes unreferenced, its slot is reclaimed,
+        # and the RTL link must drop rather than read a stale active state.
+        self.set_parameter("RCL1_FUNC", 0)
+        tstart = self.get_sim_time()
+        while True:
+            self.wait_heartbeat()
+            if self.mav.flightmode != 'RTL':
+                break
+            if self.get_sim_time() - tstart > 10:
+                raise NotAchievedException("linked RTL did not drop after source re-targeted")
+        self.set_parameter("RCL1_FUNC", 11)   # restore for the next step
+        self.wait_mode('RTL')
+
+        self.progress("Lower ch9: fence disables and the linked RTL drops")
+        self.set_rc(9, 1000)
+        self.assert_fence_disabled()
+
+        self.start_subtest("AND combine needs both channels high")
+        self.change_mode('STABILIZE')
+        self.set_parameters({
+            "RCL2_FUNC": 0,             # drop the link row
+            "RCL1_OPT": 0x4,            # fence term now AND on ch9
+            # second AND term for fence: ch10 high
+            "RCL3_FUNC": 11, "RCL3_OPT": 0x4, "RCL3_SRC": 10,
+            "RCL3_MIN": 1800, "RCL3_MAX": 2100,
+        })
+        self.set_rc(9, 2000)
+        self.set_rc(10, 1000)
+        self.assert_fence_disabled()   # only one AND term satisfied
+        self.set_rc(10, 2000)
+        self.assert_fence_enabled()    # both AND terms satisfied
+
+        self.start_subtest("Multiple functions on one channel via PWM ranges")
+        # two ranges on ch8 select two different functions, Betaflight-style
+        self.set_rc(8, 1500)
+        self.set_parameters({
+            "RCL1_FUNC": 4, "RCL1_OPT": 0, "RCL1_SRC": 8,   # RTL on ch8 high
+            "RCL1_MIN": 1800, "RCL1_MAX": 2100,
+            "RCL3_FUNC": 11, "RCL3_OPT": 0, "RCL3_SRC": 8,  # fence on ch8 low
+            "RCL3_MIN": 1000, "RCL3_MAX": 1200,
+        })
+        self.change_mode('STABILIZE')
+        self.progress("ch8 high band -> RTL, fence off")
+        self.set_rc(8, 2000)
+        self.wait_mode('RTL')
+        self.assert_fence_disabled()
+        self.progress("ch8 low band -> fence on, not RTL")
+        self.set_rc(8, 1100)
+        self.assert_fence_enabled()
+        self.wait_mode('STABILIZE')
+        self.set_rc(8, 1500)               # neither band
+        self.set_parameters({"RCL1_FUNC": 0, "RCL3_FUNC": 0})
+
+        self.start_subtest("Condition term (armed state) drives a function")
+        self.set_parameters({
+            "RCL1_FUNC": 0, "RCL3_FUNC": 0,   # clear prior rows
+            "RCL4_FUNC": 11, "RCL4_OPT": 0x2, "RCL4_SRC": 4,  # fence when ARMED
+        })
+        self.set_rc(3, 1000)
+        self.set_rc(9, 1000)
+        self.set_rc(10, 1000)
+        self.wait_ready_to_arm()
+        self.assert_fence_disabled()   # disarmed -> condition false
+        self.arm_vehicle()
+        self.assert_fence_enabled()    # armed -> condition true -> fence on
+        self.disarm_vehicle()
+        self.assert_fence_disabled()
+        self.set_parameter("RCL4_FUNC", 0)
+
+        self.start_subtest("Held functions release on disable and re-target")
+        self.set_parameters({
+            "RCL6_FUNC": 0,
+            "RCL1_FUNC": 11, "RCL1_OPT": 0, "RCL1_SRC": 9,
+            "RCL1_MIN": 1800, "RCL1_MAX": 2100,
+        })
+        self.set_rc(9, 2000)
+        self.assert_fence_enabled()
+        self.progress("Disable engine: the held fence must release")
+        self.set_parameter("RCL_ENABLE", 0)
+        self.assert_fence_disabled()
+        self.progress("Re-enable then re-target the row: fence must release")
+        self.set_parameter("RCL_ENABLE", 1)
+        self.assert_fence_enabled()
+        self.set_parameter("RCL1_FUNC", 0)
+        self.assert_fence_disabled()
+
+        self.progress("Restore")
+        self.set_parameters({
+            "RCL_ENABLE": 0, "RCL1_FUNC": 0, "RCL3_FUNC": 0, "RCL4_FUNC": 0,
+            "RCL5_FUNC": 0, "RCL6_FUNC": 0,
+        })
+        self.set_rc(8, 1500)
+        self.set_rc(9, 1000)
+        self.set_rc(10, 1000)
+        self.set_rc(11, 1000)
+        self.set_rc(12, 1000)
+
     def AuxSwitchOptions(self):
         '''Test random aux mode options'''
         self.set_parameter("RC7_OPTION", 58) # clear waypoints
@@ -16052,6 +16170,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.SetModesViaModeSwitch,
              self.BackupFence,
              self.SetModesViaAuxSwitch,
+             self.RCLogic,
              self.AuxSwitchOptions,
              self.AuxFunctionsInMission,
              self.AutoTune,
