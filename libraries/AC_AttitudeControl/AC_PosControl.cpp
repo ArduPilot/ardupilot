@@ -279,14 +279,14 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // @Param: _D_ACC_NTF
     // @DisplayName: Accel (vertical) Target notch filter index
-    // @Description: Accel (vertical) Target notch filter index. If upgrading from 4.6 this is Previously _ACCZ_NTF.
-    // @Range: 1 8
+    // @Description: Accel (vertical) Target notch filter index, zero disables. If upgrading from 4.6 this is Previously _ACCZ_NTF.
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _D_ACC_NEF
     // @DisplayName: Accel (vertical) Error notch filter index
-    // @Description: Accel (vertical) Error notch filter index. If upgrading from 4.6 this is Previously _ACCZ_NEF.
-    // @Range: 1 8
+    // @Description: Accel (vertical) Error notch filter index, zero disables. If upgrading from 4.6 this is Previously _ACCZ_NEF.
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_accel_d_m, "_D_ACC_", 13, AC_PosControl, AC_PID),
 
