@@ -494,10 +494,18 @@ bool AP_RCProtocol::new_input()
     // if we have an extra UART from a SERIALn_PROTOCOL then check it for data
     check_added_uart();
 
-    // run update function on backends
-    for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
-        if (backend[i] != nullptr) {
-            backend[i]->update();
+    const uint32_t now = AP_HAL::millis();
+    const bool searching = should_search(now);
+    const bool pulse_protocol_active =
+        (_detected_protocol != AP_RCProtocol::NONE) && !_detected_with_bytes && !searching;
+
+    if (!pulse_protocol_active) {
+// Once a pulse-based protocol is actively providing input there is no value in polling the other backends here
+// detect_async_protocol() will only consider alternates again after should_search() says input has gone idle.
+        for (uint8_t i = 0; i < ARRAY_SIZE(backend); i++) {
+            if (backend[i] != nullptr) {
+                backend[i]->update();
+            }
         }
     }
 
