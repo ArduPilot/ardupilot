@@ -45,3 +45,6 @@
 [submodule "modules/littlefs"]
 	path = modules/littlefs
 	url = https://github.com/ArduPilot/littlefs.git
+[submodule "modules/tiny-json"]
+	path = modules/tiny-json
+	url = https://github.com/rafagafe/tiny-json/
