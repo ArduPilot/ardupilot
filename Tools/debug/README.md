@@ -95,17 +95,15 @@ arm-none-eabi-gdb in the same manner.
 To see ChibiOS threads use the "info threads" command. See the gdb
 documentation for more information.
 
+`Tools/debug/debug_interface.py` is the portable GDB remote server for post-mortem
+debugging. It needs only Python 3 and replaces the platform-specific
+CrashDebug executables. It accepts binary or hexadecimal CrashCatcher dumps,
+GDB memory logs created by `crash_dump.scr`, ELF or raw firmware images, and
+optional memory aliases. For full-memory dumps it exposes the ChibiOS registry
+to GDB, including thread names, states and saved register contexts, so normal
+commands such as `info threads`, `thread N` and `thread apply all bt` work.
+
 ## Debugging Hardfaults
-
-## Getting fault dump via Serial
-
-All one needs to do is connect the First USART(not OTG) in the SERIAL_ORDER of the board via FTDI. In the case of CubeOrange that is Telem1 and for most boards that should be the case as well. Once connected run following command:
-
-`./Tools/debug/crash_debugger.py /path/to/elf --ser-debug --ser-port /dev/ttyxxx path/to/elf/file --dump-filename logfile.txt`
-
-Additionally the logfile.txt contains a memory dump, which can be shared along with elf file. And devs can then just start up gdb using following command, and do all the analysis that needs done.
-
-`arm-none-eabi-gdb -nx path/to/elf/file -ex "set target-charset ASCII" -ex "target remote | modules/CrashDebug/bins/lin64/CrashDebug --elf path/to/elf/file --dump logfile.txt"`
 
 ## Getting fault dump via Flash
 
@@ -118,9 +116,25 @@ Once fetched one can either use the following command to immediately dump backtr
 
 `./Tools/debug/crash_debugger.py  /path/to/elf --dump-debug --dump-filein crash_dump.bin`
 
+## Getting fault dump via microSD
+
+Fetch `APM/CrashDump.DAT` from the microSD card directly or via MAVFTP.
+
+For an SD crashdump containing all RAM, use a debug-symbol build and add
+`--threads` to show the saved ChibiOS registry and a backtrace for every
+thread:
+
+`./Tools/debug/crash_debugger.py /path/to/elf --dump-debug --dump-filein CrashDump.DAT --threads`
+
+The SD crashdump is preallocated, so the debugger automatically uses the dump
+length stored in its final sector and ignores the remaining `0xFF` padding. New
+SD crashdumps also include the firmware Git hash, image size and CRC. The debug
+tools verify the CRC against the supplied ELF and stop before starting GDB if
+the firmware does not match.
+
 or to open in gdb for further postmortem do the following:
 
-`arm-none-eabi-gdb -nx path/to/elf/file -ex "set target-charset ASCII" -ex "target remote | modules/CrashDebug/bins/lin64/CrashDebug --elf path/to/elf/file --dump crash_dump.bin"`
+`arm-none-eabi-gdb -nx path/to/elf/file -ex "set target-charset ASCII" -ex "target remote | python3 Tools/debug/debug_interface.py --elf path/to/elf/file --dump crash_dump.bin"`
 
 ## Debugging faults using GDB
 

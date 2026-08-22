@@ -1427,6 +1427,14 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
  */
 bool AP_Logger::check_crash_dump_save(void)
 {
+#if defined(AP_CRASHDUMP_FATFS_ENABLED) && AP_CRASHDUMP_FATFS_ENABLED
+    if (hal.util->last_crash_dump_size() > 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Previous CrashDump: APM/CrashDump.DAT");
+        return true;
+    }
+    // The SD card may not be mounted yet, so keep checking.
+    return false;
+#else
     int fd = AP::FS().open("@SYS/crash_dump.bin", O_RDONLY);
     if (fd == -1) {
         // we don't have a crash dump file. The @SYS filesystem
@@ -1448,6 +1456,7 @@ bool AP_Logger::check_crash_dump_save(void)
     AP::FS().close(fd);
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Saved crash_dump.bin");
     return true;
+#endif
 }
 
 // thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
