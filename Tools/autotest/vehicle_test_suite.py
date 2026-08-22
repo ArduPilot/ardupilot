@@ -12523,6 +12523,12 @@ Also, ignores heartbeats not from our target system'''
                     raise NotAchievedException("Cannot receive enough MAG_CAL_PROGRESS")
                 m = self.assert_receive_message(["MAG_CAL_PROGRESS", "MAG_CAL_REPORT"], timeout=10)
                 if m.get_type() == "MAG_CAL_REPORT":
+                    if reached_pct[m.compass_id] == 0:
+                        # see the other subtests: reports re-broadcast
+                        # from a previous calibration must not be graded
+                        # as this one's
+                        self.progress("Ignoring stale report for compass %u" % m.compass_id)
+                        continue
                     if report_get[m.compass_id] == 0:
                         self.progress("Report: %s" % str(m))
                         if m.cal_status == MAG_CAL_FAILED_RESIDUALS_HIGH:
@@ -12675,6 +12681,15 @@ Also, ignores heartbeats not from our target system'''
                     raise NotAchievedException("Cannot receive enough MAG_CAL_PROGRESS")
                 m = self.assert_receive_message(["MAG_CAL_PROGRESS", "MAG_CAL_REPORT"], timeout=5)
                 if m.get_type() == "MAG_CAL_REPORT":
+                    if progress_count[m.compass_id] == 0:
+                        # the firmware re-broadcasts unacknowledged
+                        # reports from the previous calibration; one
+                        # arrived 0.1s after this calibration's start
+                        # command and was graded as a zero-progress
+                        # SUCCESS.  A report for this calibration must
+                        # follow this calibration's progress.
+                        self.progress("Ignoring stale report for compass %u" % m.compass_id)
+                        continue
                     if report_get[m.compass_id] == 0:
                         self.progress("Report: %s" % self.dump_message_verbose(m))
                         param_names = ["SIM_MAG1_ORIENT"]
