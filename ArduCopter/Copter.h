@@ -724,7 +724,6 @@ private:
     void init_simple_bearing();
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
-    void update_altitude();
     bool get_wp_distance_m(float &distance) const override;
 #if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     bool get_wp_location(Location &loc) const override;
@@ -988,7 +987,7 @@ private:
     int16_t get_throttle_mid(void);
 
     // sensors.cpp
-    void read_barometer(void);
+    void update_barometer(void) override;
     void init_rangefinder(void);
     void read_rangefinder(void);
     bool rangefinder_alt_ok() const;
@@ -1000,6 +999,8 @@ private:
 
     // system.cpp
     void init_ardupilot() override;
+    uint32_t baro_log_bit() const override { return MASK_LOG_IMU; }
+
     void startup_INS_ground();
     bool position_ok() const;
     bool ekf_has_absolute_position() const;

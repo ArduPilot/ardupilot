@@ -297,6 +297,7 @@ def kill_tasks():
             'ardurover',
             'arduplane',
             'arducopter'
+            'genericvehicle',
         }
         for vehicle in vinfo.options:
             for frame in vinfo.options[vehicle]["frames"]:

@@ -20,8 +20,6 @@ void Sub::init_ardupilot()
     // initialise battery monitor
     battery.init();
 
-    barometer.init();
-
 #if AP_FEATURE_BOARD_DETECT
     // Detection won't work until after BoardConfig.init()
     switch (AP_BoardConfig::get_board_type()) {
@@ -72,7 +70,6 @@ void Sub::init_ardupilot()
 
     // Do GPS init
     gps.set_log_gps_bit(MASK_LOG_GPS);
-    gps.init();
 
     AP::compass().set_log_bit(MASK_LOG_COMPASS);
     AP::compass().init();
@@ -104,11 +101,8 @@ void Sub::init_ardupilot()
     USERHOOK_INIT
 #endif
 
-    // Init baro and determine if we have external (depth) pressure sensor
-    barometer.set_log_baro_bit(MASK_LOG_IMU);
-    barometer.calibrate(false);
+    // determine if we have external (depth) pressure sensor
     barometer.update();
-
     for (uint8_t i = 0; i < barometer.num_instances(); i++) {
         if (barometer.get_type(i) == AP_Baro::BARO_TYPE_WATER) {
             barometer.set_primary_baro(i);
