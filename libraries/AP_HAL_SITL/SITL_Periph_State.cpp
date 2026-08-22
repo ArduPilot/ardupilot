@@ -145,7 +145,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
 void SimMCast::multicast_open(void)
 {
     sock.set_multicast_interface_address(sitl_multicast_interface_address());
-    if (!sock.connect(SITL_MCAST_IP, SITL_MCAST_PORT)) {
+    if (!sock.connect(SITL_MCAST_IP, sitl_multicast_state_port(SITL_MCAST_PORT))) {
         fprintf(stderr, "multicast socket failed - %s\n", strerror(errno));
         exit(1);
     }
