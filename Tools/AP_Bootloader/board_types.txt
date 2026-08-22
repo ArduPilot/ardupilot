@@ -670,6 +670,9 @@ AP_HW_LECTRON_Pi5_H7            7140
 AP_HW_TYKHO_TLS7V2                   7170
 AP_HW_TYKHO_TLS7-Wing                7171
 
+# IDs 7180-7189 reserved for StormFly
+AP_HW_STORMFLYH743                   7180
+
 # please fill gaps in the above ranges rather than adding past ID #7199
 
 
