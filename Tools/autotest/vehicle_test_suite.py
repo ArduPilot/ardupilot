@@ -15897,6 +15897,22 @@ switch value'''
         directory = os.path.join("parallel-autotest", str(self.instance))
         os.makedirs(directory, exist_ok=True)
         os.chdir(directory)
+        # give this instance's simulation-state multicast bus its own
+        # port: the compiled-in default has no per-instance offset -
+        # unlike every other SITL port - so concurrent workers'
+        # peripheral simulations would otherwise share one bus, each
+        # peripheral answering a vehicle which is not its own.  The
+        # environment is inherited by both the vehicle SITL and any
+        # peripherals this worker spawns.  The base must sit well clear
+        # of the servo/ack ports at SITL_SERVO_PORT+instance (20722+i):
+        # multicast is delivered by port to INADDR_ANY-bound sockets
+        # once any process on the host joins the group, so a state port
+        # equal to another vehicle's servo port feeds that vehicle's
+        # lockstep a neighbour's state packets as "acks" and its main
+        # loop spins forever waiting for an ack which can never match
+        # (a base of 20721+instance did exactly that: worker W's state
+        # port was worker W-1's servo port).
+        os.environ["SITL_MCAST_STATE_PORT"] = str(24000 + self.instance)
 
     def refresh_test_binary(self):
         '''make a pristine per-instance copy of the binary.  Some tests
