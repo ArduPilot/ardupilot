@@ -2424,6 +2424,23 @@ class TestSuite(abc.ABC):
         '''adjust port in case we do not wish to use the default range (5760 and 5501 etc)'''
         return port + self.instance * 10
 
+    def ppp_ip_pair(self):
+        '''(local, remote) addresses for a host pppd serving this
+        instance's vehicle.  pppd creates a real kernel PPP interface
+        with these addresses, so concurrent instances on one machine
+        must not share a pair: identical pairs mean identical routes,
+        and traffic for one vehicle arrives at another's interface.
+        Instance 0 keeps the historical pair so serial runs and
+        documentation stay unchanged; other instances take a disjoint
+        even/odd pair from the same subnet.'''
+        if self.instance == 0:
+            return ("192.168.14.15", "192.168.14.13")
+        if self.instance > 118:
+            # 17 + 2*119 would pass .255
+            raise ValueError("instance too large for PPP address pair")
+        return ("192.168.14.%u" % (16 + 2 * self.instance,),
+                "192.168.14.%u" % (17 + 2 * self.instance,))
+
     def spare_network_port(self, offset=0):
         '''returns a network port which should be able to be bound'''
         if offset > 2:
@@ -3656,7 +3673,18 @@ class TestSuite(abc.ABC):
             all_periph_args = [a.replace('{port}', str(periph_port))
                                for a in all_periph_args]
 
-            periph_cmd = ['--defaults', ",".join(defaults_paths)] + all_periph_args
+            periph_cmd = [
+                # a peripheral with no -I is instance 0, whose default
+                # ports are shared machine-wide; sup slot 3 is reserved
+                # for frame peripherals (suite supplementary binaries
+                # use slots 0 and 1)
+                '-I', str(self.sup_instance_number(3)),
+                # SERIAL4's compiled-in default sprays
+                # udpclient:127.0.0.1:15550 machine-wide; send to this
+                # worker's own port instead
+                '--serial4', 'udpclient:127.0.0.1:%u' % self.periph_serial4_udp_port(),
+                '--defaults', ",".join(defaults_paths),
+            ] + all_periph_args
             periph_bin = os.path.join(
                 topdir, 'build', frame_opts['periph_board'], 'bin', 'AP_Periph')
             self.progress("Spawning periph: %s %s" %
@@ -15659,14 +15687,17 @@ switch value'''
             "MAVProxyFenceLoad",
             "MAVProxyRallyLoad",
 
-            # uses pppd (sudo), a fixed PPP-over-TCP port and fixed
-            # addresses for the PPP interfaces themselves.  TODO:
-            # concurrent pppd instances coexist happily; derive the
-            # port and the interface address pair from the instance
-            # number (the pppd serial port is already
-            # instance-relative) and these can leave this list:
-            "NetworkingWebServerPPP",
-            "PPPPeriph",
+            # (NetworkingWebServerPPP and PPPPeriph formerly sat here.
+            # NetworkingWebServerPPP's pppd port was already
+            # instance-relative and its kernel PPP interface addresses
+            # are per-instance now - see ppp_ip_pair().  PPPPeriph never
+            # shared what the comment said it did: its link is a
+            # SITL-internal PPP-over-TCP socket on a port from
+            # spare_network_port() (instance-derived), its 10.77.193.x
+            # addresses live inside the two processes' network stacks,
+            # and its frame build is isolated; its periph child now also
+            # gets a derived -I and SERIAL4 port instead of instance 0's
+            # machine-shared defaults.)
 
             # (CANGPSCopterMission, TestLogDownloadMAVProxyCAN and
             # PeriphMultiUARTTunnel formerly sat here: peripheral
