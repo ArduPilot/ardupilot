@@ -174,19 +174,25 @@ AP_BLHeli::AP_BLHeli(void)
     last_control_port = -1;
 }
 
-// map an incoming BLHeli motor request to the appropriate 
+// map an incoming BLHeli motor request to the appropriate
 // output channel for use in serial output so that motor numbers
 // are observed
-uint8_t AP_BLHeli::blheli_chan_to_output_chan(uint8_t motor)
+bool AP_BLHeli::get_output_channel(uint8_t motor, uint8_t &output_chan)
 {
-    // user has overidden the default output mask, we must use the motor map
-    if (channel_mask.get() != 0) {
-        return motor_map[motor];
+    if (motor >= num_motors) {
+        return false;
     }
-    // user is using motor mask and so we can use the servo channel options
-    uint8_t chan = 0;   // 0 means motor 1 and is ok as a fallback
-    SRV_Channels::find_channel(SRV_Channels::get_motor_function(motor), chan);
-    return chan;
+
+    // user has overridden the default output mask, we must use the motor map
+    if (channel_mask.get() != 0) {
+        output_chan = motor_map[motor];
+    } else if (!SRV_Channels::find_channel(SRV_Channels::get_motor_function(motor), output_chan)) {
+        return false;
+    }
+
+    // The configured output mask is cached at init. A servo-function change
+    // that moves a motor outside it requires a reboot before BLHeli can use it.
+    return output_chan < 32 && (motor_mask & (1U << output_chan)) != 0;
 }
 
 /*
@@ -484,11 +490,13 @@ void AP_BLHeli::msp_process_command(void)
         AP_BattMonitor &battery = AP::battery();
         float v;
 #if HAL_WITH_ESC_TELEM
-        if (!AP::esc_telem().get_voltage(blheli_chan_to_output_chan(blheli.chan), v)) {
+        uint8_t output_chan;
+        if (!get_output_channel(blheli.chan, output_chan) ||
+            !AP::esc_telem().get_voltage(output_chan, v)) {
             v = battery.voltage();
-        }        
+        }
 #else
-            v = battery.voltage();
+        v = battery.voltage();
 #endif
         buf[0] = battery.healthy() ? uint8_t(roundf(v / 3.85)) : 0; // cell count, 0 means no battery
         putU16(&buf[1], uint16_t(battery.pack_capacity_mah())); // capacity in mAh
@@ -511,11 +519,17 @@ void AP_BLHeli::msp_process_command(void)
 
     case MSP_MOTOR_CONFIG: {
         debug("MSP_MOTOR_CONFIG(n=%u, p=%u)", num_motors, motor_poles.get());
-        uint8_t buf[10];
-        SRV_Channel* channel = SRV_Channels::srv_channel(blheli_chan_to_output_chan(0));
-        putU16(&buf[0], channel->get_output_min()); // min throttle
-        putU16(&buf[2], channel->get_output_max()); // max throttle
-        putU16(&buf[4], channel->get_output_min()); // min command
+        uint8_t buf[10] {};
+        uint8_t output_chan;
+        SRV_Channel* channel = nullptr;
+        if (get_output_channel(0, output_chan)) {
+            channel = SRV_Channels::srv_channel(output_chan);
+        }
+        if (channel != nullptr) {
+            putU16(&buf[0], channel->get_output_min()); // min throttle
+            putU16(&buf[2], channel->get_output_max()); // max throttle
+            putU16(&buf[4], channel->get_output_min()); // min command
+        }
         // API 1.42
         buf[6] = num_motors; // motorCount
         buf[7] = motor_poles; // motorPoleCount
@@ -531,8 +545,11 @@ void AP_BLHeli::msp_process_command(void)
         uint8_t buf[16] {};
         for (uint8_t i = 0; i < num_motors; i++) {
             // if we have a mix of reversible and normal report a PWM of zero, this allows BLHeliSuite to conect
-            uint8_t chan = blheli_chan_to_output_chan(i);
-            uint16_t v = mixed_type ? 0 : hal.rcout->read(blheli_chan_to_output_chan(i));
+            uint8_t chan = UINT8_MAX;
+            uint16_t v = 0;
+            if (get_output_channel(i, chan) && !mixed_type) {
+                v = hal.rcout->read(chan);
+            }
             putU16(&buf[2*i], v);
             debug("MOTOR %u chan: %u val: %u",i,chan,v);
         }
@@ -559,7 +576,10 @@ void AP_BLHeli::msp_process_command(void)
                 debug("MSP_SET_MOTOR %u %u", i, v);
                 // map from a MSP value to a value in the range 1000 to 2000
                 uint16_t pwm = (v < 1000)?0:v;
-                hal.rcout->write(blheli_chan_to_output_chan(i), pwm);
+                uint8_t output_chan;
+                if (get_output_channel(i, output_chan)) {
+                    hal.rcout->write(output_chan, pwm);
+                }
             }
             hal.rcout->push();
         } else {
@@ -590,7 +610,9 @@ void AP_BLHeli::msp_process_command(void)
         // doing the serial setup here avoids delays when doing it on demand and makes
         // BLHeliSuite considerably more reliable
         EXPECT_DELAY_MS(1000);
-        if (!hal.rcout->serial_setup_output(blheli_chan_to_output_chan(0), 19200, motor_mask)) {
+        uint8_t output_chan;
+        if (!get_output_channel(0, output_chan) ||
+            !hal.rcout->serial_setup_output(output_chan, 19200, motor_mask)) {
             msp_send_ack(ACK_D_GENERAL_ERROR);
             break;
         } else {
@@ -666,7 +688,9 @@ bool AP_BLHeli::BL_SendBuf(const uint8_t *buf, uint16_t len)
     }
     EXPECT_DELAY_MS(1000);
     hal.scheduler->delay_microseconds(100);
-    if (!hal.rcout->serial_setup_output(blheli_chan_to_output_chan(blheli.chan), 19200, motor_mask)) {
+    uint8_t output_chan;
+    if (!get_output_channel(blheli.chan, output_chan) ||
+        !hal.rcout->serial_setup_output(output_chan, 19200, motor_mask)) {
         debug_console("serial_setup_output() failed\n");
         blheli.ack = ACK_D_GENERAL_ERROR;
         return false;
@@ -791,7 +815,9 @@ bool AP_BLHeli::BL_ReadA(uint8_t cmd, uint8_t *buf, uint16_t n)
  */
 bool AP_BLHeli::BL_ConnectEx(void)
 {
-    debug("BL_ConnectEx %u/%u at %u", blheli.chan, num_motors, blheli_chan_to_output_chan(blheli.chan));
+    uint8_t output_chan = UINT8_MAX;
+    get_output_channel(blheli.chan, output_chan);
+    debug("BL_ConnectEx %u/%u at %u", blheli.chan, num_motors, output_chan);
     setDisconnected();
     const uint8_t BootInit[] = {0,0,0,0,0,0,0,0,0,0,0,0,0x0D,'B','L','H','e','l','i',0xF4,0x7D};
     if (!BL_SendBuf(BootInit, 21)) {
