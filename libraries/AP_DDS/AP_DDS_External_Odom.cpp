@@ -2,6 +2,7 @@
 
 #include "AP_DDS_External_Odom.h"
 #include "AP_DDS_Type_Conversions.h"
+#include <AP_HAL/AP_HAL.h>
 
 #if AP_DDS_VISUALODOM_ENABLED
 
@@ -38,8 +39,11 @@ void AP_DDS_External_Odom::handle_external_odom(const tf2_msgs_msg_TFMessage& ms
         // https://www.ros.org/reps/rep-0105.html#id16
         // Thus, there will not be any resets.
         const uint8_t reset_counter {0};
-        // TODO implement jitter correction similar to GCS_MAVLINK::correct_offboard_timestamp_usec_to_ms(remote_time_us, sizeof(msg));
-        const uint32_t time_ms {static_cast<uint32_t>(remote_time_us * 1E-3)};
+        // Use local boot time for the millisecond timestamp to avoid
+        // uint32 overflow when converting the remote microsecond epoch
+        // (overflows after ~71 minutes).  The full-precision remote
+        // timestamp is still forwarded via remote_time_us.
+        const uint32_t time_ms = AP_HAL::millis();
         visual_odom->handle_pose_estimate(remote_time_us, time_ms, ap_position.x, ap_position.y, ap_position.z, ap_rotation, posErr, angErr, reset_counter, 0);
 
     }
