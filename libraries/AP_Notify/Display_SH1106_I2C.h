@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_DISPLAY_SH1106_ENABLED
+
 #include "Display.h"
 #include "Display_Backend.h"
 #include <AP_HAL/I2CDevice.h>
@@ -37,3 +41,5 @@ private:
     bool _need_hw_update;
 
 };
+
+#endif // AP_NOTIFY_DISPLAY_SH1106_ENABLED
