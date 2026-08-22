@@ -68,6 +68,33 @@ bool AP_Camera_MAVLinkCamV2::record_video(bool start_recording)
     return true;
 }
 
+// start/stop streaming video.  returns true on success
+// set start_streaming = true to start streaming, false to stop streaming
+bool AP_Camera_MAVLinkCamV2::stream_video(bool start_streaming)
+{
+    // exit immediately if have not found camera or does not support streaming video
+    if (_link == nullptr || !(_cam_info.flags & CAMERA_CAP_FLAGS_HAS_VIDEO_STREAM)) {
+        return false;
+    }
+
+    // prepare and send message
+    mavlink_command_long_t pkt {};
+    pkt.target_system = _sysid;
+    pkt.target_component = _compid;
+
+    if (start_streaming) {
+        pkt.command = MAV_CMD_VIDEO_START_STREAMING;
+        // param1 = 0, video stream id. 0 for all streams
+        // param2 = 0, status frequency.  frequency that CAMERA_CAPTURE_STATUS messages should be sent while recording. 0 for no messages
+    } else {
+        pkt.command = MAV_CMD_VIDEO_STOP_STREAMING;
+        // param1 = 0, video stream id. 0 for all streams
+    }
+
+    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    return true;
+}
+
 // set zoom specified as a rate or percentage
 bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 {

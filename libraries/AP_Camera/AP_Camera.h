@@ -148,6 +148,11 @@ public:
     bool record_video(bool start_recording);
     bool record_video(uint8_t instance, bool start_recording);
 
+    // start/stop streaming video
+    // start_streaming should be true to start streaming, false to stop streaming
+    bool stream_video(bool start_streaming);
+    bool stream_video(uint8_t instance, bool start_streaming);
+
     // set zoom specified as a rate or percentage
     bool set_zoom(ZoomType zoom_type, float zoom_value);
     bool set_zoom(uint8_t instance, ZoomType zoom_type, float zoom_value);
