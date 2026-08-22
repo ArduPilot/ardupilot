@@ -34,6 +34,10 @@
 #include <AP_HAL_SITL/HAL_SITL_Class.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <AP_HAL_SITL/SITL_SwarmInfo.h>
+#endif
+
 using namespace SITL;
 
 extern const AP_HAL::HAL& hal;
@@ -309,12 +313,64 @@ void Aircraft::sync_frame_time(void)
         // don't let a large negative debt build up
         sleep_debt_us = -1.0e5;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    /*
+      Cluster work is decimated: it runs every Nth frame where N is the
+      requested speedup, so the number of barrier crossings per WALL
+      second is constant regardless of speedup. Synchronising every frame
+      would scale sync work linearly with speedup (40000 crossings per
+      wall-second at 100x) and, with the skew window fixed in sim time,
+      would demand microsecond wall alignment no OS can deliver - which
+      is exactly what capped clustered runs near realtime.
+
+      For the same reason the skew tolerance is fixed in WALL time (the
+      per-frame default's 5ms at 1x) and scaled into sim time by the
+      speedup: scheduling jitter is a wall-clock quantity, so the minimum
+      achievable sim-time skew is jitter multiplied by speedup, whatever
+      the code asks for. Between crossings every instance advances its
+      own clock in the original manner, entirely self-paced.
+
+      One aircraft per SITL process (as the process-global hal_sitl use
+      here already assumes), so function-statics hold the state.
+    */
+    static uint32_t cluster_decimation;
+    static bool catching_up_state;
+    if (cluster_decimation == 0) {
+        // 4x the speedup: crossings per wall second are constant either
+        // way, but fewer of them shrinks exposure to the instantaneous
+        // slowest member (the cluster tracks min of fluctuating rates),
+        // measured as most of the residual clustered-vs-independent gap.
+        // The skew window below scales with this, so drift between
+        // crossings always fits inside it.
+        cluster_decimation = MAX(1U, 4U * (uint32_t)target_speedup);
+    }
+    const uint64_t max_skew_us = 5000ULL * cluster_decimation;
+    if (frame_counter % cluster_decimation == 0) {
+        // on a fresh start, instantly snap our clock to match peers
+        // instead of sprinting to catch up
+        hal_sitl.get_sitl_state()->_shared_mem.instant_catchup_if_new(time_now_us);
+
+        // if we've fallen behind the swarm (e.g. just rebooted), halve
+        // our sleep to run at ~2x speedup and fast-forward back into
+        // lock-step, rather than staying permanently excluded. The state
+        // persists across the frames in between, so the sprint pacing
+        // applies to every frame, not just the checked ones.
+        catching_up_state = hal_sitl.get_sitl_state()->_shared_mem.is_behind_peers(
+            time_now_us, max_skew_us);
+    }
+    const float catchup_sleep_scale = catching_up_state ? 0.5f : 1.0f;
+#else
+    const float catchup_sleep_scale = 1.0f;
+#endif
+    (void)catchup_sleep_scale;
+
     if (sleep_debt_us > min_sleep_time) {
         // sleep if we have built up a debt of min_sleep_tim
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-        usleep(sleep_debt_us);
+        usleep((uint64_t)(sleep_debt_us * catchup_sleep_scale));
 #elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        hal.scheduler->delay_microseconds(sleep_debt_us);
+        hal.scheduler->delay_microseconds((uint64_t)(sleep_debt_us * catchup_sleep_scale));
 #else
         // ??
 #endif
@@ -326,15 +382,176 @@ void Aircraft::sync_frame_time(void)
     float dt_wall = (now_ms - last_fps_report_ms) * 0.001;
     if (dt_wall > 0.01) {  // 0.01s average
         achieved_rate_hz = (frame_counter - last_frame_count) / dt_wall;
-#if 0
-        ::printf("Rate: target:%.1f achieved:%.1f speedup %.1f/%.1f\n",
-                 rate_hz*target_speedup, achieved_rate_hz,
-                 achieved_rate_hz/rate_hz, target_speedup);
-#endif
         last_frame_count = frame_counter;
         last_fps_report_ms = now_ms;
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+        // clustered runs report their achieved speedup so a cluster that
+        // cannot reach the requested rate is visible on the console
+        // rather than a mystery; quiet for ordinary single-vehicle SITL
+        static uint32_t last_rate_print_ms;
+        if (hal_sitl.get_sitl_state()->_shared_mem.is_initialised() &&
+            now_ms - last_rate_print_ms > 5000) {
+            last_rate_print_ms = now_ms;
+            ::printf("SIM: sim_time=%.0fs achieved %.1fx of requested %.0fx (frames %.0fHz)\n",
+                     time_now_us * 1.0e-6,
+                     achieved_rate_hz / rate_hz, target_speedup, rate_hz);
+        }
+
+        /*
+          Adaptive physics-rate governor (SITL_ADAPTIVE_RATE=1):
+          trades physics frame rate for achieved speedup at runtime
+          until the commanded speedup is met, then restores fidelity
+          when there is headroom. Measured motivation: the
+          achieved-vs-frame-rate curve is NON monotonic (on one machine
+          a 200Hz-loop copter gave 33x at 1200 frames, 67x at 600, 47x
+          at 400), so a static choice is wrong somewhere on every host -
+          it has to be a runtime measurement.
+
+          Control law: dwell at each setpoint for 20s of wall time and
+          measure the exact average speedup (sim-time advanced /
+          wall-time elapsed) over the dwell - long dwells are essential
+          because thermally-limited hosts swing their clock speed by 5x
+          on ~30s cycles, drowning any short-window measurement. Step
+          the SIM_RATE_HZ setpoint down 200Hz per dwell while below
+          target, never below 3x the vehicle loop rate (measured: below
+          3:1 frames:loop the curve turns down again - the old
+          "--rate 400 is slower" anomaly was a 400Hz loop at 1:1). If a
+          downward step measures >25% worse, step back up and hold above
+          that cliff for 120s before re-probing. Step back up toward the
+          starting rate only after two consecutive dwells met target.
+          The existing +-1Hz-per-frame walker in update_model() slews
+          the actual rate to the setpoint; adjust_frame_time() is
+          nudged directly for models that do not run that walker.
+        */
+        static int8_t adaptive = -1;
+        if (adaptive == -1) {
+            adaptive = getenv("SITL_ADAPTIVE_RATE") != nullptr;
+        }
+        if (adaptive == 1 && sitl != nullptr) {
+            static uint32_t last_adapt_ms, cliff_marked_ms;
+            static float ceiling_hz, floor_hz, last_achieved, worse_below_hz;
+            static bool stepped_down;
+            static uint8_t met_streak;
+            if (now_ms - last_adapt_ms > 20000) {
+                last_adapt_ms = now_ms;
+                bool governor_ready = true;
+                if (is_zero(ceiling_hz)) {
+                    if (!hal.scheduler->is_system_initialized()) {
+                        // get_loop_rate_hz() flags an internal error if
+                        // called before the vehicle scheduler is up, and
+                        // vehicle setup() can outlast several dwells on
+                        // a heavily loaded host - hold off until then
+                        governor_ready = false;
+                    } else {
+                        ceiling_hz = MAX(rate_hz, 100);
+                        float loop_hz = 400;
+                        AP_Scheduler *sched = AP_Scheduler::get_singleton();
+                        if (sched != nullptr) {
+                            loop_hz = sched->get_loop_rate_hz();
+                        }
+                        floor_hz = MAX(400.0f, 3.0f * loop_hz);
+                    }
+                }
+                // exact average speedup over the whole dwell
+                static uint64_t last_eval_sim_us, last_eval_wall_us;
+                const uint64_t wall_now_us = get_wall_time_us();
+                float achieved = -1;
+                if (last_eval_wall_us != 0 && wall_now_us > last_eval_wall_us) {
+                    achieved = (float)(time_now_us - last_eval_sim_us) /
+                               (float)(wall_now_us - last_eval_wall_us);
+                }
+                last_eval_sim_us = time_now_us;
+                last_eval_wall_us = wall_now_us;
+                const float setpoint = sitl->loop_rate_hz.get();
+                float want = setpoint;
+                if (governor_ready && achieved >= 0) {
+                    // a marked cliff expires so the governor re-probes
+                    // after transients (takeoff load etc) pass
+                    if (worse_below_hz > 0 &&
+                        now_ms - cliff_marked_ms > 120000) {
+                        worse_below_hz = 0;
+                    }
+                    if (achieved < 0.95f * target_speedup) {
+                        met_streak = 0;
+                        if (stepped_down &&
+                            achieved < 0.75f * last_achieved &&
+                            setpoint + 200 <= ceiling_hz) {
+                            // our own downward step made things much
+                            // worse (the curve turned): go back up and
+                            // remember the cliff
+                            worse_below_hz = setpoint + 200;
+                            cliff_marked_ms = now_ms;
+                            want = setpoint + 200;
+                        } else if (setpoint >= ceiling_hz &&
+                                   floor_hz < ceiling_hz &&
+                                   worse_below_hz <= floor_hz) {
+                            // first descent from the starting rate goes
+                            // straight to the floor - the restore path
+                            // spends any surplus on fidelity from there
+                            // - so convergence takes one dwell, not five
+                            want = floor_hz;
+                        } else if (setpoint - 200 >=
+                                   MAX(floor_hz, worse_below_hz)) {
+                            want = setpoint - 200;
+                        }
+                    } else {
+                        // target met: restore fidelity only once the
+                        // result looks stable
+                        if (met_streak < 2) {
+                            met_streak++;
+                        } else if (setpoint + 200 <= ceiling_hz) {
+                            want = setpoint + 200;
+                            met_streak = 0;
+                        }
+                    }
+                    stepped_down = want < setpoint;
+                }
+                if (!is_equal(want, setpoint)) {
+                    sitl->loop_rate_hz.set(want);
+                    ::printf("SIM: adaptive rate: frames %.0fHz -> %.0fHz "
+                             "(achieved %.1fx of %.0fx)\n",
+                             setpoint, want, achieved, target_speedup);
+                }
+                // models without the update_model() walker get slewed here
+                if (fabsf(rate_hz - sitl->loop_rate_hz.get()) > 250) {
+                    adjust_frame_time(sitl->loop_rate_hz.get());
+                }
+                last_achieved = achieved;
+            }
+        }
+#endif
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    if (frame_counter % cluster_decimation == 0) {
+    // publish basic swarm telemetry (position/velocity/heading) for peer
+    // instances to read - see AP_SITL_SwarmInfo for the payload layout.
+    {
+        AP_SITL_SwarmInfo swarm {};
+        swarm.sysid       = mavlink_system.sysid;
+        swarm.sim_time_us = time_now_us;
+        swarm.lat         = location.lat;
+        swarm.lng         = location.lng;
+        swarm.alt_cm      = location.alt;
+        swarm.vx          = velocity_ef.x;
+        swarm.vy          = velocity_ef.y;
+        swarm.vz          = velocity_ef.z;
+        float roll, pitch, yaw;
+        dcm.to_euler(&roll, &pitch, &yaw);
+        swarm.heading_deg = wrap_360(degrees(yaw));
+        hal_sitl.get_sitl_state()->_shared_mem.write_payload(&swarm, sizeof(swarm));
+    }
+
+    // When running multiple SITL instances in parallel, keep them within
+    // a bounded sim-time window of each other so inter-vehicle state is
+    // consistent. The window is wall-fixed (hence scaled by speedup, see
+    // above) and the barrier is a no-op for single-instance runs.
+    hal_sitl.get_sitl_state()->_shared_mem.sync_with_peers(time_now_us, max_skew_us);
+    }
+#endif
 }
+
 
 /* add noise based on throttle level (from 0..1) */
 void Aircraft::add_noise(float throttle)

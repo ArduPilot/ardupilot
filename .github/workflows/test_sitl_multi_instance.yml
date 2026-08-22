@@ -1,0 +1,173 @@
+name: test SITL cluster clock sync
+
+on:
+  push:
+    paths-ignore:
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+
+  pull_request:
+    paths-ignore:
+      # remove other vehicles
+      - 'AntennaTracker/**'
+      - 'ArduSub/**'
+      - 'Blimp/**'
+      - 'Rover/**'
+      # remove non SITL HAL
+      - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_QURT/**'
+      # Remove markdown files as irrelevant
+      - '**.md'
+
+concurrency:
+  group: ci-${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.1.3
+      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: get timestamp for ccache
+        id: ccache_cache_timestamp
+        run: |
+          NOW=$(date -u +"%F-%T")
+          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
+
+      - name: ccache cache files
+        uses: actions/cache@v5
+        with:
+          path: ~/.ccache
+          key: ${{github.workflow}}-ccache-base-${{steps.ccache_cache_timestamp.outputs.timestamp}}
+          restore-keys: ${{github.workflow}}-ccache-base-
+
+      - name: setup ccache
+        run: |
+          . .github/workflows/ccache.env
+
+      - name: build arducopter and arduplane
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          pip install empy==3.3.4
+          ./waf configure --board sitl
+          ./waf copter plane
+          ccache -s
+
+      - name: upload SITL binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: sitl-cluster-binaries
+          path: |
+            build/sitl/bin/arducopter
+            build/sitl/bin/arduplane
+          retention-days: 1
+
+  test-multi-instance-sync:
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.1.3
+      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: download SITL binaries
+        uses: actions/download-artifact@v4.1.3
+        with:
+          name: sitl-cluster-binaries
+          path: build/sitl/bin/
+
+      - name: make binaries executable
+        run: chmod +x build/sitl/bin/arducopter build/sitl/bin/arduplane
+
+      - name: run 5x SITL instances at speedup=100 and verify clock sync
+        shell: bash
+        timeout-minutes: 5
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/test_sitl_multi_instance.sh build/sitl/bin/arducopter
+
+      - name: archive logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-instance-logs
+          path: /tmp/sitl_multi_*
+          retention-days: 7
+
+  test-cluster-follow:
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.1.3
+      options: --privileged --cap-add=SYS_PTRACE --security-opt apparmor=unconfined --security-opt seccomp=unconfined
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: download SITL binaries
+        uses: actions/download-artifact@v4.1.3
+        with:
+          name: sitl-cluster-binaries
+          path: build/sitl/bin/
+
+      - name: make binaries executable
+        run: chmod +x build/sitl/bin/arducopter build/sitl/bin/arduplane
+
+      - name: fly 2 copters following a plane in one cluster
+        shell: bash
+        timeout-minutes: 30
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          pip install pymavlink
+          # A 2-core runner gets nowhere near 50x - locally, three vehicles
+          # in lock-step manage about 3x - which is exactly why every phase
+          # is timed in simulated seconds rather than wall seconds, and why
+          # the achieved rate is reported rather than asserted on. The wall
+          # limit is only a backstop for a wedged run, so it is raised well
+          # above the local figure to leave room for a slow runner.
+          python3 Tools/autotest/test_cluster_follow.py \
+            --speedup 50 \
+            --follow-time 250 \
+            --min-hold-time 90 \
+            --wall-limit 1500
+
+      - name: archive logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-follow-logs
+          path: /tmp/sitl_cluster_follow_*
+          retention-days: 7
