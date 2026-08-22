@@ -15776,14 +15776,17 @@ switch value'''
             "MAVProxyFenceLoad",
             "MAVProxyRallyLoad",
 
-            # uses pppd (sudo), a fixed PPP-over-TCP port and fixed
-            # addresses for the PPP interfaces themselves.  TODO:
-            # concurrent pppd instances coexist happily; derive the
-            # port and the interface address pair from the instance
-            # number (the pppd serial port is already
-            # instance-relative) and these can leave this list:
-            "NetworkingWebServerPPP",
-            "PPPPeriph",
+            # (NetworkingWebServerPPP and PPPPeriph formerly sat here.
+            # NetworkingWebServerPPP's pppd port was already
+            # instance-relative and its kernel PPP interface addresses
+            # are per-instance now - see ppp_ip_pair().  PPPPeriph never
+            # shared what the comment said it did: its link is a
+            # SITL-internal PPP-over-TCP socket on a port from
+            # spare_network_port() (instance-derived), its 10.77.193.x
+            # addresses live inside the two processes' network stacks,
+            # and its frame build is isolated; its periph child now also
+            # gets a derived -I and SERIAL4 port instead of instance 0's
+            # machine-shared defaults.)
 
             # (CANGPSCopterMission, TestLogDownloadMAVProxyCAN and
             # PeriphMultiUARTTunnel formerly sat here: peripheral
