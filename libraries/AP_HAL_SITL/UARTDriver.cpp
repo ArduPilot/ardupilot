@@ -284,12 +284,16 @@ void UARTDriver::_flush(void)
     }
 
     // ensure that the outbound TCP queue is also empty...
-    start_ms = AP_HAL::millis();
-    while (AP_HAL::millis() - start_ms < 1000) {
-        if (((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length() == 0) {
-            break;
+    // (skipped under SITL_HARD_NONBLOCK: no wall sleeps anywhere in the
+    // simulation path)
+    if (getenv("SITL_HARD_NONBLOCK") == nullptr) {
+        start_ms = AP_HAL::millis();
+        while (AP_HAL::millis() - start_ms < 1000) {
+            if (((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length() == 0) {
+                break;
+            }
+            usleep(1000);
         }
-        usleep(1000);
     }
 }
 
