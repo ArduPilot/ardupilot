@@ -109,8 +109,10 @@ bool AP_Baro_BMP388::init()
     dev->write_register(BMP388_REG_PWR_CTRL, 0x33, true);
 
     // read the calibration data
-    read_registers(BMP388_REG_CAL_P, (uint8_t *)&calib_p, sizeof(calib_p));
-    read_registers(BMP388_REG_CAL_T, (uint8_t *)&calib_t, sizeof(calib_t));
+    if (!read_registers(BMP388_REG_CAL_T, (uint8_t *)&calib_t, sizeof(calib_t)) ||
+        !read_registers(BMP388_REG_CAL_P, (uint8_t *)&calib_p, sizeof(calib_p))) {
+        return false;
+    }
 
     scale_calibration_data();
 
