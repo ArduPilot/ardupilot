@@ -879,8 +879,9 @@ private:
 
     // current height above the QRTL destination altitude, in the same
     // frame (terrain-relative if QRTL is terrain following, else absolute)
-    // the approach altitude ramp is applied in
-    float calc_alt_delta_m() const;
+    // the approach altitude ramp is applied in. Returns false, leaving
+    // alt_delta_m unchanged, if no usable altitude data is available
+    bool calc_alt_delta_m(float &alt_delta_m) const;
 
     // state latched at the start of the fixed wing approach, used to
     // gradually ramp the target altitude down to RTL_ALTITUDE
