@@ -33,7 +33,7 @@ public:
     ssize_t get_system_outqueue_length() const;
 
     bool tx_pending() override {
-        return false;
+        return _writebuffer.available() > 0;
     }
 
     /* Implementations of Stream virtual methods */
@@ -43,6 +43,7 @@ public:
 
     void set_flow_control(enum flow_control flow_control_setting) override;
     enum flow_control get_flow_control(void) override;
+    bool stop_transmit(bool stop) override;
 
     void configure_parity(uint8_t v) override;
     void set_stop_bits(int n) override;
@@ -99,6 +100,7 @@ private:
     enum flow_control _flow_control = FLOW_CONTROL_DISABLE;
     uint32_t _auto_flow_start_ms;   // time AUTO mode first had pending data to write
     bool _auto_flow_detected;   // true once CTS confirmed active in AUTO mode
+    std::atomic<bool> _transmit_stopped{false};
 
     void _tcp_start_connection(uint16_t port, bool wait_for_connection);
     void _uart_start_connection(void);

@@ -4,6 +4,8 @@
 #if AP_NETWORKING_BACKEND_PPP
 
 #include "AP_Networking_PPP.h"
+#include "AP_Networking_PPP_SoftFlow.h"
+#include <AP_HAL/utility/RingBuffer.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include <lwip/udp.h>
@@ -11,11 +13,16 @@
 #include <netif/ppp/ppp_opts.h>
 #include <netif/ppp/pppapi.h>
 #include <netif/ppp/pppos.h>
+#include <netif/ppp/ppp_impl.h>
 #include <lwip/tcpip.h>
 #include <stdio.h>
 
 #if AP_NETWORKING_CAPTURE_ENABLED
 #include <AP_Filesystem/AP_Filesystem.h>
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#include <SITL/SITL.h>
 #endif
 
 // PPP protocol
@@ -26,6 +33,33 @@
 #define PPP_BUFSIZE_TX 8192
 #endif
 
+
+// Keep the HAL queue short only on the software-flow-controlled path. The
+// normal path retains PPP_BUFSIZE_TX for high-rate links using hardware flow
+// control.
+static constexpr uint16_t PPP_SOFT_FLOW_UART_TX_SIZE = 256;
+
+struct AP_Networking_PPP::SoftFlowState {
+    explicit SoftFlowState(PPP_Instance &_instance) :
+        instance(&_instance),
+        rx_buffer(PPP_BUFSIZE_RX),
+        tx_buffer(PPP_BUFSIZE_TX)
+    {}
+
+    enum class TxState : uint8_t {
+        IDLE,
+        WAIT_NORMAL_DRAIN,
+        WAIT_COMMAND_DRAIN,
+    };
+
+    PPP_Instance *const instance;
+    ByteBuffer rx_buffer;
+    ByteBuffer tx_buffer;
+    AP_Networking_PPP_SoftFlow flow;
+    TxState tx_state = TxState::IDLE;
+    AP_Networking_PPP_SoftFlow::Command tx_command = AP_Networking_PPP_SoftFlow::Command::NONE;
+    bool hal_stopped = false;
+};
 extern const AP_HAL::HAL& hal;
 
 #if LWIP_TCPIP_CORE_LOCKING
@@ -58,11 +92,6 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
     LWIP_UNUSED_ARG(pcb);
     const uint8_t *ptr = (const uint8_t *)data;
 
-    if (pcb->phase == PPP_PHASE_TERMINATE) {
-        // don't output while terminating
-        return 0;
-    }
-
     if (driver.uart->txspace() < len) {
         /*
           if we can't send the whole frame then don't send any of it. This
@@ -82,6 +111,32 @@ uint32_t AP_Networking_PPP::ppp_output_cb(ppp_pcb *pcb, const void *data, uint32
 #endif
 
     return driver.uart->write(ptr, len);
+}
+
+/*
+  Queue a complete PPP frame for the software-flow-controlled transport.
+  This callback is selected only when software flow control is enabled, so
+  the normal high-rate output path above remains unchanged.
+ */
+uint32_t AP_Networking_PPP::ppp_output_soft_flow_cb(ppp_pcb *pcb, const void *data, uint32_t len, void *ctx)
+{
+    auto &state = *(AP_Networking_PPP::SoftFlowState *)ctx;
+    LWIP_UNUSED_ARG(pcb);
+    const uint8_t *ptr = (const uint8_t *)data;
+
+    if (state.tx_buffer.space() < len) {
+        // Keep PPP frames atomic in the staging ring.
+        return 0;
+    }
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+    auto &driver = *state.instance;
+    if (driver.backend->frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+        driver.capture_data(ptr, len);
+    }
+#endif
+
+    return state.tx_buffer.write(ptr, len);
 }
 
 #if AP_NETWORKING_CAPTURE_ENABLED
@@ -177,6 +232,15 @@ void AP_Networking_PPP::ppp_status_callback(ppp_pcb *pcb, int code, void *ctx)
     }
 }
 
+/*
+  Adapt the enabled-only callback context to the ordinary status callback.
+ */
+void AP_Networking_PPP::ppp_status_soft_flow_callback(ppp_pcb *pcb, int code, void *ctx)
+{
+    auto &state = *(AP_Networking_PPP::SoftFlowState *)ctx;
+    ppp_status_callback(pcb, code, state.instance);
+}
+
 
 /*
   initialise PPP network backend using LWIP
@@ -199,6 +263,27 @@ bool AP_Networking_PPP::init()
         activeSettings.last_change_ms = AP_HAL::millis();
     }
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    const bool software_flow_control =
+        frontend.option_is_set(AP_Networking::OPTION::PPP_SOFTWARE_FLOW_CONTROL);
+    if (software_flow_control) {
+        uint8_t num_ppp_interfaces = 0;
+        while (num_ppp_interfaces < AP_NETWORKING_PPP_NUM_INTERFACES) {
+            if (sm.find_serial(AP_SerialManager::SerialProtocol_PPP, num_ppp_interfaces) == nullptr) {
+                break;
+            }
+            num_ppp_interfaces++;
+        }
+
+        for (uint8_t i = 0; i < num_ppp_interfaces; i++) {
+            auto *uart = sm.find_serial(AP_SerialManager::SerialProtocol_PPP, i);
+            if (!uart->stop_transmit(false)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
+                              "PPP[%u]: transmit pause unavailable",
+                              unsigned(i));
+                return false;
+            }
+        }
+    }
 
     for (uint8_t i=0; i<AP_NETWORKING_PPP_NUM_INTERFACES; i++) {
         auto &inst = iface[i];
@@ -229,15 +314,43 @@ bool AP_Networking_PPP::init()
         }
 
         hal.scheduler->delay(100);
-    
+
+        SoftFlowState *flow_state = nullptr;
+        pppos_output_cb_fn output_cb = ppp_output_cb;
+        ppp_link_status_cb_fn status_cb = ppp_status_callback;
+        void *callback_ctx = &inst;
+        if (software_flow_control) {
+            flow_state = NEW_NOTHROW SoftFlowState(inst);
+            if (flow_state == nullptr ||
+                flow_state->rx_buffer.get_size() != PPP_BUFSIZE_RX ||
+                flow_state->tx_buffer.get_size() != PPP_BUFSIZE_TX) {
+                delete flow_state;
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
+                              "PPP[%u]: flow buffer allocation failed",
+                              unsigned(i));
+                break;
+            }
+            output_cb = ppp_output_soft_flow_cb;
+            status_cb = ppp_status_soft_flow_callback;
+            callback_ctx = flow_state;
+        }
+
         // create ppp connection
         LWIP_TCPIP_LOCK();
-        inst.ppp = pppos_create(inst.pppif, ppp_output_cb, ppp_status_callback, &inst);
+        inst.ppp = pppos_create(inst.pppif, output_cb, status_cb, callback_ctx);
         if (inst.ppp == nullptr) {
+            delete flow_state;
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: failed to create link", unsigned(i));
+            LWIP_TCPIP_UNLOCK();
             break;
         }
         LWIP_TCPIP_UNLOCK();
+
+        if (software_flow_control) {
+            // Reserve XON and XOFF for out-of-band flow-control codewords.
+            // The peer will escape any occurrences inside normal PPP frames.
+            ppp_set_asyncmap(inst.ppp, (1UL << 0x11) | (1UL << 0x13));
+        }
 
         inst.uart = uart;
 
@@ -337,6 +450,25 @@ void AP_Networking_PPP::stop_capture(void)
  */
 void AP_Networking_PPP::ppp_loop(void)
 {
+    for (auto &inst : iface) {
+        if (inst.uart == nullptr) {
+            continue;
+        }
+        if (inst.ppp->ctx_cb == &inst) {
+            ppp_loop_normal();
+        } else {
+            ppp_loop_soft_flow();
+        }
+        return;
+    }
+}
+
+/*
+  Original direct PPP path, kept separate so high-rate hardware-flow-controlled
+  links do not allocate staging buffers or execute software-flow checks.
+ */
+void AP_Networking_PPP::ppp_loop_normal(void)
+{
     while (!hal.scheduler->is_system_initialized()) {
         hal.scheduler->delay_microseconds(1000);
     }
@@ -355,7 +487,6 @@ void AP_Networking_PPP::ppp_loop(void)
         // use a larger buffer space for TX to allow for large downloads (eg. MAVFTP)
         inst.uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_PPP, i), PPP_BUFSIZE_RX, PPP_BUFSIZE_TX);
         inst.uart->set_unbuffered_writes(true);
-
         restart_instance(i);
     }
 
@@ -383,13 +514,71 @@ void AP_Networking_PPP::ppp_loop(void)
 }
 
 /*
+  PPP path with software flow control. Its staging buffers and smaller HAL TX
+  queue are used only when the option was enabled during init().
+ */
+void AP_Networking_PPP::ppp_loop_soft_flow(void)
+{
+    while (!hal.scheduler->is_system_initialized()) {
+        hal.scheduler->delay_microseconds(1000);
+    }
+    const bool ppp_gateway = frontend.option_is_set(AP_Networking::OPTION::PPP_ETHERNET_GATEWAY);
+    if (ppp_gateway) {
+        AP::network().startup_wait();
+    }
+
+    for (uint8_t i = 0; i < AP_NETWORKING_PPP_NUM_INTERFACES; i++) {
+        auto &inst = iface[i];
+        if (inst.uart == nullptr) {
+            continue;
+        }
+        inst.uart->begin(AP::serialmanager().find_baudrate(AP_SerialManager::SerialProtocol_PPP, i),
+                         PPP_BUFSIZE_RX,
+                         PPP_SOFT_FLOW_UART_TX_SIZE);
+        inst.uart->set_unbuffered_writes(true);
+        inst.uart->stop_transmit(false);
+        auto &state = *(SoftFlowState *)inst.ppp->ctx_cb;
+        restart_instance(i, &state);
+    }
+
+    while (true) {
+        bool read_data = false;
+
+        for (auto &inst : iface) {
+            if (inst.uart != nullptr) {
+                read_data |= update_instance_soft_flow(inst.idx);
+            }
+        }
+        if (!read_data) {
+            hal.scheduler->delay_microseconds(200);
+
+#if AP_NETWORKING_CAPTURE_ENABLED
+            if (frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+                start_capture();
+            } else {
+                stop_capture();
+            }
+#endif
+        }
+    }
+}
+
+/*
   restart link on an instance
  */
-void AP_Networking_PPP::restart_instance(const uint8_t idx)
+void AP_Networking_PPP::restart_instance(const uint8_t idx, SoftFlowState *soft_flow_state)
 {
     auto &inst = iface[idx];
-    // connect and set as default route
     LWIP_TCPIP_LOCK();
+    if (soft_flow_state != nullptr) {
+        inst.uart->stop_transmit(false);
+        soft_flow_state->hal_stopped = false;
+        soft_flow_state->flow.reset();
+        soft_flow_state->rx_buffer.clear();
+        soft_flow_state->tx_buffer.clear();
+        soft_flow_state->tx_state = SoftFlowState::TxState::IDLE;
+        soft_flow_state->tx_command = AP_Networking_PPP_SoftFlow::Command::NONE;
+    }
 
 #if AP_NETWORKING_PPP_GATEWAY_ENABLED
     // assume PPP/ethernet gateway is first instance only
@@ -489,16 +678,15 @@ void AP_Networking_PPP::PPP_Instance::capture_hook(const struct pbuf *pb)
         fs.write(capture.fd, data, plen);
     }
 }
+#endif // AP_NETWORKING_CAPTURE_ENABLED
 
 /*
-  hook for capturing all incoming PPP packets
+  hook for valid incoming PPP packets
  */
-void AP_Networking_PPP::capture_hook(const ppp_pcb *pcb, const struct pbuf *pb)
+void AP_Networking_PPP::input_hook(const ppp_pcb *pcb, const struct pbuf *pb)
 {
+    LWIP_UNUSED_ARG(pb);
     auto &frontend = AP::network();
-    if (!frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
-        return;
-    }
     AP_Networking_Backend *driver = frontend.backend;
 #if AP_NETWORKING_PPP_GATEWAY_ENABLED
     if (frontend.backend_PPP != nullptr) {
@@ -507,18 +695,24 @@ void AP_Networking_PPP::capture_hook(const ppp_pcb *pcb, const struct pbuf *pb)
 #endif
     for (auto &inst : ((AP_Networking_PPP*)driver)->iface) {
         if (inst.uart != nullptr && inst.ppp == pcb) {
-            inst.capture_hook(pb);
+            // The lwIP hook runs only after a frame passes its FCS check. Count
+            // valid LCP/IPCP packets during negotiation as link activity too;
+            // requiring IPv4 to already be up can make the peer timeout while
+            // it is responding to a legitimate renegotiation.
+            inst.last_read_ms = AP_HAL::millis();
+#if AP_NETWORKING_CAPTURE_ENABLED
+            if (frontend.option_is_set(AP_Networking::OPTION::CAPTURE_PACKETS)) {
+                inst.capture_hook(pb);
+            }
+#endif
             break;
         }
     }
 }
-#endif // AP_NETWORKING_CAPTURE_ENABLED
 
 void ap_ppp_capture_hook(const struct ppp_pcb_s *pcb, const struct pbuf *pb)
 {
-#if AP_NETWORKING_CAPTURE_ENABLED
-    AP_Networking_PPP::capture_hook(pcb, pb);
-#endif
+    AP_Networking_PPP::input_hook(pcb, pb);
 }
 
 /*
@@ -532,30 +726,43 @@ bool AP_Networking_PPP::update_instance(const uint8_t idx)
     if (inst.need_restart) {
         inst.need_restart = false;
 
-        LWIP_TCPIP_LOCK();
-        inst.ppp->phase = 0;
-        ppp_close(inst.ppp, 1);
-        LWIP_TCPIP_UNLOCK();
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: reconnecting", unsigned(idx));
+        if (!inst.restart_pending) {
+            inst.restart_pending = true;
 
+            LWIP_TCPIP_LOCK();
+            if (inst.ppp->phase != PPP_PHASE_DEAD) {
+                // Record this as a local close before completing the carrier
+                // teardown. This clears a latched PPPERR_PEERDEAD, which would
+                // otherwise make every new connection restart immediately.
+                ppp_close(inst.ppp, 1);
+                if (inst.ppp->phase != PPP_PHASE_DEAD) {
+                    // ppp_close(..., nocarrier=1) only terminates immediately
+                    // from RUNNING. In ESTABLISH or TERMINATE, force the lwIP
+                    // carrier-loss path so both peers start a fresh session.
+                    link_terminated(inst.ppp);
+                }
+            }
+            LWIP_TCPIP_UNLOCK();
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: reconnecting", unsigned(idx));
+        }
+    }
+
+    if (inst.restart_pending && inst.ppp->phase == PPP_PHASE_DEAD) {
+        inst.restart_pending = false;
+        inst.need_restart = false;
         restart_instance(idx);
     }
 
-    const uint32_t now_ms = AP_HAL::millis();
     auto n = inst.uart->read(buf, sizeof(buf));
     if (n > 0) {
         LWIP_TCPIP_LOCK();
         pppos_input(inst.ppp, buf, n);
         LWIP_TCPIP_UNLOCK();
-        if (inst.ppp->if4_up) {
-            // only consider the link active if IPv4 is up
-            // so we will restart PPP negotiation if we
-            // are out of sync with the other side
-            inst.last_read_ms = now_ms;
-        }
+    }
 #if PPP_LINK_TIMEOUT_MS
-    } else if (!frontend.option_is_set(AP_Networking::OPTION::PPP_TIMEOUT_DISABLE) &&
-               now_ms - inst.last_read_ms > PPP_LINK_TIMEOUT_MS) {
+    const uint32_t now_ms = AP_HAL::millis();
+    if (!frontend.option_is_set(AP_Networking::OPTION::PPP_TIMEOUT_DISABLE) &&
+        now_ms - inst.last_read_ms > PPP_LINK_TIMEOUT_MS) {
         inst.need_restart = true;
     }
 #endif
@@ -574,6 +781,188 @@ bool AP_Networking_PPP::update_instance(const uint8_t idx)
     }
 
     return n > 0;
+}
+
+/*
+  Pump queued PPP data and priority flow-control codewords into the UART.
+ */
+void AP_Networking_PPP::update_soft_flow_tx(PPP_Instance &inst)
+{
+    auto &state = *(SoftFlowState *)inst.ppp->ctx_cb;
+    const uint32_t now_ms = AP_HAL::millis();
+
+    if (state.tx_state == SoftFlowState::TxState::WAIT_COMMAND_DRAIN) {
+        if (inst.uart->tx_pending()) {
+            return;
+        }
+        state.flow.command_sent(state.tx_command, now_ms);
+        state.tx_command = AP_Networking_PPP_SoftFlow::Command::NONE;
+        state.tx_state = SoftFlowState::TxState::IDLE;
+    }
+
+    if (state.tx_state == SoftFlowState::TxState::WAIT_NORMAL_DRAIN) {
+        if (inst.uart->tx_pending()) {
+            return;
+        }
+        const auto current_command = state.flow.pending_command(now_ms);
+        if (current_command != AP_Networking_PPP_SoftFlow::Command::NONE) {
+            state.tx_command = current_command;
+        }
+        if (state.tx_command == AP_Networking_PPP_SoftFlow::Command::NONE) {
+            state.tx_state = SoftFlowState::TxState::IDLE;
+        } else if (inst.uart->txspace() >= AP_Networking_PPP_SoftFlow::CODEWORD_LENGTH) {
+            const uint32_t written = inst.uart->write(
+                                         AP_Networking_PPP_SoftFlow::codeword(state.tx_command),
+                                         AP_Networking_PPP_SoftFlow::CODEWORD_LENGTH);
+            if (written == AP_Networking_PPP_SoftFlow::CODEWORD_LENGTH) {
+                state.tx_state = SoftFlowState::TxState::WAIT_COMMAND_DRAIN;
+            }
+            return;
+        } else {
+            return;
+        }
+    }
+
+    const auto command = state.flow.pending_command(now_ms);
+    if (command != AP_Networking_PPP_SoftFlow::Command::NONE) {
+        if (state.hal_stopped) {
+            inst.uart->stop_transmit(false);
+            state.hal_stopped = false;
+        }
+        state.tx_command = command;
+        state.tx_state = SoftFlowState::TxState::WAIT_NORMAL_DRAIN;
+        return;
+    }
+
+    const bool transmit_paused = state.flow.transmit_paused(now_ms);
+    if (state.hal_stopped != transmit_paused) {
+        inst.uart->stop_transmit(transmit_paused);
+        state.hal_stopped = transmit_paused;
+    }
+    if (transmit_paused) {
+        return;
+    }
+
+    uint32_t available_bytes = 0;
+    const uint8_t *data = state.tx_buffer.readptr(available_bytes);
+    if (data == nullptr || available_bytes == 0) {
+        return;
+    }
+    const uint32_t tx_space = inst.uart->txspace();
+    const uint32_t len = available_bytes < tx_space ? available_bytes : tx_space;
+    if (len > 0) {
+        state.tx_buffer.advance(inst.uart->write(data, len));
+    }
+}
+
+/*
+  Software-flow-controlled input path. Raw UART data is drained into a PPP
+  staging ring before it is handed to lwIP, allowing STOP/START codewords to
+  be recognised even when the PPP consumer is temporarily slow.
+ */
+bool AP_Networking_PPP::update_instance_soft_flow(const uint8_t idx)
+{
+    auto &inst = iface[idx];
+    auto &state = *(SoftFlowState *)inst.ppp->ctx_cb;
+    uint8_t buf[1024];
+
+    if (inst.need_restart) {
+        inst.need_restart = false;
+
+        if (!inst.restart_pending) {
+            inst.restart_pending = true;
+
+            LWIP_TCPIP_LOCK();
+            if (inst.ppp->phase != PPP_PHASE_DEAD) {
+                ppp_close(inst.ppp, 1);
+                if (inst.ppp->phase != PPP_PHASE_DEAD) {
+                    link_terminated(inst.ppp);
+                }
+            }
+            LWIP_TCPIP_UNLOCK();
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "PPP[%u]: reconnecting", unsigned(idx));
+        }
+    }
+
+    if (inst.restart_pending && inst.ppp->phase == PPP_PHASE_DEAD) {
+        inst.restart_pending = false;
+        inst.need_restart = false;
+        restart_instance(idx, &state);
+    }
+
+    uint32_t now_ms = AP_HAL::millis();
+    state.flow.update_receive_space(state.rx_buffer.space(),
+                                    state.rx_buffer.get_size(),
+                                    now_ms);
+    update_soft_flow_tx(inst);
+
+    const ssize_t raw_n = inst.uart->read(buf, sizeof(buf));
+    if (raw_n > 0) {
+        uint16_t data_len = 0;
+        now_ms = AP_HAL::millis();
+        for (uint16_t i = 0; i < raw_n; i++) {
+            if (!state.flow.process_byte(buf[i], now_ms)) {
+                buf[data_len++] = buf[i];
+            }
+        }
+        if (data_len > 0) {
+            if (state.rx_buffer.write(buf, data_len) != data_len) {
+                // Flow-control thresholds leave headroom for bytes already in
+                // flight. If that is ever insufficient, recover explicitly
+                // instead of silently passing a damaged stream to lwIP.
+                inst.need_restart = true;
+            }
+        }
+    }
+
+    state.flow.update_receive_space(state.rx_buffer.space(),
+                                    state.rx_buffer.get_size(),
+                                    AP_HAL::millis());
+    update_soft_flow_tx(inst);
+
+    bool input_stalled = false;
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    const auto *sitl = AP::sitl();
+    if (sitl != nullptr && sitl->uart_read_stall_port >= 0) {
+        input_stalled = inst.uart == hal.serial(uint8_t(sitl->uart_read_stall_port));
+    }
+#endif
+
+    uint32_t input_n = 0;
+    if (!input_stalled) {
+        input_n = state.rx_buffer.read(buf, sizeof(buf));
+        if (input_n > 0) {
+            LWIP_TCPIP_LOCK();
+            pppos_input(inst.ppp, buf, input_n);
+            LWIP_TCPIP_UNLOCK();
+        }
+    }
+
+    state.flow.update_receive_space(state.rx_buffer.space(),
+                                    state.rx_buffer.get_size(),
+                                    AP_HAL::millis());
+    update_soft_flow_tx(inst);
+
+#if PPP_LINK_TIMEOUT_MS
+    now_ms = AP_HAL::millis();
+    if (!frontend.option_is_set(AP_Networking::OPTION::PPP_TIMEOUT_DISABLE) &&
+        now_ms - inst.last_read_ms > PPP_LINK_TIMEOUT_MS) {
+        inst.need_restart = true;
+    }
+#endif
+
+    if (inst.ppp->err_code == PPPERR_PEERDEAD ||
+        inst.ppp->phase == PPP_PHASE_TERMINATE) {
+        inst.need_restart = true;
+    }
+
+    if (frontend.option_is_set(AP_Networking::OPTION::PPP_ECHO_LIMIT_DISABLE)) {
+        inst.ppp->settings.lcp_echo_fails = 0;
+    } else {
+        inst.ppp->settings.lcp_echo_fails = LCP_MAXECHOFAILS;
+    }
+
+    return raw_n > 0 || input_n > 0;
 }
 
 // hook for custom routes

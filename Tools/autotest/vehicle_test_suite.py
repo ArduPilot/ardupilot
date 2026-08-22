@@ -7028,6 +7028,7 @@ class TestSuite(abc.ABC):
         '''register a pexpect.spawn periph subprocess so it is terminated
         on context_pop(). Mirrors context_backup_file() for child
         processes (used by restart_SITL_frame()).'''
+        self.expect_list_add(child)
         self.context_get().periph_children.append(child)
 
     def context_collect(self, msg_type):
@@ -7284,6 +7285,8 @@ class TestSuite(abc.ABC):
         # binary - the running periph may otherwise reconnect to the
         # restarted SITL via its still-open TCP socket
         for child in reversed(dead.periph_children):
+            if child in self.expect_list:
+                self.expect_list_remove(child)
             try:
                 child.terminate(force=True)
             except pexpect.ExceptionPexpect:

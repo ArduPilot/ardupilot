@@ -22,13 +22,15 @@ public:
     // hook for custom routes
     struct netif *routing_hook(uint32_t dest) override;
 
-#if AP_NETWORKING_CAPTURE_ENABLED
-    // hook for PPP capture
-    static void capture_hook(const struct ppp_pcb_s *pcb, const struct pbuf *pb);
-#endif
+    // hook for valid PPP input and optional capture
+    static void input_hook(const struct ppp_pcb_s *pcb, const struct pbuf *pb);
 
 private:
     void ppp_loop(void);
+    void ppp_loop_normal(void);
+    void ppp_loop_soft_flow(void);
+
+    struct SoftFlowState;
 
     struct PPP_Instance {
         uint8_t idx;
@@ -37,6 +39,7 @@ private:
         struct netif *pppif;
         struct ppp_pcb_s *ppp;
         bool need_restart;
+        bool restart_pending = false;
         uint32_t last_read_ms;
 #if AP_NETWORKING_CAPTURE_ENABLED
         struct {
@@ -48,15 +51,19 @@ private:
 #endif
     } iface[AP_NETWORKING_PPP_NUM_INTERFACES];
 
-    void restart_instance(const uint8_t idx);
+    void restart_instance(const uint8_t idx, SoftFlowState *soft_flow_state = nullptr);
     bool update_instance(const uint8_t idx);
+    bool update_instance_soft_flow(const uint8_t idx);
+    void update_soft_flow_tx(PPP_Instance &inst);
 #if AP_NETWORKING_CAPTURE_ENABLED
     void start_capture(void);
     void stop_capture(void);
 #endif
 
     static void ppp_status_callback(struct ppp_pcb_s *pcb, int code, void *ctx);
+    static void ppp_status_soft_flow_callback(struct ppp_pcb_s *pcb, int code, void *ctx);
     static uint32_t ppp_output_cb(struct ppp_pcb_s *pcb, const void *data, uint32_t len, void *ctx);
+    static uint32_t ppp_output_soft_flow_cb(struct ppp_pcb_s *pcb, const void *data, uint32_t len, void *ctx);
 };
 
 #endif // AP_NETWORKING_BACKEND_PPP
