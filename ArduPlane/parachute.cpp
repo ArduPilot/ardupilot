@@ -7,6 +7,12 @@
 void Plane::parachute_check()
 {
 #if HAL_PARACHUTE_ENABLED
+    if (standby_active) {
+        // exit immediately if in standby. The sink rate check compares
+        // this controller's intent against sensed motion, which is
+        // meaningless while another controller is flying the aircraft
+        return;
+    }
     parachute.update();
     parachute.check_sink_rate();
 #endif

@@ -101,6 +101,10 @@ public:
     // Reset rate and steering and TECS controllers
     void reset_controllers();
 
+    // drop any navigation state this mode has accumulated. Called at
+    // 100Hz while standby is active, see standby.cpp
+    virtual void standby_reset() {}
+
     //
     // methods that sub classes should override to affect movement of the vehicle in this mode
     //
@@ -680,6 +684,8 @@ public:
     void navigate() override;
 
     bool get_target_heading_cd(int32_t &target_heading) const;
+
+    void standby_reset() override;
 
     bool does_auto_throttle() const override { return true; }
 

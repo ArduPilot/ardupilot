@@ -347,6 +347,14 @@ private:
     // This is used to enable the inverted flight feature
     bool inverted_flight;
 
+    // true when this flight controller is a "ride along" in a system
+    // with multiple flight controllers running in parallel, and is not
+    // the controller in command. While set, all of the control loops
+    // keep running at full rate but their accumulated state is
+    // continually flushed, and the checks which compare commanded
+    // against sensed motion are suppressed. See standby.cpp
+    bool standby_active;
+
     // last time we ran roll/pitch stabilization
     uint32_t last_stabilize_ms;
 
@@ -1203,6 +1211,9 @@ private:
     void parachute_release();
     bool parachute_manual_release();
 #endif
+
+    // standby.cpp
+    void standby_update();
 
     // soaring.cpp
 #if HAL_SOARING_ENABLED

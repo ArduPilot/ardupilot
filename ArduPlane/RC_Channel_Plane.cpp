@@ -196,6 +196,7 @@ void RC_Channel_Plane::init_aux_function(const RC_Channel::AUX_FUNC ch_option,
 #endif
     case AUX_FUNC::TER_DISABLE:
     case AUX_FUNC::CROW_SELECT:
+    case AUX_FUNC::STANDBY:
 #if AP_ICENGINE_ENABLED
     case AUX_FUNC::ICE_START_STOP:
 #endif
@@ -495,6 +496,22 @@ bool RC_Channel_Plane::do_aux_function(const AuxFuncTrigger &trigger)
         break;
 
 #endif
+
+    case AUX_FUNC::STANDBY: {
+        switch (ch_flag) {
+        case AuxSwitchPos::HIGH:
+            plane.standby_active = true;
+            LOGGER_WRITE_EVENT(LogEvent::STANDBY_ENABLE);
+            gcs().send_text(MAV_SEVERITY_INFO, "Stand By Enabled");
+            break;
+        default:
+            plane.standby_active = false;
+            LOGGER_WRITE_EVENT(LogEvent::STANDBY_DISABLE);
+            gcs().send_text(MAV_SEVERITY_INFO, "Stand By Disabled");
+            break;
+        }
+        break;
+    }
 
     default:
         return RC_Channel::do_aux_function(trigger);
