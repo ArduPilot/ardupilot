@@ -42,7 +42,7 @@ bool CAN_Multicast::init(uint8_t instance)
 
     address[strlen(address)-1] = '0' + instance;
     sock.set_multicast_interface_address(sitl_multicast_interface_address());
-    return sock.connect(address, MCAST_PORT);
+    return sock.connect(address, sitl_can_multicast_port(MCAST_PORT));
 }
 
 /*
