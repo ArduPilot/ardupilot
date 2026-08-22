@@ -1347,6 +1347,26 @@ function AP_Scripting_SerialAccess_ud:available() end
 ---| '2' # auto
 function AP_Scripting_SerialAccess_ud:set_flow_control(flow_control_setting) end
 
+-- Changes advanced UART hardware options such as pin inversion, half-duplex mode, pull-ups/pull-downs,
+-- or DMA usage. Multiple options may be combined using the bitwise OR operator (`|`).
+---@param options uint16_t_ud
+---| '1'    # invert RX line
+---| '2'    # invert TX line
+---| '4'    # half-duplex (one-wire) mode
+---| '8'    # swap RX and TX pins
+---| '16'   # apply pulldown to RX
+---| '32'   # apply pullup to RX
+---| '64'   # apply pulldown to TX
+---| '128'  # apply pullup to TX
+---| '256'  # disable DMA for RX
+---| '512'  # disable DMA for TX
+---| '2048' # disable hardware FIFO
+function AP_Scripting_SerialAccess_ud:set_options(options) end
+
+-- Returns the current UART option bitmask previously set using set_options().
+-- The returned value contains the same bit fields as described in set_options().
+---@return uint16_t_ud
+function AP_Scripting_SerialAccess_ud:get_options() end
 
 -- desc
 ---@class (exact) RC_Channel_ud
