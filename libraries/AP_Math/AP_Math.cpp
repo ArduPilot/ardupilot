@@ -360,11 +360,12 @@ uint16_t get_random16(void)
 // generate a random float between -1 and 1
 float rand_float(void)
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-    return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
-#else
+    // the same fast Marsaglia generator hardware builds have always
+    // used. SITL previously detoured through glibc random(), which
+    // takes a lock on every call; sensor noise generation calls this
+    // several times per INS sample, and at high simulation speedups
+    // that measured at ~5% of total CPU in __random alone
     return (get_random16() / 65535.0) * 2 - 1;
-#endif
 }
 
 // generate a random Vector3f with each value between -1.0 and 1.0
