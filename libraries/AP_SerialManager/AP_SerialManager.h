@@ -229,6 +229,18 @@ public:
 #if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
         AP_HAL::UARTDriver::StatsTracker stats;
 #endif
+
+        // Enum for device type used in get_device_id
+        enum class DeviceType {
+            UNKNOWN,
+            UART,
+            NETWORKING,
+            CANBUS,
+            SCRIPTING,
+        };
+
+        // Return a device id for this port
+        uint32_t get_device_id() const;
     };
 
     // get a state from serial index
