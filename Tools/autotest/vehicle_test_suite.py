@@ -10523,7 +10523,15 @@ class TestSuite(abc.ABC):
 
     def assert_prearm_failure(self,
                               expected_statustext,
-                              timeout=5,
+                              # the arming code's report_immediately path
+                              # (MAV_CMD_RUN_PREARM_CHECKS) only re-displays
+                              # failures 4 seconds after the previous
+                              # display (AP_Arming.cpp), and a display can
+                              # fire and be drained just before our loop
+                              # starts - a 5s budget left the re-display
+                              # racing the deadline:
+                              #     Did not see failure-to-arm messages (seen_statustext=False ...)
+                              timeout=12,
                               ignore_prearm_failures: list | None = None,
                               other_prearm_failures_fatal=True):
         if ignore_prearm_failures is None:
