@@ -6773,6 +6773,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, p2=speed)
             self.wait_groundspeed(speed-0.5, speed+0.5, minimum_duration=5)
 
+        # the speed-cycling legs leave the vehicle a load-dependent
+        # distance from home - each wait_groundspeed leg stretches when
+        # the machine is busy, and RTL's completion budget below is
+        # sized for the last few metres, not for however much of the
+        # return leg remains:
+        #     Failed to attain Distance to home want 0.0, reached 15.762769171937096
+        # Finish the drive back to the guided target near home first.
+        self.wait_distance_to_home(0, 20, timeout=120)
+
         self.change_mode('RTL')
 
         self.wait_distance_to_home(0, 5, timeout=30)
