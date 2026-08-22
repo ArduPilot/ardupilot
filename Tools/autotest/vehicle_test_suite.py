@@ -15634,27 +15634,16 @@ switch value'''
             "NetworkingWebServerPPP",
             "PPPPeriph",
 
-            # the simulation-state multicast group these share is a
-            # fixed constant - SITL_MCAST_IP 239.255.145.51 port 20721,
-            # with no instance offset, unlike every other SITL port -
-            # so concurrent peripheral tests join the same bus: each
-            # vehicle sees the other's state and each peripheral answers
-            # a vehicle which is not its own.  They pass run serially
-            # and fail run together, with a different symptom each time
-            # ("GPS status bits did not become good", "Failed ordering
-            # for requested CASE", a log download which never finishes).
-            # TODO: derive the group or port from the instance number as
-            # the other ports are, and these can leave this list.
-            # (PeriphMultiUARTTunnel formerly sat here too: its CAN bus
-            # and periph serial ports were already instance-derived, and
-            # the state bus now is - see SITL_MCAST_STATE_PORT.  These
-            # two still need a per-instance CAN transport - the DroneCAN
-            # multicast group is derived from the CAN bus number, not
-            # the SITL instance - and worker-derived supplementary
-            # peripheral instance numbers, whose fixed 0/1 collide with
-            # low-numbered workers' vehicle ports.)
-            "CANGPSCopterMission",
-            "TestLogDownloadMAVProxyCAN",
+            # (CANGPSCopterMission, TestLogDownloadMAVProxyCAN and
+            # PeriphMultiUARTTunnel formerly sat here: peripheral
+            # simulations shared machine-wide fixed resources - the
+            # simulation-state multicast port, the CAN multicast
+            # transport port, supplementary peripheral instance numbers
+            # fixed at 0/1, and the peripheral SERIAL4 target port - so
+            # concurrent tests joined each other's buses and fought
+            # over each other's ports.  Each is per-instance now: see
+            # SITL_MCAST_STATE_PORT, SITL_CAN_MCAST_PORT,
+            # sup_instance_number and periph_serial4_udp_port.)
 
             # rebuilds the Replay tool; this mutates the shared build
             # directory / waf board configuration, which races with other
