@@ -35,6 +35,7 @@
 #define REG_USER_GPIO_CFG1      0x2F
 #define REG_SPI_FULLDUPLEX_KEY  0x31
 #define REG_SPI_HALFDUPLEX_KEY  0x32
+#define REG_USER_SYNC           0x33
 
 #define REG_USER_DATA_CFG               0x34
 #define USER_DATA_CFG_X_ACCEL_EN        (1U<<0)
@@ -107,32 +108,11 @@ AP_InertialSensor_ADIS16607::probe(AP_InertialSensor &imu,
 
 void AP_InertialSensor_ADIS16607::start()
 {
-    if (!_imu.register_accel(accel_instance, expected_sample_rate_hz, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS16607)) ||
-        !_imu.register_gyro(gyro_instance, expected_sample_rate_hz, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS16607))) {
+    // pre-fetch instance numbers for checking fast sampling settings
+    if (!_imu.get_gyro_instance(gyro_instance) || !_imu.get_accel_instance(accel_instance)) {
         return;
     }
-
-    // setup sensor rotations from probe()
-    set_gyro_orientation(gyro_instance, rotation);
-    set_accel_orientation(accel_instance, rotation);
-
-    fifo_buffer = hal.util->malloc_type(ADIS16607_FIFO_BUFFER_LEN * ADIS16607_FIFO_SAMPLE_SIZE + 2, AP_HAL::Util::MEM_DMA_SAFE);
-
-    if (fifo_buffer == nullptr) {
-        AP_HAL::panic("ADIS16607: Unable to allocate FIFO buffer");
-    }
-
-    periodic_handle = dev->register_periodic_callback((1000000UL / backend_rate_hz),
-                                                      FUNCTOR_BIND_MEMBER(&AP_InertialSensor_ADIS16607::read_sensor_fifo, void));
-}
-
-/**
- * @brief Check dev ID
- */
-bool AP_InertialSensor_ADIS16607::check_dev_id()
-{
-    // Lock the SPI mode
-    write_reg16(REG_SPI_HALFDUPLEX_KEY, 0xB4B4, false);
+    WITH_SEMAPHORE(dev->get_semaphore());
 
     backend_rate_hz = 1000;
     if (enable_fast_sampling(accel_instance) && (get_fast_sampling_rate() > 1) && (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI)) {
@@ -149,11 +129,15 @@ bool AP_InertialSensor_ADIS16607::check_dev_id()
         backend_rate_hz *= fast_sampling_rate;
     }
 
-    if (read_reg16(REG_DEV_ID) == DEV_ID_16607) {
-        accel_scale = GRAVITY_MSS / 200000.0f;  // Accel: Dynamic Range ±40g. 24-bit data format 200000.0 LSB/g
-        gyro_scale = radians(1.0 / 4000.0);     // Gyro: ADIS16607-3, 24-bit data format 4000.0 LSB/°/sec
-        _clip_limit = 39.5f * GRAVITY_MSS;
+#if defined (ADIS16607_SYNC_INPUT_CLOCK_HZ) && defined (ADIS16607_SYNC_INPUT_BITMASK)
+    if (ADIS16607_SYNC_INPUT_BITMASK & (1U << accel_instance)) {
+        calc_sample_and_dec_rate();
 
+        // Configure GPIO2 as SYNC
+        write_reg16(REG_USER_GPIO_CFG1, 0x0040, false);
+    } else
+#endif
+    {
         switch (backend_rate_hz) {
             case 2000:
                 expected_sample_rate_hz = 2390;
@@ -173,6 +157,97 @@ bool AP_InertialSensor_ADIS16607::check_dev_id()
                 break;
         }
 
+        write_reg16(REG_USER_GPIO_CFG1, 0x0000, false);
+    }
+
+    /**
+     * Bring rate down
+     * The actual decimation rate, D, is the DEC_RATE+1. Note that when changing the decimation rate, it is 
+     * recommended to first reset DEC_RATE to 0x000 before entering the new value. This 
+     * allows the decimation accumulator to reset.
+     */
+    if (!write_reg16(REG_DEC_RATE, 0, true)) {
+        return;
+    }
+
+    if (!write_reg16(REG_DEC_RATE, dec_rate, true)) {
+        return;
+    }
+
+    // Clear FIFO data
+    if (!write_reg16(REG_USER_FIFO_CFG, USER_FIFO_CFG_CLEAR_FIFO_B | (ADIS16607_FIFO_THRESHOLD << 0), false)) {
+        return;
+    }
+
+    // Write lock
+    write_reg16(REG_WRITE_LOCK, 0x5555, false);
+    write_reg16(REG_WRITE_LOCK, 0xAAAA, false);
+
+    if (read_reg16(REG_WRITE_LOCK) != 1U) {
+        return;
+    }
+
+    if ((read_reg16(REG_DIAG_STAT) & 0xFBFF) != 0x0000) {
+        return;
+    }
+
+    dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+
+    if (!_imu.register_accel(accel_instance, expected_sample_rate_hz, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS16607)) ||
+        !_imu.register_gyro(gyro_instance, expected_sample_rate_hz, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS16607))) {
+        return;
+    }
+
+    // setup sensor rotations from probe()
+    set_gyro_orientation(gyro_instance, rotation);
+    set_accel_orientation(accel_instance, rotation);
+
+    fifo_buffer = hal.util->malloc_type(ADIS16607_FIFO_BUFFER_LEN * ADIS16607_FIFO_SAMPLE_SIZE + 2, AP_HAL::Util::MEM_DMA_SAFE);
+
+    if (fifo_buffer == nullptr) {
+        AP_HAL::panic("ADIS16607: Unable to allocate FIFO buffer");
+    }
+
+    periodic_handle = dev->register_periodic_callback((1000000UL / backend_rate_hz),
+                                                      FUNCTOR_BIND_MEMBER(&AP_InertialSensor_ADIS16607::read_sensor_fifo, void));
+}
+
+#if defined (ADIS16607_SYNC_INPUT_CLOCK_HZ) && defined (ADIS16607_SYNC_INPUT_BITMASK)
+void AP_InertialSensor_ADIS16607::calc_sample_and_dec_rate()
+{
+    const uint16_t sync_clk = ADIS16607_SYNC_INPUT_CLOCK_HZ;
+
+    if (backend_rate_hz >= sync_clk) {
+        dec_rate = 0;
+        expected_sample_rate_hz = sync_clk;
+    } else {
+        int16_t min_error = INT16_MAX;
+        for (uint8_t i = 0; i < 9; i++) {
+            uint16_t error_abs = abs((sync_clk / (i + 1)) - backend_rate_hz);
+            if (error_abs < min_error) {
+                min_error = error_abs;
+                dec_rate = i;
+                expected_sample_rate_hz = (uint16_t)(sync_clk / (i + 1));
+            } else {
+                break;
+            }
+        }
+    }
+}
+#endif
+
+/**
+ * @brief Check dev ID
+ */
+bool AP_InertialSensor_ADIS16607::check_dev_id()
+{
+    // Lock the SPI mode
+    write_reg16(REG_SPI_HALFDUPLEX_KEY, 0xB4B4, false);
+
+    if (read_reg16(REG_DEV_ID) == DEV_ID_16607) {
+        accel_scale = GRAVITY_MSS / 200000.0f;  // Accel: Dynamic Range ±40g. 24-bit data format 200000.0 LSB/g
+        gyro_scale = radians(1.0 / 4000.0);     // Gyro: ADIS16607-3, 24-bit data format 4000.0 LSB/°/sec
+        _clip_limit = 39.5f * GRAVITY_MSS;
         return true;
     }
 
@@ -198,9 +273,18 @@ bool AP_InertialSensor_ADIS16607::init()
         return false;
     }
 
+    /**
+     * Ensure that the "BOOTLOAD_BUSY" bit (Bit 0) is low
+     * Otherwise, REG_DIAG_STAT may not be able to be cleared when we have a SYNC clock signal.
+     */
+    tries = 10;
+    while ((read_reg16(REG_DIGITAL_STATUS) & 0x01) && --tries) {
+        hal.scheduler->delay(10);
+    }
+
     // Ensure DIGITAL_STATUS is 0x0000 for clear possible false errors
     tries = 10;
-    while ((read_reg16(REG_DIAG_STAT) != 0x0000) && --tries) {
+    while (((read_reg16(REG_DIAG_STAT) & 0xFBFF) != 0x0000) && --tries) {
         hal.scheduler->delay(10);
     }
 
@@ -218,9 +302,6 @@ bool AP_InertialSensor_ADIS16607::init()
         return false;
     }
 
-    // Configure GPIO pins(GPIO3 as DR)
-    write_reg16(REG_USER_GPIO_CFG1, 0x0200, false);
-
     // Init USER_DATA_CFG register if we use burst read mode
     const uint16_t user_data_cfg = USER_DATA_CFG_X_ACCEL_EN | USER_DATA_CFG_Y_ACCEL_EN | USER_DATA_CFG_Z_ACCEL_EN |
                                    USER_DATA_CFG_X_GYRO_EN | USER_DATA_CFG_Y_GYRO_EN | USER_DATA_CFG_Z_GYRO_EN |
@@ -234,39 +315,6 @@ bool AP_InertialSensor_ADIS16607::init()
     if (!write_reg16(REG_MSC_CTRL, 0x100, true)) {
         return false;
     }
-
-    /**
-     * Bring rate down
-     * The actual decimation rate, D, is the DEC_RATE+1. Note that when changing the decimation rate, it is 
-     * recommended to first reset DEC_RATE to 0x000 before entering the new value. This 
-     * allows the decimation accumulator to reset.
-     */
-    if (!write_reg16(REG_DEC_RATE, 0, true)) {
-        return false;
-    }
-
-    if (!write_reg16(REG_DEC_RATE, dec_rate, true)) {
-        return false;
-    }
-
-    // Clear FIFO data
-    if (!write_reg16(REG_USER_FIFO_CFG, USER_FIFO_CFG_CLEAR_FIFO_B | (ADIS16607_FIFO_THRESHOLD << 0), false)) {
-        return false;
-    }
-
-    // Write lock
-    write_reg16(REG_WRITE_LOCK, 0x5555, false);
-    write_reg16(REG_WRITE_LOCK, 0xAAAA, false);
-
-    if (read_reg16(REG_WRITE_LOCK) != 1U) {
-        return false;
-    }
-
-    if (read_reg16(REG_DIAG_STAT) != 0x0000) {
-        return false;
-    }
-
-    dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     return true;
 }
