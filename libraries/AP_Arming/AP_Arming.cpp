@@ -868,7 +868,7 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
         if (rc().arming_check_throttle()) {
             const RC_Channel *c = &rc().get_throttle_channel();
                 if (c->get_control_in() != 0) {
-                    check_failed(Check::RC, true, "%s (RC%d) is not neutral", "Throttle", c->ch());
+                    check_failed(Check::RC, true, "%s (RC%d) is not zero", "Throttle", c->ch());
                     check_passed = false;
                 }
             c = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FWD_THR);
