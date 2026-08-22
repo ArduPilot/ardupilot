@@ -3324,7 +3324,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "SCR_ENABLE": 1,
-            "SIM_SPEEDUP": 20, # need to give some cycles to lua
+            # need to give some cycles to lua.  20 was not enough on a
+            # 16-core machine running the suite --parallel=32: the
+            # applet's detection messages went missing entirely
+            # ("Failed to receive text: terravoid: high terrain detected")
+            "SIM_SPEEDUP": 10,
             "RC7_OPTION": 305,
             "RTL_AUTOLAND": 2,
             "RNGFND1_TYPE": 100,
