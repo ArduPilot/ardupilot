@@ -202,6 +202,19 @@ class ManifestGenerator():
                 "filepath (%s) does not contain an APMVERSION" % (filepath,))
         return m.group(1)
 
+    def metadata_urls(self, filepath):
+        '''return URLs for metadata stored alongside a release directory'''
+        metadata_dir = pathlib.Path(filepath).parent.parent / '__METADATA__'
+        urls = {}
+        for key, filename in (('parameters', 'apm.pdef.xml.xz'),
+                              ('logs', 'LogMessages.xml.xz')):
+            metadata_path = metadata_dir / filename
+            if metadata_path.is_file():
+                url = str(metadata_path)
+                urlifier = re.compile("^" + re.escape(self.basedir))
+                urls[key] = re.sub(urlifier, self.baseurl, url)
+        return urls
+
     def add_USB_IDs_PX4(self, firmware):
         '''add USB IDs to a .px4 firmware'''
         url = firmware['url']
@@ -355,7 +368,7 @@ class ManifestGenerator():
             print("Error listing '%s'" % dir)
             return
         for platformdir in dlist:
-            if platformdir.startswith("."):
+            if platformdir.startswith(".") or platformdir == '__METADATA__':
                 continue
             some_dir = os.path.join(dir, platformdir)
             if not os.path.isdir(some_dir):
@@ -549,6 +562,7 @@ class ManifestGenerator():
                 "latest": firmware["latest"],
                 "format": firmware["format"],
             })
+            some_json.update(self.metadata_urls(filepath))
 
             if firmware["firmware-version"]:
                 try:

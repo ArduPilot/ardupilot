@@ -109,7 +109,7 @@ class EnumDocco(object):
         state = state_outside
 
         enumerations = []
-        with open(source_file) as f:
+        with open(source_file, encoding='utf-8', errors='replace') as f:
             enum_name = None
             in_class = None
             while True:

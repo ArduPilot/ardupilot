@@ -4,4 +4,5 @@ AP_FLAKE8_CLEAN
 
 
 class Emitter(object):
-    pass
+    git_sha = None
+    git_branch = None

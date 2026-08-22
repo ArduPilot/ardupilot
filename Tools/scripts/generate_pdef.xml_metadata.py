@@ -1,115 +1,184 @@
 #!/usr/bin/env python3
 
-# flake8: noqa
-
 '''
-Rsync apm.pdef.xml files for different versions of the ArduPilot firmware
-For each version, it checks out the corresponding tag, generates parameter metadata,
-and finally rsyncs the updated parameter metadata pdef.xml files.
+Legacy/backfill publisher for apm.pdef.xml files from historical ArduPilot releases.
+
+Normal firmware builds generate parameter metadata through build_binaries.py.
+This script rebuilds metadata for historical Git tags. Uploading the generated
+files requires an explicit --upload option.
+
+AP_FLAKE8_CLEAN
 
 SPDX-FileCopyrightText: 2024 Amilcar do Carmo Lucas <amilcar.lucas@iav.de>
 
 SPDX-License-Identifier: GPL-3.0-or-later
 '''
 
+import argparse
 import os
-import datetime
+from pathlib import Path
+import re
 import shutil
 import subprocess
+import sys
+import tempfile
 
-VEHICLE_TYPES = ["Copter", "Plane", "Rover", "ArduSub", "Tracker"]  # Add future vehicle types here
+
+VEHICLE_TYPES = ["Copter", "Plane", "Rover", "ArduSub", "Tracker"]
 RSYNC_USERNAME = 'amilcar'
+SCRIPT_DIR = Path(__file__).resolve().parent
+DEFAULT_REPOSITORY = SCRIPT_DIR.parent.parent
+VERSION_RE = re.compile(r'^(?P<vehicle>.+)-(?P<version>\d+\.\d+\.\d+)$')
 
-# Store the current working directory
-old_cwd = os.getcwd()
 
-def get_vehicle_tags(vehicle_type):
-    """
-    Lists all tags in the ArduPilot repository that start with the given vehicle type followed by '-'.
-    Returns a list of tag names.
-    """
+def version_key(version: str):
+    '''Return a comparable semantic version tuple, rejecting invalid input.'''
     try:
-        # Change to the ArduPilot directory
-        os.chdir('../ardupilot/')
-        tags_output = subprocess.check_output(['git', 'tag', '--list', f'{vehicle_type}-[0-9]\\.[0-9]\\.[0-9]'], text=True)
-        return tags_output.splitlines()
-    except Exception as e: # pylint: disable=broad-exception-caught
-        print(f"Error getting {vehicle_type} tags: {e}")
-        return []
+        parts = tuple(int(part) for part in version.split('.'))
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f'Invalid version: {version}') from error
+    if len(parts) != 3:
+        raise argparse.ArgumentTypeError(f'Invalid version: {version}')
+    return parts
 
-def generate_vehicle_versions():
-    """
-    Generates arrays for each vehicle type based on the tags fetched from the ArduPilot repository.
-    """
-    vehicle_versions = {}
 
-    for vehicle_type in VEHICLE_TYPES:
-        tags = get_vehicle_tags(vehicle_type)
-        if tags:
-            vehicle_versions[vehicle_type] = [tag.split('-')[1] for tag in tags]
+def get_vehicle_tags(repository: Path, vehicle_type: str):
+    '''Return release tags and versions for a vehicle, ordered by version.'''
+    tags_output = subprocess.check_output(
+        ['git', '-C', repository, 'tag', '--list', f'{vehicle_type}-*'],
+        text=True,
+    )
+    releases = []
+    for tag in tags_output.splitlines():
+        match = VERSION_RE.fullmatch(tag)
+        if match is None or match.group('vehicle') != vehicle_type:
+            continue
+        version = match.group('version')
+        releases.append((version_key(version), tag, version))
+    return [(tag, version) for _, tag, version in sorted(releases)]
 
-    return vehicle_versions
 
-def create_one_pdef_xml_file(vehicle_type: str, dst_dir: str, git_tag: str):
-    os.chdir('../ardupilot')
-    subprocess.run(['git', 'checkout', git_tag], check=True)
-    # subprocess.run(['git', 'pull'], check=True)
-    subprocess.run(['Tools/autotest/param_metadata/param_parse.py', '--vehicle', vehicle_type, '--format', 'xml'], check=True)
-    # Return to the old working directory
-    os.chdir(old_cwd)
+def add_provenance_comment(xml_path: Path, git_tag: str, git_sha: str):
+    '''Add deterministic provenance for parsers without the corresponding options.'''
+    contents = xml_path.read_text(encoding='utf-8')
+    comment = f'<!-- Generated from git tag {git_tag} ({git_sha}) -->\n'
+    xml_path.write_text(contents.replace('\n', '\n' + comment, 1), encoding='utf-8')
 
-    if not os.path.exists(dst_dir):
-        os.makedirs(dst_dir)
 
-    # Insert an XML comment on line 3 in the ../ardupilot/apm.pdef.xml file to indicate
-    # the tag used to generate the file and the current date
-    with open('../ardupilot/apm.pdef.xml', 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    lines.insert(2, f'<!-- Generated from git tag {git_tag} on {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} -->\n')
-    with open('../ardupilot/apm.pdef.xml', 'w', encoding='utf-8') as f:
-        f.writelines(lines)
-    shutil.copy('../ardupilot/apm.pdef.xml', f'{dst_dir}/apm.pdef.xml')
+def publish_file(source: Path, destination: Path):
+    '''Atomically publish a generated metadata file into its destination directory.'''
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary_name = tempfile.mkstemp(prefix='.apm.pdef-', dir=destination.parent)
+    try:
+        with os.fdopen(fd, 'wb') as temporary_file:
+            with source.open('rb') as source_file:
+                shutil.copyfileobj(source_file, temporary_file)
+        os.replace(temporary_name, destination)
+    except Exception:
+        if os.path.exists(temporary_name):
+            os.unlink(temporary_name)
+        raise
 
-# Function to sync files using rsync
-def sync_to_remote(vehicle_dir: str) -> None:
-    src_dir = f'{vehicle_dir}/'
-    dst_user = RSYNC_USERNAME
-    dst_host = 'firmware.ardupilot.org'
-    dst_path = f'param_versioned/{vehicle_dir}/'
 
-    # Construct the rsync command
-    rsync_cmd = [
+def create_one_pdef_xml_file(repository: Path, vehicle_type: str, destination: Path, git_tag: str):
+    '''Generate and atomically publish metadata from an isolated tag checkout.'''
+    with tempfile.TemporaryDirectory(prefix='pdef-metadata-') as temporary_dir:
+        worktree = Path(temporary_dir) / 'source'
+        subprocess.run(
+            ['git', '-C', repository, 'worktree', 'add', '--detach', worktree, git_tag],
+            check=True,
+        )
+        try:
+            git_sha = subprocess.check_output(
+                ['git', '-C', worktree, 'rev-parse', 'HEAD'], text=True,
+            ).strip()
+            parser_path = worktree / 'Tools' / 'autotest' / 'param_metadata' / 'param_parse.py'
+            help_output = subprocess.check_output(
+                [sys.executable, parser_path, '--help'],
+                text=True,
+                stderr=subprocess.STDOUT,
+                cwd=worktree,
+            )
+            supports_git_sha = '--git-sha' in help_output
+            supports_git_tag = '--git-tag' in help_output
+            command = [sys.executable, parser_path, '--vehicle', vehicle_type, '--format', 'xml']
+            if supports_git_sha:
+                command.extend(['--git-sha', git_sha])
+            if supports_git_tag:
+                command.extend(['--git-tag', git_tag])
+            subprocess.run(command, check=True, cwd=worktree)
+
+            metadata_path = worktree / 'apm.pdef.xml'
+            if not metadata_path.is_file():
+                raise FileNotFoundError(f'Parameter metadata was not generated: {metadata_path}')
+            if not (supports_git_sha and supports_git_tag):
+                add_provenance_comment(metadata_path, git_tag, git_sha)
+            publish_file(metadata_path, destination / 'apm.pdef.xml')
+        finally:
+            subprocess.run(
+                ['git', '-C', repository, 'worktree', 'remove', '--force', worktree],
+                check=False,
+            )
+
+
+def sync_to_remote(vehicle_dir: Path, password_file: Path):
+    '''Upload one vehicle's generated metadata after explicit user opt-in.'''
+    rsync_command = [
         'rsync',
         '-avz',
         '--progress',
-        '--password-file=.rsync_pass',
-        src_dir,
-        f'{dst_user}@{dst_host}::{dst_path}'
+        f'--password-file={password_file}',
+        f'{vehicle_dir}/',
+        f'{RSYNC_USERNAME}@firmware.ardupilot.org::param_versioned/{vehicle_dir.name}/',
     ]
-
-    print(f'Synchronizing {src_dir} to {dst_path}...')
-    print(rsync_cmd)
-    subprocess.run(rsync_cmd, check=True)
+    print(f'Synchronizing {vehicle_dir}...')
+    subprocess.run(rsync_command, check=True)
 
 
 def main():
-    vehicle_versions = generate_vehicle_versions()
+    parser = argparse.ArgumentParser(description='Generate historical apm.pdef.xml metadata.')
+    parser.add_argument('--repository', type=Path, default=DEFAULT_REPOSITORY,
+                        help='ArduPilot repository to read (default: this script\'s repository)')
+    parser.add_argument('--output-dir', type=Path, default=Path.cwd(),
+                        help='Directory in which vehicle release directories are generated')
+    parser.add_argument('--vehicle', choices=VEHICLE_TYPES, action='append',
+                        help='Vehicle to backfill; may be repeated (default: all)')
+    parser.add_argument('--start-with', type=version_key, metavar='X.Y.Z',
+                        help='Generate only releases with version X.Y.Z or newer')
+    parser.add_argument('--upload', action='store_true',
+                        help='Upload generated files using rsync after generation')
+    parser.add_argument('--rsync-password-file', type=Path, default=Path.cwd() / '.rsync_pass',
+                        help='Password file used with --upload')
+    args = parser.parse_args()
 
-    # Iterate over the vehicle_versions list
-    for vehicle_type, versions in vehicle_versions.items():
+    repository = args.repository.resolve()
+    if not (repository / '.git').exists():
+        parser.error(f'Not an ArduPilot repository: {repository}')
+    output_dir = args.output_dir.resolve()
+    vehicle_types = args.vehicle if args.vehicle is not None else VEHICLE_TYPES
+    if args.upload and not args.rsync_password_file.is_file():
+        parser.error(f'Rsync password file not found: {args.rsync_password_file}')
 
-        vehicle_dir = vehicle_type
-        if vehicle_type == 'ArduSub':
-            vehicle_dir = 'Sub'
-
-        for version in versions:
-            if version[0] == '3' and vehicle_type != 'AP_Periph':
-                continue # Skip ArduPilot 3.x versions, as param_parse.py does not support them out of the box
-            if version[0] == '4' and version[2] == '0' and vehicle_type != 'ArduSub':
-                continue # Skip ArduPilot 4.0.x versions, as param_parse.py does not support them out of the box
-            create_one_pdef_xml_file(vehicle_type, f'{vehicle_dir}/stable-{version}', f'{vehicle_type}-{version}')
-
-        sync_to_remote(vehicle_dir)
+    for vehicle_type in vehicle_types:
+        vehicle_dir = 'Sub' if vehicle_type == 'ArduSub' else vehicle_type
+        destination_vehicle_dir = output_dir / vehicle_dir
+        for git_tag, version in get_vehicle_tags(repository, vehicle_type):
+            release_version = version_key(version)
+            if args.start_with is not None and release_version < args.start_with:
+                continue
+            major, minor, _ = release_version
+            if major == 3 and vehicle_type != 'AP_Periph':
+                continue
+            if major == 4 and minor == 0 and vehicle_type != 'ArduSub':
+                continue
+            create_one_pdef_xml_file(
+                repository,
+                vehicle_type,
+                destination_vehicle_dir / f'stable-{version}',
+                git_tag,
+            )
+        if args.upload:
+            sync_to_remote(destination_vehicle_dir, args.rsync_password_file.resolve())
 
 
 if __name__ == '__main__':
