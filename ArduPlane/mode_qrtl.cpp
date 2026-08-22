@@ -186,33 +186,38 @@ void ModeQRTL::run()
 /*
   return current height above the QRTL destination altitude, in the same
   frame (terrain-relative if QRTL is terrain following, else absolute) the
-  approach altitude ramp in update_target_altitude() is applied in
+  approach altitude ramp in update_target_altitude() is applied in.
+  Returns false, leaving alt_delta_m unchanged, if no usable altitude data
+  is available -- callers must not treat that the same as a zero delta
  */
-float ModeQRTL::calc_alt_delta_m() const
+bool ModeQRTL::calc_alt_delta_m(float &alt_delta_m) const
 {
-    float alt_delta_m = 0;
 #if AP_TERRAIN_AVAILABLE
-    float current_terrain_height_m;
-    if (plane.next_WP_loc.terrain_alt &&
-        plane.terrain.height_above_terrain(current_terrain_height_m, true)) {
+    if (plane.next_WP_loc.terrain_alt) {
         // QRTL is terrain following: compute the delta in the same
         // terrain-relative frame the ramp is applied in via
         // change_target_altitude(), so the two stay consistent over
         // sloping ground. next_WP_loc.alt is already the destination's
-        // own terrain-relative target height, in cm
-        alt_delta_m = current_terrain_height_m - (plane.next_WP_loc.alt * 0.01);
-    } else
-#endif
-    {
-        int32_t current_alt_cm;
-        int32_t dest_alt_cm;
-        if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_cm) &&
-            plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, dest_alt_cm)) {
-            alt_delta_m = (current_alt_cm - dest_alt_cm) * 0.01;
+        // own terrain-relative target height, in cm. Don't fall back to
+        // the absolute-altitude path below on failure -- that would mix
+        // an AMSL delta into a terrain-relative ramp
+        float current_terrain_height_m;
+        if (!plane.terrain.height_above_terrain(current_terrain_height_m, true)) {
+            return false;
         }
-        // else no usable altitudes, fall back to going straight to RTL_ALTITUDE
+        alt_delta_m = current_terrain_height_m - (plane.next_WP_loc.alt * 0.01);
+        return true;
     }
-    return alt_delta_m;
+#endif
+    int32_t current_alt_cm;
+    int32_t dest_alt_cm;
+    if (plane.current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, current_alt_cm) &&
+        plane.next_WP_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, dest_alt_cm)) {
+        alt_delta_m = (current_alt_cm - dest_alt_cm) * 0.01;
+        return true;
+    }
+    // no usable altitudes
+    return false;
 }
 
 /*
@@ -251,10 +256,14 @@ void ModeQRTL::update_target_altitude()
     if (!approach_start.valid) {
         // latch where the approach began, so the ramp below is driven by our
         // own altitude at the start of the approach rather than the fixed wing
-        // waypoint offset, which is cleared as the destination is neared
-        approach_start.alt_delta_m = calc_alt_delta_m();
-        approach_start.dist_m = dist;
-        approach_start.valid = true;
+        // waypoint offset, which is cleared as the destination is neared.
+        // If the altitude query fails, leave valid false so we retry next
+        // cycle rather than latching a bogus zero delta that would silently
+        // disable the ramp for the rest of the approach
+        if (calc_alt_delta_m(approach_start.alt_delta_m)) {
+            approach_start.dist_m = dist;
+            approach_start.valid = true;
+        }
     }
 
     // Set the target altitude to the QRTL altitude
@@ -270,8 +279,8 @@ void ModeQRTL::update_target_altitude()
           zero disables the gradual descent, and altitude changes smaller than
           it are made immediately
          */
-        const float alt_excess = approach_start.alt_delta_m - rtl_alt_delta;
-        if ((plane.g.alt_slope_min > 0) && (alt_excess >= plane.g.alt_slope_min) &&
+        const float alt_excess = approach_start.valid ? (approach_start.alt_delta_m - rtl_alt_delta) : 0;
+        if (approach_start.valid && (plane.g.alt_slope_min > 0) && (alt_excess >= plane.g.alt_slope_min) &&
             (approach_start.dist_m > dist_rtl_alt_reached)) {
             alt = linear_interpolate(rtl_alt_delta, approach_start.alt_delta_m,
                                       dist,
@@ -285,9 +294,15 @@ void ModeQRTL::update_target_altitude()
             // the same altitude that boundary itself targets (still permits
             // climbing back to rtl_alt_delta if we're currently below it,
             // same as the pre-ramp behaviour of targeting RTL_ALTITUDE outright).
-            alt = MIN(alt, MAX(rtl_alt_delta, calc_alt_delta_m()));
+            // If this cycle's altitude query fails, skip the clamp rather than
+            // folding the failure into a target of rtl_alt_delta
+            float current_alt_delta_m;
+            if (calc_alt_delta_m(current_alt_delta_m)) {
+                alt = MIN(alt, MAX(rtl_alt_delta, current_alt_delta_m));
+            }
         } else {
-            // gradual descent disabled, or nothing worth ramping down from
+            // gradual descent disabled, nothing worth ramping down from, or
+            // the altitude query has never yet succeeded this approach
             alt = rtl_alt_delta;
         }
     } else {
