@@ -12577,6 +12577,17 @@ Also, ignores heartbeats not from our target system'''
             #################################################
             self.start_subtest("Try magcal and wait success")
             self.progress("Compass mask is %s" % "{0:b}".format(target_mask))
+            # this subtest asserts >=95% completion was reported before
+            # the SUCCESS report.  MAG_CAL_PROGRESS is a rate-limited,
+            # coalescing deferred message paced by the wall clock, while
+            # the calibration itself runs in simulated time: at high
+            # speedup on a loaded machine the whole calibration finished
+            # inside a fraction of a wall-second and NO progress message
+            # made it out before the report:
+            #     Mag calibration report SUCCESS without >=95% completion (got 0%)
+            # Bound the sim:wall ratio so the stream can keep up.
+            self.context_push()
+            self.context_set_speedup(10)
             reset_pos_and_start_magcal(mavproxy, target_mask)
             progress_count = [0] * compass_tnumber
             reached_pct = [0] * compass_tnumber
@@ -12615,6 +12626,7 @@ Also, ignores heartbeats not from our target system'''
                     if new_pct != reached_pct[cid]:
                         reached_pct[cid] = new_pct
                         self.progress("Calibration progress compass ID %d: %s%%" % (cid, str(reached_pct[cid])))
+            self.context_pop()
             mavproxy.send("sitl_stop\n")
             mavproxy.send("sitl_attitude 0 0 0\n")
             self.progress("Checking that value aren't changed without acceptation")
