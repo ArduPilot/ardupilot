@@ -382,8 +382,15 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
     // a header to allow for machine parsers to determine format
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
-    if (AP_BoardConfig::use_idle_stats()) {
+    if (AP_BoardConfig::idle_stats_enabled(AP_BoardConfig::IdleStats::TO_FILE)) {
+        // let BRD_IDLE_STATS start measurement without a reboot; a no-op
+        // once it is running, and the first read after it reports zero
+        sysStartLoadMeasure();
+        // LOAD is the current moving average; PEAK is the peak since the
+        // previous read, cleared here; the read does not disturb the
+        // windowed readers or the measurement
         str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
+        sysClearCPUPeakLoad();
     } else
 #endif
     str.printf("ThreadsV2\n");
@@ -437,27 +444,35 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                     unsigned(stack_free(tp->wabase)), unsigned(total_stack));
 #endif
     }
-#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
-    if (AP_BoardConfig::use_idle_stats()) {
-        sysStopLoadMeasure();
-        sysStartLoadMeasure();
-    }
-#endif
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
 
-// get the system load
-bool Util::get_system_load(float& avg_load, float& peak_load) const
+// consume a reader's window of system load statistics; ends the reader's
+// window, so the caller's cadence sets the window length
+bool Util::consume_system_load(LoadReader reader, float& avg_load, float& peak_load)
 {
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
     if (AP_BoardConfig::use_idle_stats()) {
-        avg_load = sysGetCPUAverageLoad() / 100.0f;
-        peak_load = sysGetCPUPeakLoad() / 100.0f;
-
-        return true;
+        // let BRD_IDLE_STATS start measurement without a reboot; a no-op
+        // once it is running
+        sysStartLoadMeasure();
     }
-#endif
+    sys_cpu_load_t avg = 0, peak = 0;
+    bool have_data = false;
+    switch (reader) {
+    case LoadReader::LOG:
+        have_data = sysReadResetCPULoad(SYS_LOAD_READER_LOG, &avg, &peak);
+        break;
+    case LoadReader::TAKEOFF:
+        have_data = sysReadResetCPULoad(SYS_LOAD_READER_TAKEOFF, &avg, &peak);
+        break;
+    }
+    avg_load = avg * 0.01f;
+    peak_load = peak * 0.01f;
+    return have_data;
+#else
     return false;
+#endif
 }
 
 

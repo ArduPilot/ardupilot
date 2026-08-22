@@ -483,8 +483,9 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 #if AP_CPU_IDLE_STATS_ENABLED
     // @Param: IDLE_STATS
     // @DisplayName: Capture and calculate true CPU load using idle threads
-    // @Description: Capture and calculate true CPU load using idle threads
-    // @Values: 0:Disable,1:Enable
+    // @Description: Bitmask of readers of true CPU load captured using the idle threads. When File is set the average and peak load since the previous read are reported via @SYS/threads.txt. When Log is set the average and peak load since the previous PM2 log message are written to the PM2 log message. Each reader observes its own measurement window.
+    // @Description{Copter}: Bitmask of readers of true CPU load captured using the idle threads. When File is set the average and peak load since the previous read are reported via @SYS/threads.txt. When Log is set the average and peak load since the previous PM2 log message are written to the PM2 log message. Each reader observes its own measurement window. Setting any bit also activates the takeoff CPU load check, see TKOFF_CPU_AVG and TKOFF_CPU_PEAK.
+    // @Bitmask: 0:File,1:Log
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("IDLE_STATS", 33, AP_BoardConfig, state.idle_stats, 0),
