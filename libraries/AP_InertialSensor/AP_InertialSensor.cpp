@@ -1930,11 +1930,9 @@ void AP_InertialSensor::update(void)
     wait_for_sample();
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            // mark sensors unhealthy and let update() in each backend
-            // mark them healthy via _publish_gyro() and
-            // _publish_accel()
-            _gyro_healthy[i] = false;
-            _accel_healthy[i] = false;
+            // health flags are deliberately not cleared here: they are read
+            // from other threads, and clearing before the backends republish
+            // leaves a window in which a healthy sensor reads unhealthy
             _delta_velocity_valid[i] = false;
             _delta_angle_valid[i] = false;
         }
