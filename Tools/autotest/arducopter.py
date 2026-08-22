@@ -12606,7 +12606,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 relative=True,
                 altitude_source=source,
                 minimum_duration=5,
-                timeout=6,
+                # the assertion is the 5s of continuous agreement; the
+                # vehicle is hovering steady, so the only thing a tight
+                # timeout adds is sensitivity to message latency - a
+                # --parallel=32 run failed with the reading in-band but
+                # only 1s of slack to enter it
+                timeout=30,
             )
 
         self.progress("Testing absolute altitudes")
@@ -12618,7 +12623,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 relative=True,
                 altitude_source=source,
                 minimum_duration=5,
-                timeout=6,
+                # the assertion is the 5s of continuous agreement; the
+                # vehicle is hovering steady, so the only thing a tight
+                # timeout adds is sensitivity to message latency - a
+                # --parallel=32 run failed with the reading in-band but
+                # only 1s of slack to enter it
+                timeout=30,
             )
 
         self.do_RTL()
