@@ -8,6 +8,7 @@
 #include "UARTDriver.h"
 #include "Scheduler.h"
 #include "CANSocketIface.h"
+#include "SITL_Multicast.h"
 
 #include <stdio.h>
 #include <signal.h>
@@ -20,6 +21,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include <poll.h>
+#include <time.h>
 
 #include <AP_Param/AP_Param.h>
 #include <SITL/SIM_JSBSim.h>
@@ -452,35 +455,12 @@ void SITL_State::multicast_state_open(void)
 #ifdef HAVE_SOCK_SIN_LEN
     sockaddr.sin_len = sizeof(sockaddr);
 #endif
-    sockaddr.sin_port = htons(SITL_MCAST_PORT);
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = inet_addr(SITL_MCAST_IP);
-
-    mc_out_fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (mc_out_fd == -1) {
-        fprintf(stderr, "socket failed - %s\n", strerror(errno));
-        exit(1);
-    }
-    ret = fcntl(mc_out_fd, F_SETFD, FD_CLOEXEC);
-    if (ret == -1) {
-        fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
-        exit(1);
-    }
-
-    // try to setup for broadcast, this may fail if insufficient privileges
-    int one = 1;
-    setsockopt(mc_out_fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
-
-    ret = connect(mc_out_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
-    if (ret == -1) {
-        fprintf(stderr, "udp connect failed on port %u - %s\n",
-                (unsigned)ntohs(sockaddr.sin_port),
-                strerror(errno));
-        exit(1);
-    }
 
     /*
-      open servo input socket
+      open the servo input socket; state is also sent from this socket
+      so that peripherals can reply to the source address and port they
+      observe, whatever this instance's servo port is
      */
     servo_in_fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (servo_in_fd == -1) {
@@ -493,14 +473,43 @@ void SITL_State::multicast_state_open(void)
         exit(1);
     }
 
+    // try to setup for broadcast, this may fail if insufficient privileges
+    int one = 1;
+    setsockopt(servo_in_fd,SOL_SOCKET,SO_BROADCAST,(char *)&one,sizeof(one));
+
+    const uint32_t mc_if_addr = sitl_multicast_interface_address();
+    if (mc_if_addr != 0) {
+        // the state is multicast from this socket, so it needs the same
+        // interface pinning the other multicast paths have: without it
+        // the state follows the routing table while the peripheral is
+        // listening on the interface it was told to use, and never sees
+        // the vehicle.  See sitl_multicast_interface_address()
+        struct in_addr ifaddr {};
+        ifaddr.s_addr = mc_if_addr;
+        if (setsockopt(servo_in_fd, IPPROTO_IP, IP_MULTICAST_IF, &ifaddr, sizeof(ifaddr)) == -1) {
+            fprintf(stderr, "failed to set multicast interface - %s\n", strerror(errno));
+            exit(1);
+        }
+    }
+
     sockaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     sockaddr.sin_port = htons(SITL_SERVO_PORT + _instance);
 
     ret = bind(servo_in_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr));
     if (ret == -1) {
-        fprintf(stderr, "udp servo connect failed\n");
+        fprintf(stderr, "udp servo bind failed\n");
         exit(1);
     }
+
+    // destination address for the multicast state
+    mc_dest = {};
+#ifdef HAVE_SOCK_SIN_LEN
+    mc_dest.sin_len = sizeof(mc_dest);
+#endif
+    mc_dest.sin_family = AF_INET;
+    mc_dest.sin_port = htons(sitl_multicast_state_port(SITL_MCAST_PORT));
+    mc_dest.sin_addr.s_addr = inet_addr(SITL_MCAST_IP);
+
     ::printf("multicast initialised\n");
 }
 
@@ -512,30 +521,150 @@ void SITL_State::multicast_state_send(void)
     if (_sitl == nullptr) {
         return;
     }
-    if (mc_out_fd == -1) {
+    if (servo_in_fd == -1) {
         multicast_state_open();
     }
     const auto &sfdm = _sitl->state;
-    send(mc_out_fd, (void*)&sfdm, sizeof(sfdm), 0);
+    sendto(servo_in_fd, (void*)&sfdm, sizeof(sfdm), 0, (struct sockaddr *)&mc_dest, sizeof(mc_dest));
 
     check_servo_input();
+
+    if (_periph_lockstep) {
+        wait_periph_acks(sfdm.timestamp_us);
+    }
 }
 
 /*
-  check for servo data from peripheral
+  check for ack/servo data from peripherals
  */
 void SITL_State::check_servo_input(void)
 {
-    // drain any pending packets
-    float mc_servo_float[SITL_NUM_CHANNELS];
-    // we loop to ensure we drain all packets from all nodes
-    while (recv(servo_in_fd, (void*)mc_servo_float, sizeof(mc_servo_float), MSG_DONTWAIT) == sizeof(mc_servo_float)) {
-        for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
-            // nan means that node is not outputting this channel
-            if (!isnan(mc_servo_float[i])) {
-                mc_servo[i] = uint16_t(mc_servo_float[i]);
-            }
+    // drain any pending packets; we loop to ensure we drain all
+    // packets from all nodes
+    struct sitl_mcast_ack ack;
+    struct sockaddr_in src;
+    socklen_t src_len = sizeof(src);
+    ssize_t ret;
+    while ((ret = recvfrom(servo_in_fd, (void*)&ack, sizeof(ack), MSG_DONTWAIT,
+                           (struct sockaddr *)&src, &src_len)) > 0) {
+        handle_periph_ack(ack, ret, src);
+        src_len = sizeof(src);
+    }
+}
+
+/*
+  handle one ack/servo packet from a peripheral
+ */
+void SITL_State::handle_periph_ack(const struct sitl_mcast_ack &ack, ssize_t len, const struct sockaddr_in &src)
+{
+    if (len != sizeof(ack)) {
+        // unknown packet format.  The most likely cause is a
+        // peripheral built from a different source tree, sending the
+        // old servo-only reply; its servo output will be ignored and
+        // it can take no part in lockstep, so say so rather than
+        // discarding its packets in silence
+        if (!_warned_ack_size) {
+            _warned_ack_size = true;
+            ::fprintf(stderr, "SITL: ignoring %d-byte peripheral reply from %s:%u, expected %u bytes; build the peripheral from this source tree\n",
+                      int(len), inet_ntoa(src.sin_addr), (unsigned)ntohs(src.sin_port),
+                      (unsigned)sizeof(ack));
         }
+        return;
+    }
+    for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
+        // nan means that node is not outputting this channel
+        if (!isnan(ack.servos[i])) {
+            mc_servo[i] = uint16_t(ack.servos[i]);
+        }
+    }
+    if (!_periph_lockstep) {
+        return;
+    }
+    // register the peripheral, or update its ack state
+    struct mcast_periph *periph = nullptr;
+    for (uint8_t i=0; i<num_mcast_periphs; i++) {
+        if (mcast_periphs[i].addr.sin_addr.s_addr == src.sin_addr.s_addr &&
+            mcast_periphs[i].addr.sin_port == src.sin_port) {
+            periph = &mcast_periphs[i];
+            break;
+        }
+    }
+    if (periph == nullptr) {
+        // do not let a recently-evicted peer's stale queued acks
+        // re-register it; a live peer re-registers with fresh acks
+        // once the cooldown expires
+        const uint64_t now_ms = wall_millis();
+        for (uint8_t i=0; i<num_evicted_periphs; ) {
+            if (now_ms - evicted_periphs[i].evicted_ms > PERIPH_REJOIN_COOLDOWN_MS) {
+                evicted_periphs[i] = evicted_periphs[--num_evicted_periphs];
+                continue;
+            }
+            if (evicted_periphs[i].addr.sin_addr.s_addr == src.sin_addr.s_addr &&
+                evicted_periphs[i].addr.sin_port == src.sin_port) {
+                return;
+            }
+            i++;
+        }
+        if (num_mcast_periphs >= MAX_MCAST_PERIPHS) {
+            return;
+        }
+        periph = &mcast_periphs[num_mcast_periphs++];
+        periph->addr = src;
+        ::printf("SITL: peripheral %s:%u joined lockstep\n",
+                 inet_ntoa(src.sin_addr), (unsigned)ntohs(src.sin_port));
+    }
+    periph->last_ack_us = ack.timestamp_us;
+    periph->last_heard_ms = wall_millis();
+}
+
+// wall-clock milliseconds; the simulation clock must not be used for
+// the lockstep eviction timeout as it is frozen while we wait
+uint64_t SITL_State::wall_millis(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return uint64_t(ts.tv_sec) * 1000ULL + ts.tv_nsec / 1000000ULL;
+}
+
+/*
+  strict simulated-peripheral lockstep: do not return (and so do not
+  advance the simulation) until every registered peripheral has
+  acknowledged consuming the state packet with this timestamp.  A
+  peripheral which stops responding for a wall-clock second is
+  presumed dead (the harness SIGTERMs them with no notice) and is
+  evicted; it re-registers on its next ack
+ */
+void SITL_State::wait_periph_acks(const uint64_t timestamp_us)
+{
+    while (true) {
+        bool all_acked = true;
+        const uint64_t now_ms = wall_millis();
+        for (uint8_t i=0; i<num_mcast_periphs; ) {
+            if (mcast_periphs[i].last_ack_us >= timestamp_us) {
+                i++;
+                continue;
+            }
+            if (now_ms - mcast_periphs[i].last_heard_ms > PERIPH_EVICT_TIMEOUT_MS) {
+                ::fprintf(stderr, "SITL: evicting unresponsive peripheral %s:%u from lockstep\n",
+                          inet_ntoa(mcast_periphs[i].addr.sin_addr),
+                          (unsigned)ntohs(mcast_periphs[i].addr.sin_port));
+                if (num_evicted_periphs < MAX_MCAST_PERIPHS) {
+                    evicted_periphs[num_evicted_periphs].addr = mcast_periphs[i].addr;
+                    evicted_periphs[num_evicted_periphs].evicted_ms = now_ms;
+                    num_evicted_periphs++;
+                }
+                mcast_periphs[i] = mcast_periphs[--num_mcast_periphs];
+                continue;
+            }
+            all_acked = false;
+            i++;
+        }
+        if (all_acked) {
+            return;
+        }
+        struct pollfd pfd { servo_in_fd, POLLIN, 0 };
+        poll(&pfd, 1, PERIPH_ACK_POLL_MS);
+        check_servo_input();
     }
 }
 

@@ -9253,11 +9253,21 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.restart_SITL_frame(
             'quadplane-PPP',
             extra_configure_args=['--debug'],
-            customisations=['--serial5=tcp:{port}'],
+            # lockstep: the periph's PPP endpoint must not fall behind
+            # simulation time when the runner is loaded
+            customisations=['--serial5=tcp:{port}', '--sim-periph-lockstep'],
         )
 
-        # Plane should announce PPP backend init.
-        self.wait_statustext("PPP[0]: started", check_context=True, timeout=30)
+        # Plane should announce PPP backend init.  Time this on the wall
+        # clock: bringing the link up runs pppd, connects a TCP socket to
+        # the AP_Periph child and negotiates LCP/IPCP, none of which is
+        # paced by the simulation.  Budgeted in simulated time this
+        # allowed 0.9s of real time for all of that before giving up:
+        #     PPPPeriph ... Failed to receive text: ppp[0]: started
+        # with the plane having booted cleanly right up to "ArduPilot
+        # Ready" in the meantime.
+        self.wait_statustext("PPP[0]: started", check_context=True, timeout=30,
+                             wallclock_timeout=True)
 
         # Pre-IPCP, the first NET: IP message is the static fallback
         # (192.168.x.x). Wait for an IPCP-assigned address - matched as any
@@ -9267,7 +9277,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # an assigned address on the plane implicitly proves both ends of
         # the link are running.
         m = self.wait_statustext(r"NET: IP\s+10\.\d+\.\d+\.\d+",
-                                 check_context=True, regex=True, timeout=30)
+                                 check_context=True, regex=True, timeout=30,
+                                 wallclock_timeout=True)
         self.progress("PPP link established: %s" % m.text.strip())
 
     def tests1c(self):

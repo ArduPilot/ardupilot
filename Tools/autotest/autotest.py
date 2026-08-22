@@ -500,9 +500,9 @@ def run_step(step):
                               "customisation" : customisation,
                               "param_file" : param_file}
                 supplementary_binaries.append(sup_binary)
-            # we are running in conjunction with a supplementary app
-            # can't have speedup
-            opts.speedup = 1.0
+            # note that speedup is permitted here: the vehicle SITL is
+            # started with --sim-periph-lockstep so it cannot outrun
+            # the supplementary peripherals
             break
 
     fly_opts = {
@@ -835,6 +835,15 @@ def list_subtests_for_vehicle(vehicle_type):
 if __name__ == "__main__":
     ''' main program '''
     os.environ['PYTHONUNBUFFERED'] = '1'
+
+    # pin SITL's multicast traffic (the simulation state a periph
+    # consumes, and multicast CAN) to the loopback interface.  By
+    # default it follows the routing table, which means it goes out
+    # whichever interface has the default route and stops working when
+    # that route is not up or is not multicast-capable; a test should
+    # not pass or fail on the state of the machine's network.  Every
+    # SITL we start inherits this.
+    os.environ.setdefault('SITL_MULTICAST_IF_ADDR', '127.0.0.1')
 
     if sys.platform != "darwin":
         os.putenv('TMPDIR', util.reltopdir('tmp'))

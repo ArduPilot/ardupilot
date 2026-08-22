@@ -10291,8 +10291,24 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Starting SITL", send_statustext=False)
         if binary is None:
             binary = self.binary
+        if self.sup_binaries:
+            # the vehicle must not advance its simulation past state
+            # the supplementary peripherals have yet to consume, or
+            # peripheral data streams stall in simulation time whenever
+            # a peripheral process is starved of wall-clock time
+            customisations = list(start_sitl_args.get("customisations") or [])
+            customisations.append("--sim-periph-lockstep")
+            start_sitl_args["customisations"] = customisations
         self.sitl = util.start_SITL(binary, **start_sitl_args)
         self.expect_list_add(self.sitl)
+        # stop the previous start's supplementary programs before we
+        # forget them.  Simply resetting the list left them running,
+        # reparented to init when their test finished - and a simulated
+        # peripheral which outlives its test carries on talking on the
+        # CAN bus, during precisely the tests which care about
+        # peripherals:
+        if getattr(self, "sup_prog", None):
+            self.stop_sup_program()
         self.sup_prog = []
         count = 0
         for sup_binary in self.sup_binaries:
@@ -10317,11 +10333,16 @@ Also, ignores heartbeats not from our target system'''
     def stop_sup_program(self, instance=None):
         self.progress("Stopping supplementary program")
         if instance is None:
-            # close all sup programs
-            for prog in self.sup_prog:
+            # close all sup programs.  Iterate over a copy: removing
+            # from the list being walked skips every other entry, so
+            # this closed only half of them - with the usual two
+            # peripherals, exactly one, and the other was left running.
+            for prog in list(self.sup_prog):
+                if prog is None:
+                    continue
                 self.expect_list_remove(prog)
-                self.sup_prog.remove(prog)
                 util.pexpect_close(prog)
+            self.sup_prog = []
         else:
             # close only the instance passed
             prog = self.sup_prog[instance]
