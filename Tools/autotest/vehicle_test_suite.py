@@ -13662,6 +13662,8 @@ Also, ignores heartbeats not from our target system'''
             mav = self.mav
         tstart = self.get_sim_time()
         count = 0
+        first_t = None
+        last_t = None
         while self.get_sim_time_cached() < tstart + timeout:
             m = mav.recv_match(
                 type=victim_message,
@@ -13670,12 +13672,23 @@ Also, ignores heartbeats not from our target system'''
             )
             if m is not None:
                 count += 1
+                last_t = self.get_sim_time_cached()
+                if first_t is None:
+                    first_t = last_t
             if mav != self.mav:
                 self.drain_mav(self.mav)
 
         time_delta = self.get_sim_time_cached() - tstart
         self.progress("%s count after %f seconds: %u" %
                       (victim_message, time_delta, count))
+        if count >= 2 and last_t > first_t:
+            # rate over the interval between the first and last message
+            # actually received: dividing the count by the fixed window
+            # systematically undercounts when the link lags the
+            # simulation, because the loop stops reading at the deadline
+            # and never counts the in-flight tail - a --parallel=32 run
+            # measured a 2Hz stream at 1.9Hz that way
+            return (count - 1) / (last_t - first_t)
         return count/time_delta
 
     def rate_to_interval_us(self, rate):
