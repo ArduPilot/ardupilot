@@ -11554,7 +11554,13 @@ Also, ignores heartbeats not from our target system'''
         # leaving the item at its old value.  On an unloaded machine the
         # download is over before any test notices; on one running the
         # suite --parallel it is not.
-        mavproxy.expect("Saved [0-9]+ parameters to")
+        #
+        # The budget is wall-clock and must cover the tests which pin
+        # SIM_SPEEDUP=1 before starting MAVProxy: a passing
+        # TestLogDownloadMAVProxyCAN run under --parallel=32 took 39.6s
+        # to get here, and Sub's TestLogDownloadMAVProxyNetwork blew
+        # pexpect's default 60s under the same load.
+        mavproxy.expect("Saved [0-9]+ parameters to", timeout=180)
 
         self._mavproxy = mavproxy  # so we can clean up after tests....
         return mavproxy
