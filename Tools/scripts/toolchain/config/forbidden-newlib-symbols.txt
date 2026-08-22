@@ -1,0 +1,54 @@
+# Public newlib entry points that flight firmware must never resolve.
+#
+# The sanitizer removes the complete archive member defining each symbol. Keep
+# one symbol per line; blank lines and lines beginning with '#' are ignored.
+
+# Process termination and host interaction.
+abort
+exit
+_Exit
+quick_exit
+system
+
+# Heap allocation and backing storage. ArduPilot supplies the allocation
+# interface it permits and must not fall through to newlib's implementation.
+_sbrk
+_sbrk_r
+_malloc_r
+_calloc_r
+_free_r
+realloc
+
+# Buffered file I/O is not permitted on flight controllers.
+ftell
+fopen
+fflush
+fwrite
+fread
+fputs
+fgets
+clearerr
+fseek
+ferror
+fclose
+tmpfile
+getc
+ungetc
+feof
+freopen
+remove
+vfprintf
+vfprintf_r
+fscanf
+
+# Host time and process-context APIs.
+_gettimeofday
+_times
+_times_r
+_gettimeofday_r
+time
+clock
+setjmp
+
+# Uses process-global state and is not thread-safe.
+gmtime
