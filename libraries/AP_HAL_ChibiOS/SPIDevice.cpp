@@ -414,9 +414,7 @@ void SPIBus::start_peripheral(void)
     spi_started = true;
 }
 
-/*
-  restore the SPI clock and SCK pin without using RTOS or DMA services
- */
+/* restore the SPI clock without using RTOS or DMA services */
 void SPIBus::crashdump_prepare_peripheral(void)
 {
     const auto &sbus = spi_devices[bus];
@@ -450,8 +448,13 @@ void SPIBus::crashdump_prepare_peripheral(void)
         rccEnableSPI6(true);
     }
 #endif
+}
+
+/* restore SCK after the crash dump path has configured the SPI peripheral */
+void SPIBus::crashdump_restore_sck(void)
+{
 #if HAL_SPI_SCK_SAVE_RESTORE
-    palSetLineMode(sbus.sck_line, sck_mode);
+    palSetLineMode(spi_devices[bus].sck_line, sck_mode);
 #endif
 }
 
