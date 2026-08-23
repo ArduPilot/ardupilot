@@ -56,6 +56,7 @@ public:
 
     // restore hardware state needed by the polled crash dump path
     void crashdump_prepare_peripheral(void);
+    void crashdump_restore_sck(void);
 
 private:
     bool spi_started;
@@ -155,6 +156,10 @@ public:
     void crashdump_prepare_peripheral()
     {
         bus.crashdump_prepare_peripheral();
+    }
+    void crashdump_restore_sck()
+    {
+        bus.crashdump_restore_sck();
     }
 
     ioline_t get_chip_select_line() const { return device_desc.pal_line; }

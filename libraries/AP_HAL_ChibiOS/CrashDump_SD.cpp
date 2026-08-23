@@ -708,6 +708,7 @@ static void spi_prepare_peripheral()
     bouncebuffer_abort(sd_spi_bouncebuffer);
     sd_spi_device->crashdump_deassert_all_cs();
     spi_configure(sd_spi_low_config1, sd_spi_low_config2);
+    sd_spi_device->crashdump_restore_sck();
 }
 
 static bool spi_reconnect_card()
@@ -1150,6 +1151,35 @@ static bool write_blocks(uint32_t sector, uint32_t blocks)
 
 #endif // CRASHDUMP_SD_SPI
 
+/* Refresh the bounce buffer that normal transfers may have resized. */
+static bool refresh_dma_buffer()
+{
+    struct bouncebuffer_t *bouncebuffer;
+#if CRASHDUMP_SD_SPI
+    bouncebuffer = sd_spi_bouncebuffer;
+#else
+    bouncebuffer = sd_sdcp == nullptr ? nullptr : sd_sdcp->bouncebuffer;
+#endif
+
+    if (bouncebuffer == nullptr) {
+        sd_dma_buf = nullptr;
+        sd_dma_buf_size = 0;
+        return false;
+    }
+
+    uint8_t *const dma_buf = bouncebuffer->dma_buf;
+    const uint32_t size = bouncebuffer->size & ~(MMCSD_BLOCK_SIZE - 1U);
+    if (dma_buf == nullptr || size < MMCSD_BLOCK_SIZE) {
+        sd_dma_buf = nullptr;
+        sd_dma_buf_size = 0;
+        return false;
+    }
+
+    sd_dma_buf = dma_buf;
+    sd_dma_buf_size = size;
+    return true;
+}
+
 static uint32_t accumulator_capacity()
 {
     uint32_t sector;
@@ -1404,7 +1434,7 @@ uint32_t crashdump_sd_max_size()
 
 bool crashdump_sd_start()
 {
-    if (!sd_is_ready || !sd_fault_write_available || sd_dma_buf == nullptr
+    if (!sd_is_ready || !sd_fault_write_available
 #if CRASHDUMP_SD_SPI
         || sd_mmcp == nullptr || sd_spi_device == nullptr || sd_spip == nullptr
 #else
@@ -1417,6 +1447,9 @@ bool crashdump_sd_start()
     // Only one fault may consume the reserve between filesystem mounts.
     sd_fault_write_available = false;
     if (!abort_transfer()) {
+        return false;
+    }
+    if (!refresh_dma_buffer()) {
         return false;
     }
 
