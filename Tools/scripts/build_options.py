@@ -231,6 +231,7 @@ BUILD_OPTIONS = [
     Feature('Compass', 'MMC5XX3', 'AP_COMPASS_MMC5XX3_ENABLED', 'Enable MMC5XX3 compasses', 1, None),
     Feature('Compass', 'QMC5883L', 'AP_COMPASS_QMC5883L_ENABLED', 'Enable QMC5883L compasses', 1, None),
     Feature('Compass', 'QMC5883P', 'AP_COMPASS_QMC5883P_ENABLED', 'Enable QMC5883P compasses', 1, None),
+    Feature('Compass', 'QMC6309', 'AP_COMPASS_QMC6309_ENABLED', 'Enable QMC6309 compasses', 1, None),
     Feature('Compass', 'RM3100', 'AP_COMPASS_RM3100_ENABLED', 'Enable RM3100 compasses', 1, None),
     Feature('Compass', 'DRONECAN_COMPASS', 'AP_COMPASS_DRONECAN_ENABLED', 'Enable DroneCAN compasses', 0, "DroneCAN"),
     Feature('Compass', 'DRONECAN_COMPASS_HIRES', 'AP_COMPASS_DRONECAN_HIRES_ENABLED', 'Enable DroneCAN HiRes compasses for survey logging', 0, "DroneCAN,DRONECAN_COMPASS"), # noqa
