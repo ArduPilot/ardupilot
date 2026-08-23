@@ -3240,9 +3240,12 @@ MAV_RESULT GCS_MAVLINK::set_message_interval(uint32_t msg_id, int32_t interval_u
         interval_ms = interval_us / 1000;
     }
 #if AP_SCHEDULER_ENABLED
-    if (interval_ms != 0 && cap_message_interval(interval_ms) > interval_ms) {
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Requested rate for message ID %u too fast. Increase SCHED_LOOP_RATE", (unsigned int)msg_id);
-        return MAV_RESULT_DENIED;
+    if (interval_ms != 0) {
+        const uint16_t capped = cap_message_interval(interval_ms);
+        if (capped > interval_ms) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Rate for msg %u clamped to scheduler max (%u ms)", (unsigned int)msg_id, (unsigned int)capped);
+            interval_ms = capped;
+        }
     }
 #endif
     if (set_ap_message_interval(id, interval_ms)) {
