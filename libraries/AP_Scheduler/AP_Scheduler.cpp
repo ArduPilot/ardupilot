@@ -25,6 +25,8 @@
 
 #include "AP_Scheduler.h"
 
+#include <stdlib.h>
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_Vehicle/AP_Vehicle.h>
@@ -179,6 +181,17 @@ void AP_Scheduler::tick(void)
  */
 static void fill_nanf_stack(void)
 {
+    // A debug aid, and a costly one: 4KB of NaNs written before EVERY
+    // scheduler task, measured at ~4% of total CPU and scaling linearly
+    // with simulation speedup. Perf-focused runs (multi-vehicle clusters
+    // chasing high speedups) can opt out; the default is unchanged.
+    static int8_t enabled = -1;
+    if (enabled == -1) {
+        enabled = getenv("SITL_DISABLE_STACK_NANF") == nullptr;
+    }
+    if (!enabled) {
+        return;
+    }
     float v[1024];
     fill_nanf(v, ARRAY_SIZE(v));
 }
