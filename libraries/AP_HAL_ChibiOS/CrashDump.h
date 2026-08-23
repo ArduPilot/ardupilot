@@ -108,8 +108,7 @@ const CrashCatcherMemoryRegion *crashdump_flash_memory_regions(bool active);
 void crashdump_flash_write(const void *memory,
                            CrashCatcherElementSizes element_size,
                            size_t element_count);
-CrashCatcherReturnCodes crashdump_flash_end(CrashCatcherReturnCodes return_code,
-        bool is_breakpoint);
+void crashdump_flash_end(void);
 #endif
 
 #ifdef __cplusplus

@@ -266,8 +266,7 @@ void crashdump_flash_write(const void *memory,
     }
 }
 
-CrashCatcherReturnCodes crashdump_flash_end(CrashCatcherReturnCodes return_code,
-        bool is_breakpoint)
+void crashdump_flash_end(void)
 {
     if (dump_size + buf_off + sizeof(dump_size) >= stm32_crash_dump_max_size()) {
         memset(&dump_buffer[sizeof(dump_buffer) - sizeof(dump_size)],
@@ -299,10 +298,6 @@ CrashCatcherReturnCodes crashdump_flash_end(CrashCatcherReturnCodes return_code,
     }
 
     stm32_flash_keep_unlocked(false);
-    if (return_code == CRASH_CATCHER_TRY_AGAIN && is_breakpoint) {
-        return CRASH_CATCHER_EXIT;
-    }
-    return return_code;
 }
 
 #endif // AP_CRASHDUMP_ENABLED && AP_CRASHDUMP_FLASH_ENABLED
