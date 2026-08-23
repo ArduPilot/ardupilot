@@ -41,16 +41,21 @@ static CrashCatcherInfo g_info;
 #endif
 
 #if AP_CRASHDUMP_FLASH_ENABLED
-CRASH_CATCHER_TEST_WRITEABLE CrashCatcherReturnCodes g_crashCatcherDumpEndReturn = CRASH_CATCHER_TRY_AGAIN;
-#endif
-
-#if AP_CRASHDUMP_FLASH_ENABLED
 static bool do_flash_crash_dump = true;
 #endif
 #if CRASHDUMP_SD_ENABLED
 static bool do_sd_crash_dump = false;
 static uint32_t sd_dump_size = 0;
 #endif
+
+static void wait_for_watchdog_or_reset() NORETURN;
+static void wait_for_watchdog_or_reset()
+{
+    if (!stm32_watchdog_enabled()) {
+        NVIC_SystemReset();
+    }
+    while (true) {}
+}
 
 const CrashCatcherMemoryRegion* CrashCatcher_GetMemoryRegions(void)
 {
@@ -150,21 +155,19 @@ CrashCatcherReturnCodes CrashCatcher_DumpEnd(void)
             crashdump_sd_end(sd_dump_size);
         }
         do_sd_crash_dump = false;
-        // Let the watchdog reboot us so the saved watchdog state is restored.
-        while (true) {}
     }
 #endif
 #if AP_CRASHDUMP_FLASH_ENABLED
     if (do_flash_crash_dump) {
-        return crashdump_flash_end(g_crashCatcherDumpEndReturn, g_info.isBKPT);
+        crashdump_flash_end();
+        do_flash_crash_dump = false;
     }
-    do_flash_crash_dump = false;
-    return CRASH_CATCHER_TRY_AGAIN;
-#else
-    // No configured backend accepted the dump. Let the watchdog reboot us so
-    // the saved watchdog state is restored.
-    while (true) {}
+    if (g_info.isBKPT) {
+        return CRASH_CATCHER_EXIT;
+    }
 #endif
+    // Preserve watchdog-reset semantics when active; otherwise reset now.
+    wait_for_watchdog_or_reset();
 }
 
 #endif // AP_CRASHDUMP_ENABLED
