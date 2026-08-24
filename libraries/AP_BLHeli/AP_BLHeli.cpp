@@ -571,7 +571,7 @@ void AP_BLHeli::msp_process_command(void)
             uint8_t nmotors = msp.dataSize / 2;
             debug("MSP_SET_MOTOR %u", nmotors);
             motors_disabled_mask = SRV_Channels::get_disabled_channel_mask();
-            SRV_Channels::set_disabled_channel_mask(0xFFFF);
+            SRV_Channels::set_disabled_channel_mask(UINT32_MAX);
             motors_disabled = true;
             EXPECT_DELAY_MS(1000);
             hal.rcout->cork();
@@ -1531,26 +1531,53 @@ void AP_BLHeli::init(uint32_t mask, AP_HAL::RCOutput::output_mode otype)
 #if defined(HAL_WITH_BIDIR_DSHOT) || HAL_WITH_IO_MCU_BIDIR_DSHOT
     hal.rcout->set_bidir_dshot_mask(uint32_t(channel_bidir_dshot_mask.get()) & digital_mask);
 #endif
-    // add motors from channel mask
-    for (uint8_t i=0; i<16 && num_motors < max_motors; i++) {
-        if (digital_mask & (1U<<i)) {
-            motor_map[num_motors] = i;
+    // Count the motors from the full channel mask. The passthrough mapping
+    // below decides which outputs to expose when more than max_motors are
+    // configured.
+    const uint32_t available_mask = digital_mask;
+    for (uint8_t i=0; i<32 && num_motors < max_motors; i++) {
+        if (available_mask & (1U<<i)) {
             num_motors++;
         }
     }
     motor_mask = mask;
 
-    // Cache the passthrough mapping. The k_motorN lookup preserves motor
-    // numbering on multicopters; motor_map handles heli, rover and frames
-    // with non-contiguous motor functions.
+    // Cache the passthrough mapping. Prefer k_motorN functions that are in
+    // the full available mask before limiting the exposed ESCs, then fill gaps
+    // with unused entries for heli, rover and frames with non-contiguous motor
+    // functions.
     for (uint8_t i = 0; i < num_motors; i++) {
-        passthrough_map[i] = motor_map[i];
-        if (initial_channel_mask == 0) {
+        passthrough_map[i] = UINT8_MAX;
+    }
+
+    uint32_t assigned_mask = 0;
+    if (initial_channel_mask == 0) {
+        for (uint8_t i = 0; i < num_motors; i++) {
             uint8_t output_chan;
-            if (SRV_Channels::find_channel(SRV_Channels::get_motor_function(i), output_chan)) {
+            if (SRV_Channels::find_channel(SRV_Channels::get_motor_function(i), output_chan) &&
+                output_chan < 32 &&
+                (available_mask & (1U << output_chan)) != 0 &&
+                (assigned_mask & (1U << output_chan)) == 0) {
                 passthrough_map[i] = output_chan;
+                assigned_mask |= 1U << output_chan;
             }
         }
+    }
+
+    for (uint8_t i = 0; i < num_motors; i++) {
+        if (passthrough_map[i] == UINT8_MAX) {
+            for (uint8_t output_chan = 0; output_chan < 32; output_chan++) {
+                if ((available_mask & (1U << output_chan)) == 0) {
+                    continue;
+                }
+                if ((assigned_mask & (1U << output_chan)) == 0) {
+                    passthrough_map[i] = output_chan;
+                    assigned_mask |= 1U << output_chan;
+                    break;
+                }
+            }
+        }
+        motor_map[i] = passthrough_map[i];
         passthrough_function[i] = uint16_t(SRV_Channels::channel_function(passthrough_map[i]));
     }
     debug("ESC: %u motors mask=0x%08lx", num_motors, digital_mask);
@@ -1593,7 +1620,7 @@ void AP_BLHeli::read_telemetry_packet(void)
     uint16_t new_rpm = ((buf[7]<<8) | buf[8]) * 200 / motor_poles;
     const uint8_t motor_idx = motor_map[last_telem_esc];
     // we have received valid data, mark the ESC as now active
-    hal.rcout->set_active_escs_mask(1<<motor_idx);
+    hal.rcout->set_active_escs_mask(1U << motor_idx);
     update_rpm(motor_idx, new_rpm);
 
     TelemetryData t {
