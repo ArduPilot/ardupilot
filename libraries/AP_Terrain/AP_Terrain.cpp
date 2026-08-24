@@ -26,6 +26,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <AP_Rally/AP_Rally.h>
 
 extern const AP_HAL::HAL& hal;
@@ -115,6 +116,13 @@ AP_Terrain::AP_Terrain() :
 bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 {
     if (!allocate()) {
+        return false;
+    }
+
+    // a lat/lng of 0,0 indicates an uninitialised location; callers
+    // should never ask for terrain height there
+    if (loc.lat == 0 && loc.lng == 0) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return false;
     }
 
