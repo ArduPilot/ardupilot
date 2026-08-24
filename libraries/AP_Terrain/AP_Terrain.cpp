@@ -198,6 +198,10 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool extrapolate)
 {
     const AP_AHRS &ahrs = AP::ahrs();
+    if (!ahrs.home_is_set()) {
+        // we don't know where home is
+        return false;
+    }
 
     float height_home, height_loc;
     if (!height_amsl(ahrs.get_home(), height_home)) {
@@ -296,6 +300,9 @@ bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude,
       adjust for height of home above terrain height at home
      */
     const AP_AHRS &ahrs = AP::ahrs();
+    if (!ahrs.home_is_set()) {
+        return false;
+    }
     const auto &home = ahrs.get_home();
     int32_t home_height_amsl_cm = 0;
     UNUSED_RESULT(home.get_alt_cm(Location::AltFrame::ABSOLUTE, home_height_amsl_cm));
@@ -368,7 +375,9 @@ void AP_Terrain::update(void)
 
     // try to ensure the home location is populated
     float height;
-    height_amsl(ahrs.get_home(), height);
+    if (ahrs.home_is_set()) {
+        height_amsl(ahrs.get_home(), height);
+    }
 
     // update the cached current location height
     Location loc;
