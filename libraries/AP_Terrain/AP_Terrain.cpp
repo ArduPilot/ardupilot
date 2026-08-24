@@ -198,6 +198,10 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool extrapolate)
 {
     const AP_AHRS &ahrs = AP::ahrs();
+    if (!ahrs.home_is_set()) {
+        // we don't know where home is
+        return false;
+    }
 
     float height_home, height_loc;
     if (!height_amsl(ahrs.get_home(), height_home)) {
@@ -373,7 +377,9 @@ void AP_Terrain::update(void)
 
     // try to ensure the home location is populated
     float height;
-    height_amsl(ahrs.get_home(), height);
+    if (ahrs.home_is_set()) {
+        height_amsl(ahrs.get_home(), height);
+    }
 
     // update the cached current location height
     Location loc;
