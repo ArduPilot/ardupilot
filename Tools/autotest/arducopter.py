@@ -1714,6 +1714,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_mode("RTL")
         self.wait_rtl_complete()
 
+    def TerrainTakeoffNoLatLon(self):
+        '''arm with a terrain-frame takeoff which has no lat/lon (issue 34016)'''
+        # start with no terrain data on board, so it must all be
+        # fetched from the GCS:
+        self.remove_ardupilot_terrain_cache()
+        self.reboot_sitl()
+
+        self.install_terrain_handlers_context()
+
+        # a takeoff to 20m above terrain with no lat/lon, followed by
+        # an RTL, also in the terrain frame.  Nothing in this mission
+        # has a location.  ArduPilot does not report the RTL's frame
+        # back on download, so upload without the usual readback
+        # comparison.
+        items = self.create_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20, {
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, {
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            }),
+        ])
+        self.upload_using_mission_protocol(mavutil.mavlink.MAV_MISSION_TYPE_MISSION, items)
+
+        # allow arming in AUTO, and start the mission's takeoff
+        # command before we arm, as a GCS user would:
+        self.set_parameter('AUTO_OPTIONS', 3)
+        self.change_mode('AUTO')
+
+        self.wait_ready_to_arm(timeout=200)
+
     def CustomController(self, timeout=300):
         '''Test Custom Controller'''
         self.progress("Configure custom controller parameters")
@@ -16071,6 +16102,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.ThrottleFailsafePassthrough,
              self.GCSFailsafe,
              self.TerrainFailsafe,
+             self.TerrainTakeoffNoLatLon,
              self.CustomController,
              self.WPArcs,
              self.WPArcs2,
