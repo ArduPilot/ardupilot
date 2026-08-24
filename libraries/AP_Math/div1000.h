@@ -1,3 +1,5 @@
+#include <stdint.h>
+
 /*
   return 64 bit x / 1000
   faster than the normal gcc implementation using by about 3x
