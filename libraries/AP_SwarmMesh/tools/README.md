@@ -92,7 +92,7 @@ With velocity FF, a 4 drone diamond holds its formation to within ~0.2 m (lag bi
 
 The leader publishes a task ID, anchor, and shared task epoch but does not send vehicle setpoints. Each speller runs [`swarm_speller.lua`](../../AP_Scripting/applets/swarm_speller.lua), constructs the same ordered 5×7 bitmap cells, maps its persistent formation number to one cell, and computes its own motion. Two-follower cohorts transit at separate altitudes in scheduled waves. Only active cohorts publish the 5 Hz position state used by their local CBF filters, which bounds mesh load as the fleet grows.
 
-See [GLYPH_FORMATION_EXPERIMENT.md](GLYPH_FORMATION_EXPERIMENT.md) for the system model, CBF equations, uncertainty treatment, scheduling model, measurement method, results, and limitations.
+See [Glyph_Formation_Experiment.md](Glyph_Formation_Experiment.md) for the system model, CBF equations, uncertainty treatment, scheduling model, measurement method, results, and limitations.
 
 ```bash
 # One speller per occupied bitmap cell; GSoC creates 56 spellers + 1 leader.
