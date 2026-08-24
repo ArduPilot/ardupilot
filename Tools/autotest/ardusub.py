@@ -46,6 +46,7 @@ class MagCal():
     NEVER = 2
     AFTER_FIRST_CLIMB = 3
     ALWAYS = 4
+    GROUND_AND_INFLIGHT = 7
 
 
 # Values for XKFS.MAG_FUSION
@@ -53,6 +54,7 @@ class MagFuseSel():
     NOT_FUSING = 0
     FUSE_YAW = 1
     FUSE_MAG = 2
+    FUSE_MAG_ANCHORED = 3
 
 
 class AutoTestSub(vehicle_test_suite.TestSuite):
@@ -1052,6 +1054,23 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.wait_ready_to_arm()
         self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
+
+        # GROUND_AND_INFLIGHT: anchor yaw to the compass while disarmed and stationary, holding the
+        # heading while the field states are learned; the anchor releases on arm and returns on disarm
+        self.set_parameters({'EK3_MAG_CAL': MagCal.GROUND_AND_INFLIGHT})
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG_ANCHORED)
+        heading = self.get_heading()
+        self.delay_sim_time(30, reason="ground yaw to walk if unanchored")
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG_ANCHORED)
+        self.assert_heading(heading, accuracy=5, heading_source='VFR_HUD')
+        self.arm_vehicle()
+        self.delay_sim_time(1, reason="yaw anchor to release")
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
+        self.disarm_vehicle()
+        self.delay_sim_time(1, reason="yaw anchor to re-engage")
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG_ANCHORED)
 
     def INA3221(self):
         '''test INA3221 driver'''
