@@ -1427,6 +1427,14 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
  */
 bool AP_Logger::check_crash_dump_save(void)
 {
+#if defined(AP_CRASHDUMP_FATFS_ENABLED) && AP_CRASHDUMP_FATFS_ENABLED
+    if (hal.util->last_crash_dump_size() > 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Previous CrashDump: APM/CrashDump.DAT");
+        return true;
+    }
+    // The SD card may not be mounted yet, so keep checking.
+    return false;
+#else
     int fd = AP::FS().open("@SYS/crash_dump.bin", O_RDONLY);
     if (fd == -1) {
         // we don't have a crash dump file. The @SYS filesystem
@@ -1448,6 +1456,7 @@ bool AP_Logger::check_crash_dump_save(void)
     AP::FS().close(fd);
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Saved crash_dump.bin");
     return true;
+#endif
 }
 
 // thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
@@ -1606,6 +1615,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
         "@SYS/storage.bin",
         "@SYS/crash_dump.bin",
         "@ROMFS/defaults.parm",
+        "APM/CrashDump.DAT",
     };
     for (const auto *name : log_content_filenames) {
         log_file_content(at_arm_file_content, name);
@@ -1720,7 +1730,7 @@ void AP_Logger::file_content_update(FileContent &file_content)
     /* this function is called at around 100Hz on average (tested on
        400Hz copter). We don't want to saturate the logging with file
        data, so we reduce the frequency of 64 byte file writes by a
-       factor of 10. For the file crash_dump.bin we dump 10x faster so
+       factor of 10. For crash dump files we dump 10x faster so
        we get it in a reasonable time (full dump of 450k in about 1
        minute)
     */
@@ -1733,7 +1743,8 @@ void AP_Logger::file_content_update(FileContent &file_content)
     if (file_content.fd == -1) {
         // open a new file
         file_content.fd  = AP::FS().open(file->filename, O_RDONLY);
-        file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0;
+        file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0 ||
+                            strcmp(file->filename, "APM/CrashDump.DAT") == 0;
         if (file_content.fd == -1) {
             file_content.remove_and_free(file);
             return;
