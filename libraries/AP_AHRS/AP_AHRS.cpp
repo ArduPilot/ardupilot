@@ -174,35 +174,11 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("EKF_TYPE",  14, AP_AHRS, _ekf_type, HAL_AHRS_EKF_TYPE_DEFAULT),
 
-    // @Param: CUSTOM_ROLL
-    // @DisplayName: Board orientation roll offset
-    // @Description: Autopilot mounting position roll offset. Positive values = roll right, negative values = roll left. This parameter is only used when AHRS_ORIENTATION is set to CUSTOM.
-    // @Range: -180 180
-    // @Units: deg
-    // @Increment: 1
-    // @User: Advanced
+    // index 15 was CUSTOM_ROLL
 
-    // index 15
+    // index 16 was CUSTOM_PIT
 
-    // @Param: CUSTOM_PIT
-    // @DisplayName: Board orientation pitch offset
-    // @Description: Autopilot mounting position pitch offset. Positive values = pitch up, negative values = pitch down. This parameter is only used when AHRS_ORIENTATION is set to CUSTOM.
-    // @Range: -180 180
-    // @Units: deg
-    // @Increment: 1
-    // @User: Advanced
-
-    // index 16
-
-    // @Param: CUSTOM_YAW
-    // @DisplayName: Board orientation yaw offset
-    // @Description: Autopilot mounting position yaw offset. Positive values = yaw right, negative values = yaw left. This parameter is only used when AHRS_ORIENTATION is set to CUSTOM.
-    // @Range: -180 180
-    // @Units: deg
-    // @Increment: 1
-    // @User: Advanced
-
-    // index 17
+    // index 17 was CUSTOM_YAW
 
     // @Param: OPTIONS
     // @DisplayName: Optional AHRS behaviour
