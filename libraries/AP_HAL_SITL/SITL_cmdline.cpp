@@ -109,7 +109,7 @@ void SITL_State::_usage(void)
            "\t--serial8 device         set device string for SERIAL8\n"
            "\t--serial9 device         set device string for SERIAL9\n"
            "\t--uartA device           alias for --serial0 (do not use)\n"
-           "\t--net-device NAME:PORT   attach simulated device NAME to TCP port PORT rather than to a serial port\n"
+           "\t--net-device NAME:PORT[,udp]   attach simulated device NAME to TCP (or, with ',udp', UDP) port PORT rather than to a serial port\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
            "\t--rc-in-port PORT        set port num for rc in\n"
            "\t--sim-address ADDR       set address string for simulator\n"
@@ -267,7 +267,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     struct AP_Param::defaults_table_struct temp_cmdline_param{};
 
 #if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
-    // NAME:TCPPORT strings from --net-device options:
+    // NAME:PORT[,udp] strings from --net-device options:
     const char *net_device_strings[4];
     uint8_t num_net_device_strings = 0;
 #endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
