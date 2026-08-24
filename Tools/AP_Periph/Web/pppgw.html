@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ArduPilot PPP Gateway</title>
+  <style>
+:root {
+  color-scheme: light dark;
+  --accent: #2477c3;
+  --background: #f3f5f7;
+  --card: #fff;
+  --border: #d6dce1;
+  --muted: #5e6973;
+  --text: #20262c;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #171a1d;
+    --card: #22272b;
+    --border: #424a51;
+    --muted: #a9b2ba;
+    --text: #edf0f2;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 0;
+}
+header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem max(1rem, calc((100% - 1100px) / 2));
+}
+header h1 { font-size: 1.35rem; margin: 0; }
+header p { color: var(--muted); margin: .3rem 0 0; }
+main { margin: 1.25rem auto; max-width: 1100px; padding: 0 1rem; }
+.tabs { border-bottom: 1px solid var(--border); display: flex; gap: .25rem; }
+.tab-button {
+  background: transparent;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: .75rem 1rem;
+}
+.tab-button.active { border-bottom-color: var(--accent); color: var(--text); font-weight: 600; }
+.tab-panel { display: none; padding-top: 1rem; }
+.tab-panel.active { display: block; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  padding: 1rem;
+}
+.status-table { border-collapse: collapse; width: 100%; }
+.status-table td { border-bottom: 1px solid var(--border); padding: .55rem .25rem; }
+.status-table td:first-child { color: var(--muted); width: 12rem; }
+.status-table tr:last-child td { border-bottom: 0; }
+button, input { font: inherit; }
+.button {
+  background: var(--accent);
+  border: 0;
+  border-radius: .3rem;
+  color: white;
+  cursor: pointer;
+  padding: .55rem .85rem;
+}
+.button.danger { background: #b42318; }
+.button:disabled { cursor: wait; opacity: .55; }
+.actions { align-items: center; display: flex; gap: .75rem; margin-top: 1rem; }
+.message { color: var(--muted); font-size: .9rem; }
+#filesystem-frame {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  height: 70vh;
+  min-height: 420px;
+  width: 100%;
+}
+.parameter-toolbar { align-items: center; display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
+#parameter-search {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .3rem;
+  color: var(--text);
+  flex: 1 1 18rem;
+  padding: .55rem .7rem;
+}
+.table-scroll { max-height: 65vh; overflow: auto; }
+.parameter-table { border-collapse: collapse; width: 100%; }
+.parameter-table th, .parameter-table td {
+  border-bottom: 1px solid var(--border);
+  padding: .45rem .5rem;
+  text-align: left;
+}
+.parameter-table th { background: var(--card); position: sticky; top: 0; z-index: 1; }
+.parameter-table tr.modified { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.parameter-name { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; }
+.parameter-value {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: .25rem;
+  color: var(--text);
+  max-width: 12rem;
+  padding: .35rem .45rem;
+  width: 100%;
+}
+.save-result { color: var(--muted); min-width: 4rem; }
+.error { color: #d92d20; }
+@media (max-width: 650px) {
+  .tab-button { padding: .65rem .55rem; }
+  .parameter-table th:nth-child(3), .parameter-table td:nth-child(3) { display: none; }
+  .status-table td:first-child { width: 9rem; }
+}
+  </style>
+  <script>
+const PARAMETER_URL = '/@PARAM/param.pck?withdefaults=1';
+const PARAMETER_TYPES = {
+  1: { name: 'int8', size: 1 },
+  2: { name: 'int16', size: 2 },
+  3: { name: 'int32', size: 4 },
+  4: { name: 'float', size: 4 }
+};
+let gatewayParameters = [];
+let statusLoading = false;
+let statusTimer = null;
+let rebootPending = false;
+
+document.addEventListener('DOMContentLoaded', pppgw_init);
+
+function pppgw_init() {
+  document.querySelectorAll('.tab-button').forEach(function(button) {
+    button.addEventListener('click', function() { select_tab(button.dataset.tab); });
+  });
+  document.getElementById('reboot-button').addEventListener('click', function() { reboot_gateway(false); });
+  document.getElementById('fwupdate-button').addEventListener('click', function() { reboot_gateway(true); });
+  document.getElementById('parameter-refresh').addEventListener('click', load_parameters);
+  document.getElementById('parameter-search').addEventListener('input', render_parameters);
+  const requestedTab = window.location.hash.substring(1);
+  const initialTab = ['status', 'filesystem', 'parameters'].includes(requestedTab) ? requestedTab : 'status';
+  select_tab(initialTab);
+  if (requestedTab) {
+    window.scrollTo(0, 0);
+  }
+}
+
+async function refresh_status() {
+  if (rebootPending) {
+    return;
+  }
+  statusLoading = true;
+  statusTimer = null;
+  try {
+    const response = await fetch('/@DYNAMIC/board_status.shtml', { cache: 'no-store' });
+    if (response.ok) {
+      const status = await response.text();
+      if (!rebootPending) {
+        document.getElementById('board_status').innerHTML = status;
+      }
+    }
+  } finally {
+    statusLoading = false;
+    if (!rebootPending && document.getElementById('tab-status').classList.contains('active')) {
+      statusTimer = window.setTimeout(refresh_status, 1000);
+    }
+  }
+}
+
+function select_tab(name) {
+  document.querySelectorAll('.tab-button').forEach(function(button) {
+    const active = button.dataset.tab === name;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach(function(panel) {
+    panel.classList.toggle('active', panel.id === 'tab-' + name);
+  });
+  window.history.replaceState(null, '', '#' + name);
+  if (name === 'status') {
+    if (!statusLoading && statusTimer === null) {
+      refresh_status();
+    }
+  } else if (statusTimer !== null) {
+    window.clearTimeout(statusTimer);
+    statusTimer = null;
+  }
+  if (name === 'filesystem') {
+    const frame = document.getElementById('filesystem-frame');
+    if (frame.dataset.src) {
+      frame.src = frame.dataset.src;
+      delete frame.dataset.src;
+    }
+  }
+  if (name === 'parameters' && gatewayParameters.length === 0) {
+    load_parameters();
+  }
+}
+
+async function reboot_gateway(holdInBootloader) {
+  const mode = holdInBootloader ? ' into firmware update mode' : '';
+  if (!window.confirm('Reboot the gateway' + mode + '?')) {
+    return;
+  }
+  rebootPending = true;
+  if (statusTimer !== null) {
+    window.clearTimeout(statusTimer);
+    statusTimer = null;
+  }
+  const buttons = document.querySelectorAll('.reboot-button');
+  const result = document.getElementById('reboot-result');
+  buttons.forEach(function(item) { item.disabled = true; });
+  result.classList.remove('error');
+  result.textContent = 'Sending reboot command...';
+  try {
+    const response = await fetch(holdInBootloader ? '/?FWUPDATE' : '/?REBOOT', {
+      cache: 'no-store',
+      headers: { 'X-ArduPilot-WebUI': 'action' }
+    });
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+    result.textContent = 'Reboot command sent';
+    window.setTimeout(function() { window.location.replace('/'); }, 2000);
+  } catch (error) {
+    rebootPending = false;
+    result.textContent = 'Reboot request failed: ' + error.message;
+    result.classList.add('error');
+    buttons.forEach(function(item) { item.disabled = false; });
+    if (!statusLoading && document.getElementById('tab-status').classList.contains('active')) {
+      refresh_status();
+    }
+  }
+}
+
+function read_parameter_value(view, state, type) {
+  const descriptor = PARAMETER_TYPES[type];
+  if (!descriptor || state.offset + descriptor.size > view.byteLength) {
+    throw new Error('Invalid packed parameter value');
+  }
+  let value;
+  if (type === 1) {
+    value = view.getInt8(state.offset);
+  } else if (type === 2) {
+    value = view.getInt16(state.offset, true);
+  } else if (type === 3) {
+    value = view.getInt32(state.offset, true);
+  } else {
+    value = view.getFloat32(state.offset, true);
+  }
+  state.offset += descriptor.size;
+  return value;
+}
+
+function parse_packed_parameters(buffer) {
+  const view = new DataView(buffer);
+  if (view.byteLength < 6) {
+    throw new Error('Packed parameter header is truncated');
+  }
+  const magic = view.getUint16(0, true);
+  if (magic !== 0x671b && magic !== 0x671c) {
+    throw new Error('Unsupported packed parameter format 0x' + magic.toString(16));
+  }
+  const withDefaults = magic === 0x671c;
+  const parameterCount = view.getUint16(2, true);
+  const totalCount = view.getUint16(4, true);
+  const decoder = new TextDecoder('utf-8');
+  const state = { offset: 6 };
+  const parameters = [];
+  let lastName = '';
+
+  while (parameters.length < parameterCount) {
+    while (state.offset < view.byteLength && view.getUint8(state.offset) === 0) {
+      state.offset++;
+    }
+    if (state.offset + 2 > view.byteLength) {
+      throw new Error('Packed parameter list ended early');
+    }
+    const typeAndFlags = view.getUint8(state.offset++);
+    const nameLengths = view.getUint8(state.offset++);
+    const type = typeAndFlags & 0x0f;
+    const flags = typeAndFlags >> 4;
+    const commonLength = nameLengths & 0x0f;
+    const suffixLength = (nameLengths >> 4) + 1;
+    if (!PARAMETER_TYPES[type] || commonLength > lastName.length ||
+        state.offset + suffixLength > view.byteLength) {
+      throw new Error('Invalid packed parameter entry');
+    }
+    const suffix = decoder.decode(new Uint8Array(buffer, state.offset, suffixLength));
+    state.offset += suffixLength;
+    const name = lastName.substring(0, commonLength) + suffix;
+    const value = read_parameter_value(view, state, type);
+    let defaultValue = null;
+    if (withDefaults) {
+      defaultValue = value;
+      if ((flags & 1) !== 0) {
+        defaultValue = read_parameter_value(view, state, type);
+      }
+    }
+    parameters.push({ name: name, value: value, defaultValue: defaultValue, type: type });
+    lastName = name;
+  }
+  if (parameterCount !== totalCount) {
+    throw new Error('Received ' + parameterCount + ' of ' + totalCount + ' parameters');
+  }
+  return parameters;
+}
+
+function format_parameter_value(value, type) {
+  if (type !== 4) {
+    return String(value);
+  }
+  return Number(value.toPrecision(9)).toString();
+}
+
+function parameter_is_modified(parameter) {
+  if (parameter.defaultValue === null) {
+    return false;
+  }
+  if (parameter.type === 4) {
+    return Math.fround(parameter.value) !== Math.fround(parameter.defaultValue);
+  }
+  return parameter.value !== parameter.defaultValue;
+}
+
+async function load_parameters() {
+  const refresh = document.getElementById('parameter-refresh');
+  const error = document.getElementById('parameter-error');
+  const count = document.getElementById('parameter-count');
+  refresh.disabled = true;
+  error.textContent = '';
+  error.classList.remove('error');
+  count.textContent = 'Loading parameters...';
+  try {
+    const response = await fetch(PARAMETER_URL, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+    gatewayParameters = parse_packed_parameters(await response.arrayBuffer());
+    document.getElementById('parameter-search').disabled = false;
+    render_parameters();
+  } catch (loadError) {
+    gatewayParameters = [];
+    document.getElementById('parameter-search').disabled = true;
+    render_parameters();
+    count.textContent = 'No parameters loaded';
+    error.textContent = 'Parameter load failed: ' + loadError.message;
+    error.classList.add('error');
+  } finally {
+    refresh.disabled = false;
+  }
+}
+
+function render_parameters() {
+  const body = document.getElementById('parameter-body');
+  const count = document.getElementById('parameter-count');
+  const query = document.getElementById('parameter-search').value.trim().toUpperCase();
+  const filtered = gatewayParameters.filter(function(parameter) {
+    return parameter.name.toUpperCase().includes(query);
+  });
+  body.replaceChildren();
+  filtered.forEach(function(parameter) {
+    const row = document.createElement('tr');
+    row.classList.toggle('modified', parameter_is_modified(parameter));
+
+    const name = document.createElement('td');
+    name.className = 'parameter-name';
+    name.textContent = parameter.name;
+    row.appendChild(name);
+
+    const valueCell = document.createElement('td');
+    const value = document.createElement('input');
+    value.className = 'parameter-value';
+    value.type = 'number';
+    value.step = parameter.type === 4 ? 'any' : '1';
+    value.value = format_parameter_value(parameter.value, parameter.type);
+    valueCell.appendChild(value);
+    row.appendChild(valueCell);
+
+    const defaultValue = document.createElement('td');
+    defaultValue.textContent = parameter.defaultValue === null ? 'Unavailable' :
+                               format_parameter_value(parameter.defaultValue, parameter.type);
+    row.appendChild(defaultValue);
+
+    const type = document.createElement('td');
+    type.textContent = PARAMETER_TYPES[parameter.type].name;
+    row.appendChild(type);
+
+    const action = document.createElement('td');
+    const save = document.createElement('button');
+    save.className = 'button';
+    save.type = 'button';
+    save.textContent = 'Save';
+    const result = document.createElement('span');
+    result.className = 'save-result';
+    save.addEventListener('click', function() {
+      save_parameter(parameter, value, save, result, row);
+    });
+    action.appendChild(save);
+    action.appendChild(document.createTextNode(' '));
+    action.appendChild(result);
+    row.appendChild(action);
+    body.appendChild(row);
+  });
+  count.textContent = filtered.length + ' of ' + gatewayParameters.length + ' parameters';
+}
+
+async function save_parameter(parameter, input, button, result, row) {
+  const valueText = input.value.trim();
+  const value = Number(valueText);
+  result.classList.remove('error');
+  if (valueText === '' || !Number.isFinite(value) ||
+      (parameter.type !== 4 && !Number.isInteger(value))) {
+    result.textContent = 'Invalid value';
+    result.classList.add('error');
+    return;
+  }
+  button.disabled = true;
+  result.textContent = 'Saving...';
+  try {
+    const query = new URLSearchParams({
+      name: parameter.name,
+      type: String(parameter.type),
+      value: String(value)
+    });
+    const response = await fetch('/@DYNAMIC/param_set.shtml?' + query.toString(), {
+      cache: 'no-store',
+      headers: { 'X-ArduPilot-WebUI': 'parameter-set' }
+    });
+    const reply = await response.json();
+    if (!response.ok || !reply.ok) {
+      throw new Error(reply.error || ('HTTP ' + response.status));
+    }
+    parameter.value = parameter.type === 4 ? Math.fround(reply.value) : reply.value;
+    input.value = format_parameter_value(parameter.value, parameter.type);
+    row.classList.toggle('modified', parameter_is_modified(parameter));
+    result.textContent = 'Saved';
+  } catch (saveError) {
+    result.textContent = saveError.message;
+    result.classList.add('error');
+  } finally {
+    button.disabled = false;
+  }
+}
+  </script>
+</head>
+<body>
+  <header>
+    <h1>ArduPilot PPP Gateway</h1>
+    <p>Gateway status and configuration</p>
+  </header>
+  <main>
+    <nav class="tabs" role="tablist" aria-label="Gateway sections">
+      <button class="tab-button active" data-tab="status" role="tab" aria-selected="true">Status</button>
+      <button class="tab-button" data-tab="filesystem" role="tab" aria-selected="false">Filesystem</button>
+      <button class="tab-button" data-tab="parameters" role="tab" aria-selected="false">Parameters</button>
+    </nav>
+
+    <section id="tab-status" class="tab-panel active" role="tabpanel">
+      <div class="card">
+        <div id="board_status">Loading status...</div>
+        <div class="actions">
+          <button id="reboot-button" class="button danger reboot-button" type="button">Reboot</button>
+          <button id="fwupdate-button" class="button reboot-button" type="button">Reboot for firmware update</button>
+          <span id="reboot-result" class="message"></span>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-filesystem" class="tab-panel" role="tabpanel">
+      <iframe id="filesystem-frame" data-src="/mnt/" title="Gateway filesystem"></iframe>
+    </section>
+
+    <section id="tab-parameters" class="tab-panel" role="tabpanel">
+      <div class="card">
+        <div class="parameter-toolbar">
+          <input id="parameter-search" type="search" placeholder="Search parameter names" autocomplete="off" disabled>
+          <button id="parameter-refresh" class="button" type="button">Refresh</button>
+          <span id="parameter-count" class="message">Parameters have not been loaded</span>
+        </div>
+        <div id="parameter-error" class="message"></div>
+        <div class="table-scroll">
+          <table class="parameter-table">
+            <thead><tr><th>Name</th><th>Value</th><th>Default</th><th>Type</th><th></th></tr></thead>
+            <tbody id="parameter-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

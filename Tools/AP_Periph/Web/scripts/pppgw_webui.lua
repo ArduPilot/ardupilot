@@ -183,38 +183,8 @@ local MIME_TYPES = {
  builtin dynamic pages
 --]]
 local DYNAMIC_PAGES = {
-
--- main home page
-["/"] = [[
-<!doctype html>
-<html lang="en">
-
-<head>
-    <meta charset="utf-8">
-    <title>ArduPilot</title>
-    <script>
-      <?lstr JS_LIBRARY['dynamic_load']?>
-    </script>
-</head>
-
-<h2>ArduPilot PPP Gateway</h2>
-<body onload="javascript: dynamic_load('board_status','/@DYNAMIC/board_status.shtml',1000)">
-
-  <div id="main">
-    <ul>
-      <li><a href="mnt/">Filesystem Access</a></li>
-      <li><a href="?FWUPDATE">Reboot for Firmware Update</a></li>
-    </ul>
-    </div>
-<h2>Controller Status</h2>
-  <div id="board_status"></div>
-</body>
-</html>
-]],    
-   
--- board status section on front page
-["@DYNAMIC/board_status.shtml"] = [[
-         <table>
+   ["@DYNAMIC/board_status.shtml"] = [[
+         <table class="status-table">
          <tr><td>Firmware</td><td><?lstr FWVersion:string() ?></td></tr>
          <tr><td>GIT Hash</td><td><?lstr FWVersion:hash() ?></td></tr>
          <tr><td>Uptime</td><td><?lstr hms_uptime() ?></td></tr>
@@ -226,42 +196,17 @@ local DYNAMIC_PAGES = {
 ]]
 }
 
-reboot_counter = 0
-
-local ACTION_PAGES = {
-   ["/?FWUPDATE"] = function()
-      periph:can_printf("Rebooting for firmware update")
-      reboot_counter = 50
-   end
+-- large browser assets stay in ROMFS instead of consuming the Lua heap
+local ROMFS_PAGES = {
+   ["/"] = "@ROMFS/pppgw.html"
 }
 
---[[
- builtin javascript library functions
---]]
-JS_LIBRARY = {
-   ["dynamic_load"] = [[
-      function dynamic_load(div_id, uri, period_ms) {
-          var xhr = new XMLHttpRequest();
-          xhr.open('GET', uri);
-          
-          xhr.setRequestHeader("Cache-Control", "no-cache, no-store, max-age=0");
-          xhr.setRequestHeader("Expires", "Tue, 01 Jan 1980 1:00:00 GMT");
-          xhr.setRequestHeader("Pragma", "no-cache");
-          
-          xhr.onload = function () {
-              if (xhr.status === 200) {
-                 var output = document.getElementById(div_id);
-                 if (uri.endsWith('.shtml') || uri.endsWith('.html')) {
-                  output.innerHTML = xhr.responseText;
-                 } else {
-                  output.textContent = xhr.responseText;
-                 }
-              }
-              setTimeout(function() { dynamic_load(div_id,uri, period_ms); }, period_ms);
-          }
-          xhr.send();
-     }
-]]
+local reboot_counter = nil
+local reboot_hold_in_bootloader = false
+
+local ACTION_PAGES = {
+   ["/?REBOOT"] = false,
+   ["/?FWUPDATE"] = true
 }
 
 if not sock_listen:bind("0.0.0.0", WEB_BIND_PORT:get()) then
@@ -306,6 +251,77 @@ end
 --]]
 local function startswith(str, s)
    return string.sub(str,1,#s) == s
+end
+
+-- decode a query-string component
+local function url_decode(str)
+   str = string.gsub(str, "+", " ")
+   return string.gsub(str, "%%(%x%x)", function(hex)
+      return string.char(tonumber(hex, 16))
+   end)
+end
+
+-- parse the key/value pairs from a HTTP query string
+local function parse_query(query)
+   local vars = {}
+   for pair in string.gmatch(query or "", "[^&]+") do
+      local key, value = string.match(pair, "^([^=]+)=(.*)$")
+      if key then
+         vars[url_decode(key)] = url_decode(value)
+      end
+   end
+   return vars
+end
+
+-- return a request header using a case-insensitive name match
+local function header_value(headers, name)
+   for key, value in pairs(headers) do
+      if string.lower(key) == name then
+         return value
+      end
+   end
+end
+
+-- create a one-parameter packed upload, preserving integer values exactly
+local function parameter_upload(name, parameter_type, value_string)
+   local value = tonumber(value_string)
+   local packed_value
+   local response_value
+
+   if parameter_type == 4 then
+      if not value or value ~= value or value == math.huge or value == -math.huge then
+         return nil
+      end
+      packed_value = string.pack("<f", value)
+      response_value = string.format("%.9g", value)
+   else
+      if not string.match(value_string, "^[+-]?%d+$") or not value then
+         return nil
+      end
+      if parameter_type == 1 and value >= -128 and value <= 127 then
+         packed_value = string.pack("<b", value)
+      elseif parameter_type == 2 and value >= -32768 and value <= 32767 then
+         packed_value = string.pack("<h", value)
+      elseif parameter_type == 3 and value >= -2147483648 and value <= 2147483647 then
+         packed_value = string.pack("<i4", value)
+      else
+         return nil
+      end
+      response_value = tostring(value)
+   end
+
+   local entry = string.char(parameter_type, (#name - 1) * 16) .. name .. packed_value
+   local packed = string.pack("<I2I2I2", 0x671b, 1, 6 + #entry) .. entry
+   local file = io.open("@PARAM/param.pck", "wb")
+   if not file then
+      return nil
+   end
+   local write_ok = file:write(packed)
+   local close_ok = file:close()
+   if not write_ok or not close_ok then
+      return nil
+   end
+   return response_value
 end
 
 local debug_count=0
@@ -454,6 +470,7 @@ local function Client(sock, idx)
    local run = nil
    local protocol = nil
    local file = nil
+   local file_block_size = nil
    local start_time = millis()
    local offset = 0
 
@@ -508,6 +525,43 @@ local function Client(sock, idx)
       end
       self.sendline("Connection: close")
       self.sendline("")
+   end
+
+   -- set and save one parameter for the Parameters tab
+   function self.parameter_set(query)
+      local vars = parse_query(query)
+      local name = vars.name
+      local parameter_type = tonumber(vars.type)
+      local value_string = vars.value
+      local error_message
+      local response_value
+
+      if header_value(header_vars, 'x-ardupilot-webui') ~= 'parameter-set' then
+         error_message = "Invalid request"
+      elseif not name or #name == 0 or #name > 16 or not string.match(name, "^[A-Z0-9_]+$") then
+         error_message = "Invalid parameter name"
+      elseif not value_string or not parameter_type or parameter_type < 1 or parameter_type > 4 then
+         error_message = "Invalid parameter value"
+      elseif param:get(name) == nil then
+         error_message = "Parameter not found"
+      else
+         response_value = parameter_upload(name, parameter_type, value_string)
+      end
+      if not error_message and not response_value then
+         error_message = "Parameter save failed"
+      end
+
+      local headers = {
+         ["Content-Type"] = "application/json",
+         ["Cache-Control"] = "no-cache, no-store, max-age=0"
+      }
+      if error_message then
+         self.send_header(400, "Bad Request", headers)
+         self.sendstring(string.format('{"ok":false,"error":"%s"}', error_message))
+         return
+      end
+      self.send_header(200, "OK", headers)
+      self.sendstring(string.format('{"ok":true,"value":%s}', response_value))
    end
 
    -- get size of a file
@@ -617,7 +671,7 @@ local function Client(sock, idx)
       if not sock:pollout(0) then
          return
       end
-      local chunk = WEB_BLOCK_SIZE:get()
+      local chunk = file_block_size or WEB_BLOCK_SIZE:get()
       local b = file:read(chunk)
       sock:set_blocking(true)
       if b and #b > 0 then
@@ -752,6 +806,7 @@ local function Client(sock, idx)
          path = string.sub(path, 2, #path)
       end
       DEBUG(string.format("%u: file_download(%s)", idx, path))
+      file_block_size = startswith(path, "@") and 1024 or nil
       file = DYNAMIC_PAGES[path]
       dynamic_page = file ~= nil
       if not dynamic_page then
@@ -849,9 +904,19 @@ local function Client(sock, idx)
          end
       end
 
+      local request_path, query = string.match(path, "^([^?]*)[?]?(.*)$")
+      if request_path == "/@DYNAMIC/param_set.shtml" then
+         self.parameter_set(query)
+         return
+      end
+
       if ACTION_PAGES[path] ~= nil then
          DEBUG(string.format("Running ACTION %s", path))
-         local fn = ACTION_PAGES[path]
+         if header_value(header_vars, 'x-ardupilot-webui') ~= 'action' then
+            self.send_header(400, "Bad Request", {["Content-Type"]="text/plain;charset=UTF-8"})
+            self.sendstring("Invalid request")
+            return
+         end
          self.send_header(200, "OK", {["Content-Type"]=CONTENT_TEXT_HTML})
          self.sendstring([[
 <html>
@@ -860,7 +925,18 @@ local function Client(sock, idx)
 </head>
 </html>
 ]])
-         fn()
+         reboot_hold_in_bootloader = ACTION_PAGES[path]
+         if reboot_hold_in_bootloader then
+            periph:can_printf("Rebooting for firmware update")
+         else
+            periph:can_printf("Rebooting")
+         end
+         reboot_counter = 50
+         return
+      end
+
+      if ROMFS_PAGES[path] ~= nil then
+         self.file_download(ROMFS_PAGES[path])
          return
       end
 
@@ -991,8 +1067,8 @@ local function update()
    if reboot_counter then
       reboot_counter = reboot_counter - 1
       if reboot_counter == 0 then
-         periph:can_printf("Rebooting")
-         periph:reboot(true)
+         reboot_counter = nil
+         periph:reboot(reboot_hold_in_bootloader)
       end
    end
    return update,5
