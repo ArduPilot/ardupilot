@@ -8494,6 +8494,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         )
         self.wait_mount_roll_pitch_yaw_deg(p=-30)
 
+    def MountTopotekNetworkUDP(self):
+        '''test Topotek gimbal connected via a UDP network port rather than TCP
+
+        deliberately the same body as MountTopotekNetwork() other than the
+        transport - this is a regression guard for create_net_serial_sim()'s
+        UDP support and its NAME:PORT,PROTOCOL spec format, not a Topotek-specific
+        test'''
+        self.set_parameters({
+            "MNT1_TYPE": 12,      # Topotek
+            "CAM1_TYPE": 4,       # Mount
+            "NET_ENABLE": 1,
+            "NET_P1_TYPE": 1,     # UDP client
+            "NET_P1_PROTOCOL": 8,  # gimbal
+            "NET_P1_IP0": 127,
+            "NET_P1_IP1": 0,
+            "NET_P1_IP2": 0,
+            "NET_P1_IP3": 1,
+            "NET_P1_PORT": 15007,
+        })
+        # the simulated gimbal listens on a UDP socket rather than a TCP
+        # socket or one of the autopilot's serial ports; the ",udp" suffix
+        # is the new comma-grouped option syntax being tested here:
+        self.customise_SITL_commandline(["--net-device=topotek:15007,udp"])
+        self.mount_check_camera_information(
+            "Topotek", "SIM_TP",
+            expected_fw_version=1,
+            expected_cap_flags=0x6C3,
+        )
+        # command an angle and check the gimbal reports reaching it,
+        # which requires traffic in both directions:
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+            p1=-30,  # pitch angle in degrees
+            p7=mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING,
+        )
+        self.wait_mount_roll_pitch_yaw_deg(p=-30)
+
     def MountViewPro(self):
         '''test Viewpro gimbal using SIM_Viewpro simulator'''
         self.set_parameters({
@@ -20015,6 +20053,7 @@ return update, 1000
             self.TakeoffWithLocation,
             self.MountTopotek,
             self.MountTopotekNetwork,
+            self.MountTopotekNetworkUDP,
             self.MountViewPro,
             self.MountAVTCM62,
             self.MountAVTCM62Dual,
