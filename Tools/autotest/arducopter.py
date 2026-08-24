@@ -7713,8 +7713,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             p3=0, # stabilize pitch (unsupported)
         )
 
-    def test_mount_rc_targetting(self, pitch_rc_neutral=1500, do_rate_tests=True):
-        '''called in multipleplaces to make sure that mount RC targeting works'''
+    def test_mount_rc_targetting(self, pitch_rc_neutral=1500, do_rate_tests=True, pitch_tolerance=0.1):
+        '''called in multipleplaces to make sure that mount RC targeting works
+
+        pitch_tolerance defaults to the original tight 0.1deg check; backends whose
+        actuator has a coarser confirmed physical resolution (e.g. a rate-only
+        actuator closing an angle loop via a quantized speed command) may need to
+        pass a wider value'''
         if True:
             self.context_push()
             self.set_parameters({
@@ -7747,9 +7752,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if expected_pitch != -11.25:
                 raise NotAchievedException("Calculation wrong - defaults changed?!")
             self.set_rc(12, rc12_in)
-            self.test_mount_pitch(-11.25, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(-11.25, pitch_tolerance, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
             self.set_rc(12, 1800)
-            self.test_mount_pitch(33.75, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(33.75, pitch_tolerance, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
             self.set_rc_from_map({
                 11: 1500,
                 12: 1500,
@@ -7765,11 +7770,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     "MNT1_PITCH_MAX": 10,
                 })
                 self.set_rc(12, 1000)
-                self.test_mount_pitch(-90.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+                self.test_mount_pitch(-90.00, pitch_tolerance, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
                 self.set_rc(12, 2000)
-                self.test_mount_pitch(10.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+                self.test_mount_pitch(10.00, pitch_tolerance, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
                 self.set_rc(12, 1500)
-                self.test_mount_pitch(-40.00, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+                self.test_mount_pitch(-40.00, pitch_tolerance, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
             finally:
                 self.context_pop()
 
@@ -7804,7 +7809,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_rc(12, 1500)
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
 
-    def mount_test_body(self, pitch_rc_neutral=1500, do_rate_tests=True, constrain_sysid_target=True, neutral_tol_deg=0):
+    def mount_test_body(self, pitch_rc_neutral=1500, do_rate_tests=True, constrain_sysid_target=True, neutral_tol_deg=0,
+                        rc_targetting_pitch_tolerance=0.1):
         '''Test Camera/Antenna Mount - assumes a camera is set up and ready to go'''
         if True:
             # make sure we're getting gimbal device attitude status
@@ -7895,10 +7901,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.test_mount_rc_targetting(
                 pitch_rc_neutral=pitch_rc_neutral,
                 do_rate_tests=do_rate_tests,
+                pitch_tolerance=rc_targetting_pitch_tolerance,
             )
 
             self.progress("Testing mount ROI behaviour")
-            self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+            self.test_mount_pitch(0, rc_targetting_pitch_tolerance, mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
             start = self.mav.location()
             self.progress("start=%s" % str(start))
             (roi_lat, roi_lon) = mavextra.gps_offset(start.lat,
