@@ -29,6 +29,7 @@
 #include <AP_RTC/AP_RTC.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Vehicle/AP_Vehicle.h>
 
 #include "AP_MSP.h"
 #include "AP_MSP_Telem_Backend.h"
@@ -340,7 +341,14 @@ void AP_MSP_Telem_Backend::update_flight_mode_str(char *flight_mode_str, uint8_t
         const char* unit = (units == OSD_UNIT_METRIC) ? "m/s" : "f/s";
 
         if (v_length > 1.0f) {
-            const int32_t angle = wrap_360_cd(rad_to_cd(atan2f(v.y, v.x)) - ahrs.yaw_sensor);
+#if AP_VEHICLE_ENABLED
+            float roll_rad, pitch_rad, yaw_rad;
+            AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+#else
+            float yaw_rad = ahrs.get_yaw_rad();
+#endif // AP_VEHICLE_ENABLED
+
+            const int32_t angle = wrap_360_cd(rad_to_cd(atan2f(v.y, v.x)) - rad_to_cd(yaw_rad));
             const int32_t interval = 36000 / ARRAY_SIZE(arrows);
             uint8_t arrow = arrows[((angle + interval / 2) / interval) % ARRAY_SIZE(arrows)];
             snprintf(flight_mode_str, size, "%s %d%s%c%c%c", notify->get_flight_mode_str(),  (uint8_t)roundf(v_length), unit, 0xE2, 0x86, arrow);
@@ -969,17 +977,25 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_config(sbuf_t *dst)
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_attitude(sbuf_t *dst)
 {
+#if AP_VEHICLE_ENABLED
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+#else
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
+    float roll_rad = ahrs.get_roll_rad();
+    float pitch_rad = ahrs.get_pitch_rad();
+    float yaw_rad = ahrs.get_yaw_rad();
+#endif // AP_VEHICLE_ENABLED
 
     const struct PACKED {
         int16_t roll;
         int16_t pitch;
         int16_t yaw;
     } attitude {
-        roll : int16_t(ahrs.get_roll_deg() * 10),     // degress to decidegrees
-        pitch : int16_t(ahrs.get_pitch_deg() * 10),   // degress to decidegrees
-        yaw : int16_t(ahrs.get_yaw_deg())
+        roll : int16_t(degrees(roll_rad) * 10),     // degress to decidegrees
+        pitch : int16_t(degrees(pitch_rad) * 10),   // degress to decidegrees
+        yaw : int16_t(wrap_360(degrees(yaw_rad)))
     };
 
     sbuf_write_data(dst, &attitude, sizeof(attitude));
