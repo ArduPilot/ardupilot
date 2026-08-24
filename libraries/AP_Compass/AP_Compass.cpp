@@ -665,38 +665,11 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("DEV_ID8", 48, Compass, extra_dev_id[4], 0),
 #endif // COMPASS_MAX_UNREG_DEV
 
-    // @Param: CUS_ROLL
-    // @DisplayName: Custom orientation roll offset
-    // @Description: Compass mounting position roll offset. Positive values = roll right, negative values = roll left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.
-    // @Range: -180 180
-    // @Units: deg
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
+    // index 49 was CUS_ROLL
 
-    // index 49
+    // index 50 was CUS_PIT
 
-    // @Param: CUS_PIT
-    // @DisplayName: Custom orientation pitch offset
-    // @Description: Compass mounting position pitch offset. Positive values = pitch up, negative values = pitch down. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.
-    // @Range: -180 180
-    // @Units: deg
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-
-    // index 50
-
-    // @Param: CUS_YAW
-    // @DisplayName: Custom orientation yaw offset
-    // @Description: Compass mounting position yaw offset. Positive values = yaw right, negative values = yaw left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.
-    // @Range: -180 180
-    // @Units: deg
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-
-    // index 51
+    // index 51 was CUS_YAW
 
     AP_GROUPEND
 };
