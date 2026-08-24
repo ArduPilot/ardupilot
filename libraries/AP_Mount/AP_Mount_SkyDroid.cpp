@@ -509,14 +509,18 @@ void AP_Mount_SkyDroid::send_target_angles(const MountAngleTarget& angle_rad)
     // set gimbal's lock state (follow the body-frame target)
     set_gimbal_lock(false);
 
-    // clamp to the configured MNT1_YAW/PITCH_MIN/MAX range - AP_Mount's frontend does
-    // not clamp the target itself before calling us.  Roll is deliberately absent:
-    // the gimbal self-stabilizes roll and offers no way to command it (see
-    // has_roll_control())
-    const float yaw_target_rad = radians(constrain_float(degrees(angle_rad.get_bf_yaw()),
-                                                           _params.yaw_angle_min, _params.yaw_angle_max));
-    const float pitch_target_rad = radians(constrain_float(degrees(angle_rad.pitch),
-                                                             _params.pitch_angle_min, _params.pitch_angle_max));
+    // clamp to the configured MNT1_YAW/PITCH_MIN/MAX range (also in degrees) -
+    // AP_Mount's frontend does not clamp the target itself before calling us.
+    // Roll is deliberately absent: the gimbal self-stabilizes roll and offers no
+    // way to command it (see has_roll_control()).  Everything below stays in
+    // degrees from here on - the only unit conversions in this function are the
+    // unavoidable ones at its boundaries: angle_rad (radians, AP_Mount's own
+    // target-type convention) coming in, and _current_angle_rad (radians, kept
+    // that way for get_attitude_quaternion()'s benefit) read via degrees() below
+    const float yaw_target_deg = constrain_float(degrees(angle_rad.get_bf_yaw()),
+                                                  _params.yaw_angle_min, _params.yaw_angle_max);
+    const float pitch_target_deg = constrain_float(degrees(angle_rad.pitch),
+                                                    _params.pitch_angle_min, _params.pitch_angle_max);
 
     // simple P-controller driving GSY/GSP as the rate actuator, using the GAC
     // attitude feedback already parsed by gimbal_angle_analyse().
@@ -561,8 +565,8 @@ void AP_Mount_SkyDroid::send_target_angles(const MountAngleTarget& angle_rad)
     // deadzone or kP tuning - re-run the autotest and see before assuming this still
     // passes
     constexpr float deadzone_deg = 0.05;  // stop correcting once within this many degrees
-    const float yaw_error_deg = degrees(wrap_PI(yaw_target_rad - _current_angle_rad.z));
-    const float pitch_error_deg = degrees(pitch_target_rad - _current_angle_rad.y);
+    const float yaw_error_deg = wrap_180(yaw_target_deg - degrees(_current_angle_rad.z));
+    const float pitch_error_deg = pitch_target_deg - degrees(_current_angle_rad.y);
     const float yaw_rate_dps = (fabsf(yaw_error_deg) <= deadzone_deg) ? 0.0f :
         constrain_float(yaw_error_deg * kP,
                          -AP_MOUNT_SKYDROID_AXIS_MAX_DPS,
