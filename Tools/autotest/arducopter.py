@@ -7786,7 +7786,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         pitch_tolerance defaults to the original tight 0.1deg check; backends whose
         actuator has a coarser confirmed physical resolution (e.g. a rate-only
         actuator closing an angle loop via a quantized speed command) may need to
-        pass a wider value'''
+        pass a wider value - see MountSkyDroid()'s use of this for a concrete
+        example with the reasoning'''
         if True:
             self.context_push()
             self.set_parameters({
@@ -8459,6 +8460,172 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # until AP_Mount_Topotek::send_target_angles enforces the limit.
         self.mount_test_body(pitch_rc_neutral=1818, do_rate_tests=False,
                              constrain_sysid_target=False)
+
+    def MountSkyDroid(self):
+        '''test SkyDroid gimbal using SIM_SkyDroid simulator'''
+        # pitch_rc_neutral=1818: with RC6 min=1000 max=2000 trim=1500 and
+        # default MNT1_PITCH_MIN=-90 / MNT1_PITCH_MAX=20, norm_input=0.636
+        # maps to exactly 0 deg pitch.
+        pitch_rc_neutral = 1818
+        # centre RC6 *before* the parameter changes below reboot the FC.  MNT1's
+        # default mode is RC_TARGETING, so without this the mount starts driving
+        # toward whatever angle RC6's un-centred default value maps to the moment
+        # it boots, well before the test gets to explicitly select NEUTRAL mode.
+        # Harmless for backends with a fast control loop (they recover from that
+        # transient inside the neutral check's 5s budget), but avoid causing a large
+        # transient in the first place anyway rather than rely on recovering from it
+        self.set_rc(6, pitch_rc_neutral)
+        self.set_parameters({
+            "MNT1_TYPE": 15,      # SkyDroid
+            "CAM1_TYPE": 4,       # Mount
+            "SERIAL5_PROTOCOL": 8,  # gimbal
+            "RC6_OPTION": 213,    # MOUNT1_PITCH
+        })
+        self.customise_SITL_commandline(["--serial5=sim:skydroid:"])
+        # version "V1.0.0" from SIM_SkyDroid: major=1 | (minor=0)<<8 | (patch=0)<<16 = 1
+        # cap flags: CAPTURE_VIDEO | CAPTURE_IMAGE | HAS_BASIC_ZOOM
+        self.mount_check_camera_information(
+            "SkyDroid", "C11",
+            expected_fw_version=1,
+            expected_cap_flags=0x43,
+        )
+        # constrain_sysid_target=True (the default): unlike Topotek/Viewpro,
+        # AP_Mount_SkyDroid::send_target_angles does clamp pitch/yaw to the
+        # configured MNT1_PITCH/YAW_MIN/MAX before sending, so the 68-deg
+        # sysid test (which expects that clamp) is exercised here.
+        # neutral_tol_deg=3.5: confirmed on real hardware that SkyDroid gimbals only
+        # respond to the individual-axis GSY/GSP speed commands (GAM/GSM are silently
+        # ignored); since there's no working absolute-angle command, the driver closes
+        # an angle P-controller loop on top of them, so allow a little settling
+        # tolerance rather than the exact positioning an absolute-angle backend gives.
+        #
+        # rc_targetting_pitch_tolerance=0.3: GSY/GSP's wire value is a quantized 8bit
+        # signed LSB (see AP_MOUNT_SKYDROID_AXIS_DPS_PER_LSB, confirmed on real
+        # hardware via dataflash log analysis to be 0.5deg/s per LSB), which puts a
+        # genuine, measured floor of ~0.25deg of angular error below which the
+        # closed-loop P-controller's commanded rate rounds to 0 LSB and it simply
+        # stops correcting - this is a real actuator resolution limit, not a driver
+        # bug, and the shared test's default 0.1deg tolerance is tighter than this
+        # actuator can physically deliver.  0.3 gives a little margin above the
+        # measured ~0.25deg floor
+        self.mount_test_body(pitch_rc_neutral=pitch_rc_neutral, do_rate_tests=False, neutral_tol_deg=3.5,
+                             rc_targetting_pitch_tolerance=0.3)
+
+    def MountSkyDroidC13(self):
+        '''test SkyDroid C13 gimbal using SIM_SkyDroid simulator
+
+        SkyDroid have confirmed the gimbal-control commands are IDENTICAL across
+        models - the C13's extra features over the C11 are infrared thermal imaging
+        and laser ranging, neither of which this driver uses.  So this test is
+        deliberately the same body as MountSkyDroid(): it is a regression guard
+        that the driver stays model-independent, and that a differently-named model
+        does not take a different control path.  It also asserts roll stays
+        uncontrollable even when MNT1_ROLL_MIN/MAX is configured, since SkyDroid
+        have confirmed roll is self-stabilized with no control command at all'''
+        # pitch_rc_neutral=1818: with RC6 min=1000 max=2000 trim=1500 and
+        # default MNT1_PITCH_MIN=-90 / MNT1_PITCH_MAX=20, norm_input=0.636
+        # maps to exactly 0 deg pitch.
+        pitch_rc_neutral = 1818
+        # centre RC6 *before* the parameter changes below reboot the FC - same fix as
+        # MountSkyDroid() needed, and for the same reason: see the comment there
+        self.set_rc(6, pitch_rc_neutral)
+        self.set_parameters({
+            "MNT1_TYPE": 15,      # SkyDroid
+            "CAM1_TYPE": 4,       # Mount
+            "SERIAL5_PROTOCOL": 8,  # gimbal
+            "RC6_OPTION": 213,    # MOUNT1_PITCH
+            # deliberately configure a roll range the gimbal cannot actually use, to
+            # prove the driver still refuses to drive roll - see the roll check below
+            "MNT1_ROLL_MIN": -45,
+            "MNT1_ROLL_MAX": 45,
+        })
+        self.customise_SITL_commandline(["--serial5=sim:skydroid_c13:"])
+        # version "V1.0.0" from SIM_SkyDroid: major=1 | (minor=0)<<8 | (patch=0)<<16 = 1
+        # cap flags: CAPTURE_VIDEO | CAPTURE_IMAGE | HAS_BASIC_ZOOM
+        # model name "C13" confirms the differently-named variant was actually selected
+        self.mount_check_camera_information(
+            "SkyDroid", "C13",
+            expected_fw_version=1,
+            expected_cap_flags=0x43,
+        )
+        # identical expectations to MountSkyDroid() - that is the point of this test,
+        # rc_targetting_pitch_tolerance included - see MountSkyDroid()'s comment for
+        # why 0.3 rather than the shared default of 0.1
+        self.mount_test_body(pitch_rc_neutral=pitch_rc_neutral, do_rate_tests=False, neutral_tol_deg=3.5,
+                             rc_targetting_pitch_tolerance=0.3)
+
+        # roll must NOT respond: SkyDroid have confirmed roll is self-stabilized by the
+        # gimbal with no control command on any model, so AP_Mount_SkyDroid reports
+        # has_roll_control() == false and never sends a roll command.  This is the
+        # inverse of a test that used to live here, which drove roll via "GAR" and
+        # expected it to move - that command turned out not to be implemented in the
+        # firmware at all despite being in the protocol document
+        self.progress("Testing mount roll stays uncommanded (roll is not controllable)")
+        # mount_test_body() above ends with its own RTL+landing sequence, so the
+        # vehicle's resting attitude here is whatever it happens to land at - NOT
+        # guaranteed level.  So this deliberately checks for CHANGE in response to the
+        # RC command, not an absolute near-zero value - the claim under test is "roll
+        # doesn't respond to input", which holds regardless of the vehicle's own
+        # attitude, unlike a fixed absolute-value check
+        self.context_push()
+        self.set_parameters({
+            'RC11_OPTION': 212,    # MOUNT1_ROLL
+        })
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING)
+        start_roll_deg, _, _, _ = self.get_mount_roll_pitch_yaw_deg()
+        self.set_rc(11, 1100)   # would demand roll to the MNT1_ROLL_MIN extreme
+        tstart = self.get_sim_time()
+        max_roll_change_deg = 0
+        while self.get_sim_time_cached() - tstart < 10:
+            mount_roll_deg, _, _, _ = self.get_mount_roll_pitch_yaw_deg()
+            self.progress("roll=%f (start was %f)" % (mount_roll_deg, start_roll_deg))
+            max_roll_change_deg = max(max_roll_change_deg, abs(mount_roll_deg - start_roll_deg))
+        self.set_rc(11, 1500)
+        self.context_pop()
+        # 15deg is well clear of the 45deg the RC input demands, while leaving room for
+        # whatever incidental roll change the gimbal's own stabilization shows as the
+        # vehicle moves - we are checking nothing *drives* roll, not that it is pinned
+        # at any particular value
+        if max_roll_change_deg > 15:
+            raise NotAchievedException(
+                "Mount roll changed %.1fdeg in response to RC input - roll should not be commandable" %
+                max_roll_change_deg)
+
+    def MountSkyDroidNetwork(self):
+        '''test SkyDroid gimbal connected via a UDP network port rather than a serial port
+
+        the real C11 hardware is UDP-only (no serial control interface), so this
+        exercises the actual transport used in the field rather than the SITL
+        serial-port path used by MountSkyDroid'''
+        self.set_parameters({
+            "MNT1_TYPE": 15,      # SkyDroid
+            "CAM1_TYPE": 4,       # Mount
+            "NET_ENABLE": 1,
+            "NET_P1_TYPE": 1,     # UDP client
+            "NET_P1_PROTOCOL": 8,  # gimbal
+            "NET_P1_IP0": 127,
+            "NET_P1_IP1": 0,
+            "NET_P1_IP2": 0,
+            "NET_P1_IP3": 1,
+            "NET_P1_PORT": 15006,
+        })
+        # the simulated gimbal listens on a UDP socket rather than
+        # being attached to one of the autopilot's serial ports:
+        self.customise_SITL_commandline(["--net-device=skydroid:15006,udp"])
+        self.mount_check_camera_information(
+            "SkyDroid", "C11",
+            expected_fw_version=1,
+            expected_cap_flags=0x43,
+        )
+        # command an angle and check the gimbal reports reaching it,
+        # which requires traffic in both directions:
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_MOUNT_CONTROL,
+            p1=-30,  # pitch angle in degrees
+            p7=mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING,
+        )
+        self.wait_mount_roll_pitch_yaw_deg(p=-30)
 
     def MountTopotekNetwork(self):
         '''test Topotek gimbal connected via a network port rather than a serial port'''
@@ -20221,6 +20388,9 @@ return update, 1000
             self.TakeoffWithLocation,
             self.MountTopotek,
             self.MountTopotekNetwork,
+            self.MountSkyDroid,
+            self.MountSkyDroidC13,
+            self.MountSkyDroidNetwork,
             self.MountViewPro,
             self.MountAVTCM62,
             self.MountAVTCM62Dual,
