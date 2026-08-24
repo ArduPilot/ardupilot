@@ -1,7 +1,7 @@
 #pragma once
 #include <stdint.h>
 
-static inline uint64_t uint64_mulhi(uint64_t x, uint64_t y)
+static inline uint64_t uint64_mulhi_32b(uint64_t x, uint64_t y)
 {
     uint64_t a_lo = (uint32_t)x;
     uint64_t a_hi = x >> 32;
@@ -26,7 +26,29 @@ static inline uint64_t uint64_mulhi(uint64_t x, uint64_t y)
   With thanks to https://0x414b.com/2021/04/16/arm-division.html
   and https://stackoverflow.com/questions/74765410/multiply-two-uint64-ts-and-store-result-to-uint64-t-doesnt-seem-to-work
 */
-static inline uint64_t uint64_div1000(uint64_t x)
+static inline uint64_t uint64_div1000_32b(uint64_t x)
 {
-    return uint64_mulhi(x >> 3U, 0x20c49ba5e353f7cfULL) >> 4U;
+    return uint64_mulhi_32b(x >> 3U, 0x20c49ba5e353f7cfULL) >> 4U;
 }
+
+/*
+  For testability purposes both implementations are built on 64-bit targets.
+  Most callers should use uint64_div1000().
+*/
+
+#if defined(__SIZEOF_INT128__)
+static inline uint64_t uint64_mulhi_64b(uint64_t x, uint64_t y)
+{
+    return ((unsigned __int128)x * y) >> 64;
+}
+
+static inline uint64_t uint64_div1000_64b(uint64_t x)
+{
+    return uint64_mulhi_64b(x >> 3U, 0x20c49ba5e353f7cfULL) >> 4U;
+}
+#define uint64_mulhi(x,y) uint64_mulhi_64b((x), (y))
+#define uint64_div1000(x) uint64_div1000_64b((x))
+#else
+#define uint64_mulhi(x,y) uint64_mulhi_32b((x), (y))
+#define uint64_div1000(x) uint64_div1000_32b((x))
+#endif

@@ -714,10 +714,13 @@ TEST(MathTest, MulHi)
         for (uint32_t j=0; j < 64; ++j) {
             uint64_t x = 1ULL << i;
             uint64_t y = 1ULL << j;
-
             uint64_t bit = 1ULL << (i + j - 64);
             uint64_t product = (i + j >= 128 || i + j < 64) ? 0ULL : bit;
             EXPECT_EQ(product, uint64_mulhi(x, y));
+            EXPECT_EQ(product, uint64_mulhi_32b(x, y));
+#if defined(__SIZEOF_INT128__)
+            EXPECT_EQ(product, uint64_mulhi_64b(x, y));
+#endif
         }
     }
 }
@@ -728,8 +731,11 @@ TEST(MathTest, div1000)
         uint64_t v;
         EXPECT_EQ(hal.util->get_random_vals((uint8_t*)&v, sizeof(v)), true);
         uint64_t v1 = v / 1000ULL;
-        uint64_t v2 = uint64_div1000(v);
-        EXPECT_EQ(v1, v2);
+        EXPECT_EQ(v1, uint64_div1000(v));
+        EXPECT_EQ(v1, uint64_div1000_32b(v));
+#if defined(__SIZEOF_INT128__)
+        EXPECT_EQ(v1, uint64_div1000_64b(v));
+#endif
     }
 }
 
