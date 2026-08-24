@@ -544,7 +544,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 
     // @Param{Sub}: BUOYANCY
     // @DisplayName: Buoyancy
-    // @Description: Buyoancy for submarines
+    // @Description: Net buoyancy force (in Newtons). 0 is neutrally buoyant, negative means the vehicle sinks.
     AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
 
     // @Param: RATE_HZ
