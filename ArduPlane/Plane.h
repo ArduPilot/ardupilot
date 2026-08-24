@@ -1081,7 +1081,7 @@ private:
     // Plane.cpp
     void disarm_if_autoland_complete();
     bool trigger_land_abort(const float climb_to_alt_m);
-    void get_osd_attitude_rad(float &roll, float &pitch, float &yaw) const override;
+    void get_osd_attitude_rad(float &roll, float &pitch, float &yaw) override;
     float tecs_hgt_afe(void);
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
