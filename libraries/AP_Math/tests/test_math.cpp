@@ -708,6 +708,20 @@ TEST(CRCTest, parity)
     EXPECT_EQ(parity(0b11111111), 0);
 }
 
+TEST(MathTest, MulHi)
+{
+    for (uint32_t i=0; i < 64; ++i) {
+        for (uint32_t j=0; j < 64; ++j) {
+            uint64_t x = 1ULL << i;
+            uint64_t y = 1ULL << j;
+
+            uint64_t bit = 1ULL << (i + j - 64);
+            uint64_t product = (i + j >= 128 || i + j < 64) ? 0ULL : bit;
+            EXPECT_EQ(product, uint64_mulhi(x, y));
+        }
+    }
+}
+
 TEST(MathTest, div1000)
 {
     for (uint32_t i=0; i<1000000; i++) {
