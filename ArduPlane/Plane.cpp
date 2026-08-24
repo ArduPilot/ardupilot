@@ -1034,8 +1034,11 @@ bool Plane::start_takeoff(const float alt_m) {
 #endif
 
 // correct AHRS pitch for PTCH_TRIM_DEG in non-VTOL modes, and return VTOL view in VTOL
-void Plane::get_osd_attitude_rad(float &roll, float &pitch, float &yaw) const
+void Plane::get_osd_attitude_rad(float &roll, float &pitch, float &yaw)
 {
+    // Take semaphore as this can be called from a thread
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.show_vtol_view()) {
         pitch = quadplane.ahrs_view->get_pitch_rad();
@@ -1044,6 +1047,7 @@ void Plane::get_osd_attitude_rad(float &roll, float &pitch, float &yaw) const
         return;
     }
 #endif
+
     pitch = ahrs.get_pitch_rad();
     roll = ahrs.get_roll_rad();
     if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH))) {  // correct for PTCH_TRIM_DEG
