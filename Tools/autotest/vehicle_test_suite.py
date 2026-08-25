@@ -3960,18 +3960,6 @@ class TestSuite(abc.ABC):
     def message_hook(self, mav, msg):
         """Called as each mavlink msg is received."""
 #        print("msg: %s" % str(msg))
-        # every timestamped message from the vehicle updates a passive
-        # sim clock, so get_sim_time() rarely has to block waiting for
-        # the next SYSTEM_TIME to come around on the stream:
-        t = getattr(msg, 'time_boot_ms', None)
-        if t is not None and msg.get_srcSystem() == self.sysid_thismav():
-            est = getattr(self, 'sim_clock_estimate_ms', None)
-            if est is None or t > est or est - t > 5000:
-                # takes decreases only when large: those are reboots;
-                # small regressions are just messages generated out of
-                # order at their different stream rates
-                self.sim_clock_estimate_ms = t
-                self.sim_clock_estimate_wall = time.time()
         if msg.get_type() == 'STATUSTEXT':
             self.progress("AP: %s" % msg.text, send_statustext=False)
 
@@ -5397,22 +5385,7 @@ class TestSuite(abc.ABC):
     def get_sim_time(self, timeout=60):
         """Get SITL time in seconds.  Note this does not flush the incoming
         message queue; a caller which needs the vehicle to have caught up
-        with what it has been told should do_timesync_roundtrip() first.
-
-        Consumes whatever has already arrived and answers from the
-        passive sim clock (see message_hook) when that is fresh; only
-        blocks for the next timestamped message when the stream has
-        gone quiet.  Blocking for the next SYSTEM_TIME on every call
-        used to cost up to a stream period - a tenth of a second or
-        more of wall clock - at each of the framework's thousands of
-        loop heads."""
-        # consume anything pending so the passive clock is current:
-        while self.mav.recv_match(blocking=False) is not None:
-            pass
-        est_wall = getattr(self, 'sim_clock_estimate_wall', None)
-        if est_wall is not None and time.time() - est_wall < 0.5:
-            return self.sim_clock_estimate_ms * 1.0e-3
-
+        with what it has been told should do_timesync_roundtrip() first."""
         tstart = time.time()
         while True:
             self.drain_all_pexpects()
