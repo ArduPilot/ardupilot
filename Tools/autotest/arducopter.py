@@ -18541,8 +18541,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # are expected as the IMU-only ExternalAHRS supplies no position).
         saw_prearm = False
         tstart = self.get_sim_time()
+        prearm_last_send = 0
         while self.get_sim_time_cached() - tstart < 20:
-            self.send_mavlink_run_prearms_command()
+            # at most one prearm run per simulated second: every run
+            # emits several PreArm statustexts, so an unpaced send here
+            # feeds itself - the replies keep the recv below from ever
+            # blocking - and the vehicle spends its main loop answering
+            # thousands of commands
+            now = self.get_sim_time_cached()
+            if now - prearm_last_send > 1:
+                prearm_last_send = now
+                self.send_mavlink_run_prearms_command()
             m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
             if m is None:
                 continue
