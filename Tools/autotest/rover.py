@@ -7460,7 +7460,11 @@ return update()
         # isolated: --enable-PPP must not rewrite the default build
         # tree's stored configuration, or every binary built there
         # afterwards comes out PPP-enabled
-        util.build_SITL('bin/ardurover', clean=False, configure=True, isolated=True,
+        # isolation directory of this test's own: build-frame belongs
+        # to the frame-rebuild tests, which can run concurrently in a
+        # unified multi-suite pool
+        util.build_SITL('bin/ardurover', clean=False, configure=True,
+                        isolated='build-rover-ppp',
                         extra_configure_args=['--enable-PPP', '--enable-math-check-indexes', '--debug'])
 
         # under the parallel test runner each test runs against a private
