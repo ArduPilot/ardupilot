@@ -433,7 +433,9 @@ def run_step(step):
         "j": opts.j,
         "debug": opts.debug,
         "clean": not opts.no_clean,
-        "configure": not opts.no_configure,
+        # configuration is checked automatically: reconfigure only
+        # when the wanted configuration differs from the tree's
+        "configure": "auto",
         "math_check_indexes": opts.math_check_indexes,
         "ekf_single": opts.ekf_single,
         "postype_single": opts.postype_single,
@@ -1018,6 +1020,8 @@ if __name__ == "__main__":
                       help='Generate Junit XML tests report')
 
     group_build = optparse.OptionGroup(parser, "Build options")
+    # deprecated: configuration is now checked automatically and only
+    # rerun when the wanted configuration differs from the tree's
     group_build.add_option("--no-configure",
                            default=False,
                            action='store_true',
@@ -1349,6 +1353,10 @@ if __name__ == "__main__":
         sys.exit(0)
 
     util.mkdir_p(buildlogs_dirpath())
+
+    if opts.no_configure:
+        print("Note: --no-configure is deprecated; configuration is "
+              "checked automatically and rerun only when it differs")
 
     lckfile = buildlogs_path('autotest.lck')
     print("lckfile=%s" % repr(lckfile))
