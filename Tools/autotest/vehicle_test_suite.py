@@ -2978,7 +2978,14 @@ class TestSuite(abc.ABC):
 
     def test_parameter_documentation_get_all_parameters(self):
 
-        xml_filepath = os.path.join(self.buildlogs_dirpath(), "apm.pdef.xml")
+        # param_parse.py writes apm.pdef.xml and friends into its
+        # working directory.  Several suites run this test, and in a
+        # unified pool two can run at once: give each its own work
+        # directory (relative to the cwd, which is per-instance under
+        # the parallel runner) rather than sharing buildlogs
+        workdir = os.path.join(os.getcwd(), "param-doc-work")
+        os.makedirs(workdir, exist_ok=True)
+        xml_filepath = os.path.join(workdir, "apm.pdef.xml")
         param_parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'param_metadata', 'param_parse.py')
         try:
             os.unlink(xml_filepath)
@@ -2991,7 +2998,7 @@ class TestSuite(abc.ABC):
             vehicle = "ArduPlane"
         cmd = [param_parse_filepath, '--vehicle', vehicle]
         # cmd.append("--verbose")
-        if util.run_cmd(cmd, directory=self.buildlogs_dirpath()) != 0:
+        if util.run_cmd(cmd, directory=workdir) != 0:
             self.progress("Failed param_parse.py (%s)" % vehicle)
             return False
         htree = self.htree_from_xml(xml_filepath)
