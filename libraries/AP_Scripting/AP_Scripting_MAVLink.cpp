@@ -38,15 +38,6 @@ void ScriptingMAVLinkBuffer::handle_msg(mavlink_msg &msg) {
         }
     }
 
-    uint32_t id = msg.msg.msgid;
-    bool valid = false;
-    for(uint32_t i = 0; i < num_accepted_msgs; i++) {
-        if(id == accept_msg_ids[i]) {
-            valid = true;
-            break;
-        }
-    }
-
     if(valid) buffer.push(msg);
 
     if (next != nullptr) {
@@ -75,20 +66,6 @@ bool ScriptingMAVLinkBuffer::add_accepted_id(uint32_t id) {
     if(next_accepted_pos < num_accepted_msgs) {
         accept_msg_ids[next_accepted_pos] = id;
         next_accepted_pos++;
-        return true;
-    }
-
-    return false;
-}
-
-bool ScriptingMAVLinkBuffer::add_accepted_id(uint32_t id) {
-    for(uint32_t i = 0; i <= last_accepted_pos; i++) {
-        if(accept_msg_ids[i] == id) return true;
-    }
-
-    if(last_accepted_pos + 1 < num_accepted_msgs) {
-        last_accepted_pos++;
-        accept_msg_ids[last_accepted_pos] = id;
         return true;
     }
 

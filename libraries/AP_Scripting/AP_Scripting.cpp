@@ -369,6 +369,15 @@ void AP_Scripting::thread(void) {
             }
         }
 
+        {
+            WITH_SEMAPHORE(mavlink_data.sem);
+            while (mavlink_data.buffer_list != nullptr) {
+                ScriptingMAVLinkBuffer *next_item = mavlink_data.buffer_list->next;
+                delete mavlink_data.buffer_list;
+                mavlink_data.buffer_list = next_item;
+            }
+        }
+
         bool cleared = false;
         while(true) {
             // 1hz check if we should restart

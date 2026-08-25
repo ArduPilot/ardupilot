@@ -68,14 +68,14 @@ int lua_mavlink_init(lua_State *L) {
 
     binding_argcheck(L, 3);
     // get the depth of receive queue
-    const uint32_t queue_size = get_uint32(L, 2, 0, 25);
+    const uint32_t queue_size = get_uint32(L, 2, 1, 25);
     // get number of msgs to accept
-    const uint32_t num_msgs = get_uint32(L, 3, 0, 25);
+    const uint32_t num_msgs = get_uint32(L, 3, 1, 25);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
 
     auto* buffer = NEW_NOTHROW ScriptingMAVLinkBuffer(queue_size, num_msgs);
-    if (buffer == nullptr) {
+    if (buffer == nullptr || !buffer->init_ok()) {
         delete buffer;
         return luaL_error(L, "out of memory");
     }
@@ -95,8 +95,6 @@ int lua_mavlink_init(lua_State *L) {
 }
 
 int lua_mavlink_receive_chan(lua_State *L) {
-    fix_dot_access_never_add_another_call(L, "mavlink");
-
     binding_argcheck(L, 1);
 
     ScriptingMAVLinkBuffer *buffer = *check_ScriptingMAVLinkBuffer(L, 1);
@@ -119,8 +117,6 @@ int lua_mavlink_receive_chan(lua_State *L) {
 }
 
 int lua_mavlink_register_rx_msgid(lua_State *L) {
-    fix_dot_access_never_add_another_call(L, "mavlink");
-
     binding_argcheck(L, 2);
 
     ScriptingMAVLinkBuffer *buffer = *check_ScriptingMAVLinkBuffer(L, 1);

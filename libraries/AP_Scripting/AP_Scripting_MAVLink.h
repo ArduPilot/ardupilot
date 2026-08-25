@@ -14,34 +14,38 @@
  */
 /*
   Scripting MAVLink class, for easy scripting MAVLink support
- */
- 
+*/
+
 #pragma once
 
 #include "AP_Scripting/AP_Scripting.h"
+#include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_HAL/AP_HAL.h>
 
-//#if defined(HAL_BUILD_AP_PERIPH)
-//    // Must have at least two CAN ports on Periph
-//    #define AP_SCRIPTING_CAN_SENSOR_ENABLED (HAL_MAX_CAN_PROTOCOL_DRIVERS > 1)
-//#else
-//    #define AP_SCRIPTING_CAN_SENSOR_ENABLED HAL_MAX_CAN_PROTOCOL_DRIVERS
-//#endif
-
-//#if AP_SCRIPTING_CAN_SENSOR_ENABLED
-
-#include <AP_CANManager/AP_CANSensor.h>
+struct mavlink_msg {
+    mavlink_message_t msg;
+    mavlink_channel_t chan;
+    uint32_t timestamp_ms;
+};
 
 class ScriptingMAVLinkBuffer {
+friend class AP_Scripting;
+
 public: ScriptingMAVLinkBuffer(uint32_t buffer_size, uint32_t num_msgs):
         buffer(buffer_size), accept_msg_ids(NEW_NOTHROW uint32_t[num_msgs]), num_accepted_msgs(num_msgs)
     {};
 
+    ~ScriptingMAVLinkBuffer() {
+        delete[] accept_msg_ids;
+    }
+
+    bool init_ok() const { return accept_msg_ids != nullptr; }
+
     // read a messages from the buffer
-    bool read_msg(AP_Scripting::mavlink_msg &msg);
+    bool read_msg(mavlink_msg &msg);
 
     // recursively add messages to buffer
-    void handle_msg(AP_Scripting::mavlink_msg &msg);
+    void handle_msg(mavlink_msg &msg);
 
     // recursively add new buffer
     void add_buffer(ScriptingMAVLinkBuffer* new_buff);
@@ -51,24 +55,15 @@ public: ScriptingMAVLinkBuffer(uint32_t buffer_size, uint32_t num_msgs):
 
 private:
 
-    ObjectBuffer<AP_Scripting::mavlink_msg> buffer;
+    ObjectBuffer<mavlink_msg> buffer;
 
     uint32_t* accept_msg_ids;
     uint32_t num_accepted_msgs;
-    uint32_t last_accepted_pos = -1;
+    uint32_t next_accepted_pos = 0;
 
-    ScriptingMAVLinkBuffer *next;
+    ScriptingMAVLinkBuffer *next = nullptr;
 
     HAL_Semaphore sem;
 
-    /*
-    struct {
-        uint32_t mask;
-        uint32_t value;
-    } filter[8];
-    uint8_t num_filters;
-    */
-
 };
 
-//#endif // AP_SCRIPTING_CAN_SENSOR_ENABLED

@@ -130,12 +130,6 @@ public:
     SocketAPM *_net_sockets[SCRIPTING_MAX_NUM_NET_SOCKET];
 #endif
 
-    struct mavlink_msg {
-        mavlink_message_t msg;
-        mavlink_channel_t chan;
-        uint32_t timestamp_ms;
-    };
-
     struct mavlink {
         ScriptingMAVLinkBuffer *buffer_list;
         HAL_Semaphore sem;
