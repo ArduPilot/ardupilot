@@ -16144,6 +16144,9 @@ switch value'''
                     self.progress("Queue is empty")
                     break
                 key = getattr(test, 'suite_step', None) or '__own__'
+                if not hasattr(self, 'unified_tester_factory'):
+                    # not a unified pool: every test runs on this tester
+                    key = '__own__'
                 if key != active_key:
                     if active is not None:
                         self.progress("TestRunner-%u: switching session %s -> %s" %
@@ -16163,6 +16166,13 @@ switch value'''
                         self.refresh_test_binary()
                     else:
                         active = self.worker_tester_for_step(key)
+                    if active_key is not None:
+                        # a fresh suite must not see the previous
+                        # suite's logs in this worker's directory (the
+                        # sequential runner clears them between steps
+                        # too): TestLogDownload-class tests list and
+                        # download "the latest log"
+                        util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
                     active.start_worker_session()
                     active_key = key
                     first_for_session = True

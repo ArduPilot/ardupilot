@@ -747,14 +747,19 @@ def run_unified_test_steps(test_steps):
         cls = tester_class_map[step]
         tester = cls(binary, **fly_opts)
         (tests, skip_list) = tester.prepare_tests()
-        for t in tests:
-            t.suite_step = step
         exclusive = tester.tests_needing_exclusive_run()
+        serial = [t for t in tests if t.name in exclusive]
+        parallel = [t for t in tests if t.name not in exclusive]
+        # only the pooled tests are tagged with their suite: the serial
+        # (exclusive) tests run on their own suite's tester, which has
+        # no unified factory to construct testers from
+        for t in parallel:
+            t.suite_step = step
         suites.append({
             "step": step,
             "tester": tester,
-            "serial": [t for t in tests if t.name in exclusive],
-            "parallel": [t for t in tests if t.name not in exclusive],
+            "serial": serial,
+            "parallel": parallel,
             "skip_list": skip_list,
         })
         factory[step] = (cls, binary, fly_opts)
