@@ -15870,7 +15870,14 @@ switch value'''
             if not len(candidates):
                 self.assign_queues[instance].put(None)
                 return
-            key = max(candidates, key=lambda k: self.bucket_remaining[k])
+            # adopt the suite whose longest remaining test is longest:
+            # every suite's marathons start as early as a worker frees
+            # up.  Adopting by total-work-remaining instead postpones a
+            # small suite entirely - marathons included - and its long
+            # test then closes the run alone (Sub's 192s log-download
+            # did exactly that).
+            key = max(candidates,
+                      key=lambda k: (getattr(buckets[k][0], 'expected_duration', None) or 300.0))
         test = buckets[key].pop(0)
         self.bucket_remaining[key] -= (getattr(test, 'expected_duration', None) or 300.0)
         self.assign_queues[instance].put(test)
