@@ -291,8 +291,9 @@ void AP_OAPathPlanner::avoidance_thread()
         bool dest_to_next_dest_clear = false;
         {
             WITH_SEMAPHORE(_rsem);
-            if (now - avoidance_request.request_time_ms > OA_TIMEOUT_MS) {
-                // this is a very old request, don't process it
+            if (avoidance_request.request_time_ms == 0 ||
+                now - avoidance_request.request_time_ms > OA_TIMEOUT_MS) {
+                // no request has ever been posted, or this is a very old request, don't process it
                 continue;
             }
 
