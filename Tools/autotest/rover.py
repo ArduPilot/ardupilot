@@ -405,8 +405,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        self.set_rc(3, 2000)
-        self.set_rc(1, 1000)
+        self.set_rc_from_map({3: 2000, 1: 1000})
 
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < timeout:
@@ -416,8 +415,7 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         # centre the sticks and let the rover coast to a stop before we
         # finish.  Disarming stops the motors but not the vehicle, and
         # the next test is entitled to start from rest.
-        self.set_rc(3, 1500)
-        self.set_rc(1, 1500)
+        self.set_rc_from_map({3: 1500, 1: 1500})
         self.disarm_vehicle()
         self.wait_groundspeed(0, 0.2, minimum_duration=1)
 
@@ -850,8 +848,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.set_rc(8, mapping[1])
         self.wait_mode('ACRO')
 
-        self.set_rc(9, 1000)
-        self.set_rc(10, 1000)
+        self.set_rc_from_map({9: 1000, 10: 1000})
         self.set_parameters({
             "RC9_OPTION": 53, # steering
             "RC10_OPTION": 54, # hold
@@ -862,8 +859,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_mode("HOLD")
 
         # reset both switches - should go back to ACRO
-        self.set_rc(9, 1000)
-        self.set_rc(10, 1000)
+        self.set_rc_from_map({9: 1000, 10: 1000})
         self.wait_mode("ACRO")
 
         self.set_rc(9, 1900)
@@ -5663,19 +5659,15 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.arm_vehicle()
         self.progress("get a known heading to avoid worrying about wrap")
         # this is steering-type-two-paddles
-        self.set_rc(1, 1400)
-        self.set_rc(3, 1500)
+        self.set_rc_from_map({1: 1400, 3: 1500})
         self.wait_heading(90)
         self.progress("straighten up")
-        self.set_rc(1, 1500)
-        self.set_rc(3, 1500)
+        self.set_rc_from_map({1: 1500, 3: 1500})
         self.progress("steer one way")
-        self.set_rc(1, 1600)
-        self.set_rc(3, 1400)
+        self.set_rc_from_map({1: 1600, 3: 1400})
         self.wait_heading(120)
         self.progress("steer the other")
-        self.set_rc(1, 1400)
-        self.set_rc(3, 1600)
+        self.set_rc_from_map({1: 1400, 3: 1600})
         self.wait_heading(60)
         self.zero_throttle()
         self.disarm_vehicle()

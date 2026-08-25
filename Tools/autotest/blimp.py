@@ -108,10 +108,7 @@ class AutoTestBlimp(TestSuite):
 
         def stop_blimp():
             self.progress("Stopping.")
-            self.set_rc(1, 1500)
-            self.set_rc(2, 1500)
-            self.set_rc(3, 1500)
-            self.set_rc(4, 1500)
+            self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
             self.wait_speed_vector(Vector3(0, 0, 0), accuracy=speed_accuracy, timeout=30)
             self.wait_yaw_speed(0, 0.2, 10)
 
