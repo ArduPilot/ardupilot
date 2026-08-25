@@ -13618,7 +13618,6 @@ Also, ignores heartbeats not from our target system'''
             "LOG_DISARMED": 0,
             "LOG_BACKEND_TYPE": 4,
             "LOG_BITMASK": 14,
-            "SIM_SPEEDUP": 1,  # there's a wallclock-time thread involved!
         })
         self.reboot_sitl()
 
@@ -13632,7 +13631,12 @@ Also, ignores heartbeats not from our target system'''
 
         self.progress("Creating a very short log")
         self.wait_ready_to_arm()
-        self.set_parameter("DISARM_DELAY", 1)
+        self.set_parameters({
+            # the wallclock-time logger io thread must keep up from
+            # here on; nothing logs before arming as LOG_DISARMED is 0
+            "SIM_SPEEDUP": 1,
+            "DISARM_DELAY": 1,
+        })
         self.arm_vehicle()
         self.wait_disarmed()
         self.delay_sim_time(15, reason="Allow log persistence to finish")
