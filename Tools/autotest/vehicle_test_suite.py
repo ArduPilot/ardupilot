@@ -3612,19 +3612,21 @@ class TestSuite(abc.ABC):
             vehicleinfo_key = self.vehicleinfo_key()
 
         self.context_backup_file(self.binary)
+        # the artefacts are delivered straight to this worker's private
+        # paths: the master binaries in build/ never change, so no
+        # concurrent worker can pick up a half-written or
+        # frame-flavoured binary (serial runs have no private copy and
+        # self.binary is the build output itself, exactly as before).
+        # The signature bookkeeping notices self.binary changed and
+        # gives the next test a fresh SITL on a pristine copy.
+        periph_artefact = os.path.join(os.getcwd(), 'AP_Periph-%s' % frame)
         frame_opts = util.build_SITL_frame(
             vehicleinfo_key, frame,
             extra_configure_args=extra_configure_args,
             clean=False, configure=True,
+            artefact_dst=self.binary,
+            periph_artefact_dst=periph_artefact,
         )
-        # pick the rebuild up.  Under the parallel runner self.binary is
-        # this instance's private copy, not the build output, so without
-        # this the restart below runs the binary as it was before the
-        # build - for PPPPeriph, one built without --enable-PPP, which
-        # boots perfectly well and never starts PPP:
-        #     PPPPeriph ... Failed to receive text: ppp[0]: started
-        # Serial runs have no private copy and so never saw it.
-        self.refresh_test_binary()
 
         periph_port = None
         if frame_opts.get('periph_board') is not None:
@@ -3682,8 +3684,7 @@ class TestSuite(abc.ABC):
                 '--serial4', 'udpclient:127.0.0.1:%u' % self.periph_serial4_udp_port(),
                 '--defaults', ",".join(defaults_paths),
             ] + all_periph_args
-            periph_bin = os.path.join(
-                topdir, 'build', frame_opts['periph_board'], 'bin', 'AP_Periph')
+            periph_bin = periph_artefact
             self.progress("Spawning periph: %s %s" %
                           (periph_bin, " ".join(periph_cmd)))
             periph = pexpect.spawn(periph_bin, periph_cmd,
@@ -18495,8 +18496,14 @@ switch value'''
         build_opts = copy.copy(self.build_opts)
         build_opts["clean"] = False
         build_opts["configure"] = True
+        # a directory and tool of this suite's own: two suites' Replay
+        # tests can run concurrently in a unified pool, and both the
+        # build directory and a shared tool path would collide
+        self.replay_tool = os.path.join(os.getcwd(), 'Replay-tool')
         util.build_SITL('tool/Replay', board='sitl',
-                        isolated='build-replay-tool', **build_opts)
+                        isolated='build-replay-tool-%s' % self.log_name(),
+                        artefact_dst=self.replay_tool,
+                        **build_opts)
 
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''
@@ -18517,7 +18524,7 @@ switch value'''
         # log lands somewhere we never look:
         #     Expected exactly one new log from Replay, got ([])
         util.run_cmd(
-            [util.reltopdir('build/sitl/tool/Replay'), filepath],
+            [self.replay_tool, filepath],
             directory=os.getcwd(),
             checkfail=True,
             show=True,

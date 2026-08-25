@@ -212,6 +212,7 @@ def build_SITL(
         asan=False,
         waflock=None,
         isolated=False,
+        artefact_dst=None,
 ):
     if extra_configure_args is None:
         extra_configure_args = []
@@ -345,7 +346,8 @@ def build_SITL(
         build_env['WAFLOCK'] = waflock
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True, env=build_env)
     if isolated:
-        _copy_frame_artefact(isolated_builddir, board, build_target)
+        _copy_frame_artefact(isolated_builddir, board, build_target,
+                             dst=artefact_dst)
     return True
 
 
@@ -353,6 +355,8 @@ def build_SITL_frame(
         vehicleinfo_key,
         frame,
         extra_configure_args: list | None = None,
+        artefact_dst=None,
+        periph_artefact_dst=None,
         **build_kwargs,
 ):
     '''Build the main vehicle SITL plus (when defined) the AP_Periph
@@ -399,6 +403,7 @@ def build_SITL_frame(
     build_SITL(frame_opts['waf_target'],
                extra_configure_args=configure_args,
                isolated=frame_isolation_dir,
+               artefact_dst=artefact_dst,
                **build_kwargs)
 
     periph_board = frame_opts.get('periph_board')
@@ -407,18 +412,23 @@ def build_SITL_frame(
                    board=periph_board,
                    extra_configure_args=configure_args,
                    isolated=frame_isolation_dir,
+                   artefact_dst=periph_artefact_dst,
                    **build_kwargs)
 
     return frame_opts
 
 
-def _copy_frame_artefact(frame_builddir, board, waf_target):
-    '''copy a binary built in the frame build directory to the same
-    relative location in the default build directory, where callers
-    (and the parallel runner's refresh_test_binary()) expect it'''
+def _copy_frame_artefact(frame_builddir, board, waf_target, dst=None):
+    '''copy a binary built in the frame build directory to dst, or by
+    default to the same relative location in the default build
+    directory.  An explicit dst lets a test deliver the artefact
+    straight to its own private binary path: the master binary in the
+    default build directory then never changes, so no concurrent
+    worker can copy a half-written or wrongly-configured binary.'''
     import shutil
     src = os.path.join(frame_builddir, board, waf_target)
-    dst = os.path.join(topdir(), 'build', board, waf_target)
+    if dst is None:
+        dst = os.path.join(topdir(), 'build', board, waf_target)
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     # unlink first: the destination may be a binary a running SITL was
     # started from, and overwriting it in place fails with ETXTBSY
@@ -427,6 +437,7 @@ def _copy_frame_artefact(frame_builddir, board, waf_target):
     except FileNotFoundError:
         pass
     shutil.copy2(src, dst)
+    os.chmod(dst, 0o755)
 
 
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
