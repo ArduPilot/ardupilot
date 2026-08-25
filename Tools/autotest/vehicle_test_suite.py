@@ -15792,19 +15792,13 @@ switch value'''
             t.start()
             self.threads.append(t)
 
-        tests_by_name = {x.name: x for x in tests}
-        outstanding_results = set(tests_by_name.keys())
+        # keyed by (suite, name): in a unified multi-suite pool the
+        # same framework test name legitimately appears once per suite
+        def result_key(test):
+            return (getattr(test, "suite_step", None), test.name)
+        tests_by_key = {result_key(x): x for x in tests}
+        outstanding_results = set(tests_by_key.keys())
         results = []
-        # hung-worker watchdog: if no result arrives for a while, ask
-        # each still-running worker to dump its thread stacks (SIGUSR1
-        # -> faulthandler, see test_runner_thread_main); if the silence
-        # persists, abandon the workers entirely so one stuck worker
-        # cannot stall the run until the global timeout
-        stack_dump_interval = 300
-        hung_worker_timeout = 1800
-        last_result_time = time.time()
-        stack_dumps_sent = 0
-        abandoned_workers = False
         reaped = set()
 
         def reap_finished_workers():
@@ -15825,6 +15819,35 @@ switch value'''
                     worker_failures.append((t.name, t.exitcode))
 
         worker_failures = []
+        try:
+            self.collect_worker_results(tests, tests_by_key, result_key,
+                                        outstanding_results, results,
+                                        reap_finished_workers, worker_failures)
+        except Exception:
+            # a dispatcher failure must not orphan the worker fleet: a
+            # pool of processes each running a SITL would grind on
+            # invisibly long after this run has reported failure
+            self.progress("Dispatcher failed; terminating workers")
+            for t in self.threads:
+                if t.is_alive():
+                    t.terminate()
+            raise
+        return self.finalise_worker_results(results, worker_failures)
+
+    def collect_worker_results(self, tests, tests_by_key, result_key,
+                               outstanding_results, results,
+                               reap_finished_workers, worker_failures):
+        # hung-worker watchdog: if no result arrives for a while, ask
+        # each still-running worker to dump its thread stacks (SIGUSR1
+        # -> faulthandler, see test_runner_thread_main); if the silence
+        # persists, abandon the workers entirely so one stuck worker
+        # cannot stall the run until the global timeout
+        stack_dump_interval = 300
+        hung_worker_timeout = 1800
+        last_result_time = time.time()
+        stack_dumps_sent = 0
+        abandoned_workers = False
+
         while len(results) != len(tests):
             reap_finished_workers()
             while True:
@@ -15841,7 +15864,7 @@ switch value'''
                             self.githash = result.githash
                         except AttributeError:
                             pass
-                    outstanding_results.remove(result.test.name)
+                    outstanding_results.remove(result_key(result.test))
                 except queue.Empty:
                     break
             if len(results) == len(tests):
@@ -15859,12 +15882,12 @@ switch value'''
                     try:
                         result = self.result_queue.get(block=False)
                         results.append(result)
-                        outstanding_results.discard(result.test.name)
+                        outstanding_results.discard(result_key(result.test))
                     except queue.Empty:
                         break
-                for name in sorted(outstanding_results):
-                    self.progress("   Test runner died without result for %s" % name)
-                    result = Result(tests_by_name[name])
+                for key in sorted(outstanding_results, key=str):
+                    self.progress("   Test runner died without result for %s" % str(key))
+                    result = Result(tests_by_key[key])
                     result.passed = False
                     if abandoned_workers:
                         result.reason = ("Test runner hung and was abandoned "
@@ -15879,7 +15902,7 @@ switch value'''
                           (len(tests), len(results), self.test_queue.qsize()))
             if len(outstanding_results) < 5:
                 for t in outstanding_results:
-                    self.progress("   Where are you %s?" % t)
+                    self.progress("   Where are you %s?" % (t[1] if t[0] is None else "%s %s" % t,))
             silence = time.time() - last_result_time
             if silence > stack_dump_interval * (stack_dumps_sent + 1):
                 alive = [t for t in self.threads if t.is_alive()]
@@ -15916,7 +15939,9 @@ switch value'''
         for t in self.threads:
             t.join()
         reap_finished_workers()
+        return results
 
+    def finalise_worker_results(self, results, worker_failures):
         if worker_failures:
             self.progress("%u worker(s) exited non-zero; the run was short of "
                           "workers and may have taken longer than it looks:" %
