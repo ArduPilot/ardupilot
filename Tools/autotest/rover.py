@@ -7016,14 +7016,13 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
 
         self.progress('rebuilding rover with ppp enabled')
-        # snapshot the rover we are about to overwrite; context_pop()
+        # snapshot the binary we are about to overwrite; context_pop()
         # restores it (stopping SITL around the restore if that is the
-        # binary being run):
-        # absolute: this test can be running from an instance
-        # directory (the parallel runner's, or -I's), where a path
-        # relative to the top of the tree finds nothing:
-        #     [Errno 2] No such file or directory: 'build/sitl/bin/ardurover'
-        self.context_backup_file(util.reltopdir('build/sitl/bin/ardurover'))
+        # binary being run).  Under the parallel runner this is the
+        # instance's private copy - the master in build/ is never
+        # touched, so no concurrent worker can pick up a half-written
+        # or PPP-enabled rover:
+        self.context_backup_file(self.binary)
 
         # stop the SITL for the duration of the build.  The build blocks
         # this process for a long time, and a SITL left running with
@@ -7045,12 +7044,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # unified multi-suite pool
         util.build_SITL('bin/ardurover', clean=False, configure=True,
                         isolated='build-rover-ppp',
+                        artefact_dst=self.binary,
                         extra_configure_args=['--enable-PPP', '--enable-math-check-indexes', '--debug'])
-
-        # under the parallel test runner each test runs against a private
-        # copy of the binary; make sure that copy is the rover we just
-        # built, or we start the pre-rebuild one back up:
-        self.refresh_test_binary()
 
         self.start_SITL(wipe=False)
         self.mav.do_connect()
