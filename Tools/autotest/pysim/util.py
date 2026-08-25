@@ -232,6 +232,46 @@ def build_SITL(
         if waflock is None:
             waflock = '.lock-waf-frame-build'
 
+    # configure="auto": (re)configure only when the configuration we
+    # want differs from the one the tree last had.  The wanted
+    # configuration is fully determined by this function's parameters,
+    # so a stamp of them is compared; a missing stamp, a missing board
+    # build directory, or any parameter change reconfigures.  This
+    # replaces the old --no-configure guesswork: skipping is the
+    # common fast path, and a tree configured some other way (a manual
+    # ./waf configure, different options) is reconfigured instead of
+    # failing with "configure options have changed".
+    stampfile = None
+    if configure == "auto":
+        wanted = repr(sorted({
+            "board": board,
+            "debug": debug,
+            "math_check_indexes": math_check_indexes,
+            "ekf_single": ekf_single,
+            "postype_single": postype_single,
+            "coverage": coverage,
+            "force_32bit": force_32bit,
+            "ubsan": ubsan,
+            "ubsan_abort": ubsan_abort,
+            "num_aux_imus": num_aux_imus,
+            "dronecan_tests": dronecan_tests,
+            "asan": asan,
+            "extra_configure_args": extra_configure_args,
+            "extra_defines": sorted(extra_defines.items()),
+            "waflock": waflock,
+        }.items()))
+        stampfile = os.path.join(topdir(), "build",
+                                 ".autotest-configure-%s" % board)
+        try:
+            with open(stampfile) as f:
+                have = f.read()
+        except OSError:
+            have = None
+        configure = (have != wanted or
+                     not os.path.exists(os.path.join(topdir(), "build", board)))
+        if not configure:
+            print("Configuration for %s unchanged; not reconfiguring" % board)
+
     # first configure
     if configure:
         waf_configure(board,
@@ -250,6 +290,19 @@ def build_SITL(
                       extra_args=extra_configure_args,
                       asan=asan,
                       waflock=waflock,)
+        if stampfile is not None:
+            os.makedirs(os.path.dirname(stampfile), exist_ok=True)
+            with open(stampfile, "w") as f:
+                f.write(wanted)
+        else:
+            # an explicitly-requested configure may differ from the
+            # stamped one; forget the stamp so the next auto build
+            # re-checks
+            try:
+                os.unlink(os.path.join(topdir(), "build",
+                                       ".autotest-configure-%s" % board))
+            except OSError:
+                pass
 
     # then clean
     if clean:
