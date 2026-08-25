@@ -514,14 +514,8 @@ def run_specific_test(step, *args, **kwargs):
     return tester.autotest(tests=run, allow_skips=False, step_name=step), tester
 
 
-def run_step(step):
-    """Run one step."""
-    # remove old logs
-    util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
-
-    if step == "prerequisites":
-        return test_prerequisites()
-
+def make_build_opts():
+    '''assemble the build options from the command-line options'''
     build_opts = {
         "j": opts.j,
         "debug": opts.debug,
@@ -532,7 +526,7 @@ def run_step(step):
         "math_check_indexes": opts.math_check_indexes,
         "ekf_single": opts.ekf_single,
         "postype_single": opts.postype_single,
-        "extra_configure_args": opts.waf_configure_args,
+        "extra_configure_args": list(opts.waf_configure_args),
         "coverage": opts.coverage,
         "force_32bit" : opts.force_32bit,
         "ubsan" : opts.ubsan,
@@ -545,6 +539,18 @@ def run_step(step):
     if opts.Werror:
         build_opts['extra_configure_args'].append("--Werror")
 
+    return build_opts
+
+
+def run_step(step):
+    """Run one step."""
+    # remove old logs
+    util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
+
+    if step == "prerequisites":
+        return test_prerequisites()
+
+    build_opts = make_build_opts()
     # a derived build phase cleans and configures the shared sitl
     # board only once; see expand_build_steps()
     build_opts.update(derived_build_opt_overrides.get(step, {}))
@@ -589,14 +595,72 @@ def run_step(step):
             os.unlink(binary)
         except (FileNotFoundError, ValueError):
             pass
+        # boards other than sitl build fully isolated - their own
+        # output directory and waf lockfile, the binary copied back to
+        # build/<board>/ where consumers expect it.  Sharing the
+        # default output directory is not an option even with a
+        # separate lockfile: configure overwrites the shared
+        # configuration cache (build/c4che), so the next sitl build
+        # would compile against this board's environment.
+        isolated = False
+        if board != 'sitl':
+            isolated = 'build-%s' % board
         return util.build_SITL(
             vehicle_binary,
             board=board,
+            isolated=isolated,
             **build_opts
         )
 
+    if step == 'build.All':
+        return build_all()
+
+    if step == 'build.Binaries':
+        return build_binaries()
+
+    if step == 'build.examples':
+        return build_examples(**build_opts)
+
+    if step == 'run.examples':
+        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
+
+    if step == 'build.Parameters':
+        return build_parameters()
+
+    if step == 'convertgpx':
+        return convert_gpx()
+
+    if step == 'build.unit_tests':
+        return build_unit_tests(**build_opts)
+
+    if step == 'run.unit_tests':
+        return run_unit_tests()
+
+    if step == 'clang-scan-build':
+        return run_clang_scan_build()
+
     binary = binary_path(step, debug=opts.debug)
 
+    fly_opts = make_fly_opts(step, build_opts)
+
+    # handle "test.Copter" etc:
+    if step in tester_class_map:
+        # create an instance of the tester class:
+        global tester
+        tester = tester_class_map[step](binary, **fly_opts)
+        # run the test and return its result and the tester itself
+        return (tester.autotest(step_name=step, parallel=opts.parallel), tester)
+
+    # handle "test.Copter.CPUFailsafe" etc:
+    specific_test_to_run = find_specific_test_to_run(step)
+    if specific_test_to_run is not None:
+        return run_specific_test(specific_test_to_run, binary, **fly_opts)
+
+    raise RuntimeError("Unknown step %s" % step)
+
+
+def make_fly_opts(step, build_opts):
+    '''assemble the tester-construction options for a test step'''
     # see if we need any supplementary binaries
     supplementary_binaries = []
     for key, value in supplementary_test_binary_map.items():
@@ -657,47 +721,75 @@ def run_step(step):
 
     fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
-    # handle "test.Copter" etc:
-    if step in tester_class_map:
-        # create an instance of the tester class:
-        global tester
-        tester = tester_class_map[step](binary, **fly_opts)
-        # run the test and return its result and the tester itself
-        return (tester.autotest(step_name=step, parallel=opts.parallel), tester)
+    return fly_opts
 
-    # handle "test.Copter.CPUFailsafe" etc:
-    specific_test_to_run = find_specific_test_to_run(step)
-    if specific_test_to_run is not None:
-        return run_specific_test(specific_test_to_run, binary, **fly_opts)
 
-    if step == 'build.All':
-        return build_all()
+def run_unified_test_steps(test_steps):
+    '''run several suites' tests in one parallel pool.
 
-    if step == 'build.Binaries':
-        return build_binaries()
+    Each suite's exclusive (serial-only) tests run first, suite by
+    suite, at the base instance, exactly as the per-suite runner does.
+    Every remaining test from every suite then goes into a single
+    parallel pool: workers hold one live session at a time and swap
+    testers when the next test belongs to a different suite, so the
+    pool stays full instead of draining to stragglers at each suite
+    boundary.
 
-    if step == 'build.examples':
-        return build_examples(**build_opts)
+    Returns a list of (step, passed, tester) in the given order.'''
+    util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
+    build_opts = make_build_opts()
+    suites = []
+    factory = {}
+    for step in test_steps:
+        binary = binary_path(step, debug=opts.debug)
+        fly_opts = make_fly_opts(step, build_opts)
+        cls = tester_class_map[step]
+        tester = cls(binary, **fly_opts)
+        (tests, skip_list) = tester.prepare_tests()
+        for t in tests:
+            t.suite_step = step
+        exclusive = tester.tests_needing_exclusive_run()
+        suites.append({
+            "step": step,
+            "tester": tester,
+            "serial": [t for t in tests if t.name in exclusive],
+            "parallel": [t for t in tests if t.name not in exclusive],
+            "skip_list": skip_list,
+        })
+        factory[step] = (cls, binary, fly_opts)
 
-    if step == 'run.examples':
-        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
+    base = opts.instance
+    results_by_step = dict((suite["step"], []) for suite in suites)
 
-    if step == 'build.Parameters':
-        return build_parameters()
+    for suite in suites:
+        if not len(suite["serial"]):
+            continue
+        print("Running %u %s test(s) serially (blacklisted from parallel run)" %
+              (len(suite["serial"]), suite["step"]))
+        results_by_step[suite["step"]] += suite["tester"].run_tests_in_processes(
+            suite["serial"], 1, base_instance=base)
 
-    if step == 'convertgpx':
-        return convert_gpx()
+    combined = []
+    for suite in suites:
+        combined += suite["parallel"]
+    if len(combined):
+        print("Running %u test(s) from %u suite(s) %u-way parallel" %
+              (len(combined), len(suites), opts.parallel))
+        conductor = suites[0]["tester"]
+        conductor.unified_tester_factory = factory
+        results = conductor.run_tests_in_processes(
+            combined, opts.parallel, base_instance=base + 1)
+        for result in results:
+            step = getattr(result.test, "suite_step", suites[0]["step"])
+            results_by_step[step].append(result)
 
-    if step == 'build.unit_tests':
-        return build_unit_tests(**build_opts)
-
-    if step == 'run.unit_tests':
-        return run_unit_tests()
-
-    if step == 'clang-scan-build':
-        return run_clang_scan_build()
-
-    raise RuntimeError("Unknown step %s" % step)
+    ret = []
+    for suite in suites:
+        step = suite["step"]
+        ok = suite["tester"].report_results(
+            results_by_step[step], suite["skip_list"], step_name=step)
+        ret.append((step, ok, suite["tester"]))
+    return ret
 
 
 class TestResult(object):
@@ -909,6 +1001,17 @@ def run_tests(steps):
 
     steps = expand_build_steps(steps)
 
+    # with a parallel pool and more than one whole-suite test step, all
+    # the suites' tests share one pool: pull those steps out of the
+    # sequential loop (their builds have already been derived)
+    unified_steps = []
+    if opts.parallel > 1:
+        unified_steps = [s for s in steps if s in tester_class_map]
+    if len(unified_steps) > 1:
+        steps = [s for s in steps if s not in unified_steps]
+    else:
+        unified_steps = []
+
     passed = True
     failed = []
     failed_testinstances = dict()
@@ -963,6 +1066,30 @@ def run_tests(steps):
             tester.rc_thread_should_quit = True
             tester.rc_thread.join()
             tester.rc_thread = None
+
+    if len(unified_steps):
+        t1 = time.time()
+        print(">>>> RUNNING UNIFIED STEPS: %s at %s" %
+              (" ".join(unified_steps), time.asctime()))
+        try:
+            outcomes = run_unified_test_steps(unified_steps)
+        except Exception as msg:  # noqa: BLE001
+            print(">>>> FAILED UNIFIED STEPS at %s (%s)" %
+                  (time.asctime(), msg))
+            traceback.print_exc(file=sys.stdout)
+            outcomes = [(step, False, None) for step in unified_steps]
+        elapsed = time.time() - t1
+        for (step, success, testinstance) in outcomes:
+            if success:
+                results.add(step, '<span class="passed-text">PASSED</span>', elapsed)
+                print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+            else:
+                print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
+                passed = False
+                failed.append(step)
+                if testinstance is not None:
+                    failed_testinstances[step] = [testinstance]
+                results.add(step, '<span class="failed-text">FAILED</span>', elapsed)
 
     if not passed:
         keys = failed_testinstances.keys()
