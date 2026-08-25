@@ -196,8 +196,10 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_mode("LOITER", timeout=10)
 
         # restore RC and prepare to test hold fallback
-        self.set_parameter("SIM_RC_FAIL", 0)
-        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.set_parameters({
+            "SIM_RC_FAIL": 0,
+            "SIM_GPS1_ENABLE": 0,
+        })
         self.change_mode("MANUAL")
 
         self.progress("Testing failsafe to hold")
@@ -1044,8 +1046,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def RCOverrides(self):
         '''Test RC overrides'''
-        self.set_parameter("MAV_GCS_SYSID", self.mav.source_system)
-        self.set_parameter("RC12_OPTION", 46)
+        self.set_parameters({
+            "MAV_GCS_SYSID": self.mav.source_system,
+            "RC12_OPTION": 46,
+        })
         self.reboot_sitl()
 
         self.change_mode('MANUAL')
@@ -7234,8 +7238,10 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, False, False, False, verbose=True)
 
         self.context_push()
-        self.set_parameter("SIM_FLOW_ENABLE", 1)
-        self.set_parameter("FLOW_TYPE", 10)
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+        })
 
         self.reboot_sitl()
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, True, True, True, verbose=True)

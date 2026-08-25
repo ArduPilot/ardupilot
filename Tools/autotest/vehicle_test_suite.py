@@ -4170,8 +4170,10 @@ class TestSuite(abc.ABC):
         if not self.is_plane():
             # Plane does not have enable parameter
             self.set_parameter("ARSPD_ENABLE", 1)
-        self.set_parameter("ARSPD_BUS", 2)
-        self.set_parameter("ARSPD_TYPE", 7)
+        self.set_parameters({
+            "ARSPD_BUS": 2,
+            "ARSPD_TYPE": 7,
+        })
         self.reboot_sitl()
 
         self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS, True, True, True, verbose=True, timeout=30)
@@ -4403,8 +4405,10 @@ class TestSuite(abc.ABC):
             # tracker starts armed, which is annoying
             return
         self.progress("Ensuring we have contents we care about")
-        self.set_parameter("LOG_FILE_DSRMROT", 1)
-        self.set_parameter("LOG_DISARMED", 0)
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "LOG_DISARMED": 0,
+        })
         logspath = Path(self.customise_SITL_log_directory())
 
         def create_num_logs(num_logs, logsdir, clear_logsdir=True):
@@ -4505,8 +4509,10 @@ class TestSuite(abc.ABC):
             # tracker starts armed, which is annoying
             return
         self.progress("Ensuring we have contents we care about")
-        self.set_parameter("LOG_FILE_DSRMROT", 1)
-        self.set_parameter("LOG_DISARMED", 0)
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "LOG_DISARMED": 0,
+        })
         self.customise_SITL_log_directory()
         for i in range(0, 10):
             self.wait_ready_to_arm()
@@ -4779,8 +4785,10 @@ class TestSuite(abc.ABC):
         if self.is_tracker():
             # tracker starts armed, which is annoying
             return
-        self.set_parameter("LOG_FILE_DSRMROT", 1)
-        self.set_parameter("LOG_DISARMED", 0)
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "LOG_DISARMED": 0,
+        })
         self.customise_SITL_log_directory()
 
         self.progress("Creating some logs")
@@ -5316,8 +5324,10 @@ class TestSuite(abc.ABC):
         if self.is_tracker():
             # tracker starts armed, which is annoying
             return
-        self.set_parameter("LOG_FILE_DSRMROT", 1)
-        self.set_parameter("LOG_DISARMED", 0)
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "LOG_DISARMED": 0,
+        })
         self.reboot_sitl()
 
         self.progress("Creating some logs")
@@ -5875,8 +5885,10 @@ class TestSuite(abc.ABC):
 
     def onboard_logging_not_log_disarmed(self):
         self.start_subtest("Test LOG_DISARMED-is-false behaviour")
-        self.set_parameter("LOG_DISARMED", 0)
-        self.set_parameter("LOG_FILE_DSRMROT", 0)
+        self.set_parameters({
+            "LOG_DISARMED": 0,
+            "LOG_FILE_DSRMROT": 0,
+        })
         self.reboot_sitl()
         self.wait_ready_to_arm() # let things setttle
         self.start_subtest("Ensure setting LOG_DISARMED yields a new file")
@@ -5949,8 +5961,10 @@ class TestSuite(abc.ABC):
     def onboard_logging_log_disarmed(self):
         self.start_subtest("Test LOG_DISARMED-is-true behaviour")
         start_list = self.log_list()
-        self.set_parameter("LOG_FILE_DSRMROT", 0)
-        self.set_parameter("LOG_DISARMED", 0)
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 0,
+            "LOG_DISARMED": 0,
+        })
         self.reboot_sitl()
         restart_list = self.log_list()
         if len(start_list) != len(restart_list):
@@ -12894,8 +12908,10 @@ Also, ignores heartbeats not from our target system'''
 
         mavproxy = self.start_mavproxy()
         try:
-            self.set_parameter("AHRS_EKF_TYPE", 10)
-            self.set_parameter("SIM_GND_BEHAV", 0)
+            self.set_parameters({
+                "AHRS_EKF_TYPE": 10,
+                "SIM_GND_BEHAV": 0,
+            })
 
             curr_params = []
             target_mask = 0
@@ -13366,9 +13382,11 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         mavproxy = None
         try:
-            self.set_parameter("LOG_BACKEND_TYPE", 4)
-            self.set_parameter("LOG_FILE_DSRMROT", 1)
-            self.set_parameter("LOG_BLK_RATEMAX", 1)
+            self.set_parameters({
+                "LOG_BACKEND_TYPE": 4,
+                "LOG_FILE_DSRMROT": 1,
+                "LOG_BLK_RATEMAX": 1,
+            })
             self.reboot_sitl()
             # MAVProxy holds its own connection to SITL.  Started before
             # the reboot above it is left on a dead socket which it does
@@ -14299,8 +14317,10 @@ Also, ignores heartbeats not from our target system'''
         new_parameter_value = old_parameter_value + 5
         ex = None
         try:
-            self.set_parameter("STAT_BOOTCNT", 0)
-            self.set_parameter("SIM_BARO_COUNT", -1)
+            self.set_parameters({
+                "STAT_BOOTCNT": 0,
+                "SIM_BARO_COUNT": -1,
+            })
 
             if self.is_tracker():
                 # starts armed...
@@ -16711,8 +16731,10 @@ switch value'''
                 })
                 self.do_fence_enable()
                 self.wait_statustext("Terminating due to fence breach", check_context=True)
-                self.set_parameter("AFS_AMSL_LIMIT", 0)
-                self.set_parameter("AFS_TERMINATE", 0)
+                self.set_parameters({
+                    "AFS_AMSL_LIMIT": 0,
+                    "AFS_TERMINATE": 0,
+                })
                 self.do_fence_disable()
 
             self.start_subtest("GPS Failure")
@@ -17165,8 +17187,10 @@ switch value'''
 
     def Button(self):
         '''Test Buttons'''
-        self.set_parameter("SIM_PIN_MASK", 0)
-        self.set_parameter("BTN_ENABLE", 1)
+        self.set_parameters({
+            "SIM_PIN_MASK": 0,
+            "BTN_ENABLE": 1,
+        })
         self.drain_mav()
         self.do_heartbeats(force=True)
         btn = 4
@@ -18665,8 +18689,10 @@ switch value'''
         self.context_collect("STATUSTEXT")
         for (sim_gps_type, name, gps_type, detect_name, serial_protocol, detect_prefix) in sim_gps:
             self.start_subtest("Checking GPS type %s" % name)
-            self.set_parameter("SIM_GPS1_TYPE", sim_gps_type)
-            self.set_parameter("SERIAL3_PROTOCOL", serial_protocol)
+            self.set_parameters({
+                "SIM_GPS1_TYPE": sim_gps_type,
+                "SERIAL3_PROTOCOL": serial_protocol,
+            })
             if gps_type is None:
                 gps_type = 1  # auto-detect
             self.set_parameter("GPS1_TYPE", gps_type)
@@ -18840,8 +18866,10 @@ switch value'''
             raise NotAchievedException("Incorrect fix type")
 
         self.start_subtest("Ensure detection when sim gps connected")
-        self.set_parameter("SIM_GPS2_TYPE", 1)
-        self.set_parameter("SIM_GPS2_ENABLE", 1)
+        self.set_parameters({
+            "SIM_GPS2_TYPE": 1,
+            "SIM_GPS2_ENABLE": 1,
+        })
         # a reboot is required after setting GPS2_TYPE.  We start
         # sending GPS2_RAW out, once the parameter is set, but a
         # reboot is required because _port[1] is only set in

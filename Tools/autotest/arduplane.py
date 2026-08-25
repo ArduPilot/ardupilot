@@ -2267,9 +2267,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def deadreckoning_main(self, disable_airspeed_sensor=False):
         self.context_push()
-        self.set_parameter("EK3_OPTIONS", 1)
-        self.set_parameter("AHRS_OPTIONS", 3)
-        self.set_parameter("LOG_REPLAY", 1)
+        self.set_parameters({
+            "EK3_OPTIONS": 1,
+            "AHRS_OPTIONS": 3,
+            "LOG_REPLAY": 1,
+        })
         self.reboot_sitl()
         self.wait_ready_to_arm()
 
@@ -2324,8 +2326,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # wait for EKF and vehicle position to stabilise, then test response to jamming
             self.delay_sim_time(20, reason="EKF and position to stabilise")
 
-            self.set_parameter("AHRS_OPTIONS", 1)
-            self.set_parameter("SIM_GPS1_JAM", 1)
+            self.set_parameters({
+                "AHRS_OPTIONS": 1,
+                "SIM_GPS1_JAM": 1,
+            })
             self.delay_sim_time(13, reason="GPS jamming simulation")
             self.set_parameter("SIM_GPS1_JAM", 0)
             t_enabled = self.get_sim_time()
@@ -7081,8 +7085,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Bad relative alt %.1f" % relalt)
 
         self.progress("Setting low accuracy, glitching GPS")
-        self.set_parameter("SIM_GPS1_ACC", 40)
-        self.set_parameter("SIM_GPS1_GLTCH_Z", -47)
+        self.set_parameters({
+            "SIM_GPS1_ACC": 40,
+            "SIM_GPS1_GLTCH_Z": -47,
+        })
 
         self.progress("Waiting 10s for height update")
         self.delay_sim_time(10, reason="GPS altitude to update")
@@ -9110,8 +9116,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_text("clear: Scaling spd", check_context=True)
 
         self.start_subsubtest("ArmCk: FOLL_SYSID must be set if FOLL_ENABLE = 1")
-        self.set_parameter("FOLL_ENABLE", 1)
-        self.set_parameter("FOLL_OFS_X", 10)
+        self.set_parameters({
+            "FOLL_ENABLE": 1,
+            "FOLL_OFS_X": 10,
+        })
         self.assert_prearm_failure("FOLL_SYSID not set", other_prearm_failures_fatal=False)
         self.set_parameter("FOLL_SYSID", 3)
         self.wait_text("clear: FOLL_SYSID not set", check_context=True)
@@ -9169,11 +9177,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("AIRSPEED_MIN", 10)
         self.wait_text("clear: stall < min", check_context=True)
         self.start_subsubtest("ArmCk: AIRSPEED cruise > max")
-        self.set_parameter("AIRSPEED_CRUISE", 40)
-        self.set_parameter("SCALING_SPEED", 40)
+        self.set_parameters({
+            "AIRSPEED_CRUISE": 40,
+            "SCALING_SPEED": 40,
+        })
         self.assert_prearm_failure("ArmCk: fail: stall < min", other_prearm_failures_fatal=False)
-        self.set_parameter("AIRSPEED_CRUISE", 22)
-        self.set_parameter("SCALING_SPEED", 22)
+        self.set_parameters({
+            "AIRSPEED_CRUISE": 22,
+            "SCALING_SPEED": 22,
+        })
         self.wait_text("clear: stall < min", check_context=True)
 
         self.start_subsubtest("ArmCk: AIRSPEED_MIN must be > AIRSPEED_STALL")
