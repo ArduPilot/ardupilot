@@ -356,9 +356,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         """Wait for level flight."""
         tstart = self.get_sim_time()
         self.progress("Waiting for level flight")
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({1: 1500, 2: 1500, 4: 1500})
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.assert_receive_message('ATTITUDE')
             roll = math.degrees(m.roll)
@@ -544,8 +542,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def test_stabilize(self, count=1):
         """Fly stabilize mode."""
         # full throttle!
-        self.set_rc(3, 2000)
-        self.set_rc(2, 1300)
+        self.set_rc_from_map({3: 2000, 2: 1300})
         self.change_altitude(300, relative=True)
         self.set_rc(2, 1500)
 
@@ -570,8 +567,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def test_acro(self, count=1):
         """Fly ACRO mode."""
         # full throttle!
-        self.set_rc(3, 2000)
-        self.set_rc(2, 1300)
+        self.set_rc_from_map({3: 2000, 2: 1300})
         self.change_altitude(300, relative=True)
         self.set_rc(2, 1500)
 
@@ -611,8 +607,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def test_FBWB(self, mode='FBWB'):
         """Fly FBWB or CRUISE mode."""
         self.change_mode(mode)
-        self.set_rc(3, 1700)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({3: 1700, 2: 1500})
 
         # lock in the altitude by asking for an altitude change then releasing
         self.set_rc(2, 1000)
@@ -1579,8 +1574,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.start_subtest("Not use RC throttle input when THR_FAILSAFE==2")
         self.takeoff(100)
-        self.set_rc(3, 1800)
-        self.set_rc(1, 2000)
+        self.set_rc_from_map({3: 1800, 1: 2000})
         self.wait_attitude(desroll=45, timeout=1)
         self.context_push()
         self.set_parameters({
@@ -2704,8 +2698,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("FLTMODE1", 1)  # circle
         self.set_rc(8, 950)
         self.wait_mode("CIRCLE")
-        self.set_rc(9, 1000)
-        self.set_rc(10, 1000)
+        self.set_rc_from_map({9: 1000, 10: 1000})
         self.set_parameters({
             "RC9_OPTION": 4, # RTL
             "RC10_OPTION": 55, # guided
@@ -2716,8 +2709,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_mode("GUIDED")
 
         self.progress("resetting both switches - should go back to CIRCLE")
-        self.set_rc(9, 1000)
-        self.set_rc(10, 1000)
+        self.set_rc_from_map({9: 1000, 10: 1000})
         self.wait_mode("CIRCLE")
 
         self.set_rc(9, 1900)
@@ -5163,8 +5155,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.progress("Fly above ceiling and check there is a breach")
         self.change_mode('FBWA')
-        self.set_rc(3, 2000)
-        self.set_rc(2, 1000)
+        self.set_rc_from_map({3: 2000, 2: 1000})
 
         self.wait_statustext("Max Alt fence breached", timeout=10, check_context=True)
         self.wait_mode('RTL')
@@ -5173,8 +5164,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         if (m.onboard_control_sensors_health & fence_bit):
             raise NotAchievedException("Fence ceiling not breached")
 
-        self.set_rc(3, 1500)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({3: 1500, 2: 1500})
 
         self.progress("Wait for RTL alt reached")
         self.wait_altitude(cruise_alt-5, cruise_alt+5, relative=True, timeout=30)
@@ -5195,15 +5185,13 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_ACTION": 8,   # Set action to AUTOLAND if possible
         })
 
-        self.set_rc(3, 2000)
-        self.set_rc(2, 1000)
+        self.set_rc_from_map({3: 2000, 2: 1000})
 
         self.wait_statustext("Max Alt fence breached", timeout=10, check_context=True)
         self.wait_mode(26) # AUTOLAND,need pymavlink .43 to use text name
         self.assert_fence_sys_status(True, True, False)
 
-        self.set_rc(3, 1500)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({3: 1500, 2: 1500})
 
         self.progress("Wait for cruise alt reached")
         self.wait_altitude(
