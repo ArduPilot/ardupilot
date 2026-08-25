@@ -252,6 +252,22 @@ def build_SITL(
     # ./waf configure, different options) is reconfigured instead of
     # failing with "configure options have changed".
     stampfile = None
+
+    # the lockfile this build will follow: waf builds whatever board
+    # the lockfile was last configured for, so the auto-configure
+    # decision must notice when some other configure has repointed it
+    lockname = waflock
+    if lockname is None:
+        lockname = '.lock-waf_%s_build' % sys.platform
+    lockpath = os.path.join(topdir(), lockname)
+
+    def lock_fingerprint():
+        try:
+            st = os.stat(lockpath)
+            return "%u:%u" % (st.st_mtime_ns, st.st_size)
+        except OSError:
+            return "missing"
+
     if configure == "auto":
         wanted = repr(sorted({
             "board": board,
@@ -274,10 +290,11 @@ def build_SITL(
                                  ".autotest-configure-%s" % board)
         try:
             with open(stampfile) as f:
-                have = f.read()
-        except OSError:
-            have = None
+                (have, have_lock) = f.read().split("\n", 1)
+        except (OSError, ValueError):
+            (have, have_lock) = (None, None)
         configure = (have != wanted or
+                     have_lock != lock_fingerprint() or
                      not os.path.exists(os.path.join(topdir(), "build", board)))
         if not configure:
             print("Configuration for %s unchanged; not reconfiguring" % board)
@@ -303,7 +320,7 @@ def build_SITL(
         if stampfile is not None:
             os.makedirs(os.path.dirname(stampfile), exist_ok=True)
             with open(stampfile, "w") as f:
-                f.write(wanted)
+                f.write(wanted + "\n" + lock_fingerprint())
         elif waflock is None and not isolated:
             # an explicitly-requested configure of the default tree may
             # differ from the stamped one; forget the stamp so the next
