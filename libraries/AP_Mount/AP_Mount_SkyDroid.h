@@ -1,11 +1,13 @@
 /*
   SkyDroid gimbal driver using custom serial protocol (usually run over UDP)
 
-  Packet format (courtesy of SkyDroid's "TOP" protocol document).  This is
-  the same framing used by SkyDroid's OEM supplier for the Topotek driver
-  (see AP_Mount_Topotek) but the address bytes, command identifiers and
-  units used by SkyDroid's own firmware differ, so this is a separate,
-  independent implementation rather than a subclass.
+  This is the same "#TP"/"#tp" wire framing used by SkyDroid's OEM supplier
+  for the Topotek driver (see AP_Mount_Topotek) - both derive from
+  AP_Mount_Backend_TPFrame, which implements the shared framing/CRC/packet-
+  send layer.  Neither protocol document ever names or expands what "TP"
+  stands for.  The address bytes, command identifiers and units used by
+  SkyDroid's own firmware differ from Topotek's, so everything past that
+  shared layer is a separate, independent implementation.
 
   -------------------------------------------------------------------------------------------
   Field                 Index   Bytes       Description
@@ -70,19 +72,19 @@
 
 #if HAL_MOUNT_SKYDROID_ENABLED
 
-#include "AP_Mount_Backend_Serial.h"
+#include "AP_Mount_Backend_TPFrame.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
 
 #define AP_MOUNT_SKYDROID_PACKETLEN_MAX     28      // maximum number of bytes in a packet sent to or received from the gimbal
 
-class AP_Mount_SkyDroid : public AP_Mount_Backend_Serial
+class AP_Mount_SkyDroid : public AP_Mount_Backend_TPFrame
 {
 
 public:
     // Constructor
-    using AP_Mount_Backend_Serial::AP_Mount_Backend_Serial;
+    using AP_Mount_Backend_TPFrame::AP_Mount_Backend_TPFrame;
 
     // Do not allow copies
     CLASS_NO_COPY(AP_Mount_SkyDroid);
@@ -171,44 +173,15 @@ protected:
 
 private:
 
-    // header type (fixed or variable length)
-    // first three bytes of packet determined by this value
-    enum class HeaderType : uint8_t {
-        FIXED_LEN = 0x00,       // #TP will be sent
-        VARIABLE_LEN = 0x01,    // #tp will be sent
-    };
-
     // address (2nd and 3rd bytes of packet)
-    // first byte is always U (external/UDP controller) for our outgoing packets
+    // first byte is always U (external control unit, whether connected over
+    // UART or UDP - SkyDroid's protocol doesn't distinguish the two at the
+    // address-byte level) for our outgoing packets
     enum class AddressByte : uint8_t {
         SYSTEM_AND_IMAGE = 68,      // 'D'
         GIMBAL = 71,                // 'G'
         LENS = 77,                  // 'M'
         UDP = 85,                   // 'U'
-    };
-
-    // control byte (read or write)
-    // sent as 7th byte of packet
-    enum class ControlByte : uint8_t {
-        READ = 114,     // 'r'
-        WRITE = 119,    // 'w'
-    };
-
-    // parsing state
-    enum class ParseState : uint8_t {
-        WAITING_FOR_HEADER1 = 0,// #
-        WAITING_FOR_HEADER2,    // T or t
-        WAITING_FOR_HEADER3,    // P or p
-        WAITING_FOR_ADDR1,      // normally U
-        WAITING_FOR_ADDR2,      // M, D, G
-        WAITING_FOR_DATALEN,
-        WAITING_FOR_CONTROL,    // r or w
-        WAITING_FOR_ID1,        // e.g. 'G'
-        WAITING_FOR_ID2,        // e.g. 'A'
-        WAITING_FOR_ID3,        // e.g. 'C'
-        WAITING_FOR_DATA,       // normally hex numbers in char form (e.g. '0A')
-        WAITING_FOR_CRC_LOW,
-        WAITING_FOR_CRC_HIGH,
     };
 
     // steps of the 1hz round-robin housekeeping loop in update() - not every value is
@@ -225,14 +198,17 @@ private:
         NUM_STEPS = 10,         // wraps back to VERSION after this - note the gap at 7-9, spare
     };
 
-    // identifier bytes
-    typedef char Identifier[3];
-
     // send text prefix string
     static const char* send_message_prefix;
 
-    // reading incoming packets from gimbal and confirm they are of the correct format
-    void read_incoming_packets();
+    // AP_Mount_Backend_TPFrame overrides - see that class for what each means
+    void handle_message(const char* msg_id) override;
+    uint8_t packetlen_max() const override { return AP_MOUNT_SKYDROID_PACKETLEN_MAX; }
+    bool is_valid_address_byte(uint8_t b) const override {
+        return b == (uint8_t)AddressByte::UDP || b == (uint8_t)AddressByte::LENS ||
+               b == (uint8_t)AddressByte::SYSTEM_AND_IMAGE || b == (uint8_t)AddressByte::GIMBAL;
+    }
+    uint8_t source_address_byte() const override { return (uint8_t)AddressByte::UDP; }
 
     // request gimbal to start sending attitude at 10hz
     void request_gimbal_attitude();
@@ -291,19 +267,15 @@ private:
     // gimbal model name analysis (raw ASCII text, e.g. "C13")
     void gimbal_model_analyse();
 
-    // calculate checksum
-    uint8_t calculate_crc(const uint8_t *cmd, uint8_t len) const;
-
-    // hexadecimal to character conversion
-    uint8_t hex2char(uint8_t data) const;
-
-    // send a fixed length packet to gimbal
-    // returns true on success, false if serial port initialization failed
-    bool send_fixedlen_packet(AddressByte address, const Identifier id, bool write, uint8_t value);
-
-    // send a variable length packet to gimbal
-    // returns true on success, false if serial port initialization failed
-    bool send_variablelen_packet(HeaderType header, AddressByte address, const Identifier id, bool write, const uint8_t* databuff, uint8_t databuff_len);
+    // thin wrappers keeping call sites typed on our own AddressByte rather than
+    // the base class's raw uint8_t (which must accommodate every product's own,
+    // differently-valued AddressByte enum)
+    bool send_fixedlen_packet(AddressByte address, const Identifier id, bool write, uint8_t value) {
+        return AP_Mount_Backend_TPFrame::send_fixedlen_packet((uint8_t)address, id, write, value);
+    }
+    bool send_variablelen_packet(HeaderType header, AddressByte address, const Identifier id, bool write, const uint8_t* databuff, uint8_t databuff_len) {
+        return AP_Mount_Backend_TPFrame::send_variablelen_packet(header, (uint8_t)address, id, write, databuff, databuff_len);
+    }
 
     // set gimbal's lock vs follow mode
     // lock should be true if gimbal should maintain an earth-frame target
@@ -327,12 +299,6 @@ private:
     uint32_t _last_current_angle_ms;                            // system time (in milliseconds) that angle information received from the gimbal
     uint32_t _last_req_current_info_ms;                         // system time that this driver last requested current gimbal information
     uint8_t _last_req_step;                                     // 10hz request loop step (different requests are sent at various steps)
-    uint8_t _msg_buff[AP_MOUNT_SKYDROID_PACKETLEN_MAX];         // buffer holding bytes from latest packet received.  only used to calculate crc
-    uint8_t _msg_buff_len;                                      // number of bytes in the msg buffer
-    struct {
-        ParseState state;                                       // parser state
-        uint8_t data_len;                                       // expected number of data bytes
-    } _parser;
 };
 
 #endif // HAL_MOUNT_SKYDROID_ENABLED

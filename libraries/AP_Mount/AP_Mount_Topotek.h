@@ -1,6 +1,10 @@
 /*
   Topotek gimbal driver using custom serial protocol
 
+  This "#TP"/"#tp" wire framing is also used by SkyDroid's OEM'd gimbal
+  family (see AP_Mount_SkyDroid) - both derive from AP_Mount_Backend_TPFrame,
+  which implements the shared framing/CRC/packet-send layer.
+
   Packet format (courtesy of Topotek's SDK document)
 
   -------------------------------------------------------------------------------------------
@@ -22,7 +26,7 @@
 
 #if HAL_MOUNT_TOPOTEK_ENABLED
 
-#include "AP_Mount_Backend_Serial.h"
+#include "AP_Mount_Backend_TPFrame.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/AP_Common.h>
@@ -30,12 +34,12 @@
 #define AP_MOUNT_TOPOTEK_PACKETLEN_MAX              36          // maximum number of bytes in a packet sent to or received from the gimbal
 #define AP_MOUNT_RECV_GIMBAL_CMD_CATEGORIES_NUM     7           // parse the number of gimbal command types
 
-class AP_Mount_Topotek : public AP_Mount_Backend_Serial
+class AP_Mount_Topotek : public AP_Mount_Backend_TPFrame
 {
 
 public:
     // Constructor
-    using AP_Mount_Backend_Serial::AP_Mount_Backend_Serial;
+    using AP_Mount_Backend_TPFrame::AP_Mount_Backend_TPFrame;
 
     // Do not allow copies
     CLASS_NO_COPY(AP_Mount_Topotek);
@@ -132,13 +136,6 @@ protected:
 
 private:
 
-    // header type (fixed or variable length)
-    // first three bytes of packet determined by this value
-    enum class HeaderType : uint8_t {
-        FIXED_LEN = 0x00,       // #TP will be sent
-        VARIABLE_LEN = 0x01,    // #tp will be sent
-    };
-
     // address (2nd and 3rd bytes of packet)
     // first byte is always U followed by one of the other options
     enum class AddressByte : uint8_t {
@@ -150,30 +147,6 @@ private:
         UART = 85,                  // 'U'
     };
 
-    // control byte (read or write)
-    // sent as 7th byte of packet
-    enum class ControlByte : uint8_t {
-        READ = 114,     // 'r'
-        WRITE = 119,    // 'w'
-    };
-
-    // parsing state
-    enum class ParseState : uint8_t {
-        WAITING_FOR_HEADER1 = 0,// #
-        WAITING_FOR_HEADER2,    // T or t
-        WAITING_FOR_HEADER3,    // P or p
-        WAITING_FOR_ADDR1,      // normally U
-        WAITING_FOR_ADDR2,      // M, D, E, P, G
-        WAITING_FOR_DATALEN,
-        WAITING_FOR_CONTROL,    // r or w
-        WAITING_FOR_ID1,        // e.g. 'G'
-        WAITING_FOR_ID2,        // e.g. 'A'
-        WAITING_FOR_ID3,        // e.g. 'C'
-        WAITING_FOR_DATA,       // normally hex numbers in char form (e.g. '0A')
-        WAITING_FOR_CRC_LOW,
-        WAITING_FOR_CRC_HIGH,
-    };
-
     // tracking status
     enum class TrackingStatus : uint8_t {
         STOPPED_TRACKING = 0x30,                // not tracking
@@ -182,14 +155,17 @@ private:
         LENS_UNSUPPORT_TRACK = 0x34,            // this lens does not support tracking
     };
 
-    // identifier bytes
-    typedef char Identifier[3];
-
     // send text prefix string
     static const char* send_message_prefix;
 
-    // reading incoming packets from gimbal and confirm they are of the correct format
-    void read_incoming_packets();
+    // AP_Mount_Backend_TPFrame overrides - see that class for what each means
+    void handle_message(const char* msg_id) override;
+    uint8_t packetlen_max() const override { return AP_MOUNT_TOPOTEK_PACKETLEN_MAX; }
+    bool is_valid_address_byte(uint8_t b) const override {
+        return b == (uint8_t)AddressByte::UART || b == (uint8_t)AddressByte::LENS ||
+               b == (uint8_t)AddressByte::SYSTEM_AND_IMAGE || b == (uint8_t)AddressByte::AUXILIARY_EQUIPMENT ||
+               b == (uint8_t)AddressByte::NETWORK || b == (uint8_t)AddressByte::GIMBAL;
+    }
 
     // request gimbal attitude
     void request_gimbal_attitude();
@@ -239,28 +215,24 @@ private:
     // gimbal distance information analysis
     void gimbal_dist_info_analyse();
 
-    // return the address to send as the source of our packets.  The
+    // return the address byte to send as the source of our packets.  The
     // gimbal sends its replies out of the interface named here, so this
     // must be the interface we are actually connected to.  This is one
     // of the few places it is legitimate to ask a port how it is
     // connected; the protocol itself carries that information
-    AddressByte source_address() const {
-        return _uart->is_network_port() ? AddressByte::NETWORK : AddressByte::UART;
+    uint8_t source_address_byte() const override {
+        return (uint8_t)(_uart->is_network_port() ? AddressByte::NETWORK : AddressByte::UART);
     }
 
-    // calculate checksum
-    uint8_t calculate_crc(const uint8_t *cmd, uint8_t len) const;
-
-    // hexadecimal to character conversion
-    uint8_t hex2char(uint8_t data) const;
-
-    // send a fixed length packet to gimbal
-    // returns true on success, false if serial port initialization failed
-    bool send_fixedlen_packet(AddressByte address, const Identifier id, bool write, uint8_t value);
-
-    // send a variable length packet to gimbal
-    // returns true on success, false if serial port initialization failed
-    bool send_variablelen_packet(HeaderType header, AddressByte address, const Identifier id, bool write, const uint8_t* databuff, uint8_t databuff_len);
+    // thin wrappers keeping call sites typed on our own AddressByte rather than
+    // the base class's raw uint8_t (which must accommodate every product's own,
+    // differently-valued AddressByte enum)
+    bool send_fixedlen_packet(AddressByte address, const Identifier id, bool write, uint8_t value) {
+        return AP_Mount_Backend_TPFrame::send_fixedlen_packet((uint8_t)address, id, write, value);
+    }
+    bool send_variablelen_packet(HeaderType header, AddressByte address, const Identifier id, bool write, const uint8_t* databuff, uint8_t databuff_len) {
+        return AP_Mount_Backend_TPFrame::send_variablelen_packet(header, (uint8_t)address, id, write, databuff, databuff_len);
+    }
 
     // set gimbal's lock vs follow mode
     // lock should be true if gimbal should maintain an earth-frame target
@@ -287,12 +259,6 @@ private:
     uint8_t _last_req_step;                                     // 10hz request loop step (different requests are sent at various steps)
     uint8_t _stop_order_count;                                  // number of stop commands sent since target rates became zero
     float _measure_dist_m = -1.0f;                              // latest rangefinder distance (in meters)
-    uint8_t _msg_buff[AP_MOUNT_TOPOTEK_PACKETLEN_MAX];          // buffer holding bytes from latest packet received.  only used to calculate crc
-    uint8_t _msg_buff_len;                                      // number of bytes in the msg buffer
-    struct {
-        ParseState state;                                       // parser state
-        uint8_t data_len;                                       // expected number of data bytes
-    } _parser;
 
     // mapping from received message key to member function pointer to consume the message
     typedef struct {
