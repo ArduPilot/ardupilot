@@ -1119,6 +1119,16 @@ void AP_Mount_Backend::update_angle_target_from_rate(const MountRateTarget& rate
     }
 }
 
+// simple P-controller converting an angle error to a rate command - see this
+// function's declaration for the full explanation
+float AP_Mount_Backend::angle_error_to_rate(float error, float gain, float rate_max, float deadzone)
+{
+    if (fabsf(error) <= deadzone) {
+        return 0.0f;
+    }
+    return constrain_float(error * gain, -rate_max, rate_max);
+}
+
 // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
 uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
 {

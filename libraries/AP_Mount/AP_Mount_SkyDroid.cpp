@@ -407,14 +407,8 @@ void AP_Mount_SkyDroid::send_target_angles(const MountAngleTarget& angle_rad)
     constexpr float deadzone_deg = 0.05;  // stop correcting once within this many degrees
     const float yaw_error_deg = wrap_180(yaw_target_deg - degrees(_current_angle_rad.z));
     const float pitch_error_deg = pitch_target_deg - degrees(_current_angle_rad.y);
-    const float yaw_rate_dps = (fabsf(yaw_error_deg) <= deadzone_deg) ? 0.0f :
-        constrain_float(yaw_error_deg * kP,
-                         -AP_MOUNT_SKYDROID_AXIS_MAX_DPS,
-                         AP_MOUNT_SKYDROID_AXIS_MAX_DPS);
-    const float pitch_rate_dps = (fabsf(pitch_error_deg) <= deadzone_deg) ? 0.0f :
-        constrain_float(pitch_error_deg * kP,
-                         -AP_MOUNT_SKYDROID_AXIS_MAX_DPS,
-                         AP_MOUNT_SKYDROID_AXIS_MAX_DPS);
+    const float yaw_rate_dps = angle_error_to_rate(yaw_error_deg, kP, AP_MOUNT_SKYDROID_AXIS_MAX_DPS, deadzone_deg);
+    const float pitch_rate_dps = angle_error_to_rate(pitch_error_deg, kP, AP_MOUNT_SKYDROID_AXIS_MAX_DPS, deadzone_deg);
 
     // GSY's sign is inverted vs AP_Mount's convention (see send_axis_rate below)
     send_axis_rate(AP_MOUNT_SKYDROID_ID3CHAR_SPEED_YAW, -yaw_rate_dps);
