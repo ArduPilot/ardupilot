@@ -311,6 +311,99 @@ __bin_names = {
 }
 
 
+# the canonical build step which produces each entry in __bin_names;
+# several test suites share one binary (QuadPlane flies arduplane,
+# BalanceBot drives ardurover) so this is keyed by the binary, not the
+# vehicle
+__canonical_build_step_for_binary = {
+    "arduplane": "build.Plane",
+    "ardurover": "build.Rover",
+    "arducopter": "build.Copter",
+    "arducopter-heli": "build.Helicopter",
+    "ardusub": "build.Sub",
+    "antennatracker": "build.Tracker",
+    "blimp": "build.Blimp",
+    ("sitl_periph_universal", "AP_Periph"): "build.SITLPeriphUniversal",
+    ("sitl_periph_battmon", "AP_Periph"): "build.SITLPeriphBattMon",
+}
+
+
+def canonical_build_step(vehicle):
+    '''canonical build step producing the binary `vehicle`'s tests run,
+    or None for names with no vehicle binary'''
+    if vehicle not in __bin_names:
+        return None
+    return __canonical_build_step_for_binary.get(__bin_names[vehicle])
+
+
+def implied_build_steps_for_test_step(step):
+    '''the canonical build steps a test step needs: its vehicle binary
+    plus any supplementary peripheral binaries its suite launches'''
+    ret = []
+    try:
+        vehicle = step.split(".")[1]
+    except IndexError:
+        return ret
+    b = canonical_build_step(vehicle)
+    if b is not None:
+        ret.append(b)
+    for key, values in supplementary_test_binary_map.items():
+        if step == key or step.startswith(key + "."):
+            for spec in values:
+                a = spec.split(':')
+                sup = __canonical_build_step_for_binary.get((a[0], a[1]))
+                if sup is not None and sup not in ret:
+                    ret.append(sup)
+    return ret
+
+
+# build-option overrides for derived build steps, filled in by
+# expand_build_steps(): later builds sharing the sitl board must not
+# re-clean (wiping the binaries built moments earlier) or re-configure
+derived_build_opt_overrides = {}
+
+
+def expand_build_steps(steps):
+    '''absorb explicit vehicle build steps into a derived build phase.
+
+    Vehicle build steps no longer need to be given: each test step
+    implies the builds it needs (via __bin_names and the supplementary
+    binaries map).  Explicit vehicle build steps are still honoured -
+    a build-only invocation must still build - but are deduplicated
+    into the derived phase, which runs peripheral boards first (so the
+    default waf lockfile is left pointing at the sitl board) and
+    cleans/configures the sitl board only once.
+
+    Returns the new step list.'''
+    builds = []
+    kept = []
+    for step in steps:
+        if step.startswith("build."):
+            b = canonical_build_step(step.split(".")[1])
+            if b is not None:
+                if b != step:
+                    print("Note: %s builds via %s" % (step, b))
+                if b not in builds:
+                    builds.append(b)
+                continue
+        kept.append(step)
+        if step.startswith("test."):
+            for b in implied_build_steps_for_test_step(step):
+                if b not in builds:
+                    builds.append(b)
+    periph_boards = ("build.SITLPeriphUniversal", "build.SITLPeriphBattMon")
+    periph = [b for b in builds if b in periph_boards]
+    sitl = [b for b in builds if b not in periph_boards]
+    derived_build_opt_overrides.clear()
+    for b in sitl[1:]:
+        # auto-configure already skips the later same-board configures;
+        # cleaning again would wipe the binaries built moments earlier
+        derived_build_opt_overrides[b] = {"clean": False}
+    if builds:
+        print("Derived build steps: %s" % " ".join(periph + sitl))
+    return periph + sitl + kept
+
+
 def binary_path(step, debug=False):
     """Get vehicle binary path."""
     try:
@@ -451,6 +544,10 @@ def run_step(step):
 
     if opts.Werror:
         build_opts['extra_configure_args'].append("--Werror")
+
+    # a derived build phase cleans and configures the shared sitl
+    # board only once; see expand_build_steps()
+    build_opts.update(derived_build_opt_overrides.get(step, {}))
 
     vehicle_binary = None
     board = "sitl"
@@ -811,6 +908,8 @@ def run_tests(steps):
     print("Removing parallel autotest instance directories %u..%u" % (lo, hi))
     util.run_cmd("rm -rf " + instance_dirs, checkfail=False)
 
+    steps = expand_build_steps(steps)
+
     passed = True
     failed = []
     failed_testinstances = dict()
@@ -818,6 +917,17 @@ def run_tests(steps):
         util.pexpect_close_all()
 
         t1 = time.time()
+        if step.startswith("test."):
+            broken = [b for b in implied_build_steps_for_test_step(step)
+                      if b in failed]
+            if broken:
+                print(">>>> SKIPPED STEP: %s at %s (%s failed)" %
+                      (step, time.asctime(), " ".join(broken)))
+                passed = False
+                failed.append(step)
+                results.add(step, '<span class="failed-text">SKIPPED (build failed)</span>',
+                            0.0)
+                continue
         print(">>>> RUNNING STEP: %s at %s" % (step, time.asctime()))
         try:
             success = run_step(step)
@@ -1391,6 +1501,13 @@ if __name__ == "__main__":
                 matches.append(x)
 
             if a in moresteps:
+                matches.append(a)
+
+            # any vehicle with a binary may be named in a build step;
+            # expand_build_steps() folds it into the derived build
+            # phase (e.g. build.QuadPlane builds via build.Plane)
+            if (not matches and a.startswith("build.") and
+                    canonical_build_step(a.split(".")[1]) is not None):
                 matches.append(a)
 
             if not len(matches):
