@@ -15,6 +15,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @DisplayName: Rangefinder type
     // @Description: Type of connected rangefinder
     // @SortValues: AlphabeticalZeroAtTop
+    // @RebootRequired: True
     // @Values: 0:None
     // @Values: 1:Analog
     // @Values: 2:MaxbotixI2C
