@@ -486,8 +486,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         # zero buoyancy and no baro noise
-        self.set_parameter("SIM_BUOYANCY", 0)
-        self.set_parameter("SIM_BARO_RND", 0)
+        self.set_parameters({
+            "SIM_BUOYANCY": 0,
+            "SIM_BARO_RND": 0,
+        })
         # dive a bit to make sure we are not surfaced
         self.change_mode('STABILIZE')
         self.set_rc(Joystick.Throttle, 1350)
@@ -547,8 +549,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # Hold in 1 m/s current
         self.progress("Testing position hold in current")
-        self.set_parameter("SIM_WIND_SPD", 1)
-        self.set_parameter("SIM_WIND_T", 1)
+        self.set_parameters({
+            "SIM_WIND_SPD": 1,
+            "SIM_WIND_T": 1,
+        })
         self.delay_sim_time(10, reason="drift measurement in 1m/s current")
         distance_m = self.get_distance(start_pos, self.get_location())
         if distance_m > 1:

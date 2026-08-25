@@ -1255,8 +1255,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.set_parameter("SIM_RC_FAIL", 1)
         self.disarm_wait(timeout=1)
-        self.set_parameter("SIM_RC_FAIL", 0)
-        self.set_parameter("DISARM_DELAY", 10)
+        self.set_parameters({
+            "SIM_RC_FAIL": 0,
+            "DISARM_DELAY": 10,
+        })
 
         # Trigger an RC failure with the failsafe disabled. Verify no action taken.
         self.start_subtest("Radio failsafe disabled test: FS_THR_ENABLE=0 should take no failsafe action")
@@ -4157,8 +4159,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW, False, False, False, verbose=True)
 
         self.start_subtest("Make sure no crash if no rangefinder")
-        self.set_parameter("SIM_FLOW_ENABLE", 1)
-        self.set_parameter("FLOW_TYPE", 10)
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+        })
 
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
 
@@ -4551,16 +4555,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_push()
         try:
 
-            self.set_parameter("SIM_FLOW_ENABLE", 1)
-            self.set_parameter("FLOW_TYPE", 10)
+            self.set_parameters({
+                "SIM_FLOW_ENABLE": 1,
+                "FLOW_TYPE": 10,
+            })
             self.set_analog_rangefinder_parameters()
 
             # RC9 starts/stops calibration
             self.set_parameter("RC9_OPTION", 158)
 
             # initialise flow scaling parameters to incorrect values
-            self.set_parameter("FLOW_FXSCALER", -200)
-            self.set_parameter("FLOW_FYSCALER", 200)
+            self.set_parameters({
+                "FLOW_FXSCALER": -200,
+                "FLOW_FYSCALER": 200,
+            })
 
             self.reboot_sitl()
 
@@ -4745,11 +4753,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(5, reason="EKF to stabilise after takeoff")
 
         self.progress("Injecting VICON glitch")
-        self.set_parameter("SIM_VICON_GLIT_X", 100)
-        self.set_parameter("SIM_VICON_GLIT_Y", 100)
+        self.set_parameters({
+            "SIM_VICON_GLIT_X": 100,
+            "SIM_VICON_GLIT_Y": 100,
+        })
         self.delay_sim_time(5, reason="VICON glitch to take effect")
-        self.set_parameter("SIM_VICON_GLIT_X", 0)
-        self.set_parameter("SIM_VICON_GLIT_Y", 0)
+        self.set_parameters({
+            "SIM_VICON_GLIT_X": 0,
+            "SIM_VICON_GLIT_Y": 0,
+        })
 
         self.progress("Injecting BARO glitch")
         self.set_parameter("SIM_BARO_GLITCH", 10)
@@ -6944,8 +6956,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def ModeZigZag(self):
         '''test zigzag mode'''
         # set channel 8 for zigzag savewp and recentre it
-        self.set_parameter("RC8_OPTION", 61)
-        self.set_parameter("LOIT_OPTIONS", 0)
+        self.set_parameters({
+            "RC8_OPTION": 61,
+            "LOIT_OPTIONS": 0,
+        })
 
         self.takeoff(altitude_min=5, mode='LOITER')
 
@@ -9600,8 +9614,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         esc_peakdb1 = psd["X"][int(esc_hz)]
 
         # now add notch-per motor and check that the peak is squashed
-        self.set_parameter("INS_HNTCH_HMNCS", 1)
-        self.set_parameter("INS_HNTCH_OPTS", 2)
+        self.set_parameters({
+            "INS_HNTCH_HMNCS": 1,
+            "INS_HNTCH_OPTS": 2,
+        })
         self.reboot_sitl()
 
         freq, hover_throttle, peakdb2, psd = \
@@ -11867,8 +11883,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.set_parameter("SIM_IE24_ERROR", 30)
         self.disarm_wait(timeout=1)
-        self.set_parameter("SIM_IE24_ERROR", 0)
-        self.set_parameter("DISARM_DELAY", 10)
+        self.set_parameters({
+            "SIM_IE24_ERROR": 0,
+            "DISARM_DELAY": 10,
+        })
 
     def test_IE24_low_capacity_failsafe(self, proto_ver):
         elec_battery_instance = 2
@@ -12964,8 +12982,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         ex = None
         try:
-            self.set_parameter("SERIAL5_PROTOCOL", 1)
-            self.set_parameter("RNGFND1_TYPE", 10)
+            self.set_parameters({
+                "SERIAL5_PROTOCOL": 1,
+                "RNGFND1_TYPE": 10,
+            })
             self.reboot_sitl()
             self.set_parameter("RNGFND1_MAX", 327.67)
 
@@ -13302,8 +13322,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # remove the glitch and switch back to EKF3 - yet another
         # reset which must be handled.  Flying home on EKF3 also
         # ensures we navigate in the frame home was recorded in:
-        self.set_parameter("SIM_GPS1_GLTCH_X", 0)
-        self.set_parameter("AHRS_EKF_TYPE", 3)
+        self.set_parameters({
+            "SIM_GPS1_GLTCH_X": 0,
+            "AHRS_EKF_TYPE": 3,
+        })
         self.wait_statustext("AHRS: EKF3 active", check_context=True, timeout=10)
 
         # wait for EKF3 to shed the glitch so the vehicle agrees with
@@ -20297,8 +20319,10 @@ RTL_ALT_M 111
         self.context_pop()
 
         self.start_subtest("Disabling applet via parameter should allow freely setting DISARM_DELAY")
-        self.set_parameter("PARAM_LOCK_ENAB", 0)
-        self.set_parameter("DISARM_DELAY", 56)
+        self.set_parameters({
+            "PARAM_LOCK_ENAB": 0,
+            "DISARM_DELAY": 56,
+        })
 
         self.start_subtest("Re-enabling applet via parameter should stop freely setting DISARM_DELAY")
         self.context_push()

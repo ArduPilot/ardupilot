@@ -229,8 +229,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.wait_servo_channel_value(5, min_pwm, comparator=operator.le)
             self.wait_ready_to_arm()
         # remove attitude error and reinstance compass arming check
-        self.set_parameter("AHRS_TRIM_X", ahrs_trim_x)
-        self.set_parameter("ARMING_MAGTHRESH", arming_magthresh)
+        self.set_parameters({
+            "AHRS_TRIM_X": ahrs_trim_x,
+            "ARMING_MAGTHRESH": arming_magthresh,
+        })
 
         self.start_subtest("verify that AIRMODE auxswitch turns airmode on/off while armed")
         """set  RC7_OPTION to AIRMODE"""
@@ -1168,9 +1170,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(1, 1000)
         self.wait_roll(-lim_roll_deg, 5)
         self.progress("Killing aileron servo output to force qassist to help")
-        self.set_parameter("SERVO1_MIN", 1480)
-        self.set_parameter("SERVO1_MAX", 1480)
-        self.set_parameter("SERVO1_TRIM", 1480)
+        self.set_parameters({
+            "SERVO1_MIN": 1480,
+            "SERVO1_MAX": 1480,
+            "SERVO1_TRIM": 1480,
+        })
         self.progress("Trying to roll over hard the other way")
         self.set_rc(1, 2000)
         self.progress("Waiting for qassist (angle) to kick in")
@@ -1283,8 +1287,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext(r"Alt assist \d*.\d*m", regex=True, timeout=100)
 
         # Test transition timeout, should switch to QRTL
-        self.set_parameter("Q_TRANS_FAIL_ACT", 1)
-        self.set_parameter("Q_TRANS_FAIL", 10)
+        self.set_parameters({
+            "Q_TRANS_FAIL_ACT": 1,
+            "Q_TRANS_FAIL": 10,
+        })
         self.wait_mode("QRTL")
 
         self.context_pop()
@@ -3271,8 +3277,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''self.install_messageprinter_handlers_context(['PARAM_VALUE'])'''
 
         self.start_subsubtest("ArmCk: Q_RTL_ALT must be legal")
-        self.set_parameter("SCALING_SPEED", 22)
-        self.set_parameter("Q_RTL_ALT", 150)
+        self.set_parameters({
+            "SCALING_SPEED": 22,
+            "Q_RTL_ALT": 150,
+        })
         self.assert_prearm_failure("ArmCk: fail: Q_RTL_ALT too high", other_prearm_failures_fatal=False)
         self.set_parameter("Q_RTL_ALT", 120)
         self.wait_text("clear: Q_RTL_ALT", check_context=True)
