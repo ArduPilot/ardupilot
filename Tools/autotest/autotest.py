@@ -7,6 +7,7 @@ Andrew Tridgell, October 2011
  AP_FLAKE8_CLEAN
 """
 import atexit
+import json
 import copy
 import fnmatch
 import glob
@@ -724,6 +725,27 @@ def make_fly_opts(step, build_opts):
     return fly_opts
 
 
+def test_durations_path():
+    return buildlogs_path('autotest-test-durations.json')
+
+
+def load_test_durations():
+    '''previously-recorded per-test durations, keyed "step::testname"'''
+    try:
+        with open(test_durations_path()) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_test_durations(durations):
+    try:
+        with open(test_durations_path(), 'w') as f:
+            json.dump(durations, f, indent=1, sort_keys=True)
+    except OSError as e:
+        print("Could not save test durations: %s" % e)
+
+
 def run_unified_test_steps(test_steps):
     '''run several suites' tests in one parallel pool.
 
@@ -774,8 +796,28 @@ def run_unified_test_steps(test_steps):
         results_by_step[suite["step"]] += suite["tester"].run_tests_in_processes(
             suite["serial"], 1, base_instance=base)
 
-    combined = []
+    # order the pool longest-first to shorten the straggler tail: a
+    # long test pulled near the end of the queue runs alone while every
+    # other worker idles.  Suites are ordered by their total recorded
+    # duration and tests within a suite likewise, so workers still chew
+    # through one suite at a time (session switches are not free) but
+    # the tail of the queue is the shortest work.  A test with no
+    # recorded duration is assumed long, so it runs early.
+    durations = load_test_durations()
+
+    def test_duration(step, test):
+        return durations.get("%s::%s" % (step, test.name), 300.0)
+
     for suite in suites:
+        suite["parallel"].sort(
+            key=lambda t, step=suite["step"]: -test_duration(step, t))
+    suites_by_length = sorted(
+        suites,
+        key=lambda suite: -sum(test_duration(suite["step"], t)
+                               for t in suite["parallel"]))
+
+    combined = []
+    for suite in suites_by_length:
         combined += suite["parallel"]
     if len(combined):
         print("Running %u test(s) from %u suite(s) %u-way parallel" %
@@ -787,6 +829,9 @@ def run_unified_test_steps(test_steps):
         for result in results:
             step = getattr(result.test, "suite_step", suites[0]["step"])
             results_by_step[step].append(result)
+            if result.time_elapsed > 0:
+                durations["%s::%s" % (step, result.test.name)] = result.time_elapsed
+        save_test_durations(durations)
 
     ret = []
     for suite in suites:
