@@ -206,31 +206,23 @@ class AutoTestHelicopter(AutoTestCopter):
         self.hover()
         self.progress("TAKEOFF COMPLETE")
 
-    def FlyEachFrame(self):
-        '''Fly each supported internal frame'''
+    # no known-broken helicopter frames:
+    fly_each_frame_known_broken = {}
+
+    def FlyFrame(self, frame):
+        '''Fly a supported internal frame'''
         vinfo = vehicleinfo.VehicleInfo()
         vinfo_options = vinfo.options[self.vehicleinfo_key()]
-        known_broken_frames = {
-        }
-        for frame in sorted(vinfo_options["frames"].keys()):
-            self.start_subtest("Testing frame (%s)" % str(frame))
-            if frame in known_broken_frames:
-                self.progress("Actually, no I'm not - it is known-broken (%s)" %
-                              (known_broken_frames[frame]))
-                continue
-            frame_bits = vinfo_options["frames"][frame]
-            print("frame_bits: %s" % str(frame_bits))
-            if frame_bits.get("external", False):
-                self.progress("Actually, no I'm not - it is an external simulation")
-                continue
-            model = frame_bits.get("model", frame)
-            self.customise_SITL_commandline(
-                [],
-                model=model,
-                wipe=True,
-            )
-            self.takeoff(10)
-            self.do_RTL()
+        frame_bits = vinfo_options["frames"][frame]
+        print("frame_bits: %s" % str(frame_bits))
+        model = frame_bits.get("model", frame)
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            wipe=True,
+        )
+        self.takeoff(10)
+        self.do_RTL()
 
     def governortest(self):
         '''Test Heli Internal Throttle Curve and Governor'''
@@ -1444,6 +1436,7 @@ class AutoTestHelicopter(AutoTestCopter):
     def tests(self):
         '''return list of all tests'''
         ret = vehicle_test_suite.TestSuite.tests(self)
+        ret.extend(self.FlyEachFrameTests())
         ret.extend([
             self.AVCMission,
             self.RotorRunup,
@@ -1455,7 +1448,6 @@ class AutoTestHelicopter(AutoTestCopter):
             self.ManAutorotation,
             self.governortest,
             self.GovernorNotEngagedManualThrottle,
-            self.FlyEachFrame,
             self.AirspeedDrivers,
             self.TurbineStart,
             self.TurbineCoolDown,
