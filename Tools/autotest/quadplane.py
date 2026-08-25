@@ -3764,16 +3764,43 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # monitor, with tolerance for float16 quantisation and sampling
         # time differences. SYS_STATUS gives the pack voltage of the
         # reference monitor; BATTERY_STATUS voltages[] of the DroneCAN
-        # monitor holds per-cell voltages so is not comparable
+        # monitor holds per-cell voltages so is not comparable.
+        #
+        # The reference values move while we watch - the simulated
+        # battery's current drifted from 8.5A to 10.75A during one
+        # loaded run - so comparing against a single SYS_STATUS
+        # snapshot fails whenever the wait takes any real time: track
+        # the reference live and pass when a scripting reading agrees
+        # with a recent reference reading.
         self.set_message_rate_hz('BATTERY_STATUS', 10)
-        ref = self.assert_receive_message('SYS_STATUS', timeout=10)
         for instance in 1, 2:
-            self.wait_message_field_values('BATTERY_STATUS', {
-                "voltages[0]": ref.voltage_battery,
-            }, instance=instance, epsilon=100, timeout=60)
-            self.wait_message_field_values('BATTERY_STATUS', {
-                "current_battery": ref.current_battery,
-            }, instance=instance, epsilon=25, timeout=60)
+            for field, ref_field, epsilon in [
+                    ("voltages[0]", "voltage_battery", 100),
+                    ("current_battery", "current_battery", 25),
+            ]:
+                tstart = self.get_sim_time()
+                ref = None
+                last_pair = None
+                while True:
+                    if self.get_sim_time_cached() - tstart > 60:
+                        raise NotAchievedException(
+                            "BATTERY_STATUS.%s (instance %u) never matched "
+                            "SYS_STATUS.%s (last %s)" %
+                            (field, instance, ref_field, last_pair))
+                    m = self.assert_receive_message(['SYS_STATUS', 'BATTERY_STATUS'])
+                    if m.get_type() == 'SYS_STATUS':
+                        ref = getattr(m, ref_field)
+                        continue
+                    if m.id != instance or ref is None:
+                        continue
+                    value = getattr(m, field.rstrip(']').split('[')[0])
+                    if '[' in field:
+                        value = value[int(field.split('[')[1].rstrip(']'))]
+                    last_pair = (value, ref)
+                    if abs(value - ref) <= epsilon:
+                        self.progress("%s instance %u matches reference (%s ~ %s)" %
+                                      (field, instance, value, ref))
+                        break
 
     def tests(self):
         '''return list of all tests'''
