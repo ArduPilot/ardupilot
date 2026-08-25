@@ -16409,62 +16409,10 @@ switch value'''
                 pass
         return fred
 
-    def download_parameters_via_ftp(self, target_system, target_component):
-        '''fetch @PARAM/param.pck over MAVFTP: one packed transfer
-        instead of ~1400 individual PARAM_VALUE messages, several
-        seconds of wall clock saved at every SITL connect and reboot.
-        Returns a name->value dict, or None on any failure - the caller
-        falls back to the streaming download.'''
-        try:
-            from pymavlink import mavftp
-        except ImportError:
-            return None
-        tmp = None
-        try:
-            ftp = mavftp.MAVFTP(self.mav,
-                                target_system=target_system,
-                                target_component=target_component)
-            tmp = tempfile.NamedTemporaryFile(delete=False)
-            tmp.close()
-            ret = ftp.cmd_get(['@PARAM/param.pck', tmp.name])
-            if ret.error_code != 0:
-                return None
-            ret = ftp.process_ftp_reply('OpenFileRO', timeout=30)
-            if ret.error_code != 0:
-                return None
-            with open(tmp.name, 'rb') as f:
-                data = f.read()
-            pdata = mavftp.MAVFTP.ftp_param_decode(data)
-            if pdata is None:
-                return None
-            seen_ids = {}
-            for (name, value, ptype) in pdata.params:
-                if isinstance(name, bytes):
-                    name = name.decode('utf-8')
-                seen_ids[name] = float(value)
-            if len(seen_ids) < 100:
-                # implausibly few for any vehicle; distrust it
-                return None
-            return seen_ids
-        except Exception as e:  # noqa: BLE001 - any failure falls back
-            self.progress("FTP parameter download failed (%s)" % str(e))
-            return None
-        finally:
-            if tmp is not None:
-                try:
-                    os.unlink(tmp.name)
-                except OSError:
-                    pass
-
     # download parameters tries to cope with its download being
     # interrupted or broken by simply retrying the download a few
     # times.
     def download_parameters(self, target_system, target_component):
-        seen_ids = self.download_parameters_via_ftp(target_system, target_component)
-        if seen_ids is not None:
-            self.progress("Downloaded %u parameters via FTP" % len(seen_ids))
-            return (seen_ids, {})
-
         # try a simple fetch-all:
         last_parameter_received = 0
         attempt_count = 0
