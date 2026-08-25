@@ -9141,8 +9141,7 @@ class TestSuite(abc.ABC):
             self.set_rc(1, steering_pwm)
             self.set_rc(3, 1550)
             self.wait_heading(heading)
-            self.set_rc(3, 1500)
-            self.set_rc(1, 1500)
+            self.set_rc_from_map({3: 1500, 1: 1500})
 
     def assert_vehicle_location_is_at_startup_location(self,
                                                        dist_max=None,

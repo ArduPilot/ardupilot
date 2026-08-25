@@ -793,9 +793,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         """Wait for level flight."""
         tstart = self.get_sim_time()
         self.progress("Waiting for level flight")
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({1: 1500, 2: 1500, 4: 1500})
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.assert_receive_message('ATTITUDE')
             roll = math.degrees(m.roll)
@@ -3243,8 +3241,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         self.start_subtest("Should not be able to arm with mid-stick throttle")
-        self.set_rc(3, 1500)
-        self.set_rc(4, 2000)
+        self.set_rc_from_map({3: 1500, 4: 2000})
         w = vehicle_test_suite.WaitAndMaintainDisarmed(self, minimum_duration=10)
         w.run()
         self.set_rc(4, 1500)
@@ -3252,8 +3249,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.clear_parameter_bit("RC_OPTIONS", 5)
         self.start_subtest("Should be able to arm with mid-stick throttle")
-        self.set_rc(3, 1500)
-        self.set_rc(4, 2000)
+        self.set_rc_from_map({3: 1500, 4: 2000})
         self.wait_armed()
         self.set_rc(4, 1500)
         self.disarm_vehicle()

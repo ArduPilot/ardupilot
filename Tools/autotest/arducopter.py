@@ -2536,8 +2536,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.set_rc(3, 1700)
         self.wait_altitude(10, 100, relative=True)
-        self.set_rc(3, 1500)
-        self.set_rc(2, 1400)
+        self.set_rc_from_map({3: 1500, 2: 1400})
         self.wait_distance_to_home(12, 20, timeout=30)
         tstart = self.get_sim_time()
         push_time = 70 # push against barrier for 60 seconds
@@ -3708,8 +3707,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.assert_receive_message('VFR_HUD')
 
         # stop rolling and yawing
-        self.set_rc(1, 1500)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({1: 1500, 4: 1500})
 
         # restore simple mode parameters to default
         self.set_parameter("SUPER_SIMPLE", 0)
@@ -4538,8 +4536,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         (now - tstart, hest_m, agl_m))
                     break
         finally:
-            self.set_rc(1, 1500)
-            self.set_rc(2, 1500)
+            self.set_rc_from_map({1: 1500, 2: 1500})
 
         self.do_RTL()
 
@@ -4590,24 +4587,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         veh_dir = 0
                 if veh_dir == 0:
                     # move right
-                    self.set_rc(1, 1800)
-                    self.set_rc(2, 1500)
+                    self.set_rc_from_map({1: 1800, 2: 1500})
                 if veh_dir == 1:
                     # move left
-                    self.set_rc(1, 1200)
-                    self.set_rc(2, 1500)
+                    self.set_rc_from_map({1: 1200, 2: 1500})
                 if veh_dir == 2:
                     # move forward
-                    self.set_rc(1, 1500)
-                    self.set_rc(2, 1200)
+                    self.set_rc_from_map({1: 1500, 2: 1200})
                 if veh_dir == 3:
                     # move back
-                    self.set_rc(1, 1500)
-                    self.set_rc(2, 1800)
+                    self.set_rc_from_map({1: 1500, 2: 1800})
 
             # return sticks to center
-            self.set_rc(1, 1500)
-            self.set_rc(2, 1500)
+            self.set_rc_from_map({1: 1500, 2: 1500})
 
             # stop calibration (not actually necessary)
             self.set_rc(9, 1000)
@@ -6486,8 +6478,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode("LOITER")
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.set_rc(3, 1800)
-        self.set_rc(2, 1200)
+        self.set_rc_from_map({3: 1800, 2: 1200})
         # wait till we get to 50m
         self.wait_altitude(50, 52, True, 60)
 
@@ -6964,8 +6955,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_subtest("Conduct ZigZag test for all 4 directions")
         while j < 4:
             self.progress("## Align heading with the run-way (j=%d)##" % j)
-            self.set_rc(8, 1500)
-            self.set_rc(4, 1420)
+            self.set_rc_from_map({8: 1500, 4: 1420})
             self.wait_heading(352-j*90)
             self.set_rc(4, 1500)
             self.change_mode(ZIGZAG)
@@ -7072,8 +7062,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         fltmode_ch = int(self.get_parameter("FLTMODE_CH"))
         self.set_rc(fltmode_ch, 1000)
         self.wait_mode("CIRCLE")
-        self.set_rc(9, 1000)
-        self.set_rc(10, 1000)
+        self.set_rc_from_map({9: 1000, 10: 1000})
         self.set_parameters({
             "RC9_OPTION": 18, # land
             "RC10_OPTION": 55, # guided
@@ -9843,11 +9832,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.assert_receive_message('ATTITUDE')
 
         # fly fast forrest!
-        self.set_rc(3, 1900)
-        self.set_rc(2, 1200)
+        self.set_rc_from_map({3: 1900, 2: 1200})
         self.wait_groundspeed(5, 1000)
-        self.set_rc(3, 1500)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({3: 1500, 2: 1500})
 
         self.do_RTL()
 
@@ -10095,11 +10082,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_altitude(8, 12, relative=True, minimum_duration=10)
         tstart, tend, hover_throttle = self.hover_for_interval(15)
         # fly fast forrest!
-        self.set_rc(3, 1900)
-        self.set_rc(2, 1200)
+        self.set_rc_from_map({3: 1900, 2: 1200})
         self.wait_groundspeed(5, 1000)
-        self.set_rc(3, 1500)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({3: 1500, 2: 1500})
         self.do_RTL()
 
         psd = self.mavfft_fttd(1, 0, tstart * 1.0e6, tend * 1.0e6)
@@ -10354,11 +10339,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode="ALT_HOLD")
         tstart, tend, hover_throttle = self.hover_for_interval(60)
         # fly fast forrest!
-        self.set_rc(3, 1900)
-        self.set_rc(2, 1200)
+        self.set_rc_from_map({3: 1900, 2: 1200})
         self.wait_groundspeed(5, 1000)
-        self.set_rc(3, 1500)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({3: 1500, 2: 1500})
         self.do_RTL()
 
         psd = self.mavfft_fttd(1, 2, tstart * 1.0e6, tend * 1.0e6)
@@ -10471,8 +10454,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # 0.02m/s until the wait timed out.  What is under test is
         # whether BRAKE stops the vehicle, not manual altitude control.
         self.change_mode("ALT_HOLD")
-        self.set_rc(3, 1500)
-        self.set_rc(2, 1200)
+        self.set_rc_from_map({3: 1500, 2: 1200})
         self.wait_groundspeed(5, 1000)
 
         self.change_mode("BRAKE")
@@ -11600,12 +11582,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.reach_heading_manual(0)
             north_loc = Location(-35.362881, 149.165103, here_alt_amsl, AltFrame.ABSOLUTE)
             self.wait_location(north_loc, accuracy=1)
-            self.set_rc(2, 1500)
-            self.set_rc(1, 1600)
+            self.set_rc_from_map({2: 1500, 1: 1600})
             east_loc = Location(-35.362986, 149.165227, here_alt_amsl, AltFrame.ABSOLUTE)
             self.wait_location(east_loc, accuracy=1)
-            self.set_rc(1, 1500)
-            self.set_rc(2, 1600)
+            self.set_rc_from_map({1: 1500, 2: 1600})
             south_loc = Location(-35.363025, 149.165182, here_alt_amsl, AltFrame.ABSOLUTE)
             self.wait_location(south_loc, accuracy=1)
             self.set_rc(2, 1500)
@@ -18313,16 +18293,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.hover()
         self.change_mode('LOITER')
-        self.set_rc(1, 1000)
-        self.set_rc(2, 1000)
+        self.set_rc_from_map({1: 1000, 2: 1000})
         self.delay_sim_time(5, reason="vehicle to slow down in loiter")
         self.set_rc(12, 2000)
         gpis.append(self.assert_receive_message('GLOBAL_POSITION_INT'))
         gps_raws.append(self.assert_receive_message('GPS_RAW_INT'))
         attitudes.append(self.assert_receive_message('ATTITUDE'))
-        self.set_rc(12, 1000)
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
+        self.set_rc_from_map({12: 1000, 1: 1500, 2: 1500})
 
         self.do_RTL()
 
@@ -19517,8 +19494,7 @@ RTL_ALT_M 111
         # commence silly flying to try to give the EKF as much
         # information as possible for it to converge its estimation;
         # there's a 5e-6 check before we consider the offsets good!
-        self.set_rc(4, 1450)
-        self.set_rc(1, 1450)
+        self.set_rc_from_map({4: 1450, 1: 1450})
         for i in range(0, 5):  # we descend through all of this:
             self.change_mode('LOITER')
             self.delay_sim_time(10, reason="compass learn data to accumulate")
@@ -19531,9 +19507,7 @@ RTL_ALT_M 111
             for i in 1, 2, 4:
                 self.set_rc(i, j)
                 self.delay_sim_time(10, reason="compass learn data to accumulate")
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({1: 1500, 2: 1500, 4: 1500})
 
         # the offsets are copied out of the EKF as we disarm, and only
         # if its magnetic field states have converged - see
@@ -19562,8 +19536,7 @@ RTL_ALT_M 111
 
         self.set_rc(4, 2000)
         self.wait_armed()
-        self.set_rc(4, 1500)
-        self.set_rc(3, 2000)
+        self.set_rc_from_map({4: 1500, 3: 2000})
         self.wait_altitude(300, 20000, relative=True, timeout=10000)
         self.hover()
         self.set_rc(4, 1000)
@@ -19573,8 +19546,7 @@ RTL_ALT_M 111
 
         self.set_rc(3, 2000)
         self.wait_altitude(300, 20000, relative=True)
-        self.set_rc(3, 1000)
-        self.set_rc(4, 1000)
+        self.set_rc_from_map({3: 1000, 4: 1000})
         self.progress("Checking we disarm")
         self.wait_disarmed(timeout=20)
         self.set_rc(4, 1500)
@@ -20260,20 +20232,17 @@ RTL_ALT_M 111
         WaitAndMaintainAttitude(self, 0, -30, epsilon=1, minimum_duration=10, timeout=60).run()
 
         self.start_subtest("Full left stick")
-        self.set_rc(2, 1500)
-        self.set_rc(1, 1000)
+        self.set_rc_from_map({2: 1500, 1: 1000})
         WaitAndMaintainAttitude(self, -30, 0, epsilon=1).run()
 
         self.start_subtest("Circular angle")
-        self.set_rc(2, 1000)
-        self.set_rc(1, 1000)
+        self.set_rc_from_map({2: 1000, 1: 1000})
         # this is some sort of circular-angle shenanigans / frame
         # translation weirdness:
         WaitAndMaintainAttitude(self, -20, -23, epsilon=1, timeout=120).run()
 
         self.start_subtest("Center the sticks")
-        self.set_rc(2, 1500)
-        self.set_rc(1, 1500)
+        self.set_rc_from_map({2: 1500, 1: 1500})
         WaitAndMaintainAttitude(self, 0, 0, epsilon=1).run()
 
         self.do_RTL()
