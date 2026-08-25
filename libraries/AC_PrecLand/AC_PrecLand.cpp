@@ -34,6 +34,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Precision Land enabled/disabled
     // @Description: Precision Land enabled/disabled
     // @Values: 0:Disabled, 1:Enabled
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLED", 0, AC_PrecLand, _enabled, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -41,6 +42,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Precision Land Type
     // @Description: Precision Land Type
     // @Values: 0:None, 1:MAVLink, 2:IRLock, 3:SITL_Gazebo, 4:SITL
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
 
