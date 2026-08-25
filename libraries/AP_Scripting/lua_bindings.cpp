@@ -99,7 +99,7 @@ int lua_mavlink_receive_chan(lua_State *L) {
 
     ScriptingMAVLinkBuffer *buffer = *check_ScriptingMAVLinkBuffer(L, 1);
 
-    struct AP_Scripting::mavlink_msg msg;
+    mavlink_msg msg;
 
     if (buffer == nullptr) {
         return luaL_error(L, "MAVLink buffer not initialized");
