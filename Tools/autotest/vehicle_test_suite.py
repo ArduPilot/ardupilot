@@ -2041,7 +2041,10 @@ class LocationInt(object):
 
 class Test(object):
     '''a test definition - information about a test'''
-    __slots__ = ('name', 'description', 'function', 'kwargs', 'attempts', 'speedup', 'instance')
+    __slots__ = ('name', 'description', 'function', 'kwargs', 'attempts', 'speedup', 'instance',
+                 # which suite step this test belongs to, when queued
+                 # into a unified multi-suite pool:
+                 'suite_step')
 
     def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None):
         if kwargs is None:
@@ -2055,6 +2058,7 @@ class Test(object):
         self.attempts = attempts
         self.speedup = speedup
         self.instance = 0
+        self.suite_step = None
 
 
 class Result(object):
@@ -16034,6 +16038,55 @@ switch value'''
             return True
         return self.binary_signature() != self.test_binary_signature
 
+    def start_worker_session(self):
+        '''bring this tester's SITL and mavlink session up inside a
+        worker process'''
+        self.init()
+
+        self.progress("Waiting for a heartbeat with mavlink protocol %s"
+                      % self.mav.WIRE_PROTOCOL_VERSION)
+        self.wait_heartbeat()
+        self.wait_for_initial_mode()
+        self.progress("Setting up RC parameters")
+        self.set_rc_default()
+        self.wait_for_mode_switch_poll()
+        if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
+            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+
+    def stop_worker_session(self):
+        '''stop this tester's SITL, its peripherals and its RC thread.
+
+        The SITL is stopped so this instance's network ports are
+        released and its binary copy is no longer held open before
+        another session reuses the instance number.  Peripherals are
+        stopped explicitly: stopping only the vehicle leaves them
+        running, reparented to init, still talking on the CAN bus for
+        later tests to hear.'''
+        if getattr(self, "sitl", None) is not None:
+            self.stop_SITL()
+        if getattr(self, "sup_prog", None):
+            self.stop_sup_program()
+        if self.rc_thread is not None:
+            # no statustext: we stopped our SITL just above, so there is
+            # nothing on the other end of the link to tell
+            self.progress("Joining RC thread", send_statustext=False)
+            self.rc_thread_should_quit = True
+            self.rc_thread.join()
+            self.rc_thread = None
+
+    def worker_tester_for_step(self, step):
+        '''construct, in this worker process, the tester for a suite
+        step from the unified-pool factory, wired to this worker's
+        instance number and its own private binary copy'''
+        (cls, binary, fly_opts) = self.unified_tester_factory[step]
+        tester = cls(binary, **fly_opts)
+        tester.instance = self.instance
+        tester.master_binary = tester.binary
+        tester.binary = os.path.join(os.getcwd(),
+                                     os.path.basename(tester.master_binary))
+        tester.refresh_test_binary()
+        return tester
+
     def test_runner_thread_main(self, instance):
         self.instance = instance
         # let the dispatcher interrogate us if we hang: SIGUSR1 makes
@@ -16045,58 +16098,71 @@ switch value'''
         # isolated from the other workers:
         self.enter_instance_dir()
 
-        # each worker - and each test - runs against its own private copy
-        # of the binary, kept in the instance's working directory:
-        self.master_binary = self.binary
-        self.binary = os.path.join(os.getcwd(), os.path.basename(self.master_binary))
-        self.refresh_test_binary()
-
+        # the pool may hold tests from several suites (see
+        # unified_tester_factory); each worker keeps one live session -
+        # a tester with its SITL up - and swaps it out when the next
+        # test belongs to a different suite.  In a single-suite pool
+        # every test resolves to this tester and the flow matches the
+        # old one-session-per-worker behaviour.
+        active = None
+        active_key = None
+        first_for_session = True
+        self_binary_privatised = False
         test = None
         try:
-            self.init()
-
-            self.progress("Waiting for a heartbeat with mavlink protocol %s"
-                          % self.mav.WIRE_PROTOCOL_VERSION)
-            self.wait_heartbeat()
-            self.wait_for_initial_mode()
-            self.progress("Setting up RC parameters")
-            self.set_rc_default()
-            self.wait_for_mode_switch_poll()
-            if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
-                self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
-
             self.progress("### Passing a queue with %u entries" % self.test_queue.qsize())
 
-            first = True
             while True:
                 try:
                     test = self.test_queue.get(block=False)
-                    # can't pickle functions, string -> function here
-                    test.function = getattr(self, test.function)
                 except queue.Empty:
                     self.progress("Queue is empty")
                     break
-                if not first and (self.reset_after_every_test or
-                                  self.test_binary_modified()):
+                key = getattr(test, 'suite_step', None) or '__own__'
+                if key != active_key:
+                    if active is not None:
+                        self.progress("TestRunner-%u: switching session %s -> %s" %
+                                      (instance, active_key, key))
+                        active.stop_worker_session()
+                    if key == '__own__':
+                        active = self
+                        if not self_binary_privatised:
+                            # each worker - and each test - runs against
+                            # its own private copy of the binary, kept in
+                            # the instance's working directory:
+                            self.master_binary = self.binary
+                            self.binary = os.path.join(
+                                os.getcwd(),
+                                os.path.basename(self.master_binary))
+                            self_binary_privatised = True
+                        self.refresh_test_binary()
+                    else:
+                        active = self.worker_tester_for_step(key)
+                    active.start_worker_session()
+                    active_key = key
+                    first_for_session = True
+                # can't pickle functions, string -> function here
+                test.function = getattr(active, test.function)
+                if not first_for_session and (active.reset_after_every_test or
+                                              active.test_binary_modified()):
                     # A fresh SITL is only needed when the test which just
                     # ran replaced the binary, or when the user asked for
                     # everything to be reset between tests: a wiped cold
                     # start costs a second or so per test and then the EKF
                     # has to settle again.  Otherwise carry the SITL over,
                     # as the serial runner does.
-                    self.stop_SITL()
-                    self.refresh_test_binary()
-                    self.start_SITL(wipe=True)
-                    self.set_streamrate(self.sitl_streamrate())
-                    self.apply_default_parameters()
-                first = False
-                self.drain_mav_unparsed()
+                    active.stop_SITL()
+                    active.refresh_test_binary()
+                    active.start_SITL(wipe=True)
+                    active.set_streamrate(active.sitl_streamrate())
+                    active.apply_default_parameters()
+                first_for_session = False
+                active.drain_mav_unparsed()
                 self.progress("TestRunner-%u: running test (%s)" %
                               (instance, test.name))
-                result = self.run_one_test(test, suppress_stdout=True)
+                result = active.run_one_test(test, suppress_stdout=True)
                 del result.test.function  # can't pickle functions
                 self.result_queue.put(result)
-#                self.result_queue.put((desc, "Fred", debug_filename))
 
         except pexpect.TIMEOUT:
             self.progress("Failed with timeout")
@@ -16104,31 +16170,13 @@ switch value'''
             result.passed = False
             result.reason = "Failed with timeout"
             self.result_queue.put(result)
-            if self.logs_dir:
+            logsrc = active if active is not None else self
+            if logsrc.logs_dir:
                 if glob.glob("core*") or glob.glob("ap-*.core"):
-                    self.check_logs("FRAMEWORK")
+                    logsrc.check_logs("FRAMEWORK")
 
-        # stop our SITL so we don't leak the process (and so we release
-        # this instance's network ports and stop holding our binary copy
-        # open) before another worker reuses this instance number:
-        if getattr(self, "sitl", None) is not None:
-            self.stop_SITL()
-
-        # and the peripherals it was talking to.  Stopping only the
-        # vehicle leaves them running: they are reparented to init when
-        # this worker exits and stay on the CAN bus, so a later test -
-        # in this run or the next one on the same machine - shares a bus
-        # with the ghosts of every peripheral test which came before it.
-        if getattr(self, "sup_prog", None):
-            self.stop_sup_program()
-
-        if self.rc_thread is not None:
-            # no statustext: we stopped our SITL just above, so there is
-            # nothing on the other end of the link to tell
-            self.progress("Joining RC thread", send_statustext=False)
-            self.rc_thread_should_quit = True
-            self.rc_thread.join()
-            self.rc_thread = None
+        if active is not None:
+            active.stop_worker_session()
 
     def run_tests(self, tests):
         """Autotest vehicle in SITL."""
@@ -20518,8 +20566,9 @@ SERIAL5_BAUD 128
             print("Had to force-reset SITL %u times" %
                   (self.forced_post_test_sitl_reboots,))
 
-    def autotest(self, parallel=1, tests=None, allow_skips=True, step_name=None):
-        """Autotest used by ArduPilot autotest CI."""
+    def prepare_tests(self, tests=None, allow_skips=True):
+        '''wrap, deduplicate, filter and (optionally) shuffle this
+        suite's tests; returns (tests, skip_list)'''
         if tests is None:
             tests = self.tests()
         all_tests = []
@@ -20556,13 +20605,11 @@ SERIAL5_BAUD 128
             self.progress("Shuffling tests with seed %u" % self.shuffle_seed)
             random.Random(self.shuffle_seed).shuffle(tests)
 
-        if parallel != 1:
-            # we preserve non-parallel behaviour to avoid fighting on
-            # e.g. Windows and MacOSX:
-            results = self.run_tests_parallel(tests, parallel=parallel)
-        else:
-            results = self.run_tests(tests)
+        return (tests, skip_list)
 
+    def report_results(self, results, skip_list, step_name=None):
+        '''report a set of results for this suite; returns True if all
+        tests passed'''
         if len(skip_list):
             self.progress("Skipped tests:")
             for skipped in skip_list:
@@ -20583,6 +20630,19 @@ SERIAL5_BAUD 128
             self.create_junit_report(step_name, results, skip_list)
 
         return len(self.fail_list) == 0
+
+    def autotest(self, parallel=1, tests=None, allow_skips=True, step_name=None):
+        """Autotest used by ArduPilot autotest CI."""
+        (tests, skip_list) = self.prepare_tests(tests=tests, allow_skips=allow_skips)
+
+        if parallel != 1:
+            # we preserve non-parallel behaviour to avoid fighting on
+            # e.g. Windows and MacOSX:
+            results = self.run_tests_parallel(tests, parallel=parallel)
+        else:
+            results = self.run_tests(tests)
+
+        return self.report_results(results, skip_list, step_name=step_name)
 
     def wait_circling_point_with_radius(self, loc, want_radius, epsilon=5.0, min_circle_time=5, timeout=120, track_angle=True, want_angle=180):  # noqa:E501
         '''wait until the vehicle is circling loc at want_radius; it
