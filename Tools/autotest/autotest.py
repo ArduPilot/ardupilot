@@ -826,7 +826,10 @@ def run_unified_test_steps(test_steps):
         for result in results:
             step = getattr(result.test, "suite_step", suites[0]["step"])
             results_by_step[step].append(result)
-            if result.time_elapsed > 0:
+            # only a pass measures the test; a failure's duration
+            # measures where it died, and a fast failure recorded
+            # here would schedule the test as short next run:
+            if result.time_elapsed > 0 and getattr(result, "passed", False):
                 durations["%s::%s" % (step, result.test.name)] = result.time_elapsed
         save_test_durations(durations)
 
