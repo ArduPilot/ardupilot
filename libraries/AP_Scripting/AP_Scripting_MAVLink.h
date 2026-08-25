@@ -33,8 +33,8 @@
 #include <AP_CANManager/AP_CANSensor.h>
 
 class ScriptingMAVLinkBuffer {
-public: ScriptingMAVLinkBuffer(uint32_t buffer_size):
-        buffer(buffer_size)
+public: ScriptingMAVLinkBuffer(uint32_t buffer_size, uint32_t num_msgs):
+        buffer(buffer_size), accept_msg_ids(NEW_NOTHROW uint32_t[num_msgs]), num_accepted_msgs(num_msgs)
     {};
 
     // read a messages from the buffer
@@ -47,11 +47,15 @@ public: ScriptingMAVLinkBuffer(uint32_t buffer_size):
     void add_buffer(ScriptingMAVLinkBuffer* new_buff);
 
     // Add a filter to this buffer
-    // bool add_filter(uint32_t mask, uint32_t value);
+    bool add_accepted_id(uint32_t id);
 
 private:
 
     ObjectBuffer<AP_Scripting::mavlink_msg> buffer;
+
+    uint32_t* accept_msg_ids;
+    uint32_t num_accepted_msgs;
+    uint32_t last_accepted_pos = -1;
 
     ScriptingMAVLinkBuffer *next;
 
