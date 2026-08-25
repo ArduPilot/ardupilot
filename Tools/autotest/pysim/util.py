@@ -384,7 +384,12 @@ def build_SITL_frame(
     # either rewrite the default lockfile makes the next plain
     # "./waf build" (or autotest --no-configure) silently build with
     # this frame's configuration instead of the tree's
-    build_kwargs.setdefault('waflock', '.lock-waf-frame-build')
+    # each frame gets its own isolation directory and lockfile: under
+    # a unified multi-suite pool two frame-building tests can run at
+    # once (CircuitStatusScript and PPPPeriph did, and their builds
+    # destroyed each other in a shared build-frame)
+    frame_isolation_dir = 'build-frame-%s' % frame
+    build_kwargs.setdefault('waflock', '.lock-waf-%s' % frame_isolation_dir)
 
     configure_args = list(frame_opts.get('configure_args', []))
     if extra_configure_args is not None:
@@ -403,7 +408,7 @@ def build_SITL_frame(
     # network-port tests built after it black-holed all NET traffic
     build_SITL(frame_opts['waf_target'],
                extra_configure_args=configure_args,
-               isolated=True,
+               isolated=frame_isolation_dir,
                **vehicle_build_kwargs)
 
     periph_board = frame_opts.get('periph_board')
@@ -411,7 +416,7 @@ def build_SITL_frame(
         build_SITL('bin/AP_Periph',
                    board=periph_board,
                    extra_configure_args=configure_args,
-                   isolated=True,
+                   isolated=frame_isolation_dir,
                    **build_kwargs)
 
     return frame_opts
