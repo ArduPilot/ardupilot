@@ -796,28 +796,24 @@ def run_unified_test_steps(test_steps):
         results_by_step[suite["step"]] += suite["tester"].run_tests_in_processes(
             suite["serial"], 1, base_instance=base)
 
-    # order the pool longest-first to shorten the straggler tail: a
-    # long test pulled near the end of the queue runs alone while every
-    # other worker idles.  Suites are ordered by their total recorded
-    # duration and tests within a suite likewise, so workers still chew
-    # through one suite at a time (session switches are not free) but
-    # the tail of the queue is the shortest work.  A test with no
-    # recorded duration is assumed long, so it runs early.
+    # annotate each pooled test with its recorded duration and order
+    # each suite longest-first: the dispatcher schedules from these -
+    # a worker stays on its current suite (longest remaining test
+    # next), idle workers adopt the suite with the most work left, and
+    # the pool's tail is the shortest work.  A test with no recorded
+    # duration is assumed long, so it runs early and gets measured.
     durations = load_test_durations()
 
     def test_duration(step, test):
         return durations.get("%s::%s" % (step, test.name), 300.0)
 
     for suite in suites:
-        suite["parallel"].sort(
-            key=lambda t, step=suite["step"]: -test_duration(step, t))
-    suites_by_length = sorted(
-        suites,
-        key=lambda suite: -sum(test_duration(suite["step"], t)
-                               for t in suite["parallel"]))
+        for t in suite["parallel"]:
+            t.expected_duration = test_duration(suite["step"], t)
+        suite["parallel"].sort(key=lambda t: -t.expected_duration)
 
     combined = []
-    for suite in suites_by_length:
+    for suite in suites:
         combined += suite["parallel"]
     if len(combined):
         print("Running %u test(s) from %u suite(s) %u-way parallel" %
