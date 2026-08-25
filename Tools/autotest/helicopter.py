@@ -1115,10 +1115,12 @@ class AutoTestHelicopter(AutoTestCopter):
         """Check Turbine Start Feature"""
         RAMP_TIME = 4
         # set option for Turbine Start
-        self.set_parameter("RC6_OPTION", 161)
-        self.set_parameter("H_RSC_RAMP_TIME", RAMP_TIME)
-        self.set_parameter("H_RSC_SETPOINT", 66)
-        self.set_parameter("DISARM_DELAY", 0)
+        self.set_parameters({
+            "RC6_OPTION": 161,
+            "H_RSC_RAMP_TIME": RAMP_TIME,
+            "H_RSC_SETPOINT": 66,
+            "DISARM_DELAY": 0,
+        })
         self.set_rc_from_map({3: 1000, 8: 1000})
 
         # check that turbine start doesn't activate while disarmed
