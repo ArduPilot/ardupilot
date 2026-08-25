@@ -15730,17 +15730,12 @@ switch value'''
             # SITL_MCAST_STATE_PORT, SITL_CAN_MCAST_PORT,
             # sup_instance_number and periph_serial4_udp_port.)
 
-            # rebuilds the Replay tool; this mutates the shared build
-            # directory / waf board configuration, which races with other
-            # tests (and other instances) building or running.  TODO:
-            # build the Replay tool alongside the vehicle binaries
-            # before any test runs.  Note that passing --out is not
-            # sufficient by itself: waf configure also writes .lock-waf
-            # into the source tree even when launched from elsewhere
-            # with --top/--out, repointing the shared tree's default
-            # build - the PeriphMultiUARTTunnel build below already
-            # uses --out and still does this:
-            "Replay",
+            # (Replay formerly sat here: its mid-test Replay-tool
+            # rebuild mutated the shared build directory's
+            # configuration.  The rebuild is isolated now - its own
+            # output directory and waf lockfile, the tool copied back -
+            # so it neither repoints the default build nor races other
+            # workers.)
 
             # The following only ever fail when run in parallel; we are not
             # 100% sure they truly need exclusive runs (vs. e.g. being
@@ -18361,14 +18356,19 @@ switch value'''
         difference (num_aux_imus, ekf_single, postype_single, debug, ...)
         changes the EKF result and makes replay diverge from the live log.
 
-        configure=True is forced because a preceding test (e.g. a CAN/periph
-        test) may have left the shared build directory configured for a
-        different board; we reconfigure for the sitl board but keep the
-        vehicle's configure options.'''
+        The build is isolated - its own output directory and waf
+        lockfile, with the tool copied into the default tree where the
+        test runs it from - so rebuilding mid-test neither rewrites the
+        shared build directory's configuration nor races other workers
+        building or running; this is what lets Replay run in the
+        parallel phase.  The isolation directory is Replay's own:
+        build-frame belongs to the frame rebuild tests, which may run
+        concurrently in another suite.'''
         build_opts = copy.copy(self.build_opts)
         build_opts["clean"] = False
         build_opts["configure"] = True
-        util.build_SITL('tool/Replay', board='sitl', **build_opts)
+        util.build_SITL('tool/Replay', board='sitl',
+                        isolated='build-replay-tool', **build_opts)
 
     def run_replay(self, filepath):
         '''runs replay in filepath, returns filepath to Replay logfile'''

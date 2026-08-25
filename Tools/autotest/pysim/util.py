@@ -228,10 +228,19 @@ def build_SITL(
     # options.
     isolated_builddir = None
     if isolated:
-        isolated_builddir = reltopdir('build-frame')
+        if isolated is True:
+            isolated_builddir = reltopdir('build-frame')
+            default_lock = '.lock-waf-frame-build'
+        else:
+            # a caller may name its own isolation directory so that
+            # concurrent isolated builds (e.g. a Replay tool build in
+            # one suite and a PPP frame build in another) cannot
+            # collide in build-frame
+            isolated_builddir = reltopdir(isolated)
+            default_lock = '.lock-waf-' + os.path.basename(isolated_builddir)
         extra_configure_args = list(extra_configure_args) + ['--out', isolated_builddir]
         if waflock is None:
-            waflock = '.lock-waf-frame-build'
+            waflock = default_lock
 
     # configure="auto": (re)configure only when the configuration we
     # want differs from the one the tree last had.  The wanted
@@ -295,10 +304,11 @@ def build_SITL(
             os.makedirs(os.path.dirname(stampfile), exist_ok=True)
             with open(stampfile, "w") as f:
                 f.write(wanted)
-        else:
-            # an explicitly-requested configure may differ from the
-            # stamped one; forget the stamp so the next auto build
-            # re-checks
+        elif waflock is None and not isolated:
+            # an explicitly-requested configure of the default tree may
+            # differ from the stamped one; forget the stamp so the next
+            # auto build re-checks.  Isolated/waflocked configures do
+            # not touch the default tree's configuration.
             try:
                 os.unlink(os.path.join(topdir(), "build",
                                        ".autotest-configure-%s" % board))
