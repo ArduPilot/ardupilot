@@ -2044,7 +2044,10 @@ class Test(object):
     __slots__ = ('name', 'description', 'function', 'kwargs', 'attempts', 'speedup', 'instance',
                  # which suite step this test belongs to, when queued
                  # into a unified multi-suite pool:
-                 'suite_step')
+                 'suite_step',
+                 # expected duration (seconds, from a previous run) for
+                 # the dispatcher's scheduling:
+                 'expected_duration')
 
     def __init__(self, function, kwargs: dict | None = None, attempts=1, speedup=None):
         if kwargs is None:
@@ -2059,6 +2062,7 @@ class Test(object):
         self.speedup = speedup
         self.instance = 0
         self.suite_step = None
+        self.expected_duration = None
 
 
 class Result(object):
@@ -15765,20 +15769,41 @@ switch value'''
 
     def run_tests_in_processes(self, tests, parallel, base_instance=1) -> List[Result]:
 
-        # prepare tests queue
-        self.test_queue = multiprocessing.Queue()
         self.result_queue = multiprocessing.Queue()
+        self.request_queue = multiprocessing.Queue()
 
+        # the dispatcher assigns tests to workers on request rather
+        # than loading a shared queue: it has the full picture, so it
+        # can hand a worker its current suite's longest remaining test
+        # (keeping session switches rare) and steer idle workers to the
+        # suite with the most work left.  A long test therefore starts
+        # as soon as any worker frees up, wherever it sits in the
+        # suite ordering, and the last assignments are the shortest
+        # work - without this, one late marathon runs alone while every
+        # other worker idles out the tail.
+        self.test_buckets = {}
+        self.bucket_remaining = {}
         for test in tests:
-            # can't pick functions, so pass a string instead:
+            # can't pickle functions, so pass a string instead:
             test.function = test.function.__name__
-            self.test_queue.put(test)
+            key = getattr(test, 'suite_step', None)
+            self.test_buckets.setdefault(key, []).append(test)
+            self.bucket_remaining[key] = (
+                self.bucket_remaining.get(key, 0.0) +
+                (getattr(test, 'expected_duration', None) or 300.0))
+
+        # per-worker assignment channels must exist before the workers
+        # fork:
+        num_workers = min([parallel, len(tests)])
+        self.assign_queues = {}
+        for i in range(num_workers):
+            self.assign_queues[base_instance + i] = multiprocessing.Queue()
 
         # start processes.  The parallel pass numbers workers from 1
         # (instance 0 is the repo-root working directory, used by serial /
         # non-parallel runs and by the blacklist serial pass):
         self.threads = []
-        for i in range(min([parallel, len(tests)])):
+        for i in range(num_workers):
             instance = base_instance + i
             t = multiprocessing.Process(
                 target=self.test_runner_thread_main,
@@ -15834,6 +15859,33 @@ switch value'''
             raise
         return self.finalise_worker_results(results, worker_failures)
 
+    def assign_next_test(self, instance, current_key):
+        '''answer one worker's request for work: its current suite's
+        next test when that suite has any left, else the next test of
+        the suite with the most expected work remaining, else None'''
+        buckets = self.test_buckets
+        key = current_key
+        if not buckets.get(key):
+            candidates = [k for k in buckets if buckets[k]]
+            if not len(candidates):
+                self.assign_queues[instance].put(None)
+                return
+            key = max(candidates, key=lambda k: self.bucket_remaining[k])
+        test = buckets[key].pop(0)
+        self.bucket_remaining[key] -= (getattr(test, 'expected_duration', None) or 300.0)
+        self.assign_queues[instance].put(test)
+
+    def handle_worker_requests(self):
+        while True:
+            try:
+                (instance, current_key) = self.request_queue.get(block=False)
+            except queue.Empty:
+                break
+            self.assign_next_test(instance, current_key)
+
+    def tests_awaiting_assignment(self):
+        return sum(len(x) for x in self.test_buckets.values())
+
     def collect_worker_results(self, tests, tests_by_key, result_key,
                                outstanding_results, results,
                                reap_finished_workers, worker_failures):
@@ -15848,8 +15900,10 @@ switch value'''
         stack_dumps_sent = 0
         abandoned_workers = False
 
+        last_waiting_print = 0
         while len(results) != len(tests):
             reap_finished_workers()
+            self.handle_worker_requests()
             while True:
                 try:
                     result = self.result_queue.get(block=False)
@@ -15897,9 +15951,14 @@ switch value'''
                     results.append(result)
                 outstanding_results = set()
                 break
-            time.sleep(1)
+            # assignments must be timely: cycle fast, but keep the
+            # waiting chatter to roughly one line a second
+            time.sleep(0.1)
+            if time.time() - last_waiting_print < 1:
+                continue
+            last_waiting_print = time.time()
             self.progress("run_tests_parallel waiting for final results (want=%u) (got=%u) (queued=%u" %
-                          (len(tests), len(results), self.test_queue.qsize()))
+                          (len(tests), len(results), self.tests_awaiting_assignment()))
             if len(outstanding_results) < 5:
                 for t in outstanding_results:
                     self.progress("   Where are you %s?" % (t[1] if t[0] is None else "%s %s" % t,))
@@ -16101,13 +16160,19 @@ switch value'''
         self_binary_privatised = False
         test = None
         try:
-            self.progress("### Passing a queue with %u entries" % self.test_queue.qsize())
-
             while True:
+                # ask the dispatcher for work, telling it which suite we
+                # have a live session for so it can keep us on it:
+                self.request_queue.put(
+                    (instance,
+                     None if active_key in (None, '__own__') else active_key))
                 try:
-                    test = self.test_queue.get(block=False)
+                    test = self.assign_queues[instance].get(timeout=600)
                 except queue.Empty:
-                    self.progress("Queue is empty")
+                    self.progress("No assignment from the dispatcher; exiting")
+                    break
+                if test is None:
+                    self.progress("Dispatcher says we are done")
                     break
                 key = getattr(test, 'suite_step', None) or '__own__'
                 if not hasattr(self, 'unified_tester_factory'):
