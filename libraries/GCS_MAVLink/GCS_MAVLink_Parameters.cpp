@@ -225,6 +225,30 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
     // @DisplayName: DeviceID
     // @Description: ID of device using this MAVLink channel
     // @ReadOnly: True
+    // @Values: 0:Unknown
+    // @Values: 65542:SERIAL0 (USB on ChibiOS)
+    // @Values: 65798:SERIAL1
+    // @Values: 66054:SERIAL2
+    // @Values: 66310:SERIAL3
+    // @Values: 66566:SERIAL4
+    // @Values: 66822:SERIAL5
+    // @Values: 67078:SERIAL6
+    // @Values: 67334:SERIAL7
+    // @Values: 67590:SERIAL8
+    // @Values: 67846:SERIAL9
+    // @Values: 131078:NET_P1
+    // @Values: 131334:NET_P2
+    // @Values: 131590:NET_P3
+    // @Values: 131846:NET_P4
+    // @Values: 196614:CAN_D1_UC_S1
+    // @Values: 196870:CAN_D1_UC_S2
+    // @Values: 197126:CAN_D1_UC_S3
+    // @Values: 196622:CAN_D2_UC_S1
+    // @Values: 196878:CAN_D2_UC_S2
+    // @Values: 197134:CAN_D2_UC_S3
+    // @Values: 262150:SCR_SDEV1
+    // @Values: 262406:SCR_SDEV2
+    // @Values: 262662:SCR_SDEV3
     // @User: Advanced
     AP_GROUPINFO_FLAGS("_DEVID",   22, GCS_MAVLINK, devid, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
