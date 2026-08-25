@@ -17660,42 +17660,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode='GUIDED')
         self.do_RTL()
 
-    def FlyEachFrame(self):
-        '''Fly each supported internal frame'''
+    # frames FlyFrame cannot fly, and why.  These are turned into
+    # disabled_tests() entries so the per-frame tests report as skipped:
+    fly_each_frame_known_broken = {
+        'heli-compound': "wrong binary, different takeoff regime",
+        'heli-dual': "wrong binary, different takeoff regime",
+        'heli': "wrong binary, different takeoff regime",
+        'heli-gas': "wrong binary, different takeoff regime",
+        'heli-blade360': "wrong binary, different takeoff regime",
+        'heli-ddvptail': "wrong binary, different takeoff regime",
+        'heli-ddfptail': "wrong binary, different takeoff regime",
+        'heli-quad': "wrong binary, different takeoff regime",
+        "quad-can" : "needs CAN periph",
+    }
+
+    def FlyEachFrameTests(self):
+        '''one test per flyable internal frame; the single FlyEachFrame
+        test used to fly them all in sequence, which made it the
+        longest test in any suite - the tent-pole a parallel pool's
+        finish time hung from'''
+        return self.tests_for_each_frame(self.FlyFrame)
+
+    def FlyFrame(self, frame):
+        '''Fly a supported internal frame'''
         vinfo = vehicleinfo.VehicleInfo()
         copter_vinfo_options = vinfo.options[self.vehicleinfo_key()]
-        known_broken_frames = {
-            'heli-compound': "wrong binary, different takeoff regime",
-            'heli-dual': "wrong binary, different takeoff regime",
-            'heli': "wrong binary, different takeoff regime",
-            'heli-gas': "wrong binary, different takeoff regime",
-            'heli-blade360': "wrong binary, different takeoff regime",
-            'heli-ddvptail': "wrong binary, different takeoff regime",
-            'heli-ddfptail': "wrong binary, different takeoff regime",
-            'heli-quad': "wrong binary, different takeoff regime",
-            "quad-can" : "needs CAN periph",
-        }
-        for frame in sorted(copter_vinfo_options["frames"].keys()):
-            self.start_subtest("Testing frame (%s)" % str(frame))
-            if frame in known_broken_frames:
-                self.progress("Actually, no I'm not - it is known-broken (%s)" %
-                              (known_broken_frames[frame]))
-                continue
-            frame_bits = copter_vinfo_options["frames"][frame]
-            print("frame_bits: %s" % str(frame_bits))
-            if frame_bits.get("external", False):
-                self.progress("Actually, no I'm not - it is an external simulation")
-                continue
-            model = frame_bits.get("model", frame)
-            self.context_push()
-            frame_script = frame_bits.get('frame_example_script', None)
-            if frame_script is not None:
-                self.install_example_script_context(frame_script)
-            self.customise_SITL_commandline(
-                [],
-                model=model,
-                wipe=True,
-            )
+        frame_bits = copter_vinfo_options["frames"][frame]
+        print("frame_bits: %s" % str(frame_bits))
+        model = frame_bits.get("model", frame)
+        self.context_push()
+        frame_script = frame_bits.get('frame_example_script', None)
+        if frame_script is not None:
+            self.install_example_script_context(frame_script)
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            wipe=True,
+        )
+        if True:
             if frame_script is not None:
                 self.set_parameters({
                     "SCR_ENABLE": 1,
@@ -20037,7 +20039,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.mission_NAV_LOITER_TURNS_zero_radius,
             self.SixCompassCalibrationAndReordering,
             self.AltEstimation,
-            self.FlyEachFrame,
             self.GPSBlendingLog,
             self.GPSBlendingAffinity,
             self.ProximitySensors,
@@ -20237,6 +20238,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.CompassLearnCopyFromSIM,
             self.IgnorePilotYaw,
         ])
+        # the per-frame flights live here, in the shortest of the suites
+        # CI runs, so that CI flies them at all - and all in the one
+        # suite, as splitting them across suites would have several
+        # containers each paying a frame rebuild
+        ret.extend(self.FlyEachFrameTests())
         return ret
 
     def ScriptMountPOI(self):
@@ -24784,7 +24790,7 @@ return update, 1000
         ret.extend(self.tests2d())
         return ret
 
-    def disabled_tests(self):
+    def copter_disabled_tests(self):
         return {
             "GroundEffectCompensation_takeOffExpected": "Flapping",
             "GroundEffectCompensation_touchDownExpected": "Flapping",
@@ -24794,6 +24800,12 @@ return update, 1000
             "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
             "ScriptingOSD": "Requires SFML which is not available in CI",
         }
+
+    def disabled_tests(self):
+        ret = self.copter_disabled_tests()
+        for (frame, reason) in self.fly_each_frame_known_broken.items():
+            ret["FlyFrame_%s" % frame] = reason
+        return ret
 
 
 class AutoTestCopterTests1a(AutoTestCopter):
