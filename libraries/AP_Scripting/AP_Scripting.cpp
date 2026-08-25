@@ -18,6 +18,7 @@
 #if AP_SCRIPTING_ENABLED
 
 #include <AP_Scripting/AP_Scripting.h>
+#include "AP_Scripting/AP_Scripting_MAVLink.h"
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>

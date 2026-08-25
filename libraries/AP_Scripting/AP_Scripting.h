@@ -46,6 +46,8 @@ class SocketAPM;
 #include "AP_Scripting_SerialDevice.h"
 #endif
 
+class ScriptingMAVLinkBuffer;
+
 class AP_Scripting
 {
 public:
