@@ -4076,18 +4076,8 @@ mavlink = {}
 -- Initializes scripting MAVLink bufffer, check for items in the buffer with `receive_chan`
 ---@param msg_queue_length uint32_t_ud|integer|number -- Larger que allows script to deal with bursts of incomming messages or check for received messages less often
 ---@param num_rx_msgid uint32_t_ud|integer|number -- Number of unique messages to be received, register ids with `register_rx_msgid`
+---@return ScriptingMAVLinkBuffer_ud
 function mavlink:init(msg_queue_length, num_rx_msgid) end
-
--- marks mavlink message for receive, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
----@param msg_id number
----@return boolean -- false if id has been registered already
-function mavlink:register_rx_msgid(msg_id) end
-
--- receives mavlink message marked for receive using mavlink:register_rx_msgid
----@return string -- bytes
----@return number -- mavlink channel
----@return uint32_t_ud -- receive_timestamp
-function mavlink:receive_chan() end
 
 -- sends mavlink message, to use this function the call should be like this:
 -- mavlink:send(chan, mavlink_msgs.encode("MSG_NAME", {param1 = value1, param2 = value2, ...}})
@@ -4101,6 +4091,20 @@ function mavlink:send_chan(chan, msgid, message) end
 ---@param comand_id integer
 ---@return boolean
 function mavlink:block_command(comand_id) end
+
+-- TODO
+ScriptingMAVLinkBuffer_ud = {}
+
+-- marks mavlink message for receive in buffer, message id can be get using mavlink_msgs.get_msgid("MSG_NAME")
+---@param msg_id number
+---@return boolean -- false if id has been registered already
+function ScriptingMAVLinkBuffer_ud:register_rx_msgid(msg_id) end
+
+-- receives mavlink message from buffer marked for receive using ScriptingMAVLinkBuffer_ud:register_rx_msgid
+---@return string -- bytes
+---@return number -- mavlink channel
+---@return uint32_t_ud -- receive_timestamp
+function ScriptingMAVLinkBuffer_ud:receive_chan() end
 
 -- Geofence library
 fence = {}
