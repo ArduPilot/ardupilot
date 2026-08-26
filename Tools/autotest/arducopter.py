@@ -19118,14 +19118,71 @@ RTL_ALT_M 111
 
         self.do_RTL(timeout=600)
 
-    def mission_NAV_LOITER_TURNS(self):
-        '''test that loiter turns basically works'''
+    def wait_circle_direction(self,
+                              centre_loc,
+                              radius_m,
+                              ccw,
+                              sweep_deg=180,
+                              epsilon_m=10,
+                              timeout=180):
+        '''wait for vehicle to travel sweep_deg around centre_loc, raising if
+        it travels in the wrong direction.  Bearing is only accumulated
+        while the vehicle is within epsilon_m of the circle, so the
+        flight out to the edge of the circle is not counted'''
+        direction_name = "counter-clockwise" if ccw else "clockwise"
+        self.progress("Waiting for %udeg of %s circle" % (sweep_deg, direction_name))
+        # bearing from the centre increases as the vehicle flies clockwise:
+        want_sign = -1 if ccw else 1
+        tstart = self.get_sim_time()
+        swept_deg = 0
+        last_bearing = None
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Did not circle %s" % direction_name)
+            m = self.assert_receive_message('GLOBAL_POSITION_INT')
+            here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+            got_radius_m = self.get_distance(centre_loc, here)
+            if abs(got_radius_m - radius_m) > epsilon_m:
+                # vehicle is not on the circle; start accumulating again
+                last_bearing = None
+                swept_deg = 0
+                continue
+            bearing = self.get_bearing(centre_loc, here)
+            if last_bearing is not None:
+                swept_deg += (bearing - last_bearing + 180) % 360 - 180
+                self.progress("radius=%0.1f/%0.1f bearing=%0.1f swept=%0.1f/%d" %
+                              (got_radius_m, radius_m, bearing, swept_deg, want_sign * sweep_deg))
+                if -want_sign * swept_deg > 20:
+                    raise NotAchievedException(
+                        "Circling in wrong direction (swept %0.1fdeg, wanted %s)" %
+                        (swept_deg, direction_name))
+                if want_sign * swept_deg > sweep_deg:
+                    self.progress("Swept %0.1fdeg %s" % (swept_deg, direction_name))
+                    return
+            last_bearing = bearing
+
+    def fly_mission_NAV_LOITER_TURNS(self, ccw=False, circle_centre_loc=None, radius_m=30):
+        '''fly a mission containing a single LOITER_TURNS item, checking the
+        circle is flown in the direction the mission item asks for.  A
+        negative loiter radius asks for a counter-clockwise circle.  If
+        circle_centre_loc is None then no location is supplied in the
+        mission item, so the vehicle circles where it is when the item
+        starts - which is over home'''
+        lat = 0
+        lng = 0
+        if circle_centre_loc is None:
+            circle_centre_loc = self.home_position_as_location()
+        else:
+            lat = int(circle_centre_loc.lat*1e7)
+            lng = int(circle_centre_loc.lng*1e7)
         self.upload_simple_relhome_mission([
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
             self.create_MISSION_ITEM_INT(
                 mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
                 p1=1,
-                p3=30,
+                p3=-radius_m if ccw else radius_m,
+                x=lat,
+                y=lng,
                 z=30,  # circle is 10m higher than takeoff
                 frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
             ),
@@ -19135,33 +19192,28 @@ RTL_ALT_M 111
         self.set_parameter('AUTO_OPTIONS', 3)
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        self.wait_current_waypoint(2)
+        self.wait_circle_direction(circle_centre_loc, radius_m, ccw)
         self.wait_disarmed()
+
+    def mission_NAV_LOITER_TURNS(self):
+        '''test that loiter turns basically works'''
+        self.fly_mission_NAV_LOITER_TURNS()
+
+    def mission_NAV_LOITER_TURNS_ccw(self):
+        '''test that a negative loiter radius gives a counter-clockwise circle'''
+        self.fly_mission_NAV_LOITER_TURNS(ccw=True)
 
     def mission_NAV_LOITER_TURNS_off_center(self):
         '''test that loiter turns basically works - copter on edge of circle'''
         self.start_subtest("Start circle when on edge of circle")
-        radius = 30
+        radius_m = 30
         self.wait_ready_to_arm()
         here = self.get_location()
-        circle_centre_loc = self.offset_location_ne(here, radius, 0)
-        self.upload_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
-            self.create_MISSION_ITEM_INT(
-                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
-                p1=1,
-                p3=radius,
-                x=int(circle_centre_loc.lat*1e7),
-                y=int(circle_centre_loc.lng*1e7),
-                z=30,  # circle is 10m higher than takeoff
-                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
-            ),
-            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
-        ])
-        self.change_mode('AUTO')
-        self.set_parameter('AUTO_OPTIONS', 3)
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.wait_disarmed()
+        self.fly_mission_NAV_LOITER_TURNS(
+            circle_centre_loc=self.offset_location_ne(here, radius_m, 0),
+            radius_m=radius_m,
+        )
 
     def mission_NAV_LOITER_TURNS_speed(self):
         '''LOITER_TURNS orbits at WP_SPD, not at CIRCLE_RATE * radius'''
@@ -20311,6 +20363,7 @@ return update, 1000
             self.DynamicRpmNotchesRateThread,
             self.PIDNotches,
             self.mission_NAV_LOITER_TURNS,
+            self.mission_NAV_LOITER_TURNS_ccw,
             self.mission_NAV_LOITER_TURNS_off_center,
             self.mission_NAV_LOITER_TURNS_speed,
             self.mission_NAV_LOITER_TURNS_zero_radius,
