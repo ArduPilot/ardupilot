@@ -983,6 +983,11 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--sysid", str(opts.sysid)])
     if opts.slave is not None:
         cmd.extend(["--slave", str(opts.slave)])
+    if opts.cluster is not None:
+        # the SITL binary requires an explicit numeric ID; sim_vehicle's
+        # bare "--cluster" convenience was already normalised to 0 before
+        # option parsing
+        cmd.append("--cluster=%s" % opts.cluster)
     if opts.enable_fgview:
         cmd.extend(["--enable-fgview"])
     if opts.sitl_instance_args:
@@ -1391,6 +1396,12 @@ group_sim.add_option("-i", "--instances",
                      default=None,
                      type='string',
                      help="a space delimited list of instances to spawn; if specified, overrides -I and -n.")
+group_sim.add_option("", "--cluster",
+                     default=None,
+                     type='int',
+                     help="join a SITL cluster for shared-memory clock sync "
+                          "between instances (swarms); optional value selects "
+                          "the cluster id, default 0. Off unless given.")
 group_sim.add_option("-V", "--valgrind",
                      action='store_true',
                      default=False,
