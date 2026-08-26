@@ -13,6 +13,7 @@
 #include <AP_DDS/AP_DDS_config.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
+#include "SIM_config.h"
 #include "SIM_Buzzer.h"
 #include "SIM_Gripper_EPM.h"
 #include "SIM_Gripper_Servo.h"
@@ -615,12 +616,16 @@ public:
     float get_apparent_wind_dir() const{return state.wind_vane_apparent.direction;}
     float get_apparent_wind_spd() const{return state.wind_vane_apparent.speed;}
 
-#if HAL_INS_TEMPERATURE_CAL_ENABLE
-    // IMU temperature calibration params
+#if AP_SIM_IMU_HEATER_ENABLED
+    // IMU warm-up curve params
     AP_Float imu_temp_start;
     AP_Float imu_temp_end;
     AP_Float imu_temp_tconst;
     AP_Float imu_temp_fixed;
+#endif
+
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+    // IMU temperature calibration params
     AP_InertialSensor_TCal imu_tcal[INS_MAX_INSTANCES];
 #endif
 

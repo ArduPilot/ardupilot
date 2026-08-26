@@ -998,7 +998,7 @@ const AP_Param::GroupInfo SIM::var_sfml_joystick[] = {
 
 // INS SITL parameters
 const AP_Param::GroupInfo SIM::var_ins[] = {
-#if HAL_INS_TEMPERATURE_CAL_ENABLE
+#if AP_SIM_IMU_HEATER_ENABLED
     // @Param: IMUT_START
     // @DisplayName: IMU temperature start
     // @Description: Starting IMU temperature of a curve
