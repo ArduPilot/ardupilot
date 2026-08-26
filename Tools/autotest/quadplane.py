@@ -1136,6 +1136,72 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 "motor stayed unsaturated at %u..%u pwm" %
                 (worst_swing, worst_pwm[0], worst_pwm[1]))
 
+    def FwdThrInVTOLCrosswindYawHunt(self):
+        """Q_FWD_THR_USE hunts in yaw when the vehicle starts crosswind
+
+        Take off pointing across a strong wind with the forward throttle
+        in use and the vehicle never settles nose-in: it enters a
+        sustained yaw limit cycle of some forty degrees peak to peak
+        which does not decay for as long as you care to watch.  The same
+        flight with Q_FWD_THR_USE at its default of 0 weathervanes into
+        the wind and holds it to within about a degree, so this is the
+        forward-throttle path rather than the wind or the weathervane
+        gain.
+
+        FwdThrInVTOL does not see this because it takes off on SITL's
+        default home heading of 8 degrees into a wind it sets from 360 -
+        the vehicle is already pointing where the weathervane wants it.
+        Started anywhere across the wind it hunts instead, which is why
+        that test fails intermittently in a parallel run: the vehicle
+        inherits whatever heading the previous test in the session left
+        it on.
+        """
+        self.customise_SITL_commandline(
+            ["--home", "-27.274439,151.290064,343.0,90"])
+        self.set_parameters({
+            "SIM_WIND_SPD": 25,
+            "SIM_WIND_DIR": 360,
+            "Q_WVANE_ENABLE": 1,
+            "Q_WVANE_GAIN": 1,
+            "STICK_MIXING": 0,
+            "Q_FWD_THR_USE": 2,
+        })
+        self.zero_throttle()
+        self.takeoff(10, mode="QLOITER")
+        self.set_rc(2, 1000)
+        self.delay_sim_time(15, reason="settle nose into wind")
+
+        worst_yaw_swing = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 30:
+            yaws = []
+            pitches = []
+            wstart = self.get_sim_time_cached()
+            while self.get_sim_time_cached() - wstart < 5:
+                m = self.assert_receive_message('ATTITUDE')
+                # the wind is from 360, so a vehicle pointing into it
+                # sits either side of zero; measure the hunt about north
+                # rather than across the wrap
+                yaw = math.degrees(m.yaw)
+                yaws.append(yaw if yaw <= 180 else yaw - 360)
+                pitches.append(math.degrees(m.pitch))
+            yaw_swing = max(yaws) - min(yaws)
+            self.progress("yaw %.1f..%.1f swing=%.1f (pitch %.2f..%.2f)" %
+                          (min(yaws), max(yaws), yaw_swing,
+                           min(pitches), max(pitches)))
+            worst_yaw_swing = max(worst_yaw_swing, yaw_swing)
+
+        self.set_rc(2, 1500)
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=120)
+
+        # the same measurement with Q_FWD_THR_USE=0 gives 1.1 degrees,
+        # so five is generous for a vehicle which has settled nose-in
+        if worst_yaw_swing > 5:
+            raise NotAchievedException(
+                "yaw hunted %.1f deg peak to peak (want < 5)" %
+                (worst_yaw_swing,))
+
     def FwdThrInVTOL(self):
         '''test use of fwd motor throttle into wind'''
         self.set_parameters({"SIM_WIND_SPD": 25, # need very strong wind for this test
@@ -3969,6 +4035,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         ret.extend([
             self.FwdThrInVTOL,
             self.FwdThrInVTOLPitchOscillation,
+            self.FwdThrInVTOLCrosswindYawHunt,
             self.AHRSSwitchBackendResets,
             self.AirMode,
             self.TestMotorMask,
