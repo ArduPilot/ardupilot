@@ -979,6 +979,71 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(4, 1500)
         self.do_RTL()
 
+    def FwdThrInVTOLPitchOscillation(self):
+        """Q_FWD_THR_USE pitch limiting oscillates rather than holding
+
+        With Q_FWD_THR_USE=2 the forward throttle is computed from the
+        *unlimited* pitch demand (assign_tilt_to_fwd_thr) while the
+        attitude demand is clipped to the forward pitch limit at the end
+        of the same function.  When the wind needs more forward force
+        than the clipped tilt can provide, the two disagree: the vehicle
+        oscillates in pitch while the forward motor chases a demand the
+        attitude controller is never given.
+
+        This is distinct from the intended "forward thrust has failed,
+        relax the tilt limit" behaviour, which only engages once the
+        forward motor saturates - here it stays well short of full
+        throttle throughout.
+        """
+        self.set_parameters({
+            "SIM_WIND_SPD": 25,
+            "SIM_WIND_DIR": 360,
+            "Q_WVANE_ENABLE": 1,
+            "Q_WVANE_GAIN": 1,
+            "STICK_MIXING": 0,
+            "Q_FWD_THR_USE": 2,
+        })
+        self.takeoff(10, mode="QLOITER")
+        self.set_rc(2, 1000)
+        self.delay_sim_time(15, reason="settle onto the forward pitch limit")
+        # raise the wind only once airborne, and make it uniform with
+        # height: SIM_WIND_T defaults to a profile which cuts the wind
+        # right down at this altitude, and a uniform wind this strong
+        # from the ground up prevents the climb entirely
+        self.set_parameters({
+            "SIM_WIND_T": 1,
+            "SIM_WIND_SPD": 34,
+        })
+        self.delay_sim_time(15, reason="settle into the raised wind")
+
+        worst_swing = 0
+        worst_pwm = (0, 0)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 30:
+            pitches = []
+            pwms = []
+            wstart = self.get_sim_time_cached()
+            while self.get_sim_time_cached() - wstart < 5:
+                m = self.assert_receive_message('ATTITUDE')
+                pitches.append(math.degrees(m.pitch))
+                pwms.append(self.get_servo_channel_value(3))
+            swing = max(pitches) - min(pitches)
+            self.progress("pitch %.2f..%.2f swing=%.2f fwd-thr pwm %u..%u" %
+                          (min(pitches), max(pitches), swing, min(pwms), max(pwms)))
+            if swing > worst_swing:
+                worst_swing = swing
+                worst_pwm = (min(pwms), max(pwms))
+
+        # a vehicle holding its forward pitch limit is very steady - the
+        # same measurement in the wind this test takes off in gives 0.05
+        # degrees - so half a degree is generous for one which has
+        # arrived rather than one which never settles
+        if worst_swing > 0.5:
+            raise NotAchievedException(
+                "pitch oscillated by %.2f deg (want < 0.5) while the forward "
+                "motor stayed unsaturated at %u..%u pwm" %
+                (worst_swing, worst_pwm[0], worst_pwm[1]))
+
     def FwdThrInVTOL(self):
         '''test use of fwd motor throttle into wind'''
         self.set_parameters({"SIM_WIND_SPD": 25, # need very strong wind for this test
@@ -3781,6 +3846,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
             self.FwdThrInVTOL,
+            self.FwdThrInVTOLPitchOscillation,
             self.AHRSSwitchBackendResets,
             self.AirMode,
             self.TestMotorMask,
