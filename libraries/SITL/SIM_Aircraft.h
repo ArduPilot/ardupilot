@@ -280,6 +280,32 @@ protected:
     float rate_hz = 1200.0f;
     float target_speedup;
     uint64_t frame_time_us;
+    // actual timestep of the current frame: equals frame_time_us
+    // except when the adaptive governor stretches a frame to
+    // hold simulated time on the wall-clock schedule
+    uint64_t effective_frame_time_us = 0;
+
+    // true while the wall-slaved schedule is engaged (cluster armed
+    // and the shared epoch published): the rate governor stands down
+    bool slave_engaged = false;
+
+    // the "SIM Hit ground" report is sent once per process
+    uint64_t last_hit_ground_report_us;
+
+    // fraction ABOVE the commanded speedup the slaved schedule aims
+    // for. Seeded from SITL_SPEEDUP_MARGIN (percent, default 5) and
+    // then self-scaling: windows measuring under commanded raise it,
+    // sustained overshoot trims it - whatever margin the host needs
+    // for the REPORTED speedup to meet the ask
+    float slave_margin = 0.05f;
+    float slave_margin_floor = 0.05f;
+
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    // runtime physics-rate governor (SITL_ADAPTIVE_RATE=1), evaluated
+    // once per wall reporting interval from sync_frame_time()
+    void adaptive_rate_governor(uint32_t now_ms);
+#endif
     uint64_t last_wall_time_us;
     uint32_t last_fps_report_ms;
     float achieved_rate_hz;  // achieved speedup rate
