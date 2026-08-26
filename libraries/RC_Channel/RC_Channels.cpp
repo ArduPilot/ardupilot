@@ -59,7 +59,31 @@ void RC_Channels::init(void)
         channel(i)->ch_in = i;
     }
 
-    init_aux_all();
+    init_aux_early();
+
+    reset_mode_switch();
+}
+
+void RC_Channels::init_aux_early()
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            continue;
+        }
+        c->init_aux_early();
+    }
+}
+
+void RC_Channels::init_aux()
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            continue;
+        }
+        c->init_aux();
+    }
 }
 
 bool RC_Channels::has_valid_input() const
@@ -237,18 +261,6 @@ void RC_Channels::read_aux_all()
         AP::logger().Write_RCIN();
     }
 #endif
-}
-
-void RC_Channels::init_aux_all()
-{
-    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        RC_Channel *c = channel(i);
-        if (c == nullptr) {
-            continue;
-        }
-        c->init_aux();
-    }
-    reset_mode_switch();
 }
 
 //
