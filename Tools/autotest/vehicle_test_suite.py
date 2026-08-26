@@ -13504,9 +13504,6 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Creating a very short log")
         self.wait_ready_to_arm()
         self.set_parameters({
-            # the wallclock-time logger io thread must keep up from
-            # here on; nothing logs before arming as LOG_DISARMED is 0
-            "SIM_SPEEDUP": 1,
             "DISARM_DELAY": 1,
         })
         self.arm_vehicle()
@@ -15748,14 +15745,14 @@ switch value'''
             # blacklisting them keeps the parallel run green.  Revisit if the
             # underlying causes are addressed:
 
-            # asserts that not one log message was dropped, and the
-            # thing which writes them runs in wall-clock time - the test
-            # already drops SIM_SPEEDUP to 1 because of it.  That is not
-            # enough when it is sharing the machine with 84 other SITLs:
-            #     Expected zero dropped log messages in logs/dataflash-log-erase.BIN, got 2680
-            # reproduced on two runs out of two at --parallel=85.  It
-            # costs about 70s to run it on its own.
-            "DataFlashErase",
+            # (DataFlashErase formerly sat here: it asserts that not
+            # one log message was dropped, and the block backend
+            # clamped its ring buffer to 64KB no matter what
+            # LOG_FILE_BUFSIZE said, so it overflowed under load -
+            # "got 2680" on two runs out of two at --parallel=85.  The
+            # backend honours the parameter now, which is 200KB in
+            # SITL, and the test no longer needs its SIM_SPEEDUP=1 pin
+            # either.)
 
             # only seen failing under heavy parallel load (passes when run
             # on its own); may just be host-load sensitive:
