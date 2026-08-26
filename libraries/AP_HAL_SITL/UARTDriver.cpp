@@ -539,6 +539,7 @@ void UARTDriver::_udp_start_client(const char *address, uint16_t port)
         fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
         exit(1);
     }
+    fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK);
 
     // try to setup for broadcast, this may fail if insufficient privileges
     int one = 1;
@@ -591,6 +592,7 @@ void UARTDriver::_udp_start_multicast(const char *address, uint16_t port)
         fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
         exit(1);
     }
+    fcntl(_mc_fd, F_SETFL, fcntl(_mc_fd, F_GETFL, 0) | O_NONBLOCK);
     int one = 1;
     if (setsockopt(_mc_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
         fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
