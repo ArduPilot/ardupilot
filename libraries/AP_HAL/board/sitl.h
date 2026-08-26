@@ -118,6 +118,13 @@
 #define AP_AHRS_EKF_RESET_ENABLED 1
 #endif
 
+// SITL simulates a board with an IMU heater.  The heater is off unless
+// BRD_HEAT_TARG is set, so that the temperature the IMU warms up to is
+// SIM_IMUT_END unless a test asks for a heated board.
+#define HAL_HAVE_IMU_HEATER 1
+#define HAL_IMU_TEMP_DEFAULT -1
+#define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+
 #define HAL_BATT_VOLT_PIN                  13
 #define HAL_BATT_CURR_PIN                  12
 #define HAL_BATT_VOLT_SCALE                10.1f
