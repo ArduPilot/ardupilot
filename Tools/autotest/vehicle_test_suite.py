@@ -16427,7 +16427,8 @@ switch value'''
         if os.environ.get('AUTOTEST_NO_FTP_PARAMS'):
             # operator escape hatch: force the streaming download
             return None
-        if 'pending_reset' not in mavftp.MAVFTP.__init__.__code__.co_names:
+        init_names = mavftp.MAVFTP.__init__.__code__.co_names
+        if 'pending_reset' not in init_names and 'pending_reset_seq' not in init_names:
             # this pymavlink predates the positive-completion exit in
             # process_ftp_reply; without it every transfer - and even
             # constructing MAVFTP, whose __init__ waits on a
