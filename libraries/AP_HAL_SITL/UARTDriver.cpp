@@ -40,6 +40,7 @@
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
+#include "SITL_Multicast.h"
 #if HAL_GCS_ENABLED
 #include <AP_HAL/utility/packetise.h>
 #endif
@@ -618,9 +619,19 @@ void UARTDriver::_udp_start_multicast(const char *address, uint16_t port)
         exit(1);
     }
 
+    // pin to one interface when SITL_MULTICAST_IF_ADDR is set (see
+    // SITL_Multicast.h) -- otherwise the routing table chooses, which for
+    // a multicast address with no specific route means whichever
+    // interface holds the default route, so a test's result ends up
+    // depending on the state of the host's network rather than the code
+    // under test. CAN_Multicast/SITL_Periph_State/the sim-state broadcast
+    // already do this; this UDP MAVLink mcast link (--serial5=mcast: etc)
+    // did not.
+    const uint32_t mcast_if_addr = sitl_multicast_interface_address();
+
     struct ip_mreq mreq {};
     mreq.imr_multiaddr.s_addr = inet_addr(address);
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    mreq.imr_interface.s_addr = mcast_if_addr != 0 ? mcast_if_addr : htonl(INADDR_ANY);
 
     ret = setsockopt(_mc_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
     if (ret == -1) {
@@ -632,6 +643,18 @@ void UARTDriver::_udp_start_multicast(const char *address, uint16_t port)
 
     // now start the outgoing connection as an ordinary UDP connection
     _udp_start_client(address, port);
+
+    if (mcast_if_addr != 0) {
+        // also send on that interface; without this the routing table
+        // chooses for the outgoing side too
+        struct in_addr ifaddr {};
+        ifaddr.s_addr = mcast_if_addr;
+        if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF, &ifaddr, sizeof(ifaddr)) == -1) {
+            fprintf(stderr, "multicast IP_MULTICAST_IF failed on port %u - %s\n",
+                    (unsigned)port, strerror(errno));
+            exit(1);
+        }
+    }
 }
 
 
