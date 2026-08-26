@@ -13691,6 +13691,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test rangefinder power down by altitude for multiple backends'''
         pwrrng = 10  # power down above this altitude in metres
 
+        self.install_terrain_handlers_context()
+
         backends = [
             ("SITL", {"RNGFND1_TYPE": 100}),
             ("TFMiniPlus", {"RNGFND1_TYPE": 25, "RNGFND1_ADDR": 0x09}),
