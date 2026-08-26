@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <sched.h>
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -119,6 +120,19 @@ void SITL_State::_fdm_input_step(void)
 }
 
 
+// SITL_HARD_NONBLOCK=1 removes every wall-clock sleep from the
+// simulation path: worker threads spin-yield instead of sleeping and
+// the main thread never waits for the SERIAL0 reader. Cores run hot by
+// design - that is the point. Default behaviour is unchanged.
+static bool _hard_nonblock(void)
+{
+    static int8_t v = -1;
+    if (v == -1) {
+        v = getenv("SITL_HARD_NONBLOCK") != nullptr;
+    }
+    return v == 1;
+}
+
 void SITL_State::wait_clock(uint64_t wait_time_usec)
 {
     float speedup = sitl_model->get_speedup();
@@ -147,6 +161,17 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
                 }
             }
 #endif
+            if (_hard_nonblock()) {
+                // a TRUE yield, never a wall sleep: usleep(0) still
+                // enters the OS delay path on Cygwin and rounds up to
+                // the Windows timer tick (15.6ms when the resolution
+                // request is being ignored), silently turning the
+                // "spin" into a sleep loop pinned near a quarter of a
+                // core. sched_yield() returns immediately on every
+                // platform - Cygwin maps it to SwitchToThread.
+                sched_yield();
+                continue;
+            }
             // most devices can't sleep for 10us - so this is also
             // essentially a yield.  At 30x speedup a 10us wall-clock
             // sleep here can equate to your thread sleeping for 300us
@@ -158,7 +183,11 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     // MAVProxy/pymavlink take too long to process packets and it ends
     // up seeing traffic well into our past and hits time-out
     // conditions.
-    if (speedup > 1 && hal.scheduler->in_main_thread()) {
+    if (speedup > 1 && hal.scheduler->in_main_thread() &&
+        !_hard_nonblock()) {
+        // skipped under SITL_HARD_NONBLOCK: this loop couples the sim
+        // rate to how fast the SERIAL0 reader drains the socket, 1ms of
+        // main-thread sleep at a time
         while (true) {
             HALSITL::UARTDriver *uart = (HALSITL::UARTDriver*)hal.serial(0);
             const int queue_length = uart->get_system_outqueue_length();
@@ -400,6 +429,14 @@ void SITL_State::init(int argc, char * const argv[])
 {
     _scheduler = Scheduler::from(hal.scheduler);
     _parse_command_line(argc, argv);
+
+    // Shared-memory clock sync between SITL instances, for swarms.
+    // Only when the user explicitly asked for it with --cluster: running
+    // "--instance 1" on its own is an ordinary single-vehicle run and
+    // must not go looking for peers.
+    if (_cluster_enabled) {
+        _shared_mem.init(_instance, _cluster_id);
+    }
 }
 
 /*

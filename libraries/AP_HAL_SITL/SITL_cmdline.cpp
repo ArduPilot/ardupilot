@@ -117,6 +117,8 @@ void SITL_State::_usage(void)
            "\t--irlock-port PORT       set port num for irlock\n"
            "\t--start-time TIMESTR     set simulation start time in UNIX timestamp\n"
            "\t--sysid ID               set MAV_SYSID\n"
+           "\t--cluster ID             join SITL cluster ID (0-255) for shared-memory\n"
+           "\t                         clock sync with other instances; off unless given\n"
            "\t--slave number           set the number of JSON slaves\n"
            "\t--use_sim_time <true|false>  use ROS2 simulation clock for DDS topics. Defaults to false\n"
         );
@@ -240,6 +242,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     float speedup = 1.0f;
     float sim_rate_hz = 0;
     _instance = 0;
+    _cluster_enabled = false;
+    _cluster_id = 0;
     // default to CMAC
     const char *home_str = nullptr;
     const char *model_str = nullptr;
@@ -315,6 +319,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_START_TIME,
         CMDLINE_SYSID,
         CMDLINE_SLAVE,
+        CMDLINE_CLUSTER,
         CMDLINE_LIST_MODELS,
 #if STORAGE_USE_FLASH
         CMDLINE_SET_STORAGE_FLASH_ENABLED,
@@ -379,6 +384,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"irlock-port",     true,   0, CMDLINE_IRLOCK_PORT},
         {"start-time",      true,   0, CMDLINE_START_TIME},
         {"sysid",           true,   0, CMDLINE_SYSID},
+        {"cluster",         true,   0, CMDLINE_CLUSTER},
         {"slave",           true,   0, CMDLINE_SLAVE},
         {"list-models",     false,  0, CMDLINE_LIST_MODELS},
 #if STORAGE_USE_FLASH
@@ -560,6 +566,26 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_START_TIME:
             start_time_UTC = atoi(gopt.optarg);
             break;
+        case CMDLINE_CLUSTER: {
+            // Membership size is never declared - instances synchronise
+            // with whichever peers have actually joined the cluster.
+            //
+            // The ID must be strictly numeric: a required argument consumes
+            // the next argv entry, so a forgotten value ("--cluster
+            // --speedup 100") would otherwise swallow the next option and
+            // silently join cluster 0.
+            char *end = nullptr;
+            const long id = strtol(gopt.optarg, &end, 10);
+            if (end == gopt.optarg || *end != 0 || id < 0 || id > 255) {
+                fprintf(stderr, "Invalid cluster ID '%s': must be a number "
+                                "between 0 and 255\n", gopt.optarg);
+                exit(1);
+            }
+            _cluster_enabled = true;
+            _cluster_id = (uint8_t)id;
+            break;
+        }
+
         case CMDLINE_SYSID: {
             const int32_t sysid = atoi(gopt.optarg);
             if (sysid < 1 || sysid > 255) {

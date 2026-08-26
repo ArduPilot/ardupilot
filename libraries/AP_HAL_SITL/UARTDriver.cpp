@@ -284,12 +284,17 @@ void UARTDriver::_flush(void)
     }
 
     // ensure that the outbound TCP queue is also empty...
-    start_ms = AP_HAL::millis();
-    while (AP_HAL::millis() - start_ms < 1000) {
-        if (((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length() == 0) {
-            break;
+    // (skipped under SITL_HARD_NONBLOCK: no wall sleeps anywhere in the
+    // simulation path)
+    static const bool hard_nonblock = getenv("SITL_HARD_NONBLOCK") != nullptr;
+    if (!hard_nonblock) {
+        start_ms = AP_HAL::millis();
+        while (AP_HAL::millis() - start_ms < 1000) {
+            if (((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length() == 0) {
+                break;
+            }
+            usleep(1000);
         }
-        usleep(1000);
     }
 }
 
@@ -404,6 +409,15 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
             fprintf(stderr, "listen failed - %s\n", strerror(errno));
             exit(1);
         }
+#ifdef CYGWIN_BUILD
+        // nonblocking so _check_connection() can poll with a bare
+        // accept() instead of a select(): Cygwin emulates select()
+        // through a helper-thread pool at 10-100x the native syscall
+        // cost even with a zero timeout, and unconnected ports poll on
+        // every IO sweep
+        fcntl(_listen_fd, F_SETFL,
+              fcntl(_listen_fd, F_GETFL, 0) | O_NONBLOCK);
+#endif
 
         fprintf(stderr, "SERIAL%u on TCP port %u\n", _portNumber,
                 (unsigned)ntohs(_listen_sockaddr.sin_port));
@@ -413,8 +427,19 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
     if (wait_for_connection) {
         fprintf(stdout, "Waiting for connection ....\n");
         fflush(stdout);
-        _fd = accept(_listen_fd, nullptr, nullptr);
-        if (_fd == -1) {
+        // the listen socket is nonblocking on Cygwin (so the per-sweep
+        // connection poll costs one native call instead of an emulated
+        // select) - this startup wait must therefore retry on EAGAIN
+        // rather than treating it as fatal
+        while (true) {
+            _fd = accept(_listen_fd, nullptr, nullptr);
+            if (_fd != -1) {
+                break;
+            }
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                usleep(10000);
+                continue;
+            }
             fprintf(stderr, "accept() error - %s", strerror(errno));
             exit(1);
         }
@@ -693,9 +718,18 @@ void UARTDriver::_check_connection(void)
         // we only want 1 connection at a time
         return;
     }
+#ifdef CYGWIN_BUILD
+    // the listen fd is nonblocking on Cygwin: a bare accept() is one
+    // native call, where the select() it replaces costs 10-100x that
+    // in Cygwin's emulation
+    {
+        _fd = accept(_listen_fd, nullptr, nullptr);
+        if (_fd != -1) {
+#else
     if (_select_check(_listen_fd)) {
         _fd = accept(_listen_fd, nullptr, nullptr);
         if (_fd != -1) {
+#endif
             int one = 1;
             _connected = true;
             setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
@@ -1011,8 +1045,24 @@ void UARTDriver::handle_reading_from_device_to_readbuffer()
             _fd = -1;
             _connected = false;
         }
-    } else if (_select_check(_fd)) {
+    } else if (_fd != -1) {
+#ifdef CYGWIN_BUILD
+        // skip the readiness select: Cygwin emulates select() through a
+        // helper-thread pool at 10-100x the native syscall cost even
+        // with a zero timeout, and this poll runs for every UART on
+        // every IO sweep. A nonblocking recv gives the same answer in
+        // one native call - EAGAIN means no data (the only thing the
+        // select distinguished), 0 means EOF.
         nread = recv(_fd, buf, space, MSG_DONTWAIT);
+        if (nread == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            return;
+        }
+#else
+        if (!_select_check(_fd)) {
+            return;
+        }
+        nread = recv(_fd, buf, space, MSG_DONTWAIT);
+#endif
         if (nread <= 0 && !_is_udp) {
             // the socket has reached EOF
             close(_fd);
