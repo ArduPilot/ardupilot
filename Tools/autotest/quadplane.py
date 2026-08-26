@@ -1049,6 +1049,18 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def FwdThrInVTOL(self):
         '''test use of fwd motor throttle into wind'''
+        # start pointing into the wind this test is about to set.  The
+        # assertions below are about a vehicle which has settled on its
+        # forward pitch limit, and it only settles if it starts near
+        # nose-in: from across the wind it hunts in yaw instead and the
+        # pitch wanders either side of the limit for as long as you
+        # watch.  Without this the vehicle inherits whatever heading the
+        # previous test in the session left it on, which is why this
+        # test failed intermittently under --parallel.  The crosswind
+        # case is a real defect and is covered by
+        # FwdThrInVTOLCrosswindYawHunt; do not remove this without it.
+        self.customise_SITL_commandline(
+            ["--home", "-27.274439,151.290064,343.0,0"])
         self.set_parameters({"SIM_WIND_SPD": 25, # need very strong wind for this test
                              "SIM_WIND_DIR": 360,
                              "Q_WVANE_ENABLE": 1,
