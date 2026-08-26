@@ -3006,8 +3006,9 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
         nav_pitch_upper_limit_cd = MIN(nav_pitch_upper_limit_cd, angle_max_cd);
 
         const float tconst = 0.5f;
-        const float dt = AP_HAL::millis() - q_pitch_limit_update_ms;
-        q_pitch_limit_update_ms = AP_HAL::millis();
+        const uint32_t now_ms = AP_HAL::millis();
+        const float dt = 0.001f * (now_ms - q_pitch_limit_update_ms);
+        q_pitch_limit_update_ms = now_ms;
         if (is_positive(dt)) {
             const float coef = dt / (dt + tconst);
             q_bck_pitch_lim_cd = (1.0f - coef) * q_bck_pitch_lim_cd + coef * nav_pitch_upper_limit_cd;
