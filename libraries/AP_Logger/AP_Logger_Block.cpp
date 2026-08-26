@@ -42,11 +42,10 @@ void AP_Logger_Block::Init(void)
         // reserve space for version in last sector
         df_NumPages -= df_PagePerBlock;
 
-        // determine and limit file backend buffersize
+        // determine buffersize - the allocation loop below already
+        // halves this until it fits, so boards short of memory are
+        // protected without clamping the capable ones
         uint32_t bufsize = _front._params.file_bufsize;
-        if (bufsize > 64) {
-            bufsize = 64;
-        }
         bufsize *= 1024;
 
         // If we can't allocate the full size, try to reduce it until we can allocate it
