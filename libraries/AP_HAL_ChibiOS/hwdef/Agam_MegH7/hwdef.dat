@@ -44,6 +44,13 @@ PE12 SPI4_SCK SPI4
 PE13 SPI4_MISO SPI4
 PE14 SPI4_MOSI SPI4
 
+# SPI1 for the W25Q128 dataflash. The chip is an assembly option and is not
+# populated on every board.
+PE11 FLASH_CS CS
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PD7 SPI1_MOSI SPI1
+
 # three I2C bus
 I2C_ORDER I2C2 I2C1 I2C4
 
@@ -217,6 +224,10 @@ STORAGE_FLASH_PAGE 14
 SPIDEV icm45686       SPI2 DEVID1  IMU1_CS         MODE3  2*MHZ  16*MHZ
 SPIDEV osd            SPI3 DEVID3  MAX7456_CS      MODE0 10*MHZ 10*MHZ
 
+# capped at 32MHz because AP_Logger_Flash_JEDEC reads with the plain 0x03
+# command, which the W25Q128JV rates to 50MHz
+SPIDEV dataflash      SPI1 DEVID1  FLASH_CS        MODE3 32*MHZ 32*MHZ
+
 # SPI4 external connector. Registered as pixartflow so a PMW3901/PAA3905
 # optical flow sensor works with FLOW_TYPE=2. Any other device needs its own
 # entry added below.
@@ -238,6 +249,12 @@ BARO BMP388 I2C:0:0x76
 BARO SPL06 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
+
+# The microSD card is the default log backend, as it is fitted on every board
+# and the dataflash is not. Where the dataflash is populated, select it with
+# LOG_BACKEND_TYPE 4, or 5 to log to both.
+define HAL_LOGGING_DATAFLASH_ENABLED 1
+define HAL_LOGGING_BACKENDS_DEFAULT Backend_Type::FILESYSTEM
 
 # setup for OSD
 define OSD_ENABLED 1
