@@ -238,6 +238,59 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.progress("FS_CRASH_CHECK,2 (hold + disarm) OK")
 
+    def LeakFailsafe(self):
+        """Trigger leak failsafe; must not be reported as radio failsafe"""
+        leak_detector_pin = 8  # not used by the default SITL pin mask
+        leak_mask = 1 << leak_detector_pin
+
+        self.context_push()
+        self.set_parameters({
+            "LEAK1_PIN": leak_detector_pin,
+            "LEAK1_LOGIC": 0,  # dry when low
+            "FS_LEAK_ENABLE": 6,  # Loiter or Hold
+            "FS_ACTION": 2,  # Hold; used if leak is mis-attributed to radio
+            "FS_THR_ENABLE": 1,
+            "FS_GCS_ENABLE": 0,
+        })
+        self.reboot_sitl()  # LEAK1_PIN is reboot-required
+
+        def set_leak(leaking):
+            mask = int(self.get_parameter("SIM_PIN_MASK"))
+            if leaking:
+                mask |= leak_mask
+            else:
+                mask &= ~leak_mask
+            self.set_parameter("SIM_PIN_MASK", mask)
+
+        def assert_not_radio_failsafe():
+            if self.statustext_in_collections("Radio Failsafe"):
+                raise NotAchievedException("Leak failsafe was reported as radio failsafe")
+
+        def trigger_leak(expect_mode):
+            self.change_mode("MANUAL")
+            self.context_collect("STATUSTEXT")
+            self.context_clear_collection("STATUSTEXT")
+            set_leak(True)
+            self.wait_statustext(r"^Leak Failsafe$", timeout=10, check_context=True, regex=True)
+            assert_not_radio_failsafe()
+            self.wait_mode(expect_mode, timeout=10)
+            set_leak(False)
+            self.wait_statustext("Leak Failsafe Cleared", timeout=15, check_context=True)
+            self.context_stop_collecting("STATUSTEXT")
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.start_subtest("Leak failsafe with radio failsafe enabled")
+        trigger_leak("LOITER")
+
+        self.start_subtest("Leak failsafe with radio failsafe disabled")
+        self.set_parameter("FS_THR_ENABLE", 0)
+        trigger_leak("LOITER")
+
+        self.disarm_vehicle()
+        self.context_pop()
+
     def PARAM_ERROR(self):
         '''test PARAM_ERROR mavlink message'''
         self.start_subtest("Non-existent parameter (get)")
@@ -7629,6 +7682,7 @@ return update()
             self.EnterModeOnSafetySwitch,
             self.ThrottleFailsafe,
             self.CrashCheck,
+            self.LeakFailsafe,
             self.DriveEachFrame,
             self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
             self.GPSAntennaPositionOffset,
