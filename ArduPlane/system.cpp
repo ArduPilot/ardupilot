@@ -104,6 +104,9 @@ void Plane::init_ardupilot()
 
     AP_Param::reload_defaults_file(true);
 
+    // ALT_OFFSET always starts at zero, independently of FLIGHT_OPTIONS.
+    reset_alt_offset(true);
+
     set_mode(mode_initializing, ModeReason::INITIALISED);
 
 #if (GROUND_START_DELAY > 0)
@@ -315,6 +318,10 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     const ModeReason  old_previous_mode_reason = previous_mode_reason;
     previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
+
+    // Apply the reset before mode entry so altitude targets use the new value,
+    // including when mode entry subsequently fails.
+    reset_alt_offset();
 
     // attempt to enter new mode
     if (!new_mode.enter()) {

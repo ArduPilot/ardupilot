@@ -5,6 +5,12 @@
 /********************************************************************************/
 bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 {
+    if (control_mode == &mode_auto &&
+        AP_Mission::is_nav_cmd(cmd) &&
+        mission.get_prev_nav_cmd_index() != cmd.index) {
+        reset_alt_offset();
+    }
+
     // default to non-VTOL loiter
     auto_state.vtol_loiter = false;
 
