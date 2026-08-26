@@ -450,6 +450,39 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # Disarm before context pop
         self.disarm_vehicle()
 
+    def fly_mission_NAV_LOITER_TURNS(self, ccw=False, radius_m=15, depth_m=10):
+        '''run a mission containing a single LOITER_TURNS item, checking the
+        circle is driven in the direction the mission item asks for.  A
+        negative loiter radius asks for a counter-clockwise circle'''
+        self.wait_ready_to_arm()
+        circle_centre_loc = self.home_position_as_location()
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, -depth_m),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LOITER_TURNS,
+                p1=1,
+                p3=-radius_m if ccw else radius_m,
+                x=int(circle_centre_loc.lat*1e7),
+                y=int(circle_centre_loc.lng*1e7),
+                z=-depth_m,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            ),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(2)
+        self.wait_circle_direction(circle_centre_loc, radius_m, ccw)
+        self.disarm_vehicle(force=True)
+
+    def mission_NAV_LOITER_TURNS(self):
+        '''test that loiter turns basically works'''
+        self.fly_mission_NAV_LOITER_TURNS()
+
+    def mission_NAV_LOITER_TURNS_ccw(self):
+        '''test that a negative loiter radius gives a counter-clockwise circle'''
+        self.fly_mission_NAV_LOITER_TURNS(ccw=True)
+
     def SimTerrainMission(self):
         """Mission at a constant height above synthetic sea floor"""
 
@@ -1852,6 +1885,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.DiveMission,
             self.GripperMission,
             self.DoubleCircle,
+            self.mission_NAV_LOITER_TURNS,
+            self.mission_NAV_LOITER_TURNS_ccw,
             self.MotorThrustHoverParameterIgnore,
             self.SET_POSITION_TARGET_GLOBAL_INT,
             self.TestLogDownloadMAVProxy,
