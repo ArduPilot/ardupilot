@@ -363,7 +363,7 @@ void Rover::gcs_failsafe_check(void)
 
     const bool do_failsafe = last_gcs_update_ms >= gcs_timeout_ms ? true : false;
 
-    failsafe_trigger(FAILSAFE_EVENT_GCS, "GCS", do_failsafe);
+    failsafe_trigger(FAILSAFE_EVENT_GCS, do_failsafe);
 }
 
 #if HAL_LOGGING_ENABLED

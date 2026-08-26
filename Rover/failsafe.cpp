@@ -7,6 +7,19 @@
 
 #include <stdio.h>
 
+// failsafe events, in decreasing order of precedence.  Every active event is
+// reported to the user, but only the highest-precedence one supplies the action.
+static const struct {
+    uint8_t bit;
+    const char *name;
+} failsafe_events[] = {
+#if AP_LEAKDETECTOR_ENABLED
+    { FAILSAFE_EVENT_LEAK, "Leak" },
+#endif
+    { FAILSAFE_EVENT_THROTTLE, "Radio" },
+    { FAILSAFE_EVENT_GCS, "GCS" },
+};
+
 /*
   our failsafe strategy is to detect main loop lockup and disarm.
  */
@@ -42,9 +55,24 @@ void Rover::failsafe_check()
 }
 
 /*
+  return the action to take for the failsafe events in the given bitmask.  A
+  leak is the most urgent condition, so it takes precedence over the radio and
+  GCS failsafe action.
+ */
+int8_t Rover::failsafe_action(uint8_t failsafe_bits) const
+{
+#if AP_LEAKDETECTOR_ENABLED
+    if (failsafe_bits & FAILSAFE_EVENT_LEAK) {
+        return g.fs_leak_enabled;
+    }
+#endif
+    return g.fs_action;
+}
+
+/*
   called to set/unset a failsafe event.
  */
-void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool on)
+void Rover::failsafe_trigger(uint8_t failsafe_type, bool on)
 {
     uint8_t old_bits = failsafe.bits;
     if (on) {
@@ -56,9 +84,12 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
         // a failsafe event has started
         failsafe.start_time = millis();
     }
-    if (failsafe.triggered != 0 && failsafe.bits == 0) {
-        // a failsafe event has ended
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Failsafe Cleared", type_str);
+    const uint8_t cleared_bits = failsafe.triggered & ~failsafe.bits;
+    for (const auto &event : failsafe_events) {
+        if (cleared_bits & event.bit) {
+            // a failsafe event has ended
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Failsafe Cleared", event.name);
+        }
     }
 
     failsafe.triggered &= failsafe.bits;
@@ -73,23 +104,22 @@ void Rover::failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool o
         (control_mode != &mode_rtl) &&
         ((control_mode != &mode_hold || (g2.fs_options & (uint32_t)Failsafe_Options::Failsafe_Option_Active_In_Hold)))) {
         failsafe.triggered = failsafe.bits;
-        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Failsafe", type_str);
+        for (const auto &event : failsafe_events) {
+            if (failsafe.triggered & event.bit) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Failsafe", event.name);
+            }
+        }
 
         // clear rc overrides
         RC_Channels::clear_overrides();
 
         if ((control_mode == &mode_auto) &&
-            ((failsafe_type == FAILSAFE_EVENT_THROTTLE && g.fs_throttle_enabled == FS_THR_ENABLED_CONTINUE_MISSION) ||
-             (failsafe_type == FAILSAFE_EVENT_GCS && g.fs_gcs_enabled == FS_GCS_ENABLED_CONTINUE_MISSION))) {
+            ((failsafe.triggered == FAILSAFE_EVENT_THROTTLE && g.fs_throttle_enabled == FS_THR_ENABLED_CONTINUE_MISSION) ||
+             (failsafe.triggered == FAILSAFE_EVENT_GCS && g.fs_gcs_enabled == FS_GCS_ENABLED_CONTINUE_MISSION))) {
             // continue with mission in auto mode
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failsafe - Continuing Auto Mode");
         } else {
-#if AP_LEAKDETECTOR_ENABLED
-            AP_Int8 failsafe_param = (failsafe_type == FAILSAFE_EVENT_LEAK ? g.fs_leak_enabled : g.fs_action);
-#else
-            AP_Int8 failsafe_param = g.fs_action;
-#endif
-            switch ((FailsafeAction)failsafe_param.get()) {
+            switch ((FailsafeAction)failsafe_action(failsafe.triggered)) {
             case FailsafeAction::None:
                 break;
             case FailsafeAction::SmartRTL:
@@ -132,8 +162,7 @@ void Rover::failsafe_leak_check()
         return;
     }
 
-    g2.leak_detector.update();
-    failsafe_trigger(FAILSAFE_EVENT_LEAK, "Leak", g2.leak_detector.get_status());
+    failsafe_trigger(FAILSAFE_EVENT_LEAK, g2.leak_detector.update());
 }
 #endif
 

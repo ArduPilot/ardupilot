@@ -316,7 +316,8 @@ private:
     void failsafe_ekf_off_event(void);
 
     // failsafe.cpp
-    void failsafe_trigger(uint8_t failsafe_type, const char* type_str, bool on);
+    int8_t failsafe_action(uint8_t failsafe_bits) const;
+    void failsafe_trigger(uint8_t failsafe_type, bool on);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);

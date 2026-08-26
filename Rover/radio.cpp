@@ -88,5 +88,5 @@ void Rover::radio_failsafe_check(uint16_t pwm)
         failed = true;
     }
     AP_Notify::flags.failsafe_radio = failed;
-    failsafe_trigger(FAILSAFE_EVENT_THROTTLE, "Radio", failed);
+    failsafe_trigger(FAILSAFE_EVENT_THROTTLE, failed);
 }

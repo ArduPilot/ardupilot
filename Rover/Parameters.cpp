@@ -344,8 +344,8 @@ const AP_Param::Info Rover::var_info[] = {
 
     // @Param: FS_LEAK_ENABLE
     // @DisplayName: Leak Failsafe Enable
-    // @Description: Controls what action to take if a leak is detected.
-    // @Values: 0:Warn only,1:RTL,2:Hold,3:SmartRTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
+    // @Description: Controls what action to take if a leak is detected. When disabled the leak detectors are not read and no warning is given.
+    // @Values: 0:Disabled,1:RTL,2:Hold,3:SmartRTL or RTL,4:SmartRTL or Hold,5:Terminate,6:Loiter or Hold
     // @User: Standard
     GSCALAR(fs_leak_enabled, "FS_LEAK_ENABLE", 0),
 #endif
