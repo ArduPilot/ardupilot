@@ -910,6 +910,7 @@ private:
     int32_t adjusted_altitude_cm(void);
     int32_t adjusted_relative_altitude_cm(void);
     float mission_alt_offset(void);
+    void reset_alt_offset(bool force = false);
     float height_above_target(void);
     float lookahead_adjustment(void);
     void fix_terrain_WP(Location &loc, uint32_t linenum);
