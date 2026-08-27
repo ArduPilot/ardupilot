@@ -610,6 +610,7 @@ static const struct AP_Param::defaults_table_struct defaults_table[] = {
   conversion table for quadplane parameters
  */
 const AP_Param::ConversionInfo q_conversion_table[] = {
+    // PARAMETER_CONVERSION - Added: Jul-2021 for ArduPlane-4.2
     // tailsitter params have moved but retain the same names
     { Parameters::k_param_quadplane, 48,  AP_PARAM_INT8,  "Q_TAILSIT_ANGLE" },
     { Parameters::k_param_quadplane, 61,  AP_PARAM_INT8,  "Q_TAILSIT_ANG_VT" },
@@ -626,6 +627,7 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_quadplane, 1595,  AP_PARAM_FLOAT, "Q_TAILSIT_RAT_FW" },
     { Parameters::k_param_quadplane, 1659,  AP_PARAM_FLOAT, "Q_TAILSIT_RAT_FW" },
 
+    // PARAMETER_CONVERSION - Added: Sep-2021 for ArduPlane-4.2
     // tiltrotor params have moved but retain the same names
     { Parameters::k_param_quadplane, 37,  AP_PARAM_INT16,  "Q_TILT_MASK" },
     { Parameters::k_param_quadplane, 38,  AP_PARAM_INT16,  "Q_TILT_RATE_UP" },
@@ -636,11 +638,11 @@ const AP_Param::ConversionInfo q_conversion_table[] = {
     { Parameters::k_param_quadplane, 1467,  AP_PARAM_FLOAT,  "Q_TILT_FIX_ANGLE" },
     { Parameters::k_param_quadplane, 1531,  AP_PARAM_FLOAT,  "Q_TILT_FIX_GAIN" },
 
-    // PARAMETER_CONVERSION - Added: Jan-2022
+    // PARAMETER_CONVERSION - Added: Jan-2022 for ArduPlane-4.2
     { Parameters::k_param_quadplane, 33,  AP_PARAM_FLOAT, "Q_WVANE_GAIN" },     // Moved from quadplane to weathervane library
     { Parameters::k_param_quadplane, 34,  AP_PARAM_FLOAT, "Q_WVANE_ANG_MIN" },  // Q_WVANE_MINROLL moved from quadplane to weathervane library
 
-    // PARAMETER_CONVERSION - Added: July-2022
+    // PARAMETER_CONVERSION - Added: Jul-2022 for ArduPlane-4.3
     { Parameters::k_param_quadplane, 25,  AP_PARAM_FLOAT, "Q_PLT_Y_RATE" },   // Moved from quadplane to command model library
 };
 
@@ -819,7 +821,7 @@ bool QuadPlane::setup(void)
 
     AP_Param::convert_old_parameters(&q_conversion_table[0], ARRAY_SIZE(q_conversion_table));
 
-    // centi-conversions added January 2024
+    // PARAMETER_CONVERSION - Added: Jan-2024 for ArduPlane-4.5
     land_final_speed_ms.convert_centi_parameter(AP_PARAM_INT16);
     pilot_speed_z_max_up_ms.convert_centi_parameter(AP_PARAM_INT16);
     pilot_speed_z_max_dn_ms.convert_centi_parameter(AP_PARAM_INT16);
