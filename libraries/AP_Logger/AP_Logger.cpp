@@ -223,10 +223,6 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
 {
     _log_bitmask = &log_bitmask;
 
-    // PARAMETER_CONVERSION - Added: Nov-2020 for ArduPilot-4.1
-    // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
-    _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
-
     if (hal.util->was_watchdog_armed()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
         _params.log_disarmed.set(LogDisarmed::LOG_WHILE_DISARMED);
