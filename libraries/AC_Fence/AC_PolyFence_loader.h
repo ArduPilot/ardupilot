@@ -154,6 +154,12 @@ public:
         return breached(loc, distance_outside_fence, breach_direction);
     }
 
+    // get_closest_loc_within_fence - finds the closest point to loc that does not breach
+    // any loaded inclusion/exclusion polygon or circle, expanded/contracted by margin_cm.
+    // if loc does not breach the fence then loc_closest is simply set to loc.
+    // returns false if no such point could be found (e.g. fence not loaded)
+    bool get_closest_loc_within_fence(const Location& loc, float margin_cm, Location& loc_closest) const WARN_IF_UNUSED;
+
     // returns true if a polygonal include fence could be returned
     bool inclusion_boundary_available() const WARN_IF_UNUSED {
         return _num_loaded_inclusion_boundaries != 0;
@@ -371,7 +377,27 @@ private:
     bool scale_latlon_from_origin(const Location &origin,
                                   const Vector2l &point,
                                   Vector2f &pos_cm) const WARN_IF_UNUSED;
-   
+
+    // helper for get_closest_loc_within_fence: moves a point to the far side of the nearest fence
+    // boundary, clearing it by margin_cm.  Works for both inclusion and exclusion boundaries
+    //   from_pos_cm: point to move, as an offset in cm from the EKF origin
+    //   closest_vec_cm: vector from from_pos_cm to the nearest point on the boundary
+    //   margin_cm: distance to clear the boundary by
+    // returns the new point, as an offset in cm from the EKF origin
+    Vector2f move_pos_away_from_boundary(const Vector2f &from_pos_cm, const Vector2f &closest_vec_cm, float margin_cm) const;
+
+    // helper for get_closest_loc_within_fence: keeps candidate_pos_cm if it does not breach the
+    // fence and is closer to scaled_pos_cm than the best candidate found so far
+    //   candidate_pos_cm: candidate point to test, as an offset in cm from the EKF origin
+    //   scaled_pos_cm: point candidates are being compared against, as an offset in cm from the EKF origin
+    //   found, closest_dist_cm_sq, closest_loc: best candidate found so far; updated if candidate_pos_cm is better
+    void compare_closest_point_candidate(const Vector2f &candidate_pos_cm,
+                                          const Vector2f &scaled_pos_cm,
+                                          bool &found,
+                                          float &closest_dist_cm_sq,
+                                          Location &closest_loc) const;
+
+
     // read_polygon_from_storage - reads vertex_count
     // latitude/longitude points from offset in permanent storage,
     // transforms them into an offset-from-origin and deposits the
