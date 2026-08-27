@@ -150,7 +150,7 @@ bool AP_VideoTX::init(void)
         return false;
     }
 
-    // PARAMETER_CONVERSION - Added: Sept-2022
+    // PARAMETER_CONVERSION - Added: Sep-2022 for ArduPilot-4.3
     _options.convert_parameter_width(AP_PARAM_INT16);
 
     // find the index into the power table
