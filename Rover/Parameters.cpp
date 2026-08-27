@@ -788,8 +788,6 @@ void Rover::load_parameters(void)
         g2.crash_angle.set_default(30);
     }
 
-    SRV_Channels::upgrade_parameters();
-
     // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
     // PARAMETER_CONVERSION - Added: Jan-2019 for Rover-3.5
     const AP_Param::ConversionInfo ch7_option_info = { Parameters::k_param_ch7_option, 0, AP_PARAM_INT8, "RC7_OPTION" };
@@ -837,18 +835,6 @@ void Rover::load_parameters(void)
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
-#if AP_AIRSPEED_ENABLED
-// PARAMETER_CONVERSION - Added: Jan-2022 for Rover-4.2
-        { &airspeed, airspeed.var_info, 37 },
-#endif
-#if AP_AIS_ENABLED
-// PARAMETER_CONVERSION - Added: Mar-2022 for Rover-4.4
-        { &ais, ais.var_info, 50 },
-#endif
-#if AP_FENCE_ENABLED
-// PARAMETER_CONVERSION - Added: Mar-2022 for Rover-4.4
-        { &fence, fence.var_info, 17 },
-#endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
         { &stats, stats.var_info, 1 },
