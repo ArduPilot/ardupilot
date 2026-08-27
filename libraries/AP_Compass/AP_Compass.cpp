@@ -718,6 +718,7 @@ void Compass::init()
     }
 
 #if COMPASS_MAX_INSTANCES > 1
+    // PARAMETER_CONVERSION - Added: Feb-2020 for ArduPilot-4.0
     // Look if there was a primary compass setup in previous version
     // if so and the primary compass is not set in current setup
     // make the devid as primary.
