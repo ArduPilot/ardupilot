@@ -44,12 +44,8 @@ bool ModeAuto::init(bool ignore_checks)
         // initialise desired speed overrides
         desired_speed_override_ms = {0, 0, 0};
 
-        // initialise LOITER_TURNS orbit state
-        circle_turns_signed = 0.0f;
-        circle_radius_m = 0.0f;
-        circle_turns_reported = 0;
-        circle_panorama_start_ms = 0;
-        circle_panorama_rate_rads = 0.0f;
+        // initialise LOITER_TURNS circle state
+        circle = {};
 
         // set flag to start mission
         waiting_to_start = true;
@@ -540,11 +536,11 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     // set circle center
     copter.circle_nav->set_center(circle_center);
 
-    // set circle radius. The radius is read back so circle_radius_m carries AC_Circle's
+    // set circle radius. The radius is read back so circle.radius_m carries AC_Circle's
     // clamp, and a zero (panorama) radius is stored explicitly because get_radius_m() falls
     // back to the CIRCLE_RADIUS parameter when the commanded radius is zero
     copter.circle_nav->set_radius_m(radius_m);
-    circle_radius_m = is_positive(radius_m) ? copter.circle_nav->get_radius_m() : 0.0f;
+    circle.radius_m = is_positive(radius_m) ? copter.circle_nav->get_radius_m() : 0.0f;
 
     // Always fly to the exact edge of the circle first: circle_start() derives the S-curve
     // orbit's radius purely from wp_nav's current destination, with no closed-loop correction
@@ -569,7 +565,7 @@ void ModeAuto::circle_movetoedge_start(const Location &circle_center, float radi
     // initialise yaw
     // To-Do: reset the yaw only when the previous navigation command is not a WP.  this would allow removing the special check for ROI
     if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
-        if (dist_to_center_m > circle_radius_m && dist_to_center_m > 5.0) {
+        if (dist_to_center_m > circle.radius_m && dist_to_center_m > 5.0) {
             auto_yaw.set_mode_to_default(false);
         } else {
             // vehicle is within circle so hold yaw to avoid spinning as we move to edge of circle
@@ -591,7 +587,7 @@ void ModeAuto::circle_start()
     // reached by the move-to-edge leg) and spin yaw at the circle rate.  No orbit leg is built,
     // rather than relying on calculate_circle_track()'s degenerate-arc guard to reject a
     // zero-radius orbit, so the hold does not depend on the origin landing exactly on the center.
-    if (!is_positive(circle_radius_m)) {
+    if (!is_positive(circle.radius_m)) {
         // a zero radius cannot encode a direction in the mission item (loiter_ccw comes from
         // param3 < 0), so CIRCLE_RATE supplies both the rate and the spin direction
         const float rate_degs = copter.circle_nav->get_rate_degs();
@@ -605,16 +601,16 @@ void ModeAuto::circle_start()
             // slew the yaw target through the requested turns at the circle rate.  FIXED is an
             // angle target, so unlike a rate command it cannot under-rotate against the yaw slew
             // limit, and it needs no teardown when the command ends
-            auto_yaw.set_fixed_yaw_rad(fabsf(circle_turns_signed) * M_2PI, rate_rads,
+            auto_yaw.set_fixed_yaw_rad(fabsf(circle.turns_signed) * M_2PI, rate_rads,
                                        is_negative(rate_degs) ? -1 : 1, true);
         }
 
         // the panorama runs for as long as the commanded turns take at that rate, the same way
         // AC_Circle's angle counter measured it
-        circle_panorama_start_ms = millis();
-        circle_panorama_rate_rads = rate_rads;
+        circle.panorama_start_ms = millis();
+        circle.panorama_rate_rads = rate_rads;
 
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: circling %.1f turns", (double)fabsf(circle_turns_signed));
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: circling %.1f turns", (double)fabsf(circle.turns_signed));
 
         // set submode to circle
         set_submode(SubMode::CIRCLE);
@@ -622,7 +618,7 @@ void ModeAuto::circle_start()
     }
 
     // no whole turn has been announced yet
-    circle_turns_reported = 0;
+    circle.turns_reported = 0;
 
     const Vector3p center_ned_m = copter.circle_nav->get_center_NED_m();
     const bool is_terrain_alt = copter.circle_nav->center_is_terrain_alt();
@@ -630,13 +626,13 @@ void ModeAuto::circle_start()
     // start the S-curve orbit leg (origin is the current wp_nav destination, on the circle edge).
     // The orbit is flown at the waypoint speed like any other leg, limited by the corner
     // acceleration through the arc radius
-    if (!wp_nav->set_circle_destination_NED_m(center_ned_m.xy().tofloat(), circle_turns_signed, center_ned_m.z, is_terrain_alt)) {
+    if (!wp_nav->set_circle_destination_NED_m(center_ned_m.xy().tofloat(), circle.turns_signed, center_ned_m.z, is_terrain_alt)) {
         // failure to set destination can only be because of missing terrain data
         copter.failsafe_terrain_on_event();
         return;
     }
 
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: circling %.1f turns", (double)fabsf(circle_turns_signed));
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: circling %.1f turns", (double)fabsf(circle.turns_signed));
 
     if (auto_yaw.mode() != AutoYaw::Mode::ROI) {
         auto_yaw.set_mode(AutoYaw::Mode::CIRCLE);
@@ -1780,7 +1776,7 @@ void ModeAuto::do_circle(const AP_Mission::Mission_Command& cmd)
     const bool circle_direction_ccw = cmd.content.location.loiter_ccw;
 
     // signed number of turns for the S-curve orbit (sign selects direction, matching arc waypoints)
-    circle_turns_signed = (circle_direction_ccw ? -1.0f : 1.0f) * cmd.get_loiter_turns();
+    circle.turns_signed = (circle_direction_ccw ? -1.0f : 1.0f) * cmd.get_loiter_turns();
 
     // move to edge of circle (verify_circle) will ensure we begin circling once we reach the edge
     circle_movetoedge_start(circle_center, radius_m);
@@ -2350,23 +2346,23 @@ bool ModeAuto::verify_circle(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
-    if (!is_positive(circle_radius_m)) {
+    if (!is_positive(circle.radius_m)) {
         // radius-0 panorama: position is held while the yaw target slews through the requested
         // turns.  The elapsed angle is counted here rather than read back from the yaw
         // controller, so anything that takes the heading away, such as an ROI, pilot yaw or
         // weathervaning, changes where the aircraft points without changing how long the
         // command runs.  AC_Circle's angle counter behaved the same way
-        const float angle_swept_rad = circle_panorama_rate_rads * (millis() - circle_panorama_start_ms) * 0.001;
-        return angle_swept_rad >= fabsf(circle_turns_signed) * M_2PI;
+        const float angle_swept_rad = circle.panorama_rate_rads * (millis() - circle.panorama_start_ms) * 0.001;
+        return angle_swept_rad >= fabsf(circle.turns_signed) * M_2PI;
     }
 
     // report each whole turn as it is completed.  The angle comes from the orbit leg itself, so
     // it tracks the path actually flown rather than an independently integrated rate
     const uint16_t turns_done = copter.wp_nav->get_circle_angle_covered_rad() / M_2PI;
-    if (turns_done > circle_turns_reported) {
-        circle_turns_reported = turns_done;
+    if (turns_done > circle.turns_reported) {
+        circle.turns_reported = turns_done;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: circled %u/%.1f turns",
-                      (unsigned)turns_done, (double)fabsf(circle_turns_signed));
+                      (unsigned)turns_done, (double)fabsf(circle.turns_signed));
     }
 
     // the orbit is a single S-curve leg spanning all requested turns; it is complete
