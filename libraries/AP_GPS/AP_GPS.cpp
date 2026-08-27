@@ -321,6 +321,7 @@ void AP_GPS::init()
     convert_parameters();
 
     // Set new primary param based on old auto_switch use second option
+    // PARAMETER_CONVERSION - Added: Nov-2020 for ArduPilot-4.1
     if ((_auto_switch.get() == 3) && !_primary.configured()) {
         _primary.set_and_save(1);
         _auto_switch.set_and_save(0);
@@ -366,7 +367,7 @@ void AP_GPS::convert_parameters()
 
     // table parameters to convert without scaling
     static const AP_Param::ConversionInfo conversion_info[] {
-        // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
+        // PARAMETER_CONVERSION - Added: Mar-2024 for ArduPilot-4.6
         { k_param_gps_key, 0, AP_PARAM_INT8, "GPS1_TYPE" },
         { k_param_gps_key, 1, AP_PARAM_INT8, "GPS2_TYPE" },
         { k_param_gps_key, 10, AP_PARAM_INT8, "GPS1_GNSS_MODE" },
@@ -393,7 +394,7 @@ void AP_GPS::convert_parameters()
 
 #if GPS_MOVING_BASELINE
     // convert old MovingBaseline parameters
-    // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
+    // PARAMETER_CONVERSION - Added: Mar-2024 for ArduPilot-4.6
     for (uint8_t i=0; i<MIN(2, GPS_MAX_RECEIVERS); i++) {
         // the old _MB parameters were 25 and 26:
         const uint8_t old_index = 25 + i;
