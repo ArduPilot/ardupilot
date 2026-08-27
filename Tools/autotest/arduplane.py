@@ -9198,6 +9198,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def UTMGlobalPosition(self):
         '''test UTM_GLOBAL_POSITION message sending'''
+        self.install_terrain_handlers_context()
         self.wait_ready_to_arm()
         m = self.assert_received_message_field_values("UTM_GLOBAL_POSITION", {
             "flight_state": mavutil.mavlink.UTM_FLIGHT_STATE_GROUND,
