@@ -229,7 +229,8 @@ AP_Arming::AP_Arming()
 
 __INITFUNC__ void AP_Arming::init(void)
 {
-    // PARAM_CONVERSION - 4.7 CHECK -> SKIPCHK
+    // PARAMETER_CONVERSION - Added: Dec-2025 for ArduPilot-4.7
+    // ARMING_CHECK -> ARMING_SKIPCHK
 
     if (!checks_to_skip.configured()) {
         // new parameter is not configured (though it may be set non-zero in a
