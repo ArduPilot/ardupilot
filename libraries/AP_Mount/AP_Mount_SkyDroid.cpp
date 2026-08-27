@@ -128,8 +128,12 @@ bool AP_Mount_SkyDroid::healthy() const
         return false;
     }
 
-    // unhealthy if attitude information not received recently
+    // unhealthy until we've heard at least one "GAC" attitude report, and if
+    // attitude information has not been received recently since then
     const uint32_t last_current_angle_ms = _last_current_angle_ms;
+    if (last_current_angle_ms == 0) {
+        return false;
+    }
     return (AP_HAL::millis() - last_current_angle_ms < AP_MOUNT_SKYDROID_HEALTH_TIMEOUT_MS);
 }
 
@@ -361,6 +365,18 @@ void AP_Mount_SkyDroid::send_target_angles(const MountAngleTarget& angle_rad)
                                                   _params.yaw_angle_min, _params.yaw_angle_max);
     const float pitch_target_deg = constrain_float(degrees(angle_rad.pitch),
                                                     _params.pitch_angle_min, _params.pitch_angle_max);
+
+    // if GAC attitude reports have stopped arriving, _current_angle_rad is stale -
+    // the error computed against it below would be wrong, and (since it's held
+    // fixed once the feed drops) could keep commanding a nonzero rate indefinitely
+    // rather than converging.  Command an explicit stop instead of just skipping
+    // the send, since a resumed-later GAC feed is the only thing that would
+    // otherwise correct a stale outstanding rate command
+    if (!healthy()) {
+        send_axis_rate(AP_MOUNT_SKYDROID_ID3CHAR_SPEED_YAW, 0);
+        send_axis_rate(AP_MOUNT_SKYDROID_ID3CHAR_SPEED_PITCH, 0);
+        return;
+    }
 
     // simple P-controller driving GSY/GSP as the rate actuator, using the GAC
     // attitude feedback already parsed by gimbal_angle_analyse().
