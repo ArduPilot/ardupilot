@@ -788,18 +788,6 @@ void Rover::load_parameters(void)
         g2.crash_angle.set_default(30);
     }
 
-    // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
-    // PARAMETER_CONVERSION - Added: Jan-2019 for Rover-3.5
-    const AP_Param::ConversionInfo ch7_option_info = { Parameters::k_param_ch7_option, 0, AP_PARAM_INT8, "RC7_OPTION" };
-    AP_Int8 ch7_opt_old;
-    if (AP_Param::find_old_parameter(&ch7_option_info, &ch7_opt_old)) {
-        const uint8_t ch7_opt_map[] = {0,7,50,41,51,52,53,54,16,4,42,55,56};
-        const uint8_t ch7_opt_old_val = (uint8_t)ch7_opt_old.get();
-        if (ch7_opt_old_val < ARRAY_SIZE(ch7_opt_map)) {
-            AP_Param::set_default_by_name(ch7_option_info.new_name, ch7_opt_map[ch7_opt_old_val]);
-        }
-    }
-
     // set AR_WPNav's WP_SPEED to be old WP_SPEED (if set) or CRUISE_SPEED (if set)
     // PARAMETER_CONVERSION - Added: May-2019 for Rover-4.0
     const AP_Param::ConversionInfo wp_speed_old_info = { Parameters::k_param_g2, 14, AP_PARAM_FLOAT, "WP_SPEED" };
