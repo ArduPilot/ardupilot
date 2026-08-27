@@ -719,24 +719,6 @@ void Compass::init()
     }
 
 #if COMPASS_MAX_INSTANCES > 1
-    // PARAMETER_CONVERSION - Added: Feb-2020 for ArduPilot-4.0
-    // Look if there was a primary compass setup in previous version
-    // if so and the primary compass is not set in current setup
-    // make the devid as primary.
-    if (_priority_did_stored_list[Priority(0)] == 0) {
-        uint16_t k_param_compass;
-        if (AP_Param::find_top_level_key_by_pointer(this, k_param_compass)) {
-            const AP_Param::ConversionInfo primary_compass_old_param = {k_param_compass, 12, AP_PARAM_INT8, ""};
-            AP_Int8 value;
-            value.set(0);
-            bool primary_param_exists = AP_Param::find_old_parameter(&primary_compass_old_param, &value);
-            int8_t oldvalue = value.get();
-            if ((oldvalue!=0) && (oldvalue<COMPASS_MAX_INSTANCES) && primary_param_exists) {
-                _priority_did_stored_list[Priority(0)].set_and_save_ifchanged(_state[StateIndex(oldvalue)].dev_id);
-            }
-        }
-    }
-
     // Load priority list from storage, the changes to priority list
     // by user only take effect post reboot, after this
     if (!suppress_devid_save) {
