@@ -366,9 +366,6 @@ public:
     // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed, float uncertainty);
 
-    // parameter conversion
-    void convert_parameters();
-
     // returns true when the yaw angle has been aligned
     bool yawAlignmentComplete(void) const;
 
