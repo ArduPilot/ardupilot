@@ -46,8 +46,6 @@ void Tracker::init_ardupilot()
 #endif
 
     // initialise rc channels including setting mode
-    // PARAMETER_CONVERSION - Added: Sep-2021 for Tracker-4.5
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
     // initialise servos
