@@ -119,7 +119,7 @@ for version 3.0:
 
 For version 3, the orientation needs to be changed:
 
-- AHRS_ORIENTATION = 5 (Yaw225)
+- BRD_ORIENTATION = 5 (Yaw225)
 
 ## Compass
 
