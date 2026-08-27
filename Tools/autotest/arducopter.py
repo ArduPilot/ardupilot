@@ -19372,7 +19372,13 @@ RTL_ALT_M 111
         self.install_example_script_context("Copter_Motors_6DoF.lua")
         self.reboot_sitl()
 
-        self.wait_statustext("6DoF Copter quad scripting", timeout=30, check_context=True)
+        # the script's own gcs:send_text() is a one-shot emitted while
+        # the vehicle is still booting - before our link is active
+        # again after the reboot - so ArduPilot drops it on the floor.
+        # Ask for the banner instead; it carries the frame string the
+        # script sets, so it proves the scripting motor matrix came up:
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SEND_BANNER)
+        self.wait_statustext("6DoF Copter quad scrip", timeout=30, check_context=True)
         self.wait_ready_to_arm()
 
         self.upload_simple_relhome_mission([
