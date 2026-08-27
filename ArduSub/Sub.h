@@ -558,7 +558,6 @@ private:
 
     uint16_t get_pilot_speed_dn() const;
 
-    void convert_old_parameters(void);
 
 #if LEAKDETECTOR_MAX_INSTANCES > 0
     void update_leak_pins();

@@ -800,7 +800,6 @@ void Sub::load_parameters()
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
 
-    convert_old_parameters();
     AP_Param::set_defaults_from_table(defaults_table, ARRAY_SIZE(defaults_table));
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
@@ -874,19 +873,6 @@ void Sub::load_parameters()
         { 2, 21, AP_PARAM_FLOAT, "AHRS_ORIGIN_ALT" },   // ORIGIN_ALT moved to AHRS_ORIGIN_ALT
     };
     AP_Param::convert_old_parameters(&origin_conversion_info[0], ARRAY_SIZE(origin_conversion_info));
-}
-
-void Sub::convert_old_parameters()
-{
-    // attitude control filter parameter changes from _FILT to FLTE or FLTD
-    // PARAMETER_CONVERSION - Added: Jul-2019 for ArduSub-4.0
-    const AP_Param::ConversionInfo filt_conversion_info[] = {
-        // move ATC_RAT_RLL/PIT_FILT to FLTD, move ATC_RAT_YAW_FILT to FLTE
-        { Parameters::k_param_attitude_control, 385, AP_PARAM_FLOAT, "ATC_RAT_RLL_FLTE" },
-        { Parameters::k_param_attitude_control, 386, AP_PARAM_FLOAT, "ATC_RAT_PIT_FLTE" },
-        { Parameters::k_param_attitude_control, 387, AP_PARAM_FLOAT, "ATC_RAT_YAW_FLTE" },
-    };
-    AP_Param::convert_old_parameters(&filt_conversion_info[0], ARRAY_SIZE(filt_conversion_info));
 }
 
 #if LEAKDETECTOR_MAX_INSTANCES > 0
