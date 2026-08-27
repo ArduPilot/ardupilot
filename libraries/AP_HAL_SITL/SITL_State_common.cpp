@@ -417,8 +417,9 @@ void SITL_State_Common::create_net_serial_sim(const char *spec)
 void SITL_State_Common::sim_update(void)
 {
 #if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
-    // move data between the autopilot and any device attached via TCP;
-    // for serially-attached devices the SITL UART driver does this:
+    // move data between the autopilot and any device attached via a
+    // network socket (TCP or UDP); for serially-attached devices the
+    // SITL UART driver does this:
     for (uint8_t i=0; i<num_net_serial_sims; i++) {
         net_serial_sims[i]->network_update();
     }
