@@ -46,8 +46,6 @@ void Blimp::init_ardupilot()
     AP_Param::invalidate_count();
 
     // initialise rc channels including setting mode
-    // PARAMETER_CONVERSION - Added: Sep-2021 for ArduPilot-4.2
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
     // sets up motors and output to escs
