@@ -1337,7 +1337,7 @@ void Copter::load_parameters(void)
     copter.avoid.convert_params();
 #endif
 
-    // convert PILOT vertical speed and acceleration parameters
+// convert PILOT vertical speed and acceleration parameters
     // PARAMETER_CONVERSION - Added: Feb 2026 for ardupilot-4.7
     {
         static const AP_Param::ConversionInfo pilot_conversion_info[] = {
@@ -1347,6 +1347,14 @@ void Copter::load_parameters(void)
             { Parameters::k_param_g2, 24, AP_PARAM_INT16, "PILOT_SPD_DN" },                     // PILOT_SPEED_DN moved to PILOT_SPD_DN
         };
         AP_Param::convert_old_parameters_scaled(pilot_conversion_info, ARRAY_SIZE(pilot_conversion_info), 0.01, 0);
+    }
+
+    // convert PLND_YAW_ALIGN to PLND_ORIENT_YAW and scale from centidegrees to degrees
+    {
+        static const AP_Param::ConversionInfo plnd_conversion_info[] = {
+            { Parameters::k_param_precland, 2, AP_PARAM_FLOAT, "PLND_ORIENT_YAW" },
+        };
+        AP_Param::convert_old_parameters_scaled(plnd_conversion_info, ARRAY_SIZE(plnd_conversion_info), 0.01f, 0);
     }
 
     // setup AP_Param frame type flags
