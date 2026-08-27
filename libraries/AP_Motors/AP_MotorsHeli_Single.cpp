@@ -651,7 +651,7 @@ void AP_MotorsHeli_Single::heli_motors_param_conversions(void)
     }
 
     if (use_tail_RSC()) {
-        // PARAMETER_CONVERSION - Added: June-2026
+        // PARAMETER_CONVERSION - Added: Jun-2026 for ArduPilot-4.8
         // New parameter added to allow users to specify Tail RSC ramp time.  Thus
         // if the tail rsc is being used then the H_RSC_RAMP_TIME is assigned to the
         // H_TAIL_RAMP_TIME parameter.
