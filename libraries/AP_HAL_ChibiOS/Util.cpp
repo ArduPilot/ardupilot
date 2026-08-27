@@ -110,6 +110,26 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
 
 #endif // CH_CFG_USE_HEAP
 
+#if HAL_WITH_MCU_MONITORING
+uint16_t Util::get_cpu_frequency_mhz() const
+{
+#if defined(STM32_SYS_CK)
+    return uint16_t(STM32_SYS_CK / 1000000U);
+#elif defined(STM32_HCLK)
+    return uint16_t(STM32_HCLK / 1000000U);
+#elif defined(HAL_EXPECTED_SYSCLOCK)
+    return uint16_t(HAL_EXPECTED_SYSCLOCK / 1000000U);
+#else
+    return 0;
+#endif
+}
+
+float Util::get_cpu_temperature_c() const
+{
+    return hal.analogin->mcu_temperature();
+}
+#endif  // HAL_WITH_MCU_MONITORING
+
 /*
   get safety switch state
  */
