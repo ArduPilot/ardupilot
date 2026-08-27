@@ -495,7 +495,7 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
 
 void AP_BoardConfig::init()
 {
-    // PARAMETER_CONVERSION - Added: APR-2022
+    // PARAMETER_CONVERSION - Added: Apr-2022 for ArduPilot-4.3
     vehicleSerialNumber.convert_parameter_width(AP_PARAM_INT16);
 
     board_setup();
