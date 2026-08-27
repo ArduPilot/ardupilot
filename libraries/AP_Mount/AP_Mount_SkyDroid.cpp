@@ -256,7 +256,7 @@ void AP_Mount_SkyDroid::handle_message(const char* msg_id)
     }
 }
 
-// request gimbal to (re)start sending us attitude at 10hz
+// request gimbal to (re)start sending us attitude at AP_MOUNT_SKYDROID_ATTITUDE_RATE_HZ
 void AP_Mount_SkyDroid::request_gimbal_attitude()
 {
     // "GAA": enable/disable gimbal->us attitude streaming, data bytes: 00:off,
@@ -461,6 +461,9 @@ void AP_Mount_SkyDroid::send_axis_rate(const Identifier id, float rate_dps)
 void AP_Mount_SkyDroid::gimbal_angle_analyse()
 {
     // consume current angles.  data is yaw, pitch, roll in that order, each 4 hex chars, 0.01deg units
+    if (_parser.data_len < 12) {
+        return;
+    }
     uint32_t yaw_raw, pitch_raw, roll_raw;
     if (!hex_chars_to_uint32((const char*)&_msg_buff[AP_MOUNT_TPFRAME_MSGOFS_DATA], 4, yaw_raw) ||
         !hex_chars_to_uint32((const char*)&_msg_buff[AP_MOUNT_TPFRAME_MSGOFS_DATA + 4], 4, pitch_raw) ||
@@ -493,6 +496,9 @@ void AP_Mount_SkyDroid::gimbal_record_analyse()
 {
     // data is 2 ASCII chars ("00" or "01") - only the low digit is ever non-zero, so
     // that's the only one we need to check
+    if (_parser.data_len < 2) {
+        return;
+    }
     _recording = (_msg_buff[AP_MOUNT_TPFRAME_MSGOFS_DATA + 1] == '1');
 }
 

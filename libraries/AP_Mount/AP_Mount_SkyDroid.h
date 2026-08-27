@@ -210,7 +210,7 @@ private:
     }
     uint8_t source_address_byte() const override { return (uint8_t)AddressByte::UDP; }
 
-    // request gimbal to start sending attitude at 10hz
+    // request gimbal to start sending attitude at AP_MOUNT_SKYDROID_ATTITUDE_RATE_HZ
     void request_gimbal_attitude();
 
     // request gimbal memory card information
