@@ -155,6 +155,12 @@ public:
      */
     virtual uint32_t available_memory(void) { return 4096; }
 
+    // current CPU clock in MHz, if available
+    virtual bool get_cpu_frequency_mhz(uint16_t &freq_mhz) const { return false; }
+
+    // SoC/CPU temperature in degrees C, if available
+    virtual bool get_cpu_temperature_c(float &temp_c) const { return false; }
+
     // attempt to trap the processor, presumably to enter an attached debugger
     virtual bool trap() const { return false; }
 
