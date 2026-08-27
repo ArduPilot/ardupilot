@@ -1185,6 +1185,12 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surf_dist_parameters.glitch_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
 #endif
 
+#if MODE_FLIP_ENABLED
+    // @Group: FLIP_
+    // @Path: mode_flip.cpp
+    AP_SUBGROUPPTR(mode_flip_ptr, "FLIP_", 23, ParametersG2, ModeFlip),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1251,6 +1257,11 @@ ParametersG2::ParametersG2(void) :
 #if MODE_POSHOLD_ENABLED
     ,mode_poshold_ptr(&copter.mode_poshold)
 #endif
+
+#if MODE_FLIP_ENABLED
+    ,mode_flip_ptr(&copter.mode_flip)
+#endif
+
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);
@@ -1337,7 +1348,7 @@ void Copter::load_parameters(void)
     copter.avoid.convert_params();
 #endif
 
-// convert PILOT vertical speed and acceleration parameters
+    // convert PILOT vertical speed and acceleration parameters
     // PARAMETER_CONVERSION - Added: Feb 2026 for ardupilot-4.7
     {
         static const AP_Param::ConversionInfo pilot_conversion_info[] = {
@@ -1349,6 +1360,7 @@ void Copter::load_parameters(void)
         AP_Param::convert_old_parameters_scaled(pilot_conversion_info, ARRAY_SIZE(pilot_conversion_info), 0.01, 0);
     }
 
+#if AC_PRECLAND_ENABLED
     // convert PLND_YAW_ALIGN to PLND_ORIENT_YAW and scale from centidegrees to degrees
     {
         static const AP_Param::ConversionInfo plnd_conversion_info[] = {
@@ -1356,6 +1368,7 @@ void Copter::load_parameters(void)
         };
         AP_Param::convert_old_parameters_scaled(plnd_conversion_info, ARRAY_SIZE(plnd_conversion_info), 0.01f, 0);
     }
+#endif
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
