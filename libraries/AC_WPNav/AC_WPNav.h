@@ -405,10 +405,8 @@ protected:
 
     // path type flags
     bool _this_leg_is_spline;       // true if the current leg uses spline trajectory
-    // true if the current leg is a circular orbit built by set_circle_destination_NED_m.
-    // initialised here because it gates object avoidance, so it must be valid before the first leg is set
-    bool _this_leg_is_circle = false;
     bool _next_leg_is_spline;       // true if the next leg will use spline trajectory
+    bool _this_leg_is_circle;       // true if the current leg is a circular orbit built by set_circle_destination_NED_m
 
     // waypoint navigation state
     uint32_t _wp_last_update_ms;         // timestamp of the last update_wpnav() call (milliseconds)
