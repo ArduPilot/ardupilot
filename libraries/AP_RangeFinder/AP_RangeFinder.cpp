@@ -196,7 +196,7 @@ RangeFinder::RangeFinder()
 
 void RangeFinder::convert_params(void)
 {
-    // PARAMETER_CONVERSION - Added: Dec-2024 for 4.6->4.7
+    // PARAMETER_CONVERSION - Added: Dec-2024 for ArduPilot-4.7
     for (auto &p : params) {
         p.convert_min_max_params();
     }

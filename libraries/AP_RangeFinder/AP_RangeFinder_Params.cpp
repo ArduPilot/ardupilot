@@ -193,7 +193,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 };
 
 
-// PARAMETER_CONVERSION - Added: Dec-2024 for 4.7
+// PARAMETER_CONVERSION - Added: Dec-2024 for ArduPilot-4.7
 void AP_RangeFinder_Params::convert_min_max_params(void)
 {
     // ./Tools/autotest/test_param_upgrade.py --vehicle=arducopter --param "RNGFND1_MAX_CM=300->RNGFND1_MAX=3.00" --param "RNGFND2_MIN_CM=678->RNGFND2_MIN=6.78" --param "RNGFNDA_MIN_CM=1->RNGFNDA_MIN=0.01" --param "RNGFND5_GNDCLEAR=103->RNGFND5_GNDCLR=1.03"
