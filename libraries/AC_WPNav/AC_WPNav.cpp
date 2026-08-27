@@ -115,7 +115,7 @@ const AP_Param::GroupInfo AC_WPNav::var_info[] = {
 // perform any required parameter conversions
 void AC_WPNav::convert_parameters()
 {
-    // PARAMETER_CONVERSION - Added: Feb-2026 for 4.7
+    // PARAMETER_CONVERSION - Added: Feb-2026 for ArduPilot-4.7
 
     // return immediately if no conversion is needed
     if (_wp_speed_ms.configured() || _wp_radius_m.configured() || _wp_speed_up_ms.configured() || 

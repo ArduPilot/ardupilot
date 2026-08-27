@@ -262,7 +262,7 @@ void AC_Loiter::set_speed_max_NE_ms(float speed_max_ne_ms)
 // perform any required parameter conversions
 void AC_Loiter::convert_parameters()
 {
-    // PARAMETER_CONVERSION - Added: Jan-2026 for 4.7
+    // PARAMETER_CONVERSION - Added: Jan-2026 for ArduPilot-4.7
 
     // return immediately if no conversion is needed
     if (_speed_max_ne_ms.configured() || _accel_max_ne_mss.configured() || _brake_accel_max_mss.configured() || _brake_jerk_max_msss.configured()) {
