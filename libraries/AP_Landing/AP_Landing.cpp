@@ -772,7 +772,7 @@ bool AP_Landing::terminate(void) {
  */
 void AP_Landing::convert_parameters(void)
 {
-    // added January 2024
+    // PARAMETER_CONVERSION - Added: Jan-2024 for ArduPilot-4.5
     pitch_deg.convert_centi_parameter(AP_PARAM_INT16);
 
     // PARAMETER_CONVERSION - Added: Mar-2026 for THR_SLEWRATE width change
