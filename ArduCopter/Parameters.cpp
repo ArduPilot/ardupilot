@@ -1271,11 +1271,6 @@ void Copter::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
-    // PARAMETER_CONVERSION - Added: Mar-2022
-#if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
-#endif
-
     // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
@@ -1363,88 +1358,3 @@ void Copter::load_parameters(void)
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
 }
-
-// handle conversion of PID gains
-void Copter::convert_pid_parameters(void)
-{
-    const AP_Param::ConversionInfo angle_and_filt_conversion_info[] = {
-        // PARAMETER_CONVERSION - Added: Aug-2021
-        { Parameters::k_param_pi_vel_xy, 3, AP_PARAM_FLOAT, "PSC_NE_VEL_FLTE" },
-    };
-
-    // convert angle controller gain and filter without scaling
-    for (const auto &info : angle_and_filt_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 1.0f);
-    }
-
-#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
-    if (!ins.harmonic_notches[1].params.enabled()) {
-        // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
-        const AP_Param::ConversionInfo notchfilt_conversion_info[] {
-            // PARAMETER_CONVERSION - Added: Apr-2022 for ArduPilot-4.2
-            { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
-            { Parameters::k_param_ins, 293, AP_PARAM_FLOAT, "INS_HNTC2_ATT" },
-            { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
-            { Parameters::k_param_ins, 421, AP_PARAM_FLOAT, "INS_HNTC2_BW" },
-        };
-        AP_Param::convert_old_parameters(&notchfilt_conversion_info[0], ARRAY_SIZE(notchfilt_conversion_info));
-        AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
-        AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
-    }
-#endif
-#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-
-    // ACRO_RP_P and ACRO_Y_P replaced with ACRO_RP_RATE and ACRO_Y_RATE for Copter-4.2
-    // PARAMETER_CONVERSION - Added: Sep-2021
-    const AP_Param::ConversionInfo acro_rpy_conversion_info[] = {
-        { Parameters::k_param_acro_rp_p, 0, AP_PARAM_FLOAT, "ACRO_RP_RATE" },
-        { Parameters::k_param_acro_yaw_p,  0, AP_PARAM_FLOAT, "ACRO_Y_RATE" }
-    };
-    for (const auto &info : acro_rpy_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 45.0);
-    }
-
-    // convert rate and expo command model parameters for Copter-4.3
-    // PARAMETER_CONVERSION - Added: Jun-2022 for ArduPilot-4.3
-    const AP_Param::ConversionInfo cmd_mdl_conversion_info[] = {
-        { Parameters::k_param_g2, 47, AP_PARAM_FLOAT, "ACRO_RP_RATE" },
-        { Parameters::k_param_acro_rp_expo,  0, AP_PARAM_FLOAT, "ACRO_RP_EXPO" },
-        { Parameters::k_param_g2,  48, AP_PARAM_FLOAT, "ACRO_Y_RATE" },
-        { Parameters::k_param_g2,  9, AP_PARAM_FLOAT, "ACRO_Y_EXPO" },
-        { Parameters::k_param_g2,  49, AP_PARAM_FLOAT, "PILOT_Y_RATE" },
-        { Parameters::k_param_g2,  50, AP_PARAM_FLOAT, "PILOT_Y_EXPO" },
-    };
-    for (const auto &info : cmd_mdl_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 1.0);
-    }
-
-    // make any SRV_Channel upgrades needed
-    SRV_Channels::upgrade_parameters();
-}
-
-#if HAL_PROXIMITY_ENABLED
-void Copter::convert_prx_parameters()
-{
-    // convert PRX to PRX1_ parameters for Copter-4.3
-    // PARAMETER_CONVERSION - Added: Aug-2022
-    static const AP_Param::ConversionInfo prx_conversion_info[] = {
-        { Parameters::k_param_g2, 72, AP_PARAM_INT8, "PRX1_TYPE" },
-        { Parameters::k_param_g2, 136, AP_PARAM_INT8, "PRX1_ORIENT" },
-        { Parameters::k_param_g2, 200, AP_PARAM_INT16, "PRX1_YAW_CORR" },
-        { Parameters::k_param_g2, 264, AP_PARAM_INT16, "PRX1_IGN_ANG1" },
-        { Parameters::k_param_g2, 328, AP_PARAM_INT8, "PRX1_IGN_WID1" },
-        { Parameters::k_param_g2, 392, AP_PARAM_INT16, "PRX1_IGN_ANG2" },
-        { Parameters::k_param_g2, 456, AP_PARAM_INT8, "PRX1_IGN_WID2" },
-        { Parameters::k_param_g2, 520, AP_PARAM_INT16, "PRX1_IGN_ANG3" },
-        { Parameters::k_param_g2, 584, AP_PARAM_INT8, "PRX1_IGN_WID3" },
-        { Parameters::k_param_g2, 648, AP_PARAM_INT16, "PRX1_IGN_ANG4" },
-        { Parameters::k_param_g2, 712, AP_PARAM_INT8, "PRX1_IGN_WID4" },
-        { Parameters::k_param_g2, 1224, AP_PARAM_FLOAT, "PRX1_MIN" },
-        { Parameters::k_param_g2, 1288, AP_PARAM_FLOAT, "PRX1_MAX" },
-    };
-    for (const auto &info : prx_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 1.0);
-    }
-}
-#endif

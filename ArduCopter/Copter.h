@@ -968,10 +968,6 @@ private:
 
     // Parameters.cpp
     void load_parameters(void) override;
-    void convert_pid_parameters(void);
-#if HAL_PROXIMITY_ENABLED
-    void convert_prx_parameters();
-#endif
 
     // precision_landing.cpp
     void init_precland();
