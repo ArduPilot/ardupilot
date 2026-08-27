@@ -19,6 +19,8 @@
 
 #if HAL_GCS_ENABLED
 
+#include <hwdef_boardid.h>
+
 #include "GCS.h"
 
 #include <AC_Fence/AC_Fence.h>

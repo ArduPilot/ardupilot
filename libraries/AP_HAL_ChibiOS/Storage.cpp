@@ -75,7 +75,7 @@ void Storage::_storage_open(void)
 #endif // HAL_WITH_RAMTRON
 
 // allow for devices with no FRAM chip to fall through to other storage
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
         // load from storage backend
         _flash_load();
         _save_backup();
@@ -299,7 +299,7 @@ void Storage::_timer_tick(void)
     }
 #endif
 
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
     if (_initialisedType == StorageBackend::Flash) {
         // save to storage backend
         if (_flash_write(i)) {
@@ -327,7 +327,7 @@ void Storage::_timer_tick(void)
  */
 void Storage::_flash_load(void)
 {
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
     _flash_page = STORAGE_FLASH_PAGE;
 
 #if AP_FLASH_STORAGE_DOUBLE_PAGE
@@ -349,7 +349,7 @@ void Storage::_flash_load(void)
 */
 bool Storage::_flash_write(uint16_t line)
 {
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
     EXPECT_DELAY_MS(1);
     return _flash.write(line*CH_STORAGE_LINE_SIZE, CH_STORAGE_LINE_SIZE);
 #else
@@ -362,7 +362,7 @@ bool Storage::_flash_write(uint16_t line)
  */
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
 #if AP_FLASH_STORAGE_DOUBLE_PAGE
     sector *= 2;
 #endif
@@ -396,7 +396,7 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
  */
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
 #if AP_FLASH_STORAGE_DOUBLE_PAGE
     sector *= 2;
 #endif
@@ -414,7 +414,7 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
  */
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
 #if AP_FLASH_STORAGE_DOUBLE_PAGE
     sector *= 2;
 #endif
@@ -480,7 +480,7 @@ bool Storage::erase(void)
         return AP_HAL::Storage::erase();
     }
 #endif
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
     return _flash.erase();
 #else
     return false;

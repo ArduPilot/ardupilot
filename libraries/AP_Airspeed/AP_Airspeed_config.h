@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef_airspeed.h>
+
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_MSP/AP_MSP_config.h>

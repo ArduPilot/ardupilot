@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef_battery.h>
+
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_config.h>
 #include <AP_EFI/AP_EFI_config.h>

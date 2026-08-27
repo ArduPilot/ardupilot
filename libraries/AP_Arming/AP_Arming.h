@@ -4,7 +4,7 @@
 #include <AP_HAL/Semaphores.h>
 #include <AP_Param/AP_Param.h>
 #include <AP_GPS/AP_GPS_config.h>
-#include <AP_BoardConfig/AP_BoardConfig_config.h>
+#include <AP_BoardConfig/IMU_heater_config.h>
 
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"

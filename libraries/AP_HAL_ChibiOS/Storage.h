@@ -16,6 +16,7 @@
  */
 #pragma once
 
+#include <AP_Param/AP_Param_config.h>
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include <AP_Common/Bitmask.h>
@@ -29,7 +30,7 @@
 
 // when using flash storage we use a small line size to make storage
 // compact and minimise the number of erase cycles needed
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
 #if defined(STM32H7XX)
 #define CH_STORAGE_LINE_SHIFT 4
 #else
@@ -91,7 +92,7 @@ private:
     uint32_t _last_re_init_ms;
     uint32_t _last_empty_ms;
 
-#ifdef STORAGE_FLASH_PAGE
+#if HAL_STORAGE_FLASH_PAGE_ENABLED
     AP_FlashStorage _flash{_buffer,
 #if AP_FLASH_STORAGE_DOUBLE_PAGE
             stm32_flash_getpagesize(STORAGE_FLASH_PAGE)*2,
