@@ -43,7 +43,7 @@ ModeLand::ModeLand() : Mode()
 // convert parameters
 void ModeLand::convert_params()
 {
-    // PARAMETER_CONVERSION - Added: Jan 2026
+    // PARAMETER_CONVERSION - Added: Jan-2026 for ArduPilot-4.7
 
     // return immediately if parameter conversion has already been performed
     if (land_speed_ms.configured() || land_speed_high_ms.configured() || land_alt_low_m.configured()) {

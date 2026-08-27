@@ -1276,7 +1276,7 @@ void Copter::load_parameters(void)
     AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
 #endif
 
-    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
@@ -1349,7 +1349,7 @@ void Copter::load_parameters(void)
 #endif
 
     // convert PILOT vertical speed and acceleration parameters
-    // PARAMETER_CONVERSION - Added: Feb 2026 for ardupilot-4.7
+    // PARAMETER_CONVERSION - Added: Feb-2026 for ArduPilot-4.7
     {
         static const AP_Param::ConversionInfo pilot_conversion_info[] = {
             { Parameters::k_param_pilot_speed_up_cms, 0, AP_PARAM_INT16, "PILOT_SPD_UP" },      // PILOT_SPEED_UP moved to PILOT_SPD_UP
@@ -1382,7 +1382,7 @@ void Copter::convert_pid_parameters(void)
     if (!ins.harmonic_notches[1].params.enabled()) {
         // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
         const AP_Param::ConversionInfo notchfilt_conversion_info[] {
-            // PARAMETER_CONVERSION - Added: Apr 2022
+            // PARAMETER_CONVERSION - Added: Apr-2022 for ArduPilot-4.2
             { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
             { Parameters::k_param_ins, 293, AP_PARAM_FLOAT, "INS_HNTC2_ATT" },
             { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
@@ -1406,7 +1406,7 @@ void Copter::convert_pid_parameters(void)
     }
 
     // convert rate and expo command model parameters for Copter-4.3
-    // PARAMETER_CONVERSION - Added: June-2022
+    // PARAMETER_CONVERSION - Added: Jun-2022 for ArduPilot-4.3
     const AP_Param::ConversionInfo cmd_mdl_conversion_info[] = {
         { Parameters::k_param_g2, 47, AP_PARAM_FLOAT, "ACRO_RP_RATE" },
         { Parameters::k_param_acro_rp_expo,  0, AP_PARAM_FLOAT, "ACRO_RP_EXPO" },
