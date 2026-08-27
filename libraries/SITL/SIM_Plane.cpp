@@ -526,6 +526,9 @@ void Plane::update(const struct sitl_input &input)
     
     calculate_forces(input, rot_accel);
     update_battery(input);
+
+    apply_move();
+
     update_dynamics(rot_accel);
 
     /*
