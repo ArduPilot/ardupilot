@@ -182,7 +182,7 @@ AP_GPS_SBF::read(void)
                                 if (get_type() == AP_GPS::GPS_Type::GPS_TYPE_SBF_DUAL_ANTENNA) {
                                     targetGA = "MultiAntenna";
                                 }
-                                if (asprintf(&config_string, "sga, %s\n", targetGA)) {
+                                if (asprintf(&config_string, "sga, %s\n", targetGA) == -1) {
                                   config_string = nullptr;
                                 }
                                 break;
