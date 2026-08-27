@@ -783,20 +783,9 @@ ParametersG2::ParametersG2()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-const AP_Param::ConversionInfo conversion_table[] = {
-    // PARAMETER_CONVERSION - Added: Mar-2018 for ArduSub-4.0
-    { Parameters::k_param_fs_batt_voltage,   0,      AP_PARAM_FLOAT,  "BATT_LOW_VOLT" },
-    { Parameters::k_param_fs_batt_mah,       0,      AP_PARAM_FLOAT,  "BATT_LOW_MAH" },
-    { Parameters::k_param_failsafe_battery_enabled,       0,      AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
-    // PARAMETER_CONVERSION - Added: Apr-2019 for ArduSub-4.0
-    { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
-};
-
 void Sub::load_parameters()
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
-
-    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
 
