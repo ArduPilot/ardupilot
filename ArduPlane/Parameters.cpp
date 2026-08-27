@@ -1360,8 +1360,6 @@ void Plane::load_parameters(void)
     g2.servo_channels.set_default_function(CH_2, SRV_Channel::k_elevator);
     g2.servo_channels.set_default_function(CH_3, SRV_Channel::k_throttle);
     g2.servo_channels.set_default_function(CH_4, SRV_Channel::k_rudder);
-        
-    SRV_Channels::upgrade_parameters();
 
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.enable) {
@@ -1385,137 +1383,8 @@ void Plane::load_parameters(void)
         }
     }
 
-
-// PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
-#if AP_FENCE_ENABLED
-    enum ap_var_type ptype_fence_type;
-    AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
-    if (fence_type_new && !fence_type_new->configured()) {
-        // If we find the new parameter and it hasn't been configured
-        // attempt to upgrade the altitude fences.
-        int8_t fence_type_new_val = AC_FENCE_TYPE_POLYGON;
-        AP_Int16 fence_alt_min_old;
-        AP_Param::ConversionInfo fence_alt_min_info_old = {
-            Parameters::k_param_fence_minalt,
-            0,
-            AP_PARAM_INT16,
-            nullptr
-        };
-        if (AP_Param::find_old_parameter(&fence_alt_min_info_old, &fence_alt_min_old)) {
-            if (fence_alt_min_old.configured()) {
-                //
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MIN;
-            }
-        }
-
-        AP_Int16 fence_alt_max_old;
-        AP_Param::ConversionInfo fence_alt_max_info_old = {
-            Parameters::k_param_fence_maxalt,
-            0,
-            AP_PARAM_INT16,
-            nullptr
-        };
-        if (AP_Param::find_old_parameter(&fence_alt_max_info_old, &fence_alt_max_old)) {
-            if (fence_alt_max_old.configured()) {
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MAX;
-            }
-        }
-
-        fence_type_new->set_and_save((int8_t)fence_type_new_val);
-    }
-
-    AP_Int8 fence_action_old;
-    AP_Param::ConversionInfo fence_action_info_old = {
-        Parameters::k_param_fence_action,
-        0,
-        AP_PARAM_INT8,
-        "FENCE_ACTION"
-    };
-    if (AP_Param::find_old_parameter(&fence_action_info_old, &fence_action_old)) {
-        enum ap_var_type ptype;
-        AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
-        AC_Fence::Action fence_action_new_val;
-        if (fence_action_new && !fence_action_new->configured()) {
-            switch(fence_action_old.get()) {
-                case 0: // FENCE_ACTION_NONE
-                case 2: // FENCE_ACTION_REPORT_ONLY
-                default:
-                    fence_action_new_val = AC_Fence::Action::REPORT_ONLY;
-                    break;
-                case 1: // FENCE_ACTION_GUIDED
-                    fence_action_new_val = AC_Fence::Action::GUIDED;
-                    break;
-                case 3: // FENCE_ACTION_GUIDED_THR_PASS
-                    fence_action_new_val = AC_Fence::Action::GUIDED_THROTTLE_PASS;
-                    break;
-                case 4: // FENCE_ACTION_RTL
-                    fence_action_new_val = AC_Fence::Action::RTL_AND_LAND;
-                    break;
-            }
-            fence_action_new->set_and_save((int8_t)fence_action_new_val);
-            
-            // Now upgrade the new fence enable at the same time
-            enum ap_var_type ptype_fence_enable;
-            AP_Int8 *fence_enable = (AP_Int8*)AP_Param::find("FENCE_ENABLE", &ptype_fence_enable);
-            // fences were used if there was a count, and the old fence action was not zero
-            AC_Fence *ap_fence = AP::fence();
-            bool fences_exist = false;
-            if (ap_fence) {
-                // If the fence library is present, attempt to read the fence count
-                fences_exist = ap_fence->polyfence().total_fence_count() > 0;
-            }
-            
-            bool fences_used = fence_action_old.get() != 0;
-            if (fence_enable && !fence_enable->configured()) {
-                // The fence enable parameter exists, so now set it accordingly
-                fence_enable->set_and_save(fences_exist && fences_used);
-            }
-        }
-    }
-#endif // AP_FENCE_ENABLED
-
-#if AP_TERRAIN_AVAILABLE
-    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
-    g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
-#endif
-
-    // PARAMETER_CONVERSION - Added: Jun-2021 for ArduPlane-4.1
-    g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
-
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
     g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);
-
-#if AP_AIRSPEED_ENABLED
-    // PARAMETER_CONVERSION - Added: Jan-2022
-    {
-        const uint16_t old_key = g.k_param_airspeed;
-        const uint16_t old_index = 0;       // Old parameter index in the tree
-        AP_Param::convert_class(old_key, &airspeed, airspeed.var_info, old_index, true);
-    }
-#endif
-
-#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
-    if (!ins.harmonic_notches[1].params.enabled()) {
-        // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
-        const AP_Param::ConversionInfo notchfilt_conversion_info[] {
-            // PARAMETER_CONVERSION - Added: Apr-2022 for ArduPlane-4.2
-            { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
-            { Parameters::k_param_ins, 293, AP_PARAM_FLOAT, "INS_HNTC2_ATT" },
-            { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
-            { Parameters::k_param_ins, 421, AP_PARAM_FLOAT, "INS_HNTC2_BW" },
-        };
-        AP_Param::convert_old_parameters(&notchfilt_conversion_info[0], ARRAY_SIZE(notchfilt_conversion_info));
-        AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
-        AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
-    }
-#endif // HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
-#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-
-    // PARAMETER_CONVERSION - Added: Mar-2022
-#if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, true);
-#endif
 
     // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
@@ -1541,10 +1410,6 @@ void Plane::load_parameters(void)
     landing.convert_parameters();
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
-    // PARAMETER_CONVERSION - Added: Oct-2021
-#if HAL_EFI_ENABLED
-        { &efi, efi.var_info, 22 },
-#endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
         { &stats, stats.var_info, 5 },
