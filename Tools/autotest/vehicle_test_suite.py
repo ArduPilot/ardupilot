@@ -11175,10 +11175,12 @@ Also, ignores heartbeats not from our target system'''
         path = None
         try:
             path = self.current_onboard_log_filepath()
-        except (IndexError, ValueError):
+        except (IndexError, ValueError, OSError):
             # ValueError: max() of an empty log list - e.g. the
             # log-wrap tests can leave no logs on disk at exception
-            # time, and this diagnostic path must never take the
+            # time.  OSError: a test may fabricate a log which cannot
+            # be stat()ed at all, as TestLogOpenErrors does with a
+            # symlink loop.  This diagnostic path must never take the
             # worker down (it did: "Test runner exited without
             # returning a result")
             pass
@@ -15328,8 +15330,21 @@ switch value'''
         the lexicographically-highest name then returns a stale log with none
         of the current messages.'''
         logs = self.log_list()
-        latest = max(logs, key=lambda p: os.path.getmtime(p))
-        return latest
+
+        # a log we cannot stat is not the current log, and must not be
+        # allowed to take the test runner down with it: a test may
+        # deliberately fabricate an unopenable log, and this is called
+        # from the failure path, so raising here loses the failure
+        def mtime_or_none(path):
+            try:
+                return os.path.getmtime(path)
+            except OSError:
+                return None
+
+        stattable = [x for x in logs if mtime_or_none(x) is not None]
+        if len(stattable) == 0:
+            return None
+        return max(stattable, key=mtime_or_none)
 
     def dfreader_for_path(self, path):
         '''return a DFReader for path.  The reader holds an open filehandle
