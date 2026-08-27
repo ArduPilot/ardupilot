@@ -509,14 +509,8 @@ void Copter::allocate_motors(void)
     }
     
     // upgrade parameters. This must be done after allocating the objects
-    convert_pid_parameters();
 #if FRAME_CONFIG == HELI_FRAME
     motors->heli_motors_param_conversions();
-#endif
-
-#if HAL_PROXIMITY_ENABLED
-    // convert PRX to PRX1_ parameters
-    convert_prx_parameters();
 #endif
 
     // upgrade attitude controller parameters
