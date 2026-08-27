@@ -565,9 +565,6 @@ public:
 #endif
     }
 
-    // SERVO* parameters
-    static void upgrade_parameters(void);
-
     // given a zero-based motor channel, return the k_motor function for that channel
     static SRV_Channel::Function get_motor_function(uint8_t channel) {
         if (channel < 8) {
