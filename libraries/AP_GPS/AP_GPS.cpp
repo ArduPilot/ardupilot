@@ -365,7 +365,7 @@ void AP_GPS::convert_parameters()
     }
 
     // table parameters to convert without scaling
-    static const AP_Param::ConversionInfo conversion_info[] {
+    const AP_Param::ConversionInfo conversion_info[] {
         // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
         { k_param_gps_key, 0, AP_PARAM_INT8, "GPS1_TYPE" },
         { k_param_gps_key, 1, AP_PARAM_INT8, "GPS2_TYPE" },
@@ -1391,8 +1391,8 @@ uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
 #if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
-    // Only send if enabled
-    if (get_type(0) == GPS_TYPE_NONE) {
+    // Only send if enabled and healthy/connected
+    if (get_type(0) == GPS_TYPE_NONE || !is_healthy(0) || status(0) == AP_GPS_FixType::NO_GPS) {
         return;
     }
 
@@ -1432,8 +1432,8 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 #if AP_GPS_GPS2_RAW_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
-    // always send the message if 2nd GPS is configured
-    if (params[1].type == GPS_TYPE_NONE) {
+    // only send the message if 2nd GPS is configured and healthy/connected
+    if (params[1].type == GPS_TYPE_NONE || !is_healthy(1) || status(1) == AP_GPS_FixType::NO_GPS) {
         return;
     }
 
