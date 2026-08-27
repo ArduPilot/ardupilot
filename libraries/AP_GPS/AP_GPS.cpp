@@ -320,13 +320,6 @@ void AP_GPS::init()
 
     convert_parameters();
 
-    // Set new primary param based on old auto_switch use second option
-    // PARAMETER_CONVERSION - Added: Nov-2020 for ArduPilot-4.1
-    if ((_auto_switch.get() == 3) && !_primary.configured()) {
-        _primary.set_and_save(1);
-        _auto_switch.set_and_save(0);
-    }
-
     // search for serial ports with gps protocol
     const auto &serial_manager = AP::serialmanager();
     uint8_t uart_idx = 0;
