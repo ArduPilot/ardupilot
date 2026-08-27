@@ -161,6 +161,9 @@ public:
     // SoC/CPU temperature in degrees C, if available
     virtual bool get_cpu_temperature_c(float &temp_c) const { return false; }
 
+    // true if the CPU/SoC is currently under-voltage, if available
+    virtual bool get_cpu_undervoltage(bool &undervolt) const { return false; }
+
     // attempt to trap the processor, presumably to enter an attached debugger
     virtual bool trap() const { return false; }
 

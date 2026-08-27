@@ -163,3 +163,7 @@
 #ifndef HAL_LINUX_THERMAL_PATH
 #define HAL_LINUX_THERMAL_PATH "/sys/class/thermal/thermal_zone0/temp"
 #endif
+
+#ifndef HAL_LINUX_THROTTLED_PATH
+#define HAL_LINUX_THROTTLED_PATH "/sys/devices/platform/soc/soc:firmware/get_throttled"
+#endif
