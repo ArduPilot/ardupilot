@@ -1032,6 +1032,7 @@ def run_tests(steps):
               "to %u (instance %u's RC-in port is instance 0's SITL "
               "port)." % (opts.parallel, opts.instance, highest_instance,
                           MAX_AUTOTEST_INSTANCE, MAX_AUTOTEST_INSTANCE + 1))
+        sys.exit(1)
 
     if opts.enable_fgview and opts.instance != 0:
         # SITL's FlightGear output is 5503+10*instance and cannot be set

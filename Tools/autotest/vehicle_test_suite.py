@@ -16114,12 +16114,12 @@ switch value'''
         # loop spins forever waiting for an ack which can never match
         # (a base of 20721+instance did exactly that: worker W's state
         # port was worker W-1's servo port).
-        os.environ["SITL_MCAST_STATE_PORT"] = str(24000 + self.instance)
+        os.environ["SITL_MCAST_STATE_PORT"] = str(self.sitl_mcast_state_port())
         # likewise for the simulated CAN buses: the multicast group
         # varies with the CAN bus number but the port is a fixed
         # constant, so concurrent workers' CAN traffic would otherwise
         # share one set of buses.
-        os.environ["SITL_CAN_MCAST_PORT"] = str(57732 + self.instance)
+        os.environ["SITL_CAN_MCAST_PORT"] = str(self.sitl_can_mcast_port())
 
     def refresh_test_binary(self):
         '''make a pristine per-instance copy of the binary.  Some tests
