@@ -12,9 +12,6 @@ void Plane::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    rollController.convert_pid();
-    pitchController.convert_pid();
-
     // initialise rc channels including setting mode
     // PARAMETER_CONVERSION - Added: Sep-2021 for ArduPlane-4.2
 #if HAL_QUADPLANE_ENABLED

@@ -1305,55 +1305,9 @@ ParametersG2::ParametersG2(void) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-/*
-  This is a conversion table from old parameter values to new
-  parameter names. The startup code looks for saved values of the old
-  parameters and will copy them across to the new parameters if the
-  new parameter does not yet have a saved value. It then saves the new
-  value.
-  
-  Note that this works even if the old parameter has been removed. It
-  relies on the old k_param index not being removed
-  
-  The second column below is the index in the var_info[] table for the
-  old object. This should be zero for top level parameters.
- */
-static const AP_Param::ConversionInfo conversion_table[] = {
-    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
-    { Parameters::k_param_fence_minalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MIN"},
-    { Parameters::k_param_fence_maxalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MAX"},
-    { Parameters::k_param_fence_retalt,       0,     AP_PARAM_INT16, "FENCE_RET_ALT"},
-    { Parameters::k_param_fence_ret_rally,    0,      AP_PARAM_INT8, "FENCE_RET_RALLY"},
-    { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
-};
-
-struct RCConversionInfo {
-    uint16_t old_key; // k_param_*
-    uint32_t old_group_element; // index in old object
-    RC_Channel::AUX_FUNC fun; // new function
-};
-
-static const RCConversionInfo rc_option_conversion[] = {
-    { Parameters::k_param_flapin_channel_old, 0, RC_Channel::AUX_FUNC::FLAP},
-    { Parameters::k_param_g2, 968, RC_Channel::AUX_FUNC::SOARING},
-#if AP_FENCE_ENABLED
-    { Parameters::k_param_fence_channel, 0, RC_Channel::AUX_FUNC::FENCE},
-#endif
-#if AP_MISSION_ENABLED
-    { Parameters::k_param_reset_mission_chan, 0, RC_Channel::AUX_FUNC::MISSION_RESET},
-#endif
-#if HAL_PARACHUTE_ENABLED
-    { Parameters::k_param_parachute_channel, 0, RC_Channel::AUX_FUNC::PARACHUTE_RELEASE},
-#endif
-    { Parameters::k_param_fbwa_tdrag_chan, 0, RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER},
-    { Parameters::k_param_reset_switch_chan, 0, RC_Channel::AUX_FUNC::MODE_SWITCH_RESET},
-};
-
 void Plane::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
-
-    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     // setup defaults in SRV_Channels
     g2.servo_channels.set_default_function(CH_1, SRV_Channel::k_aileron);
@@ -1369,19 +1323,6 @@ void Plane::load_parameters(void)
 #endif
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
-
-    // Convert chan params to RCx_OPTION
-    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
-    for (uint8_t i=0; i<ARRAY_SIZE(rc_option_conversion); i++) {
-        AP_Int8 chan_param;
-        AP_Param::ConversionInfo info {rc_option_conversion[i].old_key, rc_option_conversion[i].old_group_element, AP_PARAM_INT8, nullptr};
-        if (AP_Param::find_old_parameter(&info, &chan_param) && chan_param.get() > 0) {
-            RC_Channel *chan = rc().channel(chan_param.get() - 1);
-            if (chan != nullptr && !chan->option.configured()) {
-                chan->option.set_and_save((int16_t)rc_option_conversion[i].fun); // save the new param
-            }
-        }
-    }
 
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
     g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);
