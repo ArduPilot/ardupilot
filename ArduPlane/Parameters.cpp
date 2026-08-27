@@ -1475,9 +1475,11 @@ void Plane::load_parameters(void)
 #endif // AP_FENCE_ENABLED
 
 #if AP_TERRAIN_AVAILABLE
+    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
     g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
 #endif
 
+    // PARAMETER_CONVERSION - Added: Jun-2021 for ArduPlane-4.1
     g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
 
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
@@ -1497,6 +1499,7 @@ void Plane::load_parameters(void)
     if (!ins.harmonic_notches[1].params.enabled()) {
         // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
         const AP_Param::ConversionInfo notchfilt_conversion_info[] {
+            // PARAMETER_CONVERSION - Added: Apr-2022 for ArduPlane-4.2
             { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
             { Parameters::k_param_ins, 293, AP_PARAM_FLOAT, "INS_HNTC2_ATT" },
             { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
