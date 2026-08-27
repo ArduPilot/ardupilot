@@ -784,9 +784,11 @@ ParametersG2::ParametersG2()
 }
 
 const AP_Param::ConversionInfo conversion_table[] = {
+    // PARAMETER_CONVERSION - Added: Mar-2018 for ArduSub-4.0
     { Parameters::k_param_fs_batt_voltage,   0,      AP_PARAM_FLOAT,  "BATT_LOW_VOLT" },
     { Parameters::k_param_fs_batt_mah,       0,      AP_PARAM_FLOAT,  "BATT_LOW_MAH" },
     { Parameters::k_param_failsafe_battery_enabled,       0,      AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
+    // PARAMETER_CONVERSION - Added: Apr-2019 for ArduSub-4.0
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
 };
 
@@ -808,14 +810,14 @@ void Sub::load_parameters()
     AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
 #endif
 
-    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_AIRSPEED_ENABLED
-    // PARAMETER_CONVERSION - Added: JAN-2022
+    // PARAMETER_CONVERSION - Added: Jan-2022 for ArduSub-4.5
         { &airspeed, airspeed.var_info, 19 },
 #endif
 #if AP_STATS_ENABLED
@@ -886,6 +888,7 @@ void Sub::load_parameters()
 void Sub::convert_old_parameters()
 {
     // attitude control filter parameter changes from _FILT to FLTE or FLTD
+    // PARAMETER_CONVERSION - Added: Jul-2019 for ArduSub-4.0
     const AP_Param::ConversionInfo filt_conversion_info[] = {
         // move ATC_RAT_RLL/PIT_FILT to FLTD, move ATC_RAT_YAW_FILT to FLTE
         { Parameters::k_param_attitude_control, 385, AP_PARAM_FLOAT, "ATC_RAT_RLL_FLTE" },
