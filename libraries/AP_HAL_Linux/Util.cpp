@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -38,6 +39,16 @@ void Util::init(int argc, char * const *argv) {
 #else
     _heat = NEW_NOTHROW Linux::Heat();
 #endif // #ifdef
+
+    // cpuinfo_cur_freq reports the actual clock but is usually root-only
+    _cpufreq_fd = open(HAL_LINUX_CPUFREQ_PATH, O_RDONLY | O_CLOEXEC);
+    if (_cpufreq_fd < 0) {
+        _cpufreq_fd = open(HAL_LINUX_CPUFREQ_FALLBACK_PATH, O_RDONLY | O_CLOEXEC);
+    }
+    _thermal_fd = open(HAL_LINUX_THERMAL_PATH, O_RDONLY | O_CLOEXEC);
+    if (_cpufreq_fd >= 0 || _thermal_fd >= 0) {
+        hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&Util::update_cpu_stats, void));
+    }
 }
 
 // set current IMU temperatue in degrees C
@@ -104,6 +115,66 @@ bool Util::is_chardev_node(const char *path)
 uint32_t Util::available_memory(void)
 {
     return 256*1024;
+}
+
+// read an integer from a sysfs file kept open, rewinding with pread
+static bool read_sysfs_int(int fd, int32_t &value)
+{
+    if (fd < 0) {
+        return false;
+    }
+    char buf[16];
+    const ssize_t n = pread(fd, buf, sizeof(buf) - 1, 0);
+    if (n <= 0) {
+        return false;
+    }
+    buf[n] = '\0';
+    char *end;
+    value = strtol(buf, &end, 10);
+    return end != buf;
+}
+
+// sysfs reads can take over 1ms on a Raspberry Pi, so keep them off the main thread
+void Util::update_cpu_stats()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    if (now_ms - _cpu_stats_last_ms < 1000U) {
+        return;
+    }
+    _cpu_stats_last_ms = now_ms;
+
+    int32_t freq_khz;
+    if (read_sysfs_int(_cpufreq_fd, freq_khz) && freq_khz >= 1000) {
+        _cpu_freq_mhz = uint16_t(freq_khz / 1000);
+    } else {
+        _cpu_freq_mhz = 0;
+    }
+
+    int32_t milli_c;
+    if (read_sysfs_int(_thermal_fd, milli_c)) {
+        _cpu_temp_c = milli_c * 0.001f;
+    } else {
+        _cpu_temp_c = NAN;
+    }
+}
+
+bool Util::get_cpu_frequency_mhz(uint16_t &freq_mhz) const
+{
+    if (_cpu_freq_mhz == 0) {
+        return false;
+    }
+    freq_mhz = _cpu_freq_mhz;
+    return true;
+}
+
+bool Util::get_cpu_temperature_c(float &temp_c) const
+{
+    const float t = _cpu_temp_c;
+    if (isnan(t)) {
+        return false;
+    }
+    temp_c = t;
+    return true;
 }
 
 #ifndef HAL_LINUX_DEFAULT_SYSTEM_ID
