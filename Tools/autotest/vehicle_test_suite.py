@@ -16418,7 +16418,6 @@ switch value'''
         try:
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
-            mavproxy.send("ftp set debug 1\n")  # so we get the "Terminated session" message
             mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
             mavproxy.expect("Getting")
             tstart = self.get_sim_time()
@@ -16433,9 +16432,6 @@ switch value'''
                     break
                 except Exception:  # noqa: BLE001
                     continue
-            # terminate the connection, or it may still be in progress the next time an FTP is attempted:
-            mavproxy.send("ftp cancel\n")
-            mavproxy.expect("Terminated session")
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
