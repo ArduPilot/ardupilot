@@ -2151,20 +2151,4 @@ bool RC_Channels::duplicate_options_exist()
     return false;
 }
 
-// convert option parameter from old to new
-// PARAMETER_CONVERSION - Added: Sep-2021 for ArduPilot-4.2
-void RC_Channels::convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option)
-{
-    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        RC_Channel *c = channel(i);
-        if (c == nullptr) {
-            // odd?
-            continue;
-        }
-        if ((RC_Channel::AUX_FUNC)c->option.get() == old_option) {
-            c->option.set_and_save((int16_t)new_option);
-        }
-    }
-}
-
 #endif  // AP_RC_CHANNEL_ENABLED

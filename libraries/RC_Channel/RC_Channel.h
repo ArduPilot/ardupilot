@@ -645,7 +645,6 @@ public:
 
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
     bool duplicate_options_exist();
-    void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
 
     void init_aux_all();
     void read_aux_all();
