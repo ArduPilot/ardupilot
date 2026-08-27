@@ -805,21 +805,12 @@ void Sub::load_parameters()
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
 
-    // PARAMETER_CONVERSION - Added: Mar-2022
-#if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
-#endif
-
     // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
-#if AP_AIRSPEED_ENABLED
-    // PARAMETER_CONVERSION - Added: Jan-2022 for ArduSub-4.5
-        { &airspeed, airspeed.var_info, 19 },
-#endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
         { &stats, stats.var_info, 1 },
@@ -896,8 +887,6 @@ void Sub::convert_old_parameters()
         { Parameters::k_param_attitude_control, 387, AP_PARAM_FLOAT, "ATC_RAT_YAW_FLTE" },
     };
     AP_Param::convert_old_parameters(&filt_conversion_info[0], ARRAY_SIZE(filt_conversion_info));
-
-    SRV_Channels::upgrade_parameters();
 }
 
 #if LEAKDETECTOR_MAX_INSTANCES > 0
