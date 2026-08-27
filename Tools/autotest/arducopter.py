@@ -10749,31 +10749,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "--home", home_string,
             ])
             self.wait_ready_to_arm()
-            expected_distances_copy = copy.copy(expected_distances)
+            # a sector holds whatever the sweep last saw in it, so its
+            # reported distance alternates between the objects the sweep
+            # passes.  Wait for each sector to report the object we are
+            # looking for rather than sampling whichever one the sweep
+            # happens to be showing:
+            outstanding = copy.copy(expected_distances)
+            seen = {}
             tstart = self.get_sim_time()
-            failed = False
-            wants = []
-            gots = []
             epsilon = 20
-            while True:
+            while len(outstanding):
                 if self.get_sim_time_cached() - tstart > 30:
-                    raise AutoTestTimeoutException("Failed to get distances")
-                if len(expected_distances_copy.keys()) == 0:
-                    break
+                    raise NotAchievedException(
+                        "Distance too great (%s) (want=%s seen=%s)" %
+                        (name, outstanding, seen))
                 m = self.assert_receive_message("DISTANCE_SENSOR")
-                if m.orientation not in expected_distances_copy:
+                if m.orientation not in outstanding:
                     continue
                 got = m.current_distance
-                want = expected_distances_copy[m.orientation]
-                wants.append(want)
-                gots.append(got)
-                if abs(want - got) > epsilon:
-                    failed = True
-                del expected_distances_copy[m.orientation]
-            if failed:
-                raise NotAchievedException(
-                    "Distance too great (%s) (want=%s != got=%s)" %
-                    (name, wants, gots))
+                if got not in seen.setdefault(m.orientation, []):
+                    seen[m.orientation].append(got)
+                if abs(outstanding[m.orientation] - got) <= epsilon:
+                    del outstanding[m.orientation]
 
     def AC_Avoidance_Proximity_AVOID_ALT_MIN(self):
         '''Test proximity avoidance with AVOID_ALT_MIN'''
