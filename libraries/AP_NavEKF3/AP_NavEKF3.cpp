@@ -803,11 +803,6 @@ bool NavEKF3::InitialiseFilter(void)
     // expected number of IMU frames per prediction
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
-    // convert parameters if necessary
-    convert_parameters();
-#endif
-
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     if (ins.get_accel_count() == 0) {
         return false;
@@ -1787,108 +1782,6 @@ void NavEKF3::writeTerrainData(float alt_m)
         }
     }
 #endif
-}
-
-// parameter conversion of EKF3 parameters
-// PARAMETER_CONVERSION - Added: Nov-2020 for ArduPilot-4.1
-void NavEKF3::convert_parameters()
-{
-    // exit immediately if param conversion has been done before
-    if (sources.configured()) {
-        return;
-    }
-
-    // find EKF3's top level key
-    uint16_t k_param_ekf3;
-    if (!AP_Param::find_top_level_key_by_pointer(this, k_param_ekf3)) {
-        return;
-    }
-
-    // use EK3_GPS_TYPE to set EK3_SRC1_POSXY, EK3_SRC1_VELXY, EK3_SRC1_VELZ
-    const AP_Param::ConversionInfo gps_type_info = {k_param_ekf3, 1, AP_PARAM_INT8, "EK3_GPS_TYPE"};
-    AP_Int8 gps_type_old;
-    const bool found_gps_type = AP_Param::find_old_parameter(&gps_type_info, &gps_type_old);
-    if (found_gps_type) {
-        switch (gps_type_old.get()) {
-        case 0:
-            // EK3_GPS_TYPE == 0 (GPS 3D Vel and 2D Pos)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELZ", (int8_t)AP_NavEKF_Source::SourceZ::GPS);
-            break;
-        case 1:
-            // EK3_GPS_TYPE == 1 (GPS 2D Vel and 2D Pos) then EK3_SRC1_POSXY = GPS(1), EK3_SRC1_VELXY = GPS(1), EK3_SRC1_VELZ = NONE(0)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELZ", (int8_t)AP_NavEKF_Source::SourceZ::NONE);
-            break;
-        case 2:
-            // EK3_GPS_TYPE == 2 (GPS 2D Pos) then EK3_SRC1_POSXY = GPS(1), EK3_SRC1_VELXY = None(0), EK3_SRC1_VELZ = NONE(0)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::NONE);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELZ", (int8_t)AP_NavEKF_Source::SourceZ::NONE);
-            break;
-        case 3:
-        default:
-            // EK3_GPS_TYPE == 3 (No GPS) we don't know what to do, could be optical flow, beacon or external nav
-            sources.mark_configured();
-            break;
-        }
-    } else {
-        // mark configured in storage so conversion is only run once
-        sources.mark_configured();
-    }
-
-    // use EK3_ALT_SOURCE to set EK3_SRC1_POSZ
-    const AP_Param::ConversionInfo alt_source_info = {k_param_ekf3, 9, AP_PARAM_INT8, "EK3_ALT_SOURCE"};
-    AP_Int8 alt_source_old;
-    if (AP_Param::find_old_parameter(&alt_source_info, &alt_source_old)) {
-        switch (alt_source_old.get()) {
-        case 0:
-            // EK3_ALT_SOURCE = BARO, the default so do nothing
-            break;
-        case 1:
-            // EK3_ALT_SOURCE == 1 (RangeFinder)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::RANGEFINDER);
-            break;
-        case 2:
-            // EK3_ALT_SOURCE == 2 (GPS)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::GPS);
-            break;
-        case 3:
-            // EK3_ALT_SOURCE == 3 (Beacon)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::BEACON);
-            break;
-        case 4:
-            // EK3_ALT_SOURCE == 4 (ExtNav)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::EXTNAV);
-            break;
-        default:
-            // do nothing
-            break;
-        }
-    }
-
-    // use EK3_MAG_CAL to set EK3_SRC1_YAW
-    switch (_magCal.get()) {
-    case 5:
-        // EK3_MAG_CAL = 5 (External Yaw sensor).  We rely on effective_magCal to interpret old "5" values as "Never"
-        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::GPS);
-        break;
-    case 6:
-        // EK3_MAG_CAL = 6 (ExtYaw with Compass fallback).  We rely on effective_magCal to interpret old "6" values as "When Flying"
-        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK);
-        break;
-    default:
-        // do nothing
-        break;
-    }
-
-    // if GPS and optical flow enabled set EK3_SRC2_VELXY to optical flow
-    // EK3_SRC_OPTIONS should default to 1 meaning both GPS and optical flow velocities will be fused
-    if (dal.opticalflow_enabled() && (!found_gps_type || (gps_type_old.get() <= 2))) {
-        AP_Param::set_and_save_by_name("EK3_SRC2_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::OPTFLOW);
-    }
 }
 
 // Set to true if the terrain underneath is stable enough to be used as a height reference
