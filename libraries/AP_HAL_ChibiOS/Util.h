@@ -40,6 +40,11 @@ public:
 
     uint32_t available_memory() override;
 
+#if HAL_WITH_MCU_MONITORING
+    bool get_cpu_frequency_mhz(uint16_t &freq_mhz) const override;
+    bool get_cpu_temperature_c(float &temp_c) const override;
+#endif
+
     // get path to custom defaults file for AP_Param
     const char* get_custom_defaults_file() const override {
         return "@ROMFS/defaults.parm";
