@@ -58,6 +58,39 @@
 #define AP_SITL_SHMEM_PAYLOAD_SIZE  4096
 
 /*
+  the payload block is partitioned between its tenants at fixed offsets:
+    [0, AP_SITL_SHMEM_RIDE_OFFSET)    AP_SITL_SwarmInfo, published from
+                                      Aircraft::sync_frame_time()
+    [AP_SITL_SHMEM_RIDE_OFFSET, end)  ride-along JSON transport channel,
+                                      used by SIM_JSON_Master (master) and
+                                      SIM_JSON (slave) instead of the UDP
+                                      sockets when the ride-along pair was
+                                      started with --cluster
+  Both tenants are guarded by the same per-slot robust mutex.
+*/
+#define AP_SITL_SHMEM_RIDE_OFFSET   512
+#define AP_SITL_SHMEM_RIDE_SIZE     (AP_SITL_SHMEM_PAYLOAD_SIZE - AP_SITL_SHMEM_RIDE_OFFSET)
+
+/*
+  one-directional message channel living in the ride-along region of a
+  slot: the master publishes its fdm JSON line in its own slot, each
+  slave publishes its servo packet in its own slot. A publish rewrites
+  the whole record under the slot mutex and bumps seq last, so a single
+  read_payload() of the channel always yields an internally-consistent
+  record; readers poll seq for change.
+*/
+struct AP_SITL_RideAlongChannel {
+    uint32_t magic;     // which endpoint writes this slot's channel (below)
+    uint32_t seq;       // bumped once per publish
+    uint32_t len;       // valid bytes in data[]
+    uint8_t  data[AP_SITL_SHMEM_RIDE_SIZE - 12];
+};
+static_assert(sizeof(AP_SITL_RideAlongChannel) == AP_SITL_SHMEM_RIDE_SIZE,
+              "ride-along channel must exactly fill its payload region");
+#define AP_SITL_RIDE_FDM_MAGIC    0x52464D31  // "RFM1": master -> slaves fdm JSON
+#define AP_SITL_RIDE_SERVO_MAGIC  0x52535631  // "RSV1": slave -> master servo packet
+
+/*
   Robust process-shared mutexes make a peer that is killed mid-write hand
   the next locker EOWNERDEAD instead of deadlocking every other instance
   forever.
@@ -153,18 +186,20 @@ public:
       write up to AP_SITL_SHMEM_PAYLOAD_SIZE bytes into this instance's
       payload block, for peers to read via read_payload(). Takes the
       slot's robust process-shared mutex for the duration of the copy so
-      readers never observe a torn write.
+      readers never observe a torn write. offset positions the write
+      within the block, for tenants above the first (see the payload
+      partition map by AP_SITL_SHMEM_RIDE_OFFSET).
     */
-    void write_payload(const void *data, uint32_t len);
+    void write_payload(const void *data, uint32_t len, uint32_t offset = 0);
 
     /*
       read the given instance's payload block into data (up to len bytes,
-      capped at AP_SITL_SHMEM_PAYLOAD_SIZE). Takes the slot's robust
-      process-shared mutex for the duration of the copy. Returns true on
-      success, false if shm is not initialised or instance_id is out of
-      range.
+      capped at AP_SITL_SHMEM_PAYLOAD_SIZE, starting offset bytes into
+      the block). Takes the slot's robust process-shared mutex for the
+      duration of the copy. Returns true on success, false if shm is not
+      initialised or instance_id is out of range.
     */
-    bool read_payload(uint8_t instance_id, void *data, uint32_t len) const;
+    bool read_payload(uint8_t instance_id, void *data, uint32_t len, uint32_t offset = 0) const;
 
     /*
       barrier sync: spin-wait until every peer that has joined the cluster

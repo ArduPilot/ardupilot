@@ -119,7 +119,9 @@ void SITL_State::_usage(void)
            "\t--sysid ID               set MAV_SYSID\n"
            "\t--cluster ID             join SITL cluster ID (0-255) for shared-memory\n"
            "\t                         clock sync with other instances; off unless given\n"
-           "\t--slave number           set the number of JSON slaves\n"
+           "\t--slave number           set the number of JSON ride-along slaves; with\n"
+           "\t                         --cluster the fdm/servo exchange runs over the\n"
+           "\t                         cluster's shared memory instead of UDP\n"
            "\t--use_sim_time <true|false>  use ROS2 simulation clock for DDS topics. Defaults to false\n"
         );
 }

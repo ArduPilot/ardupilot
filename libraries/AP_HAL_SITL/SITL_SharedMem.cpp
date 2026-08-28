@@ -704,20 +704,20 @@ uint8_t AP_SITL_SharedMem::get_instance_count() const
   mutex. EOWNERDEAD (a prior crashed run reusing this slot) is marked
   consistent and we proceed, since we are the sole writer for our slot.
 */
-void AP_SITL_SharedMem::write_payload(const void *data, uint32_t len)
+void AP_SITL_SharedMem::write_payload(const void *data, uint32_t len, uint32_t offset)
 {
-    if (_data == nullptr) {
+    if (_data == nullptr || offset >= AP_SITL_SHMEM_PAYLOAD_SIZE) {
         return;
     }
-    if (len > AP_SITL_SHMEM_PAYLOAD_SIZE) {
-        len = AP_SITL_SHMEM_PAYLOAD_SIZE;
+    if (len > AP_SITL_SHMEM_PAYLOAD_SIZE - offset) {
+        len = AP_SITL_SHMEM_PAYLOAD_SIZE - offset;
     }
     auto &slot = _data->instance[_instance_id];
 
 #ifdef __CYGWIN__
     // no cross-process lock exists on this platform - see
     // _init_segment_contents(); the copy is unguarded
-    memcpy(slot.payload, data, len);
+    memcpy(&slot.payload[offset], data, len);
 #else
     int ret = pthread_mutex_lock(&slot.payload_mutex);
 #if AP_SITL_SHMEM_ROBUST_MUTEX
@@ -736,7 +736,7 @@ void AP_SITL_SharedMem::write_payload(const void *data, uint32_t len)
         return;
     }
 
-    memcpy(slot.payload, data, len);
+    memcpy(&slot.payload[offset], data, len);
 
     pthread_mutex_unlock(&slot.payload_mutex);
 #endif  // __CYGWIN__
@@ -747,20 +747,21 @@ void AP_SITL_SharedMem::write_payload(const void *data, uint32_t len)
   mutex. EOWNERDEAD means the peer died mid-write; mark it consistent
   but treat the data as unreliable and return false.
 */
-bool AP_SITL_SharedMem::read_payload(uint8_t instance_id, void *data, uint32_t len) const
+bool AP_SITL_SharedMem::read_payload(uint8_t instance_id, void *data, uint32_t len, uint32_t offset) const
 {
-    if (_data == nullptr || instance_id >= AP_SITL_SHMEM_MAX_INSTANCES) {
+    if (_data == nullptr || instance_id >= AP_SITL_SHMEM_MAX_INSTANCES ||
+        offset >= AP_SITL_SHMEM_PAYLOAD_SIZE) {
         return false;
     }
-    if (len > AP_SITL_SHMEM_PAYLOAD_SIZE) {
-        len = AP_SITL_SHMEM_PAYLOAD_SIZE;
+    if (len > AP_SITL_SHMEM_PAYLOAD_SIZE - offset) {
+        len = AP_SITL_SHMEM_PAYLOAD_SIZE - offset;
     }
     auto &slot = _data->instance[instance_id];
 
 #ifdef __CYGWIN__
     // no cross-process lock exists on this platform - see
     // _init_segment_contents(); the copy is unguarded
-    memcpy(data, slot.payload, len);
+    memcpy(data, &slot.payload[offset], len);
     return true;
 #else
     int ret = pthread_mutex_lock(&slot.payload_mutex);
@@ -782,7 +783,7 @@ bool AP_SITL_SharedMem::read_payload(uint8_t instance_id, void *data, uint32_t l
     }
 
     if (!owner_died) {
-        memcpy(data, slot.payload, len);
+        memcpy(data, &slot.payload[offset], len);
     }
 
     pthread_mutex_unlock(&slot.payload_mutex);
