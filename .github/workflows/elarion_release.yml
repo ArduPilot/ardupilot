@@ -60,6 +60,18 @@ jobs:
             exit 1
           fi
 
+      - name: Ensure intelhex
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Without this module waf sets HAVE_INTEL_HEX=False and silently skips
+          # arducopter_with_bl.hex - configure and build still succeed, so the
+          # only symptom is a missing file at packaging time.
+          python3 -m pip install --user intelhex \
+            || python3 -m pip install --user --break-system-packages intelhex
+          # NB: no intelhex.__version__ attribute exists - just prove the import
+          python3 -c 'import intelhex; print("intelhex import OK")'
+
       - name: Build ${{ matrix.board }}
         shell: bash
         run: |
@@ -72,7 +84,11 @@ jobs:
             '${{ steps.ver.outputs.version }}' > /tmp/elarion_version.hwdef
           cat /tmp/elarion_version.hwdef
           ./waf configure --board '${{ matrix.board }}' \
-            --extra-hwdef /tmp/elarion_version.hwdef
+            --extra-hwdef /tmp/elarion_version.hwdef 2>&1 | tee /tmp/configure.log
+          if ! grep -qE 'Checking for intelhex module:.*OK' /tmp/configure.log; then
+            echo "::error::waf cannot import intelhex, so arducopter_with_bl.hex will not be built"
+            exit 1
+          fi
           ./waf copter
 
       - name: Package ${{ matrix.board }}
@@ -86,11 +102,14 @@ jobs:
           OUT=artifacts
           mkdir -p "$OUT"
 
-          # arducopter_with_bl.hex only appears if Tools/bootloaders/${B}_bl.bin
-          # is committed. waf just prints a warning and carries on if it is
-          # missing, which would ship a release with no bootloader image.
+          # arducopter_with_bl.hex needs both the intelhex module and a
+          # committed Tools/bootloaders/${B}_bl.bin. waf skips it with only a
+          # warning if either is absent, which would otherwise ship a release
+          # with no bootloader image.
+          echo "--- contents of $SRC ---"
+          ls -l "$SRC"
           if [ ! -f "$SRC/arducopter_with_bl.hex" ]; then
-            echo "::error::$SRC/arducopter_with_bl.hex missing - is Tools/bootloaders/${B}_bl.bin committed?"
+            echo "::error::$SRC/arducopter_with_bl.hex missing - see the file list above"
             exit 1
           fi
 
