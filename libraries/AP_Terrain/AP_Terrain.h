@@ -454,6 +454,8 @@ private:
     bool have_reference_offset;
     float reference_offset;
 
+    // true if we've already warned about being below terrain
+    bool below_terrain_warned;
 
     // cache the last terrain height (AMSL) of the AHRS current
     // location. This is used for extrapolation when terrain data is

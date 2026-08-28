@@ -91,7 +91,8 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
 // constructor
 AP_Terrain::AP_Terrain() :
     disk_io_state(DiskIoIdle),
-    fd(-1)
+    fd(-1),
+    below_terrain_warned(false)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
@@ -264,6 +265,7 @@ bool AP_Terrain::height_above_terrain(float &terrain_altitude, bool extrapolate)
     UNUSED_RESULT(current_loc.get_alt_cm(Location::AltFrame::ABSOLUTE, height_amsl_cm));
 
     terrain_altitude = height_amsl_cm*0.01 - theight_loc;
+
     return true;
 }
 
@@ -410,6 +412,22 @@ void AP_Terrain::update(void)
         }
     } else {
         system_status = TerrainStatusDisabled;
+    }
+
+    // warn if drone is below terrain (home.alt mismatch)
+    if (pos_valid && terrain_valid && have_reference_offset) {
+        float terrain_h, current_h;
+        if (height_amsl(ahrs.get_home(), terrain_h, true) &&
+            height_above_terrain(current_h, true)) {
+            if (current_h < 0 && !below_terrain_warned) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                              "Terrain: below terrain by %.0fm - check home altitude",
+                              -current_h);
+                below_terrain_warned = true;
+            } else if (current_h >= 0) {
+                below_terrain_warned = false;
+            }
+        }
     }
 }
 
