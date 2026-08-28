@@ -198,6 +198,17 @@ private:
         NUM_STEPS = 10,         // wraps back to VERSION after this - note the gap at 7-9, spare
     };
 
+    // memory card state, as last reported by "SDC" (see gimbal_sdcard_analyse()).
+    // UNKNOWN until the first reply arrives - camera-addressed replies like this one
+    // can take anywhere from under a second to 8+ minutes (see this file's header
+    // comment), so capture attempts must not be blocked on a card that may simply not
+    // have reported in yet
+    enum class SDCardState : uint8_t {
+        UNKNOWN = 0,
+        PRESENT = 1,
+        ABSENT = 2,
+    };
+
     // send text prefix string
     static const char* send_message_prefix;
 
@@ -288,7 +299,7 @@ private:
 
     // members
     bool _recording;                                            // recording status, tracked locally from commands we've sent
-    bool _sdcard_healthy;                                        // true if a memory card is present and OK (received from gimbal)
+    SDCardState _sdcard_state = SDCardState::UNKNOWN;           // memory card state, as last reported by the gimbal (see SDCardState)
     bool _last_lock;                                            // last lock mode sent to gimbal
     bool _got_gimbal_version;                                   // true if gimbal's version has been received
     bool _got_model_name;                                       // true if gimbal's model name has been received

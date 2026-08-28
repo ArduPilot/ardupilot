@@ -145,8 +145,11 @@ bool AP_Mount_SkyDroid::take_picture()
         return false;
     }
 
-    // exit immediately if the memory card is abnormal
-    if (!_sdcard_healthy) {
+    // exit immediately if the memory card is confirmed absent - UNKNOWN (no SDC
+    // reply yet) is allowed through, since that reply can take minutes (see
+    // SDCardState's comment) and we'd rather attempt the capture than silently
+    // refuse every request until it arrives
+    if (_sdcard_state == SDCardState::ABSENT) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s SD card error", send_message_prefix);
         return false;
     }
@@ -164,8 +167,8 @@ bool AP_Mount_SkyDroid::record_video(bool start_recording)
         return false;
     }
 
-    // exit immediately if the memory card is abnormal
-    if (!_sdcard_healthy) {
+    // exit immediately if the memory card is confirmed absent (see take_picture())
+    if (_sdcard_state == SDCardState::ABSENT) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s SD card error", send_message_prefix);
         return false;
     }
@@ -506,14 +509,16 @@ void AP_Mount_SkyDroid::gimbal_record_analyse()
 void AP_Mount_SkyDroid::gimbal_sdcard_analyse()
 {
     // data is 10 hex chars: 5 for remaining capacity, 5 for total capacity (units MB)
-    // all zeros means no card inserted.  A too-short buffer is treated the same as
-    // all-zero (no card), matching this function's previous behaviour
-    static const uint8_t all_zero_chars[10] = {'0','0','0','0','0','0','0','0','0','0'};
-    bool all_zero = true;
-    if (_msg_buff_len >= AP_MOUNT_TPFRAME_MSGOFS_DATA + ARRAY_SIZE(all_zero_chars)) {
-        all_zero = (memcmp(&_msg_buff[AP_MOUNT_TPFRAME_MSGOFS_DATA], all_zero_chars, ARRAY_SIZE(all_zero_chars)) == 0);
+    // all zeros means no card inserted.  Gate on _parser.data_len (the actual number
+    // of data bytes), not _msg_buff_len (which also counts the 2 trailing CRC chars) -
+    // otherwise a data_len of 8 or 9 would read 1-2 CRC characters as if they were
+    // card-capacity data, and a nonzero CRC char would falsely read as "card present"
+    if (_parser.data_len < 10) {
+        return;
     }
-    _sdcard_healthy = !all_zero;
+    static const uint8_t all_zero_chars[10] = {'0','0','0','0','0','0','0','0','0','0'};
+    const bool all_zero = (memcmp(&_msg_buff[AP_MOUNT_TPFRAME_MSGOFS_DATA], all_zero_chars, ARRAY_SIZE(all_zero_chars)) == 0);
+    _sdcard_state = all_zero ? SDCardState::ABSENT : SDCardState::PRESENT;
 }
 
 // gimbal basic information analysis.  response data is of the form "VX.X.X" (e.g. "V1.0.78")
