@@ -19,7 +19,9 @@ from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
 
+from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
@@ -62,7 +64,24 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         return os.path.realpath(__file__)
 
     def sitl_start_location(self):
+        # TerrainStallReposition boots at Da Nang, not the default location
+        if hasattr(self, '_terrain_stall_test_start_loc'):
+            return self._terrain_stall_test_start_loc
         return SITL_START_LOCATION
+
+    def sitl_home(self):
+        # TerrainStallReposition uses a Location (frame-aware) for its start
+        # location; sitl_home needs a "lat,lng,alt,heading" string.
+        if hasattr(self, '_terrain_stall_test_start_loc'):
+            loc = self._terrain_stall_test_start_loc
+            return "%f,%f,%u,%u" % (loc.lat, loc.lng, loc.get_alt_m(AltFrame.ABSOLUTE), 0)
+        return super().sitl_home()
+
+    def max_distance_from_startup_location_at_end_of_test(self):
+        # TerrainStallReposition boots at Da Nang -- skip startup location check
+        if hasattr(self, '_terrain_stall_test_start_loc'):
+            return None
+        return super().max_distance_from_startup_location_at_end_of_test()
 
     def log_name(self):
         return "QuadPlane"
@@ -3404,6 +3423,159 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.terrain_avoid_applet_teardown()
 
+    def TerrainStallReposition(self):
+        '''Regression test: VTOL terrain-aware flight with SRTM at Da Nang.
+
+        Verifies that a QuadPlane can fly a GUIDED reposition with TERRAIN_ENABLE=1
+        over hilly terrain (SRTM varies 25-103m) without stalling, provided
+        home.alt matches the SRTM terrain elevation at home and the flight
+        altitude clears the highest terrain along the route.
+
+        Root cause of original stall: when home.alt=0 but SRTM terrain at home
+        is 25m AMSL, the drone at 45m AGL flies at 45m AMSL. At the loiter
+        target, SRTM terrain is ~70m AMSL. The drone is below terrain.
+        height_above_terrain() returns ~0 or negative, and the SITL
+        ground_height_difference() raises the simulated ground, making
+        hagl() go negative -> on_ground()=true -> SITL clamps the drone
+        -> airspeed drops to 0 -> apparent "stall". This is a test-setup
+        issue: home.alt and flight altitude must account for terrain.
+
+        Test flow:
+          1. Boot at Da Nang, Vietnam (16.04, 108.09, alt=25m = SRTM elevation)
+          2. Install terrain handlers (simulates a GCS serving SRTM data)
+          3. Set TERRAIN_ENABLE=1
+          4. Wait for terrain data to load
+          5. Arm -> GUIDED -> NAV_TAKEOFF (MC takeoff to 60m AGL)
+          6. DO_REPOSITION to 500m north (triggers FW transition + goto)
+          7. Verify stable FW flight (gs > 15 for 10s)
+        '''
+        self.context_push()
+
+        # Da Nang, Vietnam: home.alt=25m (SRTM terrain elevation at home)
+        # Using the correct AMSL altitude ensures the SITL ground matches
+        # the firmware's terrain model, preventing false on_ground() detection
+        danang_loc = Location(16.0436, 108.0940, 25, AltFrame.ABSOLUTE)
+        # Override sitl_start_location BEFORE customise so start_SITL uses Da Nang
+        self._terrain_stall_test_start_loc = danang_loc
+        self.customise_SITL_commandline(
+            ["--home", f"{danang_loc.lat},{danang_loc.lng},{danang_loc.get_alt_m(AltFrame.ABSOLUTE)},0"]
+        )
+        self.reboot_sitl(check_position=False)
+
+        # Install terrain handlers (simulates MAVProxy serving SRTM data)
+        self.install_terrain_handlers_context()
+
+        # TERRAIN_ENABLE defaults to 1 in ArduPlane. Ensure it is on.
+        self.set_parameter("TERRAIN_ENABLE", 1)
+
+        # Wait for terrain data to load
+        self.delay_sim_time(15, reason="terrain data to load")
+
+        # Verify terrain data is loaded
+        report = self.assert_receive_message('TERRAIN_REPORT', timeout=30)
+        self.progress("TERRAIN_REPORT: terrain_height=%.1f current_height=%.1f pending=%d loaded=%d" % (
+            report.terrain_height, report.current_height, report.pending, report.loaded))
+        if abs(report.terrain_height - 25) > 10:
+            raise NotAchievedException(
+                "Expected terrain_height~25 at Da Nang, got %.1f" % report.terrain_height)
+
+        # Set VTOL params for stalling susceptibility
+        self.set_parameters({
+            'Q_GUIDED_MODE': 0,
+            'Q_ASSIST_SPEED': -1,
+            'Q_ASSIST_ALT': 0,
+            'AIRSPEED_MIN': 17,
+            'AIRSPEED_STALL': 14,
+            'WP_LOITER_RAD': 250,
+            'TRIM_THROTTLE': 60,
+            'TECS_RLL2THR': 15,
+            'ROLL_LIMIT_DEG': 35,
+            'THR_PASS_STAB': 1,
+            'NAVL1_PERIOD': 20,
+            'TECS_PITCH_MAX': 20,
+            'TECS_PTCH_FF_V0': 18,
+            'TERRAIN_FOLLOW': 0,
+        })
+
+        self.wait_ready_to_arm()
+
+        # Arm in default mode, then switch to GUIDED (matches VTOL goto flow)
+        self.arm_vehicle()
+        self.change_mode('GUIDED')
+
+        # MC takeoff to 60m AGL (terrain at target ~70m AMSL, home=25m, so
+        # 60m AGL = 85m AMSL clears the ~70m terrain with 15m margin)
+        self.takeoff(60, mode='GUIDED')
+
+        # DO_REPOSITION to 500m north (triggers FW transition + goto)
+        # This is the VTOL navto_fw flow: DO_REPOSITION with CHANGE_MODE flag
+        current = self.get_location(frame=AltFrame.ABOVE_HOME)
+        dest = Location(current.lat + 0.0045, current.lng, 60, AltFrame.ABOVE_HOME)  # ~500m north, 60m relative
+
+        self.progress("DO_REPOSITION to (%.7f, %.7f) alt=%d" % (dest.lat, dest.lng, dest.get_alt_m(AltFrame.ABOVE_HOME)))
+        self.send_do_reposition(dest)
+
+        # Monitor groundspeed -- use wallclock time (100x speedup makes sim-time loops too fast)
+        import time as _time
+        self.progress("Monitoring groundspeed after DO_REPOSITION")
+        wall_start = _time.time()
+        wall_timeout = 60  # 60s wallclock = 6000s sim time at 100x
+        stall_detected = False
+        stable_detected = False
+        stable_start = None
+        low_gs_start = None
+
+        while _time.time() - wall_start < wall_timeout:
+            m = self.mav.recv_match(type='VFR_HUD', blocking=True, timeout=2)
+            if m is None:
+                continue
+            gs = m.groundspeed
+            elapsed = _time.time() - wall_start
+
+            # Debug: log alt, climb, heading every 2s
+            if int(elapsed) % 2 == 0 and abs(elapsed - int(elapsed)) < 0.5:
+                pos = self.mav.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=1)
+                if pos:
+                    self.progress("[%.0fs] gs=%.1f alt=%.1f climb=%.1f heading=%d" % (
+                        elapsed, gs, pos.relative_alt/1000.0, pos.vz/100.0, pos.hdg))
+
+            if gs > 15:
+                if stable_start is None:
+                    stable_start = _time.time()
+                elif _time.time() - stable_start >= 10:
+                    self.progress("STABLE: gs=%.1f (stable for %.1fs)" % (gs, _time.time() - stable_start))
+                    stable_detected = True
+                    break
+            else:
+                stable_start = None
+
+            if gs < 5:
+                if low_gs_start is None:
+                    low_gs_start = _time.time()
+                elif _time.time() - low_gs_start >= 5:
+                    self.progress("STALL: gs=%.1f (low for %.1fs)" % (gs, _time.time() - low_gs_start))
+                    stall_detected = True
+                    break
+            else:
+                low_gs_start = None
+
+            if int(elapsed) % 10 == 0 and abs(elapsed - int(elapsed)) < 0.5:
+                self.progress("[%.0fs] gs=%.1f alt=%.1f" % (elapsed, gs, m.alt))
+
+        if stall_detected:
+            raise NotAchievedException(
+                "FW loiter stall after DO_REPOSITION with TERRAIN_ENABLE=1 - "
+                "drone hit terrain (home.alt may not match SRTM)")
+
+        if not stable_detected:
+            raise NotAchievedException(
+                "Inconclusive: drone neither stalled nor stayed stable")
+
+        self.progress("Drone flew stable with TERRAIN_ENABLE=1 and correct home.alt")
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        del self._terrain_stall_test_start_loc
+
     def TakeoffCheck(self):
         '''Test takeoff check - auto mode'''
         self.set_parameters({
@@ -3869,6 +4041,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.ScriptedArmingChecksApplet,
             self.TerrainAvoidApplet,
             self.TerrainAvoidAppletPitching,
+            self.TerrainStallReposition,
             self.TakeoffCheck,
             self.MAVFTPBadReadOffset,
             self.FenceRelativePreArms,

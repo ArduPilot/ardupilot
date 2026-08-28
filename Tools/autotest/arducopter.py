@@ -29,7 +29,9 @@ import vehicle_test_suite
 from pysim import util
 from pysim import vehicleinfo
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
+from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
@@ -92,7 +94,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.current_test_name_directory = "ArduCopter_Tests/" + name + "/"
 
     def sitl_start_location(self):
+        # TerrainStallGuided boots at Da Nang, not Canberra
+        if hasattr(self, '_terrain_stall_test_start_loc'):
+            return self._terrain_stall_test_start_loc
         return SITL_START_LOCATION
+
+    def sitl_home(self):
+        # TerrainStallGuided uses a Location (frame-aware) for its start
+        # location; sitl_home needs a "lat,lng,alt,heading" string.
+        if hasattr(self, '_terrain_stall_test_start_loc'):
+            loc = self._terrain_stall_test_start_loc
+            return "%f,%f,%u,%u" % (loc.lat, loc.lng, loc.get_alt_m(AltFrame.ABSOLUTE), 0)
+        return super().sitl_home()
 
     def max_distance_from_startup_location_at_end_of_test(self):
         # Copter's tests start from the point the simulation puts the
@@ -102,6 +115,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # started - Landing measured 1.24m and 1.10m on consecutive
         # runs - while the tests which genuinely fly away and stay away
         # start at 2.38m and run to 400m.
+        # TerrainStallGuided boots at Da Nang, not Canberra -- skip check.
+        if hasattr(self, '_terrain_stall_test_start_loc'):
+            return None
         return 2
 
     def mavproxy_options(self):
@@ -6023,6 +6039,74 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''Test Splines and Terrain'''
         self.set_parameter("TERRAIN_ENABLE", 0)
         self.fly_mission("wp.txt")
+
+    def TerrainStallGuided(self):
+        '''Regression test: TERRAIN_ENABLE=1 with home.alt=0 — copter GUIDED goto.
+
+        Companion to QuadPlane.TerrainStallReposition.  Tests whether the
+        terrain home-alt mismatch bug also affects copters, or is specific
+        to VTOL/planes (TECS).
+
+        Test flow:
+          1. Boot at Da Nang, Vietnam (16.04, 108.09, alt=0)
+          2. Install terrain handlers (simulates a GCS serving SRTM data)
+          3. Set TERRAIN_ENABLE=1
+          4. Wait for terrain data to load
+          5. Arm -> GUIDED -> takeoff to 45m
+          6. GUIDED goto 500m north (set_position_target_global_int)
+          7. Monitor: reach target = PASS, fail to reach = BUG
+        '''
+        self.context_push()
+
+        # Da Nang, Vietnam: home.alt=0, SRTM terrain=25m
+        danang_loc = Location(16.0436, 108.0940, 0, AltFrame.ABSOLUTE)
+        # Override sitl_start_location BEFORE customise so start_SITL uses Da Nang
+        self._terrain_stall_test_start_loc = danang_loc
+        self.customise_SITL_commandline(
+            ["--home", f"{danang_loc.lat},{danang_loc.lng},{danang_loc.get_alt_m(AltFrame.ABSOLUTE)},0"]
+        )
+        self.reboot_sitl(check_position=False)
+
+        # Install terrain handlers (simulates a GCS serving SRTM data)
+        self.install_terrain_handlers_context()
+
+        # TERRAIN_ENABLE defaults to 1 in ArduCopter. Ensure it is on.
+        self.set_parameter("TERRAIN_ENABLE", 1)
+
+        # Wait for terrain data to load
+        self.delay_sim_time(15, reason="terrain data to load")
+
+        # Verify terrain data is loaded
+        report = self.assert_receive_message('TERRAIN_REPORT', timeout=30)
+        self.progress("TERRAIN_REPORT: terrain_height=%.1f current_height=%.1f pending=%d loaded=%d" % (
+            report.terrain_height, report.current_height, report.pending, report.loaded))
+        if abs(report.terrain_height - 25) > 10:
+            raise NotAchievedException(
+                "Expected terrain_height~25 at Da Nang, got %.1f" % report.terrain_height)
+
+        self.wait_ready_to_arm()
+        self.takeoff(45, mode='GUIDED')
+
+        # GUIDED goto 500m north
+        current = self.get_location(frame=AltFrame.ABOVE_HOME)
+        dest = Location(current.lat + 0.0045, current.lng, 45, AltFrame.ABOVE_HOME)  # ~500m north, 45m relative
+
+        self.progress("GUIDED goto (%.7f, %.7f) alt=%d" % (dest.lat, dest.lng, dest.get_alt_m(AltFrame.ABOVE_HOME)))
+        self.send_set_position_target_global_int(
+            int(dest.lat * 1e7), int(dest.lng * 1e7), dest.get_alt_m(AltFrame.ABOVE_HOME))
+
+        # Wait to reach target (copter should reach it regardless of terrain)
+        try:
+            self.wait_location(dest, accuracy=20, timeout=200, height_accuracy=10)
+            self.progress("Copter reached GUIDED target with TERRAIN_ENABLE=1 -- no stall")
+        except NotAchievedException:
+            raise NotAchievedException(
+                "Copter failed to reach GUIDED target with TERRAIN_ENABLE=1 - "
+                "terrain home alt mismatch also affects copters")
+
+        self.disarm_vehicle(force=True)
+        self.context_pop()
+        del self._terrain_stall_test_start_loc
 
     def WP_SPEED(self):
         '''ensure resetting WP_SPD during a mission works'''
@@ -16236,6 +16320,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.SetpointGlobalVel,
              self.SetpointBadVel,
              self.SplineTerrain,
+             self.TerrainStallGuided,
              self.TakeoffCheck,
              self.GainBackoffTakeoff,
         ])
