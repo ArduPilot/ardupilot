@@ -7923,6 +7923,26 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             #     ScriptStats (test script stats logging) (Did not see
             #     simple_loop.lua script)
             'LOG_DISARMED': 1,
+            # SCR is a streaming message, so the logger's rate limiter
+            # applies - and as this test never arms the limit is
+            # LOG_DARM_RATEMAX: 5Hz, one record per 200ms per message
+            # type.  The scripts here all reschedule at 1000ms and run
+            # within a millisecond of each other, so they compete for
+            # that one slot.  should_log() reuses its decision for the
+            # rest of the scheduler tick, so two runs which share a tick
+            # are both logged, but when they straddle one the second is
+            # judged on its own, sees 1ms < 200ms, and is refused.
+            # Under a loaded parallel run they straddle every cycle and
+            # one script's stats never appear at all - a failing run
+            # logged 155 records for strings.lua and not one for
+            # simple_loop.lua, which had run 158 times:
+            #     ScriptStats (test script stats logging) (Did not see
+            #     simple_loop.lua script stats in onboard log)
+            # Both limits have to go: zeroing only the disarmed one
+            # falls back to LOG_FILE_RATEMAX (10Hz, 100ms) and the later
+            # record still loses.
+            'LOG_DARM_RATEMAX': 0,
+            'LOG_FILE_RATEMAX': 0,
         })
         self.install_test_scripts_context([
             "math.lua",
