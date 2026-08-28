@@ -15,12 +15,12 @@
 /*
   driver for ST LSM6DSOXTR IMU
 
-  Uses HAODR mode-1 for high-accuracy ODR (1000-8000 Hz) and
+  Uses the high-performance ODR steps (833/1660/3330/6660 Hz) and
   continuous FIFO for burst reads.  Digital filters auto-adapt to ODR
   so no per-rate AAF register reconfiguration is needed.
 
   fast sampling is controlled via INS_FAST_SAMPLE / INS_GYRO_RATE
-  with base rate 1000 Hz.
+  with base rate 833 Hz, snapped to the sensor's real ODR steps.
  */
 
 #include "AP_InertialSensor_LSM6DSO.h"
@@ -44,12 +44,12 @@ namespace {
 #define LSM6DSO_ACCEL_LPF2_ENABLED 1
 #endif
 
-// LPF2 bandwidth selection written to CTRL8 HP_LPF2_XL_BW bits [7:5].
-// When CTRL9.LPF2_XL_EN = 1 these select the second-stage cutoff:
+// LPF2 bandwidth selection written to CTRL8 HPCF_XL bits [7:5].
+// When CTRL1.LPF2_XL_EN = 1 these select the second-stage cutoff:
 //   0x00 = ODR/4   0x20 = ODR/10   0x40 = ODR/20   0x60 = ODR/45
 //   0x80 = ODR/100 0xA0 = ODR/200  0xC0 = ODR/400  0xE0 = ODR/800
 #ifndef LSM6DSO_ACCEL_LPF2_BW
-#define LSM6DSO_ACCEL_LPF2_BW 0x20  // ODR/10 → 200 Hz @ 2 kHz ODR
+#define LSM6DSO_ACCEL_LPF2_BW 0x20  // ODR/10 → 166 Hz @ 1.66 kHz ODR
 #endif
 
 // ---- FIFO control registers (R/W) ----
@@ -67,7 +67,7 @@ namespace {
 #define LSM6DSO_ID_LSM6DSOXTR               0x6C
 
 // ---- Accelerometer control register 1 (R/W) ----
-// [6:4] OP_MODE_XL: operating mode   [3:0] ODR_XL: output data rate
+// [7:4] ODR_XL: output data rate   [3:2] FS_XL   [1] LPF2_XL_EN
 #define LSM6DSO_REG_CTRL1                   0x10 //XL_FS_MODE = 0 and LPF2_XL_EN = 1 required
 #define LSM6DSO_CTRL1_FS_XL_2G              0x00
 #define LSM6DSO_CTRL1_FS_XL_16G             0x04
@@ -76,7 +76,7 @@ namespace {
 #define LSM6DSO_CTRL1_LPF2_XL_EN            0x02
 
 // ---- Gyroscope control register 2 (R/W) ----
-// [6:4] OP_MODE_G: operating mode   [3:0] ODR_G: output data rate
+// [7:4] ODR_G: output data rate   [3:2] FS_G   [1] FS_125
 #define LSM6DSO_REG_CTRL2                   0x11
 #define LSM6DSO_CTRL2_FS_G_125DPS           0x02
 #define LSM6DSO_CTRL2_FS_G_250DPS           0x00
@@ -90,22 +90,31 @@ namespace {
 #define LSM6DSO_CTRL3_IF_INC                (1U << 2)  // auto-increment address
 #define LSM6DSO_CTRL3_SW_RESET              (1U << 0)  // software reset
 
-// ---- Control register 6 — gyro full-scale selection (R/W) ----
-// [3:0] FS_G: gyroscope full-scale
-// #define LSM6DSO_REG_CTRL6                   0x15
+// ---- Control register 4 (R/W) ----
+#define LSM6DSO_REG_CTRL4                   0x13
+#define LSM6DSO_CTRL4_LPF1_SEL_G            (1U << 1)  // enable gyro digital LPF1
+#define LSM6DSO_CTRL4_I2C_DISABLE           (1U << 2)  // SPI-only: disable I2C interface
 
-// ---- Control register 8 — accel full-scale & LPF2 BW (R/W) ----
-// [7:5] HP_LPF2_XL_BW   [1:0] FS_XL: accelerometer full-scale
+// ---- Control register 6 (R/W) ----
+// [2:0] FTYPE: gyro LPF1 bandwidth. 000 = 239Hz @833, 304Hz @1.66k,
+// 328Hz @3.33k, 335Hz @6.66k ODR (datasheet table 60)
+#define LSM6DSO_REG_CTRL6                   0x15
+#define LSM6DSO_CTRL6_FTYPE_0               0x00
+
+// ---- Control register 8 — accel LPF2/HPF config (R/W) ----
+// [7:5] HPCF_XL: with LPF2_XL_EN=1 selects the LPF2 cutoff
 #define LSM6DSO_REG_CTRL8                   0x17
 
-// ---- Control register 9 — accel LPF2 enable (R/W) ----
+// ---- Control register 9 (R/W) ----
+// [7:5] DEN config (default 111), [1] I3C_disable
 #define LSM6DSO_REG_CTRL9                   0x18
-#define LSM6DSO_CTRL9_LPF2_XL_EN            (1U << 3)
+#define LSM6DSO_CTRL9_DEN_DEFAULT           0xE0
+#define LSM6DSO_CTRL9_I3C_DISABLE           (1U << 1)
 
 // ---- FIFO status registers (R) ----
 #define LSM6DSO_REG_FIFO_STATUS1            0x3A  // DIFF_FIFO [7:0]
-#define LSM6DSO_REG_FIFO_STATUS2            0x3B  // flags + DIFF_FIFO [8]
-#define LSM6DSO_FIFO_STATUS2_DIFF_FIFO_8    (1U << 0)
+#define LSM6DSO_REG_FIFO_STATUS2            0x3B  // flags + DIFF_FIFO [9:8]
+#define LSM6DSO_FIFO_STATUS2_DIFF_FIFO_MASK 0x03U
 
 // ---- Status register (R) ----
 #define LSM6DSO_REG_STATUS                  0x1E
@@ -118,7 +127,7 @@ namespace {
 #define LSM6DSO_REG_OUTX_L_G                0x22  // gyro XYZ output (6 bytes)
 #define LSM6DSO_REG_OUTX_L_A                0x28  // accel XYZ output (6 bytes)
 
-// HAODR mode-1 ODR codes (written to CTRL1/CTRL2 ODR_XL/ODR_G [3:0])
+// high-performance ODR codes (written to CTRL1/CTRL2 bits [7:4])
 #define LSM6DSO_ODR_104HZ                   0x40
 #define LSM6DSO_ODR_208HZ                   0x50
 #define LSM6DSO_ODR_416HZ                   0x60
@@ -307,7 +316,7 @@ bool AP_InertialSensor_LSM6DSO::hardware_init()
 
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
-    if (!_dev->setup_checked_registers(14, 20)) {
+    if (!_dev->setup_checked_registers(18, 20)) {
         return false;
     }
 
@@ -333,6 +342,22 @@ bool AP_InertialSensor_LSM6DSO::hardware_init()
 
         if (!write_register(LSM6DSO_REG_CTRL3,
                             LSM6DSO_CTRL3_BDU | LSM6DSO_CTRL3_IF_INC,
+                            true)) {
+            continue;
+        }
+
+        // SPI-only design: disable the unused I2C and I3C interfaces as
+        // recommended by the datasheet; enable gyro LPF1 for anti-aliasing
+        // (the fixed gyro LPF2 sits above Nyquist at fast-sampling ODRs)
+        // and select the accel LPF2 cutoff (CTRL1 only enables LPF2, the
+        // bandwidth lives in CTRL8)
+        if (!write_register(LSM6DSO_REG_CTRL4,
+                            LSM6DSO_CTRL4_LPF1_SEL_G | LSM6DSO_CTRL4_I2C_DISABLE,
+                            true) ||
+            !write_register(LSM6DSO_REG_CTRL6, LSM6DSO_CTRL6_FTYPE_0, true) ||
+            !write_register(LSM6DSO_REG_CTRL8, LSM6DSO_ACCEL_LPF2_BW, true) ||
+            !write_register(LSM6DSO_REG_CTRL9,
+                            LSM6DSO_CTRL9_DEN_DEFAULT | LSM6DSO_CTRL9_I3C_DISABLE,
                             true)) {
             continue;
         }
@@ -565,7 +590,7 @@ bool AP_InertialSensor_LSM6DSO::read_fifo_status(FifoFrame &frame, uint32_t now_
     }
 
     frame.unread_words = fifo_status[0] |
-                         (((fifo_status[1] & LSM6DSO_FIFO_STATUS2_DIFF_FIFO_8) != 0U) ? 0x100U : 0U);
+                         (uint16_t(fifo_status[1] & LSM6DSO_FIFO_STATUS2_DIFF_FIFO_MASK) << 8);
 
     return true;
 }
