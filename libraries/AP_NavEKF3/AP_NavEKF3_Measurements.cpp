@@ -1079,7 +1079,18 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) || !statesInitialised) {
+    if ((timeStamp_ms - extNavMeasTime_ms) < frontend->extNavIntervalMin_ms) {
+        if (!extNavRateDropObserved) {
+            extNavRateDropObserved = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u external nav rate-limited", (unsigned)imu_index);
+        }
+        return;
+    }
+    if (!statesInitialised) {
+        if (!extNavInitDropObserved) {
+            extNavInitDropObserved = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u external nav dropped before init", (unsigned)imu_index);
+        }
         return;
     } else {
         extNavMeasTime_ms = timeStamp_ms;
