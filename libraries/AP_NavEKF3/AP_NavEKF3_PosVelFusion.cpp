@@ -536,6 +536,10 @@ void NavEKF3_core::SelectVelPosFusion()
 #if EK3_FEATURE_EXTERNAL_NAV
     // Check for data at the fusion time horizon
     extNavDataToFuse = storedExtNav.recall(extNavDataDelayed, imuDataDelayed.time_ms);
+    if (extNavDataToFuse && !extNavRecallObserved) {
+        extNavRecallObserved = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u external nav sample recalled", (unsigned)imu_index);
+    }
     if (extNavDataToFuse) {
         CorrectExtNavForSensorOffset(extNavDataDelayed);
     }

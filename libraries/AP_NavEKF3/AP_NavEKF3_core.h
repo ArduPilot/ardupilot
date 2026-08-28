@@ -1532,6 +1532,7 @@ private:
     uint32_t extNavMeasTime_ms;         // time external measurements were accepted for input to the data buffer (msec)
     uint32_t extNavLastPosResetTime_ms; // last time the external nav systen performed a position reset (msec)
     bool extNavDataToFuse;              // true when there is new external nav data to fuse
+    bool extNavRecallObserved;          // true after a sample is recalled at the fusion horizon
     bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
     EKF_obs_buffer_t<ext_nav_vel_elements> storedExtNavVel;    // external navigation velocity data buffer
     ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
