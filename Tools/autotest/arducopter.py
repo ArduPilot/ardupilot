@@ -13102,14 +13102,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('GUIDED')
         self.wait_ready_to_arm()
 
-        # record starting position
-        startpos = self.assert_receive_message('LOCAL_POSITION_NED')
-        self.progress("startpos=%s" % str(startpos))
-
         # arm vehicle and takeoff to at least 5m
         self.arm_vehicle()
         expected_alt = 5
         self.user_takeoff(alt_min=expected_alt)
+
+        # Climbing past EKF*_MAG_FINAL_RESET_ALT (2.5m, a compile-time
+        # constant in both estimators) makes the EKF realign yaw from
+        # the magnetometer.  With the compass 180 degrees out that reset
+        # just re-applies the same error, so it cannot recover the
+        # vehicle - but it does reset the innovation baseline, and
+        # ekf_check only asks for a GSF reset once it has seen
+        # EKF_CHECK_ITERATIONS_MAX-2 iterations of *continuously* bad
+        # variance, so a realignment landing mid-count defers the
+        # request.  Wait for it before starting to measure: from here on
+        # the GSF is the only thing which can recover the yaw.
+        self.wait_statustext("EKF%u IMU. MAG. in-flight yaw alignment complete" % active_type,
+                             timeout=30, regex=True, check_context=True)
+
+        # record the position the runaway is measured from
+        startpos = self.assert_receive_message('LOCAL_POSITION_NED')
+        self.progress("startpos=%s" % str(startpos))
 
         # watch for emergency yaw reset
         self.wait_statustext("EKF%u IMU. emergency yaw reset" % active_type,
