@@ -463,7 +463,21 @@ uint16_t AP_InertialSensor_LSM6DSO::calculate_backend_rate(uint16_t base_rate_hz
         min_mult = 4;
     }
     const uint8_t mult = constrain_int16(get_fast_sampling_rate(), min_mult, 8);
-    return constrain_int16(base_rate_hz * mult, base_rate_hz, 6660);
+    const uint16_t target = constrain_int16(base_rate_hz * mult, base_rate_hz, 6660);
+    // snap to the sensor's actual ODR steps (833/1660/3330/6660) so the
+    // rate registered with the frontend matches what the sensor really
+    // produces; base*mult values like 1666 otherwise fall through the
+    // exact-match ODR switch and leave the sensor at 833Hz
+    if (target >= 6660) {
+        return 6660;
+    }
+    if (target >= 3330) {
+        return 3330;
+    }
+    if (target >= 1660) {
+        return 1660;
+    }
+    return 833;
 }
 
 bool AP_InertialSensor_LSM6DSO::fifo_tag_supported_for_primary(const FifoTag tag)
