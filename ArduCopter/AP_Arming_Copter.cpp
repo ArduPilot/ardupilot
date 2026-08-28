@@ -318,21 +318,30 @@ bool AP_Arming_Copter::parameter_checks(bool display_failure)
 
 bool AP_Arming_Copter::oa_checks(bool display_failure)
 {
+#if AP_AVOIDANCE_ENABLED
+    if (copter.avoid.requires_backup_velocity(copter.pos_control->NE_get_pos_p().kP(),
+                                              copter.pos_control->NE_get_max_accel_mss() * 100.0f,
+                                              copter.pos_control->D_get_pos_p().kP(),
+                                              copter.pos_control->D_get_max_accel_mss() * 100.0f,
+                                              copter.G_Dt)) {
+        check_failed(display_failure, "Avoidance: Vehicle requires backup");
+        return false;
+    }
+#endif
+
 #if AP_OAPATHPLANNER_ENABLED
     char failure_msg[100] = {};
-    if (copter.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
-        return true;
+    if (!copter.g2.oa.pre_arm_check(failure_msg, ARRAY_SIZE(failure_msg))) {
+        // display failure
+        if (strlen(failure_msg) == 0) {
+            check_failed(display_failure, "%s", "Check Object Avoidance");
+        } else {
+            check_failed(display_failure, "%s", failure_msg);
+        }
+        return false;
     }
-    // display failure
-    if (strlen(failure_msg) == 0) {
-        check_failed(display_failure, "%s", "Check Object Avoidance");
-    } else {
-        check_failed(display_failure, "%s", failure_msg);
-    }
-    return false;
-#else
-    return true;
 #endif
+    return true;
 }
 
 bool AP_Arming_Copter::rc_calibration_checks(bool display_failure)
