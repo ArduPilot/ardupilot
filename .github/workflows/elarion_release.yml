@@ -1,0 +1,158 @@
+name: Elarion Release
+
+# Tag a release as v<version>, e.g. `v4.8.0a`, and push the tag. The leading
+# "v" is stripped for the version string baked into the firmware.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build, e.g. 4.8.0a'
+        required: true
+        type: string
+
+env:
+  # The ELARION H7 boards are only validated against this toolchain. The
+  # ardupilot-dev-chibios container ships it at /opt/gcc-arm-none-eabi-10;
+  # the build asserts the version and fails rather than silently using another.
+  EXPECTED_GCC: '10-2020-q4-major'
+  GCC_PATH: '/opt/gcc-arm-none-eabi-10/bin'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-chibios:v0.1.3
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [ELARIONH7V1, ELARIONH7V1SD]
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            V='${{ inputs.version }}'
+          else
+            V="${GITHUB_REF_NAME#v}"
+          fi
+          if [ -z "$V" ]; then
+            echo "::error::could not determine a version"
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Building version $V"
+
+      - name: Verify toolchain
+        shell: bash
+        run: |
+          export PATH="$GCC_PATH:$PATH"
+          arm-none-eabi-gcc --version
+          if ! arm-none-eabi-gcc --version | head -1 | grep -q "$EXPECTED_GCC"; then
+            echo "::error::toolchain is not $EXPECTED_GCC - refusing to build a release"
+            exit 1
+          fi
+
+      - name: Build ${{ matrix.board }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          export PATH="$GCC_PATH:$PATH"
+          # Vendor version string, reported to the GCS. Injected rather than
+          # committed so the tag stays the single source of truth.
+          printf 'define AP_CUSTOM_FIRMWARE_STRING "Elarion %s"\n' \
+            '${{ steps.ver.outputs.version }}' > /tmp/elarion_version.hwdef
+          cat /tmp/elarion_version.hwdef
+          ./waf configure --board '${{ matrix.board }}' \
+            --extra-hwdef /tmp/elarion_version.hwdef
+          ./waf copter
+
+      - name: Package ${{ matrix.board }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$GCC_PATH:$PATH"
+          B='${{ matrix.board }}'
+          V='${{ steps.ver.outputs.version }}'
+          SRC="build/$B/bin"
+          OUT=artifacts
+          mkdir -p "$OUT"
+
+          # arducopter_with_bl.hex only appears if Tools/bootloaders/${B}_bl.bin
+          # is committed. waf just prints a warning and carries on if it is
+          # missing, which would ship a release with no bootloader image.
+          if [ ! -f "$SRC/arducopter_with_bl.hex" ]; then
+            echo "::error::$SRC/arducopter_with_bl.hex missing - is Tools/bootloaders/${B}_bl.bin committed?"
+            exit 1
+          fi
+
+          # Full-flash image: bootloader at 0x08000000, firmware at the
+          # FLASH_RESERVE_START_KB offset. Flash with DFU/SWD at 0x08000000.
+          arm-none-eabi-objcopy -I ihex -O binary \
+            "$SRC/arducopter_with_bl.hex" "$OUT/arducopter-$B-$V-with-bl.bin"
+
+          cp "$SRC/arducopter_with_bl.hex" "$OUT/arducopter-$B-$V-with-bl.hex"
+          cp "$SRC/arducopter.apj"         "$OUT/arducopter-$B-$V.apj"
+          cp "$SRC/arducopter.bin"         "$OUT/arducopter-$B-$V.bin"
+          cp "$SRC/AP_Bootloader.bin"      "$OUT/AP_Bootloader-$B-$V.bin"
+          if [ -f "$SRC/arducopter.abin" ]; then
+            cp "$SRC/arducopter.abin" "$OUT/arducopter-$B-$V.abin"
+          fi
+
+          ( cd "$OUT" && sha256sum arducopter-* AP_Bootloader-* > "SHA256SUMS-$B.txt" )
+          ls -l "$OUT"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.board }}-${{ steps.ver.outputs.version }}
+          path: artifacts/
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          ls -l dist
+          V="${GITHUB_REF_NAME#v}"
+          # Deliberately not --generate-notes: with the full upstream ArduPilot
+          # history imported and no prior tag, generated notes are enormous.
+          cat > /tmp/notes.md <<EOF
+          ELARION H7 firmware $V
+
+          Built with gcc-arm-none-eabi-$EXPECTED_GCC (asserted at build time).
+
+          | Artifact | Contents | Use |
+          |---|---|---|
+          | \`*-with-bl.bin\` / \`*-with-bl.hex\` | bootloader + firmware | blank board, flash at 0x08000000 |
+          | \`*.apj\` | firmware only | Mission Planner / QGC update |
+          | \`*.bin\` | firmware only | flash at 0x08020000 |
+          | \`AP_Bootloader-*.bin\` | bootloader only | recovery |
+          EOF
+          sed -i 's/^          //' /tmp/notes.md
+          cat /tmp/notes.md
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file /tmp/notes.md \
+            dist/*
