@@ -226,8 +226,18 @@ def ap_autoconfigure(execute_method):
             cmd = lock_env.config_cmd or 'configure'
             tmp = Options.options.__dict__
 
-            if env.OPTIONS and sorted(env.OPTIONS.keys()) == sorted(tmp.keys()):
-                Options.options.__dict__ = env.OPTIONS
+            if env.OPTIONS:
+                # the set of options can change under a configured build:
+                # a new entry in build_options.py adds an --enable-*
+                # /--disable-* pair, for example.  Reconfigure with the
+                # values we were configured with for the options which
+                # still exist, and the current default for any which are
+                # new - refusing here leaves the build unusable until it
+                # is configured by hand.
+                restored = dict(tmp)
+                restored.update({k: v for (k, v) in env.OPTIONS.items()
+                                 if k in tmp})
+                Options.options.__dict__ = restored
             else:
                 raise Errors.WafError('The project configure options have changed: run "waf configure" again!')
 
