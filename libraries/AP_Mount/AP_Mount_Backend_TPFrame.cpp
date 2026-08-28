@@ -105,11 +105,25 @@ void AP_Mount_Backend_TPFrame::read_incoming_packets()
 
         case ParseState::WAITING_FOR_ID1:
         case ParseState::WAITING_FOR_ID2:
-        case ParseState::WAITING_FOR_ID3:
             // check all uppercase letters and numbers.  eg 'GAC'
             if ((b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')) {
                 // advance to next state
                 _parser.state = (ParseState)((uint8_t)_parser.state+1);
+                break;
+            }
+            reset_parser = true;
+            break;
+
+        case ParseState::WAITING_FOR_ID3:
+            if ((b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')) {
+                // a zero-length data segment has no data bytes to wait for - the
+                // WAITING_FOR_DATA case below can only advance once
+                // data_bytes_received (which starts at 1 on the very next byte and
+                // only increases) equals _parser.data_len, which can never happen
+                // for data_len==0, so go straight to the CRC instead of getting
+                // stuck consuming the CRC (and then the next packet) as fake data
+                // until datalen_max() overflows and fires an avoidable INTERNAL_ERROR
+                _parser.state = (_parser.data_len == 0) ? ParseState::WAITING_FOR_CRC_LOW : ParseState::WAITING_FOR_DATA;
                 break;
             }
             reset_parser = true;
