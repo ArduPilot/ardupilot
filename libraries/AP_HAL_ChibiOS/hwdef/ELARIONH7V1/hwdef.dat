@@ -9,6 +9,8 @@ APJ_BOARD_ID AP_HW_ELARIONH7V1
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
+# Y1 is an active oscillator driving OSC_IN (OSC_OUT unconnected)
+define STM32_HSE_BYPASS
 
 FLASH_SIZE_KB 2048
 
@@ -20,10 +22,11 @@ STM32_ST_USE_TIMER 12
 define CH_CFG_ST_RESOLUTION 16
 
 # LED
-PE3 LED0 OUTPUT LOW GPIO(90) # blue
+PE3 LED0 OUTPUT LOW GPIO(90) # blue, active low (HAL_GPIO_LED_ON default 0)
 define HAL_GPIO_A_LED_PIN 90
 
 # Video select
+PC12  PINIO1 OUTPUT GPIO(81) LOW # VOUT1_EN: video power switch, active high, off at boot
 PC13  PINIO3 OUTPUT GPIO(83) LOW # VIDEO_SELECT
 
 DMA_PRIORITY S*

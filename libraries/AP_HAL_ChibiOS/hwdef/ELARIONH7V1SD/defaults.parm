@@ -40,6 +40,9 @@ VTX_POWER 25
 VTX_MAX_POWER 1000
 
 # Ground station video input select on PC13 / GPIO83
+RELAY2_PIN       81 # VOUT1 video power switch
+RELAY2_FUNCTION  1
+RELAY2_DEFAULT   0  # video power off at boot
 RELAY1_PIN       83
 RELAY1_FUNCTION  1
 RELAY1_DEFAULT   0

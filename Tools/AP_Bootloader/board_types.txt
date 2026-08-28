@@ -338,6 +338,7 @@ AP_HW_HWH7                           1223
 
 AP_HW_ELARIONH7V1                    1224
 AP_HW_ELARIONF4V1                    1225
+AP_HW_ELARIONH7V1SD                  1226
 
 AP_HW_ATLAS_CONTROL                  1227
 AP_HW_MatekH7A3_Wing                 1228
