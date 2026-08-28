@@ -10652,7 +10652,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_RTL()
 
     def check_avoidance_corners(self):
+        # These tests exercise avoidance while flying near fence corners.  Arm
+        # and take off with avoidance disabled so the pre-arm backup check does
+        # not reject their deliberately constrained starting position, then
+        # restore the test's original avoidance configuration before flying.
+        avoid_enable = self.get_parameter("AVOID_ENABLE")
+        self.set_parameter("AVOID_ENABLE", 0)
         self.takeoff(10, mode="LOITER")
+        self.set_parameter("AVOID_ENABLE", avoid_enable)
         here = self.mav.location()
         # the vehicle starts a test at home but with whatever heading
         # the previous test left it; face west like the other corner
