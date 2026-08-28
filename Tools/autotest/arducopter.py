@@ -13125,8 +13125,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_RTL()
         self.context_pop()
 
-        # ensure vehicle did not fly too far
-        dist_m_max = 8
+        # ensure vehicle did not fly too far.  The reset is requested by
+        # Copter's ekf_check only after EKF_CHECK_ITERATIONS_MAX-2
+        # iterations of bad variance - 0.8s at 10Hz - and the vehicle is
+        # flying away on a 180-degree yaw error throughout, so the
+        # distance covered is set by how promptly that counter fills.
+        # Measured triggers ran 6.264-7.638m against the previous 8m
+        # bound - under 5% headroom - and a loaded run reached 8.079m.
+        dist_m_max = 9
         if dist_m > dist_m_max:
             raise NotAchievedException("GSF reset failed, vehicle flew too far (%f > %f)" % (dist_m, dist_m_max))
 
