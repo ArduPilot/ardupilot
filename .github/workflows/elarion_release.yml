@@ -121,7 +121,10 @@ jobs:
           cp "$SRC/arducopter_with_bl.hex" "$OUT/arducopter-$B-$V-with-bl.hex"
           cp "$SRC/arducopter.apj"         "$OUT/arducopter-$B-$V.apj"
           cp "$SRC/arducopter.bin"         "$OUT/arducopter-$B-$V.bin"
-          cp "$SRC/AP_Bootloader.bin"      "$OUT/AP_Bootloader-$B-$V.bin"
+          # AP_Bootloader.bin is only built by the bootloader target, which this
+          # workflow does not run. Ship the committed blob instead - it is the
+          # exact bootloader embedded into the -with-bl image above.
+          cp "Tools/bootloaders/${B}_bl.bin" "$OUT/AP_Bootloader-$B-$V.bin"
           if [ -f "$SRC/arducopter.abin" ]; then
             cp "$SRC/arducopter.abin" "$OUT/arducopter-$B-$V.abin"
           fi
