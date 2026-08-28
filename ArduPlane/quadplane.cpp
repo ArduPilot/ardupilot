@@ -572,6 +572,49 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Bitmask: 1: Disable thrust loss detection in transtions and fixed wing modes. Thrust loss detection will only run in VTOL modes.
     AP_GROUPINFO("THRST_LOSS_OPT", 42, QuadPlane, thrust_loss.options, 0),
 
+    // @Param: BKF_ENABLE
+    // @DisplayName: Backward airflow protection
+    // @Description: Protection against flying tail first fast enough in VTOL modes to reverse and separate the flow over the tail, which can produce a large uncommanded nose down pitch. A backward airspeed is estimated from the EKF ground velocity and wind estimate, resolved onto the body forward axis. Set to 1 to only log the BAKF message, so data can be gathered on an airframe without changing how it flies. Set to 2 to also hold the vehicle to Q_BKF_SPD_MAX. This caps how fast the vehicle can be flown backwards at all: in a tailwind stronger than Q_BKF_SPD_MAX it will drift downwind, so weathervaning (Q_WVANE_ENABLE) should be left on as the primary defence. IMPORTANT: the wind estimate is only observable to the EKF in forward flight, or in VTOL flight if EK3_DRAG_BCOEF_X/Y are set. Before the first transition of a sortie the estimate falls back to backward groundspeed, which under reads in a tailwind and over reads in a headwind, so a VTOL only sortie is not protected unless EK3_DRAG_BCOEF_X/Y are set. BAKF.WSpd logs the wind actually used. The defaults come from a single flight log and need confirming by flight test on each airframe.
+    // @Values: 0:Disabled,1:Log only,2:Log and limit backward speed
+    // @User: Advanced
+    AP_GROUPINFO("BKF_ENABLE", 43, QuadPlane, bkflow_enable, uint8_t(BackwardFlowUse::OFF)),
+
+    // @Param: BKF_SPD_MIN
+    // @DisplayName: Backward airflow limiting start speed
+    // @Description: Estimated backward (tail first) airspeed at which the limiter starts squeezing the pitch back demand, and at which the BAKF message starts being logged and the one shot warning is sent. Between this and Q_BKF_SPD_MAX the pitch back demand the pilot or navigation controller can ask for falls linearly to zero. Setting it well below Q_BKF_SPD_MAX gives a gentle squeeze and plenty of logged data before the limit is reached; setting it close makes the intervention abrupt. Has no effect unless Q_BKF_ENABLE is non zero.
+    // @Units: m/s
+    // @Range: 0.5 10.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("BKF_SPD_MIN", 44, QuadPlane, bkflow_spd_min, 1.5f),
+
+    // @Param: BKF_SPD_MAX
+    // @DisplayName: Backward airflow speed limit
+    // @Description: The backward (tail first) airspeed the limiter holds the vehicle to. Between Q_BKF_SPD_MIN and this speed the pitch back demand is progressively squeezed to zero, at this speed the vehicle is held level, and above it nose down is commanded to arrest the backward motion. Set this below the backward airspeed at which the tail flow is known to separate on your airframe, with enough margin that the limiter has time to act. Has no effect unless Q_BKF_ENABLE is 2.
+    // @Units: m/s
+    // @Range: 1.0 15.0
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("BKF_SPD_MAX", 45, QuadPlane, bkflow_spd_max, 3.0f),
+
+    // @Param: BKF_GAIN
+    // @DisplayName: Backward airflow limiter gain
+    // @Description: How hard the limiter pushes once past Q_BKF_SPD_MAX, in degrees of commanded nose down per m/s of overshoot, up to Q_BKF_ANG_MAX. Larger values recover the speed limit faster but make the intervention more abrupt. This has no effect below Q_BKF_SPD_MAX, where the squeeze is set by Q_BKF_SPD_MIN instead. Set to zero to disable the limit while leaving logging active. Has no effect unless Q_BKF_ENABLE is 2.
+    // @Units: deg/m/s
+    // @Range: 0.0 20.0
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("BKF_GAIN", 46, QuadPlane, bkflow_gain, 5.0f),
+
+    // @Param: BKF_ANG_MAX
+    // @DisplayName: Backward airflow maximum nose down
+    // @Description: The largest nose down pitch angle the limiter is allowed to command in order to arrest backward motion. This bounds how hard the vehicle will push forward when it is well past Q_BKF_SPD_MAX. Keep it small: a large commanded nose down in reversed flow is the attitude this feature exists to avoid. Has no effect unless Q_BKF_ENABLE is 2.
+    // @Units: deg
+    // @Range: 0.0 25.0
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("BKF_ANG_MAX", 47, QuadPlane, bkflow_ang_max, 10.0f),
+
     AP_GROUPEND
 };
 
@@ -1710,6 +1753,9 @@ void QuadPlane::update(void)
     // keep motors interlock state upto date with E-stop
     motors->set_interlock(!SRV_Channels::get_emergency_stop());
 
+    // capture the wind estimate while it is still valid, see update_wind_cache()
+    update_wind_cache();
+
     if ((ahrs_view != NULL) && !is_equal(_last_ahrs_trim_pitch, ahrs_trim_pitch.get())) {
         _last_ahrs_trim_pitch = ahrs_trim_pitch.get();
         ahrs_view->set_pitch_trim(_last_ahrs_trim_pitch);
@@ -1745,6 +1791,11 @@ void QuadPlane::update(void)
         }
         // todo: do you want to set the throttle at this point?
         pos_control->D_relax_controller(0);
+
+        // re-arm the one shot backward airflow warning and drop the cached
+        // wind estimate so the next flight starts clean
+        backward_flow.warned = false;
+        backward_flow.wind_valid = false;
     }
 
     const uint32_t now = AP_HAL::millis();
@@ -2689,6 +2740,7 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
+        backward_flow_limit_speed();
         assign_tilt_to_fwd_thr();
 
         if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
@@ -2744,6 +2796,7 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
+        backward_flow_limit_speed();
         assign_tilt_to_fwd_thr();
 
         if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
@@ -2790,6 +2843,7 @@ void QuadPlane::vtol_position_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
+        backward_flow_limit_speed();
         assign_tilt_to_fwd_thr();
 
         // call attitude controller
@@ -3079,6 +3133,218 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
 }
 
 /*
+  remember the last valid AHRS wind estimate, for backward_flow_limit_speed().
+
+  EKF3 freezes the wind states when the vehicle leaves fixed wing flight, and
+  AP_AHRS::get_wind() then reports them as invalid. The last learned value is
+  far better than assuming zero wind for the VTOL phase, so cache it. This
+  runs in all modes so the estimate is captured while still flying forwards.
+
+  Before the first transition there is nothing cached and the backward
+  airspeed falls back to groundspeed. Setting EK3_DRAG_BCOEF_X/Y makes the
+  wind observable in VTOL flight and removes that dependency. BAKF.WSpd logs
+  the value actually used.
+ */
+void QuadPlane::update_wind_cache(void)
+{
+    Vector3f wind_ned;
+    if (ahrs.get_wind(wind_ned)) {
+        backward_flow.wind_ne = wind_ned.xy();
+        backward_flow.wind_valid = true;
+    }
+}
+
+/*
+  hold the vehicle to a maximum backward (tail first) airspeed in VTOL modes.
+
+  Backing up into a tailwind while descending can take a conventional
+  quadplane tail past the angle at which its flow separates. The tail then
+  loses its damping and the aircraft can pitch hard nose down with the VTOL
+  rate controller unable to arrest it. The source log reached 4.4 m/s
+  backwards on only 3 to 7 degrees of commanded lean held for six seconds,
+  so limiting the lean angle cannot prevent it; the backward speed itself is
+  what has to be limited.
+
+  The ceiling on the pitch demand follows the backward airspeed, and is
+  continuous across both joins:
+
+    below Q_BKF_SPD_MIN   ceiling = Q_A_ANGLE_MAX, ie no restriction
+    up to Q_BKF_SPD_MAX   ceiling falls linearly from Q_A_ANGLE_MAX to zero
+    above Q_BKF_SPD_MAX   ceiling = -(excess * Q_BKF_GAIN), to -Q_BKF_ANG_MAX
+
+  Detection cannot come from the AOA or the airspeed sensor. The AOA is not a
+  vane; AP_AHRS::update_AOA_SSA() derives it from the same EKF velocity and
+  wind and forces it to exactly zero whenever the body forward airspeed is
+  negative, so it reports that reversed flow is present but discards how fast
+  it is. A pitot cannot sense direction at all. Resolving the EKF air
+  velocity onto the body forward axis recovers the signed magnitude.
+
+  Deliberately not covered:
+
+   - QPOS_AIRBRAKE, where the demand comes from TECS while still decelerating
+     out of forward flight and airbrake needs its nose up authority.
+
+   - the SystemID attitude offset, which is added after this runs and is
+     meant to bypass the normal shaping and constraints.
+
+   - QACRO and QAUTOTUNE, which do not command a lean angle through this path.
+ */
+void QuadPlane::backward_flow_limit_speed(void)
+{
+    backward_flow.limiting = false;
+
+    if (bkflow_enable == BackwardFlowUse::OFF ||
+        tailsitter.enabled() ||
+        force_fw_control_recovery ||
+        !plane.arming.is_armed_and_safety_off()) {
+        /*
+          nothing to do.
+
+          A tailsitter hovers with its tail down and has no conventional tail
+          surfaces in the airflow, so this does not apply to it.
+
+          We also stand aside during a fixed wing attitude recovery. That is
+          triggered at twice Q_A_ANGLE_MAX, which is the attitude a tail flow
+          separation event produces if it happens anyway. The recovery needs
+          nose up authority to pull out of it, and this limiter commands nose
+          down, so it must not be running then.
+         */
+        backward_flow.in_band = false;
+        backward_flow.airspeed_ms = 0;
+        backward_flow.pitch_limit_cd = 0;
+        return;
+    }
+
+    Vector3f vel_ned;
+    if (!ahrs.get_velocity_NED(vel_ned)) {
+        // without a velocity estimate we cannot form the synthetic airspeed
+        backward_flow.in_band = false;
+        return;
+    }
+
+    // with no wind estimate at all this degrades to backward groundspeed,
+    // which under estimates the backward airspeed in a tailwind. That is the
+    // case we care about, so it is a degraded but still useful fallback
+    const Vector2f wind_ne = backward_flow.wind_valid ? backward_flow.wind_ne : Vector2f{};
+
+    // velocity of the airframe through the air mass. The EKF does not
+    // estimate vertical wind, so only the horizontal components of the air
+    // mass velocity can be removed
+    const Vector3f air_vel_ned{vel_ned.x - wind_ne.x, vel_ned.y - wind_ne.y, vel_ned.z};
+
+    /*
+      resolve onto the body forward axis rather than onto the horizontal
+      heading. Descending with the nose up puts flow on the tail from behind
+      even with no horizontal motion at all, and reduced throttle with the
+      stick held back produces exactly that combination. Projecting onto the
+      horizontal would miss it, and would also overstate the axial flow
+      produced by horizontal motion by a factor of 1/cos(pitch).
+
+      A negative body forward airspeed means the air is arriving from behind.
+     */
+    backward_flow.airspeed_ms = -ahrs.earth_to_body(air_vel_ned).x;
+
+#if HAL_LOGGING_ENABLED
+    // only needed to form the BAKF message below
+    const float backward_gnd_speed_ms = -ahrs.earth_to_body(vel_ned).x;
+    const bool was_in_band = backward_flow.in_band;
+#endif
+
+    // clamp to zero so that a negative Q_BKF_SPD_MIN cannot leave the logging
+    // band, and the warning with it, permanently active in a normal hover
+    const float spd_min = MAX(bkflow_spd_min, 0.0f);
+    // keep the squeeze non degenerate so the interpolation is well defined
+    const float spd_max = MAX(bkflow_spd_max, spd_min + 0.1f);
+
+    backward_flow.in_band = backward_flow.airspeed_ms > spd_min;
+
+    // the ceiling on the pitch demand
+    const float angle_max_cd = attitude_control->lean_angle_max_cd();
+    const float ang_max_cd = constrain_float(bkflow_ang_max * 100.0f, 0.0f, angle_max_cd);
+    if (backward_flow.airspeed_ms <= spd_max) {
+        // squeeze the pitch back demand to nothing as the limit is approached
+        backward_flow.pitch_limit_cd = linear_interpolate(angle_max_cd, 0.0f,
+                                                          backward_flow.airspeed_ms,
+                                                          spd_min, spd_max);
+    } else {
+        // past the limit, command nose down to arrest the backward motion
+        backward_flow.pitch_limit_cd = -MIN((backward_flow.airspeed_ms - spd_max) * bkflow_gain * 100.0f,
+                                            ang_max_cd);
+    }
+
+    if (bkflow_enable == BackwardFlowUse::LIMIT && is_positive(bkflow_gain)) {
+        const int32_t limit_cd = (int32_t)backward_flow.pitch_limit_cd;
+        if (plane.nav_pitch_cd > limit_cd) {
+            plane.nav_pitch_cd = limit_cd;
+            backward_flow.limiting = true;
+            if (pos_control->NE_is_active()) {
+                // tell the position controller it is being limited so it
+                // does not wind up against a limit it cannot see
+                pos_control->NE_set_externally_limited();
+            }
+        }
+    }
+
+    if (backward_flow.in_band && !backward_flow.warned) {
+        // one shot text message per flight so this shows up in a quick log
+        // scan without having to graph the BAKF message
+        backward_flow.warned = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "QuadPlane: backward airflow %.1fm/s",
+                      (double)backward_flow.airspeed_ms);
+    }
+
+#if HAL_LOGGING_ENABLED
+    const uint32_t now_ms = AP_HAL::millis();
+    // log at 5Hz while above Q_BKF_SPD_MIN, plus one sample on the way out,
+    // and whenever the limiter is actually intervening
+    if ((backward_flow.in_band && now_ms - backward_flow.last_log_ms >= 200) ||
+        (!backward_flow.in_band && was_in_band) ||
+        (backward_flow.limiting && now_ms - backward_flow.last_log_ms >= 200)) {
+        backward_flow.last_log_ms = now_ms;
+
+        float eas = 0;
+        IGNORE_RETURN(ahrs.airspeed_EAS(eas));
+
+        float diff_press_pa = 0;
+#if AP_AIRSPEED_ENABLED
+        const AP_Airspeed *airspeed = AP::airspeed();
+        if (airspeed != nullptr && airspeed->healthy()) {
+            diff_press_pa = airspeed->get_differential_pressure();
+        }
+#endif
+
+        // @LoggerMessage: BAKF
+        // @Description: QuadPlane backward (tail first) airflow protection
+        // @Field: TimeUS: Time since system startup
+        // @Field: BSpd: backward airspeed on the body forward axis, from ground velocity and wind
+        // @Field: BGnd: backward groundspeed on the same axis, for comparison with BSpd
+        // @Field: WSpd: speed of the cached wind estimate used to form BSpd
+        // @Field: ASpd: AHRS equivalent airspeed estimate
+        // @Field: DP: airspeed sensor differential pressure
+        // @Field: AOA: AHRS angle of attack, which is pinned to zero while BSpd is positive
+        // @Field: Pitch: current pitch angle
+        // @Field: PLim: ceiling on the pitch demand called for by BSpd
+        // @Field: Lim: true if the limiter reduced the commanded pitch this loop
+        AP::logger().WriteStreaming("BAKF",
+                                    "TimeUS,BSpd,BGnd,WSpd,ASpd,DP,AOA,Pitch,PLim,Lim",  // labels
+                                    "snnnnPddd-",   // units
+                                    "F---------",   // multipliers
+                                    "QffffffffB",   // fmt
+                                    AP_HAL::micros64(),
+                                    (double)backward_flow.airspeed_ms,
+                                    (double)backward_gnd_speed_ms,
+                                    (double)wind_ne.length(),
+                                    (double)eas,
+                                    (double)diff_press_pa,
+                                    (double)ahrs.getAOA(),
+                                    (double)ahrs.get_pitch_deg(),
+                                    (double)(backward_flow.pitch_limit_cd * 0.01f),
+                                    (uint8_t)backward_flow.limiting);
+    }
+#endif  // HAL_LOGGING_ENABLED
+}
+
+/*
   we want to limit WP speed to a lower speed when more than 20 degrees
   off pointing at the destination. quadplanes are often
   unstable when flying sideways or backwards
@@ -3217,6 +3483,7 @@ void QuadPlane::takeoff_controller(void)
         plane.nav_roll_cd = pos_control->get_roll_cd();
         plane.nav_pitch_cd = pos_control->get_pitch_cd();
 
+        backward_flow_limit_speed();
         assign_tilt_to_fwd_thr();
     }
 
@@ -3275,6 +3542,7 @@ void QuadPlane::waypoint_controller(void)
     plane.nav_roll_cd = wp_nav->get_roll();
     plane.nav_pitch_cd = wp_nav->get_pitch();
 
+    backward_flow_limit_speed();
     assign_tilt_to_fwd_thr();
 
     if (transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {
