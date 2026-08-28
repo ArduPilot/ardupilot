@@ -75,6 +75,24 @@ private:
     void output_servos(const struct sitl_input &input);
     void recv_fdm(const struct sitl_input &input);
 
+    // receive one chunk from whichever transport is active into
+    // sensor_buffer (shared-memory ride-along channel when this
+    // instance was started with --cluster, the UDP socket otherwise);
+    // mirrors sock.recv() semantics, returning 0 on timeout
+    ssize_t transport_recv(uint32_t timeout_ms);
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    // ride-along over the cluster's shared memory segment, as an
+    // alternative to the UDP sockets: see AP_SITL_RideAlongChannel in
+    // SITL_SharedMem.h
+    bool ride_shmem_active(void) const;
+    void ride_shmem_send(const void *pkt, uint32_t len);
+    ssize_t ride_shmem_recv(uint8_t *buf, uint32_t size, uint32_t timeout_ms);
+    uint32_t ride_out_seq;
+    uint32_t ride_in_seq;
+    int8_t ride_master_slot = -1;   // shmem slot the fdm channel was found in
+#endif
+
     uint64_t parse_sensors(const char *json);
 
     // buffer for parsing pose data in JSON format
