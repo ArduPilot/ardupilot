@@ -295,6 +295,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_BARO_PROBE_EXTERNAL_I2C_BUSES', r'AP_Baro::_probe_i2c_barometers'),
             ('AP_RSSI_ENABLED', r'AP_RSSI::init'),
             ('AP_FOLLOW_ENABLED', 'AP_Follow::AP_Follow'),
+            ('AP_GROUNDEFFECT_ENABLED', 'AP_GroundEffect::AP_GroundEffect'),
 
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
             ('AP_ROVER_AUTO_ARM_ONCE_ENABLED', r'Rover::handle_auto_arm_once'),
