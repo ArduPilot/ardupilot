@@ -103,6 +103,15 @@ bool AP_Baro_BMP581::init()
         return false;
     }
 
+    // the POR/reset-complete flag in INT_STATUS is clear-on-read, so on a
+    // warm boot (soft reboot or watchdog reset without removing sensor
+    // power) it has already been consumed by the previous boot. Issue a
+    // soft reset so the flag is freshly set before we check it below.
+    if (!_dev->write_register(BMP581_REG_CMD, 0xB6)) {
+        return false;
+    }
+    hal.scheduler->delay(4); // t_soft_res is 2ms
+
     uint8_t status;
     if (!_dev->read_registers(BMP581_REG_STATUS, &status, 1)) {
         return false;
