@@ -588,13 +588,18 @@ void AP_Mount_SkyDroid::gimbal_model_analyse()
 // lock is false to follow / maintain a body-frame target
 bool AP_Mount_SkyDroid::set_gimbal_lock(bool lock)
 {
-    if (_last_lock == lock) {
+    // _last_lock defaults false, which is indistinguishable from "we've already
+    // confirmed the gimbal is in follow mode" unless we also track whether a mode
+    // has actually been sent yet - without _lock_sent, the very first call (always
+    // requesting follow, false) would silently no-op instead of sending anything
+    if (_lock_sent && _last_lock == lock) {
         return true;
     }
 
     // send message and update lock state.  PTZ data: 0x06 = follow, 0x07 = lock head
     if (send_fixedlen_packet(AddressByte::GIMBAL, AP_MOUNT_SKYDROID_ID3CHAR_GIMBAL_MODE, true, lock ? 0x07 : 0x06)) {
         _last_lock = lock;
+        _lock_sent = true;
         return true;
     }
     return false;
