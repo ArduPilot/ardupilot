@@ -400,6 +400,7 @@ void NavEKF3_core::InitialiseVariables()
     extNavRecallObserved = false;
     extNavInitDropObserved = false;
     extNavRateDropObserved = false;
+    extNavBufferAcceptObserved = false;
     extNavUsedForPos = false;
     extNavVelDelayed = {};
     extNavVelToFuse = false;

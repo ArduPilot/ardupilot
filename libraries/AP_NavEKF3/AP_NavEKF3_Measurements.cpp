@@ -1118,6 +1118,10 @@ void NavEKF3_core::writeExtNavData(const Vector3f &pos, const Quaternion &quat, 
 
     // store position data to buffer
     storedExtNav.push(extNavDataNew);
+    if (!extNavBufferAcceptObserved) {
+        extNavBufferAcceptObserved = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u external nav accepted into buffer", (unsigned)imu_index);
+    }
 
     // protect against attitude or angle being NaN
     if (!quat.is_nan() && !isnan(angErr)) {

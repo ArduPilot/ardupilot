@@ -1535,6 +1535,7 @@ private:
     bool extNavRecallObserved;          // true after a sample is recalled at the fusion horizon
     bool extNavInitDropObserved;        // SITL diagnostic: sample dropped before filter init
     bool extNavRateDropObserved;        // SITL diagnostic: sample dropped by interval limit
+    bool extNavBufferAcceptObserved;    // SITL diagnostic: sample accepted into the buffer
     bool extNavUsedForPos;              // true when the external nav data is being used as a position reference.
     EKF_obs_buffer_t<ext_nav_vel_elements> storedExtNavVel;    // external navigation velocity data buffer
     ext_nav_vel_elements extNavVelDelayed;  // external navigation velocity data at the fusion time horizon.  Already corrected for sensor position
