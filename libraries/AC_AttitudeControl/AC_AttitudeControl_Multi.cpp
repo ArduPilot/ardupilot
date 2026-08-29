@@ -453,10 +453,10 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
 
-void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads, float dt)
+void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads, float dt, const Vector3f& ang_vel_body_rads)
 {
     // take a copy of the target so that it can't be changed from under us.
-    Vector3f ang_vel_body = _ang_vel_body_rads;
+    Vector3f ang_vel_body = ang_vel_body_rads;
 
     // boost angle_p/pd each cycle on high throttle slew
     update_throttle_gain_boost();
@@ -466,6 +466,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
 
     ang_vel_body += _sysid_ang_vel_body_rads;
 
+    _rate_target_rads = ang_vel_body;
     _rate_gyro_rads = gyro_rads;
     _rate_gyro_time_us = AP_HAL::micros64();
 
@@ -487,7 +488,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
     Vector3f gyro_latest_rads = _ahrs.get_gyro_latest();
-    rate_controller_run_dt(gyro_latest_rads, _dt_s);
+    rate_controller_run_dt(gyro_latest_rads, _dt_s, _ang_vel_body_rads);
 }
 
 // sanity check parameters.  should be called once before takeoff
