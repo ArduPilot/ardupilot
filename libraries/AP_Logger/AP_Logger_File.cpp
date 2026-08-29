@@ -412,6 +412,15 @@ void AP_Logger_File::EraseAll()
     stop_logging();
 
     erase.log_num = 1;
+    // Erase walks the log numbers one per IO-thread iteration, so the
+    // bound matters: with no limit configured get_max_num_logs() is the
+    // whole 16-bit numbering space, and walking that would spend tens of
+    // thousands of iterations unlinking files which were never there.
+    // Stop at the highest log which actually exists instead.  A
+    // configured limit keeps the old bound, so stray files above the
+    // last log are still cleaned up.
+    const uint16_t max_logs = _front.get_max_num_logs();
+    erase.last_log_num = (max_logs == UINT16_MAX) ? find_last_log() : max_logs;
 }
 
 bool AP_Logger_File::WritesOK() const
@@ -1099,7 +1108,7 @@ void AP_Logger_File::erase_next(void)
     free(fname);
 
     erase.log_num++;
-    if (erase.log_num <= _front.get_max_num_logs()) {
+    if (erase.log_num <= erase.last_log_num) {
         return;
     }
     
