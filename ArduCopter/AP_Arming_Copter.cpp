@@ -671,6 +671,21 @@ void AP_Arming_Copter::set_pre_arm_check(bool b)
     AP_Notify::flags.pre_arm_check = b;
 }
 
+// The EKF reports on-ground from the moment the motors disarm, so it cannot
+// tell a mid-air disarm from a landed one and a reset there would zero a real
+// descent rate
+void AP_Arming_Copter::reset_height_datum()
+{
+    if (copter.ap.disarmed_in_air || !AP::ahrs().resetHeightDatum()) {
+        return;
+    }
+    LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
+#if AP_TERRAIN_AVAILABLE
+    // the base class captured the terrain reference before the reset
+    copter.terrain.set_reference_location();
+#endif
+}
+
 bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_checks)
 {
     static bool in_arm_motors = false;
@@ -722,12 +737,18 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        ahrs.resetHeightDatum();
-        LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
+        reset_height_datum();
 
-        // we have reset height, so arming height is zero
-        copter.arming_altitude_m = 0;
+        // remember the height we armed at rather than assuming the reset
+        // zeroed it: it is skipped after a mid-air disarm, and refused
+        // outright for several height sources.  Reads zero when there is no
+        // origin to measure against, as before
+        float pos_d_m = 0;
+        UNUSED_RESULT(ahrs.get_relative_position_D_origin_float(pos_d_m));
+        copter.arming_altitude_m = -pos_d_m;
     } else if (!ahrs.home_is_locked()) {
+        reset_height_datum();
+
         // Reset home position if it has already been set before (but not locked)
         if (!copter.set_home_to_current_location(false)) {
             // ignore failure
@@ -735,7 +756,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
         // remember the height when we armed (ignore failures)
         float pos_d_m = 0;
-        UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
+        UNUSED_RESULT(ahrs.get_relative_position_D_origin_float(pos_d_m));
         copter.arming_altitude_m = -pos_d_m;
     }
     copter.update_super_simple_bearing(false);
@@ -813,6 +834,10 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     send_arm_disarm_statustext("Disarming motors");
 #endif
+
+    // sticky because a re-arm in the air followed by a second disarm sees
+    // land_complete still set by the first; only the land detector clears it
+    copter.ap.disarmed_in_air = copter.ap.disarmed_in_air || !copter.ap.land_complete;
 
     // we are not in the air
     copter.set_land_complete(true);
