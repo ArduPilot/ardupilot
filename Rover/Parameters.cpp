@@ -678,36 +678,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPEND
 };
 
-// These auxiliary channel param descriptions are here so that users of beta Mission Planner (which uses the master branch as its source of descriptions)
-// can get them.  These lines can be removed once Rover-3.6-beta testing begins or we improve the source of descriptions for GCSs.
-//
-// @Param: CH7_OPTION
-// @DisplayName: Channel 7 option
-// @Description: What to do use channel 7 for
-// @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Acro,6:Steering,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided,12:Loiter
-// @User: Standard
-
-// @Param: AUX_CH
-// @DisplayName: Auxiliary switch channel
-// @Description: RC Channel to use for auxiliary functions including saving waypoints
-// @User: Advanced
-
-// @Param: PIVOT_TURN_ANGLE
-// @DisplayName: Pivot turn angle
-// @Description: Navigation angle threshold in degrees to switch to pivot steering. This allows you to setup a skid steering rover to turn on the spot in auto mode when the angle it needs to turn it greater than this angle. An angle of zero means to disable pivot turning. Note that you will probably also want to set a low value for WP_RADIUS to get neat turns.
-// @Units: deg
-// @Range: 0 360
-// @Increment: 1
-// @User: Standard
-
-// @Param: PIVOT_TURN_RATE
-// @DisplayName: Pivot turn rate
-// @Description: Desired pivot turn rate in deg/s.
-// @Units: deg/s
-// @Range: 0 360
-// @Increment: 1
-// @User: Standard
-
 ParametersG2::ParametersG2(void)
     :
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
