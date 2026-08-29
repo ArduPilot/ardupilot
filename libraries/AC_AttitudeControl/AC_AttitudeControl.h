@@ -305,8 +305,6 @@ public:
 
     // Run the angular velocity controller with a specified timestep and rate target. Must be implemented by derived class.
     virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt, const Vector3f& ang_vel_body_rads) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
-    // Run the angular velocity controller with a specified timestep on the current rate target.
-    void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) { rate_controller_run_dt(gyro_rads, dt, _ang_vel_body_rads); }
 
     // euler_derivative_to_body - transform euler angle derivative to body-frame
     // Converts euler derivatives (rate, acceleration, etc.) to body-frame equivalents.
