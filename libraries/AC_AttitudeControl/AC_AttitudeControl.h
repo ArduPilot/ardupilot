@@ -303,8 +303,10 @@ public:
     // reset the rate controller target loop updates
     void rate_controller_target_reset();
 
-    // Run the angular velocity controller with a specified timestep. Must be implemented by derived class.
-    virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
+    // Run the angular velocity controller with a specified timestep and rate target. Must be implemented by derived class.
+    virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt, const Vector3f& ang_vel_body_rads) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
+    // Run the angular velocity controller with a specified timestep on the current rate target.
+    void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) { rate_controller_run_dt(gyro_rads, dt, _ang_vel_body_rads); }
 
     // euler_derivative_to_body - transform euler angle derivative to body-frame
     // Converts euler derivatives (rate, acceleration, etc.) to body-frame equivalents.
@@ -382,6 +384,9 @@ public:
 
     // Return the body-frame angular velocity (in rad/s) used by the angular velocity controller.
     Vector3f rate_bf_targets() const { return _ang_vel_body_rads + _sysid_ang_vel_body_rads; }
+
+    // Return the body-frame angular velocity target (in rad/s) without the sysid contribution
+    const Vector3f& get_ang_vel_body_rads() const { return _ang_vel_body_rads; }
 
     // return the angular velocity of the target (setpoint) attitude rad/s
     const Vector3f& get_rate_ef_target_rads() const { return _euler_rate_target_rads; }
@@ -600,6 +605,8 @@ protected:
     // Angle limit
     AP_Float            _angle_max_deg;
 
+    // Body-frame angular velocity target (rad/s) as given to the rate controller
+    Vector3f            _rate_target_rads;
     // Latest body-frame gyro measurement (rad/s) used by rate controller
     Vector3f            _rate_gyro_rads;
     // timestamp of the latest gyro measurement (in microseconds) value used by the rate controller
