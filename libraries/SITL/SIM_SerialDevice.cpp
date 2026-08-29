@@ -276,7 +276,14 @@ void SerialDevice::network_update_udp()
         return;
     }
     while (true) {
-        const ssize_t nread = read_from_device(buffer, sizeof(buffer));
+        // AP_Networking_port::run() (AP_Networking_port.cpp) reads at
+        // most 300 bytes per recv() call.  UDP is datagram-based, not
+        // a byte stream like TCP, so a datagram larger than that isn't
+        // queued for a later read -- the kernel silently discards
+        // whatever didn't fit.  Cap what we send to what the far end
+        // can actually receive in one call, or a device that bursts
+        // more than 300 bytes at once would have its frame truncated.
+        const ssize_t nread = read_from_device(buffer, MIN(sizeof(buffer), (size_t)300));
         if (nread <= 0) {
             break;
         }
