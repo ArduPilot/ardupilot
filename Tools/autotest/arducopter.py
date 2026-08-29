@@ -564,6 +564,55 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.do_RTL()
 
+    def ModeVAltHold(self):
+        '''Test VALT velocity alt-hold mode (mode 29)'''
+        # use mode number directly since pymavlink does not know VALT
+        VALT = 29
+
+        self.takeoff(10, mode="ALT_HOLD")
+        self.change_mode(VALT)
+
+        # verify altitude is maintained with neutral sticks
+        self.progress("Checking altitude hold with velocity control")
+        self.wait_altitude(9, 11, relative=True, minimum_duration=5, timeout=6)
+
+        # verify altitude is maintained while flying laterally
+        self.progress("Checking altitude hold during lateral flight")
+        self.set_rc_from_map({
+            1: 1000,
+            2: 1000,
+        })
+        self.wait_altitude(9, 11, relative=True, minimum_duration=5, timeout=6)
+        self.set_rc_from_map({
+            1: 1500,
+            2: 1500,
+        })
+
+        # command a climb and verify altitude increases
+        self.progress("Commanding climb with throttle 1800")
+        self.set_rc(3, 1800)
+        self.wait_altitude(12, 25, relative=True, timeout=10)
+        alt_after_climb = self.get_altitude(relative=True)
+        self.progress("Altitude after climb: %.1f" % alt_after_climb)
+
+        # release stick to neutral and let it settle
+        self.progress("Releasing stick, checking altitude settles")
+        self.set_rc(3, 1500)
+        self.delay_sim_time(3, "let the altitude settle")
+        settled_alt = self.get_altitude(relative=True)
+        self.progress("Settled altitude: %.1f" % settled_alt)
+
+        # verify altitude is maintained at the new altitude
+        self.wait_altitude(
+            settled_alt - 1,
+            settled_alt + 1,
+            relative=True,
+            minimum_duration=3,
+            timeout=4,
+        )
+
+        self.do_RTL()
+
     def fly_to_origin(self, final_alt=10):
         origin = self.poll_message("GPS_GLOBAL_ORIGIN")
         self.change_mode("GUIDED")
@@ -16616,6 +16665,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.AirModeStabZeroThrottle,
              self.AirModeLanding,
              self.ModeAltHold,
+             self.ModeVAltHold,
              self.ModeLoiter,
              self.SimpleMode,
              self.SuperSimpleCircle,
