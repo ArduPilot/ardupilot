@@ -11,6 +11,10 @@
  * during the manoeuvre cancels, because both sides of the error saw it.
  */
 
+// position correction limit in ground effect, still above the 0.03-0.05 m/s
+// drift seen with no position authority at all
+#define VALT_GNDEFF_CORR_SPEED_MS 0.1f
+
 bool ModeVelAltHold::init(bool ignore_checks)
 {
     if (!ModeAltHold::init(ignore_checks)) {
@@ -39,6 +43,16 @@ void ModeVelAltHold::alt_hold_run_flying(float &target_roll_rad, float &target_p
 
     // get avoidance adjusted climb rate
     target_climb_rate_ms = get_avoidance_adjusted_climbrate_ms(target_climb_rate_ms);
+
+    // rotor wash steps the baro by metres at ground contact; limiting the
+    // correction saturates that error instead of turning it into a climb.
+    // ModeAltHold::run() only refreshes the trajectory limits, so the
+    // unlimited value has to be restored here
+    if (ahrs.get_takeoff_expected() || ahrs.get_touchdown_expected()) {
+        pos_control->D_set_correction_speed_accel_m(VALT_GNDEFF_CORR_SPEED_MS, VALT_GNDEFF_CORR_SPEED_MS, get_pilot_accel_D_mss());
+    } else {
+        pos_control->D_set_correction_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
+    }
 
     // Send the commanded climb rate to the position controller
     pos_control->D_set_pos_target_from_climb_rate_ms(target_climb_rate_ms);
