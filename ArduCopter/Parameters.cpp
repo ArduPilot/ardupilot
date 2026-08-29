@@ -1359,6 +1359,21 @@ void Copter::load_parameters(void)
         };
         AP_Param::convert_old_parameters_scaled(pilot_conversion_info, ARRAY_SIZE(pilot_conversion_info), 0.01, 0);
     }
+    
+
+
+
+    #if AC_PRECLAND_ENABLED
+    // convert PLND_YAW_ALIGN to PLND_ORIENT_YAW and scale from centidegrees to degrees
+    {
+        static const AP_Param::ConversionInfo plnd_conversion_info[] = {
+            { Parameters::k_param_precland, 2, AP_PARAM_FLOAT, "PLND_ORIENT_YAW" },
+        };
+        AP_Param::convert_old_parameters_scaled(plnd_conversion_info, ARRAY_SIZE(plnd_conversion_info), 0.01f, 0);
+    }
+#endif
+
+
 
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
