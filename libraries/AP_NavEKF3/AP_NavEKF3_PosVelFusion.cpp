@@ -347,10 +347,21 @@ void NavEKF3_core::ResetHeight(void)
 // Return true if the height datum reset has been performed
 bool NavEKF3_core::resetHeightDatum(void)
 {
-    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround) {
-        // only allow resets when on the ground.
-        // If using using rangefinder for height then never perform a
-        // reset of the height datum
+    if (!onGround) {
+        // only allow resets when on the ground
+        return false;
+    }
+    if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO &&
+        activeHgtSource != AP_NavEKF_Source::SourceZ::GPS) {
+        // with any height source other than baro or GPS the estimate is
+        // referenced to that sensor rather than the baro, so zeroing it
+        // would corrupt the height and there is no baro drift to clear
+        return false;
+    }
+    if (frontend->_originHgtMode & (1<<2)) {
+        // the height observations are referenced to the fixed EKF_origin in
+        // this mode, so the local zero cannot be relabelled without moving
+        // the origin; bits 0/1, when also set, correct drift continuously
         return false;
     }
     // record the old height estimate
@@ -381,11 +392,8 @@ bool NavEKF3_core::resetHeightDatum(void)
     // transient.
     baroHgtOffset = 0.0f;
 
-    // shift the reported origin height (ekfGpsRefHgt) rather than
-    // EKF_origin.alt: the origin anchors the NED frame and a user-set one
-    // (AHRS_ORIGIN_ALT, MAV_CMD_DO_SET_GLOBAL_ORIGIN) must not move.
-    // getLLH() and getPosD() are referenced to ekfGpsRefHgt, so the
-    // reported height stays consistent across the reset
+    // shift the reference height ekfGpsRefHgt rather than EKF_origin.alt:
+    // the origin anchors the NED frame and a user-set one must not move
     if (validOrigin) {
         // gpsGoodToAlign is not updated without a 3D fix, so also check the
         // current fix or a GPS that died after alignment would be trusted
