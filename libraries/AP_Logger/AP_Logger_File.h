@@ -28,12 +28,24 @@ class AP_Logger_File : public AP_Logger_Backend
 public:
     // constructor
     AP_Logger_File(AP_Logger &front,
-                   LoggerMessageWriter_DFLogStart *);
+                   LoggerMessageWriter_DFLogStart *,
+                   const char *log_directory = HAL_BOARD_LOG_DIRECTORY,
+                   bool replay_only = false);
 
     static AP_Logger_Backend  *probe(AP_Logger &front,
                                      LoggerMessageWriter_DFLogStart *ls) {
         return NEW_NOTHROW AP_Logger_File(front, ls);
     }
+
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+    static AP_Logger_Backend  *probe_replay(AP_Logger &front,
+                                            LoggerMessageWriter_DFLogStart *ls) {
+        return NEW_NOTHROW AP_Logger_File(front, ls, HAL_BOARD_REPLAY_DIRECTORY, true);
+    }
+#endif
+
+    uint16_t get_max_num_logs() const override;
+    uint16_t current_log_number() const override { return _cur_log_num; }
 
     // initialisation
     void Init() override;
@@ -85,6 +97,7 @@ private:
     
     int _read_fd = -1;
     uint16_t _read_fd_log_num;
+    uint16_t _cur_log_num;
     uint32_t _read_offset;
     uint32_t _write_offset;
     volatile uint32_t _open_error_ms;
@@ -102,6 +115,13 @@ private:
     void Prep_MinSpace();
     int64_t disk_space_avail();
     int64_t disk_space();
+
+#if AP_LOGGER_REPLAY_SEPARATE_LOG_ENABLED
+    // rotate or evict replay logs to bound their footprint; true if rotated
+    bool bound_replay_usage();
+
+    void ensure_parent_directory_exists();
+#endif
 
     void ensure_log_directory_exists();
 

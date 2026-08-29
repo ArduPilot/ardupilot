@@ -22,8 +22,10 @@
 extern const AP_HAL::HAL& hal;
 
 AP_Logger_Backend::AP_Logger_Backend(AP_Logger &front,
-                                     class LoggerMessageWriter_DFLogStart *writer) :
+                                     class LoggerMessageWriter_DFLogStart *writer,
+                                     bool replay_only) :
     _front(front),
+    _replay_only(replay_only),
     _startup_messagewriter(writer)
 {
     writer->set_logger_backend(this);
@@ -483,6 +485,12 @@ bool AP_Logger_Backend::ShouldLog(bool is_critical)
         return false;
     }
 
+    if (replay_only()) {
+        // a gap makes a replay log useless, so none of the conditions
+        // below may pause it; it runs from boot until shutdown
+        return true;
+    }
+
     if (_front.in_log_download() &&
         _front._last_mavlink_log_transfer_message_handled_ms != 0) {
         if (AP_HAL::millis() - _front._last_mavlink_log_transfer_message_handled_ms < 10000) {
@@ -639,7 +647,7 @@ uint16_t AP_Logger_Backend::log_num_from_list_entry(const uint16_t list_entry)
     }
 
     uint32_t log_num = oldest_log + list_entry - 1;
-    const auto max_logs_num = _front.get_max_num_logs();
+    const auto max_logs_num = get_max_num_logs();
     if (log_num > (uint32_t)max_logs_num) {
         log_num -= max_logs_num;
     }
@@ -664,10 +672,18 @@ uint16_t AP_Logger_Backend::find_oldest_log()
     return _cached_oldest_log;
 }
 
+uint16_t AP_Logger_Backend::get_max_num_logs() const
+{
+    return _front.get_max_num_logs();
+}
+
 void AP_Logger_Backend::vehicle_was_disarmed()
 {
-    if (_front._params.file_disarm_rot &&
-        !_front._params.log_replay) {
+    // rotating mid-session breaks a replay log, so only a log actually
+    // carrying replay data is held open across a disarm
+    const bool carries_replay_data =
+        _front.log_replay() && (replay_only() || !_front.replay_separate_file());
+    if (_front._params.file_disarm_rot && !carries_replay_data) {
         // rotate our log.  Closing the current one and letting the
         // logging restart naturally based on log_disarmed should do
         // the trick:
@@ -678,6 +694,10 @@ void AP_Logger_Backend::vehicle_was_disarmed()
 // we are enabled if we should be logging at the moment
 bool AP_Logger_Backend::logging_enabled() const
 {
+    if (replay_only()) {
+        // replay data is gathered from boot, independent of LOG_DISARMED
+        return true;
+    }
     if (hal.util->get_soft_armed() ||
         _front.log_while_disarmed()) {
         return true;
