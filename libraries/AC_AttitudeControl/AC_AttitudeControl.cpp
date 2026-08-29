@@ -242,6 +242,43 @@ const Vector3f AC_AttitudeControl::get_latest_gyro() const
 #endif
 }
 
+// Set the body-frame angular velocity target (in rad/s) and publish a copy of it for the
+// rate thread. The copy is bracketed by the sequence, odd while it is being written, so the
+// reader can tell a partially written target from a whole one without either side taking a
+// lock. Every access is volatile, so the compiler keeps the stores in this order.
+void AC_AttitudeControl::publish_ang_vel_body_rads(const Vector3f& ang_vel_body_rads)
+{
+    _ang_vel_body_rads = ang_vel_body_rads;
+    const uint32_t seq = _ang_vel_body_seq;
+    _ang_vel_body_seq = seq + 1;
+    _ang_vel_body_pub_rads[0] = ang_vel_body_rads.x;
+    _ang_vel_body_pub_rads[1] = ang_vel_body_rads.y;
+    _ang_vel_body_pub_rads[2] = ang_vel_body_rads.z;
+    _ang_vel_body_seq = seq + 2;
+}
+
+// Copy the body-frame angular velocity target (in rad/s), without the sysid contribution,
+// if it has been published since seq, and update seq to match. Returns false if nothing
+// new has been published, or if the main loop was part way through publishing it. The
+// rate thread can preempt the main loop on a single core, so it keeps its previous target
+// for that tick rather than waiting. A multi-core Linux board with weakly ordered memory
+// could still let a mixed target through, and the rate thread would then ramp towards it
+// for one main loop period; that is accepted to keep both sides free of locks and barriers.
+bool AC_AttitudeControl::get_ang_vel_body_rads(Vector3f& ang_vel_body_rads, uint32_t& seq) const
+{
+    const uint32_t seq_start = _ang_vel_body_seq;
+    if ((seq_start & 1U) != 0 || seq_start == seq) {
+        return false;
+    }
+    const Vector3f target_rads { _ang_vel_body_pub_rads[0], _ang_vel_body_pub_rads[1], _ang_vel_body_pub_rads[2] };
+    if (_ang_vel_body_seq != seq_start) {
+        return false;
+    }
+    ang_vel_body_rads = target_rads;
+    seq = seq_start;
+    return true;
+}
+
 // Ensure attitude controller have zero errors to relax rate controller output
 void AC_AttitudeControl::relax_attitude_controllers()
 {
@@ -267,7 +304,7 @@ void AC_AttitudeControl::relax_attitude_controllers()
     // Reset the I terms
     reset_rate_controller_I_terms();
     // finally update the attitude target
-    _ang_vel_body_rads = gyro;
+    publish_ang_vel_body_rads(gyro);
 }
 
 void AC_AttitudeControl::reset_rate_controller_I_terms()
@@ -672,7 +709,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_rads(float roll_rate_bf_
     body_to_euler_derivative(_attitude_target, _ang_vel_target_rads, _euler_rate_target_rads);
 
     // Update body-frame angular velocity target used by the rate controller.
-    _ang_vel_body_rads = _ang_vel_target_rads;
+    publish_ang_vel_body_rads(_ang_vel_target_rads);
 }
 
 // Sets the desired roll, pitch, and yaw angular rates in body-frame (in centidegrees/s).
@@ -738,7 +775,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_rads(float roll_rate_bf_
     ang_vel_body_rads += _ang_vel_target_rads;
 
     // Update body-frame angular velocity target used by the rate controller
-    _ang_vel_body_rads = ang_vel_body_rads;
+    publish_ang_vel_body_rads(ang_vel_body_rads);
 }
 
 /*
@@ -778,7 +815,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_rads(float roll
     body_to_euler_derivative(_attitude_target, _ang_vel_target_rads, _euler_rate_target_rads);
 
     // Update body-frame angular velocity target used by the rate controller.
-    _ang_vel_body_rads = _ang_vel_target_rads;
+    publish_ang_vel_body_rads(_ang_vel_target_rads);
 }
 
 // Applies a one-time angular offset to the attitude target using body-frame roll, pitch,
@@ -822,7 +859,7 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_
     _euler_rate_target_rads.zero();
 
     // Apply the requested body-frame angular rate step directly to the rate controller input.
-    _ang_vel_body_rads = Vector3f{roll_rate_step_bf_rads, pitch_rate_step_bf_rads, yaw_rate_step_bf_rads};
+    publish_ang_vel_body_rads(Vector3f{roll_rate_step_bf_rads, pitch_rate_step_bf_rads, yaw_rate_step_bf_rads});
 }
 
 // Sets the desired thrust vector and a yaw/heading rate input (radians/s).
@@ -1025,7 +1062,7 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     // Record error to handle EKF resets
     _attitude_ang_error = attitude_body.inverse() * _attitude_target;
     // finally update the attitude target
-    _ang_vel_body_rads = ang_vel_body_rads;
+    publish_ang_vel_body_rads(ang_vel_body_rads);
 }
 
 // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
