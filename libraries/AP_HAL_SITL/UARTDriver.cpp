@@ -620,18 +620,14 @@ void UARTDriver::_udp_start_multicast(const char *address, uint16_t port)
     }
 
     // pin to one interface when SITL_MULTICAST_IF_ADDR is set (see
-    // SITL_Multicast.h) -- otherwise the routing table chooses, which for
-    // a multicast address with no specific route means whichever
-    // interface holds the default route, so a test's result ends up
-    // depending on the state of the host's network rather than the code
-    // under test. CAN_Multicast/SITL_Periph_State/the sim-state broadcast
-    // already do this; this UDP MAVLink mcast link (--serial5=mcast: etc)
-    // did not.
+    // SITL_Multicast.h). CAN_Multicast/SITL_Periph_State/the sim-state
+    // broadcast already do this; this UDP MAVLink mcast link
+    // (--serial5=mcast: etc) did not.
     const uint32_t mcast_if_addr = sitl_multicast_interface_address();
 
     struct ip_mreq mreq {};
     mreq.imr_multiaddr.s_addr = inet_addr(address);
-    mreq.imr_interface.s_addr = mcast_if_addr != 0 ? mcast_if_addr : htonl(INADDR_ANY);
+    mreq.imr_interface.s_addr = mcast_if_addr;
 
     ret = setsockopt(_mc_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
     if (ret == -1) {
