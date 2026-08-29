@@ -135,6 +135,7 @@ class ExtractFeatures(BuildScriptBase):
             ('MODE_AUTOLAND_ENABLED', 'ModeAutoLand::update'),
             ('MODE_{type}_ENABLED', r'Mode(?P<type>.+)::init',),
             ('MODE_GUIDED_NOGPS_ENABLED', r'ModeGuidedNoGPS::init',),
+            ('MODE_VALT_ENABLED', r'ModeVelAltHold::alt_hold_run_flying',),
 
             ('AP_CAMERA_ENABLED', 'AP_Camera::var_info',),
             ('AP_CAMERA_{type}_ENABLED', 'AP_Camera_(?P<type>.*)::trigger_pic',),
