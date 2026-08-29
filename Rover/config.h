@@ -45,14 +45,6 @@
 // Developer Items
 //
 
-// if RESET_SWITCH_CH is not zero, then this is the PWM value on
-// that channel where we reset the control mode to the current switch
-// position (to for example return to switched mode after failsafe or
-// fence breach)
-#ifndef RESET_SWITCH_CHAN_PWM
-  #define RESET_SWITCH_CHAN_PWM    1750
-#endif
-
 #ifndef AP_ROVER_ADVANCED_FAILSAFE_ENABLED
   #define AP_ROVER_ADVANCED_FAILSAFE_ENABLED 0
 #endif
