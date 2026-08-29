@@ -15051,7 +15051,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "GNDEFF_TMO should extend ground effect (tmo=%fs <= no_tmo=%fs)"
                 % (total_tmo, total_small))
 
+        # Subtest D: rangefinder HAGL path. On the ground the EKF HAGL reads
+        # the rangefinder ground clearance rather than zero, so with GNDCLR
+        # above GNDEFF_ALT the windows must be measured from the on-ground
+        # reading or takeoff releases before liftoff and touchdown never fires.
+        self.start_subtest("Rangefinder HAGL is measured from the on-ground reading")
+        self.set_parameters({
+            "GNDEFF_ALT": 0.5,
+            "GNDEFF_TMO": 0,
+            "RNGFND1_TYPE": 100,  # SITL
+            "RNGFND1_GNDCLR": 0.6,
+        })
+        self.reboot_sitl()
+        self.takeoff(5, mode='ALT_HOLD')
+        self.delay_sim_time(5, reason='let the takeoff window expire before landing')
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations_rf = self.get_takeoffexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_rf = sum(durations_rf)
+        touchdown_rf = sum(self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True))
+        self.progress("takeoff_expected total with rangefinder GNDCLR=0.6: %fs (touchdown %fs)" %
+                      (total_rf, touchdown_rf))
+        if total_rf < 0.5 * total_small:
+            raise NotAchievedException(
+                "Rangefinder should not release takeoff early (rf=%fs < half of baro=%fs)"
+                % (total_rf, total_small))
+        if touchdown_rf <= 0:
+            raise NotAchievedException("Rangefinder touchdown_expected never fired")
+
         # we are not at the home location - reboot so the next test starts there
+        self.set_parameter("RNGFND1_TYPE", 0)
         self.reboot_sitl()
 
     def TouchdownGroundEffectAlt(self):
