@@ -412,6 +412,12 @@ void AP_Logger_File::EraseAll()
     stop_logging();
 
     erase.log_num = 1;
+    // Erase walks every log number the limit allows, one unlink per
+    // IO-thread iteration, and erase_next() read the bound on each of
+    // those iterations - hundreds or thousands of reads for a single
+    // erase, with a limit changed part way through moving the bound
+    // under the walk.  Take it once, here.
+    erase.last_log_num = _front.get_max_num_logs();
 }
 
 bool AP_Logger_File::WritesOK() const
@@ -1099,7 +1105,7 @@ void AP_Logger_File::erase_next(void)
     free(fname);
 
     erase.log_num++;
-    if (erase.log_num <= _front.get_max_num_logs()) {
+    if (erase.log_num <= erase.last_log_num) {
         return;
     }
     
