@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 import logging
 import math
+import operator
 import os
 import pathlib
 import re
@@ -572,17 +573,118 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.do_RTL()
 
+    def valt_pos_desired_error(self, dfreader, tstart, tend):
+        """mean |DPD - PD| from PSCD over a sim-time window, in metres"""
+        total = 0.0
+        count = 0
+        while True:
+            m = dfreader.recv_match(type='PSCD')
+            if m is None:
+                break
+            t = m.TimeUS * 1.0e-6
+            if t < tstart:
+                continue
+            if t > tend:
+                break
+            total += abs(m.DPD - m.PD)
+            count += 1
+        if count == 0:
+            raise NotAchievedException("No PSCD in window %f-%f" % (tstart, tend))
+        return total / count
+
     def ModeVAltHold(self):
-        '''Test VALT velocity alt-hold mode (mode 29)'''
-        # use mode number directly since pymavlink does not know VALT
+        '''Test VALT velocity alt-hold mode'''
+        # the mode number is used directly: COPTER_MODE_VALT is not in the
+        # pinned pymavlink, which still maps 29 to RATE_ACRO
         VALT = 29
 
+        self.start_subtest("VALT stays in ground idle at mid-stick")
+        # Regression guard for spool_up_at_zero_climb_on_ground(): VALT keeps
+        # the motors in ground idle at mid-stick (its resting hold state), so a
+        # neutral stick must NOT take off, while a deliberate climb command must
+        # spool up from ground idle and lift off cleanly.
+        self.change_mode(VALT)
+        self.set_rc(3, 1000)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        # mid-stick: AltHold spools the motors up ready for take-off, VALT
+        # stays in ground idle, so its motor output must sit below AltHold's
+        self.set_rc(3, 1500)
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(3, "let the motors spool in AltHold")
+        spooled = self.assert_receive_message('SERVO_OUTPUT_RAW', timeout=10).servo1_raw
+        self.progress("AltHold spooled output: %u" % spooled)
+        self.change_mode(VALT)
+        self.wait_servo_channel_value(1, spooled - 20, timeout=10, comparator=operator.lt)
+        self.wait_altitude(-1, 1, relative=True, minimum_duration=5, timeout=20)
+        if not self.armed():
+            raise NotAchievedException("VALT disarmed on the ground at mid-stick")
+
+        # a deliberate climb command must spool up from ground idle and lift off
+        self.progress("Commanding climb from the ground")
+        self.set_rc(3, 1800)
+        self.wait_altitude(5, 15, relative=True, timeout=30)
+        self.set_rc(3, 1500)
+        self.do_RTL()
+
+        self.start_subtest("GCS take-off in VALT from mid-stick")
+        # mid-stick holds ground idle in VALT, so the take-off command itself
+        # has to spool the motors up
+        self.change_mode(VALT)
+        self.set_rc(3, 1000)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1500)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p3=1,  # NAV_TAKEOFF_FLAGS_HORIZONTAL_POSITION_NOT_REQUIRED
+            p7=10,
+        )
+        self.wait_altitude(9, 11, relative=True, timeout=30)
+        self.do_RTL()
+
+        self.start_subtest("LOITER to VALT and straight back keeps the surface tracking height")
+        # VALT clears the surface tracking offset on entry; a return inside the
+        # tracker's 1 s timeout must re-initialise it rather than add it again
+        self.context_push()  # the rangefinder is for this subtest only
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.takeoff(10, mode="LOITER")
+        self.set_parameter("SIM_SONAR_OFFSET", -1)
+        self.wait_climbrate(-0.05, 0.05, minimum_duration=5, timeout=60)
+        alt = self.get_altitude(relative=True)
+        tstart = self.get_sim_time()
+        self.run_cmd_do_set_mode(VALT)
+        self.run_cmd_do_set_mode('LOITER')
+        self.wait_altitude(alt - 0.3, alt + 0.3, relative=True, minimum_duration=10, timeout=20)
+        # the return only tests the re-initialisation if it beat the timeout
+        dfreader = self.dfreader_for_current_onboard_log()
+        valt_start_us = None
+        while True:
+            m = dfreader.recv_match(type='MODE')
+            if m is None:
+                raise NotAchievedException("No change out of VALT in the log")
+            if m.TimeUS * 1.0e-6 < tstart:
+                continue
+            if m.Mode == VALT:
+                valt_start_us = m.TimeUS
+            elif valt_start_us is not None:
+                break
+        valt_s = (m.TimeUS - valt_start_us) * 1.0e-6
+        self.progress("VALT lasted %.3f s" % valt_s)
+        if valt_s >= 1.0:  # SURFACE_TRACKING_TIMEOUT_MS
+            raise NotAchievedException("VALT lasted %.3f s, past the surface tracking timeout" % valt_s)
+        self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
+        self.start_subtest("VALT holds altitude and tracks stick rate")
         self.takeoff(10, mode="ALT_HOLD")
         self.change_mode(VALT)
 
         # verify altitude is maintained with neutral sticks
-        self.progress("Checking altitude hold with velocity control")
-        self.wait_altitude(9, 11, relative=True, minimum_duration=5, timeout=6)
+        self.wait_altitude(9, 11, relative=True, minimum_duration=5, timeout=20)
 
         # verify altitude is maintained while flying laterally
         self.progress("Checking altitude hold during lateral flight")
@@ -590,7 +692,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             1: 1000,
             2: 1000,
         })
-        self.wait_altitude(9, 11, relative=True, minimum_duration=5, timeout=6)
+        self.wait_altitude(9, 11, relative=True, minimum_duration=5, timeout=20)
         self.set_rc_from_map({
             1: 1500,
             2: 1500,
@@ -600,44 +702,104 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Commanding climb with throttle 1800")
         self.set_rc(3, 1800)
         self.wait_altitude(12, 25, relative=True, timeout=10)
-        alt_after_climb = self.get_altitude(relative=True)
-        self.progress("Altitude after climb: %.1f" % alt_after_climb)
 
-        # release stick to neutral and let it settle
-        self.progress("Releasing stick, checking altitude settles")
+        # release stick to neutral and verify the altitude settles and holds
         self.set_rc(3, 1500)
-        self.delay_sim_time(3, "let the altitude settle")
+        self.wait_climbrate(-0.2, 0.2, minimum_duration=1, timeout=20)
         settled_alt = self.get_altitude(relative=True)
         self.progress("Settled altitude: %.1f" % settled_alt)
-
-        # verify altitude is maintained at the new altitude
         self.wait_altitude(
             settled_alt - 1,
             settled_alt + 1,
             relative=True,
-            minimum_duration=3,
-            timeout=4,
+            minimum_duration=5,
+            timeout=20,
         )
 
-        # repeat hold and descent with the position-authority blend enabled
-        # (VALT_POS_EXPO > 0) to confirm it does not regress normal behaviour:
-        # mid-stick still holds, and a full-down command still descends.
-        self.progress("Enabling VALT_POS_EXPO blend")
-        self.set_parameter("VALT_POS_EXPO", 3)
-        self.wait_altitude(
-            settled_alt - 1,
-            settled_alt + 1,
-            relative=True,
-            minimum_duration=3,
-            timeout=4,
-        )
-        self.progress("Commanding descent with throttle 1200")
-        self.set_rc(3, 1200)
-        self.wait_altitude(3, settled_alt - 3, relative=True, timeout=20)
+        # VALT_POS_EXPO leaves pos_desired marching at full deflection instead
+        # of snapping it to the estimate, so a held full-down command builds a
+        # position error the velocity loop would otherwise never see.  Measure
+        # |DPD - PD| over a held full-down descent with the blend off and on;
+        # with the blend off the snap makes it identically zero.
+        self.start_subtest("VALT_POS_EXPO leaves pos_desired marching at the stick edge")
+        expo_windows = []
+        for expo in 0, 3:
+            self.set_parameter("VALT_POS_EXPO", expo)
+            self.set_rc(3, 1800)
+            self.wait_altitude(30, 60, relative=True, timeout=60)
+            self.set_rc(3, 1500)
+            self.wait_climbrate(-0.2, 0.2, minimum_duration=1, timeout=20)
+            self.progress("Holding full-down with VALT_POS_EXPO=%u" % expo)
+            self.set_rc(3, 1000)
+            tstart = self.get_sim_time()
+            self.delay_sim_time(5, "hold full-down stick")
+            expo_windows.append((expo, tstart, self.get_sim_time()))
+            self.set_rc(3, 1500)
+            self.wait_climbrate(-0.2, 0.2, minimum_duration=1, timeout=20)
+
+        # Fly the ground-effect path with a perturbed baro.  This is an
+        # exercise, not coverage: the correction limit only bites once the
+        # height estimate itself has stepped by more than the 0.1 m leash,
+        # and SITL's EKF gates a baro glitch long before that (measured
+        # 0.0036 m of position error with the limit, 0.0055 m without).
+        # Reproducing it needs SIM_BARO_GEFF_M from the pr-ground-effect
+        # branch; the flown evidence is the 3.80 m estimate excursion in
+        # FPV-4C log81.
+        self.start_subtest("VALT flies the ground-effect path with a perturbed baro")
+        # the blend must be on: with the hard cutoff the snap zeroes the
+        # position error itself, so there is nothing for the limit to bound
+        self.set_parameters({
+            "VALT_POS_EXPO": 3,
+            "GNDEFF_ALT": 30,    # keep the window open at test height
+        })
         self.set_rc(3, 1500)
-        self.wait_altitude(2, settled_alt - 2, relative=True, minimum_duration=5, timeout=6)
+        self.wait_altitude(8, 20, relative=True, timeout=60)
+        self.set_rc(3, 1500)
+        self.wait_climbrate(-0.2, 0.2, minimum_duration=1, timeout=20)
+
+        # a gentle demanded descent is what latches touchdown_expected
+        self.set_rc(3, 1350)
+        self.delay_sim_time(3, "latch the ground effect window")
+        self.set_parameter("SIM_BARO_GLITCH", -8)
+        glitch_start = self.get_sim_time()
+        self.delay_sim_time(6, "baro glitch to take effect")
+        glitch_end = self.get_sim_time()
+        self.set_parameter("SIM_BARO_GLITCH", 0)
+        self.set_rc(3, 1500)
 
         self.do_RTL()
+        self.wait_disarmed()
+
+        # the ground-effect window must have been open for the whole glitch,
+        # or the subtest above proved nothing
+        dfreader = self.dfreader_for_current_onboard_log()
+        samples = 0
+        while True:
+            m = dfreader.recv_match(type='XKF4', condition='XKF4.C==0')
+            if m is None or m.TimeUS * 1.0e-6 > glitch_end:
+                break
+            if m.TimeUS * 1.0e-6 < glitch_start:
+                continue
+            if not m.SS & (1 << 12):  # touchdown expected
+                raise NotAchievedException(
+                    "ground effect window was closed at %.1f s, inside the baro glitch" % (m.TimeUS * 1.0e-6))
+            samples += 1
+        if samples == 0:
+            raise NotAchievedException("No XKF4 inside the baro glitch")
+        self.progress("touchdown_expected set in all %u XKF4 samples across the baro glitch" % samples)
+
+        errors = {}
+        for (expo, tstart, tend) in expo_windows:
+            dfreader = self.dfreader_for_current_onboard_log()
+            errors[expo] = self.valt_pos_desired_error(dfreader, tstart, tend)
+            self.progress("VALT_POS_EXPO=%u mean |DPD-PD| = %.4f m" % (expo, errors[expo]))
+        # measured in SITL: 0.0000 m with the snap, 0.0398 m with the blend
+        if errors[0] > 0.005:
+            raise NotAchievedException(
+                "VALT_POS_EXPO=0 should snap pos_desired to the estimate (got %.4f m)" % errors[0])
+        if errors[3] < 0.02:
+            raise NotAchievedException(
+                "VALT_POS_EXPO=3 should leave pos_desired marching at full stick (got %.4f m)" % errors[3])
 
     def fly_to_origin(self, final_alt=10):
         origin = self.poll_message("GPS_GLOBAL_ORIGIN")
