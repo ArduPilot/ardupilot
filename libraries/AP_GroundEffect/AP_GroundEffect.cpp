@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: ALT
     // @DisplayName: Ground effect altitude threshold
-    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the altitude gating: the takeoff window is released once GNDEFF_TMO has elapsed and the vehicle has climbed at all, and any gentle descent counts as a landing (the legacy behaviour). Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present) or using the height-change-since-takeoff assuming flat ground with a 20m horizontal gate from the takeoff location if the horizontal position is available.
+    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the altitude gating: the takeoff window is released once GNDEFF_TMO has elapsed and the vehicle has climbed at all, and any gentle descent counts as a landing (the legacy behaviour). Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present) or using the height-change-since-takeoff assuming flat ground and no baro drift. More than 20m from the takeoff location (when a horizontal position is available) the landing altitude gate is dropped and any gentle descent counts as a landing.
     // @Range: -1 10
     // @Units: m
     // @User: Advanced
@@ -141,10 +141,10 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
     // Touchdown altitude gate.
     //   - GNDEFF_ALT <= 0: legacy behaviour, any gentle descent counts
     //   - HAGL: trust height_m directly
-    //   - relative-to-takeoff fallback with horizontal position: only
-    //     trust the gate while still within AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M
-    //     of the launch point; further out we cannot assume the ground
-    //     beneath us is at the takeoff elevation
+    //   - relative-to-takeoff fallback with horizontal position: gate only
+    //     while within AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M of the launch
+    //     point; further out we cannot assume the ground beneath us is at
+    //     the takeoff elevation, so any gentle descent counts
     //   - baro-only fallback (no horizontal position): assume flat ground
     bool near_ground;
     if (!is_positive(_alt_m)) {
@@ -153,8 +153,8 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
         near_ground = height_m < _alt_m;
     } else {
         const float drift_ne_m = (pos_ne_m - _state.takeoff_pos_ne_m).length();
-        near_ground = (drift_ne_m < AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M)
-                      && (height_m < _alt_m);
+        near_ground = (drift_ne_m >= AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M)
+                      || (height_m < _alt_m);
     }
 
     _state.touchdown_expected = slow_horizontal && slow_descent && near_ground;
