@@ -124,7 +124,7 @@ public:
         k_param_speed_cruise,
         k_param_speed_turn_gain,    // unused
         k_param_speed_turn_dist,    // unused
-        k_param_ch7_option,         // unused
+        k_param_ch7_option,         // unused as a parameter; key retained for the RC7_OPTION conversion
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
         k_param_turn_circle,  // unused
@@ -243,7 +243,6 @@ public:
     // navigation parameters
     //
     AP_Float    speed_cruise;
-    AP_Int8     ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
     AP_Int16    gcs_pid_mask;
