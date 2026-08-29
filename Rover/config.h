@@ -2,10 +2,6 @@
 
 #include "defines.h"
 
-#ifndef MAV_SYSTEM_ID
-  #define MAV_SYSTEM_ID    1
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // MODE
 // MODE_CHANNEL
