@@ -43,8 +43,12 @@ private:
 #endif
     SITL::SIM *sitl;
 
-    const uint16_t gyro_sample_hz;
+    uint16_t gyro_sample_hz;
     const uint16_t accel_sample_hz;
+    // simulated raw gyro samples per backend sample
+    uint8_t gyro_nsamples;
+    // timestamp of the gyro sample being generated
+    uint64_t gyro_sample_us;
 
     uint64_t next_gyro_sample;
     uint64_t next_accel_sample;
