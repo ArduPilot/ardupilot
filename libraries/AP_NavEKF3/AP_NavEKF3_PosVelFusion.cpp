@@ -381,15 +381,30 @@ bool NavEKF3_core::resetHeightDatum(void)
     }
     outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
     outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
+    vertCompFiltState.pos = outputDataNew.position.z;
     vertCompFiltState.vel = outputDataNew.velocity.z;
 
+    // detectFlight() only refreshes these while on the ground, so arming in
+    // the same cycle as the reset would leave them at the pre-reset height
+    // and the height jump would be read as a takeoff
+    posDownAtTakeoff = stateStruct.position.z;
+    if (magStateInitComplete) {
+        posDownAtLastMagReset = stateStruct.position.z;
+    }
+
+    // the same applies to the filtered baro height that ground effect floors
+    // the height observation at: it only refilters while takeoff is not
+    // expected, and arming makes that true and holds it true on the ground,
+    // so it would pin the observation at the drift that was just cleared
+    meaHgtAtTakeOff = 0.0f;
+
     // baroHgtOffset is a slow first-order filter (calcFiltBaroOffset)
-    // tracking baroDataDelayed.hgt + position.z.  Post-reset baro
-    // reads 0 and position.z is 0 so the steady-state offset is 0;
-    // without this, hgtMea = baroDataDelayed.hgt - baroHgtOffset
-    // would feed a non-zero observation into the EKF for the ~1 s
-    // the filter takes to relax, producing a post-reset altitude
-    // transient.
+    // tracking baroDataDelayed.hgt + position.z.  Position.z is now zero and
+    // the recalibrated baro reads BARO_ALT_OFFSET, so zero is the steady
+    // state only while that is unset; with it set the filter settles that far
+    // above the datum.  The offset is not readable in this frame - the DAL
+    // serves the altitude cached at the last one - so getting it right means
+    // deferring to the first post-reset baro sample, which is left undone
     baroHgtOffset = 0.0f;
 
     // shift the reference height ekfGpsRefHgt rather than EKF_origin.alt:
