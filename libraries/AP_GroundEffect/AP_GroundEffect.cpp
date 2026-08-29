@@ -79,27 +79,31 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
         _state.takeoff_expected = true;
     }
 
-    // Anchor the takeoff timer, altitude and XY position while still on
-    // the ground without throttle up. Only the relative-to-takeoff
-    // fallback consumes these; HAGL path ignores them.
+    // Anchor the takeoff timer, altitude, XY position and HAGL while still
+    // on the ground without throttle up.
     float pos_d_m = 0;
     UNUSED_RESULT(ahrs.get_relative_position_D_origin_float(pos_d_m));
     Vector2f pos_ne_m;
     const bool have_pos_ne = ahrs.get_relative_position_NE_origin_float(pos_ne_m);
+    float hagl_m = 0;
+    const bool height_is_agl = ahrs.get_hagl(hagl_m);
 
     if (!throttle_up && land_complete) {
         _state.takeoff_time_ms = tnow_ms;
         _state.takeoff_alt_m = -pos_d_m;
         _state.takeoff_pos_ne_m = pos_ne_m;
         _state.takeoff_pos_ne_valid = have_pos_ne;
+        // HAGL is not zero on the ground, it reads the rangefinder ground clearance
+        _state.takeoff_hagl_m = height_is_agl ? hagl_m : 0.0f;
     }
 
     // Pick the best available height
-    // EKF's HAGL uses rangefinder or optflow AGL KF
+    // EKF's HAGL uses rangefinder or optflow AGL KF, measured from the on-ground reading
     // fall back to height-since-takeoff and assume flat ground
-    float height_m = 0;
-    bool height_is_agl = ahrs.get_hagl(height_m);
-    if (!height_is_agl) {
+    float height_m;
+    if (height_is_agl) {
+        height_m = hagl_m - _state.takeoff_hagl_m;
+    } else {
         height_m = -pos_d_m - _state.takeoff_alt_m;
     }
 
