@@ -1391,8 +1391,8 @@ uint16_t AP_GPS::gps_yaw_cdeg(uint8_t instance) const
 #if AP_GPS_GPS_RAW_INT_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 {
-    // Only send if enabled and healthy/connected
-    if (get_type(0) == GPS_TYPE_NONE || !is_healthy(0) || status(0) == AP_GPS_FixType::NO_GPS) {
+    // Only send if enabled and data has been received at least once during this boot
+    if (get_type(0) == GPS_TYPE_NONE || last_message_time_ms(0) == 0) {
         return;
     }
 
@@ -1432,8 +1432,8 @@ void AP_GPS::send_mavlink_gps_raw(mavlink_channel_t chan)
 #if AP_GPS_GPS2_RAW_SENDING_ENABLED
 void AP_GPS::send_mavlink_gps2_raw(mavlink_channel_t chan)
 {
-    // only send the message if 2nd GPS is configured and healthy/connected
-    if (params[1].type == GPS_TYPE_NONE || !is_healthy(1) || status(1) == AP_GPS_FixType::NO_GPS) {
+    // only send the message if 2nd GPS is configured and data has been received at least once during this boot
+    if (params[1].type == GPS_TYPE_NONE || last_message_time_ms(1) == 0) {
         return;
     }
 
