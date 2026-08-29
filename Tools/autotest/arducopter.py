@@ -15131,6 +15131,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Larger threshold should have longer touchdown (large=%fs <= small=%fs)"
                 % (total_large, total_small))
 
+        # Subtest C: more than 20m from the takeoff point the baro fallback
+        # cannot assume flat ground, so the altitude gate is dropped and the
+        # whole slow descent counts, as it did before the gate existed.
+        self.start_subtest("Far from takeoff the touchdown gate is dropped")
+        self.set_parameter("GNDEFF_ALT", 1.0)
+        self.takeoff(3, mode='GUIDED', alt_minimum_duration=2)
+        self.fly_guided_move_local(30, 0, 3)
+        self.change_mode('LAND')
+        self.wait_disarmed()
+        durations_far = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_far = sum(durations_far)
+        self.progress("touchdown_expected total with GNDEFF_ALT=1.0 30m from takeoff: %fs" % total_far)
+        if total_far <= total_small:
+            raise NotAchievedException(
+                "Dropping the gate far from takeoff should lengthen touchdown (far=%fs <= near=%fs)"
+                % (total_far, total_small))
+
+        # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
+
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
         self.takeoff(20, mode='GUIDED')
