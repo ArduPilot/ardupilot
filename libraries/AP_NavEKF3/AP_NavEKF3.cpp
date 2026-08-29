@@ -1447,7 +1447,13 @@ bool NavEKF3::getOriginLLH(Location &loc) const
         loc = common_EKF_origin;
         return true;
     }
-    return core[primary].getOriginLLH(loc);
+    if (!core[primary].getOriginLLH(loc)) {
+        return false;
+    }
+    // report the public origin height that getPosD() is referenced to,
+    // not the core's corrected reference height
+    loc.alt = common_EKF_origin.alt;
+    return true;
 }
 
 // set the latitude and longitude and height used to set the NED origin
