@@ -381,7 +381,16 @@ bool NavEKF3_core::resetHeightDatum(void)
     }
     outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
     outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
+    vertCompFiltState.pos = outputDataNew.position.z;
     vertCompFiltState.vel = outputDataNew.velocity.z;
+
+    // detectFlight() only refreshes these while on the ground, so arming in
+    // the same cycle as the reset would leave them at the pre-reset height
+    // and the height jump would be read as a takeoff
+    posDownAtTakeoff = stateStruct.position.z;
+    if (magStateInitComplete) {
+        posDownAtLastMagReset = stateStruct.position.z;
+    }
 
     // baroHgtOffset is a slow first-order filter (calcFiltBaroOffset)
     // tracking baroDataDelayed.hgt + position.z.  Post-reset baro
