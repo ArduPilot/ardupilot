@@ -1049,13 +1049,20 @@ Mode::AltHoldModeState Mode::get_alt_hold_state_D_ms(float target_climb_rate_ms)
         }
 
     } else if (takeoff.running() || takeoff.triggered_ms(target_climb_rate_ms)) {
+        // a GCS take-off may start from the ground idle the branch below holds at zero climb
+        if (!spool_up_at_zero_climb_on_ground() && !is_negative(target_climb_rate_ms)) {
+            motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        }
         // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
         // the aircraft should progress through the take off procedure
         return AltHoldModeState::Takeoff;
 
     } else if (!copter.ap.auto_armed || copter.ap.land_complete) {
         // the aircraft is armed and landed
-        if (target_climb_rate_ms < 0.0f && !copter.ap.using_interlock) {
+        const bool request_ground_idle = !copter.ap.using_interlock &&
+            (target_climb_rate_ms < 0.0f ||
+             (is_zero(target_climb_rate_ms) && !spool_up_at_zero_climb_on_ground()));
+        if (request_ground_idle) {
             // the aircraft should move to a ground idle state
             motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         } else {
