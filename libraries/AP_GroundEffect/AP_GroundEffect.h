@@ -141,6 +141,7 @@ private:
         bool     touchdown_expected;
         uint32_t takeoff_time_ms;
         float    takeoff_alt_m;
+        float    takeoff_hagl_m;    // HAGL while on the ground, 0 if HAGL was unavailable
         Vector2f takeoff_pos_ne_m;  // EKF-origin XY at takeoff, used by the relative-to-takeoff fallback
         bool     takeoff_pos_ne_valid;
     } _state;
