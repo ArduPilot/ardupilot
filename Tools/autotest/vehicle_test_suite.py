@@ -4467,6 +4467,11 @@ class TestSuite(abc.ABC):
                 wrap = False
                 offset = 0
                 max_logs_num = int(self.get_parameter("LOG_MAX_FILES"))
+                if max_logs_num == 0:
+                    # 0 means no limit, so log numbers run up to the
+                    # ceiling of the numbering scheme rather than
+                    # wrapping - matching AP_Logger::get_max_num_logs()
+                    max_logs_num = 65535
                 if test_log_num > max_logs_num:
                     wrap = True
                     offset = test_log_num - max_logs_num
