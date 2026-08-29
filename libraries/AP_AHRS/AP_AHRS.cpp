@@ -1770,7 +1770,7 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
-// Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+// Adjusts the EKF reference height so that the reported height stays consistent
 void AP_AHRS::resetHeightDatum(void)
 {
     // support locked access functions to AHRS data
@@ -1778,7 +1778,18 @@ void AP_AHRS::resetHeightDatum(void)
 
     for (auto &backend_and_estimates : backends_and_estimates) {
         backend_and_estimates.backend.resetHeightDatum();
+        // fill a temporary rather than the published estimates: this can
+        // run off the main thread, which reads them without the semaphore
+        AP_AHRS_Backend::Estimates estimates {};
+        backend_and_estimates.backend.get_results(estimates);
+        backend_and_estimates.estimates = estimates;
     }
+
+    // republish the location so that home set from get_location() straight
+    // after this call sees the post-reset height.  Only the location is
+    // refreshed, not the whole of update_state(): the rest of that is
+    // attitude and origin publication that must stay on the main thread
+    state.location_ok = _get_location(state.location);
 }
 
 #if HAL_GCS_ENABLED
