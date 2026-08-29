@@ -9468,6 +9468,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def SITLGyroRate(self):
+        '''SITL gyro rate follows INS_GYRO_RATE with fast sampling enabled'''
+        self.set_parameters({
+            "FSTRATE_ENABLE": 3,
+            "FSTRATE_DIV": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        # the rate thread reports the rate it runs at, which is the gyro
+        # rate with FSTRATE_DIV at 1
+        for gyro_rate, pattern in ((0, r".*rate set to (99[0-9]|1000)Hz"),
+                                   (1, r".*rate set to (199[0-9]|2000)Hz"),
+                                   (2, r".*rate set to (399[0-9]|4000)Hz")):
+            self.set_parameter("INS_GYRO_RATE", gyro_rate)
+            self.reboot_sitl()
+            self.wait_statustext(pattern, regex=True, timeout=60, check_context=True)
+
     def hover_and_check_matched_frequency(self, *, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         '''do a simple up-and-down test flight with current vehicle state.
         Check that the onboard filter comes up with the same peak-frequency that
@@ -19917,6 +19933,7 @@ return update, 1000
             self.PositionWhenGPSIsZero,
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.DynamicRpmNotchesRateThread,
+            self.SITLGyroRate,
             self.PIDNotches,
             self.mission_NAV_LOITER_TURNS,
             self.mission_NAV_LOITER_TURNS_off_center,
