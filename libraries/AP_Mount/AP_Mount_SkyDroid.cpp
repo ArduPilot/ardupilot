@@ -12,7 +12,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define AP_MOUNT_SKYDROID_UPDATE_INTERVAL_MS 100                 // resend angle or rate targets, and push our attitude, at this interval
+#define AP_MOUNT_SKYDROID_UPDATE_INTERVAL_MS 100                 // push our attitude to the gimbal, and step the 1hz request loop, at this interval - target angles/rates are sent every update() call instead, at the full 50hz (see update()'s comment)
 #define AP_MOUNT_SKYDROID_HEALTH_TIMEOUT_MS  1000                // timeout for health (based on attitude reports from gimbal)
 #define AP_MOUNT_SKYDROID_ATTITUDE_RATE_HZ   50                  // rate we ask the gimbal to stream its attitude to us (matches the 50hz rate AP_Mount::update() is actually called at; doc allows up to 100hz)
 
