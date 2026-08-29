@@ -258,22 +258,53 @@ void NavEKF2_core::ResetPositionD(ftype posD)
 // Return true if the height datum reset has been performed
 bool NavEKF2_core::resetHeightDatum(void)
 {
-    if (activeHgtSource == HGT_SOURCE_RNG || !onGround) {
-        // only allow resets when on the ground.
-        // If using using rangefinder for height then never perform a
-        // reset of the height datum
+    if (!onGround) {
+        // only allow resets when on the ground
+        return false;
+    }
+    if (activeHgtSource != HGT_SOURCE_BARO &&
+        activeHgtSource != HGT_SOURCE_GPS) {
+        // with any height source other than baro or GPS the estimate is
+        // referenced to that sensor rather than the baro, so zeroing it
+        // would corrupt the height and there is no baro drift to clear
         return false;
     }
     // record the old height estimate
     ftype oldHgt = -stateStruct.position.z;
     // reset the barometer so that it reads zero at the current height
     dal.baro().update_calibration();
+
+    // clear the baro data buffer
+    storedBaro.reset();
+
     // reset the height state
     stateStruct.position.z = 0.0f;
+    outputDataNew.position.z = stateStruct.position.z;
+    outputDataDelayed.position.z = stateStruct.position.z;
+    for (uint8_t i=0; i<imu_buffer_length; i++) {
+        storedOutput[i].position.z = stateStruct.position.z;
+    }
+    vertCompFiltState.pos = stateStruct.position.z;
+
+    // detectFlight() only refreshes these while on the ground, so arming in
+    // the same cycle as the reset would leave them at the pre-reset height
+    // and the height jump would be read as a takeoff
+    posDownAtTakeoff = stateStruct.position.z;
+    if (magStateInitComplete) {
+        posDownAtLastMagReset = stateStruct.position.z;
+    }
+
+    // the post-reset baro reads zero and position.z is zero, so the
+    // steady-state offset is zero; without this the ~1 s the filter takes
+    // to relax feeds a non-zero observation into the EKF
+    baroHgtOffset = 0.0f;
+
     // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
 
     if (validOrigin) {
-        if (!gpsGoodToAlign) {
+        // gpsGoodToAlign is not updated without a 3D fix, so also check the
+        // current fix or a GPS that died after alignment would be trusted
+        if (!gpsGoodToAlign || dal.gps().status(dal.gps().primary_sensor()) < AP_GPS_FixType::FIX_3D) {
             // if we don't have GPS lock then we shouldn't be doing a
             // resetHeightDatum, but if we do then the best option is
             // to maintain the old error
