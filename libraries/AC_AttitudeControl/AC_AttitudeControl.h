@@ -11,7 +11,6 @@
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <atomic>
 
 #define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
 
@@ -186,7 +185,8 @@ public:
     // at the end once all of the calculations have been performed, via publish_ang_vel_body_rads(). This
     // avoids intermediate results being used by the rate controller when running concurrently.
     // _ang_vel_body_rads is accessed so commonly that locking proves to be moderately expensive, so the
-    // rate thread instead reads it with get_ang_vel_body_rads(), which rejects a partially written target.
+    // rate thread instead reads a published copy with get_ang_vel_body_rads(), which skips a partially
+    // written target without waiting.
     // Any additional functions that are added to manipulate _ang_vel_body_rads should follow this pattern.
 
     // Calculates the body frame angular velocities to follow the target attitude
@@ -306,8 +306,6 @@ public:
 
     // Run the angular velocity controller with a specified timestep and rate target. Must be implemented by derived class.
     virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt, const Vector3f& ang_vel_body_rads) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
-    // Run the angular velocity controller with a specified timestep on the current rate target.
-    void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) { rate_controller_run_dt(gyro_rads, dt, _ang_vel_body_rads); }
 
     // euler_derivative_to_body - transform euler angle derivative to body-frame
     // Converts euler derivatives (rate, acceleration, etc.) to body-frame equivalents.
@@ -386,11 +384,7 @@ public:
     // Return the body-frame angular velocity (in rad/s) used by the angular velocity controller.
     Vector3f rate_bf_targets() const { return _ang_vel_body_rads + _sysid_ang_vel_body_rads; }
 
-    // Return the body-frame angular velocity target (in rad/s) without the sysid contribution
-    Vector3f get_ang_vel_body_rads() const { return _ang_vel_body_rads; }
-
-    // Copy the body-frame angular velocity target (in rad/s) without the sysid contribution if it has been
-    // published since seq, updating seq. Returns false if there is nothing new or it is being written.
+    // Copy the body-frame rate target (in rad/s) if it has been published since seq
     bool get_ang_vel_body_rads(Vector3f& ang_vel_body_rads, uint32_t& seq) const;
 
     // return the angular velocity of the target (setpoint) attitude rad/s
@@ -645,8 +639,9 @@ protected:
     // This represents the angular velocity in radians per second in the body frame, used in the angular
     // velocity controller and most importantly the rate controller.
     Vector3f            _ang_vel_body_rads;
-    // Sequence for _ang_vel_body_rads, odd while publish_ang_vel_body_rads() is writing it
-    std::atomic<uint32_t> _ang_vel_body_seq;
+    // Copy of _ang_vel_body_rads for the rate thread, and its sequence, odd while it is being written
+    volatile float      _ang_vel_body_pub_rads[3];
+    volatile uint32_t   _ang_vel_body_seq;
 
     // This is the angular velocity in radians per second in the body frame, added to the output angular
     // attitude controller by the System Identification Mode.

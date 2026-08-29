@@ -242,26 +242,36 @@ const Vector3f AC_AttitudeControl::get_latest_gyro() const
 #endif
 }
 
+// Set the body-frame angular velocity target (in rad/s) and publish a copy of it for the
+// rate thread. The copy is bracketed by the sequence, odd while it is being written, so the
+// reader can tell a partially written target from a whole one without either side taking a
+// lock. Every access is volatile, so the compiler keeps the stores in this order.
 void AC_AttitudeControl::publish_ang_vel_body_rads(const Vector3f& ang_vel_body_rads)
 {
-    const uint32_t seq = _ang_vel_body_seq.load(std::memory_order_relaxed);
-    _ang_vel_body_seq.store(seq + 1, std::memory_order_relaxed);
-    std::atomic_thread_fence(std::memory_order_release);
     _ang_vel_body_rads = ang_vel_body_rads;
-    _ang_vel_body_seq.store(seq + 2, std::memory_order_release);
+    const uint32_t seq = _ang_vel_body_seq;
+    _ang_vel_body_seq = seq + 1;
+    _ang_vel_body_pub_rads[0] = ang_vel_body_rads.x;
+    _ang_vel_body_pub_rads[1] = ang_vel_body_rads.y;
+    _ang_vel_body_pub_rads[2] = ang_vel_body_rads.z;
+    _ang_vel_body_seq = seq + 2;
 }
 
-// the rate thread can preempt the writer on a single core, so a target caught part way through
-// being written is skipped until the next call rather than waited for
+// Copy the body-frame angular velocity target (in rad/s), without the sysid contribution,
+// if it has been published since seq, and update seq to match. Returns false if nothing
+// new has been published, or if the main loop was part way through publishing it. The
+// rate thread can preempt the main loop on a single core, so it keeps its previous target
+// for that tick rather than waiting. A multi-core Linux board with weakly ordered memory
+// could still let a mixed target through, and the rate thread would then ramp towards it
+// for one main loop period; that is accepted to keep both sides free of locks and barriers.
 bool AC_AttitudeControl::get_ang_vel_body_rads(Vector3f& ang_vel_body_rads, uint32_t& seq) const
 {
-    const uint32_t seq_start = _ang_vel_body_seq.load(std::memory_order_acquire);
+    const uint32_t seq_start = _ang_vel_body_seq;
     if ((seq_start & 1U) != 0 || seq_start == seq) {
         return false;
     }
-    const Vector3f target_rads = _ang_vel_body_rads;
-    std::atomic_thread_fence(std::memory_order_acquire);
-    if (_ang_vel_body_seq.load(std::memory_order_relaxed) != seq_start) {
+    const Vector3f target_rads { _ang_vel_body_pub_rads[0], _ang_vel_body_pub_rads[1], _ang_vel_body_pub_rads[2] };
+    if (_ang_vel_body_seq != seq_start) {
         return false;
     }
     ang_vel_body_rads = target_rads;

@@ -453,6 +453,10 @@ void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
     _throttle_rpy_mix = constrain_float(_throttle_rpy_mix, 0.1f, AC_ATTITUDE_CONTROL_MAX);
 }
 
+// Run the body-frame rate PIDs for one step of dt seconds and set the motor roll, pitch and
+// yaw outputs. ang_vel_body_rads is the rate target in rad/s, passed in rather than read
+// from _ang_vel_body_rads so the fast rate thread can supply its interpolated copy; the
+// sysid rate offset is added to it here. gyro_rads is the measured body rate in rad/s.
 void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads, float dt, const Vector3f& ang_vel_body_rads)
 {
     // take a copy of the target so that it can't be changed from under us.
