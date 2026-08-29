@@ -334,7 +334,7 @@ public:
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
-    // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
+    // Adjusts the EKF reference height so that the reported height stays consistent
     virtual void resetHeightDatum(void) { }
 
     // return the innovations for the specified instance
