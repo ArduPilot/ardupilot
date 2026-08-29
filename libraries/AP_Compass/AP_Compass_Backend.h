@@ -79,6 +79,7 @@ public:
         DEVTYPE_BMM350 = 0x17,
         DEVTYPE_IIS2MDC = 0x18,
         // DEVTYPE_LIS2MDL = 0x19,  // DO NOT re-use this ID; same sensor as IIS2MDC
+        DEVTYPE_AK09940A = 0x1A,
     };
 
 #if AP_COMPASS_MSP_ENABLED
