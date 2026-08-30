@@ -245,7 +245,8 @@ private:
     TrackingStatus _last_tracking_state = TrackingStatus::STOPPED_TRACKING; // last tracking state received from gimbal
     uint8_t _last_mode;                                         // mode during latest update, used to detect mode changes and cancel tracking
     bool _sdcard_status;                                        // memory card status (received from gimbal)
-    bool _last_lock;                                            // last lock mode sent to gimbal
+    bool _last_lock;                                            // last lock mode sent to gimbal, only meaningful once _lock_sent
+    bool _lock_sent;                                            // true once set_gimbal_lock() has sent a mode at least once
     bool _got_gimbal_version;                                   // true if gimbal's version has been received
     bool _got_gimbal_model_name;                                // true if gimbal's model name has been received
     bool _last_zoom_stop;                                       // true if zoom has been stopped (used to re-send in order to handle lost packets)

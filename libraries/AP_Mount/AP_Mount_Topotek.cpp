@@ -889,13 +889,18 @@ void AP_Mount_Topotek::gimbal_model_name_analyse()
 // lock is false to follow / maintain a body-frame target
 bool AP_Mount_Topotek::set_gimbal_lock(bool lock)
 {
-    if (_last_lock == lock) {
+    // _last_lock defaults false, which is indistinguishable from "we've already
+    // confirmed the gimbal is in follow mode" unless we also track whether a mode
+    // has actually been sent yet - without _lock_sent, the very first call (often
+    // requesting follow, false) would silently no-op instead of sending anything
+    if (_lock_sent && _last_lock == lock) {
         return true;
     }
 
     // send message and update lock state
     if (send_fixedlen_packet(AddressByte::GIMBAL, AP_MOUNT_TOPOTEK_ID3CHAR_GIMBAL_MODE, true, lock ? 6 : 7)) {
         _last_lock = lock;
+        _lock_sent = true;
         return true;
     }
     return false;
