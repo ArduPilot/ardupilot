@@ -125,6 +125,15 @@ public:
         return uint32_t(state.ignore_safety_channels.get());
     }
 
+    // true if the board is configured to start up with safety engaged,
+    // i.e. the effective value of BRD_SAFETY_DEFLT. This says nothing
+    // about whether a safety switch is fitted, and nothing about the
+    // live safety state; it is the configured boot state, so it is safe
+    // to call before init_safety() has run
+    bool safety_enabled_at_boot(void) const {
+        return state.safety_enable != 0;
+    }
+
     uint32_t get_serial_number() const {
         return (uint32_t)vehicleSerialNumber.get();
     }
