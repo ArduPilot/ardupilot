@@ -3397,7 +3397,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                     self.dir_average = di
                 else:
                     self.speed_average += spd
-                    self.di_average += spd
+                    self.dir_average += di
                 self.count += 1
                 return (self.speed_average/self.count, self.dir_average/self.count)
 
