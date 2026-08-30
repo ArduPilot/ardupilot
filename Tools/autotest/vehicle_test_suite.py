@@ -385,6 +385,10 @@ class TeeBoth(object):
         self.file = None
 
     def write(self, data):
+        if self.file is None:
+            # see flush()
+            self.stdout.write(data)
+            return
         if isinstance(data, bytes):
             data = data.decode('ascii')
         self.file.write(data)
@@ -392,6 +396,14 @@ class TeeBoth(object):
             self.stdout.write(data)
 
     def flush(self):
+        # close() sets self.file to None, but anything still holding a
+        # reference to us keeps calling these.  logging.shutdown() does,
+        # at interpreter exit: without this guard a run which passed
+        # every test raises AttributeError on the way out, exits 1, and
+        # loses the "FAILED n tests" summary line it was about to be
+        # judged on.
+        if self.file is None:
+            return
         self.file.flush()
 
 
