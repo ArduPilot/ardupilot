@@ -6078,6 +6078,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''
         self.context_push()
         try:
+            self.install_terrain_handlers_context()
+            self.set_parameter("TERRAIN_ENABLE", 1)
+
+            # the warning is emitted once, shortly after boot, so it may
+            # well arrive before we get a chance to wait for it.  Collect
+            # statustexts so the wait can examine ones already received.
+            self.context_collect("STATUSTEXT")
+
             # Boot at the usual start location but with a deliberately wrong
             # home altitude (0).  SRTM at CMAC is ~584m so the mismatch
             # warning must fire.  The start lat/lng are unchanged so the
@@ -6086,12 +6094,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 ["--home", "%f,%f,0,%u" % (SITL_START_LOCATION.lat,
                                            SITL_START_LOCATION.lng,
                                            SITL_START_LOCATION.heading)])
-            self.reboot_sitl(check_position=False)
 
-            self.install_terrain_handlers_context()
-            self.set_parameter("TERRAIN_ENABLE", 1)
-
-            self.wait_statustext("SIM: home.alt", timeout=120)
+            self.wait_statustext("SIM: home.alt", timeout=120, check_context=True)
         finally:
             # restore the correct home altitude for subsequent tests
             self.customise_SITL_commandline(
@@ -6099,7 +6103,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                                             SITL_START_LOCATION.lng,
                                             int(SITL_START_LOCATION.alt),
                                             SITL_START_LOCATION.heading)])
-            self.reboot_sitl(check_position=False)
         self.context_pop()
 
     def WP_SPEED(self):
