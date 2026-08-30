@@ -638,9 +638,15 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         }
     }
 
-    // check if safety switch has been pushed
+    // check if safety switch has been pushed. This deliberately does not take
+    // a Check bit, so clearing Check::SWITCH alone does not skip it: the
+    // outputs are physically inhibited while safety is on. Note that
+    // should_skip_all_checks() returns above, so clearing ARMING_CHECK
+    // entirely does still skip this gate. Use the same wording as
+    // AP_Arming::hardware_safety_check() so that a user who has skipped
+    // Check::SWITCH still recognises the message they were getting before
     if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-        check_failed(true, "Safety Switch");
+        check_failed(true, "Hardware safety switch");
         return false;
     }
 
