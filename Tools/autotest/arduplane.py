@@ -3427,16 +3427,29 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.takeoff(70)  # default wind sim wind is a sqrt function up to 60m
         self.change_mode('LOITER')
         # use default estimator to determine when to check others:
-        self.wait_and_maintain_wind_estimate(5, 45, timeout=120)
+        self.wait_and_maintain_wind_estimate(
+            5, 45, timeout=120, minimum_duration=10)
 
         for ahrs_type in 0, 2, 3, 10:
             self.start_subtest("Checking AHRS_EKF_TYPE=%u" % ahrs_type)
             self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
-            self.wait_and_maintain_wind_estimate(
-                5, 45,
-                speed_tolerance=1,
-                timeout=30
-            )
+            if ahrs_type == 0:
+                # DCM's wind triangle assumes the airflow lies along the fuselage, so the
+                # angle of attack and turn-direction-dependent sideslip it ignores cost it degrees.
+                self.wait_and_maintain_wind_estimate(
+                    5, 45,
+                    speed_tolerance=1,
+                    dir_tolerance=6,
+                    minimum_duration=10,
+                    timeout=90,
+                )
+            else:
+                self.wait_and_maintain_wind_estimate(
+                    5, 45,
+                    speed_tolerance=1,
+                    minimum_duration=10,
+                    timeout=60,
+                )
         self.fly_home_land_and_disarm()
 
     def WindEstimatesTrim(self):
