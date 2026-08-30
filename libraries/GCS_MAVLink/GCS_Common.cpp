@@ -4835,6 +4835,21 @@ void GCS_MAVLINK::send_banner()
         send_text(MAV_SEVERITY_INFO, "%s", banner_msg);
     }
 
+    // tell the user when safety is engaged and still holding the outputs off.
+    // Otherwise the only indication is a pre-arm failure, so bench testing of
+    // servo directions and motors silently does nothing when the board is
+    // configured for a safety switch and none is fitted. Both conditions are
+    // needed: the configured boot state alone would nag on every board that
+    // has a switch fitted and pressed, and the live state alone would fire on
+    // BRD_SAFETY_DEFLT=0 boards, where the banner can be sent before
+    // init_safety() has forced safety off
+    const AP_BoardConfig *boardconfig = AP_BoardConfig::get_singleton();
+    if (boardconfig != nullptr &&
+        boardconfig->safety_enabled_at_boot() &&
+        hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        send_text(MAV_SEVERITY_INFO, "Safety on: press switch or set BRD_SAFETY_DEFLT=0");
+    }
+
 #if AP_INERTIALSENSOR_ENABLED
     // output any fast sampling status messages
     for (uint8_t i = 0; i < INS_MAX_BACKENDS; i++) {
