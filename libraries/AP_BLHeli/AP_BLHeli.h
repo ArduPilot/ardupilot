@@ -244,7 +244,11 @@ private:
 
     // mapping from BLHeli motor numbers to RC output channels
     uint8_t motor_map[max_motors];
+    uint8_t passthrough_map[max_motors];
+    uint16_t passthrough_function[max_motors];
     uint32_t motor_mask;
+    uint32_t initial_channel_mask;
+    bool output_mapping_error_reported;
 
     // convert between servo number and FMU channel number for ESC telemetry
     uint8_t chan_offset;
@@ -261,7 +265,7 @@ private:
     bool msp_process_byte(uint8_t c);
     void blheli_crc_update(uint8_t c);
     bool blheli_4way_process_byte(uint8_t c);
-    uint8_t blheli_chan_to_output_chan(uint8_t motor);
+    bool get_output_channel(uint8_t motor, uint8_t &output_chan);
     void msp_send_ack(uint8_t cmd);
     void msp_send_reply(uint8_t cmd, const uint8_t *buf, uint8_t len);
     void putU16(uint8_t *b, uint16_t v);
