@@ -497,6 +497,9 @@ private:
         DRIVER_IIS2MDC  =22,
 #endif
         // DRIVER_LIS2MDL  =23,  // DO NOT re-use this ID; same sensor as IIS2MDC
+#if AP_COMPASS_QMC6309_ENABLED
+        DRIVER_QMC6309  =24,
+#endif
 };
 
     bool _driver_enabled(enum DriverType driver_type);
