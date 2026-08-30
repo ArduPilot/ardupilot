@@ -365,7 +365,7 @@ void AP_GPS::convert_parameters()
     }
 
     // table parameters to convert without scaling
-    static const AP_Param::ConversionInfo conversion_info[] {
+    const AP_Param::ConversionInfo conversion_info[] {
         // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
         { k_param_gps_key, 0, AP_PARAM_INT8, "GPS1_TYPE" },
         { k_param_gps_key, 1, AP_PARAM_INT8, "GPS2_TYPE" },
