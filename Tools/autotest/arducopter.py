@@ -16911,12 +16911,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # ensure that the blended solution is always about half-way
         # between the two GPSs:
+        # the cores set their origins on different loops and XKF1
+        # reports zero for a core without one, so only compare the
+        # cores while armed
         current_ts = None
         max_errors = [0, 0, 0]
+        armed = False
+        comparisons = 0
         while True:
-            m = current_log_file.recv_match(type='XKF1')
+            m = current_log_file.recv_match(type=['XKF1', 'EV'])
             if m is None:
                 break
+            if m.get_type() == 'EV':
+                if m.Id == 10:  # LogEvent::ARMED
+                    armed = True
+                elif m.Id == 11:  # LogEvent::DISARMED
+                    armed = False
+                continue
+            if not armed:
+                continue
             if current_ts is None:
                 if m.C != 0:  # noqa
                     continue
@@ -16938,8 +16951,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         max_errors[n] = error
                     if error > epsilon:
                         raise NotAchievedException(f"Blended diverged {n=} {measurements[0][n]=} {measurements[1][n]=} {measurements[2][n]=} {error=}")  # noqa:E501
+                comparisons += 1
                 current_ts = None
-        self.progress(f"{max_errors=}")
+        if comparisons == 0:
+            raise NotAchievedException("No armed XKF1 samples compared")
+        self.progress(f"{max_errors=} {comparisons=}")
 
     def Callisto(self):
         '''Test Callisto'''
