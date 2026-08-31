@@ -99,6 +99,11 @@
 #include <AP_Scripting/AP_Scripting.h>
 #endif
 
+#include <AP_ExternalControl/AP_ExternalControl_config.h>
+#if AP_EXTERNAL_CONTROL_ENABLED
+#include "AP_ExternalControl_Sub.h"
+#endif
+
 class Sub : public AP_Vehicle {
 public:
     friend class GCS_MAVLINK_Sub;
@@ -120,6 +125,9 @@ public:
     friend class ModeCircle;
     friend class ModeSurface;
     friend class ModeMotordetect;
+#if AP_EXTERNAL_CONTROL_ENABLED
+    friend class AP_ExternalControl_Sub;
+#endif
 
     Sub(void);
 
@@ -280,6 +288,10 @@ private:
                            _failsafe_priorities};
 
     AP_Arming_Sub arming;
+
+#if AP_EXTERNAL_CONTROL_ENABLED
+    AP_ExternalControl_Sub external_control;
+#endif
 
     // Turn counter
     int32_t quarter_turn_count;
