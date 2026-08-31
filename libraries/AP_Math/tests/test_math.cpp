@@ -83,13 +83,13 @@ TEST(VectorTest, Rotations)
     TEST_ROTATION(ROTATION_ROLL_315, 1, SQRT_2, 0);
     EXPECT_EQ(ROTATION_MAX, rotation_count) << "All rotations are expect to be tested";
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    TEST_ROTATION(ROTATION_CUSTOM_OLD, 1, 1, 1);
-    TEST_ROTATION(ROTATION_MAX, 1, 1, 1);
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && defined(HAL_DEBUG_BUILD)
     Vector3F v {1, 1, 1};
     EXPECT_EXIT(v.rotate(ROTATION_CUSTOM_OLD), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bad_rotation");
     EXPECT_EXIT(v.rotate(ROTATION_MAX), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::bad_rotation");
+#else
+    TEST_ROTATION(ROTATION_CUSTOM_OLD, 1, 1, 1);
+    TEST_ROTATION(ROTATION_MAX, 1, 1, 1);
 #endif
 }
 
@@ -388,12 +388,12 @@ TEST(MathTest, Constrain)
     EXPECT_EQ(10,    constrain_int32( 0xFFFFFFFFU, 10U, 1200U));
     EXPECT_EQ(1200U, constrain_uint32(0xFFFFFFFFU, 10U, 1200U));
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-    EXPECT_EQ(1.0f, constrain_float(nanf("0x4152"), 1.0f, 1.0f));
-    EXPECT_EQ(1.0f, constrain_value(nanf("0x4152"), 1.0f, 1.0f));
-#elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && defined(HAL_DEBUG_BUILD)
     EXPECT_EXIT(constrain_float(nanf("0x4152"), 1.0f, 1.0f), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::cnstring_nan");
     EXPECT_EXIT(constrain_value(nanf("0x4152"), 1.0f, 1.0f), testing::KilledBySignal(SIGABRT), "AP_InternalError::error_t::cnstring_nan");
+#else
+    EXPECT_EQ(1.0f, constrain_float(nanf("0x4152"), 1.0f, 1.0f));
+    EXPECT_EQ(1.0f, constrain_value(nanf("0x4152"), 1.0f, 1.0f));
 #endif
 }
 
