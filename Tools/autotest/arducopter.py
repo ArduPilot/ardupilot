@@ -8116,6 +8116,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 constrained=constrain_sysid_target,
             )
 
+            self.progress("Testing mount holds last angle once sysid target telemetry goes stale")
+            pre_stale_pitch = self.get_mount_roll_pitch_yaw_deg()[1]
+            self.delay_sim_time(3.5, reason="let sysid target telemetry go stale")
+            # move a long way in a direction that would swing the
+            # elevation angle a lot if the mount were still (incorrectly)
+            # tracking the stale target location as we move; it should
+            # instead hold the angle last commanded above
+            startpos = self.assert_receive_message('LOCAL_POSITION_NED')
+            orig_x, orig_y, orig_z = startpos.x, startpos.y, startpos.z
+            self.fly_guided_move_local(orig_x, orig_y + 80, -orig_z, timeout=60)
+            self.test_mount_pitch(
+                pre_stale_pitch,
+                3,
+                mavutil.mavlink.MAV_MOUNT_MODE_SYSID_TARGET,
+                timeout=5,
+                hold=2,
+                constrained=False,
+            )
+
+            # move back to the original position, then confirm fresh
+            # telemetry resumes tracking immediately (ie. not stuck forever)
+            self.fly_guided_move_local(orig_x, orig_y, -orig_z, timeout=60)
+            self.mav.mav.global_position_int_send(
+                0, # time boot ms
+                int(roi_lat * 1e7),
+                int(roi_lon * 1e7),
+                670 * 1000, # mm alt amsl
+                100 * 1000, # mm UP!
+                0, # vx
+                0, # vy
+                0, # vz
+                0 # heading
+            )
+            self.test_mount_pitch(
+                68, 5, mavutil.mavlink.MAV_MOUNT_MODE_SYSID_TARGET, hold=1,
+                constrained=constrain_sysid_target,
+            )
+
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
 
