@@ -165,7 +165,7 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails (get archives!)
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
       - uses: ./.github/actions/setup-ccache
@@ -211,7 +211,7 @@ jobs:
           ./Tools/autotest/process_scan_build_output.py $HOME/scan-build-stdout.txt
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
            name: clang-scan-build
