@@ -813,6 +813,7 @@ void AP_Logger_File::start_new_log(void)
     }
 
     uint16_t log_num = find_last_log();
+    const uint16_t prev_log_num = log_num;
     // re-use empty logs if possible
     if (_get_log_size(log_num) > 0 || log_num == 0) {
         log_num++;
@@ -844,12 +845,28 @@ void AP_Logger_File::start_new_log(void)
     // create the log directory if need be
     ensure_log_directory_exists();
 
+    // update LASTLOG.TXT *before* creating the log file.  find_oldest_log()
+    // decides a log number has wrapped by comparing it against LASTLOG.TXT,
+    // so a log file numbered above LASTLOG.TXT - which is what the other
+    // order leaves on disk until we get to the bottom of this function -
+    // reads as a wrap, and the wrong "oldest" it computes then gets cached.
+    last_log_is_marked_discard = _front._params.log_disarmed == AP_Logger::LogDisarmed::LOG_WHILE_DISARMED_DISCARD;
+    const bool wrote_lastlog = write_lastlog_file(log_num);
+    if (!wrote_lastlog) {
+        _open_error_ms = AP_HAL::millis();
+    }
+
     EXPECT_DELAY_MS(3000);
     _writebuf.clear();
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
     _cached_oldest_log = 0;
 
     if (_write_fd == -1) {
+        if (wrote_lastlog && prev_log_num != 0) {
+            // the log we promised in LASTLOG.TXT does not exist; put it back
+            write_lastlog_file(prev_log_num);
+            _cached_oldest_log = 0;
+        }
         write_fd_semaphore.give();
         int saved_errno = errno;
         if (open_error_ms_was_zero) {
@@ -864,12 +881,6 @@ void AP_Logger_File::start_new_log(void)
     _open_error_ms = 0;
     _write_offset = 0;
     write_fd_semaphore.give();
-
-    // now update lastlog.txt with the new log number
-    last_log_is_marked_discard = _front._params.log_disarmed == AP_Logger::LogDisarmed::LOG_WHILE_DISARMED_DISCARD;
-    if (!write_lastlog_file(log_num)) {
-        _open_error_ms = AP_HAL::millis();
-    }
 }
 
 /*
