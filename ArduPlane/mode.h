@@ -817,6 +817,11 @@ protected:
     bool _enter() override;
     uint32_t last_target_loc_set_ms;
 
+    // entered with a stale attitude target: drive it level before
+    // initialising the loiter controller
+    bool entry_leveling;
+    uint32_t entry_leveling_start_ms;
+
 #if AP_QUICKTUNE_ENABLED
     bool supports_quicktune() const override { return true; }
 #endif
