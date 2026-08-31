@@ -1,0 +1,47 @@
+# hw definition file for processing by chibios_hwdef.py
+# bootloader for the ZenFC H743 hardware
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_ZenFC_H743
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# order of UARTs (and USB).
+SERIAL_ORDER OTG1 USART1
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# USART1 - Serial 1
+PA10 USART1_RX USART1
+PB6  USART1_TX USART1
+
+# pins for SWD debugging
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# CS pins - held deasserted during bootloader
+PC14 BMI088_1_GYRO_CS  CS
+PC15 BMI088_1_ACCEL_CS CS
+PD4  AT7456E_CS        CS
+PA15 BMI088_2_GYRO_CS  CS
+PC13 BMI088_2_ACCEL_CS CS
+
+# LEDs (per src/hw_config.h BOARD_PIN_LED_ACTIVITY/BOOTLOADER, active low)
+PD11 LED_ACTIVITY   OUTPUT LOW #blue
+PB9  LED_BOOTLOADER OUTPUT LOW #green
+define HAL_LED_ON 0
