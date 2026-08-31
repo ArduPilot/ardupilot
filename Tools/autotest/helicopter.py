@@ -1185,6 +1185,73 @@ class AutoTestHelicopter(AutoTestCopter):
         self.set_rc(8, 1000)
         self.disarm_vehicle()
 
+    def InterlockDuringArmingDelay(self):
+        """Regression test for https://github.com/ArduPilot/ardupilot/issues/34219:
+        engaging motor interlock immediately after arming (i.e. during the
+        arming delay, before an ESC playing an arming tune could plausibly
+        have finished) must not cause the RSC output to jump straight to
+        setpoint once the arming delay ends. H_RSC_IDLE_SEC must hold the
+        RSC output at ground idle for a configurable ESC-startup grace
+        period, regardless of how quickly the pilot engages interlock, and
+        must then still ramp to setpoint under H_RSC_RAMP_TIME rather than
+        jumping."""
+        self.context_push()
+        # Pin speedup to 1x: at the default 100x speedup, ordinary
+        # wall-clock round-trip latency between arm_vehicle() and set_rc()
+        # gets amplified into several seconds of simulated time, which would
+        # make this timing-sensitive check flaky.
+        self.context_set_speedup(1)
+
+        RAMP_TIME = 2
+        IDLE = 10
+        SETPOINT = 70
+        IDLE_SEC = 3   # deliberately longer than the 2s Copter arming delay,
+                       # so this test exercises H_RSC_IDLE_SEC and not just
+                       # the pre-existing arming-delay/interlock gating.
+        self.set_parameters({
+            "H_RSC_RAMP_TIME": RAMP_TIME,
+            "H_RSC_SETPOINT": SETPOINT,
+            "H_RSC_IDLE": IDLE,
+            "H_RSC_IDLE_SEC": IDLE_SEC,
+            "RC8_OPTION": 32,  # Motor Interlock
+        })
+        self.set_rc(3, 1000)
+        self.set_rc(8, 1000)
+
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        arm_time = self.get_sim_time()
+
+        # This is the exact repro from the issue: "before the arming beeps
+        # finish playing (preferably immediately), release the motor
+        # interlock".
+        self.set_rc(8, 2000)
+
+        idle_raw = 1000 + IDLE * 0.01 * 1000
+        # generous margin above ground idle, comfortably below setpoint, so
+        # this only trips on a real excursion toward/at the ramped setpoint
+        max_allowed_raw = idle_raw + 60
+
+        self.progress("Checking RSC output stays at ground idle through H_RSC_IDLE_SEC")
+        # Measured from arm time (matching the C++ implementation, which times
+        # the hold from when the vehicle leaves SHUT_DOWN) with a full second
+        # of margin subtracted to absorb message-timing/round-trip slop.
+        while self.get_sim_time() - arm_time < IDLE_SEC - 1.0:
+            servo = self.assert_receive_message('SERVO_OUTPUT_RAW')
+            if servo.servo8_raw > max_allowed_raw:
+                raise NotAchievedException(
+                    "RSC output rose to %u (> %u) before H_RSC_IDLE_SEC elapsed; "
+                    "output must stay at ground idle regardless of when "
+                    "interlock is engaged" % (servo.servo8_raw, max_allowed_raw))
+
+        self.progress("Checking RSC output still reaches setpoint via a controlled ramp")
+        expected_thr = 1000 + SETPOINT * 0.01 * 1000 - 1
+        self.wait_servo_channel_value(8, expected_thr, timeout=IDLE_SEC + RAMP_TIME + 2, comparator=operator.ge)
+
+        self.set_rc(8, 1000)
+        self.disarm_vehicle()
+        self.context_pop()
+
     def PIDNotches(self):
         """Use dynamic harmonic notch to control motor noise."""
         self.progress("Flying with PID notches")
@@ -1451,6 +1518,7 @@ class AutoTestHelicopter(AutoTestCopter):
             self.AirspeedDrivers,
             self.TurbineStart,
             self.TurbineCoolDown,
+            self.InterlockDuringArmingDelay,
             self.NastyMission,
             self.PIDNotches,
             self.AutoTune,

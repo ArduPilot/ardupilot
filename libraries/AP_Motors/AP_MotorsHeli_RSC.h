@@ -182,6 +182,7 @@ private:
     uint8_t         _governor_fault_count;        // variable for tracking governor speed sensor faults
     float           _governor_torque_reference;   // governor reference for load calculations
     float           _idle_throttle;               // current idle throttle setting
+    uint32_t        _esc_startup_start_ms;         // millis() timestamp of the most recent SHUT_DOWN state, used to hold ramp at idle for _esc_startup_delay after leaving it
     bool            _save_rsc_mode;               // flag to determine if we should save RSC mode changes to EEPROM, used to prevent saving changes to RSC mode param while armed.
     bool            _using_manual_collective_mode; // flag to determine if we are using a manual collective flight mode
 
@@ -195,6 +196,7 @@ private:
     AP_Float        _governor_ff;               // governor feedforward variable
     AP_Float        _governor_range;            // RPM range +/- governor rpm reference setting where governor is operational
     AP_Int16        _cooldown_time;             // cooldown time to provide a fast idle
+    AP_Float        _esc_startup_delay;         // time to hold at ground idle after arming before allowing the ramp to advance, to let the ESC finish its startup sequence
 
     // parameter accessors to allow conversions
     float           get_critical_speed() const { return _critical_speed * 0.01; }

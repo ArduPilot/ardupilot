@@ -224,6 +224,15 @@ const AP_Param::GroupInfo AP_MotorsHeli_RSC::var_info[] = {
 
     // 27 was AROT_IDLE, moved to RSC autorotation sub group
 
+    // @Param: IDLE_SEC
+    // @DisplayName: ESC Startup Delay
+    // @Description: Time to hold throttle output (HeliRSC servo) at ground idle (RSC_IDLE) after arming, before allowing RSC_RAMP_TIME to begin, regardless of how quickly motor interlock is enabled. Use this to give the ESC time to complete its own power-on/arming sequence (e.g. a DShot ESC configured as a buzzer playing an arming tune) before commanding it away from idle. A value of zero disables this delay.
+    // @Range: 0 10
+    // @Units: s
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("IDLE_SEC", 28, AP_MotorsHeli_RSC, _esc_startup_delay, 0),
+
     AP_GROUPEND
 };
 
@@ -458,6 +467,17 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update_spool_state(AP_Motors
     // set desired spool state
     _desired_spool_state = desired_spool_state;
 
+    // Track the most recent time we were in SHUT_DOWN. This is used below to hold the ramp at ground
+    // idle for RSC_IDLE_SEC after arming, regardless of how quickly motor interlock is enabled, so
+    // that a DShot ESC has time to finish its own power-on/arming sequence (e.g. an arming tune played
+    // through the ESC's buzzer) before being commanded away from idle. A millis() timestamp is used
+    // (matching how ArduCopter's own post-arm ARMING_DELAY_SEC is implemented) rather than accumulating
+    // dt, since this function can be called from either the main loop or the separate rate thread, at
+    // different effective rates. _spool_state here still holds the previous iteration's state.
+    if (_spool_state == RSCSpoolState::SHUT_DOWN) {
+        _esc_startup_start_ms = AP_HAL::millis();
+    }
+
     switch (_desired_spool_state) {
         case DesiredRSCSpoolState::SHUT_DOWN:
             // if we are shutting down, we want to immediately go to SHUT_DOWN state and not wait for spool down to complete
@@ -471,10 +491,17 @@ AP_MotorsHeli_RSC::RSCSpoolState AP_MotorsHeli_RSC::update_spool_state(AP_Motors
             update_rotor_ramp(0.0f, dt);
             break;
 
-        case DesiredRSCSpoolState::THROTTLE_UNLIMITED:
+        case DesiredRSCSpoolState::THROTTLE_UNLIMITED: {
+            if (AP_HAL::millis() - _esc_startup_start_ms < uint32_t(_esc_startup_delay.get() * 1000)) {
+                // Hold at ground idle until RSC_IDLE_SEC has elapsed since arming, to give the ESC
+                // time to finish its startup sequence before commanding it away from idle.
+                update_rotor_ramp(0.0f, dt);
+                break;
+            }
             // set main rotor ramp to increase to full speed
             update_rotor_ramp(1.0f, dt);
             break;
+        }
     }
 
     // update rotor speed run-up estimate
