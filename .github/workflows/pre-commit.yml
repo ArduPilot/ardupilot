@@ -22,4 +22,4 @@ jobs:
     - uses: pre-commit/action@v3.0.1
     - run: python3 -m pip install --upgrade pip
     - run: python3 -m pip install pytest
-    - run: PYTHONPATH="." pytest tests/test_pre_commit_copyright.py
+    - run: PYTHONPATH="." pytest tests/
