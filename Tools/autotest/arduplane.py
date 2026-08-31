@@ -1214,8 +1214,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("FLAP_1_SPEED", 26)  # above typical cruise of ~22 m/s
         self.set_parameter("FLIGHT_OPTIONS", 1 << 15)  # enable FLAP_ACTUAL_SPEED
         self.change_mode("FBWA")
-        self.set_rc(3, 1700)
-        self.wait_airspeed(18, 24, timeout=30)  # confirm flying below new threshold
+        self.set_rc(3, 1500)
+        self.wait_airspeed(18, 24, timeout=30, minimum_duration=5)
         self.wait_servo_channel_value(servo_ch, flap_1_pwm, epsilon=pwm_epsilon, timeout=15)
 
         self.progress("Flaps retract when FLAP_ACTUAL_SPEED option is disabled")
