@@ -9898,9 +9898,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SoaringClimbRate": "very bad sink rate",
-            "MAVFTPListDirectoryInterleavedPut": "needs a MAVProxy which does not continue a listing by mutating the last op sent; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
-            "MAVFTPListDirectoryInterleavedGet": "needs a MAVProxy which does not continue a listing by mutating the last op sent; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
-            "MAVFTPListDirectoryTabInNameMAVProxy": "needs a MAVProxy which takes the size from the end of a listing entry; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
         }
         if not self.mavproxy_ftp_module_has_command("crccmp"):
             # added to MAVProxy in 328d7de20 (2026-07-27) and not in any

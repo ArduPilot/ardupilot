@@ -17821,6 +17821,10 @@ switch value'''
     def MAVFTPListDirectoryInterleavedPut(self):
         '''test an upload started during a directory listing is not corrupted'''
 
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
         dirname = "ftp_interleave_test"
         local_name = "ftp_interleave_local.dat"
         remote_name = "ftp_interleave_remote.dat"
@@ -17877,6 +17881,10 @@ switch value'''
 
     def MAVFTPListDirectoryInterleavedGet(self):
         '''test a download started during a directory listing is not corrupted'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
 
         dirname = "ftp_interleave_get_test"
         remote_name = "ftp_interleave_source.dat"
@@ -17951,6 +17959,10 @@ switch value'''
 
     def MAVFTPListDirectoryTabInNameMAVProxy(self):
         '''test MAVProxy parses a listing entry whose filename contains a tab'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
 
         dirname = "ftp_listing_tab_test"
         # the size is the last tab-separated field of an entry, so a name
