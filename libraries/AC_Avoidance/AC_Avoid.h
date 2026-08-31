@@ -67,6 +67,10 @@ public:
         desired_vel_ned_ms = Vector3f{desired_vel_neu_cms.x, desired_vel_neu_cms.y, -desired_vel_neu_cms.z} * 0.01;
     }
 
+    // return true if avoidance would command the vehicle to back away from
+    // a fence or obstacle.  This probe does not update avoidance state.
+    bool requires_backup_velocity(float kP, float accel_cmss, float kP_z, float accel_z_cmss, float dt);
+
     // This method limits velocity and calculates backaway velocity from various supported fences
     // Also limits vertical velocity using adjust_velocity_z method
     void adjust_velocity_fence(float kP, float accel_cmss, Vector3f &desired_vel_neu_cms, Vector3f &backup_vel_cms, float kP_z, float accel_z_cmss, float dt);

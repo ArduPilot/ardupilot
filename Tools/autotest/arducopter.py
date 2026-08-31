@@ -2515,6 +2515,63 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.fly_fence_avoid_test_radius_check(avoid_behave=1, timeout=timeout)
         self.fly_fence_avoid_test_radius_check(avoid_behave=0, timeout=timeout)
 
+    def FenceMarginArming(self):
+        '''Prevent arming inside the horizontal fence avoidance margin'''
+        fence_radius = 15
+        fence_margin = 3
+        self.change_mode("LOITER")
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "FENCE_TYPE": 2,
+            "FENCE_RADIUS": fence_radius,
+            "FENCE_MARGIN": fence_margin,
+            "FENCE_ACTION": 0,
+            "AVOID_ENABLE": 1,
+        })
+        self.wait_ready_to_arm()
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.progress("Control: armed outside the fence avoidance margin")
+        self.disarm_vehicle()
+
+        self.set_parameter("AVOID_ENABLE", 0)
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_altitude(3, 6, relative=True)
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1400)
+        self.wait_distance_to_home(11.8, 12.2, timeout=30)
+        self.set_rc(2, 1500)
+        self.land_and_disarm()
+
+        landed_distance = self.distance_to_home(use_cached_home=True)
+        inner_radius = fence_radius - fence_margin
+        self.progress("Landed %.2fm from home; avoidance begins at %.2fm" %
+                      (landed_distance, inner_radius))
+        if landed_distance <= inner_radius or landed_distance >= fence_radius:
+            raise PreconditionFailedException(
+                "Vehicle did not land inside the fence avoidance margin")
+
+        self.set_parameter("AVOID_ENABLE", 1)
+        self.change_mode("LOITER")
+        self.assert_prearm_failure("Avoidance: Vehicle requires backup")
+
+        # Return to the startup location so this regression composes with
+        # the standard autotest harness cleanup checks.
+        self.set_parameters({
+            "FENCE_ENABLE": 0,
+            "AVOID_ENABLE": 0,
+        })
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_altitude(3, 6, relative=True)
+        self.set_rc(3, 1500)
+        self.set_rc(2, 1600)
+        self.wait_distance_to_home(11.8, 12.2, timeout=30)
+        self.set_rc(2, 1500)
+        self.land_and_disarm()
+
     # fly_fence_test - fly east until you hit the horizontal circular fence
     def HorizontalFence(self, timeout=180):
         '''Test horizontal fence'''
@@ -10596,7 +10653,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_RTL()
 
     def check_avoidance_corners(self):
+        # These tests exercise avoidance while flying near fence corners.  Arm
+        # and take off with avoidance disabled so the pre-arm backup check does
+        # not reject their deliberately constrained starting position, then
+        # restore the test's original avoidance configuration before flying.
+        avoid_enable = self.get_parameter("AVOID_ENABLE")
+        self.set_parameter("AVOID_ENABLE", 0)
         self.takeoff(10, mode="LOITER")
+        self.set_parameter("AVOID_ENABLE", avoid_enable)
         here = self.mav.location()
         # the vehicle starts a test at home but with whatever heading
         # the previous test left it; face west like the other corner
@@ -16319,6 +16383,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ret = ([
              self.HorizontalFence,
              self.HorizontalAvoidFence,
+             self.FenceMarginArming,
              self.MaxAltFence,
              self.MaxAltFenceAvoid,
              self.MinAltFence,

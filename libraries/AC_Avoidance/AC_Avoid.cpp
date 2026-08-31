@@ -322,6 +322,34 @@ void AC_Avoid::adjust_velocity(Vector3f &desired_vel_neu_cms, bool &backing_up, 
 #endif
 }
 
+bool AC_Avoid::requires_backup_velocity(float kP, float accel_cmss, float kP_z, float accel_z_cmss, float dt)
+{
+    if (_enabled == AC_AVOID_DISABLED) {
+        return false;
+    }
+
+    // A non-zero probe is required because some fence checks exit early for
+    // a stationary vehicle.  Only backup velocity is inspected; ordinary
+    // limiting of the probe velocity does not prevent arming.
+    const Vector3f probe_velocity_neu_cms{1.0f, 1.0f, 1.0f};
+    Vector3f desired_vel_neu_cms = probe_velocity_neu_cms;
+    Vector3f backup_vel_neu_cms;
+
+    if (proximity_avoidance_enabled() && _proximity_alt_enabled) {
+        adjust_velocity_proximity(kP, accel_cmss, desired_vel_neu_cms, backup_vel_neu_cms, kP_z, accel_z_cmss, dt);
+        if ((!backup_vel_neu_cms.xy().is_zero() && is_positive(_backup_speed_max_ne_ms)) ||
+            (!is_zero(backup_vel_neu_cms.z) && is_positive(_backup_speed_max_u_ms))) {
+            return true;
+        }
+    }
+
+    desired_vel_neu_cms = probe_velocity_neu_cms;
+    backup_vel_neu_cms.zero();
+    adjust_velocity_fence(kP, accel_cmss, desired_vel_neu_cms, backup_vel_neu_cms, kP_z, accel_z_cmss, dt);
+    return (!backup_vel_neu_cms.xy().is_zero() && is_positive(_backup_speed_max_ne_ms)) ||
+           (!is_zero(backup_vel_neu_cms.z) && is_positive(_backup_speed_max_u_ms));
+}
+
 /*
 * Limit acceleration so that change of velocity output by avoidance library is controlled
 * This helps reduce jerks and sudden movements in the vehicle
