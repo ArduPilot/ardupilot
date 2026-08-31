@@ -422,6 +422,10 @@ public:
     // Sets desired horizontal acceleration in m/s².
     void set_accel_desired_NE_mss(const Vector2f &accel_desired_ne_mss) { _accel_desired_ned_mss.xy() = accel_desired_ne_mss; }
 
+    // Returns desired NED acceleration in m/s². This is the trajectory
+    // feed-forward, excluding the correction applied by the controller.
+    const Vector3f& get_accel_desired_NED_mss() const { return _accel_desired_ned_mss; }
+
     // Returns target NED acceleration in m/s².
     const Vector3f& get_accel_target_NED_mss() const { return _accel_target_ned_mss; }
 
