@@ -592,6 +592,7 @@ void AP_SerialManager::init()
 
 void AP_SerialManager::convert_parameters()
 {
+    // PARAMETER_CONVERSION - Added: Jun-2025 for ArduPilot-4.7
     for (auto &_state : state) {
         _state.options.convert_parameter_width(AP_PARAM_INT16);
     }
@@ -842,7 +843,7 @@ void AP_SerialManager::set_protocol_and_baud(uint8_t sernum, enum SerialProtocol
 }
 bool AP_SerialManager::pre_arm_checks(char *failure_msg, const uint8_t failure_msg_len)
 {
-    // PARAMETER_CONVERSION - Added May 2028 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jun-2025 for ArduPilot-4.7
     // ArduPilot 4.7 pre-arm fails if either bit is set when conversion should have nuked them
     // ArduPilot 4.8 pre-arm fails if either bit is set when conversion should have nuked them
     // ArduPilot 4.9 pre-arm fails if either bit is set when conversion should have nuked them

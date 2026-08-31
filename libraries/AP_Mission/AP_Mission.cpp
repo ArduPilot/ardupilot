@@ -3179,7 +3179,7 @@ void AP_Mission::format_conversion(uint8_t tag_byte, const Mission_Command &cmd,
     // currently only one conversion needed, more can be added
 #if AP_SCRIPTING_ENABLED
     if (tag_byte == 0 && cmd.id == MAV_CMD_NAV_SCRIPT_TIME) {
-        // PARAMETER_CONVERSION: conversion code added Oct 2022
+        // PARAMETER_CONVERSION - Added: Oct-2022 for ArduPilot-4.4
         struct nav_script_time_Command_tag0 old_fmt;
         struct nav_script_time_Command new_fmt;
         memcpy((void*)&old_fmt, packed_content.bytes, sizeof(old_fmt));

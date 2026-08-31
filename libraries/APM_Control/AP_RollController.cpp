@@ -250,6 +250,7 @@ float AP_RollController::run_axis_rate_control(float desired_rate_degs, float sc
   convert from old to new PIDs
   this is a temporary conversion function during development
  */
+// PARAMETER_CONVERSION - Added: Apr-2021 for ArduPilot-4.1
 void AP_RollController::convert_pid()
 {
     AP_Float &ff = rate_pid.ff();

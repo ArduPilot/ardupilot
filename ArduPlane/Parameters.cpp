@@ -1319,6 +1319,7 @@ ParametersG2::ParametersG2(void) :
   old object. This should be zero for top level parameters.
  */
 static const AP_Param::ConversionInfo conversion_table[] = {
+    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
     { Parameters::k_param_fence_minalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MIN"},
     { Parameters::k_param_fence_maxalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MAX"},
     { Parameters::k_param_fence_retalt,       0,     AP_PARAM_INT16, "FENCE_RET_ALT"},
@@ -1372,6 +1373,7 @@ void Plane::load_parameters(void)
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
     // Convert chan params to RCx_OPTION
+    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
     for (uint8_t i=0; i<ARRAY_SIZE(rc_option_conversion); i++) {
         AP_Int8 chan_param;
         AP_Param::ConversionInfo info {rc_option_conversion[i].old_key, rc_option_conversion[i].old_group_element, AP_PARAM_INT8, nullptr};
@@ -1384,7 +1386,7 @@ void Plane::load_parameters(void)
     }
 
 
-// PARAMETER_CONVERSION - Added: March 2021 for ArduPlane-4.1
+// PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
 #if AP_FENCE_ENABLED
     enum ap_var_type ptype_fence_type;
     AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
@@ -1473,9 +1475,11 @@ void Plane::load_parameters(void)
 #endif // AP_FENCE_ENABLED
 
 #if AP_TERRAIN_AVAILABLE
+    // PARAMETER_CONVERSION - Added: Mar-2021 for ArduPlane-4.1
     g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
 #endif
 
+    // PARAMETER_CONVERSION - Added: Jun-2021 for ArduPlane-4.1
     g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
 
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
@@ -1495,6 +1499,7 @@ void Plane::load_parameters(void)
     if (!ins.harmonic_notches[1].params.enabled()) {
         // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
         const AP_Param::ConversionInfo notchfilt_conversion_info[] {
+            // PARAMETER_CONVERSION - Added: Apr-2022 for ArduPlane-4.2
             { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
             { Parameters::k_param_ins, 293, AP_PARAM_FLOAT, "INS_HNTC2_ATT" },
             { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
@@ -1512,12 +1517,12 @@ void Plane::load_parameters(void)
     AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, true);
 #endif
 
-    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
 
-    // PARAMETER_CONVERSION - Added: Dec 2023
+    // PARAMETER_CONVERSION - Added: Dec-2023 for ArduPlane-4.5
     // Convert _CM (centimeter) parameters to meters and _CD (centidegrees) parameters to meters
     g.pitch_trim.convert_centi_parameter(AP_PARAM_INT16);
     aparm.airspeed_cruise.convert_centi_parameter(AP_PARAM_INT32);

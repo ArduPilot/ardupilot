@@ -51,7 +51,7 @@ public:
     bool reached_wp_destination() const override;
 
     // Runs the waypoint navigation update loop, including OA path planning logic.
-    // Delegates to parent class if OA is not active or not required.
+    // Delegates to parent class if the leg is a circular orbit, or if OA is not active or not required.
     bool update_wpnav() override;
 
 protected:

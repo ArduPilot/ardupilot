@@ -16,7 +16,7 @@ void Plane::init_ardupilot()
     pitchController.convert_pid();
 
     // initialise rc channels including setting mode
-    // CONVERSION: Added for upgrade to ArduPlane 4.2, Sep 2021
+    // PARAMETER_CONVERSION - Added: Sep-2021 for ArduPlane-4.2
 #if HAL_QUADPLANE_ENABLED
     rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, (quadplane.enabled() && quadplane.option_is_set(QuadPlane::Option::AIRMODE_UNUSED) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) ? RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE : RC_Channel::AUX_FUNC::ARMDISARM);
 #else

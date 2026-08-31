@@ -1029,7 +1029,7 @@ void AP_Camera::convert_runcam_params()
         return;
     }
 
-    // RunCam PARAMETER_CONVERSION - Added: Nov-2024 ahead of 4.7 release
+    // PARAMETER_CONVERSION - Added: Dec-2024 for ArduPilot-4.7
 
     // Since slot 1 is essentially used by the trigger type, we will use slot 2 for runcam
     int8_t rc_type = 0;
@@ -1074,7 +1074,7 @@ void AP_Camera::convert_params()
         return;
     }
 
-    // PARAMETER_CONVERSION - Added: Feb-2023 ahead of 4.4 release
+    // PARAMETER_CONVERSION - Added: Feb-2023 for ArduPilot-4.4
 
     // convert CAM_TRIGG_TYPE to CAM1_TYPE
     int8_t cam_trigg_type = 0;

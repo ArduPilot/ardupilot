@@ -591,7 +591,7 @@ public:
     void takeoff_start(const Location& dest_loc);
     bool wp_start(const Location& dest_loc);
     void land_start();
-    void circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
+    void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
     void nav_guided_start();
 
@@ -673,7 +673,6 @@ private:
     void wp_run();
     void land_run();
     void rtl_run();
-    void circle_run();
     void nav_guided_run();
     void loiter_run();
     void loiter_to_alt_run();
@@ -809,7 +808,14 @@ private:
         float down;   // desired speed downwards in m/s. 0 if unset
     } desired_speed_override_ms;
 
-    float circle_last_num_complete;
+    // LOITER_TURNS state
+    struct {
+        float turns_signed;         // signed number of turns for the active LOITER_TURNS orbit (sign selects direction)
+        float radius_m;             // commanded LOITER_TURNS radius (0 = panorama; circle_nav's get_radius_m() falls back to the parameter so cannot express zero)
+        uint16_t turns_reported;    // number of whole orbit turns already announced to the GCS
+        uint32_t panorama_start_ms; // time the radius-0 panorama started
+        float panorama_rate_rads;   // yaw rate the radius-0 panorama was commanded at
+    } circle;
 };
 #endif  // MODE_AUTO_ENABLED
 

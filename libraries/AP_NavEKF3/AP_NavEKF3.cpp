@@ -1790,6 +1790,7 @@ void NavEKF3::writeTerrainData(float alt_m)
 }
 
 // parameter conversion of EKF3 parameters
+// PARAMETER_CONVERSION - Added: Nov-2020 for ArduPilot-4.1
 void NavEKF3::convert_parameters()
 {
     // exit immediately if param conversion has been done before

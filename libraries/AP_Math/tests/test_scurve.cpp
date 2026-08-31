@@ -248,13 +248,15 @@ TEST(SCurveCalcPath, constraints)
 // calculate_track: arc speed limit must come from the arc length, not the chord
 // ---------------------------------------------------------------------------
 
-// Runaway guard for the drive loops below. Both legs complete in well under this
-// (roughly 8k iterations), so it only bounds a regression that never reports
-// completion. 50000 iterations is 125 s of simulated time at 400 Hz.
+// Runaway guard for every drive loop below. All of them complete in well under this: the
+// straight and arc legs in roughly 8k iterations, the longest circle (3.5 turns) in roughly
+// 20k, so it only bounds a regression that never reports completion. 50000 iterations is
+// 125 s of simulated time at 400 Hz.
 static const uint32_t MAX_DRIVE_ITERS = 50000;
 
-// drive a prepared leg to completion, returning the peak horizontal and vertical target speed
-struct LegPeak { float speed_xy; float speed_z; bool finished; };
+// drive a prepared leg to completion, returning the peak horizontal and vertical
+// target speed and the final target position
+struct LegPeak { float speed_xy; float speed_z; Vector3p final_pos; bool finished; };
 static LegPeak drive_leg(SCurve &leg, const Vector3p &origin)
 {
     SCurve prev, next;
@@ -273,8 +275,33 @@ static LegPeak drive_leg(SCurve &leg, const Vector3p &origin)
         r.speed_xy = MAX(r.speed_xy, vel.xy().length());
         r.speed_z = MAX(r.speed_z, fabsf(vel.z));
     }
+    r.final_pos = pos;
     r.finished = done;
     return r;
+}
+
+// A level straight leg reaches the full horizontal speed, has no vertical motion, and
+// finishes at the destination. Covers the set_straight_geometry / generate_path path
+// for a non-arc segment.
+TEST(SCurveTrack, straight_leg)
+{
+    const Vector3p origin{0, 0, -50};
+    const Vector3p dest{50, 0, -50};    // 50 m north, level
+    const float speed_xy = 5.0f;
+
+    SCurve leg;
+    leg.calculate_track(origin, dest, 0.0f,   // arc angle 0 -> straight segment
+                        speed_xy, 3.0f, 2.0f,
+                        2.0f, 2.0f, 2.0f,
+                        60.0f, 10.0f);
+
+    const LegPeak p = drive_leg(leg, origin);
+    EXPECT_TRUE(p.finished);
+    EXPECT_NEAR(p.speed_xy, speed_xy, 0.05f);   // reaches the horizontal speed
+    EXPECT_LE(p.speed_z, 0.02f);                // stays level
+    EXPECT_NEAR((float)p.final_pos.x, 50.0f, 0.05f);
+    EXPECT_NEAR((float)p.final_pos.y, 0.0f, 0.05f);
+    EXPECT_NEAR((float)p.final_pos.z, -50.0f, 0.05f);
 }
 
 // A climbing arc must take its speed limit from the path it actually flies (the arc
@@ -342,6 +369,173 @@ TEST(SCurveTrack, arc_velocity_matches_position_derivative)
     // finite difference matches the reported velocity to O(dt); a large gap means the reported
     // velocity is not tangent to the path actually flown
     EXPECT_LT(max_err, 0.05f);
+}
+
+// ---------------------------------------------------------------------------
+// calculate_circle_track: full-circle / multi-turn arc geometry
+// ---------------------------------------------------------------------------
+
+// result of driving one circle leg to completion, sampling the target path
+struct CircleResult {
+    float max_radius_err;   // largest deviation of the target from radius R
+    float peak_speed_ne;    // largest horizontal target speed (what the centripetal clamp bounds)
+    Vector3p final_pos;     // target position at completion
+    float first_east;       // east position ~1 s after start (direction check)
+    bool finished;          // leg reported completion
+};
+
+// build a circle leg and advance it to completion, exactly as AC_WPNav drives a leg
+static CircleResult run_circle(const Vector3p &origin, const Vector2f &center,
+                               float total_angle_rad, float climb_d_m,
+                               float speed_xy, float accel_c)
+{
+    SCurve prev, leg, next;
+    prev.init();
+    next.init();
+    leg.calculate_circle_track(origin, center, total_angle_rad, climb_d_m,
+                               speed_xy, 3.0f, 2.0f,   // speed xy, up, down
+                               2.0f, 2.0f, accel_c,    // accel xy, z, corner
+                               60.0f, 10.0f);          // snap, jerk
+
+    const float R = (center - origin.xy().tofloat()).length();
+    const float dt = 0.0025f;
+
+    CircleResult r {};
+    Vector3p pos;
+    Vector3f vel, accel;
+    bool done = false;
+    for (uint32_t i = 0; i < MAX_DRIVE_ITERS && !done; i++) {
+        // target_pos must be reset to the leg origin before each advance (see AC_WPNav)
+        pos = origin;
+        vel.zero();
+        accel.zero();
+        done = leg.advance_target_along_track(prev, next, 2.0f, accel_c, false, dt, pos, vel, accel);
+        r.max_radius_err = MAX(r.max_radius_err, fabsf((pos.xy().tofloat() - center).length() - R));
+        r.peak_speed_ne = MAX(r.peak_speed_ne, vel.xy().length());
+        if (i == 400) {
+            r.first_east = pos.y;
+        }
+    }
+    r.final_pos = pos;
+    r.finished = done;
+    return r;
+}
+
+TEST(SCurveCircle, geometry)
+{
+    const Vector3p origin{10, 0, -50};   // 10 m north of center, 50 m up
+    const Vector2f center{0, 0};
+    const float R = 10.0f;
+    const float accel_c = 2.0f;
+    // horizontal speed is clamped so centripetal accel v^2/R stays within accel_c
+    const float vmax_expect = MIN(5.0f, safe_sqrt(accel_c * R));
+
+    struct Case { const char *name; float turns; float climb; };
+    const Case cases[] = {
+        {"full_cw",    1.0f,   0.0f},
+        {"half_cw",    0.5f,   0.0f},
+        {"multi_cw",   3.5f,   0.0f},
+        {"climb_cw",   2.0f,  -5.0f},
+        {"full_ccw",  -1.0f,   0.0f},
+        {"multi_ccw", -2.5f,   0.0f},
+    };
+
+    for (const auto &c : cases) {
+        const float angle = c.turns * M_2PI;
+        const CircleResult r = run_circle(origin, center, angle, c.climb, 5.0f, accel_c);
+
+        EXPECT_TRUE(r.finished) << c.name;
+
+        // target never leaves the circle
+        EXPECT_LT(r.max_radius_err, 0.05f) << "radius drift: " << c.name
+            << " err=" << r.max_radius_err;
+
+        // never exceeds the clamped speed (verifies the centripetal limit)
+        EXPECT_LE(r.peak_speed_ne, vmax_expect + 0.05f) << "overspeed: " << c.name
+            << " peak=" << r.peak_speed_ne;
+
+        // reaches the commanded net climb
+        EXPECT_NEAR((float)r.final_pos.z, (float)origin.z + c.climb, 0.10f) << "climb: " << c.name;
+
+        // NE endpoint matches the swept angle applied to the entry offset
+        Vector2f rel = origin.xy().tofloat() - center;
+        rel.rotate(angle);
+        const Vector2f end_expect = center + rel;
+        EXPECT_NEAR((float)r.final_pos.x, end_expect.x, 0.15f) << "end north: " << c.name;
+        EXPECT_NEAR((float)r.final_pos.y, end_expect.y, 0.15f) << "end east: " << c.name;
+
+        // direction: positive angle sweeps toward +east, negative toward -east
+        if (angle > 0) {
+            EXPECT_GT(r.first_east, 0.0f) << "expected CW: " << c.name;
+        } else {
+            EXPECT_LT(r.first_east, 0.0f) << "expected CCW: " << c.name;
+        }
+    }
+}
+
+// Regression test: AC_WPNav's corner-blending mechanism used to corrupt the position target of
+// the leg immediately following a fractional-turn circle. This replicates exactly what
+// AC_WPNav does when a plain WP leg follows a circle leg: the finished circle is preserved as
+// the new leg's _scurve_prev_leg for corner blending (see AC_WPNav::set_wp_destination_NED_m),
+// and advance_target_along_track() unconditionally calls prev_leg.move_to_pos_vel_accel() every
+// tick, which subtracts get_origin_to_destination() to cancel a finished leg's contribution
+// to zero.
+TEST(SCurveCircle, prev_leg_handoff)
+{
+    const Vector3p O{10, 0, -50};
+    const Vector2f center{0, 0};
+    const float turns = 0.5f;          // fractional turns -> destination != origin
+
+    SCurve circle;
+    circle.calculate_circle_track(O, center, turns * M_2PI, 0.0f,
+                                  5.0f, 3.0f, 2.0f,
+                                  2.0f, 2.0f, 2.0f,
+                                  60.0f, 10.0f);
+
+    // drive the circle leg to completion (mirrors run_circle() above)
+    {
+        SCurve prev, next;
+        prev.init();
+        next.init();
+        Vector3p pos;
+        Vector3f vel, accel;
+        bool done = false;
+        for (uint32_t i = 0; i < MAX_DRIVE_ITERS && !done; i++) {
+            pos = O;
+            vel.zero();
+            accel.zero();
+            done = circle.advance_target_along_track(prev, next, 2.0f, 2.0f, false, 0.0025f, pos, vel, accel);
+        }
+        ASSERT_TRUE(done);
+    }
+
+    // the orbit destination (AC_WPNav derives this from the leg's get_origin_to_destination();
+    // computed independently here from the endpoint rotation so the test does not trust
+    // seg_delta)
+    Vector2f origin_to_end_ne = O.xy().tofloat() - center;
+    origin_to_end_ne.rotate(turns * M_2PI);
+    const Vector3p D(center.x + origin_to_end_ne.x, center.y + origin_to_end_ne.y, O.z);
+
+    // new leg: origin = D (AC_WPNav sets _origin_ned_m = _destination_ned_m), a straight hop north
+    SCurve new_leg;
+    new_leg.calculate_track(D, D + Vector3p(20, 0, 0), 0.0f,
+                            5.0f, 3.0f, 2.0f,
+                            2.0f, 2.0f, 2.0f,
+                            60.0f, 10.0f);
+
+    // AC_WPNav preserves the finished circle as _scurve_prev_leg for the new leg
+    SCurve scurve_next_leg;
+    scurve_next_leg.init();
+
+    Vector3p target_pos = D;
+    Vector3f target_vel, target_accel;
+    // one tick into a 20 m leg definitely isn't finished; this also exercises the return value
+    EXPECT_FALSE(new_leg.advance_target_along_track(circle, scurve_next_leg, 2.0f, 2.0f, false, 0.0025f, target_pos, target_vel, target_accel));
+
+    // the first tick of the new leg must start at (essentially) its own origin D
+    EXPECT_NEAR((float)target_pos.x, (float)D.x, 0.05f);
+    EXPECT_NEAR((float)target_pos.y, (float)D.y, 0.05f);
+    EXPECT_NEAR((float)target_pos.z, (float)D.z, 0.05f);
 }
 
 AP_GTEST_MAIN()

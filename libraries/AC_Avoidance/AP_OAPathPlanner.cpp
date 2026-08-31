@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AP_OAPathPlanner::var_info[] = {
 
     // @Param: MARGIN_MAX
     // @DisplayName: Object Avoidance wide margin distance
-    // @Description: Object Avoidance will ignore objects more than this many meters from vehicle
+    // @Description: Minimum distance in meters that the vehicle will try to stay away from obstacles and fences. BendyRuler only accepts a candidate path whose clearance exceeds this, and Dijkstra uses it as the margin held from fences. This is not a detection range: use OA_BR_LOOKAHEAD to limit how far ahead BendyRuler looks for obstacles.
     // @Units: m
     // @Range: 0.1 100
     // @Increment: 1

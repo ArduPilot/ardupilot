@@ -678,36 +678,6 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPEND
 };
 
-// These auxiliary channel param descriptions are here so that users of beta Mission Planner (which uses the master branch as its source of descriptions)
-// can get them.  These lines can be removed once Rover-3.6-beta testing begins or we improve the source of descriptions for GCSs.
-//
-// @Param: CH7_OPTION
-// @DisplayName: Channel 7 option
-// @Description: What to do use channel 7 for
-// @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Acro,6:Steering,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided,12:Loiter
-// @User: Standard
-
-// @Param: AUX_CH
-// @DisplayName: Auxiliary switch channel
-// @Description: RC Channel to use for auxiliary functions including saving waypoints
-// @User: Advanced
-
-// @Param: PIVOT_TURN_ANGLE
-// @DisplayName: Pivot turn angle
-// @Description: Navigation angle threshold in degrees to switch to pivot steering. This allows you to setup a skid steering rover to turn on the spot in auto mode when the angle it needs to turn it greater than this angle. An angle of zero means to disable pivot turning. Note that you will probably also want to set a low value for WP_RADIUS to get neat turns.
-// @Units: deg
-// @Range: 0 360
-// @Increment: 1
-// @User: Standard
-
-// @Param: PIVOT_TURN_RATE
-// @DisplayName: Pivot turn rate
-// @Description: Desired pivot turn rate in deg/s.
-// @Units: deg/s
-// @Range: 0 360
-// @Increment: 1
-// @User: Standard
-
 ParametersG2::ParametersG2(void)
     :
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
@@ -752,28 +722,37 @@ ParametersG2::ParametersG2(void)
   old object. This should be zero for top level parameters.
  */
 const AP_Param::ConversionInfo conversion_table[] = {
+    // PARAMETER_CONVERSION - Added: Oct-2013 for APMrover2-2.44
     { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
     { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
     { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },
     { Parameters::k_param_volt_div_ratio,     0,      AP_PARAM_FLOAT, "BATT_VOLT_MULT" },
     { Parameters::k_param_curr_amp_per_volt,  0,      AP_PARAM_FLOAT, "BATT_AMP_PERVOLT" },
     { Parameters::k_param_pack_capacity,      0,      AP_PARAM_INT32, "BATT_CAPACITY" },
+    // PARAMETER_CONVERSION - Added: Jan-2015 for APMrover2-2.49
     { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
     { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
     { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
+    // PARAMETER_CONVERSION - Added: Aug-2017 for Rover-3.2
     { Parameters::k_param_throttle_min_old,   0,      AP_PARAM_INT8,  "MOT_THR_MIN" },
     { Parameters::k_param_throttle_max_old,   0,      AP_PARAM_INT8,  "MOT_THR_MAX" },
+    // PARAMETER_CONVERSION - Added: Apr-2019 for Rover-4.0
     { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
+    // PARAMETER_CONVERSION - Added: May-2019 for Rover-4.0
     { Parameters::k_param_waypoint_radius_old,    0,  AP_PARAM_FLOAT,  "WP_RADIUS" },
+    // PARAMETER_CONVERSION - Added: Dec-2021 for Rover-4.4
     { Parameters::k_param_g2,               299,      AP_PARAM_INT16,  "WP_PIVOT_ANGLE" },
     { Parameters::k_param_g2,               363,      AP_PARAM_INT16,  "WP_PIVOT_RATE" },
     { Parameters::k_param_g2,               491,      AP_PARAM_FLOAT,  "WP_PIVOT_DELAY" },
+    // PARAMETER_CONVERSION - Added: May-2019 for Rover-4.0
     { Parameters::k_param_g2,                32,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MIN" },
     { Parameters::k_param_g2,                33,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MAX" },
     { Parameters::k_param_g2,                34,      AP_PARAM_FLOAT,  "SAIL_ANGLE_IDEAL" },
     { Parameters::k_param_g2,                35,      AP_PARAM_FLOAT,  "SAIL_HEEL_MAX" },
     { Parameters::k_param_g2,                36,      AP_PARAM_FLOAT,  "SAIL_NO_GO_ANGLE" },
+    // PARAMETER_CONVERSION - Added: May-2021 for Rover-4.1
     { Parameters::k_param_turn_max_g_old,     0,     AP_PARAM_FLOAT,  "ATC_TURN_MAX_G" },
+    // PARAMETER_CONVERSION - Added: Aug-2022 for Rover-4.4
     { Parameters::k_param_g2,                82,     AP_PARAM_INT8 , "PRX1_TYPE" },
     { Parameters::k_param_g2,               146,     AP_PARAM_INT8 , "PRX1_ORIENT" },
     { Parameters::k_param_g2,               210,     AP_PARAM_INT16, "PRX1_YAW_CORR" },
@@ -787,6 +766,7 @@ const AP_Param::ConversionInfo conversion_table[] = {
     { Parameters::k_param_g2,               722,     AP_PARAM_INT8,  "PRX1_IGN_WID4" },
     { Parameters::k_param_g2,               1234,    AP_PARAM_FLOAT, "PRX1_MIN" },
     { Parameters::k_param_g2,               1298,    AP_PARAM_FLOAT, "PRX1_MAX" },
+    // PARAMETER_CONVERSION - Added: May-2024 for Rover-4.6
     { Parameters::k_param_g2,               113,     AP_PARAM_INT8, "TRQ1_TYPE" },
     { Parameters::k_param_g2,               177,     AP_PARAM_INT8, "TRQ1_ONOFF_PIN" },
     { Parameters::k_param_g2,               241,     AP_PARAM_INT8, "TRQ1_DE_PIN" },
@@ -815,6 +795,7 @@ void Rover::load_parameters(void)
     SRV_Channels::upgrade_parameters();
 
     // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
+    // PARAMETER_CONVERSION - Added: Jan-2019 for Rover-3.5
     const AP_Param::ConversionInfo ch7_option_info = { Parameters::k_param_ch7_option, 0, AP_PARAM_INT8, "RC7_OPTION" };
     AP_Int8 ch7_opt_old;
     if (AP_Param::find_old_parameter(&ch7_option_info, &ch7_opt_old)) {
@@ -826,6 +807,7 @@ void Rover::load_parameters(void)
     }
 
     // set AR_WPNav's WP_SPEED to be old WP_SPEED (if set) or CRUISE_SPEED (if set)
+    // PARAMETER_CONVERSION - Added: May-2019 for Rover-4.0
     const AP_Param::ConversionInfo wp_speed_old_info = { Parameters::k_param_g2, 14, AP_PARAM_FLOAT, "WP_SPEED" };
     const AP_Param::ConversionInfo cruise_speed_info = { Parameters::k_param_speed_cruise, 0, AP_PARAM_FLOAT, "WP_SPEED" };
     AP_Float wp_speed_old;
@@ -838,6 +820,7 @@ void Rover::load_parameters(void)
     }
 
     // attitude control FF and FILT parameter changes for Rover-3.6
+    // PARAMETER_CONVERSION - Added: Jul-2019 for Rover-4.0
     const AP_Param::ConversionInfo ff_and_filt_conversion_info[] = {
         { Parameters::k_param_g2, 24650, AP_PARAM_FLOAT, "ATC_STR_RAT_FLTE" },
         { Parameters::k_param_g2, 28746, AP_PARAM_FLOAT, "ATC_STR_RAT_FF" },
@@ -859,15 +842,15 @@ void Rover::load_parameters(void)
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
 #if AP_AIRSPEED_ENABLED
-// PARAMETER_CONVERSION - Added: JAN-2022
+// PARAMETER_CONVERSION - Added: Jan-2022 for Rover-4.2
         { &airspeed, airspeed.var_info, 37 },
 #endif
 #if AP_AIS_ENABLED
-// PARAMETER_CONVERSION - Added: MAR-2022
+// PARAMETER_CONVERSION - Added: Mar-2022 for Rover-4.4
         { &ais, ais.var_info, 50 },
 #endif
 #if AP_FENCE_ENABLED
-// PARAMETER_CONVERSION - Added: Mar-2022
+// PARAMETER_CONVERSION - Added: Mar-2022 for Rover-4.4
         { &fence, fence.var_info, 17 },
 #endif
 #if AP_STATS_ENABLED
@@ -895,7 +878,7 @@ void Rover::load_parameters(void)
     AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
 
-    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif

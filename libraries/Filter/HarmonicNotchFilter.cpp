@@ -549,6 +549,7 @@ HarmonicNotchFilterParams::HarmonicNotchFilterParams(void)
 
 void HarmonicNotchFilterParams::init()
 {
+    // PARAMETER_CONVERSION - Added: Apr-2024 for ArduPilot-4.5
     _harmonics.convert_bitmask_parameter_width(AP_PARAM_INT8);
 }
 

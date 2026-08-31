@@ -1103,7 +1103,7 @@ void AP_Mount::convert_params()
         return;
     }
 
-    // below conversions added Sep 2022 ahead of 4.3 release
+    // PARAMETER_CONVERSION - Added: Sep-2022 for ArduPilot-4.3
 
     // convert MNT_TYPE to MNT1_TYPE
     int8_t mnt_type = 0;
