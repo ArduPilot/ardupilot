@@ -122,7 +122,7 @@ void ModeSurftrak::control_range() {
         }
         if (sub.ap.at_surface) {
             // Set target depth to 5 cm below SURFACE_DEPTH and reset
-            position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), g.surface_depth - 5.0f));
+            position_control->set_pos_desired_U_cm(MIN(position_control->get_pos_desired_U_cm(), sub.get_surface_depth_U_cm() - 5.0f));
             reset();
         } else if (sub.ap.at_bottom) {
             // Set target depth to 10 cm above bottom and reset

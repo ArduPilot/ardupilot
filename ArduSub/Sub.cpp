@@ -455,6 +455,24 @@ float Sub::get_alt_msl() const
     return -posD;
 }
 
+// water-surface altitude in the position controller U frame (EKF origin).
+// Derived from the current position vs depth, so it tracks a new origin or a re-zeroed
+// depth sensor. With no depth sensor, assume the origin is the surface.
+float Sub::get_surface_alt_U_m() const
+{
+    if (!ap.depth_sensor_present) {
+        return 0;
+    }
+
+    return pos_control.get_pos_estimate_U_m() - barometer.get_altitude();
+}
+
+// get SURFACE_DEPTH expressed in the position controller's U frame
+float Sub::get_surface_depth_U_cm() const
+{
+    return get_surface_alt_U_m() * 100.0f + g.surface_depth;
+}
+
 #if AP_SUB_RC_ENABLED
 void Sub::rc_loop()
 {
