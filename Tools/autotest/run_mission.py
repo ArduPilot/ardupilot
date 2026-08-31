@@ -19,8 +19,8 @@ from pysim import util  # noqa:E402
 
 
 class RunMission(vehicle_test_suite.TestSuite):
-    def __init__(self, vehicle_binary, model, mission_filepath, speedup=None, sim_rate_hz=None):
-        super(RunMission, self).__init__(vehicle_binary)
+    def __init__(self, vehicle_binary, model, mission_filepath, speedup=None, sim_rate_hz=None, instance=0):
+        super(RunMission, self).__init__(vehicle_binary, instance=instance)
         self.mission_filepath = mission_filepath
         self.model = model
         self.speedup = speedup
@@ -97,6 +97,13 @@ if __name__ == "__main__":
         help='simulation physics rate',
         default=None,
     )
+    parser.add_argument(
+        '--instance',
+        type=int,
+        help='SITL instance number; offsets the ports we bind, so a caller '
+             'running at a non-zero instance does not land on instance 0',
+        default=0,
+    )
 
     args = parser.parse_args()
 
@@ -105,6 +112,7 @@ if __name__ == "__main__":
         args.model,
         args.mission_filepath,
         speedup=args.speedup,
-        sim_rate_hz=args.sim_rate_hz
+        sim_rate_hz=args.sim_rate_hz,
+        instance=args.instance,
     )
     x.run()
