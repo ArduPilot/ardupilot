@@ -267,9 +267,11 @@ bool AP_Mount_Backend_TPFrame::send_variablelen_packet(HeaderType header, uint8_
     send_buff[send_buff_ofs++] = hex2char((crc >> 4) & 0x0f);
     send_buff[send_buff_ofs++] = hex2char(crc & 0x0f);
 
-    // send packet
-    _uart->write(send_buff, send_buff_ofs);
-    return true;
+    // send packet.  txspace() was already confirmed sufficient above, but
+    // callers (e.g. set_gimbal_lock()) latch success permanently on a true
+    // return, so a short write must be reported as failure rather than
+    // silently dropping the unsent tail of the packet
+    return _uart->write(send_buff, send_buff_ofs) == send_buff_ofs;
 }
 
 #endif // HAL_MOUNT_TOPOTEK_ENABLED || HAL_MOUNT_SKYDROID_ENABLED
