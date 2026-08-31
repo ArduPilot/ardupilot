@@ -66,7 +66,7 @@ All UARTs are DMA capable.
 - SERIAL2 -> UART2 (GPS)
 - SERIAL3 -> UART3 (GPS2)
 - SERIAL4 -> UART4 (HD-VTX DisplayPort OSD support on UART4)
-- SERIAL5 -> USB (SLCAN)
+- SERIAL5 -> USB (MAVLink2)
 - SERIAL6 -> UART6 (RCIN)
 - SERIAL7 -> UART7 (MAVLink2)
 - SERIAL8 -> UART8 (User)
@@ -107,6 +107,9 @@ The voltage sensors can handle up to 12S LiPo batteries.
 
 The first voltage/current sensor is enabled by default and the pin inputs and voltage scale for the second, unenabled, sensor are also set by default:
 
+BATT2_AMP_PERVLT themselves to match whatever sensor they connect, same as any other
+analog current input with no fixed hardware behind it.
+
 - BATT_MONITOR 4
 - BATT_VOLT_PIN 10
 - BATT_CURR_PIN 11
@@ -115,6 +118,7 @@ The first voltage/current sensor is enabled by default and the pin inputs and vo
 - BATT2_VOLT_PIN 18
 - BATT2_CURR_PIN 7
 - BATT2_VOLT_MULT 21
+- BATT2_AMP_PERVLT defaults to 17
 
 ## Analog RSSI and AIRSPEED inputs
 
