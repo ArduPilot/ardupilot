@@ -29,7 +29,7 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag)
       apply compass compensations for boards that have a heater which
       interferes with an internal compass. This needs to be applied
       before the board orientation so it is independent of
-      AHRS_ORIENTATION
+      BRD_ORIENTATION
      */
     if (!is_external()) {
         const uint32_t dev_id = uint32_t(_compass._state[Compass::StateIndex(instance)].dev_id);

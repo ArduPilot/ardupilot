@@ -110,7 +110,9 @@ public:
 
     enum Gyro_Calibration_Timing {
         GYRO_CAL_NEVER = 0,
-        GYRO_CAL_STARTUP_ONLY = 1
+        GYRO_CAL_STARTUP_ONLY = 1,
+        GYRO_CAL_STARTUP_BACKGROUND = 2,
+        GYRO_CAL_AT_TEMPERATURE = 3,
     };
 
     /// Perform startup initialisation.
@@ -137,6 +139,13 @@ public:
 
     /// calibrating - returns true if the gyros or accels are currently being calibrated
     bool calibrating() const;
+
+    /// gyro_calibrating - returns true if a gyro calibration is running
+    bool gyro_calibrating() const { return _calibrating_gyro; }
+
+    /// true if the automatic gyro calibration is waiting for the IMUs
+    /// to reach temperature
+    bool gyro_cal_waiting_for_temperature() const { return gyro_cal_deferred; }
 
     /// calibrating - returns true if a temperature calibration is running
     bool temperature_cal_running() const;
@@ -269,10 +278,6 @@ public:
 #endif
 
     // set overall board orientation
-    void set_board_orientation(enum Rotation orientation) {
-        _board_orientation = orientation;
-    }
-
     // return the selected loop rate at which samples are made avilable
     uint16_t get_loop_rate_hz(void) const { return _loop_rate; }
 
@@ -543,8 +548,60 @@ private:
     void _start_backends();
     AP_InertialSensor_Backend *_find_backend(int16_t backend_id, uint8_t instance);
 
-    // gyro initialisation
-    void _init_gyro();
+    // take the orientation the board is mounted in from BRD_ORIENTATION
+    void update_board_orientation();
+
+    // return a gyro reading in sensor frame with the backend's
+    // calibration corrections removed
+    Vector3f uncorrected_gyro(uint8_t instance) const;
+
+    // state of a gyro calibration in progress.  Readings are averaged
+    // over a series of windows, and the calibration completes when the
+    // averages from two successive windows agree closely enough.  This
+    // is allocated only while a calibration is running.
+    struct GyroCal {
+        enum class Stage : uint8_t {
+            SETTLE = 0,   // discarding readings while the sensors settle
+            ACCUMULATE,   // accumulating readings into the current window
+        } stage;
+
+        uint32_t start_ms;          // time the calibration started
+        uint32_t window_start_ms;   // time the current window started
+        uint16_t window_count;      // readings accumulated this window
+
+        uint8_t num_gyros;
+        uint8_t num_converged;
+
+        Vector3f accel_start;       // accel reading at start of window
+        Vector3f window_sum[INS_MAX_INSTANCES];
+        Vector3f last_average[INS_MAX_INSTANCES];
+        Vector3f best_avg[INS_MAX_INSTANCES];
+        Vector3f new_gyro_offset[INS_MAX_INSTANCES];
+        float best_diff[INS_MAX_INSTANCES];
+        bool converged[INS_MAX_INSTANCES];
+#if HAL_INS_TEMPERATURE_CAL_ENABLE
+        float start_temperature[INS_MAX_INSTANCES];
+#endif
+    };
+    GyroCal *gyro_cal;
+
+    // true if the automatic gyro calibration is waiting for the IMUs
+    // to reach temperature
+    bool gyro_cal_deferred;
+
+    // true if the IMUs have warmed up enough for a calibration
+    bool imu_up_to_temperature() const;
+
+    // gyro calibration state machine
+    void gyro_cal_check_start();
+    bool gyro_cal_start();
+    void gyro_cal_start_window(uint32_t now_ms);
+    void gyro_cal_end_window(uint32_t now_ms);
+    void gyro_cal_update();
+    void gyro_cal_finish();
+
+    // drive a running gyro calibration to completion, blocking the caller
+    void gyro_cal_run_blocking();
 
     // Calibration routines borrowed from Rolfe Schmidt
     // blog post describing the method: http://chionophilous.wordpress.com/2011/10/24/accelerometer-calibration-iv-1-implementing-gauss-newton-on-an-atmega/

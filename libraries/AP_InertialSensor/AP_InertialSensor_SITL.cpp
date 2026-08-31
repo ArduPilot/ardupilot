@@ -47,7 +47,7 @@ static float calculate_noise(float noise, float noise_variation) {
 
 float AP_InertialSensor_SITL::get_temperature(void)
 {
-#if HAL_INS_TEMPERATURE_CAL_ENABLE
+#if AP_SIM_IMU_HEATER_ENABLED
     if (!is_zero(sitl->imu_temp_fixed)) {
         // user wants fixed temperature
         return sitl->imu_temp_fixed;

@@ -409,7 +409,7 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     AP_GROUPINFO("GND_BEHAV",   41, SIM,  gnd_behav, -1),
 
     // @Param: IMU_ORIENT
-    // @CopyFieldsFrom: AHRS_ORIENTATION
+    // @CopyFieldsFrom: BRD_ORIENTATION
     // @DisplayName: IMU orientation
     // @Description: Simulated orientation of the IMUs
     AP_GROUPINFO("IMU_ORIENT",   42, SIM,  imu_orientation, 0),
@@ -998,7 +998,7 @@ const AP_Param::GroupInfo SIM::var_sfml_joystick[] = {
 
 // INS SITL parameters
 const AP_Param::GroupInfo SIM::var_ins[] = {
-#if HAL_INS_TEMPERATURE_CAL_ENABLE
+#if AP_SIM_IMU_HEATER_ENABLED
     // @Param: IMUT_START
     // @DisplayName: IMU temperature start
     // @Description: Starting IMU temperature of a curve

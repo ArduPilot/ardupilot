@@ -10794,31 +10794,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "--home", home_string,
             ])
             self.wait_ready_to_arm()
-            expected_distances_copy = copy.copy(expected_distances)
+            # a sector holds whatever the sweep last saw in it, so its
+            # reported distance alternates between the objects the sweep
+            # passes.  Wait for each sector to report the object we are
+            # looking for rather than sampling whichever one the sweep
+            # happens to be showing:
+            outstanding = copy.copy(expected_distances)
+            seen = {}
             tstart = self.get_sim_time()
-            failed = False
-            wants = []
-            gots = []
             epsilon = 20
-            while True:
+            while len(outstanding):
                 if self.get_sim_time_cached() - tstart > 30:
-                    raise AutoTestTimeoutException("Failed to get distances")
-                if len(expected_distances_copy.keys()) == 0:
-                    break
+                    raise NotAchievedException(
+                        "Distance too great (%s) (want=%s seen=%s)" %
+                        (name, outstanding, seen))
                 m = self.assert_receive_message("DISTANCE_SENSOR")
-                if m.orientation not in expected_distances_copy:
+                if m.orientation not in outstanding:
                     continue
                 got = m.current_distance
-                want = expected_distances_copy[m.orientation]
-                wants.append(want)
-                gots.append(got)
-                if abs(want - got) > epsilon:
-                    failed = True
-                del expected_distances_copy[m.orientation]
-            if failed:
-                raise NotAchievedException(
-                    "Distance too great (%s) (want=%s != got=%s)" %
-                    (name, wants, gots))
+                if got not in seen.setdefault(m.orientation, []):
+                    seen[m.orientation].append(got)
+                if abs(outstanding[m.orientation] - got) <= epsilon:
+                    del outstanding[m.orientation]
 
     def AC_Avoidance_Proximity_AVOID_ALT_MIN(self):
         '''Test proximity avoidance with AVOID_ALT_MIN'''
@@ -16131,6 +16128,85 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if self.get_sim_time() - tstart < 8:
             raise NotAchievedException("Should take 10 seconds to become armableafter IMU upset")
 
+    def GyroCalibration(self):
+        '''test the startup gyro calibration measures the gyro bias'''
+        bias = math.radians(2)
+
+        self.start_subtest("the calibration blocks the boot process by default")
+        self.assert_parameter_value("INS_GYR_CAL", 1)
+
+        self.start_subtest("no calibration is performed when INS_GYR_CAL is zero")
+        self.set_parameters({
+            "INS_GYR_CAL": 0,
+            "SIM_GYR1_BIAS_X": bias,
+            "SIM_GYR2_BIAS_X": bias,
+            "INS_GYROFFS_X": 0,
+        })
+        self.reboot_sitl()
+        self.assert_parameter_value("INS_GYROFFS_X", 0)
+
+        for gyr_cal in 1, 2, 3:
+            # INS_GYR_CAL=2 runs the calibration in the background while
+            # the rest of the vehicle boots.  INS_GYR_CAL=3 further defers
+            # the calibration until the IMUs are at temperature; SITL has
+            # no IMU heater, so it calibrates at startup just as
+            # INS_GYR_CAL=2 does
+            self.start_subtest("bias is measured with INS_GYR_CAL=%u" % gyr_cal)
+            self.set_parameter("INS_GYR_CAL", gyr_cal)
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.assert_parameter_values({
+                "INS_GYROFFS_X": bias,
+                "INS_GYR2OFFS_X": bias,
+            }, epsilon=math.radians(0.1))
+
+        self.start_subtest("INS_GYR_CAL=3 waits for the IMU to warm up")
+        self.set_parameters({
+            "INS_GYR_CAL": 3,
+            # the IMU is cold at boot and warms up to the heater target,
+            # which the vehicle will arm at 5 degrees below:
+            "BRD_HEAT_TARG": 45,
+            "BRD_HEAT_LOWMGN": 5,
+            "SIM_IMUT_START": 10,
+            "SIM_IMUT_END": 45,
+            "SIM_IMUT_TCONST": 10,
+            "INS_GYROFFS_X": 0,
+            "INS_GYR2OFFS_X": 0,
+        })
+        self.reboot_sitl()
+        self.assert_prearm_failure("Gyro cal waiting for IMU temperature",
+                                   other_prearm_failures_fatal=False)
+        # the calibration really has not been done yet:
+        self.assert_parameter_value("INS_GYROFFS_X", 0)
+        self.wait_ready_to_arm(timeout=120)
+        self.assert_parameter_values({
+            "INS_GYROFFS_X": bias,
+            "INS_GYR2OFFS_X": bias,
+        }, epsilon=math.radians(0.1))
+
+        self.start_subtest("no calibration is performed after a watchdog reset")
+        # the simulator takes the watchdog flag from its environment as
+        # it starts, and the reboot below re-executes it, so the vehicle
+        # comes up believing it has suffered a watchdog reset:
+        os.environ["SITL_WATCHDOG_RESET"] = "1"
+        try:
+            self.reset_SITL_commandline()
+            self.set_parameters({
+                "INS_GYR_CAL": 1,
+                "SIM_GYR1_BIAS_X": bias,
+                "SIM_GYR2_BIAS_X": bias,
+                "INS_GYROFFS_X": 0,
+                "INS_GYR2OFFS_X": 0,
+            })
+            self.reboot_sitl()
+            self.assert_parameter_values({
+                "INS_GYROFFS_X": 0,
+                "INS_GYR2OFFS_X": 0,
+            })
+        finally:
+            del os.environ["SITL_WATCHDOG_RESET"]
+            self.reset_SITL_commandline()
+
     def Sprayer(self):
         """Test sprayer functionality."""
         self.context_push()
@@ -20232,6 +20308,7 @@ return update, 1000
             self.MissionIndexValidity,
             self.InvalidJumpTags,
             self.IMUConsistency,
+            self.GyroCalibration,
             self.AHRSTrimLand,
             self.IBus,
             self.WaitAndMaintainAttitude_RCFlight,

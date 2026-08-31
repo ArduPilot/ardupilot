@@ -520,6 +520,14 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(Check::INS, report, "Gyros not healthy");
             return false;
         }
+        if (ins.gyro_cal_waiting_for_temperature()) {
+            check_failed(Check::INS, report, "Gyro cal waiting for IMU temperature");
+            return false;
+        }
+        if (ins.gyro_calibrating()) {
+            check_failed(Check::INS, report, "Gyros calibrating");
+            return false;
+        }
         if (!ins.gyro_calibrated_ok_all()) {
             check_failed(Check::INS, report, "Gyros not calibrated");
             return false;

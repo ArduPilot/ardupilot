@@ -123,7 +123,9 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     // SIM exactly estimates accel bias:
     results.accel_bias = AP::sitl()->accel_bias[results.primary_accel].get();
 
-    const Vector3f &accel = _ins.get_accel();
+    // the bias we know about is removed from the acceleration we
+    // report, as an estimator which estimates a bias corrects for it:
+    const Vector3f accel = _ins.get_accel() - results.accel_bias;
     results.accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
 
     results.velocity_NED = Vector3f(fdm.speedN, fdm.speedE, fdm.speedD);

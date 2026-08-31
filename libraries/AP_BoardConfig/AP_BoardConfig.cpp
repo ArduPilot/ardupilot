@@ -28,6 +28,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
+#include <AP_AHRS/AP_AHRS.h>
 
 #include <stdio.h>
 
@@ -490,13 +491,80 @@ const AP_Param::GroupInfo AP_BoardConfig::var_info[] = {
     AP_GROUPINFO("IDLE_STATS", 33, AP_BoardConfig, state.idle_stats, 0),
 #endif
 
+    // @Param: ORIENTATION
+    // @DisplayName: Board Orientation
+    // @Description: Overall board orientation relative to the standard orientation for the board type. This rotates the IMU and compass readings to allow the board to be oriented in your vehicle at any 90 or 45 degree angle. The label for each option is specified in the order of rotations for that orientation. This option takes affect on next boot. After changing you will need to re-level your vehicle. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the AHRS_CUSTOM_ROLL/PIT/YAW angles for AHRS orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_ROT1_ROLL/PIT/YAW or CUST_ROT2_ROLL/PIT/YAW angles.
+    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Yaw45Roll180,10:Yaw90Roll180,11:Yaw135Roll180,12:Pitch180,13:Yaw225Roll180,14:Yaw270Roll180,15:Yaw315Roll180,16:Roll90,17:Yaw45Roll90,18:Yaw90Roll90,19:Yaw135Roll90,20:Roll270,21:Yaw45Roll270,22:Yaw90Roll270,23:Yaw135Roll270,24:Pitch90,25:Pitch270,26:Yaw90Pitch180,27:Yaw270Pitch180,28:Pitch90Roll90,29:Pitch90Roll180,30:Pitch90Roll270,31:Pitch180Roll90,32:Pitch180Roll270,33:Pitch270Roll90,34:Pitch270Roll180,35:Pitch270Roll270,36:Yaw90Pitch180Roll90,37:Yaw270Roll90,38:Yaw293Pitch68Roll180,39:Pitch315,40:Pitch315Roll90,42:Roll45,43:Roll315,100:Custom 4.1 and older,101:Custom 1,102:Custom 2
+    // @User: Advanced
+    AP_GROUPINFO("ORIENTATION", 34, AP_BoardConfig, _orientation, 0),
+
     AP_GROUPEND
 };
+
+/*
+  return the orientation the board is mounted in.
+
+  The value is latched rather than being read straight from the
+  parameter, so that the rotation applied to sensor data can not change
+  while the vehicle is armed, and so that every sensor driver sees the
+  same value.  This preserves the behaviour of the periodic push from
+  AHRS_ORIENTATION which this replaced.
+ */
+enum Rotation AP_BoardConfig::get_orientation()
+{
+    const uint32_t now_ms = AP_HAL::millis();
+
+    if (orientation_state.last_update_ms != 0) {
+        if (now_ms - orientation_state.last_update_ms < 1000) {
+            // only update once/second
+            return orientation_state.orientation;
+        }
+        if (hal.util->get_soft_armed()) {
+            // never update while armed - unless we've never updated
+            // (e.g. mid-air reboot or ARMING_REQUIRED=NO on Plane)
+            return orientation_state.orientation;
+        }
+    }
+
+    orientation_state.last_update_ms = now_ms;
+    orientation_state.orientation = (enum Rotation)_orientation.get();
+
+    return orientation_state.orientation;
+}
+
+#if AP_AHRS_ENABLED
+/*
+  the board orientation was held in AHRS_ORIENTATION, which was element
+  9 of the AHRS parameter group.  The AHRS object is asked for its own
+  parameter key as that differs between vehicles.
+  PARAMETER_CONVERSION - Added: Aug-2026
+ */
+void AP_BoardConfig::convert_orientation_parameter()
+{
+    const AP_AHRS *ahrs = AP_AHRS::get_singleton();
+    if (ahrs == nullptr) {
+        return;
+    }
+
+    AP_Param::ConversionInfo info;
+    if (!AP_Param::find_top_level_key_by_pointer(ahrs, info.old_key)) {
+        return;
+    }
+    info.type = AP_PARAM_INT8;
+    info.new_name = "BRD_ORIENTATION";
+    info.old_group_element = 9;
+    AP_Param::convert_old_parameter(&info, 1.0);
+}
+#endif  // AP_AHRS_ENABLED
 
 void AP_BoardConfig::init()
 {
     // PARAMETER_CONVERSION - Added: Apr-2022 for ArduPilot-4.3
     vehicleSerialNumber.convert_parameter_width(AP_PARAM_INT16);
+
+#if AP_AHRS_ENABLED
+    convert_orientation_parameter();
+#endif
 
     board_setup();
 

@@ -187,7 +187,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 
     // @Param: EXTERNAL
     // @DisplayName: Compass is attached via an external cable
-    // @Description: Configure compass so it is attached externally. This is auto-detected on most boards. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the AHRS_ORIENTATION board orientation option. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
+    // @Description: Configure compass so it is attached externally. This is auto-detected on most boards. Set to 1 if the compass is externally connected. When externally connected the COMPASS_ORIENT option operates independently of the BRD_ORIENTATION board orientation option. If set to 0 or 1 then auto-detection by bus connection can override the value. If set to 2 then auto-detection will be disabled.
     // @Values: 0:Internal,1:External,2:ForcedExternal
     // @User: Advanced
     AP_GROUPINFO("EXTERNAL", 9, Compass, _state._priv_instance[0].external, 0),
@@ -812,10 +812,7 @@ void Compass::init()
         }
     }
 
-#ifndef HAL_BUILD_AP_PERIPH
-    // updating the AHRS orientation updates our own orientation:
-    AP::ahrs().update_orientation();
-#endif
+    update_board_orientation();
 
     init_done = true;
     suppress_devid_save = false;
@@ -1742,6 +1739,19 @@ void Compass::_reset_compass_id()
 #endif
 }
 
+/*
+  take the orientation the board is mounted in from BRD_ORIENTATION.
+  Boards with no AP_BoardConfig - AP_Periph - keep ROTATION_NONE.
+ */
+void Compass::update_board_orientation()
+{
+    AP_BoardConfig *board = AP::boardConfig();
+    if (board == nullptr) {
+        return;
+    }
+    _board_orientation = board->get_orientation();
+}
+
 // Look for devices beyond initialisation
 void
 Compass::_detect_runtime(void)
@@ -1779,6 +1789,9 @@ Compass::read(void)
     if (!available()) {
         return false;
     }
+
+    // allow the board orientation to be changed at runtime
+    update_board_orientation();
 
 #if HAL_LOGGING_ENABLED
     const bool old_healthy = healthy();
