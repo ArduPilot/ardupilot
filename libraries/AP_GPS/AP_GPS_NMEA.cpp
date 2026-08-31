@@ -669,10 +669,16 @@ bool AP_GPS_NMEA::_term_complete()
             _phd.itow = strtoul(_term, nullptr, 10);
             break;
         case _GPS_SENTENCE_PHD + 6 ... _GPS_SENTENCE_PHD + 11: // PHD message, fields
-            _phd.fields[_term_number-6] = atol(_term);
+            // guard on the sentence type: _term_number is unbounded, so a longer
+            // sentence of another type can otherwise alias into this case range
+            if (_sentence_type == _GPS_SENTENCE_PHD) {
+                _phd.fields[_term_number-6] = atol(_term);
+            }
             break;
         case _GPS_SENTENCE_KSXT + 1 ... _GPS_SENTENCE_KSXT + 21: // KSXT message, fields (21 fields, indices 0..20)
-            _ksxt.fields[_term_number-1] = atof(_term);
+            if (_sentence_type == _GPS_SENTENCE_KSXT) {
+                _ksxt.fields[_term_number-1] = atof(_term);
+            }
             break;
 #if AP_GPS_NMEA_UNICORE_ENABLED
         case _GPS_SENTENCE_AGRICA + 1 ... _GPS_SENTENCE_AGRICA + 65: // AGRICA message
