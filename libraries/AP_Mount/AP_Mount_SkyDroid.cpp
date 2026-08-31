@@ -311,7 +311,7 @@ bool AP_Mount_SkyDroid::send_time_sync()
     uint8_t databuff[16];
     hal.util->snprintf((char*)databuff, ARRAY_SIZE(databuff), "%02u%02u%02u.%02u%02u%02u%02u",
                         hour, min, sec, (unsigned)((ms / 10) % 100),
-                        day, month, (unsigned)(year % 100));
+                        day, month + 1, (unsigned)(year % 100));
     return send_variablelen_packet(HeaderType::VARIABLE_LEN, AddressByte::SYSTEM_AND_IMAGE, "TIM", true, databuff, ARRAY_SIZE(databuff)-1);
 }
 
