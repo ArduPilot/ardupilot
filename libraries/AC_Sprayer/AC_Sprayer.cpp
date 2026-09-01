@@ -104,6 +104,12 @@ void AC_Sprayer::run(const bool activate)
     }
 }
 
+void AC_Sprayer::stop()
+{
+    run(false);
+}
+
+
 void AC_Sprayer::stop_spraying()
 {
     SRV_Channels::set_output_limit(SRV_Channel::k_sprayer_pump, SRV_Channel::Limit::MIN);
@@ -114,7 +120,8 @@ void AC_Sprayer::stop_spraying()
 
 /// update - adjust pwm of servo controlling pump speed according to the desired quantity and our horizontal speed
 void AC_Sprayer::update()
-{
+{   
+    
     // exit immediately if we are disabled or shouldn't be running
     if (!_enabled || !running()) {
         run(false);
@@ -183,6 +190,7 @@ void AC_Sprayer::update()
 
     // if spraying or testing update the pump servo position
     if (should_be_spraying) {
+
         float pos = ground_speed * _pump_pct_1ms;
         pos = MAX(pos, 100 *_pump_min_pct); // ensure min pump speed
         pos = MIN(pos,10000); // clamp to range
