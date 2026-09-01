@@ -22,6 +22,7 @@
   uniform implementation across all platforms
  */
 
+#include <stdio.h>
 #include "AP_Filesystem.h"
 
 #if AP_FILESYSTEM_FATFS_ENABLED || AP_FILESYSTEM_POSIX_ENABLED || AP_FILESYSTEM_ESP32_ENABLED || AP_FILESYSTEM_ROMFS_ENABLED
