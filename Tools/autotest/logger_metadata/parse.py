@@ -47,9 +47,11 @@ re_units_define = re.compile(r'#define\s+(\w+_UNITS)\s+"([\w\-#?%]+)"')
 re_mults_define = re.compile(r'#define\s+(\w+_MULTS)\s+"([\w\-#?%]+)"')
 
 # Regular expressions for finding message definitions in Write calls
-re_start_writecall = re.compile(r"\s*[AP:]*logger[\(\)]*.Write[StreamingCrcl]*\(")
+# AP::logger().Write and logger->Write (singleton pointer) are both used
+re_logger_write = r'(?:[AP:]*logger[\(\)]*|logger->)Write[StreamingCrcl]*\('
+re_start_writecall = re.compile(r'\s*' + re_logger_write)
 re_writefield = r'\s*"([\w\-#?%,]+)"\s*'
-re_full_writecall = re.compile(r'\s*[AP:]*logger[\(\)]*.Write[StreamingCrcl]*\(' +
+re_full_writecall = re.compile(r'\s*' + re_logger_write +
                                f'{re_writefield},{re_writefield},{re_writefield},({re_writefield},{re_writefield})?',
                                re.MULTILINE)
 
