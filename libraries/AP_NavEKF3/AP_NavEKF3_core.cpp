@@ -1117,7 +1117,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 treatWindStatesAsTruth = false;
                 if (windStateIsObservable) {
                     // allow EKF to relearn wind states rapidly
-                    P[23][23] = P[22][22] = sq(WIND_VEL_VARIANCE_MAX);
+                    P[23][23] = P[22][22] = WIND_VEL_VARIANCE_MAX;
                 }
             }
 	        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
