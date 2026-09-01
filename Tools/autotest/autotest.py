@@ -6,11 +6,13 @@ Andrew Tridgell, October 2011
 
  AP_FLAKE8_CLEAN
 """
+import ast
 import atexit
 import json
 import copy
 import fnmatch
 import glob
+import operator
 import optparse
 import os
 import pathlib
@@ -1224,6 +1226,108 @@ def list_subtests_for_vehicle(vehicle_type):
         print("")  # needed to clear the trailing %
 
 
+def cpu_thread_count():
+    """number of logical CPUs available to this process.
+
+    sched_getaffinity honours taskset and container affinity masks,
+    which cpu_count does not; fall back where it is unavailable.
+    """
+    try:
+        return len(os.sched_getaffinity(0))
+    except AttributeError:
+        return os.cpu_count() or 1
+
+
+def cpu_core_count():
+    """number of physical cores available to this process.
+
+    Counts distinct (physical package, core) pairs among the CPUs we
+    are allowed to run on, so a hyperthreaded machine reports half its
+    logical count and a taskset-restricted run reports only what it
+    can reach.  Falls back to the logical count where /proc/cpuinfo is
+    not available or does not carry the topology.
+    """
+    try:
+        allowed = os.sched_getaffinity(0)
+    except AttributeError:
+        return cpu_thread_count()
+    try:
+        with open("/proc/cpuinfo") as f:
+            cpuinfo = f.read()
+    except OSError:
+        return cpu_thread_count()
+    cores = set()
+    processor = physical = core = None
+    for line in cpuinfo.splitlines() + [""]:
+        if line.strip() == "":
+            if processor in allowed and physical is not None and core is not None:
+                cores.add((physical, core))
+            processor = physical = core = None
+            continue
+        key, _, value = line.partition(":")
+        key = key.strip()
+        value = value.strip()
+        if key == "processor":
+            processor = int(value)
+        elif key == "physical id":
+            physical = value
+        elif key == "core id":
+            core = value
+    return len(cores) or cpu_thread_count()
+
+
+def evaluate_parallel(expression):
+    """evaluate the --parallel argument.
+
+    It is an integer arithmetic expression which may refer to
+    CPUThreadCount (logical CPUs) and CPUCoreCount (physical cores),
+    so a caller which does not know how big the machine is can still
+    ask for a sensible number of workers:
+
+        --parallel=8                    8 workers
+        --parallel=CPUThreadCount       one per logical CPU
+        --parallel=CPUCoreCount         one per physical core
+        --parallel=CPUThreadCount*2     two per logical CPU
+        --parallel=CPUThreadCount-1     leave one for everything else
+
+    Deliberately not eval(): only integer literals, those two names and
+    the four arithmetic operators are accepted.
+    """
+    names = {
+        "CPUThreadCount": cpu_thread_count,
+        "CPUCoreCount": cpu_core_count,
+    }
+    binops = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.FloorDiv: operator.floordiv,
+    }
+
+    def evaluate(node):
+        if isinstance(node, ast.Expression):
+            return evaluate(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, int):
+            return node.value
+        if isinstance(node, ast.Name) and node.id in names:
+            return names[node.id]()
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+            return -evaluate(node.operand)
+        if isinstance(node, ast.BinOp) and type(node.op) in binops:
+            return binops[type(node.op)](evaluate(node.left),
+                                         evaluate(node.right))
+        raise ValueError("unsupported in --parallel: %s" % type(node).__name__)
+
+    try:
+        value = evaluate(ast.parse(str(expression).strip(), mode="eval"))
+    except (SyntaxError, ValueError, ZeroDivisionError) as e:
+        raise ValueError("bad --parallel expression %s: %s" % (expression, e))
+    if value < 1:
+        raise ValueError("--parallel %s evaluates to %d; want at least 1" %
+                         (expression, value))
+    return value
+
+
 if __name__ == "__main__":
     ''' main program '''
     os.environ['PYTHONUNBUFFERED'] = '1'
@@ -1298,9 +1402,12 @@ if __name__ == "__main__":
                       type='int',
                       help='maximum runtime in seconds')
     parser.add_option("--parallel",
-                      default=1,
-                      type='int',
-                      help='number of tests to run in parallel')
+                      default="1",
+                      type='string',
+                      help='number of tests to run in parallel; an integer '
+                           'expression which may use CPUThreadCount and '
+                           'CPUCoreCount, e.g. "CPUThreadCount" or '
+                           '"CPUCoreCount*2"')
     parser.add_option("-I", "--instance",
                       default=0,
                       type='int',
@@ -1495,6 +1602,11 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
+
+    try:
+        opts.parallel = evaluate_parallel(opts.parallel)
+    except ValueError as e:
+        parser.error(str(e))
 
     # canonicalise on opts.debug:
     if opts.debug is None and opts.no_debug is None:
