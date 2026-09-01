@@ -209,8 +209,10 @@ void Copter::rate_controller_thread()
     uint8_t filter_loop_count = 0;
 
     // rate target ramp state, see the interpolation below
+    Vector3f ang_vel_target_rads;
     Vector3f ang_vel_interp_start_rads;
     Vector3f ang_vel_interp_end_rads;
+    uint32_t ang_vel_target_count = 0;
     uint8_t ang_vel_interp_count = 0;
     uint8_t ang_vel_interp_steps = 0;
 
@@ -266,31 +268,38 @@ void Copter::rate_controller_thread()
             rate_loop_count++;
         }
 
-        // take a copy of the target so that it can't be changed from under us.
-        Vector3f ang_vel_target_rads = attitude_control->get_ang_vel_body_rads();
+        // take a copy of the target so that it can't be changed from under us. the count is read
+        // first because the main loop bumps it after storing the target, so a target read once the
+        // count has moved on is one that the main loop has finished writing.
+        const uint32_t target_count = attitude_control->get_ang_vel_body_count();
+        const bool target_updated = target_count != ang_vel_target_count;
+        if (target_updated) {
+            ang_vel_target_rads = attitude_control->get_ang_vel_body_rads();
+            ang_vel_target_count = target_count;
+        }
+        Vector3f ang_vel_body_rads = ang_vel_target_rads;
 
         // the target only updates at the main loop rate, so stepping it would inject shot
         // noise at that rate and its harmonics into the PIDs. ramp to each new target over
-        // one main loop period instead, triggered by the target changing rather than by
-        // main_loop_count since the main loop runs asynchronously to this thread.
-        if (rates.main_loop_rate > 1 && !ang_vel_target_rads.is_nan() && !ang_vel_target_rads.is_inf()) {
+        // one main loop period instead, triggered by the target being republished rather than
+        // by main_loop_count since the main loop runs asynchronously to this thread.
+        if (rates.main_loop_rate > 1 && !ang_vel_body_rads.is_nan() && !ang_vel_body_rads.is_inf()) {
             const uint8_t steps = rates.main_loop_rate;
             if (steps != ang_vel_interp_steps) {
                 // start from the live target after the ramp was idle or the step count changed
-                ang_vel_interp_start_rads = ang_vel_interp_end_rads = ang_vel_target_rads;
+                ang_vel_interp_start_rads = ang_vel_interp_end_rads = ang_vel_body_rads;
                 ang_vel_interp_count = steps;
                 ang_vel_interp_steps = steps;
-            }
-            if (ang_vel_target_rads != ang_vel_interp_end_rads) {
+            } else if (target_updated) {
                 // restart from the current output so the sequence stays continuous
                 ang_vel_interp_start_rads += (ang_vel_interp_end_rads - ang_vel_interp_start_rads) * ((float)ang_vel_interp_count / steps);
-                ang_vel_interp_end_rads = ang_vel_target_rads;
+                ang_vel_interp_end_rads = ang_vel_body_rads;
                 ang_vel_interp_count = 0;
             }
             if (ang_vel_interp_count < steps) {
                 ang_vel_interp_count++;
             }
-            ang_vel_target_rads = ang_vel_interp_start_rads + (ang_vel_interp_end_rads - ang_vel_interp_start_rads) * ((float)ang_vel_interp_count / steps);
+            ang_vel_body_rads = ang_vel_interp_start_rads + (ang_vel_interp_end_rads - ang_vel_interp_start_rads) * ((float)ang_vel_interp_count / steps);
         } else {
             ang_vel_interp_steps = 0;
         }
@@ -298,7 +307,7 @@ void Copter::rate_controller_thread()
         // run the rate controller on all available samples
         // it is important not to drop samples otherwise the filtering will be fubar
         // there is no need to output to the motors more than once for every batch of samples
-        attitude_control->rate_controller_run_dt(gyro + ahrs.get_gyro_drift(), sensor_dt, ang_vel_target_rads);
+        attitude_control->rate_controller_run_dt(gyro + ahrs.get_gyro_drift(), sensor_dt, ang_vel_body_rads);
 
 #ifdef RATE_LOOP_TIMING_DEBUG
         rate_controller_time_us += AP_HAL::micros() - rate_now_us;
