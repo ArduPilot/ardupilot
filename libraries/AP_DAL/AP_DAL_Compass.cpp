@@ -1,3 +1,7 @@
+#include <AP_Compass/AP_Compass_config.h>
+
+#if AP_COMPASS_ENABLED
+
 #include "AP_DAL_Compass.h"
 
 #include <AP_Compass/AP_Compass.h>
@@ -41,3 +45,5 @@ void AP_DAL_Compass::start_frame()
         WRITE_REPLAY_BLOCK_IFCHANGED(RMGI, RMGI, old_RMGI);
     }
 }
+
+#endif  // AP_COMPASS_ENABLED

@@ -232,6 +232,10 @@ public:
         return (uint16_t(_options.get()) & uint16_t(option)) != 0;
     }
 
+    // moved AP_Baro to AP_Vehicle; parameter conversion for Baro and
+    // its sub-object WindCoeff
+    void convert_parameters_for_move_to_ap_vehicle(uint32_t old_toplevel_key);
+
 private:
     // singleton
     static AP_Baro *_singleton;
