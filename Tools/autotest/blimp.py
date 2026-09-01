@@ -104,12 +104,24 @@ class AutoTestBlimp(TestSuite):
     def FlyManualFinned(self):
         '''test manual mode on the finned blimp frame'''
         speed_accuracy = 0.07
+        # "stopped" has to be tighter than the manoeuvre tolerance, because
+        # the next manoeuvre's off-axis check has to absorb both whatever
+        # this stop left behind and the coupling the manoeuvre itself adds.
+        # Leaving at the 0.07 bound left 0.065 on the axis just flown - the
+        # wait attains on the first sample to cross the band, ~0.1s in,
+        # while the blimp is still coasting - the next manoeuvre added
+        # ~0.02 to that, and the off-axis check failed at 0.09.  The blimp
+        # coasts to a floor of 0.014-0.022 rather than to zero, so this
+        # cannot be much tighter than it is; measured over 8 stops the
+        # worst reached 0.03 in 13 simulated seconds, against the 30s
+        # budget below.
+        stop_accuracy = 0.03
         heading_accuracy = 15
 
         def stop_blimp():
             self.progress("Stopping.")
             self.set_rc_from_map({1: 1500, 2: 1500, 3: 1500, 4: 1500})
-            self.wait_speed_vector(Vector3(0, 0, 0), accuracy=speed_accuracy, timeout=30)
+            self.wait_speed_vector(Vector3(0, 0, 0), accuracy=stop_accuracy, timeout=30)
             self.wait_yaw_speed(0, 0.2, 10)
 
         # MANUAL has no heading control, and nothing here commands the
