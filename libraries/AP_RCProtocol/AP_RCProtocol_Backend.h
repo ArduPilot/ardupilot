@@ -125,7 +125,7 @@ protected:
         uint32_t ch7 : 11;
     } PACKED;
 
-    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1, int16_t rx_link_quality=-1);
+    void add_input(uint8_t num_channels, uint16_t *values, bool in_failsafe, int16_t rssi=-1, int16_t rx_link_quality=-1, uint32_t active_mask=UINT32_MAX);
     AP_RCProtocol &frontend;
 
     void log_data(AP_RCProtocol::rcprotocol_t prot, uint32_t timestamp, const uint8_t *data, uint8_t len) const;
@@ -142,6 +142,7 @@ private:
     uint8_t  _num_channels;
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
+    uint32_t active_mask = UINT32_MAX;
 };
 
 #endif  // AP_RCPROTOCOL_ENABLED
