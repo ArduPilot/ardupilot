@@ -1,0 +1,31 @@
+name: Run generate_pdef.xml_metadata.py
+
+# Whenever a tag is pushed, create the corresponding parameter metadata documentation
+# apm.pdef.xml file on the https://autotest.ardupilot.org/Parameters/versioned/ URL
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install rsync
+      run: sudo apt-get update && sudo apt-get install -y rsync
+
+    - name: Run generate_pdef.xml_metadata.py
+      env:
+        RSYNC_USERNAME: ${{ secrets.RSYNC_USERNAME }}
+        RSYNC_PASSWORD: ${{ secrets.RSYNC_PASSWORD }}
+      run: python Tools/scripts/generate_pdef.xml_metadata.py
