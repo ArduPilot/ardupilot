@@ -37,7 +37,6 @@ public:
     virtual uint16_t init_ports() { return 0; };
 
 protected:
-
     bool hw_set_rgb(uint8_t r, uint8_t g, uint8_t b) override;
 
 private:
