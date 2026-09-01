@@ -182,10 +182,12 @@ public:
     ////// begin rate update functions //////
     // These functions all update _ang_vel_body_rads which is used as the rate target by the rate controller.
     // Since _ang_vel_body_rads can be seen by the rate controller thread all these functions only set it
-    // at the end once all of the calculations have been performed. This avoids intermediate results being
-    // used by the rate controller when running concurrently. _ang_vel_body_rads is accessed so commonly that
-    // locking proves to be moderately expensive, however since this is changing incrementally values combining 
-    // previous and current elements are safe and do not have an impact on control.
+    // at the end once all of the calculations have been performed, via publish_ang_vel_body_rads() which
+    // also bumps _ang_vel_body_count after the store so that the rate thread can tell when the target has
+    // moved on. This avoids intermediate results being used by the rate controller when running
+    // concurrently. _ang_vel_body_rads is accessed so commonly that locking proves to be moderately
+    // expensive, however since this is changing incrementally values combining previous and current
+    // elements are safe and do not have an impact on control.
     // Any additional functions that are added to manipulate _ang_vel_body_rads should follow this pattern.
 
     // Calculates the body frame angular velocities to follow the target attitude
@@ -384,7 +386,12 @@ public:
     Vector3f rate_bf_targets() const { return _ang_vel_body_rads + _sysid_ang_vel_body_rads; }
 
     // Return the body-frame angular velocity target (in rad/s) without the sysid contribution
-    const Vector3f& get_ang_vel_body_rads() const { return _ang_vel_body_rads; }
+    Vector3f get_ang_vel_body_rads() const { return _ang_vel_body_rads; }
+
+    // Return the number of updates made to the target above. It is bumped after the target itself,
+    // so a reader that checks this first and only then reads the target cannot pick up one that the
+    // main loop is part way through writing.
+    uint32_t get_ang_vel_body_count() const { return _ang_vel_body_count; }
 
     // return the angular velocity of the target (setpoint) attitude rad/s
     const Vector3f& get_rate_ef_target_rads() const { return _euler_rate_target_rads; }
@@ -560,6 +567,10 @@ protected:
     // Ensures minimum latency when rate control is run before or after attitude control.
     const Vector3f get_latest_gyro() const;
 
+    // Publish the body-frame angular velocity target for the rate controller, see the rate
+    // update function notes above.
+    void publish_ang_vel_body_rads(const Vector3f& ang_vel_body_rads);
+
     // Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
     AP_Float            _rate_wp_yaw_max_degs;
 
@@ -635,6 +646,8 @@ protected:
     // This represents the angular velocity in radians per second in the body frame, used in the angular
     // velocity controller and most importantly the rate controller.
     Vector3f            _ang_vel_body_rads;
+    // Count of updates to _ang_vel_body_rads, bumped after the target itself has been stored
+    uint32_t            _ang_vel_body_count;
 
     // This is the angular velocity in radians per second in the body frame, added to the output angular
     // attitude controller by the System Identification Mode.
