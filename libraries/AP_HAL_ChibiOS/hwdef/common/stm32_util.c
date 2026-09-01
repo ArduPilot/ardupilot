@@ -350,6 +350,22 @@ void peripheral_power_enable(void)
 #endif
 }
 
+/*
+  PWM OUTPUT ENABLE control
+  It can be used to avoid unnecessary PWM output during initialization
+*/
+void peripheral_io_output_enable(void)
+{
+#if defined(HAL_GPIO_PIN_PWM_OE) || defined(HAL_GPIO_PIN_PWM_OE2)
+#ifdef HAL_GPIO_PIN_PWM_OE
+    palWriteLine(HAL_GPIO_PIN_PWM_OE, 1);
+#endif
+#ifdef HAL_GPIO_PIN_PWM_OE2
+    palWriteLine(HAL_GPIO_PIN_PWM_OE2, 1);
+#endif
+#endif
+}
+
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
 /*
   read mode of a pin. This allows a pin config to be read, changed and
