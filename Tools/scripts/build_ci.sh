@@ -138,7 +138,7 @@ function run_autotest() {
         # happens for this target, so this does not select a compiler
         ao="--asan"
     fi
-    Tools/autotest/autotest.py --parallel=8 --show-test-timings --junit $ao --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
+    Tools/autotest/autotest.py --parallel=CPUThreadCount --show-test-timings --junit $ao --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
 
