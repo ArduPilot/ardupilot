@@ -112,10 +112,10 @@ void Sub::failsafe_ekf_check()
     Vector3f magVar;
     float compass_variance;
     float vel_variance;
-    ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar);
-    compass_variance = magVar.length();
+    bool variances_valid = ahrs.get_variances(vel_variance, posVar, hgtVar, magVar, tasVar);
 
-    if (compass_variance < g.fs_ekf_thresh && vel_variance < g.fs_ekf_thresh) {
+    compass_variance = magVar.length();
+    if (variances_valid && compass_variance < g.fs_ekf_thresh && vel_variance < g.fs_ekf_thresh) {
         last_ekf_good_ms = AP_HAL::millis();
         failsafe.ekf = false;
         AP_Notify::flags.ekf_bad = false;
@@ -542,7 +542,7 @@ void Sub::failsafe_radio_on_event()
             break;
         case FS_THR_DISABLED:
             break;
-    }    
+    }
 }
 
 // failsafe_radio_off event- respond to radio contact being regained
