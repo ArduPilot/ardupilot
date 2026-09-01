@@ -17332,11 +17332,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def clear_roi(self):
         '''ensure three commands that clear ROI are equivalent'''
 
+        # 8000m so the vehicle never reaches the waypoint: the thirteen heading
+        # waits below are capped at 30s each and the twelve command ACKs at 10s,
+        # 5100m at the default WP_SPD, from within 500m of home.  A stopped
+        # vehicle holds its last yaw.
         self.upload_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,    0, 0, 20),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,   0, 0, 20),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 20), # directly North, i.e. 0 degrees
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 0, 20), # directly North, i.e. 0 degrees
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,     0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 8000, 0, 20), # directly North, i.e. 0 degrees
         ])
 
         self.set_parameter("AUTO_OPTIONS", 3)
@@ -17345,6 +17347,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         home_loc = self.get_location()
 
+        self.wait_distance_to_home(150, 500, timeout=120)
+        self.wait_heading(0)
+
         cmd_ids = [
             mavutil.mavlink.MAV_CMD_DO_SET_ROI,
             mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
@@ -17352,8 +17357,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ]
         for command in self.run_cmd, self.run_cmd_int:
             for cmd_id in cmd_ids:
-                self.wait_waypoint(2, 2)
-
                 # Set an ROI at the Home location, expect to point at Home
                 self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
                              p5=home_loc.lat,
@@ -17361,13 +17364,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                              p7=home_loc.get_alt_m(AltFrame.ABSOLUTE))
                 self.wait_heading(180)
 
-                # Clear the ROI, expect to point at the next Waypoint
+                # Clear the ROI, expect to point along the flight path again
                 self.progress("Clear ROI using %s(%d)" % (command.__name__, cmd_id))
                 command(cmd_id)
                 self.wait_heading(0)
-
-                self.wait_waypoint(4, 4)
-                self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=2)
 
         self.land_and_disarm()
 
