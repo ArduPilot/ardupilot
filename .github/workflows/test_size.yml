@@ -123,7 +123,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
     container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.2.0
     permissions:
       contents: read

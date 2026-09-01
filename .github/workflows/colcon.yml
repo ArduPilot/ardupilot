@@ -145,7 +145,7 @@ jobs:
     permissions:
       contents: read
       actions: write  # save/prune ccache on master
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
     timeout-minutes: 60
     container:
       image: ardupilot/ardupilot-dev-ros:latest
