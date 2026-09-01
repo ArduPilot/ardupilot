@@ -247,9 +247,9 @@ void WiFiUdpDriver::initialize_wifi()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-
-    strcpy((char *)wifi_config.ap.ssid, WIFI_SSID);
-    strcpy((char *)wifi_config.ap.password, WIFI_PWD);
+    // Defensive copy to prevent buffer overflow if SSID/password exceeds buffer size
+    strlcpy((char *)wifi_config.ap.ssid, WIFI_SSID, sizeof(wifi_config.ap.ssid));
+    strlcpy((char *)wifi_config.ap.password, WIFI_PWD, sizeof(wifi_config.ap.password));
     wifi_config.ap.ssid_len = strlen(WIFI_SSID),
     wifi_config.ap.max_connection = WIFI_MAX_CONNECTION,
     wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
@@ -295,9 +295,10 @@ void WiFiUdpDriver::initialize_wifi()
                                                         &_sta_event_handler,
                                                         NULL,
                                                         &instance_got_ip));
-
-    strcpy((char *)wifi_config.sta.ssid, WIFI_SSID_STATION);
-    strcpy((char *)wifi_config.sta.password, WIFI_PWD);
+    
+    // Defensive copy: prevents buffer overflow if SSID/password exceeds buffer size
+    strlcpy((char *)wifi_config.sta.ssid, WIFI_SSID_STATION, sizeof(wifi_config.sta.ssid));
+    strlcpy((char *)wifi_config.sta.password, WIFI_PWD, sizeof(wifi_config.sta.password));
     wifi_config.sta.threshold.authmode = WIFI_AUTH_OPEN;
     wifi_config.sta.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;
 
