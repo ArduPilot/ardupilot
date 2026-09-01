@@ -9872,6 +9872,7 @@ class TestSuite(abc.ABC):
                      location_source: str = None,
                      frame: AltFrame = AltFrame.ABSOLUTE,
                      timeout: float = 60,
+                     drain_mav: bool = True,
                      ) -> Location:
         '''return the current vehicle location as a (frame-aware)
         Location, with the altitude taken in the requested frame.  Use
@@ -9880,11 +9881,19 @@ class TestSuite(abc.ABC):
         from a single GLOBAL_POSITION_INT, unlike mavfile.location()
         which mixes GPS_RAW_INT and VFR_HUD.  location_source of
         SIMSTATE returns a lat/lng-only Location as SIMSTATE carries no
-        altitude'''
-        # drain the link so the message we then block for reflects the
-        # current position rather than being one which has sat in the
-        # receive queue:
-        self.drain_mav()
+        altitude.
+
+        drain_mav=False skips the drain below.  The drain is
+        wall-clock-bounded, so at high speedup it costs simulated time -
+        and thus vehicle movement - between successive calls; a caller
+        polling for the vehicle to reach a position wants the tightest
+        sampling it can get more than it wants each individual sample to
+        be the freshest possible.'''
+        if drain_mav:
+            # drain the link so the message we then block for reflects
+            # the current position rather than being one which has sat
+            # in the receive queue:
+            self.drain_mav()
         if location_source == 'SIMSTATE':
             self.send_poll_message('SIMSTATE')
             m = self.assert_receive_message('SIMSTATE')
@@ -9924,10 +9933,16 @@ class TestSuite(abc.ABC):
 
     def wait_distance(self, distance, accuracy=2, timeout=30, location_source=None, **kwargs):
         """Wait for flight of a given distance."""
-        start = self.get_location(location_source)
+        # no drain: the drain is wall-clock-bounded, so it decides how
+        # much simulated distance the vehicle covers between samples.
+        # Rover.DriveSquare asks for 50m +-2m at full throttle, and with
+        # the drain in the loop the vehicle went straight through the
+        # band - the next sample read 202.79m.
+        start = self.get_location(location_source, drain_mav=False)
 
         def get_distance():
-            return self.get_distance(start, self.get_location(location_source))
+            return self.get_distance(
+                start, self.get_location(location_source, drain_mav=False))
 
         def validator(value2, target2):
             return math.fabs(value2 - target2) <= accuracy
