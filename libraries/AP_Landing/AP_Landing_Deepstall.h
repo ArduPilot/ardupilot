@@ -31,6 +31,16 @@ class AP_Landing;
 /// @brief  Class managing Plane Deepstall landing methods
 class AP_Landing_Deepstall
 {
+public:
+    // enum for ELEV_SRC parameter
+    enum class DeepstallElevSource {
+        ELEV_PWM = 0,
+        ELEV_NRM = 1,
+    };
+
+    // Return the elevator source
+    DeepstallElevSource get_elev_src() const { return (DeepstallElevSource)ds_elev_src.get(); }
+
 private:
     friend class AP_Landing;
 
@@ -60,6 +70,8 @@ private:
     AP_Float time_constant;
     AP_Float min_abort_alt;
     AP_Float aileron_scalar;
+    AP_Int8 ds_elev_src; // elevator source (0=legacy, 1=channel invariant)
+    AP_Float elevator_norm; // normalized channel invariant value for the elevator at full deflection in deepstall
     int32_t loiter_sum_cd;         // used for tracking the progress on loitering
     DEEPSTALL_STAGE stage;
     Location landing_point;
@@ -71,6 +83,7 @@ private:
     float target_heading_deg;      // target heading for the deepstall in degrees
     uint32_t stall_entry_time;     // time when the aircrafted enter the stall (in millis)
     uint16_t initial_elevator_pwm; // PWM to start slewing the elevator up from
+    int16_t initial_elevator_scaled; // scaled value to start slewing the elevator up from
     uint32_t last_time;            // last time the controller ran
     float L1_xtrack_i;             // L1 integrator for navigation
     PID ds_PID;
