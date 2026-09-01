@@ -148,7 +148,7 @@ def configure(cfg):
         # on cygwin arm-none-eabi-ar doesn't support the @FILE syntax for splitting long lines
         cfg.find_program('ar', var='AR', quiet=True)
     else:
-        cfg.find_program('%s-ar' % cfg.env.TOOLCHAIN, var='AR', quiet=True)
+        cfg.find_program('%s-gcc-ar' % cfg.env.TOOLCHAIN, var='AR', quiet=True)
     cfg.load('compiler_cxx compiler_c gccdeps')
 
     if sys.platform.startswith("cygwin"):
