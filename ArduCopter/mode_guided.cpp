@@ -44,6 +44,13 @@ bool ModeGuided::init(bool ignore_checks)
     // clear pause state when entering guided mode
     _paused = false;
 
+    // no yaw has been commanded yet, so report it as ignored in
+    // POSITION_TARGET_LOCAL_NED until a target sets it (issue #13932)
+    _reported_yaw_ignore = true;
+    _reported_yaw_rate_ignore = true;
+    _reported_yaw_rad = 0.0f;
+    _reported_yaw_rate_rads = 0.0f;
+
     return true;
 }
 
@@ -1039,6 +1046,14 @@ void ModeGuided::angle_control_run()
 // helper function to set yaw state and targets
 void ModeGuided::set_yaw_state_rad(bool use_yaw, float yaw_rad, bool use_yaw_rate, float yaw_rate_rads, bool relative_angle)
 {
+    // record the commanded yaw / yaw-rate so POSITION_TARGET_LOCAL_NED telemetry
+    // can echo what was requested (issue #13932). Store yaw in earth-frame by
+    // resolving body-relative requests against the current heading.
+    _reported_yaw_ignore = !use_yaw;
+    _reported_yaw_rate_ignore = !use_yaw_rate;
+    _reported_yaw_rad = (use_yaw && relative_angle) ? wrap_PI(copter.ahrs.get_yaw_rad() + yaw_rad) : yaw_rad;
+    _reported_yaw_rate_rads = use_yaw_rate ? yaw_rate_rads : 0.0f;
+
     if (use_yaw && relative_angle) {
         auto_yaw.set_fixed_yaw_rad(yaw_rad, 0.0f, 0, relative_angle);
     } else if (use_yaw && use_yaw_rate) {
