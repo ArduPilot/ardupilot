@@ -293,8 +293,8 @@ protected:
     float eas2tas = 1.0;
     float air_density = SSL_AIR_DENSITY;
 
-    // allow for AHRS_ORIENTATION
-    AP_Int8 *ahrs_orientation;
+    // allow for BRD_ORIENTATION
+    AP_Int8 *board_orientation;
     enum Rotation last_imu_rotation;
     AP_Float* custom_roll;
     AP_Float* custom_pitch;

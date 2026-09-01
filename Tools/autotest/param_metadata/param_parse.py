@@ -669,12 +669,32 @@ def validate(param, is_library=False):
             error("missing parameter metadata field '%s' in %s" % (req_field, param.__field_text))
 
 
+# Some parameters copy their fields from a parameter in a library which
+# is not in every vehicle's parameter tree; AP_Periph has the SIM_
+# parameters but no AP_BoardConfig to take BRD_ORIENTATION from, for
+# example.  Parse those libraries so that they can be copied from,
+# without documenting them for a vehicle which does not have them:
+copy_source_libraries = libraries[:]
+for (libname, libpath) in [("BRD_", "AP_BoardConfig/AP_BoardConfig.cpp")]:
+    if any(lib.name == libname for lib in libraries):
+        continue
+    copy_source_library = Library(libname)
+    setattr(copy_source_library, "Path", libpath)
+    # process_library() appends any subgroups it finds to the list the
+    # emitters iterate over, so take those back off it again; they are
+    # part of the copy source, not of this vehicle:
+    documented_libraries = libraries[:]
+    process_library(vehicle, copy_source_library)
+    copy_source_libraries += [lib for lib in libraries if lib not in documented_libraries]
+    libraries[:] = documented_libraries
+    copy_source_libraries.append(copy_source_library)
+
 # handle CopyFieldsFrom and CopyValuesFrom:
 for param in vehicle.params:
-    do_copy_fields(vehicle.params, libraries, param)
+    do_copy_fields(vehicle.params, copy_source_libraries, param)
 for library in libraries:
     for param in library.params:
-        do_copy_fields(vehicle.params, libraries, param)
+        do_copy_fields(vehicle.params, copy_source_libraries, param)
 
 for param in vehicle.params:
     clean_param(param)

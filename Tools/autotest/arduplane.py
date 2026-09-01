@@ -5049,7 +5049,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # which follows on this worker inherits a vehicle with no GPS,
         # and an EKF which never starts:
         #     AHRS2Logging (...) (Failed to get EKF.flags=831)      [EKF_UNINITIALIZED]
-        #     AHRS_ORIENTATION (...) (GPS status bits did not become good)
+        #     BRD_ORIENTATION (...) (GPS status bits did not become good)
         self.run_auxfunc(65, 0, run_cmd=run_cmd)
         self.wait_gps_sys_status_not_present_or_enabled_and_healthy()
 
@@ -9040,7 +9040,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.FlyEachFrameRCInput,
             self.AutoLandMode,
             self.RCDisableAirspeedUse,
-            self.AHRS_ORIENTATION,
+            self.BRD_ORIENTATION,
             self.AHRSTrim,
             self.AHRS2Logging,
             self.AHRS2NoSecondaryEstimate,

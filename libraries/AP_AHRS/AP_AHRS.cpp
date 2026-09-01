@@ -139,12 +139,7 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("TRIM", 8, AP_AHRS, _trim, 0),
 
-    // @Param: ORIENTATION
-    // @DisplayName: Board Orientation
-    // @Description: Overall board orientation relative to the standard orientation for the board type. This rotates the IMU and compass readings to allow the board to be oriented in your vehicle at any 90 or 45 degree angle. The label for each option is specified in the order of rotations for that orientation. This option takes affect on next boot. After changing you will need to re-level your vehicle. Firmware versions 4.2 and prior can use a CUSTOM (100) rotation to set the AHRS_CUSTOM_ROLL/PIT/YAW angles for AHRS orientation. Later versions provide two general custom rotations which can be used, Custom 1 and Custom 2, with CUST_ROT1_ROLL/PIT/YAW or CUST_ROT2_ROLL/PIT/YAW angles.
-    // @Values: 0:None,1:Yaw45,2:Yaw90,3:Yaw135,4:Yaw180,5:Yaw225,6:Yaw270,7:Yaw315,8:Roll180,9:Yaw45Roll180,10:Yaw90Roll180,11:Yaw135Roll180,12:Pitch180,13:Yaw225Roll180,14:Yaw270Roll180,15:Yaw315Roll180,16:Roll90,17:Yaw45Roll90,18:Yaw90Roll90,19:Yaw135Roll90,20:Roll270,21:Yaw45Roll270,22:Yaw90Roll270,23:Yaw135Roll270,24:Pitch90,25:Pitch270,26:Yaw90Pitch180,27:Yaw270Pitch180,28:Pitch90Roll90,29:Pitch90Roll180,30:Pitch90Roll270,31:Pitch180Roll90,32:Pitch180Roll270,33:Pitch270Roll90,34:Pitch270Roll180,35:Pitch270Roll270,36:Yaw90Pitch180Roll90,37:Yaw270Roll90,38:Yaw293Pitch68Roll180,39:Pitch315,40:Pitch315Roll90,42:Roll45,43:Roll315,100:Custom 4.1 and older,101:Custom 1,102:Custom 2
-    // @User: Advanced
-    AP_GROUPINFO("ORIENTATION", 9, AP_AHRS, _board_orientation, 0),
+    // index 9 was ORIENTATION, moved to BRD_ORIENTATION
 
     // @Param: COMP_BETA
     // @DisplayName: AHRS Velocity Complementary Filter Beta Coefficient
@@ -309,11 +304,8 @@ void AP_AHRS::update_secondary_backend_pointers()
     secondary_estimates = estimates_for_type(secondary_type);
 }
 
-// init sets up INS board orientation
 void AP_AHRS::init()
 {
-    update_orientation();
-
     // EKF1 is no longer supported - handle case where it is selected
     if (_ekf_type.get() == 1) {
         AP_BoardConfig::config_error("EKF1 not available");
@@ -538,12 +530,6 @@ void AP_AHRS::update_reset_counters()
 // update run at loop rate
 void AP_AHRS::update(bool skip_ins_update)
 {
-    // periodically checks to see if we should update the AHRS
-    // orientation (e.g. based on the AHRS_ORIENTATION parameter)
-    // allow for runtime change of orientation
-    // this makes initial config easier
-    update_orientation();
-
     if (!skip_ins_update) {
         // tell the IMU to grab some data
         AP::ins().update();

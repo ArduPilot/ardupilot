@@ -238,11 +238,6 @@ public:
 
     bool auto_declination_enabled() const { return _auto_declination != 0; }
 
-    // set overall board orientation
-    void set_board_orientation(enum Rotation orientation) {
-        _board_orientation = orientation;
-    }
-
     // get overall board orientation
     enum Rotation get_board_orientation(void) const {
         return _board_orientation;
@@ -536,7 +531,7 @@ private:
     // settable parameters
     AP_Enum<LearnType> _learn;
 
-    // board orientation from AHRS
+    // board orientation, from BRD_ORIENTATION
     enum Rotation _board_orientation = ROTATION_NONE;
 
     // declination in radians
@@ -614,6 +609,9 @@ private:
     Priority _get_priority(StateIndex state_id) { return _state[state_id].priority; }
     //Method to detect compass beyond initialisation stage
     void _detect_runtime(void);
+
+    // take the orientation the board is mounted in from BRD_ORIENTATION
+    void update_board_orientation();
     // This method reorganises devid list to match
     // priority list, only call before detection at boot
 #if COMPASS_MAX_INSTANCES > 1
