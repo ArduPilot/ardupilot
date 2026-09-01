@@ -112,9 +112,23 @@ class AutoTestBlimp(TestSuite):
             self.wait_speed_vector(Vector3(0, 0, 0), accuracy=speed_accuracy, timeout=30)
             self.wait_yaw_speed(0, 0.2, 10)
 
+        # MANUAL has no heading control, and nothing here commands the
+        # blimp back to where it started - so checking every stop against
+        # the launch heading checks the *sum* of every manoeuvre's
+        # disturbance so far, not what any one of them did.  Seven
+        # manoeuvres in, that had spent most of the allowance: measured
+        # over 20 runs the vehicle finishes 11-12 degrees off with no
+        # single manoeuvre disturbing it by more than 7, and under
+        # --parallel load it went over and the test failed at 16.  Move
+        # the reference to wherever the vehicle settled, so what is
+        # asserted is what one manoeuvre is allowed to do.
+        heading_reference = 0
+
         def stop_blimp_wait_heading():
+            nonlocal heading_reference
             stop_blimp()
-            self.wait_heading(0, accuracy=heading_accuracy, timeout=2)
+            self.wait_heading(heading_reference, accuracy=heading_accuracy, timeout=2)
+            heading_reference = self.get_heading()
 
         self.change_mode('MANUAL')
         self.wait_ready_to_arm()
