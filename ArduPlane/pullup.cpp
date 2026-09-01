@@ -60,7 +60,7 @@ const AP_Param::GroupInfo GliderPullup::var_info[] = {
     // @Range: -80 0
     // @User: Advanced
     AP_GROUPINFO("PITCH_START", 7, GliderPullup,  pitch_start, -60),
-    
+
     AP_GROUPEND
 };
 
