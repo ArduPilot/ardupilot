@@ -3641,18 +3641,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("Wind failsafe at", check_context=True, timeout=120)
         self.wait_mode('RTL', timeout=10)
         self.context_pop()
-        # QRTL's stopping distance goes as the square of groundspeed -
-        # measured across 21 runs it is 0.25*v^2 to three digits - so the
-        # entry speed decides whether the vehicle stops at home or
-        # overshoots and spends the landing budget flying back.  The
-        # failsafe fires wherever the vehicle happens to be in its loiter
-        # circle, and in wind that is a groundspeed anywhere between about
-        # 4 and 32 m/s: entering at 41.4m/s needed 429m to stop with 91m to
-        # run and the landing below timed out.  The vehicle is circling, so
-        # its groundspeed sweeps that band continuously - take the slow part
-        # of the sweep.  Every entry observed at or below 12m/s stopped
-        # within 35m, comfortably inside the distance to run.
-        self.wait_groundspeed(0, 12, timeout=120)
         # switch to QRTL so the vehicle does a VTOL landing and disarms promptly
         self.change_mode('QRTL')
 
