@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
     container:
       image: ${{matrix.os}}:${{matrix.name}}
       options: --privileged
@@ -141,7 +141,7 @@ jobs:
           ./waf plane
 
   build-alpine:  # special case for alpine as it doesn't have bash by default
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
     container:
       image: alpine:latest
       options: --privileged

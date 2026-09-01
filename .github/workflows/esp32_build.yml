@@ -145,7 +145,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
     # ESP-IDF toolchain is baked into this image (see ardupilot_dev_docker
     # Dockerfile_dev-esp32). Keep the tag in sync with the rest of CI.
     container: ardupilot/ardupilot-dev-esp32:v0.2.0
