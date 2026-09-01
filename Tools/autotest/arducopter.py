@@ -20663,9 +20663,76 @@ return update, 1000
             # post-test reboot_sitl() location check passes
             self.customise_SITL_commandline([])
 
+    def DroneCANRangeFinderRecvID(self):
+        '''assign DroneCAN rangefinders reporting the same sensor ID to instances via RNGFNDx_RECV_ID'''
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+            "RNGFND1_TYPE": 24,
+            "RNGFND1_MAX": 110.00,
+            "RNGFND2_TYPE": 24,
+            "RNGFND2_MAX": 110.00,
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        def wait_bound_node(instance, timeout=30):
+            text = self.wait_text(
+                r"RangeFinder\[%u\]: added DroneCAN node (\d+) addr 0" % instance,
+                regex=True,
+                check_context=True,
+                timeout=timeout,
+            )
+            return int(re.match(r".*node (\d+) addr", text).group(1))
+
+        def assert_distance_sensor_ids(want_ids, absent_ids=()):
+            for want in want_ids:
+                self.assert_receive_message(
+                    'DISTANCE_SENSOR',
+                    timeout=10,
+                    condition="DISTANCE_SENSOR.id==%u" % want,
+                )
+            for absent in absent_ids:
+                self.assert_not_receive_message(
+                    'DISTANCE_SENSOR',
+                    timeout=2,
+                    condition="DISTANCE_SENSOR.id==%u" % absent,
+                )
+
+        # both periphs report sensor_id 0, so each instance takes the
+        # first node it hears from
+        node_a = wait_bound_node(0)
+        node_b = wait_bound_node(1)
+        if node_a == node_b:
+            raise NotAchievedException("Both instances bound to node %u" % node_a)
+        assert_distance_sensor_ids({0, 1})
+
+        self.start_subtest("Swap instances at runtime using RECV_ID")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameters({
+            "RNGFND1_RECV_ID": node_b,
+            "RNGFND2_RECV_ID": node_a,
+        })
+        if wait_bound_node(0) != node_b or wait_bound_node(1) != node_a:
+            raise NotAchievedException("RECV_ID not honoured at runtime")
+        assert_distance_sensor_ids({0, 1})
+
+        self.start_subtest("RECV_ID persists across reboot")
+        self.context_clear_collection('STATUSTEXT')
+        self.reboot_sitl()
+        if wait_bound_node(0) != node_b or wait_bound_node(1) != node_a:
+            raise NotAchievedException("RECV_ID not honoured after reboot")
+        assert_distance_sensor_ids({0, 1})
+
+        self.start_subtest("RECV_ID for an absent node starves the instance")
+        self.set_parameter("RNGFND2_RECV_ID", 100)
+        # the instance drops to NoData 500ms after its last measurement
+        self.delay_sim_time(1, reason="instance to time out")
+        assert_distance_sensor_ids({0}, absent_ids={1})
+
     def testcan(self):
         ret = ([
             self.CANGPSCopterMission,
+            self.DroneCANRangeFinderRecvID,
             self.TestLogDownloadMAVProxyCAN,
         ])
         return ret
