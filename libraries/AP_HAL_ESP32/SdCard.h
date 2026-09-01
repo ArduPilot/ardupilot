@@ -18,3 +18,6 @@
 void mount_sdcard();
 void unmount_sdcard();
 bool sdcard_retry();
+void mount_flashfs();
+void unmount_flashfs();
+bool flashfs_retry();
