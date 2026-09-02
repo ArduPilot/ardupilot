@@ -1,6 +1,3 @@
-# Frame
-FRAME_CLASS 1
-
 # GPS on USART3 = SERIAL3
 SERIAL3_BAUD     115
 
