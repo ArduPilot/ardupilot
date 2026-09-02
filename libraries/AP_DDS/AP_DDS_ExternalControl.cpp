@@ -52,11 +52,11 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
     }
 
     if (strcmp(cmd_vel.header.frame_id, BASE_LINK_FRAME_ID) == 0) {
-        // Convert commands from body frame (x-forward, y-left, z-up) to NED.
+        // Convert commands from ROS FLU to AP FRD.
         Vector3f linear_velocity;
         Vector3f linear_velocity_base_link {
             float(cmd_vel.twist.linear.x),
-            float(cmd_vel.twist.linear.y),
+            float(-cmd_vel.twist.linear.y),
             float(-cmd_vel.twist.linear.z) };
 
         if (isnan(linear_velocity_base_link.y) && isnan(linear_velocity_base_link.z)) {
