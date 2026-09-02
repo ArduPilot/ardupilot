@@ -1,4 +1,5 @@
-// STM32F1 UART wrapper with an IDLE interval suitable for a paced serial link.
+// Legacy STM32 UART wrapper with an IDLE interval suitable for a paced serial
+// link. STM32F1 and STM32F4 use the same Renode STM32_UART register model.
 // The stock STM32_UART schedules IDLE eight bit-times after each received byte,
 // which is earlier than the following 8N1 byte. ChibiOS uses IDLE to terminate
 // compact IOMCU packets, so that behavior splits a request at every byte.
@@ -45,7 +46,7 @@ namespace Antmicro.Renode.Peripherals.UART
                 uartFrequency == null || updateInterrupt == null)
             {
                 throw new ConstructionException(
-                    "STM32_UART IDLE internals changed - revisit the STM32F1 wrapper");
+                    "STM32_UART IDLE internals changed - revisit the legacy STM32 wrapper");
             }
         }
 
@@ -114,6 +115,7 @@ namespace Antmicro.Renode.Peripherals.UART
         }
 
         public uint BaudRate => uart.BaudRate;
+        public STM32_UART InnerUart => uart;
         public Bits StopBits => uart.StopBits;
         public Parity ParityBit => uart.ParityBit;
         public long Size => 0x100;

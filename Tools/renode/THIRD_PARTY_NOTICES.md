@@ -14,6 +14,14 @@ the [MIT licence](https://github.com/antmicro/renode/blob/v1.16.1/LICENSE).
 The platform sources came from Renode 1.16.1 and
 [ArduPilot's Renode fork](https://github.com/ArduPilot/renode/tree/2a060779f4e2b87d1ae7238a041d858369818805).
 
+## pyfatfs
+
+The Renode runtime uses
+[pyfatfs 1.1.0](https://github.com/nathanhi/pyfatfs/tree/v1.1.0) to create and
+read FAT images without platform-specific host utilities. pyfatfs is copyright
+(c) 2018-2024 pyfatfs contributors and distributed under the
+[MIT licence](https://github.com/nathanhi/pyfatfs/blob/v1.1.0/LICENSE).
+
 ## STMicroelectronics CMSIS-SVD files
 
 The following STMicroelectronics CMSIS-SVD deliverables are hosted in the

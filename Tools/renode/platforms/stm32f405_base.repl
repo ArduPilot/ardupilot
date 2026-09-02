@@ -44,27 +44,27 @@ flash_controller: MTD.AP_STM32F4_FlashController @ {
 // frequency is the APB bus clock the BRR divides (APB2 84MHz for
 // USART1/6, APB1 42MHz for the rest): the model computes the baud rate
 // from it for the IDLE-line timing ArduPilot's RX DMA harvest relies on
-usart1: UART.STM32_UART @ sysbus <0x40011000, +0x100>
+usart1: UART.AP_STM32F1_UART @ sysbus <0x40011000, +0x100>
     -> nvic@37
     frequency: 84000000
 
-usart2: UART.STM32_UART @ sysbus <0x40004400, +0x100>
+usart2: UART.AP_STM32F1_UART @ sysbus <0x40004400, +0x100>
     -> nvic@38
     frequency: 42000000
 
-usart3: UART.STM32_UART @ sysbus <0x40004800, +0x100>
+usart3: UART.AP_STM32F1_UART @ sysbus <0x40004800, +0x100>
     -> nvic@39
     frequency: 42000000
 
-uart4: UART.STM32_UART @ sysbus <0x40004C00, +0x100>
+uart4: UART.AP_STM32F1_UART @ sysbus <0x40004C00, +0x100>
     -> nvic@52
     frequency: 42000000
 
-uart5: UART.STM32_UART @ sysbus <0x40005000, +0x100>
+uart5: UART.AP_STM32F1_UART @ sysbus <0x40005000, +0x100>
     -> nvic@53
     frequency: 42000000
 
-usart6: UART.STM32_UART @ sysbus <0x40011400, +0x100>
+usart6: UART.AP_STM32F1_UART @ sysbus <0x40011400, +0x100>
     -> nvic@71
     frequency: 84000000
 

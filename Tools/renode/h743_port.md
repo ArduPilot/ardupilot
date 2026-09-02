@@ -159,9 +159,10 @@ implicit DATA-to-TRAN completion after fetching the block; multi-block
 CMD18 still uses the driver's explicit CMD12. The FAT mount then
 completes and Plane initialization begins.
 
-`run.py` creates and supplies a persistent 256 MiB FAT32 image. It defaults to
-`renode/<board>/sdcard.img`, or to the directory selected with `--state-dir`,
-and is directly accessible with host image tools while Renode is stopped.
+`run.py` creates and supplies a sparse persistent 512 MiB FAT32 image with
+4 KiB clusters. It defaults to `renode/<board>/sdcard.img`, or to the directory
+selected with `--state-dir`, and is directly accessible with host image tools
+while Renode is stopped.
 
 ## Stage 2 status (complete)
 
@@ -355,8 +356,8 @@ parameter downloads each returned 11488 bytes.
   fixed/valid controls passed.
 - 2026-08-07: board state moved out of the generated build tree and made
   persistent across Renode processes. `run.py` defaults to
-  `renode/<board>/`, creates 256 MiB FAT32 SD images, writes mapped STM32
-  flash regions back on pause and exit, and generates an SPI
+  `renode/<board>/`, creates sparse 512 MiB FAT32 SD images with 4 KiB clusters,
+  writes mapped STM32 flash regions back on pause and exit, and generates an SPI
   RAMTRON model from `HAL_WITH_RAMTRON` plus `SPIDEV ramtron`. A real
   CUAV-Nora ArduPlane build initialized the generated FRAM and wrote its
   parameter header; MatekH743 wrote its storage backup into the host SD

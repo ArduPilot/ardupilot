@@ -1,53 +1,31 @@
-// Minimal u-blox receiver for AP_Periph GPS testing. It emits a stationary
-// 3D fix using the UBX NAV-PVT and NAV-TIMEGPS messages understood by the
-// reduced AP_Periph GPS build.
+// Physics-driven u-blox receiver. It emits a 3D fix using UBX NAV-PVT and
+// NAV-TIMEGPS messages understood by the production AP_GPS_UBLOX backend.
 using System;
 using System.Collections.Generic;
-using Antmicro.Migrant;
 using Antmicro.Renode.Core;
-using Antmicro.Renode.Peripherals;
-using Antmicro.Renode.Peripherals.Bus;
-using Antmicro.Renode.Peripherals.UART;
-using Antmicro.Renode.Time;
+using Antmicro.Renode.Peripherals.Miscellaneous;
 
 namespace Antmicro.Renode.Peripherals.Sensors
 {
-    public class AP_UBlox : IUART, IDoubleWordPeripheral, IKnownSize
+    public class AP_UBlox : AP_UARTFrameDevice
     {
-        public AP_UBlox(IMachine machine)
+        public AP_UBlox(IMachine machine) : base(
+            machine, MessagesPerSecond, BaudRateBitsPerSecond)
         {
-            this.machine = machine;
-            transmitter = machine.ObtainManagedThread(
-                SendNavigation, MessagesPerSecond, name: "AP u-blox navigation", owner: this);
-            transmitter.Start();
+            physics = AP_PhysicsState.ForMachine(machine);
+            StartTransmitter();
         }
 
-        public void Reset()
+        public override void Reset()
         {
-            generation++;
+            base.Reset();
             itow = InitialTimeOfWeekMs;
         }
 
-        public void WriteChar(byte value)
-        {
-            // Configuration sent by the firmware is intentionally accepted
-            // without changing the deterministic navigation stream.
-        }
-
-        public uint BaudRate => 230400;
-        public Parity ParityBit => Parity.None;
-        public Bits StopBits => Bits.One;
-        public long Size => 4;
-
-        public uint ReadDoubleWord(long offset) => 0;
-        public void WriteDoubleWord(long offset, uint value) { }
-
-        [field: Transient]
-        public event Action<byte> CharReceived;
-
-        private void SendNavigation()
+        protected override byte[] BuildFrame()
         {
             itow += 1000U / MessagesPerSecond;
+            var truth = physics.Current;
             var output = new List<byte>();
 
             var pvt = new List<byte>();
@@ -57,17 +35,26 @@ namespace Antmicro.Renode.Peripherals.Sensors
             AddUInt32(pvt, 10000);       // UTC time accuracy, ns
             AddInt32(pvt, 0);            // fractional UTC time, ns
             pvt.AddRange(new byte[] { 3, 1, 0, 15 }); // 3D fix, valid, satellites
-            AddInt32(pvt, 1491652300);   // longitude, 1e-7 degrees
-            AddInt32(pvt, -353632610);   // latitude, 1e-7 degrees
-            AddInt32(pvt, 600000);       // ellipsoid height, mm
-            AddInt32(pvt, 584000);       // MSL height, mm
+            AddInt32(pvt, ScaledInt32(truth.LongitudeDeg, 1e7));
+            AddInt32(pvt, ScaledInt32(truth.LatitudeDeg, 1e7));
+            AddInt32(pvt, ScaledInt32(truth.AltitudeM, 1000.0));
+            AddInt32(pvt, ScaledInt32(truth.AltitudeM, 1000.0));
             AddUInt32(pvt, 500);         // horizontal accuracy, mm
             AddUInt32(pvt, 800);         // vertical accuracy, mm
-            AddInt32(pvt, 0);            // north velocity, mm/s
-            AddInt32(pvt, 0);            // east velocity, mm/s
-            AddInt32(pvt, 0);            // down velocity, mm/s
-            AddInt32(pvt, 0);            // ground speed, mm/s
-            AddInt32(pvt, 0);            // course, 1e-5 degrees
+            AddInt32(pvt, ScaledInt32(truth.VelocityNedMS[0], 1000.0));
+            AddInt32(pvt, ScaledInt32(truth.VelocityNedMS[1], 1000.0));
+            AddInt32(pvt, ScaledInt32(truth.VelocityNedMS[2], 1000.0));
+            var groundSpeed = Math.Sqrt(
+                truth.VelocityNedMS[0] * truth.VelocityNedMS[0] +
+                truth.VelocityNedMS[1] * truth.VelocityNedMS[1]);
+            AddInt32(pvt, ScaledInt32(groundSpeed, 1000.0));
+            var courseDeg = Math.Atan2(
+                truth.VelocityNedMS[1], truth.VelocityNedMS[0]) * 180.0 / Math.PI;
+            if(courseDeg < 0.0)
+            {
+                courseDeg += 360.0;
+            }
+            AddInt32(pvt, ScaledInt32(courseDeg, 1e5));
             AddUInt32(pvt, 100);         // speed accuracy, mm/s
             AddUInt32(pvt, 10000);       // heading accuracy, 1e-5 degrees
             AddUInt16(pvt, 120);         // position DOP, 0.01
@@ -85,7 +72,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             timeGps.Add(0x07);           // TOW, week and leap seconds valid
             AddUInt32(timeGps, 10000);
             AppendFrame(output, 0x01, 0x20, timeGps);
-            ScheduleOutput(output);
+            return output.ToArray();
         }
 
         private void AppendFrame(List<byte> output, byte messageClass,
@@ -110,26 +97,21 @@ namespace Antmicro.Renode.Peripherals.Sensors
             output.Add(checksumB);
         }
 
-        private void ScheduleOutput(List<byte> output)
-        {
-            var scheduledGeneration = generation;
-            for(var i = 0; i < output.Count; i++)
-            {
-                var value = output[i];
-                machine.ScheduleAction(
-                    TimeInterval.FromMicroseconds((ulong)i * InterByteDelayUs), _ =>
-                    {
-                        if(scheduledGeneration != generation)
-                        {
-                            return;
-                        }
-                        CharReceived?.Invoke(value);
-                    }, name: "AP u-blox serial output");
-            }
-        }
-
         private static void AddInt16(List<byte> output, short value) =>
             AddUInt16(output, unchecked((ushort)value));
+        private static int ScaledInt32(double value, double scale)
+        {
+            value *= scale;
+            if(value > Int32.MaxValue)
+            {
+                return Int32.MaxValue;
+            }
+            if(value < Int32.MinValue)
+            {
+                return Int32.MinValue;
+            }
+            return (int)Math.Round(value);
+        }
         private static void AddUInt16(List<byte> output, ushort value)
         {
             output.Add((byte)value);
@@ -145,13 +127,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
             output.Add((byte)(value >> 24));
         }
 
-        private readonly IMachine machine;
-        private readonly IManagedThread transmitter;
-        private uint generation;
+        private readonly AP_PhysicsState physics;
         private uint itow = InitialTimeOfWeekMs;
 
         private const uint MessagesPerSecond = 5;
-        private const uint InterByteDelayUs = 1000;
+        private const uint BaudRateBitsPerSecond = 230400;
         private const uint InitialTimeOfWeekMs = 518400000;
         private const ushort GpsWeek = 2430;
     }

@@ -13,7 +13,7 @@ using Antmicro.Renode.Time;
 
 namespace Antmicro.Renode.Peripherals.Miscellaneous
 {
-    public class AP_IOMCU : IDoubleWordPeripheral, IKnownSize
+    public class AP_IOMCU : IDoubleWordPeripheral, IKnownSize, IAP_PhysicsActuatorSource
     {
         public AP_IOMCU(IMachine machine, IUART uart, uint firmwareCrc)
         {
@@ -23,6 +23,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             request = new List<byte>();
             setup = new ushort[SetupRegisterCount];
             servos = new ushort[MaxChannels];
+            servoWritten = new bool[MaxChannels];
+            AP_PhysicsState.ForMachine(machine).RegisterActuatorSource(this);
             uart.CharReceived += WriteChar;
             Reset();
         }
@@ -32,7 +34,12 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             generation++;
             request.Clear();
             Array.Clear(setup, 0, setup.Length);
-            Array.Clear(servos, 0, servos.Length);
+            lock(servoSync)
+            {
+                Array.Clear(servos, 0, servos.Length);
+                Array.Clear(servoWritten, 0, servoWritten.Length);
+                ignoreSafetyMask = 0;
+            }
             safetyOff = false;
             totalPackets = 0;
             setup[DefaultRateRegister] = 50;
@@ -81,6 +88,21 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         }
 
         public long Size => 4;
+
+        public void Sample(AP_PhysicsActuator[] actuators)
+        {
+            lock(servoSync)
+            {
+                for(var channel = 0; channel < MainOutputChannels; channel++)
+                {
+                    actuators[channel] = new AP_PhysicsActuator(
+                        servos[channel], AP_PhysicsActuator.ProtocolPwm,
+                        servoWritten[channel] && (safetyOff ||
+                            (ignoreSafetyMask & (1U << channel)) != 0) ?
+                            AP_PhysicsActuator.FlagValid : (byte)0);
+                }
+            }
+        }
 
         private void ProcessRequest(byte code, int count, byte page, byte offset)
         {
@@ -202,10 +224,21 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     {
                         safetyOff = false;
                     }
+                    else if(register == IgnoreSafetyRegister)
+                    {
+                        lock(servoSync)
+                        {
+                            ignoreSafetyMask = value;
+                        }
+                    }
                 }
                 else if(page == PageDirectPwm && register < servos.Length)
                 {
-                    servos[register] = value;
+                    lock(servoSync)
+                    {
+                        servos[register] = value;
+                        servoWritten[register] = true;
+                    }
                 }
             }
         }
@@ -271,11 +304,15 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private readonly List<byte> request;
         private readonly ushort[] setup;
         private readonly ushort[] servos;
-        private bool safetyOff;
+        private readonly bool[] servoWritten;
+        private readonly object servoSync = new object();
+        private volatile bool safetyOff;
+        private ushort ignoreSafetyMask;
         private uint totalPackets;
         private uint generation;
         private const int HeaderSize = 4;
         private const int MaxChannels = 16;
+        private const int MainOutputChannels = 8;
         private const int SetupRegisterCount = 28;
         private const int CodeShift = 6;
         private const int CountMask = 0x3F;
@@ -297,6 +334,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const int FirmwareCrcRegister = 11;
         private const int ForceSafetyOffRegister = 12;
         private const int ForceSafetyOnRegister = 14;
+        private const int IgnoreSafetyRegister = 20;
         private const ushort ForceSafetyMagic = 22027;
         private const ushort ProtocolVersion = 4;
         private const ushort ProtocolVersion2 = 10;

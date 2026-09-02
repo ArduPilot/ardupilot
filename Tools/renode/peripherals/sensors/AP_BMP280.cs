@@ -3,32 +3,30 @@
 // AP_Baro_BMP280 needs: ID, the 24-byte calibration block, read-back
 // CTRL_MEAS/CONFIG (checked registers, re-read every 20 transfers) and
 // the 6-byte pressure/temperature data block. Calibration constants
-// and raw readings are the BMP280 datasheet worked example, which the
-// driver's compensation turns into ~100653 Pa / ~25.1 C - a stable,
-// plausible bench condition.
+// and the 6-byte pressure/temperature data block. Raw readings are generated
+// from the physics truth by inverting the integer compensation functions used
+// by AP_Baro_BMP280.
 //
 using System;
-using System.Collections.Generic;
 using Antmicro.Renode.Core;
-using Antmicro.Renode.Logging;
-using Antmicro.Renode.Peripherals;
-using Antmicro.Renode.Peripherals.I2C;
+using Antmicro.Renode.Peripherals.Miscellaneous;
 
 namespace Antmicro.Renode.Peripherals.Sensors
 {
-    public class AP_BMP280 : II2CPeripheral
+    public class AP_BMP280 : AP_I2CRegisterDevice
     {
-        public AP_BMP280()
+        public AP_BMP280(IMachine machine)
         {
+            physics = AP_PhysicsState.ForMachine(machine);
             Reset();
         }
 
-        public void Reset()
+        public override void Reset()
         {
-            pointer = 0;
-            registers = new byte[256];
+            base.Reset();
+            pressureSampleNumber = 0;
 
-            registers[ID] = 0x58;
+            Registers[ID] = 0x58;
 
             // dig_T1..dig_P9, little-endian, datasheet worked example
             WriteU16(0x88, 27504);
@@ -44,70 +42,131 @@ namespace Antmicro.Renode.Peripherals.Sensors
             WriteS16(0x9C, -14600);
             WriteS16(0x9E, 6000);
 
-            // adc_P = 415148 (0x655CC), adc_T = 519888 (0x7EED0):
-            // 20-bit values as msb / lsb / xlsb<<4
-            registers[0xF7] = 0x65;
-            registers[0xF8] = 0x5C;
-            registers[0xF9] = 0xC0;
-            registers[0xFA] = 0x7E;
-            registers[0xFB] = 0xED;
-            registers[0xFC] = 0x00;
+            UpdateSample();
         }
 
-        public void Write(byte[] data)
+        protected override void WriteRegister(int register, byte value)
         {
-            if(data.Length == 0)
+            switch(register)
             {
+            case RESET:
+                if(value == 0xB6)
+                {
+                    Registers[CTRL_MEAS] = 0;
+                    Registers[CONFIG] = 0;
+                }
+                return;
+            case STATUS:
+                return;
+            default:
+                base.WriteRegister(register, value);
                 return;
             }
-            pointer = data[0];
-            // register writes arrive as (reg, value) pairs
-            for(var i = 1; i < data.Length; i += 2)
-            {
-                switch(pointer)
-                {
-                case RESET:
-                    if(data[i] == 0xB6)
-                    {
-                        var saved = registers;
-                        Reset();
-                        registers = saved; // measurement/cal content survives; config resets
-                        registers[CTRL_MEAS] = 0;
-                        registers[CONFIG] = 0;
-                    }
-                    break;
-                case STATUS:
-                    break; // read-only
-                default:
-                    registers[pointer] = data[i];
-                    break;
-                }
-                if(i + 1 < data.Length)
-                {
-                    pointer = data[i + 1];
-                }
-            }
         }
 
-        public byte[] Read(int count = 1)
+        public override byte[] Read(int count = 1)
         {
-            var result = new byte[count];
-            for(var i = 0; i < count; i++)
+            if(!FreezeSample)
             {
-                result[i] = registers[pointer];
-                pointer = (pointer + 1) & 0xFF;
+                UpdateSample();
             }
-            return result;
+            return base.Read(count);
         }
 
-        public void FinishTransmission()
+        public bool FreezeSample { get; set; }
+
+        private void UpdateSample()
         {
+            var truth = physics.Current;
+            pressureSampleNumber++;
+            var temperatureRaw = FindTemperatureRaw((truth.TemperatureK - 273.15) * 100.0);
+            var temperatureFine = CompensateTemperatureFine(temperatureRaw);
+            var pressure = AP_SensorNoise.Pressure(
+                truth, pressureSampleNumber, 0xB280U, 0.5f);
+            var pressureRaw = FindPressureRaw(pressure, temperatureFine);
+            Set20(Pressure, pressureRaw);
+            Set20(Temperature, temperatureRaw);
+        }
+
+        private int FindTemperatureRaw(double targetHundredthsC)
+        {
+            var low = 0;
+            var high = 0xFFFFF;
+            while(low < high)
+            {
+                var middle = low + (high - low) / 2;
+                var temperature = (CompensateTemperatureFine(middle) * 5 + 128) >> 8;
+                if(temperature < targetHundredthsC)
+                {
+                    low = middle + 1;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+            return low;
+        }
+
+        private int CompensateTemperatureFine(int raw)
+        {
+            var var1 = ((((raw >> 3) - DigT1 * 2) * DigT2) >> 11);
+            var difference = (raw >> 4) - DigT1;
+            var var2 = (((difference * difference >> 12) * DigT3) >> 14);
+            return var1 + var2;
+        }
+
+        private int FindPressureRaw(double targetPa, int temperatureFine)
+        {
+            var low = 0;
+            var high = 0xFFFFF;
+            while(low < high)
+            {
+                var middle = low + (high - low) / 2;
+                // Compensated pressure falls as the raw ADC value rises.
+                if(CompensatePressure(middle, temperatureFine) > targetPa)
+                {
+                    low = middle + 1;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+            return low;
+        }
+
+        private double CompensatePressure(int raw, int temperatureFine)
+        {
+            long var1 = temperatureFine - 128000;
+            long var2 = var1 * var1 * DigP6;
+            var2 += var1 * DigP5 << 17;
+            var2 += (long)DigP4 << 35;
+            var1 = ((var1 * var1 * DigP3) >> 8) + ((var1 * DigP2) << 12);
+            var1 = (((1L << 47) + var1) * DigP1) >> 33;
+            if(var1 == 0)
+            {
+                return 0.0;
+            }
+            long pressure = 1048576 - raw;
+            pressure = (((pressure << 31) - var2) * 3125) / var1;
+            var1 = DigP9 * (pressure >> 13) * (pressure >> 13) >> 25;
+            var2 = DigP8 * pressure >> 19;
+            pressure = ((pressure + var1 + var2) >> 8) + ((long)DigP7 << 4);
+            return pressure / 256.0;
+        }
+
+        private void Set20(int offset, int value)
+        {
+            Registers[offset] = (byte)(value >> 12);
+            Registers[offset + 1] = (byte)(value >> 4);
+            Registers[offset + 2] = (byte)(value << 4);
         }
 
         private void WriteU16(int offset, ushort value)
         {
-            registers[offset] = (byte)(value & 0xFF);
-            registers[offset + 1] = (byte)(value >> 8);
+            Registers[offset] = (byte)(value & 0xFF);
+            Registers[offset + 1] = (byte)(value >> 8);
         }
 
         private void WriteS16(int offset, short value)
@@ -115,13 +174,27 @@ namespace Antmicro.Renode.Peripherals.Sensors
             WriteU16(offset, (ushort)value);
         }
 
-        private byte[] registers;
-        private int pointer;
+        private readonly AP_PhysicsState physics;
+        private uint pressureSampleNumber;
 
         private const int ID = 0xD0;
         private const int RESET = 0xE0;
         private const int STATUS = 0xF3;
         private const int CTRL_MEAS = 0xF4;
         private const int CONFIG = 0xF5;
+        private const int Pressure = 0xF7;
+        private const int Temperature = 0xFA;
+        private const int DigT1 = 27504;
+        private const int DigT2 = 26435;
+        private const int DigT3 = -1000;
+        private const int DigP1 = 36477;
+        private const int DigP2 = -10685;
+        private const int DigP3 = 3024;
+        private const int DigP4 = 2855;
+        private const int DigP5 = 140;
+        private const int DigP6 = -7;
+        private const int DigP7 = 15500;
+        private const int DigP8 = -14600;
+        private const int DigP9 = 6000;
     }
 }

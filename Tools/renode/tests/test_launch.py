@@ -9,9 +9,12 @@ import importlib.util
 import io
 import json
 import os
+import signal
 import socket
+import subprocess
 import sys
 import tarfile
+import time
 
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,6 +24,7 @@ import pytest
 MODULE_PATH = Path(__file__).resolve().parents[1] / 'launch.py'
 sys.path.insert(0, str(MODULE_PATH.parent))
 import gen_board  # noqa: E402
+import process_utils  # noqa: E402
 
 SPEC = importlib.util.spec_from_file_location('renode_launch', MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
@@ -63,6 +67,61 @@ def test_parse_metrics():
         'virtual_seconds': 90.25,
         'host_seconds': 120.5,
     }
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='requires POSIX process groups')
+def test_process_group_cleanup_after_leader_exits():
+    script = (
+        'import subprocess,sys; '
+        'child=subprocess.Popen([sys.executable,"-c",'
+        '"import time; time.sleep(60)"]); '
+        'print(child.pid,flush=True)'
+    )
+    process = subprocess.Popen(
+        [sys.executable, '-c', script],
+        stdout=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    child_pid = int(process.stdout.readline())
+    process.wait(timeout=5)
+    try:
+        os.kill(child_pid, 0)
+        process_utils.terminate_process_group(
+            process, graceful_timeout=0.2)
+        deadline = time.monotonic() + 3
+        while time.monotonic() < deadline:
+            try:
+                os.kill(child_pid, 0)
+            except ProcessLookupError:
+                break
+            time.sleep(0.05)
+        else:
+            raise AssertionError('descendant survived process-group cleanup')
+    finally:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+
+
+def test_dronecan_device_emulator_has_bounded_runtime():
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(launch.HERE / 'device_emulator.py'),
+            'dronecan-airspeed',
+            '--can-bus', '9',
+            '--node-id', '127',
+            '--run-seconds', '0.1',
+        ],
+        cwd=launch.ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert 'DroneCAN airspeed node 127 on mcast:9' in result.stdout
 
 
 def test_build_command_contains_selected_options(tmp_path):
@@ -121,6 +180,97 @@ def test_build_command_contains_selected_options(tmp_path):
     ]
 
 
+def test_physics_connect_command_and_status():
+    args = SimpleNamespace(
+        monitor_port=12390,
+        uart_port=5762,
+        usbip_port=3240,
+        physics_port=9102,
+        physics_binary=None,
+        renode=None,
+        state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+    launcher.physics_model = 'quadplane'
+    launcher.physics_latitude = -35.363261
+    launcher.physics_longitude = 149.165230
+    launcher.physics_altitude = 584.25
+    launcher.physics_heading = 353.0
+    launcher.physics_rate = 400
+
+    assert launcher.physics_connect_command() == (
+        'physics Connect 9102 "quadplane" -35.363261 149.16523 '
+        '584.25 353 400')
+    launcher.physics_longitude = 179.1234567
+    assert ' 179.1234567 ' in launcher.physics_connect_command()
+    physics = launcher.status_snapshot()['physics']
+    assert physics['model'] == 'quadplane'
+    assert physics['port'] == 9102
+    assert physics['location']['altitude_m'] == 584.25
+
+
+def test_explicit_physics_binary_is_absolute(tmp_path, monkeypatch):
+    binary = tmp_path / 'renode-physics'
+    binary.touch()
+    monkeypatch.chdir(tmp_path)
+
+    assert launch.find_physics_binary('renode-physics') == binary.resolve()
+
+
+def test_physics_connect_command_rejects_invalid_values():
+    args = SimpleNamespace(
+        monitor_port=12390,
+        uart_port=5762,
+        usbip_port=3240,
+        physics_port=9002,
+        physics_binary=None,
+        renode=None,
+        state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+    launcher.physics_latitude = float('nan')
+    with pytest.raises(ValueError, match='invalid physics'):
+        launcher.physics_connect_command()
+    launcher.physics_latitude = 0.0
+    launcher.physics_rate = 0
+    with pytest.raises(ValueError, match='rate'):
+        launcher.physics_connect_command()
+
+
+def test_launcher_starts_standalone_physics_sidecar():
+    binary = launch.find_physics_binary()
+    if binary is None:
+        pytest.skip('build tool/renode-physics or install the sidecar')
+    listener = socket.socket()
+    listener.bind(('127.0.0.1', 0))
+    physics_port = listener.getsockname()[1]
+    listener.close()
+    args = SimpleNamespace(
+        monitor_port=12390,
+        uart_port=5762,
+        usbip_port=3240,
+        physics_port=physics_port,
+        physics_binary=str(binary),
+        renode=None,
+        state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+    try:
+        started = time.monotonic()
+        assert launcher.start_physics() is None
+        assert time.monotonic() - started < 1
+        assert launcher.physics_runner.running()
+        assert launcher.physics_status == 'starting'
+        deadline = time.monotonic() + 10
+        while launcher.physics_status == 'starting':
+            launcher.handle_event(launcher.log_q.get(
+                timeout=max(0.1, deadline - time.monotonic())))
+        assert launcher.physics_status == 'listening'
+    finally:
+        launcher.stop_physics()
+    assert launcher.physics_status == 'off'
+
+
 def test_config_ports_follow_expanded_hwdef(tmp_path):
     ports = gen_board.configuration_ports(
         launch.ROOT, 'CubeOrangePlus', tmp_path / 'hwdef')
@@ -146,6 +296,8 @@ def test_generate_attached_devices(tmp_path):
         state_dir=tmp_path,
         attachments=[
             {'port': 'SERIAL2', 'device': 'ublox-gps'},
+            {'port': 'SERIAL3', 'device': 'benewake-rangefinder',
+             'physics_index': 3},
             {'port': 'I2C2', 'device': 'ist8310-compass'},
             {'port': 'I2C2', 'device': 'ms4525-airspeed'},
             {'port': 'CAN2', 'device': 'dronecan-airspeed'},
@@ -154,15 +306,80 @@ def test_generate_attached_devices(tmp_path):
 
     repl = generated['repl'].read_text()
     resc = generated['resc'].read_text()
+    assert 'physics: Miscellaneous.AP_Physics @ sysbus' in repl
     assert 'configDevice0: Sensors.AP_UBlox @ sysbus' in repl
-    assert 'configDevice1: Sensors.AP_IST8310 @ i2c4 0x0E' in repl
-    assert 'configDevice2: Sensors.AP_Airspeed @ i2c4 0x28' in repl
+    assert ('configDevice1: Sensors.AP_Benewake @ sysbus' in repl and
+            '    RangefinderIndex: 3' in repl)
+    assert 'configDevice2: Sensors.AP_IST8310 @ i2c4 0x0E' in repl
+    assert 'configDevice3: Sensors.AP_Airspeed @ i2c4 0x28' in repl
     assert 'connector Connect sysbus.usart3Host configDevice0Hub' in resc
     assert 'connector Connect sysbus.configDevice0 configDevice0Hub' in resc
     assert generated['serial'] == 'USART2'
     assert [attachment['device']['sidecar']
-            for attachment in generated['attachments'][3:]] == [
+            for attachment in generated['attachments'][4:]] == [
                 'dronecan-airspeed', 'dronecan-airspeed']
+
+
+def test_timer_actuators_follow_hwdef_and_iomcu_offset(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeBlack', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    assert 'timer1Actuators: Miscellaneous.AP_STM32_Timer_Actuators' in repl
+    assert '    timer: timer1\n' in repl
+    assert '    output1: 11\n' in repl
+    assert '    output2: 10\n' in repl
+    assert '    output3: 9\n' in repl
+    assert '    output4: 8\n' in repl
+    assert 'timer4Actuators: Miscellaneous.AP_STM32_Timer_Actuators' in repl
+    assert '    output2: 12\n' in repl
+    assert '    output3: 13\n' in repl
+
+
+def test_timer_actuators_start_at_output_one_without_iomcu(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'BlitzWingH743', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    assert 'iomcu: Miscellaneous.AP_IOMCU' not in repl
+    assert 'timer3Actuators: Miscellaneous.AP_STM32_Timer_Actuators' in repl
+    assert '    output3: 0\n' in repl
+    assert '    output4: 1\n' in repl
+
+
+def test_system_timer_compare_zero_is_kept_enabled(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'KakuteF4', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    resc = generated['resc'].read_text()
+    assert (
+        'sysbus SetHookBeforePeripheralWrite sysbus.timer4 '
+        '"if offset == 0x34 and value == 0: value = 1"' in resc
+    )
+
+
+def test_timer_actuators_mark_complementary_hwdef_channels(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'MatekH743', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    assert 'timer8Actuators: Miscellaneous.AP_STM32_Timer_Actuators' in repl
+    assert '    output2: 0\n    complementary2: true\n' in repl
+    assert '    output3: 1\n    complementary3: true\n' in repl
+
+
+def test_spi_sensor_transactions_follow_chip_select(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'MatekH743', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    assert 'spi4Mux: Miscellaneous.AP_SPIMultiplexer @ spi4' in repl
+    assert 'frameOnTransfer: true' not in repl
 
 
 def test_duplicate_i2c_address_is_rejected(tmp_path):
@@ -196,6 +413,49 @@ def test_runtime_uart_device_commands():
         'machine APHotUnplug "sysbus.configHotDevice0" '
         '"configHotDevice0Hub"',
     ]
+
+
+def test_runtime_uart_device_physics_channel():
+    attachment = {
+        'runtime_id': 'configHotDevice0',
+        'runtime_address': 0x6FFF0000,
+        'physics_index': 2,
+    }
+    port = {'bus': 'uart', 'target': 'usart3Host'}
+    device = {
+        'model': 'Sensors.AP_Benewake',
+        'physics': {
+            'source': 'rangefinder',
+            'property': 'RangefinderIndex',
+            'count': 10,
+        },
+    }
+
+    assert launch.runtime_device_commands(attachment, port, device, True)[0] == (
+        'machine LoadPlatformDescriptionFromString '
+        '"configHotDevice0: Sensors.AP_Benewake @ sysbus 0x6FFF0000'
+        '\\n    RangefinderIndex: 2"')
+
+
+def test_launcher_allocates_and_reuses_physics_channels():
+    launcher = launch.Launcher.__new__(launch.Launcher)
+    launcher.attachments = []
+    device = launch.ATTACHABLE_DEVICES['benewake-rangefinder']
+    first = {'device': 'benewake-rangefinder'}
+    second = {'device': 'lightware-rangefinder'}
+
+    launcher.allocate_physics_channel(first, device)
+    launcher.attachments.append(first)
+    launcher.allocate_physics_channel(
+        second, launch.ATTACHABLE_DEVICES['lightware-rangefinder'])
+    launcher.attachments.append(second)
+
+    assert first['physics_index'] == 0
+    assert second['physics_index'] == 1
+    launcher.attachments.remove(first)
+    replacement = {'device': 'benewake-rangefinder'}
+    launcher.allocate_physics_channel(replacement, device)
+    assert replacement['physics_index'] == 0
 
 
 def test_runtime_i2c_device_commands():

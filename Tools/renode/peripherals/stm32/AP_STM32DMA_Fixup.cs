@@ -8,9 +8,10 @@
 // scribbles the next fill further into memory. The same pattern hits
 // aborted SPI transfers (20ms timeout path).
 //
-// The stock model also completes memory-to-memory transfers immediately
-// but leaves SxCR.EN set. Hardware clears EN when the transfer finishes;
-// bootloader flash ECC checks wait for that transition before continuing.
+// The stock model also completes memory-to-memory and memory-to-peripheral
+// transfers immediately but leaves SxCR.EN set. Hardware clears EN when the
+// transfer finishes; bootloader flash ECC checks and UART TX both rely on
+// that transition before starting another transfer.
 // Clear it after the model has performed the transfer.
 //
 // Real hardware reloads its internal pointers whenever NDTR is written
@@ -56,8 +57,9 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 {
                     const uint enable = 1U << 0;
                     const uint directionMask = 3U << 6;
-                    const uint memoryToMemory = 2U << 6;
-                    if((value & enable) != 0 && (value & directionMask) == memoryToMemory)
+                    const uint peripheralToMemory = 0;
+                    if((value & enable) != 0 &&
+                        (value & directionMask) != peripheralToMemory)
                     {
                         dma.WriteDoubleWord(offset, value & ~enable);
                     }

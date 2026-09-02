@@ -9,10 +9,10 @@
 // the stream runs permanently behind the fifo, and RX eventually goes
 // deaf while TX keeps working.
 //
-// This helper hooks the stream's CR register: whenever EN is written 1
-// it blinks one request per byte already queued in the UART's receive
-// fifo. Reflection is only used to read the private fifo reference
-// once at construction.
+// This helper hooks the stream's CR register. When EN is written 1 it
+// blinks one request per byte already queued in the UART's receive fifo.
+// Reflection is only used to read the private fifo reference once at
+// construction.
 //
 using System;
 using System.Collections.Generic;
@@ -32,14 +32,24 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
     public class AP_UartRxDmaPump : IDoubleWordPeripheral, IKnownSize
     {
         public AP_UartRxDmaPump(IMachine machine, STM32DMA dma, int stream,
-                               STM32_UART uart)
+                               IUART uart)
         {
+            var stm32Uart = uart as STM32_UART;
+            if(uart is AP_STM32F1_UART wrappedUart)
+            {
+                stm32Uart = wrappedUart.InnerUart;
+            }
+            if(stm32Uart == null)
+            {
+                throw new ConstructionException(
+                    "AP_UartRxDmaPump needs an STM32 legacy UART");
+            }
             var fifoField = typeof(STM32_UART).GetField("receiveFifo", BindingFlags.NonPublic | BindingFlags.Instance);
             if(fifoField == null)
             {
                 throw new ConstructionException("STM32_UART no longer has a receiveFifo field - revisit this fix");
             }
-            var fifo = (Queue<byte>)fifoField.GetValue(uart);
+            var fifo = (Queue<byte>)fifoField.GetValue(stm32Uart);
 
             dma.RegistersCollection.AddBeforeWriteHook(0x10 + 0x18 * stream, (long offset, uint value) =>
             {
@@ -57,7 +67,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     var pending = fifo.Count;
                     for(var i = 0; i < pending; i++)
                     {
-                        uart.DMARequest.Blink();
+                        stm32Uart.DMARequest.Blink();
                     }
                 }, name: "AP UART RX DMA replay");
                 return null;

@@ -673,7 +673,8 @@ namespace Antmicro.Renode.Peripherals.USB
                 Disconnect();
                 return;
             }
-            if(wasDisconnected && !connectOnVbusSensing)
+            if(wasDisconnected &&
+                (!connectOnVbusSensing || VbusConnectionEnabled()))
             {
                 Connect();
             }
@@ -687,9 +688,10 @@ namespace Antmicro.Renode.Peripherals.USB
                 return;
             }
             var wasConnected =
-                (GetRegister(GlobalCoreConfiguration) & VbusBSensingEnable) != 0;
+                (GetRegister(GlobalCoreConfiguration) &
+                    VbusConnectionMask) != 0;
             registers[GlobalCoreConfiguration] = value;
-            var isConnected = (value & VbusBSensingEnable) != 0;
+            var isConnected = (value & VbusConnectionMask) != 0;
             if(wasConnected == isConnected)
             {
                 return;
@@ -726,10 +728,18 @@ namespace Antmicro.Renode.Peripherals.USB
                 return;
             }
             if((GetRegister(GlobalCoreConfiguration) &
-                VbusBSensingEnable) != 0)
+                VbusConnectionMask) != 0)
             {
                 Connect();
             }
+        }
+
+        private bool VbusConnectionEnabled()
+        {
+            return (GetRegister(GlobalCoreConfiguration) &
+                    VbusConnectionMask) != 0 &&
+                (GetRegister(AhbConfiguration) &
+                    GlobalInterruptEnable) != 0;
         }
 
         private void Connect()
@@ -1014,6 +1024,9 @@ namespace Antmicro.Renode.Peripherals.USB
         private const uint AhbIdle = 1u << 31;
         private const uint GlobalInterruptEnable = 1u << 0;
         private const uint VbusBSensingEnable = 1u << 19;
+        private const uint NoVbusSensing = 1u << 21;
+        private const uint VbusConnectionMask =
+            VbusBSensingEnable | NoVbusSensing;
         private const uint OutEndpointInterrupt = 1u << 19;
         private const uint InEndpointInterrupt = 1u << 18;
         private const uint EnumerationDoneInterrupt = 1u << 13;

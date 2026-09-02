@@ -1,10 +1,11 @@
 // ICM-20649/ICM-20948-compatible SPI IMU for ArduPilot's Invensense-v2
 // backend. It implements banked register access, checked-register readback,
-// reset/wake behavior, and a 1125 Hz FIFO containing stationary samples.
+// reset/wake behavior, and a 1125 Hz FIFO containing physics-driven samples.
 //
 using System;
 using System.Collections.Generic;
 using Antmicro.Renode.Core;
+using Antmicro.Renode.Peripherals.Miscellaneous;
 using Antmicro.Renode.Peripherals.SPI;
 using Antmicro.Renode.Peripherals.Timers;
 using Antmicro.Renode.Time;
@@ -13,9 +14,12 @@ namespace Antmicro.Renode.Peripherals.Sensors
 {
     public class AP_InvensenseV2 : ISPIPeripheral
     {
-        public AP_InvensenseV2(IMachine machine, byte whoAmI = 0xEA)
+        public AP_InvensenseV2(IMachine machine, byte whoAmI = 0xEA,
+                              byte rotation = 0)
         {
             this.whoAmI = whoAmI;
+            this.rotation = rotation;
+            physics = AP_PhysicsState.ForMachine(machine);
             registers = new byte[BankCount, RegisterCount];
             fifo = new Queue<byte>();
             sampleTimer = new LimitTimer(machine.ClockSource, 1000000, this, "invensense-v2 odr",
@@ -125,13 +129,26 @@ namespace Antmicro.Renode.Peripherals.Sensors
             {
                 return;
             }
+            var truth = physics.Current;
+            var acceleration = AP_SensorOrientation.BodyToSensor(
+                truth.SpecificForceMS2, rotation);
+            var gyro = AP_SensorOrientation.BodyToSensor(
+                truth.GyroRadS, rotation);
+            var accelScale = Gravity /
+                (whoAmI == WhoAmIIcm20649 ? 1024.0 : 2048.0);
+            PushWord(ScaleWord(acceleration[1], accelScale));
+            PushWord(ScaleWord(acceleration[0], accelScale));
+            PushWord(ScaleWord(-acceleration[2], accelScale));
+            PushWord(ScaleWord(gyro[1], GyroScale));
+            PushWord(ScaleWord(gyro[0], GyroScale));
+            PushWord(ScaleWord(-gyro[2], GyroScale));
             PushWord(0);
-            PushWord(0);
-            PushWord(whoAmI == WhoAmIIcm20649 ? (short)1024 : (short)2048);
-            PushWord(0);
-            PushWord(0);
-            PushWord(0);
-            PushWord(0);
+        }
+
+        private static short ScaleWord(float value, double scale)
+        {
+            return (short)Math.Max(Int16.MinValue,
+                Math.Min(Int16.MaxValue, Math.Round(value / scale)));
         }
 
         private void PushWord(short value)
@@ -141,6 +158,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         }
 
         private readonly byte whoAmI;
+        private readonly byte rotation;
+        private readonly AP_PhysicsState physics;
         private readonly byte[,] registers;
         private readonly Queue<byte> fifo;
         private readonly LimitTimer sampleTimer;
@@ -173,5 +192,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte FifoEnable = 0x40;
         private const byte SramReset = 0x04;
         private const byte WhoAmIIcm20649 = 0xE1;
+        private const double Gravity = 9.80665;
+        private const double GyroScale = Math.PI / 180.0 / 16.4;
     }
 }

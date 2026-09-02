@@ -1,53 +1,34 @@
-// Minimal LightWare serial lidar using the legacy ASCII protocol.
-// A steady 5 m sample is accepted by AP_RangeFinder_LightWareSerial.
+// Physics-driven LightWare serial lidar using the legacy ASCII protocol.
 using System;
+using System.Globalization;
 using System.Text;
 using Antmicro.Renode.Core;
-using Antmicro.Renode.Peripherals;
-using Antmicro.Renode.Peripherals.Bus;
-using Antmicro.Renode.Peripherals.UART;
+using Antmicro.Renode.Peripherals.Miscellaneous;
 
 namespace Antmicro.Renode.Peripherals.Sensors
 {
-    public class AP_LightWare : IUART, IDoubleWordPeripheral, IKnownSize
+    public class AP_LightWare : AP_UARTFrameDevice
     {
-        public AP_LightWare(IMachine machine)
+        public AP_LightWare(IMachine machine) : base(machine, ReadingsPerSecond)
         {
-            reading = Encoding.ASCII.GetBytes("5.00\r");
-            transmitter = machine.ObtainManagedThread(
-                SendReading, ReadingsPerSecond,
-                name: "AP LightWare range", owner: this);
-            transmitter.Start();
+            physics = AP_PhysicsState.ForMachine(machine);
+            StartTransmitter();
         }
 
-        public void Reset()
+        protected override byte[] BuildFrame()
         {
+            var truth = physics.Current;
+            var distanceM = truth.TimestampUs == 0
+                ? DefaultDistanceM
+                : truth.RangefinderM[RangefinderIndex];
+            return Encoding.ASCII.GetBytes(
+                distanceM.ToString("F2", CultureInfo.InvariantCulture) + "\r");
         }
 
-        public void WriteChar(byte value)
-        {
-        }
+        public uint RangefinderIndex { get; set; }
 
-        public uint BaudRate => 115200;
-        public Parity ParityBit => Parity.None;
-        public Bits StopBits => Bits.One;
-        public long Size => 4;
-
-        public uint ReadDoubleWord(long offset) => 0;
-        public void WriteDoubleWord(long offset, uint value) { }
-
-        public event Action<byte> CharReceived;
-
-        private void SendReading()
-        {
-            foreach(var value in reading)
-            {
-                CharReceived?.Invoke(value);
-            }
-        }
-
-        private readonly byte[] reading;
-        private readonly IManagedThread transmitter;
+        private readonly AP_PhysicsState physics;
         private const uint ReadingsPerSecond = 20;
+        private const double DefaultDistanceM = 5.0;
     }
 }

@@ -19,6 +19,8 @@ import time
 
 from pathlib import Path
 
+import fat_image
+
 from pymavlink import mavutil
 
 CRASHDUMP_TEXT = 'CrashDump data detected'
@@ -167,13 +169,7 @@ def find_crashdump_info(elf):
 
 
 def extract_fatfs_and_verify(sd_image, output, elf, verifier):
-    mcopy = shutil.which('mcopy')
-    if mcopy is None:
-        raise RuntimeError('mcopy is required to extract CrashDump.DAT')
-    subprocess.run(
-        [mcopy, '-o', '-i', str(sd_image), '::APM/CrashDump.DAT', str(output)],
-        check=True,
-    )
+    fat_image.extract_file(sd_image, '/APM/CrashDump.DAT', output)
     if verifier is None:
         print('warning: no Tools/debug/crashdump_info.py found beside the ELF; '
               'skipping firmware identity verification', file=sys.stderr)
