@@ -126,6 +126,7 @@ jobs:
             unit-tests,
             unit-tests-asan,
             examples,
+            examples-asan,
             sitl
         ]
         exclude:
@@ -134,6 +135,8 @@ jobs:
           # libclang-rt-<v>-dev is in ardupilot-dev-clang
           - toolchain: clang
             config: unit-tests-asan
+          - toolchain: clang
+            config: examples-asan
     steps:
       # git checkout the PR
       - uses: actions/checkout@v7
