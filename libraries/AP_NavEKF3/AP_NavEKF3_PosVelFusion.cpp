@@ -1082,7 +1082,8 @@ void NavEKF3_core::FuseVelPosNED()
                     // stays healthy, and a baro that still fails the gate once
                     // the flags clear is reset by the normal timeout
                     const bool baroInGndEffect = activeHgtSource == AP_NavEKF_Source::SourceZ::BARO &&
-                                                 (dal.get_takeoff_expected() || dal.get_touchdown_expected());
+                                                 (dal.get_takeoff_expected() || dal.get_touchdown_expected()) &&
+                                                 !assume_zero_sideslip();
                     if (baroInGndEffect && !badIMUdata) {
                         lastHgtPassTime_ms = imuSampleTime_ms;
                     } else {
@@ -1136,7 +1137,9 @@ void NavEKF3_core::FuseVelPosNED()
                     const ftype gndMaxBaroErr = fabsF(frontend->_baroGndEffectDeadZone);
                     const ftype gndBaroInnovFloor = -0.5;
 
-                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
+                    // the held height is not corrupted, so its correction is not floored
+                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) &&
+                        activeHgtSource == AP_NavEKF_Source::SourceZ::BARO && !fusingGndEffectHgtRef) {
                         // when baro positive pressure error due to ground effect is expected,
                         // floor the barometer innovation at gndBaroInnovFloor
                         // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
@@ -1447,9 +1450,10 @@ void NavEKF3_core::selectHeightForFusion()
         const bool gndEffectExpected = dal.get_takeoff_expected() || dal.get_touchdown_expected();
         // before liftoff fuse the held height instead of the baro corrupted by
         // prop wash. time_flying_ms is zero until the vehicle's land detector
-        // clears land_complete
+        // clears land_complete. Fly-forward vehicles are excluded as their
+        // flags derive from is_flying(), which can read not-flying in the air
         fusingGndEffectHgtRef = gndEffectExpected && is_negative(frontend->_baroGndEffectDeadZone) &&
-                                dal.get_time_flying_ms() == 0;
+                                !assume_zero_sideslip() && dal.get_time_flying_ms() == 0;
         if (fusingGndEffectHgtRef) {
             hgtMea = -posDownGndEffectRef;
         } else {
