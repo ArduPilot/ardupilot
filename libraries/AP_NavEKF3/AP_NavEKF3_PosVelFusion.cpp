@@ -1075,9 +1075,21 @@ void NavEKF3_core::FuseVelPosNED()
                 }
 
                 if (hgtTimeout) {
-                    ResetHeight();
+                    // baro is corrupted by prop wash in ground effect, so do not
+                    // reset to it unless the IMU is also bad. Restart the retry
+                    // timer instead of leaving it latched so the height status
+                    // stays healthy, and a baro that still fails the gate once
+                    // the flags clear is reset by the normal timeout
+                    const bool baroInGndEffect = activeHgtSource == AP_NavEKF_Source::SourceZ::BARO &&
+                                                 (dal.get_takeoff_expected() || dal.get_touchdown_expected());
+                    if (baroInGndEffect && !badIMUdata) {
+                        lastHgtPassTime_ms = imuSampleTime_ms;
+                    } else {
+                        ResetHeight();
+                    }
 
-                    // Don't fuse the same data we have used to reset states.
+                    // Don't fuse the same data we have used to reset states
+                    // or that we have rejected in ground effect.
                     fuseHgtData = false;
                 }
 
