@@ -61,7 +61,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
-      - '.github/workflows/test_clang_scan_build.yml'
+      - '!.github/workflows/test_clang_scan_build.yml'  # except this one
 
 
   pull_request:
@@ -124,7 +124,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
-      - '.github/workflows/test_clang_scan_build.yml'
+      - '!.github/workflows/test_clang_scan_build.yml'
 
   workflow_dispatch:
 
