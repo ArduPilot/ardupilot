@@ -2,6 +2,7 @@ name: test size
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:  # ignore autotest stuffs
       - 'Tools/autotest/**'
       # Remove markdown files as irrelevant

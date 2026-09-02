@@ -2,6 +2,7 @@ name: ESP32 Build
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
       # remove non copter and plane vehicles
       - 'AntennaTracker/**'

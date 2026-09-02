@@ -2,6 +2,7 @@ name: test tracker
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
       # remove other vehicles
       - 'ArduCopter/**'

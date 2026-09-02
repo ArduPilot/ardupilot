@@ -2,6 +2,7 @@ name: Macos Build
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
       # remove other env install scripts
       - 'Tools/environment_install/install-ROS-ubuntu.sh'
