@@ -52,12 +52,12 @@ The source scanner currently reports:
 - 49 production source candidates which directly acquire an I2C device.
 - 13 barometer, 14 compass and 2 IMU I2C probe families used by ChibiOS
   hwdefs.
-- 87 concrete Renode I2C transport classes and 36 concrete UART transport
+- 87 concrete Renode I2C transport classes and 48 concrete UART transport
   classes, including address-specific classes and models which inherit their
   transport implementation.
-- 119 launcher catalog entries: 82 I2C, 36 UART and one CAN.
+- 131 launcher catalog entries: 82 I2C, 48 UART and one CAN.
 - Current I2C coverage: 82 dynamic selectable attachments.
-- Current UART coverage: 36 dynamic selectable models.
+- Current UART coverage: 48 dynamic selectable models.
 
 Source-candidate counts are deliberately not called driver counts. Frontends,
 shared helpers and multi-variant backends need classification in the reviewed
@@ -150,8 +150,8 @@ telemetry and DataFlash logs.
 | 3 | Expose and fully validate all existing Renode sensor models | Complete |
 | 4 | Environmental/navigation I2C drivers | Complete |
 | 5 | Remaining I2C power, output and high-rate devices | Complete |
-| 6 | Serial navigation, ranging and proximity devices | In progress |
-| 7 | Complex bidirectional and output-only serial devices | Not started |
+| 6 | Serial navigation, ranging and proximity devices | Complete |
+| 7 | Complex bidirectional and output-only serial devices | In progress |
 | 8 | Full fault, hotplug, Windows bundle and nightly CI matrix | Not started |
 
 ## Progress log
@@ -959,6 +959,93 @@ telemetry and DataFlash logs.
   `build/renode-test/driver-probe-matekh743-lightware-sf45b-proximity-stage6/`
   and
   `build/renode-test/driver-probe-matekh743-configured-rangefinders-lightware-base-regression/`.
+- Completed Stage 6: every physical serial GNSS, rangefinder and proximity
+  backend now has a dynamic catalog model and a production-driver probe.
+- Began Stage 7 with the NMEA VHW/MTW water-speed sensor and MWV wind sensor.
+  The shared NMEA encoder emits checksummed 4800-baud sentences. The water-
+  speed model follows physics airspeed and temperature; its real MatekH743
+  Rover backend reported 0/20 m/s and 20/30 C, became unhealthy under silence
+  and checksum corruption, and recovered in place. The wind model exposes
+  runtime speed and direction controls; its production backend tracked four
+  value steps and retained its previous reading while output was suppressed or
+  corrupted before accepting valid data again. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-nmea-airspeed-stage7c/` and
+  `build/renode-test/driver-probe-matekh743-nmea-wind-stage7/`.
+- Added the two physical UART optical-flow sensors: Cheerson CX-OF and UPixel
+  UPFLOW. A shared physics adapter converts NED velocity, attitude, height and
+  angular rate into each sensor's integrated-motion representation. CX-OF
+  exercises its coarse 1.76-milliradian count and remapped 64--78 quality
+  range; UPFLOW exercises its microsecond integration interval, sensor-axis
+  negation and XOR-protected payload. Both real MatekH743 ArduPlane backends
+  reported the baseline `(0.6,0.8)` rad/s and stepped `(-0.65,-0.75)` rad/s
+  motion within protocol quantisation, became unhealthy under silence and
+  corrupt byte streams, and recovered without reboot. UPFLOW also rejected
+  frames with an independently corrupted checksum while retaining valid
+  framing. The existing PX4Flow production probe passed after the shared
+  assertion refactor. Artifacts are
+  under `build/renode-test/driver-probe-matekh743-{cxof,upflow}-stage7/` and
+  `build/renode-test/driver-probe-matekh743-px4flow-stage7-regression/`.
+- Added a physics-driven NMEA AIVDM AIS receiver. It emits Class A position
+  reports plus fragmented static/voyage data for one vessel, including MMSI,
+  callsign, name, type and dimensions. The real MatekH743 Rover backend tracked
+  baseline and stepped position, speed, course and heading values, rejected
+  checksum-corrupt, suppressed and byte-corrupt input, and recovered after
+  each fault without reboot. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-nmea-ais-stage8/`.
+- Added the Pozyx UWB beacon as the first production serial-beacon backend.
+  Its model emits the four anchor configurations, geometric ranges and a
+  physics-driven vehicle position. A feature-forced MatekH743 Copter build
+  recorded both position steps and all four ranges in `BCN` DataFlash records,
+  lost health under checksum corruption, silence and arbitrary byte corruption,
+  and recovered after each fault. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-pozyx-beacon-stage7b/`.
+- Added the Marvelmind UWB beacon with high-resolution anchor positions,
+  physics-driven vehicle positions and geometric anchor ranges. Its model
+  preserves the production protocol's ENU wire coordinates and Modbus CRC,
+  while the real MatekH743 Copter backend converts the data back to NED. The
+  DataFlash oracle verified both position steps and all four ranges, plus
+  health loss and recovery through checksum corruption, silence and arbitrary
+  byte corruption. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-marvelmind-beacon-stage7/`.
+- Added the bidirectional Nooploop UWB beacon. Its model streams signed 24-bit
+  ENU node frames, recognises the production backend's 128-byte settings
+  request and responds with four anchor positions before the backend accepts
+  navigation data. The real MatekH743 Copter probe verified that handshake,
+  both NED position/range sets, and three health-loss/recovery cycles through
+  checksum corruption, silence and arbitrary byte corruption. Passing
+  artifacts are under
+  `build/renode-test/driver-probe-matekh743-nooploop-beacon-stage7d/`.
+- Added an analyser for the output-only NMEA navigation protocol. A real
+  MatekH743 ArduPlane build consumed physics-driven NMEA GPS on one UART and
+  emitted checksummed GPGGA, GPRMC and PASHR sentences on another. The probe
+  verified fix state, latitude, longitude, altitude, speed and the production
+  output's course convention at baseline and stepped motion points, with no
+  invalid checksums. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-nmea-output-stage7b/`.
+- Added an analyser for output-only LightTelemetry (LTM). It validates the
+  fixed GPS, attitude and sensor frame lengths and payload XOR checksums, and
+  decodes their little-endian fields. A feature-forced MatekH743 ArduPlane
+  build emitted all three frame types; the probe verified the GPS fix and
+  satellite packing, baseline position, speed and relative altitude, then the
+  stepped position and speed. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-ltm-output-stage7b/`.
+- Added an analyser for the output-only Devo telemetry packet. A feature-forced
+  MatekH743 ArduPlane build produced valid 20-byte additive-checksum frames;
+  the probe verified DMS longitude conversion, baseline relative altitude and
+  both ground-speed points. It also captured a production limitation:
+  `gpsDdToDmsFormat()` returns an unsigned value, so the ChibiOS conversion
+  clamps southern latitudes (and equivalently western longitudes) to zero.
+  The oracle records that behavior without masking it in the analyser. Passing
+  artifacts are under
+  `build/renode-test/driver-probe-matekh743-devo-output-stage7b/`.
+- Added an analyser for output-only FrSky D telemetry. It decodes the
+  start-delimited, byte-stuffed little-endian sensor records emitted by the
+  production backend. A feature-forced MatekH743 ArduPlane probe verified GPS
+  status, southern/eastern position, speed and absolute altitude at baseline
+  and stepped states. The 605 m baseline deliberately places `0x5D` in the
+  altitude payload, proving the firmware's escaping and the analyser's
+  unstuffing on the real UART stream. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-frsky-d-output-stage7b/`.
 
 The current fast probe can be repeated without rebuilding firmware:
 
@@ -973,9 +1060,9 @@ checked-in test defaults first.
 
 Next work:
 
-1. Continue Stage 6 through the remaining serial ranging and proximity lidar
-   protocol families, reusing shared binary framing and scan geometry where
-   possible.
+1. Continue Stage 7 through the remaining bidirectional and output-only serial
+   protocol families, grouping closely related protocols into reviewable
+   tranches.
 2. Extend the manifest with explicit protocol variants and per-frontend
    multi-instance parameter naming where a family shares one model.
 3. Make the DroneCAN airspeed sidecar physics-driven and fault-testable as part

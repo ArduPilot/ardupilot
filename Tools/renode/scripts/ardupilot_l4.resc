@@ -32,6 +32,16 @@ include $repo/Tools/renode/peripherals/sensors/AP_TemperatureSensors.cs
 include $repo/Tools/renode/peripherals/sensors/AP_BMP388.cs
 include $repo/Tools/renode/peripherals/sensors/AP_Benewake.cs
 include $repo/Tools/renode/peripherals/sensors/AP_SerialRangefinders.cs
+include $repo/Tools/renode/peripherals/sensors/AP_SerialNMEASensors.cs
+include $repo/Tools/renode/peripherals/sensors/AP_SerialOpticalFlow.cs
+include $repo/Tools/renode/peripherals/sensors/AP_AIS.cs
+include $repo/Tools/renode/peripherals/sensors/AP_PozyxBeacon.cs
+include $repo/Tools/renode/peripherals/sensors/AP_MarvelmindBeacon.cs
+include $repo/Tools/renode/peripherals/sensors/AP_NooploopBeacon.cs
+include $repo/Tools/renode/peripherals/sensors/AP_NMEAOutput.cs
+include $repo/Tools/renode/peripherals/sensors/AP_LTMOutput.cs
+include $repo/Tools/renode/peripherals/sensors/AP_DevoOutput.cs
+include $repo/Tools/renode/peripherals/sensors/AP_FrSkyDOutput.cs
 include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
 include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
 include $repo/Tools/renode/peripherals/sensors/AP_LightWare.cs

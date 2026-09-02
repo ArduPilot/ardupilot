@@ -45,7 +45,7 @@ VALID_PROBE_ASSERTIONS = frozenset((
     'configuration', 'corrupt-read-recovery',
     'data-ready-recovery',
     'data-invalid-recovery', 'detection', 'device-id', 'stable-values',
-    'stepped-values',
+    'settings-request', 'static-data', 'stepped-values',
     'output-corruption-recovery',
     'output-suppression-recovery', 'stuck-sample-recovery',
 ))
