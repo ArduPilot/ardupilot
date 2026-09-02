@@ -125,7 +125,15 @@ function run_autotest() {
     if [ "$NAME" == "Examples" ]; then
         w="$w --speedup=5 --timeout=14400 --debug --no-clean"
     fi
-    Tools/autotest/autotest.py --show-test-timings --junit --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
+    # options for autotest itself rather than for waf configure
+    ao=""
+    if [ "$NAME" == "Unit Tests ASAN" ]; then
+        # autotest puts --asan and --debug on the waf configure line
+        # itself, and needs to see the option to know to build and run
+        # only the sitl tests: --asan is implemented for that board alone
+        ao="--asan"
+    fi
+    Tools/autotest/autotest.py --show-test-timings --junit $ao --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
 
@@ -234,6 +242,11 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "unit-tests" ]; then
         run_autotest "Unit Tests" "build.unit_tests" "run.unit_tests"
+        continue
+    fi
+
+    if [ "$t" == "unit-tests-asan" ]; then
+        run_autotest "Unit Tests ASAN" "build.unit_tests" "run.unit_tests"
         continue
     fi
 
