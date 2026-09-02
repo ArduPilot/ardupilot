@@ -2,6 +2,7 @@ name: colcon build/test
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
       # remove not tests vehicles
       - 'AntennaTracker/**'
